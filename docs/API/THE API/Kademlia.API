@@ -1,0 +1,66 @@
+Kademlia API
+
+# Interface design:
+# Tests:
+
+(all Sets should be able to be configured in a config file - 
+there here in case we ave folks who want to set these via a config SCREEN)
+
+ReadNodes()
+// reads cache list of nodes from a container (file)
+// need to call File(string filename)
+// if IP:Port == null, it's us!!
+return vector object
+
+WriteNodes()
+// writes found nodes to File
+return int
+
+SetTupleInfo(*tuple = default, int fixedSize)
+// default is ID:IP:Port but we could add more / fixed in 
+// size here so we can decode the streams from find nodes / find value  etc.
+
+Join(string ID, boot_strapping_node_addresses, int port, bool persistent=0)
+// Bootstrap process ID is a hash
+// If Address == null, generate a random port
+// If ID == null, check for persistent one, else generate a random ID
+// If persistent, write ID to file
+
+//RPC's
+
+RpcPingNode(string ID)
+return bool
+
+RpcStoreValue(string key,string value)
+return bool
+
+RpcFindValue(string key)
+// find  value for key (iterative)
+// if the value is not found, a list of the k closest nodes is returned
+return string
+
+RpcFindNearNodes(string ID)
+// find nearest k nodes to an ID, including the searched node
+return string // this will be a multiple of node info stored (As above in setTuple)
+
+RpcNodeDown(string ID,Address)
+// Down list update
+return bool
+
+// Constants
+int keySize //sets key size kademlia will use (can differ from routing table key size)
+int addrSize //Sets the address size Kademlai will use (can be read from a config if it exists)
+int k //sets value of K
+int r=k //set's number of returns that are acceptable from a search (i.e. ask for k closest - accept r)
+int alpha //sets alpha - value used to configure amount of parallel searches
+int Beta //Sets value of beta (number of alpha returned before continuing iterative search)
+int ttl //sets time to live for any data (can be 0 for infinite)
+        //this is a system wide setting
+int repubT Sets time to republish (this is used by beta republish in the beta repub algorithm (not the same beta as above))
+int replT=3600 //time to replicate i.e. ensure closest K nodes have key - must not be the original publisher
+int refT //time to refresh kbuckets
+
+
+
+
+

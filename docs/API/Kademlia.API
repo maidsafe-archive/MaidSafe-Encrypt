@@ -1,0 +1,99 @@
+Kademlia API
+
+#The pertinence of this layer is disputed. 
+#Client and vault operations do not necessarily run through.
+#Component/module diagram?
+
+(all Sets should be able to be configured in a config file - there here in case we ave folks who want to set these via a config SCREEN)
+
+#//setKeySize(int keySize)
+//sets key size kademlia will use (can differ from routing table key size)
+
+#//setAddrSize(int addrSize)
+//Sets the address size Kademlai will use (can be read from a config if it exists)
+#//return bool
+
+#//setK(int k)
+//sets value of K
+#//return Bool
+
+#//setR(int r=k)
+//set's number of returns that are acceptable from a search (i.e. ask for k closest - accept r)
+#//return bool
+
+#//setAlpha(int alpha)
+//sets alpha - value used to configure amount of parallel searches
+#//return bool
+
+#//setBeta(int Beta)
+//Sets value of beta (number of alpha returned before continuing iterative search)
+#//return bool
+
+#//setTTL(int ttl)
+//sets time to live for any data (can be 0 for infinite)
+//this is a system wide setting
+#//return bool
+
+#//setRepublishT(int repubT)
+//Sets time to republish (this is used by beta republish in the beta repub algorithm (not the same beta as above))
+#//return bool
+
+#//setReplicateT(int replT=3600)
+//time to replicate i.e. ensure closest K nodes have key - must not be the original publisher
+#//return bool
+
+#//setRefreshT(int refT)
+//time to refresh kbuckets
+#//return bool
+
+readConfFile(char filename)
+//config file which will hold all above settings (all above write the settings to this file)
+//All above call this directly
+return int //0-OK 1=cannot read file, 2 cannot write to file etc.
+
+writeConfFile(char filename, char data)
+//guess what
+return int (0=OK etc.)
+
+readNodes()
+//reads cache list of nodes from a container (file)
+//need to call setConfFile(char filename)
+return vector object
+
+writeNodes()
+//writes found nodes to ConfFile
+return int
+
+setTupleInfo(*tuple = default, int fixedSize )
+// default is ID:IP:Port but we could add more / fixed in 
+// size here so we can decode the streams from find nodes / find value  etc.
+
+join(string ID, boot_strapping_node_addresses)
+//Bootstrap process ID is a hash
+
+
+RPC's
+
+#StoreValue(string key,string value)
+//Return bool
+
+#FindValue(string key)
+//find  value for key (iterative)
+return string
+
+#FindNearNodes(string ID)
+//find nearest K nodes to an ID, including the ID node
+return string //this will be a multiple of node info stored (As above in setTuple))
+
+#//Should this be in the upper layer?
+#//DeleteValue(string key,string value)
+#//if value not empty, remove that value from kademlia
+#//else delete all values with that key
+#//(perhaps must be original publisher - usually) ???XXXTOCHECK
+
+#NodeDown(string ID,address)
+#//Down list update
+
+
+
+

@@ -1,0 +1,40 @@
+Layer 1 Network API
+
+#Design:Iain
+#Tests:Haiyang
+
+SendPacket(SOCKADDR *remote, string payload)
+return bool
+//PacketReceived(SOCKADDR *remote, string payload)
+//return bool
+
+NetStart(int port, callback handler)
+// Start listening
+return bool
+NetStop()
+// Stop listening
+return bool
+
+GetExtIPPort(SOCKADDR *extAddr)
+// Get the IP address and port  other peers see
+//if client = local IP POrt
+//if NatType!=0 then run stun and friends to get IP:PORT
+return int
+
+GetLocalIPPort(SOCKADDR *localAddr)
+// Get the local IP address and port 
+return int 
+
+ListDevices()
+// List all network devices 
+return interface and ip address 
+
+NatType()
+//Are we behind a NAT device
+// 0 for no NAT
+return int
+
+######CONSTANTS#######
+None
+
+

@@ -1,0 +1,101 @@
+maidsafe layer API
+
+###############Statefull Interface 1 start here 
+
+login(char *username, int pin, char *password)
+//creates a session object, containing DA, cache location etc.
+return int  
+//0=OK, 1=FAIL, 2=PASSWORD_FAIL, 3=NON_EXISTING_USER
+
+logout()
+//logs out and gracefully exists kademlia network 
+//cleaning up as it goes 
+return int 
+//0=OK, 1=NO_CONNECTION
+
+listFileSys()
+//filesystem is populated with 'files' which only contain the file hash
+return int
+//0=OK, 1=NO_PERMISSIONS, 3=DA_CORRUPT, 4=CANNOT_GET_DA
+
+openFile(int512 hash)
+//takes hash of a file and retrieves content - presents content to Operating System
+// client gets the chunks from the vaults - via Transport layer (IP addresses and ports) 
+return int
+//0=OK, 1=NO_PERMISSIONS, 3=DA_CORRUPT, 4=CANNOT_GET_DA
+
+closeFile(str filenameandpath)
+// checks hash and if different - send to self encryption
+// save new hash to DA - update file (private interfaces)
+return int
+//0=OK, 1=CANNOT_WRITE_DM, 2=CANNOT_WRITE_DA, 3=CANNOT_UPDATE_DM
+
+deleteFile(str nameandpath)
+//removes a file from your visible filesystem (stays in DA - flagged deleted)
+return int
+//0=OK, 1=CANNOT_WRITE_DM, 2=CANNOT_WRITE_DA, 3=CANNOT_UPDATE_DM
+
+forgetfile(str nameandpath)
+//completely remove a file from filesystem and DA
+return int
+//0=OK, 1=CANNOT_WRITE_DM, 2=CANNOT_WRITE_DA, 3=CANNOT_UPDATE_DM
+
+listShares()
+// returns a vector of shares, attributes, users, files 
+return vector
+//v[0]=error code or ok (0) //errors = CANNOT_ACCESS_DA, DA_CORRUPT, NO_SHARES
+
+createShare(str name,str filenameandpath = NULL)
+// Create a share, optionally by right clicking on a file
+//will need lower level interface designed in maid layer
+return int 
+//0=OK, 1=NETWORK_FAIL, 2=NO_PUB_NAME
+
+deleteShare(str name,removeself=NULL)
+//delete yourself from a share or delete complete share if privs allow
+return int 
+//0=OK, 1=NO_PRIVS, 2=CANNOT_WRITE_DM, 3=CANNOT_WRITE_DA, 4=CANNOT_UPDATE_DM, 5=CANNOT_UPDATE_PEERS
+ 
+addUserToShare(str share, str user, int permissions=default)
+//adds a user to share with permissions
+return int
+//0=OK, 1=NO_PRIVS, 2=CANNOT_WRITE_DM, 3=CANNOT_WRITE_DA, 4=CANNOT_UPDATE_DM, 5=CANNOT_UPDATE_PEERS
+
+alterShare(str name,vector files=NULL, vector users=NULL, vector perms=NULL)
+//alter a share name, files (remove/add a file), users (remove/add), permissions (alter)
+return int
+//0=OK, 1=NO_PRIVS, 2=CANNOT_WRITE_DM, 3=CANNOT_WRITE_DA, 4=CANNOT_UPDATE_DM, 5=CANNOT_UPDATE_PEERS
+
+messagePeer(int512 peerID, str message)
+//send another peer a message (goes through buffer packets - see private API)
+return int
+//0=OK, 1=NO_PRIVS, 2=NO_CONNECTION
+
+checkMessages(int512 ID)
+//checks messages and returns messages if there 
+return str
+//NO_CONNECTION, NO_BUFFER, NO_MESSAGES
+
+deleteMessages(int512 ID, int messageIDstart, messageIDend=NULL)
+//removes messages from buffer after acted upon (could be added to DA is acted on etc.)
+return int
+//0=OK, 1=NO_CONNECTION, 2=NO_BUFFER, 3=NO_MESSAGE
+
+
+################Statefull Interface 1 end here 
+(nodes are stateless - i.e. just like ants they follow a few rules)
+
+storeFile(data)
+//node request to store a file (see private API for rules)
+return int
+//0=OK, 1=NO_SPACE, 2=NO_CONTRACT (i.e. no quid pro quo or iou)
+
+getFile(data)
+//kad layer has identified where the file is - we as Transport to get it
+return int
+//0=OK, 1=NO_CONNECTION, 2=PEER_DOWN, 3=CHUNK_CORRUPT, 4=WERE_BLACKLISTED
+
+(all other stuff like alerts, PD etc. in the node private API)
+
+
+

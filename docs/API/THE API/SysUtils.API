@@ -1,0 +1,36 @@
+SysUtils API
+
+SetDevice(dev=default)
+// Select the network device to use
+return bool
+
+ListDevices()
+// Select the network device to use
+return string
+
+GetFreeSpace()
+// Free disk space
+// Call function from BOOST and return the free space only from the returned structure
+return int
+
+// Geographical zone
+GetZone()
+return string
+
+SetZone(string zone)
+return bool
+
+// Bandwidth
+GetBW()
+return int
+
+SetBW(int bandwidth)
+return bool
+
+// Memory
+GetFreeMemory()
+return int
+
+// Home Location
+GetHomeLocation()
+return string

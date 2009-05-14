@@ -1,0 +1,20 @@
+Tranport API
+
+#Design:Haiyang (done, but has to be reviewed and tested)
+#Tests: Mambo
+
+#SendMessage(Message,Address)
+//Sends a data stream (any size to the selected IP:Port)
+// Kad layer will tell us the IP:Port we dont care about Kad addresses in this level
+//Return enum 0=sucess 1 = connection dropped, 2 = corrupt etc.
+#Return int
+
+#StartListening(Address)
+//listens for data and gets it rebuilding the data from the network layer
+//if required
+//The transport layer will rebuild packets into data
+//if data corrupt etc. it's dropped and not passed to kademlia
+//This is a seperate thread that kademlia listens to 
+Return bool 
+
+

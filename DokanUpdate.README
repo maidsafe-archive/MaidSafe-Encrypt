@@ -1,0 +1,5 @@
+1. In a command window, run "dokanctl.exe /r a" to uninstall previous version.
+2. Copy dokan.sys to \Windows\system32\drivers
+3. Copy dokan.dll, dokanctl.exe and mounter.exe to \Windows\system32
+4. Reboot.
+5. In a command window, run "dokanctl.exe /i a" to install new version.

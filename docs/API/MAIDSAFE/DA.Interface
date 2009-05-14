@@ -1,0 +1,107 @@
+Data Atlas (DA) Class Diagram
+
+###############################
+# Developers: Hiayang and Dan #
+# Testers: Mambo and Iain     #
+###############################
+structure
+DM -> Data Map Structure
+Fh (File Hash) + pre enc hash 1 + pre enc hash 2 ... Post enc hash 1 + post enc hash 2 .....
+.proto
+{
+required Fh - int 512
+required PreHash - int 512 (repeatable)
+required PostHash - int 512 (repeatable)
+}
+
+FMDM -> File Metadata Map
+nameandpath (boost, path=maidsafe path) + File Hash v1 v2 v3 etc. (repeatable) +  stat (r/o r/w/etc.) + Tag (optional) Fh
+
+
+Keyring -> structure
+TYPE + ID + Pub key + Priv key :: + ...
+
+DA = FDM + DM + Keyring
+
+//think about - cache info (last files used etc. i.e. order Fmd by this)
+
+addFile(string filenameandpath)
+//add all required info for a file (DM MD)
+return bool
+
+
+removefile(string filenameandpath)
+//remove metadata and possibly* DM (need to check DM is not used by other files)
+return bool
+
+
+
+//Data Maps*****************************************************
+
+???????searchDM(string hash)
+//simple search
+return bool
+
+addDataMap()
+//each DM identified via fhash (link to FMeta)
+return bool
+
+remFDataMap(string hash)
+//
+return bool
+
+
+//Metadata part**************************************************
+
+addFMeta()
+//All files identified via nameandpath and hash
+//Hash is an ever expanding dict {hash:comment&timestamp}
+//sorted by most recently used
+return bool
+
+searchFMforhash(string hash)
+//how many files ref a DM (needed =  1 for delete DM)
+return int
+
+addRevMeta(string filenameandpath)
+//Update (ie add another hash that links to a seperate DM)
+return bool
+
+//Pub key cache ***************************************************
+//(save all known pub keys here)
+
+storePubKeyToCache(string key, str ID)
+//store a public key for somebody who we have dealt with
+//simple ID:key dictionary
+//hash of this cache and cache cache can also be written to
+//local computer (if hash matches we dont need to dowload this cache)
+return bool
+
+removePubKeyFromCache(str ID)
+//remove a public key from cache
+return bool
+
+prunePKeyCache(int days)
+//traverse pkey cache and remove all keys not used for int days
+return bool
+
+//Keyring *************************************************************
+//(our keys)
+
+addKeyPair(str ID,str pub, str priv)
+return bool
+
+removeKeyPair(ID)
+return bool
+
+getPrivKey(ID)
+return string
+
+getPubKey(ID)
+return string
+
+
+
+
+
+

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<resource xmlns="http:// www.wxwidgets.org/wxxrc">
+   <object class="wxBitmap" name="icon">Globe-32.png</object>
+   <object class="wxBitmap" name="splash">Globe-32.png</object>
+   <object class="wxBitmap" name="pd">Globe-32.png</object>
+   <object class="wxBitmap" name="addcontact">AddUser-32.png</object>
+   <object class="wxBitmap" name="contacts">Contacts-32.png</object>
+   <object class="wxBitmap" name="shares">Shares-32.png</object>
+   <object class="wxBitmap" name="settings">Settings-32.png</object>
+   <object class="wxBitmap" name="messages">Message-32.png</object>
+   
+   <object class="wxBitmap" name="pd">Globe-32.png</object>
+   <object class="wxBitmap" name="ok">Globe-32.png</object>
+   <object class="wxBitmap" name="notok">Globe-32.png</object>
+   <object class="wxBitmap" name="world">Globe-32.png</object>
+   
+   <object class="wxBitmap" name="license">license.html</object>
+</resource>

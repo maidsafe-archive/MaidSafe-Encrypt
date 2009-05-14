@@ -1,0 +1,37 @@
+Layer 1 Network – API / Interface
+
+#Design:Iain
+#Tests:Haiyang
+
+SendPacket(boost::asio::ip::udp::endpoint *remote_addr, unsigned char * payload, std::size_t payload_length);
+return bool
+
+NetStart(unsigned short listenPort);
+// Start listening.  Spawns a listening thread which calls back to the transport layer with incoming datagrams.
+
+"void DatagramReceived" method calls back with (boost::asio::ip::udp::endpoint *remote_addr, unsigned char * incoming_payload, std::size_t payload_length)
+
+return bool
+
+NetStop();
+//stops the listening thread
+return bool
+
+LocalIPPort();
+//returns the local defaultroute IP address as well as the port number that was specified with NetStart(listenPort)
+return boost::asio::ip::udp::endpoint
+
+GetExtIPPort(boost::asio::ip::udp::endpoint *extAddr)
+// Get the IP address and port other peers see
+//if client = local IP Port
+//if NatType!=0 then run stun and friends to get IP:PORT
+return int
+
+ListDevices();
+//returns a vector of structs
+//The struct is:
+//boost::asio::ip::address ip_address;
+//std::string interface;
+return std::vector<struct device_struct>
+
+

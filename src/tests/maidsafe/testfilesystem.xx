@@ -1,0 +1,375 @@
+#include <gtest/gtest.h>
+#include "maidsafe/maidsafe.h"
+#include "maidsafe/clientcontroller.h"
+#include "maidsafe/sessionsingleton.h"
+#include "fs/filesystem.h"
+namespace fs = boost::filesystem;
+
+class FileSystemTest : public testing::Test {
+  protected:
+  FileSystemTest() {}
+  virtual void TearDown() {
+    if (boost::filesystem::exists("KademilaDb.db"))
+      boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
+  }
+};
+
+
+TEST_F(FileSystemTest, 11_MountWithNoLogin) {
+  // Mount() should fail if no 'Username' in session singleton
+  file_system::FileSystem *file_sys_obj = \
+    file_system::FileSystem::getInstance();
+  ASSERT_FALSE(file_sys_obj->Mount()) << \
+  "Mount() returned true when it should have failed because no session exists";
+}
+
+TEST_F(FileSystemTest, 11A_UnMountWithNoLogin) {
+  file_system::FileSystem *file_sys_obj = \
+    file_system::FileSystem::getInstance();
+  ASSERT_FALSE(file_sys_obj->UnMount()) << \
+  "returned true when it should have failed because no session exists";
+}
+
+TEST_F(FileSystemTest, 12_MountWithLogin) {
+  maidsafe::ClientController client_obj;
+  std::string username = "iain";
+  std::string pin = "4321";
+  std::string password = "mypassword";
+  if (client_obj.CreateUser(username, pin, password)) {
+    std::cout <<  "Created user with username: " <<  username <<std::endl;
+    std::cout <<  "Created user with pin: " <<  pin <<std::endl;
+    std::cout <<  "Created user with password: " <<  password <<std::endl;
+  } else {
+    std::cout << "will try to login using" <<std::endl;
+  }
+  ASSERT_TRUE(client_obj.Start(username, pin, password)) << \
+    "Failed to login user";
+  std::cout <<  "Sucessfully Logged in! " <<std::endl;
+
+  file_system::FileSystem *file_sys_obj = \
+    file_system::FileSystem::getInstance();
+  ASSERT_TRUE(file_sys_obj->Mount()) << "Mount unexpectedly returned false";
+  // check that we can detect the user's home dir path
+  ASSERT_TRUE(fs::exists(file_sys_obj->HomeDir())) << \
+    "the system home dir was not detected";
+  // check .maidsafeSHA1 directory exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeDir())) << \
+    "the maidsafe dir was not detected";
+  // TODO(user):
+  // check MS dir contains the home dir path as a subset in the dir string
+  // check MS dir contains .maidsafe and the 20 byte SHA1 hash of pin + username
+  // check ms/home exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeHomeDir())) << \
+    "the .maidsafe+SHA1/home dir was not detected";
+  //  check ms/cache exists
+  // ASSERT_TRUE(fs::exists(file_sys_obj->CacheDir())) << "the .maidsafe+SHA1/\
+  // cache dir was not detected";
+  // check ms/net exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->NetDir())) << \
+    "the .maidsafe+SHA1/net dir was not detected";
+  //  check ms/process exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->ProcessDir())) << \
+    "the .maidsafe+SHA1/process dir was not detected";
+  //  Tear Down:
+  ASSERT_TRUE(fs::remove_all(file_sys_obj->MaidsafeDir())) << \
+    "Failed to clean up the .maidsafe dir";
+  ASSERT_TRUE(client_obj.Logout());
+  #ifdef DEBUG
+  std::cout <<  "Tear Down: Removed all created directories" <<std::endl;
+  #endif
+}
+
+TEST_F(FileSystemTest, 13_UnMountWithLoginDefCon3) {
+  maidsafe::SessionSingleton *session;
+  session = maidsafe::SessionSingleton::getInstance();
+  std::string username = "iain3";
+  std::string pin = "4321";
+  std::string password = "mypassword";
+  maidsafe::ClientController client_obj;
+  if (client_obj.CreateUser(username, pin, password, maidsafe::DEFCON3)) {
+    std::cout <<  "Created user with username: " <<  username <<std::endl;
+    std::cout <<  "Created user with pin: " <<  pin <<std::endl;
+    std::cout <<  "Created user with password: " <<  password <<std::endl;
+  } else {
+    std::cout <<  "will try to login" <<std::endl;
+    ASSERT_TRUE(client_obj.Start(username, pin, password, \
+      maidsafe::DEFCON3)) << "Failed to login user";
+  }
+  // ASSERT_TRUE(client_obj.Start(username, pin, password)) << "Failed to\
+  // login user";
+  file_system::FileSystem *file_sys_obj = \
+    file_system::FileSystem::getInstance();
+  //  Mount File System
+  ASSERT_TRUE(file_sys_obj->Mount()) << "Mount unexpectedly returned false";
+  // check that we can detect the user's home dir path
+  ASSERT_TRUE(fs::exists(file_sys_obj->HomeDir())) << \
+    "the system home dir was not detected";
+  // check maidsafe directory exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeDir())) << \
+    "the maidsafe dir was not detected";
+  // check ms/process directory exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->ProcessDir())) << \
+    "the .maidsafe+SHA1/process dir was not detected";
+  //  check ms/home exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeHomeDir())) << \
+    "the .maidsafe+SHA1/home dir was not detected";
+  //  check ms/cache exists
+  // ASSERT_TRUE(fs::exists(file_sys_obj->CacheDir())) << "the .maidsafe+\
+  // SHA1/cache dir was not detected";
+  // check ms/net exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->NetDir())) << \
+    "the .maidsafe+SHA1/net dir was not detected";
+  // Test UnMount() with DefCon=3 - remove everything
+  // std::cout <<  "test.cc DefCon should be three: "  <<std::endl ;
+  // UnMount - remove all MS dirs
+  ASSERT_TRUE(file_sys_obj->UnMount()) << \
+    "Unmount() function reported a failure";
+  //  check ms/home no longer exists
+  EXPECT_FALSE(fs::exists(file_sys_obj->MaidsafeHomeDir())) <<
+    "the .maidsafe+SHA1/home dir was detected";
+  //  check ms/cache still DOES exist
+  // EXPECT_FALSE(fs::exists(file_sys_obj->CacheDir())) << "the .maidsafe+\
+  // SHA1/cache dir was detected";
+  //  check ms/net no longer exists
+  EXPECT_FALSE(fs::exists(file_sys_obj->NetDir())) << \
+    "the .maidsafe+SHA1/net dir was detected";
+  // check ms/process no longer exists
+  EXPECT_FALSE(fs::exists(file_sys_obj->ProcessDir())) << \
+    "the .maidsafe+SHA1/process dir was detected";
+  // check maidsafe directory no longer exists
+  EXPECT_FALSE(fs::exists(file_sys_obj->MaidsafeDir())) << \
+    "the maidsafe dir was detected";
+  ASSERT_TRUE(client_obj.Logout());
+}
+
+TEST_F(FileSystemTest, 14_UnMountWithLoginDefCon2) {
+  maidsafe::SessionSingleton *session;
+  session = maidsafe::SessionSingleton::getInstance();
+  std::string username = "iain2";
+  std::string pin = "4321";
+  std::string password = "mypassword";
+  maidsafe::ClientController client_obj;
+  if (client_obj.CreateUser(username, pin, password, maidsafe::DEFCON2)) {
+    std::cout <<  "Created user with username: " <<  username <<std::endl;
+    std::cout <<  "Created user with pin: " <<  pin <<std::endl;
+    std::cout <<  "Created user with password: " <<  password <<std::endl;
+  } else {
+    std::cout <<  "will try to login" <<std::endl;
+    ASSERT_TRUE(client_obj.Start(username, pin, password, \
+      maidsafe::DEFCON2)) << "Failed to login user";
+  }
+  file_system::FileSystem *file_sys_obj = \
+    file_system::FileSystem::getInstance();
+  //  Mount File System
+  ASSERT_TRUE(file_sys_obj->Mount()) << "Mount unexpectedly returned false";
+  // check that we can detect the user's home dir path
+  ASSERT_TRUE(fs::exists(file_sys_obj->HomeDir())) << \
+    "the system home dir was not detected";
+  // check maidsafe directory exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeDir())) << \
+    "the maidsafe dir was not detected";
+  //  check ms/home exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeHomeDir())) << \
+    "the .maidsafe+SHA1/home dir was not detected";
+  //  check ms/cache exists
+  // ASSERT_TRUE(fs::exists(file_sys_obj->CacheDir())) << "the .maidsafe+\
+  // SHA1/cache dir was not detected";
+  //  check ms/net exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->NetDir())) << \
+    "the .maidsafe+SHA1/net dir was not detected";
+  // check ms/process directory exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->ProcessDir())) << \
+    "the .maidsafe+SHA1/process dir was not detected";
+  // Test UnMount() with DefCon=2 - remove everything apart from cache dir
+  // UnMount - remove all MS dirs
+  ASSERT_TRUE(file_sys_obj->UnMount()) <<
+    "Unmount() function reported a failure";
+  // check maidsafe directory still DOES exist
+  std::cout << "MS DIR " << file_sys_obj->MaidsafeDir() << std::endl;
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeDir())) << \
+    "the .maidsafe+SHA1 dir was NOT detected, it should not have been removed";
+  //  check ms/cache still DOES exist
+  // EXPECT_TRUE(fs::exists(file_sys_obj->CacheDir())) << "the .maidsafe+\
+  // SHA1/cache dir was NOT detected, it should not have been removed";
+  #ifdef DEBUG
+  std::cout <<  "CACHE STILL EXISTS " <<std::endl;
+  #endif
+  //  check ms/home no longer exists
+  EXPECT_FALSE(fs::exists(file_sys_obj->MaidsafeHomeDir())) << \
+    "the .maidsafe+SHA1/home dir was detected";
+  //  check ms/net no longer exists
+  EXPECT_FALSE(fs::exists(file_sys_obj->NetDir())) << \
+    "the .maidsafe+SHA1/net dir was detected";
+  //  check ms/process no longer exists
+  EXPECT_FALSE(fs::exists(file_sys_obj->ProcessDir())) << \
+    "the .maidsafe+SHA1/process dir was detected";
+  //  Tear Down:
+  ASSERT_TRUE(fs::remove_all(file_sys_obj->MaidsafeDir())) << \
+    "Failed to clean up the .maidsafe dir";
+  // std::cout <<  "CACHE REMOVED" <<std::endl ;
+  client_obj.Logout();
+  #ifdef DEBUG
+  std::cout <<  "Tear Down: Removed all created directories" <<std::endl;
+  #endif
+}
+
+TEST_F(FileSystemTest, 15_UnMountWithLoginDefCon1) {
+  maidsafe::SessionSingleton *session;
+  session = maidsafe::SessionSingleton::getInstance();
+  std::string username = "iain1";
+  std::string pin = "4321";
+  std::string password = "mypassword";
+  maidsafe::ClientController client_obj;
+  if (client_obj.CreateUser(username, pin, password, maidsafe::DEFCON1)) {
+    std::cout <<  "Created user with username: " <<  username << std::endl;
+    std::cout <<  "Created user with pin: " <<  pin << std::endl;
+    std::cout <<  "Created user with password: " <<  password << std::endl;
+  } else {
+    std::cout <<  "will try to login with this" << std::endl;
+    ASSERT_TRUE(client_obj.Start(username, pin, password, \
+      maidsafe::DEFCON1)) << "Failed to login user";
+  }
+  file_system::FileSystem *file_sys_obj = \
+    file_system::FileSystem::getInstance();
+  //  Mount File System
+  ASSERT_TRUE(file_sys_obj->Mount()) << "Mount unexpectedly returned false";
+  // check that we can detect the user's home dir path
+  ASSERT_TRUE(fs::exists(file_sys_obj->HomeDir())) << \
+    "the system home dir was not detected";
+  // check maidsafe directory exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeDir())) << \
+    "the maidsafe dir was not detected";
+  //  check ms/home exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeHomeDir())) << \
+    "the .maidsafe+SHA1/home dir was not detected";
+  //  check ms/cache exists
+  // ASSERT_TRUE(fs::exists(file_sys_obj->CacheDir())) << "the \
+  // .maidsafe+SHA1/cache dir was not detected";
+  //  check ms/net exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->NetDir())) << \
+    "the .maidsafe+SHA1/net dir was not detected";
+  // check ms/process directory exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->ProcessDir())) << \
+    "the .maidsafe+SHA1/process dir was not detected";
+  // Test UnMount() with DefCon=1 - don't delete anything
+  // UnMount - remove all MS dirs
+  ASSERT_TRUE(file_sys_obj->UnMount()) << \
+    "Unmount() function reported a failure";
+  // check maidsafe directory still DOES exist
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeDir())) << \
+    "the maidsafe dir was NOT detected";
+  //  check ms/home still DOES exist
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeHomeDir())) << \
+    "the .maidsafe+SHA1/home dir was NOT detected";
+  //  check ms/cache still DOES exist
+  // ASSERT_TRUE(fs::exists(file_sys_obj->CacheDir())) << "the \
+  // .maidsafe+SHA1/cache dir was NOT detected";
+  //  check ms/net still DOES exist
+  ASSERT_TRUE(fs::exists(file_sys_obj->NetDir())) << \
+    "the .maidsafe+SHA1/net dir was NOT detected";
+  //  check ms/process still DOES exist
+  ASSERT_TRUE(fs::exists(file_sys_obj->ProcessDir())) << \
+    "the .maidsafe+SHA1/process dir was NOT detected";
+  //  Tear Down:
+  ASSERT_TRUE(fs::remove_all(file_sys_obj->MaidsafeDir())) << \
+    "Failed to clean up the .maidsafe dir";
+  #ifdef DEBUG
+  std::cout <<  "Tear Down: Removed all created directories" <<std::endl;
+  #endif
+  ASSERT_TRUE(client_obj.Logout());
+}
+
+TEST_F(FileSystemTest, 16_GetAvailableSpace) {
+  int space = AvailableHomeSpace();
+  EXPECT_NE(space, -1) << "cant get avail space on home drive";
+  std::cout <<  "Available Space:"<< space <<std::endl;
+}
+
+TEST_F(FileSystemTest, 17_GetFreeSpace) {
+  int space = FreeHomeSpace();
+  EXPECT_NE(space, -1) << "can't get free space on home drive";
+  std::cout <<  "Free Home Space:"<< space <<std::endl;
+}
+
+TEST_F(FileSystemTest, 18_GetTotalSpace) {
+  int space = TotalHomeSpace();
+  EXPECT_NE(space, -1) << "can't get Total space on home drive";
+  std::cout <<  "Total Home Space:"<< space <<std::endl;
+}
+
+TEST_F(FileSystemTest, 18A_MountWithExistingFolder) {
+  // this tests the situation where the user tries to log in and the (rw)
+  // maidsafe+sha1 directory already exists
+  maidsafe::ClientController client_obj;
+  std::string username = "iain";
+  std::string pin = "4321";
+  std::string password = "mypassword";
+  if (client_obj.CreateUser(username, pin, password)) {
+    std::cout <<  "Created user with username: " <<  username <<std::endl;
+    std::cout <<  "Created user with pin: " <<  pin <<std::endl;
+    std::cout <<  "Created user with password: " <<  password <<std::endl;
+  } else {
+    std::cout <<  "will try to login" <<std::endl;
+  }
+  ASSERT_TRUE(client_obj.Start(username, pin, password)) << \
+    "Failed to login user";
+  std::cout <<  "Sucessfully Logged in! " <<std::endl;
+  file_system::FileSystem *file_sys_obj = \
+    file_system::FileSystem::getInstance();
+  ASSERT_TRUE(file_sys_obj->Mount()) << "Mount unexpectedly returned false";
+  // check that we can detect the user's home dir path
+  ASSERT_TRUE(fs::exists(file_sys_obj->HomeDir())) << \
+    "the system home dir was not detected";
+  // check .maidsafeSHA1 directory exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeDir())) << \
+    "the maidsafe dir was not detected";
+  //  check ms/home exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeHomeDir())) << \
+    "the .maidsafe+SHA1/home dir was not detected";
+  //  check ms/cache exists
+  // ASSERT_TRUE(fs::exists(file_sys_obj->CacheDir())) << "the \
+  // .maidsafe+SHA1/cache dir was not detected";
+  //  check ms/net exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->NetDir())) << \
+    "the .maidsafe+SHA1/net dir was not detected";
+  //  check ms/process exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->ProcessDir())) << \
+    "the .maidsafe+SHA1/process dir was not detected";
+  //  LOG IN AGAIN WITHOUT UNMOUNT i.e. existing directory
+  if (client_obj.CreateUser(username, pin, password)) {
+    std::cout <<  "Created user with username: " <<  username <<std::endl;
+    std::cout <<  "Created user with pin: " <<  pin <<std::endl;
+    std::cout <<  "Created user with password: " <<  password <<std::endl;
+  } else {
+    std::cout <<  "will try to login using this" <<std::endl;
+  }
+  ASSERT_TRUE(client_obj.Start(username, pin, password)) << \
+    "Failed to login user";
+  std::cout <<  "Sucessfully Logged in! " <<std::endl;
+  ASSERT_TRUE(file_sys_obj->Mount()) << "Mount unexpectedly returned false";
+  // check that we can detect the user's home dir path
+  ASSERT_TRUE(fs::exists(file_sys_obj->HomeDir())) << \
+    "the system home dir was not detected";
+  // check .maidsafeSHA1 directory exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeDir())) << \
+    "the maidsafe dir was not detected";
+  //  check ms/home exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->MaidsafeHomeDir())) << \
+    "the .maidsafe+SHA1/home dir was not detected";
+  //  check ms/cache exists
+  // ASSERT_TRUE(fs::exists(file_sys_obj->CacheDir())) << "the \
+  // .maidsafe+SHA1/cache dir was not detected";
+  //  check ms/net exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->NetDir())) << \
+    "the .maidsafe+SHA1/net dir was not detected";
+  //  check ms/process exists
+  ASSERT_TRUE(fs::exists(file_sys_obj->ProcessDir())) << \
+    "the .maidsafe+SHA1/process dir was not detected";
+  //  Tear Down:
+  ASSERT_TRUE(fs::remove_all(file_sys_obj->MaidsafeDir())) << \
+    "Failed to clean up the .maidsafe dir";
+  ASSERT_TRUE(client_obj.Logout());
+  #ifdef DEBUG
+  std::cout <<  "Tear Down: Removed all created directories" <<std::endl;
+  #endif
+}

@@ -1,0 +1,52 @@
+maidsafe Kademlia API
+
+join()
+//extend
+//add digital signatures to join requests
+//OR give a k+1 address if node is client
+//Addresses are signed by the R0 bootstraped from 
+return bool
+
+addToKBucket()
+//maidsafe kbucket contains
+//KAD Address:IP:PORT:signature (PMID)
+//signature is checked prior to adding
+//resist sybil attacks
+//ignore k+1 addresses (drop silently)
+//this is in addition to normal bucket checks
+//WE ALSO
+//give priority to higher rank machines - i.e. a rank 2 will be ejected if a 
+//rank 1 is found for that region of the network
+return bool
+
+getH()
+//get current height of tree (do we need this ?)
+return bool
+
+refreshK()
+//refresh kbuckets but
+//republish all values in a beta republish way
+//only republish to nearest K nodes
+//otherwise set a tExpire on value
+return bool
+
+
+RPC's
+
+storeKVnocache(char Key,char Value)
+//extend store value to not cache
+//only stored at k closest nodes 
+return bool
+
+
+findVcache(char Key)
+// if data chunk cache it at every node in route
+//cache lasts tExpire unless asked for by another node
+//in which case tExpire restarts
+return string
+
+deleteV(int key, char[] value)
+//remove a value from kademlia (perhaps must be original publisher - usually) ???XXXTOCHECK
+
+
+

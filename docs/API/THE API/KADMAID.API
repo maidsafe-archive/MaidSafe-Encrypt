@@ -1,0 +1,65 @@
+maidsafe Kademlia API
+
+Join(string ID,int port)
+//extend
+//add digital signatures to join requests
+//OR give a k+1 address if node is client
+//Addresses are signed by the R0 bootstraped from
+return bool
+
+AddContact()
+//maidsafe kbucket contains
+//KAD Address:IP:PORT:signature (PMID)
+//signature is checked prior to adding
+//resist sybil attacks
+//ignore k+1 addresses (drop silently)
+//this is in addition to normal bucket checks
+//WE ALSO
+//give priority to higher rank machines - i.e. a rank 2 will be ejected if a 
+//rank 1 is found for that region of the network
+return bool
+
+
+Store(string key,string value,string signature,string sigID,string type)
+// Will store accordingly depending on the type
+return bool
+
+FindSystemPacket(string key)
+// Extends RpcFindValue to wait for all values and do a majority rule
+return string
+
+FindValueCache(string key)
+// if data chunk cache it at every node in route
+// cache lasts tExpire unless asked for by another node
+// in which case tExpire restarts
+return string
+
+DeleteValue(string key, string value,string signature,string signedID,string type)
+//remove a value from kademlia (perhaps must be original 
+//publisher - usually) ???XXXTOCHECK
+//Instead of signed ID to fetch the public key to validate signature, pass public key????
+
+StoreChunk(string data,string chunkname,string signature,string sigID,string iou)
+// Stores a chunk
+return bool
+
+ForgetChunk(string chunkname,string signature,string sigID)
+// Forget a chunk, delete from watch list
+return bool
+
+CheckAvailability(string ID)
+// extend ping RPC from kademlia
+return bool
+
+CheckChunk(string random, string ID)
+// Check the validity of the chunk
+return string
+
+SendMessage(string ID,string message)
+// to send any kind of message
+
+IsKeyUnique(string key)
+// Checks for uniqueness of a key
+return bool
+
+

@@ -1,0 +1,21 @@
+?package(perpetualdata):\
+ needs="x11"\
+ section="Applications/Internet"\
+ longtitle="Maidsafe Perpetual Data client"\
+ title="Perpetual Data"\
+ icon="/usr/share/pixmaps/maidsafe_logo.xpm"\
+ command="perpetualdata"
+?package(pdlocal):\
+ needs="x11"\
+ section="Applications/Internet"\
+ longtitle="local perpetual data client for testing"\
+ title="local pd"\
+ icon="/usr/share/pixmaps/xterm-color_32x32.xpm"\
+ command="pdlocal"
+?package(vault):\
+ needs="text"\
+ section="Applications/Internet"\
+ longtitle="local perpetual data vault"\
+ title="pd vault"\
+ icon="/usr/share/pixmaps/maidsafe_logo.xpm"\
+ command="vault"

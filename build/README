@@ -1,0 +1,20 @@
+DON NOT !!! build files from here
+go into dir below  for the os you are on and run the build from there
+
+i.e. cd Linux 
+cmake ../../ [this will create a makefile in the Linux dir]
+make [to build project]
+make package [to build an rpm or .deb]
+etc.
+
+i.e. cd Win
+wincmakelist.bat 
+nmake [to build project]
+nmake package [to build an rpm or .deb]
+etc.
+
+
+You can get Release adn Debug install seperated by creating a Release and Debug dir and set the appropriate build type such as 
+
+cmake ../../-DCMAKE_BUILD_TYPE=Release [in the release dir]
+and likewise in the Debug dir

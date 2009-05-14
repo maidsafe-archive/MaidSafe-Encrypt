@@ -1,0 +1,11 @@
+maidsafe.Vault layer API
+
+// Vault: graceful entry and exit
+StartVault(string mode=local,string path)
+StopVault()
+
+InstallVault(string[] parameters)
+
+
+
+

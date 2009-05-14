@@ -1,0 +1,202 @@
+/*
+* ============================================================================
+*
+* Copyright [2009] maidsafe.net limited
+*
+* Description:  Singleton for setting/getting session info
+* Version:      1.0
+* Created:      2009-01-28-16.56.20
+* Revision:     none
+* Compiler:     gcc
+* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
+* Company:      maidsafe.net limited
+*
+* The following source code is property of maidsafe.net limited and is not
+* meant for external use.  The use of this code is governed by the license
+* file LICENSE.TXT found in the root of this directory and also on
+* www.maidsafe.net.
+*
+* You are not free to copy, amend or otherwise use this source code without
+* the explicit written permission of the board of directors of maidsafe.net.
+*
+* ============================================================================
+*/
+
+#ifndef MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
+#define MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
+
+#include <map>
+#include <set>
+#include <string>
+
+#include "boost/thread/thread.hpp"
+
+#include "base/crypto.h"
+#include "maidsafe/maidsafe.h"
+
+namespace maidsafe {
+
+enum DefConLevels {DEFCON1 = 1, DEFCON2, DEFCON3};
+
+struct UserDetails {
+  UserDetails() : defconlevel(DEFCON2), da_modified(false), username(""),
+    pin(""), password(""), mid_rid(0), smid_rid(0), session_name(""),
+    root_db_key(""), self_encrypting(true), authorised_users(),
+    maid_authorised_users(), ids(ids), public_keys(public_keys),
+    private_keys(), mounted(0), win_drive('\0'), connection_status(0) {}
+  DefConLevels defconlevel;
+  bool da_modified;
+  std::string username;
+  std::string pin;
+  std::string password;
+  uint32_t mid_rid;
+  uint32_t smid_rid;
+  std::string session_name;
+  std::string root_db_key;
+  bool self_encrypting;
+  std::set<std::string> authorised_users;
+  std::set<std::string> maid_authorised_users;
+  std::map<buffer_packet_type, std::string> ids;
+  std::map<buffer_packet_type, std::string> public_keys;
+  std::map<buffer_packet_type, std::string> private_keys;
+  int mounted;
+  char win_drive;
+  int connection_status;
+};
+
+class SessionSingleton {
+ public:
+  bool ResetSession();
+  static SessionSingleton* getInstance();
+  static void Destroy();
+
+  // Assessors
+  inline DefConLevels DefConLevel() { return ud_.defconlevel; }
+  inline bool DaModified() { return ud_.da_modified; }
+  inline std::string Username() { return ud_.username; }
+  inline std::string Pin() { return ud_.pin; }
+  inline std::string Password() { return ud_.password; }
+  inline std::string PublicUsername() { return GetId(MPID_BP); }
+  inline uint32_t MidRid() { return ud_.mid_rid; }
+  inline uint32_t SmidRid() { return ud_.smid_rid; }
+  inline std::string SessionName() { return ud_.session_name; }
+  inline std::string RootDbKey() { return ud_.root_db_key; }
+  inline bool SelfEncrypting() { return ud_.self_encrypting; }
+  inline std::set<std::string> AuthorisedUsers() {
+    return ud_.authorised_users;
+  }
+  inline std::set<std::string> MaidAuthorisedUsers() {
+    return ud_.maid_authorised_users;
+  }
+  inline std::string GetPrivateKey(buffer_packet_type type) {
+    return ud_.private_keys[type];
+  }
+  inline std::string GetPublicKey(buffer_packet_type type) {
+    return ud_.public_keys[type];
+  }
+  inline std::string GetId(buffer_packet_type type) { return ud_.ids[type]; }
+  inline int Mounted() { return ud_.mounted; }
+  inline char WinDrive() { return ud_.win_drive; }
+  inline int ConnectionStatus() { return ud_.connection_status; }
+
+  // Mutators
+  inline bool SetDefConLevel(DefConLevels defconlevel) {
+    ud_.defconlevel = defconlevel;
+    return true;
+  }
+  inline bool SetDaModified(bool da_modified) {
+    ud_.da_modified = da_modified;
+    return true;
+  }
+  inline bool SetUsername(const std::string &username) {
+    ud_.username = username;
+    return true;
+  }
+  inline bool SetPin(const std::string &pin) {
+    ud_.pin = pin;
+    return true;
+  }
+  inline bool SetPassword(const std::string &password) {
+    ud_.password = password;
+    return true;
+  }
+  inline bool SetPublicUsername(const std::string &public_username) {
+    return SetId(public_username, MPID_BP);
+  }
+  inline bool SetMidRid(const int64_t &midrid) {
+    ud_.mid_rid = midrid;
+    return true;
+  }
+  inline bool SetSmidRid(const int64_t &smidrid) {
+    ud_.smid_rid = smidrid;
+    return true;
+  }
+  inline bool SetSessionName(bool clear) {
+    if (clear) {
+      ud_.session_name = "";
+    } else {
+      crypto::Crypto c;
+      c.set_hash_algorithm("SHA1");
+      ud_.session_name = c.Hash(Pin()+Username(),
+                                "",
+                                crypto::STRING_STRING,
+                                true);
+    }
+    return true;
+  }
+  inline bool SetRootDbKey(const std::string &root_db_key_) {
+    ud_.root_db_key = root_db_key_;
+    return true;
+  }
+  inline bool SetSelfEncrypting(bool self_encrypting) {
+    ud_.self_encrypting = self_encrypting;
+    return true;
+  }
+  inline bool SetAuthorisedUsers(
+      const std::set<std::string> &authorised_users) {
+    ud_.authorised_users = authorised_users;
+    return true;
+  }
+  inline bool SetMaidAuthorisedUsers(
+      const std::set<std::string> &maid_authorised_users) {
+    ud_.maid_authorised_users = maid_authorised_users;
+    return true;
+  }
+  inline bool SetPrivateKey(const std::string &private_key,
+                            buffer_packet_type type) {
+    ud_.private_keys[type] = private_key;
+    return true;
+  }
+  inline bool SetPublicKey(const std::string &public_key,
+                           buffer_packet_type type) {
+    ud_.public_keys[type] = public_key;
+    return true;
+  }
+  inline bool SetId(const std::string &id, buffer_packet_type type) {
+    ud_.ids[type] = id;
+    return true;
+  }
+  inline bool SetMounted(int mounted) {
+    ud_.mounted = mounted;
+    return true;
+  }
+  inline bool SetWinDrive(char win_drive) {
+    ud_.win_drive = win_drive;
+    return true;
+  }
+  inline bool SetConnectionStatus(int status) {
+    ud_.connection_status = status;
+    return true;
+  }
+
+ private:
+  SessionSingleton &operator=(const SessionSingleton&);
+  SessionSingleton(const SessionSingleton&);
+  static SessionSingleton *single;
+  ~SessionSingleton() {}
+  UserDetails ud_;
+  SessionSingleton() : ud_() { ResetSession(); }
+};
+}  // namesapce maidsafe
+
+#endif  // MAIDSAFE_CLIENT_SESSIONSINGLETON_H_

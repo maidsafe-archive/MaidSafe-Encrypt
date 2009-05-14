@@ -1,0 +1,8 @@
+maidsafe Perpetual Data 
+
+
+
+External Libraries 
+cryptopp - cryptographic library 
+boost libraries 
+    boost filesystem - cross platform filesystem functions 

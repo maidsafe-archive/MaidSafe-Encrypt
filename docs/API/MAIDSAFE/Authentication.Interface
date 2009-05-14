@@ -1,0 +1,31 @@
+Authentication Interface
+
+Login(string username, int pin, string password)
+//creates a session object, containing DA, cache location etc.
+return int  
+//0=OK, 1=FAIL, 2=PASSWORD_FAIL, 3=NON_EXISTING_USER
+
+Logout()
+//logs out and gracefully exits kademlia network
+//cleaning up as it goes 
+return int 
+//0=OK, 1=NO_CONNECTION, ...
+
+RegisterUser(string username,int pin,string password)
+return bool
+
+CreatePublicUsername(string public_username)
+return bool
+
+ChangeUsername(string old_username,string new_username)
+return bool
+
+ChangePin(int old_pin,int new_pin)
+return bool
+
+ChangePassword(string old_passwd,string new_passwd)
+return bool
+
+RemoveMe(string username,int pin,string password)
+return bool
+
