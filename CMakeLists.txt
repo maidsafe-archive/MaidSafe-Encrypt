@@ -264,13 +264,15 @@ c:/usr/lib/libcryptopp.a
 c:/usr/lib/libprotobuf.a c:/usr/lib/libsqlite3.a -liphlpapi
 )
 ENDIF(APPLE)
-
-TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib fuse ${QT_LIBRARIES} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(wxperpetualdata PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib fuse ${MAC_WX} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(wxpdlocal  PDTESTmsclientlib PDmsvaultlib PDfslib PDpbmsgslib fuse ${SYS_WX} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmsvaultlib PDfslib PDpbmsgslib fuse ${QT_LIBRARIES}  ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTmaidsafe  PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib fuse gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTfs PDfslib fuse gtest ${SYS_LIB})
+IF(UNIX)
+	SET(FUSE = "fuse")
+	ENDIF()
+TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(wxperpetualdata PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${MAC_WX} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(wxpdlocal  PDTESTmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${SYS_WX} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES}  ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTmaidsafe  PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTfs PDfslib ${FUSE} gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(testvault PDmsvaultlib PDmsclientlib PDpbmsgslib ${SYS_LIB})
 TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmsclientlib PDpbmsgslib ${SYS_LIB})
 
