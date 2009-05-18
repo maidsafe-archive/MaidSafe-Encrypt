@@ -103,6 +103,9 @@ FILE(GLOB M_QT_H "${SOURCE_DIR}/qt/*.h*")                            #
 FILE(GLOB M_QT_UI "${SOURCE_DIR}/qt/ui/*.ui")                            #
 FILE(GLOB M_QT_QRC "${SOURCE_DIR}/qt/resources/*.qrc")                            #
 LIST(APPEND M_QT_DIR ${M_QT_C} ${M_QT_H})                      #
+FILE(GLOB M_PROTOBUF_C "${SOURCE_DIR}/protobuf/*.c*")                            #
+FILE(GLOB M_PROTOBUF_H "${SOURCE_DIR}/protobuf/*.h*")                            #
+LIST(APPEND M_PROTOBUF_DIR ${M_PROTOBUF_C} ${M_PROTOBUF_H})                      #
 FILE(GLOB M_MAIDSAFE_C "${SOURCE_DIR}/maidsafe/*.c*")                            #
 FILE(GLOB M_MAIDSAFE_H "${SOURCE_DIR}/maidsafe/*.h*")                            #
 LIST(APPEND M_MAIDSAFE_DIR ${M_MAIDSAFE_C} ${M_MAIDSAFE_H})                      #
@@ -172,6 +175,7 @@ add_library(PDmsclientlib STATIC ${M_MSCLIENT_DIR})
 add_library(PDmsvaultlib STATIC ${M_MSVAULT_DIR})
 add_library(PDTESTmsclientlib STATIC ${M_MSCLIENT_DIR})
 add_library(PDfslib STATIC ${SOURCE_DIR}/fs/filesystem.cc ${FS_SOURCE_FILE})
+add_library(PDpbmsgslib STATIC  ${M_PROTOBUF_DIR})
 ##########################################################################################
 #Set up some extra compiler and linker flags for the tests mainly                        #
 ##########################################################################################
@@ -261,14 +265,14 @@ c:/usr/lib/libprotobuf.a c:/usr/lib/libsqlite3.a -liphlpapi
 )
 ENDIF(APPLE)
 
-TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmsvaultlib PDfslib fuse ${QT_LIBRARIES} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(wxperpetualdata PDmsclientlib PDmsvaultlib PDfslib fuse ${MAC_WX} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(wxpdlocal  PDTESTmsclientlib PDmsvaultlib PDfslib  fuse ${SYS_WX} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmsvaultlib PDfslib fuse  ${QT_LIBRARIES}  ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTmaidsafe  PDmsclientlib PDmsvaultlib PDfslib fuse gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTfs   PDbaselib fuse gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(testvault PDmsvaultlib PDmsclientlib  ${SYS_LIB})
-TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmsclientlib ${SYS_LIB})
+TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib fuse ${QT_LIBRARIES} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(wxperpetualdata PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib fuse ${MAC_WX} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(wxpdlocal  PDTESTmsclientlib PDmsvaultlib PDfslib PDpbmsgslib fuse ${SYS_WX} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmsvaultlib PDfslib PDpbmsgslib fuse ${QT_LIBRARIES}  ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTmaidsafe  PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib fuse gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTfs PDfslib fuse gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(testvault PDmsvaultlib PDmsclientlib PDpbmsgslib ${SYS_LIB})
+TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmsclientlib PDpbmsgslib ${SYS_LIB})
 
 
 IF(WIN32)
