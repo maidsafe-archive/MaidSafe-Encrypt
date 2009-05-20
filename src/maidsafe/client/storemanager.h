@@ -27,7 +27,9 @@
 
 #include <string>
 
-#include "base/utils.h"
+#include "maidsafe/maidsafe.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 
 namespace maidsafe {
 

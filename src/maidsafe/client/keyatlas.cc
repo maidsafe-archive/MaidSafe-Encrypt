@@ -34,8 +34,9 @@
 
 #include "boost/filesystem.hpp"
 
-#include "base/crypto.h"
-#include "base/utils.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 #include "protobuf/datamaps.pb.h"
 
 namespace fs = boost::filesystem;

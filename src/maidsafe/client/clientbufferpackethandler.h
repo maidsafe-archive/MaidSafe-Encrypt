@@ -31,8 +31,8 @@
 
 #include "boost/thread/mutex.hpp"
 
-#include "base/crypto.h"
-#include "base/rsakeypair.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/rsakeypair.h"
 #include "maidsafe/maidsafe.h"
 #include "protobuf/packet.pb.h"
 #include "maidsafe/client/sessionsingleton.h"

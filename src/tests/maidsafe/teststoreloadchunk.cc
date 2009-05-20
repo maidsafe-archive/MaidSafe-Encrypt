@@ -11,10 +11,10 @@
  *  Created on: Sep 29, 2008
  *      Author: Haiyang, Jose
  */
-/*#include "base/utils.h"
+/*#include "maidsafe/utils.h"
 #include "maidsafe/client/pdclient.h"
-#include "base/crypto.h"
-#include "base/rsakeypair.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/rsakeypair.h"
 #include "base/calllatertimer.h"
 #include <exception>
 #include <boost/bind.hpp>
@@ -172,13 +172,13 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk) {
   args.set_data_type(maidsafe::DATA);
   args.SerializeToString(&args_str);
   nodes[2]->RpcStoreChunk(args_str, sender_info, &result_str);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_TRUE(result.ParseFromString(result_str));
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   nodes[5]->RpcStoreChunk(args_str, sender_info, &result_str);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   nodes[4]->RpcStoreChunk(args_str, sender_info, &result_str);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   FindCallback cb1;
   pdclient->FindValue(chunk_name,
       boost::bind(&FindCallback::CallbackFunc, &cb1, _1));
@@ -218,13 +218,13 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_HolderLeaves) {
   args.set_data_type(maidsafe::DATA);
   args.SerializeToString(&args_str);
   nodes[2]->RpcStoreChunk(args_str, sender_info, &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   nodes[5]->RpcStoreChunk(args_str, sender_info, &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   nodes[4]->RpcStoreChunk(args_str, sender_info, &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   FindCallback cb1;
   pdclient->FindValue(chunk_name,
       boost::bind(&FindCallback::CallbackFunc, &cb1, _1));
@@ -272,13 +272,13 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_AllChunkHoldersLeave) {
   args.set_data_type(maidsafe::DATA);
   args.SerializeToString(&args_str);
   nodes[2]->RpcStoreChunk(args_str, sender_info, &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   nodes[5]->RpcStoreChunk(args_str, sender_info, &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   nodes[4]->RpcStoreChunk(args_str, sender_info, &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   cb1.Reset();
   FindCallback cb2;
   pdclient->FindValue(chunk_name,
@@ -293,13 +293,13 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_AllChunkHoldersLeave) {
   GeneralKadCallback cb3;
   nodes[4]->Leave(boost::bind(&FakeCallback::CallbackFunc, &cb3, _1));
   std::cout << "Leaving network" << std::endl;
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   nodes[5]->Leave(boost::bind(&FakeCallback::CallbackFunc, &cb3, _1));
   std::cout << "Leaving network" << std::endl;
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   nodes[2]->Leave(boost::bind(&FakeCallback::CallbackFunc, &cb3, _1));
   std::cout << "Leaving network" << std::endl;
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   cb1.Reset();
   pdclient->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb1, _1));
@@ -429,7 +429,7 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkNoContacts) {
   wait_result(&cb2, client_mutex);
   ASSERT_EQ(kad::kRpcResultFailure, cb2.result());
   pdclient1->Leave(boost::bind(&FakeCallback::CallbackFunc, &cb2, _1));
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   delete pdclient1;
   delete timer_;
   delete mutex;
@@ -481,7 +481,7 @@ TEST_F(PDClientTest, FUNC_KAD_Store_LoadChunk) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
   pdclient1->Leave(boost::bind(&GeneralKadCallback::CallbackFunc, &cb2, _1));
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   delete pdclient1;
   delete timer_;
   delete mutex;
@@ -509,7 +509,7 @@ TEST_F(PDClientTest, FUNC_KAD_BasicUpdateChunk) {
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
   ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
-  base::sleep(1); // make sure all chunk references are saved!
+  boost::this_thread::sleep(boost::posix_time::seconds(1)); // make sure all chunk references are saved!
   std::string new_chunk_content = base::RandomString(250*1024);
   ASSERT_NE(chunk_content, new_chunk_content);
   UpdateChunkCallback cb2;
@@ -594,7 +594,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateChunkWithChunkHolderLeave) {
     }
   }
   ASSERT_EQ(1, copies);
-  base::sleep(1); // make sure all chunk references are saved!
+  boost::this_thread::sleep(boost::posix_time::seconds(1)); // make sure all chunk references are saved!
   std::string new_chunk_content = base::RandomString(250*1024);
   ASSERT_NE(chunk_content, new_chunk_content);
   UpdateChunkCallback cb2;
@@ -652,34 +652,34 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
   args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
   args.SerializeToString(&args_str);
   nodes[1]->RpcStoreChunk(args_str, "", &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   nodes[2]->RpcStoreChunk(args_str, "", &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   nodes[4]->RpcStoreChunk(args_str, "", &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   nodes[6]->RpcStoreChunk(args_str, "", &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   nodes[7]->RpcStoreChunk(args_str, "", &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   nodes[8]->RpcStoreChunk(args_str, "", &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   nodes[9]->RpcStoreChunk(args_str, "", &result_str);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
-  base::sleep(1);  // make sure all chunk references are saved!
+  boost::this_thread::sleep(boost::posix_time::seconds(1));  // make sure all chunk references are saved!
   FindCallback cb1;
   nodes[3]->FindValue(chunk_name,
       boost::bind(&FindCallback::CallbackFunc, &cb1, _1));
@@ -732,7 +732,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
   nodes[8]->Leave(boost::bind(&GeneralKadCallback::CallbackFunc, &cb6, _1));
   wait_result(&cb6, mutex[8]);
   // update the chunk again
-  base::sleep(1);  // make sure all chunk references are saved!
+  boost::this_thread::sleep(boost::posix_time::seconds(1));  // make sure all chunk references are saved!
   std::string new_chunk_content1 = base::RandomString(250*1024);
   ASSERT_NE(new_chunk_content, new_chunk_content1);
   ASSERT_NE(chunk_content, new_chunk_content1);
@@ -813,7 +813,7 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkSystemPacket) {
   ASSERT_EQ(gp.data(), gp_rec.data());
   ASSERT_EQ(gp.signature(), gp_rec.signature());
   pdclient1->Leave(boost::bind(&GeneralKadCallback::CallbackFunc, &cb2, _1));
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   delete pdclient1;
   delete timer_;
   delete mutex;
@@ -930,7 +930,7 @@ TEST_F(PDClientTest, FUNC_KAD_StoreUnSignedPDDir) {
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
   ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   LoadChunkCallback cb3;
   pdclient->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb3, _1));
@@ -960,7 +960,7 @@ TEST_F(PDClientTest, FUNC_KAD_StoreBUFFER_PACKET) {
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
   ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   LoadChunkCallback cb3;
   pdclient->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb3, _1));
@@ -992,7 +992,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateSignedPDDir) {
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
   ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   LoadChunkCallback cb3;
   pdclient->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb3, _1));
@@ -1066,7 +1066,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   cb1.Reset();
   // sleeping one second to allow chunk references to be stored
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   LoadChunkCallback cb2;
   pdclient->LoadChunk(chunk_name,
     boost::bind(&LoadChunkCallback::CallbackFunc, &cb2, _1));

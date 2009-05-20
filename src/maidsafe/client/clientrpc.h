@@ -28,8 +28,8 @@
 #include <string>
 
 #include "protobuf/maidsafe_service.pb.h"
-#include "rpcprotocol/channelmanager.h"
-#include "rpcprotocol/channel.h"
+#include "maidsafe/maidsafe.h"
+#include "maidsafe/maidsafe-dht.h"
 
 namespace maidsafe {
 

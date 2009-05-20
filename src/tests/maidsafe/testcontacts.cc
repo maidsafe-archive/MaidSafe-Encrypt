@@ -15,7 +15,8 @@
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
 #include "maidsafe/client/contacts.h"
-#include "base/utils.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 
 class ContactsTest : public testing::Test {
   protected:

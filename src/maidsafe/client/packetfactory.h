@@ -30,8 +30,8 @@
 #include <string>
 #include <map>
 
-#include "base/crypto.h"
-#include "base/rsakeypair.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/rsakeypair.h"
 
 namespace packethandler {
 

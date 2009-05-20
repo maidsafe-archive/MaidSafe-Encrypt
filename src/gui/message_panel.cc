@@ -14,7 +14,7 @@
 #include "gui/message_panel.h"
 #include <wx/wx.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 
 MessagePanel::MessagePanel(wxWindow* parent, wxWindowID id,
   const wxPoint& pos, const wxSize& size,

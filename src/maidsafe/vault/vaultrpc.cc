@@ -28,8 +28,8 @@
 
 namespace maidsafe_vault {
 
-VaultRpcs::VaultRpcs(rpcprotocol::ChannelManager *channel_manager)
-    : channel_manager_(channel_manager) {}
+VaultRpcs::VaultRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
+    channel_manager) : channel_manager_(channel_manager) {}
 
 void VaultRpcs::StoreChunk(const std::string &chunkname,
                       const std::string &data,
@@ -51,8 +51,7 @@ void VaultRpcs::StoreChunk(const std::string &chunkname,
   args.set_data_type(data_type);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
-      channel_manager_,
+      channel_manager_.get(),
       remote_ip,
       remote_port,
       local));
@@ -70,8 +69,7 @@ void VaultRpcs::CheckChunk(const std::string &chunkname,
   args.set_chunkname(chunkname);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
-      channel_manager_,
+      channel_manager_.get(),
       remote_ip,
       remote_port,
       local));
@@ -89,8 +87,7 @@ void VaultRpcs::Get(const std::string &chunkname,
   args.set_chunkname(chunkname);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
-      channel_manager_,
+      channel_manager_.get(),
       remote_ip,
       remote_port,
       local));
@@ -118,8 +115,7 @@ void VaultRpcs::Update(const std::string &chunkname,
   args.set_data_type(data_type);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
-      channel_manager_,
+      channel_manager_.get(),
       remote_ip,
       remote_port,
       local));
@@ -145,8 +141,7 @@ void VaultRpcs::Delete(const std::string &chunkname,
   args.set_data_type(data_type);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
-      channel_manager_,
+      channel_manager_.get(),
       remote_ip,
       remote_port,
       local));
@@ -166,8 +161,7 @@ void VaultRpcs::ValidityCheck(const std::string &chunkname,
   args.set_random_data(random_data);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
-      channel_manager_,
+      channel_manager_.get(),
       remote_ip,
       remote_port,
       local));
@@ -189,8 +183,7 @@ void VaultRpcs::GetMessages(const std::string &buffer_packet_name,
   args.set_signed_public_key(signed_public_key);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
-      channel_manager_,
+      channel_manager_.get(),
       remote_ip,
       remote_port,
       local));
@@ -217,8 +210,7 @@ void VaultRpcs::SwapChunk(const boost::uint32_t request_type,
   }
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
-      channel_manager_,
+      channel_manager_.get(),
       remote_ip,
       remote_port,
       local));

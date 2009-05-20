@@ -19,8 +19,6 @@
 #include <boost/thread/mutex.hpp>
 #include <ctime>
 
-#include "base/utils.h"
-
 namespace maidsafe_vault {
 
 ChunkStore::ChunkStore(const std::string &chunkstore_dir)

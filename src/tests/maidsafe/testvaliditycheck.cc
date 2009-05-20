@@ -14,7 +14,7 @@
 
 /*#include "kademlia/validitycheck.h"
 #include "kademlia/knode.h"
-#include "base/crypto.h"
+#include "maidsafe/crypto.h"
 #include "base/calllatertimer.h"
 
 #include<gtest/gtest.h>

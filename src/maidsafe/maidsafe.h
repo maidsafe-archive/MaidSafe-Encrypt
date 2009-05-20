@@ -281,4 +281,16 @@ const int kMaxChunkStoreRetries(10);  // max number of tries to store or update
                                      // a chunk
 const boost::uint32_t kSaveUpdatesTrigger(100);  // max no of dbs in save queue
                                                  // before running save queue
+const int kMinSuccessfulPecentageOfUpdating(0.9);
+
+// TODO(jose): change the namespace to base
+namespace maidsafe {
+
+enum value_types {
+  SYSTEM_PACKET, BUFFER_PACKET, BUFFER_PACKET_INFO, BUFFER_PACKET_MESSAGE,
+  CHUNK_REFERENCE, WATCH_LIST, DATA, PDDIR_SIGNED, PDDIR_NOTSIGNED
+};
+
+}  // namespace maidsafe
+
 #endif  // MAIDSAFE_MAIDSAFE_H_

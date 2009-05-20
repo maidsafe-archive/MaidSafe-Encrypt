@@ -17,28 +17,24 @@
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "base/tri_logger.h"
-#include "kademlia/contact.h"
 #include "maidsafe/maidsafe.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
-#include "rpcprotocol/channelmanager.h"
 
 namespace maidsafe {
 
+inline void dummy_callback(const std::string& result) {}
+
 PDClient::PDClient(const std::string &datastore_dir,
                    const boost::uint16_t &port,
-                   const std::string &kad_config_file,
-                   boost::shared_ptr<base::CallLaterTimer> timer,
-                   boost::recursive_mutex *recursive_mutex)
+                   const std::string &kad_config_file)
     : datastore_dir_(datastore_dir),
       port_(port),
       kad_config_file_(kad_config_file),
-      timer_(timer),
-      recursive_mutex_(recursive_mutex),
-      channel_manager_(new rpcprotocol::ChannelManager(timer_)),
+      channel_manager_(new rpcprotocol::ChannelManager()),
       knode_(new kad::KNode(datastore_dir,
-                            timer,
                             channel_manager_,
                             kad::CLIENT)),
       client_rpcs_(channel_manager_) {}
@@ -47,8 +43,6 @@ PDClient::~PDClient() {
 #ifdef DEBUG
   printf("calling pdclient destructor\n");
 #endif
-//  timer_->CancelAll();
-//  channel_manager_->StopTransport();
   knode_.reset();
 }
 
@@ -194,7 +188,7 @@ void PDClient::GetMessages(const std::string &chunk_name,
                            const std::string &public_key,
                            const std::string &signed_public_key,
                            base::callback_func_type cb) {
-  boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
+//  boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
   boost::shared_ptr<LoadChunkData> data(new LoadChunkData(chunk_name, cb));
   data->get_msgs = true;
   data->pub_key = public_key;
@@ -414,7 +408,7 @@ void PDClient::StoreChunk(const std::string &chunk_name,
                           const std::string &signed_request,
                           const maidsafe::value_types &data_type,
                           base::callback_func_type cb) {
-  boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
+//  boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
   boost::shared_ptr<StoreChunkData> data(new StoreChunkData(chunk_name,
     content, cb, public_key, signed_public_key, signed_request, data_type));
   IterativeStoreChunk(data);
@@ -491,7 +485,7 @@ void PDClient::IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data) {
       printf("2 stored copies: %d\n", data->stored_copies);
       knode_->FindCloseNodes(
           knode_->node_id(),
-          &kad::dummy_callback);
+          &dummy_callback);
       return;
     }
     for (int i = 0; i < static_cast<int>(contacts.size()); ++i)
@@ -658,7 +652,7 @@ void PDClient::UpdateChunk(const std::string &chunk_name,
                            const std::string &signed_request,
                            const maidsafe::value_types &data_type,
                            base::callback_func_type cb) {
-  boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
+//  boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
   // Look up the chunk references
   knode_->FindValue(chunk_name,
                     boost::bind(&PDClient::IterativeCheckAlive,
@@ -1127,17 +1121,13 @@ void PDClient::Join(const std::string &node_id,
                 _1,
                 _2,
                 _3));
-  knode_->Join(node_id, kad_config_file_, cb);
+  knode_->Join(node_id, kad_config_file_, cb, false);
 }
 
 void PDClient::Leave(base::callback_func_type cb) {
   knode_->Leave();
   #ifdef DEBUG
-    printf("cancelling timer\n");
-  #endif
-  timer_->CancelAll();
-  #ifdef DEBUG
-    printf("timer cancelled -- stopping transport\n");
+    printf("stopping transport\n");
   #endif
   channel_manager_->StopTransport();
   #ifdef DEBUG

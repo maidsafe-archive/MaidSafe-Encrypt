@@ -37,11 +37,12 @@
 
 #include "boost/filesystem.hpp"
 
-#include "base/cppsqlite3.h"
-#include "base/crypto.h"
-#include "base/utils.h"
+#include "maidsafe/cppsqlite3.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/utils.h"
 #include "protobuf/datamaps.pb.h"
 #include "maidsafe/maidsafe.h"
+#include "maidsafe/maidsafe-dht.h"
 
 namespace fs = boost::filesystem;
 

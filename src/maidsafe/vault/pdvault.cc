@@ -28,8 +28,9 @@
 #include <boost/thread/xtime.hpp>
 #include <google/protobuf/descriptor.h>
 
-#include "base/tri_logger.h"
+#include "maidsafe/maidsafe-dht.h"
 #include "protobuf/general_messages.pb.h"
+#include "protobuf/kademlia_service_messages.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -43,17 +44,15 @@ PDVault::PDVault(const std::string &pmid_public,
                  const std::string &chunkstore_dir,
                  const std::string &datastore_dir,
                  const boost::uint16_t &port,
-                 const std::string &kad_config_file,
-                 boost::shared_ptr<base::CallLaterTimer> timer)
+                 const std::string &kad_config_file)
     : port_(port),
       mutex0_(),
       mutex1_(),
-      channel_manager_(new rpcprotocol::ChannelManager(timer)),
+      channel_manager_(),
       knode_(new kad::KNode(datastore_dir,
-                            timer,
                             channel_manager_,
                             kad::VAULT)),
-      vault_rpcs_(channel_manager_.get()),
+      vault_rpcs_(channel_manager_),
       chunkstore_(new ChunkStore(chunkstore_dir)),
       vault_service_(),
       kad_joined_(false),
@@ -182,7 +181,7 @@ void PDVault::IterativeSyncVault(boost::shared_ptr<SyncVaultData> data) {
     maidsafe::UpdateResponse local_result;
     std::string local_result_str("");
     if (static_cast<float>(data->num_updated_chunks) >=
-        kad::kMinSuccessfulPecentageOfUpdating*(data->num_chunks))
+        kMinSuccessfulPecentageOfUpdating*(data->num_chunks))
       local_result.set_result(kRpcResultSuccess);
     else
       local_result.set_result(kRpcResultFailure);
@@ -481,7 +480,7 @@ void PDVault::IterativePublishChunkRef(
     std::string local_result_str;
     printf("\nVault republished!\n");
     if (static_cast<float>(data->num_republished_chunks) >=
-        kad::kMinSuccessfulPecentageOfUpdating*(data->num_chunks))
+        kMinSuccessfulPecentageOfUpdating*(data->num_chunks))
       local_result.set_result(kRpcResultSuccess);
     else
       local_result.set_result(kRpcResultFailure);
@@ -957,8 +956,7 @@ void PDVault::RegisterMaidService() {
                      chunkstore_,
                      knode_));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
-      new rpcprotocol::Channel(channel_manager_->ptransport(),
-                               channel_manager_.get()));
+      new rpcprotocol::Channel(channel_manager_.get()));
   svc_channel_->SetService(vault_service_.get());
   channel_manager_->RegisterChannel(
     vault_service_->GetDescriptor()->name(), svc_channel_.get());

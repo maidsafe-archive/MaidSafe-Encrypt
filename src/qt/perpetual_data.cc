@@ -18,7 +18,7 @@
 #endif
 
 // core
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/clientcontroller.h"
 
 // local
@@ -467,7 +467,7 @@ bool PerpetualData::mount()
     std::string mount_point = fsys_.MaidsafeFuseDir();
     fsl_.Mount(mount_point, debug_mode);
 #endif
-    base::sleep(1);
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
 
     return maidsafe::SessionSingleton::getInstance()->Mounted() == 0;
 }
@@ -493,7 +493,7 @@ bool PerpetualData::unmount()
     success = ShellExecuteEx(&shell_info);
 
     WaitForSingleObject(shell_info.hProcess, INFINITE);
-    base::sleep(0.5);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 #else
     // un-mount fuse
     fsl_.UnMount();

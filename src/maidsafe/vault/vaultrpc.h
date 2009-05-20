@@ -27,16 +27,17 @@
 
 #include <string>
 
-#include "base/utils.h"
+#include "maidsafe/maidsafe.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 #include "protobuf/maidsafe_service.pb.h"
-#include "rpcprotocol/channel.h"
-#include "rpcprotocol/channelmanager.h"
 
 namespace maidsafe_vault {
 
 class VaultRpcs {
  public:
-  explicit VaultRpcs(rpcprotocol::ChannelManager *channel_manager);
+  explicit VaultRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
+      channel_manager);
   ~VaultRpcs() {}
   void StoreChunk(const std::string &chunkname,
              const std::string &data,
@@ -109,7 +110,7 @@ class VaultRpcs {
  private:
   VaultRpcs(const VaultRpcs&);
   VaultRpcs& operator=(const VaultRpcs&);
-  rpcprotocol::ChannelManager *channel_manager_;
+  boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
 };
 }  // namespace maidsafe_vault
 

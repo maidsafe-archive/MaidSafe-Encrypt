@@ -27,7 +27,7 @@
 #include <string>
 #include <cstdlib>
 
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/clientbufferpackethandler.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/packetfactory.h"
@@ -56,7 +56,7 @@ void wait_for_result_tbph(const FakeCallback &cb,
       if (cb.result != "")
         return;
     }
-    base::sleep(0.005);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(5));
   }
 };
 
@@ -87,7 +87,7 @@ class BufferPacketHandlerTest : public testing::Test {
         sm(new maidsafe::LocalStoreManager(mutex));
     sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_tbph(cb, mutex);
-    base::sleep(0.5);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     base::GeneralResponse res;
     ASSERT_TRUE(res.ParseFromString(cb.result));
     if (res.result() == kCallbackFailure) {
@@ -118,7 +118,7 @@ class BufferPacketHandlerTest : public testing::Test {
       printf("%s\n", ex_.what());
     }
     delete mutex;
-    base::sleep(1);
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
     ss->Destroy();
   }
   crypto::Crypto crypto_obj;
@@ -149,7 +149,7 @@ class BufferPacketHandlerTest : public testing::Test {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -168,7 +168,7 @@ class BufferPacketHandlerTest : public testing::Test {
   clientbufferpackethandler.AddUsers(users,
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, add_users_res.result());
@@ -182,7 +182,7 @@ class BufferPacketHandlerTest : public testing::Test {
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   std::string ser_bp = load_res.content();
@@ -232,7 +232,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -244,7 +244,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
                                   true),
                   boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   base::GeneralResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackFailure, is_unique_res.result());
@@ -256,7 +256,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   std::string ser_bp = load_res.content();
@@ -287,7 +287,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -305,7 +305,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
   clientbufferpackethandler.AddUsers(users,
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, add_users_res.result());
@@ -317,7 +317,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   std::string ser_bp = load_res.content();
@@ -349,7 +349,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -366,7 +366,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   clientbufferpackethandler.AddUsers(users,
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, add_users_res.result());
@@ -379,7 +379,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   std::string ser_bp = load_res.content();
@@ -457,7 +457,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -474,7 +474,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   clientbufferpackethandler.AddUsers(users,
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, add_users_res.result());
@@ -487,7 +487,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
                                   boost::bind(&FakeCallback::CallbackFunc,
                                   &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   std::string ser_bp = load_res.content();
@@ -535,7 +535,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckOwner) {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -547,7 +547,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckOwner) {
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   std::string ser_bp = load_res.content();
@@ -576,7 +576,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -594,13 +594,13 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   clientbufferpackethandler.AddUsers(users,
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, add_users_res.result());
   cb.Reset();
   add_users_res.Clear();
-  base::sleep(0.1);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_TRUE(users == ss->AuthorisedUsers());
 
   std::set<std::string> del_users;
@@ -609,7 +609,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   clientbufferpackethandler.DeleteUsers(del_users,
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::DeleteResponse del_res;
   ASSERT_TRUE(del_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, del_res.result());
@@ -622,7 +622,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   std::string ser_bp = load_res.content();
@@ -651,7 +651,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckSignature) {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -664,7 +664,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckSignature) {
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   std::string ser_bp = load_res.content();
@@ -688,7 +688,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -706,7 +706,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   clientbufferpackethandler.AddUsers(users,
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, add_users_res.result());
@@ -719,7 +719,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -790,7 +790,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
                   true,
                   boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
   cb.Reset();
@@ -813,11 +813,11 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   clientbufferpackethandler.GetMessages(MPID_BP,
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetMessagesResponse get_msg_res;
   ASSERT_TRUE(get_msg_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, get_msg_res.result());
-  base::sleep(2);
+  boost::this_thread::sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(3, get_msg_res.messages_size());
 
   for (int j = 0; j < get_msg_res.messages_size(); ++j) {
@@ -843,7 +843,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -862,7 +862,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   clientbufferpackethandler.AddUsers(users,
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, add_users_res.result());
@@ -875,7 +875,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -942,7 +942,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -955,7 +955,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
                   boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   base::GeneralResponse is_unique_res;
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackFailure, is_unique_res.result());
   is_unique_res.Clear();
@@ -968,7 +968,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   std::string ser_bp = load_res.content();
@@ -1018,7 +1018,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
     private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_res.result());
@@ -1027,7 +1027,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(\
     &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetMessagesResponse get_msgs_res;
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, get_msgs_res.result());
@@ -1045,7 +1045,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   clientbufferpackethandler.AddUsers(users,
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, add_users_res.result());
@@ -1055,7 +1055,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(\
     &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, get_msgs_res.result());
   ASSERT_EQ(0, get_msgs_res.messages_size());

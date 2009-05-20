@@ -32,13 +32,12 @@
 #include <string>
 #include <list>
 #include <vector>
-#include "base/crypto.h"
-#include "base/utils.h"
-#include "kademlia/knode.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/vault/chunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
-#include "rpcprotocol/channel.h"
 
 namespace maidsafe_vault {
 
@@ -155,8 +154,7 @@ class PDVault {
           const std::string &chunkstore_dir,
           const std::string &datastore_dir,
           const boost::uint16_t &port,
-          const std::string &kad_config_file,
-          boost::shared_ptr<base::CallLaterTimer> timer);
+          const std::string &kad_config_file);
   ~PDVault();
   void Start(const bool &port_forwarded);
   int Stop();

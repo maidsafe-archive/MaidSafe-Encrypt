@@ -30,7 +30,7 @@
 #include "boost/filesystem.hpp"
 #include "boost/thread/mutex.hpp"
 
-#include "base/cppsqlite3.h"
+#include "maidsafe/cppsqlite3.h"
 #include "maidsafe/client/storemanager.h"
 #include "maidsafe/vault/vaultbufferpackethandler.h"
 

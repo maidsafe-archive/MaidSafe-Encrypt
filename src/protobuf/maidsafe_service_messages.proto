@@ -1,0 +1,107 @@
+// Maidsafe rpc arguments and responses
+// data_type is defined in  base/utils.h as the enum value_types
+
+package maidsafe;
+
+message StoreRequest {
+  required bytes chunkname = 1;
+  required bytes data = 2;
+  required bytes public_key = 3;
+  required bytes signed_public_key = 4;
+  required bytes signed_request = 5;
+  required int32 data_type = 6;
+};
+
+message StoreResponse {
+  required bytes result = 1;
+  optional bytes pmid_id = 2;
+};
+
+message DeleteRequest {
+  required bytes chunkname = 1;
+  required bytes public_key = 2;
+  required bytes signed_public_key = 3;
+  required bytes signed_request = 4;
+  required int32 data_type = 5;
+};
+
+message DeleteResponse {
+  required bytes result = 1;
+  optional bytes pmid_id = 2;
+};
+
+message GetRequest {
+  required bytes chunkname = 1;
+};
+
+message GetResponse {
+  required bytes result = 1;
+  optional bytes content = 2;
+  optional bytes pmid_id = 3;
+};
+
+message CheckChunkRequest {
+  required bytes chunkname = 1;
+};
+
+message CheckChunkResponse {
+  required bytes result = 1;
+  required bytes pmid_id = 2;
+};
+
+message ValidityCheckRequest {
+  required bytes chunkname = 1;
+  required bytes random_data = 2;
+};
+
+message ValidityCheckResponse {
+  required bytes result = 1;
+  optional bytes hash_content = 2;
+  required bytes pmid_id = 3;
+};
+
+message UpdateRequest {
+  required bytes chunkname = 1;
+  required bytes data = 2;
+  required bytes public_key = 3;
+  required bytes signed_public_key = 4;
+  required bytes signed_request = 5;
+  required int32 data_type = 6;
+};
+
+message UpdateResponse {
+  required bytes result = 1;
+  optional bytes pmid_id = 2;
+};
+
+message GetMessagesRequest {
+  required bytes buffer_packet_name = 1;
+  required bytes public_key = 2;
+  required bytes signed_public_key = 3;
+};
+
+message GetMessagesResponse {
+  required bytes result = 1;
+  repeated bytes messages = 2;
+  optional bytes pmid_id = 3;
+};
+
+message SwapChunkRequest {
+  required int32 request_type = 1;
+  required bytes chunkname1 = 2;
+  optional bytes chunkcontent1 = 3;
+  optional int32 size1 = 4;
+  optional bytes chunkname2 = 5;
+};
+
+message SwapChunkResponse {
+  required int32 request_type = 1;
+  required bytes result = 2;
+  optional bytes chunkname1 = 3;
+  optional bytes chunkcontent1 = 4;
+  optional int32 size1 = 5;
+  optional bytes chunkname2 = 6;
+  optional bytes chunkcontent2 = 7;
+  optional int32 size2 = 8;
+  required bytes pmid_id = 9;
+};

@@ -31,7 +31,6 @@
 #include <boost/tokenizer.hpp>
 
 #include "fs/filesystem.h"
-#include "kademlia/kadutils.h"
 #include "maidsafe/maidsafe.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
@@ -42,9 +41,7 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::recursive_mutex *mutex)
-    : mutex_(mutex),
-      pdclient_timer_(new base::CallLaterTimer),
-      datastore_dir_(""),
+    : datastore_dir_(""),
       pdclient_(),
       cry_obj() {
   file_system::FileSystem fsys;
@@ -55,9 +52,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::recursive_mutex *mutex)
   printf("kadconfig_path: %s\n", kadconfig_path.string().c_str());
   pdclient_ = new PDClient(datastore_dir_,
                            0,
-                           kadconfig_path.string(),
-                           pdclient_timer_,
-                           mutex_);
+                           kadconfig_path.string());
   cry_obj.set_symm_algorithm("AES_256");
   cry_obj.set_hash_algorithm("SHA512");
 }

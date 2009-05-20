@@ -1,4 +1,4 @@
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/selfencryption.h"
 
 #include <stdint.h>
@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/maidsafe-dht.h"
 #include "fs/filesystem.h"
 
 namespace fs=boost::filesystem;

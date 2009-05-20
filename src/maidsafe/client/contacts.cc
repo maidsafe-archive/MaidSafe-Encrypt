@@ -13,6 +13,7 @@
  */
 #include "maidsafe/client/contacts.h"
 #include <boost/filesystem.hpp>
+#include "maidsafe/maidsafe-dht.h"
 
 namespace fs = boost::filesystem;
 

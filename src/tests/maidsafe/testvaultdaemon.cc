@@ -20,10 +20,10 @@
 #include <vector>
 #include <map>
 #include <exception>
-#include "base/crypto.h"
-#include "base/rsakeypair.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/rsakeypair.h"
 #include "boost/date_time/posix_time/posix_time.hpp"
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "kademlia/contact.h"
 #include "kademlia/knode.h"
 #include "maidsafe/vault/vaultdaemon.h"
@@ -155,7 +155,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_NoPartners) {
   std::string ser_args;
   args.SerializeToString(&ser_args);
   nodes[rand_node]->RpcStoreChunk(ser_args, sender_info, &result);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   // try to synchronize the chunk
   kad::VaultDaemon daemon(nodes[rand_node]);
   GeneralKadCallback cb;
@@ -187,16 +187,16 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
   std::string ser_args;
   args.SerializeToString(&ser_args);
   nodes[2]->RpcStoreChunk(ser_args, sender_info, &ser_result);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   result.ParseFromString(ser_result);
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   result.Clear();
   nodes[6]->RpcStoreChunk(ser_args, sender_info, &ser_result);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   result.ParseFromString(ser_result);
   ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   nodes[8]->RpcStoreChunk(ser_args, sender_info, &ser_result);
-  base::sleep(3);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   // update two of them
   std::string new_chunk_content = base::RandomString(250*1024);
   ASSERT_NE(chunk_content, new_chunk_content);
@@ -254,14 +254,14 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
 
     nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
     ASSERT_EQ(kad::kRpcResultSuccess, result.result());
     nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
     nodes[19]->RpcStoreChunk(ser_args, sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
   }
   for (int i = 0; i < 5; i++) {
     std::string chunk_content = base::RandomString(512);
@@ -285,18 +285,18 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
     args.SerializeToString(&ser_args);
     nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
     ASSERT_EQ(kad::kRpcResultSuccess, result.result());
     nodes[base::random_32bit_uinteger()  %19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
     std::string new_chunk_content = base::RandomString(512);
     args.clear_content();
     args.set_content(new_chunk_content);
     args.SerializeToString(&ser_args);
     nodes[19]->RpcStoreChunk(ser_args, sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
   }
   // create a vault daemon to synchronize the stale chunks
   kad::VaultDaemon daemon(nodes[19]);
@@ -338,14 +338,14 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
     args.SerializeToString(&ser_args);
     nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
     ASSERT_EQ(kad::kRpcResultSuccess, result.result());
     nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
     nodes[19]->RpcStoreChunk(ser_args, sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
   }
   for (int i = 0; i < 5; i++) {
     std::string chunk_content = base::RandomString(512);
@@ -369,18 +369,18 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
     args.SerializeToString(&ser_args);
     nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
     ASSERT_EQ(kad::kRpcResultSuccess, result.result());
     nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
     std::string new_chunk_content = base::RandomString(512);
     args.clear_content();
     args.set_content(new_chunk_content);
     args.SerializeToString(&ser_args);
     nodes[19]->RpcStoreChunk(ser_args, sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
   }
   // kill some nodes
   for (int i = 3; i < 5; i++) {
@@ -432,7 +432,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_RepublishChunkRef) {
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
     args.SerializeToString(&ser_args);
     nodes[rep_node]->RpcStoreChunk(ser_args, sender_info, &ser_result);
-    base::sleep(3);
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
     ASSERT_EQ(kad::kRpcResultSuccess, result.result());
   }

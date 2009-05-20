@@ -16,7 +16,7 @@
 
 #include <wx/dialog.h>
 #include <wx/wx.h>
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 
 // PublicUsernameDialog class declaration
 class PublicUsernameDialog: public wxDialog {

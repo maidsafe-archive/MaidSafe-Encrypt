@@ -31,8 +31,8 @@
 #include <string>
 #include <vector>
 
-#include "base/config.h"
-#include "base/utils.h"
+#include "maidsafe/config.h"
+#include "maidsafe/utils.h"
 #include "fs/filesystem.h"
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/client/clientbufferpackethandler.h"

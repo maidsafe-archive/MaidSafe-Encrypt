@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <gtest/gtest.h>
 #include <sstream>
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/clientbufferpackethandler.h"
 #include "maidsafe/client/messagehandler.h"
@@ -32,7 +32,7 @@ void wait_for_result_tmsgh(FakeCallback &cb, boost::recursive_mutex *mutex) {
       if (cb.result != "")
         return;
     }
-    base::sleep(0.005);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(5));
   }
 };
 
@@ -84,7 +84,7 @@ class MsgHandlerTest : public testing::Test {
       printf("%s\n", ex_.what());
     }
     delete mutex;
-    base::sleep(1);
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
     ss->Destroy();
   }
 
@@ -185,7 +185,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   msghandler.SendMessage(ser_ci,recs,MPID_BP,packethandler::ADD_CONTACT_RQST,\
     boost::bind(&FakeCallback::CallbackFunc,&cb, _1));
   wait_for_result_tmsgh(cb, mutex);
-  base::sleep(0.2);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(200));
   packethandler::StoreMessagesResult store_msg_result;
   ASSERT_TRUE(store_msg_result.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, store_msg_result.result());

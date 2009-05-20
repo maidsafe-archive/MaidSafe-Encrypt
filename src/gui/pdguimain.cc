@@ -48,7 +48,7 @@
 #include <map>
 #include <string>
 
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/selfencryption.h"
 #include "protobuf/datamaps.pb.h"
@@ -432,7 +432,7 @@ void pdguiFrame::Ontxt_passwordText(wxCommandEvent& event) {  // NOLINT
           std::string debug_mode("-d");
           fsl_.Mount(mount_point, debug_mode);
 #endif
-        base::sleep(1);
+        boost::this_thread::sleep(boost::posix_time::seconds(1));
         if (maidsafe::SessionSingleton::
             getInstance()->PublicUsername() != "") {
           std::string newDb("/.contacts");
@@ -539,7 +539,7 @@ void pdguiFrame::Onbutton_logoutClick(wxCommandEvent& event) {  // NOLINT
 
   if (logout)
     WaitForSingleObject(shell_info.hProcess, INFINITE);
-  base::sleep(0.5);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 #else
   // un-mount fuse
   fsl_.UnMount();
@@ -548,7 +548,6 @@ void pdguiFrame::Onbutton_logoutClick(wxCommandEvent& event) {  // NOLINT
 
   if (logout) {
     printf("damn the devil to hell.\n");
-    // base::sleep(50);
     int n = maidsafe::ClientController::getInstance()->Logout();
     n = n * 1;
     // TODO(dan): verify that n == 0 for success.
@@ -603,7 +602,7 @@ void pdguiFrame::OnQuit(wxCommandEvent& event) {  // NOLINT
     logout = ShellExecuteEx(&shell_info);
     if (logout)
       WaitForSingleObject(shell_info.hProcess, INFINITE);
-    base::sleep(0.5);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 #else
     // un-mount fuse
     fsl_.UnMount();
@@ -690,7 +689,7 @@ void pdguiFrame::Onbutton_createCLICK(wxWizardEvent& event) {  // NOLINT
       std::string debug_mode("-d");
       fsm_.Mount(mount_point, debug_mode);
 #endif
-    base::sleep(1);
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
     if (maidsafe::SessionSingleton::getInstance()->Mounted() == 0) {
       AddLoggedInPanels(1);
       SetStatusText(wxT("Logged In"), 1);

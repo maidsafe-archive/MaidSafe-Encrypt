@@ -30,7 +30,7 @@
 
 #include "maidsafe/client/pdclient.h"
 #include "maidsafe/client/storemanager.h"
-#include "base/crypto.h"
+#include "maidsafe/crypto.h"
 
 namespace maidsafe {
 
@@ -88,8 +88,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                            base::callback_func_type cb);
   void DeleteChunk_Callback(const std::string &result,
                             base::callback_func_type cb);
-  boost::recursive_mutex *mutex_;
-  boost::shared_ptr<base::CallLaterTimer> pdclient_timer_;
   std::string datastore_dir_;
   PDClient *pdclient_;
   crypto::Crypto cry_obj;

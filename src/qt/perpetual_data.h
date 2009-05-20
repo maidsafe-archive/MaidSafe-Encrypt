@@ -4,7 +4,7 @@
 
 // core
 #include "fs/filesystem.h"
-#include "base/config.h"
+#include "maidsafe/config.h"
 
 #if defined(MAIDSAFE_WIN32)
   //  #include "fs/w_fuse/fswin.h"

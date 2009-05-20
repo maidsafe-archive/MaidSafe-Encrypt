@@ -59,7 +59,7 @@ with this program. If not, see <http:// www.gnu.org/licenses/>.
 #include <map>
 #include <string>
 
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "protobuf/datamaps.pb.h"
 
@@ -216,6 +216,11 @@ typedef struct _DOKAN_OPERATIONS {
     LPCWSTR,   //  FileName
     LONGLONG,  //  Length
     PDOKAN_FILE_INFO);
+
+	int (DOKAN_CALLBACK *SetAllocationSize) (  // NOLINT (Fraser)
+		LPCWSTR,  // FileName
+		LONGLONG, // Length
+		PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *LockFile) (  // NOLINT (Fraser)
     LPCWSTR,   //  FileName

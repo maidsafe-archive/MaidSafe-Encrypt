@@ -29,13 +29,13 @@
 #include <map>
 #include <vector>
 
-#include "base/crypto.h"
-#include "base/utils.h"
-#include "kademlia/knode.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/pdclient.h"
 #include "maidsafe/client/systempackets.h"
 #include "maidsafe/vault/pdvault.h"
-#include "rpcprotocol/channelmanager.h"
+#include "protobuf/general_messages.pb.h"
 
 namespace maidsafe_vault {
 
@@ -127,7 +127,6 @@ class RunPDVaults {
         kad_config_file_(datastore_dir_+"/.kadconfig"),
         chunkstore_dirs_(),
         mutices_(),
-        vault_timers_(),
         cb_(),
         crypto_(),
         pdvaults_(new std::vector< boost::shared_ptr<PDVault> >),
@@ -144,7 +143,7 @@ class RunPDVaults {
   }
 
   ~RunPDVaults() {
-    UDT::cleanup();
+//    UDT::cleanup();
     fs::path temp_(test_dir_);
     printf("Are you really, really, really sure that you want to delete %s?\n",
            test_dir_.c_str());
@@ -219,10 +218,6 @@ class RunPDVaults {
       boost::shared_ptr<boost::mutex> mutex_local_(new boost::mutex);
       mutices_.push_back(mutex_local_);
 
-      boost::shared_ptr<base::CallLaterTimer>
-          vault_timer_local_(new base::CallLaterTimer);
-      vault_timers_.push_back(vault_timer_local_);
-
       boost::shared_ptr<PDVault>
           pdvault_local_(new PDVault(public_key_,
                                      private_key_,
@@ -230,8 +225,7 @@ class RunPDVaults {
                                      chunkstore_local_,
                                      datastore_local_,
                                      this_port,
-                                     kad_config_file_,
-                                     vault_timers_[i]));
+                                     kad_config_file_));
       pdvaults_->push_back(pdvault_local_);
       ++current_nodes_created_;
       printf(".");
@@ -279,8 +273,6 @@ class RunPDVaults {
 
   void TearDown() {
     bool success_(false);
-    for (int i = 0; i < no_of_vaults_; ++i)
-      vault_timers_[i]->CancelAll();
     for (int i = 0; i < no_of_vaults_; ++i) {
       success_ = false;
       (*(pdvaults_))[i]->Stop();
@@ -312,7 +304,6 @@ class RunPDVaults {
   std::string chunkstore_dir_, datastore_dir_, kad_config_file_;
   std::vector<fs::path> chunkstore_dirs_;
   std::vector< boost::shared_ptr<boost::mutex> > mutices_;
-  std::vector< boost::shared_ptr<base::CallLaterTimer> > vault_timers_;
   base::callback_func_type cb_;
   crypto::Crypto crypto_;
   boost::shared_ptr< std::vector< boost::shared_ptr<PDVault> > > pdvaults_;
@@ -585,7 +576,6 @@ int main(int argc, char* argv[]) {
 ////    node->Leave(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
 ////    wait_result_client(cb);
 ////    delete node;
-////    // base::sleep(1);
 ////    try {
 ////      boost::filesystem::remove_all(*db);
 ////    } catch (std::exception &e) {
@@ -647,7 +637,7 @@ int main(int argc, char* argv[]) {
 ////    std::cout << "To stop, please press CTRL+C" << std::endl;
 ////    signal(SIGINT, ctrlc_handler);
 ////    while (!ctrlc_pressed) {
-////      base::sleep(1);
+////      boost::this_thread::sleep(boost::posix_time::seconds(1));
 ////    }
 ////    // stop the vault nodes
 ////    for (int i = 0; i < number_of_ports; i++) {

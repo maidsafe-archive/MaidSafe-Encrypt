@@ -54,7 +54,6 @@ void ClientRpcs::Store(const std::string &chunkname,
   args.set_data_type(data_type);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
       channel_manager_.get(),
       remote_ip,
       remote_port,
@@ -73,7 +72,6 @@ void ClientRpcs::CheckChunk(const std::string &chunkname,
   args.set_chunkname(chunkname);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
       channel_manager_.get(),
       remote_ip,
       remote_port,
@@ -92,7 +90,6 @@ void ClientRpcs::Get(const std::string &chunkname,
   args.set_chunkname(chunkname);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
       channel_manager_.get(),
       remote_ip,
       remote_port,
@@ -121,7 +118,6 @@ void ClientRpcs::Update(const std::string &chunkname,
   args.set_data_type(data_type);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
       channel_manager_.get(),
       remote_ip,
       remote_port,
@@ -148,7 +144,6 @@ void ClientRpcs::Delete(const std::string &chunkname,
   args.set_data_type(data_type);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
       channel_manager_.get(),
       remote_ip,
       remote_port,
@@ -171,7 +166,6 @@ void ClientRpcs::GetMessages(const std::string &buffer_packet_name,
   args.set_signed_public_key(signed_public_key);
   rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_->ptransport(),
       channel_manager_.get(),
       remote_ip,
       remote_port,

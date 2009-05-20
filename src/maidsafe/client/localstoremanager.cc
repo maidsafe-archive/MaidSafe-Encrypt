@@ -16,7 +16,7 @@
 #include <cryptopp/hex.h>
 #include <vector>
 
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"

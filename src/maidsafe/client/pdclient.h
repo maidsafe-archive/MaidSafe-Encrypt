@@ -21,12 +21,9 @@
 #include <string>
 #include <vector>
 
-#include "base/calllatertimer.h"
-#include "base/utils.h"
-#include "kademlia/contact.h"
-#include "kademlia/knode.h"
 #include "maidsafe/client/clientrpc.h"
-#include "rpcprotocol/channelmanager.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 
 namespace fs = boost::filesystem;
 
@@ -179,9 +176,7 @@ class PDClient {
  public:
   PDClient(const std::string &datastore_dir,
            const boost::uint16_t &port,
-           const std::string &kad_config_file,
-           boost::shared_ptr<base::CallLaterTimer> timer,
-           boost::recursive_mutex *recursive_mutex);
+           const std::string &kad_config_file);
   ~PDClient();
   void GetMessages(const std::string &chunk_name,
                    const std::string &public_key,
@@ -279,8 +274,6 @@ class PDClient {
   std::string datastore_dir_;
   boost::uint16_t port_;
   std::string kad_config_file_;
-  boost::shared_ptr<base::CallLaterTimer> timer_;
-  boost::recursive_mutex *recursive_mutex_;
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
   ClientRpcs client_rpcs_;

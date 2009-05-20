@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "gui/general_login.h"
 #include "gui/logged_in.h"
 #include "gui/message_panel.h"
@@ -37,7 +37,7 @@
 #include "gui/contacts.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "fs/filesystem.h"
-#include "base/config.h"
+#include "maidsafe/config.h"
 
 #if defined(MAIDSAFE_WIN32)
   //  #include "fs/w_fuse/fswin.h"

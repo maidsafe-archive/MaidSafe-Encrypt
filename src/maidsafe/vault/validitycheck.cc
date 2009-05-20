@@ -28,8 +28,8 @@
 #include <boost/bind.hpp>
 #include <list>
 
-#include "base/utils.h"
-#include "base/crypto.h"
+#include "maidsafe/utils.h"
+#include "maidsafe/crypto.h"
 
 namespace fs = boost::filesystem;
 
@@ -37,10 +37,8 @@ namespace maidsafe_vault {
 
 ValCheck::ValCheck(
                   const boost::shared_ptr<PDVault> pdvault,
-                  const std::string &chunkstore_dir,
-                  boost::shared_ptr<base::CallLaterTimer> timer)
+                  const std::string &chunkstore_dir)
         : db_path_(chunkstore_dir, fs::native),
-          timer_(timer),
           pdvault_(pdvault),
           db_(), started_(false) {
   db_path_ /= "valchk.db";

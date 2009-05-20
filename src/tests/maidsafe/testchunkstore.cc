@@ -15,8 +15,8 @@
 
 #include <boost/filesystem/fstream.hpp>
 #include <gtest/gtest.h>
-#include "base/utils.h"
-#include "base/crypto.h"
+#include "maidsafe/utils.h"
+#include "maidsafe/crypto.h"
 #include "maidsafe/vault/chunkstore.h"
 
 class TestChunkstore : public testing::Test {

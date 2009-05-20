@@ -27,7 +27,7 @@
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/privateshares.h"
 #include "gui/createsharedialog.h"
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 
 enum share_panel_ids {
   ID_share_name = 1,

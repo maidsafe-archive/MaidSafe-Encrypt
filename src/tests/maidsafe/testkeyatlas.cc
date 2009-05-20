@@ -3,7 +3,8 @@
 #include "boost/filesystem.hpp"
 #include "boost/scoped_ptr.hpp"
 
-#include "base/utils.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/keyatlas.h"
 
 namespace fs=boost::filesystem;

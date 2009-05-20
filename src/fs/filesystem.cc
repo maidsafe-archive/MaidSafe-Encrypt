@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 
+#include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/maidsafe.h"
 

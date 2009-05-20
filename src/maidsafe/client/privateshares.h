@@ -31,8 +31,8 @@
 #include <list>
 #include <vector>
 
-#include "base/cppsqlite3.h"
-#include "base/utils.h"
+#include "maidsafe/cppsqlite3.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/messagehandler.h"
 
 //  Return codes: based on 2200

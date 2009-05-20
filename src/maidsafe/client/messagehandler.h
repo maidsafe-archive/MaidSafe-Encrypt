@@ -31,7 +31,7 @@
 #include "boost/shared_ptr.hpp"
 #include "boost/thread/mutex.hpp"
 
-#include "base/crypto.h"
+#include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"

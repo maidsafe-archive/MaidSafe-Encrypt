@@ -20,7 +20,8 @@
 #include <list>
 #include <string>
 
-#include "base/crypto.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/maidsafe-dht.h"
 
 namespace fs = boost::filesystem;
 

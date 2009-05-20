@@ -14,6 +14,7 @@
 
 #include "maidsafe/vault/vaultbufferpackethandler.h"
 #include <cstdio>
+#include "protobuf/packet.pb.h"
 
 namespace packethandler {
 
@@ -200,7 +201,6 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
 
   *status = bpi.online();
   return true;
-
 }
 
 bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,

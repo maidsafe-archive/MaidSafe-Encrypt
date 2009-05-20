@@ -57,7 +57,7 @@
 #include "boost/shared_ptr.hpp"
 #include "gtest/gtest_prod.h"
 
-#include "base/cppsqlite3.h"
+#include "maidsafe/cppsqlite3.h"
 #include "maidsafe/maidsafe.h"
 
 namespace maidsafe {

@@ -29,6 +29,7 @@
 
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/vaultbufferpackethandler.h"
+#include "protobuf/kademlia_service_messages.pb.h"
 
 namespace maidsafe_vault {
 

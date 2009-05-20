@@ -54,7 +54,7 @@ void wait_for_result_ta(const FakeCallback &cb, boost::recursive_mutex *mutex) {
       if (cb.result != "")
         return;
     }
-    base::sleep(static_cast<float>(0.005));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(5));
   }
 };
 
@@ -224,7 +224,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
   ASSERT_EQ(USER_EXISTS, result) << "The same user was registered twice";
   // need to wait before exiting because in the background it is getting
   // the TMID of the user
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
 }
 
 //  TEST_F(AuthenticationTest, 46_IllegalUsername) {
@@ -459,7 +459,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
     &FakeCallback::CallbackFunc, &cb, _1));
   ASSERT_EQ(USER_EXISTS, result) << "User does not exist";
   wait_for_result_ta(cb, mutex);
-  base::sleep(1.0);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   result = authentication->GetUserData(password, ser_da_login);
   ASSERT_EQ(OK, result) << "Can't login with new iuserneim";
 
@@ -514,7 +514,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   result = authentication->GetUserInfo(username, "7894", boost::bind(\
     &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_ta(cb, mutex);
-  base::sleep(1.0);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   result = authentication->GetUserData(password, ser_da_login);
   ASSERT_EQ(OK, result) << "Can't login with new pin";
   result = authentication->GetUserInfo(username, pin, boost::bind(\
@@ -646,7 +646,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   cb.Reset();
   authentication->CreateMSIDPacket(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_ta(cb, mutex);
-  base::sleep(1.0);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   packethandler::CreateMSIDResult msid_result;
   ASSERT_TRUE(msid_result.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, msid_result.result());
@@ -655,7 +655,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   pub_key = msid_result.public_key();
   std::string empty_str("");
   cb.Reset();
-  base::sleep(1.0);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_NE(empty_str, msid_name);
   ASSERT_NE(empty_str, priv_key);
   ASSERT_NE(empty_str, pub_key);

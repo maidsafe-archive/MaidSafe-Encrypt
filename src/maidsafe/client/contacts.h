@@ -29,8 +29,8 @@
 #include <string>
 #include <vector>
 
-#include "base/cppsqlite3.h"
-#include "base/utils.h"
+#include "maidsafe/cppsqlite3.h"
+#include "maidsafe/utils.h"
 
 //  Return codes:
 //   0: Success

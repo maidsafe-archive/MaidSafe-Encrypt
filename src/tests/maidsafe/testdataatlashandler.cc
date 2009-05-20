@@ -1,4 +1,4 @@
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/keyatlas.h"
 #include "maidsafe/client/pddir.h"
@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
-#include "base/crypto.h"
+#include "maidsafe/crypto.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
@@ -39,7 +39,7 @@ void wait_for_result_seh_(FakeCallback &cb, boost::recursive_mutex *mutex) {
       if (cb.result != "")
         return;
     }
-    base::sleep((float)0.005);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(5));
   }
 };
 
@@ -117,7 +117,7 @@ protected:
   void TearDown() {
     // SessionSingleton::getInstance()->ResetSession();
     try {
-      base::sleep((float)0.1);
+      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
       file_system::FileSystem fsys_;
       fs::remove_all(fsys_.MaidsafeHomeDir());
       fs::remove_all(fsys_.DbDir());

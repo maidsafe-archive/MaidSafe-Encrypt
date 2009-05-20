@@ -32,7 +32,8 @@
 #include "cryptopp/des.h"
 // #include "cryptopp/randpool.h"
 
-#include "base/utils.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 
 namespace packethandler {
 

@@ -32,8 +32,9 @@
 #include "boost/thread/thread.hpp"
 #include "gtest/gtest.h"
 
-#include "base/crypto.h"
-#include "base/utils.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/rsakeypair.h"
+#include "maidsafe/utils.h"
 #include "fs/filesystem.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/selfencryption.h"
@@ -108,7 +109,7 @@ class RunPDVaults {
   }
 
   ~RunPDVaults() {
-    UDT::cleanup();
+//    UDT::cleanup();
     fs::path temp_(test_dir_);
     try {
       if (fs::exists(temp_))
@@ -162,10 +163,6 @@ class RunPDVaults {
           vault_recursive_mutex_local_(new boost::recursive_mutex);
       vault_recursive_mutices_.push_back(vault_recursive_mutex_local_);
 
-      boost::shared_ptr<base::CallLaterTimer>
-          vault_timer_local_(new base::CallLaterTimer);
-      vault_timers_.push_back(vault_timer_local_);
-
       boost::shared_ptr<PDVault>
           pdvault_local_(new PDVault(public_key_,
                                      private_key_,
@@ -173,8 +170,7 @@ class RunPDVaults {
                                      chunkstore_local_,
                                      datastore_local_,
                                      0,
-                                     kad_config_file_,
-                                     vault_timers_[i]));
+                                     kad_config_file_));
       pdvaults_->push_back(pdvault_local_);
       ++current_nodes_created_;
       printf(".");
@@ -220,8 +216,6 @@ class RunPDVaults {
 
   void TearDown() {
     bool success_(false);
-    for (int i = 0; i < no_of_vaults_; ++i)
-      vault_timers_[i]->CancelAll();
     for (int i = 0; i < no_of_vaults_; ++i) {
       success_ = false;
       (*(pdvaults_))[i]->Stop();
@@ -412,7 +406,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -475,7 +469,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -505,7 +499,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   load_res.Clear();
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -537,7 +531,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   load_res.Clear();
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -568,7 +562,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   load_res.Clear();
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -601,7 +595,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   load_res.Clear();
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -654,7 +648,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -787,7 +781,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -853,7 +847,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -896,7 +890,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   load_res.Clear();
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -942,7 +936,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   load_res.Clear();
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
@@ -1028,7 +1022,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 //    std::string hash_original_file = se.SHA512(path_);
 //    ASSERT_TRUE(cc->BackupElement(path));
 //    while(ss->SelfEncrypting())
-//      base::sleep(0.1);
+//      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 //    OutputProcessedJobs(cc);
 //    printf("File backed up.\n");
 //

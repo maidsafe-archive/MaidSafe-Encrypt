@@ -41,8 +41,9 @@
 #include "boost/scoped_ptr.hpp"
 #include "cryptopp/gzip.h"
 
-#include "base/crypto.h"
-#include "base/utils.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 
 namespace fs = boost::filesystem;
 

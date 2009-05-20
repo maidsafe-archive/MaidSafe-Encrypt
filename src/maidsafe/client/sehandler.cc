@@ -30,7 +30,7 @@
 #include "boost/filesystem/fstream.hpp"
 #include "boost/scoped_ptr.hpp"
 
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "fs/filesystem.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/privateshares.h"
@@ -1101,7 +1101,7 @@ void SEHandler::WaitForResult(const CallbackResult &cb) {
       if (cb.result != "")
         return;
     }
-    base::sleep(0.01);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
 }
 

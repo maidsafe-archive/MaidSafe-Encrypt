@@ -19,7 +19,7 @@
 #include <wx/wx.h>
 #include <wx/artprov.h>
 #include <wx/hyperlink.h>
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 // #endif
 
 

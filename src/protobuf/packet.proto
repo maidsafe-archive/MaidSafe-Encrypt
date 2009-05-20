@@ -1,0 +1,92 @@
+package packethandler;
+
+// define types of messages
+enum MessageType {
+  SHARE=0;
+  ADD_CONTACT_RQST=1;
+  GENERAL=2;
+  ADD_CONTACT_RESPONSE=3;
+  INSTANT_MSG=4;
+  INSTANT_FILE=5;
+  DELETE_CONTACT_NOTIF=6;
+  STATUS_CHECK=7;
+}
+
+message GenericPacket {
+  required bytes data = 1;
+  required bytes signature = 2;
+}
+
+message BufferPacketInfo {
+  required bytes owner = 1;
+  required bytes ownerPublicKey = 2;
+  repeated bytes users = 3;
+  optional int32 online = 4;
+}
+
+message BufferPacketMessage {
+  required bytes sender_id = 1;
+  optional bytes sender_public_key = 2;
+  required bytes RSAenc_key = 3;
+  required bytes AESenc_message = 4;
+  required MessageType type = 5;
+}
+
+message BufferPacket {
+  repeated GenericPacket owner_info = 1;
+  repeated GenericPacket messages = 2;
+}
+
+message ValidatedBufferPacketMessage {
+  required bytes sender = 1;
+  required bytes message = 2;
+  required bytes index = 3;
+  required MessageType type = 4;
+}
+
+message ContactInfo {
+  optional bytes name = 1;
+  optional bytes birthday = 2;
+  optional bytes office_number = 3;
+  optional bytes gender = 4;
+  optional int32 country = 5;
+  optional bytes city = 6;
+  optional int32 language = 7;
+}
+
+message InstantMessage {
+  required bytes sender = 1;
+  required bytes message = 2;
+  required int32 date = 3;
+  required MessageType type = 4;
+}
+
+message InstantFileMessage {
+  required bytes ser_mdm = 1;
+  required bytes ser_dm = 2;
+  required bytes filename = 3;
+  optional bytes sender_msg = 4;
+}
+
+message StoreMessagesResult {
+  required bytes result = 1;
+  required int32 stored_msgs = 2;
+  repeated bytes failed = 3;
+}
+
+message CreateMSIDResult {
+  required bytes result = 1;
+  optional bytes name = 2;
+  optional bytes private_key = 3;
+  optional bytes public_key = 4;
+}
+
+message PrivateShareNotification {
+  required bytes name = 1;
+  required bytes msid = 2;
+  required bytes public_key = 3;
+  optional bytes private_key = 4;
+  repeated bytes admins = 5;
+  repeated bytes readonlys = 6;
+  required bytes dir_db_key = 7;
+}

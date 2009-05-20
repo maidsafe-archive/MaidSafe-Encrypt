@@ -1,4 +1,4 @@
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
@@ -28,7 +28,7 @@ void wait_for_result_lsm(FakeCallback &cb, boost::recursive_mutex *mutex) {
         return;
       }
     }
-    base::sleep(0.005);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(5));
   }
 };
 

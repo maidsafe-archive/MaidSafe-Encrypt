@@ -27,9 +27,8 @@
 
 #include <string>
 
-#include "base/crypto.h"
-#include "base/utils.h"
-#include "kademlia/knode.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/chunkstore.h"
 #include "protobuf/maidsafe_service.pb.h"

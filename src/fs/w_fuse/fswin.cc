@@ -366,7 +366,20 @@ static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   std::wcout << "FileName: " << FileName << std::endl;
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
+  DWORD attr;
   GetFilePath(filePath, FileName);
+  attr = GetFileAttributes(filePath);
+  if (attr == INVALID_FILE_ATTRIBUTES) {
+    DWORD error = GetLastError();
+#ifdef DEBUG
+    printf("\terror code = %d\n\n", error);
+#endif
+    return error * -1;
+  }
+  if (!(attr & FILE_ATTRIBUTE_DIRECTORY)) {
+    return -1;
+  }
+
   // WCHAR DokanPath[MAX_PATH];
   // GetDokanFilePath(DokanPath, FileName);
   handle = CreateFile(filePath,
@@ -989,8 +1002,46 @@ static int WinSetEndOfFile(LPCWSTR FileName,
   }
   if (!SetEndOfFile(handle)) {
     DWORD error = GetLastError();
-    DbgPrint(L"\t\terror code = %d\n\n", error);
+    printf("\t\terror code = %d\n\n", error);
     printf("ttttttttttttttttt\n");
+    return error * -1;
+  }
+  return 0;
+}
+
+
+static int WinSetAllocationSize(LPCWSTR FileName,
+                                LONGLONG AllocSize,
+                                PDOKAN_FILE_INFO DokanFileInfo) {
+  base::pd_scoped_lock guard(dokan_mutex);
+  printf("WinSetAllocationSize\n");
+  std::wcout << "FileName: " << FileName << std::endl;
+  WCHAR filePath[MAX_PATH];
+  HANDLE handle;
+  LARGE_INTEGER fileSize;
+  GetFilePath(filePath, FileName);
+  handle = (HANDLE)DokanFileInfo->Context;
+  if (!handle || handle == INVALID_HANDLE_VALUE) {
+    printf("\tinvalid handle\n\n");
+    return -1;
+  }
+  if (GetFileSizeEx(handle, &fileSize)) {
+    if (AllocSize < fileSize.QuadPart) {
+      fileSize.QuadPart = AllocSize;
+      if (SetFilePointerEx(handle, fileSize, NULL, FILE_BEGIN)) {
+        printf("\tSetAllocationSize: SetFilePointer error: %d", GetLastError());
+        printf(", offfset = %I64d\n\n", AllocSize);
+        return GetLastError() * -1;
+      }
+      if (!SetEndOfFile(handle)) {
+        DWORD error = GetLastError();
+        printf("\terror code = %d\n\n", error);
+        return error * -1;
+      }
+    }
+  } else {
+    DWORD error = GetLastError();
+    printf("\terror code = %d\n\n", error);
     return error * -1;
   }
   return 0;
@@ -1080,35 +1131,11 @@ static int WinUnmount(PDOKAN_FILE_INFO) {
 }
 
 
-static DOKAN_OPERATIONS
-Dokan_Operations = {
-  WinCreateFile,
-  WinOpenDirectory,
-  WinCreateDirectory,
-  WinCleanup,
-  WinCloseFile,
-  WinReadFile,
-  WinWriteFile,
-  WinFlushFileBuffers,
-  WinGetFileInformation,
-  WinFindFiles,
-  NULL,  // FindFilesWithPattern
-  WinSetFileAttributes,
-  WinSetFileTime,
-  WinDeleteFile,
-  WinDeleteDirectory,
-  WinMoveFile,
-  WinSetEndOfFile,
-  WinLockFile,
-  WinUnlockFile,
-  NULL,  // GetDiskFreeSpace
-  NULL,  // GetVolumeInformation
-  WinUnmount  // Unmount
-};
-
 static void CallMount(char drive) {
   printf("In CallMount()\n");
   int status;
+  fs_w_fuse::PDOKAN_OPERATIONS Dokan_Operations =
+      (fs_w_fuse::PDOKAN_OPERATIONS)malloc(sizeof(fs_w_fuse::DOKAN_OPERATIONS));
   fs_w_fuse::PDOKAN_OPTIONS Dokan_Options =
       (fs_w_fuse::PDOKAN_OPTIONS)malloc(sizeof(fs_w_fuse::DOKAN_OPTIONS));
 
@@ -1128,7 +1155,6 @@ static void CallMount(char drive) {
   g_DebugMode = TRUE;
   g_UseStdErr = FALSE;
 
-
   Dokan_Options->DriveLetter = drive;
   Dokan_Options->ThreadCount = 3;
   if (g_DebugMode)
@@ -1136,7 +1162,33 @@ static void CallMount(char drive) {
   if (g_UseStdErr)
     Dokan_Options->Options |= DOKAN_OPTION_STDERR;
   Dokan_Options->Options |= DOKAN_OPTION_KEEP_ALIVE;
-  status = DokanMain(Dokan_Options, &fs_w_fuse::Dokan_Operations);
+
+  ZeroMemory(Dokan_Operations, sizeof(fs_w_fuse::DOKAN_OPERATIONS));
+  Dokan_Operations->CreateFile = WinCreateFile;
+  Dokan_Operations->OpenDirectory = WinOpenDirectory;
+  Dokan_Operations->CreateDirectory = WinCreateDirectory;
+  Dokan_Operations->Cleanup = WinCleanup;
+  Dokan_Operations->CloseFile = WinCloseFile;
+  Dokan_Operations->ReadFile = WinReadFile;
+  Dokan_Operations->WriteFile = WinWriteFile;
+  Dokan_Operations->FlushFileBuffers = WinFlushFileBuffers;
+  Dokan_Operations->GetFileInformation = WinGetFileInformation;
+  Dokan_Operations->FindFiles = WinFindFiles;
+  Dokan_Operations->FindFilesWithPattern = NULL;
+  Dokan_Operations->SetFileAttributes = WinSetFileAttributes;
+  Dokan_Operations->SetFileTime = WinSetFileTime;
+  Dokan_Operations->DeleteFile = WinDeleteFile;
+  Dokan_Operations->DeleteDirectory = WinDeleteDirectory;
+  Dokan_Operations->MoveFile = WinMoveFile;
+  Dokan_Operations->SetEndOfFile = WinSetEndOfFile;
+  Dokan_Operations->SetAllocationSize = WinSetAllocationSize;
+  Dokan_Operations->LockFile = WinLockFile;
+  Dokan_Operations->UnlockFile = WinUnlockFile;
+  Dokan_Operations->GetDiskFreeSpace = NULL;
+  Dokan_Operations->GetVolumeInformation = NULL;
+  Dokan_Operations->Unmount = WinUnmount;
+
+  status = DokanMain(Dokan_Options, Dokan_Operations);
   maidsafe::SessionSingleton::getInstance()->SetMounted(status);
   switch (status) {
     case DOKAN_SUCCESS:
@@ -1161,6 +1213,8 @@ static void CallMount(char drive) {
       printf("Dokan Unknown error: %d\n", status);
       break;
   }
+  free(Dokan_Options);
+  free(Dokan_Operations);
 }
 
 void Mount(char drive) {

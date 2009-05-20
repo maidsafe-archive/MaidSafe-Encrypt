@@ -3,7 +3,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/timer.hpp>
 
-#include "base/utils.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/pddir.h"
 
 namespace fs=boost::filesystem;
@@ -821,7 +822,7 @@ TEST_F(PdDirTest, BEH_MAID_ChangeMtime) {
   // wait 2 seconds
   //std::cout << "Waiting";
   for (int i=0; i<20; i++) {
-    base::sleep((float)0.1);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     //std::cout << ".";
   }
   //std::cout << std::endl;
@@ -889,7 +890,7 @@ TEST_F(PdDirTest, BEH_MAID_ChangeAtime) {
   // wait 2 seconds
   //std::cout << "Waiting";
   for (int i=0; i<20; i++) {
-    base::sleep((float)0.1);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     //std::cout << ".";
   }
   //std::cout << std::endl;

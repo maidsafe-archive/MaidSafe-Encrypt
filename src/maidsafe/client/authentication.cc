@@ -19,7 +19,7 @@
 #include "boost/regex.hpp"
 #include "boost/thread/mutex.hpp"
 
-#include "base/cppsqlite3.h"
+#include "maidsafe/cppsqlite3.h"
 #include "maidsafe/maidsafe.h"
 #include "protobuf/datamaps.pb.h"
 #include "protobuf/general_messages.pb.h"
@@ -1140,7 +1140,7 @@ void Authentication::WaitForResult(const AuthCallbackResult &cb) {
       if (cb.result != "")
         return;
     }
-    base::sleep(0.01);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
 }
 

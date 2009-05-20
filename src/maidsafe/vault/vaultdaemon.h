@@ -20,8 +20,7 @@
 
 #include "gtest/gtest_prod.h"
 
-#include "base/calllatertimer.h"
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/pdvault.h"
 #include "maidsafe/vault/validitycheck.h"
@@ -35,8 +34,7 @@ namespace maidsafe_vault {
 class VaultDaemon {
   // A daemon class to assist PD vault functions
  public:
-  explicit VaultDaemon(int port) : timer_(),
-                                   pdvault_(),
+  explicit VaultDaemon(int port) : pdvault_(),
                                    val_check_(),
                                    is_owned_(false),
                                    config_file_(""),
@@ -65,7 +63,6 @@ class VaultDaemon {
   void ValidityCheck();
   FRIEND_TEST(VaultDaemonTest, BEH_KAD_EmptyChunkStorage);
 
-  boost::shared_ptr<base::CallLaterTimer> timer_;
   boost::shared_ptr<PDVault> pdvault_;
   boost::shared_ptr<ValCheck> val_check_;
   bool is_owned_;

@@ -22,7 +22,7 @@
 #include <vector>
 #include <list>
 
-#include "base/cppsqlite3.h"
+#include "maidsafe/cppsqlite3.h"
 #include "maidsafe/vault/pdvault.h"
 
 typedef boost::tuple<std::string, std::string> str_tuple;
@@ -41,8 +41,7 @@ struct IterativeCheckData {
 class ValCheck {
  public:
   ValCheck(const boost::shared_ptr<PDVault> pdvault,
-           const std::string &chunkstore_dir,
-           boost::shared_ptr<base::CallLaterTimer> timer);
+           const std::string &chunkstore_dir);
   // Starts de validity check process
 /*  bool Start(bool reuse_database);
   // Stops de validity check process and closes DB
@@ -81,7 +80,6 @@ class ValCheck {
     const std::string &node_id, const std::string &chunk_name,
     const bool &local);*/
   boost::filesystem::path db_path_;
-  boost::shared_ptr<base::CallLaterTimer> timer_;
   boost::shared_ptr<PDVault> pdvault_;
   CppSQLite3DB db_;
   bool started_;

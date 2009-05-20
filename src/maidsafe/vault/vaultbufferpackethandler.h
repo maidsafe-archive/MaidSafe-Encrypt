@@ -29,8 +29,8 @@
 #include <string>
 #include <vector>
 
-#include "base/crypto.h"
-#include "base/utils.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/maidsafe.h"
 
 namespace packethandler {

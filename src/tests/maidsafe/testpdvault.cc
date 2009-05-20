@@ -29,12 +29,13 @@
 #include <map>
 #include <vector>
 
-#include "base/crypto.h"
-#include "base/utils.h"
-#include "kademlia/knode.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/pdclient.h"
 #include "maidsafe/client/systempackets.h"
 #include "maidsafe/vault/pdvault.h"
+#include "protobuf/general_messages.pb.h"
 
 const int kNetworkSize = 10;
 const int kTestK = 4;
@@ -276,8 +277,6 @@ class TestPDVault : public testing::Test {
                   chunkstore_dirs_(),
                   recursive_mutex_client_(new boost::recursive_mutex),
                   mutices_(),
-                  timer_client_(new base::CallLaterTimer),
-                  vault_timers_(),
                   crypto_(),
                   pdvaults_(new std::vector< boost::shared_ptr<PDVault> >),
                   current_nodes_created_(0),
@@ -309,7 +308,7 @@ class TestPDVault : public testing::Test {
   }
 
   virtual ~TestPDVault() {
-    UDT::cleanup();
+//    UDT::cleanup();
     fs::path temp_("PDVaultTest");
     try {
       if (fs::exists(temp_))
@@ -343,10 +342,6 @@ class TestPDVault : public testing::Test {
       printf(".");
       mutices_.push_back(mutex_local_);
 
-      boost::shared_ptr<base::CallLaterTimer>
-          vault_timer_local_(new base::CallLaterTimer);
-      printf(".");
-      vault_timers_.push_back(vault_timer_local_);
       printf(".");
       ASSERT_TRUE(crypto_.AsymCheckSig(public_key_, signed_key_, public_key_,
         crypto::STRING_STRING));
@@ -358,8 +353,7 @@ class TestPDVault : public testing::Test {
                                      chunkstore_local_,
                                      datastore_local_,
                                      64001+i,
-                                     kad_config_file_,
-                                     vault_timers_[i]));
+                                     kad_config_file_));
       printf(". ");
       pdvaults_->push_back(pdvault_local_);
       ++current_nodes_created_;
@@ -402,9 +396,7 @@ class TestPDVault : public testing::Test {
     boost::shared_ptr<maidsafe::PDClient>
         pdclient_local_(new maidsafe::PDClient(client_datastore_dir_,
                                                63001,
-                                               kad_config_file_,
-                                               timer_client_,
-                                               recursive_mutex_client_.get()));
+                                               kad_config_file_));
     pdclient_ = pdclient_local_;
     testpdvault::PrepareCallbackResults();
     pdclient_->Join("",
@@ -418,7 +410,6 @@ class TestPDVault : public testing::Test {
     // stop pdclient_
     printf("#######################\n");
     printf("#### TEARDOWN\n");
-    timer_client_->CancelAll();
     testpdvault::PrepareCallbackResults();
     pdclient_->Leave(boost::bind(&testpdvault::GeneralCallback, _1));
     testpdvault::BluddyWaitFunction(60, &mutex_);
@@ -428,9 +419,7 @@ class TestPDVault : public testing::Test {
     bool success_(false);
     printf("#### CLIENT STOPPPED\n");
     for (int i = 0; i < kNetworkSize; ++i) {
-      printf("Trying to cancel vault timer %i.\n", i);
-      vault_timers_[i]->CancelAll();
-      printf("Cancelled vault timer %i. Trying to stop vault %i.\n", i, i);
+      printf("Trying to stop vault %i.\n", i, i);
       success_ = false;
       (*(pdvaults_))[i]->Stop();
       printf("Stopped vault %i.\n", i);
@@ -448,8 +437,6 @@ class TestPDVault : public testing::Test {
   std::vector<fs::path> chunkstore_dirs_;
   boost::shared_ptr<boost::recursive_mutex> recursive_mutex_client_;
   std::vector< boost::shared_ptr<boost::mutex> > mutices_;
-  boost::shared_ptr<base::CallLaterTimer> timer_client_;
-  std::vector< boost::shared_ptr<base::CallLaterTimer> > vault_timers_;
   crypto::Crypto crypto_;
   boost::shared_ptr< std::vector< boost::shared_ptr<PDVault> > > pdvaults_;
   int current_nodes_created_;
@@ -722,13 +709,9 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
 
   std::string datastoredir(datastore_dir_+"/ClientDatastore1");
   boost::recursive_mutex client1mutex;
-  boost::shared_ptr<base::CallLaterTimer>
-      client1timer(new base::CallLaterTimer);
   maidsafe::PDClient *newclient =  new maidsafe::PDClient(datastoredir,
                                                           63002,
-                                                          kad_config_file_,
-                                                          client1timer,
-                                                          &client1mutex);
+                                                          kad_config_file_);
   testpdvault::PrepareCallbackResults();
   newclient->Join("",
                   boost::bind(&testpdvault::GeneralCallback, _1));
@@ -749,7 +732,6 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
   ASSERT_EQ(chunk_name, hash);
   packethandler::GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(callback_content_));
-  client1timer->CancelAll();
   testpdvault::PrepareCallbackResults();
   newclient->Leave(boost::bind(&testpdvault::GeneralCallback, _1));
   testpdvault::BluddyWaitFunction(60, &client1mutex);

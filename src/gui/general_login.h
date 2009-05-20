@@ -36,9 +36,9 @@
 #include <boost/scoped_ptr.hpp>
 #include <string>
 
-#include "base/utils.h"
+#include "maidsafe/utils.h"
 #include "fs/filesystem.h"
-#include "base/config.h"
+#include "maidsafe/config.h"
 #include "maidsafe/client/clientcontroller.h"
 
 #if defined(MAIDSAFE_WIN32)

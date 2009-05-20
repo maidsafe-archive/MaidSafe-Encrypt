@@ -1,0 +1,15 @@
+import "maidsafe_service_messages.proto";
+
+package maidsafe;
+
+service MaidsafeService {
+  rpc StoreChunk( StoreRequest ) returns ( StoreResponse );
+  // check if a chunk exists
+  rpc CheckChunk( CheckChunkRequest ) returns ( CheckChunkResponse );
+  rpc Get( GetRequest ) returns ( GetResponse );
+  rpc Update( UpdateRequest ) returns ( UpdateResponse );
+  rpc GetMessages( GetMessagesRequest ) returns ( GetMessagesResponse );
+  rpc Delete( DeleteRequest ) returns ( DeleteResponse );
+  rpc ValidityCheck( ValidityCheckRequest ) returns ( ValidityCheckResponse );
+  rpc SwapChunk( SwapChunkRequest ) returns ( SwapChunkResponse );
+}
