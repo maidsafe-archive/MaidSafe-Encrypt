@@ -60,12 +60,15 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
 //  printf("Chunk name: %s\n", request->chunkname().c_str());
 //  printf("Chunk content: %s\n", request->data().c_str());
 #ifdef DEBUG
-  printf("Public Key: %s\n", request->public_key().c_str());
+//  printf("In VaultService::StoreChunk, Public Key: %s\n",
+//    request->public_key().c_str());
 #endif
 //  printf("Signed Pub Key: %s\n", request->signed_public_key().c_str());
 //  printf("Signed Request: %s\n", request->signed_request().c_str());
 //  printf("Data Type: %i\n", request->data_type());
-  response->set_pmid_id(pmid_);
+  std::string id;
+  base::decode_from_hex(pmid_, id);
+  response->set_pmid_id(id);
   if (!request->IsInitialized()) {
     response->set_result(kCallbackFailure);
     done->Run();
@@ -79,7 +82,9 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
        request->chunkname())) {
     response->set_result(kCallbackFailure);
     done->Run();
+#ifdef DEBUG
     printf("In VaultService::StoreChunk, failed to validate signed request.\n");
+#endif
     return;
   }
   bool valid_data = false;
@@ -114,24 +119,36 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     if (!StoreChunkLocal(key, request->data())) {
       response->set_result(kCallbackFailure);
       done->Run();
+#ifdef DEBUG
       printf("In VaultService::StoreChunk, failed to store chunk locally.\n");
+#endif
       return;
     }
+#ifdef DEBUG
+      printf("In VaultService::StoreChunk, stored chunk locally.\n");
+#endif
     StoreChunkReference(key);
     response->set_result(kCallbackSuccess);
   } else {
+#ifdef DEBUG
     printf("In VaultService::StoreChunk, failed to validate data.\n");
+#endif
     response->set_result(kCallbackFailure);
   }
+#ifdef DEBUG
+  printf("In VaultService::StoreChunk, returning result %s\n",
+    response->result().c_str());
+#endif
   done->Run();
-  printf("In VaultService::StoreChunk, chunk stored method finished.\n");
 }
 
 void VaultService::Get(google::protobuf::RpcController*,
                        const maidsafe::GetRequest* request,
                        maidsafe::GetResponse* response,
                        google::protobuf::Closure* done) {
-  response->set_pmid_id(pmid_);
+  std::string id;
+  base::decode_from_hex(pmid_, id);
+  response->set_pmid_id(id);
   if (!request->IsInitialized()) {
     response->set_result(kCallbackFailure);
     done->Run();
@@ -152,7 +169,9 @@ void VaultService::CheckChunk(google::protobuf::RpcController*,
                               const maidsafe::CheckChunkRequest* request,
                               maidsafe::CheckChunkResponse* response,
                               google::protobuf::Closure* done) {
-  response->set_pmid_id(pmid_);
+  std::string id;
+  base::decode_from_hex(pmid_, id);
+  response->set_pmid_id(id);
   if (!request->IsInitialized()) {
     response->set_result(kCallbackFailure);
     done->Run();
@@ -172,7 +191,9 @@ void VaultService::Update(google::protobuf::RpcController*,
 #ifdef DEBUG
   printf("Pub key: %s.\n", request->public_key().c_str());
 #endif
-  response->set_pmid_id(pmid_);
+  std::string id;
+  base::decode_from_hex(pmid_, id);
+  response->set_pmid_id(id);
   if (!request->IsInitialized()) {
     response->set_result(kCallbackFailure);
     done->Run();
@@ -218,9 +239,9 @@ void VaultService::Update(google::protobuf::RpcController*,
                                         request->public_key())) {
                                       updated_value = request->data();
                                       valid_data = true;
-                                    } else {
+                                   } else {
                                       printf("Current data not validated.\n");
-                                    }
+                                   }
                                  } else {
                                    printf("New data not validated.\n");
                                  }
@@ -263,7 +284,9 @@ void VaultService::GetMessages(google::protobuf::RpcController*,
                                const maidsafe::GetMessagesRequest* request,
                                maidsafe::GetMessagesResponse* response,
                                google::protobuf::Closure* done) {
-  response->set_pmid_id(pmid_);
+  std::string id;
+  base::decode_from_hex(pmid_, id);
+  response->set_pmid_id(id);
   if (!request->IsInitialized()) {
     response->set_result(kCallbackFailure);
     done->Run();
@@ -301,7 +324,9 @@ void VaultService::Delete(google::protobuf::RpcController*,
                           const maidsafe::DeleteRequest* request,
                           maidsafe::DeleteResponse* response,
                           google::protobuf::Closure* done) {
-  response->set_pmid_id(pmid_);
+  std::string id;
+  base::decode_from_hex(pmid_, id);
+  response->set_pmid_id(id);
   if (!request->IsInitialized()) {
     response->set_result(kCallbackFailure);
     done->Run();
@@ -367,7 +392,9 @@ void VaultService::ValidityCheck(google::protobuf::RpcController*,
                                  const maidsafe::ValidityCheckRequest* request,
                                  maidsafe::ValidityCheckResponse* response,
                                  google::protobuf::Closure* done) {
-  response->set_pmid_id(pmid_);
+  std::string id;
+  base::decode_from_hex(pmid_, id);
+  response->set_pmid_id(id);
   if (!request->IsInitialized()) {
     response->set_result(kCallbackFailure);
     done->Run();
@@ -393,7 +420,9 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
                              const maidsafe::SwapChunkRequest* request,
                              maidsafe::SwapChunkResponse* response,
                              google::protobuf::Closure* done) {
-  response->set_pmid_id(pmid_);
+  std::string id;
+  base::decode_from_hex(pmid_, id);
+  response->set_pmid_id(id);
   if (!request->IsInitialized()) {
     response->set_result(kCallbackFailure);
     done->Run();
