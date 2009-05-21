@@ -1,33 +1,34 @@
-#include "perpetual_data.h"
+/*
+ * copyright maidsafe.net limited 2009
+ * The following source code is property of maidsafe.net limited and
+ * is not meant for external use. The use of this code is governed
+ * by the license file LICENSE.TXT found in the root of this directory and also
+ * on www.maidsafe.net.
+ *
+ * You are not free to copy, amend or otherwise use this source code without
+ * explicit written permission of the board of directors of maidsafe.net
+ *
+ *  Created on: May 19, 2009
+ *      Author: Team
+ */
 
-// os
-#ifdef WIN32
-  #include <shellapi.h>
-#endif
+#include "perpetual_data.h"
 
 // qt
 #include <QDebug>
 #include <QMessageBox>
 #include <QProcess>
 
-// 3rd party
-#ifdef __WIN32__
-#include "fs/w_fuse/fswin.h"
-#else
-#include "fs/l_fuse/fslinux.h"
-#endif
-
-// core
-#include "maidsafe/utils.h"
-#include "maidsafe/client/clientcontroller.h"
 
 // local
-#include "login.h"
-#include "create_user.h"
-#include "progress.h"
-#include "user_panels.h"
-#include "mount_thread.h"
-#include "create_user_thread.h"
+#include "widgets/login.h"
+#include "widgets/create_user.h"
+#include "widgets/progress.h"
+#include "widgets/user_panels.h"
+
+#include "client/client_controller.h"
+#include "client/mount_thread.h"
+#include "client/create_user_thread.h"
 
 // generated
 #include "ui_about.h"
@@ -39,7 +40,6 @@ PerpetualData::PerpetualData( QWidget* parent )
     , create_( NULL )
     , state_( LOGIN )
     , quitting_( false )
-    , fsys_()
 {
     setAttribute( Qt::WA_DeleteOnClose, false );
     setWindowIcon( QPixmap( ":/icons/16/globe" ) );
@@ -52,9 +52,6 @@ PerpetualData::PerpetualData( QWidget* parent )
     createActions();
 
     createMenus();
-
-    maidsafe::ClientController::getInstance()->JoinKademlia();
-    maidsafe::ClientController::getInstance()->Init();
 
     // create the main screens
     login_ = new Login;
@@ -70,14 +67,11 @@ PerpetualData::PerpetualData( QWidget* parent )
     setCentralWidget( ui_.stackedWidget );
 
     setState( LOGIN );
-    // debug...
-//    setState( LOGGED_IN );
 }
 
 PerpetualData::~PerpetualData()
 {
     onLogout();
-    maidsafe::ClientController::getInstance()->CloseConnection();
 }
 
 
@@ -215,12 +209,7 @@ void PerpetualData::onLoginExistingUser()
     // mount the file system..
 
 #ifdef DEBUG
-    printf("Pub_name: %s\n",
-             maidsafe::SessionSingleton::getInstance()->
-                 PublicUsername().c_str());
-
-    qDebug() << "public name:" << QString::fromStdString(
-        maidsafe::SessionSingleton::getInstance()->PublicUsername() );
+    qDebug() << "public name:" << ClientController::instance()->publicUsername();
 #endif
     setState( MOUNT_USER );
     asyncMount();
@@ -248,7 +237,7 @@ void PerpetualData::onSetupNewUserCancelled()
 
 void PerpetualData::asyncMount()
 {
-    MountThread* mt = new MountThread( this, MountThread::MOUNT );
+    MountThread* mt = new MountThread( MountThread::MOUNT, this );
     connect( mt, SIGNAL( completed( bool ) ),
              this, SLOT( onMountCompleted( bool ) ) );
 
@@ -257,7 +246,7 @@ void PerpetualData::asyncMount()
 
 void PerpetualData::asyncUnmount()
 {
-    MountThread* mt = new MountThread( this, MountThread::UNMOUNT );
+    MountThread* mt = new MountThread( MountThread::UNMOUNT, this );
     connect( mt, SIGNAL( completed( bool ) ),
              this, SLOT( onUnmountCompleted( bool ) ) );
 
@@ -271,7 +260,7 @@ void PerpetualData::asyncCreateUser()
                                                   login_->password(),
                                                   this );
 
-    connect( cut,  SIGNAL( createUserCompleted( bool ) ),
+    connect( cut,  SIGNAL( completed( bool ) ),
              this, SLOT( onUserCreationCompleted( bool ) ) );
 
     cut->start();
@@ -280,9 +269,6 @@ void PerpetualData::asyncCreateUser()
 void PerpetualData::onUserCreationCompleted( bool success )
 {
     qDebug() << "PerpetualData::onUserCreationCompleted:" << success;
-
-    QObject* createThread = sender();
-    createThread->deleteLater();
 
     if ( success )
     {
@@ -301,20 +287,9 @@ void PerpetualData::onMountCompleted( bool success )
 {
     qDebug() << "PerpetualData::onMountCompleted:" << success;
 
-    QObject* mountThread = sender();
-    mountThread->deleteLater();
-
     //
     if ( success )
     {
-        if ( maidsafe::SessionSingleton::getInstance()->PublicUsername() != "" )
-        {
-            std::string newDb("/.contacts");
-            maidsafe::ClientController::getInstance()->read(newDb);
-            newDb = std::string("/.shares");
-            maidsafe::ClientController::getInstance()->read(newDb);
-        }
-
         statusBar()->showMessage( tr( "Logged in" ) );
         setState( LOGGED_IN );
     }
@@ -330,18 +305,8 @@ void PerpetualData::onUnmountCompleted( bool success )
 {
     qDebug() << "PerpetualData::onUnMountCompleted:" << success;
 
-    QObject* mountThread = sender();
-    mountThread->deleteLater();
-
-    //
     if ( success )
     {
-        // \TODO does logout take a long enough time to warrant a worker thread?
-        const int n = maidsafe::ClientController::getInstance()->Logout();
-        if ( n != 0 )
-        {
-            // TODO verify n!=0 means failure
-        }
         // TODO disable the logout action
         statusBar()->showMessage( tr( "Logged out" ) );
 
@@ -374,16 +339,6 @@ void PerpetualData::onLogout()
     {
         // if we're still to login we can't logout
         return;
-    }
-
-    if ( maidsafe::SessionSingleton::getInstance()->PublicUsername() != "" )
-    {
-        std::string newDb("/.contacts");
-        int res_ = maidsafe::ClientController::getInstance()->write(newDb);
-        printf("Backed up contacts db with result %i\n", res_);
-        newDb = std::string("/.shares");
-        res_ = maidsafe::ClientController::getInstance()->write(newDb);
-        printf("Backed up shares db with result %i\n", res_);
     }
 
     asyncUnmount();
@@ -448,58 +403,5 @@ void PerpetualData::onApplicationActionTriggered()
                    << "for action"
                    << action->text();
     }
-}
-
-bool PerpetualData::mount()
-{
-    maidsafe::SessionSingleton::getInstance()->SetMounted(0);
-
-    std::string debug_mode("-d");
-#ifdef MAIDSAFE_WIN32
-    char drive = maidsafe::ClientController::getInstance()->DriveLetter();
-    fs_w_fuse::Mount(drive);
-    maidsafe::SessionSingleton::getInstance()->SetWinDrive(drive);
-#elif defined(MAIDSAFE_POSIX)
-    // std::string mount_point = fsys->MaidsafeFuseDir();
-    std::string mount_point = fsys_.MaidsafeFuseDir();
-    fsl_.Mount(mount_point, debug_mode);
-#elif defined(MAIDSAFE_APPLE)
-    std::string mount_point = fsys_.MaidsafeFuseDir();
-    fsl_.Mount(mount_point, debug_mode);
-#endif
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-
-    return maidsafe::SessionSingleton::getInstance()->Mounted() == 0;
-}
-
-bool PerpetualData::unmount()
-{
-    bool success = false;
-    std::string ms_dir = fsys_.MaidsafeDir();
-    std::string mount_point = fsys_.MaidsafeFuseDir();
-#ifdef WIN32
-    // unload dokan
-    SHELLEXECUTEINFO shell_info;
-    memset(&shell_info, 0, sizeof(shell_info));
-    shell_info.cbSize = sizeof(shell_info);
-    shell_info.hwnd = NULL;
-    shell_info.lpVerb = L"open";
-    shell_info.lpFile = L"dokanctl";
-    shell_info.lpParameters = L" /u ";
-    shell_info.lpParameters +=
-    maidsafe::SessionSingleton::getInstance()->WinDrive();
-    shell_info.nShow = SW_HIDE;
-    shell_info.fMask = SEE_MASK_NOCLOSEPROCESS;
-    success = ShellExecuteEx(&shell_info);
-
-    WaitForSingleObject(shell_info.hProcess, INFINITE);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-#else
-    // un-mount fuse
-    fsl_.UnMount();
-    success = true;
-#endif
-
-    return success;
 }
 

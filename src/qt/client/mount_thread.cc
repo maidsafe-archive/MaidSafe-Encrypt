@@ -19,12 +19,11 @@
 #include <QDebug>
 
 // local
-#include "perpetual_data.h"
+#include "user_space_filesystem.h"
 
 
-MountThread::MountThread( PerpetualData* pd, MountAction action )
-    : QThread( pd )
-    , pd_ ( pd )
+MountThread::MountThread( MountAction action, QObject* parent )
+    : WorkerThread( parent )
     , action_ ( action )
 {
 
@@ -32,17 +31,7 @@ MountThread::MountThread( PerpetualData* pd, MountAction action )
 
 MountThread::~MountThread()
 {
-    qDebug() << "MountThread >> DTOR";
 
-    quit();  // the event loop
-    wait();  // until run has exited
-
-    qDebug() << "MountThread << DTOR";
-
-    if ( isRunning() || !isFinished() )
-    {
-        qDebug() << "\nMountThread - not shutdown";
-    }
 }
 
 void MountThread::run()
@@ -52,14 +41,16 @@ void MountThread::run()
     bool success = false;
     if ( action_ == MOUNT )
     {
-        success = pd_->mount();
+        success = UserSpaceFileSystem::instance()->mount();
     }
     else
     {
-        success = pd_->unmount();
+        success = UserSpaceFileSystem::instance()->unmount();
     }
 
     emit completed( success );
+    
+    deleteLater();
 }
 
 

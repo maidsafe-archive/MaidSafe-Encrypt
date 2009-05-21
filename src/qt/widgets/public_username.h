@@ -8,43 +8,46 @@
  * You are not free to copy, amend or otherwise use this source code without
  * explicit written permission of the board of directors of maidsafe.net
  *
- *  Created on: Mar 26, 2009
+ *  Created on: May 8, 2009
  *      Author: Team
  */
 
-#ifndef QT_CONTACTS_H_
-#define QT_CONTACTS_H_
+#ifndef QT_PUBLIC_USERNAME_H_
+#define QT_PUBLIC_USERNAME_H_
 
 // local
 #include "panel.h"
 
 // generated
-#include "ui_user_contacts_panel.h"
+#include "ui_user_public_username_panel.h"
 
-//! Custom widget that displays contacts
+//! Custom widget that prompts user for a public username
 /*!
-    Displays a list of contacts and lets you add them.
+    When a public username has been successfully set the complete()
+    signal is emitted
 */
-class Contacts : public Panel
+class PublicUsername : public Panel
 {
     Q_OBJECT
 public:
-    Contacts( QWidget* parent = 0 );
-    virtual ~Contacts();
+    PublicUsername( QWidget* parent = 0 );
+    virtual ~PublicUsername();
 
     virtual void setActive( bool );
     virtual void reset();
 
+
+signals:
+    void complete();
+
 private slots:
-    void onAddContactClicked();
-    void onClearSearchClicked();
-    void onLostFocus();
+    void onCreateUsernameClicked();
+
+    void onCreateUsernameCompleted( bool );
 
 private:
-    //! Add a new entry in the listing of contacts
-    void addContact( const QString& contact_name, const char &status );
-    Ui::ContactsPage ui_;
+    Ui::PublicUsernamePage ui_;
     bool init_;
 };
 
-#endif // QT_CONTACTS_H_
+#endif // QT_PUBLIC_USERNAME_H_

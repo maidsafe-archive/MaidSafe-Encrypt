@@ -16,9 +16,8 @@
 #ifndef QT_MOUNT_THREAD_H_
 #define QT_MOUNT_THREAD_H_
 
-#include <QThread>
+#include "worker_thread.h"
 
-class PerpetualData;
 
 //! Worker thread for mounting
 /*!
@@ -31,9 +30,9 @@ class PerpetualData;
     in a non blocking worker thread.  consider a single class that can perform
     multiple different actions
 
-    \sa PerpetualData::mount()
+    \sa UserSpaceFileSystem::mount()
 */
-class MountThread : public QThread
+class MountThread : public WorkerThread
 {
     Q_OBJECT
 public:
@@ -43,16 +42,12 @@ public:
         UNMOUNT
     };
 
-    MountThread( PerpetualData* pd, MountAction action );
+    MountThread( MountAction action, QObject* parent = 0 );
     virtual ~MountThread();
 
     virtual void run();
 
-signals:
-    void completed( bool success );
-
 private:
-    PerpetualData* pd_;
     MountAction action_;
 };
 

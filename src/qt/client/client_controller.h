@@ -1,26 +1,16 @@
 /*
-* ============================================================================
-*
-* Copyright [2009] maidsafe.net limited
-*
-* Description:  Notification interface implemented by maidsafe gui
-* Version:      1.0
-* Created:      2009-05-06-00.00.00
-* Revision:     none
-* Compiler:     gcc
-* Author:       William Cook (wdsc), info@maidsafe.net
-* Company:      maidsafe.net limited
-*
-* The following source code is property of maidsafe.net limited and is not
-* meant for external use.  The use of this code is governed by the license
-* file LICENSE.TXT found in the root of this directory and also on
-* www.maidsafe.net.
-*
-* You are not free to copy, amend or otherwise use this source code without
-* the explicit written permission of the board of directors of maidsafe.net.
-*
-* ============================================================================
-*/
+ * copyright maidsafe.net limited 2009
+ * The following source code is property of maidsafe.net limited and
+ * is not meant for external use. The use of this code is governed
+ * by the license file LICENSE.TXT found in the root of this directory and also
+ * on www.maidsafe.net.
+ *
+ * You are not free to copy, amend or otherwise use this source code without
+ * explicit written permission of the board of directors of maidsafe.net
+ *
+ *  Created on: May 9, 2009
+ *      Author: Team
+ */
 
 #ifndef QT_CLIENT_CONTROLLER_H_
 #define QT_CLIENT_CONTROLLER_H_
@@ -28,16 +18,25 @@
 // qt
 #include <QObject>
 #include <QString>
+#include <QDateTime>
 
 // core
 #include "maidsafe/client/clientinterface.h"
 
+// local
+#include "qt/client/share.h"
+#include "qt/client/contact.h"
 
 
-//! Qt freidly wrapper for maidsafe::ClientController
+
+//! Wrapper for maidsafe::ClientController
 /*!
     Implements the ClientController notification interface and wraps up
-    the ClientController methods in a Qt style API
+    the ClientController methods in a Qt style API.
+
+    The ClientController class, in conjunction with the other classes in
+    qt/client, act as a layer between the Qt gui world and the maidsafe
+    world.
 */
 class ClientController : public QObject,
                          public maidsafe::ClientInterface
@@ -46,8 +45,74 @@ class ClientController : public QObject,
 public:
     static ClientController* instance();
 
+    //!
+    void shutdown();
+
+    //! Public username of current user.
+    /*!
+        Public username is actually on the SessionSingleton interface.  If
+        we need to access more of the SessionSingleton inteface then we may
+        be as well to split into a sepetate Qt wrapper
+    */
+    QString publicUsername() const;
+
+
+    /// Contacts
+    //! Current contacts.
+    ContactList contacts() const;
+
+    //! Public names of all current contacts
+    QStringList contactsNames() const;
+
+    //! Add a contact.
+    /*!
+        \param name public name of the contact you want to add.
+
+        This sends a request to \a name asking if they want to be added.
+
+        The result of this request will be notified contactStatusChanged
+    */
+    bool addContact( const QString& name );
+
+    //! Remove a contact
+    bool removeContact( const QString& name );
+
+
+    /// Shares
+    //! Create a share
+    bool createShare( const QString& shareName,
+                      const QStringList& admin,
+                      const QStringList& readOnly );
+
+    //! Current shares
+    ShareList shares() const;
+
+
+    /// Messaging
+    //! Send an instant message to someone
+    /*!
+        \param txt the message
+        \param to public user name of the intended recipient
+
+        TODO - any length or format restrictions?
+    */
+    bool sendInstantMessage( const QString& txt, const QString& to );
+
+    //! Send a file to someone
+    /*!
+        \param path full file path of file
+        \param txt accompanying message
+        \param to public user name of the intended recipient
+
+        The file must be within the maidsage file system
+    */
+    bool sendInstantFile( const QString& filePath,
+                          const QString& txt,
+                          const QString& to );
+
 signals:
-    void messageReceived( const QString& from,
+    void messageReceived( const QDateTime& time,
+                          const QString& from,
                           const QString& msg );
 
     //! A contact's status has changed
@@ -130,6 +195,10 @@ public:
 
     //! System messages - to be decided
     virtual void systemMessage( const std::string& message );
+
+private slots:
+    //! temporary while we emulate message notifications
+    void checkForMessages();
 
 private:
     explicit ClientController( QObject* parent = 0 );

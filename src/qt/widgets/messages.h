@@ -16,7 +16,7 @@
 #define QT_MESSAGES_H_
 
 // qt
-#include <QTime>
+#include <QDateTime>
 #include <QTimer>
 
 // local
@@ -63,13 +63,12 @@ signals:
     void messageReceived();
 
 private slots:
-    //! Polls ClientController for messages
-    void checkForMessages();
+    void onMessageReceived( const QDateTime& time,
+                     const QString& sender,
+                     const QString& message );
 
 private:
-    void addMessages( const std::list<packethandler::InstantMessage>& msgs );
-    void addMessage( const packethandler::InstantMessage& im );
-    void addMessage( const QTime& time,
+    void addMessage( const QDateTime& time,
                      const QString& sender,
                      const QString& message );
 
@@ -81,7 +80,7 @@ private:
 
     //! Hold basic message info
     struct Message{
-        QTime time;
+        QDateTime time;
         QString from;
         QString text;
     };
@@ -92,8 +91,6 @@ private:
 
     //! Count of unread messages
     int unread_;
-
-    QTimer *messagePollTimer_;
 };
 
 #endif // QT_MESSAGES_H_

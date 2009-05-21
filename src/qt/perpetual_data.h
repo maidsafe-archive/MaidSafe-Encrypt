@@ -1,18 +1,22 @@
-#pragma once
+/*
+ * copyright maidsafe.net limited 2009
+ * The following source code is property of maidsafe.net limited and
+ * is not meant for external use. The use of this code is governed
+ * by the license file LICENSE.TXT found in the root of this directory and also
+ * on www.maidsafe.net.
+ *
+ * You are not free to copy, amend or otherwise use this source code without
+ * explicit written permission of the board of directors of maidsafe.net
+ *
+ *  Created on: Mar 26, 2009
+ *      Author: Team
+ */
 
+#ifndef QT_PERPETUAl_DATA_H_
+#define QT_PERPETUAl_DATA_H_
+
+// qt
 #include <QMainWindow>
-
-// core
-#include "fs/filesystem.h"
-#include "maidsafe/config.h"
-
-#if defined(MAIDSAFE_WIN32)
-  //  #include "fs/w_fuse/fswin.h"
-#elif defined(MAIDSAFE_POSIX)
-  #include "fs/l_fuse/fslinux.h"
-#elif defined(MAIDSAFE_APPLE)
-  #include "fs/m_fuse/fsmac.h"
-#endif
 
 // generated
 #include "ui_pd.h"
@@ -75,21 +79,6 @@ private slots:
     void onApplicationActionTriggered();
     void onQuit();
 
-protected:
-    friend class MountThread;
-    //! Mount the user space filesystem
-    /*!
-        This is blocking and takes a while.  Should normally only ever be
-        called by MountThread
-    */
-    bool mount();
-
-    //! Unmount the user space filesystem
-    /*!
-        This is blocking and takes a while.  Should normally only ever be
-        called by MountThread
-    */
-    bool unmount();
 
 private:
     Ui::PerpetualData ui_;
@@ -159,14 +148,7 @@ private:
     void asyncMount();
     void asyncCreateUser();
     void asyncUnmount();
-
-    file_system::FileSystem fsys_;
-    #ifdef MAIDSAFE_WIN32
-      // none needed
-    #elif defined(MAIDSAFE_POSIX)
-      fs_l_fuse::FSLinux fsl_;
-    #elif defined(MAIDSAFE_APPLE)
-      fs_l_fuse::FSLinux fsl_;
-      // fs_m_fuse::FSMac fsm_;
-    #endif
 };
+
+#endif // QT_PERPETUAl_DATA_H_
+

@@ -22,14 +22,14 @@
 #include "maidsafe/client/clientcontroller.h"
 
 // local
-#include "perpetual_data.h"
+
 
 
 CreateUserThread::CreateUserThread( const QString& username,
                                     const QString& pin,
                                     const QString& password,
                                     QObject* parent )
-    : QThread( parent )
+    : WorkerThread( parent )
     , username_ ( username )
     , pin_ ( pin )
     , password_ ( password )
@@ -39,17 +39,7 @@ CreateUserThread::CreateUserThread( const QString& username,
 
 CreateUserThread::~CreateUserThread()
 {
-    qDebug() << "CreateUserThread >> DTOR";
 
-    quit();  // the event loop
-    wait();  // until run has exited
-
-    qDebug() << "CreateUserThread << DTOR";
-
-    if ( isRunning() || !isFinished() )
-    {
-        qDebug() << "\nCreateUserThread - not shutdown";
-    }
 }
 
 void CreateUserThread::run()
@@ -63,11 +53,14 @@ void CreateUserThread::run()
     if ( !maidsafe::ClientController::getInstance()->
                                         CreateUser(username, pin, password) )
     {
-        createUserCompleted( false );
-        return;
+        emit completed( false );
+    }
+    else
+    {
+        emit completed( true );
     }
 
-    emit createUserCompleted( true );
+    deleteLater();
 }
 
 

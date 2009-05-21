@@ -17,10 +17,8 @@
 // qt
 #include <QMessageBox>
 
-// core
-#include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/client/clientcontroller.h"
-
+// local
+#include "qt/client/create_public_username_thread.h"
 
 PublicUsername::PublicUsername( QWidget* parent )
     : Panel( parent )
@@ -30,6 +28,9 @@ PublicUsername::PublicUsername( QWidget* parent )
 
     connect( ui_.create, SIGNAL( clicked(bool) ),
              this,       SLOT( onCreateUsernameClicked() ) );
+
+    ui_.progressLabel->setVisible( false );
+    ui_.progressBar->setVisible( false );
 }
 
 
@@ -44,6 +45,8 @@ void PublicUsername::setActive( bool b )
 void PublicUsername::reset()
 {
     init_ = false;
+    ui_.progressLabel->setVisible( false );
+    ui_.progressBar->setVisible( false );
 }
 
 PublicUsername::~PublicUsername()
@@ -59,8 +62,19 @@ void PublicUsername::onCreateUsernameClicked()
         return;
     }
 
-    if ( maidsafe::ClientController::getInstance()->CreatePublicUsername(
-                                                    text.toStdString() ) )
+    CreatePublicUsernameThread* cput =
+                                new CreatePublicUsernameThread( text, this );
+
+    connect( cput, SIGNAL( completed( bool ) ),
+             this, SLOT( onCreateUsernameCompleted( bool ) ) );
+
+    cput->start();
+
+}
+
+void PublicUsername::onCreateUsernameCompleted( bool success )
+{
+    if ( success )
     {
         emit complete();
     }
@@ -71,5 +85,4 @@ void PublicUsername::onCreateUsernameClicked()
                           tr( "Error setting Username." )
                         );
     }
-
 }

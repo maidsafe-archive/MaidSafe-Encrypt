@@ -21,6 +21,8 @@
 // generated
 #include "ui_user_contacts_item.h"
 
+class Contact;
+
 //! Custom widget that displays a user's contact details
 /*!
     Displays:
@@ -38,11 +40,7 @@ class ContactDetail : public QWidget
     Q_OBJECT
 
 public:
-    /*!
-        \param user public name of user
-    */
-    ContactDetail( const QString& user_name,
-      const char &status, QWidget* parent = 0 );
+    ContactDetail( Contact* contact, QWidget* parent = 0 );
     virtual ~ContactDetail();
 
     //! Get public name of this user.
@@ -58,8 +56,7 @@ private slots:
 
 private:
     Ui::ContactsItem ui_;
-    QString user_name_;
-    char status_;
+    Contact* contact_;
 };
 
 #endif // QT_CONTACT_DETAIL_H_

@@ -20,24 +20,28 @@
 #include <QFileDialog>
 #include <QPicture>
 
-//
-#include "fs/filesystem.h"
-#include "maidsafe/client/clientcontroller.h"
+
+// local
+#include "qt/client/client_controller.h"
+#include "qt/client/contact.h"
 
 
-ContactDetail::ContactDetail( const QString& user_name, const char &status,
+ContactDetail::ContactDetail( Contact* contact,
     QWidget* parent )
     : QWidget( parent )
-    , user_name_( user_name ), status_(status)
+    , contact_( contact )
 {
     ui_.setupUi( this );
 
-    ui_.user_name->setText( user_name_ );
+    ui_.user_name->setText( contact_->publicName() );
 
-    if (status_ == 'C') {
-      ui_.user_status->setPixmap(QPixmap(":/icons/16/tick"));
-    } else {
-      ui_.user_status->setPixmap(QPixmap(":/icons/16/question"));
+    if ( contact_->presence() == Presence::INVALID )
+    {
+        ui_.user_status->setPixmap( QPixmap(":/icons/16/question") );
+    }
+    else
+    {
+        ui_.user_status->setPixmap( QPixmap(":/icons/16/tick") );
     }
 
 //    QPicture  pic;
@@ -77,7 +81,7 @@ ContactDetail::~ContactDetail()
 
 QString ContactDetail::getUser() const
 {
-    return user_name_;
+    return contact_->publicName();
 }
 
 void ContactDetail::onUserActionsClicked()
@@ -87,57 +91,39 @@ void ContactDetail::onUserActionsClicked()
 
 void ContactDetail::onViewProfileClicked()
 {
-    const std::string pub_name = user_name_.toStdString();
-    std::vector<maidsafe::Contacts> c_list;
-    const int n = maidsafe::ClientController::getInstance()->
-                    ContactList( &c_list, pub_name );
-    if ( n == 0 )
-    {
-        maidsafe::Contacts c = c_list[0];
+    // \TODO QString/html/%1,%2 etc - inline view of details?
+    QString details("Public Username: ");
+    details += contact_->publicName() + "\n";
+    details += "Full Name: " +    contact_->profile().full_name + "\n";
+    details += "Office Phone: " + contact_->profile().office_phone + "\n";
+    details += "Birthday: " +     contact_->profile().birthday.toString() + "\n";
+    details += "Gender: " +       QString(contact_->profile().gender == Profile::MALE ? "M" : "F") + "\n";
+    details += "Language: " +     QLocale::languageToString( contact_->profile().language ) + "\n";
+    details += "City: " +         contact_->profile().city + "\n";
+    details += "Country: " +      QLocale::countryToString( contact_->profile().country ) + "\n";
 
-        // \TODO QString/html/%1,%2 etc - inline view of details?
-        std::string details("Public Username: ");
-        details += pub_name + "\n";
-        details += "Full Name: " + c.FullName() + "\n";
-        details += "Office Phone: " + c.OfficePhone() + "\n";
-        details += "Birthday: " + c.Birthday() + "\n";
-        std::string gender;
-        gender.resize(1, c.Gender());
-        details += "Gender: " + gender + "\n";
-        details += "Language: " + base::itos(c.Language()) + "\n";
-        details += "City: " + c.City() + "\n";
-        details += "Country: " + base::itos(c.Country()) + "\n";
-
-        QMessageBox::information( this,
-                                  tr( "Contact Details" ),
-                                  QString::fromStdString( details )
-                                );
-    }
-    else
-    {
-        QMessageBox::warning( this,
-                              tr( "Error" ),
-                              QString( tr( "Error finding details of user: %1" ) )
-                             .arg( user_name_ )
+    QMessageBox::information( this,
+                              tr( "Contact Details" ),
+                              details
                             );
-    }
 }
 
 void ContactDetail::onDeleteUserClicked()
 {
-    const std::string pub_name = user_name_.toStdString();
-    const int n = maidsafe::ClientController::getInstance()->
-                    DeleteContact( pub_name );
-    //  std::cout << "Deletion result: " << n << std::endl;
-    if ( n == 0 )
+    if ( ClientController::instance()->removeContact( contact_->publicName() ) )
     {
         // delete ourselves.  delayed delete as deleting yourself inside
         // a slot makes bad things happen
         deleteLater();
     }
-
-    // debug...
-//    deleteLater();
+    else
+    {
+        QMessageBox::warning( this,
+                              tr( "Error" ),
+                              QString( tr( "Error removing user: %1" ) )
+                             .arg( contact_->publicName() )
+                            );
+    }
 }
 
 
@@ -155,23 +141,17 @@ void ContactDetail::onSendMessageClicked()
         return;
     }
 
-    const std::string pub_name = user_name_.toStdString();
-    const std::string msg = text.toStdString();
-    const int n = maidsafe::ClientController::getInstance()->
-                    SendInstantMessage( msg, pub_name );
-    if ( n == 0 )
+    if ( ClientController::instance()->sendInstantMessage( text, contact_->publicName() ) )
     {
         QMessageBox::information( this,
                                   tr( "Success!"),
-                                  tr( "Message sent to: %1" ).arg( user_name_ )
+                                  tr( "Message sent to: %1" ).arg( contact_->publicName() )
                                 );
     }
     else
     {
-        const QString msg = tr( "Error sending a message to: %1\n"
-                                "Error code: %2")
-                                .arg( user_name_ )
-                                .arg( n );
+        const QString msg = tr( "Error sending a message to: %1")
+                                .arg( contact_->publicName() );
 
         QMessageBox::warning( this,
                               tr( "Error" ),
@@ -224,21 +204,10 @@ void ContactDetail::onFileSendClicked()
         // TODO default message?
         return;
     }
-    const std::string msg = text.toStdString();
-    file_system::FileSystem fsys;
-    std::string rel_filename( fsys.MakeRelativeMSPath( filename.toStdString() ) );
-    const std::string pub_name = user_name_.toStdString();
 
-#ifdef __WIN32__
-    rel_filename.erase( 0, 2 );
-#endif
-    printf( "Before Tidy Path: %s\n", rel_filename.c_str() );
-    rel_filename = base::TidyPath( rel_filename );
-    printf( "Tidy Path: %s\n", rel_filename.c_str() );
-    const int n = maidsafe::ClientController::getInstance()->
-                    SendInstantFile( &rel_filename, msg, pub_name );
-
-    if ( n == 0 )
+    if ( ClientController::instance()->sendInstantFile( filename,
+                                                        text,
+                                                        contact_->publicName() ) )
     {
         QMessageBox::information( this,
                                   tr( "File Sent"),
@@ -248,10 +217,8 @@ void ContactDetail::onFileSendClicked()
     }
     else
     {
-        const QString msg = tr( "There was an error sending the file: %1\n"
-                                "Error code: %2")
-                           .arg( filename )
-                           .arg( n );
+        const QString msg = tr( "There was an error sending the file: %1")
+                           .arg( filename );
 
         QMessageBox::warning( this,
                               tr( "File Not Sent" ),

@@ -19,8 +19,6 @@
 #include <QLabel>
 #include <QValidator>
 
-// core
-#include "maidsafe/client/sessionsingleton.h"
 
 // local
 #include "panel.h"
@@ -28,6 +26,7 @@
 #include "shares.h"
 #include "contacts.h"
 #include "public_username.h"
+#include "qt/client/client_controller.h"
 
 namespace
 {
@@ -109,12 +108,9 @@ void UserPanels::setActive( bool active )
 {
     if ( active )
     {
-        const QString username = QString::fromStdString(
-                maidsafe::SessionSingleton::getInstance()->PublicUsername() );
+        const QString username = ClientController::instance()->publicUsername();
 
-           printf("UserPanels::setActive - public name: %s\n",
-                 maidsafe::SessionSingleton::getInstance()->
-                     PublicUsername().c_str());
+        qDebug() << "UserPanels::setActive - public name:" << username;
 
         if ( username.isEmpty() )
         {

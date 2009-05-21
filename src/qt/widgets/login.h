@@ -109,8 +109,7 @@ private:
         EDIT_USER,
         EDIT_PIN,
         WAITING_ON_USER_CHECK,
-        EDIT_PASSWORD,
-        LOGGING_IN
+        EDIT_PASSWORD
     };
 
     State state_;

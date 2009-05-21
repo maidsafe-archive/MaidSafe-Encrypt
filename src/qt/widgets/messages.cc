@@ -23,12 +23,13 @@
 #include <QScrollBar>
 
 //
-
-#include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/clientcontroller.h"
 
-const int MESSAGE_POLL_TIMEOUT_MS = 6000;
+// local
+#include "qt/client/client_controller.h"
+
+
 namespace
 {
 
@@ -68,10 +69,16 @@ Messages::Messages( QWidget* parent )
             "span.system-message { font-weight: normal; color: #ff0000; }" );
     ui_.textBrowser->setOpenExternalLinks( true );
 
-    messagePollTimer_ = new QTimer(this);
-    connect( messagePollTimer_, SIGNAL( timeout() ),
-             this,               SLOT( checkForMessages() ) );
-    messagePollTimer_->start( MESSAGE_POLL_TIMEOUT_MS );
+    connect( ClientController::instance(),
+             SIGNAL( messageReceived( const QDateTime&,
+                                      const QString&,
+                                      const QString& ) ),
+             this,
+             SLOT( onMessageReceived( const QDateTime&,
+                                      const QString&,
+                                      const QString& ) ) );
+
+
 }
 
 Messages::~Messages()
@@ -123,61 +130,22 @@ int Messages::totalMessages() const
     return messages_.size();
 }
 
-void Messages::checkForMessages()
+
+void Messages::onMessageReceived( const QDateTime& time,
+                                  const QString& sender,
+                                  const QString& message )
 {
-#ifdef DEBUG
-  printf("Checking for messages.\n");
-#endif
-    maidsafe::ClientController::getInstance()->GetMessages();
-    std::list<packethandler::InstantMessage> msgs;
-    const int n = maidsafe::ClientController::getInstance()
-                    ->GetInstantMessages( &msgs );
-
-    if (n != 0)
-      return;
-
-#ifdef DEBUG
-  printf("Found %i instant messages.\n", msgs.size());
-#endif
-
-    addMessages( msgs );
-
-    if ( msgs.size() > 0 )
+    if ( !active_ )
     {
-        if ( !active_ )
-        {
-            unread_ += msgs.size();
-        }
-
-        emit messageReceived();
+        ++unread_;
     }
-}
-
-void Messages::addMessages( const std::list<packethandler::InstantMessage>& msgs )
-{
-    // TODO double check the message order
-    std::list<packethandler::InstantMessage> temp = msgs;
-    while ( !temp.empty() )
-    {
-        addMessage( temp.front() );
-        temp.pop_front();
-    }
-//    for ( int i = 0; i<msgs.size(); ++i )
-//    {
-//        addMessage( msgs.at( i );
-//    }
-}
-
-void Messages::addMessage( const packethandler::InstantMessage& im )
-{
-    const QTime time = QTime::currentTime();
-    const QString sender = QString::fromStdString( im.sender() );
-    const QString message = QString::fromStdString( im.message() );
 
     addMessage( time, sender, message );
+
+    emit messageReceived();
 }
 
-void Messages::addMessage( const QTime& time,
+void Messages::addMessage( const QDateTime& time,
                            const QString& sender,
                            const QString& message )
 {

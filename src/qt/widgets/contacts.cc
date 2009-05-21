@@ -17,12 +17,15 @@
 // qt
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QDebug>
 
 //
-#include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/clientcontroller.h"
-#include "qt/contact_detail.h"
+#include "qt/widgets/contact_detail.h"
+
+// local
+#include "qt/client/client_controller.h"
 
 
 Contacts::Contacts( QWidget* parent )
@@ -43,7 +46,7 @@ Contacts::Contacts( QWidget* parent )
 
 void Contacts::onLostFocus()
 {
-    if (ui_.contactLineEdit->text() == "")
+    if ( ui_.contactLineEdit->text().isEmpty() )
     {
         ui_.contactLineEdit->setText( tr( "Search (or add) contacts" ) );
     }
@@ -53,19 +56,10 @@ void Contacts::setActive( bool b )
 {
     if ( b && !init_ )
     {
-        const QString username = QString::fromStdString(
-            maidsafe::SessionSingleton::getInstance()->PublicUsername() );
-
-        std::vector<maidsafe::Contacts> contact_list;
-        const int n = maidsafe::ClientController::getInstance()
-                        ->ContactList( &contact_list, "" );
-        if ( n == 0)
+        ContactList contact_list = ClientController::instance()->contacts();
+        foreach ( Contact* contact, contact_list )
         {
-            for ( unsigned int i = 0; i < contact_list.size(); ++i )
-            {
-                maidsafe::Contacts c = contact_list[i];
-                addContact( QString::fromStdString( c.PublicName() ), c.Confirmed() );
-            }
+            addContact( contact );
         }
 
         init_ = true;
@@ -81,6 +75,9 @@ void Contacts::reset()
         delete contacts.takeLast();
     }
 
+    qDeleteAll( contacts_ );
+    contacts_.clear();
+
     init_ = false;
 }
 
@@ -94,42 +91,28 @@ void Contacts::onAddContactClicked()
 
     // TODO add contact should be disabled if name isn't valid
 
-    if (ui_.contactLineEdit->text() == "Search (or add) contacts") {
-      QMessageBox::warning( this,
-                          tr( "Problem!" ),
-                          tr( "Please enter a valid username." )
-                        );
-      return;
+    if ( ui_.contactLineEdit->text() == "Search (or add) contacts" )
+    {
+        QMessageBox::warning( this,
+                              tr( "Problem!" ),
+                              tr( "Please enter a valid username." )
+                            );
+        return;
     }
 
-    const int n = maidsafe::ClientController::getInstance()->
-                    AddContact( contact_name.toStdString() );
-    printf("Addition result: %i\n", n);
-    switch (n)
+
+    if ( ClientController::instance()->addContact( contact_name ) )
     {
-    case 0:
-    {
-        addContact( contact_name, 'U' );
+        addContact( new Contact( contact_name ) );
         ui_.contactLineEdit->setText( tr( "Search (or add) contacts" ) );
-        break;
     }
-    case -221:
+    else
     {
         QMessageBox::warning( this,
                           tr( "Problem!" ),
                           tr( "Error adding contact. Username doesn't exist." )
                         );
-        break;
     }
-    default:
-    {
-        // unknown error
-        break;
-    }
-    }
-
-    // debug...
-//    addContact( contact_name );
 }
 
 void Contacts::onClearSearchClicked()
@@ -138,9 +121,10 @@ void Contacts::onClearSearchClicked()
     ui_.contactLineEdit->setText( tr( "Search (or add) contacts" ) );
 }
 
-void Contacts::addContact( const QString& contact_name, const char &status )
+void Contacts::addContact( Contact* contact )
 {
-    ContactDetail* detail = new ContactDetail( contact_name, status, NULL );
+    contacts_.push_back( contact );
+    ContactDetail* detail = new ContactDetail( contact, NULL );
     ui_.contacts_layout->addWidget( detail );
 }
 

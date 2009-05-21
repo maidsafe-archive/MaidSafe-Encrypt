@@ -16,9 +16,7 @@
 #ifndef QT_CREATE_USER_THREAD_H_
 #define QT_CREATE_USER_THREAD_H_
 
-#include <QThread>
-
-class PerpetualData;
+#include "worker_thread.h"
 
 //! Worker thread for creating users
 /*!
@@ -27,7 +25,7 @@ class PerpetualData;
 
     Currently intended for single use.
 */
-class CreateUserThread : public QThread
+class CreateUserThread : public WorkerThread
 {
     Q_OBJECT
 public:
@@ -38,9 +36,6 @@ public:
     virtual ~CreateUserThread();
 
     virtual void run();
-
-signals:
-    void createUserCompleted( bool success );
 
 private:
     QString username_, pin_, password_;
