@@ -271,7 +271,7 @@ c:/usr/lib/libprotobuf.a c:/usr/lib/libsqlite3.a -liphlpapi
 )
 ENDIF(APPLE)
 IF(UNIX)
-	SET(FUSE = "fuse")
+	SET(FUSE  "fuse")
 	ENDIF()
 TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES} ${SYS_LIB})
 TARGET_LINK_LIBRARIES(wxperpetualdata PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${SYS_WX} ${SYS_LIB})
