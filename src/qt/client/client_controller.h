@@ -19,6 +19,7 @@
 #include <QObject>
 #include <QString>
 #include <QDateTime>
+#include <QDir>
 
 // core
 #include "maidsafe/client/clientinterface.h"
@@ -86,6 +87,13 @@ public:
 
     //! Current shares
     ShareList shares() const;
+
+    //! Root directory of a named share
+    /*!
+        Note: doesn't check validity of share name
+        TODO: move onto Share interface
+    */
+    QDir shareDirRoot( const QString& name ) const;
 
 
     /// Messaging

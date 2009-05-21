@@ -30,6 +30,14 @@
 
 const int MESSAGE_POLL_TIMEOUT_MS = 6000;
 
+namespace
+{
+    bool contactSortLessThan( const Contact* c1, const Contact* c2 )
+    {
+        return c1->publicName() < c2->publicName();
+    }
+}
+
 class ClientController::ClientControllerImpl
 {
 
@@ -158,6 +166,34 @@ ShareList ClientController::shares() const
     return rv;
 }
 
+
+QDir ClientController::shareDirRoot( const QString& name ) const
+{
+    qDebug() << "ClientController::shareDirRoot:" << name;
+    QString pathInMaidsafe = QString( "Shares%1Private%2%3" )
+                            .arg( QDir::separator() )
+                            .arg( QDir::separator() )
+                            .arg( name );
+
+#ifdef MAIDSAFE_WIN32
+    QString maidsafeRoot = QString( "%1:\\" ).arg( maidsafe::SessionSingleton::getInstance()->WinDrive() );
+#else
+    file_system::FileSystem fs;
+    QString maidsafeRoot = QString::fromStdString( fs.MaidsafeFuseDir() );
+#endif
+
+    QString path = maidsafeRoot + pathInMaidsafe;
+
+    QDir dir( path );
+    if ( !dir.exists() )
+    {
+        qWarning() << "share directory doesn't exist:" << path;
+    }
+
+    return dir;
+}
+
+
 QStringList ClientController::contactsNames() const
 {
     std::vector<maidsafe::Contacts> contact_list;
@@ -204,6 +240,8 @@ ContactList ClientController::contacts() const
 
         rv.push_back( contact );
     }
+
+    qSort( rv.begin(), rv.end(), contactSortLessThan );
 
     return rv;
 }

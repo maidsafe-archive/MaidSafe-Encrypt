@@ -42,6 +42,7 @@ public:
 
 private slots:
     void onCreateShareClicked();
+    void onItemDoubleClicked( QListWidgetItem* );
 
 private:
     //! Initialize the display of a user's shares

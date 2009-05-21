@@ -16,7 +16,10 @@
 
 // qt
 #include <QMessageBox>
-#include <QLabel>
+#include <QUrl>
+#include <QDesktopServices>
+#include <QProcess>
+#include <QDebug>
 
 // local
 #include "qt/widgets/share_participants.h"
@@ -31,6 +34,9 @@ Shares::Shares( QWidget* parent )
 
     connect( ui_.create, SIGNAL( clicked(bool) ),
              this,       SLOT( onCreateShareClicked() ) );
+
+    connect( ui_.listWidget, SIGNAL( itemDoubleClicked( QListWidgetItem* ) ),
+             this,           SLOT( onItemDoubleClicked( QListWidgetItem* ) ) );
 }
 
 Shares::~Shares()
@@ -49,11 +55,13 @@ void Shares::setActive( bool b )
 void Shares::reset()
 {
     // clear the list of share
-    QList<QLabel*> shares = ui_.sharesScrollArea->findChildren<QLabel*>();
+    /*QList<QLabel*> shares = ui_.sharesScrollArea->findChildren<QLabel*>();
     while( !shares.isEmpty() )
     {
         delete shares.takeLast();
-    }
+    }*/
+
+    ui_.listWidget->clear();
 
     ui_.shareNameLineEdit->setText( tr( "Enter share name" ) );
 
@@ -97,6 +105,37 @@ void Shares::onCreateShareClicked()
     }
 }
 
+void Shares::onItemDoubleClicked( QListWidgetItem* item )
+{
+    qDebug() << "Shares::onItemDoubleClicked:" << item->text();
+    QDir dir = ClientController::instance()->shareDirRoot( item->text() );
+
+    //QDesktopServices::openUrl( QUrl( dir.absolutePath() ) );
+
+#ifdef MAIDSAFE_WIN32
+    // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
+
+    // TODO: doesn't like spaces in the name
+    QString app( "explorer.exe" );
+    QStringList args;
+    args <<  "/e" << QString( "/root,%1" ).arg( dir.absolutePath().replace( "/", "\\" ) );
+
+    qDebug() << "explore:" << app << args;
+
+    if ( !QProcess::startDetached( app, args ) )
+    {
+        qWarning() << "PerpetualData::failed to start"
+                   << app
+                   << "with args"
+                   << args;
+    }
+
+#else
+
+#endif
+
+}
+
 void Shares::init()
 {
     if ( init_ )
@@ -122,6 +161,5 @@ void Shares::init()
 
 void Shares::addShare( const QString& shareName )
 {
-    //ShareDetail* detail = new ShareDetail( contact_name, NULL );
-    ui_.shares_layout->addWidget( new QLabel( shareName ) );
+    ui_.listWidget->addItem( shareName );
 }

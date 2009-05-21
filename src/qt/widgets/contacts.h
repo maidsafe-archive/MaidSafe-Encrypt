@@ -41,12 +41,22 @@ private slots:
     void onClearSearchClicked();
     void onLostFocus();
 
+    void onItemDoubleClicked( QListWidgetItem* );
+    void onItemSelectionChanged();
+
+    void onDeleteUserClicked();
+    void onViewProfileClicked();
+    void onSendMessageClicked();
+    void onFileSendClicked();
+
 private:
     //! Add a new entry in the listing of contacts
     void addContact( Contact* );
     Ui::ContactsPage ui_;
     bool init_;
     ContactList contacts_;
+
+    Contact* currentContact();
 };
 
 #endif // QT_CONTACTS_H_
