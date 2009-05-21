@@ -98,11 +98,17 @@ link_directories (${PD_BINARY_DIR})
 ##################################################################################
 #SET UP ALL FILES AS GLOBS #######################################################
 ##################################################################################
-FILE(GLOB M_QT_C "${SOURCE_DIR}/qt/*.c*")                            #
-FILE(GLOB M_QT_H "${SOURCE_DIR}/qt/*.h*")                            #
-FILE(GLOB M_QT_UI "${SOURCE_DIR}/qt/ui/*.ui")                            #
-FILE(GLOB M_QT_QRC "${SOURCE_DIR}/qt/resources/*.qrc")                            #
-LIST(APPEND M_QT_DIR ${M_QT_C} ${M_QT_H})                      #
+FILE(GLOB M_QT_C "${SOURCE_DIR}/qt/*.c*")                                        #
+FILE(GLOB M_QT_H "${SOURCE_DIR}/qt/*.h*")                                        #
+FILE(GLOB M_QT_WIDGETS_C "${SOURCE_DIR}/qt/widgets/*.c*")                        #
+FILE(GLOB M_QT_WIDGETS_H "${SOURCE_DIR}/qt/widgets/*.h*")                        #
+FILE(GLOB M_QT_CLIENT_C "${SOURCE_DIR}/qt/client/*.c*")                          #
+FILE(GLOB M_QT_CLIENT_H "${SOURCE_DIR}/qt/client/*.h*")                          #
+FILE(GLOB M_QT_UI "${SOURCE_DIR}/qt/ui/*.ui")                                    #
+FILE(GLOB M_QT_QRC "${SOURCE_DIR}/qt/resources/*.qrc")                           #
+LIST(APPEND M_QT_C ${M_QT_WIDGETS_C} ${M_QT_CLIENT_C})                           #
+LIST(APPEND M_QT_H ${M_QT_WIDGETS_H} ${M_QT_CLIENT_H})                           #
+LIST(APPEND M_QT_DIR ${M_QT_C} ${M_QT_H})                                        #
 FILE(GLOB M_PROTOBUF_C "${SOURCE_DIR}/protobuf/*.c*")                            #
 FILE(GLOB M_PROTOBUF_H "${SOURCE_DIR}/protobuf/*.h*")                            #
 LIST(APPEND M_PROTOBUF_DIR ${M_PROTOBUF_C} ${M_PROTOBUF_H})                      #
