@@ -228,6 +228,7 @@ SET(SYS_LIB
 	/usr/lib/libboost_date_time-gcc43-mt.a
 	-lrt
 	-lc
+	-lcryptopp
   maidsafe-dht
 )
 SET(SYS_WX
