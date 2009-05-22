@@ -37,6 +37,14 @@ Contacts::Contacts( QWidget* parent )
     connect( ui_.add,    SIGNAL( clicked(bool) ),
              this,       SLOT( onAddContactClicked() ) );
 
+    // To enable the return event on the button
+    connect( ui_.add,    SIGNAL( returnPressed() ),
+             this,       SLOT( onAddContactClicked() ) );
+
+    // To enable the return event on the textbox
+    connect( ui_.contactLineEdit,    SIGNAL( returnPressed() ),
+             this,                   SLOT( onAddContactClicked() ) );
+
     connect( ui_.clear,  SIGNAL( clicked(bool) ),
              this,       SLOT( onClearSearchClicked() ) );
 
@@ -47,14 +55,22 @@ Contacts::Contacts( QWidget* parent )
     // buttons
     connect( ui_.delete_user, SIGNAL( clicked(bool) ),
              this,            SLOT( onDeleteUserClicked() ) );
+    connect( ui_.delete_user, SIGNAL( returnPressed() ),
+             this,            SLOT( onDeleteUserClicked() ) );
 
     connect( ui_.view_profile, SIGNAL( clicked(bool) ),
+             this,             SLOT( onViewProfileClicked() ) );
+    connect( ui_.view_profile, SIGNAL( returnPressed() ),
              this,             SLOT( onViewProfileClicked() ) );
 
     connect( ui_.send_message, SIGNAL( clicked(bool) ),
              this,             SLOT( onSendMessageClicked() ) );
+    connect( ui_.send_message, SIGNAL( returnPressed() ),
+             this,             SLOT( onSendMessageClicked() ) );
 
     connect( ui_.share_file, SIGNAL( clicked(bool) ),
+             this,           SLOT( onFileSendClicked() ) );
+    connect( ui_.share_file, SIGNAL( returnPressed() ),
              this,           SLOT( onFileSendClicked() ) );
 
 

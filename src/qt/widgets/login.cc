@@ -467,4 +467,3 @@ bool Login::focusNextPrevChild( bool next )
     return QWidget::focusNextPrevChild( next );
 }
 
-

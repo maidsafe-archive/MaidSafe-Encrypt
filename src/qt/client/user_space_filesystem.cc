@@ -89,10 +89,10 @@ bool UserSpaceFileSystem::mount()
     maidsafe::SessionSingleton::getInstance()->SetWinDrive(drive);
 #elif defined(MAIDSAFE_POSIX)
     // std::string mount_point = fsys->MaidsafeFuseDir();
-    std::string mount_point = fsys_.MaidsafeFuseDir();
+    std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
     impl_->fsl_.Mount(mount_point, debug_mode);
 #elif defined(MAIDSAFE_APPLE)
-    std::string mount_point = fsys_.MaidsafeFuseDir();
+    std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
     impl_->fsl_.Mount(mount_point, debug_mode);
 #endif
     boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -165,5 +165,4 @@ bool UserSpaceFileSystem::unmount()
 
     return success;
 }
-
 

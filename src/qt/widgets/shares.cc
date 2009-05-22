@@ -131,6 +131,20 @@ void Shares::onItemDoubleClicked( QListWidgetItem* item )
     }
 
 #else
+    // nautilus FuseHomeDir()/Shares/Private/"name"
+    QString app( "nautilus" );
+    QStringList args;
+    args <<  QString( "%1" ).arg( dir.absolutePath() );
+
+    qDebug() << "explore:" << app << args;
+
+    if ( !QProcess::startDetached( app, args ) )
+    {
+        qWarning() << "PerpetualData::failed to start"
+                   << app
+                   << "with args"
+                   << args;
+    }
 
 #endif
 

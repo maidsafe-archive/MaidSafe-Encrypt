@@ -40,6 +40,8 @@ private slots:
     void onAddContactClicked();
     void onClearSearchClicked();
     void onLostFocus();
+//    void focusInEvent(QFocusEvent* );
+//    void onFocus();
 
     void onItemDoubleClicked( QListWidgetItem* );
     void onItemSelectionChanged();
@@ -57,6 +59,7 @@ private:
     ContactList contacts_;
 
     Contact* currentContact();
+
 };
 
 #endif // QT_CONTACTS_H_

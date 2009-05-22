@@ -21,12 +21,12 @@
 #include <QTimer>
 
 // core
+#include "maidsafe/maidsafe-dht.h"
 #include "fs/filesystem.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/privateshares.h"
-#include "maidsafe/maidsafe-dht.h"
 
 const int MESSAGE_POLL_TIMEOUT_MS = 6000;
 
@@ -179,7 +179,8 @@ QDir ClientController::shareDirRoot( const QString& name ) const
     QString maidsafeRoot = QString( "%1:\\" ).arg( maidsafe::SessionSingleton::getInstance()->WinDrive() );
 #else
     file_system::FileSystem fs;
-    QString maidsafeRoot = QString::fromStdString( fs.MaidsafeFuseDir() );
+    // Path comes back without that last slash
+    QString maidsafeRoot = QString::fromStdString( fs.MaidsafeFuseDir() + "/" );
 #endif
 
     QString path = maidsafeRoot + pathInMaidsafe;
@@ -369,6 +370,11 @@ void ClientController::checkForMessages()
 {
     qDebug() << "ClientController::checkForMessages()";
 
+    // Check for messages only when public username is set
+    if (maidsafe::SessionSingleton::getInstance()->PublicUsername()
+        == "")
+      return;
+
     maidsafe::ClientController::getInstance()->GetMessages();
     std::list<packethandler::InstantMessage> msgs;
     const int n = maidsafe::ClientController::getInstance()
@@ -393,3 +399,5 @@ void ClientController::checkForMessages()
         temp.pop_front();
     }
 }
+
+

@@ -28,6 +28,7 @@
 #include <boost/thread/xtime.hpp>
 #include <map>
 #include <vector>
+#include <fstream>
 
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -49,18 +50,6 @@ void PrepareCallbackResults() {
   callback_succeeded_ = false;
   callback_prepared_ = true;
 }
-
-//  static void GeneralCallbackFunction(const std::string &result) {
-//    base::GeneralResponse result_msg;
-//    if ((!result_msg.ParseFromString(result))||
-//        (result_msg.result() != kad::kRpcResultSuccess)) {
-//      callback_succeeded_ = false;
-//      callback_timed_out_ = false;
-//    } else {
-//      callback_succeeded_ = true;
-//      callback_timed_out_ = false;
-//    }
-//  }
 
 void BluddyWaitFunction(int seconds, boost::mutex* mutex) {
   if (!callback_prepared_) {

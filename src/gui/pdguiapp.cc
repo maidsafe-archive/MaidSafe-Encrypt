@@ -8,8 +8,9 @@
  **************************************************************/
 #include "gui/pdguiapp.h"
 #include <wx/image.h>
+#include <wx/app.h>
 #include <wx/xrc/xmlres.h>
-// #include "gui/images.cc"
+//  #include "gui/images.cc"
 #include "gui/pdguimain.h"
 
 // #ifdef DEBUG

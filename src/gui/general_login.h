@@ -40,6 +40,7 @@
 #include "fs/filesystem.h"
 #include "maidsafe/config.h"
 #include "maidsafe/client/clientcontroller.h"
+#include "maidsafe/maidsafe-dht.h"
 
 #if defined(MAIDSAFE_WIN32)
   #include "fs/w_fuse/fswin.h"
