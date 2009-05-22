@@ -13,7 +13,7 @@
  */
 #ifndef GUI_CONTACT_DETAIL_H_
 #define GUI_CONTACT_DETAIL_H_
-// #ifdef WIN32
+// #ifdef MAIDSAFE_WIN32
 //  #include <wxprec_monolib.pch>
 // #else
 #include <wx/wx.h>

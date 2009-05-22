@@ -16,7 +16,7 @@
 #include <wx/wx.h>
 #include <wx/artprov.h>
 #include <wx/xrc/xmlres.h>
-#ifdef WIN32
+#ifdef MAIDSAFE_WIN32
   #include <wx/msw/winundef.h>
 #endif
 #include <wx/event.h>

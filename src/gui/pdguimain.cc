@@ -17,7 +17,7 @@
   #include <wx/msw/winundef.h>
 #endif
 
-// #ifdef WIN32
+// #ifdef MAIDSAFE_WIN32
 //  #include <wxprec_monolib.pch"
 // #else
 #include <wx/wx.h>
@@ -27,7 +27,7 @@
 #include <wx/aboutdlg.h>
 #include <wx/xrc/xmlres.h>
 // #endif
-#ifdef WIN32
+#ifdef MAIDSAFE_WIN32
   #include <shellapi.h>
 #endif
 
@@ -100,7 +100,7 @@ pdguiFrame::pdguiFrame(wxWindow* parent)
   image_ok(NULL), m_taskBarIcon(NULL), listbook_images(NULL),
   m_timer(NULL), got_enc_data(false), user_exists(false),
   fsys_(),
-  #ifdef __WIN32__
+  #ifdef MAIDSAFE_WIN32
   #else
     fsl_(),
   #endif
@@ -122,7 +122,7 @@ pdguiFrame::pdguiFrame(wxWindow* parent)
   SetStatusText(wxT("On line"), 0);
   // the wxICON macro makes this cross platform
   wxIcon icon(wxICON(maidsafe_logo1));
-  #ifdef __WIN32__
+  #ifdef MAIDSAFE_WIN32
     // TODO(dan): this does not work on linux at least
     net_connect_ = wxDialUpManager::Create();
     // need to use an IDLE time WXUNUSED(event) to test linux and set manually
@@ -259,7 +259,7 @@ pdguiFrame::pdguiFrame(wxWindow* parent)
     reinterpret_cast<wxObjectEventFunction>(&pdguiFrame::OnIconize));
   Connect(ID_LISTBOOK_MAIN, wxEVT_COMMAND_LISTBOOK_PAGE_CHANGED,
     reinterpret_cast<wxObjectEventFunction>(&pdguiFrame::OnPageChanged));
-#ifdef __WIN32__
+#ifdef MAIDSAFE_WIN32
   Connect(wxID_ANY, wxEVT_DIALUP_CONNECTED,
     wxDialUpEventHandler(pdguiFrame::OnNet_Con_Off));
   Connect(wxID_ANY, wxEVT_DIALUP_CONNECTED,
@@ -288,7 +288,7 @@ pdguiFrame::pdguiFrame(wxWindow* parent)
     wxALL|wxALIGN_LEFT|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5);
   frame_sizer->Add(panel_login, 1,
     wxALL|wxALIGN_LEFT|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5);
-  //   # ifdef __WIN32__
+  //   # ifdef MAIDSAFE_WIN32
   // remove the ifdef endif when fuse works
   listbook_main->Hide();
   frame_sizer->Show(panel_login);
@@ -317,7 +317,7 @@ void pdguiFrame::OnFullSCreen(wxCommandEvent& event) {  // NOLINT
   }
 }
 
-#if defined(__WIN32__)
+#if defined(MAIDSAFE_WIN32)
 void pdguiFrame::OnNet_Con_On(wxDialUpEvent& event) {  // NOLINT
   printf("Event id: %i\n", event.GetId());
   wxIcon iconok;
@@ -523,7 +523,7 @@ void pdguiFrame::Onbutton_logoutClick(wxCommandEvent& event) {  // NOLINT
   }
   std::string ms_dir = fsys_.MaidsafeDir();
   std::string mount_point = fsys_.MaidsafeFuseDir();
-#ifdef WIN32
+#ifdef MAIDSAFE_WIN32
   SHELLEXECUTEINFO shell_info;
   memset(&shell_info, 0, sizeof(shell_info));
   shell_info.cbSize = sizeof(shell_info);
@@ -585,7 +585,7 @@ void pdguiFrame::OnQuit(wxCommandEvent& event) {  // NOLINT
     }
     std::string ms_dir = fsys_.MaidsafeDir();
     std::string mount_point = fsys_.MaidsafeFuseDir();
-#ifdef WIN32
+#ifdef MAIDSAFE_WIN32
 //    std::string drive(" /u ");
 //    drive += maidsafe::ClientController::getInstance()->DriveLetter();
     SHELLEXECUTEINFO shell_info;

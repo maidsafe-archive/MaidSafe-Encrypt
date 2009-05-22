@@ -38,7 +38,6 @@
 
 #include "maidsafe/utils.h"
 #include "fs/filesystem.h"
-#include "maidsafe/config.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/maidsafe-dht.h"
 

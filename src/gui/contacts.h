@@ -14,7 +14,7 @@
 #ifndef GUI_CONTACTS_H_
 #define GUI_CONTACTS_H_
 
-#ifdef WIN32
+#ifdef MAIDSAFE_WIN32
 // #define WIN32_LEAN_AND_MEAN
 // passed as a compiler flag now
 // Edited by David Irvine <david.irvine@maidsafe.net> 2009-01-26

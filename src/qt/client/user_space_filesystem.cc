@@ -20,7 +20,6 @@
 // core
 #include "fs/filesystem.h"
 #include "maidsafe/client/clientcontroller.h"
-#include "maidsafe/config.h"
 
 // 3rd party
 #if defined(MAIDSAFE_WIN32)
@@ -32,7 +31,7 @@
 #endif
 
 // os
-#ifdef WIN32
+#ifdef MAIDSAFE_WIN32
   #include <shellapi.h>
 #endif
 
@@ -133,7 +132,7 @@ bool UserSpaceFileSystem::unmount()
     bool success = false;
     std::string ms_dir = impl_->fsys_.MaidsafeDir();
     std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
-#ifdef WIN32
+#ifdef MAIDSAFE_WIN32
     // unload dokan
     SHELLEXECUTEINFO shell_info;
     memset(&shell_info, 0, sizeof(shell_info));

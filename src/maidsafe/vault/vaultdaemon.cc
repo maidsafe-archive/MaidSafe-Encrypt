@@ -16,7 +16,7 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem/fstream.hpp>
-#ifdef WIN32
+#ifdef MAIDSAFE_WIN32
 #include <shlwapi.h>
 #endif
 #include <iostream>  // NOLINT Fraser - required for handling .config file

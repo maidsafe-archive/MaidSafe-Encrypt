@@ -31,7 +31,6 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/config.h"
 #include "maidsafe/utils.h"
 #include "fs/filesystem.h"
 #include "maidsafe/client/authentication.h"

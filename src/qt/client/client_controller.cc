@@ -307,7 +307,7 @@ bool ClientController::sendInstantFile( const QString& filePath,
     file_system::FileSystem fsys;
     std::string rel_filename( fsys.MakeRelativeMSPath( filePath.toStdString() ) );
 
-#ifdef __WIN32__
+#ifdef MAIDSAFE_WIN32
     // trim e.g. C:
     rel_filename.erase( 0, 2 );
 #endif

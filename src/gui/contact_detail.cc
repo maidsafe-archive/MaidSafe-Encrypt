@@ -17,7 +17,7 @@
 #include "maidsafe/client/clientcontroller.h"
 #include "gui/contacts.h"
 
-// #ifdef WIN32
+// #ifdef MAIDSAFE_WIN32
 //  #include <wxprec_monolib.pch"
 // #endif
 
@@ -143,7 +143,7 @@ ContactDetail::ContactDetail(wxWindow* parent,
 
   // Dialog's below
   file_system::FileSystem fs;
-  #ifdef __WIN32__
+  #ifdef MAIDSAFE_WIN32
     // TODO(richard): Change to make sure the correct letter is passed.
     wxString default_dir = wxString::FromAscii("M:\\");
   #else
@@ -428,7 +428,7 @@ void ContactDetail::Onfile_send_buttonClick(wxCommandEvent& event) {  // NOLINT
       std::string pub_name((const char*)wx_pub_name.mb_str());
       wxString wx_m = dialog.GetValue();
       std::string m((const char*)wx_m.mb_str());
-      #ifdef __WIN32__
+      #ifdef MAIDSAFE_WIN32
         rel_filename.erase(0, 2);
       #endif
       printf("Beforeeeeee Tidyyyyyy Pathhhhhh: %s\n", rel_filename.c_str());

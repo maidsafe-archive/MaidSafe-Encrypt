@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAIDSAFE_MAIDSAFE_DHT_CONFIG_H_
 
 
-#if defined (__WIN32__) || defined (__MINGW__)
+#if defined (MAIDSAFE_WIN32) || defined (__MINGW__)
 #include <winsock2.h>
 #include <iphlpapi.h>
 #else  // apple and POSIX

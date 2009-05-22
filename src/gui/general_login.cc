@@ -65,7 +65,7 @@ general_login::general_login(wxWindow* parent,
   : wxPanel(parent, id, pos, size), StaticTextCREATEUSER(NULL),
   button_create_user(NULL), GridSizer1(NULL),
   BoxSizer2(NULL), BoxSizer4(NULL), fsys(NULL),
-  #ifdef __WIN32__
+  #ifdef MAIDSAFE_WIN32
   #else
     fsl_(),
   #endif

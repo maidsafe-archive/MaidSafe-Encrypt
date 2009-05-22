@@ -24,7 +24,7 @@
 
 #include <gtest/gtest.h>
 
-#if defined __WIN32__
+#if defined MAIDSAFE_WIN32
   #include <windef.h>
   #include <shellapi.h>
 #endif
@@ -35,7 +35,6 @@
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
 
-#include "maidsafe/config.h"
 #include "fs/filesystem.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/maidsafe.h"

@@ -31,7 +31,6 @@
 #include <string>
 #include <vector>
 #include "boost/filesystem.hpp"
-#include "maidsafe/config.h"
 #include "maidsafe/client/sessionsingleton.h"
 // if (BOOST_PLATFORM == "linux")
 //   #include "fs/l_fuse/fusecpp.h"

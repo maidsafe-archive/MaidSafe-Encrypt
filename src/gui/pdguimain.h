@@ -37,7 +37,6 @@
 #include "gui/contacts.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "fs/filesystem.h"
-#include "maidsafe/config.h"
 
 #if defined(MAIDSAFE_WIN32)
   //  #include "fs/w_fuse/fswin.h"
@@ -90,7 +89,7 @@ class pdguiFrame: public wxFrame {
     void OnPageChanged(wxListbookEvent& WXUNUSED(event));  // NOLINT
     void OnFullSCreen(wxCommandEvent& WXUNUSED(event));  // NOLINT
     void Ontxt_passwordText(wxCommandEvent& WXUNUSED(event));  // NOLINT
-    #ifdef __WIN32__
+    #ifdef MAIDSAFE_WIN32
       void OnNet_Con_Off(wxDialUpEvent& WXUNUSED(event));  // NOLINT
       void OnNet_Con_On(wxDialUpEvent& WXUNUSED(event));  // NOLINT
     #endif
@@ -170,7 +169,7 @@ class pdguiFrame: public wxFrame {
     wxBoxSizer *frame_sizer;
     wxPanel* m_panel_;
     wxPanel *l_panel_;
-    #ifdef __WIN32__
+    #ifdef MAIDSAFE_WIN32
       wxDialUpManager *net_connect_;
     #endif
     std::vector<packethandler::InstantMessage> all_messages_;

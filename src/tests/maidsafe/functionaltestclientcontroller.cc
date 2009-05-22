@@ -390,7 +390,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                            _1),
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());

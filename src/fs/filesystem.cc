@@ -34,7 +34,7 @@
 #include <boost/filesystem/convenience.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
-#ifdef WIN32
+#ifdef MAIDSAFE_WIN32
 #include <shlwapi.h>
 #endif
 #include <algorithm>
@@ -49,8 +49,7 @@ namespace fs = boost::filesystem;
 
 namespace file_system {
 
-FileSystem::FileSystem() : defcon_(maidsafe::DEFCON1) {
-}
+FileSystem::FileSystem() : defcon_(maidsafe::DEFCON2) {}
 
 FileSystem::~FileSystem() {}
 
