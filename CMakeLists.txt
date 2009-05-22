@@ -231,7 +231,7 @@ SET(SYS_LIB
   maidsafe-dht
 )
 SET(SYS_WX
-	-pthread   /usr/lib/libwx_gtk2u-2.8.a -pthread -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lpangoft2-1.0 -lgdk_pixbuf-2.0 -lm -lgio-2.0 -lpango-1.0 -lfreetype -lz -lfontconfig -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lglib-2.0 -lXinerama -lSM -lpng -lz -lwxregexu-2.8 -lz -ldl -lm
+	-pthread   /usr/lib/libwx_gtk2u-2.8.a -lwxjpeg-2.8  -lwxtiff-2.8 -pthread -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lpangoft2-1.0 -lgdk_pixbuf-2.0 -lm -lgio-2.0 -lpango-1.0 -lfreetype -lz -lfontconfig -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lglib-2.0 -lXinerama -lSM -lpng -lz -lwxregexu-2.8 -lz -ldl -lm
 	)
 
 ELSEIF (WIN32)
