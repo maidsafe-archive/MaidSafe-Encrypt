@@ -419,39 +419,39 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 }
 
 TEST_F(FunctionalMaidsafeClientControllerTest,
-       DISABLED_FUNC_MAID_ControllerChangeDetails) {
+       FUNC_MAID_ControllerChangeDetails) {
   ss = SessionSingleton::getInstance();
   ASSERT_EQ("", ss->Username());
   ASSERT_EQ("", ss->Pin());
   ASSERT_EQ("", ss->Password());
   printf("Preconditions fulfilled.\n");
 
+//  exitcode result = cc->CheckUserExists(username,
+//                                        pin,
+//                                        boost::bind(
+//                                            &FakeCallback::CallbackFunc,
+//                                            &cb,
+//                                            _1),
+//                                        DEFCON2);
+//  ASSERT_EQ(NON_EXISTING_USER, result);
+//  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+//  ASSERT_EQ(username, ss->Username());
+//  ASSERT_EQ(pin, ss->Pin());
+//  ASSERT_EQ(password, ss->Password());
+//  printf("User created.\n");
+//
+//  ASSERT_TRUE(cc->Logout());
+//  ASSERT_EQ("", ss->Username());
+//  ASSERT_EQ("", ss->Pin());
+//  ASSERT_EQ("", ss->Password());
+//  printf("Logged out.\n");
+//
   exitcode result = cc->CheckUserExists(username,
                                         pin,
-                                        boost::bind(
-                                            &FakeCallback::CallbackFunc,
-                                            &cb,
-                                            _1),
+                                        boost::bind(&FakeCallback::CallbackFunc,
+                                                    &cb,
+                                                    _1),
                                         DEFCON2);
-  ASSERT_EQ(NON_EXISTING_USER, result);
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
-  ASSERT_EQ(username, ss->Username());
-  ASSERT_EQ(pin, ss->Pin());
-  ASSERT_EQ(password, ss->Password());
-  printf("User created.\n");
-
-  ASSERT_TRUE(cc->Logout());
-  ASSERT_EQ("", ss->Username());
-  ASSERT_EQ("", ss->Pin());
-  ASSERT_EQ("", ss->Password());
-  printf("Logged out.\n");
-
-  result = cc->CheckUserExists(username,
-                               pin,
-                               boost::bind(&FakeCallback::CallbackFunc,
-                                           &cb,
-                                           _1),
-                               DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   GetResponse load_res;
@@ -594,43 +594,39 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 }
 
 TEST_F(FunctionalMaidsafeClientControllerTest,
-       DISABLED_FUNC_MAID_ControllerCreatePublicUsername) {
+       FUNC_MAID_ControllerCreatePublicUsername) {
   ss = SessionSingleton::getInstance();
   ASSERT_EQ("", ss->Username());
   ASSERT_EQ("", ss->Pin());
   ASSERT_EQ("", ss->Password());
   printf("Preconditions fulfilled.\n");
 
+//  exitcode result = cc->CheckUserExists(username,
+//                                        pin,
+//                                        boost::bind(
+//                                            &FakeCallback::CallbackFunc,
+//                                            &cb,
+//                                            _1),
+//                                        DEFCON2);
+//  ASSERT_EQ(NON_EXISTING_USER, result);
+//  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+//  ASSERT_EQ(username, ss->Username());
+//  ASSERT_EQ(pin, ss->Pin());
+//  ASSERT_EQ(password, ss->Password());
+//  printf("User created.\n");
+//
+//  ASSERT_TRUE(cc->Logout());
+//  ASSERT_EQ("", ss->Username());
+//  ASSERT_EQ("", ss->Pin());
+//  ASSERT_EQ("", ss->Password());
+//  printf("Logged out.\n");
+
   exitcode result = cc->CheckUserExists(username,
                                         pin,
-                                        boost::bind(
-                                            &FakeCallback::CallbackFunc,
-                                            &cb,
-                                            _1),
+                                        boost::bind(&FakeCallback::CallbackFunc,
+                                                    &cb,
+                                                    _1),
                                         DEFCON2);
-  ASSERT_EQ(NON_EXISTING_USER, result);
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
-  ASSERT_EQ(username, ss->Username());
-  ASSERT_EQ(pin, ss->Pin());
-  ASSERT_EQ(password, ss->Password());
-  printf("User created.\n");
-
-  ASSERT_TRUE(cc->CreatePublicUsername("el.mambo.tonnnnnto"));
-  ASSERT_EQ("el.mambo.tonnnnnto", ss->PublicUsername());
-  printf("Public Username created.\n");
-
-  ASSERT_TRUE(cc->Logout());
-  ASSERT_EQ("", ss->Username());
-  ASSERT_EQ("", ss->Pin());
-  ASSERT_EQ("", ss->Password());
-  printf("Logged out.\n");
-
-  result = cc->CheckUserExists(username,
-                               pin,
-                               boost::bind(&FakeCallback::CallbackFunc,
-                                           &cb,
-                                           _1),
-                               DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   GetResponse load_res;
@@ -644,6 +640,10 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   ASSERT_EQ("el.mambo.tonnnnnto", ss->PublicUsername());
   printf("Logged in.\n");
 
+  ASSERT_TRUE(cc->CreatePublicUsername("el.mambo.tonnnnnto"));
+  ASSERT_EQ("el.mambo.tonnnnnto", ss->PublicUsername());
+  printf("Public Username created.\n");
+
   ASSERT_FALSE(cc->CreatePublicUsername("el.mambo.tonnnnnto"));
   ASSERT_EQ("el.mambo.tonnnnnto", ss->PublicUsername());
   printf("Public Username already created.\n");
@@ -656,26 +656,46 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 }
 
 TEST_F(FunctionalMaidsafeClientControllerTest,
-       DISABLED_FUNC_MAID_ControllerLeaveNetwork) {
+       FUNC_MAID_ControllerLeaveNetwork) {
   ss = SessionSingleton::getInstance();
   ASSERT_EQ("", ss->Username());
   ASSERT_EQ("", ss->Pin());
   ASSERT_EQ("", ss->Password());
   printf("Preconditions fulfilled.\n");
 
+//  exitcode result = cc->CheckUserExists(username,
+//                                        pin,
+//                                        boost::bind(
+//                                            &FakeCallback::CallbackFunc,
+//                                            &cb,
+//                                            _1),
+//                                        DEFCON2);
+//  ASSERT_EQ(NON_EXISTING_USER, result);
+//  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+//  ASSERT_EQ(username, ss->Username());
+//  ASSERT_EQ(pin, ss->Pin());
+//  ASSERT_EQ(password, ss->Password());
+//  printf("User created.\n");
+//
+
   exitcode result = cc->CheckUserExists(username,
                                         pin,
-                                        boost::bind(
-                                            &FakeCallback::CallbackFunc,
-                                            &cb,
-                                            _1),
+                                        boost::bind(&FakeCallback::CallbackFunc,
+                                                    &cb,
+                                                    _1),
                                         DEFCON2);
-  ASSERT_EQ(NON_EXISTING_USER, result);
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_EQ(USER_EXISTS, result);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  GetResponse load_res;
+  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_EQ(kCallbackSuccess, load_res.result());
+  std::list<std::string> list;
+  ASSERT_TRUE(cc->ValidateUser(password, &list));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
-  printf("User created.\n");
+  ASSERT_EQ("el.mambo.tonnnnnto", ss->PublicUsername());
+  printf("Logged in.\n");
 
   ASSERT_TRUE(cc->LeaveMaidsafeNetwork());
   printf("Left maidsafe ='(.\n");
@@ -710,26 +730,46 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 }
 
 TEST_F(FunctionalMaidsafeClientControllerTest,
-       DISABLED_FUNC_MAID_ControllerBackupFile) {
+       FUNC_MAID_ControllerBackupFile) {
   ss = SessionSingleton::getInstance();
   ASSERT_EQ("", ss->Username());
   ASSERT_EQ("", ss->Pin());
   ASSERT_EQ("", ss->Password());
   printf("Preconditions fulfilled.\n");
 
+//  exitcode result = cc->CheckUserExists(username,
+//                                        pin,
+//                                        boost::bind(
+//                                            &FakeCallback::CallbackFunc,
+//                                            &cb,
+//                                            _1),
+//                                        DEFCON2);
+//  ASSERT_EQ(NON_EXISTING_USER, result);
+//  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+//  ASSERT_EQ(username, ss->Username());
+//  ASSERT_EQ(pin, ss->Pin());
+//  ASSERT_EQ(password, ss->Password());
+//  printf("User created.\n");
+//
+
   exitcode result = cc->CheckUserExists(username,
                                         pin,
-                                        boost::bind(
-                                            &FakeCallback::CallbackFunc,
-                                            &cb,
-                                            _1),
+                                        boost::bind(&FakeCallback::CallbackFunc,
+                                                    &cb,
+                                                    _1),
                                         DEFCON2);
-  ASSERT_EQ(NON_EXISTING_USER, result);
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_EQ(USER_EXISTS, result);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  GetResponse load_res;
+  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_EQ(kCallbackSuccess, load_res.result());
+  std::list<std::string> list;
+  ASSERT_TRUE(cc->ValidateUser(password, &list));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
-  printf("User created.\n");
+  ASSERT_EQ("el.mambo.tonnnnnto", ss->PublicUsername());
+  printf("Logged in.\n");
 
   file_system::FileSystem fsys_;
   fs::create_directories(fsys_.MaidsafeHomeDir()+kRootSubdir[0][0]);
@@ -766,10 +806,10 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  GetResponse load_res;
+  load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  std::list<std::string> list;
+  list.clear();
   ASSERT_TRUE(cc->ValidateUser(password, &list));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
@@ -793,26 +833,46 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 }
 
 TEST_F(FunctionalMaidsafeClientControllerTest,
-       DISABLED_FUNC_MAID_ControllerUserAuthorisation) {
+       FUNC_MAID_ControllerUserAuthorisation) {
   ss = SessionSingleton::getInstance();
   ASSERT_EQ("", ss->Username());
   ASSERT_EQ("", ss->Pin());
   ASSERT_EQ("", ss->Password());
   printf("Preconditions fulfilled.\n");
 
+//  exitcode result = cc->CheckUserExists(username,
+//                                        pin,
+//                                        boost::bind(
+//                                            &FakeCallback::CallbackFunc,
+//                                            &cb,
+//                                            _1),
+//                                        DEFCON2);
+//  ASSERT_EQ(NON_EXISTING_USER, result);
+//  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+//  ASSERT_EQ(username, ss->Username());
+//  ASSERT_EQ(pin, ss->Pin());
+//  ASSERT_EQ(password, ss->Password());
+//  printf("User created.\n");
+//
+
   exitcode result = cc->CheckUserExists(username,
                                         pin,
-                                        boost::bind(
-                                            &FakeCallback::CallbackFunc,
-                                            &cb,
-                                            _1),
+                                        boost::bind(&FakeCallback::CallbackFunc,
+                                                    &cb,
+                                                    _1),
                                         DEFCON2);
-  ASSERT_EQ(NON_EXISTING_USER, result);
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_EQ(USER_EXISTS, result);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  GetResponse load_res;
+  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_EQ(kCallbackSuccess, load_res.result());
+  std::list<std::string> list;
+  ASSERT_TRUE(cc->ValidateUser(password, &list));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
-  printf("User created.\n");
+  ASSERT_EQ("el.mambo.tonnnnnto", ss->PublicUsername());
+  printf("Logged in.\n");
 
   ASSERT_TRUE(cc->CreatePublicUsername("el.mambo.tonnnnnto"));
   ASSERT_EQ("el.mambo.tonnnnnto", ss->PublicUsername());
@@ -832,10 +892,10 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                DEFCON2);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  GetResponse load_res;
+  load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  std::list<std::string> list;
+  list.clear();
   ASSERT_TRUE(cc->ValidateUser(password, &list));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
@@ -1042,26 +1102,46 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 //  }
 
 TEST_F(FunctionalMaidsafeClientControllerTest,
-      DISABLED_FUNC_MAID_ControllerFuseFunctions) {
+      FUNC_MAID_ControllerFuseFunctions) {
   ss = SessionSingleton::getInstance();
   ASSERT_EQ("", ss->Username());
   ASSERT_EQ("", ss->Pin());
   ASSERT_EQ("", ss->Password());
   printf("Preconditions fulfilled.\n");
 
+//  exitcode result = cc->CheckUserExists(username,
+//                                        pin,
+//                                        boost::bind(
+//                                            &FakeCallback::CallbackFunc,
+//                                            &cb,
+//                                            _1),
+//                                        DEFCON2);
+//  ASSERT_EQ(NON_EXISTING_USER, result);
+//  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+//  ASSERT_EQ(username, ss->Username());
+//  ASSERT_EQ(pin, ss->Pin());
+//  ASSERT_EQ(password, ss->Password());
+//  printf("User created.\n");
+//
+
   exitcode result = cc->CheckUserExists(username,
                                         pin,
-                                        boost::bind(
-                                            &FakeCallback::CallbackFunc,
-                                            &cb,
-                                            _1),
+                                        boost::bind(&FakeCallback::CallbackFunc,
+                                                    &cb,
+                                                    _1),
                                         DEFCON2);
-  ASSERT_EQ(NON_EXISTING_USER, result);
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_EQ(USER_EXISTS, result);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  GetResponse load_res;
+  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_EQ(kCallbackSuccess, load_res.result());
+  std::list<std::string> list;
+  ASSERT_TRUE(cc->ValidateUser(password, &list));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
-  printf("User created.\n");
+  ASSERT_EQ("el.mambo.tonnnnnto", ss->PublicUsername());
+  printf("Logged in.\n");
 
   file_system::FileSystem fsys_;
   fs::create_directories(fsys_.MaidsafeHomeDir()+kRootSubdir[0][0]);
@@ -1217,6 +1297,6 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   printf("Logged out user.\n");
 }
 
-}  // namespace
+}  // namespace maidsafe
 
 
