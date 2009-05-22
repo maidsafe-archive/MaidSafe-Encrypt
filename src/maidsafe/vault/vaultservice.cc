@@ -39,7 +39,7 @@ VaultService::VaultService(const std::string &pmid_public,
                            const std::string &pmid_private,
                            const std::string &signed_pmid_public,
                            boost::shared_ptr<ChunkStore>chunkstore,
-                           boost::shared_ptr<kad::KNode> knode)
+                           kad::KNode *knode)
     : crypto_(),
       pmid_public_(pmid_public),
       pmid_private_(pmid_private),
@@ -50,7 +50,8 @@ VaultService::VaultService(const std::string &pmid_public,
 //  printf("In VaultService contructor.\n");
   crypto_.set_symm_algorithm("AES_256");
   crypto_.set_hash_algorithm("SHA512");
-  pmid_ = crypto_.Hash(signed_pmid_public_, "", crypto::STRING_STRING, true);
+  pmid_ = crypto_.Hash(signed_pmid_public_, "", maidsafe_crypto::STRING_STRING,
+                       true);
 }
 
 void VaultService::StoreChunk(google::protobuf::RpcController*,
@@ -293,7 +294,7 @@ void VaultService::GetMessages(google::protobuf::RpcController*,
     return;
   }
   if (!crypto_.AsymCheckSig(request->public_key(), request->signed_public_key(),
-      request->public_key(), crypto::STRING_STRING)) {
+      request->public_key(), maidsafe_crypto::STRING_STRING)) {
     response->set_result(kCallbackFailure);
     done->Run();
     return;
@@ -410,7 +411,7 @@ void VaultService::ValidityCheck(google::protobuf::RpcController*,
   //                  return kCallbackFailure if we fail and try and get another
   //                  uncorrupted copy.
   std::string hcontent = crypto_.Hash(chunk_content +
-      request->random_data(), "", crypto::STRING_STRING, false);
+      request->random_data(), "", maidsafe_crypto::STRING_STRING, false);
   response->set_result(kCallbackSuccess);
   response->set_hash_content(hcontent);
   done->Run();
@@ -481,12 +482,12 @@ bool VaultService::ValidateSignedRequest(const std::string &public_key,
                                          const std::string &signed_request,
                                          const std::string &key) {
   if (crypto_.AsymCheckSig(public_key, signed_public_key, public_key,
-                           crypto::STRING_STRING)) {
+                           maidsafe_crypto::STRING_STRING)) {
     std::string encoded_key;
     base::encode_to_hex(key, encoded_key);
     return crypto_.AsymCheckSig(crypto_.Hash(public_key + signed_public_key +
-      encoded_key, "", crypto::STRING_STRING, true), signed_request, public_key,
-      crypto::STRING_STRING);
+      encoded_key, "", maidsafe_crypto::STRING_STRING, true), signed_request,
+      public_key, maidsafe_crypto::STRING_STRING);
   } else {
     printf("Failed to check Signature\n");
     return false;
@@ -499,13 +500,13 @@ bool VaultService::ValidateSystemPacket(const std::string &ser_content,
   if (!gp.ParseFromString(ser_content))
     return false;
   return crypto_.AsymCheckSig(gp.data(), gp.signature(), public_key,
-    crypto::STRING_STRING);
+    maidsafe_crypto::STRING_STRING);
 }
 
 bool VaultService::ValidateDataChunk(const std::string &chunkname,
                                      const std::string &content) {
   std::string computed_chunkname = crypto_.Hash(content, "",
-    crypto::STRING_STRING, false);
+    maidsafe_crypto::STRING_STRING, false);
   if (chunkname == computed_chunkname)
     return true;
   else
@@ -552,17 +553,17 @@ void VaultService::StoreChunkReference(const std::string &chunk_name) {
   std::string signed_request_ = crypto_.AsymSign(
       crypto_.Hash(pmid_public_ + signed_pmid_public_ + chunk_name,
                    "",
-                   crypto::STRING_STRING,
+                   maidsafe_crypto::STRING_STRING,
                    true),
       "",
       pmid_private_,
-      crypto::STRING_STRING);
+      maidsafe_crypto::STRING_STRING);
   kad::ContactInfo ci = knode_->contact_info();
   std::string contact_info;
   ci.SerializeToString(&contact_info);
 #ifdef DEBUG
   if (!crypto_.AsymCheckSig(pmid_public_, signed_pmid_public_, pmid_public_,
-      crypto::STRING_STRING))
+      maidsafe_crypto::STRING_STRING))
     printf("Pa variar, la firma valio vergaaaaaaaa!");
 #endif
   knode_->StoreValue(chunk_name,

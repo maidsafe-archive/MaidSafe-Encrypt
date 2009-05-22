@@ -94,15 +94,15 @@ void GeneratePmidStuff(std::string *public_key,
                        std::string *private_key,
                        std::string *signed_key,
                        std::string *pmid) {
-  crypto::Crypto co_;
+  maidsafe_crypto::Crypto co_;
   co_.set_hash_algorithm("SHA512");
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(packethandler::kRsaKeySize);
   *signed_key = co_.AsymSign(keys.public_key(), "", keys.private_key(),
-    crypto::STRING_STRING);
+    maidsafe_crypto::STRING_STRING);
   *public_key = keys.public_key();
   *private_key = keys.private_key();
-  *pmid = co_.Hash(*signed_key, "", crypto::STRING_STRING, true);
+  *pmid = co_.Hash(*signed_key, "", maidsafe_crypto::STRING_STRING, true);
 };
 
 class RunPDVaults {
@@ -305,7 +305,7 @@ class RunPDVaults {
   std::vector<fs::path> chunkstore_dirs_;
   std::vector< boost::shared_ptr<boost::mutex> > mutices_;
   base::callback_func_type cb_;
-  crypto::Crypto crypto_;
+  maidsafe_crypto::Crypto crypto_;
   boost::shared_ptr< std::vector< boost::shared_ptr<PDVault> > > pdvaults_;
   int current_nodes_created_;
   boost::mutex mutex_;

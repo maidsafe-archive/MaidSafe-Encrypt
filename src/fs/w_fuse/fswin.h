@@ -218,9 +218,9 @@ typedef struct _DOKAN_OPERATIONS {
     PDOKAN_FILE_INFO);
 
 	int (DOKAN_CALLBACK *SetAllocationSize) (  // NOLINT (Fraser)
-		LPCWSTR,  // FileName
-		LONGLONG, // Length
-		PDOKAN_FILE_INFO);
+    LPCWSTR,  // FileName
+    LONGLONG,  // Length
+    PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *LockFile) (  // NOLINT (Fraser)
     LPCWSTR,   //  FileName

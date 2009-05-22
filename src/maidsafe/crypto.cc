@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/utils.h"
 
-namespace crypto {
+namespace maidsafe_crypto {
 
 CryptoPP::RandomNumberGenerator & GlobalRNG() {
   static CryptoPP::AutoSeededRandomPool rand_pool;
@@ -706,4 +706,4 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
   }
 }
 
-}  // namespace crypto
+}  // namespace maidsafe_crypto

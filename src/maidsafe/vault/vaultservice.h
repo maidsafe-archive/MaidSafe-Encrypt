@@ -41,7 +41,7 @@ class VaultService : public maidsafe::MaidsafeService {
                const std::string &pmid_private,
                const std::string &signed_pmid_public,
                boost::shared_ptr<ChunkStore>chunkstore,
-               boost::shared_ptr<kad::KNode> knode);
+               kad::KNode *knode);
   ~VaultService() {
 //    printf("In VaultService destructor.\n");
   }
@@ -99,10 +99,10 @@ class VaultService : public maidsafe::MaidsafeService {
   bool LoadChunkLocal(const std::string &chunkname, std::string *content);
   bool DeleteChunkLocal(const std::string &chunkname);
   void StoreChunkReference(const std::string &chunk_name);
-  crypto::Crypto crypto_;
+  maidsafe_crypto::Crypto crypto_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
   boost::shared_ptr<ChunkStore>chunkstore_;
-  boost::shared_ptr<kad::KNode>knode_;
+  kad::KNode *knode_;
 };
 }  // namespace maidsafe_vault
 

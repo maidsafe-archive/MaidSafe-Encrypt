@@ -17,12 +17,12 @@ PacketHandlerTest() : crypto_obj(), input_param() {}
       crypto_obj.set_symm_algorithm("AES_256");
       crypto_obj.set_hash_algorithm("SHA512");
   }
-    crypto::Crypto crypto_obj; // used for validating
+    maidsafe_crypto::Crypto crypto_obj; // used for validating
     PacketParams input_param;
 };
 
-crypto::RsaKeyPair create_keys(){
-  crypto::RsaKeyPair rsakp;
+maidsafe_crypto::RsaKeyPair create_keys(){
+  maidsafe_crypto::RsaKeyPair rsakp;
   rsakp.GenerateKeys(kRsaKeySize);
   return rsakp;
 }
@@ -33,7 +33,7 @@ boost::timer t;
   MidPacket *midPacket = dynamic_cast<MidPacket*>(packet);
   uint32_t rid=0;
   GenericPacket mid;
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize); // simulating signing keys of ANMID
   input_param["username"] = std::string("user1");
   input_param["PIN"] = std::string("1234");
@@ -41,14 +41,14 @@ boost::timer t;
   PacketParams result = midPacket->Create(input_param);
   std::string mid_name;
   std::string ser_mid = boost::any_cast<std::string>(result["ser_packet"]);
-  std::string hashusername = crypto_obj.Hash("user1","", crypto::STRING_STRING, true);
-  std::string hashpin = crypto_obj.Hash("1234","", crypto::STRING_STRING, true);
-  ASSERT_EQ(crypto_obj.Hash(hashusername+hashpin,"", crypto::STRING_STRING, true),
+  std::string hashusername = crypto_obj.Hash("user1","", maidsafe_crypto::STRING_STRING, true);
+  std::string hashpin = crypto_obj.Hash("1234","", maidsafe_crypto::STRING_STRING, true);
+  ASSERT_EQ(crypto_obj.Hash(hashusername+hashpin,"", maidsafe_crypto::STRING_STRING, true),
       boost::any_cast<std::string>(result["name"]));
   ASSERT_TRUE(mid.ParseFromString(ser_mid));
   // Check it is correctly signed
   ASSERT_TRUE(crypto_obj.AsymCheckSig(mid.data(), mid.signature(),
-      keys.public_key(), crypto::STRING_STRING));
+      keys.public_key(), maidsafe_crypto::STRING_STRING));
   // Check that data is encrypted
   std::stringstream out;
   out << rid;
@@ -59,7 +59,7 @@ boost::timer t;
 TEST_F(PacketHandlerTest, BEH_MAID_GetRidMID){
   Packet *packet = PacketFactory::Factory(MID);
   MidPacket *midPacket = dynamic_cast<MidPacket*>(packet);
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize); // simulating signing keys of ANMID
   input_param["username"] = std::string("user1");
   input_param["PIN"] = std::string("1234");
@@ -74,7 +74,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetRidMID){
 TEST_F(PacketHandlerTest, BEH_MAID_CreateSigPacket){
   // Signature packets are signed by themselves
   std::string name;
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   SignaturePacket *sigPacket = dynamic_cast<SignaturePacket*>(PacketFactory::Factory(MAID));
   PacketParams result = sigPacket->Create(input_param);
   GenericPacket sigpacket;
@@ -86,18 +86,18 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateSigPacket){
   ASSERT_TRUE(sigpacket.ParseFromString(ser_packet));
   // Check it is correctly signed
   ASSERT_TRUE(crypto_obj.AsymCheckSig(sigpacket.data(), sigpacket.signature(),
-      keys.public_key(), crypto::STRING_STRING));
+      keys.public_key(), maidsafe_crypto::STRING_STRING));
   // Checking that the public key returned is a valid one
   ASSERT_TRUE(crypto_obj.AsymCheckSig(keys.public_key(), sigpacket.signature(),
-      keys.public_key(), crypto::STRING_STRING));
+      keys.public_key(), maidsafe_crypto::STRING_STRING));
   std::string expected_name = crypto_obj.Hash(sigpacket.data()+
-      sigpacket.signature(), "", crypto::STRING_STRING, true);
+      sigpacket.signature(), "", maidsafe_crypto::STRING_STRING, true);
   ASSERT_EQ(expected_name, name);
 }
 
 TEST_F(PacketHandlerTest, BEH_MAID_CreateMPID){
   std::string name;
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize);
   input_param["publicname"] = std::string("juan esmer");
   input_param["privateKey"] = keys.private_key();
@@ -109,15 +109,15 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateMPID){
   ASSERT_TRUE(mpidpacket.ParseFromString(ser_packet));
   // Check it is correctly signed
   ASSERT_TRUE(crypto_obj.AsymCheckSig(mpidpacket.data(), mpidpacket.signature(), keys.public_key(),
-    crypto::STRING_STRING));
+    maidsafe_crypto::STRING_STRING));
   std::string expected_name = crypto_obj.Hash(boost::any_cast<std::string>(
-      input_param["publicname"]), "", crypto::STRING_STRING, true);
+      input_param["publicname"]), "", maidsafe_crypto::STRING_STRING, true);
   ASSERT_EQ(expected_name, name);
 
 }
 
 TEST_F(PacketHandlerTest, BEH_MAID_GetKeyFromPacket){
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   std::string ser_packet;
   PacketParams result;
 
@@ -150,7 +150,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetKeyFromPacket){
 
 TEST_F(PacketHandlerTest, BEH_MAID_CreatePMID){
   std::string name;
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize);
   input_param["privateKey"] = keys.private_key();
   PmidPacket *pmidPacket = dynamic_cast<PmidPacket*>(PacketFactory::Factory(PMID));
@@ -161,8 +161,8 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreatePMID){
   ASSERT_TRUE(pmidpacket.ParseFromString(ser_packet));
   // Check it is correctly signed
   ASSERT_TRUE(crypto_obj.AsymCheckSig(pmidpacket.data(), pmidpacket.signature(), keys.public_key(),
-    crypto::STRING_STRING));
-  std::string expected_name = crypto_obj.Hash(pmidpacket.data()+pmidpacket.signature(), "", crypto::STRING_STRING, true);
+    maidsafe_crypto::STRING_STRING));
+  std::string expected_name = crypto_obj.Hash(pmidpacket.data()+pmidpacket.signature(), "", maidsafe_crypto::STRING_STRING, true);
   ASSERT_EQ(expected_name, name);
 }
 
@@ -174,7 +174,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateTMID){
   input_param["data"] = std::string("serialised DataAtlas");
   input_param["PIN"] = std::string("1234");
   input_param["rid"]  = uint32_t(5555);
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize); // simulating signing keys of ANTMID
   input_param["privateKey"] = keys.private_key();
   PacketParams result = tmid_packet->Create(input_param);
@@ -186,13 +186,13 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateTMID){
   ASSERT_TRUE(tmid.ParseFromString(ser_tmid));
   // Check it is correctly signed
   ASSERT_TRUE(crypto_obj.AsymCheckSig(tmid.data(), tmid.signature(),
-      keys.public_key(), crypto::STRING_STRING));
+      keys.public_key(), maidsafe_crypto::STRING_STRING));
   // Check name
-  std::string hashusername = crypto_obj.Hash("user1","", crypto::STRING_STRING, true);
-  std::string hashpin = crypto_obj.Hash("1234","", crypto::STRING_STRING, true);
-  std::string hashrid = crypto_obj.Hash("5555","", crypto::STRING_STRING, true);
+  std::string hashusername = crypto_obj.Hash("user1","", maidsafe_crypto::STRING_STRING, true);
+  std::string hashpin = crypto_obj.Hash("1234","", maidsafe_crypto::STRING_STRING, true);
+  std::string hashrid = crypto_obj.Hash("5555","", maidsafe_crypto::STRING_STRING, true);
   ASSERT_EQ(crypto_obj.Hash(hashusername+hashpin+hashrid,"",
-      crypto::STRING_STRING, true), boost::any_cast<std::string>(result["name"]));
+      maidsafe_crypto::STRING_STRING, true), boost::any_cast<std::string>(result["name"]));
   // Check data is encrypted
   ASSERT_NE(boost::any_cast<std::string>(input_param["data"]), tmid.data());
 }
@@ -204,7 +204,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetDataFromTMID){
   input_param["data"] = std::string("serialised DataAtlas");
   input_param["PIN"] = std::string("1234");
   input_param["rid"]  = uint32_t(5555);
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize); // simulating signing keys of ANTMID
   input_param["privateKey"] = keys.private_key();
   PacketParams result = tmid_packet->Create(input_param);
@@ -220,7 +220,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetDataFromTMID){
 TEST_F(PacketHandlerTest, BEH_MAID_CreateSMID){
   SmidPacket *smidPacket = dynamic_cast<SmidPacket*>(PacketFactory::Factory(SMID));
   GenericPacket smid;
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize); // simulating signing keys of ANMID
   input_param["username"] = std::string("user1");
   input_param["PIN"] = std::string("1234");
@@ -229,19 +229,19 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateSMID){
   PacketParams result = smidPacket->Create(input_param);
   std::string smid_name;
   std::string ser_smid = boost::any_cast<std::string>(result["ser_packet"]);
-  std::string hashusername = crypto_obj.Hash("user1","", crypto::STRING_STRING, true);
-  std::string hashpin = crypto_obj.Hash("1234","", crypto::STRING_STRING, true);
-  ASSERT_EQ(crypto_obj.Hash(hashusername+hashpin+"1","", crypto::STRING_STRING, true),
+  std::string hashusername = crypto_obj.Hash("user1","", maidsafe_crypto::STRING_STRING, true);
+  std::string hashpin = crypto_obj.Hash("1234","", maidsafe_crypto::STRING_STRING, true);
+  ASSERT_EQ(crypto_obj.Hash(hashusername+hashpin+"1","", maidsafe_crypto::STRING_STRING, true),
       boost::any_cast<std::string>(result["name"]));
   ASSERT_TRUE(smid.ParseFromString(ser_smid));
   // Check it is correctly signed
   ASSERT_TRUE(crypto_obj.AsymCheckSig(smid.data(), smid.signature(),
-    keys.public_key(), crypto::STRING_STRING));
+    keys.public_key(), maidsafe_crypto::STRING_STRING));
 }
 
 TEST_F(PacketHandlerTest, BEH_MAID_GetRidSMID){
   SmidPacket *smidPacket = dynamic_cast<SmidPacket*>(PacketFactory::Factory(SMID));
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize); // simulating signing keys of ANMID
   input_param["username"] = std::string("user1");
   input_param["PIN"] = std::string("1234");

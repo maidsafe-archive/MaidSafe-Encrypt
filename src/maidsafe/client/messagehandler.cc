@@ -80,15 +80,15 @@ std::string MessageHandler::CreateMessage(
   bpm.set_type(m_type);
   int iter = base::random_32bit_uinteger() % 1000 +1;
   std::string aes_key = co_.SecurePassword(
-      co_.Hash(msg, "", crypto::STRING_STRING, true),
+      co_.Hash(msg, "", maidsafe_crypto::STRING_STRING, true),
       iter);
   bpm.set_rsaenc_key(co_.AsymEncrypt(aes_key,
                                      "",
                                      rec_public_key,
-                                     crypto::STRING_STRING));
+                                     maidsafe_crypto::STRING_STRING));
   bpm.set_aesenc_message(co_.SymmEncrypt(msg,
                                          "",
-                                         crypto::STRING_STRING,
+                                         maidsafe_crypto::STRING_STRING,
                                          aes_key));
   std::string ser_bpm;
   bpm.SerializeToString(&ser_bpm);
@@ -96,7 +96,7 @@ std::string MessageHandler::CreateMessage(
   gp.set_signature(co_.AsymSign(gp.data(),
                                 "",
                                 ss_->GetPrivateKey(p_type),
-                                crypto::STRING_STRING));
+                                maidsafe_crypto::STRING_STRING));
   std::string ser_gp;
   gp.SerializeToString(&ser_gp);
   return ser_gp;
@@ -109,15 +109,15 @@ void MessageHandler::CreateSignature(const std::string &buffer_name,
   *signed_public_key = co_.AsymSign(ss_->GetPublicKey(type),
                                     "",
                                     ss_->GetPrivateKey(type),
-                                    crypto::STRING_STRING);
+                                    maidsafe_crypto::STRING_STRING);
   *signed_request = co_.AsymSign(
       co_.Hash(ss_->GetPublicKey(type) + *signed_public_key + buffer_name,
                "",
-               crypto::STRING_STRING,
+               maidsafe_crypto::STRING_STRING,
                true),
       "",
       ss_->GetPrivateKey(type),
-      crypto::STRING_STRING);
+      maidsafe_crypto::STRING_STRING);
 }
 
 // bool MessageHandler::HandleMessages(std::list<dht::entry> msgs) {
@@ -193,31 +193,31 @@ void MessageHandler::IterativeStoreMsgs(
         case packethandler::SHARE:
             sys_packet_name = co_.Hash(data->receivers[data->index].id,
                                        "",
-                                       crypto::STRING_STRING,
+                                       maidsafe_crypto::STRING_STRING,
                                        true);
             break;
         case packethandler::ADD_CONTACT_RQST:
             sys_packet_name = co_.Hash(data->receivers[data->index].id,
                                        "",
-                                       crypto::STRING_STRING,
+                                       maidsafe_crypto::STRING_STRING,
                                        true);
             break;
         case packethandler::ADD_CONTACT_RESPONSE:
             sys_packet_name = co_.Hash(data->receivers[data->index].id,
                                        "",
-                                       crypto::STRING_STRING,
+                                       maidsafe_crypto::STRING_STRING,
                                        true);
             break;
         case packethandler::GENERAL:
             sys_packet_name = co_.Hash(data->receivers[data->index].id,
                                        "",
-                                       crypto::STRING_STRING,
+                                       maidsafe_crypto::STRING_STRING,
                                        true);
             break;
         case packethandler::INSTANT_MSG:
             sys_packet_name = co_.Hash(data->receivers[data->index].id,
                                        "",
-                                       crypto::STRING_STRING,
+                                       maidsafe_crypto::STRING_STRING,
                                        true);
             break;
         default : sys_packet_name = data->receivers[data->index].id;
@@ -240,7 +240,7 @@ void MessageHandler::StoreMessage(
                                       data->p_type);
   std::string bufferpacketname = co_.Hash(data->receivers[index].id+"BUFFER",
                                           "",
-                                          crypto::STRING_STRING,
+                                          maidsafe_crypto::STRING_STRING,
                                           true);
 #ifdef DEBUG
   // printf("\nBufferpacket name (Saving):\n%s\n\n", bufferpacketname.c_str());

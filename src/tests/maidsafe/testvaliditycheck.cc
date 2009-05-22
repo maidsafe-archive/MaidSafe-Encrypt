@@ -35,7 +35,7 @@ class ValidityCheckTest:public testing::Test {
     }
     kad::KNode *node;
     boost::asio::io_service io_service_;
-    crypto::Crypto cry_obj;
+    maidsafe_crypto::Crypto cry_obj;
     boost::recursive_mutex *mutex;
     base::CallLaterTimer *timer;
 };
@@ -46,7 +46,7 @@ TEST_F(ValidityCheckTest, TestAddchunk) {
   ASSERT_TRUE(vdcheck.Start());
   std::string chunk_content = base::RandomString(333*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content,"",
-    crypto::STRING_STRING,false);
+    maidsafe_crypto::STRING_STRING,false);
   dht::entry param, result;
   param["key"] = chunk_name;
   param["content"] = chunk_content;
@@ -71,7 +71,7 @@ TEST_F(ValidityCheckTest, TestAddchunk) {
   // checking the chunk
   std::string randomdata = base::RandomString(10);
   std::string hash_chunk = cry_obj.Hash(chunk_content+randomdata,"",
-    crypto::STRING_STRING,false);
+    maidsafe_crypto::STRING_STRING,false);
   dht::entry validityres;
   validityres["result"] = kad::kRpcResultSuccess;
   validityres["hashcontent"] = hash_chunk;
@@ -112,7 +112,7 @@ TEST_F(ValidityCheckTest, TestAddchunk) {
   ASSERT_FALSE(vdcheck.PartnerExists(partner4, chunk_name));
   std::string new_chunk_content = base::RandomString(350*1024);
   std::string new_chunk_name = cry_obj.Hash(new_chunk_content,"",
-    crypto::STRING_STRING,false);
+    maidsafe_crypto::STRING_STRING,false);
   newpartners.clear();
   newpartners.push_back(partner3);
   result["values"] = newpartners;

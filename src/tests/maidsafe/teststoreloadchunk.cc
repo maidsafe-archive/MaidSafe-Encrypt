@@ -42,7 +42,7 @@ protected:
     cry_obj.set_hash_algorithm("SHA512");
     keys.GenerateKeys(1024);
     sig_pub_key = cry_obj.AsymSign(keys.public_key(), "", keys.private_key(),
-      crypto::STRING_STRING);
+      maidsafe_crypto::STRING_STRING);
 
   }
   virtual ~PDClientTest() {
@@ -146,16 +146,16 @@ protected:
   boost::filesystem::path *client_db;
   base::CallLaterTimer *client_timer;
   boost::asio::io_service *client_io_service;
-  crypto::Crypto cry_obj;
+  maidsafe_crypto::Crypto cry_obj;
   GeneralKadCallback cb;
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   std::string sig_pub_key;
 };
 
 TEST_F(PDClientTest, FUNC_KAD_LoadChunk) {
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-    crypto::STRING_STRING, false);
+    maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   kad::StoreChunkRequest args;
@@ -166,8 +166,8 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk) {
   args.set_public_key(keys.public_key());
   args.set_signed_public_key(sig_pub_key);
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   args.set_signed_request(sig_req);
   args.set_data_type(maidsafe::DATA);
   args.SerializeToString(&args_str);
@@ -201,7 +201,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk) {
 TEST_F(PDClientTest, FUNC_KAD_LoadChunk_HolderLeaves) {
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-    crypto::STRING_STRING, false);
+    maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   kad::StoreChunkRequest args;
@@ -212,8 +212,8 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_HolderLeaves) {
   args.set_public_key(keys.public_key());
   args.set_signed_public_key(sig_pub_key);
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   args.set_signed_request(sig_req);
   args.set_data_type(maidsafe::DATA);
   args.SerializeToString(&args_str);
@@ -250,7 +250,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_HolderLeaves) {
 TEST_F(PDClientTest, FUNC_KAD_LoadChunk_AllChunkHoldersLeave) {
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-      crypto::STRING_STRING, false);
+      maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   LoadChunkCallback cb1;
@@ -266,8 +266,8 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_AllChunkHoldersLeave) {
   args.set_public_key(keys.public_key());
   args.set_signed_public_key(sig_pub_key);
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   args.set_signed_request(sig_req);
   args.set_data_type(maidsafe::DATA);
   args.SerializeToString(&args_str);
@@ -311,13 +311,13 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_AllChunkHoldersLeave) {
 TEST_F(PDClientTest, BEH_KAD_Test_StoreChunk) {
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-    crypto::STRING_STRING, false);
+    maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb1;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient->StoreChunk(chunk_name, chunk_content, keys.public_key(),
     sig_pub_key, sig_req, maidsafe::DATA,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
@@ -357,14 +357,14 @@ TEST_F(PDClientTest, BEH_KAD_Test_StoreChunk) {
 TEST_F(PDClientTest, BEH_KAD_StoreChunk_InvalidRequest) {
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-    crypto::STRING_STRING, false);
+    maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb1;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
-  crypto::RsaKeyPair otherkeys;
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
+  maidsafe_crypto::RsaKeyPair otherkeys;
   otherkeys.GenerateKeys(1024);
   ASSERT_NE(keys.public_key(), otherkeys.public_key());
   pdclient->StoreChunk(chunk_name, chunk_content, otherkeys.public_key(),
@@ -388,7 +388,7 @@ TEST_F(PDClientTest, BEH_KAD_StoreChunk_InvalidRequest) {
   ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   cb1.Reset();
   std::string data_incorrect_name = cry_obj.Hash("chunk_content", "",
-    crypto::STRING_STRING, false);
+    maidsafe_crypto::STRING_STRING, false);
   pdclient->StoreChunk(data_incorrect_name, chunk_content, keys.public_key(),
     sig_pub_key, sig_req, maidsafe::DATA,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
@@ -416,13 +416,13 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkNoContacts) {
   ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-    crypto::STRING_STRING, false);
+    maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb2;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient1->StoreChunk(chunk_name, chunk_content, keys.public_key(),
     sig_pub_key, sig_req, maidsafe::DATA,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb2, _1));
@@ -445,13 +445,13 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkNoContacts) {
 TEST_F(PDClientTest, FUNC_KAD_Store_LoadChunk) {
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-      crypto::STRING_STRING, false);
+      maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb1;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient->StoreChunk(chunk_name, chunk_content,
     keys.public_key(), sig_pub_key, sig_req, maidsafe::DATA,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
@@ -497,13 +497,13 @@ TEST_F(PDClientTest, FUNC_KAD_Store_LoadChunk) {
 TEST_F(PDClientTest, FUNC_KAD_BasicUpdateChunk) {
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-    crypto::STRING_STRING, false);
+    maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb1;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient->StoreChunk(chunk_name, chunk_content,
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_NOTSIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
@@ -552,13 +552,13 @@ TEST_F(PDClientTest, FUNC_KAD_BasicUpdateChunk) {
 TEST_F(PDClientTest, FUNC_KAD_UpdateChunkWithChunkHolderLeave) {
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-    crypto::STRING_STRING, false);
+    maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb1;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient->StoreChunk(chunk_name, chunk_content,
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_NOTSIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
@@ -635,7 +635,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateChunkWithChunkHolderLeave) {
 TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-    crypto::STRING_STRING, false);
+    maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   kad::StoreChunkRequest args;
@@ -646,8 +646,8 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
   args.set_public_key(keys.public_key());
   args.set_signed_public_key(sig_pub_key);
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   args.set_signed_request(sig_req);
   args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
   args.SerializeToString(&args_str);
@@ -769,17 +769,17 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkSystemPacket) {
   packethandler::GenericPacket gp;
   gp.set_data(base::RandomString(4096));
   gp.set_signature(cry_obj.AsymSign(gp.data(), "", keys.private_key(),
-    crypto::STRING_STRING));
+    maidsafe_crypto::STRING_STRING));
   std::string chunk_content;
   gp.SerializeToString(&chunk_content);;
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-      crypto::STRING_STRING, false);
+      maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb1;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient->StoreChunk(chunk_name, chunk_content,
     keys.public_key(), sig_pub_key, sig_req, maidsafe::SYSTEM_PACKET,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
@@ -830,17 +830,17 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkSystemPacket_InvalidPacket) {
   packethandler::GenericPacket gp;
   gp.set_data(base::RandomString(4096));
   gp.set_signature(cry_obj.AsymSign(gp.data(), "", keys.private_key(),
-    crypto::STRING_STRING));
+    maidsafe_crypto::STRING_STRING));
   std::string chunk_content;
   gp.SerializeToString(&chunk_content);;
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-      crypto::STRING_STRING, false);
+      maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb1;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient->StoreChunk(chunk_name, base::RandomString(4096),
     keys.public_key(), sig_pub_key, sig_req, maidsafe::SYSTEM_PACKET,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
@@ -887,17 +887,17 @@ TEST_F(PDClientTest, FUNC_KAD_StoreSignedPDDir) {
   packethandler::GenericPacket gp;
   gp.set_data(base::RandomString(4096));
   gp.set_signature(cry_obj.AsymSign(gp.data(), "", keys.private_key(),
-    crypto::STRING_STRING));
+    maidsafe_crypto::STRING_STRING));
   std::string chunk_content;
   gp.SerializeToString(&chunk_content);;
   std::string chunk_name = cry_obj.Hash("PD_DIR", "",
-      crypto::STRING_STRING, false);
+      maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb1;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient->StoreChunk(chunk_name, chunk_content,
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_SIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
@@ -918,13 +918,13 @@ TEST_F(PDClientTest, FUNC_KAD_StoreSignedPDDir) {
 TEST_F(PDClientTest, FUNC_KAD_StoreUnSignedPDDir) {
   std::string chunk_content = base::RandomString(4096);
   std::string chunk_name = cry_obj.Hash("PD_DIR", "",
-      crypto::STRING_STRING, false);
+      maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb1;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient->StoreChunk(chunk_name, chunk_content,
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_NOTSIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
@@ -944,17 +944,17 @@ TEST_F(PDClientTest, FUNC_KAD_StoreBUFFER_PACKET) {
   packethandler::GenericPacket *gp = bp.add_owner_info();
   gp->set_data(base::RandomString(4096));
   gp->set_signature(cry_obj.AsymSign(gp->data(), "", keys.private_key(),
-    crypto::STRING_STRING));
+    maidsafe_crypto::STRING_STRING));
   std::string chunk_content;
   bp.SerializeToString(&chunk_content);;
   std::string chunk_name = cry_obj.Hash("BUFERPACKET", "",
-      crypto::STRING_STRING, false);
+      maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb1;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient->StoreChunk(chunk_name, chunk_content,
     keys.public_key(), sig_pub_key, sig_req, maidsafe::BUFFER_PACKET,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
@@ -976,17 +976,17 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateSignedPDDir) {
   std::string orig_content = base::RandomString(4096);
   gp.set_data(orig_content);
   gp.set_signature(cry_obj.AsymSign(gp.data(), "", keys.private_key(),
-    crypto::STRING_STRING));
+    maidsafe_crypto::STRING_STRING));
   std::string chunk_content;
   gp.SerializeToString(&chunk_content);;
   std::string chunk_name = cry_obj.Hash("PD_DIR", "",
-      crypto::STRING_STRING, false);
+      maidsafe_crypto::STRING_STRING, false);
   std::string encoded_chunk_name;
   base::encode_to_hex(chunk_name, encoded_chunk_name);
   StoreChunkCallback cb1;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key() +
-    sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key + encoded_chunk_name, "", maidsafe_crypto::STRING_STRING, true), "",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient->StoreChunk(chunk_name, chunk_content,
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_SIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
@@ -1007,7 +1007,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateSignedPDDir) {
   gp.Clear();
   gp.set_data(base::RandomString(4096));
   gp.set_signature(cry_obj.AsymSign(gp.data(), "", keys.private_key(),
-    crypto::STRING_STRING));
+    maidsafe_crypto::STRING_STRING));
   gp.SerializeToString(&chunk_content);
   cb1.Reset();
   pdclient->UpdateChunk(chunk_name, "not a serialised generic packet",
@@ -1038,7 +1038,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateSignedPDDir) {
 TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
   std::string owner_id("Juan U. Smer");
   std::string bufferpacketname = cry_obj.Hash\
-    (owner_id+"BUFFER","", crypto::STRING_STRING, true);
+    (owner_id+"BUFFER","", maidsafe_crypto::STRING_STRING, true);
   packethandler::BufferPacket buffer_packet;
   packethandler::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
   packethandler::BufferPacketInfo buffer_packet_info;
@@ -1049,13 +1049,13 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
   buffer_packet_info.SerializeToString(&ser_info);
   ser_owner_info->set_data(ser_info);
   ser_owner_info->set_signature(cry_obj.AsymSign(ser_info,"",keys.private_key(),
-    crypto::STRING_STRING));
+    maidsafe_crypto::STRING_STRING));
   std::string chunk_content;
   buffer_packet.SerializeToString(&chunk_content);
   std::string ser_bp = chunk_content;
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(keys.public_key()+
-    sig_pub_key+bufferpacketname, "", crypto::STRING_STRING, true),"",
-    keys.private_key(), crypto::STRING_STRING);
+    sig_pub_key+bufferpacketname, "", maidsafe_crypto::STRING_STRING, true),"",
+    keys.private_key(), maidsafe_crypto::STRING_STRING);
   StoreChunkCallback cb1;
   std::string chunk_name;
   base::decode_from_hex(bufferpacketname, chunk_name);
@@ -1079,10 +1079,10 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
   packethandler::BufferPacketMessage bpmsg;
   bpmsg.set_sender_id("sender");
   bpmsg.set_rsaenc_key(cry_obj.AsymEncrypt(key, "", keys.public_key(),
-    crypto::STRING_STRING));
+    maidsafe_crypto::STRING_STRING));
   cry_obj.set_symm_algorithm("AES_256");
   bpmsg.set_aesenc_message(cry_obj.SymmEncrypt("test msg", "",
-    crypto::STRING_STRING, key));
+    maidsafe_crypto::STRING_STRING, key));
   bpmsg.set_type(packethandler::ADD_CONTACT_RQST);
   bpmsg.set_sender_public_key(keys.public_key());
   std::string ser_bpmsg;
@@ -1090,7 +1090,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
   packethandler::GenericPacket bpmsg_gp;
   bpmsg_gp.set_data(ser_bpmsg);
   bpmsg_gp.set_signature(cry_obj.AsymSign(ser_bpmsg, "", keys.private_key(),
-    crypto::STRING_STRING));
+    maidsafe_crypto::STRING_STRING));
   std::string ser_bpmsg_gp;
   bpmsg_gp.SerializeToString(&ser_bpmsg_gp);
   //Expected result for GetMsgs
@@ -1104,13 +1104,13 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
 
   UpdateChunkCallback cb3;
   //Updating bp info not owner and invalid owner info data
-  crypto::RsaKeyPair newkeys;
+  maidsafe_crypto::RsaKeyPair newkeys;
   newkeys.GenerateKeys(1024);
   std::string new_sig_pk = cry_obj.AsymSign(newkeys.public_key(), "",
-    newkeys.private_key(), crypto::STRING_STRING);
+    newkeys.private_key(), maidsafe_crypto::STRING_STRING);
   std::string new_sig_req = cry_obj.AsymSign(cry_obj.Hash(newkeys.public_key()+
-    new_sig_pk+bufferpacketname, "", crypto::STRING_STRING, true),"",
-    newkeys.private_key(), crypto::STRING_STRING);
+    new_sig_pk+bufferpacketname, "", maidsafe_crypto::STRING_STRING, true),"",
+    newkeys.private_key(), maidsafe_crypto::STRING_STRING);
   pdclient->UpdateChunk(chunk_name, ser_bpmsg_gp,
     newkeys.public_key(), new_sig_pk, new_sig_req, maidsafe::BUFFER_PACKET_INFO,
     boost::bind(&UpdateChunkCallback::CallbackFunc, &cb3, _1));

@@ -80,7 +80,7 @@ ClientController::ClientController(): auth_(), sm_(), ss_(),
 #ifdef LOCAL_PDVAULT
     sm_ = new LocalStoreManager(&mutex_);
 #else
-    sm_ = new MaidsafeStoreManager(&mutex_);
+    sm_ = new MaidsafeStoreManager();
 #endif
 }
 
@@ -379,7 +379,7 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
 #endif
     return -1;
   }
-  crypto::Crypto co_;
+  maidsafe_crypto::Crypto co_;
   co_.set_symm_algorithm("AES_256");
   co_.set_hash_algorithm("SHA1");
   fs::path config_file(vault_path);
@@ -389,14 +389,17 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
   vault_config.set_pmid_private(pmid_private);
   //  vault_config.set_port(6666);
   vault_config.set_signed_pmid_public(
-      co_.AsymSign(pmid_public, "", pmid_private, crypto::STRING_STRING));
+      co_.AsymSign(pmid_public, "", pmid_private,
+      maidsafe_crypto::STRING_STRING));
   fs::path chunkstore_path(vault_path);
   chunkstore_path /= "Chunkstore";
-  chunkstore_path /= co_.Hash(pmid_public, "", crypto::STRING_STRING, true);
+  chunkstore_path /= co_.Hash(pmid_public, "", maidsafe_crypto::STRING_STRING,
+                              true);
   vault_config.set_chunkstore_dir(chunkstore_path.string());
   fs::path datastore_path(vault_path);
   datastore_path /= "Datastore";
-  datastore_path /= co_.Hash(pmid_public, "", crypto::STRING_STRING, true);
+  datastore_path /= co_.Hash(pmid_public, "", maidsafe_crypto::STRING_STRING,
+                             true);
   vault_config.set_datastore_dir(datastore_path.string());
   std::fstream output(config_file.string().c_str(),
                       std::ios::out | std::ios::trunc | std::ios::binary);
@@ -893,10 +896,11 @@ bool ClientController::GetMessages() {
   WaitForResult(cb);
   DeleteResponse clear_result;
   if ((!clear_result.ParseFromString(cb.result)) ||
-       (clear_result.result() == kCallbackFailure))
+       (clear_result.result() == kCallbackFailure)) {
 #ifdef DEBUG
     printf("Error clearing messages from buffer packet.");
 #endif
+  }
   return true;
 }
 

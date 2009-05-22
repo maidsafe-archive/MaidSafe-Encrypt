@@ -19,8 +19,8 @@
 
 // core
 #include "fs/filesystem.h"
-#include "base/config.h"
 #include "maidsafe/client/clientcontroller.h"
+#include "maidsafe/config.h"
 
 // 3rd party
 #if defined(MAIDSAFE_WIN32)
@@ -95,7 +95,7 @@ bool UserSpaceFileSystem::mount()
     std::string mount_point = fsys_.MaidsafeFuseDir();
     impl_->fsl_.Mount(mount_point, debug_mode);
 #endif
-    base::sleep(1);
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
 
     if ( maidsafe::SessionSingleton::getInstance()->Mounted() != 0 )
     {
@@ -149,7 +149,7 @@ bool UserSpaceFileSystem::unmount()
     success = ShellExecuteEx(&shell_info);
 
     WaitForSingleObject(shell_info.hProcess, INFINITE);
-    base::sleep(0.5);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 #else
     // un-mount fuse
     impl_->fsl_.UnMount();

@@ -21,12 +21,12 @@
 #include <QTimer>
 
 // core
-#include "base/utils.h"
 #include "fs/filesystem.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/privateshares.h"
+#include "maidsafe/maidsafe-dht.h"
 
 const int MESSAGE_POLL_TIMEOUT_MS = 6000;
 
@@ -393,10 +393,3 @@ void ClientController::checkForMessages()
         temp.pop_front();
     }
 }
-
-
-
-
-
-
-

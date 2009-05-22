@@ -101,7 +101,7 @@ class MessageHandler {
       boost::shared_ptr<SendMessagesData> data);
     SessionSingleton *ss_;
     StoreManagerInterface *sm_;
-    crypto::Crypto co_;
+    maidsafe_crypto::Crypto co_;
     boost::recursive_mutex *mutex_;
 };
 

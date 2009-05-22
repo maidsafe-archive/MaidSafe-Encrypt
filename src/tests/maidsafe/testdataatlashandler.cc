@@ -79,7 +79,7 @@ protected:
     SessionSingleton::getInstance()->SetPassword("password1");
     SessionSingleton::getInstance()->SetSessionName(false);
     SessionSingleton::getInstance()->SetRootDbKey("whatever");
-    crypto::RsaKeyPair rsakp;
+    maidsafe_crypto::RsaKeyPair rsakp;
     rsakp.GenerateKeys(packethandler::kRsaKeySize);
     SessionSingleton::getInstance()->SetPrivateKey(rsakp.private_key(), MAID_BP);
     SessionSingleton::getInstance()->SetPublicKey(rsakp.public_key(), MAID_BP);
@@ -179,13 +179,13 @@ void PrepareDataAtlas(PdDir *da, std::vector<std::string> &file_names, std::vect
     folder_names.push_back(base::RandomString(20));
     folder_ids.push_back(base::random_32bit_integer());
   }
-  crypto::Crypto ct;
+  maidsafe_crypto::Crypto ct;
   ct.set_symm_algorithm("AES_256");
   ct.set_hash_algorithm("SHA512");
   // create 5 files
   for (int i = 0; i < 5; i++){
     std::string file_hash = ct.Hash(base::RandomString(200),"",
-        crypto::STRING_STRING, true);
+        maidsafe_crypto::STRING_STRING, true);
     std::string ser_mdm, ser_dm;
     PrepareMetaDataMap(file_ids[i], file_names[i], REGULAR_FILE,
       file_hash, "Stats", "Tag", 0, 1314, 1111, 2222, 3333, ser_mdm);
@@ -2185,7 +2185,7 @@ TEST_F(DataAtlasHandlerTest, ShareInDataAtlas) {
   ASSERT_EQ((unsigned)4, get_share_items.size());
   dah3.Close();
   // try to parse the buffer messages
-  crypto::Crypto ct;
+  maidsafe_crypto::Crypto ct;
   ct.set_symm_algorithm("AES_256");
   ct.set_hash_algorithm("SHA512");
   DataAtlasHandler another_dah;

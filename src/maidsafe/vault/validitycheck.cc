@@ -221,11 +221,11 @@ void ValCheck::CheckValidity_Callback(const dht::entry &result,
   if (result["result"].string() == kRpcResultSuccess) {
     std::string remote_hash = result["hashcontent"].string();
     std::string content;
-    crypto::Crypto cry_obj;
+    maidsafe_crypto::Crypto cry_obj;
     cry_obj.set_symm_algorithm("AES_256");
     cry_obj.set_hash_algorithm("SHA512");
     node_->ReadChunkContent(chunk_name, content);
-    hcontent = cry_obj.Hash(content+random_data,"",crypto::STRING_STRING,false);
+    hcontent = cry_obj.Hash(content+random_data,"",maidsafe_crypto::STRING_STRING,false);
     if (hcontent == remote_hash)
       chunkstatus = CORRECT;
   }

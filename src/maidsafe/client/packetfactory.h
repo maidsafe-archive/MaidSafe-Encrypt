@@ -63,7 +63,7 @@ class Packet {
   PacketParams GetData(std::string serialised_packet);
   virtual ~Packet()=0;
 // protected:
-  crypto::Crypto crypto_obj_;
+  maidsafe_crypto::Crypto crypto_obj_;
 };
 
 class PacketFactory {

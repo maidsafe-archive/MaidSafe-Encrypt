@@ -171,13 +171,13 @@ class PDVault {
                  const std::string &remote_ip,
                  const uint16_t &remote_port,
                  base::callback_func_type cb);
-  const std::string node_id();
-  const std::string host_ip() { return knode_->host_ip();}
-  boost::uint16_t host_port() { return port_;}
-  const std::string local_host_ip() { return knode_->local_host_ip();}
-  boost::uint16_t local_host_port() { return knode_->local_host_port();}
-  const std::string rv_ip() { return knode_->rv_ip();}
-  const boost::uint16_t rv_port() { return knode_->rv_port();}
+  std::string node_id() const;
+  std::string host_ip() const { return knode_.host_ip(); }
+  boost::uint16_t host_port() const { return port_; }
+  std::string local_host_ip() const { return knode_.local_host_ip(); }
+  boost::uint16_t local_host_port() { return knode_.local_host_port(); }
+  std::string rv_ip() const { return knode_.rv_ip(); }
+  boost::uint16_t rv_port() const { return knode_.rv_port(); }
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
@@ -231,7 +231,7 @@ class PDVault {
   boost::uint16_t port_;
   boost::mutex mutex0_, mutex1_;
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
-  boost::shared_ptr<kad::KNode> knode_;
+  kad::KNode knode_;
   VaultRpcs vault_rpcs_;
   boost::shared_ptr<ChunkStore> chunkstore_;
   boost::shared_ptr<VaultService> vault_service_;
@@ -240,7 +240,7 @@ class PDVault {
   bool kad_left_calledback_;
   bool vault_started_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
-  crypto::Crypto co;
+  maidsafe_crypto::Crypto co;
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   std::string kad_config_file_;
 };

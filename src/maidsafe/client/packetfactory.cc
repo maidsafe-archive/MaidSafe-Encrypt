@@ -40,7 +40,7 @@ bool Packet::ValidateSignature(const std::string &serialised_packet,
   return crypto_obj_.AsymCheckSig(packet.data(),
                                   packet.signature(),
                                   public_key,
-                                  crypto::STRING_STRING);
+                                  maidsafe_crypto::STRING_STRING);
 }
 
 PacketParams Packet::GetData(std::string serialised_packet) {

@@ -72,7 +72,7 @@ class ClientBufferPacketHandler {
   //                            const std::string &language = "");
 
  private:
-  crypto::Crypto crypto_obj_;
+  maidsafe_crypto::Crypto crypto_obj_;
   maidsafe::SessionSingleton *ss_;
   maidsafe::StoreManagerInterface *sm_;
   boost::recursive_mutex *mutex_;

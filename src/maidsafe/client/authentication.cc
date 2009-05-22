@@ -1115,21 +1115,21 @@ bool Authentication::CheckPassword(const std::string &password) {
 int Authentication::CreateSignedRequest(const std::string &private_key,
     const std::string &public_key, const std::string &hex_packet_name,
     std::string *signed_public_key, std::string *signed_request) {
-  crypto::Crypto cry_obj_;
+  maidsafe_crypto::Crypto cry_obj_;
   cry_obj_.set_symm_algorithm("AES_256");
   cry_obj_.set_hash_algorithm("SHA512");
   *signed_public_key = cry_obj_.AsymSign(public_key,
                                          "",
                                          private_key,
-                                         crypto::STRING_STRING);
+                                         maidsafe_crypto::STRING_STRING);
   *signed_request = cry_obj_.AsymSign(
       cry_obj_.Hash(public_key + *signed_public_key + hex_packet_name,
                     "",
-                    crypto::STRING_STRING,
+                    maidsafe_crypto::STRING_STRING,
                     true),
       "",
       private_key,
-      crypto::STRING_STRING);
+      maidsafe_crypto::STRING_STRING);
   return 0;
 }
 

@@ -40,18 +40,19 @@ namespace packethandler {
 PacketParams SignaturePacket::Create(PacketParams params) {
   GenericPacket sig_packet;
   std::string ser_packet;
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize);
   params["privateKey"] = keys.private_key();
   params["publicKey"] = keys.public_key();
   sig_packet.set_data(keys.public_key());
-  sig_packet.set_signature(crypto_obj_.AsymSign(keys.public_key(),
-                                                "",
-                                                keys.private_key(),
-                                                crypto::STRING_STRING));
+  sig_packet.set_signature(crypto_obj_.AsymSign(
+      keys.public_key(),
+      "",
+      keys.private_key(),
+      maidsafe_crypto::STRING_STRING));
   params["name"] = crypto_obj_.Hash(sig_packet.data()+sig_packet.signature(),
                                     "",
-                                    crypto::STRING_STRING,
+                                    maidsafe_crypto::STRING_STRING,
                                     true);
   sig_packet.SerializeToString(&ser_packet);
   params["ser_packet"] = ser_packet;
@@ -75,12 +76,13 @@ PacketParams MidPacket::Create(PacketParams params) {
       pin);
   mid_packet.set_data(crypto_obj_.SymmEncrypt(base::itos(rid),
                                               "",
-                                              crypto::STRING_STRING,
+                                              maidsafe_crypto::STRING_STRING,
                                               password));
-  mid_packet.set_signature(crypto_obj_.AsymSign(mid_packet.data(),
-                                                "", boost::any_cast<std::string>
-                                                (params["privateKey"]),
-                                                crypto::STRING_STRING));
+  mid_packet.set_signature(crypto_obj_.AsymSign(
+      mid_packet.data(),
+      "",
+      boost::any_cast<std::string>(params["privateKey"]),
+      maidsafe_crypto::STRING_STRING));
 
   if (mid_packet.signature() == "")
     return result;
@@ -103,10 +105,11 @@ PacketParams MidPacket::GetData(std::string serialised_packet,
   } else {
     int pin = base::stoi(PIN);
     std::string password = crypto_obj_.SecurePassword(username, pin);
-    std::string str_rid = crypto_obj_.SymmDecrypt(mid_packet.data(),
-                                                  "",
-                                                  crypto::STRING_STRING,
-                                                  password);
+    std::string str_rid = crypto_obj_.SymmDecrypt(
+        mid_packet.data(),
+        "",
+        maidsafe_crypto::STRING_STRING,
+        password);
     result["data"] = static_cast<uint32_t>(base::stoi(str_rid));
   }
   return result;
@@ -115,9 +118,10 @@ PacketParams MidPacket::GetData(std::string serialised_packet,
 std::string MidPacket::PacketName(PacketParams params) {
   return crypto_obj_.Hash(
       crypto_obj_.Hash(boost::any_cast<std::string>(params["username"]),
-        "", crypto::STRING_STRING, true)
+        "", maidsafe_crypto::STRING_STRING, true)
         +crypto_obj_.Hash(boost::any_cast<std::string>(params["PIN"]),
-        "", crypto::STRING_STRING, true), "", crypto::STRING_STRING, true);
+        "", maidsafe_crypto::STRING_STRING, true), "",
+        maidsafe_crypto::STRING_STRING, true);
 }
 
 PacketParams SmidPacket::Create(PacketParams params) {
@@ -134,13 +138,13 @@ PacketParams SmidPacket::Create(PacketParams params) {
   smid_packet.set_data(crypto_obj_.SymmEncrypt(
       base::itos(boost::any_cast<uint32_t>(params["rid"])),
       "",
-      crypto::STRING_STRING,
+      maidsafe_crypto::STRING_STRING,
       password));
   smid_packet.set_signature(crypto_obj_.AsymSign(
       smid_packet.data(),
       "",
       boost::any_cast<std::string>(params["privateKey"]),
-      crypto::STRING_STRING));
+      maidsafe_crypto::STRING_STRING));
 
   if (smid_packet.signature() == "")
     return result;
@@ -155,9 +159,10 @@ PacketParams SmidPacket::Create(PacketParams params) {
 std::string SmidPacket::PacketName(PacketParams params) {
   return crypto_obj_.Hash(
       crypto_obj_.Hash(boost::any_cast<std::string>(params["username"]),
-      "", crypto::STRING_STRING, true) + crypto_obj_.Hash(
+      "", maidsafe_crypto::STRING_STRING, true) + crypto_obj_.Hash(
       boost::any_cast<std::string>(params["PIN"]), "",
-      crypto::STRING_STRING, true) + "1", "", crypto::STRING_STRING, true);
+      maidsafe_crypto::STRING_STRING, true) + "1", "",
+      maidsafe_crypto::STRING_STRING, true);
 }
 
 PacketParams TmidPacket::Create(PacketParams params) {
@@ -179,13 +184,13 @@ PacketParams TmidPacket::Create(PacketParams params) {
 #endif
   tmid_packet.set_data(crypto_obj_.SymmEncrypt(boost::any_cast<std::string>(
                                                params["data"]), "",
-                                               crypto::STRING_STRING,
+                                               maidsafe_crypto::STRING_STRING,
                                                password));
-  tmid_packet.set_signature(crypto_obj_.AsymSign(tmid_packet.data(),
-                                                 "",
-                                                 boost::any_cast<std::string>(
-                                                 params["privateKey"]),
-                                                 crypto::STRING_STRING));
+  tmid_packet.set_signature(crypto_obj_.AsymSign(
+      tmid_packet.data(),
+      "",
+      boost::any_cast<std::string>(params["privateKey"]),
+      maidsafe_crypto::STRING_STRING));
 
   if (tmid_packet.signature() == "") {
 #ifdef DEBUG
@@ -212,7 +217,7 @@ PacketParams TmidPacket::GetData(std::string serialised_packet,
     std::string secure_passw = crypto_obj_.SecurePassword(password, rid);
     result["data"] = crypto_obj_.SymmDecrypt(tmid_packet.data(),
                                      "",
-                                     crypto::STRING_STRING,
+                                     maidsafe_crypto::STRING_STRING,
                                      secure_passw);
   }
   return result;
@@ -224,14 +229,14 @@ std::string TmidPacket::PacketName(PacketParams params) {
 #endif
   return crypto_obj_.Hash(
       crypto_obj_.Hash(boost::any_cast<std::string>(params["username"]), "",
-                       crypto::STRING_STRING, true)
+                       maidsafe_crypto::STRING_STRING, true)
       +crypto_obj_.Hash(boost::any_cast<std::string>(params["PIN"]), "",
-                        crypto::STRING_STRING, true)
+                        maidsafe_crypto::STRING_STRING, true)
       +crypto_obj_.Hash(base::itos(boost::any_cast<uint32_t>(params["rid"])),
                         "",
-                        crypto::STRING_STRING, true),
+                        maidsafe_crypto::STRING_STRING, true),
       "",
-      crypto::STRING_STRING, true);
+      maidsafe_crypto::STRING_STRING, true);
 }
 
 PacketParams PmidPacket::Create(PacketParams params) {
@@ -240,20 +245,20 @@ PacketParams PmidPacket::Create(PacketParams params) {
     return result;
   GenericPacket pmid_packet;
   std::string ser_packet;
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize);
   pmid_packet.set_data(keys.public_key());
-  pmid_packet.set_signature(crypto_obj_.AsymSign(keys.public_key(),
-                                                 "",
-                                                 boost::any_cast<std::string>(
-                                                 params["privateKey"]),
-                                                 crypto::STRING_STRING));
+  pmid_packet.set_signature(crypto_obj_.AsymSign(
+      keys.public_key(),
+      "",
+      boost::any_cast<std::string>(params["privateKey"]),
+      maidsafe_crypto::STRING_STRING));
   if (pmid_packet.signature() == "")
     return result;
   result["privateKey"] = keys.private_key();
   result["publicKey"] = keys.public_key();
   result["name"] = crypto_obj_.Hash(pmid_packet.data()
-      + pmid_packet.signature(), "", crypto::STRING_STRING, true);
+      + pmid_packet.signature(), "", maidsafe_crypto::STRING_STRING, true);
   pmid_packet.SerializeToString(&ser_packet);
   result["ser_packet"] = ser_packet;
   return result;
@@ -266,14 +271,14 @@ PacketParams MpidPacket::Create(PacketParams params) {
     return result;
   GenericPacket mpid_packet;
   std::string ser_packet;
-  crypto::RsaKeyPair keys;
+  maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize);
   mpid_packet.set_data(keys.public_key());
-  mpid_packet.set_signature(crypto_obj_.AsymSign(keys.public_key(),
-                                                 "",
-                                                 boost::any_cast<std::string>(
-                                                 params["privateKey"]),
-                                                 crypto::STRING_STRING));
+  mpid_packet.set_signature(crypto_obj_.AsymSign(
+      keys.public_key(),
+      "",
+      boost::any_cast<std::string>(params["privateKey"]),
+      maidsafe_crypto::STRING_STRING));
   if (mpid_packet.signature() == "")
     return result;
   result["privateKey"] = keys.private_key();
@@ -287,7 +292,7 @@ PacketParams MpidPacket::Create(PacketParams params) {
 std::string MpidPacket::PacketName(PacketParams params) {
   return crypto_obj_.Hash(boost::any_cast<std::string>(params["publicname"]),
                           "",
-                          crypto::STRING_STRING, true);
+                          maidsafe_crypto::STRING_STRING, true);
 }
 
 }  // namespace packethandler

@@ -25,12 +25,12 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef BASE_CRYPTO_H_
-#define BASE_CRYPTO_H_
+#ifndef MAIDSAFE_CRYPTO_H_
+#define MAIDSAFE_CRYPTO_H_
 #include <string>
 #include "maidsafe/rsakeypair.h"
 
-namespace crypto {
+namespace maidsafe_crypto {
 
 const int AES256_KeySize = 32;  // size in bytes
 const int AES256_IVSize = 16;   // in bytes
@@ -147,6 +147,6 @@ class Crypto {
   std::string hash_algorithm_;
   std::string symm_algorithm_;
 };
-}   // namespace crypto
-#endif  // BASE_CRYPTO_H_
+}   // namespace maidsafe_crypto
+#endif  // MAIDSAFE_CRYPTO_H_
 

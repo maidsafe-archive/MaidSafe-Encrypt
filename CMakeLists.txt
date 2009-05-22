@@ -228,7 +228,6 @@ SET(SYS_LIB
 	/usr/lib/libboost_date_time-gcc43-mt.a
 	-lrt
 	-lc
-	-lcryptopp
   maidsafe-dht
 )
 SET(SYS_WX
@@ -274,14 +273,14 @@ ENDIF(APPLE)
 IF(UNIX)
 	SET(FUSE  "fuse")
 	ENDIF()
-TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(wxperpetualdata PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${SYS_WX} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(wxpdlocal  PDTESTmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${SYS_WX} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES}  ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTmaidsafe  PDmsclientlib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTfs PDfslib ${FUSE} gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(testvault PDmsvaultlib PDmsclientlib PDpbmsgslib ${SYS_LIB})
-TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmsclientlib PDpbmsgslib ${SYS_LIB})
+TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(wxperpetualdata PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${SYS_WX} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(wxpdlocal PDTESTmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${SYS_WX} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES}  ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTmaidsafe PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTfs PDmaidsafelib PDfslib ${FUSE} gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(testvault PDmsclientlib PDmaidsafelib PDmsvaultlib PDpbmsgslib ${SYS_LIB})
+TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmaidsafelib PDpbmsgslib ${SYS_LIB})
 
 
 IF(WIN32)

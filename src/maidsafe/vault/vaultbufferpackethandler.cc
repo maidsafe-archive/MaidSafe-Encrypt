@@ -60,7 +60,7 @@ bool VaultBufferPacketHandler::ValidateOwnerSignature(std::string public_key,
   if (!bp.ParseFromString(ser_bufferpacket))
     return false;
   return crypto_obj_.AsymCheckSig(bp.owner_info(0).data(),
-    bp.owner_info(0).signature(), public_key, crypto::STRING_STRING);
+    bp.owner_info(0).signature(), public_key, maidsafe_crypto::STRING_STRING);
 }
 
 bool VaultBufferPacketHandler::GetMessages(const std::string &ser_bp,
@@ -161,7 +161,7 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
 
   std::string public_key = bpm.sender_public_key();
   if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key,
-      public_key, crypto::STRING_STRING)) {
+      public_key, maidsafe_crypto::STRING_STRING)) {
 #ifdef DEBUG
     printf("invalid public key signature\n");
 #endif
@@ -169,7 +169,7 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
   }
 
   if (!crypto_obj_.AsymCheckSig(message.data(), message.signature(),
-      public_key, crypto::STRING_STRING)) {
+      public_key, maidsafe_crypto::STRING_STRING)) {
 #ifdef DEBUG
     printf("invalid message signature\n");
 #endif
@@ -235,7 +235,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
     && bpm.type() != DELETE_CONTACT_NOTIF) {
     public_key = bpm.sender_public_key();
     std::string id = crypto_obj_.Hash(public_key+signed_public_key, "",
-      crypto::STRING_STRING, true);
+      maidsafe_crypto::STRING_STRING, true);
     if (id != bpm.sender_id()) {
       printf("invalid sender_id\n");
       return false;
@@ -245,7 +245,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
   }
 
   if (!crypto_obj_.AsymCheckSig(message.data(), message.signature(),
-    public_key, crypto::STRING_STRING)) {
+    public_key, maidsafe_crypto::STRING_STRING)) {
     printf("invalid message signature\n");
     return false;
   }

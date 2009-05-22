@@ -85,7 +85,7 @@ class TestSEHandler : public testing::Test {
     SessionSingleton::getInstance()->SetPassword("password1");
     SessionSingleton::getInstance()->SetSessionName(false);
     SessionSingleton::getInstance()->SetRootDbKey("whatever");
-    crypto::RsaKeyPair rsa_kp;
+    maidsafe_crypto::RsaKeyPair rsa_kp;
     rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
     SessionSingleton::getInstance()->SetPrivateKey(rsa_kp.private_key(),
       MAID_BP);

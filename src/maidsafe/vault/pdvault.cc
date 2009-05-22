@@ -48,10 +48,8 @@ PDVault::PDVault(const std::string &pmid_public,
     : port_(port),
       mutex0_(),
       mutex1_(),
-      channel_manager_(),
-      knode_(new kad::KNode(datastore_dir,
-                            channel_manager_,
-                            kad::VAULT)),
+      channel_manager_(new rpcprotocol::ChannelManager()),
+      knode_(datastore_dir, channel_manager_, kad::VAULT),
       vault_rpcs_(channel_manager_),
       chunkstore_(new ChunkStore(chunkstore_dir)),
       vault_service_(),
@@ -68,14 +66,17 @@ PDVault::PDVault(const std::string &pmid_public,
       kad_config_file_(kad_config_file) {
   co.set_symm_algorithm("AES_256");
   co.set_hash_algorithm("SHA512");
-  pmid_ = co.Hash(signed_pmid_public_, "", crypto::STRING_STRING, true);
+  pmid_ = co.Hash(signed_pmid_public_, "", maidsafe_crypto::STRING_STRING,
+                  true);
 }
 
 PDVault::~PDVault() {
-  printf("In PDVault destructor, before Stop().\n");
-  int result = Stop();
-  printf("In PDVault destructor, Stop() returned %i.\n", result);
 #ifdef DEBUG
+  printf("In PDVault destructor, before Stop().\n");
+#endif
+  int result = Stop();
+#ifdef DEBUG
+  printf("In PDVault destructor, Stop() returned %i.\n", result);
   if (vault_started_)
     printf("Vault didn't stop correctly.");
 #endif
@@ -87,16 +88,16 @@ void PDVault::Start(const bool &port_forwarded) {
     return;
   channel_manager_->StartTransport(port_,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
-                  knode_.get(),
+                  &knode_,
                   _1,
                   _2,
                   _3));
   kad_joined_calledback_ = false;
   RegisterMaidService();
-  knode_->Join(pmid_,
-               kad_config_file_,
-               boost::bind(&PDVault::KadJoinedCallback, this, _1),
-               port_forwarded);
+  knode_.Join(pmid_,
+              kad_config_file_,
+              boost::bind(&PDVault::KadJoinedCallback, this, _1),
+              port_forwarded);
   // Hash check all current chunks in chunkstore
   std::list<std::string> failed_keys;
   if (0 != chunkstore_->HashCheckAllChunks(true, &failed_keys)) {
@@ -137,8 +138,8 @@ int PDVault::Stop() {
     return -1;
   }
   UnRegisterMaidService();
-  knode_->Leave();
-  kad_joined_ = knode_->is_joined();
+  knode_.Leave();
+  kad_joined_ = knode_.is_joined();
   vault_started_ = kad_joined_;
   channel_manager_->StopTransport();
   return 0;
@@ -194,7 +195,7 @@ void PDVault::IterativeSyncVault(boost::shared_ptr<SyncVaultData> data) {
     data->chunk_names.pop_front();
     ++data->active_updating;
     // Look up the chunk references
-    knode_->FindValue(chunk_name,
+    knode_.FindValue(chunk_name,
                      boost::bind(&PDVault::SyncVault_FindAlivePartner,
                                  this,
                                  _1,
@@ -228,9 +229,9 @@ void PDVault::SyncVault_FindAlivePartner(
     std::string contact_info = result_msg.values(i);
     kad::Contact remote;
     if (remote.ParseFromString(contact_info) &&
-        remote.node_id() != knode_->node_id()) {
+        remote.node_id() != knode_.node_id()) {
       correct_info = true;
-      knode_->Ping(remote,
+      knode_.Ping(remote,
                   boost::bind(&PDVault::SyncVault_FindAlivePartner_Callback,
                               this,
                               _1,
@@ -316,14 +317,11 @@ void PDVault::ValidityCheck(const std::string &chunk_name,
                                     validity_check_response_,
                                     validity_check_args_);
   kad::connect_to_node conn_type =
-      knode_->CheckContactLocalAddress(validity_check_args_->
-                                           chunk_holder_.node_id(),
-                                       validity_check_args_->
-                                           chunk_holder_.local_ip(),
-                                       validity_check_args_->
-                                           chunk_holder_.local_port(),
-                                       validity_check_args_->
-                                           chunk_holder_.host_ip());
+      knode_.CheckContactLocalAddress(
+          validity_check_args_->chunk_holder_.node_id(),
+          validity_check_args_->chunk_holder_.local_ip(),
+          validity_check_args_->chunk_holder_.local_port(),
+          validity_check_args_->chunk_holder_.host_ip());
   bool local = false;
   std::string ip = validity_check_args_->chunk_holder_.host_ip();
   uint16_t port = static_cast<uint16_t>(
@@ -382,7 +380,8 @@ void PDVault::ValidityCheckCallback(
   std::string local_content_("");
   chunkstore_->LoadChunk(validity_check_args->chunk_name_, &local_content_);
   std::string local_hash_content_(co.Hash(local_content_ +
-      validity_check_args->random_data_, "", crypto::STRING_STRING, true));
+      validity_check_args->random_data_, "", maidsafe_crypto::STRING_STRING,
+      true));
   if (local_hash_content_ != remote_hash_content_) {
     // TODO(Fraser#5#): 2009-03-18 - if check fails do we retry once, or try
     //                  with another chunk holder (if available) and/or alert
@@ -409,10 +408,10 @@ void PDVault::IterativeSyncVault_SyncChunk(
                                       get_chunk_response_,
                                       synch_args_);
     kad::connect_to_node conn_type =
-      knode_->CheckContactLocalAddress(synch_args_->chunk_holder_.node_id(),
-                                       synch_args_->chunk_holder_.local_ip(),
-                                       synch_args_->chunk_holder_.local_port(),
-                                       synch_args_->chunk_holder_.host_ip());
+      knode_.CheckContactLocalAddress(synch_args_->chunk_holder_.node_id(),
+                                      synch_args_->chunk_holder_.local_ip(),
+                                      synch_args_->chunk_holder_.local_port(),
+                                      synch_args_->chunk_holder_.host_ip());
     bool local = false;
     std::string ip = synch_args_->chunk_holder_.host_ip();
     uint16_t port =
@@ -494,20 +493,20 @@ void PDVault::IterativePublishChunkRef(
     std::string signed_request_ = co.AsymSign(
         co.Hash(pmid_public_ + signed_pmid_public_ + chunk_name,
                 "",
-                crypto::STRING_STRING,
+                maidsafe_crypto::STRING_STRING,
                 true),
         "",
         pmid_private_,
-        crypto::STRING_STRING);
-    knode_->StoreValue(chunk_name,
-                       pmid_,
-                       pmid_public_,
-                       signed_pmid_public_,
-                       signed_request_,
-                       boost::bind(&PDVault::IterativePublishChunkRef_Next,
-                                   this,
-                                   _1,
-                                   data));
+        maidsafe_crypto::STRING_STRING);
+    knode_.StoreValue(chunk_name,
+                      pmid_,
+                      pmid_public_,
+                      signed_pmid_public_,
+                      signed_request_,
+                      boost::bind(&PDVault::IterativePublishChunkRef_Next,
+                                  this,
+                                  _1,
+                                  data));
   }
 }
 
@@ -529,15 +528,14 @@ void PDVault::GetChunk(const std::string &chunk_name,
 }
 
 void PDVault::FindChunkRef(boost::shared_ptr<struct LoadChunkData> data) {
-  knode_->FindValue(
-      data->chunk_name,
-      boost::bind(&PDVault::FindChunkRefCallback, this, _1, data));
+  knode_.FindValue(data->chunk_name,
+                   boost::bind(&PDVault::FindChunkRefCallback, this, _1, data));
 }
 
 void PDVault::FindChunkRefCallback(
     const std::string &result,
     boost::shared_ptr<struct LoadChunkData> data) {
-  if (data->is_callbacked || !knode_->is_joined()) {
+  if (data->is_callbacked || !knode_.is_joined()) {
     // callback can only be called once
     return;
   }
@@ -589,10 +587,10 @@ void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
                                     check_chunk_response_,
                                     get_args);
   kad::connect_to_node conn_type =
-      knode_->CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
-                                       get_args->chunk_holder_.local_ip(),
-                                       get_args->chunk_holder_.local_port(),
-                                       get_args->chunk_holder_.host_ip());
+      knode_.CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
+                                      get_args->chunk_holder_.local_ip(),
+                                      get_args->chunk_holder_.local_port(),
+                                      get_args->chunk_holder_.host_ip());
   bool local = false;
   std::string ip = get_args->chunk_holder_.host_ip();
   uint16_t port = static_cast<uint16_t>(get_args->chunk_holder_.host_port());
@@ -614,7 +612,7 @@ void PDVault::CheckChunkCallback(
     boost::shared_ptr<maidsafe::CheckChunkResponse> check_chunk_response,
     boost::shared_ptr<GetArgs> get_args) {
   if (get_args->data_->is_callbacked ||
-      !knode_->is_joined()) {
+      !knode_.is_joined()) {
     // callback can only be called once
     return;
   }
@@ -623,7 +621,7 @@ void PDVault::CheckChunkCallback(
       check_chunk_response->pmid_id() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote) {
       get_args->retry_remote = false;
-      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::CheckChunkResponse>
           resp(new maidsafe::CheckChunkResponse());
       google::protobuf::Closure* done =
@@ -659,10 +657,10 @@ void PDVault::CheckChunkCallback(
       get_args->data_->is_active = true;
       // if we're trying to get messages (a buffer packet)
       kad::connect_to_node conn_type =
-        knode_->CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
-                                         get_args->chunk_holder_.local_ip(),
-                                         get_args->chunk_holder_.local_port(),
-                                         get_args->chunk_holder_.host_ip());
+        knode_.CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
+                                        get_args->chunk_holder_.local_ip(),
+                                        get_args->chunk_holder_.local_port(),
+                                        get_args->chunk_holder_.host_ip());
       bool local = false;
       std::string ip = get_args->chunk_holder_.host_ip();
       uint16_t port = static_cast<uint16_t>(
@@ -728,7 +726,7 @@ void PDVault::GetMessagesCallback(
       get_messages_response->pmid_id() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote) {
       get_args->retry_remote = false;
-      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::GetMessagesResponse>
           resp(new maidsafe::GetMessagesResponse());
       google::protobuf::Closure* done =
@@ -767,7 +765,7 @@ void PDVault::GetChunkCallback(
       get_response->pmid_id() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote) {
       get_args->retry_remote = false;
-      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::GetResponse>
           resp(new maidsafe::GetResponse());
       google::protobuf::Closure* done =
@@ -799,7 +797,7 @@ void PDVault::GetChunkCallback(
 }
 
 void PDVault::RetryGetChunk(boost::shared_ptr<struct LoadChunkData> data) {
-  if (data->is_callbacked || !knode_->is_joined()) {
+  if (data->is_callbacked || !knode_.is_joined()) {
     // callback can only be called once
     return;
   }
@@ -929,12 +927,12 @@ void PDVault::SwapChunkAcceptChunk(
   std::string signed_request = co.AsymSign(
       co.Hash(pmid_public_ + signed_pmid_public_ + chunk_name_,
               "",
-              crypto::STRING_STRING,
+              maidsafe_crypto::STRING_STRING,
               true),
       "",
       pmid_private_,
-      crypto::STRING_STRING);
-  knode_->StoreValue(swap_chunk_args->chunkname_,
+      maidsafe_crypto::STRING_STRING);
+  knode_.StoreValue(swap_chunk_args->chunkname_,
                     pmid_,
                     pmid_public_,
                     signed_pmid_public_,
@@ -954,7 +952,7 @@ void PDVault::RegisterMaidService() {
                      pmid_private_,
                      signed_pmid_public_,
                      chunkstore_,
-                     knode_));
+                     &knode_));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
       new rpcprotocol::Channel(channel_manager_.get()));
   svc_channel_->SetService(vault_service_.get());
@@ -969,9 +967,9 @@ void PDVault::UnRegisterMaidService() {
   vault_service_.reset();
 }
 
-const std::string PDVault::node_id() {
+std::string PDVault::node_id() const {
   std::string hex_id("");
-  base::encode_to_hex(knode_->node_id(), hex_id);
+  base::encode_to_hex(knode_.node_id(), hex_id);
   return hex_id;
 }
 }  // namespace maidsafe_vault

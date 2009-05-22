@@ -20,8 +20,8 @@
 #include <QMessageBox>
 
 // core
-#include "base/utils.h"
 #include "maidsafe/client/clientcontroller.h"
+#include "maidsafe/maidsafe-dht.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 // local

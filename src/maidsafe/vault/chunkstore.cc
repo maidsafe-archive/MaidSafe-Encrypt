@@ -212,7 +212,7 @@ int ChunkStore::HashCheckChunk(const std::string &key) {
 int ChunkStore::HashCheckChunk(const fs::path &filepath) {
   std::string file_hash_ = crypto_.Hash(filepath.string(),
                                         "",
-                                        crypto::FILE_STRING,
+                                        maidsafe_crypto::FILE_STRING,
                                         true);
   if (file_hash_ == filepath.filename())
     return 0;

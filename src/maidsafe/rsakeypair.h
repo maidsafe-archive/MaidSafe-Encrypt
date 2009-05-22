@@ -25,11 +25,11 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef BASE_RSAKEYPAIR_H_
-#define BASE_RSAKEYPAIR_H_
+#ifndef MAIDSAFE_RSAKEYPAIR_H_
+#define MAIDSAFE_RSAKEYPAIR_H_
 #include <string>
 
-namespace crypto {
+namespace maidsafe_crypto {
 
   class RsaKeyPair {
     public:
@@ -47,6 +47,6 @@ namespace crypto {
       std::string private_key_;
 };
 
-}  // namespace crypto
+}  // namespace maidsafe_crypto
 
-#endif  // BASE_RSAKEYPAIR_H_
+#endif  // MAIDSAFE_RSAKEYPAIR_H_

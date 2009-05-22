@@ -36,7 +36,7 @@ namespace maidsafe {
 
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
-  explicit MaidsafeStoreManager(boost::recursive_mutex *mutex);
+  MaidsafeStoreManager();
   ~MaidsafeStoreManager();
   void StoreChunk(const std::string &chunk_name,
                   const std::string &content,
@@ -90,7 +90,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                             base::callback_func_type cb);
   std::string datastore_dir_;
   PDClient *pdclient_;
-  crypto::Crypto cry_obj;
+  maidsafe_crypto::Crypto cry_obj;
 };
 
 }  // namespace maidsafe

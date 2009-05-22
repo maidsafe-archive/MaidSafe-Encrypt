@@ -121,8 +121,8 @@ class BufferPacketHandlerTest : public testing::Test {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
     ss->Destroy();
   }
-  crypto::Crypto crypto_obj;
-  crypto::RsaKeyPair rsa_obj;
+  maidsafe_crypto::Crypto crypto_obj;
+  maidsafe_crypto::RsaKeyPair rsa_obj;
   std::string private_key;
   std::string public_key;
   std::string public_username;
@@ -178,7 +178,7 @@ class BufferPacketHandlerTest : public testing::Test {
   // Get BP
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
-                                 crypto::STRING_STRING,
+                                 maidsafe_crypto::STRING_STRING,
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -201,7 +201,7 @@ class BufferPacketHandlerTest : public testing::Test {
   packethandler::GenericPacket gp_msg;
   gp_msg.set_data(ser_msg);
   gp_msg.set_signature(crypto_obj.AsymSign(ser_msg, "", rsa_obj.private_key(),
-    crypto::STRING_STRING));
+    maidsafe_crypto::STRING_STRING));
   gp_msg.SerializeToString(&ser_msg);
 
   cb.Reset();
@@ -209,7 +209,7 @@ class BufferPacketHandlerTest : public testing::Test {
   std::string sig_sender_pubkey = crypto_obj.AsymSign(rsa_obj.public_key(),
                                                       "",
                                                       rsa_obj.private_key(),
-                                                      crypto::STRING_STRING);
+                                                      maidsafe_crypto::STRING_STRING);
 
   int status = -1;
   ASSERT_TRUE(vaultbufferpackethandler.CheckStatus(ser_bp, ser_msg,
@@ -240,7 +240,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   store_res.Clear();
   sm->IsKeyUnique(crypto_obj.Hash(public_username+"BUFFER",
                                   "",
-                                  crypto::STRING_STRING,
+                                  maidsafe_crypto::STRING_STRING,
                                   true),
                   boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -252,7 +252,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   cb.Reset();
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
-                                 crypto::STRING_STRING,
+                                 maidsafe_crypto::STRING_STRING,
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -264,7 +264,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   ASSERT_EQ(1, buffer_packet.owner_info_size()) << "User Info empty";
   ASSERT_TRUE(crypto_obj.AsymCheckSig(buffer_packet.owner_info(0).data(),
                                       buffer_packet.owner_info(0).signature(),
-                    public_key, crypto::STRING_STRING)) << "Invalid Signature";
+                    public_key, maidsafe_crypto::STRING_STRING)) << "Invalid Signature";
 
   ASSERT_TRUE(buffer_packet_info.ParseFromString(
       buffer_packet.owner_info(0).data())) << "Incorrect serialization";
@@ -313,7 +313,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
 
   sm->LoadPacket(crypto_obj.Hash(public_username+"BUFFER",
                                  "",
-                                 crypto::STRING_STRING,
+                                 maidsafe_crypto::STRING_STRING,
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -375,7 +375,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
 
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
-                                 crypto::STRING_STRING,
+                                 maidsafe_crypto::STRING_STRING,
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -400,7 +400,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   gp_msg.set_signature(crypto_obj.AsymSign(ser_msg,
                                           "",
                                           rsa_obj.private_key(),
-                                          crypto::STRING_STRING));
+                                          maidsafe_crypto::STRING_STRING));
 
   gp_msg.SerializeToString(&ser_msg);
 
@@ -410,7 +410,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   std::string sig_sender_pubkey = crypto_obj.AsymSign(rsa_obj.public_key(),
                                                       "",
                                                       rsa_obj.private_key(),
-                                                      crypto::STRING_STRING);
+                                                      maidsafe_crypto::STRING_STRING);
   ASSERT_TRUE(vaultbufferpackethandler.AddMessage(ser_bp, ser_msg,
       sig_sender_pubkey, &ser_up_bp));
   ser_bp = ser_up_bp;
@@ -431,7 +431,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   gp_msg1.set_signature(crypto_obj.AsymSign(ser_msg,
                                             "",
                                             rsa_obj.private_key(),
-                                            crypto::STRING_STRING));
+                                            maidsafe_crypto::STRING_STRING));
   gp_msg1.SerializeToString(&ser_msg);
   cb.Reset();
   ASSERT_TRUE(vaultbufferpackethandler.AddMessage(ser_bp, ser_msg,
@@ -483,7 +483,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
 
   sm->LoadPacket(crypto_obj.Hash(public_username+"BUFFER",
                                   "",
-                                  crypto::STRING_STRING, true),
+                                  maidsafe_crypto::STRING_STRING, true),
                                   boost::bind(&FakeCallback::CallbackFunc,
                                   &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -509,14 +509,14 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   gp_msg.set_signature(crypto_obj.AsymSign(ser_msg,
                                           "",
                                           rsa_obj.private_key(),
-                                          crypto::STRING_STRING));
+                                          maidsafe_crypto::STRING_STRING));
 
   gp_msg.SerializeToString(&ser_msg);
 
   std::string sig_sender_pubkey = crypto_obj.AsymSign(rsa_obj.public_key(),
                                                       "",
                                                       rsa_obj.private_key(),
-                                                      crypto::STRING_STRING);
+                                                      maidsafe_crypto::STRING_STRING);
   std::string ser_up_bp;
   ASSERT_FALSE(vaultbufferpackethandler.AddMessage(ser_bp, ser_msg,
       sig_sender_pubkey, &ser_up_bp)) << "Unauthorised user added a msg";
@@ -543,7 +543,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckOwner) {
   store_res.Clear();
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
-                                 crypto::STRING_STRING,
+                                 maidsafe_crypto::STRING_STRING,
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -618,7 +618,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
 
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
-                                 crypto::STRING_STRING,
+                                 maidsafe_crypto::STRING_STRING,
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -660,7 +660,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckSignature) {
 
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
-                                 crypto::STRING_STRING,
+                                 maidsafe_crypto::STRING_STRING,
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -715,7 +715,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
 
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
-                                 crypto::STRING_STRING,
+                                 maidsafe_crypto::STRING_STRING,
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -737,10 +737,10 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
     bpm.set_rsaenc_key(crypto_obj.AsymEncrypt("AES_key",
                                               "",
                                               public_key,
-                                              crypto::STRING_STRING));
+                                              maidsafe_crypto::STRING_STRING));
     enc_msgs[i] = crypto_obj.SymmEncrypt("mensaje tonto " + base::itos(i + 1),
                                          "",
-                                         crypto::STRING_STRING,
+                                         maidsafe_crypto::STRING_STRING,
                                          "AES_key");
     bpm.set_aesenc_message(enc_msgs[i]);
     bpm.set_type(packethandler::SHARE);
@@ -752,14 +752,14 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
     gp_msg.set_signature(crypto_obj.AsymSign(ser_msg,
                                              "",
                                              rsa_obj.private_key(),
-                                             crypto::STRING_STRING));
+                                             maidsafe_crypto::STRING_STRING));
 
     gp_msg.SerializeToString(&ser_msg);
 
     std::string sig_sender_pubkey = crypto_obj.AsymSign(rsa_obj.public_key(),
                                                         "",
                                                         rsa_obj.private_key(),
-                                                        crypto::STRING_STRING);
+                                                        maidsafe_crypto::STRING_STRING);
     std::string ser_up_bp;
     ASSERT_TRUE(vaultbufferpackethandler.AddMessage(ser_bp, ser_msg,
         sig_sender_pubkey, &ser_up_bp));
@@ -769,18 +769,18 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   std::string signed_public_key = crypto_obj.AsymSign(public_key,
                                                       "",
                                                       private_key,
-                                                      crypto::STRING_STRING);
+                                                      maidsafe_crypto::STRING_STRING);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(
       public_key+signed_public_key+crypto_obj.Hash(public_username+"BUFFER",
                                                    "",
-                                                   crypto::STRING_STRING,
+                                                   maidsafe_crypto::STRING_STRING,
                                                    true),
       "",
-      crypto::STRING_STRING,
-      true), "", private_key, crypto::STRING_STRING);
+      maidsafe_crypto::STRING_STRING,
+      true), "", private_key, maidsafe_crypto::STRING_STRING);
   sm->StorePacket(crypto_obj.Hash(public_username + "BUFFER",
                                   "",
-                                  crypto::STRING_STRING,
+                                  maidsafe_crypto::STRING_STRING,
                                   true),
                   ser_bp,
                   signed_request,
@@ -871,7 +871,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
 
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
-                                 crypto::STRING_STRING,
+                                 maidsafe_crypto::STRING_STRING,
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -893,10 +893,10 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
     bpm.set_rsaenc_key(crypto_obj.AsymEncrypt("AES_key",
                                               "",
                                               public_key,
-                                              crypto::STRING_STRING));
+                                              maidsafe_crypto::STRING_STRING));
     enc_msgs[i] = crypto_obj.SymmEncrypt("mensaje tonto "+ base::itos(i+1),
                                          "",
-                                         crypto::STRING_STRING,
+                                         maidsafe_crypto::STRING_STRING,
                                          "AES_key");
     bpm.set_aesenc_message(enc_msgs[i]);
     bpm.set_type(packethandler::SHARE);
@@ -908,7 +908,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
     gp_msg.set_signature(crypto_obj.AsymSign(ser_msg,
                                              "",
                                              rsa_obj.private_key(),
-                                             crypto::STRING_STRING));
+                                             maidsafe_crypto::STRING_STRING));
 
     gp_msg.SerializeToString(&ser_msg);
 
@@ -916,7 +916,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
     std::string sig_sender_pubkey = crypto_obj.AsymSign(rsa_obj.public_key(),
                                                         "",
                                                         rsa_obj.private_key(),
-                                                        crypto::STRING_STRING);
+                                                        maidsafe_crypto::STRING_STRING);
     std::string ser_up_bp;
     ASSERT_TRUE(vaultbufferpackethandler.AddMessage(ser_bp, ser_msg,
         sig_sender_pubkey, &ser_up_bp));
@@ -950,7 +950,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   store_res.Clear();
   sm->IsKeyUnique(crypto_obj.Hash(public_username + "BUFFER",
                                   "",
-                                  crypto::STRING_STRING,
+                                  maidsafe_crypto::STRING_STRING,
                                   true),
                   boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   base::GeneralResponse is_unique_res;
@@ -964,7 +964,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   cb.Reset();
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
-                                 crypto::STRING_STRING,
+                                 maidsafe_crypto::STRING_STRING,
                                  true),
                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -994,7 +994,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   gp.set_signature(crypto_obj.AsymSign(gp.data(),
                                       "",
                                       public_key,
-                                      crypto::STRING_STRING));
+                                      maidsafe_crypto::STRING_STRING));
   std::string ser_gp;
   gp.SerializeToString(&ser_gp);
   ASSERT_TRUE(vaultbufferpackethandler.ChangeOwnerInfo(ser_gp,

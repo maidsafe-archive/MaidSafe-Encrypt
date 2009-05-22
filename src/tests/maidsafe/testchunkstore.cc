@@ -33,14 +33,14 @@ class TestChunkstore : public testing::Test {
     fs::remove_all(storedir);
   }
   fs::path storedir;
-  crypto::Crypto cry_obj;
+  maidsafe_crypto::Crypto cry_obj;
   maidsafe_vault::ChunkStore chunkstore;
 };
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStoreChunk) {
   std::string value = base::RandomString(250*1024);
   fs::path filename(storedir);
-  std::string name = cry_obj.Hash(value, "", crypto::STRING_STRING, false);
+  std::string name = cry_obj.Hash(value, "", maidsafe_crypto::STRING_STRING, false);
   ASSERT_TRUE(chunkstore.StoreChunk(name, value));
   std::string enc_name;
   base::encode_to_hex(name, enc_name);
@@ -60,7 +60,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStoreChunk) {
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadChunk) {
   std::string value = base::RandomString(250*1024);
-  std::string name = cry_obj.Hash(value, "", crypto::STRING_STRING, false);
+  std::string name = cry_obj.Hash(value, "", maidsafe_crypto::STRING_STRING, false);
   ASSERT_TRUE(chunkstore.StoreChunk(name, value));
   std::string rec_value;
   ASSERT_TRUE(chunkstore.LoadChunk(name, &rec_value));
@@ -69,16 +69,16 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadChunk) {
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHasChunk) {
   std::string value = base::RandomString(250*1024);
-  std::string name = cry_obj.Hash(value, "", crypto::STRING_STRING, false);
+  std::string name = cry_obj.Hash(value, "", maidsafe_crypto::STRING_STRING, false);
   ASSERT_TRUE(chunkstore.StoreChunk(name, value));
   ASSERT_TRUE(chunkstore.HasChunk(name));
-  name = cry_obj.Hash("otherfile", "", crypto::STRING_STRING, false);
+  name = cry_obj.Hash("otherfile", "", maidsafe_crypto::STRING_STRING, false);
   ASSERT_FALSE(chunkstore.HasChunk(name));
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk) {
   std::string value = base::RandomString(250*1024);
-  std::string name = cry_obj.Hash(value, "", crypto::STRING_STRING, false);
+  std::string name = cry_obj.Hash(value, "", maidsafe_crypto::STRING_STRING, false);
   ASSERT_TRUE(chunkstore.StoreChunk(name, value));
   ASSERT_TRUE(chunkstore.HasChunk(name));
   fs::path filename(storedir);
@@ -98,7 +98,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk) {
   ASSERT_EQ(value, std::string(""));
   for (int i = 0; i < 10; i++) {
     value = base::RandomString(1024);
-    key = cry_obj.Hash(value, "", crypto::STRING_STRING, false);
+    key = cry_obj.Hash(value, "", maidsafe_crypto::STRING_STRING, false);
     ASSERT_TRUE(chunkstore.StoreChunk(key, value));
   }
   key = "";
@@ -129,7 +129,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreReuseDirectory) {
   std::string values[10];
   for (int i = 0; i < 10; i++) {
     values[i] = base::RandomString(1024);
-    keys[i] = cry_obj.Hash(values[i], "", crypto::STRING_STRING, false);
+    keys[i] = cry_obj.Hash(values[i], "", maidsafe_crypto::STRING_STRING, false);
     ASSERT_TRUE(chunkstore.StoreChunk(keys[i], values[i]));
   }
   for (int i = 0; i < 10; i++)
@@ -162,7 +162,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreGetAllChunks) {
   std::list<std::string> chunk_names;
   for (int i = 0; i < 100; i++) {
     std::string value = base::RandomString(1024);
-    std::string name = cry_obj.Hash(value, "", crypto::STRING_STRING, false);
+    std::string name = cry_obj.Hash(value, "", maidsafe_crypto::STRING_STRING, false);
     ASSERT_TRUE(chunkstore.StoreChunk(name, value));
     chunk_names.push_back(name);
   }
@@ -180,7 +180,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreGetAllChunks) {
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreUpdateChunk) {
   std::string value = base::RandomString(250*1024);
-  std::string name = cry_obj.Hash(value, "", crypto::STRING_STRING, false);
+  std::string name = cry_obj.Hash(value, "", maidsafe_crypto::STRING_STRING, false);
   ASSERT_TRUE(chunkstore.StoreChunk(name, value));
   std::string value1 = base::RandomString(250*1024);
   ASSERT_NE(value, value1);

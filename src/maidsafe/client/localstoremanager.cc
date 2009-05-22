@@ -78,7 +78,7 @@ bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
   if (!gp.ParseFromString(ser_gp))
     return false;
   if (!crypto_obj_.AsymCheckSig(gp.data(), gp.signature(),
-    public_key, crypto::STRING_STRING))
+    public_key, maidsafe_crypto::STRING_STRING))
     return false;
   return true;
 }
@@ -122,7 +122,7 @@ void LocalStoreManager::StorePacket(const std::string &key,
                                     base::callback_func_type cb) {
   if (type != DATA && type != PDDIR_NOTSIGNED) {
     if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key,
-      public_key, crypto::STRING_STRING)) {
+      public_key, maidsafe_crypto::STRING_STRING)) {
 #ifdef DEBUG
       printf("\n\n\nFail check signed pubkey.\n\n\n");
 #endif
@@ -131,8 +131,8 @@ void LocalStoreManager::StorePacket(const std::string &key,
     }
 
     if (!crypto_obj_.AsymCheckSig(crypto_obj_.Hash(
-      public_key + signed_public_key + key, "", crypto::STRING_STRING, true),
-      signature, public_key, crypto::STRING_STRING)) {
+      public_key + signed_public_key + key, "", maidsafe_crypto::STRING_STRING,
+      true), signature, public_key, maidsafe_crypto::STRING_STRING)) {
 #ifdef DEBUG
       printf("Fail check signed request.\n");
 #endif
@@ -275,14 +275,14 @@ void LocalStoreManager::DeletePacket(const std::string &key,
                                      const value_types &type,
                                      base::callback_func_type cb) {
   if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key,
-    public_key, crypto::STRING_STRING)) {
+    public_key, maidsafe_crypto::STRING_STRING)) {
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
     return;
   }
 
   if (!crypto_obj_.AsymCheckSig(crypto_obj_.Hash(
-    public_key + signed_public_key + key, "", crypto::STRING_STRING, true),
-    signature, public_key, crypto::STRING_STRING)) {
+    public_key + signed_public_key + key, "", maidsafe_crypto::STRING_STRING,
+    true), signature, public_key, maidsafe_crypto::STRING_STRING)) {
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
     return;
   }
@@ -317,8 +317,8 @@ void LocalStoreManager::DeletePacket(const std::string &key,
           boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
           return;
         }
-        if (!crypto_obj_.AsymCheckSig(syspacket.data(),
-             syspacket.signature(), public_key, crypto::STRING_STRING)) {
+        if (!crypto_obj_.AsymCheckSig(syspacket.data(), syspacket.signature(),
+            public_key, maidsafe_crypto::STRING_STRING)) {
           boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
           return;
         }
@@ -453,7 +453,7 @@ void LocalStoreManager::GetMessages(const std::string &key,
                                     base::callback_func_type cb) {
   std::vector<std::string> result;
   if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key,
-    public_key, crypto::STRING_STRING)) {
+    public_key, maidsafe_crypto::STRING_STRING)) {
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
     return;
   }

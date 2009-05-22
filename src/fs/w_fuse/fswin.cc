@@ -248,7 +248,7 @@ static int WinCreateFile(LPCWSTR FileName,
 //      NULL);
 //    if (handle == INVALID_HANDLE_VALUE) {
 //      DWORD error = GetLastError();
-//      DbgPrint(L"\t\terror code = %d\n\n", error);
+//      DbgPrint(L"\t\terror code = %ld\n\n", error);
 //      std::cout << "fdsfdsafdsfdsf" << std::endl;
 //      return error * -1;
 //    }
@@ -372,7 +372,7 @@ static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   if (attr == INVALID_FILE_ATTRIBUTES) {
     DWORD error = GetLastError();
 #ifdef DEBUG
-    printf("\terror code = %d\n\n", error);
+    printf("\terror code = %ld\n\n", error);
 #endif
     return error * -1;
   }
@@ -391,7 +391,7 @@ static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
                       NULL);
   if (handle == INVALID_HANDLE_VALUE) {
     DWORD error = GetLastError();
-    DbgPrint(L"\t\terror code = %d\n\n", error);
+    DbgPrint(L"\t\terror code = %ld\n\n", error);
     printf("bbbbbbbbbbbbbb\n");
     return error * -1;
   }
@@ -870,7 +870,7 @@ static int WinDeleteDirectory(LPCWSTR FileName,
 
   if (!RemoveDirectory(filePath)) {
     DWORD error = GetLastError();
-    DbgPrint(L"\t\terror code = %d\n\n", error);
+    DbgPrint(L"\t\terror code = %ld\n\n", error);
 #ifdef DEBUG
     printf("kkkkkkkkkkkkkk\n");
 #endif
@@ -1002,7 +1002,7 @@ static int WinSetEndOfFile(LPCWSTR FileName,
   }
   if (!SetEndOfFile(handle)) {
     DWORD error = GetLastError();
-    printf("\t\terror code = %d\n\n", error);
+    printf("\t\terror code = %ld\n\n", error);
     printf("ttttttttttttttttt\n");
     return error * -1;
   }
@@ -1029,19 +1029,20 @@ static int WinSetAllocationSize(LPCWSTR FileName,
     if (AllocSize < fileSize.QuadPart) {
       fileSize.QuadPart = AllocSize;
       if (SetFilePointerEx(handle, fileSize, NULL, FILE_BEGIN)) {
-        printf("\tSetAllocationSize: SetFilePointer error: %d", GetLastError());
-        printf(", offfset = %I64d\n\n", AllocSize);
+        printf("\tSetAllocationSize: SetFilePointer error: %ld",
+               GetLastError());
+        printf(", offfset = %I64lld\n\n", AllocSize);
         return GetLastError() * -1;
       }
       if (!SetEndOfFile(handle)) {
         DWORD error = GetLastError();
-        printf("\terror code = %d\n\n", error);
+        printf("\terror code = %ld\n\n", error);
         return error * -1;
       }
     }
   } else {
     DWORD error = GetLastError();
-    printf("\terror code = %d\n\n", error);
+    printf("\terror code = %ld\n\n", error);
     return error * -1;
   }
   return 0;
@@ -1058,7 +1059,7 @@ static int WinSetFileAttributes(LPCWSTR FileName,
   GetFilePath(filePath, FileName);
   if (!SetFileAttributes(filePath, FileAttributes)) {
     DWORD error = GetLastError();
-    DbgPrint(L"\t\terror code = %d\n\n", error);
+    DbgPrint(L"\t\terror code = %ld\n\n", error);
     printf("uuuuuuuuuuuuuuuuuuuu\n");
     return error * -1;
   }
@@ -1085,7 +1086,7 @@ static int WinSetFileTime(LPCWSTR FileName,
   if (!SetFileTime(handle, CreationTime, LastAccessTime, LastWriteTime)) {
     DWORD error = GetLastError();
     printf("wwwwwwwwwwwwwwwww\n");
-    DbgPrint(L"\t\terror code = %d\n\n", error);
+    DbgPrint(L"\t\terror code = %ld\n\n", error);
     return error * -1;
   }
   return 0;

@@ -40,19 +40,34 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-MaidsafeStoreManager::MaidsafeStoreManager(boost::recursive_mutex *mutex)
+MaidsafeStoreManager::MaidsafeStoreManager()
     : datastore_dir_(""),
       pdclient_(),
       cry_obj() {
   file_system::FileSystem fsys;
   fs::path datastore_path(fsys.DbDir(), fs::native);
   datastore_dir_ = datastore_path.string();
-  fs::path kadconfig_path(fsys.ApplicationDataDir(), fs::native);
-  kadconfig_path /= ".kadconfig";
-  printf("kadconfig_path: %s\n", kadconfig_path.string().c_str());
+  // If kad config file exists in dir we're in, use that, otherwise get default
+  // path to file.
+  std::string kadconfig_str("");
+  try {
+    if (fs::exists(".kadconfig")) {
+      kadconfig_str = ".kadconfig";
+    } else {
+      fs::path kadconfig_path(fsys.ApplicationDataDir(), fs::native);
+      kadconfig_path /= ".kadconfig";
+      kadconfig_str = kadconfig_path.string();
+    }
+  }
+  catch(const std::exception &ex) {
+#ifdef DEBUG
+    printf("%s\n", ex.what());
+#endif
+  }
+  printf("kadconfig_path: %s\n", kadconfig_str.c_str());
   pdclient_ = new PDClient(datastore_dir_,
                            0,
-                           kadconfig_path.string());
+                           kadconfig_str);
   cry_obj.set_symm_algorithm("AES_256");
   cry_obj.set_hash_algorithm("SHA512");
 }

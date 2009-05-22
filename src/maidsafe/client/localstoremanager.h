@@ -79,7 +79,7 @@ class LocalStoreManager : public StoreManagerInterface {
  private:
   CppSQLite3DB db_;
   packethandler::VaultBufferPacketHandler vbph_;
-  crypto::Crypto crypto_obj_;
+  maidsafe_crypto::Crypto crypto_obj_;
   boost::recursive_mutex *mutex_;
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
   // bool AddMessageToBufferPacket(std::string &key,

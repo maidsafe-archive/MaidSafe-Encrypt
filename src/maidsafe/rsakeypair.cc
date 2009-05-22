@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cryptopp/osrng.h>
 #include "maidsafe/maidsafe-dht.h"
 
-namespace crypto {
+namespace maidsafe_crypto {
 
 void RsaKeyPair::GenerateKeys(unsigned int keySize) {
   // CryptoPP::AutoSeededRandomPool rand_pool;
@@ -66,4 +66,4 @@ void RsaKeyPair::ClearKeys() {
 }
 
 
-}  // namespace crypt
+}  // namespace maidsafe_crypto

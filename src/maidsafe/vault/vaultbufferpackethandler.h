@@ -61,7 +61,7 @@ class VaultBufferPacketHandler {
                          MessageType &type);
 
  private:
-  crypto::Crypto crypto_obj_;
+  maidsafe_crypto::Crypto crypto_obj_;
   VaultBufferPacketHandler &operator=(const VaultBufferPacketHandler);
   VaultBufferPacketHandler(const VaultBufferPacketHandler&);
 };

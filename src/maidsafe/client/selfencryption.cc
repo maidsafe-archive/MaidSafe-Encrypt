@@ -199,12 +199,12 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
 #endif
       // output encrypted chunklet
       std::string post_enc_;
-      crypto::Crypto enc_crypto_;
+      maidsafe_crypto::Crypto enc_crypto_;
       enc_crypto_.set_symm_algorithm("AES_256");
       post_enc_ = enc_crypto_.SymmEncrypt((
         enc_crypto_.Obfuscate(
-          this_chunklet_, resized_obs_hash_, crypto::XOR)),
-          "", crypto::STRING_STRING, encryption_hash_);
+          this_chunklet_, resized_obs_hash_, maidsafe_crypto::XOR)),
+          "", maidsafe_crypto::STRING_STRING, encryption_hash_);
 #ifdef DEBUG_
       printf("chunklet's orig data     : %s\n", this_chunklet_.c_str());
       printf("chunklet's orig data size: %lu\n\n", this_chunklet_.size());
@@ -343,12 +343,14 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
                  encryption_hash_no_, encryption_hash_.c_str());
 #endif
         std::string decrypt_;
-        crypto::Crypto dec_crypto_;
+        maidsafe_crypto::Crypto dec_crypto_;
         dec_crypto_.set_symm_algorithm("AES_256");
         decrypt_ = dec_crypto_.Obfuscate((
-          dec_crypto_.SymmDecrypt(
-          this_chunklet_, "", crypto::STRING_STRING, encryption_hash_)),
-            resized_obs_hash_, crypto::XOR);
+                       dec_crypto_.SymmDecrypt(
+                       this_chunklet_,
+                       "",
+                       maidsafe_crypto::STRING_STRING, encryption_hash_)),
+                       resized_obs_hash_, maidsafe_crypto::XOR);
 #ifdef DEBUG_
           printf("this chunklet's decrypted content: %s", decrypt_.c_str());
           printf("\nand size: %lu\n", decrypt_.size());
@@ -392,23 +394,24 @@ int SelfEncryption::CheckEntry(const fs::path &entry_path) {
 
 
 std::string SelfEncryption::SHA512(const fs::path &file_path) {  // files
-  crypto::Crypto filehash_crypto;
+  maidsafe_crypto::Crypto filehash_crypto;
   filehash_crypto.set_hash_algorithm("SHA512");
   std::string file_hash_ = filehash_crypto.Hash(file_path.string(),
                                                 "",
-                                                crypto::FILE_STRING,
+                                                maidsafe_crypto::FILE_STRING,
                                                 true);
   return file_hash_;
 }  // end SHA512 for files
 
 
 std::string SelfEncryption::SHA512(const std::string &content) {  // strings
-  crypto::Crypto stringhash_crypto;
+  maidsafe_crypto::Crypto stringhash_crypto;
   stringhash_crypto.set_hash_algorithm("SHA512");
-  std::string string_hash_ = stringhash_crypto.Hash(content,
-                                                    "",
-                                                    crypto::STRING_STRING,
-                                                    true);
+  std::string string_hash_ = stringhash_crypto.Hash(
+                                 content,
+                                 "",
+                                 maidsafe_crypto::STRING_STRING,
+                                 true);
   return string_hash_;
 }  // end SHA512 for strings
 

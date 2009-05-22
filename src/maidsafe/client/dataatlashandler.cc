@@ -52,11 +52,12 @@ DataAtlasHandler::DataAtlasHandler() :db_dir_(), dirs_() {
   if (maidsafe::SessionSingleton::getInstance()->SessionName() != "") {
     db_dir_ = fsys_.DbDir();
   } else {
-    crypto::Crypto c;
+    maidsafe_crypto::Crypto c;
     c.set_hash_algorithm("SHA1");
     std::string username = "user1";
     std::string pin = "1234";
-    std::string s = c.Hash(pin+username, "", crypto::STRING_STRING, true);
+    std::string s = c.Hash(pin+username, "", maidsafe_crypto::STRING_STRING,
+                           true);
     std::string mdir = ".maidsafe" + s;
     fs::path db_dir(fsys_.HomeDir());
     db_dir /= mdir;
@@ -113,11 +114,11 @@ void DataAtlasHandler::GetDbPath(const std::string &element_path,
     pre_hash_db_name_ = path_.string()+db_dir_;
   }
 
-  crypto::Crypto crypto_;
+  maidsafe_crypto::Crypto crypto_;
   crypto_.set_hash_algorithm("SHA1");
   *db_path = crypto_.Hash(base::StrToLwr(pre_hash_db_name_),
                           "",
-                          crypto::STRING_STRING,
+                          maidsafe_crypto::STRING_STRING,
                           true);
 
   fs::path db_path_(db_dir_, fs::native);

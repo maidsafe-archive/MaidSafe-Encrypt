@@ -37,6 +37,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_MAIDSAFE_DHT_H_
 #define MAIDSAFE_MAIDSAFE_DHT_H_
 
+#include <string>
+#include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
 
 //  int StartListening(port);
@@ -147,7 +149,7 @@ class ChannelManager {
   int StopTransport();
   void MessageArrive(const std::string &message,
                      const boost::uint32_t &connection_id);
-  void MessageSentResult(boost::uint32_t , bool );
+  void MessageSentResult(boost::uint32_t , bool);
   boost::uint32_t CreateNewId();
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
   void DeleteRequest(const boost::uint32_t &req_id);
@@ -202,7 +204,7 @@ class Channel : public google::protobuf::RpcChannel {
 };
 }  // namespace rpcprotocol
 
-//callbacks section
+// callbacks section
 // link our callback funtions to lower level
 bool LostNet();
 bool ChangedIP();
