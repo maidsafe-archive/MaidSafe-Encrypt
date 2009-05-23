@@ -28,7 +28,7 @@
 #include <boost/thread/xtime.hpp>
 #include <map>
 #include <vector>
-#include <fstream>
+#include <fstream>  // NOLINT (Fraser) - for protobuf config file
 
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"

@@ -451,12 +451,12 @@ fs::path SelfEncryption::GetChunkPath(const std::string &chunk_name) {
   dir_three = chunk_name.substr(2, 1);
   fs::path chunk_branch_ = fs::path(fsys_.ApplicationDataDir(), fs::native)
     / "client" / dir_one / dir_two / dir_three;
-#ifdef DEBUG_
-  printf("Chunk path: %s\n\n", chunk_path_.c_str());
-#endif
   if (!fs::exists(chunk_branch_))
     fs::create_directories(chunk_branch_);
   fs::path chunk_path_ = chunk_branch_ / chunk_name;
+#ifdef DEBUG_
+  printf("Chunk path: %s\n\n", chunk_path_.string().c_str());
+#endif
   return chunk_path_;
 }  // end GetChunkPath
 

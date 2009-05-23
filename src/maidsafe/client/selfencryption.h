@@ -42,7 +42,7 @@ namespace maidsafe {
 class SelfEncryption {
  public:
   SelfEncryption();
-  virtual ~SelfEncryption() {}
+  ~SelfEncryption() {}
   // encrypt entire file
   int Encrypt(const std::string &entry_str, maidsafe::DataMap *dm);
   // decrypt chunks starting at chunklet spanning offset point
