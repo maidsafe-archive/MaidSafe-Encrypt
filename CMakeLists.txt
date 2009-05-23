@@ -41,58 +41,21 @@ set(BUILD_SHARED_LIBS OFF)
 #message ("---------------------------------------------------")
 
 
-#################################################################################
-##Wxwidgets code                                                                #
-#################################################################################
-# moved to a unicode static monolithic release library - easier                 #
-# TODO later we need to fine tune this lib to contain only                      #
-# what we need - ala cryptopp)                                                  #
-#################################################################################
-SET(WXW_USE_DEBUG OFF)
-SET(WXW_USE_UNICODE ON)
-SET(WXW_USE_SHARED OFF)
-SET(WXW_USE_UNIV OFF)
-SET(WXW_USE_MONO ON)
-SET(WXW_FILE_VERSION "28")
-SET(WXW_VERSION "2.8")
-
-IF(WIN32)
-    SET(wxWidgets_CONFIGURATION  mswu)
-    IF(MSVC)
-    SET(wxWidgets_ROOT_DIR  "C:/wxWidgets-2.8.9/")
-    SET(wxWidgets_LIB_DIR  "C:/wxWidgets-2.8.9/lib/vc_lib")
-    ENDIF(MSVC)
-    SET(wxWidgets_ROOT_DIR  "C:/usr/bin")
-    SET(wxWidgets_LIB_DIR  "C:/usr/lib/vc_lib")
-    SET(wxWidgets_CONFIGURATION  mswu)
-    FIND_PACKAGE(wxWidgets COMPONENTS  adv aui xrc xml qa html core base)
-ELSE(WIN32)
-     FIND_PACKAGE(wxWidgets COMPONENTS   xrc  core base)
-ENDIF(WIN32)
-
-
-IF(wxWidgets_FOUND)
-	  INCLUDE(${wxWidgets_USE_FILE})
-ENDIF(wxWidgets_FOUND)
-
-#########end of wxwidgets code ####################################################
 ###################################################################################
 #Set up extra includes and libs for windows - it puts them everywhere #############
 ###################################################################################
 IF (WIN32)
 	IF(MSVC)
-	set(INCLUDE_DIR c:/include/ C:/wxWidgets-2.8.9/include/ ${wxWidgets_INCLUDE_DIRS})
-#INCLUDE_DIRECTORIES(C:/wxWidgets-2.8.9/include/ ${wxWidgets_INCLUDE_DIRS})
+	set(INCLUDE_DIR c:/include/ )
 	set(LIB_DIR c:/lib/ )
 	ELSE(MSVC)
 	set(INCLUDE_DIR c:/usr/include/)
 	link_directories(c:/MinGW/lib/ c:/MinGW/mingw32/lib/ c:/usr/lib/ C:/Qt/4.5.0/lib)
-INCLUDE_DIRECTORIES(C:/usr/include/wx-2.8/  )
 	ENDIF(MSVC)
 ELSE(WIN32)
 	set(INCLUDE_DIR  /opt/local/var/macports/software/macfuse/1.7_0/opt/local/include/ )
 ENDIF(WIN32)
-INCLUDE_DIRECTORIES(${SOURCE_DIR} ${INCLUDE_DIR} ${wxWidgets_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${SOURCE_DIR} ${INCLUDE_DIR} )
 link_directories (${PD_BINARY_DIR})
 
 ##################################################################################
@@ -127,12 +90,6 @@ LIST(REMOVE_ITEM M_MSVAULT_DIR "${SOURCE_DIR}/maidsafe/vault/main.cc")
 LIST(REMOVE_ITEM M_MSVAULT_DIR "${SOURCE_DIR}/maidsafe/vault/win_service.cc") 
 LIST(REMOVE_ITEM M_MSVAULT_DIR "${SOURCE_DIR}/maidsafe/vault/unix_deamon.cc") 
 LIST(APPEND STYLE_MSVAULT ${M_MSVAULT_C} ${M_MSVAULT_H})                         #
-FILE(GLOB M_GUI_C "${SOURCE_DIR}/gui/*.c*")                                      #
-FILE(GLOB M_GUI_H "${SOURCE_DIR}/gui/*.h*")                                      #
-FILE(GLOB M_GUI_I "${SOURCE_DIR}/gui/img/*.cc")                                  #
-LIST(APPEND M_GUI_DIR ${M_GUI_C} ${M_GUI_H} ${M_GUI_I} )                         #
-LIST(APPEND STYLE_GUI ${M_GUI_C} ${M_GUI_H} )                                    #
-LIST(REMOVE_ITEM STYLE_GUI ${M_GUI_I})                                           #
 FILE(GLOB T_MAIDSAFE_C "${SOURCE_DIR}/tests/maidsafe/*.c*")                      #
 FILE(GLOB T_MAIDSAFE_H "${SOURCE_DIR}/tests/maidsafe/*.h*")                      #
 LIST(APPEND T_MAIDSAFE_DIR ${T_MAIDSAFE_C} ${T_MAIDSAFE_H})                      #
@@ -194,8 +151,6 @@ IF (APPLE)
 ###############################
 add_executable(perpetualdata MACOSX_BUNDLE ${M_QT_C})
 add_executable(pdlocal  MACOSX_BUNDLE  ${M_QT_C} )
-add_executable(wxperpetualdata MACOSX_BUNDLE ${M_GUI_DIR})
-add_executable(wxpdlocal  MACOSX_BUNDLE  ${M_GUI_DIR} )
 SET(SYS_LIB
 protobuf
 cryptopp
@@ -206,52 +161,40 @@ boost_regex-xgcc40-mt-1_37
 boost_thread-xgcc40-mt-1_37
 boost_date_time-xgcc40-mt-1_37
 maidsafe-dht)
-SET(SYS_WX -lwx_macu-2.8;/usr/lib/libwxexpat-2.8.a;/usr/lib/libwxtiff-2.8.a;/usr/lib/libwxjpeg-2.8.a;/usr/lib/libwxpng-2.8.a;-lz;-lpthread)
 
 ELSEIF (UNIX AND NOT APPLE)
 ###########################
 # LINUX BUILDS
 ##########################
-add_executable(wxperpetualdata ${M_GUI_DIR} )
-add_executable(wxpdlocal ${M_GUI_DIR} )
 add_executable(perpetualdata ${M_QT_C} )
 add_executable(pdlocal ${M_QT_C} )
 
 SET(SYS_LIB
 	/usr/lib/libboost_thread-gcc43-mt.a
-	sqlite3
+	/usr/lib/libsqlite3.a
 	/usr/lib/libprotobuf.a
 	/usr/lib/libboost_system-gcc43-mt.a
 	/usr/lib/libboost_filesystem-gcc43-mt.a
 	/usr/lib/libcryptopp.a
 	/usr/lib/libboost_regex-gcc43-mt.a
 	/usr/lib/libboost_date_time-gcc43-mt.a
-	-lrt
-	-lc
+	rt
+	/usr/lib/libc.a
+	/usr/lib/libm.a
+	dl
+	pthread
   maidsafe-dht
 )
-SET(SYS_WX
-	-pthread   /usr/lib/libwx_gtk2u-2.8.a -lwxjpeg-2.8  -lwxtiff-2.8 -pthread -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lpangoft2-1.0 -lgdk_pixbuf-2.0 -lm -lgio-2.0 -lpango-1.0 -lfreetype -lz -lfontconfig -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lglib-2.0 -lXinerama -lSM -lpng -lz -lwxregexu-2.8 -lz -ldl -lm
-	)
+
+#SET(QT_LIBRARIES /usr/lib/libQtCore.a /usr/lib/libQtGui.a)
 
 ELSEIF (WIN32)
 ########################
 # Windows Builds
 ########################
-add_executable(wxperpetualdata WIN32 ${M_GUI_DIR})
 add_executable(perpetualdata WIN32 ${M_QT_C})
 add_executable(pdlocal WIN32 ${M_QT_C} )
-add_executable(wxpdlocal WIN32 ${M_GUI_DIR} )
 
-SET(SYS_WX
-c:/usr/lib/libwx_mswu-2.8.a
- c:/usr/lib/libwxregexu-2.8.a c:/usr/lib/libwxexpat-2.8.a c:/usr/lib/libwxtiff-2.8.a c:/usr/lib/libwxjpeg-2.8.a c:/usr/lib/libwxpng-2.8.a c:/usr/lib/libwxzlib-2.8.a
-c:/usr/lib/libwxjpeg-2.8.a c:/usr/lib/libwxpng-2.8.a c:/usr/lib/libwxzlib-2.8.a -loleaut32 -lole32
--lmingw32 -ladvapi32 -lmingwex -lkernel32  -lmingwex -lgcc
--lwinspool -lwinmm -ladvapi32
--lrpcrt4 -luuid -lwinspool -lwinmm -lshell32 -lcomctl32 -lcomdlg32
--lctl3d32 -ladvapi32 -lwsock32 -lgdi32 -liphlpapi -lmsvcrt
-)
 SET(SYS_LIB
   -lmaidsafe-dht
  -ladvapi32 
@@ -259,7 +202,6 @@ SET(SYS_LIB
  -mi386pe
 -lstdc++
 -lws2_32
-c:/usr/lib/libwx_mswu-2.8.a
 c:/usr/lib/libboost_system-mgw43-mt-1_37.lib
 c:/usr/lib/libboost_filesystem-mgw43-mt-1_37.lib
 c:/usr/lib/libboost_regex-mgw43-mt-1_37.lib
@@ -268,24 +210,22 @@ c:/usr/lib/libboost_date_time-mgw43-mt-1_37.lib
 c:/usr/lib/dokan.lib
 c:/usr/lib/libcryptopp.a
 c:/usr/lib/libprotobuf.a c:/usr/lib/libsqlite3.a -liphlpapi
+
 )
 ENDIF(APPLE)
 IF(UNIX)
-	SET(FUSE  "fuse")
+	SET(FUSE  "/usr/lib/libfuse.a")
 	ENDIF()
-TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(wxperpetualdata PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${SYS_WX} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(wxpdlocal PDTESTmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${SYS_WX} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES}  ${SYS_LIB})
+TARGET_LINK_LIBRARIES(perpetualdata -static PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(pdlocal -static PDTESTmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES}  ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTmaidsafe PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTfs PDmaidsafelib PDfslib ${FUSE} gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(testvault PDmsclientlib PDmaidsafelib PDmsvaultlib PDpbmsgslib ${SYS_LIB})
-TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmaidsafelib PDpbmsgslib ${SYS_LIB})
+TARGET_LINK_LIBRARIES(testvault PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib sqlite3 ${SYS_LIB} )
+TARGET_LINK_LIBRARIES(vault   PDmsvaultlib PDmaidsafelib PDpbmsgslib  ${SYS_LIB} )
 
 
 IF(WIN32)
 SET(TARGET_PROPERTIES vault testvault TESTmaidsafe  COMPILE_FLAGS  ${CMAKE_CXX_FLAGS} --Wl,-subsystem,console)
-SET(TARGET_PROPERTIES wxperpetualdata wxpdlocal  COMPILE_FLAGS ${CMAKE_CXX_FLAGS} -Wl,-subsystem,windows)
 ENDIF(WIN32)
 
 ##################################################################################
@@ -322,19 +262,19 @@ SET (CTEST_CONTINUOUS_MINIMUM_INTERVAL 10)
 set(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY true)
 #ADD_TEST(TestIdentifier ExecutableName [Arguments])
 IF(UNIX)
-	ADD_TEST(CHK_GUI_ ${SOURCE_DIR}/cpplint.py ${STYLE_GUI})
 ADD_TEST(CHK_MS_ ${SOURCE_DIR}/cpplint.py ${STYLE_MAIDSAFE})
 ADD_TEST(CHK_KAD_ ${SOURCE_DIR}/cpplint.py ${STYLE_KADEMLIA})
-#ADD_TEST(CHK_TRAN_ ${SOURCE_DIR}/cpplint.py ${M_TRANSPORT_DIR})
+ADD_TEST(CHK_TRAN_ ${SOURCE_DIR}/cpplint.py ${M_TRANSPORT_DIR})
 ADD_TEST(CHK_BASE_ ${SOURCE_DIR}/cpplint.py ${M_BASE_DIR})
 ADD_TEST(CHK_RPC_COMPONENT ${SOURCE_DIR}/cpplint.py ${M_RPCPROTO_DIR})
 ENDIF(UNIX)
 IF(UNIX)
 	FOREACH(TESTTYPE TESTmaidsafe TESTfs )
 ELSE(UNIX)
-	FOREACH(TESTTYPE TESTmaidsafe.exe )
+	FOREACH(TESTTYPE TESTmaidsafe.exe TESTfs.exe )
 ENDIF(UNIX)
 	EXEC_PROGRAM(${EXECUTABLE_OUTPUT_PATH}/${TESTTYPE} ARGS --gtest_list_tests OUTPUT_VARIABLE maid_tests)
+	#message(${EXECUTABLE_OUTPUT_PATH}/${TESTTYPE} ARGS --gtest_list_tests OUTPUT_VARIABLE maid_tests)
 	if(WIN32)
 	STRING(REPLACE "\n" ";" maid_tests "${maid_tests}")
 	STRING(REPLACE " " "" maid_tests "${maid_tests}")
@@ -350,7 +290,7 @@ ENDIF(UNIX)
 			IF(NOT "${tst}" MATCHES "(\\.$)")
 			IF("${tst}" MATCHES "(${MAIDSAFE_TEST_TYPE}).+")
 		    ADD_TEST(${tst}    ${EXECUTABLE_OUTPUT_PATH}/${TESTTYPE}   --gtest_filter=*${tst}*)
-		    #		    message("${tst}   ${TESTTYPE}    --gtest_filter=*${tst}*")
+		    #message("${tst}   ${TESTTYPE}    --gtest_filter=*${tst}*")
 	    		ENDIF()
 	    		ENDIF()
 			ENDIF()
@@ -642,7 +582,7 @@ SET(CPACK_NSIS_CONTACT "contact@maidsafe.net")
 
 ELSEIF(UNIX AND NOT APPLE)
 	SET(CMAKE_INSTALL_PREFIX "/usr")
-	#SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libfuse.so.2 libsqlite3.so.0 librt.so.1 libQtGui.so.4 libXext.so.6 libX11.so.6 libQtCore.so.4 libpthread.so.0")
+	SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libqtcore4, libqtgui4")
   SET(CPACK_SET_DESTDIR on)
  SET(CPACK_STRIP_FILES "perpetualdata pdlocal vault")
   SET(CPACK_RPM_SPEC_INSTALL_POST "if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/false --no-create-home maidsafe; fi ;  if [ -e /var/cache/maidsafe/ ];then   mkdir -p /var/cache/maidsafe ;  /bin/chown maidsafe.maidsafe /var/cache/maidsafe;fi; /bin/chmod 755 /etc/init.d/perpetualvault")
