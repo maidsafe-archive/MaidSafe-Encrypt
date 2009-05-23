@@ -74,7 +74,8 @@ void Shares::onCreateShareClicked()
     // 2 - choose admin contacts
     // 3 - choose ro contacts
     // 4 - submit
-    if ( ui_.shareNameLineEdit->text().isEmpty() )
+    if ( ui_.shareNameLineEdit->text().isEmpty() ||
+        ui_.shareNameLineEdit->text() == tr( "Enter share name" ) )
     {
         QMessageBox::warning( this,
                               tr( "Problem!" ),
@@ -88,9 +89,18 @@ void Shares::onCreateShareClicked()
     ShareParticipantsChoice spc_admin(this, tr("Administrators"), &admin_set);
     int n = spc_admin.exec();
 
+    QStringList db_contacts = ClientController::instance()->contactsNames();
+    foreach ( const QString& s, admin_set )
+    {
+        db_contacts.removeAll( s );
+    }
+
+
     QStringList ro_set(admin_set);
-    ShareParticipantsChoice spc_ro(this, tr("Read Onlys"), &ro_set);
-    n = spc_ro.exec();
+    if ( db_contacts.size() > 0 ) {
+      ShareParticipantsChoice spc_ro(this, tr("Read Onlys"), &ro_set);
+      n = spc_ro.exec();
+    }
 
     if ( ro_set.size() > 0 || admin_set.size() > 0 )
     {
@@ -101,7 +111,17 @@ void Shares::onCreateShareClicked()
         {
             addShare( share_name );
             ui_.shareNameLineEdit->clear();
+        } else {
+            QMessageBox::warning( this,
+                              tr( "Problem!" ),
+                              tr( "There was an issue creating this share." )
+                            );
         }
+    } else {
+        QMessageBox::warning( this,
+                              tr( "Problem!" ),
+                              tr( "Please select some contacts for the share." )
+                            );
     }
 }
 

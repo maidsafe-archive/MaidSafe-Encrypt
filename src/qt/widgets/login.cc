@@ -161,6 +161,8 @@ Login::Login( QWidget* parent )
 
     ui_.pin->setValidator( new PinValidator( this ) );
     ui_.password->setValidator( new PasswordValidator( this ) );
+    ui_.login->setAutoDefault(true);
+    ui_.create->setAutoDefault(true);
 
     reset();
 

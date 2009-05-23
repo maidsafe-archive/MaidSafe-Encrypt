@@ -166,7 +166,10 @@ void MessageHandler::IterativeStoreMsgs(
   }
   if (data->stores_done == static_cast<int>(data->receivers.size())) {
     packethandler::StoreMessagesResult result;
-    result.set_result(kCallbackSuccess);
+    if (data->successful_stores == 0)
+      result.set_result(kCallbackFailure);
+    else
+      result.set_result(kCallbackSuccess);
     result.set_stored_msgs(data->successful_stores);
     for (int i = 0; i < static_cast<int>(data->no_auth_rec.size()); ++i) {
       result.add_failed(data->no_auth_rec[i]);

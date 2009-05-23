@@ -114,9 +114,9 @@ bool ClientController::createShare( const QString& shareName,
                                                     ro_set );
     printf("Add share result: %i\n", n);
 
-    if ( n == 0 ||      // success
-         n == -30006 || // message error
-         n == -30007 )  // message error
+    if ( n == 0 ) // ||      // success
+         // n == -30006 || // message error
+         // n == -30007 )  // message error
     {
         return true;
     }
@@ -128,8 +128,8 @@ ShareList ClientController::shares() const
 {
     ShareList rv;
     std::list<maidsafe::PrivateShare> ps_list;
-        const int n = maidsafe::ClientController::getInstance()
-                        ->GetShareList( &ps_list, "" );
+    const int n = maidsafe::ClientController::getInstance()
+                    ->GetShareList( &ps_list, "" );
     if ( n == 0 )
     {
         while ( !ps_list.empty() )

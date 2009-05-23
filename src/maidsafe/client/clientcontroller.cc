@@ -1242,7 +1242,7 @@ int ClientController::HandleAddContactRequest(
 #ifdef DEBUG
   printf("\n\n\nHandleAddContactRequest\nHandleAddContactRequest\n\n\n");
 #endif
-  // TODO(Richard): return choice to the user to accept/reject contact
+
   packethandler::ContactInfo ci;
   if (!ci.ParseFromString(vbpm.message())) {
 #ifdef DEBUG
@@ -1253,6 +1253,7 @@ int ClientController::HandleAddContactRequest(
 #ifdef DEBUG
   printf("Parsed message.\n");
 #endif
+  // TODO(Richard): return choice to the user to accept/reject contact
 
   // Get contacts public key
   std::string rec_public_key;

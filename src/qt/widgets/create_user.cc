@@ -39,6 +39,8 @@ CreateUser::CreateUser( QWidget* parent )
 {
     ui_.setupUi( this );
 
+    ui_.next->setAutoDefault(true);
+
     connect( ui_.back, SIGNAL( clicked( bool ) ), this, SLOT( onBack() ) );
     connect( ui_.next, SIGNAL( clicked( bool ) ), this, SLOT( onNext() ) );
     connect( ui_.cancel, SIGNAL( clicked( bool ) ), this, SIGNAL( cancelled() ) );

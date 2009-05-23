@@ -19,6 +19,8 @@
 #include <QMessageBox>
 #include <QProcess>
 
+// core
+#include "maidsafe/client/sessionsingleton.h"
 
 // local
 #include "widgets/login.h"
@@ -290,7 +292,11 @@ void PerpetualData::onMountCompleted( bool success )
     //
     if ( success )
     {
-        statusBar()->showMessage( tr( "Logged in" ) );
+        QString qs(maidsafe::SessionSingleton::getInstance()->PublicUsername().c_str());
+        if ( qs != tr(""))
+          statusBar()->showMessage( tr( "Logged in: " ) + qs);
+        else
+          statusBar()->showMessage( tr( "Logged in" ) );
         setState( LOGGED_IN );
     }
     else
