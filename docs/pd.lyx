@@ -1937,8 +1937,8 @@ To achive reliability of data where multiple copies may exist and be altered
  data.
  Using the above scenario a node intending (and allowed to, if required)
  tries to get all the k closest nodes via an iterative search.
- On success each node is sent a lock request which it answers with ACK or
- NACK.
+ On success each node is sent a lock request which it answers with (Acknowledge)
+ ACK or (Negative Acknowledge) NACK.
  Each node can pass this request to its known k closest nodes.
  On reciept of k ACK's the node then alters the value (if allowed as previously
  stated).
