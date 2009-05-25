@@ -360,3 +360,52 @@ int main(int argc, char* argv[]) {
   }
   return 0;
 }
+
+//  int main(int argc, char* argv[]) {
+//    if (argc < 2) {
+//      printf("Enter \"testvault [path to application dir. (eg. \"C:\\Progra");
+//      printf("mData\\maidsafe\" or \"/var/cache/maidsafe/\" or \"/Library/m");
+//      printf("aidsafe/\")] [port]\"\n");
+//      return -1;
+//    } else {
+//      std::string app_dir(argv[1]);
+//      std::string port_string(argv[2]);
+//      fs::path vault_path(app_dir, fs::native);
+//      vault_path /= "vault";
+//      maidsafe_crypto::Crypto co_;
+//      co_.set_symm_algorithm("AES_256");
+//      co_.set_hash_algorithm("SHA512");
+//      fs::path config_file(".config");
+//      base::VaultConfig vault_config;
+//      int port = base::stoi(port_string);
+//      maidsafe_crypto::RsaKeyPair keys;
+//      keys.GenerateKeys(packethandler::kRsaKeySize);
+//      vault_config.set_pmid_public(keys.public_key());
+//      vault_config.set_pmid_private(keys.private_key());
+//      vault_config.set_signed_pmid_public(
+//          co_.AsymSign(keys.public_key(), "", keys.private_key(),
+//          maidsafe_crypto::STRING_STRING));
+//      vault_config.set_port(port);
+//      fs::path chunkstore_path(vault_path);
+//      chunkstore_path /= "Chunkstore";
+//      co_.set_hash_algorithm("SHA1");
+//      chunkstore_path /= co_.Hash(keys.public_key(), "",
+//                                  maidsafe_crypto::STRING_STRING, true);
+//      vault_config.set_chunkstore_dir(chunkstore_path.string());
+//      fs::path datastore_path(vault_path);
+//      datastore_path /= "Datastore";
+//      datastore_path /= co_.Hash(keys.public_key(), "",
+//                                 maidsafe_crypto::STRING_STRING, true);
+//      vault_config.set_datastore_dir(datastore_path.string());
+//      std::fstream output(config_file.string().c_str(),
+//                          std::ios::out | std::ios::trunc | std::ios::binary);
+//      if (!vault_config.SerializeToOstream(&output)) {
+//        printf("Failed to write vault configuration file.\n");
+//        return -2;
+//      }
+//      output.close();
+//      printf(".config file created successfully in the directory where this");
+//      printf(" is being run.\n\n%s", vault_config.DebugString().c_str());
+//      return 0;
+//    }
+//  }
