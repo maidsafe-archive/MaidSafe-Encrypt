@@ -78,6 +78,8 @@ private slots:
     void onToggleFullScreen( bool );
     void onApplicationActionTriggered();
     void onQuit();
+    void onMyFiles();
+    void onPrivateShares();
 
 
 private:
@@ -89,7 +91,9 @@ private:
         LOGOUT,
         FULLSCREEN,
         QUIT,
-        ABOUT
+        ABOUT,
+        MY_FILES,
+        PRIVATE_SHARES
     };
     typedef QMap<Action, QAction*> ActionMap;
     ActionMap actions_;

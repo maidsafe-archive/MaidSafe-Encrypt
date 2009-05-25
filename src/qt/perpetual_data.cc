@@ -84,6 +84,8 @@ void PerpetualData::createActions()
     actions_[ LOGOUT ] = ui_.actionLogout;
     actions_[ FULLSCREEN ] = ui_.actionFullScreen;
     actions_[ ABOUT ] = ui_.actionAbout;
+    actions_[ MY_FILES ] = ui_.actionMy_Files;
+    actions_[ PRIVATE_SHARES ] = ui_.actionPrivate_Shares;
 
     actions_[ QUIT ]->setShortcut( Qt::ALT + Qt::Key_F4 );
     actions_[ FULLSCREEN ]->setShortcut( Qt::Key_F11 );
@@ -96,6 +98,10 @@ void PerpetualData::createActions()
              this,              SLOT( onToggleFullScreen( bool ) ) );
     connect( actions_[ ABOUT ], SIGNAL( triggered() ),
              this,              SLOT( onAbout() ) );
+    connect( actions_[ MY_FILES ], SIGNAL( triggered() ),
+             this,                 SLOT( onMyFiles() ) );
+    connect( actions_[ PRIVATE_SHARES ], SIGNAL( triggered() ),
+             this,                       SLOT( onPrivateShares() ) );
 
 }
 
@@ -372,6 +378,100 @@ void PerpetualData::onAbout()
     ui.setupUi( &about );
 
     about.exec();
+}
+
+void PerpetualData::onMyFiles()
+{
+    if (maidsafe::SessionSingleton::getInstance()->SessionName().empty())
+      return;
+
+    qDebug() << "PerpetualData::onMyFiles()";
+    QDir dir = ClientController::instance()->myFilesDirRoot( tr("") );
+
+    //QDesktopServices::openUrl( QUrl( dir.absolutePath() ) );
+
+#ifdef MAIDSAFE_WIN32
+    // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
+
+    // TODO: doesn't like spaces in the name
+    QString app( "explorer.exe" );
+    QStringList args;
+    args <<  "/e" << QString( "/root,%1" ).arg( dir.absolutePath().replace( "/", "\\" ) );
+
+    qDebug() << "explore:" << app << args;
+
+    if ( !QProcess::startDetached( app, args ) )
+    {
+        qWarning() << "PerpetualData::failed to start"
+                   << app
+                   << "with args"
+                   << args;
+    }
+
+#else
+    // nautilus FuseHomeDir()/Shares/Private/"name"
+    QString app( "nautilus" );
+    QStringList args;
+    args <<  QString( "%1" ).arg( dir.absolutePath() );
+
+    qDebug() << "explore:" << app << args;
+
+    if ( !QProcess::startDetached( app, args ) )
+    {
+        qWarning() << "PerpetualData::failed to start"
+                   << app
+                   << "with args"
+                   << args;
+    }
+
+#endif
+}
+
+void PerpetualData::onPrivateShares()
+{
+    if (maidsafe::SessionSingleton::getInstance()->SessionName().empty())
+      return;
+
+    qDebug() << "PerpetualData::onPrivateShares()";
+    QDir dir = ClientController::instance()->shareDirRoot( tr("") );
+
+    //QDesktopServices::openUrl( QUrl( dir.absolutePath() ) );
+
+#ifdef MAIDSAFE_WIN32
+    // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
+
+    // TODO: doesn't like spaces in the name
+    QString app( "explorer.exe" );
+    QStringList args;
+    args <<  "/e" << QString( "/root,%1" ).arg( dir.absolutePath().replace( "/", "\\" ) );
+
+    qDebug() << "explore:" << app << args;
+
+    if ( !QProcess::startDetached( app, args ) )
+    {
+        qWarning() << "PerpetualData::failed to start"
+                   << app
+                   << "with args"
+                   << args;
+    }
+
+#else
+    // nautilus FuseHomeDir()/Shares/Private/"name"
+    QString app( "nautilus" );
+    QStringList args;
+    args <<  QString( "%1" ).arg( dir.absolutePath() );
+
+    qDebug() << "explore:" << app << args;
+
+    if ( !QProcess::startDetached( app, args ) )
+    {
+        qWarning() << "PerpetualData::failed to start"
+                   << app
+                   << "with args"
+                   << args;
+    }
+
+#endif
 }
 
 void PerpetualData::onToggleFullScreen( bool b )

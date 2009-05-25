@@ -94,6 +94,7 @@ public:
         TODO: move onto Share interface
     */
     QDir shareDirRoot( const QString& name ) const;
+    QDir myFilesDirRoot( const QString& name ) const;
 
 
     /// Messaging

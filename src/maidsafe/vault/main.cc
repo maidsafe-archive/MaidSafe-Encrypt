@@ -262,7 +262,7 @@ class RunPDVaults {
 
   void TearDown() {
     bool success_(false);
-    for (int i = 0; i < no_of_vaults_; ++i) {
+    for (int i = no_of_vaults_-1; i >= 0; --i) {
       success_ = false;
       (*(pdvaults_))[i]->Stop();
       for (int j = 0; j < 6000; ++j) {
@@ -276,6 +276,8 @@ class RunPDVaults {
         printf("\tVault %i stopped.\n", i+1);
       else
         printf("\tVault %i failed to stop correctly.\n", i+1);
+      if (i == 0)
+        (*(pdvaults_))[i]->CleanUp();
       (*(pdvaults_))[i].reset();
     }
   }

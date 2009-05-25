@@ -194,6 +194,32 @@ QDir ClientController::shareDirRoot( const QString& name ) const
     return dir;
 }
 
+QDir ClientController::myFilesDirRoot( const QString& name ) const
+{
+    qDebug() << "ClientController::myFilesDirRoot:" << name;
+    QString pathInMaidsafe = QString( "My Files%1%2" )
+                            .arg( QDir::separator() )
+                            .arg( name );
+
+#ifdef MAIDSAFE_WIN32
+    QString maidsafeRoot = QString( "%1:\\" ).arg( maidsafe::SessionSingleton::getInstance()->WinDrive() );
+#else
+    file_system::FileSystem fs;
+    // Path comes back without that last slash
+    QString maidsafeRoot = QString::fromStdString( fs.MaidsafeFuseDir() + "/" );
+#endif
+
+    QString path = maidsafeRoot + pathInMaidsafe;
+
+    QDir dir( path );
+    if ( !dir.exists() )
+    {
+        qWarning() << "share directory doesn't exist:" << path;
+    }
+
+    return dir;
+}
+
 
 QStringList ClientController::contactsNames() const
 {

@@ -38,6 +38,7 @@ VaultDaemon::~VaultDaemon() {
   boost::posix_time::ptime now_ = boost::posix_time::second_clock::local_time();
   stop_ += boost::posix_time::to_simple_string(now_);
   WriteToLog(stop_);
+  pdvault_->CleanUp();
 }
 
 

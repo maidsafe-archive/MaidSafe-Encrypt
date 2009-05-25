@@ -158,6 +158,7 @@ class PDVault {
   ~PDVault();
   void Start(const bool &port_forwarded);
   int Stop();
+  void CleanUp();
   inline bool vault_started() {return vault_started_;}
   void SyncVault(base::callback_func_type cb);
   void RepublishChunkRef(base::callback_func_type cb);

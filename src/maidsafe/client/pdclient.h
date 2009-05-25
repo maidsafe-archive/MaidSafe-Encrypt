@@ -178,6 +178,7 @@ class PDClient {
            const boost::uint16_t &port,
            const std::string &kad_config_file);
   ~PDClient();
+  void CleanUp();
   void GetMessages(const std::string &chunk_name,
                    const std::string &public_key,
                    const std::string &signed_public_key,

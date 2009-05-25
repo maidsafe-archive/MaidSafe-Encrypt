@@ -101,6 +101,7 @@ void MaidsafeStoreManager::Init(base::callback_func_type cb) {
 void MaidsafeStoreManager::Close(base::callback_func_type cb) {
   pdclient_->Leave(boost::bind(&MaidsafeStoreManager::SimpleResult_Callback,
                                this, _1, cb));
+  pdclient_->CleanUp();
 }
 
 //  bool MaidsafeStoreManager::GetBootstrappingNodes(

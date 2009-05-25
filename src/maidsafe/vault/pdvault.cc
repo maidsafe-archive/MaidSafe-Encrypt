@@ -28,7 +28,7 @@
 #include <boost/thread/xtime.hpp>
 #include <google/protobuf/descriptor.h>
 
-#include "maidsafe/maidsafe-dht.h"
+#include <maidsafe/maidsafe-dht.h>
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
 
@@ -143,6 +143,10 @@ int PDVault::Stop() {
   vault_started_ = kad_joined_;
   channel_manager_->StopTransport();
   return 0;
+}
+
+void PDVault::CleanUp() {
+  channel_manager_->CleanUpTransport();
 }
 
 void PDVault::SyncVault(base::callback_func_type cb) {

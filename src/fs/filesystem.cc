@@ -234,12 +234,12 @@ bool FileSystem::CreateDirs() {
   fs::path ms_home_path_(MaidsafeHomeDir(), fs::native);
   // if this is created OK, so is MaidsafeDir
   // TODO(username): If exists but is a read only dir or a file,throw exception
-#ifdef DEBUG_
+#ifdef DEBUG
   if (fs::exists(ms_home_path_))
     printf("fs.cc Already Exists: %s\n", ms_home_path_.string().c_str());
 #endif
   if (!fs::exists(ms_home_path_)) {
-#ifdef DEBUG_
+#ifdef DEBUG
     printf("fs.cc Creating %s\n", ms_home_path_.string().c_str());
 #endif
   fs::create_directories(ms_home_path_);
@@ -256,12 +256,12 @@ bool FileSystem::CreateDirs() {
   for (unsigned int i = 0; i != dir_.size() ;i++) {
   // TODO(user): If exists but is a read only dir or a file, throw exception
     if (fs::exists(dir_[i])) {
-#ifdef DEBUG_
+#ifdef DEBUG
       printf("fs.cc Already Exists: %s\n", dir_[i].string().c_str());
 #endif
     }
     if (!fs::exists(dir_[i])) {
-#ifdef DEBUG_
+#ifdef DEBUG
       printf("fs.cc Creating %s\n", dir_[i].string().c_str());
 #endif
       fs::create_directories(dir_[i]);
