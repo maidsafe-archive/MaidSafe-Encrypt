@@ -35,25 +35,21 @@ class BufferPacketMessage;
 class BufferPacket;
 class ValidatedBufferPacketMessage;
 class ContactInfo;
+class ContactNotification;
+class InstantFileNotification;
+class PrivateShareNotification;
 class InstantMessage;
-class InstantFileMessage;
 class StoreMessagesResult;
 class CreateMSIDResult;
-class PrivateShareNotification;
 
 enum MessageType {
-  SHARE = 0,
   ADD_CONTACT_RQST = 1,
-  GENERAL = 2,
-  ADD_CONTACT_RESPONSE = 3,
-  INSTANT_MSG = 4,
-  INSTANT_FILE = 5,
-  DELETE_CONTACT_NOTIF = 6,
-  STATUS_CHECK = 7
+  INSTANT_MSG = 2,
+  STATUS_CHECK = 3
 };
 const ::google::protobuf::EnumDescriptor* MessageType_descriptor();
 bool MessageType_IsValid(int value);
-const MessageType MessageType_MIN = SHARE;
+const MessageType MessageType_MIN = ADD_CONTACT_RQST;
 const MessageType MessageType_MAX = STATUS_CHECK;
 
 // ===================================================================
@@ -683,6 +679,329 @@ class ContactInfo : public ::google::protobuf::Message {
 };
 // -------------------------------------------------------------------
 
+class ContactNotification : public ::google::protobuf::Message {
+ public:
+  ContactNotification();
+  virtual ~ContactNotification();
+  
+  ContactNotification(const ContactNotification& from);
+  
+  inline ContactNotification& operator=(const ContactNotification& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ContactNotification& default_instance();
+  void Swap(ContactNotification* other);
+  
+  // implements Message ----------------------------------------------
+  
+  ContactNotification* New() const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required int32 action = 1;
+  inline bool has_action() const;
+  inline void clear_action();
+  inline ::google::protobuf::int32 action() const;
+  inline void set_action(::google::protobuf::int32 value);
+  
+  // optional .packethandler.ContactInfo contact = 2;
+  inline bool has_contact() const;
+  inline void clear_contact();
+  inline const ::packethandler::ContactInfo& contact() const;
+  inline ::packethandler::ContactInfo* mutable_contact();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::int32 action_;
+  ::packethandler::ContactInfo* contact_;
+  friend void protobuf_BuildDesc_packet_2eproto_AssignGlobalDescriptors(
+      const ::google::protobuf::FileDescriptor* file);
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static ContactNotification* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class InstantFileNotification : public ::google::protobuf::Message {
+ public:
+  InstantFileNotification();
+  virtual ~InstantFileNotification();
+  
+  InstantFileNotification(const InstantFileNotification& from);
+  
+  inline InstantFileNotification& operator=(const InstantFileNotification& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const InstantFileNotification& default_instance();
+  void Swap(InstantFileNotification* other);
+  
+  // implements Message ----------------------------------------------
+  
+  InstantFileNotification* New() const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes ser_mdm = 1;
+  inline bool has_ser_mdm() const;
+  inline void clear_ser_mdm();
+  inline const ::std::string& ser_mdm() const;
+  inline void set_ser_mdm(const ::std::string& value);
+  inline void set_ser_mdm(const char* value);
+  inline void set_ser_mdm(const void* value, size_t size);
+  inline ::std::string* mutable_ser_mdm();
+  
+  // required bytes ser_dm = 2;
+  inline bool has_ser_dm() const;
+  inline void clear_ser_dm();
+  inline const ::std::string& ser_dm() const;
+  inline void set_ser_dm(const ::std::string& value);
+  inline void set_ser_dm(const char* value);
+  inline void set_ser_dm(const void* value, size_t size);
+  inline ::std::string* mutable_ser_dm();
+  
+  // required bytes filename = 3;
+  inline bool has_filename() const;
+  inline void clear_filename();
+  inline const ::std::string& filename() const;
+  inline void set_filename(const ::std::string& value);
+  inline void set_filename(const char* value);
+  inline void set_filename(const void* value, size_t size);
+  inline ::std::string* mutable_filename();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* ser_mdm_;
+  static const ::std::string _default_ser_mdm_;
+  ::std::string* ser_dm_;
+  static const ::std::string _default_ser_dm_;
+  ::std::string* filename_;
+  static const ::std::string _default_filename_;
+  friend void protobuf_BuildDesc_packet_2eproto_AssignGlobalDescriptors(
+      const ::google::protobuf::FileDescriptor* file);
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static InstantFileNotification* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class PrivateShareNotification : public ::google::protobuf::Message {
+ public:
+  PrivateShareNotification();
+  virtual ~PrivateShareNotification();
+  
+  PrivateShareNotification(const PrivateShareNotification& from);
+  
+  inline PrivateShareNotification& operator=(const PrivateShareNotification& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const PrivateShareNotification& default_instance();
+  void Swap(PrivateShareNotification* other);
+  
+  // implements Message ----------------------------------------------
+  
+  PrivateShareNotification* New() const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes name = 1;
+  inline bool has_name() const;
+  inline void clear_name();
+  inline const ::std::string& name() const;
+  inline void set_name(const ::std::string& value);
+  inline void set_name(const char* value);
+  inline void set_name(const void* value, size_t size);
+  inline ::std::string* mutable_name();
+  
+  // required bytes msid = 2;
+  inline bool has_msid() const;
+  inline void clear_msid();
+  inline const ::std::string& msid() const;
+  inline void set_msid(const ::std::string& value);
+  inline void set_msid(const char* value);
+  inline void set_msid(const void* value, size_t size);
+  inline ::std::string* mutable_msid();
+  
+  // required bytes public_key = 3;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // optional bytes private_key = 4;
+  inline bool has_private_key() const;
+  inline void clear_private_key();
+  inline const ::std::string& private_key() const;
+  inline void set_private_key(const ::std::string& value);
+  inline void set_private_key(const char* value);
+  inline void set_private_key(const void* value, size_t size);
+  inline ::std::string* mutable_private_key();
+  
+  // repeated bytes admins = 5;
+  inline int admins_size() const;
+  inline void clear_admins();
+  inline const ::google::protobuf::RepeatedPtrField< ::std::string>& admins() const;
+  inline ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_admins();
+  inline const ::std::string& admins(int index) const;
+  inline ::std::string* mutable_admins(int index);
+  inline void set_admins(int index, const ::std::string& value);
+  inline void set_admins(int index, const char* value);
+  inline ::std::string* add_admins();
+  inline void add_admins(const ::std::string& value);
+  inline void add_admins(const char* value);
+  inline void set_admins(int index, const void* value, size_t size);
+  inline void add_admins(const void* value, size_t size);
+  
+  // repeated bytes readonlys = 6;
+  inline int readonlys_size() const;
+  inline void clear_readonlys();
+  inline const ::google::protobuf::RepeatedPtrField< ::std::string>& readonlys() const;
+  inline ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_readonlys();
+  inline const ::std::string& readonlys(int index) const;
+  inline ::std::string* mutable_readonlys(int index);
+  inline void set_readonlys(int index, const ::std::string& value);
+  inline void set_readonlys(int index, const char* value);
+  inline ::std::string* add_readonlys();
+  inline void add_readonlys(const ::std::string& value);
+  inline void add_readonlys(const char* value);
+  inline void set_readonlys(int index, const void* value, size_t size);
+  inline void add_readonlys(const void* value, size_t size);
+  
+  // required bytes dir_db_key = 7;
+  inline bool has_dir_db_key() const;
+  inline void clear_dir_db_key();
+  inline const ::std::string& dir_db_key() const;
+  inline void set_dir_db_key(const ::std::string& value);
+  inline void set_dir_db_key(const char* value);
+  inline void set_dir_db_key(const void* value, size_t size);
+  inline ::std::string* mutable_dir_db_key();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* name_;
+  static const ::std::string _default_name_;
+  ::std::string* msid_;
+  static const ::std::string _default_msid_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* private_key_;
+  static const ::std::string _default_private_key_;
+  ::google::protobuf::RepeatedPtrField< ::std::string> admins_;
+  ::google::protobuf::RepeatedPtrField< ::std::string> readonlys_;
+  ::std::string* dir_db_key_;
+  static const ::std::string _default_dir_db_key_;
+  friend void protobuf_BuildDesc_packet_2eproto_AssignGlobalDescriptors(
+      const ::google::protobuf::FileDescriptor* file);
+  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static PrivateShareNotification* default_instance_;
+};
+// -------------------------------------------------------------------
+
 class InstantMessage : public ::google::protobuf::Message {
  public:
   InstantMessage();
@@ -746,11 +1065,23 @@ class InstantMessage : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 date() const;
   inline void set_date(::google::protobuf::int32 value);
   
-  // required .packethandler.MessageType type = 4;
-  inline bool has_type() const;
-  inline void clear_type();
-  inline packethandler::MessageType type() const;
-  inline void set_type(packethandler::MessageType value);
+  // optional .packethandler.ContactNotification contact_notification = 4;
+  inline bool has_contact_notification() const;
+  inline void clear_contact_notification();
+  inline const ::packethandler::ContactNotification& contact_notification() const;
+  inline ::packethandler::ContactNotification* mutable_contact_notification();
+  
+  // optional .packethandler.InstantFileNotification instantfile_notification = 5;
+  inline bool has_instantfile_notification() const;
+  inline void clear_instantfile_notification();
+  inline const ::packethandler::InstantFileNotification& instantfile_notification() const;
+  inline ::packethandler::InstantFileNotification* mutable_instantfile_notification();
+  
+  // optional .packethandler.PrivateShareNotification privateshare_notification = 6;
+  inline bool has_privateshare_notification() const;
+  inline void clear_privateshare_notification();
+  inline const ::packethandler::PrivateShareNotification& privateshare_notification() const;
+  inline ::packethandler::PrivateShareNotification* mutable_privateshare_notification();
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -761,10 +1092,12 @@ class InstantMessage : public ::google::protobuf::Message {
   ::std::string* message_;
   static const ::std::string _default_message_;
   ::google::protobuf::int32 date_;
-  int type_;
+  ::packethandler::ContactNotification* contact_notification_;
+  ::packethandler::InstantFileNotification* instantfile_notification_;
+  ::packethandler::PrivateShareNotification* privateshare_notification_;
   friend void protobuf_BuildDesc_packet_2eproto_AssignGlobalDescriptors(
       const ::google::protobuf::FileDescriptor* file);
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -779,113 +1112,6 @@ class InstantMessage : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static InstantMessage* default_instance_;
-};
-// -------------------------------------------------------------------
-
-class InstantFileMessage : public ::google::protobuf::Message {
- public:
-  InstantFileMessage();
-  virtual ~InstantFileMessage();
-  
-  InstantFileMessage(const InstantFileMessage& from);
-  
-  inline InstantFileMessage& operator=(const InstantFileMessage& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
-    return _unknown_fields_;
-  }
-  
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
-    return &_unknown_fields_;
-  }
-  
-  static const ::google::protobuf::Descriptor* descriptor();
-  static const InstantFileMessage& default_instance();
-  void Swap(InstantFileMessage* other);
-  
-  // implements Message ----------------------------------------------
-  
-  InstantFileMessage* New() const;
-  int GetCachedSize() const { return _cached_size_; }
-  private:
-  void SetCachedSize(int size) const { _cached_size_ = size; }
-  public:
-  
-  const ::google::protobuf::Descriptor* GetDescriptor() const;
-  const ::google::protobuf::Reflection* GetReflection() const;
-  
-  // nested types ----------------------------------------------------
-  
-  // accessors -------------------------------------------------------
-  
-  // required bytes ser_mdm = 1;
-  inline bool has_ser_mdm() const;
-  inline void clear_ser_mdm();
-  inline const ::std::string& ser_mdm() const;
-  inline void set_ser_mdm(const ::std::string& value);
-  inline void set_ser_mdm(const char* value);
-  inline void set_ser_mdm(const void* value, size_t size);
-  inline ::std::string* mutable_ser_mdm();
-  
-  // required bytes ser_dm = 2;
-  inline bool has_ser_dm() const;
-  inline void clear_ser_dm();
-  inline const ::std::string& ser_dm() const;
-  inline void set_ser_dm(const ::std::string& value);
-  inline void set_ser_dm(const char* value);
-  inline void set_ser_dm(const void* value, size_t size);
-  inline ::std::string* mutable_ser_dm();
-  
-  // required bytes filename = 3;
-  inline bool has_filename() const;
-  inline void clear_filename();
-  inline const ::std::string& filename() const;
-  inline void set_filename(const ::std::string& value);
-  inline void set_filename(const char* value);
-  inline void set_filename(const void* value, size_t size);
-  inline ::std::string* mutable_filename();
-  
-  // optional bytes sender_msg = 4;
-  inline bool has_sender_msg() const;
-  inline void clear_sender_msg();
-  inline const ::std::string& sender_msg() const;
-  inline void set_sender_msg(const ::std::string& value);
-  inline void set_sender_msg(const char* value);
-  inline void set_sender_msg(const void* value, size_t size);
-  inline ::std::string* mutable_sender_msg();
-  
- private:
-  ::google::protobuf::UnknownFieldSet _unknown_fields_;
-  mutable int _cached_size_;
-  
-  ::std::string* ser_mdm_;
-  static const ::std::string _default_ser_mdm_;
-  ::std::string* ser_dm_;
-  static const ::std::string _default_ser_dm_;
-  ::std::string* filename_;
-  static const ::std::string _default_filename_;
-  ::std::string* sender_msg_;
-  static const ::std::string _default_sender_msg_;
-  friend void protobuf_BuildDesc_packet_2eproto_AssignGlobalDescriptors(
-      const ::google::protobuf::FileDescriptor* file);
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
-  
-  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
-  inline bool _has_bit(int index) const {
-    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
-  }
-  inline void _set_bit(int index) {
-    _has_bits_[index / 32] |= (1u << (index % 32));
-  }
-  inline void _clear_bit(int index) {
-    _has_bits_[index / 32] &= ~(1u << (index % 32));
-  }
-  
-  void InitAsDefaultInstance();
-  static InstantFileMessage* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -1090,156 +1316,6 @@ class CreateMSIDResult : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static CreateMSIDResult* default_instance_;
-};
-// -------------------------------------------------------------------
-
-class PrivateShareNotification : public ::google::protobuf::Message {
- public:
-  PrivateShareNotification();
-  virtual ~PrivateShareNotification();
-  
-  PrivateShareNotification(const PrivateShareNotification& from);
-  
-  inline PrivateShareNotification& operator=(const PrivateShareNotification& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
-    return _unknown_fields_;
-  }
-  
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
-    return &_unknown_fields_;
-  }
-  
-  static const ::google::protobuf::Descriptor* descriptor();
-  static const PrivateShareNotification& default_instance();
-  void Swap(PrivateShareNotification* other);
-  
-  // implements Message ----------------------------------------------
-  
-  PrivateShareNotification* New() const;
-  int GetCachedSize() const { return _cached_size_; }
-  private:
-  void SetCachedSize(int size) const { _cached_size_ = size; }
-  public:
-  
-  const ::google::protobuf::Descriptor* GetDescriptor() const;
-  const ::google::protobuf::Reflection* GetReflection() const;
-  
-  // nested types ----------------------------------------------------
-  
-  // accessors -------------------------------------------------------
-  
-  // required bytes name = 1;
-  inline bool has_name() const;
-  inline void clear_name();
-  inline const ::std::string& name() const;
-  inline void set_name(const ::std::string& value);
-  inline void set_name(const char* value);
-  inline void set_name(const void* value, size_t size);
-  inline ::std::string* mutable_name();
-  
-  // required bytes msid = 2;
-  inline bool has_msid() const;
-  inline void clear_msid();
-  inline const ::std::string& msid() const;
-  inline void set_msid(const ::std::string& value);
-  inline void set_msid(const char* value);
-  inline void set_msid(const void* value, size_t size);
-  inline ::std::string* mutable_msid();
-  
-  // required bytes public_key = 3;
-  inline bool has_public_key() const;
-  inline void clear_public_key();
-  inline const ::std::string& public_key() const;
-  inline void set_public_key(const ::std::string& value);
-  inline void set_public_key(const char* value);
-  inline void set_public_key(const void* value, size_t size);
-  inline ::std::string* mutable_public_key();
-  
-  // optional bytes private_key = 4;
-  inline bool has_private_key() const;
-  inline void clear_private_key();
-  inline const ::std::string& private_key() const;
-  inline void set_private_key(const ::std::string& value);
-  inline void set_private_key(const char* value);
-  inline void set_private_key(const void* value, size_t size);
-  inline ::std::string* mutable_private_key();
-  
-  // repeated bytes admins = 5;
-  inline int admins_size() const;
-  inline void clear_admins();
-  inline const ::google::protobuf::RepeatedPtrField< ::std::string>& admins() const;
-  inline ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_admins();
-  inline const ::std::string& admins(int index) const;
-  inline ::std::string* mutable_admins(int index);
-  inline void set_admins(int index, const ::std::string& value);
-  inline void set_admins(int index, const char* value);
-  inline ::std::string* add_admins();
-  inline void add_admins(const ::std::string& value);
-  inline void add_admins(const char* value);
-  inline void set_admins(int index, const void* value, size_t size);
-  inline void add_admins(const void* value, size_t size);
-  
-  // repeated bytes readonlys = 6;
-  inline int readonlys_size() const;
-  inline void clear_readonlys();
-  inline const ::google::protobuf::RepeatedPtrField< ::std::string>& readonlys() const;
-  inline ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_readonlys();
-  inline const ::std::string& readonlys(int index) const;
-  inline ::std::string* mutable_readonlys(int index);
-  inline void set_readonlys(int index, const ::std::string& value);
-  inline void set_readonlys(int index, const char* value);
-  inline ::std::string* add_readonlys();
-  inline void add_readonlys(const ::std::string& value);
-  inline void add_readonlys(const char* value);
-  inline void set_readonlys(int index, const void* value, size_t size);
-  inline void add_readonlys(const void* value, size_t size);
-  
-  // required bytes dir_db_key = 7;
-  inline bool has_dir_db_key() const;
-  inline void clear_dir_db_key();
-  inline const ::std::string& dir_db_key() const;
-  inline void set_dir_db_key(const ::std::string& value);
-  inline void set_dir_db_key(const char* value);
-  inline void set_dir_db_key(const void* value, size_t size);
-  inline ::std::string* mutable_dir_db_key();
-  
- private:
-  ::google::protobuf::UnknownFieldSet _unknown_fields_;
-  mutable int _cached_size_;
-  
-  ::std::string* name_;
-  static const ::std::string _default_name_;
-  ::std::string* msid_;
-  static const ::std::string _default_msid_;
-  ::std::string* public_key_;
-  static const ::std::string _default_public_key_;
-  ::std::string* private_key_;
-  static const ::std::string _default_private_key_;
-  ::google::protobuf::RepeatedPtrField< ::std::string> admins_;
-  ::google::protobuf::RepeatedPtrField< ::std::string> readonlys_;
-  ::std::string* dir_db_key_;
-  static const ::std::string _default_dir_db_key_;
-  friend void protobuf_BuildDesc_packet_2eproto_AssignGlobalDescriptors(
-      const ::google::protobuf::FileDescriptor* file);
-  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
-  
-  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
-  inline bool _has_bit(int index) const {
-    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
-  }
-  inline void _set_bit(int index) {
-    _has_bits_[index / 32] |= (1u << (index % 32));
-  }
-  inline void _clear_bit(int index) {
-    _has_bits_[index / 32] &= ~(1u << (index % 32));
-  }
-  
-  void InitAsDefaultInstance();
-  static PrivateShareNotification* default_instance_;
 };
 // ===================================================================
 
@@ -1660,7 +1736,7 @@ inline bool BufferPacketMessage::has_type() const {
   return _has_bit(4);
 }
 inline void BufferPacketMessage::clear_type() {
-  type_ = 0;
+  type_ = 1;
   _clear_bit(4);
 }
 inline packethandler::MessageType BufferPacketMessage::type() const {
@@ -1861,7 +1937,7 @@ inline bool ValidatedBufferPacketMessage::has_type() const {
   return _has_bit(3);
 }
 inline void ValidatedBufferPacketMessage::clear_type() {
-  type_ = 0;
+  type_ = 1;
   _clear_bit(3);
 }
 inline packethandler::MessageType ValidatedBufferPacketMessage::type() const {
@@ -2121,164 +2197,80 @@ inline void ContactInfo::set_language(::google::protobuf::int32 value) {
 
 // -------------------------------------------------------------------
 
-// InstantMessage
+// ContactNotification
 
-// required bytes sender = 1;
-inline bool InstantMessage::has_sender() const {
+// required int32 action = 1;
+inline bool ContactNotification::has_action() const {
   return _has_bit(0);
 }
-inline void InstantMessage::clear_sender() {
-  if (sender_ != &_default_sender_) {
-    sender_->clear();
-  }
+inline void ContactNotification::clear_action() {
+  action_ = 0;
   _clear_bit(0);
 }
-inline const ::std::string& InstantMessage::sender() const {
-  return *sender_;
+inline ::google::protobuf::int32 ContactNotification::action() const {
+  return action_;
 }
-inline void InstantMessage::set_sender(const ::std::string& value) {
+inline void ContactNotification::set_action(::google::protobuf::int32 value) {
   _set_bit(0);
-  if (sender_ == &_default_sender_) {
-    sender_ = new ::std::string;
-  }
-  sender_->assign(value);
-}
-inline void InstantMessage::set_sender(const char* value) {
-  _set_bit(0);
-  if (sender_ == &_default_sender_) {
-    sender_ = new ::std::string;
-  }
-  sender_->assign(value);
-}
-inline void InstantMessage::set_sender(const void* value, size_t size) {
-  _set_bit(0);
-  if (sender_ == &_default_sender_) {
-    sender_ = new ::std::string;
-  }
-  sender_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* InstantMessage::mutable_sender() {
-  _set_bit(0);
-  if (sender_ == &_default_sender_) {
-    sender_ = new ::std::string;
-  }
-  return sender_;
+  action_ = value;
 }
 
-// required bytes message = 2;
-inline bool InstantMessage::has_message() const {
+// optional .packethandler.ContactInfo contact = 2;
+inline bool ContactNotification::has_contact() const {
   return _has_bit(1);
 }
-inline void InstantMessage::clear_message() {
-  if (message_ != &_default_message_) {
-    message_->clear();
-  }
+inline void ContactNotification::clear_contact() {
+  if (contact_ != NULL) contact_->::packethandler::ContactInfo::Clear();
   _clear_bit(1);
 }
-inline const ::std::string& InstantMessage::message() const {
-  return *message_;
+inline const ::packethandler::ContactInfo& ContactNotification::contact() const {
+  return contact_ != NULL ? *contact_ : *default_instance_->contact_;
 }
-inline void InstantMessage::set_message(const ::std::string& value) {
+inline ::packethandler::ContactInfo* ContactNotification::mutable_contact() {
   _set_bit(1);
-  if (message_ == &_default_message_) {
-    message_ = new ::std::string;
-  }
-  message_->assign(value);
-}
-inline void InstantMessage::set_message(const char* value) {
-  _set_bit(1);
-  if (message_ == &_default_message_) {
-    message_ = new ::std::string;
-  }
-  message_->assign(value);
-}
-inline void InstantMessage::set_message(const void* value, size_t size) {
-  _set_bit(1);
-  if (message_ == &_default_message_) {
-    message_ = new ::std::string;
-  }
-  message_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* InstantMessage::mutable_message() {
-  _set_bit(1);
-  if (message_ == &_default_message_) {
-    message_ = new ::std::string;
-  }
-  return message_;
-}
-
-// required int32 date = 3;
-inline bool InstantMessage::has_date() const {
-  return _has_bit(2);
-}
-inline void InstantMessage::clear_date() {
-  date_ = 0;
-  _clear_bit(2);
-}
-inline ::google::protobuf::int32 InstantMessage::date() const {
-  return date_;
-}
-inline void InstantMessage::set_date(::google::protobuf::int32 value) {
-  _set_bit(2);
-  date_ = value;
-}
-
-// required .packethandler.MessageType type = 4;
-inline bool InstantMessage::has_type() const {
-  return _has_bit(3);
-}
-inline void InstantMessage::clear_type() {
-  type_ = 0;
-  _clear_bit(3);
-}
-inline packethandler::MessageType InstantMessage::type() const {
-  return static_cast< packethandler::MessageType >(type_);
-}
-inline void InstantMessage::set_type(packethandler::MessageType value) {
-  GOOGLE_DCHECK(packethandler::MessageType_IsValid(value));
-  _set_bit(3);
-  type_ = value;
+  if (contact_ == NULL) contact_ = new ::packethandler::ContactInfo;
+  return contact_;
 }
 
 // -------------------------------------------------------------------
 
-// InstantFileMessage
+// InstantFileNotification
 
 // required bytes ser_mdm = 1;
-inline bool InstantFileMessage::has_ser_mdm() const {
+inline bool InstantFileNotification::has_ser_mdm() const {
   return _has_bit(0);
 }
-inline void InstantFileMessage::clear_ser_mdm() {
+inline void InstantFileNotification::clear_ser_mdm() {
   if (ser_mdm_ != &_default_ser_mdm_) {
     ser_mdm_->clear();
   }
   _clear_bit(0);
 }
-inline const ::std::string& InstantFileMessage::ser_mdm() const {
+inline const ::std::string& InstantFileNotification::ser_mdm() const {
   return *ser_mdm_;
 }
-inline void InstantFileMessage::set_ser_mdm(const ::std::string& value) {
+inline void InstantFileNotification::set_ser_mdm(const ::std::string& value) {
   _set_bit(0);
   if (ser_mdm_ == &_default_ser_mdm_) {
     ser_mdm_ = new ::std::string;
   }
   ser_mdm_->assign(value);
 }
-inline void InstantFileMessage::set_ser_mdm(const char* value) {
+inline void InstantFileNotification::set_ser_mdm(const char* value) {
   _set_bit(0);
   if (ser_mdm_ == &_default_ser_mdm_) {
     ser_mdm_ = new ::std::string;
   }
   ser_mdm_->assign(value);
 }
-inline void InstantFileMessage::set_ser_mdm(const void* value, size_t size) {
+inline void InstantFileNotification::set_ser_mdm(const void* value, size_t size) {
   _set_bit(0);
   if (ser_mdm_ == &_default_ser_mdm_) {
     ser_mdm_ = new ::std::string;
   }
   ser_mdm_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* InstantFileMessage::mutable_ser_mdm() {
+inline ::std::string* InstantFileNotification::mutable_ser_mdm() {
   _set_bit(0);
   if (ser_mdm_ == &_default_ser_mdm_) {
     ser_mdm_ = new ::std::string;
@@ -2287,40 +2279,40 @@ inline ::std::string* InstantFileMessage::mutable_ser_mdm() {
 }
 
 // required bytes ser_dm = 2;
-inline bool InstantFileMessage::has_ser_dm() const {
+inline bool InstantFileNotification::has_ser_dm() const {
   return _has_bit(1);
 }
-inline void InstantFileMessage::clear_ser_dm() {
+inline void InstantFileNotification::clear_ser_dm() {
   if (ser_dm_ != &_default_ser_dm_) {
     ser_dm_->clear();
   }
   _clear_bit(1);
 }
-inline const ::std::string& InstantFileMessage::ser_dm() const {
+inline const ::std::string& InstantFileNotification::ser_dm() const {
   return *ser_dm_;
 }
-inline void InstantFileMessage::set_ser_dm(const ::std::string& value) {
+inline void InstantFileNotification::set_ser_dm(const ::std::string& value) {
   _set_bit(1);
   if (ser_dm_ == &_default_ser_dm_) {
     ser_dm_ = new ::std::string;
   }
   ser_dm_->assign(value);
 }
-inline void InstantFileMessage::set_ser_dm(const char* value) {
+inline void InstantFileNotification::set_ser_dm(const char* value) {
   _set_bit(1);
   if (ser_dm_ == &_default_ser_dm_) {
     ser_dm_ = new ::std::string;
   }
   ser_dm_->assign(value);
 }
-inline void InstantFileMessage::set_ser_dm(const void* value, size_t size) {
+inline void InstantFileNotification::set_ser_dm(const void* value, size_t size) {
   _set_bit(1);
   if (ser_dm_ == &_default_ser_dm_) {
     ser_dm_ = new ::std::string;
   }
   ser_dm_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* InstantFileMessage::mutable_ser_dm() {
+inline ::std::string* InstantFileNotification::mutable_ser_dm() {
   _set_bit(1);
   if (ser_dm_ == &_default_ser_dm_) {
     ser_dm_ = new ::std::string;
@@ -2329,365 +2321,45 @@ inline ::std::string* InstantFileMessage::mutable_ser_dm() {
 }
 
 // required bytes filename = 3;
-inline bool InstantFileMessage::has_filename() const {
+inline bool InstantFileNotification::has_filename() const {
   return _has_bit(2);
 }
-inline void InstantFileMessage::clear_filename() {
+inline void InstantFileNotification::clear_filename() {
   if (filename_ != &_default_filename_) {
     filename_->clear();
   }
   _clear_bit(2);
 }
-inline const ::std::string& InstantFileMessage::filename() const {
+inline const ::std::string& InstantFileNotification::filename() const {
   return *filename_;
 }
-inline void InstantFileMessage::set_filename(const ::std::string& value) {
+inline void InstantFileNotification::set_filename(const ::std::string& value) {
   _set_bit(2);
   if (filename_ == &_default_filename_) {
     filename_ = new ::std::string;
   }
   filename_->assign(value);
 }
-inline void InstantFileMessage::set_filename(const char* value) {
+inline void InstantFileNotification::set_filename(const char* value) {
   _set_bit(2);
   if (filename_ == &_default_filename_) {
     filename_ = new ::std::string;
   }
   filename_->assign(value);
 }
-inline void InstantFileMessage::set_filename(const void* value, size_t size) {
+inline void InstantFileNotification::set_filename(const void* value, size_t size) {
   _set_bit(2);
   if (filename_ == &_default_filename_) {
     filename_ = new ::std::string;
   }
   filename_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* InstantFileMessage::mutable_filename() {
+inline ::std::string* InstantFileNotification::mutable_filename() {
   _set_bit(2);
   if (filename_ == &_default_filename_) {
     filename_ = new ::std::string;
   }
   return filename_;
-}
-
-// optional bytes sender_msg = 4;
-inline bool InstantFileMessage::has_sender_msg() const {
-  return _has_bit(3);
-}
-inline void InstantFileMessage::clear_sender_msg() {
-  if (sender_msg_ != &_default_sender_msg_) {
-    sender_msg_->clear();
-  }
-  _clear_bit(3);
-}
-inline const ::std::string& InstantFileMessage::sender_msg() const {
-  return *sender_msg_;
-}
-inline void InstantFileMessage::set_sender_msg(const ::std::string& value) {
-  _set_bit(3);
-  if (sender_msg_ == &_default_sender_msg_) {
-    sender_msg_ = new ::std::string;
-  }
-  sender_msg_->assign(value);
-}
-inline void InstantFileMessage::set_sender_msg(const char* value) {
-  _set_bit(3);
-  if (sender_msg_ == &_default_sender_msg_) {
-    sender_msg_ = new ::std::string;
-  }
-  sender_msg_->assign(value);
-}
-inline void InstantFileMessage::set_sender_msg(const void* value, size_t size) {
-  _set_bit(3);
-  if (sender_msg_ == &_default_sender_msg_) {
-    sender_msg_ = new ::std::string;
-  }
-  sender_msg_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* InstantFileMessage::mutable_sender_msg() {
-  _set_bit(3);
-  if (sender_msg_ == &_default_sender_msg_) {
-    sender_msg_ = new ::std::string;
-  }
-  return sender_msg_;
-}
-
-// -------------------------------------------------------------------
-
-// StoreMessagesResult
-
-// required bytes result = 1;
-inline bool StoreMessagesResult::has_result() const {
-  return _has_bit(0);
-}
-inline void StoreMessagesResult::clear_result() {
-  if (result_ != &_default_result_) {
-    result_->clear();
-  }
-  _clear_bit(0);
-}
-inline const ::std::string& StoreMessagesResult::result() const {
-  return *result_;
-}
-inline void StoreMessagesResult::set_result(const ::std::string& value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void StoreMessagesResult::set_result(const char* value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void StoreMessagesResult::set_result(const void* value, size_t size) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* StoreMessagesResult::mutable_result() {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  return result_;
-}
-
-// required int32 stored_msgs = 2;
-inline bool StoreMessagesResult::has_stored_msgs() const {
-  return _has_bit(1);
-}
-inline void StoreMessagesResult::clear_stored_msgs() {
-  stored_msgs_ = 0;
-  _clear_bit(1);
-}
-inline ::google::protobuf::int32 StoreMessagesResult::stored_msgs() const {
-  return stored_msgs_;
-}
-inline void StoreMessagesResult::set_stored_msgs(::google::protobuf::int32 value) {
-  _set_bit(1);
-  stored_msgs_ = value;
-}
-
-// repeated bytes failed = 3;
-inline int StoreMessagesResult::failed_size() const {
-  return failed_.size();
-}
-inline void StoreMessagesResult::clear_failed() {
-  failed_.Clear();
-}
-inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
-StoreMessagesResult::failed() const {
-  return failed_;
-}
-inline ::google::protobuf::RepeatedPtrField< ::std::string>*
-StoreMessagesResult::mutable_failed() {
-  return &failed_;
-}
-inline const ::std::string& StoreMessagesResult::failed(int index) const {
-  return failed_.Get(index);
-}
-inline ::std::string* StoreMessagesResult::mutable_failed(int index) {
-  return failed_.Mutable(index);
-}
-inline void StoreMessagesResult::set_failed(int index, const ::std::string& value) {
-  failed_.Mutable(index)->assign(value);
-}
-inline void StoreMessagesResult::set_failed(int index, const char* value) {
-  failed_.Mutable(index)->assign(value);
-}
-inline ::std::string* StoreMessagesResult::add_failed() {
-  return failed_.Add();
-}
-inline void StoreMessagesResult::add_failed(const ::std::string& value) {
-  failed_.Add()->assign(value);
-}
-inline void StoreMessagesResult::add_failed(const char* value) {
-  failed_.Add()->assign(value);
-}
-inline void StoreMessagesResult::set_failed(int index, const void* value, size_t size) {
-  failed_.Mutable(index)->assign(
-    reinterpret_cast<const char*>(value), size);
-}
-inline void StoreMessagesResult::add_failed(const void* value, size_t size) {
-  failed_.Add()->assign(reinterpret_cast<const char*>(value), size);
-}
-
-// -------------------------------------------------------------------
-
-// CreateMSIDResult
-
-// required bytes result = 1;
-inline bool CreateMSIDResult::has_result() const {
-  return _has_bit(0);
-}
-inline void CreateMSIDResult::clear_result() {
-  if (result_ != &_default_result_) {
-    result_->clear();
-  }
-  _clear_bit(0);
-}
-inline const ::std::string& CreateMSIDResult::result() const {
-  return *result_;
-}
-inline void CreateMSIDResult::set_result(const ::std::string& value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void CreateMSIDResult::set_result(const char* value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void CreateMSIDResult::set_result(const void* value, size_t size) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* CreateMSIDResult::mutable_result() {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  return result_;
-}
-
-// optional bytes name = 2;
-inline bool CreateMSIDResult::has_name() const {
-  return _has_bit(1);
-}
-inline void CreateMSIDResult::clear_name() {
-  if (name_ != &_default_name_) {
-    name_->clear();
-  }
-  _clear_bit(1);
-}
-inline const ::std::string& CreateMSIDResult::name() const {
-  return *name_;
-}
-inline void CreateMSIDResult::set_name(const ::std::string& value) {
-  _set_bit(1);
-  if (name_ == &_default_name_) {
-    name_ = new ::std::string;
-  }
-  name_->assign(value);
-}
-inline void CreateMSIDResult::set_name(const char* value) {
-  _set_bit(1);
-  if (name_ == &_default_name_) {
-    name_ = new ::std::string;
-  }
-  name_->assign(value);
-}
-inline void CreateMSIDResult::set_name(const void* value, size_t size) {
-  _set_bit(1);
-  if (name_ == &_default_name_) {
-    name_ = new ::std::string;
-  }
-  name_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* CreateMSIDResult::mutable_name() {
-  _set_bit(1);
-  if (name_ == &_default_name_) {
-    name_ = new ::std::string;
-  }
-  return name_;
-}
-
-// optional bytes private_key = 3;
-inline bool CreateMSIDResult::has_private_key() const {
-  return _has_bit(2);
-}
-inline void CreateMSIDResult::clear_private_key() {
-  if (private_key_ != &_default_private_key_) {
-    private_key_->clear();
-  }
-  _clear_bit(2);
-}
-inline const ::std::string& CreateMSIDResult::private_key() const {
-  return *private_key_;
-}
-inline void CreateMSIDResult::set_private_key(const ::std::string& value) {
-  _set_bit(2);
-  if (private_key_ == &_default_private_key_) {
-    private_key_ = new ::std::string;
-  }
-  private_key_->assign(value);
-}
-inline void CreateMSIDResult::set_private_key(const char* value) {
-  _set_bit(2);
-  if (private_key_ == &_default_private_key_) {
-    private_key_ = new ::std::string;
-  }
-  private_key_->assign(value);
-}
-inline void CreateMSIDResult::set_private_key(const void* value, size_t size) {
-  _set_bit(2);
-  if (private_key_ == &_default_private_key_) {
-    private_key_ = new ::std::string;
-  }
-  private_key_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* CreateMSIDResult::mutable_private_key() {
-  _set_bit(2);
-  if (private_key_ == &_default_private_key_) {
-    private_key_ = new ::std::string;
-  }
-  return private_key_;
-}
-
-// optional bytes public_key = 4;
-inline bool CreateMSIDResult::has_public_key() const {
-  return _has_bit(3);
-}
-inline void CreateMSIDResult::clear_public_key() {
-  if (public_key_ != &_default_public_key_) {
-    public_key_->clear();
-  }
-  _clear_bit(3);
-}
-inline const ::std::string& CreateMSIDResult::public_key() const {
-  return *public_key_;
-}
-inline void CreateMSIDResult::set_public_key(const ::std::string& value) {
-  _set_bit(3);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(value);
-}
-inline void CreateMSIDResult::set_public_key(const char* value) {
-  _set_bit(3);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(value);
-}
-inline void CreateMSIDResult::set_public_key(const void* value, size_t size) {
-  _set_bit(3);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* CreateMSIDResult::mutable_public_key() {
-  _set_bit(3);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  return public_key_;
 }
 
 // -------------------------------------------------------------------
@@ -2990,6 +2662,439 @@ inline ::std::string* PrivateShareNotification::mutable_dir_db_key() {
     dir_db_key_ = new ::std::string;
   }
   return dir_db_key_;
+}
+
+// -------------------------------------------------------------------
+
+// InstantMessage
+
+// required bytes sender = 1;
+inline bool InstantMessage::has_sender() const {
+  return _has_bit(0);
+}
+inline void InstantMessage::clear_sender() {
+  if (sender_ != &_default_sender_) {
+    sender_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& InstantMessage::sender() const {
+  return *sender_;
+}
+inline void InstantMessage::set_sender(const ::std::string& value) {
+  _set_bit(0);
+  if (sender_ == &_default_sender_) {
+    sender_ = new ::std::string;
+  }
+  sender_->assign(value);
+}
+inline void InstantMessage::set_sender(const char* value) {
+  _set_bit(0);
+  if (sender_ == &_default_sender_) {
+    sender_ = new ::std::string;
+  }
+  sender_->assign(value);
+}
+inline void InstantMessage::set_sender(const void* value, size_t size) {
+  _set_bit(0);
+  if (sender_ == &_default_sender_) {
+    sender_ = new ::std::string;
+  }
+  sender_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* InstantMessage::mutable_sender() {
+  _set_bit(0);
+  if (sender_ == &_default_sender_) {
+    sender_ = new ::std::string;
+  }
+  return sender_;
+}
+
+// required bytes message = 2;
+inline bool InstantMessage::has_message() const {
+  return _has_bit(1);
+}
+inline void InstantMessage::clear_message() {
+  if (message_ != &_default_message_) {
+    message_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& InstantMessage::message() const {
+  return *message_;
+}
+inline void InstantMessage::set_message(const ::std::string& value) {
+  _set_bit(1);
+  if (message_ == &_default_message_) {
+    message_ = new ::std::string;
+  }
+  message_->assign(value);
+}
+inline void InstantMessage::set_message(const char* value) {
+  _set_bit(1);
+  if (message_ == &_default_message_) {
+    message_ = new ::std::string;
+  }
+  message_->assign(value);
+}
+inline void InstantMessage::set_message(const void* value, size_t size) {
+  _set_bit(1);
+  if (message_ == &_default_message_) {
+    message_ = new ::std::string;
+  }
+  message_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* InstantMessage::mutable_message() {
+  _set_bit(1);
+  if (message_ == &_default_message_) {
+    message_ = new ::std::string;
+  }
+  return message_;
+}
+
+// required int32 date = 3;
+inline bool InstantMessage::has_date() const {
+  return _has_bit(2);
+}
+inline void InstantMessage::clear_date() {
+  date_ = 0;
+  _clear_bit(2);
+}
+inline ::google::protobuf::int32 InstantMessage::date() const {
+  return date_;
+}
+inline void InstantMessage::set_date(::google::protobuf::int32 value) {
+  _set_bit(2);
+  date_ = value;
+}
+
+// optional .packethandler.ContactNotification contact_notification = 4;
+inline bool InstantMessage::has_contact_notification() const {
+  return _has_bit(3);
+}
+inline void InstantMessage::clear_contact_notification() {
+  if (contact_notification_ != NULL) contact_notification_->::packethandler::ContactNotification::Clear();
+  _clear_bit(3);
+}
+inline const ::packethandler::ContactNotification& InstantMessage::contact_notification() const {
+  return contact_notification_ != NULL ? *contact_notification_ : *default_instance_->contact_notification_;
+}
+inline ::packethandler::ContactNotification* InstantMessage::mutable_contact_notification() {
+  _set_bit(3);
+  if (contact_notification_ == NULL) contact_notification_ = new ::packethandler::ContactNotification;
+  return contact_notification_;
+}
+
+// optional .packethandler.InstantFileNotification instantfile_notification = 5;
+inline bool InstantMessage::has_instantfile_notification() const {
+  return _has_bit(4);
+}
+inline void InstantMessage::clear_instantfile_notification() {
+  if (instantfile_notification_ != NULL) instantfile_notification_->::packethandler::InstantFileNotification::Clear();
+  _clear_bit(4);
+}
+inline const ::packethandler::InstantFileNotification& InstantMessage::instantfile_notification() const {
+  return instantfile_notification_ != NULL ? *instantfile_notification_ : *default_instance_->instantfile_notification_;
+}
+inline ::packethandler::InstantFileNotification* InstantMessage::mutable_instantfile_notification() {
+  _set_bit(4);
+  if (instantfile_notification_ == NULL) instantfile_notification_ = new ::packethandler::InstantFileNotification;
+  return instantfile_notification_;
+}
+
+// optional .packethandler.PrivateShareNotification privateshare_notification = 6;
+inline bool InstantMessage::has_privateshare_notification() const {
+  return _has_bit(5);
+}
+inline void InstantMessage::clear_privateshare_notification() {
+  if (privateshare_notification_ != NULL) privateshare_notification_->::packethandler::PrivateShareNotification::Clear();
+  _clear_bit(5);
+}
+inline const ::packethandler::PrivateShareNotification& InstantMessage::privateshare_notification() const {
+  return privateshare_notification_ != NULL ? *privateshare_notification_ : *default_instance_->privateshare_notification_;
+}
+inline ::packethandler::PrivateShareNotification* InstantMessage::mutable_privateshare_notification() {
+  _set_bit(5);
+  if (privateshare_notification_ == NULL) privateshare_notification_ = new ::packethandler::PrivateShareNotification;
+  return privateshare_notification_;
+}
+
+// -------------------------------------------------------------------
+
+// StoreMessagesResult
+
+// required bytes result = 1;
+inline bool StoreMessagesResult::has_result() const {
+  return _has_bit(0);
+}
+inline void StoreMessagesResult::clear_result() {
+  if (result_ != &_default_result_) {
+    result_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& StoreMessagesResult::result() const {
+  return *result_;
+}
+inline void StoreMessagesResult::set_result(const ::std::string& value) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(value);
+}
+inline void StoreMessagesResult::set_result(const char* value) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(value);
+}
+inline void StoreMessagesResult::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* StoreMessagesResult::mutable_result() {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  return result_;
+}
+
+// required int32 stored_msgs = 2;
+inline bool StoreMessagesResult::has_stored_msgs() const {
+  return _has_bit(1);
+}
+inline void StoreMessagesResult::clear_stored_msgs() {
+  stored_msgs_ = 0;
+  _clear_bit(1);
+}
+inline ::google::protobuf::int32 StoreMessagesResult::stored_msgs() const {
+  return stored_msgs_;
+}
+inline void StoreMessagesResult::set_stored_msgs(::google::protobuf::int32 value) {
+  _set_bit(1);
+  stored_msgs_ = value;
+}
+
+// repeated bytes failed = 3;
+inline int StoreMessagesResult::failed_size() const {
+  return failed_.size();
+}
+inline void StoreMessagesResult::clear_failed() {
+  failed_.Clear();
+}
+inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
+StoreMessagesResult::failed() const {
+  return failed_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+StoreMessagesResult::mutable_failed() {
+  return &failed_;
+}
+inline const ::std::string& StoreMessagesResult::failed(int index) const {
+  return failed_.Get(index);
+}
+inline ::std::string* StoreMessagesResult::mutable_failed(int index) {
+  return failed_.Mutable(index);
+}
+inline void StoreMessagesResult::set_failed(int index, const ::std::string& value) {
+  failed_.Mutable(index)->assign(value);
+}
+inline void StoreMessagesResult::set_failed(int index, const char* value) {
+  failed_.Mutable(index)->assign(value);
+}
+inline ::std::string* StoreMessagesResult::add_failed() {
+  return failed_.Add();
+}
+inline void StoreMessagesResult::add_failed(const ::std::string& value) {
+  failed_.Add()->assign(value);
+}
+inline void StoreMessagesResult::add_failed(const char* value) {
+  failed_.Add()->assign(value);
+}
+inline void StoreMessagesResult::set_failed(int index, const void* value, size_t size) {
+  failed_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline void StoreMessagesResult::add_failed(const void* value, size_t size) {
+  failed_.Add()->assign(reinterpret_cast<const char*>(value), size);
+}
+
+// -------------------------------------------------------------------
+
+// CreateMSIDResult
+
+// required bytes result = 1;
+inline bool CreateMSIDResult::has_result() const {
+  return _has_bit(0);
+}
+inline void CreateMSIDResult::clear_result() {
+  if (result_ != &_default_result_) {
+    result_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& CreateMSIDResult::result() const {
+  return *result_;
+}
+inline void CreateMSIDResult::set_result(const ::std::string& value) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(value);
+}
+inline void CreateMSIDResult::set_result(const char* value) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(value);
+}
+inline void CreateMSIDResult::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateMSIDResult::mutable_result() {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  return result_;
+}
+
+// optional bytes name = 2;
+inline bool CreateMSIDResult::has_name() const {
+  return _has_bit(1);
+}
+inline void CreateMSIDResult::clear_name() {
+  if (name_ != &_default_name_) {
+    name_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& CreateMSIDResult::name() const {
+  return *name_;
+}
+inline void CreateMSIDResult::set_name(const ::std::string& value) {
+  _set_bit(1);
+  if (name_ == &_default_name_) {
+    name_ = new ::std::string;
+  }
+  name_->assign(value);
+}
+inline void CreateMSIDResult::set_name(const char* value) {
+  _set_bit(1);
+  if (name_ == &_default_name_) {
+    name_ = new ::std::string;
+  }
+  name_->assign(value);
+}
+inline void CreateMSIDResult::set_name(const void* value, size_t size) {
+  _set_bit(1);
+  if (name_ == &_default_name_) {
+    name_ = new ::std::string;
+  }
+  name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateMSIDResult::mutable_name() {
+  _set_bit(1);
+  if (name_ == &_default_name_) {
+    name_ = new ::std::string;
+  }
+  return name_;
+}
+
+// optional bytes private_key = 3;
+inline bool CreateMSIDResult::has_private_key() const {
+  return _has_bit(2);
+}
+inline void CreateMSIDResult::clear_private_key() {
+  if (private_key_ != &_default_private_key_) {
+    private_key_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& CreateMSIDResult::private_key() const {
+  return *private_key_;
+}
+inline void CreateMSIDResult::set_private_key(const ::std::string& value) {
+  _set_bit(2);
+  if (private_key_ == &_default_private_key_) {
+    private_key_ = new ::std::string;
+  }
+  private_key_->assign(value);
+}
+inline void CreateMSIDResult::set_private_key(const char* value) {
+  _set_bit(2);
+  if (private_key_ == &_default_private_key_) {
+    private_key_ = new ::std::string;
+  }
+  private_key_->assign(value);
+}
+inline void CreateMSIDResult::set_private_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (private_key_ == &_default_private_key_) {
+    private_key_ = new ::std::string;
+  }
+  private_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateMSIDResult::mutable_private_key() {
+  _set_bit(2);
+  if (private_key_ == &_default_private_key_) {
+    private_key_ = new ::std::string;
+  }
+  return private_key_;
+}
+
+// optional bytes public_key = 4;
+inline bool CreateMSIDResult::has_public_key() const {
+  return _has_bit(3);
+}
+inline void CreateMSIDResult::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& CreateMSIDResult::public_key() const {
+  return *public_key_;
+}
+inline void CreateMSIDResult::set_public_key(const ::std::string& value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void CreateMSIDResult::set_public_key(const char* value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void CreateMSIDResult::set_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateMSIDResult::mutable_public_key() {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
 }
 
 

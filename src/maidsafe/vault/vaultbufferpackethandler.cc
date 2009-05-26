@@ -206,6 +206,7 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
 bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
     const std::string &ser_message, const std::string &signed_public_key,
     std::string *updated_bp) {
+  printf("ADDING A FECKING MESSAGE TO THE CUNT BP\n");
   GenericPacket message;
   if (!message.ParseFromString(ser_message)) {
     printf("invalid msg\n");
@@ -229,10 +230,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
   std::string public_key;
   //  These are the messages that are not sent with the MPID.
   //  Other new messages sent with the MPID should be here as well.
-  if (bpm.type() != SHARE && bpm.type() != ADD_CONTACT_RESPONSE
-    && bpm.type() != GENERAL && bpm.type() != INSTANT_MSG
-    && bpm.type() != ADD_CONTACT_RQST
-    && bpm.type() != DELETE_CONTACT_NOTIF) {
+  if (bpm.type() != INSTANT_MSG && bpm.type() != ADD_CONTACT_RQST) {
     public_key = bpm.sender_public_key();
     std::string id = crypto_obj_.Hash(public_key+signed_public_key, "",
       maidsafe_crypto::STRING_STRING, true);

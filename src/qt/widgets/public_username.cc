@@ -25,9 +25,13 @@ PublicUsername::PublicUsername( QWidget* parent )
     , init_( false )
 {
     ui_.setupUi( this );
+    ui_.create->setAutoDefault(true);
 
     connect( ui_.create, SIGNAL( clicked(bool) ),
              this,       SLOT( onCreateUsernameClicked() ) );
+
+    connect( ui_.contactLineEdit, SIGNAL( returnPressed() ),
+             this,                SLOT( onCreateUsernameClicked() ) );
 
     ui_.progressLabel->setVisible( false );
     ui_.progressBar->setVisible( false );

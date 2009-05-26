@@ -391,17 +391,17 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
     return -ENOENT;
   // std::cout << "ms_getattr: died: " << lala << std::endl;
 
-  bool ro = maidsafe::ClientController::getInstance()->ReadOnly(
-    base::TidyPath(path_), false);
+//  bool ro = maidsafe::ClientController::getInstance()->ReadOnly(
+//    base::TidyPath(path_), false);
 
   int res = 0;
   memset(stbuf, 0, sizeof(struct stat));
   if (ser_mdm != "") {
     if (mdm.type() == maidsafe::EMPTY_FILE || mdm.type()
        == maidsafe::REGULAR_FILE || mdm.type() == maidsafe::SMALL_FILE) {
-      if (ro)
-        stbuf->st_mode = S_IFREG | 0444;
-      else
+//      if (ro)
+//        stbuf->st_mode = S_IFREG | 0444;
+//      else
         stbuf->st_mode = S_IFREG | 0644;
       stbuf->st_nlink = 1;
       stbuf->st_size = mdm.file_size_low();

@@ -28,21 +28,24 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* ContactInfo_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   ContactInfo_reflection_ = NULL;
+const ::google::protobuf::Descriptor* ContactNotification_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  ContactNotification_reflection_ = NULL;
+const ::google::protobuf::Descriptor* InstantFileNotification_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  InstantFileNotification_reflection_ = NULL;
+const ::google::protobuf::Descriptor* PrivateShareNotification_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  PrivateShareNotification_reflection_ = NULL;
 const ::google::protobuf::Descriptor* InstantMessage_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   InstantMessage_reflection_ = NULL;
-const ::google::protobuf::Descriptor* InstantFileMessage_descriptor_ = NULL;
-const ::google::protobuf::internal::GeneratedMessageReflection*
-  InstantFileMessage_reflection_ = NULL;
 const ::google::protobuf::Descriptor* StoreMessagesResult_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   StoreMessagesResult_reflection_ = NULL;
 const ::google::protobuf::Descriptor* CreateMSIDResult_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   CreateMSIDResult_reflection_ = NULL;
-const ::google::protobuf::Descriptor* PrivateShareNotification_descriptor_ = NULL;
-const ::google::protobuf::internal::GeneratedMessageReflection*
-  PrivateShareNotification_reflection_ = NULL;
 const ::google::protobuf::EnumDescriptor* MessageType_descriptor_ = NULL;
 
 }  // namespace
@@ -169,86 +172,44 @@ void protobuf_BuildDesc_packet_2eproto_AssignGlobalDescriptors(const ::google::p
       sizeof(ContactInfo));
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     ContactInfo_descriptor_, ContactInfo::default_instance_);
-  InstantMessage_descriptor_ = file->message_type(6);
-  InstantMessage::default_instance_ = new InstantMessage();
-  static const int InstantMessage_offsets_[4] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, sender_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, message_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, date_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, type_),
+  ContactNotification_descriptor_ = file->message_type(6);
+  ContactNotification::default_instance_ = new ContactNotification();
+  static const int ContactNotification_offsets_[2] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactNotification, action_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactNotification, contact_),
   };
-  InstantMessage_reflection_ =
+  ContactNotification_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
-      InstantMessage_descriptor_,
-      InstantMessage::default_instance_,
-      InstantMessage_offsets_,
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, _has_bits_[0]),
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, _unknown_fields_),
+      ContactNotification_descriptor_,
+      ContactNotification::default_instance_,
+      ContactNotification_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactNotification, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactNotification, _unknown_fields_),
       -1,
       ::google::protobuf::DescriptorPool::generated_pool(),
-      sizeof(InstantMessage));
+      sizeof(ContactNotification));
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
-    InstantMessage_descriptor_, InstantMessage::default_instance_);
-  InstantFileMessage_descriptor_ = file->message_type(7);
-  InstantFileMessage::default_instance_ = new InstantFileMessage();
-  static const int InstantFileMessage_offsets_[4] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileMessage, ser_mdm_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileMessage, ser_dm_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileMessage, filename_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileMessage, sender_msg_),
+    ContactNotification_descriptor_, ContactNotification::default_instance_);
+  InstantFileNotification_descriptor_ = file->message_type(7);
+  InstantFileNotification::default_instance_ = new InstantFileNotification();
+  static const int InstantFileNotification_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileNotification, ser_mdm_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileNotification, ser_dm_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileNotification, filename_),
   };
-  InstantFileMessage_reflection_ =
+  InstantFileNotification_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
-      InstantFileMessage_descriptor_,
-      InstantFileMessage::default_instance_,
-      InstantFileMessage_offsets_,
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileMessage, _has_bits_[0]),
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileMessage, _unknown_fields_),
+      InstantFileNotification_descriptor_,
+      InstantFileNotification::default_instance_,
+      InstantFileNotification_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileNotification, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileNotification, _unknown_fields_),
       -1,
       ::google::protobuf::DescriptorPool::generated_pool(),
-      sizeof(InstantFileMessage));
+      sizeof(InstantFileNotification));
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
-    InstantFileMessage_descriptor_, InstantFileMessage::default_instance_);
-  StoreMessagesResult_descriptor_ = file->message_type(8);
-  StoreMessagesResult::default_instance_ = new StoreMessagesResult();
-  static const int StoreMessagesResult_offsets_[3] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, result_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, stored_msgs_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, failed_),
-  };
-  StoreMessagesResult_reflection_ =
-    new ::google::protobuf::internal::GeneratedMessageReflection(
-      StoreMessagesResult_descriptor_,
-      StoreMessagesResult::default_instance_,
-      StoreMessagesResult_offsets_,
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, _has_bits_[0]),
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, _unknown_fields_),
-      -1,
-      ::google::protobuf::DescriptorPool::generated_pool(),
-      sizeof(StoreMessagesResult));
-  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
-    StoreMessagesResult_descriptor_, StoreMessagesResult::default_instance_);
-  CreateMSIDResult_descriptor_ = file->message_type(9);
-  CreateMSIDResult::default_instance_ = new CreateMSIDResult();
-  static const int CreateMSIDResult_offsets_[4] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, result_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, name_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, private_key_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, public_key_),
-  };
-  CreateMSIDResult_reflection_ =
-    new ::google::protobuf::internal::GeneratedMessageReflection(
-      CreateMSIDResult_descriptor_,
-      CreateMSIDResult::default_instance_,
-      CreateMSIDResult_offsets_,
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, _has_bits_[0]),
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, _unknown_fields_),
-      -1,
-      ::google::protobuf::DescriptorPool::generated_pool(),
-      sizeof(CreateMSIDResult));
-  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
-    CreateMSIDResult_descriptor_, CreateMSIDResult::default_instance_);
-  PrivateShareNotification_descriptor_ = file->message_type(10);
+    InstantFileNotification_descriptor_, InstantFileNotification::default_instance_);
+  PrivateShareNotification_descriptor_ = file->message_type(8);
   PrivateShareNotification::default_instance_ = new PrivateShareNotification();
   static const int PrivateShareNotification_offsets_[7] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PrivateShareNotification, name_),
@@ -271,6 +232,67 @@ void protobuf_BuildDesc_packet_2eproto_AssignGlobalDescriptors(const ::google::p
       sizeof(PrivateShareNotification));
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     PrivateShareNotification_descriptor_, PrivateShareNotification::default_instance_);
+  InstantMessage_descriptor_ = file->message_type(9);
+  InstantMessage::default_instance_ = new InstantMessage();
+  static const int InstantMessage_offsets_[6] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, sender_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, message_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, date_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, contact_notification_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, instantfile_notification_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, privateshare_notification_),
+  };
+  InstantMessage_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      InstantMessage_descriptor_,
+      InstantMessage::default_instance_,
+      InstantMessage_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      sizeof(InstantMessage));
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    InstantMessage_descriptor_, InstantMessage::default_instance_);
+  StoreMessagesResult_descriptor_ = file->message_type(10);
+  StoreMessagesResult::default_instance_ = new StoreMessagesResult();
+  static const int StoreMessagesResult_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, result_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, stored_msgs_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, failed_),
+  };
+  StoreMessagesResult_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      StoreMessagesResult_descriptor_,
+      StoreMessagesResult::default_instance_,
+      StoreMessagesResult_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      sizeof(StoreMessagesResult));
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    StoreMessagesResult_descriptor_, StoreMessagesResult::default_instance_);
+  CreateMSIDResult_descriptor_ = file->message_type(11);
+  CreateMSIDResult::default_instance_ = new CreateMSIDResult();
+  static const int CreateMSIDResult_offsets_[4] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, result_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, name_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, private_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, public_key_),
+  };
+  CreateMSIDResult_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      CreateMSIDResult_descriptor_,
+      CreateMSIDResult::default_instance_,
+      CreateMSIDResult_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      sizeof(CreateMSIDResult));
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    CreateMSIDResult_descriptor_, CreateMSIDResult::default_instance_);
   MessageType_descriptor_ = file->enum_type(0);
   GenericPacket::default_instance_->InitAsDefaultInstance();
   BufferPacketInfo::default_instance_->InitAsDefaultInstance();
@@ -278,11 +300,12 @@ void protobuf_BuildDesc_packet_2eproto_AssignGlobalDescriptors(const ::google::p
   BufferPacket::default_instance_->InitAsDefaultInstance();
   ValidatedBufferPacketMessage::default_instance_->InitAsDefaultInstance();
   ContactInfo::default_instance_->InitAsDefaultInstance();
+  ContactNotification::default_instance_->InitAsDefaultInstance();
+  InstantFileNotification::default_instance_->InitAsDefaultInstance();
+  PrivateShareNotification::default_instance_->InitAsDefaultInstance();
   InstantMessage::default_instance_->InitAsDefaultInstance();
-  InstantFileMessage::default_instance_->InitAsDefaultInstance();
   StoreMessagesResult::default_instance_->InitAsDefaultInstance();
   CreateMSIDResult::default_instance_->InitAsDefaultInstance();
-  PrivateShareNotification::default_instance_->InitAsDefaultInstance();
 }
 
 void protobuf_BuildDesc_packet_2eproto() {
@@ -311,24 +334,28 @@ void protobuf_BuildDesc_packet_2eproto() {
     "e\"\205\001\n\013ContactInfo\022\014\n\004name\030\001 \001(\014\022\020\n\010birth"
     "day\030\002 \001(\014\022\025\n\roffice_number\030\003 \001(\014\022\016\n\006gend"
     "er\030\004 \001(\014\022\017\n\007country\030\005 \001(\005\022\014\n\004city\030\006 \001(\014\022"
-    "\020\n\010language\030\007 \001(\005\"i\n\016InstantMessage\022\016\n\006s"
-    "ender\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\014\n\004date\030\003 \002"
-    "(\005\022(\n\004type\030\004 \002(\0162\032.packethandler.Message"
-    "Type\"[\n\022InstantFileMessage\022\017\n\007ser_mdm\030\001 "
-    "\002(\014\022\016\n\006ser_dm\030\002 \002(\014\022\020\n\010filename\030\003 \002(\014\022\022\n"
-    "\nsender_msg\030\004 \001(\014\"J\n\023StoreMessagesResult"
-    "\022\016\n\006result\030\001 \002(\014\022\023\n\013stored_msgs\030\002 \002(\005\022\016\n"
-    "\006failed\030\003 \003(\014\"Y\n\020CreateMSIDResult\022\016\n\006res"
-    "ult\030\001 \002(\014\022\014\n\004name\030\002 \001(\014\022\023\n\013private_key\030\003"
-    " \001(\014\022\022\n\npublic_key\030\004 \001(\014\"\226\001\n\030PrivateShar"
-    "eNotification\022\014\n\004name\030\001 \002(\014\022\014\n\004msid\030\002 \002("
-    "\014\022\022\n\npublic_key\030\003 \002(\014\022\023\n\013private_key\030\004 \001"
-    "(\014\022\016\n\006admins\030\005 \003(\014\022\021\n\treadonlys\030\006 \003(\014\022\022\n"
-    "\ndir_db_key\030\007 \002(\014*\244\001\n\013MessageType\022\t\n\005SHA"
-    "RE\020\000\022\024\n\020ADD_CONTACT_RQST\020\001\022\013\n\007GENERAL\020\002\022"
-    "\030\n\024ADD_CONTACT_RESPONSE\020\003\022\017\n\013INSTANT_MSG"
-    "\020\004\022\020\n\014INSTANT_FILE\020\005\022\030\n\024DELETE_CONTACT_N"
-    "OTIF\020\006\022\020\n\014STATUS_CHECK\020\007", 1384,
+    "\020\n\010language\030\007 \001(\005\"R\n\023ContactNotification"
+    "\022\016\n\006action\030\001 \002(\005\022+\n\007contact\030\002 \001(\0132\032.pack"
+    "ethandler.ContactInfo\"L\n\027InstantFileNoti"
+    "fication\022\017\n\007ser_mdm\030\001 \002(\014\022\016\n\006ser_dm\030\002 \002("
+    "\014\022\020\n\010filename\030\003 \002(\014\"\226\001\n\030PrivateShareNoti"
+    "fication\022\014\n\004name\030\001 \002(\014\022\014\n\004msid\030\002 \002(\014\022\022\n\n"
+    "public_key\030\003 \002(\014\022\023\n\013private_key\030\004 \001(\014\022\016\n"
+    "\006admins\030\005 \003(\014\022\021\n\treadonlys\030\006 \003(\014\022\022\n\ndir_"
+    "db_key\030\007 \002(\014\"\227\002\n\016InstantMessage\022\016\n\006sende"
+    "r\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\014\n\004date\030\003 \002(\005\022@"
+    "\n\024contact_notification\030\004 \001(\0132\".packethan"
+    "dler.ContactNotification\022H\n\030instantfile_"
+    "notification\030\005 \001(\0132&.packethandler.Insta"
+    "ntFileNotification\022J\n\031privateshare_notif"
+    "ication\030\006 \001(\0132\'.packethandler.PrivateSha"
+    "reNotification\"J\n\023StoreMessagesResult\022\016\n"
+    "\006result\030\001 \002(\014\022\023\n\013stored_msgs\030\002 \002(\005\022\016\n\006fa"
+    "iled\030\003 \003(\014\"Y\n\020CreateMSIDResult\022\016\n\006result"
+    "\030\001 \002(\014\022\014\n\004name\030\002 \001(\014\022\023\n\013private_key\030\003 \001("
+    "\014\022\022\n\npublic_key\030\004 \001(\014*F\n\013MessageType\022\024\n\020"
+    "ADD_CONTACT_RQST\020\001\022\017\n\013INSTANT_MSG\020\002\022\020\n\014S"
+    "TATUS_CHECK\020\003", 1533,
   &protobuf_BuildDesc_packet_2eproto_AssignGlobalDescriptors);
 }
 
@@ -345,14 +372,9 @@ const ::google::protobuf::EnumDescriptor* MessageType_descriptor() {
 }
 bool MessageType_IsValid(int value) {
   switch(value) {
-    case 0:
     case 1:
     case 2:
     case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
       return true;
     default:
       return false;
@@ -496,7 +518,7 @@ BufferPacketMessage::BufferPacketMessage()
     sender_public_key_(const_cast< ::std::string*>(&_default_sender_public_key_)),
     rsaenc_key_(const_cast< ::std::string*>(&_default_rsaenc_key_)),
     aesenc_message_(const_cast< ::std::string*>(&_default_aesenc_message_)),
-    type_(0) {
+    type_(1) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -509,7 +531,7 @@ BufferPacketMessage::BufferPacketMessage(const BufferPacketMessage& from)
     sender_public_key_(const_cast< ::std::string*>(&_default_sender_public_key_)),
     rsaenc_key_(const_cast< ::std::string*>(&_default_rsaenc_key_)),
     aesenc_message_(const_cast< ::std::string*>(&_default_aesenc_message_)),
-    type_(0) {
+    type_(1) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
 }
@@ -617,7 +639,7 @@ ValidatedBufferPacketMessage::ValidatedBufferPacketMessage()
     sender_(const_cast< ::std::string*>(&_default_sender_)),
     message_(const_cast< ::std::string*>(&_default_message_)),
     index_(const_cast< ::std::string*>(&_default_index_)),
-    type_(0) {
+    type_(1) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -629,7 +651,7 @@ ValidatedBufferPacketMessage::ValidatedBufferPacketMessage(const ValidatedBuffer
     sender_(const_cast< ::std::string*>(&_default_sender_)),
     message_(const_cast< ::std::string*>(&_default_message_)),
     index_(const_cast< ::std::string*>(&_default_index_)),
-    type_(0) {
+    type_(1) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
 }
@@ -758,8 +780,209 @@ const ::google::protobuf::Reflection* ContactInfo::GetReflection() const {
 
 // ===================================================================
 
+
+
+ContactNotification::ContactNotification()
+  : ::google::protobuf::Message(),
+    _cached_size_(0),
+    action_(0),
+    contact_(NULL) {
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+void ContactNotification::InitAsDefaultInstance() {  contact_ = const_cast< ::packethandler::ContactInfo*>(&::packethandler::ContactInfo::default_instance());
+}
+
+ContactNotification::ContactNotification(const ContactNotification& from)
+  : ::google::protobuf::Message(),
+    _cached_size_(0),
+    action_(0),
+    contact_(NULL) {
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  MergeFrom(from);
+}
+
+ContactNotification::~ContactNotification() {
+  if (this != default_instance_) {
+    delete contact_;
+  }
+}
+
+const ::google::protobuf::Descriptor* ContactNotification::descriptor() {
+  if (ContactNotification_descriptor_ == NULL) protobuf_BuildDesc_packet_2eproto();
+  return ContactNotification_descriptor_;
+}
+
+const ContactNotification& ContactNotification::default_instance() {
+  if (default_instance_ == NULL) protobuf_BuildDesc_packet_2eproto();
+  return *default_instance_;
+}
+
+ContactNotification* ContactNotification::default_instance_ = NULL;
+
+ContactNotification* ContactNotification::New() const {
+  return new ContactNotification;
+}
+
+const ::google::protobuf::Descriptor* ContactNotification::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* ContactNotification::GetReflection() const {
+  if (ContactNotification_reflection_ == NULL) protobuf_BuildDesc_packet_2eproto();
+  return ContactNotification_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string InstantFileNotification::_default_ser_mdm_;
+const ::std::string InstantFileNotification::_default_ser_dm_;
+const ::std::string InstantFileNotification::_default_filename_;
+InstantFileNotification::InstantFileNotification()
+  : ::google::protobuf::Message(),
+    _cached_size_(0),
+    ser_mdm_(const_cast< ::std::string*>(&_default_ser_mdm_)),
+    ser_dm_(const_cast< ::std::string*>(&_default_ser_dm_)),
+    filename_(const_cast< ::std::string*>(&_default_filename_)) {
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+void InstantFileNotification::InitAsDefaultInstance() {}
+
+InstantFileNotification::InstantFileNotification(const InstantFileNotification& from)
+  : ::google::protobuf::Message(),
+    _cached_size_(0),
+    ser_mdm_(const_cast< ::std::string*>(&_default_ser_mdm_)),
+    ser_dm_(const_cast< ::std::string*>(&_default_ser_dm_)),
+    filename_(const_cast< ::std::string*>(&_default_filename_)) {
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  MergeFrom(from);
+}
+
+InstantFileNotification::~InstantFileNotification() {
+  if (ser_mdm_ != &_default_ser_mdm_) {
+    delete ser_mdm_;
+  }
+  if (ser_dm_ != &_default_ser_dm_) {
+    delete ser_dm_;
+  }
+  if (filename_ != &_default_filename_) {
+    delete filename_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* InstantFileNotification::descriptor() {
+  if (InstantFileNotification_descriptor_ == NULL) protobuf_BuildDesc_packet_2eproto();
+  return InstantFileNotification_descriptor_;
+}
+
+const InstantFileNotification& InstantFileNotification::default_instance() {
+  if (default_instance_ == NULL) protobuf_BuildDesc_packet_2eproto();
+  return *default_instance_;
+}
+
+InstantFileNotification* InstantFileNotification::default_instance_ = NULL;
+
+InstantFileNotification* InstantFileNotification::New() const {
+  return new InstantFileNotification;
+}
+
+const ::google::protobuf::Descriptor* InstantFileNotification::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* InstantFileNotification::GetReflection() const {
+  if (InstantFileNotification_reflection_ == NULL) protobuf_BuildDesc_packet_2eproto();
+  return InstantFileNotification_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string PrivateShareNotification::_default_name_;
+const ::std::string PrivateShareNotification::_default_msid_;
+const ::std::string PrivateShareNotification::_default_public_key_;
+const ::std::string PrivateShareNotification::_default_private_key_;
+
+
+const ::std::string PrivateShareNotification::_default_dir_db_key_;
+PrivateShareNotification::PrivateShareNotification()
+  : ::google::protobuf::Message(),
+    _cached_size_(0),
+    name_(const_cast< ::std::string*>(&_default_name_)),
+    msid_(const_cast< ::std::string*>(&_default_msid_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    private_key_(const_cast< ::std::string*>(&_default_private_key_)),
+    dir_db_key_(const_cast< ::std::string*>(&_default_dir_db_key_)) {
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+void PrivateShareNotification::InitAsDefaultInstance() {}
+
+PrivateShareNotification::PrivateShareNotification(const PrivateShareNotification& from)
+  : ::google::protobuf::Message(),
+    _cached_size_(0),
+    name_(const_cast< ::std::string*>(&_default_name_)),
+    msid_(const_cast< ::std::string*>(&_default_msid_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    private_key_(const_cast< ::std::string*>(&_default_private_key_)),
+    dir_db_key_(const_cast< ::std::string*>(&_default_dir_db_key_)) {
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  MergeFrom(from);
+}
+
+PrivateShareNotification::~PrivateShareNotification() {
+  if (name_ != &_default_name_) {
+    delete name_;
+  }
+  if (msid_ != &_default_msid_) {
+    delete msid_;
+  }
+  if (public_key_ != &_default_public_key_) {
+    delete public_key_;
+  }
+  if (private_key_ != &_default_private_key_) {
+    delete private_key_;
+  }
+  if (dir_db_key_ != &_default_dir_db_key_) {
+    delete dir_db_key_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* PrivateShareNotification::descriptor() {
+  if (PrivateShareNotification_descriptor_ == NULL) protobuf_BuildDesc_packet_2eproto();
+  return PrivateShareNotification_descriptor_;
+}
+
+const PrivateShareNotification& PrivateShareNotification::default_instance() {
+  if (default_instance_ == NULL) protobuf_BuildDesc_packet_2eproto();
+  return *default_instance_;
+}
+
+PrivateShareNotification* PrivateShareNotification::default_instance_ = NULL;
+
+PrivateShareNotification* PrivateShareNotification::New() const {
+  return new PrivateShareNotification;
+}
+
+const ::google::protobuf::Descriptor* PrivateShareNotification::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* PrivateShareNotification::GetReflection() const {
+  if (PrivateShareNotification_reflection_ == NULL) protobuf_BuildDesc_packet_2eproto();
+  return PrivateShareNotification_reflection_;
+}
+
+// ===================================================================
+
 const ::std::string InstantMessage::_default_sender_;
 const ::std::string InstantMessage::_default_message_;
+
+
 
 
 InstantMessage::InstantMessage()
@@ -768,11 +991,16 @@ InstantMessage::InstantMessage()
     sender_(const_cast< ::std::string*>(&_default_sender_)),
     message_(const_cast< ::std::string*>(&_default_message_)),
     date_(0),
-    type_(0) {
+    contact_notification_(NULL),
+    instantfile_notification_(NULL),
+    privateshare_notification_(NULL) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
-void InstantMessage::InitAsDefaultInstance() {}
+void InstantMessage::InitAsDefaultInstance() {  contact_notification_ = const_cast< ::packethandler::ContactNotification*>(&::packethandler::ContactNotification::default_instance());
+  instantfile_notification_ = const_cast< ::packethandler::InstantFileNotification*>(&::packethandler::InstantFileNotification::default_instance());
+  privateshare_notification_ = const_cast< ::packethandler::PrivateShareNotification*>(&::packethandler::PrivateShareNotification::default_instance());
+}
 
 InstantMessage::InstantMessage(const InstantMessage& from)
   : ::google::protobuf::Message(),
@@ -780,7 +1008,9 @@ InstantMessage::InstantMessage(const InstantMessage& from)
     sender_(const_cast< ::std::string*>(&_default_sender_)),
     message_(const_cast< ::std::string*>(&_default_message_)),
     date_(0),
-    type_(0) {
+    contact_notification_(NULL),
+    instantfile_notification_(NULL),
+    privateshare_notification_(NULL) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
 }
@@ -793,6 +1023,9 @@ InstantMessage::~InstantMessage() {
     delete message_;
   }
   if (this != default_instance_) {
+    delete contact_notification_;
+    delete instantfile_notification_;
+    delete privateshare_notification_;
   }
 }
 
@@ -819,77 +1052,6 @@ const ::google::protobuf::Descriptor* InstantMessage::GetDescriptor() const {
 const ::google::protobuf::Reflection* InstantMessage::GetReflection() const {
   if (InstantMessage_reflection_ == NULL) protobuf_BuildDesc_packet_2eproto();
   return InstantMessage_reflection_;
-}
-
-// ===================================================================
-
-const ::std::string InstantFileMessage::_default_ser_mdm_;
-const ::std::string InstantFileMessage::_default_ser_dm_;
-const ::std::string InstantFileMessage::_default_filename_;
-const ::std::string InstantFileMessage::_default_sender_msg_;
-InstantFileMessage::InstantFileMessage()
-  : ::google::protobuf::Message(),
-    _cached_size_(0),
-    ser_mdm_(const_cast< ::std::string*>(&_default_ser_mdm_)),
-    ser_dm_(const_cast< ::std::string*>(&_default_ser_dm_)),
-    filename_(const_cast< ::std::string*>(&_default_filename_)),
-    sender_msg_(const_cast< ::std::string*>(&_default_sender_msg_)) {
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-}
-
-void InstantFileMessage::InitAsDefaultInstance() {}
-
-InstantFileMessage::InstantFileMessage(const InstantFileMessage& from)
-  : ::google::protobuf::Message(),
-    _cached_size_(0),
-    ser_mdm_(const_cast< ::std::string*>(&_default_ser_mdm_)),
-    ser_dm_(const_cast< ::std::string*>(&_default_ser_dm_)),
-    filename_(const_cast< ::std::string*>(&_default_filename_)),
-    sender_msg_(const_cast< ::std::string*>(&_default_sender_msg_)) {
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  MergeFrom(from);
-}
-
-InstantFileMessage::~InstantFileMessage() {
-  if (ser_mdm_ != &_default_ser_mdm_) {
-    delete ser_mdm_;
-  }
-  if (ser_dm_ != &_default_ser_dm_) {
-    delete ser_dm_;
-  }
-  if (filename_ != &_default_filename_) {
-    delete filename_;
-  }
-  if (sender_msg_ != &_default_sender_msg_) {
-    delete sender_msg_;
-  }
-  if (this != default_instance_) {
-  }
-}
-
-const ::google::protobuf::Descriptor* InstantFileMessage::descriptor() {
-  if (InstantFileMessage_descriptor_ == NULL) protobuf_BuildDesc_packet_2eproto();
-  return InstantFileMessage_descriptor_;
-}
-
-const InstantFileMessage& InstantFileMessage::default_instance() {
-  if (default_instance_ == NULL) protobuf_BuildDesc_packet_2eproto();
-  return *default_instance_;
-}
-
-InstantFileMessage* InstantFileMessage::default_instance_ = NULL;
-
-InstantFileMessage* InstantFileMessage::New() const {
-  return new InstantFileMessage;
-}
-
-const ::google::protobuf::Descriptor* InstantFileMessage::GetDescriptor() const {
-  return descriptor();
-}
-
-const ::google::protobuf::Reflection* InstantFileMessage::GetReflection() const {
-  if (InstantFileMessage_reflection_ == NULL) protobuf_BuildDesc_packet_2eproto();
-  return InstantFileMessage_reflection_;
 }
 
 // ===================================================================
@@ -1018,85 +1180,6 @@ const ::google::protobuf::Descriptor* CreateMSIDResult::GetDescriptor() const {
 const ::google::protobuf::Reflection* CreateMSIDResult::GetReflection() const {
   if (CreateMSIDResult_reflection_ == NULL) protobuf_BuildDesc_packet_2eproto();
   return CreateMSIDResult_reflection_;
-}
-
-// ===================================================================
-
-const ::std::string PrivateShareNotification::_default_name_;
-const ::std::string PrivateShareNotification::_default_msid_;
-const ::std::string PrivateShareNotification::_default_public_key_;
-const ::std::string PrivateShareNotification::_default_private_key_;
-
-
-const ::std::string PrivateShareNotification::_default_dir_db_key_;
-PrivateShareNotification::PrivateShareNotification()
-  : ::google::protobuf::Message(),
-    _cached_size_(0),
-    name_(const_cast< ::std::string*>(&_default_name_)),
-    msid_(const_cast< ::std::string*>(&_default_msid_)),
-    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
-    private_key_(const_cast< ::std::string*>(&_default_private_key_)),
-    dir_db_key_(const_cast< ::std::string*>(&_default_dir_db_key_)) {
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-}
-
-void PrivateShareNotification::InitAsDefaultInstance() {}
-
-PrivateShareNotification::PrivateShareNotification(const PrivateShareNotification& from)
-  : ::google::protobuf::Message(),
-    _cached_size_(0),
-    name_(const_cast< ::std::string*>(&_default_name_)),
-    msid_(const_cast< ::std::string*>(&_default_msid_)),
-    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
-    private_key_(const_cast< ::std::string*>(&_default_private_key_)),
-    dir_db_key_(const_cast< ::std::string*>(&_default_dir_db_key_)) {
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  MergeFrom(from);
-}
-
-PrivateShareNotification::~PrivateShareNotification() {
-  if (name_ != &_default_name_) {
-    delete name_;
-  }
-  if (msid_ != &_default_msid_) {
-    delete msid_;
-  }
-  if (public_key_ != &_default_public_key_) {
-    delete public_key_;
-  }
-  if (private_key_ != &_default_private_key_) {
-    delete private_key_;
-  }
-  if (dir_db_key_ != &_default_dir_db_key_) {
-    delete dir_db_key_;
-  }
-  if (this != default_instance_) {
-  }
-}
-
-const ::google::protobuf::Descriptor* PrivateShareNotification::descriptor() {
-  if (PrivateShareNotification_descriptor_ == NULL) protobuf_BuildDesc_packet_2eproto();
-  return PrivateShareNotification_descriptor_;
-}
-
-const PrivateShareNotification& PrivateShareNotification::default_instance() {
-  if (default_instance_ == NULL) protobuf_BuildDesc_packet_2eproto();
-  return *default_instance_;
-}
-
-PrivateShareNotification* PrivateShareNotification::default_instance_ = NULL;
-
-PrivateShareNotification* PrivateShareNotification::New() const {
-  return new PrivateShareNotification;
-}
-
-const ::google::protobuf::Descriptor* PrivateShareNotification::GetDescriptor() const {
-  return descriptor();
-}
-
-const ::google::protobuf::Reflection* PrivateShareNotification::GetReflection() const {
-  if (PrivateShareNotification_reflection_ == NULL) protobuf_BuildDesc_packet_2eproto();
-  return PrivateShareNotification_reflection_;
 }
 
 }  // namespace packethandler

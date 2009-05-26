@@ -193,30 +193,30 @@ void MessageHandler::IterativeStoreMsgs(
       std::string ser_packet="";
       std::string sys_packet_name;
       switch (data->p_type) {
-        case packethandler::SHARE:
-            sys_packet_name = co_.Hash(data->receivers[data->index].id,
-                                       "",
-                                       maidsafe_crypto::STRING_STRING,
-                                       true);
-            break;
+//        case packethandler::SHARE:
+//            sys_packet_name = co_.Hash(data->receivers[data->index].id,
+//                                       "",
+//                                       maidsafe_crypto::STRING_STRING,
+//                                       true);
+//            break;
         case packethandler::ADD_CONTACT_RQST:
-            sys_packet_name = co_.Hash(data->receivers[data->index].id,
-                                       "",
-                                       maidsafe_crypto::STRING_STRING,
-                                       true);
-            break;
-        case packethandler::ADD_CONTACT_RESPONSE:
-            sys_packet_name = co_.Hash(data->receivers[data->index].id,
-                                       "",
-                                       maidsafe_crypto::STRING_STRING,
-                                       true);
-            break;
-        case packethandler::GENERAL:
-            sys_packet_name = co_.Hash(data->receivers[data->index].id,
-                                       "",
-                                       maidsafe_crypto::STRING_STRING,
-                                       true);
-            break;
+//            sys_packet_name = co_.Hash(data->receivers[data->index].id,
+//                                       "",
+//                                       maidsafe_crypto::STRING_STRING,
+//                                       true);
+//            break;
+//        case packethandler::ADD_CONTACT_RESPONSE:
+//            sys_packet_name = co_.Hash(data->receivers[data->index].id,
+//                                       "",
+//                                       maidsafe_crypto::STRING_STRING,
+//                                       true);
+//            break;
+//        case packethandler::GENERAL:
+//            sys_packet_name = co_.Hash(data->receivers[data->index].id,
+//                                       "",
+//                                       maidsafe_crypto::STRING_STRING,
+//                                       true);
+//            break;
         case packethandler::INSTANT_MSG:
             sys_packet_name = co_.Hash(data->receivers[data->index].id,
                                        "",

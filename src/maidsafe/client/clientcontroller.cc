@@ -912,24 +912,12 @@ int ClientController::HandleMessages(std::list<std::string> *msgs) {
     msgs->pop_front();
     if (msg.ParseFromString(ser_msg)) {
       switch (msg.type()) {
-        case packethandler::SHARE:
-            result += HandleReceivedShare(msg);
-            SetBufferPacketMessages(true);
-            break;
         case packethandler::ADD_CONTACT_RQST:
-            result += HandleAddContactRequest(msg);
-            SetBufferPacketMessages(true);
-            break;
-        case packethandler::ADD_CONTACT_RESPONSE:
-            result += HandleAddContactResponse(msg);
-            SetBufferPacketMessages(true);
-            break;
+//            result += HandleAddContactRequest(msg);
+//            SetBufferPacketMessages(true);
+//            break;
         case packethandler::INSTANT_MSG:
             result += HandleInstantMessage(msg);
-            break;
-        case packethandler::DELETE_CONTACT_NOTIF:
-            result += HandleDeleteContactNotification(msg);
-            SetBufferPacketMessages(true);
             break;
         default: break;  // TODO(Richard): define other type of messages
       }
@@ -976,19 +964,11 @@ int ClientController::HandleDeleteContactNotification(
 }
 
 int ClientController::HandleReceivedShare(
-    packethandler::ValidatedBufferPacketMessage &vbpm) {
-  packethandler::PrivateShareNotification psn;
-  if (!psn.ParseFromString(vbpm.message())) {
+    const packethandler::PrivateShareNotification &psn,
+    const std::string &name) {
 #ifdef DEBUG
-    printf("Message doesn't parse as a Private Share Notification.\n");
-#endif
-    return -20001;
-  }
-#ifdef DEBUG
-  std::cout << "Dir key: " << psn.dir_db_key() << std::endl;
-#endif
-#ifdef DEBUG
-  std::cout << "Public key: " << psn.public_key() << std::endl;
+  printf("Dir key: %s", psn.dir_db_key().c_str());
+  printf("Public key: %s", psn.public_key().c_str());
 #endif
 
   fs::path newDb(fsys_.MaidsafeHomeDir());
@@ -1073,11 +1053,8 @@ int ClientController::HandleReceivedShare(
 
   // Create directory in Shares/Private
   std::string share_path("Shares/Private/" + psn.name());
-  // std::string private_share_path("Shares/Private");
   DB_TYPE db_type;
-  // std::string msid = psn.msid();
   std::string msid("");
-
 
   int n = GetDb(share_path, &db_type, &msid);
   if (n != 0) {
@@ -1121,18 +1098,6 @@ int ClientController::HandleReceivedShare(
     return -20007;
   }
 
-  packethandler::InstantMessage im;
-  std::string new_msg("You have been added as ");
-  if (psn.private_key() == "")
-    new_msg += "a Read Only participant to share: " + psn.name();
-  else
-    new_msg += "an Administrator participant to share: " + psn.name();
-
-  im.set_message(new_msg);
-  im.set_sender(vbpm.sender());
-  im.set_date(base::get_epoch_time());
-  messages_.push_back(im);
-
   return 0;
 }
 
@@ -1144,33 +1109,35 @@ int ClientController::HandleInstantMessage(
 #endif
   packethandler::InstantMessage im;
   if (im.ParseFromString(vbpm.message())) {
-    if (im.type() == packethandler::INSTANT_FILE) {
-      packethandler::InstantFileMessage ifm;
-      if (ifm.ParseFromString(im.message())) {
-        int n = AddInstantFile(ifm);
-#ifdef DEBUG
-        printf("Addition result: %i\n", n);
-#endif
-        if (n != 0)
-          return n;
-        std::string new_msg("You've received file: " +
-          ifm.filename() + ". " + im.sender() + " says: " +
-          ifm.sender_msg() + "\n");
-#ifdef DEBUG
-        printf("%s\n", new_msg.c_str());
-#endif
-        im.set_message(new_msg);
-        messages_.push_back(im);
-#ifdef DEBUG
-        printf("You've got an instant file\n");
-#endif
-      }
-    } else {
+//    if
+//
+//    if (im.type() == packethandler::INSTANT_FILE) {
+//      packethandler::InstantFileMessage ifm;
+//      if (ifm.ParseFromString(im.message())) {
+//        int n = AddInstantFile(ifm);
+//#ifdef DEBUG
+//        printf("Addition result: %i\n", n);
+//#endif
+//        if (n != 0)
+//          return n;
+//        std::string new_msg("You've received file: " +
+//          ifm.filename() + ". " + im.sender() + " says: " +
+//          ifm.sender_msg() + "\n");
+//#ifdef DEBUG
+//        printf("%s\n", new_msg.c_str());
+//#endif
+//        im.set_message(new_msg);
+//        messages_.push_back(im);
+//#ifdef DEBUG
+//        printf("You've got an instant file\n");
+//#endif
+//      }
+//    } else {
       messages_.push_back(im);
 #ifdef DEBUG
       printf("%s\n", vbpm.message().c_str());
 #endif
-    }
+//    }
     return 0;
   } else {
     return -1;
@@ -1178,7 +1145,8 @@ int ClientController::HandleInstantMessage(
 }
 
 int ClientController::AddInstantFile(
-    const packethandler::InstantFileMessage &ifm) {
+    const packethandler::InstantFileNotification &ifm,
+    const std::string &location) {
   fs::path path(base::TidyPath(kRootSubdir[0][0]));
 
   maidsafe::MetaDataMap sent_mdm;
@@ -1237,28 +1205,27 @@ int ClientController::AddInstantFile(
   return 0;
 }
 
-int ClientController::HandleAddContactRequest(
-    packethandler::ValidatedBufferPacketMessage &vbpm) {
+int ClientController::HandleAddContactRequest(packethandler::ContactInfo &ci,
+    const std::string &sender) {
 #ifdef DEBUG
   printf("\n\n\nHandleAddContactRequest\nHandleAddContactRequest\n\n\n");
 #endif
 
-  packethandler::ContactInfo ci;
-  if (!ci.ParseFromString(vbpm.message())) {
-#ifdef DEBUG
-    printf("Message didn't parse as contact info.\n");
-#endif
-    return -7;
-  }
-#ifdef DEBUG
-  printf("Parsed message.\n");
-#endif
+//    packethandler::ContactInfo ci;
+//    if (!ci.ParseFromString(vbpm.message())) {
+//  #ifdef DEBUG
+//      printf("Message didn't parse as contact info.\n");
+//  #endif
+//      return -7;
+//    }
+//  #ifdef DEBUG
+//    printf("Parsed message.\n");
+//  #endif
   // TODO(Richard): return choice to the user to accept/reject contact
 
   // Get contacts public key
   std::string rec_public_key;
-  exitcode result = auth_->PublicUsernamePublicKey(vbpm.sender(),
-                                                   rec_public_key);
+  exitcode result = auth_->PublicUsernamePublicKey(sender, rec_public_key);
   if (result != OK) {
 #ifdef DEBUG
     printf("Can't get sender's public key.\n");
@@ -1270,7 +1237,7 @@ int ClientController::HandleAddContactRequest(
 #endif
 
   Contacts c;
-  c.SetPublicName(vbpm.sender());
+  c.SetPublicName(sender);
   c.SetPublicKey(rec_public_key);
   c.SetFullName(ci.name());
   c.SetOfficePhone(ci.office_number());
@@ -1306,7 +1273,7 @@ int ClientController::HandleAddContactRequest(
 
   // Add to authorised users in BP
   std::set<std::string> s;
-  s.insert(vbpm.sender());
+  s.insert(sender);
   if (!AuthoriseUsers(s))
     return -7777;
 #ifdef DEBUG
@@ -1315,25 +1282,38 @@ int ClientController::HandleAddContactRequest(
 
   // Send message back with own details
   maidsafe::Receivers rec;
-  rec.id = vbpm.sender();
+  rec.id = sender;
   rec.public_key = rec_public_key;
   std::vector<Receivers> recs;
   recs.push_back(rec);
-  packethandler::ContactInfo info;
-  info.set_name("Mock");
-  info.set_birthday("Today");
-  info.set_office_number("0987456321");
-  info.set_gender("F");
-  info.set_country(22);
-  info.set_city("Troon");
-  info.set_language(7);
-  std::string ser_info;
-  info.SerializeToString(&ser_info);
+
+  packethandler::InstantMessage im;
+  packethandler::ContactNotification *cn = im.mutable_contact_notification();
+  packethandler::ContactInfo *info = cn->mutable_contact();
+
+  info->set_name("Mock");
+  info->set_birthday("Today");
+  info->set_office_number("0987456321");
+  info->set_gender("F");
+  info->set_country(22);
+  info->set_city("Troon");
+  info->set_language(7);
+
+  cn->set_action(1);
+
+  std::string message("\"");
+  message += sender + "\" has confirmed you as a contact.";
+  im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
+  im.set_date(base::get_epoch_time());
+  im.set_message(message);
+  std::string ser_im;
+  im.SerializeToString(&ser_im);
+
   CC_CallbackResult cb;
-  msgh_->SendMessage(ser_info,
+  msgh_->SendMessage(ser_im,
                      recs,
                      MPID_BP,
-                     packethandler::ADD_CONTACT_RESPONSE,
+                     packethandler::INSTANT_MSG,
                      boost::bind(&CC_CallbackResult::CallbackFunc,
                      &cb, _1));
   WaitForResult(cb);
@@ -1353,19 +1333,15 @@ int ClientController::HandleAddContactRequest(
   return 0;
 }
 
-int ClientController::HandleAddContactResponse(
-    packethandler::ValidatedBufferPacketMessage &vbpm) {
-  packethandler::ContactInfo ci;
-  if (!ci.ParseFromString(vbpm.message())) {
+int ClientController::HandleAddContactResponse(packethandler::ContactInfo &ci,
+  const std::string &sender) {
 #ifdef DEBUG
-    printf("Message didn't parse as contact info.\n");
+  printf("\n\n\nHandleAddContactResponse\nHandleAddContactResponse\n\n\n");
 #endif
-    return -8;
-  }
 
   // Check if contact exists in local DB
   Contacts c;
-  c.SetPublicName(vbpm.sender());
+  c.SetPublicName(sender);
   c.SetPublicKey("");
   c.SetFullName(ci.name());
   c.SetOfficePhone(ci.office_number());
@@ -1381,10 +1357,10 @@ int ClientController::HandleAddContactResponse(
   newDb /= ".contacts";
   std::string dbNameNew(newDb.string());
   std::vector<maidsafe::Contacts> list;
-  int n = ch.GetContactList(dbNameNew, list, vbpm.sender());
-#ifdef DEBUG
+  int n = ch.GetContactList(dbNameNew, list, sender);
+//#ifdef DEBUG
   printf("GetContactList result: %i\n", n);
-#endif
+//#endif
   if (n != 0) {
 #ifdef DEBUG
     printf("Getting contact list failed.\n");
@@ -1441,7 +1417,7 @@ int ClientController::SendInstantMessage(const std::string &message,
   im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
   im.set_message(message);
   im.set_date(base::get_epoch_time());
-  im.set_type(packethandler::INSTANT_MSG);
+//  im.set_type(packethandler::INSTANT_MSG);
   im.SerializeToString(&ser_im);
 
   CC_CallbackResult cb;
@@ -1464,10 +1440,10 @@ int ClientController::SendInstantMessage(const std::string &message,
   return 0;
 }
 
-unsigned int ClientController::InstantMessageCount() {
-  return messages_.size();
-}
-
+//unsigned int ClientController::InstantMessageCount() {
+//  return messages_.size();
+//}
+//
 int ClientController::GetInstantMessages(
   std::list<packethandler::InstantMessage> *messages) {
   *messages = messages_;
@@ -1509,18 +1485,20 @@ int ClientController::SendInstantFile(std::string *filename,
   }
 
   fs::path p_filename(*filename);
-  packethandler::InstantFileMessage ifm;
-  ifm.set_ser_mdm(ser_mdm);
-  ifm.set_ser_dm(ser_dm);
-  ifm.set_filename(p_filename.filename());
-#ifdef DEBUG
-  printf("Message: %s\n", msg.c_str());
-#endif
-  if (msg != "")
-    ifm.set_sender_msg(msg);
+  packethandler::InstantMessage im;
+  packethandler::InstantFileNotification *ifm =
+      im.mutable_instantfile_notification();
+  ifm->set_ser_mdm(ser_mdm);
+  ifm->set_ser_dm(ser_dm);
+  ifm->set_filename(p_filename.filename());
+  im.set_sender(SessionSingleton::getInstance()->PublicUsername());
+  im.set_date(base::get_epoch_time());
+  std::string message("\"");
+  message += im.sender() + "\" has sent you file " + p_filename.filename();
+  im.set_message(message);
 
   std::string ser_instant_file;
-  ifm.SerializeToString(&ser_instant_file);
+  im.SerializeToString(&ser_instant_file);
 
   std::vector<Contacts> list;
   maidsafe::ContactsHandler ch;
@@ -1543,16 +1521,8 @@ int ClientController::SendInstantFile(std::string *filename,
   std::vector<Receivers> recs;
   recs.push_back(rec);
 
-  std::string ser_im;
-  packethandler::InstantMessage im;
-  im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
-  im.set_message(ser_instant_file);
-  im.set_date(base::get_epoch_time());
-  im.set_type(packethandler::INSTANT_FILE);
-  im.SerializeToString(&ser_im);
-
   CC_CallbackResult cb;
-  msgh_->SendMessage(ser_im,
+  msgh_->SendMessage(ser_instant_file,
                      recs,
                      MPID_BP,
                      packethandler::INSTANT_MSG,
@@ -1601,18 +1571,32 @@ int ClientController::AddContact(const std::string &public_name) {
     rec.public_key = public_key;
     std::vector<Receivers> recs;
     recs.push_back(rec);
-    packethandler::ContactInfo info;
-    info.set_name("Mock");
-    info.set_birthday("Today");
-    info.set_office_number("0987456321");
-    info.set_gender("F");
-    info.set_country(22);
-    info.set_city("Troon");
-    info.set_language(7);
-    std::string ser_info;
-    info.SerializeToString(&ser_info);
+
+    packethandler::InstantMessage im;
+    packethandler::ContactNotification *cn = im.mutable_contact_notification();
+    packethandler::ContactInfo *info = cn->mutable_contact();
+
+    info->set_name("Mock");
+    info->set_birthday("Today");
+    info->set_office_number("0987456321");
+    info->set_gender("F");
+    info->set_country(22);
+    info->set_city("Troon");
+    info->set_language(7);
+
+    cn->set_action(0);
+
+    im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
+    im.set_date(base::get_epoch_time());
+    std::string message("\"");
+    message += im.sender() + "\" has requested to add you as a contact.";
+    im.set_message(message);
+
+    std::string ser_im;
+    im.SerializeToString(&ser_im);
+
     CC_CallbackResult cb;
-    msgh_->SendMessage(ser_info,
+    msgh_->SendMessage(ser_im,
                        recs,
                        MPID_BP,
                        packethandler::ADD_CONTACT_RQST,
@@ -1695,7 +1679,7 @@ int ClientController::DeleteContact(const std::string &public_name) {
   im.set_date(base::get_epoch_milliseconds());
   im.set_message(deletion_msg);
   im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
-  im.set_type(packethandler::DELETE_CONTACT_NOTIF);
+//  im.set_type(packethandler::DELETE_CONTACT_NOTIF);
   std::string ser_im;
   im.SerializeToString(&ser_im);
 
@@ -1709,7 +1693,7 @@ int ClientController::DeleteContact(const std::string &public_name) {
   msgh_->SendMessage(ser_im,
                      recs,
                      MPID_BP,
-                     packethandler::DELETE_CONTACT_NOTIF,
+                     packethandler::INSTANT_MSG,
                      boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   packethandler::StoreMessagesResult res;
@@ -1842,84 +1826,100 @@ int ClientController::CreateNewShare(const std::string &name,
   }
 
   // Send message to all participants
-  packethandler::PrivateShareNotification psn;
-  psn.set_name(name);
-  psn.set_msid(cmsidr.name());
-  psn.set_public_key(cmsidr.public_key());
-  psn.set_dir_db_key(share_dir_key);
+  packethandler::InstantMessage im;
+  packethandler::PrivateShareNotification *psn =
+      im.mutable_privateshare_notification();
+  psn->set_name(name);
+  psn->set_msid(cmsidr.name());
+  psn->set_public_key(cmsidr.public_key());
+  psn->set_dir_db_key(share_dir_key);
+  im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
+  im.set_date(base::get_epoch_time());
+  std::string message("\"");
+  message += im.sender() + "\" has added you as a Read Only participant to" +
+      " share " + name;
+  im.set_message(message);
   std::string share_message;
-  psn.SerializeToString(&share_message);
+  im.SerializeToString(&share_message);
 
   // Send to READONLYS
   std::vector<Receivers> recs;
-  for (unsigned int n = 0; n < parts.size(); n++) {
-    if (parts[n].role == 'R') {
-      Receivers r;
-      r.id = parts[n].id;
-      r.public_key = parts[n].public_key;
-      recs.push_back(r);
-      std::string *ro = psn.add_readonlys();
-      *ro = parts[n].id;
-    } else {
-      std::string *admin = psn.add_admins();
-      *admin = parts[n].id;
-    }
-  }
-  cbr.Reset();
-  msgh_->SendMessage(share_message,
-                     recs,
-                     MPID_BP,
-                     packethandler::SHARE,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
-  WaitForResult(cbr);
   packethandler::StoreMessagesResult res;
-  if ((!res.ParseFromString(cbr.result)) ||
-      (res.result() == kCallbackFailure)) {
+  if (readonlys.size() > 0) {
+    for (unsigned int n = 0; n < parts.size(); n++) {
+      if (parts[n].role == 'R') {
+        Receivers r;
+        r.id = parts[n].id;
+        r.public_key = parts[n].public_key;
+        recs.push_back(r);
+        std::string *ro = psn->add_readonlys();
+        *ro = parts[n].id;
+      } else {
+        std::string *admin = psn->add_admins();
+        *admin = parts[n].id;
+      }
+    }
+    cbr.Reset();
+    msgh_->SendMessage(share_message,
+                       recs,
+                       MPID_BP,
+                       packethandler::INSTANT_MSG,
+                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
+    WaitForResult(cbr);
+    if ((!res.ParseFromString(cbr.result)) ||
+        (res.result() == kCallbackFailure)) {
 #ifdef DEBUG
-    printf("Callback failure send msg to readonlys.\n");
+      printf("Callback failure send msg to readonlys.\n");
 #endif
-    return -30003;
+      return -30003;
+    }
+    if (static_cast<unsigned int>(res.stored_msgs()) != recs.size())
+      return -30004;
   }
-  if (static_cast<unsigned int>(res.stored_msgs()) != recs.size())
-    return -30004;
 
   // Send to ADMINS
-  std::string *me = psn.add_admins();
-  *me = maidsafe::SessionSingleton::getInstance()->PublicUsername();
-  psn.set_private_key(cmsidr.private_key());
-  psn.SerializeToString(&share_message);
-  recs.clear();
-  for (unsigned int n = 0; n < parts.size(); n++) {
-    if (parts[n].role == 'A') {
-      Receivers r;
-      r.id = parts[n].id;
-      r.public_key = parts[n].public_key;
-      recs.push_back(r);
+  if (admins.size() > 0) {
+    std::string *me = psn->add_admins();
+    *me = maidsafe::SessionSingleton::getInstance()->PublicUsername();
+    psn->set_private_key(cmsidr.private_key());
+    message = std::string ("\"");
+    message += im.sender() +
+        "\" has added you as an Administrator participant to" +
+        " share " + name;
+    im.set_message(message);
+    im.SerializeToString(&share_message);
+    recs.clear();
+    for (unsigned int n = 0; n < parts.size(); n++) {
+      if (parts[n].role == 'A') {
+        Receivers r;
+        r.id = parts[n].id;
+        r.public_key = parts[n].public_key;
+        recs.push_back(r);
+      }
+    }
+    cbr.Reset();
+    msgh_->SendMessage(share_message,
+                       recs,
+                       MPID_BP,
+                       packethandler::INSTANT_MSG,
+                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
+    WaitForResult(cbr);
+    // packethandler::StoreMessagesResult res;
+    if ((!res.ParseFromString(cbr.result)) ||
+        (res.result() == kCallbackFailure)) {
+  #ifdef DEBUG
+      printf("Callback failure send msg to admins.\n");
+  #endif
+      return -30005;
+    }
+    if (static_cast<unsigned int>(res.stored_msgs()) != recs.size()) {
+  #ifdef DEBUG
+      printf("Couldn't send message to all participants: %i out of %i.\n",
+        res.stored_msgs(), recs.size());
+  #endif
+      return -30006;
     }
   }
-  cbr.Reset();
-  msgh_->SendMessage(share_message,
-                     recs,
-                     MPID_BP,
-                     packethandler::SHARE,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
-  WaitForResult(cbr);
-  // packethandler::StoreMessagesResult res;
-  if ((!res.ParseFromString(cbr.result)) ||
-      (res.result() == kCallbackFailure)) {
-#ifdef DEBUG
-    printf("Callback failure send msg to admins.\n");
-#endif
-    return -30005;
-  }
-  if (static_cast<unsigned int>(res.stored_msgs()) != recs.size()) {
-#ifdef DEBUG
-    printf("Couldn't send message to all participants: %i out of %i.\n",
-      res.stored_msgs(), recs.size());
-#endif
-    return -30006;
-  }
-
   return 0;
 }
 

@@ -308,6 +308,7 @@ class TestPDVault : public testing::Test {
   }
 
   virtual ~TestPDVault() {
+    (*(pdvaults_))[0]->CleanUp();
     fs::path temp_("PDVaultTest");
     try {
       if (fs::exists(temp_))

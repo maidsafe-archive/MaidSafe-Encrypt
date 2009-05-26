@@ -2,16 +2,12 @@ package packethandler;
 
 // define types of messages
 enum MessageType {
-  SHARE=0;
-  ADD_CONTACT_RQST=1;
-  GENERAL=2;
-  ADD_CONTACT_RESPONSE=3;
-  INSTANT_MSG=4;
-  INSTANT_FILE=5;
-  DELETE_CONTACT_NOTIF=6;
-  STATUS_CHECK=7;
+  ADD_CONTACT_RQST = 1;
+  INSTANT_MSG = 2;
+  STATUS_CHECK = 3;
 }
 
+// BP General Message Structure
 message GenericPacket {
   required bytes data = 1;
   required bytes signature = 2;
@@ -44,6 +40,7 @@ message ValidatedBufferPacketMessage {
   required MessageType type = 4;
 }
 
+// Instant Messages
 message ContactInfo {
   optional bytes name = 1;
   optional bytes birthday = 2;
@@ -54,18 +51,34 @@ message ContactInfo {
   optional int32 language = 7;
 }
 
+message ContactNotification {
+  required int32 action = 1;
+  optional ContactInfo contact = 2;
+}
+
+message InstantFileNotification {
+  required bytes ser_mdm = 1;
+  required bytes ser_dm = 2;
+  required bytes filename = 3;
+}
+
+message PrivateShareNotification {
+  required bytes name = 1;
+  required bytes msid = 2;
+  required bytes public_key = 3;
+  optional bytes private_key = 4;
+  repeated bytes admins = 5;
+  repeated bytes readonlys = 6;
+  required bytes dir_db_key = 7;
+}
+
 message InstantMessage {
   required bytes sender = 1;
   required bytes message = 2;
   required int32 date = 3;
-  required MessageType type = 4;
-}
-
-message InstantFileMessage {
-  required bytes ser_mdm = 1;
-  required bytes ser_dm = 2;
-  required bytes filename = 3;
-  optional bytes sender_msg = 4;
+  optional ContactNotification contact_notification = 4;
+  optional InstantFileNotification instantfile_notification = 5;
+  optional PrivateShareNotification privateshare_notification = 6;
 }
 
 message StoreMessagesResult {
@@ -81,12 +94,3 @@ message CreateMSIDResult {
   optional bytes public_key = 4;
 }
 
-message PrivateShareNotification {
-  required bytes name = 1;
-  required bytes msid = 2;
-  required bytes public_key = 3;
-  optional bytes private_key = 4;
-  repeated bytes admins = 5;
-  repeated bytes readonlys = 6;
-  required bytes dir_db_key = 7;
-}

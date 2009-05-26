@@ -91,22 +91,23 @@ class ClientController {
   inline void SetBufferPacketMessages(bool bp_messages) {
     bp_messages_ = bp_messages;
   }
-  int HandleReceivedShare(
-    packethandler::ValidatedBufferPacketMessage &vbpm);
+  int HandleReceivedShare(const packethandler::PrivateShareNotification &psn,
+                          const std::string &name);
   int HandleDeleteContactNotification(
     packethandler::ValidatedBufferPacketMessage &vbpm);
   int HandleInstantMessage(
     packethandler::ValidatedBufferPacketMessage &vbpm);
-  int HandleAddContactRequest(
-      packethandler::ValidatedBufferPacketMessage &vbpm);
-  int HandleAddContactResponse(
-      packethandler::ValidatedBufferPacketMessage &vbpm);
+  int HandleAddContactRequest(packethandler::ContactInfo &ci,
+    const std::string &sender);
+  int HandleAddContactResponse(packethandler::ContactInfo &ci,
+    const std::string &sender);
   int GetInstantMessages(std::list<packethandler::InstantMessage> *messages);
-  unsigned int InstantMessageCount();
   int SendInstantMessage(const std::string &message,
                          const std::string &contact_name);
   int SendInstantFile(std::string *filename, const std::string &msg,
                       const std::string &contact_name);
+  int AddInstantFile(const packethandler::InstantFileNotification &ifm,
+                     const std::string &location);
 
   // Contact operations
   int ContactList(std::vector<maidsafe::Contacts> *c_list,
@@ -188,7 +189,6 @@ class ClientController {
   int RemoveDb(const std::string &path_);
   DB_TYPE GetDbType(const std::string &path_);
   int PathDistinction(const std::string &path, std::string *msid);
-  int AddInstantFile(const packethandler::InstantFileMessage &ifm);
 
   // Variables
   Authentication *auth_;

@@ -68,8 +68,12 @@ Contacts::Contacts( QWidget* parent )
              this,           SLOT( onFileSendClicked() ) );
 
 
-    connect( ui_.listWidget, SIGNAL( itemDoubleClicked( QListWidgetItem* ) ),
-             this,           SLOT( onItemDoubleClicked( QListWidgetItem* ) ) );
+    connect( ClientController::instance(),
+                   SIGNAL( addedContact( const QString& ) ),
+             this, SLOT( onAddedContact( const QString& ) ) );
+
+    connect( ui_.listWidget, SIGNAL( itemSelectionChanged() ),
+             this,           SLOT( onItemSelectionChanged() ) );
 
     connect( ui_.listWidget, SIGNAL( itemSelectionChanged() ),
              this,           SLOT( onItemSelectionChanged() ) );
@@ -135,6 +139,16 @@ void Contacts::onItemSelectionChanged()
 void Contacts::onAddContactClicked()
 {
     const QString contact_name = ui_.contactLineEdit->text().trimmed();
+
+    if (ui_.contactLineEdit->text().trimmed().toStdString() ==
+        maidsafe::SessionSingleton::getInstance()->PublicUsername())
+    {
+      QMessageBox::warning( this,
+                            tr( "Recommendation" ),
+                            tr( "Try not to add yourself as a contact." )
+                          );
+      return;
+    }
 
     // TODO add contact should be disabled if name isn't valid
 
@@ -368,3 +382,7 @@ Contact* Contacts::currentContact()
     return NULL;
 }
 
+void Contacts::onAddedContact(const QString &name) {
+  qDebug() << "Contacts::onAddedContact()";
+  addContact( new Contact( name ) );
+}

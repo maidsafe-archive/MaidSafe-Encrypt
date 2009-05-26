@@ -23,6 +23,7 @@
 
 // core
 #include "maidsafe/client/clientinterface.h"
+#include "maidsafe/client/clientcontroller.h"
 
 // local
 #include "qt/client/share.h"
@@ -123,6 +124,8 @@ signals:
     void messageReceived( const QDateTime& time,
                           const QString& from,
                           const QString& msg );
+    void addedContact( const QString& name );
+    void addedPrivateShare( const QString& name );
 
     //! A contact's status has changed
     /*!
@@ -212,7 +215,9 @@ private slots:
 private:
     explicit ClientController( QObject* parent = 0 );
     virtual ~ClientController();
-
+    int analiseMessage(
+      const packethandler::InstantMessage& im,
+      QString *sender, QString *message);
     class ClientControllerImpl;
     ClientControllerImpl* impl_;
 };

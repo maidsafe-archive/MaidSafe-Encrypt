@@ -37,6 +37,10 @@ Shares::Shares( QWidget* parent )
 
     connect( ui_.listWidget, SIGNAL( itemDoubleClicked( QListWidgetItem* ) ),
              this,           SLOT( onItemDoubleClicked( QListWidgetItem* ) ) );
+
+    connect( ClientController::instance(),
+                   SIGNAL( addedPrivateShare( const QString& ) ),
+             this, SLOT( onAddedPrivateShare( const QString& ) ) );
 }
 
 Shares::~Shares()
@@ -100,6 +104,8 @@ void Shares::onCreateShareClicked()
     if ( db_contacts.size() > 0 ) {
       ShareParticipantsChoice spc_ro(this, tr("Read Onlys"), &ro_set);
       n = spc_ro.exec();
+    } else {
+      ro_set.clear();
     }
 
     if ( ro_set.size() > 0 || admin_set.size() > 0 )
@@ -197,3 +203,9 @@ void Shares::addShare( const QString& shareName )
 {
     ui_.listWidget->addItem( shareName );
 }
+
+void Shares::onAddedPrivateShare(const QString &name) {
+  qDebug() << "Shares::onAddedPrivateShare()";
+  addShare( name );
+}
+
