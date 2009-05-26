@@ -314,7 +314,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   recs.push_back(rec);
 
   //  Sending the message
-  msghandler.SendMessage(ser_ci,recs,MPID_BP,packethandler::ADD_CONTACT_RESPONSE,\
+  msghandler.SendMessage(ser_ci,recs,MPID_BP,packethandler::INSTANT_MSG,\
     boost::bind(&FakeCallback::CallbackFunc,&cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(store_msg_result.ParseFromString(cb.result));
@@ -353,7 +353,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   ser_msg1 = get_msgs_res.messages(0);
   vbpm1.ParseFromString(ser_msg1);
   ASSERT_EQ(public_username, vbpm1.sender());
-  ASSERT_EQ(packethandler::ADD_CONTACT_RESPONSE, vbpm1.type());
+  ASSERT_EQ(packethandler::INSTANT_MSG, vbpm1.type());
   ASSERT_TRUE(ci_ret1.ParseFromString(vbpm1.message()));
   ASSERT_EQ(ci_ret1.name(), "Danbert");
   ASSERT_EQ(ci_ret1.birthday(), "19/01/1960");

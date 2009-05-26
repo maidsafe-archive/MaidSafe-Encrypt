@@ -92,7 +92,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   std::string enc_msg = cry_obj.SymmEncrypt("msj tonto", "",
     maidsafe_crypto::STRING_STRING, "key");
   bp_msg.set_aesenc_message(enc_msg);
-  bp_msg.set_type(packethandler::GENERAL);
+  bp_msg.set_type(packethandler::INSTANT_MSG);
   std::string ser_bp_msg;
   bp_msg.SerializeToString(&ser_bp_msg);
   gp_msg.set_data(ser_bp_msg);
@@ -101,7 +101,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   gp_msg.SerializeToString(&ser_msg);
   ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, sender, type));
   ASSERT_EQ("non authuser", sender);
-  ASSERT_EQ(packethandler::GENERAL, type);
+  ASSERT_EQ(packethandler::INSTANT_MSG, type);
 
   std::string sender_id = cry_obj.Hash(rsakp.public_key()+signed_public_key,
     "", maidsafe_crypto::STRING_STRING, true);
@@ -114,7 +114,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   gp_msg.SerializeToString(&ser_msg);
   ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, sender, type));
   ASSERT_EQ(sender_id, sender);
-  ASSERT_EQ(packethandler::GENERAL, type);
+  ASSERT_EQ(packethandler::INSTANT_MSG, type);
   std::string ser_bp_updated;
   ASSERT_FALSE(vbph.AddMessage(ser_bp, ser_msg, signed_public_key,
                &ser_bp_updated));

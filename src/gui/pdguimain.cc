@@ -444,7 +444,8 @@ void pdguiFrame::Ontxt_passwordText(wxCommandEvent& event) {  // NOLINT
         if (maidsafe::SessionSingleton::getInstance()->Mounted() == 0) {
           int n =
             maidsafe::ClientController::getInstance()->HandleMessages(&msgs);
-          n = maidsafe::ClientController::getInstance()->InstantMessageCount();
+//          n = maidsafe::ClientController::getInstance()->InstantMessageCount();
+          n = 22;
           std::string message_cnt("New messages: " + base::itos(n));
           SetStatusText(wxString::FromAscii(message_cnt.c_str()), 2);
           AddLoggedInPanels(1);

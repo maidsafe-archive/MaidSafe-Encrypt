@@ -537,7 +537,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
     maidsafe_crypto::STRING_STRING));
   bpmsg.set_aesenc_message(crypto_obj.SymmEncrypt("test msg", "",
     maidsafe_crypto::STRING_STRING, key));
-  bpmsg.set_type(packethandler::GENERAL);
+  bpmsg.set_type(packethandler::INSTANT_MSG);
   bpmsg.set_sender_public_key(mpidsender_pubkey);
   std::string ser_bpmsg;
   bpmsg.SerializeToString(&ser_bpmsg);

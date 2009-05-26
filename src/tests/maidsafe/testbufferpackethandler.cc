@@ -391,7 +391,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   bpm.set_sender_public_key(rsa_obj.public_key());
   bpm.set_aesenc_message("mensaje tonto");
   bpm.set_rsaenc_key("AES_key");
-  bpm.set_type(packethandler::SHARE);
+  bpm.set_type(packethandler::INSTANT_MSG);
   std::string ser_msg;
   bpm.SerializeToString(&ser_msg);
 
@@ -423,7 +423,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   bpm.set_sender_id(usuarios[1]);
   bpm.clear_aesenc_message();
   bpm.set_aesenc_message("mensaje tonto ver2");
-  bpm.set_type(packethandler::SHARE);
+  bpm.set_type(packethandler::INSTANT_MSG);
   bpm.SerializeToString(&ser_msg);
 
   packethandler::GenericPacket gp_msg1;
@@ -500,7 +500,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   bpm.set_sender_public_key(rsa_obj.public_key());
   bpm.set_aesenc_message("mensaje tonto");
   bpm.set_rsaenc_key("AES_key");
-  bpm.set_type(packethandler::SHARE);
+  bpm.set_type(packethandler::INSTANT_MSG);
   std::string ser_msg;
   bpm.SerializeToString(&ser_msg);
 
@@ -743,7 +743,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
                                          maidsafe_crypto::STRING_STRING,
                                          "AES_key");
     bpm.set_aesenc_message(enc_msgs[i]);
-    bpm.set_type(packethandler::SHARE);
+    bpm.set_type(packethandler::INSTANT_MSG);
     std::string ser_msg;
     bpm.SerializeToString(&ser_msg);
 
@@ -899,7 +899,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
                                          maidsafe_crypto::STRING_STRING,
                                          "AES_key");
     bpm.set_aesenc_message(enc_msgs[i]);
-    bpm.set_type(packethandler::SHARE);
+    bpm.set_type(packethandler::INSTANT_MSG);
     std::string ser_msg;
     bpm.SerializeToString(&ser_msg);
 
