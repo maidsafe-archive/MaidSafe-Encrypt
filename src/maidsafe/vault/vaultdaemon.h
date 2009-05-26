@@ -49,6 +49,7 @@ class VaultDaemon {
     TakeOwnership();
   }
   ~VaultDaemon();
+  void Status();
  private:
   // Start vaultdaemon without an owner.  Once config file is located and read
   // owner of PMID in config file now owns the vault.

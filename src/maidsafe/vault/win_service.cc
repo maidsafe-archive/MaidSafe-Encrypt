@@ -30,7 +30,7 @@
 #include "maidsafe/vault/vaultdaemon.h"
 
 #define LOGFILE "VaultService.txt"
-const int kSleepTime = 10000;
+const int kSleepTime = 10000;  // milliseconds
 
 int WriteToLog(char* str) {
   FILE* log;
@@ -129,6 +129,7 @@ void ServiceMain() {
 //      SetServiceStatus(hStatus, &ServiceStatus);
 //      return;
 //    }
+    vault_daemon_.Status();
     Sleep(kSleepTime);
   }
   return;

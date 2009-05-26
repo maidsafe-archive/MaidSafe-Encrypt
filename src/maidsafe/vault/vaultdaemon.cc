@@ -42,6 +42,11 @@ VaultDaemon::~VaultDaemon() {
 }
 
 
+void VaultDaemon::Status() {
+  std::string out = base::itos(pdvault_->host_port()) + " - OK";
+  WriteToLog(out);
+}
+
 void VaultDaemon::TakeOwnership() {
   std::string init_ = "VaultDaemon starting  ";
   boost::posix_time::ptime now_ = boost::posix_time::second_clock::local_time();

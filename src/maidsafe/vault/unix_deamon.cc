@@ -109,7 +109,8 @@ int main(int argc, char* argv[]) {
   while (1) {
     /* Do some task here ... */
     /* we should check vaultdeamon still running */
-    sleep(30); /* wait 30 seconds */
+    vault_daemon_.Status();
+    sleep(10);  /* wait 10 seconds */
   }
   exit(EXIT_SUCCESS);
 }
