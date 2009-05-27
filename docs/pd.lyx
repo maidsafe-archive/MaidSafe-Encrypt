@@ -1948,6 +1948,11 @@ To achive reliability of data where multiple copies may exist and be altered
  
 \end_layout
 
+\begin_layout Standard
+Two locks in collision (which can still happen) are compared for rank and
+ the highest rank gets the lock, the lower of the two gets the NACK.
+\end_layout
+
 \begin_layout Section
 Vaults
 \begin_inset CommandInset label
