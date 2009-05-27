@@ -201,7 +201,14 @@ void Shares::init()
 
 void Shares::addShare( const QString& shareName )
 {
-    ui_.listWidget->addItem( shareName );
+    bool b = true;
+    for (int n = 0; n < ui_.listWidget->count(); n++) {
+      QString *qs = (QString *)ui_.listWidget->item(n);
+      if ( *qs == shareName)
+        b = false;
+    }
+    if (b)
+      ui_.listWidget->addItem( shareName );
 }
 
 void Shares::onAddedPrivateShare(const QString &name) {

@@ -773,12 +773,15 @@ int SEHandler::EncryptDm(const std::string &dir_path,
   // The following function sets parent_key_ to MSID public key if msid != ""
   // otherwise it sets it to the dir key of the parent folder
   GetDirKeys(dir_path, msid, &key_, &parent_key_);
-#ifdef DEBUG
-  printf("In EncryptDm dir_path: %s\tkey_: %s\tparent_key_: %s\n",
-          dir_path.c_str(), key_.c_str(), parent_key_.c_str());
-#endif
+
   enc_hash_ = SHA512(parent_key_ + key_, false);
   xor_hash_ = SHA512(key_ + parent_key_, false);
+#ifdef DEBUG
+  if (msid != "") {
+    printf("In EncryptDm dir_path: %s\nkey_: %s\nparent_key_: %s\nenc_hash_: %s\n",
+          dir_path.c_str(), key_.c_str(), parent_key_.c_str(), enc_hash_.c_str());
+  }
+#endif
   while (xor_hash_extended_.size() < ser_dm.size())
     xor_hash_extended_.append(xor_hash_);
   xor_hash_extended_ = xor_hash_extended_.substr(0, ser_dm.size());

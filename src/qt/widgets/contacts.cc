@@ -72,8 +72,8 @@ Contacts::Contacts( QWidget* parent )
                    SIGNAL( addedContact( const QString& ) ),
              this, SLOT( onAddedContact( const QString& ) ) );
 
-    connect( ui_.listWidget, SIGNAL( itemSelectionChanged() ),
-             this,           SLOT( onItemSelectionChanged() ) );
+    connect( ui_.listWidget, SIGNAL( itemDoubleClicked( QListWidgetItem* ) ),
+             this,           SLOT( onItemDoubleClicked( QListWidgetItem* ) ) );
 
     connect( ui_.listWidget, SIGNAL( itemSelectionChanged() ),
              this,           SLOT( onItemSelectionChanged() ) );

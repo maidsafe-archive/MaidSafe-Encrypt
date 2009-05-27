@@ -274,7 +274,7 @@ const int kCheckPartnerRefDelay(300);  // 5 minutes
 const std::string kValidityCheckClean("C");
 const std::string kValidityCheckDirty("D");
 const int kValidityCheckRetry(2);  // retries for validity check (timeouts)
-const int kMinChunkCopies(4);
+const int kMinChunkCopies(1);
 const int kMaxPingRetries(2);  // max number of ping tries
 const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
 const int kMaxChunkStoreRetries(10);  // max number of tries to store or update

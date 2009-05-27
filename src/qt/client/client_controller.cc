@@ -129,6 +129,7 @@ ShareList ClientController::shares() const
     std::list<maidsafe::PrivateShare> ps_list;
     const int n = maidsafe::ClientController::getInstance()
                     ->GetShareList( &ps_list, "" );
+    qDebug() << ps_list.size();
     if ( n == 0 )
     {
         while ( !ps_list.empty() )
@@ -150,15 +151,15 @@ ShareList ClientController::shares() const
                 const QString name = QString::fromStdString( I->id );
                 const char role = I->role;
                 Share::Permissions permissions = Share::NONE;
-                if ( role == 'A' )
+                if ( role == 'A' ) {
                     permissions = Share::Permissions(Share::READ | Share::WRITE);
-                else if ( role == 'R' )
+                } else if ( role == 'R' ) {
                     permissions = Share::READ;
-
+                }
                 share.addParticipant( name, permissions );
 
-                rv.push_back( share );
             }
+            rv.push_back( share );
         }
     }
 

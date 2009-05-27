@@ -1757,6 +1757,7 @@ int ClientController::CreateNewShare(const std::string &name,
 
 #ifdef DEBUG
   printf("Public key: %s\n", cmsidr.public_key().c_str());
+  printf("MSID: %s\n", cmsidr.name().c_str());
 #endif
   // MSID & keys are needed here
   attributes.push_back(cmsidr.name());
