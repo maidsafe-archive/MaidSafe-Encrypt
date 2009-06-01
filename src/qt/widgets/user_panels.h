@@ -77,6 +77,8 @@ private slots:
     //! Notification from the Public Username panel that a username was set
     void onPublicUsernameChosen();
 
+    //! 'My Files' button has been clicked
+    void onMyFilesClicked();
 
 private:
     void activatePanel( int i, bool );

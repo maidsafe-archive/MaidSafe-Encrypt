@@ -27,6 +27,7 @@
 #include "contacts.h"
 #include "public_username.h"
 #include "qt/client/client_controller.h"
+#include "qt/client/user_space_filesystem.h"
 
 namespace
 {
@@ -64,6 +65,9 @@ UserPanels::UserPanels( QWidget* parent )
 
     connect( public_username_, SIGNAL( complete() ),
              this,      SLOT( onPublicUsernameChosen() ) );
+
+     connect( ui_.my_files_button, SIGNAL( clicked( bool ) ),
+             this,      SLOT( onMyFilesClicked() ) );
 }
 
 UserPanels::~UserPanels()
@@ -78,6 +82,14 @@ void UserPanels::onPublicUsernameChosen()
 {
     ui_.listWidget->setEnabled( true );
     onCurrentRowChanged( ui_.stackedWidget->indexOf( contacts_ ) );
+
+    ui_.user_public_username->setText( ClientController::instance()->publicUsername() );
+    ui_.my_files_button->setEnabled( true );
+}
+
+void UserPanels::onMyFilesClicked()
+{
+    UserSpaceFileSystem::instance()->explore( UserSpaceFileSystem::MY_FILES );
 }
 
 void UserPanels::onCurrentRowChanged( int i )
@@ -116,6 +128,8 @@ void UserPanels::setActive( bool active )
         {
             ui_.listWidget->setEnabled( false );
             onCurrentRowChanged( ui_.stackedWidget->indexOf( public_username_ ) );
+            ui_.user_public_username->clear();
+            ui_.my_files_button->setEnabled( false );
         }
         else
         {
@@ -129,6 +143,9 @@ void UserPanels::setActive( bool active )
         {
             panel->reset();
         }
+
+        ui_.user_public_username->clear();
+        ui_.my_files_button->setEnabled( false );
     }
 }
 
