@@ -276,10 +276,11 @@ void Contacts::onSendMessageClicked()
 
     if ( ClientController::instance()->sendInstantMessage( text, contact_->publicName() ) )
     {
-        QMessageBox::information( this,
-                                  tr( "Success!"),
-                                  tr( "Message sent to: %1" ).arg( contact_->publicName() )
-                                );
+        qDebug() << "Message sent to:" << contact_->publicName();
+        //QMessageBox::information( this,
+        //                          tr( "Success!"),
+        //                          tr( "Message sent to: %1" ).arg( contact_->publicName() )
+        //                        );
     }
     else
     {

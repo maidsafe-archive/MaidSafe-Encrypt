@@ -24,6 +24,7 @@
 // generated
 #include "ui_pd.h"
 
+class QLabel;
 class Login;
 class CreateUser;
 class UserPanels;
@@ -94,6 +95,8 @@ private slots:
 
     void onShareReceived( const QString&, const QString& );
     void onFileReceived( const QString&, const QString& );
+
+    void onUnreadMessagesChanged( int count );
 private:
     Ui::PerpetualData ui_;
 
@@ -152,6 +155,9 @@ private:
 
     //! User level pages - shown once logged in
     UserPanels* userPanels_;
+
+    //! Status bar label for message count
+    QLabel* message_status_;
 
     //! Switch between different application states
     void setState( State state );

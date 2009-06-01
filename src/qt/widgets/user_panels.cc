@@ -75,7 +75,7 @@ UserPanels::~UserPanels()
 
 void UserPanels::onMessageReceived()
 {
-    // TODO set message in the status bar
+    emit unreadMessages( messages_->unreadMessages() );
 }
 
 void UserPanels::onPublicUsernameChosen()

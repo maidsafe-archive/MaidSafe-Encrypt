@@ -66,6 +66,8 @@ public:
     void setActive( bool active );
 
 signals:
+    //! Notify a change in the number of unread messages
+    void unreadMessages( int );
 
 private slots:
     //! User has chosen a different panel

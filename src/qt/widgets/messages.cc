@@ -21,6 +21,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QScrollBar>
+#include <QDebug>
 
 //
 #include "maidsafe/client/contacts.h"
@@ -99,6 +100,7 @@ void Messages::setActive( bool b )
     {
         unread_ = 0;
         updateHtml();
+        emit messageReceived();
     }
 }
 
@@ -141,6 +143,9 @@ void Messages::onMessageReceived( ClientController::MessageType,
     {
         ++unread_;
     }
+
+    qDebug() << "Messages::onMessageReceived:" << sender << message
+             << "Unread:" << unread_;
 
     addMessage( time, sender, message );
 

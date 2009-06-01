@@ -41,6 +41,7 @@ PerpetualData::PerpetualData( QWidget* parent )
     : QMainWindow( parent )
     , login_( NULL )
     , create_( NULL )
+    , message_status_( NULL )
     , state_( LOGIN )
     , quitting_( false )
 {
@@ -50,7 +51,7 @@ PerpetualData::PerpetualData( QWidget* parent )
     ui_.setupUi( this );
 
     statusBar()->show();
-    //statusBar()->showMessage( "Status" );
+    statusBar()->addPermanentWidget( message_status_ = new QLabel );
 
     createActions();
 
@@ -201,6 +202,8 @@ void PerpetualData::setState( State state )
     case LOGGED_IN:
     {
         ui_.stackedWidget->setCurrentWidget( userPanels_ );
+        connect( userPanels_, SIGNAL( unreadMessages( int ) ),
+                 this,        SLOT( onUnreadMessagesChanged( int ) ) );
         userPanels_->setActive( true );
         break;
     }
@@ -227,6 +230,11 @@ void PerpetualData::setState( State state )
     {
         break;
     }
+    }
+
+    if ( state != LOGGED_IN )
+    {
+        message_status_->clear();
     }
 }
 
@@ -499,5 +507,28 @@ void PerpetualData::onFileReceived( const QString& from,
                       .arg( from ).arg( file_name );
 
     SystemTrayIcon::instance()->showMessage( title, message );
+}
+
+void PerpetualData::onUnreadMessagesChanged( int count )
+{
+    qDebug() << "PerpetualData::onUnreadMessagesChanged:" << count;
+    QString text;
+    if ( state_ == LOGGED_IN )
+    {
+        if ( count == 0 )
+        {
+            text = tr( "No unread messages" );
+        }
+        else if ( count == 1 )
+        {
+            text = tr( "1 unread message" );
+        }
+        else
+        {
+            text = tr( "%n unread messages", "", count );
+        }
+    }
+
+    message_status_->setText( text );
 }
 
