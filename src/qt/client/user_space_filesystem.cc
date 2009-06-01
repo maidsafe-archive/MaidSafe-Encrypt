@@ -180,24 +180,36 @@ void UserSpaceFileSystem::explore( Location l, QString subDir )
         dir = ClientController::instance()->shareDirRoot( subDir );
     }
 
-    //QDesktopServices::openUrl( QUrl( dir.absolutePath() ) );
 
 #ifdef MAIDSAFE_WIN32
     // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
+    // invoking using QProcess doesn't work if the path has spaces in the name
+    // so we need to go old skool...
+    QString operation( "explore" );
+    quintptr returnValue;
+    QT_WA(
+        {
+            returnValue = (quintptr)ShellExecute(0,
+                                                (TCHAR *)operation.utf16(),
+                                                (TCHAR *)dir.absolutePath().utf16(),
+                                                0,
+                                                0,
+                                                SW_SHOWNORMAL);
+        } ,
+        {
+            returnValue = (quintptr)ShellExecuteA(0,
+                                                  operation.toLocal8Bit().constData(),
+                                                  dir.absolutePath().toLocal8Bit().constData(),
+                                                  0,
+                                                  0,
+                                                  SW_SHOWNORMAL);
+        }
+    );
 
-    // TODO: doesn't like spaces in the name
-    QString app( "explorer.exe" );
-    QStringList args;
-    args <<  "/e" << QString( "/root,%1" ).arg( dir.absolutePath().replace( "/", "\\" ) );
-
-    qDebug() << "explore:" << app << args;
-
-    if ( !QProcess::startDetached( app, args ) )
+    if ( returnValue <= 32 )
     {
-        qWarning() << "PerpetualData::failed to start"
-                   << app
-                   << "with args"
-                   << args;
+        qWarning() << "UserSpaceFileSystem::explore: failed to open"
+                   << dir.absolutePath();
     }
 
 #else
@@ -210,7 +222,7 @@ void UserSpaceFileSystem::explore( Location l, QString subDir )
 
     if ( !QProcess::startDetached( app, args ) )
     {
-        qWarning() << "PerpetualData::failed to start"
+        qWarning() << "UserSpaceFileSystem::explore: failed to start"
                    << app
                    << "with args"
                    << args;
