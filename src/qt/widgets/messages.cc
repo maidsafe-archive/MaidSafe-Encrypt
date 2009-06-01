@@ -26,8 +26,7 @@
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/clientcontroller.h"
 
-// local
-#include "qt/client/client_controller.h"
+
 
 
 namespace
@@ -70,11 +69,13 @@ Messages::Messages( QWidget* parent )
     ui_.textBrowser->setOpenExternalLinks( true );
 
     connect( ClientController::instance(),
-             SIGNAL( messageReceived( const QDateTime&,
+             SIGNAL( messageReceived( ClientController::MessageType,
+                                      const QDateTime&,
                                       const QString&,
                                       const QString& ) ),
              this,
-             SLOT( onMessageReceived( const QDateTime&,
+             SLOT( onMessageReceived( ClientController::MessageType,
+                                      const QDateTime&,
                                       const QString&,
                                       const QString& ) ) );
 
@@ -131,7 +132,8 @@ int Messages::totalMessages() const
 }
 
 
-void Messages::onMessageReceived( const QDateTime& time,
+void Messages::onMessageReceived( ClientController::MessageType,
+                                  const QDateTime& time,
                                   const QString& sender,
                                   const QString& message )
 {

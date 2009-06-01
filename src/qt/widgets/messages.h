@@ -19,10 +19,12 @@
 #include <QDateTime>
 #include <QTimer>
 
-// local
+// core
 #include "protobuf/packet.pb.h"
 
+// local
 #include "panel.h"
+#include "qt/client/client_controller.h"
 
 // generated
 #include "ui_user_messages_panel.h"
@@ -63,9 +65,10 @@ signals:
     void messageReceived();
 
 private slots:
-    void onMessageReceived( const QDateTime& time,
-                     const QString& sender,
-                     const QString& message );
+    void onMessageReceived( ClientController::MessageType,
+                            const QDateTime& time,
+                            const QString& sender,
+                            const QString& message );
 
 private:
     void addMessage( const QDateTime& time,

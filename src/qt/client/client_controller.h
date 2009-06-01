@@ -120,13 +120,27 @@ public:
                           const QString& txt,
                           const QString& to );
 
+    enum MessageType
+    {
+        TEXT,             //! Instant message received from someone
+        SHARE,            //! Someone has shared something
+        FILE,             //! Someone has sent a file
+        CONTACT_REQUEST,  //! Someone has requested to add us
+        CONTACT_RESPONSE  //! Someone has responed to our request
+    };
+
 signals:
     //! A message has been received.
-    void messageReceived( const QDateTime& time,
+    void messageReceived( ClientController::MessageType type,
+                          const QDateTime& time,
                           const QString& from,
                           const QString& msg );
 
     //! We've added a contact
+    /*!
+        Note that at this point the contact may not yet have responded
+        to our request.
+    */
     void addedContact( const QString& name );
 
     //! We've added a private share
@@ -226,10 +240,13 @@ private:
         handles:
          contacts added
          private shares added
+
+        emits:
+            contactAdded
+            privateShareAdded
+            messageReceived
     */
-    int analyseMessage(
-      const packethandler::InstantMessage& im,
-      QString *sender, QString *message);
+    int analyseMessage( const packethandler::InstantMessage& im );
     class ClientControllerImpl;
     ClientControllerImpl* impl_;
 };

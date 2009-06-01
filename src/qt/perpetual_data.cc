@@ -27,8 +27,8 @@
 #include "widgets/create_user.h"
 #include "widgets/progress.h"
 #include "widgets/user_panels.h"
+#include "widgets/system_tray_icon.h"
 
-#include "client/client_controller.h"
 #include "client/mount_thread.h"
 #include "client/create_user_thread.h"
 #include "client/user_space_filesystem.h"
@@ -70,6 +70,25 @@ PerpetualData::PerpetualData( QWidget* parent )
     setCentralWidget( ui_.stackedWidget );
 
     setState( LOGIN );
+
+    connect( ClientController::instance(),
+             SIGNAL( messageReceived( ClientController::MessageType,
+                                      const QDateTime&,
+                                      const QString&,
+                                      const QString& ) ),
+             this,
+             SLOT( onMessageReceived( ClientController::MessageType,
+                                      const QDateTime&,
+                                      const QString&,
+                                      const QString& ) ) );
+
+    connect( ClientController::instance(),
+                   SIGNAL( shareReceived( const QString&, const QString& ) ),
+             this, SLOT( onShareReceived( const QString&, const QString& ) ) );
+
+    connect( ClientController::instance(),
+                   SIGNAL( fileReceived( const QString&, const QString& ) ),
+             this, SLOT( onFileReceived( const QString&, const QString& ) ) );
 }
 
 PerpetualData::~PerpetualData()
@@ -362,6 +381,12 @@ void PerpetualData::onLogout()
     setState( LOGGING_OUT );
 }
 
+void PerpetualData::quit()
+{
+    showNormal();
+    onQuit();
+}
+
 void PerpetualData::onQuit()
 {
     // \TODO: confirm quit if something in progress - chats etc
@@ -440,5 +465,39 @@ void PerpetualData::onApplicationActionTriggered()
                    << "for action"
                    << action->text();
     }
+}
+
+void PerpetualData::onMessageReceived( ClientController::MessageType type,
+                                  const QDateTime& time,
+                                  const QString& sender,
+                                  const QString& detail )
+{
+    if ( type == ClientController::TEXT )
+    {
+        QString title = tr( "Message received" );
+        QString message = tr( "'%1' said: %2" ).arg( sender ).arg( detail );
+
+        SystemTrayIcon::instance()->showMessage( title, message );
+    }
+}
+
+void PerpetualData::onShareReceived( const QString& from,
+                                     const QString& share_name)
+{
+    QString title = tr( "Share received" );
+    QString message = tr( "'%1' has shared '%2' with you" )
+                      .arg( from ).arg( share_name );
+
+    SystemTrayIcon::instance()->showMessage( title, message );
+}
+
+void PerpetualData::onFileReceived( const QString& from,
+                                     const QString& file_name)
+{
+    QString title = tr( "File received" );
+    QString message = tr( "'%1' has shared the file '%2' with you" )
+                      .arg( from ).arg( file_name );
+
+    SystemTrayIcon::instance()->showMessage( title, message );
 }
 

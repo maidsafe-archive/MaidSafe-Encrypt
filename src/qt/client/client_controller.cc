@@ -413,76 +413,90 @@ void ClientController::checkForMessages()
     std::list<packethandler::InstantMessage> temp = msgs;
     while ( !temp.empty() )
     {
-        const packethandler::InstantMessage& im = temp.front();
-
-        const QDateTime time = QDateTime::currentDateTime();
-        QString sender;
-        QString message;
-        analyseMessage(im, &sender, &message);
-
-        emit messageReceived( time, sender, message );
-
+        analyseMessage( temp.front() );
         temp.pop_front();
     }
 }
 
-int ClientController::analyseMessage( const packethandler::InstantMessage& im,
-                                      QString *sender,
-                                      QString *message)
+int ClientController::analyseMessage( const packethandler::InstantMessage& im )
 {
-  int n = 0;
-  if (im.has_contact_notification())
-  {
-    qDebug() << "HANDLING Cntact Notification";
-    packethandler::ContactNotification cn = im.contact_notification();
-    packethandler::ContactInfo ci;
-    if ( cn.has_contact() )
-      ci = cn.contact();
-
-    switch (cn.action())
+    MessageType type = TEXT;
+    int n = 0;
+    if ( im.has_contact_notification() )
     {
-      // ADD REQUEST
-      case 0:
-      {
-          n = maidsafe::ClientController::getInstance()->
-                  HandleAddContactRequest(ci, im.sender());
-          if (n == 0)
-          {
-            QString qs = QString::fromStdString( im.sender() );
-            emit addedContact(qs);
-          }
-          break;
-      }
-      // ADD RESPONSE
-      case 1:
-      {
-          qDebug() << "HANDLING AddContactResponse";
-          n = maidsafe::ClientController::getInstance()->
-              HandleAddContactResponse(ci, im.sender());
-          break;
-      }
+        qDebug() << "HANDLING Contact Notification";
+        packethandler::ContactNotification cn = im.contact_notification();
+        packethandler::ContactInfo ci;
+        if ( cn.has_contact() )
+          ci = cn.contact();
+
+        switch (cn.action())
+        {
+        // ADD REQUEST - we have requested to add a user
+        case 0:
+        {
+            n = maidsafe::ClientController::getInstance()->
+                                    HandleAddContactRequest( ci, im.sender() );
+            if (n == 0)
+            {
+                emit addedContact( QString::fromStdString( im.sender() ) );
+                type = CONTACT_REQUEST;
+            }
+            break;
+        }
+        // ADD RESPONSE - a user has responded to our add request
+        case 1:
+        {
+            qDebug() << "HANDLING AddContactResponse";
+            n = maidsafe::ClientController::getInstance()->
+                                    HandleAddContactResponse( ci, im.sender() );
+
+            type = CONTACT_RESPONSE;
+            break;
+        }
+        }
     }
-  }
-  else if (im.has_instantfile_notification())
-  {
-    n = maidsafe::ClientController::getInstance()->
-        AddInstantFile(im.instantfile_notification(), "");
-  }
-  else if (im.has_privateshare_notification())
-  {
-    n = maidsafe::ClientController::getInstance()->
-        HandleReceivedShare(im.privateshare_notification(), "");
-    packethandler::PrivateShareNotification psn =
-      im.privateshare_notification();
-    if (n == 0)
+    else if ( im.has_instantfile_notification() )
     {
-        QString qs = QString::fromStdString( psn.name() );
-        emit addedPrivateShare( qs );
+        n = maidsafe::ClientController::getInstance()->
+                            AddInstantFile( im.instantfile_notification(), "" );
+
+        if ( n == 0 )
+        {
+            packethandler::InstantFileNotification ifn =
+                                                im.instantfile_notification();
+
+            emit fileReceived( QString::fromStdString( im.sender() ),
+                            QString::fromStdString( ifn.filename() ) );
+
+            type = FILE;
+        }
     }
-  }
+    else if ( im.has_privateshare_notification() )
+    {
+        // we have added a new private share
+        // \TODO what about someone else adding us to one og their shares?
+        n = maidsafe::ClientController::getInstance()->
+                        HandleReceivedShare(im.privateshare_notification(), "");
+        if ( n == 0)
+        {
+            packethandler::PrivateShareNotification psn =
+                                                im.privateshare_notification();
+            emit addedPrivateShare( QString::fromStdString( psn.name() ) );
+            type = SHARE;
+        }
+    }
 
-  *message = QString::fromStdString( im.message() );
-  *sender = QString::fromStdString( im.sender() );
 
-  return n;
+    QDateTime time = QDateTime::currentDateTime();
+    if ( im.has_date() )
+    {
+        time = QDateTime::fromTime_t( im.date() );
+    }
+    const QString message = QString::fromStdString( im.message() );
+    const QString sender = QString::fromStdString( im.sender() );
+
+    emit messageReceived( type, time, sender, message );
+
+    return n;
 }

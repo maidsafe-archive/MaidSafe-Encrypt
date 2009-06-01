@@ -62,7 +62,7 @@ int main( int argc, char *argv[] )
     app.setQuitOnLastWindowClosed( false );
 
     QObject::connect( SystemTrayIcon::instance(), SIGNAL( quit() ),
-                      qApp,                       SLOT(   quit() ) );
+                      &pd,                        SLOT(   quit() ) );
     QObject::connect( SystemTrayIcon::instance(), SIGNAL( open() ),
                       &pd,                        SLOT(   show() ) );
     QObject::connect( SystemTrayIcon::instance(), SIGNAL( close() ),

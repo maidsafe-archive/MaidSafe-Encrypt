@@ -18,6 +18,9 @@
 // qt
 #include <QMainWindow>
 
+// local
+#include "client/client_controller.h"
+
 // generated
 #include "ui_pd.h"
 
@@ -53,6 +56,9 @@ public:
     PerpetualData( QWidget* parent = 0 );
     virtual ~PerpetualData();
 
+public slots:
+    void quit();
+
 private slots:
     //! Existing user logging in.
     void onLoginExistingUser();
@@ -81,7 +87,13 @@ private slots:
     void onMyFiles();
     void onPrivateShares();
 
+    void onMessageReceived( ClientController::MessageType,
+                            const QDateTime& time,
+                            const QString& sender,
+                            const QString& message );
 
+    void onShareReceived( const QString&, const QString& );
+    void onFileReceived( const QString&, const QString& );
 private:
     Ui::PerpetualData ui_;
 
