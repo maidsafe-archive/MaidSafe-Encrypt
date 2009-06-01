@@ -16,6 +16,8 @@
 
 // qt
 #include <QObject>
+#include <QDebug>
+#include <QProcess>
 
 // core
 #include "fs/filesystem.h"
@@ -163,5 +165,58 @@ bool UserSpaceFileSystem::unmount()
     }
 
     return success;
+}
+
+
+void UserSpaceFileSystem::explore( Location l, QString subDir )
+{
+    QDir dir;
+    if ( l == MY_FILES )
+    {
+        dir = ClientController::instance()->myFilesDirRoot( subDir );
+    }
+    else // PRIVATE_SHARES
+    {
+        dir = ClientController::instance()->shareDirRoot( subDir );
+    }
+
+    //QDesktopServices::openUrl( QUrl( dir.absolutePath() ) );
+
+#ifdef MAIDSAFE_WIN32
+    // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
+
+    // TODO: doesn't like spaces in the name
+    QString app( "explorer.exe" );
+    QStringList args;
+    args <<  "/e" << QString( "/root,%1" ).arg( dir.absolutePath().replace( "/", "\\" ) );
+
+    qDebug() << "explore:" << app << args;
+
+    if ( !QProcess::startDetached( app, args ) )
+    {
+        qWarning() << "PerpetualData::failed to start"
+                   << app
+                   << "with args"
+                   << args;
+    }
+
+#else
+    // nautilus FuseHomeDir()/Shares/Private/"name"
+    QString app( "nautilus" );
+    QStringList args;
+    args <<  QString( "%1" ).arg( dir.absolutePath() );
+
+    qDebug() << "explore:" << app << args;
+
+    if ( !QProcess::startDetached( app, args ) )
+    {
+        qWarning() << "PerpetualData::failed to start"
+                   << app
+                   << "with args"
+                   << args;
+    }
+
+#endif
+
 }
 

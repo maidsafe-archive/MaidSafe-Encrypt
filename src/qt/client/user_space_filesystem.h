@@ -44,6 +44,18 @@ public:
     */
     bool unmount();
 
+    enum Location
+    {
+        MY_FILES,
+        PRIVATE_SHARES
+    };
+
+    //! Explore a filesystem location
+    /*!
+
+    */
+    void explore( Location l, QString subDir = QString() );
+
 private:
     explicit UserSpaceFileSystem( QObject* parent = 0 );
     virtual ~UserSpaceFileSystem();

@@ -45,9 +45,6 @@ private slots:
     void onItemDoubleClicked( QListWidgetItem* );
     void onAddedPrivateShare( const QString &name );
 
-signals:
-    void addedPrivateShare( const QString &name );
-
 private:
     //! Initialize the display of a user's shares
     void init();

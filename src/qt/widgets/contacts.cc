@@ -140,8 +140,7 @@ void Contacts::onAddContactClicked()
 {
     const QString contact_name = ui_.contactLineEdit->text().trimmed();
 
-    if (ui_.contactLineEdit->text().trimmed().toStdString() ==
-        maidsafe::SessionSingleton::getInstance()->PublicUsername())
+    if ( contact_name == ClientController::instance()->publicUsername() )
     {
       QMessageBox::warning( this,
                             tr( "Recommendation" ),
@@ -382,7 +381,8 @@ Contact* Contacts::currentContact()
     return NULL;
 }
 
-void Contacts::onAddedContact(const QString &name) {
-  qDebug() << "Contacts::onAddedContact()";
-  addContact( new Contact( name ) );
+void Contacts::onAddedContact(const QString &name)
+{
+    qDebug() << "Contacts::onAddedContact()";
+    addContact( new Contact( name ) );
 }

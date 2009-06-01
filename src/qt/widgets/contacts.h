@@ -53,9 +53,6 @@ private slots:
 
     void onAddedContact( const QString &name );
 
-signals:
-    void addedContact( const QString &name );
-
 private:
     //! Add a new entry in the listing of contacts
     void addContact( Contact* );

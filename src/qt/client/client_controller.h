@@ -121,10 +121,15 @@ public:
                           const QString& to );
 
 signals:
+    //! A message has been received.
     void messageReceived( const QDateTime& time,
                           const QString& from,
                           const QString& msg );
+
+    //! We've added a contact
     void addedContact( const QString& name );
+
+    //! We've added a private share
     void addedPrivateShare( const QString& name );
 
     //! A contact's status has changed
@@ -215,7 +220,14 @@ private slots:
 private:
     explicit ClientController( QObject* parent = 0 );
     virtual ~ClientController();
-    int analiseMessage(
+
+    //! Analyse an instanst message and emit the appropriate signals
+    /*!
+        handles:
+         contacts added
+         private shares added
+    */
+    int analyseMessage(
       const packethandler::InstantMessage& im,
       QString *sender, QString *message);
     class ClientControllerImpl;
