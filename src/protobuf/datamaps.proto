@@ -12,13 +12,6 @@ enum itemtype {
   UNKNOWN = 8;
 };
 
-enum ShareOperation {
-  SHARE_ADD = 0;
-  SHARE_REMOVE = 1;
-  SHARE_ADD_ITEM = 2;
-  SHARE_DEL_ITEM = 3;
-};
-
 enum PacketType {
   ANMID = 0;
   ANTMID = 1;
@@ -59,45 +52,10 @@ message MetaDataMap {
   optional int32 last_access = 11;
 }
 
-message MetaData {
-  required bytes ms_path = 1;
-  required bytes file_hash = 2;
-  optional bytes stats = 3;
-  optional int32 file_size = 4;
-  optional bytes outname = 5;
-}
-
-
 message Chunk {
   optional bytes compression_type = 1;
   repeated bytes chunklet = 2;
   repeated int32 pre_compression_chunklet_size_ = 3;
-}
-
-
-message ShareFromMe {
-  required int32 share_id = 1;
-  required bytes share_name = 2;
-  optional bytes owner = 3;
-  repeated int32 meta_data_map_id = 4;
-  repeated bytes users = 5;
-}
-
-message ShareToMe {
-  required int32 share_id = 1;
-  required bytes share_name = 2;
-  required bytes owner = 3;
-  repeated MetaDataMap mdms = 4;
-  repeated DataMap dms = 5;
-}
-
-message ShareToMeBufferMessage {
-  required int32 share_id = 1;
-  optional bytes share_name = 2;
-  required bytes owner = 3;
-  required ShareOperation op = 4;
-  repeated MetaDataMap mdms = 5;
-  repeated DataMap dms = 6;
 }
 
 message DataAtlas {
@@ -105,8 +63,4 @@ message DataAtlas {
   repeated Key keys = 2;
   repeated MetaDataMap mdms = 3;
   repeated DataMap dms = 4;
-  repeated ShareFromMe offered_share = 5;
-  repeated ShareToMe accepted_share = 6;
 }
-
-

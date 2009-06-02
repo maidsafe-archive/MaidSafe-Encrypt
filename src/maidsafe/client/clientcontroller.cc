@@ -126,24 +126,43 @@ bool ClientController::JoinKademlia() {
 }
 
 int ClientController::ParseDa() {
-  DataAtlas data_atlas_;
-  data_atlas_.ParseFromString(ser_da_);
-  ss_->SetRootDbKey(data_atlas_.root_db_key());
-  DataMap dm_root_, dm_keys_, dm_shares_;
-  dm_root_ = data_atlas_.dms(0);
-  dm_keys_ = data_atlas_.dms(1);
-  dm_shares_ = data_atlas_.dms(2);
-  std::string ser_dm_root_, ser_dm_keys_, ser_dm_shares_;
-  dm_root_.SerializeToString(&ser_dm_root_);
-  dm_keys_.SerializeToString(&ser_dm_keys_);
-  dm_shares_.SerializeToString(&ser_dm_shares_);
+  DataAtlas data_atlas;
+  if (!data_atlas.ParseFromString(ser_da_)) {
+#ifdef DEBUG
+    printf("TMID brought doesn't parse as a DA.\n");
+#endif
+    return -9000;
+  }
+  if (!data_atlas.has_root_db_key()) {
+#ifdef DEBUG
+    printf("DA doesn't have a root db key.\n");
+#endif
+    return -9001;
+  }
+  ss_->SetRootDbKey(data_atlas.root_db_key());
+
+  if (data_atlas.dms_size() < 3) {
+#ifdef DEBUG
+    printf("Not enough datamaps in the DA.\n");
+#endif
+    return -9002;
+  }
+
+  DataMap dm_root, dm_keys, dm_shares;
+  dm_root = data_atlas.dms(0);
+  dm_keys = data_atlas.dms(1);
+  dm_shares = data_atlas.dms(2);
+  std::string ser_dm_root, ser_dm_keys, ser_dm_shares;
+  dm_root.SerializeToString(&ser_dm_root);
+  dm_keys.SerializeToString(&ser_dm_keys);
+  dm_shares.SerializeToString(&ser_dm_shares);
 #ifdef DEBUG
   // printf("ser_dm_root_ = %s\n", ser_dm_root_);
   // printf("ser_dm_keys_ = %s\n", ser_dm_keys_);
 #endif
   int i = seh_->DecryptDb(kRoot,
                           PRIVATE,
-                          ser_dm_root_,
+                          ser_dm_root,
                           "",
                           "",
                           false,
@@ -153,7 +172,7 @@ int ClientController::ParseDa() {
 #endif
   i = seh_->DecryptDb(kKeysDb,
                       PRIVATE,
-                      ser_dm_keys_,
+                      ser_dm_keys,
                       "",
                       "",
                       false,
@@ -163,7 +182,7 @@ int ClientController::ParseDa() {
 #endif
   seh_->DecryptDb(base::TidyPath(kRootSubdir[1][0]),
                   PRIVATE,
-                  ser_dm_shares_,
+                  ser_dm_shares,
                   "",
                   "",
                   false,
@@ -459,34 +478,35 @@ bool ClientController::ValidateUser(const std::string &password,
       ss_->SetConnectionStatus(connection_status);
 
       // GET MESSAGES AND CLEAR THEM
-      CC_CallbackResult cb;
+//      CC_CallbackResult cb;
       ss_->SetPublicKey(dah_->GetPublicKey(out.str()), MPID_BP);
       ss_->SetPrivateKey(dah_->GetPrivateKey(out.str()), MPID_BP);
-      cbph_->GetBufferPacket(MPID_BP, boost::bind(
-          &CC_CallbackResult::CallbackFunc,
-          &cb,
-          _1));
-      WaitForResult(cb);
-      GetMessagesResponse get_bufpacket_result;
-      if ((get_bufpacket_result.ParseFromString(cb.result)) &&
-          (get_bufpacket_result.result() == kCallbackSuccess)) {
-        for (int i = 0; i < get_bufpacket_result.messages_size(); i++)
-          msgs->push_back(get_bufpacket_result.messages(i));
-        int n = msgs->size();
-        // HandleMessages(&msgs);
-        if (n > 0) {
-          cb.Reset();
-          cbph_->ClearMessages(MPID_BP,
-                               boost::bind(&CC_CallbackResult::CallbackFunc,
-                                           &cb,
-                                           _1));
-          WaitForResult(cb);
-        }
-      }
+//      cbph_->GetBufferPacket(MPID_BP, boost::bind(
+//          &CC_CallbackResult::CallbackFunc,
+//          &cb,
+//          _1));
+//      WaitForResult(cb);
+//      GetMessagesResponse get_bufpacket_result;
+//      if ((get_bufpacket_result.ParseFromString(cb.result)) &&
+//          (get_bufpacket_result.result() == kCallbackSuccess)) {
+//        for (int i = 0; i < get_bufpacket_result.messages_size(); i++)
+//          msgs->push_back(get_bufpacket_result.messages(i));
+//        int n = msgs->size();
+//        // HandleMessages(&msgs);
+//        if (n > 0) {
+//          cb.Reset();
+//          cbph_->ClearMessages(MPID_BP,
+//                               boost::bind(&CC_CallbackResult::CallbackFunc,
+//                                           &cb,
+//                                           _1));
+//          WaitForResult(cb);
+//        }
+//      }
     } else {
     }
     return true;
   }
+  maidsafe::SessionSingleton::getInstance()->ResetSession();
 #ifdef DEBUG
   printf("Invalid password.\n");
 #endif

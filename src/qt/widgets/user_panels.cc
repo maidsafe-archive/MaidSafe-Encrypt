@@ -84,7 +84,7 @@ void UserPanels::onPublicUsernameChosen()
     onCurrentRowChanged( ui_.stackedWidget->indexOf( contacts_ ) );
 
     ui_.user_public_username->setText( ClientController::instance()->publicUsername() );
-    ui_.my_files_button->setEnabled( true );
+    // ui_.my_files_button->setEnabled( true );
 }
 
 void UserPanels::onMyFilesClicked()
@@ -129,7 +129,7 @@ void UserPanels::setActive( bool active )
             ui_.listWidget->setEnabled( false );
             onCurrentRowChanged( ui_.stackedWidget->indexOf( public_username_ ) );
             ui_.user_public_username->clear();
-            ui_.my_files_button->setEnabled( false );
+            ui_.my_files_button->setEnabled( true );
         }
         else
         {
@@ -145,7 +145,7 @@ void UserPanels::setActive( bool active )
         }
 
         ui_.user_public_username->clear();
-        ui_.my_files_button->setEnabled( false );
+        ui_.my_files_button->setEnabled( true );
     }
 }
 
