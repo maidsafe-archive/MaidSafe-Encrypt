@@ -46,7 +46,6 @@ public:
         messagePollTimer.start( MESSAGE_POLL_TIMEOUT_MS );
     }
 
-
     QTimer messagePollTimer;
 };
 
@@ -67,16 +66,21 @@ ClientController::ClientController( QObject* parent )
     maidsafe::ClientController::getInstance()->JoinKademlia();
     maidsafe::ClientController::getInstance()->Init();
 
-
-    connect( &impl_->messagePollTimer, SIGNAL( timeout() ),
-             this,                     SLOT( checkForMessages() ) );
-
 }
 
 ClientController::~ClientController()
 {
     delete impl_;
     impl_ = NULL;
+}
+
+void ClientController::StartCheckingMessages() {
+    connect( &impl_->messagePollTimer, SIGNAL( timeout() ),
+             this,                     SLOT( checkForMessages() ) );
+}
+
+void ClientController::StopCheckingMessages() {
+    disconnect( &impl_->messagePollTimer, NULL, this, NULL );
 }
 
 void ClientController::shutdown()

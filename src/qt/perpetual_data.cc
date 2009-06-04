@@ -343,6 +343,8 @@ void PerpetualData::onMountCompleted( bool success )
         progressPage_->setProgressMessage( tr( "Mount failed" ) );
         setState( FAILURE );
     }
+    if (!ClientController::instance()->publicUsername().isEmpty())
+        ClientController::instance()->StartCheckingMessages();
 }
 
 void PerpetualData::onUnmountCompleted( bool success )
@@ -384,7 +386,7 @@ void PerpetualData::onLogout()
         // if we're still to login we can't logout
         return;
     }
-
+    ClientController::instance()->StopCheckingMessages();
     asyncUnmount();
     setState( LOGGING_OUT );
 }

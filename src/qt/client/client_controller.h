@@ -99,10 +99,17 @@ public:
 
 
     /// Messaging
+    //! To start and stop looking for messages
+    void StartCheckingMessages();
+    void StopCheckingMessages();
+
     //! Send an instant message to someone
     /*!
         \param txt the message
         \param to public user name of the intended recipient
+
+    //! To start looking for messages
+    void ClientController::StartCheckingMessages()
 
         TODO - any length or format restrictions?
     */

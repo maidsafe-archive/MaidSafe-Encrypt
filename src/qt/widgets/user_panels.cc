@@ -66,7 +66,7 @@ UserPanels::UserPanels( QWidget* parent )
     connect( public_username_, SIGNAL( complete() ),
              this,      SLOT( onPublicUsernameChosen() ) );
 
-     connect( ui_.my_files_button, SIGNAL( clicked( bool ) ),
+    connect( ui_.my_files_button, SIGNAL( clicked( bool ) ),
              this,      SLOT( onMyFilesClicked() ) );
 }
 
@@ -84,6 +84,7 @@ void UserPanels::onPublicUsernameChosen()
     onCurrentRowChanged( ui_.stackedWidget->indexOf( contacts_ ) );
 
     ui_.user_public_username->setText( ClientController::instance()->publicUsername() );
+    ClientController::instance()->StartCheckingMessages();
     // ui_.my_files_button->setEnabled( true );
 }
 
