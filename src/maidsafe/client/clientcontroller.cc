@@ -573,6 +573,16 @@ bool ClientController::Logout() {
     delete seh_;
     delete msgh_;
     messages_.clear();
+    fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
+    client_path /= "client";
+    if (boost::filesystem::exists(client_path)) {
+      try {
+        boost::filesystem::remove_all(client_path);
+      }
+      catch (const std::exception &e) {
+        printf("Couldn't delete client path\n");
+      }
+    }
     return true;
   }
 

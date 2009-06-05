@@ -308,7 +308,9 @@ void Contacts::onFileSendClicked()
     // TODO: restrict file dialog to maidsafe directories
 #ifdef __WIN32__
     // TODO(richard): Change to make sure the correct letter is passed.
-    dialog.setDirectory( "M:\\" );
+    QString root;
+    root = QString("%1:\\My Files").arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+    dialog.setDirectory( root );
 #else
     file_system::FileSystem fs;
     dialog.setDirectory( QString::fromStdString( fs.MaidsafeFuseDir() ) );
