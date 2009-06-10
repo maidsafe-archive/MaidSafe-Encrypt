@@ -41,58 +41,21 @@ set(BUILD_SHARED_LIBS OFF)
 #message ("---------------------------------------------------")
 
 
-#################################################################################
-##Wxwidgets code                                                                #
-#################################################################################
-# moved to a unicode static monolithic release library - easier                 #
-# TODO later we need to fine tune this lib to contain only                      #
-# what we need - ala cryptopp)                                                  #
-#################################################################################
-SET(WXW_USE_DEBUG OFF)
-SET(WXW_USE_UNICODE ON)
-SET(WXW_USE_SHARED OFF)
-SET(WXW_USE_UNIV OFF)
-SET(WXW_USE_MONO ON)
-SET(WXW_FILE_VERSION "28")
-SET(WXW_VERSION "2.8")
-
-IF(WIN32)
-    SET(wxWidgets_CONFIGURATION  mswu)
-    IF(MSVC)
-    SET(wxWidgets_ROOT_DIR  "C:/wxWidgets-2.8.9/")
-    SET(wxWidgets_LIB_DIR  "C:/wxWidgets-2.8.9/lib/vc_lib")
-    ENDIF(MSVC)
-    SET(wxWidgets_ROOT_DIR  "C:/usr/bin")
-    SET(wxWidgets_LIB_DIR  "C:/usr/lib/vc_lib")
-    SET(wxWidgets_CONFIGURATION  mswu)
-    FIND_PACKAGE(wxWidgets COMPONENTS  adv aui xrc xml qa html core base)
-ELSE(WIN32)
-     FIND_PACKAGE(wxWidgets COMPONENTS   xrc  core base)
-ENDIF(WIN32)
-
-
-IF(wxWidgets_FOUND)
-	  INCLUDE(${wxWidgets_USE_FILE})
-ENDIF(wxWidgets_FOUND)
-
-#########end of wxwidgets code ####################################################
 ###################################################################################
 #Set up extra includes and libs for windows - it puts them everywhere #############
 ###################################################################################
 IF (WIN32)
 	IF(MSVC)
-	set(INCLUDE_DIR c:/include/ C:/wxWidgets-2.8.9/include/ ${wxWidgets_INCLUDE_DIRS})
-#INCLUDE_DIRECTORIES(C:/wxWidgets-2.8.9/include/ ${wxWidgets_INCLUDE_DIRS})
+	set(INCLUDE_DIR c:/include/ )
 	set(LIB_DIR c:/lib/ )
 	ELSE(MSVC)
 	set(INCLUDE_DIR c:/usr/include/)
 	link_directories(c:/MinGW/lib/ c:/MinGW/mingw32/lib/ c:/usr/lib/ C:/Qt/4.5.0/lib)
-INCLUDE_DIRECTORIES(C:/usr/include/wx-2.8/  )
 	ENDIF(MSVC)
 ELSE(WIN32)
 	set(INCLUDE_DIR  /opt/local/var/macports/software/macfuse/1.7_0/opt/local/include/ )
 ENDIF(WIN32)
-INCLUDE_DIRECTORIES(${SOURCE_DIR} ${INCLUDE_DIR} ${wxWidgets_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${SOURCE_DIR} ${INCLUDE_DIR} )
 link_directories (${PD_BINARY_DIR})
 
 ##################################################################################
@@ -146,6 +109,7 @@ FILE(GLOB T_FS  "${SOURCE_DIR}/tests/fs/*.c*")                                  
        	SET(ENV{QTDIR} "C:/Qt/4.5.0")
 	SET(QT_STATIC 1)
        ENDIF(WIN32)	
+	SET(QT_STATIC 0)
        FIND_PACKAGE( Qt4 )
   INCLUDE( ${QT_USE_FILE} )
   QT4_ADD_RESOURCES(  M_QT_C ${M_QT_QRC} )
@@ -194,8 +158,6 @@ IF (APPLE)
 ###############################
 add_executable(perpetualdata MACOSX_BUNDLE ${M_QT_C})
 add_executable(pdlocal  MACOSX_BUNDLE  ${M_QT_C} )
-add_executable(wxperpetualdata MACOSX_BUNDLE ${M_GUI_DIR})
-add_executable(wxpdlocal  MACOSX_BUNDLE  ${M_GUI_DIR} )
 SET(SYS_LIB
 protobuf
 cryptopp
@@ -206,14 +168,11 @@ boost_regex-xgcc40-mt-1_37
 boost_thread-xgcc40-mt-1_37
 boost_date_time-xgcc40-mt-1_37
 maidsafe-dht)
-SET(SYS_WX -lwx_macu-2.8;/usr/lib/libwxexpat-2.8.a;/usr/lib/libwxtiff-2.8.a;/usr/lib/libwxjpeg-2.8.a;/usr/lib/libwxpng-2.8.a;-lz;-lpthread)
 
 ELSEIF (UNIX AND NOT APPLE)
 ###########################
 # LINUX BUILDS
 ##########################
-add_executable(wxperpetualdata ${M_GUI_DIR} )
-add_executable(wxpdlocal ${M_GUI_DIR} )
 add_executable(perpetualdata ${M_QT_C} )
 add_executable(pdlocal ${M_QT_C} )
 
@@ -230,28 +189,14 @@ SET(SYS_LIB
 	-lc
   maidsafe-dht
 )
-SET(SYS_WX
-	-pthread   /usr/lib/libwx_gtk2u-2.8.a -lwxjpeg-2.8  -lwxtiff-2.8 -pthread -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lpangoft2-1.0 -lgdk_pixbuf-2.0 -lm -lgio-2.0 -lpango-1.0 -lfreetype -lz -lfontconfig -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lglib-2.0 -lXinerama -lSM -lpng -lz -lwxregexu-2.8 -lz -ldl -lm
-	)
 
 ELSEIF (WIN32)
 ########################
 # Windows Builds
 ########################
-add_executable(wxperpetualdata WIN32 ${M_GUI_DIR})
 add_executable(perpetualdata WIN32 ${M_QT_C})
 add_executable(pdlocal WIN32 ${M_QT_C} )
-add_executable(wxpdlocal WIN32 ${M_GUI_DIR} )
 
-SET(SYS_WX
-c:/usr/lib/libwx_mswu-2.8.a
- c:/usr/lib/libwxregexu-2.8.a c:/usr/lib/libwxexpat-2.8.a c:/usr/lib/libwxtiff-2.8.a c:/usr/lib/libwxjpeg-2.8.a c:/usr/lib/libwxpng-2.8.a c:/usr/lib/libwxzlib-2.8.a
-c:/usr/lib/libwxjpeg-2.8.a c:/usr/lib/libwxpng-2.8.a c:/usr/lib/libwxzlib-2.8.a -loleaut32 -lole32
--lmingw32 -ladvapi32 -lmingwex -lkernel32  -lmingwex -lgcc
--lwinspool -lwinmm -ladvapi32
--lrpcrt4 -luuid -lwinspool -lwinmm -lshell32 -lcomctl32 -lcomdlg32
--lctl3d32 -ladvapi32 -lwsock32 -lgdi32 -liphlpapi -lmsvcrt
-)
 SET(SYS_LIB
   -lmaidsafe-dht
  -ladvapi32 
@@ -259,7 +204,6 @@ SET(SYS_LIB
  -mi386pe
 -lstdc++
 -lws2_32
-c:/usr/lib/libwx_mswu-2.8.a
 c:/usr/lib/libboost_system-mgw43-mt-1_37.lib
 c:/usr/lib/libboost_filesystem-mgw43-mt-1_37.lib
 c:/usr/lib/libboost_regex-mgw43-mt-1_37.lib
@@ -274,8 +218,6 @@ IF(UNIX)
 	SET(FUSE  "fuse")
 	ENDIF()
 TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(wxperpetualdata PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${SYS_WX} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(wxpdlocal PDTESTmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${SYS_WX} ${SYS_LIB})
 TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES}  ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTmaidsafe PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTfs PDmaidsafelib PDfslib ${FUSE} gtest ${SYS_LIB})
@@ -285,7 +227,6 @@ TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmaidsafelib PDpbmsgslib ${SYS_LIB})
 
 IF(WIN32)
 SET(TARGET_PROPERTIES vault testvault TESTmaidsafe  COMPILE_FLAGS  ${CMAKE_CXX_FLAGS} --Wl,-subsystem,console)
-SET(TARGET_PROPERTIES wxperpetualdata wxpdlocal  COMPILE_FLAGS ${CMAKE_CXX_FLAGS} -Wl,-subsystem,windows)
 ENDIF(WIN32)
 
 ##################################################################################
@@ -308,7 +249,7 @@ IF(MSVC)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /DUNICODE /D_WIN32_WINDOWS /DDEBUG /D_CONSOLE")
 ELSE(MSVC)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wfloat-equal -Wlong-long  -Wstrict-overflow=5 -D_FORTIFY_SOURCE=2 -fno-stack-protector  -D_FILE_OFFSET_BITS=64")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DMAIDSAFE_WIN32 -D_FORTIFY_SOURCE=2   -DWIN32_LEAN_AND_MEAN  -D__MINGW__  -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static   -mthreads -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32  -D_WIN32_WINNT=0x0501  -Ic:\\usr\\lib\\wx\\include\\msw-unicode-release-static-2.8  -I c:\\usr\\include\\wx-2.8 -D__WXMSW__ -mthreads ")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DMAIDSAFE_WIN32 -D_FORTIFY_SOURCE=2   -DWIN32_LEAN_AND_MEAN  -D__MINGW__  -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static   -mthreads -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32  -D_WIN32_WINNT=0x0501  -mthreads ")
   SET_TARGET_PROPERTIES( pdlocal perpetualdata  PROPERTIES COMPILE_FLAGS -w )
 ENDIF(MSVC)
 ENDIF(APPLE)
