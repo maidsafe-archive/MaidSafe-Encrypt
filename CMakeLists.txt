@@ -90,12 +90,6 @@ LIST(REMOVE_ITEM M_MSVAULT_DIR "${SOURCE_DIR}/maidsafe/vault/main.cc")
 LIST(REMOVE_ITEM M_MSVAULT_DIR "${SOURCE_DIR}/maidsafe/vault/win_service.cc") 
 LIST(REMOVE_ITEM M_MSVAULT_DIR "${SOURCE_DIR}/maidsafe/vault/unix_deamon.cc") 
 LIST(APPEND STYLE_MSVAULT ${M_MSVAULT_C} ${M_MSVAULT_H})                         #
-FILE(GLOB M_GUI_C "${SOURCE_DIR}/gui/*.c*")                                      #
-FILE(GLOB M_GUI_H "${SOURCE_DIR}/gui/*.h*")                                      #
-FILE(GLOB M_GUI_I "${SOURCE_DIR}/gui/img/*.cc")                                  #
-LIST(APPEND M_GUI_DIR ${M_GUI_C} ${M_GUI_H} ${M_GUI_I} )                         #
-LIST(APPEND STYLE_GUI ${M_GUI_C} ${M_GUI_H} )                                    #
-LIST(REMOVE_ITEM STYLE_GUI ${M_GUI_I})                                           #
 FILE(GLOB T_MAIDSAFE_C "${SOURCE_DIR}/tests/maidsafe/*.c*")                      #
 FILE(GLOB T_MAIDSAFE_H "${SOURCE_DIR}/tests/maidsafe/*.h*")                      #
 LIST(APPEND T_MAIDSAFE_DIR ${T_MAIDSAFE_C} ${T_MAIDSAFE_H})                      #
@@ -265,7 +259,6 @@ SET (CTEST_CONTINUOUS_MINIMUM_INTERVAL 60)
 set(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY true)
 #ADD_TEST(TestIdentifier ExecutableName [Arguments])
 IF(UNIX)
-	#	ADD_TEST(CHK_GUI_ ${SOURCE_DIR}/cpplint.py ${STYLE_GUI})
 ADD_TEST(CHK_MS_ ${SOURCE_DIR}/cpplint.py ${STYLE_MAIDSAFE})
 #ADD_TEST(CHK_KAD_ ${SOURCE_DIR}/cpplint.py ${STYLE_KADEMLIA})
 #ADD_TEST(CHK_TRAN_ ${SOURCE_DIR}/cpplint.py ${M_TRANSPORT_DIR})
