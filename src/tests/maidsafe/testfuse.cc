@@ -1669,3 +1669,6 @@ TEST_F(FunctionalFuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
 }
 
 }  // namespace fs_w_fuse or fs_l_fuse
+int main() {
+return 0;
+}

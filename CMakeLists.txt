@@ -93,6 +93,7 @@ LIST(APPEND STYLE_MSVAULT ${M_MSVAULT_C} ${M_MSVAULT_H})                        
 FILE(GLOB T_MAIDSAFE_C "${SOURCE_DIR}/tests/maidsafe/*.c*")                      #
 FILE(GLOB T_MAIDSAFE_H "${SOURCE_DIR}/tests/maidsafe/*.h*")                      #
 LIST(APPEND T_MAIDSAFE_DIR ${T_MAIDSAFE_C} ${T_MAIDSAFE_H})                      #
+LIST(REMOVE_ITEM T_MAIDSAFE_DIR "${SOURCE_DIR}/tests/maidsafe/testfuse.cc")
 FILE(GLOB T_MAIN  "${SOURCE_DIR}/tests/main.cc")                                 #
 FILE(GLOB T_FS  "${SOURCE_DIR}/tests/fs/*.c*")                                   #
 ##################################################################################
@@ -123,6 +124,7 @@ ENDIF(APPLE)
 ######################################################################################
 #All Platforms:  Add Test Exes and Create all PD libs                                 #
 #######################################################################################
+add_executable(TESTfuse "${SOURCE_DIR}/tests/maidsafe/testfuse.cc" )
 add_executable(TESTmaidsafe ${T_MAIDSAFE_DIR})
 add_executable(TESTfs ${T_MAIN} ${T_FS})
 add_executable(testvault  "${SOURCE_DIR}/maidsafe/vault/main.cc")
@@ -214,6 +216,7 @@ IF(UNIX)
 TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES} ${SYS_LIB})
 TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} ${QT_LIBRARIES}  ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTmaidsafe PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTfuse PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTfs PDmaidsafelib PDfslib ${FUSE} gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(testvault PDmsclientlib PDmaidsafelib PDmsvaultlib PDpbmsgslib ${SYS_LIB})
 TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmaidsafelib PDpbmsgslib ${SYS_LIB})
@@ -258,6 +261,7 @@ SET (CTEST_CONTINUOUS_DURATION 600)
 SET (CTEST_CONTINUOUS_MINIMUM_INTERVAL 60)
 set(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY true)
 #ADD_TEST(TestIdentifier ExecutableName [Arguments])
+ADD_TEST(Testfuse ${EXECUTABLE_OUTPUT_PATH}/TESTfuse)
 IF(UNIX)
 ADD_TEST(CHK_MS_ ${SOURCE_DIR}/cpplint.py ${STYLE_MAIDSAFE})
 #ADD_TEST(CHK_KAD_ ${SOURCE_DIR}/cpplint.py ${STYLE_KADEMLIA})
