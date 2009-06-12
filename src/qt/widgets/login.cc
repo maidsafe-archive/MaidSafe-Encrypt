@@ -20,6 +20,7 @@
 // qt
 #include <QDebug>
 #include <QValidator>
+#include <QMessageBox>
 
 // core
 #include "maidsafe/client/clientcontroller.h"
@@ -346,7 +347,10 @@ void Login::onLoginClicked()
     // verify the password )
     if ( !isCorrectPassword( password() ) )
     {
-        qWarning() << "invalid password";
+        QMessageBox::warning( this,
+                              tr( "Error!" ),
+                              tr( "Please verify your credentials." )
+                            );
         return;
     }
 
@@ -356,8 +360,8 @@ void Login::onLoginClicked()
 void Login::reset()
 {
     ui_.username->clear();
-    ui_.username->setFocus( Qt::OtherFocusReason );
     ui_.username->setEnabled( true );
+    ui_.username->setFocus( Qt::OtherFocusReason );
 
     ui_.pin->clear();
     ui_.pin->setEnabled( false );

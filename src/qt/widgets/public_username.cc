@@ -80,8 +80,8 @@ void PublicUsername::onCreateUsernameCompleted( bool success )
 {
     if ( success )
     {
-        emit complete();
         ui_.contactLineEdit->setText( tr("") );
+        emit complete();
     }
     else
     {
