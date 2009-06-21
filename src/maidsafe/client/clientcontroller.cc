@@ -443,7 +443,14 @@ bool ClientController::ValidateUser(const std::string &password,
     boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
     seh_ = new SEHandler(sm_, &mutex_);
     msgh_ = new MessageHandler(sm_, &mutex_);
-    ParseDa();
+    int result = ParseDa();
+    if (result != 0) {
+      delete seh_;
+      delete msgh_;
+      return false;
+      ss_->ResetSession();
+      return false;
+    }
     if (dah_->Init(false)) {
       delete seh_;
       delete msgh_;

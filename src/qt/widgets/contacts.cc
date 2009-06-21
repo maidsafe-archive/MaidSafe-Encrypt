@@ -27,6 +27,8 @@
 // local
 #include "qt/client/client_controller.h"
 
+//
+#include <boost/progress.hpp>
 
 Contacts::Contacts( QWidget* parent )
     : Panel( parent )
@@ -301,28 +303,38 @@ void Contacts::onFileSendClicked()
         return;
 
     // choose a file
-    QFileDialog dialog( this, tr( "Select file" ) );
-    dialog.setFileMode( QFileDialog::ExistingFile );
-    dialog.setViewMode( QFileDialog::Detail );
+//    QFileDialog dialog( this, tr( "Select file" ) );
+//    dialog.setFileMode( QFileDialog::ExistingFile );
+//    dialog.setViewMode( QFileDialog::Detail );
     // starting directoty should be the maidafe one.
     // TODO: restrict file dialog to maidsafe directories
-#ifdef __WIN32__
-    // TODO(richard): Change to make sure the correct letter is passed.
     QString root;
-    root = QString("%1:\\My Files").arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
-    dialog.setDirectory( root );
+#ifdef __WIN32__
+    root = QString("%1:\\My Files").
+           arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+    //dialog.setDirectory( root );
 #else
     file_system::FileSystem fs;
-    dialog.setDirectory( QString::fromStdString( fs.MaidsafeFuseDir() ) );
+    root = QString::fromStdString( fs.MaidsafeFuseDir() );
 #endif
-    dialog.setNameFilter( tr( "Any file (*)" ) );
+    //root = QString("C:\\");
 
-    if ( !dialog.exec() )
-    {
-        return;
-    }
-
-    const QStringList fileNames = dialog.selectedFiles();
+//    dialog.setNameFilter( tr( "Any file (*)" ) );
+//
+//    if ( !dialog.exec() )
+//    {
+//        return;
+//    }
+//
+//    const QStringList fileNames = dialog.selectedFiles();
+    printf("\n\nContacts::onFileSendClicked: opening the \"\"\"conversation\"\"\".\n\n");
+    boost::progress_timer t;
+    QStringList fileNames = QFileDialog::getOpenFileNames(
+                            this,
+                            "Select one to send",
+                            root,
+                            tr( "Any file (*)" ));
+    printf("\n\nDialog time: %f\n\n", t.elapsed());
     if ( fileNames.isEmpty() )
     {
         return;

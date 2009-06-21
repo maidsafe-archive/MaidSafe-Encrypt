@@ -58,10 +58,14 @@ bool FileSystem::Mount() {
   // is session valid ?
   if (maidsafe::SessionSingleton::getInstance()->Username() == "")
     return false;
-  if (FileSystem::CreateDirs())
-    return true;
-  else
+  if (!FileSystem::DeleteDirs()) {
+#ifdef DEBUG
+    printf("Didn't delete the dirs on log in. They might have not existed.\n");
+#endif
+  }
+  if (!FileSystem::CreateDirs())
     return false;
+  return true;
 }
 
 bool FileSystem::UnMount() {

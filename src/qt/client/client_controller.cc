@@ -43,7 +43,6 @@ class ClientController::ClientControllerImpl
 public:
     ClientControllerImpl()
     {
-        messagePollTimer.start( MESSAGE_POLL_TIMEOUT_MS );
     }
 
     QTimer messagePollTimer;
@@ -75,11 +74,13 @@ ClientController::~ClientController()
 }
 
 void ClientController::StartCheckingMessages() {
+    impl_->messagePollTimer.start( MESSAGE_POLL_TIMEOUT_MS );
     connect( &impl_->messagePollTimer, SIGNAL( timeout() ),
              this,                     SLOT( checkForMessages() ) );
 }
 
 void ClientController::StopCheckingMessages() {
+    impl_->messagePollTimer.stop();
     disconnect( &impl_->messagePollTimer, NULL, this, NULL );
 }
 

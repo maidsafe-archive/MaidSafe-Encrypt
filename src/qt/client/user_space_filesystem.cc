@@ -135,22 +135,40 @@ bool UserSpaceFileSystem::unmount()
     std::string ms_dir = impl_->fsys_.MaidsafeDir();
     std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
 #ifdef MAIDSAFE_WIN32
-    // unload dokan
-    SHELLEXECUTEINFO shell_info;
-    memset(&shell_info, 0, sizeof(shell_info));
-    shell_info.cbSize = sizeof(shell_info);
-    shell_info.hwnd = NULL;
-    shell_info.lpVerb = L"open";
-    shell_info.lpFile = L"dokanctl";
-    shell_info.lpParameters = L" /u ";
-    shell_info.lpParameters +=
-    maidsafe::SessionSingleton::getInstance()->WinDrive();
-    shell_info.nShow = SW_HIDE;
-    shell_info.fMask = SEE_MASK_NOCLOSEPROCESS;
-    success = ShellExecuteEx(&shell_info);
+    // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
+    // invoking using QProcess doesn't work if the path has spaces in the name
+    // so we need to go old skool...
+    QString operation( "open" );
+    QString command( "dokanctl" );
+    QString parameters( " /u " );
+    parameters.append(maidsafe::SessionSingleton::getInstance()->WinDrive());
+    quintptr returnValue;
+    QT_WA(
+        {
+            returnValue = (quintptr)ShellExecute(0,
+                                                (TCHAR *)operation.utf16(),
+                                                (TCHAR *)command.utf16(),
+                                                (TCHAR *)parameters.utf16(),
+                                                0,
+                                                SW_HIDE);
+        } ,
+        {
+            returnValue = (quintptr)ShellExecuteA(0,
+                                                  operation.toLocal8Bit().constData(),
+                                                  command.toLocal8Bit().constData(),
+                                                  parameters.toLocal8Bit().constData(),
+                                                  0,
+                                                  SW_HIDE);
+        }
+    );
 
-    WaitForSingleObject(shell_info.hProcess, INFINITE);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    if ( returnValue <= 32 )
+    {
+      qWarning() << "UserSpaceFileSystem::unmount: failed to unmount dokan de mierrrrrda: "
+          << returnValue;
+    } else {
+      success = true;
+    }
 #else
     // un-mount fuse
     impl_->fsl_.UnMount();
