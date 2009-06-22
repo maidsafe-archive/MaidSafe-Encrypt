@@ -1155,3 +1155,6 @@ TEST_F(TestPDVault, DISABLED_FUNC_MAID_VaultRepublishChunkRef) {
 }
 
 }  // namespace maidsafe_vault
+ int main() {
+return 0;
+}

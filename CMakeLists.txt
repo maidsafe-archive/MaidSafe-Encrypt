@@ -94,6 +94,8 @@ FILE(GLOB T_MAIDSAFE_C "${SOURCE_DIR}/tests/maidsafe/*.c*")                     
 FILE(GLOB T_MAIDSAFE_H "${SOURCE_DIR}/tests/maidsafe/*.h*")                      #
 LIST(APPEND T_MAIDSAFE_DIR ${T_MAIDSAFE_C} ${T_MAIDSAFE_H})                      #
 LIST(REMOVE_ITEM T_MAIDSAFE_DIR "${SOURCE_DIR}/tests/maidsafe/testfuse.cc")
+LIST(REMOVE_ITEM T_MAIDSAFE_DIR "${SOURCE_DIR}/tests/maidsafe/functionaltestclientcontroller.cc")
+LIST(REMOVE_ITEM T_MAIDSAFE_DIR "${SOURCE_DIR}/tests/maidsafe/testpdvault.cc")
 FILE(GLOB T_MAIN  "${SOURCE_DIR}/tests/main.cc")                                 #
 FILE(GLOB T_FS  "${SOURCE_DIR}/tests/fs/*.c*")                                   #
 ##################################################################################
@@ -125,6 +127,8 @@ ENDIF(APPLE)
 #All Platforms:  Add Test Exes and Create all PD libs                                 #
 #######################################################################################
 add_executable(TESTfuse "${SOURCE_DIR}/tests/maidsafe/testfuse.cc" )
+add_executable(TESTclientcontroller "${SOURCE_DIR}/tests/maidsafe/functionaltestclientcontroller.cc")
+add_executable(TESTpdvault "${SOURCE_DIR}/tests/maidsafe/testpdvault.cc")
 add_executable(TESTmaidsafe ${T_MAIDSAFE_DIR})
 add_executable(TESTfs ${T_MAIN} ${T_FS})
 add_executable(testvault  "${SOURCE_DIR}/maidsafe/vault/main.cc")
@@ -262,6 +266,8 @@ SET (CTEST_CONTINUOUS_MINIMUM_INTERVAL 60)
 set(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY true)
 #ADD_TEST(TestIdentifier ExecutableName [Arguments])
 ADD_TEST(Testfuse ${EXECUTABLE_OUTPUT_PATH}/TESTfuse)
+ADD_TEST(Testfuse ${EXECUTABLE_OUTPUT_PATH}/TESTclientcontroller)
+ADD_TEST(Testfuse ${EXECUTABLE_OUTPUT_PATH}/TESTpdvault)
 IF(UNIX)
 ADD_TEST(CHK_MS_ ${SOURCE_DIR}/cpplint.py ${STYLE_MAIDSAFE})
 #ADD_TEST(CHK_KAD_ ${SOURCE_DIR}/cpplint.py ${STYLE_KADEMLIA})

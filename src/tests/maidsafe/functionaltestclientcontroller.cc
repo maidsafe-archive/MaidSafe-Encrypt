@@ -1304,4 +1304,6 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 
 }  // namespace maidsafe
 
-
+int main() {
+return 0;
+}
