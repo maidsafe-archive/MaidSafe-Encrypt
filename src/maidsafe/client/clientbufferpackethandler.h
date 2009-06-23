@@ -60,6 +60,8 @@ class ClientBufferPacketHandler {
     base::callback_func_type cb);
   void ClearMessages(const buffer_packet_type &type,
     base::callback_func_type cb);
+  void GetBufferPacketInfo(const buffer_packet_type &type,
+    base::callback_func_type cb);
 
   // void SendAddContactRequest(const std::string &contact_name,
   //                            const std::string &contact_public_key,
@@ -88,6 +90,8 @@ class ClientBufferPacketHandler {
   void GetMessages_Callback(const std::string &result,
     const buffer_packet_type &type, base::callback_func_type cb);
   void GetBufferPacket_Callback(const std::string &result,
+    const buffer_packet_type &type, base::callback_func_type cb);
+  void GetBufferPacketInfo_Callback(const std::string &result,
     const buffer_packet_type &type, base::callback_func_type cb);
   void ChangeStatus_Callback(const std::string &result,
     base::callback_func_type cb);

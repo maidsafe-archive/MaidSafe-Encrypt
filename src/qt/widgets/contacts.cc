@@ -351,7 +351,7 @@ void Contacts::onFileSendClicked()
                                          QLineEdit::Normal,
                                          QString(),
                                          &ok );
-    if ( !ok || text.isEmpty() )
+    if ( !ok )
     {
         // TODO default message?
         return;

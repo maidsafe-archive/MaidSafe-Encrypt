@@ -44,8 +44,8 @@ PDClient::~PDClient() {
   printf("calling pdclient destructor\n");
 #endif
   knode_.reset();
-
 }
+
 void PDClient::CleanUp() {
   channel_manager_->CleanUpTransport();
 }

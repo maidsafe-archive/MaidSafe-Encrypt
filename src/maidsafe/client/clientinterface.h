@@ -27,58 +27,56 @@
 
 #include <string>
 
-namespace maidsafe
-{
+namespace maidsafe {
 
-//! Callback interface to be used for notifications from the ClientController
+// ! Callback interface to be used for notifications from the ClientController
 /*!
     Note: implementors of this interface should ensure they do not block whilst
     handling the notification.
 */
-class ClientInterface
-{
-public:
-    virtual ~ClientInterface() {}
-    //! A user has sent you a message
-    virtual void messageReceived( const std::string& from,
-                                  const std::string& msg ) = 0;
+class ClientInterface {
+ public:
+  virtual ~ClientInterface() {}
+  // ! A user has sent you a message
+  virtual void messageReceived(const std::string& from,
+                               const std::string& msg) = 0;
 
-    //! A contact's status has changed
-    /*!
-        TODO: emnumerate possible status
-    */
-    virtual void contactStatusChanged( const std::string& from,
-                                       int status ) = 0;
+  // ! A contact's status has changed
+  /*!
+      TODO: emnumerate possible status
+  */
+  virtual void contactStatusChanged(const std::string& from,
+                                    int status) = 0;
 
-    //! User requested add of contact
-    /*!
-        \param from contact who wants to add you
-        \param msg introduction message
+  // ! User requested add of contact
+  /*!
+      \param from contact who wants to add you
+      \param msg introduction message
 
-        In response, the request should be accepted or declined via client
-        controller.
-    */
-    virtual void contactAdditionRequested( const std::string& from,
-                                           const std::string& msg ) = 0;
+      In response, the request should be accepted or declined via client
+      controller.
+  */
+  virtual void contactAdditionRequested(const std::string& from,
+                                        const std::string& msg) = 0;
 
-    //! A user has shared something with you
-    virtual void shareReceived( const std::string& from,
-                                const std::string& share_name ) = 0;
+  // ! A user has shared something with you
+  virtual void shareReceived(const std::string& from,
+                             const std::string& share_name) = 0;
 
-    //! A share has been changed in some way e.g. permissions or removed
-    virtual void shareChanged( const std::string& from,
-                               const std::string& share_name ) = 0;
+  // ! A share has been changed in some way e.g. permissions or removed
+  virtual void shareChanged(const std::string& from,
+                            const std::string& share_name) = 0;
 
-    //! A user has sent you a file
-    /*!
-        Currently saved directly into private file's section.
-        Would be nice to prompt for new filename, whether to accept etc
-    */
-    virtual void fileReceived( const std::string& from,
-                               const std::string& file_name ) = 0;
+  // ! A user has sent you a file
+  /*!
+      Currently saved directly into private file's section.
+      Would be nice to prompt for new filename, whether to accept etc
+  */
+  virtual void fileReceived(const std::string& from,
+                            const std::string& file_name) = 0;
 
-    //! System messages - to be decided
-    virtual void systemMessage( const std::string& message ) = 0;
+  // ! System messages - to be decided
+  virtual void systemMessage(const std::string& message) = 0;
 };
 
 

@@ -42,9 +42,8 @@ namespace
 
     bool isCorrectPassword( const QString& password )
     {
-        std::list<std::string> msgs;
         return maidsafe::ClientController::getInstance()->ValidateUser(
-                password.toStdString(), &msgs);
+                password.toStdString());
     }
 
     bool isExistingUser( const QString& username, const QString& pin,

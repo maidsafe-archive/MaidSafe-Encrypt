@@ -70,8 +70,7 @@ class ClientController {
                   const std::string &password);
   int SetVaultConfig(const std::string &pmid_public,
                      const std::string &pmid_private);
-  bool ValidateUser(const std::string &password,
-                    std::list<std::string> *msgs);
+  bool ValidateUser(const std::string &password);
 
   bool Logout();
   bool LeaveMaidsafeNetwork();
@@ -97,9 +96,9 @@ class ClientController {
     packethandler::ValidatedBufferPacketMessage &vbpm);
   int HandleInstantMessage(
     packethandler::ValidatedBufferPacketMessage &vbpm);
-  int HandleAddContactRequest(packethandler::ContactInfo &ci,
+  int HandleAddContactRequest(const packethandler::ContactInfo &ci,
     const std::string &sender);
-  int HandleAddContactResponse(packethandler::ContactInfo &ci,
+  int HandleAddContactResponse(const packethandler::ContactInfo &ci,
     const std::string &sender);
   int GetInstantMessages(std::list<packethandler::InstantMessage> *messages);
   int SendInstantMessage(const std::string &message,

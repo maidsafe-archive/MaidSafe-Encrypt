@@ -406,6 +406,42 @@ void ClientBufferPacketHandler::GetBufferPacket_Callback(
   cb(str_local_result);
 }
 
+void ClientBufferPacketHandler::GetBufferPacketInfo(
+    const buffer_packet_type &type, base::callback_func_type cb) {
+  std::string bufferpacketname = crypto_obj_.Hash(ss_->GetId(type) +
+    "BUFFER", "", maidsafe_crypto::STRING_STRING, true);
+  sm_->LoadPacket(bufferpacketname,
+    boost::bind(&ClientBufferPacketHandler::GetBufferPacket_Callback, this,
+    _1, type, cb));
+}
+
+void ClientBufferPacketHandler::GetBufferPacketInfo_Callback(
+    const std::string &result, const buffer_packet_type &type,
+    base::callback_func_type cb) {
+  maidsafe::GetResponse local_result;
+  std::string str_local_result;
+  if ((!local_result.ParseFromString(result))||
+      (!local_result.has_content())) {
+    local_result.set_result(kCallbackFailure);
+    local_result.SerializeToString(&str_local_result);
+    cb(str_local_result);
+    return;
+  }
+  maidsafe::GetMessagesResponse msgs_result;
+  msgs_result.set_result(kCallbackSuccess);
+  BufferPacket bp;
+  BufferPacketInfo bpi;
+  bp.ParseFromString(local_result.content());
+  bpi.ParseFromString(bp.owner_info(0).data());
+  std::set<std::string> users;
+  for (int i = 0; i < bpi.users_size(); ++i)
+    users.insert(bpi.users(i));
+  ss_->SetAuthorisedUsers(users);
+  local_result.set_result(kCallbackSuccess);
+  local_result.SerializeToString(&str_local_result);
+  cb(str_local_result);
+}
+
 void ClientBufferPacketHandler::ClearMessages(const buffer_packet_type &type,
   base::callback_func_type cb) {
   std::string bufferpacketname = crypto_obj_.Hash(ss_->GetId(type) +

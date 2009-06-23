@@ -111,10 +111,10 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
   if (compress_file_)
     compress_file_ = CheckCompressibility(entry_path_);
 #ifdef DEBUG
-//    if (compress_file_)
-//      printf("Compression ON for '%s'\n", fs::extension(entry_path_).c_str());
-//    else
-//      printf("Compression OFF for '%s'\n", fs::extension(entry_path_).c_str());
+//  if (compress_file_)
+//    printf("Compression ON for '%s'\n", fs::extension(entry_path_).c_str());
+//  else
+//    printf("Compression OFF for '%s'\n", fs::extension(entry_path_).c_str());
 #endif
   if (compress_file_)
     dm->set_compression_on(true);

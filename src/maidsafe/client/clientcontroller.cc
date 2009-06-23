@@ -432,8 +432,7 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
   return 0;
 }
 
-bool ClientController::ValidateUser(const std::string &password,
-  std::list<std::string> *msgs) {
+bool ClientController::ValidateUser(const std::string &password) {
   ser_da_ = "";
   exitcode result = auth_->GetUserData(password, ser_da_);
 
@@ -458,6 +457,7 @@ bool ClientController::ValidateUser(const std::string &password,
       ss_->ResetSession();
       return false;
     }
+
     // Setting on session singleton the MAID, MPID, and PMID keys
     std::stringstream out;
     out << MAID;
@@ -474,7 +474,11 @@ bool ClientController::ValidateUser(const std::string &password,
     out.str("");
     out << MPID;
     ss_->SetPublicUsername(dah_->GetPackageID(out.str()));
+
+    // Create the mount point directory
     fsys_.FuseMountPoint();
+
+    // Do BP operations if need be
     if (ss_->PublicUsername() != "") {
       // CHANGE CONNECTION STATUS
       int connection_status(1);
@@ -484,35 +488,24 @@ bool ClientController::ValidateUser(const std::string &password,
       }
       ss_->SetConnectionStatus(connection_status);
 
-      // GET MESSAGES AND CLEAR THEM
-//      CC_CallbackResult cb;
+      // Get BP info and put it to the session
+      CC_CallbackResult cb;
       ss_->SetPublicKey(dah_->GetPublicKey(out.str()), MPID_BP);
       ss_->SetPrivateKey(dah_->GetPrivateKey(out.str()), MPID_BP);
-//      cbph_->GetBufferPacket(MPID_BP, boost::bind(
-//          &CC_CallbackResult::CallbackFunc,
-//          &cb,
-//          _1));
-//      WaitForResult(cb);
-//      GetMessagesResponse get_bufpacket_result;
-//      if ((get_bufpacket_result.ParseFromString(cb.result)) &&
-//          (get_bufpacket_result.result() == kCallbackSuccess)) {
-//        for (int i = 0; i < get_bufpacket_result.messages_size(); i++)
-//          msgs->push_back(get_bufpacket_result.messages(i));
-//        int n = msgs->size();
-//        // HandleMessages(&msgs);
-//        if (n > 0) {
-//          cb.Reset();
-//          cbph_->ClearMessages(MPID_BP,
-//                               boost::bind(&CC_CallbackResult::CallbackFunc,
-//                                           &cb,
-//                                           _1));
-//          WaitForResult(cb);
-//        }
-//      }
+      cbph_->GetBufferPacketInfo(MPID_BP, boost::bind(
+          &CC_CallbackResult::CallbackFunc,
+          &cb,
+          _1));
+      WaitForResult(cb);
     } else {
+#ifdef DEBUG
+      printf("No public username, no need to look for BP.\n");
+#endif
     }
     return true;
   }
+
+  // Password validation failed
   maidsafe::SessionSingleton::getInstance()->ResetSession();
 #ifdef DEBUG
   printf("Invalid password.\n");
@@ -586,7 +579,7 @@ bool ClientController::Logout() {
       try {
         boost::filesystem::remove_all(client_path);
       }
-      catch (const std::exception &e) {
+      catch(const std::exception &e) {
         printf("Couldn't delete client path\n");
       }
     }
@@ -1146,30 +1139,6 @@ int ClientController::HandleInstantMessage(
 #endif
   packethandler::InstantMessage im;
   if (im.ParseFromString(vbpm.message())) {
-//    if
-//
-//    if (im.type() == packethandler::INSTANT_FILE) {
-//      packethandler::InstantFileMessage ifm;
-//      if (ifm.ParseFromString(im.message())) {
-//        int n = AddInstantFile(ifm);
-//#ifdef DEBUG
-//        printf("Addition result: %i\n", n);
-//#endif
-//        if (n != 0)
-//          return n;
-//        std::string new_msg("You've received file: " +
-//          ifm.filename() + ". " + im.sender() + " says: " +
-//          ifm.sender_msg() + "\n");
-//#ifdef DEBUG
-//        printf("%s\n", new_msg.c_str());
-//#endif
-//        im.set_message(new_msg);
-//        messages_.push_back(im);
-//#ifdef DEBUG
-//        printf("You've got an instant file\n");
-//#endif
-//      }
-//    } else {
       messages_.push_back(im);
 #ifdef DEBUG
       printf("%s\n", vbpm.message().c_str());
@@ -1242,22 +1211,12 @@ int ClientController::AddInstantFile(
   return 0;
 }
 
-int ClientController::HandleAddContactRequest(packethandler::ContactInfo &ci,
-    const std::string &sender) {
+int ClientController::HandleAddContactRequest(
+    const packethandler::ContactInfo &ci, const std::string &sender) {
 #ifdef DEBUG
   printf("\n\n\nHandleAddContactRequest\nHandleAddContactRequest\n\n\n");
 #endif
 
-//    packethandler::ContactInfo ci;
-//    if (!ci.ParseFromString(vbpm.message())) {
-//  #ifdef DEBUG
-//      printf("Message didn't parse as contact info.\n");
-//  #endif
-//      return -7;
-//    }
-//  #ifdef DEBUG
-//    printf("Parsed message.\n");
-//  #endif
   // TODO(Richard): return choice to the user to accept/reject contact
 
   // Get contacts public key
@@ -1370,8 +1329,8 @@ int ClientController::HandleAddContactRequest(packethandler::ContactInfo &ci,
   return 0;
 }
 
-int ClientController::HandleAddContactResponse(packethandler::ContactInfo &ci,
-  const std::string &sender) {
+int ClientController::HandleAddContactResponse(
+    const packethandler::ContactInfo &ci, const std::string &sender) {
 #ifdef DEBUG
   printf("\n\n\nHandleAddContactResponse\nHandleAddContactResponse\n\n\n");
 #endif
@@ -1395,9 +1354,9 @@ int ClientController::HandleAddContactResponse(packethandler::ContactInfo &ci,
   std::string dbNameNew(newDb.string());
   std::vector<maidsafe::Contacts> list;
   int n = ch.GetContactList(dbNameNew, list, sender);
-//#ifdef DEBUG
+#ifdef DEBUG
   printf("GetContactList result: %i\n", n);
-//#endif
+#endif
   if (n != 0) {
 #ifdef DEBUG
     printf("Getting contact list failed.\n");
@@ -1443,9 +1402,6 @@ int ClientController::SendInstantMessage(const std::string &message,
   maidsafe::Receivers rec;
   rec.id = contact_name;
   rec.public_key = c.PublicKey();
-#ifdef DEBUG
-  // printf("Contact's public key: %s\n", rec.public_key.c_str());
-#endif
   std::vector<Receivers> recs;
   recs.push_back(rec);
 
@@ -1454,7 +1410,6 @@ int ClientController::SendInstantMessage(const std::string &message,
   im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
   im.set_message(message);
   im.set_date(base::get_epoch_time());
-//  im.set_type(packethandler::INSTANT_MSG);
   im.SerializeToString(&ser_im);
 
   CC_CallbackResult cb;
@@ -1477,10 +1432,6 @@ int ClientController::SendInstantMessage(const std::string &message,
   return 0;
 }
 
-//unsigned int ClientController::InstantMessageCount() {
-//  return messages_.size();
-//}
-//
 int ClientController::GetInstantMessages(
   std::list<packethandler::InstantMessage> *messages) {
   *messages = messages_;
@@ -1530,8 +1481,14 @@ int ClientController::SendInstantFile(std::string *filename,
   ifm->set_filename(p_filename.filename());
   im.set_sender(SessionSingleton::getInstance()->PublicUsername());
   im.set_date(base::get_epoch_time());
-  std::string message("\"");
-  message += im.sender() + "\" has sent you file " + p_filename.filename();
+  std::string message;
+  if (msg.empty()) {
+    message = "\"";
+    message += im.sender() + "\" has sent you file " +
+              p_filename.filename();
+  } else {
+    message = msg + " - Filename: " + p_filename.filename();
+  }
   im.set_message(message);
 
   std::string ser_instant_file;
@@ -1920,7 +1877,7 @@ int ClientController::CreateNewShare(const std::string &name,
     std::string *me = psn->add_admins();
     *me = maidsafe::SessionSingleton::getInstance()->PublicUsername();
     psn->set_private_key(cmsidr.private_key());
-    message = std::string ("\"");
+    message = std::string("\"");
     message += im.sender() +
         "\" has added you as an Administrator participant to" +
         " share " + name;

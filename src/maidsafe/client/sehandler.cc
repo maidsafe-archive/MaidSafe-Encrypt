@@ -778,8 +778,10 @@ int SEHandler::EncryptDm(const std::string &dir_path,
   xor_hash_ = SHA512(key_ + parent_key_, false);
 #ifdef DEBUG
   if (msid != "") {
-    printf("In EncryptDm dir_path: %s\nkey_: %s\nparent_key_: %s\nenc_hash_: %s\n",
-          dir_path.c_str(), key_.c_str(), parent_key_.c_str(), enc_hash_.c_str());
+    printf("In EncryptDm dir_path: %s\n"
+           "key_: %s\nparent_key_: %s\nenc_hash_: %s\n",
+            dir_path.c_str(), key_.c_str(),
+            parent_key_.c_str(), enc_hash_.c_str());
   }
 #endif
   while (xor_hash_extended_.size() < ser_dm.size())
