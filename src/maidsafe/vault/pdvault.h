@@ -174,7 +174,7 @@ class PDVault {
                  base::callback_func_type cb);
   std::string node_id() const;
   std::string host_ip() const { return knode_.host_ip(); }
-  boost::uint16_t host_port() const { return port_; }
+  boost::uint16_t host_port() const { return knode_.host_port(); }
   std::string local_host_ip() const { return knode_.local_host_ip(); }
   boost::uint16_t local_host_port() { return knode_.local_host_port(); }
   std::string rv_ip() const { return knode_.rv_ip(); }

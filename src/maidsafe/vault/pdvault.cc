@@ -116,6 +116,9 @@ void PDVault::Start(const bool &port_forwarded) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
     // ++count_;
   }
+  // Set port, so that if vault is restarted before it is destroyed, it re-uses
+  // port (unless this port has become unavailable).
+  port_ = knode_.host_port();
   vault_started_ = kad_joined_;
 }
 
@@ -158,7 +161,7 @@ void PDVault::SyncVault(base::callback_func_type cb) {
   boost::shared_ptr<SyncVaultData> data(new struct SyncVaultData());
   chunkstore_->GetAllChunks(&data->chunk_names);
   if (!data->chunk_names.empty()) {
-    printf("Synchronizing vault (One * represents one chunk):\n");
+    printf("Synchronising vault (One * represents one chunk):\n");
     data->num_chunks = data->chunk_names.size();
     data->cb = cb;
     int parallel_size;
@@ -182,7 +185,7 @@ void PDVault::IterativeSyncVault(boost::shared_ptr<SyncVaultData> data) {
   if (data->is_callbacked) return;
   if (data->chunk_names.empty() && data->active_updating == 0) {
     // no more chunks need to be updated, job done!
-    printf("\nVault synchronized!\n");
+    printf("\nVault synchronised.\n");
     maidsafe::UpdateResponse local_result;
     std::string local_result_str("");
     if (static_cast<float>(data->num_updated_chunks) >=
@@ -208,10 +211,9 @@ void PDVault::IterativeSyncVault(boost::shared_ptr<SyncVaultData> data) {
   }
 }
 
-void PDVault::SyncVault_FindAlivePartner(
-    const std::string& result,
-    boost::shared_ptr<SyncVaultData> data,
-    std::string chunk_name) {
+void PDVault::SyncVault_FindAlivePartner(const std::string& result,
+                                         boost::shared_ptr<SyncVaultData> data,
+                                         std::string chunk_name) {
   kad::FindResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
       result_msg.result() == kRpcResultFailure ||

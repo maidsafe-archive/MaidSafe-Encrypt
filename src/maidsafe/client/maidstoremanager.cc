@@ -40,10 +40,9 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-MaidsafeStoreManager::MaidsafeStoreManager()
-    : datastore_dir_(""),
-      pdclient_(),
-      cry_obj() {
+MaidsafeStoreManager::MaidsafeStoreManager() : datastore_dir_(""),
+                                               pdclient_(),
+                                               cry_obj() {
   file_system::FileSystem fsys;
   fs::path datastore_path(fsys.DbDir(), fs::native);
   datastore_dir_ = datastore_path.string();
