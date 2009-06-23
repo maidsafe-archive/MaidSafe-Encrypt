@@ -155,7 +155,7 @@ bool CreateRandomFile(const std::string &filename,
                       std::string *hash) {
   std::string file_content = base::RandomString(size);
   file_system::FileSystem fsys;
-  fs::ofstream ofs;
+  boost::filesystem::ofstream ofs;
   try {
     ofs.open(filename);
     ofs << file_content;
@@ -231,9 +231,9 @@ int LoginAndMount(maidsafe::ClientController *cc,
                   const std::string &pin,
                   const std::string &pw,
 #ifdef MAIDSAFE_POSIX
-                  const fs_l_fuse::FSLinux &fsl,
+                  fs_l_fuse::FSLinux &fsl,
 #elif defined(MAIDSAFE_APPLE)
-                  const fs_l_fuse::FSLinux &fsm,
+                  fs_l_fuse::FSLinux &fsm,
 #endif
                   fs::path *mount_path) {
   if (logged_in_)
@@ -246,8 +246,7 @@ int LoginAndMount(maidsafe::ClientController *cc,
   if (maidsafe::USER_EXISTS != result)
     return -1;
   tt::sleep(p_time::seconds(5));
-  std::list<std::string> list;
-  if (!cc->ValidateUser(pw, &list))
+  if (!cc->ValidateUser(pw))
     return -2;
 
   ss->SetMounted(0);
@@ -262,13 +261,13 @@ int LoginAndMount(maidsafe::ClientController *cc,
   file_system::FileSystem fsys;
   std::string mount_point = fsys.MaidsafeFuseDir();
   *mount_path = fs::path(mount_point, fs::native);
-  std::string debug_mode_("-d");
+  std::string debug_mode("-d");
   fsl.Mount(mount_point, debug_mode);
 #elif defined(MAIDSAFE_APPLE)
   file_system::FileSystem fsys;
   std::string mount_point = fsys.MaidsafeFuseDir();
   *mount_path = fs::path(mount_point, fs::native);
-  std::string debug_mode_("-d");
+  std::string debug_mode("-d");
   fsm.Mount(mount_point, debug_mode);
 #endif
   tt::sleep(p_time::seconds(5));
@@ -282,9 +281,9 @@ int LoginAndMount(maidsafe::ClientController *cc,
 int UnmountAndLogout(maidsafe::ClientController *cc,
                      maidsafe::SessionSingleton *ss
 #ifdef MAIDSAFE_POSIX
-                     const fs_l_fuse::FSLinux &fsl
+                     , fs_l_fuse::FSLinux &fsl
 #elif defined(MAIDSAFE_APPLE)
-                     const fs_l_fuse::FSLinux &fsm
+                     , fs_l_fuse::FSLinux &fsm
 #endif
                      ) {
   if (!logged_in_)
@@ -310,10 +309,10 @@ int UnmountAndLogout(maidsafe::ClientController *cc,
   tt::sleep(p_time::milliseconds(500));
 
 #elif defined(MAIDSAFE_POSIX)
-  fsl->UnMount();
+  fsl.UnMount();
   success = true;
 #elif defined(MAIDSAFE_APPLE)
-  fsm->UnMount();
+  fsm.UnMount();
   success = true;
 #endif
   if (!success)

@@ -29,7 +29,9 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
+#include <fstream>
 #include "boost/filesystem.hpp"
+#include "boost/filesystem/fstream.hpp"
 #include "boost/thread/thread.hpp"
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/crypto.h"

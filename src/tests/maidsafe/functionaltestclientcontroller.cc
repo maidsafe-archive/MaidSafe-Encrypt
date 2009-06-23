@@ -389,8 +389,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  std::list<std::string> list;
-  ASSERT_TRUE(cc->ValidateUser(password, &list));
+  ASSERT_TRUE(cc->ValidateUser(password));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -485,8 +484,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  std::list<std::string> list;
-  ASSERT_TRUE(cc->ValidateUser(password, &list));
+  ASSERT_TRUE(cc->ValidateUser(password));
   ASSERT_EQ("juan.smer", ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -517,8 +515,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   load_res.Clear();
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  list.clear();
-  ASSERT_TRUE(cc->ValidateUser(password, &list));
+  ASSERT_TRUE(cc->ValidateUser(password));
   ASSERT_EQ("juan.smer", ss->Username());
   ASSERT_EQ("2207", ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -548,9 +545,8 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   load_res.Clear();
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  list.clear();
   std::string new_pwd("elpasguor");
-  ASSERT_TRUE(cc->ValidateUser(new_pwd, &list));
+  ASSERT_TRUE(cc->ValidateUser(new_pwd));
   ASSERT_EQ("juan.smer", ss->Username());
   ASSERT_EQ("2207", ss->Pin());
   ASSERT_EQ("elpasguor", ss->Password());
@@ -581,8 +577,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   load_res.Clear();
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  list.clear();
-  ASSERT_FALSE(cc->ValidateUser(password, &list))
+  ASSERT_FALSE(cc->ValidateUser(password))
     << "old details still work, damn it, damn the devil to hell";
   ss->ResetSession();
   ASSERT_EQ("", ss->Username());
@@ -692,8 +687,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  std::list<std::string> list;
-  ASSERT_TRUE(cc->ValidateUser(password, &list));
+  ASSERT_TRUE(cc->ValidateUser(password));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -814,8 +808,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  std::list<std::string> list;
-  ASSERT_TRUE(cc->ValidateUser(password, &list));
+  ASSERT_TRUE(cc->ValidateUser(password));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -902,8 +895,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  std::list<std::string> list;
-  ASSERT_TRUE(cc->ValidateUser(password, &list));
+  ASSERT_TRUE(cc->ValidateUser(password));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -941,8 +933,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   load_res.Clear();
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  list.clear();
-  ASSERT_TRUE(cc->ValidateUser(password, &list));
+  ASSERT_TRUE(cc->ValidateUser(password));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -987,8 +978,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   load_res.Clear();
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  list.clear();
-  ASSERT_TRUE(cc->ValidateUser(password, &list));
+  ASSERT_TRUE(cc->ValidateUser(password));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -1141,8 +1131,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
   ASSERT_EQ(kCallbackSuccess, load_res.result());
-  std::list<std::string> list;
-  ASSERT_TRUE(cc->ValidateUser(password, &list));
+  ASSERT_TRUE(cc->ValidateUser(password));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
