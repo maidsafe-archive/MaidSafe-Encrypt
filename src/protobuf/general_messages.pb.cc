@@ -149,6 +149,7 @@ struct StaticDescriptorInitializer_general_5fmessages_2eproto {
 const ::std::string GeneralResponse::_default_result_;
 GeneralResponse::GeneralResponse()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -158,6 +159,7 @@ void GeneralResponse::InitAsDefaultInstance() {}
 
 GeneralResponse::GeneralResponse(const GeneralResponse& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -207,6 +209,7 @@ const ::std::string VaultConfig::_default_datastore_dir_;
 
 VaultConfig::VaultConfig()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     pmid_public_(const_cast< ::std::string*>(&_default_pmid_public_)),
     pmid_private_(const_cast< ::std::string*>(&_default_pmid_private_)),
@@ -221,6 +224,7 @@ void VaultConfig::InitAsDefaultInstance() {}
 
 VaultConfig::VaultConfig(const VaultConfig& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     pmid_public_(const_cast< ::std::string*>(&_default_pmid_public_)),
     pmid_private_(const_cast< ::std::string*>(&_default_pmid_private_)),
@@ -288,6 +292,7 @@ const ::std::string KadConfig_Contact::_default_rendezvouz_ip_;
 
 KadConfig_Contact::KadConfig_Contact()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     node_id_(const_cast< ::std::string*>(&_default_node_id_)),
     ip_(const_cast< ::std::string*>(&_default_ip_)),
@@ -303,6 +308,7 @@ void KadConfig_Contact::InitAsDefaultInstance() {}
 
 KadConfig_Contact::KadConfig_Contact(const KadConfig_Contact& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     node_id_(const_cast< ::std::string*>(&_default_node_id_)),
     ip_(const_cast< ::std::string*>(&_default_ip_)),
@@ -363,8 +369,10 @@ const ::google::protobuf::Reflection* KadConfig_Contact::GetReflection() const {
 
 KadConfig::KadConfig()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
-    port_(0) {
+    port_(0),
+    contact_() {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -372,8 +380,10 @@ void KadConfig::InitAsDefaultInstance() {}
 
 KadConfig::KadConfig(const KadConfig& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
-    port_(0) {
+    port_(0),
+    contact_() {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
 }

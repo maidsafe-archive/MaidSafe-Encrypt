@@ -55,7 +55,7 @@ message MetaDataMap {
 message Chunk {
   optional bytes compression_type = 1;
   repeated bytes chunklet = 2;
-  repeated int32 pre_compression_chunklet_size_ = 3;
+  repeated int32 pre_compression_chunklet_size = 3;
 }
 
 message DataAtlas {

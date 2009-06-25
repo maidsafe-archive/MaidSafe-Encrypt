@@ -66,10 +66,10 @@ void GeneratePmidStuff(std::string *public_key,
 class RunPDVaults {
  public:
   RunPDVaults(const int &no_of_vaults,
-              const std::string &test_dir,
-              const std::string &bootstrap_id,
-              const std::string &bootstrap_ip,
-              const boost::uint16_t &bootstrap_port)
+              const std::string &test_dir)
+//              const std::string &bootstrap_id,
+//              const std::string &bootstrap_ip,
+//              const boost::uint16_t &bootstrap_port)
       : no_of_vaults_(no_of_vaults),
         test_dir_(test_dir),
 //        bootstrap_id_(bootstrap_id),
@@ -269,7 +269,8 @@ class FunctionalMaidsafeClientControllerTest : public testing::Test {
                                              cb() {}
 
   static void SetUpTestCase() {
-    shared_vaults_ = new maidsafe_vault::RunPDVaults(10, "CCTest", "", "", 0);
+    shared_vaults_ = new maidsafe_vault::RunPDVaults(10, "CCTest"
+                     /*, "", "", 0*/);
     shared_vaults_->SetUp();
   }
 

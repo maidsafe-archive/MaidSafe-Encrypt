@@ -416,8 +416,7 @@ void ClientBufferPacketHandler::GetBufferPacketInfo(
 }
 
 void ClientBufferPacketHandler::GetBufferPacketInfo_Callback(
-    const std::string &result, const buffer_packet_type &type,
-    base::callback_func_type cb) {
+    const std::string &result, base::callback_func_type cb) {
   maidsafe::GetResponse local_result;
   std::string str_local_result;
   if ((!local_result.ParseFromString(result))||

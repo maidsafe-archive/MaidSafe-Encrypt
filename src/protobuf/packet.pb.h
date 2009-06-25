@@ -111,6 +111,8 @@ class GenericPacket : public ::google::protobuf::Message {
   inline void set_signature(const void* value, size_t size);
   inline ::std::string* mutable_signature();
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -216,6 +218,8 @@ class BufferPacketInfo : public ::google::protobuf::Message {
   inline void clear_online();
   inline ::google::protobuf::int32 online() const;
   inline void set_online(::google::protobuf::int32 value);
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -328,6 +332,8 @@ class BufferPacketMessage : public ::google::protobuf::Message {
   inline packethandler::MessageType type() const;
   inline void set_type(packethandler::MessageType value);
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -417,6 +423,8 @@ class BufferPacket : public ::google::protobuf::Message {
   inline const ::packethandler::GenericPacket& messages(int index) const;
   inline ::packethandler::GenericPacket* mutable_messages(int index);
   inline ::packethandler::GenericPacket* add_messages();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -515,6 +523,8 @@ class ValidatedBufferPacketMessage : public ::google::protobuf::Message {
   inline void clear_type();
   inline packethandler::MessageType type() const;
   inline void set_type(packethandler::MessageType value);
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -643,6 +653,8 @@ class ContactInfo : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 language() const;
   inline void set_language(::google::protobuf::int32 value);
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -729,6 +741,8 @@ class ContactNotification : public ::google::protobuf::Message {
   inline void clear_contact();
   inline const ::packethandler::ContactInfo& contact() const;
   inline ::packethandler::ContactInfo* mutable_contact();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -821,6 +835,8 @@ class InstantFileNotification : public ::google::protobuf::Message {
   inline void set_filename(const char* value);
   inline void set_filename(const void* value, size_t size);
   inline ::std::string* mutable_filename();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -966,6 +982,8 @@ class PrivateShareNotification : public ::google::protobuf::Message {
   inline void set_dir_db_key(const void* value, size_t size);
   inline ::std::string* mutable_dir_db_key();
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -1083,6 +1101,8 @@ class InstantMessage : public ::google::protobuf::Message {
   inline const ::packethandler::PrivateShareNotification& privateshare_notification() const;
   inline ::packethandler::PrivateShareNotification* mutable_privateshare_notification();
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -1183,6 +1203,8 @@ class StoreMessagesResult : public ::google::protobuf::Message {
   inline void add_failed(const char* value);
   inline void set_failed(int index, const void* value, size_t size);
   inline void add_failed(const void* value, size_t size);
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -1286,6 +1308,8 @@ class CreateMSIDResult : public ::google::protobuf::Message {
   inline void set_public_key(const char* value);
   inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;

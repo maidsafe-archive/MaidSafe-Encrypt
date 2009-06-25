@@ -1006,7 +1006,11 @@ int ClientController::HandleReceivedShare(
   std::string dbNameNew(newDb.string());
   std::vector<std::string> attributes;
   std::list<ShareParticipants> participants;
-  attributes.push_back(psn.name());
+  if (name.empty())
+    attributes.push_back(psn.name());
+  // TODO(Dan#5#): 2009-06-25 - Make sure name is the correct one
+  else
+    attributes.push_back(name);
   attributes.push_back(psn.msid());
   attributes.push_back(psn.public_key());
   attributes.push_back("");
@@ -1174,9 +1178,14 @@ int ClientController::AddInstantFile(
   std::string dir_key("");
 
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-
-  fs::path path_with_filename(base::TidyPath(kRootSubdir[0][0]));
-  path_with_filename /= ifm.filename();
+  fs::path path_with_filename;
+  if (location.empty()) {
+    path_with_filename = fs::path(base::TidyPath(kRootSubdir[0][0]));
+    path_with_filename /= ifm.filename();
+  } else {
+    // TODO(Dan#5#): 2009-06-25 - Make sure location is the correct path
+    path_with_filename = fs::path(base::TidyPath(location));
+  }
   std::string path_add_element(path_with_filename.string());
   DB_TYPE db_type;
   std::string msid("");
@@ -2293,10 +2302,10 @@ bool ClientController::ReadOnly(const std::string &path, bool gui) {
   return false;
 }
 
+
 //////////////////////////////
 // Here comes FUSE stuff !! //
 //////////////////////////////
-
 
 char ClientController::DriveLetter() {
   for (char drive_ = 'm'; drive_ <= 'z'; ++drive_) {
@@ -2798,51 +2807,6 @@ int ClientController::create(const std::string &path) {
 #endif
   return mknod(path);
 }
-
-int ClientController::chmod(const std::string &path, int perm) {
-#ifdef DEBUG
-  printf("\t\tCC::chmod %s to %i\n", path.c_str(), perm);
-#endif
-  return 0;
-}
-
-int ClientController::chown(const std::string &path, std::string &user) {
-#ifdef DEBUG
-  printf("\t\tCC::chown %s with user %s\n", path.c_str(), user.c_str());
-#endif
-  return 0;
-}
-
-int ClientController::truncate() { return 0; }
-
-int ClientController::flush() { return 0; }
-
-int ClientController::fsync() { return 0; }
-
-int ClientController::opendir(const std::string &path) {
-#ifdef DEBUG
-  printf("\t\tCC::opendir %s\n", path.c_str());
-#endif
-  return 0;
-}
-
-int ClientController::getdir(const std::string &path) {
-#ifdef DEBUG
-  printf("\t\tCC::getdir %s\n", path.c_str());
-#endif
-  return 0;
-}
-
-int ClientController::releasedir(const std::string &path) {
-#ifdef DEBUG
-  printf("\t\tCC::releasedir %s\n", path.c_str());
-#endif
-  return 0;
-}
-
-int ClientController::fsyncdir() { return 0; }
-
-int ClientController::ftruncate() { return 0; }
 
 ///////////////////////////////
 // Here endeth FUSE stuff !! //

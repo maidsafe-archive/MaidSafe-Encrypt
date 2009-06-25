@@ -139,6 +139,8 @@ class Key : public ::google::protobuf::Message {
   inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -271,6 +273,8 @@ class DataMap : public ::google::protobuf::Message {
   inline void clear_compression_on();
   inline bool compression_on() const;
   inline void set_compression_on(bool value);
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -427,6 +431,8 @@ class MetaDataMap : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 last_access() const;
   inline void set_last_access(::google::protobuf::int32 value);
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -528,14 +534,16 @@ class Chunk : public ::google::protobuf::Message {
   inline void set_chunklet(int index, const void* value, size_t size);
   inline void add_chunklet(const void* value, size_t size);
   
-  // repeated int32 pre_compression_chunklet_size_ = 3;
-  inline int pre_compression_chunklet_size__size() const;
-  inline void clear_pre_compression_chunklet_size_();
-  inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >& pre_compression_chunklet_size_() const;
-  inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >* mutable_pre_compression_chunklet_size_();
-  inline ::google::protobuf::int32 pre_compression_chunklet_size_(int index) const;
-  inline void set_pre_compression_chunklet_size_(int index, ::google::protobuf::int32 value);
-  inline void add_pre_compression_chunklet_size_(::google::protobuf::int32 value);
+  // repeated int32 pre_compression_chunklet_size = 3;
+  inline int pre_compression_chunklet_size_size() const;
+  inline void clear_pre_compression_chunklet_size();
+  inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >& pre_compression_chunklet_size() const;
+  inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >* mutable_pre_compression_chunklet_size();
+  inline ::google::protobuf::int32 pre_compression_chunklet_size(int index) const;
+  inline void set_pre_compression_chunklet_size(int index, ::google::protobuf::int32 value);
+  inline void add_pre_compression_chunklet_size(::google::protobuf::int32 value);
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -544,7 +552,7 @@ class Chunk : public ::google::protobuf::Message {
   ::std::string* compression_type_;
   static const ::std::string _default_compression_type_;
   ::google::protobuf::RepeatedPtrField< ::std::string> chunklet_;
-  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > pre_compression_chunklet_size__;
+  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > pre_compression_chunklet_size_;
   friend void protobuf_BuildDesc_datamaps_2eproto_AssignGlobalDescriptors(
       const ::google::protobuf::FileDescriptor* file);
   ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
@@ -639,6 +647,8 @@ class DataAtlas : public ::google::protobuf::Message {
   inline const ::maidsafe::DataMap& dms(int index) const;
   inline ::maidsafe::DataMap* mutable_dms(int index);
   inline ::maidsafe::DataMap* add_dms();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -1414,29 +1424,29 @@ inline void Chunk::add_chunklet(const void* value, size_t size) {
   chunklet_.Add()->assign(reinterpret_cast<const char*>(value), size);
 }
 
-// repeated int32 pre_compression_chunklet_size_ = 3;
-inline int Chunk::pre_compression_chunklet_size__size() const {
-  return pre_compression_chunklet_size__.size();
+// repeated int32 pre_compression_chunklet_size = 3;
+inline int Chunk::pre_compression_chunklet_size_size() const {
+  return pre_compression_chunklet_size_.size();
 }
-inline void Chunk::clear_pre_compression_chunklet_size_() {
-  pre_compression_chunklet_size__.Clear();
+inline void Chunk::clear_pre_compression_chunklet_size() {
+  pre_compression_chunklet_size_.Clear();
 }
 inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
-Chunk::pre_compression_chunklet_size_() const {
-  return pre_compression_chunklet_size__;
+Chunk::pre_compression_chunklet_size() const {
+  return pre_compression_chunklet_size_;
 }
 inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
-Chunk::mutable_pre_compression_chunklet_size_() {
-  return &pre_compression_chunklet_size__;
+Chunk::mutable_pre_compression_chunklet_size() {
+  return &pre_compression_chunklet_size_;
 }
-inline ::google::protobuf::int32 Chunk::pre_compression_chunklet_size_(int index) const {
-  return pre_compression_chunklet_size__.Get(index);
+inline ::google::protobuf::int32 Chunk::pre_compression_chunklet_size(int index) const {
+  return pre_compression_chunklet_size_.Get(index);
 }
-inline void Chunk::set_pre_compression_chunklet_size_(int index, ::google::protobuf::int32 value) {
-  pre_compression_chunklet_size__.Set(index, value);
+inline void Chunk::set_pre_compression_chunklet_size(int index, ::google::protobuf::int32 value) {
+  pre_compression_chunklet_size_.Set(index, value);
 }
-inline void Chunk::add_pre_compression_chunklet_size_(::google::protobuf::int32 value) {
-  pre_compression_chunklet_size__.Add(value);
+inline void Chunk::add_pre_compression_chunklet_size(::google::protobuf::int32 value) {
+  pre_compression_chunklet_size_.Add(value);
 }
 
 // -------------------------------------------------------------------

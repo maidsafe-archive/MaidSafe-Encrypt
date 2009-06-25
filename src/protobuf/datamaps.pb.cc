@@ -106,7 +106,7 @@ void protobuf_BuildDesc_datamaps_2eproto_AssignGlobalDescriptors(const ::google:
   static const int Chunk_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Chunk, compression_type_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Chunk, chunklet_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Chunk, pre_compression_chunklet_size__),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Chunk, pre_compression_chunklet_size_),
   };
   Chunk_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -171,18 +171,18 @@ void protobuf_BuildDesc_datamaps_2eproto() {
     "\006 \001(\014\022\026\n\016file_size_high\030\007 \001(\005\022\025\n\rfile_si"
     "ze_low\030\010 \001(\005\022\025\n\rcreation_time\030\t \001(\005\022\025\n\rl"
     "ast_modified\030\n \001(\005\022\023\n\013last_access\030\013 \001(\005\""
-    "[\n\005Chunk\022\030\n\020compression_type\030\001 \001(\014\022\020\n\010ch"
-    "unklet\030\002 \003(\014\022&\n\036pre_compression_chunklet"
-    "_size_\030\003 \003(\005\"\202\001\n\tDataAtlas\022\023\n\013root_db_ke"
-    "y\030\001 \001(\014\022\033\n\004keys\030\002 \003(\0132\r.maidsafe.Key\022#\n\004"
-    "mdms\030\003 \003(\0132\025.maidsafe.MetaDataMap\022\036\n\003dms"
-    "\030\004 \003(\0132\021.maidsafe.DataMap*\240\001\n\010itemtype\022\020"
-    "\n\014REGULAR_FILE\020\000\022\016\n\nSMALL_FILE\020\001\022\016\n\nEMPT"
-    "Y_FILE\020\002\022\017\n\013LOCKED_FILE\020\003\022\r\n\tDIRECTORY\020\004"
-    "\022\023\n\017EMPTY_DIRECTORY\020\005\022\010\n\004LINK\020\006\022\026\n\022NOT_F"
-    "OR_PROCESSING\020\007\022\013\n\007UNKNOWN\020\010*Y\n\nPacketTy"
-    "pe\022\t\n\005ANMID\020\000\022\n\n\006ANTMID\020\001\022\n\n\006ANSMID\020\002\022\010\n"
-    "\004MAID\020\003\022\010\n\004PMID\020\004\022\n\n\006ANMPID\020\005\022\010\n\004MPID\020\006", 999,
+    "Z\n\005Chunk\022\030\n\020compression_type\030\001 \001(\014\022\020\n\010ch"
+    "unklet\030\002 \003(\014\022%\n\035pre_compression_chunklet"
+    "_size\030\003 \003(\005\"\202\001\n\tDataAtlas\022\023\n\013root_db_key"
+    "\030\001 \001(\014\022\033\n\004keys\030\002 \003(\0132\r.maidsafe.Key\022#\n\004m"
+    "dms\030\003 \003(\0132\025.maidsafe.MetaDataMap\022\036\n\003dms\030"
+    "\004 \003(\0132\021.maidsafe.DataMap*\240\001\n\010itemtype\022\020\n"
+    "\014REGULAR_FILE\020\000\022\016\n\nSMALL_FILE\020\001\022\016\n\nEMPTY"
+    "_FILE\020\002\022\017\n\013LOCKED_FILE\020\003\022\r\n\tDIRECTORY\020\004\022"
+    "\023\n\017EMPTY_DIRECTORY\020\005\022\010\n\004LINK\020\006\022\026\n\022NOT_FO"
+    "R_PROCESSING\020\007\022\013\n\007UNKNOWN\020\010*Y\n\nPacketTyp"
+    "e\022\t\n\005ANMID\020\000\022\n\n\006ANTMID\020\001\022\n\n\006ANSMID\020\002\022\010\n\004"
+    "MAID\020\003\022\010\n\004PMID\020\004\022\n\n\006ANMPID\020\005\022\010\n\004MPID\020\006", 998,
   &protobuf_BuildDesc_datamaps_2eproto_AssignGlobalDescriptors);
 }
 
@@ -242,6 +242,7 @@ const ::std::string Key::_default_private_key_;
 const ::std::string Key::_default_public_key_;
 Key::Key()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     id_(const_cast< ::std::string*>(&_default_id_)),
     type_(0),
@@ -254,6 +255,7 @@ void Key::InitAsDefaultInstance() {}
 
 Key::Key(const Key& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     id_(const_cast< ::std::string*>(&_default_id_)),
     type_(0),
@@ -312,9 +314,13 @@ const ::std::string DataMap::_default_se_version_;
 
 DataMap::DataMap()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     file_hash_(const_cast< ::std::string*>(&_default_file_hash_)),
     se_version_(const_cast< ::std::string*>(&_default_se_version_)),
+    chunk_name_(),
+    encrypted_chunk_name_(),
+    chunk_size_(),
     compression_on_(false) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -323,9 +329,13 @@ void DataMap::InitAsDefaultInstance() {}
 
 DataMap::DataMap(const DataMap& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     file_hash_(const_cast< ::std::string*>(&_default_file_hash_)),
     se_version_(const_cast< ::std::string*>(&_default_se_version_)),
+    chunk_name_(),
+    encrypted_chunk_name_(),
+    chunk_size_(),
     compression_on_(false) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
@@ -382,10 +392,12 @@ const ::std::string MetaDataMap::_default_tag_;
 
 MetaDataMap::MetaDataMap()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     id_(0),
     display_name_(const_cast< ::std::string*>(&_default_display_name_)),
     type_(0),
+    file_hash_(),
     stats_(const_cast< ::std::string*>(&_default_stats_)),
     tag_(const_cast< ::std::string*>(&_default_tag_)),
     file_size_high_(0),
@@ -400,10 +412,12 @@ void MetaDataMap::InitAsDefaultInstance() {}
 
 MetaDataMap::MetaDataMap(const MetaDataMap& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     id_(0),
     display_name_(const_cast< ::std::string*>(&_default_display_name_)),
     type_(0),
+    file_hash_(),
     stats_(const_cast< ::std::string*>(&_default_stats_)),
     tag_(const_cast< ::std::string*>(&_default_tag_)),
     file_size_high_(0),
@@ -461,8 +475,11 @@ const ::std::string Chunk::_default_compression_type_;
 
 Chunk::Chunk()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
-    compression_type_(const_cast< ::std::string*>(&_default_compression_type_)) {
+    compression_type_(const_cast< ::std::string*>(&_default_compression_type_)),
+    chunklet_(),
+    pre_compression_chunklet_size_() {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -470,8 +487,11 @@ void Chunk::InitAsDefaultInstance() {}
 
 Chunk::Chunk(const Chunk& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
-    compression_type_(const_cast< ::std::string*>(&_default_compression_type_)) {
+    compression_type_(const_cast< ::std::string*>(&_default_compression_type_)),
+    chunklet_(),
+    pre_compression_chunklet_size_() {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
 }
@@ -517,8 +537,12 @@ const ::std::string DataAtlas::_default_root_db_key_;
 
 DataAtlas::DataAtlas()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
-    root_db_key_(const_cast< ::std::string*>(&_default_root_db_key_)) {
+    root_db_key_(const_cast< ::std::string*>(&_default_root_db_key_)),
+    keys_(),
+    mdms_(),
+    dms_() {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -526,8 +550,12 @@ void DataAtlas::InitAsDefaultInstance() {}
 
 DataAtlas::DataAtlas(const DataAtlas& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
-    root_db_key_(const_cast< ::std::string*>(&_default_root_db_key_)) {
+    root_db_key_(const_cast< ::std::string*>(&_default_root_db_key_)),
+    keys_(),
+    mdms_(),
+    dms_() {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
 }

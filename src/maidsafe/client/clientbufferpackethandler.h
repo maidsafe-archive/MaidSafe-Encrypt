@@ -92,7 +92,7 @@ class ClientBufferPacketHandler {
   void GetBufferPacket_Callback(const std::string &result,
     const buffer_packet_type &type, base::callback_func_type cb);
   void GetBufferPacketInfo_Callback(const std::string &result,
-    const buffer_packet_type &type, base::callback_func_type cb);
+    base::callback_func_type cb);
   void ChangeStatus_Callback(const std::string &result,
     base::callback_func_type cb);
 //   std::string CreateMessage(const std::string &sender_id,

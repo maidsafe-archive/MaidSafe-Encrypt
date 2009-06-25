@@ -126,6 +126,8 @@ class ContactInfo : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 rv_port() const;
   inline void set_rv_port(::google::protobuf::int32 value);
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;

@@ -259,6 +259,7 @@ class TestPDVault : public testing::Test {
   TestPDVault() : kad_config_file_(".kadconfig"),
                   client_chunkstore_dir_("TestVault/ClientChunkstore"),
                   client_datastore_dir_("TestVault/ClientDatastore"),
+                  chunkstore_dirs_(),
                   pdclient_(),
                   client_keys_(),
                   client_public_key_(""),

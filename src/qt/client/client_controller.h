@@ -27,6 +27,8 @@
 
 // local
 #include "qt/client/share.h"
+#include "qt/client/profile.h"
+#include "qt/client/presence.h"
 #include "qt/client/contact.h"
 
 

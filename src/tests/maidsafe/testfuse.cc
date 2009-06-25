@@ -114,6 +114,8 @@ class TestCallback {
   }
 
  private:
+  TestCallback(const fs_l_fuse::fuse_test::TestCallback&);
+  TestCallback &operator=(const TestCallback&);
   boost::mutex* mutex_;
   std::string result_;
   bool callback_timed_out_;
@@ -364,9 +366,9 @@ TEST_F(FuseTest, FUNC_FS_RepeatedMount) {
 #ifdef MAIDSAFE_WIN32
     ASSERT_EQ(0, fuse_test::UnmountAndLogout(cc_, ss_));
 #elif defined(MAIDSAFE_POSIX)
-    ASSERT_EQ(0, fuse_test::UnmountAndLogout(cc_, ss_, fsl_));
+    ASSERT_EQ(0, fuse_test::UnmountAndLogout(cc_, fsl_));
 #elif defined(MAIDSAFE_APPLE)
-    ASSERT_EQ(0, fuse_test::UnmountAndLogout(cc_, ss_, fsm_));
+    ASSERT_EQ(0, fuse_test::UnmountAndLogout(cc_, fsm_));
 #endif
     printf("Logged out (%i)\n--------------------------------------\n\n", i+1);
     ASSERT_FALSE(fs::exists(mount_path_));

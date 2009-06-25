@@ -79,6 +79,7 @@ const ::std::string ContactInfo::_default_rv_ip_;
 
 ContactInfo::ContactInfo()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     node_id_(const_cast< ::std::string*>(&_default_node_id_)),
     ip_(const_cast< ::std::string*>(&_default_ip_)),
@@ -94,6 +95,7 @@ void ContactInfo::InitAsDefaultInstance() {}
 
 ContactInfo::ContactInfo(const ContactInfo& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     node_id_(const_cast< ::std::string*>(&_default_node_id_)),
     ip_(const_cast< ::std::string*>(&_default_ip_)),

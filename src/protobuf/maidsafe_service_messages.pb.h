@@ -138,6 +138,8 @@ class StoreRequest : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 data_type() const;
   inline void set_data_type(::google::protobuf::int32 value);
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -229,6 +231,8 @@ class StoreResponse : public ::google::protobuf::Message {
   inline void set_pmid_id(const char* value);
   inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -339,6 +343,8 @@ class DeleteRequest : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 data_type() const;
   inline void set_data_type(::google::protobuf::int32 value);
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -429,6 +435,8 @@ class DeleteResponse : public ::google::protobuf::Message {
   inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -504,6 +512,8 @@ class GetRequest : public ::google::protobuf::Message {
   inline void set_chunkname(const char* value);
   inline void set_chunkname(const void* value, size_t size);
   inline ::std::string* mutable_chunkname();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -597,6 +607,8 @@ class GetResponse : public ::google::protobuf::Message {
   inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -674,6 +686,8 @@ class CheckChunkRequest : public ::google::protobuf::Message {
   inline void set_chunkname(const char* value);
   inline void set_chunkname(const void* value, size_t size);
   inline ::std::string* mutable_chunkname();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -757,6 +771,8 @@ class CheckChunkResponse : public ::google::protobuf::Message {
   inline void set_pmid_id(const char* value);
   inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -842,6 +858,8 @@ class ValidityCheckRequest : public ::google::protobuf::Message {
   inline void set_random_data(const char* value);
   inline void set_random_data(const void* value, size_t size);
   inline ::std::string* mutable_random_data();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -936,6 +954,8 @@ class ValidityCheckResponse : public ::google::protobuf::Message {
   inline void set_pmid_id(const char* value);
   inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -1057,6 +1077,8 @@ class UpdateRequest : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 data_type() const;
   inline void set_data_type(::google::protobuf::int32 value);
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -1148,6 +1170,8 @@ class UpdateResponse : public ::google::protobuf::Message {
   inline void set_pmid_id(const char* value);
   inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -1242,6 +1266,8 @@ class GetMessagesRequest : public ::google::protobuf::Message {
   inline void set_signed_public_key(const char* value);
   inline void set_signed_public_key(const void* value, size_t size);
   inline ::std::string* mutable_signed_public_key();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -1344,6 +1370,8 @@ class GetMessagesResponse : public ::google::protobuf::Message {
   inline void set_pmid_id(const char* value);
   inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -1451,6 +1479,8 @@ class SwapChunkRequest : public ::google::protobuf::Message {
   inline void set_chunkname2(const char* value);
   inline void set_chunkname2(const void* value, size_t size);
   inline ::std::string* mutable_chunkname2();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -1594,6 +1624,8 @@ class SwapChunkResponse : public ::google::protobuf::Message {
   inline void set_pmid_id(const char* value);
   inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;

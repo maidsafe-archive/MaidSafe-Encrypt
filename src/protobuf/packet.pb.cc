@@ -388,6 +388,7 @@ const ::std::string GenericPacket::_default_data_;
 const ::std::string GenericPacket::_default_signature_;
 GenericPacket::GenericPacket()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     data_(const_cast< ::std::string*>(&_default_data_)),
     signature_(const_cast< ::std::string*>(&_default_signature_)) {
@@ -398,6 +399,7 @@ void GenericPacket::InitAsDefaultInstance() {}
 
 GenericPacket::GenericPacket(const GenericPacket& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     data_(const_cast< ::std::string*>(&_default_data_)),
     signature_(const_cast< ::std::string*>(&_default_signature_)) {
@@ -449,9 +451,11 @@ const ::std::string BufferPacketInfo::_default_ownerpublickey_;
 
 BufferPacketInfo::BufferPacketInfo()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     owner_(const_cast< ::std::string*>(&_default_owner_)),
     ownerpublickey_(const_cast< ::std::string*>(&_default_ownerpublickey_)),
+    users_(),
     online_(0) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -460,9 +464,11 @@ void BufferPacketInfo::InitAsDefaultInstance() {}
 
 BufferPacketInfo::BufferPacketInfo(const BufferPacketInfo& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     owner_(const_cast< ::std::string*>(&_default_owner_)),
     ownerpublickey_(const_cast< ::std::string*>(&_default_ownerpublickey_)),
+    users_(),
     online_(0) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
@@ -513,6 +519,7 @@ const ::std::string BufferPacketMessage::_default_aesenc_message_;
 
 BufferPacketMessage::BufferPacketMessage()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     sender_id_(const_cast< ::std::string*>(&_default_sender_id_)),
     sender_public_key_(const_cast< ::std::string*>(&_default_sender_public_key_)),
@@ -526,6 +533,7 @@ void BufferPacketMessage::InitAsDefaultInstance() {}
 
 BufferPacketMessage::BufferPacketMessage(const BufferPacketMessage& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     sender_id_(const_cast< ::std::string*>(&_default_sender_id_)),
     sender_public_key_(const_cast< ::std::string*>(&_default_sender_public_key_)),
@@ -584,7 +592,10 @@ const ::google::protobuf::Reflection* BufferPacketMessage::GetReflection() const
 
 BufferPacket::BufferPacket()
   : ::google::protobuf::Message(),
-    _cached_size_(0) {
+    _unknown_fields_(),
+    _cached_size_(0),
+    owner_info_(),
+    messages_() {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -592,7 +603,10 @@ void BufferPacket::InitAsDefaultInstance() {}
 
 BufferPacket::BufferPacket(const BufferPacket& from)
   : ::google::protobuf::Message(),
-    _cached_size_(0) {
+    _unknown_fields_(),
+    _cached_size_(0),
+    owner_info_(),
+    messages_() {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
 }
@@ -635,6 +649,7 @@ const ::std::string ValidatedBufferPacketMessage::_default_index_;
 
 ValidatedBufferPacketMessage::ValidatedBufferPacketMessage()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     sender_(const_cast< ::std::string*>(&_default_sender_)),
     message_(const_cast< ::std::string*>(&_default_message_)),
@@ -647,6 +662,7 @@ void ValidatedBufferPacketMessage::InitAsDefaultInstance() {}
 
 ValidatedBufferPacketMessage::ValidatedBufferPacketMessage(const ValidatedBufferPacketMessage& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     sender_(const_cast< ::std::string*>(&_default_sender_)),
     message_(const_cast< ::std::string*>(&_default_message_)),
@@ -706,6 +722,7 @@ const ::std::string ContactInfo::_default_city_;
 
 ContactInfo::ContactInfo()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     name_(const_cast< ::std::string*>(&_default_name_)),
     birthday_(const_cast< ::std::string*>(&_default_birthday_)),
@@ -721,6 +738,7 @@ void ContactInfo::InitAsDefaultInstance() {}
 
 ContactInfo::ContactInfo(const ContactInfo& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     name_(const_cast< ::std::string*>(&_default_name_)),
     birthday_(const_cast< ::std::string*>(&_default_birthday_)),
@@ -784,6 +802,7 @@ const ::google::protobuf::Reflection* ContactInfo::GetReflection() const {
 
 ContactNotification::ContactNotification()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     action_(0),
     contact_(NULL) {
@@ -795,6 +814,7 @@ void ContactNotification::InitAsDefaultInstance() {  contact_ = const_cast< ::pa
 
 ContactNotification::ContactNotification(const ContactNotification& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     action_(0),
     contact_(NULL) {
@@ -840,6 +860,7 @@ const ::std::string InstantFileNotification::_default_ser_dm_;
 const ::std::string InstantFileNotification::_default_filename_;
 InstantFileNotification::InstantFileNotification()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     ser_mdm_(const_cast< ::std::string*>(&_default_ser_mdm_)),
     ser_dm_(const_cast< ::std::string*>(&_default_ser_dm_)),
@@ -851,6 +872,7 @@ void InstantFileNotification::InitAsDefaultInstance() {}
 
 InstantFileNotification::InstantFileNotification(const InstantFileNotification& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     ser_mdm_(const_cast< ::std::string*>(&_default_ser_mdm_)),
     ser_dm_(const_cast< ::std::string*>(&_default_ser_dm_)),
@@ -909,11 +931,14 @@ const ::std::string PrivateShareNotification::_default_private_key_;
 const ::std::string PrivateShareNotification::_default_dir_db_key_;
 PrivateShareNotification::PrivateShareNotification()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     name_(const_cast< ::std::string*>(&_default_name_)),
     msid_(const_cast< ::std::string*>(&_default_msid_)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
     private_key_(const_cast< ::std::string*>(&_default_private_key_)),
+    admins_(),
+    readonlys_(),
     dir_db_key_(const_cast< ::std::string*>(&_default_dir_db_key_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -922,11 +947,14 @@ void PrivateShareNotification::InitAsDefaultInstance() {}
 
 PrivateShareNotification::PrivateShareNotification(const PrivateShareNotification& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     name_(const_cast< ::std::string*>(&_default_name_)),
     msid_(const_cast< ::std::string*>(&_default_msid_)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
     private_key_(const_cast< ::std::string*>(&_default_private_key_)),
+    admins_(),
+    readonlys_(),
     dir_db_key_(const_cast< ::std::string*>(&_default_dir_db_key_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
@@ -987,6 +1015,7 @@ const ::std::string InstantMessage::_default_message_;
 
 InstantMessage::InstantMessage()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     sender_(const_cast< ::std::string*>(&_default_sender_)),
     message_(const_cast< ::std::string*>(&_default_message_)),
@@ -1004,6 +1033,7 @@ void InstantMessage::InitAsDefaultInstance() {  contact_notification_ = const_ca
 
 InstantMessage::InstantMessage(const InstantMessage& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     sender_(const_cast< ::std::string*>(&_default_sender_)),
     message_(const_cast< ::std::string*>(&_default_message_)),
@@ -1061,9 +1091,11 @@ const ::std::string StoreMessagesResult::_default_result_;
 
 StoreMessagesResult::StoreMessagesResult()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
-    stored_msgs_(0) {
+    stored_msgs_(0),
+    failed_() {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -1071,9 +1103,11 @@ void StoreMessagesResult::InitAsDefaultInstance() {}
 
 StoreMessagesResult::StoreMessagesResult(const StoreMessagesResult& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
-    stored_msgs_(0) {
+    stored_msgs_(0),
+    failed_() {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
 }
@@ -1119,6 +1153,7 @@ const ::std::string CreateMSIDResult::_default_private_key_;
 const ::std::string CreateMSIDResult::_default_public_key_;
 CreateMSIDResult::CreateMSIDResult()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     name_(const_cast< ::std::string*>(&_default_name_)),
@@ -1131,6 +1166,7 @@ void CreateMSIDResult::InitAsDefaultInstance() {}
 
 CreateMSIDResult::CreateMSIDResult(const CreateMSIDResult& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     name_(const_cast< ::std::string*>(&_default_name_)),

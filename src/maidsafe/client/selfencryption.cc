@@ -161,7 +161,7 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
                                                     -this_chunk_done_);
       // save chunklet's size to chunk_ before compression so that correct
       // offset can be applied if required
-      chunk_.add_pre_compression_chunklet_size_(this_chunklet_size_);
+      chunk_.add_pre_compression_chunklet_size(this_chunklet_size_);
       // increment chunk size counter before compression
       this_chunk_done_ += this_chunklet_size_;
 

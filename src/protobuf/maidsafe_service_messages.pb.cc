@@ -458,6 +458,7 @@ const ::std::string StoreRequest::_default_signed_request_;
 
 StoreRequest::StoreRequest()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)),
     data_(const_cast< ::std::string*>(&_default_data_)),
@@ -472,6 +473,7 @@ void StoreRequest::InitAsDefaultInstance() {}
 
 StoreRequest::StoreRequest(const StoreRequest& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)),
     data_(const_cast< ::std::string*>(&_default_data_)),
@@ -534,6 +536,7 @@ const ::std::string StoreResponse::_default_result_;
 const ::std::string StoreResponse::_default_pmid_id_;
 StoreResponse::StoreResponse()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
@@ -544,6 +547,7 @@ void StoreResponse::InitAsDefaultInstance() {}
 
 StoreResponse::StoreResponse(const StoreResponse& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
@@ -596,6 +600,7 @@ const ::std::string DeleteRequest::_default_signed_request_;
 
 DeleteRequest::DeleteRequest()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
@@ -609,6 +614,7 @@ void DeleteRequest::InitAsDefaultInstance() {}
 
 DeleteRequest::DeleteRequest(const DeleteRequest& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
@@ -667,6 +673,7 @@ const ::std::string DeleteResponse::_default_result_;
 const ::std::string DeleteResponse::_default_pmid_id_;
 DeleteResponse::DeleteResponse()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
@@ -677,6 +684,7 @@ void DeleteResponse::InitAsDefaultInstance() {}
 
 DeleteResponse::DeleteResponse(const DeleteResponse& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
@@ -725,6 +733,7 @@ const ::google::protobuf::Reflection* DeleteResponse::GetReflection() const {
 const ::std::string GetRequest::_default_chunkname_;
 GetRequest::GetRequest()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -734,6 +743,7 @@ void GetRequest::InitAsDefaultInstance() {}
 
 GetRequest::GetRequest(const GetRequest& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -780,6 +790,7 @@ const ::std::string GetResponse::_default_content_;
 const ::std::string GetResponse::_default_pmid_id_;
 GetResponse::GetResponse()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     content_(const_cast< ::std::string*>(&_default_content_)),
@@ -791,6 +802,7 @@ void GetResponse::InitAsDefaultInstance() {}
 
 GetResponse::GetResponse(const GetResponse& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     content_(const_cast< ::std::string*>(&_default_content_)),
@@ -843,6 +855,7 @@ const ::google::protobuf::Reflection* GetResponse::GetReflection() const {
 const ::std::string CheckChunkRequest::_default_chunkname_;
 CheckChunkRequest::CheckChunkRequest()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -852,6 +865,7 @@ void CheckChunkRequest::InitAsDefaultInstance() {}
 
 CheckChunkRequest::CheckChunkRequest(const CheckChunkRequest& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -897,6 +911,7 @@ const ::std::string CheckChunkResponse::_default_result_;
 const ::std::string CheckChunkResponse::_default_pmid_id_;
 CheckChunkResponse::CheckChunkResponse()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
@@ -907,6 +922,7 @@ void CheckChunkResponse::InitAsDefaultInstance() {}
 
 CheckChunkResponse::CheckChunkResponse(const CheckChunkResponse& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
@@ -956,6 +972,7 @@ const ::std::string ValidityCheckRequest::_default_chunkname_;
 const ::std::string ValidityCheckRequest::_default_random_data_;
 ValidityCheckRequest::ValidityCheckRequest()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)),
     random_data_(const_cast< ::std::string*>(&_default_random_data_)) {
@@ -966,6 +983,7 @@ void ValidityCheckRequest::InitAsDefaultInstance() {}
 
 ValidityCheckRequest::ValidityCheckRequest(const ValidityCheckRequest& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)),
     random_data_(const_cast< ::std::string*>(&_default_random_data_)) {
@@ -1016,6 +1034,7 @@ const ::std::string ValidityCheckResponse::_default_hash_content_;
 const ::std::string ValidityCheckResponse::_default_pmid_id_;
 ValidityCheckResponse::ValidityCheckResponse()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     hash_content_(const_cast< ::std::string*>(&_default_hash_content_)),
@@ -1027,6 +1046,7 @@ void ValidityCheckResponse::InitAsDefaultInstance() {}
 
 ValidityCheckResponse::ValidityCheckResponse(const ValidityCheckResponse& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     hash_content_(const_cast< ::std::string*>(&_default_hash_content_)),
@@ -1084,6 +1104,7 @@ const ::std::string UpdateRequest::_default_signed_request_;
 
 UpdateRequest::UpdateRequest()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)),
     data_(const_cast< ::std::string*>(&_default_data_)),
@@ -1098,6 +1119,7 @@ void UpdateRequest::InitAsDefaultInstance() {}
 
 UpdateRequest::UpdateRequest(const UpdateRequest& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)),
     data_(const_cast< ::std::string*>(&_default_data_)),
@@ -1160,6 +1182,7 @@ const ::std::string UpdateResponse::_default_result_;
 const ::std::string UpdateResponse::_default_pmid_id_;
 UpdateResponse::UpdateResponse()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
@@ -1170,6 +1193,7 @@ void UpdateResponse::InitAsDefaultInstance() {}
 
 UpdateResponse::UpdateResponse(const UpdateResponse& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
@@ -1220,6 +1244,7 @@ const ::std::string GetMessagesRequest::_default_public_key_;
 const ::std::string GetMessagesRequest::_default_signed_public_key_;
 GetMessagesRequest::GetMessagesRequest()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     buffer_packet_name_(const_cast< ::std::string*>(&_default_buffer_packet_name_)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
@@ -1231,6 +1256,7 @@ void GetMessagesRequest::InitAsDefaultInstance() {}
 
 GetMessagesRequest::GetMessagesRequest(const GetMessagesRequest& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     buffer_packet_name_(const_cast< ::std::string*>(&_default_buffer_packet_name_)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
@@ -1285,8 +1311,10 @@ const ::std::string GetMessagesResponse::_default_result_;
 const ::std::string GetMessagesResponse::_default_pmid_id_;
 GetMessagesResponse::GetMessagesResponse()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
+    messages_(),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -1295,8 +1323,10 @@ void GetMessagesResponse::InitAsDefaultInstance() {}
 
 GetMessagesResponse::GetMessagesResponse(const GetMessagesResponse& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
+    messages_(),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
@@ -1347,6 +1377,7 @@ const ::std::string SwapChunkRequest::_default_chunkcontent1_;
 const ::std::string SwapChunkRequest::_default_chunkname2_;
 SwapChunkRequest::SwapChunkRequest()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     request_type_(0),
     chunkname1_(const_cast< ::std::string*>(&_default_chunkname1_)),
@@ -1360,6 +1391,7 @@ void SwapChunkRequest::InitAsDefaultInstance() {}
 
 SwapChunkRequest::SwapChunkRequest(const SwapChunkRequest& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     request_type_(0),
     chunkname1_(const_cast< ::std::string*>(&_default_chunkname1_)),
@@ -1422,6 +1454,7 @@ const ::std::string SwapChunkResponse::_default_chunkcontent2_;
 const ::std::string SwapChunkResponse::_default_pmid_id_;
 SwapChunkResponse::SwapChunkResponse()
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     request_type_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
@@ -1439,6 +1472,7 @@ void SwapChunkResponse::InitAsDefaultInstance() {}
 
 SwapChunkResponse::SwapChunkResponse(const SwapChunkResponse& from)
   : ::google::protobuf::Message(),
+    _unknown_fields_(),
     _cached_size_(0),
     request_type_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),

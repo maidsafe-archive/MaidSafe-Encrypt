@@ -84,6 +84,8 @@ class GeneralResponse : public ::google::protobuf::Message {
   inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -199,6 +201,8 @@ class VaultConfig : public ::google::protobuf::Message {
   inline void clear_port();
   inline ::google::protobuf::int32 port() const;
   inline void set_port(::google::protobuf::int32 value);
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -328,6 +332,8 @@ class KadConfig_Contact : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 rendezvouz_port() const;
   inline void set_rendezvouz_port(::google::protobuf::int32 value);
   
+  // nalga de camello -------------------------------------------------------
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -418,6 +424,8 @@ class KadConfig : public ::google::protobuf::Message {
   inline const ::base::KadConfig_Contact& contact(int index) const;
   inline ::base::KadConfig_Contact* mutable_contact(int index);
   inline ::base::KadConfig_Contact* add_contact();
+  
+  // nalga de camello -------------------------------------------------------
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
