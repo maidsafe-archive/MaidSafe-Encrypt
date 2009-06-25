@@ -25,7 +25,7 @@
 
 namespace maidsafe {
 
-inline void dummy_callback(const std::string& result) {}
+inline void dummy_callback(const std::string&) {}
 
 PDClient::PDClient(const std::string &datastore_dir,
                    const boost::uint16_t &port,
@@ -487,9 +487,7 @@ void PDClient::IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data) {
       // Initiate the Kademlia joining sequence - perform a search for this
       // node's own ID
       printf("2 stored copies: %d\n", data->stored_copies);
-      knode_->FindCloseNodes(
-          knode_->node_id(),
-          &dummy_callback);
+      knode_->FindCloseNodes(knode_->node_id(), &dummy_callback);
       return;
     }
     for (int i = 0; i < static_cast<int>(contacts.size()); ++i)

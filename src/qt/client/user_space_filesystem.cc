@@ -135,40 +135,45 @@ bool UserSpaceFileSystem::unmount()
     std::string ms_dir = impl_->fsys_.MaidsafeDir();
     std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
 #ifdef MAIDSAFE_WIN32
-    // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
-    // invoking using QProcess doesn't work if the path has spaces in the name
-    // so we need to go old skool...
-    QString operation( "open" );
-    QString command( "dokanctl" );
-    QString parameters( " /u " );
-    parameters.append(maidsafe::SessionSingleton::getInstance()->WinDrive());
-    quintptr returnValue;
-    QT_WA(
-        {
-            returnValue = (quintptr)ShellExecute(0,
-                                                (TCHAR *)operation.utf16(),
-                                                (TCHAR *)command.utf16(),
-                                                (TCHAR *)parameters.utf16(),
-                                                0,
-                                                SW_HIDE);
-        } ,
-        {
-            returnValue = (quintptr)ShellExecuteA(0,
-                                                  operation.toLocal8Bit().constData(),
-                                                  command.toLocal8Bit().constData(),
-                                                  parameters.toLocal8Bit().constData(),
-                                                  0,
-                                                  SW_HIDE);
-        }
-    );
+    std::locale loc;
+    wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
+        (loc).widen(maidsafe::SessionSingleton::getInstance()->WinDrive());
+    success = fs_w_fuse::DokanUnmount(drive_letter);
 
-    if ( returnValue <= 32 )
-    {
+//    // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
+//    // invoking using QProcess doesn't work if the path has spaces in the name
+//    // so we need to go old skool...
+//    QString operation( "open" );
+//    QString command( "dokanctl" );
+//    QString parameters( " /u " );
+//    parameters.append(maidsafe::SessionSingleton::getInstance()->WinDrive());
+//    quintptr returnValue;
+//    QT_WA(
+//        {
+//            returnValue = (quintptr)ShellExecute(0,
+//                                                (TCHAR *)operation.utf16(),
+//                                                (TCHAR *)command.utf16(),
+//                                                (TCHAR *)parameters.utf16(),
+//                                                0,
+//                                                SW_HIDE);
+//        } ,
+//        {
+//            returnValue = (quintptr)ShellExecuteA(0,
+//                                                  operation.toLocal8Bit().constData(),
+//                                                  command.toLocal8Bit().constData(),
+//                                                  parameters.toLocal8Bit().constData(),
+//                                                  0,
+//                                                  SW_HIDE);
+//        }
+//    );
+
+    if ( !success )
+//    {
       qWarning() << "UserSpaceFileSystem::unmount: failed to unmount dokan de mierrrrrda: "
-          << returnValue;
-    } else {
-      success = true;
-    }
+          << success;
+//    } else {
+//      success = true;
+//    }
 #else
     // un-mount fuse
     impl_->fsl_.UnMount();

@@ -39,8 +39,6 @@
 #include "protobuf/general_messages.pb.h"
 
 namespace fs = boost::filesystem;
-namespace tt = boost::this_thread;
-namespace p_time = boost::posix_time;
 
 namespace localvaults {
 
@@ -118,11 +116,11 @@ class Env: public testing::Environment {
     }
     // Start second vault and add as bootstrapping node for first vault
     (*pdvaults_)[1]->Start(false);
-    p_time::ptime stop = p_time::second_clock::local_time() +
-                         single_function_timeout;
+    boost::posix_time::ptime stop =
+        boost::posix_time::second_clock::local_time() + single_function_timeout;
     while (!(*pdvaults_)[1]->vault_started() &&
-           p_time::second_clock::local_time() < stop) {
-      tt::sleep(p_time::seconds(1));
+           boost::posix_time::second_clock::local_time() < stop) {
+      boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
     ASSERT_TRUE((*pdvaults_)[1]->vault_started());
     base::KadConfig kad_config;
@@ -140,10 +138,11 @@ class Env: public testing::Environment {
     // Start first vault, add him as bootstrapping node for all others and stop
     // second vault
     (*pdvaults_)[0]->Start(false);
-    stop = p_time::second_clock::local_time() + single_function_timeout;
+    stop = boost::posix_time::second_clock::local_time() +
+        single_function_timeout;
     while (!(*pdvaults_)[0]->vault_started() &&
-           p_time::second_clock::local_time() < stop) {
-      tt::sleep(p_time::seconds(1));
+           boost::posix_time::second_clock::local_time() < stop) {
+      boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
     ASSERT_TRUE((*pdvaults_)[0]->vault_started());
     printf("Vault 0 started.\n\n");
@@ -166,14 +165,15 @@ class Env: public testing::Environment {
       ASSERT_TRUE(kad_config.SerializeToOstream(&output));
       output.close();
       (*pdvaults_)[k]->Start(false);
-      stop = p_time::second_clock::local_time() + single_function_timeout;
+      stop = boost::posix_time::second_clock::local_time() +
+          single_function_timeout;
       while (!(*pdvaults_)[k]->vault_started() &&
-             p_time::second_clock::local_time() < stop) {
-        tt::sleep(p_time::seconds(1));
+             boost::posix_time::second_clock::local_time() < stop) {
+        boost::this_thread::sleep(boost::posix_time::seconds(1));
       }
       ASSERT_TRUE((*pdvaults_)[k]->vault_started());
       printf("Vault %i started.\n\n", k);
-//      tt::sleep(p_time::seconds(15));
+//      boost::this_thread::sleep(boost::posix_time::seconds(15));
     }
     // Make kad config file in ./ for clients' use.
     kad_config_file_ = ".kadconfig";
@@ -207,6 +207,8 @@ class Env: public testing::Environment {
 #endif
     printf("In vault tear down.\n");
     bool success(false);
+    for (int i = 0; i < current_nodes_created_; ++i)
+      (*pdvaults_)[i]->StopRvPing();
     for (int i = 0; i < current_nodes_created_; ++i) {
       printf("Trying to stop vault %i.\n", i);
       success = false;
@@ -240,7 +242,7 @@ class Env: public testing::Environment {
   const int kTestK_;
   int current_nodes_created_;
   boost::mutex mutex_;
-  p_time::seconds single_function_timeout;
+  boost::posix_time::seconds single_function_timeout;
 
  private:
   Env(const Env&);

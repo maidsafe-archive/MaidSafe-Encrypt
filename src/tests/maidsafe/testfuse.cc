@@ -27,21 +27,6 @@
 #include "tests/maidsafe/localvaults.h"
 
 #if defined MAIDSAFE_WIN32
-//    #include <windef.h>
-  #include <shellapi.h>
-//    #include <locale>
-#endif
-//
-//  #include <map>
-//  #include <set>
-//
-//  #include "boost/filesystem/fstream.hpp"
-//
-//  #include "fs/filesystem.h"
-//  #include "maidsafe/client/clientcontroller.h"
-//  #include "maidsafe/client/sessionsingleton.h"
-//  #include "protobuf/general_messages.pb.h"
-#if defined MAIDSAFE_WIN32
   #include "fs/w_fuse/fswin.h"
 #elif defined MAIDSAFE_POSIX
   #include "fs/l_fuse/fslinux.h"
@@ -61,7 +46,7 @@
 namespace fuse_test {
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
-static const int kNetworkSize_ = 10;
+static const int kNetworkSize_ = 20;
 static const int kTestK_ = 4;
 static bool logged_in_;
 static std::vector<fs::path> test_file_;
@@ -119,7 +104,7 @@ class TestCallback {
           }
         }
       }
-      tt::sleep(p_time::milliseconds(10));
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     }
     {
       boost::mutex::scoped_lock lock_(*mutex_);
@@ -221,7 +206,7 @@ int CreateUser(maidsafe::ClientController *cc,
 //  if (maidsafe::USER_EXISTS != result)
 //    return -9;
   logged_in_ = true;
-  tt::sleep(p_time::seconds(10));
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   return 0;
 }
 
@@ -245,7 +230,7 @@ int LoginAndMount(maidsafe::ClientController *cc,
       &TestCallback::CallbackFunc, &cb, _1), maidsafe::DEFCON2);
   if (maidsafe::USER_EXISTS != result)
     return -1;
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   if (!cc->ValidateUser(pw))
     return -2;
 
@@ -270,20 +255,21 @@ int LoginAndMount(maidsafe::ClientController *cc,
   std::string debug_mode("-d");
   fsm.Mount(mount_point, debug_mode);
 #endif
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   if (ss->Mounted() != 0)
     return -3;
   logged_in_ = true;
-  tt::sleep(p_time::seconds(10));
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   return 0;
 }
 
 int UnmountAndLogout(maidsafe::ClientController *cc,
+#ifdef MAIDSAFE_WIN32
                      maidsafe::SessionSingleton *ss
-#ifdef MAIDSAFE_POSIX
-                     , fs_l_fuse::FSLinux &fsl
+#elif defined(MAIDSAFE_POSIX)
+                     fs_l_fuse::FSLinux &fsl
 #elif defined(MAIDSAFE_APPLE)
-                     , fs_l_fuse::FSLinux &fsm
+                     fs_l_fuse::FSLinux &fsm
 #endif
                      ) {
   if (!logged_in_)
@@ -291,23 +277,10 @@ int UnmountAndLogout(maidsafe::ClientController *cc,
   // unmount drive
   bool success = false;
 #ifdef MAIDSAFE_WIN32
-  SHELLEXECUTEINFO shell_info;
-  memset(&shell_info, 0, sizeof(shell_info));
-  shell_info.cbSize = sizeof(shell_info);
-  shell_info.hwnd = NULL;
-  shell_info.lpVerb = L"open";
-  shell_info.lpFile = L"dokanctl";
-  shell_info.lpParameters = L" /u ";
   std::locale loc;
   wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
                          (loc).widen(ss->WinDrive());
-  shell_info.lpParameters += drive_letter;
-  shell_info.nShow = SW_HIDE;
-  shell_info.fMask = SEE_MASK_NOCLOSEPROCESS;
-  success = ShellExecuteEx(&shell_info);
-  WaitForSingleObject(shell_info.hProcess, INFINITE);
-  tt::sleep(p_time::milliseconds(500));
-
+  success = fs_w_fuse::DokanUnmount(drive_letter);
 #elif defined(MAIDSAFE_POSIX)
   fsl.UnMount();
   success = true;
@@ -321,7 +294,7 @@ int UnmountAndLogout(maidsafe::ClientController *cc,
   if (!success)
     return -2;
   logged_in_ = false;
-  tt::sleep(p_time::seconds(10));
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   return 0;
 }
 
@@ -398,9 +371,9 @@ TEST_F(FuseTest, FUNC_FS_RepeatedMount) {
     printf("Logged out (%i)\n--------------------------------------\n\n", i+1);
     ASSERT_FALSE(fs::exists(mount_path_));
   }
-//  tt::sleep(p_time::seconds(5));
+//  boost::this_thread::sleep(boost::posix_time::seconds(5));
   cc_->CloseConnection();
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 }
 /*
 TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
@@ -422,7 +395,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
         logout_ = ShellExecuteEx(&shell_info_);
         if (logout_)
           WaitForSingleObject(shell_info_.hProcess, INFINITE);
-        tt::sleep(p_time::milliseconds(500));
+        boost::this_thread::sleep(boost::posix_time::milliseconds(500));
       #else
         fsl_.UnMount();
       #endif
@@ -462,7 +435,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
                                              _1),
                                  maidsafe::DEFCON2);
   ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   std::list<std::string> list;
   ASSERT_TRUE(cc_->ValidateUser(password_, &list));
   ss_->SetMounted(0);
@@ -482,11 +455,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
     std::string debug_mode_("-d");
     fsm_.Mount(mount_point_, debug_mode_);
   #endif
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss_->Mounted());
   logged_in_ = true;
   printf("Logged in.\n");
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 
   // try to write file to root dir
   fs::path test_path_(mount_path_);
@@ -531,24 +504,24 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
   ASSERT_TRUE(success_);
   printf("Trying to create %s\n", test_file_[0].string().c_str());
   success_ = CreateRandomFile(test_file_[0].string(), 2, &pre_hash_[0]);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[1].string(), 10, &pre_hash_[1]);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[2].string(), 100, &pre_hash_[2]);
-  tt::sleep(p_time::seconds(10));
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[3].string(), 100, &pre_hash_[3]);
-  tt::sleep(p_time::seconds(60));
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[4].string(), 100, &pre_hash_[4]);
-  tt::sleep(p_time::seconds(60));
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
   maidsafe::SelfEncryption se_;
   for (int i = 0; i < 5; ++i) {
     ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
-    tt::sleep(p_time::seconds(5));
+    boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
 //  test_root_ = root_;
 //
@@ -573,33 +546,33 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
 //  try {
 //    fs::create_directory(test_dir_0_.string());
 //    fs::create_directory(test_dir_1_.string());
-//    tt::sleep(p_time::seconds(30));
+//    boost::this_thread::sleep(boost::posix_time::seconds(30));
 //    success_ = (fs::exists(test_dir_0_) && fs::exists(test_dir_1_));
 //  }
 //  catch(const std::exception &e_) {
 //    printf("%s\n", e_.what());
 //  }
-//  tt::sleep(p_time::seconds(30));
+//  boost::this_thread::sleep(boost::posix_time::seconds(30));
 //  ASSERT_TRUE(success_);
 //  printf("Trying to create %s\n", test_file_[5].string().c_str());
 //  success_ = CreateRandomFile(test_file_[5].string(), 2, &pre_hash_[5]);
-//  tt::sleep(p_time::seconds(5));
+//  boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  ASSERT_TRUE(success_);
 //  success_ = CreateRandomFile(test_file_[6].string(), 10, &pre_hash_[6]);
-//  tt::sleep(p_time::seconds(5));
+//  boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  ASSERT_TRUE(success_);
 //  success_ = CreateRandomFile(test_file_[7].string(), 100, &pre_hash_[7]);
-//  tt::sleep(p_time::seconds(10));
+//  boost::this_thread::sleep(boost::posix_time::seconds(10));
 //  ASSERT_TRUE(success_);
 //  success_ = CreateRandomFile(test_file_[8].string(), 100, &pre_hash_[8]);
-//  tt::sleep(p_time::seconds(60));
+//  boost::this_thread::sleep(boost::posix_time::seconds(60));
 //  ASSERT_TRUE(success_);
 //  success_ = CreateRandomFile(test_file_[9].string(), 100, &pre_hash_[9]);
-//  tt::sleep(p_time::seconds(60));
+//  boost::this_thread::sleep(boost::posix_time::seconds(60));
 //  ASSERT_TRUE(success_);
 //  for (int i = 5; i < 10; ++i) {
 //    ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
-//    tt::sleep(p_time::seconds(5));
+//    boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  }
   test_root_ = root_;
 
@@ -629,27 +602,27 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
   catch(const std::exception &e_) {
     printf("%s\n", e_.what());
   }
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   ASSERT_TRUE(success_);
   printf("Trying to create %s\n", test_file_[10].string().c_str());
   success_ = CreateRandomFile(test_file_[10].string(), 2, &pre_hash_[10]);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[11].string(), 10, &pre_hash_[11]);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[12].string(), 100, &pre_hash_[12]);
-  tt::sleep(p_time::seconds(10));
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[13].string(), 100, &pre_hash_[13]);
-  tt::sleep(p_time::seconds(60));
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[14].string(), 100, &pre_hash_[14]);
-  tt::sleep(p_time::seconds(60));
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
   for (int i = 10; i < 15; ++i) {
     ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
-    tt::sleep(p_time::seconds(5));
+    boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
   test_root_ = root_;
 
@@ -674,12 +647,12 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
   catch(const std::exception &e_) {
     printf("%s\n", e_.what());
   }
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   ASSERT_FALSE(success_);
   printf("Trying to create %s\n", test_txt_.string().c_str());
   std::string file_hash_("");
   success_ = CreateRandomFile(test_txt_.string(), 2, &file_hash_);
-  tt::sleep(p_time::seconds(10));
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_FALSE(success_);
 
   // logout
@@ -697,7 +670,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
     logout_ = ShellExecuteEx(&shell_info_);
     if (logout_)
       WaitForSingleObject(shell_info_.hProcess, INFINITE);
-    tt::sleep(p_time::milliseconds(500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     logout_ = true;
   #else
     fsl_.UnMount();
@@ -705,7 +678,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
   #endif
   ASSERT_TRUE(logout_);
   ASSERT_TRUE(cc_->Logout());
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   printf("Logged out\n--------------------------------------------------\n\n");
   cc_->CloseConnection();
   logged_in_ = false;
@@ -730,7 +703,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_Rename_Dir) {
 //        logout_ = ShellExecuteEx(&shell_info_);
 //        if (logout_)
 //          WaitForSingleObject(shell_info_.hProcess, INFINITE);
-//        tt::sleep(p_time::milliseconds(500));
+//        boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 //      #else
 //        fsl_.UnMount();
 //      #endif
@@ -778,7 +751,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_Rename_Dir) {
 //                                             _1),
 //                                 maidsafe::DEFCON2);
 //  ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-//  tt::sleep(p_time::seconds(5));
+//  boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  std::list<dht::entry> list;
 //  ASSERT_TRUE(cc_->ValidateUser(password_, &list));
 //  ss_->SetMounted(0);
@@ -798,11 +771,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_Rename_Dir) {
 //    std::string debug_mode_("-d");
 //    fsm_.Mount(mount_point_, debug_mode_);
 //  #endif
-//  tt::sleep(p_time::seconds(5));
+//  boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  ASSERT_EQ(0, ss_->Mounted());
 //  logged_in_ = true;
 //  printf("Logged in.\n");
-//  tt::sleep(p_time::seconds(5));
+//  boost::this_thread::sleep(boost::posix_time::seconds(5));
 //
 //  // write files and dirs to "/My Files" dir
 //  #if defined MAIDSAFE_WIN32
@@ -829,13 +802,13 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_Rename_Dir) {
 //  catch(const std::exception &e_) {
 //    printf("%s\n", e_.what());
 //  }
-//  tt::sleep(p_time::seconds(30));
+//  boost::this_thread::sleep(boost::posix_time::seconds(30));
 //  ASSERT_TRUE(success_);
 //  ASSERT_TRUE(renamation);
 //
 //  fs::path fileillo(test_dir_0_renamed / "summat.txt");
 //  success_ = CreateRandomFile(fileillo.string(), 100, &pre_hash_[2]);
-//  tt::sleep(p_time::seconds(10));
+//  boost::this_thread::sleep(boost::posix_time::seconds(10));
 
 // DO NOT ERASE. HAD TO COMMIT TO GENERATE BUILD.
   SUCCEED();
@@ -859,7 +832,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
         logout_ = ShellExecuteEx(&shell_info_);
         if (logout_)
           WaitForSingleObject(shell_info_.hProcess, INFINITE);
-        tt::sleep(p_time::milliseconds(500));
+        boost::this_thread::sleep(boost::posix_time::milliseconds(500));
       #else
         fsl_.UnMount();
       #endif
@@ -900,7 +873,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
                                              _1),
                                  maidsafe::DEFCON2);
   ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   std::list<std::string> list;
   ASSERT_TRUE(cc_->ValidateUser(password_, &list));
   ss_->SetMounted(0);
@@ -920,11 +893,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
     std::string debug_mode_("-d");
     fsm_.Mount(mount_point_, debug_mode_);
   #endif
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss_->Mounted());
   logged_in_ = true;
   printf("Logged in.\n");
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 
   // try to write file to root dir
   fs::path test_path_(mount_path_);
@@ -966,28 +939,28 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   catch(const std::exception &e_) {
     printf("%s\n", e_.what());
   }
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   ASSERT_TRUE(success_);
   printf("Trying to create %s\n", test_file_[0].string().c_str());
   success_ = CreateRandomFile(test_file_[0].string(), 2, &pre_hash_[0]);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[1].string(), 10, &pre_hash_[1]);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[2].string(), 100, &pre_hash_[2]);
-  tt::sleep(p_time::seconds(10));
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[3].string(), 100, &pre_hash_[3]);
-  tt::sleep(p_time::seconds(60));
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[4].string(), 100, &pre_hash_[4]);
-  tt::sleep(p_time::seconds(60));
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
   maidsafe::SelfEncryption se_;
   for (int i = 0; i < 5; ++i) {
     ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
-    tt::sleep(p_time::seconds(5));
+    boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
 //  test_root_ = root_;
 //
@@ -1012,33 +985,33 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
 //  try {
 //    fs::create_directory(test_dir_0_.string());
 //    fs::create_directory(test_dir_1_.string());
-//    tt::sleep(p_time::seconds(30));
+//    boost::this_thread::sleep(boost::posix_time::seconds(30));
 //    success_ = (fs::exists(test_dir_0_) && fs::exists(test_dir_1_));
 //  }
 //  catch(const std::exception &e_) {
 //    printf("%s\n", e_.what());
 //  }
-//  tt::sleep(p_time::seconds(30));
+//  boost::this_thread::sleep(boost::posix_time::seconds(30));
 //  ASSERT_TRUE(success_);
 //  printf("Trying to create %s\n", test_file_[5].string().c_str());
 //  success_ = CreateRandomFile(test_file_[5].string(), 2, &pre_hash_[5]);
-//  tt::sleep(p_time::seconds(5));
+//  boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  ASSERT_TRUE(success_);
 //  success_ = CreateRandomFile(test_file_[6].string(), 10, &pre_hash_[6]);
-//  tt::sleep(p_time::seconds(5));
+//  boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  ASSERT_TRUE(success_);
 //  success_ = CreateRandomFile(test_file_[7].string(), 100, &pre_hash_[7]);
-//  tt::sleep(p_time::seconds(10));
+//  boost::this_thread::sleep(boost::posix_time::seconds(10));
 //  ASSERT_TRUE(success_);
 //  success_ = CreateRandomFile(test_file_[8].string(), 100, &pre_hash_[8]);
-//  tt::sleep(p_time::seconds(60));
+//  boost::this_thread::sleep(boost::posix_time::seconds(60));
 //  ASSERT_TRUE(success_);
 //  success_ = CreateRandomFile(test_file_[9].string(), 100, &pre_hash_[9]);
-//  tt::sleep(p_time::seconds(60));
+//  boost::this_thread::sleep(boost::posix_time::seconds(60));
 //  ASSERT_TRUE(success_);
 //  for (int i = 5; i < 10; ++i) {
 //    ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
-//    tt::sleep(p_time::seconds(5));
+//    boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  }
   test_root_ = root_;
 
@@ -1068,27 +1041,27 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   catch(const std::exception &e_) {
     printf("%s\n", e_.what());
   }
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   ASSERT_TRUE(success_);
   printf("Trying to create %s\n", test_file_[10].string().c_str());
   success_ = CreateRandomFile(test_file_[10].string(), 2, &pre_hash_[10]);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[11].string(), 10, &pre_hash_[11]);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[12].string(), 100, &pre_hash_[12]);
-  tt::sleep(p_time::seconds(10));
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[13].string(), 100, &pre_hash_[13]);
-  tt::sleep(p_time::seconds(60));
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
   success_ = CreateRandomFile(test_file_[14].string(), 100, &pre_hash_[14]);
-  tt::sleep(p_time::seconds(60));
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
   for (int i = 10; i < 15; ++i) {
     ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
-    tt::sleep(p_time::seconds(5));
+    boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
   test_root_ = root_;
 
@@ -1112,12 +1085,12 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   catch(const std::exception &e_) {
     printf("%s\n", e_.what());
   }
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   ASSERT_FALSE(success_);
   printf("Trying to create %s\n", test_txt_.string().c_str());
   std::string file_hash_("");
   success_ = CreateRandomFile(test_txt_.string(), 2, &file_hash_);
-  tt::sleep(p_time::seconds(10));
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_FALSE(success_);
 
   // logout
@@ -1135,7 +1108,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
     logout_ = ShellExecuteEx(&shell_info_);
     if (logout_)
       WaitForSingleObject(shell_info_.hProcess, INFINITE);
-    tt::sleep(p_time::milliseconds(500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     logout_ = true;
   #else
     fsl_.UnMount();
@@ -1143,7 +1116,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   #endif
   ASSERT_TRUE(logout_);
   ASSERT_TRUE(cc_->Logout());
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   printf("Logged out\n--------------------------------------------------\n\n");
 
   // login
@@ -1154,7 +1127,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
                                              _1),
                                  maidsafe::DEFCON2);
   ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   list.clear();
   ASSERT_TRUE(cc_->ValidateUser(password_, &list));
   ss_->SetMounted(0);
@@ -1165,11 +1138,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   #elif defined MAIDSAFE_APPLE
     fsm_.Mount(mount_point_, debug_mode_);
   #endif
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss_->Mounted());
   logged_in_ = true;
   printf("Logged in.\n");
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 
   // TODO(Fraser#5#): Create private share and save files and dirs to it
 
@@ -1187,7 +1160,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
     logout_ = ShellExecuteEx(&shell_info_);
     if (logout_)
       WaitForSingleObject(shell_info_.hProcess, INFINITE);
-    tt::sleep(p_time::milliseconds(500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     logout_ = true;
   #else
     fsl_.UnMount();
@@ -1195,7 +1168,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   #endif
   ASSERT_TRUE(logout_);
   ASSERT_TRUE(cc_->Logout());
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   printf("Logged out\n--------------------------------------------------\n\n");
 
   // login
@@ -1206,7 +1179,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
                                              _1),
                                  maidsafe::DEFCON2);
   ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   list.clear();
   ASSERT_TRUE(cc_->ValidateUser(password_, &list));
   ss_->SetMounted(0);
@@ -1217,11 +1190,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   #elif defined MAIDSAFE_APPLE
     fsm_.Mount(mount_point_, debug_mode_);
   #endif
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss_->Mounted());
   logged_in_ = true;
   printf("Logged in.\n");
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 
   // ensure all previous files are still there
   for (int i = 0; i < 15; ++i) {
@@ -1231,7 +1204,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
            i,
            se_.SHA512(test_file_[i]).c_str());
     ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
-    tt::sleep(p_time::seconds(5));
+    boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
   // TODO(Fraser#5#): ensure private shared files are still there
 
@@ -1252,7 +1225,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
     logout_ = ShellExecuteEx(&shell_info_);
     if (logout_)
       WaitForSingleObject(shell_info_.hProcess, INFINITE);
-    tt::sleep(p_time::milliseconds(500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     logout_ = true;
   #else
     fsl_.UnMount();
@@ -1260,7 +1233,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   #endif
   ASSERT_TRUE(logout_);
   ASSERT_TRUE(cc_->Logout());
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   printf("Logged out\n--------------------------------------------------\n\n");
   cc_->CloseConnection();
   logged_in_ = false;
@@ -1284,7 +1257,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_CheckNewUserDirs) {
         logout_ = ShellExecuteEx(&shell_info_);
         if (logout_)
           WaitForSingleObject(shell_info_.hProcess, INFINITE);
-        tt::sleep(p_time::milliseconds(500));
+        boost::this_thread::sleep(boost::posix_time::milliseconds(500));
       #else
         fsl_.UnMount();
       #endif
@@ -1326,7 +1299,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_CheckNewUserDirs) {
                                              _1),
                                  maidsafe::DEFCON2);
   ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   std::list<std::string> list;
   ASSERT_TRUE(cc_->ValidateUser(password_, &list));
   ss_->SetMounted(0);
@@ -1346,11 +1319,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_CheckNewUserDirs) {
     std::string debug_mode_("-d");
     fsm_.Mount(mount_point_, debug_mode_);
   #endif
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss_->Mounted());
   logged_in_ = true;
   printf("Logged in.\n");
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 
   // check "My Files" and "Shares/Private" are empty
   #if defined MAIDSAFE_WIN32
@@ -1444,7 +1417,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_CheckNewUserDirs) {
     logout_ = ShellExecuteEx(&shell_info_);
     if (logout_)
       WaitForSingleObject(shell_info_.hProcess, INFINITE);
-    tt::sleep(p_time::milliseconds(500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     logout_ = true;
   #else
     fsl_.UnMount();
@@ -1452,7 +1425,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_CheckNewUserDirs) {
   #endif
   ASSERT_TRUE(logout_);
   ASSERT_TRUE(cc_->Logout());
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   printf("Logged out\n--------------------------------------------------\n\n");
   cc_->CloseConnection();
   logged_in_ = false;
@@ -1476,7 +1449,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
         logout_ = ShellExecuteEx(&shell_info_);
         if (logout_)
           WaitForSingleObject(shell_info_.hProcess, INFINITE);
-        tt::sleep(p_time::milliseconds(500));
+        boost::this_thread::sleep(boost::posix_time::milliseconds(500));
       #else
         fsl_.UnMount();
       #endif
@@ -1508,7 +1481,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
                                             _1),
                                         maidsafe::DEFCON2);
   ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   std::list<std::string> list;
   ASSERT_TRUE(cc_->ValidateUser(password_, &list));
   ss_->SetMounted(0);
@@ -1528,11 +1501,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
     std::string debug_mode_("-d");
     fsm_.Mount(mount_point_, debug_mode_);
   #endif
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss_->Mounted());
   logged_in_ = true;
   printf("Logged in.\n");
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 
   // Authorise user 2
   std::set<std::string> auth_users1_;
@@ -1558,7 +1531,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
     logout_ = ShellExecuteEx(&shell_info_);
     if (logout_)
       WaitForSingleObject(shell_info_.hProcess, INFINITE);
-    tt::sleep(p_time::milliseconds(500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     logout_ = true;
   #else
     fsl_.UnMount();
@@ -1566,7 +1539,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
   #endif
   ASSERT_TRUE(logout_);
   ASSERT_TRUE(cc_->Logout());
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   printf("Logged out\n--------------------------------------------------\n\n");
 
   // login as user 2
@@ -1577,7 +1550,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
                                              _1),
                                  maidsafe::DEFCON2);
   ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   list.clear();
   ASSERT_TRUE(cc_->ValidateUser(password_, &list));
   ss_->SetMounted(0);
@@ -1588,11 +1561,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
   #elif defined MAIDSAFE_APPLE
     fsm_.Mount(mount_point_, debug_mode_);
   #endif
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss_->Mounted());
   logged_in_ = true;
   printf("Logged in.\n");
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 
   // TODO(Fraser#5#): ensure user 2 can add to private share
 
@@ -1613,7 +1586,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
     logout_ = ShellExecuteEx(&shell_info_);
     if (logout_)
       WaitForSingleObject(shell_info_.hProcess, INFINITE);
-    tt::sleep(p_time::milliseconds(500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     logout_ = true;
   #else
     fsl_.UnMount();
@@ -1621,7 +1594,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
   #endif
   ASSERT_TRUE(logout_);
   ASSERT_TRUE(cc_->Logout());
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   printf("Logged out\n--------------------------------------------------\n\n");
 
   // login as user 1
@@ -1632,7 +1605,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
                                              _1),
                                  maidsafe::DEFCON2);
   ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   list.clear();
   ASSERT_TRUE(cc_->ValidateUser(password_, &list));
   ss_->SetMounted(0);
@@ -1643,11 +1616,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
   #elif defined MAIDSAFE_APPLE
     fsm_.Mount(mount_point_, debug_mode_);
   #endif
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss_->Mounted());
   logged_in_ = true;
   printf("Logged in.\n");
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 
   // TODO(Fraser#5#): Ensure user 1 has received correct message (containing the
   //                  file hash) and can access and verify the file
@@ -1668,7 +1641,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
     logout_ = ShellExecuteEx(&shell_info_);
     if (logout_)
       WaitForSingleObject(shell_info_.hProcess, INFINITE);
-    tt::sleep(p_time::milliseconds(500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     logout_ = true;
   #else
     fsl_.UnMount();
@@ -1676,7 +1649,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
   #endif
   ASSERT_TRUE(logout_);
   ASSERT_TRUE(cc_->Logout());
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   printf("Logged out\n--------------------------------------------------\n\n");
 
   // login as user 2
@@ -1687,7 +1660,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
                                              _1),
                                  maidsafe::DEFCON2);
   ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   list.clear();
   ASSERT_TRUE(cc_->ValidateUser(password_, &list));
   ss_->SetMounted(0);
@@ -1698,11 +1671,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
   #elif defined MAIDSAFE_APPLE
     fsm_.Mount(mount_point_, debug_mode_);
   #endif
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss_->Mounted());
   logged_in_ = true;
   printf("Logged in.\n");
-  tt::sleep(p_time::seconds(5));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 
   // TODO(Fraser#5#): Ensure user 2 has received correct message (containing the
   //               file hash) and can access and verify the file
@@ -1721,7 +1694,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
     logout_ = ShellExecuteEx(&shell_info_);
     if (logout_)
       WaitForSingleObject(shell_info_.hProcess, INFINITE);
-    tt::sleep(p_time::milliseconds(500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     logout_ = true;
   #else
     fsl_.UnMount();
@@ -1729,7 +1702,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_SharesAndMessages) {
   #endif
   ASSERT_TRUE(logout_);
   ASSERT_TRUE(cc_->Logout());
-  tt::sleep(p_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   printf("Logged out\n--------------------------------------------------\n\n");
   cc_->CloseConnection();
   try {

@@ -25,7 +25,6 @@
 #include <boost/thread/thread.hpp>
 #include <boost/thread/xtime.hpp>
 #include <gtest/gtest.h>
-#include <fstream>
 #include <map>
 #include <vector>
 
@@ -35,10 +34,8 @@
 #include "maidsafe/client/pdclient.h"
 #include "maidsafe/client/systempackets.h"
 #include "maidsafe/vault/pdvault.h"
-#include "protobuf/general_messages.pb.h"
+#include "tests/maidsafe/localvaults.h"
 
-const int kNetworkSize = 10;
-const int kTestK = 4;
 static bool callback_timed_out_ = true;
 static bool callback_succeeded_ = false;
 static std::string callback_content_ = "";
@@ -119,16 +116,16 @@ static void GetChunkCallback(const std::string &result) {
   }
 }
 
-void BluddyWaitFunction(int seconds, boost::recursive_mutex* mutex) {
+void BluddyWaitFunction(int seconds, boost::mutex* mutex) {
   if (!callback_prepared_) {
     printf("Callback result variables were not set.\n");
     return;
   }
   bool got_callback = false;
-  //for (int i = 0; i < seconds*100; ++i) {
+  // for (int i = 0; i < seconds*100; ++i) {
   while (!got_callback) {
     {
-      boost::recursive_mutex::scoped_lock lock_(*mutex);
+      boost::mutex::scoped_lock lock_(*mutex);
       if (!callback_timed_out_) {
         got_callback = true;
         if (callback_succeeded_) {
@@ -148,21 +145,6 @@ void BluddyWaitFunction(int seconds, boost::recursive_mutex* mutex) {
   }
   callback_prepared_ = false;
   printf("Callback timed out after %i second(s)\n", seconds);
-}
-
-void GeneratePmidStuff(std::string *public_key,
-                       std::string *private_key,
-                       std::string *signed_key,
-                       std::string *pmid) {
-  maidsafe_crypto::Crypto co_;
-  co_.set_hash_algorithm("SHA512");
-  maidsafe_crypto::RsaKeyPair keys;
-  keys.GenerateKeys(packethandler::kRsaKeySize);
-  *signed_key = co_.AsymSign(keys.public_key(), "", keys.private_key(),
-    maidsafe_crypto::STRING_STRING);
-  *public_key = keys.public_key();
-  *private_key = keys.private_key();
-  *pmid = co_.Hash(*signed_key, "", maidsafe_crypto::STRING_STRING, true);
 }
 
 void MakeChunks(const fs::path &test_chunkstore,
@@ -200,7 +182,8 @@ void CreateSystemPacket(const std::string &priv_key,
   gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
     maidsafe_crypto::STRING_STRING));
   gp.SerializeToString(ser_packet);
-  *packet_name = co.Hash(*ser_packet, "", maidsafe_crypto::STRING_STRING, false);
+  *packet_name = co.Hash(*ser_packet, "", maidsafe_crypto::STRING_STRING,
+                         false);
 }
 
 void CreateBufferPacket(const std::string &owner,
@@ -210,7 +193,8 @@ void CreateBufferPacket(const std::string &owner,
                         std::string *ser_packet) {
   maidsafe_crypto::Crypto co;
   co.set_hash_algorithm("SHA512");
-  *packet_name = co.Hash(owner + "BUFFER", "", maidsafe_crypto::STRING_STRING, false);
+  *packet_name = co.Hash(owner + "BUFFER", "", maidsafe_crypto::STRING_STRING,
+                         false);
   packethandler::BufferPacket buffer_packet;
   packethandler::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
   packethandler::BufferPacketInfo buffer_packet_info;
@@ -253,7 +237,7 @@ void CreateMessage(const std::string &message,
   std::string ser_bpmsg_gp;
   bpmsg_gp.SerializeToString(ser_message);
 
-  //Expected result for GetMsgs
+  // Expected result for GetMsgs
   packethandler::ValidatedBufferPacketMessage val_msg;
   val_msg.set_index(bpmsg.rsaenc_key());
   val_msg.set_message(bpmsg.aesenc_message());
@@ -266,35 +250,32 @@ void CreateMessage(const std::string &message,
 
 namespace maidsafe_vault {
 
+static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
+static const int kNetworkSize_ = 10;
+static const int kTestK_ = 4;
+
 class TestPDVault : public testing::Test {
  protected:
-  TestPDVault() : kad_config_(),
-                  chunkstore_dir_("PDVaultTest/Chunkstores"),
-                  datastore_dir_("PDVaultTest/Datastores"),
-                  kad_config_file_(datastore_dir_+"/.kadconfig"),
-                  client_chunkstore_dir_(chunkstore_dir_+"/ClientChunkstore"),
-                  client_datastore_dir_(datastore_dir_+"/ClientDatastore"),
-                  chunkstore_dirs_(),
-                  recursive_mutex_client_(new boost::recursive_mutex),
-                  crypto_(),
-                  pdvaults_(new std::vector< boost::shared_ptr<PDVault> >),
-                  current_nodes_created_(0),
+  TestPDVault() : kad_config_file_(".kadconfig"),
+                  client_chunkstore_dir_("TestVault/ClientChunkstore"),
+                  client_datastore_dir_("TestVault/ClientDatastore"),
                   pdclient_(),
                   client_keys_(),
                   client_public_key_(""),
                   client_private_key_(""),
                   client_signed_public_key_(""),
-                  mutex_() {
-    fs::path temp_("PDVaultTest");
-    try {
-      if (fs::exists(temp_))
-        fs::remove_all(temp_);
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-    fs::create_directories(datastore_dir_);
+                  mutex_(),
+                  crypto_() {
+//    fs::path temp_("PDVaultTest");
+//    try {
+//      if (fs::exists(temp_))
+//        fs::remove_all(temp_);
+//    }
+//    catch(const std::exception &e) {
+//      printf("%s\n", e.what());
+//    }
     fs::create_directories(client_chunkstore_dir_);
+    fs::create_directories(client_datastore_dir_);
     crypto_.set_hash_algorithm("SHA512");
     crypto_.set_symm_algorithm("AES_256");
     client_keys_.GenerateKeys(packethandler::kRsaKeySize);
@@ -307,138 +288,38 @@ class TestPDVault : public testing::Test {
                                     maidsafe_crypto::STRING_STRING);
   }
 
-  virtual ~TestPDVault() {
-    (*(pdvaults_))[0]->CleanUp();
-    fs::path temp_("PDVaultTest");
-    try {
-      if (fs::exists(temp_))
-        fs::remove_all(temp_);
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-  }
+  virtual ~TestPDVault() {}
 
   virtual void SetUp() {
-    // Construct and start vaults
-    printf("Starting vaults");
-    for (int i = 0; i < kNetworkSize; ++i) {
-      printf(".");
-      std::string chunkstore_local_ = chunkstore_dir_+"/Chunkstore"+
-          base::itos(64001+i);
-      fs::path chunkstore_local_path_(chunkstore_local_, fs::native);
-      chunkstore_dirs_.push_back(chunkstore_local_path_);
-      std::string datastore_local_ = datastore_dir_+"/Datastore"+
-          base::itos(64001+i);
-      std::string public_key_(""), private_key_(""), signed_key_("");
-      std::string node_id_("");
-      printf(".");
-      testpdvault::GeneratePmidStuff(&public_key_,
-                                     &private_key_,
-                                     &signed_key_,
-                                     &node_id_);
-      printf(".");
-      ASSERT_TRUE(crypto_.AsymCheckSig(public_key_, signed_key_, public_key_,
-                                       maidsafe_crypto::STRING_STRING));
-      kad_config_file_ = datastore_local_ + "/.kadconfig";
-      boost::shared_ptr<PDVault>
-          pdvault_local_(new PDVault(public_key_,
-                                     private_key_,
-                                     signed_key_,
-                                     chunkstore_local_,
-                                     datastore_local_,
-                                     64001+i,
-                                     kad_config_file_));
-      printf(". ");
-      pdvaults_->push_back(pdvault_local_);
-      ++current_nodes_created_;
-      printf("starting pdvault\n");
-      pdvault_local_->Start(false);
-      printf("Vault %i started.\n\n", i);
-      ASSERT_TRUE(pdvault_local_->vault_started());
-      if (i == 0) {
-        // Make the first vault as bootstrapping node
-        kad_config_.Clear();
-        base::KadConfig::Contact *kad_contact_ = kad_config_.add_contact();
-        kad_contact_->set_node_id(pdvault_local_->node_id());
-        kad_contact_->set_ip(pdvault_local_->host_ip());
-        kad_contact_->set_port(pdvault_local_->host_port());
-        kad_contact_->set_local_ip(pdvault_local_->local_host_ip());
-        kad_contact_->set_local_port(pdvault_local_->local_host_port());
-        // Save kad_config to files
-        for (int k = 1; k < kNetworkSize; ++k) {
-          std::string dir = datastore_dir_+"/Datastore"+ base::itos(64001+k);
-          boost::filesystem::create_directories(dir);
-          kad_config_file_ = datastore_dir_+"/Datastore"+ base::itos(64001+k) +
-              "/.kadconfig";
-          std::fstream output_(kad_config_file_.c_str(),
-            std::ios::out | std::ios::trunc | std::ios::binary);
-          ASSERT_TRUE(kad_config_.SerializeToOstream(&output_));
-          output_.close();
-        }
-        // clients kad config
-        boost::filesystem::create_directories(client_datastore_dir_);
-        kad_config_file_ = client_datastore_dir_ + "/.kadconfig";
-        std::fstream output_(kad_config_file_.c_str(),
-          std::ios::out | std::ios::trunc | std::ios::binary);
-        ASSERT_TRUE(kad_config_.SerializeToOstream(&output_));
-        output_.close();
-      }
-    }
-    printf("\n");
-    // start a pdclient
-    kad_config_file_ = client_datastore_dir_ + "/.kadconfig";
     boost::shared_ptr<maidsafe::PDClient>
-        pdclient_local_(new maidsafe::PDClient(client_datastore_dir_,
-                                               63001,
+        pdclient_local_(new maidsafe::PDClient(client_datastore_dir_, 63001,
                                                kad_config_file_));
     pdclient_ = pdclient_local_;
     testpdvault::PrepareCallbackResults();
-    pdclient_->Join("",
-                    boost::bind(&testpdvault::GeneralCallback, _1));
+    pdclient_->Join("", boost::bind(&testpdvault::GeneralCallback, _1));
     testpdvault::BluddyWaitFunction(60, &mutex_);
     ASSERT_TRUE(callback_succeeded_);
     ASSERT_FALSE(callback_timed_out_);
   }
 
   virtual void TearDown() {
-    // stop pdclient_
-    printf("#######################\n");
-    printf("#### TEARDOWN\n");
     testpdvault::PrepareCallbackResults();
     pdclient_->Leave(boost::bind(&testpdvault::GeneralCallback, _1));
     testpdvault::BluddyWaitFunction(60, &mutex_);
     ASSERT_TRUE(callback_succeeded_);
     ASSERT_FALSE(callback_timed_out_);
     pdclient_.reset();
-    bool success_(false);
     printf("#### CLIENT STOPPPED\n");
-    for (int i = 0; i < kNetworkSize; ++i) {
-      printf("Trying to stop vault %i.\n", i);
-      success_ = false;
-      (*(pdvaults_))[i]->Stop();
-      printf("Stopped vault %i.\n", i);
-      if (!(*(pdvaults_))[i]->vault_started())
-        printf("##########Vault %i stopped.\n", i);
-      else
-        printf("########Vault %i failed to stop correctly.\n", i);
-      (*(pdvaults_))[i].reset();
-    }
   }
 
-  base::KadConfig kad_config_;
-  std::string chunkstore_dir_, datastore_dir_, kad_config_file_;
-  std::string client_chunkstore_dir_, client_datastore_dir_;
+  std::string kad_config_file_, client_chunkstore_dir_, client_datastore_dir_;
   std::vector<fs::path> chunkstore_dirs_;
-  boost::shared_ptr<boost::recursive_mutex> recursive_mutex_client_;
-  maidsafe_crypto::Crypto crypto_;
-  boost::shared_ptr< std::vector< boost::shared_ptr<PDVault> > > pdvaults_;
-  int current_nodes_created_;
   boost::shared_ptr<maidsafe::PDClient> pdclient_;
   maidsafe_crypto::RsaKeyPair client_keys_;
   std::string client_public_key_, client_private_key_;
   std::string client_signed_public_key_;
-  boost::recursive_mutex mutex_;
+  boost::mutex mutex_;
+  maidsafe_crypto::Crypto crypto_;
 
  private:
   TestPDVault(const TestPDVault&);
@@ -451,22 +332,22 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
   const int kTestVaultNo(4);
   for (int loop = 0; loop < 2; ++loop) {
     success_ = false;
-    (*(pdvaults_))[kTestVaultNo]->Stop();
-    ASSERT_FALSE((*(pdvaults_))[kTestVaultNo]->vault_started());
+    pdvaults_[kTestVaultNo]->Stop();
+    ASSERT_FALSE(pdvaults_[kTestVaultNo]->vault_started());
     printf("Vault stopped - iteration %i.\n\n", loop+1);
-    // checking kadconfig file
-    std::string kadconfig_path(datastore_dir_+"/Datastore"+
-        base::itos(64001+kTestVaultNo) + "/.kadconfig");
-    base::KadConfig kconf;
-    ASSERT_TRUE(boost::filesystem::exists(
-        boost::filesystem::path(kadconfig_path)));
-    std::ifstream kadconf_file(kadconfig_path.c_str(),
-        std::ios::in | std::ios::binary);
-    ASSERT_TRUE(kconf.ParseFromIstream(&kadconf_file));
-    kadconf_file.close();
-    ASSERT_LT(0, kconf.contact_size());
-    (*(pdvaults_))[kTestVaultNo]->Start(false);
-    ASSERT_TRUE((*(pdvaults_))[kTestVaultNo]->vault_started());
+//    // checking kadconfig file
+//    std::string kadconfig_path(datastore_dir_+"/Datastore"+
+//        base::itos(64001+kTestVaultNo) + "/.kadconfig");
+//    base::KadConfig kconf;
+//    ASSERT_TRUE(boost::filesystem::exists(
+//        boost::filesystem::path(kadconfig_path)));
+//    std::ifstream kadconf_file(kadconfig_path.c_str(),
+//        std::ios::in | std::ios::binary);
+//    ASSERT_TRUE(kconf.ParseFromIstream(&kadconf_file));
+//    kadconf_file.close();
+//    ASSERT_LT(0, kconf.contact_size());
+    pdvaults_[kTestVaultNo]->Start(false);
+    ASSERT_TRUE(pdvaults_[kTestVaultNo]->vault_started());
     printf("Vault started - iteration %i.\n\n", loop+1);
   }
 }
@@ -493,7 +374,8 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
                          client_private_key_,
                          maidsafe_crypto::STRING_STRING);
     testpdvault::PrepareCallbackResults();
-    printf("\tIn TestPDVault, before store chunk %s.\n", hex_chunk_name.c_str());
+    printf("\tIn TestPDVault, before store chunk %s.\n",
+           hex_chunk_name.c_str());
     pdclient_->StoreChunk((*it_).first,
                           (*it_).second,
                           client_public_key_,
@@ -509,27 +391,27 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
     boost::this_thread::sleep(boost::posix_time::seconds(8));
     i++;
   }
-  // iterate through all vault chunkstores to ensure each chunk stored
-  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
-  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
-    std::string hash_;
-    base::encode_to_hex((*it_).first, hash_);
-    int chunk_count_ = 0;
-    for (int vault_no_ = 0; vault_no_ < kNetworkSize; ++vault_no_) {
-      fs::directory_iterator end_itr_;
-      for (fs::directory_iterator itr_(chunkstore_dirs_[vault_no_]);
-           itr_ != end_itr_;
-           ++itr_) {
-        if (!is_directory(itr_->status())) {
-          if (itr_->filename() == hash_) {
-            // printf("Chunk: %s\n", itr_->path().string().c_str());
-            ++chunk_count_;
-          }
-        }
-      }
-    }
-    ASSERT_EQ(kTestK, chunk_count_);
-  }
+//  // iterate through all vault chunkstores to ensure each chunk stored
+//  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
+//  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+//    std::string hash_;
+//    base::encode_to_hex((*it_).first, hash_);
+//    int chunk_count_ = 0;
+//    for (int vault_no_ = 0; vault_no_ < kNetworkSize_; ++vault_no_) {
+//      fs::directory_iterator end_itr_;
+//      for (fs::directory_iterator itr_(chunkstore_dirs_[vault_no_]);
+//           itr_ != end_itr_;
+//           ++itr_) {
+//        if (!is_directory(itr_->status())) {
+//          if (itr_->filename() == hash_) {
+//            // printf("Chunk: %s\n", itr_->path().string().c_str());
+//            ++chunk_count_;
+//          }
+//        }
+//      }
+//    }
+//    ASSERT_EQ(kTestK_, chunk_count_);
+//  }
   boost::this_thread::sleep(boost::posix_time::seconds(5));
 }
 
@@ -564,7 +446,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
                           maidsafe::DATA,
                           boost::bind(&testpdvault::StoreChunkCallback,
                                       _1));
-    testpdvault::BluddyWaitFunction(120, recursive_mutex_client_.get());
+    testpdvault::BluddyWaitFunction(120, &mutex_);
     printf("after store chunk %d\n", i);
     ASSERT_TRUE(callback_succeeded_);
     ASSERT_FALSE(callback_timed_out_);
@@ -701,24 +583,23 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
   ASSERT_FALSE(callback_timed_out_);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
-  std::string datastoredir(datastore_dir_+"/ClientDatastore1");
-  boost::recursive_mutex client1mutex;
+  std::string datastoredir("TestVault/ClientDatastore1");
   maidsafe::PDClient *newclient =  new maidsafe::PDClient(datastoredir,
                                                           63002,
                                                           kad_config_file_);
   testpdvault::PrepareCallbackResults();
   newclient->Join("",
                   boost::bind(&testpdvault::GeneralCallback, _1));
-  testpdvault::BluddyWaitFunction(60, &client1mutex);
+  testpdvault::BluddyWaitFunction(60, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
   testpdvault::PrepareCallbackResults();
   newclient->GetChunk(chunk_name,
                         boost::bind(&testpdvault::GetChunkCallback, _1));
-  testpdvault::BluddyWaitFunction(60, &client1mutex);
+  testpdvault::BluddyWaitFunction(60, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_EQ(callback_content_, chunk_content);
-  ASSERT_FALSE(callback_timed_out_);;
+  ASSERT_FALSE(callback_timed_out_);
   std::string hash = crypto_.Hash(callback_content_,
                                    "",
                                    maidsafe_crypto::STRING_STRING,
@@ -728,7 +609,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
   ASSERT_TRUE(gp.ParseFromString(callback_content_));
   testpdvault::PrepareCallbackResults();
   newclient->Leave(boost::bind(&testpdvault::GeneralCallback, _1));
-  testpdvault::BluddyWaitFunction(60, &client1mutex);
+  testpdvault::BluddyWaitFunction(60, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
   delete newclient;
@@ -779,15 +660,15 @@ TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
 }
 
 TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
-
-  std::string chunk_name = crypto_.Hash("abc", "", maidsafe_crypto::STRING_STRING,
-    false);
+  std::string chunk_name = crypto_.Hash("abc", "",
+                                        maidsafe_crypto::STRING_STRING, false);
   std::string chunk_content = base::RandomString(200);
   std::string chunk_name_enc;
   base::encode_to_hex(chunk_name, chunk_name_enc);
   std::string signed_request_ =
         crypto_.AsymSign(crypto_.Hash(client_public_key_ +
-                                      client_signed_public_key_ + chunk_name_enc,
+                                      client_signed_public_key_ +
+                                      chunk_name_enc,
                                       "",
                                       maidsafe_crypto::STRING_STRING,
                                       true),
@@ -803,7 +684,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
                         maidsafe::PDDIR_NOTSIGNED,
                         boost::bind(&testpdvault::StoreChunkCallback,
                                     _1));
-  testpdvault::BluddyWaitFunction(120, recursive_mutex_client_.get());
+  testpdvault::BluddyWaitFunction(120, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
@@ -832,7 +713,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
                         maidsafe::PDDIR_NOTSIGNED,
                         boost::bind(&testpdvault::StoreChunkCallback,
                                     _1));
-  testpdvault::BluddyWaitFunction(120, recursive_mutex_client_.get());
+  testpdvault::BluddyWaitFunction(120, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -995,7 +876,8 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
 
 TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
   std::string chunk_name, chunk_content;
-  testpdvault::CreateBufferPacket("publicuser", client_public_key_, client_private_key_,
+  testpdvault::CreateBufferPacket("publicuser", client_public_key_,
+      client_private_key_,
     &chunk_name, &chunk_content);
   std::string chunk_name_enc;
   base::encode_to_hex(chunk_name, chunk_name_enc);
@@ -1017,7 +899,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
                         maidsafe::BUFFER_PACKET,
                         boost::bind(&testpdvault::StoreChunkCallback,
                                     _1));
-  testpdvault::BluddyWaitFunction(120, recursive_mutex_client_.get());
+  testpdvault::BluddyWaitFunction(120, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
@@ -1051,7 +933,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
                          maidsafe::BUFFER_PACKET_INFO,
                          boost::bind(&testpdvault::StoreChunkCallback,
                                     _1));
-  testpdvault::BluddyWaitFunction(120, recursive_mutex_client_.get());
+  testpdvault::BluddyWaitFunction(120, &mutex_);
   ASSERT_FALSE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
 
@@ -1064,7 +946,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
                          maidsafe::BUFFER_PACKET_MESSAGE,
                          boost::bind(&testpdvault::StoreChunkCallback,
                                     _1));
-  testpdvault::BluddyWaitFunction(120, recursive_mutex_client_.get());
+  testpdvault::BluddyWaitFunction(120, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
 
@@ -1155,6 +1037,12 @@ TEST_F(TestPDVault, DISABLED_FUNC_MAID_VaultRepublishChunkRef) {
 }
 
 }  // namespace maidsafe_vault
- int main() {
-return 0;
+
+int main(int argc, char **argv) {
+  testing::InitGoogleTest(&argc, argv);
+  testing::AddGlobalTestEnvironment(
+      new localvaults::Env(maidsafe_vault::kNetworkSize_,
+                           maidsafe_vault::kTestK_,
+                           &maidsafe_vault::pdvaults_));
+  return RUN_ALL_TESTS();
 }

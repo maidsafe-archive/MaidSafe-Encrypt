@@ -39,6 +39,12 @@
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
 
+// This forward declaration is to allow gtest environment to be declared as a
+// friend class
+namespace localvaults {
+class Env;
+}  // namespace localvaults
+
 namespace maidsafe_vault {
 
 struct SyncVaultData {
@@ -179,6 +185,7 @@ class PDVault {
   boost::uint16_t local_host_port() { return knode_.local_host_port(); }
   std::string rv_ip() const { return knode_.rv_ip(); }
   boost::uint16_t rv_port() const { return knode_.rv_port(); }
+  friend class localvaults::Env;
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
@@ -229,6 +236,7 @@ class PDVault {
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   void RegisterMaidService();
   void UnRegisterMaidService();
+  void StopRvPing() { knode_.StopRvPing(); }
   boost::uint16_t port_;
   boost::mutex mutex0_, mutex1_;
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
