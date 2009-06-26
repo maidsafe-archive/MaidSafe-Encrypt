@@ -114,7 +114,7 @@ class TestCallback {
   }
 
  private:
-  TestCallback(const fs_l_fuse::fuse_test::TestCallback&);
+  TestCallback(const TestCallback&);
   TestCallback &operator=(const TestCallback&);
   boost::mutex* mutex_;
   std::string result_;
