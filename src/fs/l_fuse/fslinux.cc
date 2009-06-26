@@ -368,7 +368,7 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
 //    return -13;
 
   if (path_ == "/") {
-    stbuf->st_mode = S_IFDIR | 0755;
+    stbuf->st_mode = S_IFDIR | 0444;
     stbuf->st_nlink = 2;
     stbuf->st_size = 4*1024;
     stbuf->st_uid = fuse_get_context()->uid;
