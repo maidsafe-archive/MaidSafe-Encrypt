@@ -89,9 +89,7 @@ void PDVault::Start(const bool &port_forwarded) {
   channel_manager_->StartTransport(port_,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
                   &knode_,
-                  _1,
-                  _2,
-                  _3));
+                  _1));
   kad_joined_calledback_ = false;
   RegisterMaidService();
   knode_.Join(pmid_,

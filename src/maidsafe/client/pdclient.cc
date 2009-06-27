@@ -1118,11 +1118,7 @@ void PDClient::DeleteChunk_DeleteChunkCallback(
 void PDClient::Join(const std::string &node_id,
                     base::callback_func_type cb) {
   channel_manager_->StartTransport(port_,
-    boost::bind(&kad::KNode::HandleDeadRendezvousServer,
-                knode_.get(),
-                _1,
-                _2,
-                _3));
+    boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_.get(),_1));
   knode_->Join(node_id, kad_config_file_, cb, false);
 }
 
