@@ -122,7 +122,6 @@ ELSEIF (UNIX AND NOT APPLE)
 ELSEIF (WIN32)
   	SET(FS_SOURCE_FILE ${SOURCE_DIR}/fs/w_fuse/fswin.cc ${SOURCE_DIR}/fs/w_fuse/dokan/fileinfo.h )
 ENDIF(APPLE)
-
 ######################################################################################
 #All Platforms:  Add Test Exes and Create all PD libs                                 #
 #######################################################################################
