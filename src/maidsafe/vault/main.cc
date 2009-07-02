@@ -163,8 +163,8 @@ class RunPDVaults {
       base::KadConfig::Contact *kad_contact_ = kad_config_.add_contact();
 //      std::string bin_id_("");
 //      std::string bin_ip_("");
-//      base::decode_from_hex(bootstrap_id_, bin_id_);
-//      base::decode_from_hex(bootstrap_ip_, bin_ip_);
+//      base::decode_from_hex(bootstrap_id_, &bin_id_);
+//      base::decode_from_hex(bootstrap_ip_, &bin_ip_);
       kad_contact_->set_node_id(bootstrap_id_);
       kad_contact_->set_ip(bootstrap_ip_);
       kad_contact_->set_port(bootstrap_port_);
@@ -224,8 +224,8 @@ class RunPDVaults {
         base::KadConfig::Contact *kad_contact_ = kad_config_.add_contact();
 //        std::string bin_id_("");
 //        std::string bin_ip_("");
-//        base::decode_from_hex(pdvault_local_->node_id(), bin_id_);
-//        base::decode_from_hex(pdvault_local_->host_ip(), bin_ip_);
+//        base::decode_from_hex(pdvault_local_->node_id(), &bin_id_);
+//        base::decode_from_hex(pdvault_local_->host_ip(), &bin_ip_);
         kad_contact_->set_node_id(pdvault_local_->node_id());
         kad_contact_->set_ip(pdvault_local_->host_ip());
         kad_contact_->set_port(pdvault_local_->host_port());

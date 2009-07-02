@@ -196,8 +196,8 @@ std::string Crypto::SHA224Hash(const std::string &input,
       try {
         f_source = new CryptoPP::FileSource(input.c_str(), true,
             new CryptoPP::HashFilter(hash,
-            new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str(),
-            false))));
+            new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
+            false)));
       }
       catch(const CryptoPP::Exception &e) {
         buffer = "";
@@ -227,8 +227,8 @@ std::string Crypto::SHA256Hash(const std::string &input,
       try {
         s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
           (input.c_str()), input.length(), true, new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str(),
-          false))));
+          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
+          false)));
       }
       catch(const CryptoPP::Exception &e) {
         buffer = "";
@@ -251,8 +251,8 @@ std::string Crypto::SHA256Hash(const std::string &input,
       try {
         f_source = new CryptoPP::FileSource(input.c_str(), true,
             new CryptoPP::HashFilter(hash,
-            new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str(),
-            false))));
+            new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
+            false)));
       }
       catch(const CryptoPP::Exception &e) {
         buffer = "";

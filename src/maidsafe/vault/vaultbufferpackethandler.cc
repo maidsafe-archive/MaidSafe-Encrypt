@@ -206,7 +206,6 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
 bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
     const std::string &ser_message, const std::string &signed_public_key,
     std::string *updated_bp) {
-  printf("ADDING A FECKING MESSAGE TO THE CUNT BP\n");
   GenericPacket message;
   if (!message.ParseFromString(ser_message)) {
     printf("invalid msg\n");

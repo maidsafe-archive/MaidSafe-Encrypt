@@ -42,8 +42,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStoreChunk) {
   fs::path filename(storedir);
   std::string name = cry_obj.Hash(value, "", maidsafe_crypto::STRING_STRING, false);
   ASSERT_TRUE(chunkstore.StoreChunk(name, value));
-  std::string enc_name;
-  base::encode_to_hex(name, enc_name);
+  std::string enc_name("");
+  base::encode_to_hex(name, &enc_name);
   filename = filename / enc_name;
   ASSERT_TRUE(fs::exists(filename));
   boost::uintmax_t size = fs::file_size(filename);
@@ -82,8 +82,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk) {
   ASSERT_TRUE(chunkstore.StoreChunk(name, value));
   ASSERT_TRUE(chunkstore.HasChunk(name));
   fs::path filename(storedir);
-  std::string enc_name;
-  base::encode_to_hex(name, enc_name);
+  std::string enc_name("");
+  base::encode_to_hex(name, &enc_name);
   filename /= enc_name;
   ASSERT_TRUE(fs::exists(filename));
   ASSERT_TRUE(chunkstore.DeleteChunk(name));
@@ -104,8 +104,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk) {
   key = "";
   value = "";
   ASSERT_TRUE(chunkstore.LoadRandomChunk(&key, &value));
-  std::string enc_key;
-  base::encode_to_hex(key, enc_key);
+  std::string enc_key("");
+  base::encode_to_hex(key, &enc_key);
   fs::path filename(storedir);
   filename /= enc_key;
   ASSERT_TRUE(fs::exists(filename));

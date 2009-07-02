@@ -110,11 +110,11 @@ void MessageHandler::CreateSignature(const std::string &buffer_name,
                                     "",
                                     ss_->GetPrivateKey(type),
                                     maidsafe_crypto::STRING_STRING);
+  std::string non_hex_buffer_name("");
+  base::decode_from_hex(buffer_name, &non_hex_buffer_name);
   *signed_request = co_.AsymSign(
-      co_.Hash(ss_->GetPublicKey(type) + *signed_public_key + buffer_name,
-               "",
-               maidsafe_crypto::STRING_STRING,
-               true),
+      co_.Hash(ss_->GetPublicKey(type) + *signed_public_key +
+               non_hex_buffer_name, "", maidsafe_crypto::STRING_STRING, true),
       "",
       ss_->GetPrivateKey(type),
       maidsafe_crypto::STRING_STRING);

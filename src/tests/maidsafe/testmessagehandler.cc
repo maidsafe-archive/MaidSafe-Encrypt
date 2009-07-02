@@ -146,7 +146,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
     maidsafe_crypto::STRING_STRING);
   sm->StorePacket(crypto_obj.Hash(sender,"",maidsafe_crypto::STRING_STRING, true), ser_gp,\
     crypto_obj.AsymSign(crypto_obj.Hash(rsa_obj.public_key()+signed_pubkey+\
-    crypto_obj.Hash(sender,"",maidsafe_crypto::STRING_STRING, true),"",maidsafe_crypto::STRING_STRING, true),\
+    crypto_obj.Hash(sender,"",maidsafe_crypto::STRING_STRING, false),"",maidsafe_crypto::STRING_STRING, true),\
     "",rsa_obj.private_key(), maidsafe_crypto::STRING_STRING), rsa_obj.public_key(),\
     signed_pubkey, maidsafe::SYSTEM_PACKET, false, boost::bind(\
     &FakeCallback::CallbackFunc, &cb, _1));

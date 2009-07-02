@@ -774,7 +774,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
       public_key+signed_public_key+crypto_obj.Hash(public_username+"BUFFER",
                                                    "",
                                                    maidsafe_crypto::STRING_STRING,
-                                                   true),
+                                                   false),
       "",
       maidsafe_crypto::STRING_STRING,
       true), "", private_key, maidsafe_crypto::STRING_STRING);

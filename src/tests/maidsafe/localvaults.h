@@ -88,7 +88,17 @@ class Env: public testing::Environment {
     crypto_.set_symm_algorithm("AES_256");
   }
 
-  virtual ~Env() {}
+  virtual ~Env() {
+    try {
+      if (fs::exists(vault_dir_))
+        fs::remove_all(vault_dir_);
+      if (fs::exists(kad_config_file_))
+        fs::remove(kad_config_file_);
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
 
   virtual void SetUp() {
     // Construct and start vaults
@@ -145,7 +155,7 @@ class Env: public testing::Environment {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
     ASSERT_TRUE((*pdvaults_)[0]->vault_started());
-    printf("Vault 0 started.\n\n");
+    printf("Vault 0 started.\n");
     kad_contact->Clear();
     kad_config.Clear();
     kad_contact = kad_config.add_contact();
@@ -172,7 +182,7 @@ class Env: public testing::Environment {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
       }
       ASSERT_TRUE((*pdvaults_)[k]->vault_started());
-      printf("Vault %i started.\n\n", k);
+      printf("Vault %i started.\n", k);
 //      boost::this_thread::sleep(boost::posix_time::seconds(15));
     }
     // Make kad config file in ./ for clients' use.
@@ -185,7 +195,7 @@ class Env: public testing::Environment {
     HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hconsole, 10 | 0 << 4);
 #endif
-    printf("*-----------------------------------------------*\n");
+    printf("\n*-----------------------------------------------*\n");
     printf("*            %i local vaults running            *\n",
            kNetworkSize_);
     printf("*                                               *\n");
@@ -213,7 +223,6 @@ class Env: public testing::Environment {
       printf("Trying to stop vault %i.\n", i);
       success = false;
       (*pdvaults_)[i]->Stop();
-      printf("Stopped vault %i.\n", i);
       if (!(*pdvaults_)[i]->vault_started())
         printf("Vault %i stopped.\n", i);
       else

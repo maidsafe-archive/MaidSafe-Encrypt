@@ -424,6 +424,8 @@ TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptPrivateDb) {
   file_system::FileSystem fsys_;
   fs::path db_path_(db_str1_, fs::native);
   std::string key_("somekey");
+//  std::string key_("");
+//  ASSERT_EQ(0, seh->GenerateUniqueKey(PRIVATE, "", 0, &key_));
 //  dah->GetDirKey(kRootSubdir[0][0], &key_);
   ASSERT_TRUE(fs::exists(db_path_));
   std::string hash_before_ = seh->SHA512(db_str1_, true);

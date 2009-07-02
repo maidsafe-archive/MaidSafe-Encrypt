@@ -252,23 +252,23 @@ void MaidsafeStoreManager::Close(base::callback_func_type cb) {
 //  return true;
 // }
 
-void MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
+void MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
                                      base::callback_func_type cb) {
-  std::string hex_chunk_name;
-  base::decode_from_hex(chunk_name, hex_chunk_name);
-  pdclient_->GetChunk(hex_chunk_name,
+  std::string chunk_name("");
+  base::decode_from_hex(hex_chunk_name, &chunk_name);
+  pdclient_->GetChunk(chunk_name,
       boost::bind(&MaidsafeStoreManager::LoadChunk_Callback, this, _1, cb));
 }
 
-void MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
+void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
                                       const std::string &content,
                                       const std::string &signature,
                                       const std::string &public_key,
                                       const std::string &signed_public_key,
                                       base::callback_func_type cb) {
-  std::string hex_chunk_name;
-  base::decode_from_hex(chunk_name, hex_chunk_name);
-  pdclient_->StoreChunk(hex_chunk_name,
+  std::string chunk_name("");
+  base::decode_from_hex(hex_chunk_name, &chunk_name);
+  pdclient_->StoreChunk(chunk_name,
                         content,
                         public_key,
                         signed_public_key,
@@ -281,33 +281,33 @@ void MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
                             cb));
 }
 
-void MaidsafeStoreManager::IsKeyUnique(const std::string &key,
+void MaidsafeStoreManager::IsKeyUnique(const std::string &hex_key,
                                        base::callback_func_type cb) {
-  std::string hex_key;
-  base::decode_from_hex(key, hex_key);
-  pdclient_->FindValue(hex_key,
+  std::string key("");
+  base::decode_from_hex(hex_key, &key);
+  pdclient_->FindValue(key,
                        boost::bind(&MaidsafeStoreManager::IsKeyUnique_Callback,
                                    this,
                                    _1,
                                    cb));
 }
 
-void MaidsafeStoreManager::DeletePacket(const std::string &key,
+void MaidsafeStoreManager::DeletePacket(const std::string &hex_key,
                                         const std::string &signature,
                                         const std::string &public_key,
                                         const std::string &signed_public_key,
                                         const value_types &type,
                                         base::callback_func_type cb) {
-  std::string hex_key;
-  base::decode_from_hex(key, hex_key);
-  pdclient_->DeleteChunk(hex_key, public_key,
+  std::string key("");
+  base::decode_from_hex(hex_key, &key);
+  pdclient_->DeleteChunk(key, public_key,
                          signed_public_key, signature,
                          type, boost::bind(
                            &MaidsafeStoreManager::DeleteChunk_Callback,
                            this, _1, cb));
 }
 
-void MaidsafeStoreManager::StorePacket(const std::string &key,
+void MaidsafeStoreManager::StorePacket(const std::string &hex_key,
                                        const std::string &value,
                                        const std::string &signature,
                                        const std::string &public_key,
@@ -315,38 +315,38 @@ void MaidsafeStoreManager::StorePacket(const std::string &key,
                                        const value_types &type,
                                        bool update,
                                        base::callback_func_type cb) {
-  std::string hex_key;
-  base::decode_from_hex(key, hex_key);
+  std::string key("");
+  base::decode_from_hex(hex_key, &key);
   if (update)
-    pdclient_->UpdateChunk(hex_key, value, public_key,
+    pdclient_->UpdateChunk(key, value, public_key,
       signed_public_key, signature, type,
       boost::bind(&MaidsafeStoreManager::StoreChunk_Callback, this, _1,
                   update, cb));
   else
-    pdclient_->StoreChunk(hex_key, value, public_key,
+    pdclient_->StoreChunk(key, value, public_key,
       signed_public_key, signature, type,
       boost::bind(&MaidsafeStoreManager::StoreChunk_Callback, this, _1,
                   update, cb));
 }
 
-void MaidsafeStoreManager::LoadPacket(const std::string &key,
+void MaidsafeStoreManager::LoadPacket(const std::string &hex_key,
                                       base::callback_func_type cb) {
-  std::string hex_key;
-  base::decode_from_hex(key, hex_key);
-  pdclient_->GetChunk(hex_key,
+  std::string key("");
+  base::decode_from_hex(hex_key, &key);
+  pdclient_->GetChunk(key,
                       boost::bind(&MaidsafeStoreManager::LoadChunk_Callback,
                                   this,
                                   _1,
                                   cb));
 }
 
-void MaidsafeStoreManager::GetMessages(const std::string &key,
+void MaidsafeStoreManager::GetMessages(const std::string &hex_key,
                                        const std::string &public_key,
                                        const std::string &signed_public_key,
                                        base::callback_func_type cb) {
-  std::string hex_key;
-  base::decode_from_hex(key, hex_key);
-  pdclient_->GetMessages(hex_key, public_key, signed_public_key, cb);
+  std::string key("");
+  base::decode_from_hex(hex_key, &key);
+  pdclient_->GetMessages(key, public_key, signed_public_key, cb);
 }
 
 void MaidsafeStoreManager::LoadChunk_Callback(const std::string &result,

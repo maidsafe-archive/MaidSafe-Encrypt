@@ -155,20 +155,20 @@ void MakeChunks(const fs::path &test_chunkstore,
   cryobj_.set_symm_algorithm("AES_256");
   for (int i = 0; i < no_of_chunks; ++i) {
     std::string chunk_content_ = base::RandomString(100);
-    std::string chunk_name_ = cryobj_.Hash(chunk_content_,
+    std::string non_hex_chunk_name_ = cryobj_.Hash(chunk_content_,
                                            "",
                                            maidsafe_crypto::STRING_STRING,
                                            false);
     fs::path chunk_path_(test_chunkstore);
     std::string hex_chunk_name_("");
-    base::encode_to_hex(chunk_name_, hex_chunk_name_);
+    base::encode_to_hex(non_hex_chunk_name_, &hex_chunk_name_);
     chunk_path_ /= hex_chunk_name_;
     std::ofstream ofs_;
     ofs_.open(chunk_path_.string().c_str());
     ofs_ << chunk_content_;
     ofs_.close();
     chunks->insert(std::pair<std::string, std::string>
-        (chunk_name_, chunk_content_));
+        (non_hex_chunk_name_, chunk_content_));
   }
 }
 
@@ -331,25 +331,14 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
   // check pdvaults can be started and stopped multiple times
   bool success_(false);
   const int kTestVaultNo(4);
-  for (int loop = 0; loop < 2; ++loop) {
+  for (int loop = 0; loop < 7; ++loop) {
     success_ = false;
     pdvaults_[kTestVaultNo]->Stop();
     ASSERT_FALSE(pdvaults_[kTestVaultNo]->vault_started());
-    printf("Vault stopped - iteration %i.\n\n", loop+1);
-//    // checking kadconfig file
-//    std::string kadconfig_path(datastore_dir_+"/Datastore"+
-//        base::itos(64001+kTestVaultNo) + "/.kadconfig");
-//    base::KadConfig kconf;
-//    ASSERT_TRUE(boost::filesystem::exists(
-//        boost::filesystem::path(kadconfig_path)));
-//    std::ifstream kadconf_file(kadconfig_path.c_str(),
-//        std::ios::in | std::ios::binary);
-//    ASSERT_TRUE(kconf.ParseFromIstream(&kadconf_file));
-//    kadconf_file.close();
-//    ASSERT_LT(0, kconf.contact_size());
+    printf("Vault stopped - iteration %i.\n", loop+1);
     pdvaults_[kTestVaultNo]->Start(false);
     ASSERT_TRUE(pdvaults_[kTestVaultNo]->vault_started());
-    printf("Vault started - iteration %i.\n\n", loop+1);
+    printf("Vault started - iteration %i.\n", loop+1);
   }
 }
 
@@ -362,12 +351,13 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
   int i = 0;
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
 //    printf("Saving chunk: %s\n", (*it_).first.c_str());
-    std::string chunk_name = (*it_).first;
-    std::string hex_chunk_name;
-    base::encode_to_hex(chunk_name, hex_chunk_name);
+    std::string non_hex_chunk_name = (*it_).first;
+    std::string hex_chunk_name("");
+    base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
     std::string signed_request_ =
         crypto_.AsymSign(crypto_.Hash(client_public_key_ +
-                                      client_signed_public_key_+hex_chunk_name,
+                                      client_signed_public_key_ +
+                                      non_hex_chunk_name,
                                       "",
                                       maidsafe_crypto::STRING_STRING,
                                       true),
@@ -377,7 +367,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
     testpdvault::PrepareCallbackResults();
     printf("\tIn TestPDVault, before store chunk %s.\n",
            hex_chunk_name.c_str());
-    pdclient_->StoreChunk((*it_).first,
+    pdclient_->StoreChunk(non_hex_chunk_name,
                           (*it_).second,
                           client_public_key_,
                           client_signed_public_key_,
@@ -395,8 +385,8 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
 //  // iterate through all vault chunkstores to ensure each chunk stored
 //  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
 //  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
-//    std::string hash_;
-//    base::encode_to_hex((*it_).first, hash_);
+//    std::string hash_("");
+//    base::encode_to_hex((*it_).first, &hash_);
 //    int chunk_count_ = 0;
 //    for (int vault_no_ = 0; vault_no_ < kNetworkSize_; ++vault_no_) {
 //      fs::directory_iterator end_itr_;
@@ -424,12 +414,13 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
   int i = 0;
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
 //    printf("Saving chunk: %s\n", (*it_).first.c_str());
-    std::string chunk_name = (*it_).first;
-    std::string chunk_name_enc;
-    base::encode_to_hex(chunk_name, chunk_name_enc);
+    std::string non_hex_chunk_name = (*it_).first;
+    std::string hex_chunk_name("");
+    base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
     std::string signed_request_ =
         crypto_.AsymSign(crypto_.Hash(client_public_key_ +
-                                      client_signed_public_key_+chunk_name_enc,
+                                      client_signed_public_key_ +
+                                      non_hex_chunk_name,
                                       "",
                                       maidsafe_crypto::STRING_STRING,
                                       true),
@@ -439,7 +430,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
     testpdvault::PrepareCallbackResults();
     i++;
     printf("before store chunk %d\n", i);
-    pdclient_->StoreChunk(chunk_name,
+    pdclient_->StoreChunk(non_hex_chunk_name,
                           (*it_).second,
                           client_public_key_,
                           client_signed_public_key_,
@@ -477,23 +468,24 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunkInvalidRequest) {
   const boost::uint32_t kNumOfTestChunks(1);
   testpdvault::MakeChunks(client_chunkstore_dir_, kNumOfTestChunks, &chunks);
   std::map<std::string, std::string>::iterator it;
-  std::string chunk_name;
+  std::string non_hex_chunk_name;
   for (it = chunks.begin(); it != chunks.end(); ++it)
-    chunk_name = (*it).first;
+    non_hex_chunk_name = (*it).first;
 
-  std::string enc_chunk_name;
-  base::encode_to_hex(chunk_name, enc_chunk_name);
+  std::string hex_chunk_name("");
+  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
 
-  // creating a the signature
+  // creating a valid request
   std::string signed_request =
       crypto_.AsymSign(crypto_.Hash(client_public_key_ +
-                                    client_signed_public_key_+enc_chunk_name,
+                                    client_signed_public_key_ +
+                                    non_hex_chunk_name,
                                     "",
                                     maidsafe_crypto::STRING_STRING,
                                     true),
                        "",
                        client_private_key_,
-                        maidsafe_crypto::STRING_STRING);
+                       maidsafe_crypto::STRING_STRING);
 
   // creating another pair of keys
   maidsafe_crypto::RsaKeyPair keys;
@@ -505,8 +497,8 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunkInvalidRequest) {
                                              maidsafe_crypto::STRING_STRING);
 
   testpdvault::PrepareCallbackResults();
-  pdclient_->StoreChunk(chunk_name,
-                        chunks[chunk_name],
+  pdclient_->StoreChunk(non_hex_chunk_name,
+                        chunks[non_hex_chunk_name],
                         keys.public_key(),
                         sig_pub_key,
                         signed_request,
@@ -518,8 +510,8 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunkInvalidRequest) {
   ASSERT_FALSE(callback_timed_out_);
   testpdvault::PrepareCallbackResults();
   // sending invalid public key
-  pdclient_->StoreChunk(chunk_name,
-                        chunks[chunk_name],
+  pdclient_->StoreChunk(non_hex_chunk_name,
+                        chunks[non_hex_chunk_name],
                         std::string("invalid key"),
                         sig_pub_key,
                         signed_request,
@@ -534,7 +526,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunkInvalidRequest) {
   // sending invalid request
   signed_request =
       crypto_.AsymSign(crypto_.Hash(client_public_key_ +
-                                    client_signed_public_key_+chunk_name,
+                                    client_signed_public_key_ + hex_chunk_name,
                                     "",
                                     maidsafe_crypto::STRING_STRING,
                                     true),
@@ -542,8 +534,8 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunkInvalidRequest) {
                        client_private_key_,
                        maidsafe_crypto::STRING_STRING);
 
-  pdclient_->StoreChunk(chunk_name,
-                        chunks[chunk_name],
+  pdclient_->StoreChunk(non_hex_chunk_name,
+                        chunks[non_hex_chunk_name],
                         client_public_key_,
                         client_signed_public_key_,
                         signed_request,
@@ -556,14 +548,15 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunkInvalidRequest) {
 }
 
 TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
-  std::string chunk_name, chunk_content;
-  testpdvault::CreateSystemPacket(client_private_key_, &chunk_name,
+  std::string non_hex_chunk_name, chunk_content;
+  testpdvault::CreateSystemPacket(client_private_key_, &non_hex_chunk_name,
     &chunk_content);
-  std::string hex_chunk_name;
-  base::encode_to_hex(chunk_name, hex_chunk_name);
+  std::string hex_chunk_name("");
+  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
   std::string signed_request =
       crypto_.AsymSign(crypto_.Hash(client_public_key_ +
-                                    client_signed_public_key_+hex_chunk_name,
+                                    client_signed_public_key_ +
+                                    non_hex_chunk_name,
                                     "",
                                     maidsafe_crypto::STRING_STRING,
                                     true),
@@ -571,7 +564,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
                        client_private_key_,
                        maidsafe_crypto::STRING_STRING);
   testpdvault::PrepareCallbackResults();
-  pdclient_->StoreChunk(chunk_name,
+  pdclient_->StoreChunk(non_hex_chunk_name,
                         chunk_content,
                         client_public_key_,
                         client_signed_public_key_,
@@ -595,17 +588,17 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
   testpdvault::PrepareCallbackResults();
-  newclient->GetChunk(chunk_name,
-                        boost::bind(&testpdvault::GetChunkCallback, _1));
+  newclient->GetChunk(non_hex_chunk_name,
+                      boost::bind(&testpdvault::GetChunkCallback, _1));
   testpdvault::BluddyWaitFunction(60, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_EQ(callback_content_, chunk_content);
   ASSERT_FALSE(callback_timed_out_);
   std::string hash = crypto_.Hash(callback_content_,
-                                   "",
-                                   maidsafe_crypto::STRING_STRING,
-                                   false);
-  ASSERT_EQ(chunk_name, hash);
+                                  "",
+                                  maidsafe_crypto::STRING_STRING,
+                                  false);
+  ASSERT_EQ(non_hex_chunk_name, hash);
   packethandler::GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(callback_content_));
   testpdvault::PrepareCallbackResults();
@@ -617,16 +610,17 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
 }
 
 TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
-  std::string chunk_name, chunk_content;
+  std::string non_hex_chunk_name, chunk_content;
   maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(packethandler::kRsaKeySize);
-  testpdvault::CreateSystemPacket(keys.private_key(), &chunk_name,
+  testpdvault::CreateSystemPacket(keys.private_key(), &non_hex_chunk_name,
     &chunk_content);
-  std::string hex_chunk_name;
-  base::encode_to_hex(chunk_name, hex_chunk_name);
+  std::string hex_chunk_name("");
+  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
   std::string signed_request =
       crypto_.AsymSign(crypto_.Hash(client_public_key_ +
-                                    client_signed_public_key_+hex_chunk_name,
+                                    client_signed_public_key_ +
+                                    non_hex_chunk_name,
                                     "",
                                     maidsafe_crypto::STRING_STRING,
                                     true),
@@ -634,7 +628,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
                        client_private_key_,
                        maidsafe_crypto::STRING_STRING);
   testpdvault::PrepareCallbackResults();
-  pdclient_->StoreChunk(chunk_name,
+  pdclient_->StoreChunk(non_hex_chunk_name,
                         chunk_content,
                         client_public_key_,
                         client_signed_public_key_,
@@ -647,7 +641,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
   ASSERT_FALSE(callback_timed_out_);
 
   testpdvault::PrepareCallbackResults();
-  pdclient_->StoreChunk(chunk_name,
+  pdclient_->StoreChunk(non_hex_chunk_name,
                         std::string("not a system packet"),
                         client_public_key_,
                         client_signed_public_key_,
@@ -661,15 +655,15 @@ TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
 }
 
 TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
-  std::string chunk_name = crypto_.Hash("abc", "",
+  std::string non_hex_chunk_name = crypto_.Hash("abc", "",
                                         maidsafe_crypto::STRING_STRING, false);
   std::string chunk_content = base::RandomString(200);
-  std::string chunk_name_enc;
-  base::encode_to_hex(chunk_name, chunk_name_enc);
+  std::string hex_chunk_name("");
+  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
   std::string signed_request_ =
         crypto_.AsymSign(crypto_.Hash(client_public_key_ +
                                       client_signed_public_key_ +
-                                      chunk_name_enc,
+                                      non_hex_chunk_name,
                                       "",
                                       maidsafe_crypto::STRING_STRING,
                                       true),
@@ -677,7 +671,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
                          client_private_key_,
                          maidsafe_crypto::STRING_STRING);
   testpdvault::PrepareCallbackResults();
-  pdclient_->StoreChunk(chunk_name,
+  pdclient_->StoreChunk(non_hex_chunk_name,
                         chunk_content,
                         client_public_key_,
                         client_signed_public_key_,
@@ -692,7 +686,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
   // fail to store again on same key
   std::string new_chunk_content = base::RandomString(200);
 //  testpdvault::PrepareCallbackResults();
-//  pdclient_->StoreChunk(chunk_name,
+//  pdclient_->StoreChunk(non_hex_chunk_name,
 //                        new_chunk_content,
 //                        client_public_key_,
 //                        client_signed_public_key_,
@@ -706,14 +700,14 @@ TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
 
   // Updating chunk
   testpdvault::PrepareCallbackResults();
-  pdclient_->UpdateChunk(chunk_name,
-                        new_chunk_content,
-                        client_public_key_,
-                        client_signed_public_key_,
-                        signed_request_,
-                        maidsafe::PDDIR_NOTSIGNED,
-                        boost::bind(&testpdvault::StoreChunkCallback,
-                                    _1));
+  pdclient_->UpdateChunk(non_hex_chunk_name,
+                         new_chunk_content,
+                         client_public_key_,
+                         client_signed_public_key_,
+                         signed_request_,
+                         maidsafe::PDDIR_NOTSIGNED,
+                         boost::bind(&testpdvault::StoreChunkCallback,
+                                     _1));
   testpdvault::BluddyWaitFunction(120, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
@@ -721,7 +715,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
 
   // loading chunk
   testpdvault::PrepareCallbackResults();
-  pdclient_->GetChunk(chunk_name,
+  pdclient_->GetChunk(non_hex_chunk_name,
                       boost::bind(&testpdvault::GetChunkCallback, _1));
   testpdvault::BluddyWaitFunction(60, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
@@ -730,14 +724,15 @@ TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
 }
 
 TEST_F(TestPDVault, FUNC_MAID_UpdateSystemPacket) {
-  std::string chunk_name, chunk_content;
-  testpdvault::CreateSystemPacket(client_private_key_, &chunk_name,
+  std::string non_hex_chunk_name, chunk_content;
+  testpdvault::CreateSystemPacket(client_private_key_, &non_hex_chunk_name,
     &chunk_content);
-  std::string hex_chunk_name;
-  base::encode_to_hex(chunk_name, hex_chunk_name);
+  std::string hex_chunk_name("");
+  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
   std::string signed_request =
       crypto_.AsymSign(crypto_.Hash(client_public_key_ +
-                                    client_signed_public_key_+hex_chunk_name,
+                                    client_signed_public_key_ +
+                                    non_hex_chunk_name,
                                     "",
                                     maidsafe_crypto::STRING_STRING,
                                     true),
@@ -745,7 +740,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateSystemPacket) {
                        client_private_key_,
                        maidsafe_crypto::STRING_STRING);
   testpdvault::PrepareCallbackResults();
-  pdclient_->StoreChunk(chunk_name,
+  pdclient_->StoreChunk(non_hex_chunk_name,
                         chunk_content,
                         client_public_key_,
                         client_signed_public_key_,
@@ -759,13 +754,13 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateSystemPacket) {
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   std::string new_chunk_content;
-  std::string new_chunk_name;
-  testpdvault::CreateSystemPacket(client_private_key_, &new_chunk_name,
+  std::string new_non_hex_chunk_name;
+  testpdvault::CreateSystemPacket(client_private_key_, &new_non_hex_chunk_name,
     &new_chunk_content);
   ASSERT_NE(chunk_content, new_chunk_content);
 
   testpdvault::PrepareCallbackResults();
-  pdclient_->UpdateChunk(chunk_name,
+  pdclient_->UpdateChunk(non_hex_chunk_name,
                         new_chunk_content,
                         client_public_key_,
                         client_signed_public_key_,
@@ -779,7 +774,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateSystemPacket) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
 
   testpdvault::PrepareCallbackResults();
-  pdclient_->GetChunk(chunk_name,
+  pdclient_->GetChunk(non_hex_chunk_name,
                       boost::bind(&testpdvault::GetChunkCallback, _1));
   testpdvault::BluddyWaitFunction(60, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
@@ -788,14 +783,15 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateSystemPacket) {
 }
 
 TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
-  std::string chunk_name, chunk_content;
-  testpdvault::CreateSystemPacket(client_private_key_, &chunk_name,
+  std::string non_hex_chunk_name, chunk_content;
+  testpdvault::CreateSystemPacket(client_private_key_, &non_hex_chunk_name,
     &chunk_content);
-  std::string hex_chunk_name;
-  base::encode_to_hex(chunk_name, hex_chunk_name);
+  std::string hex_chunk_name("");
+  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
   std::string signed_request =
       crypto_.AsymSign(crypto_.Hash(client_public_key_ +
-                                    client_signed_public_key_+hex_chunk_name,
+                                    client_signed_public_key_ +
+                                    non_hex_chunk_name,
                                     "",
                                     maidsafe_crypto::STRING_STRING,
                                     true),
@@ -803,7 +799,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
                        client_private_key_,
                        maidsafe_crypto::STRING_STRING);
   testpdvault::PrepareCallbackResults();
-  pdclient_->StoreChunk(chunk_name,
+  pdclient_->StoreChunk(non_hex_chunk_name,
                         chunk_content,
                         client_public_key_,
                         client_signed_public_key_,
@@ -817,28 +813,28 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   testpdvault::PrepareCallbackResults();
-  pdclient_->UpdateChunk(chunk_name,
-                        std::string("this is not a system packet"),
-                        client_public_key_,
-                        client_signed_public_key_,
-                        signed_request,
-                        maidsafe::SYSTEM_PACKET,
-                        boost::bind(&testpdvault::StoreChunkCallback,
-                                    _1));
+  pdclient_->UpdateChunk(non_hex_chunk_name,
+                         std::string("this is not a system packet"),
+                         client_public_key_,
+                         client_signed_public_key_,
+                         signed_request,
+                         maidsafe::SYSTEM_PACKET,
+                         boost::bind(&testpdvault::StoreChunkCallback,
+                                     _1));
   testpdvault::BluddyWaitFunction(120, &mutex_);
   ASSERT_FALSE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
 
   // Udating different type
   testpdvault::PrepareCallbackResults();
-  pdclient_->UpdateChunk(chunk_name,
-                        std::string("this is not a system packet"),
-                        client_public_key_,
-                        client_signed_public_key_,
-                        signed_request,
-                        maidsafe::PDDIR_NOTSIGNED,
-                        boost::bind(&testpdvault::StoreChunkCallback,
-                                    _1));
+  pdclient_->UpdateChunk(non_hex_chunk_name,
+                         std::string("this is not a system packet"),
+                         client_public_key_,
+                         client_signed_public_key_,
+                         signed_request,
+                         maidsafe::PDDIR_NOTSIGNED,
+                         boost::bind(&testpdvault::StoreChunkCallback,
+                                     _1));
   testpdvault::BluddyWaitFunction(120, &mutex_);
   ASSERT_FALSE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
@@ -847,14 +843,15 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
   maidsafe_crypto::RsaKeyPair keys;
   keys.GenerateKeys(packethandler::kRsaKeySize);
   std::string new_chunk_content;
-  std::string new_chunk_name;
-  testpdvault::CreateSystemPacket(keys.private_key(), &new_chunk_name,
+  std::string new_non_hex_chunk_name;
+  testpdvault::CreateSystemPacket(keys.private_key(), &new_non_hex_chunk_name,
     &new_chunk_content);
   std::string sig_pubkey = crypto_.AsymSign(keys.public_key(), "",
      keys.private_key(), maidsafe_crypto::STRING_STRING);
   signed_request =
       crypto_.AsymSign(crypto_.Hash(keys.public_key() +
-                                    client_signed_public_key_+hex_chunk_name,
+                                    client_signed_public_key_ +
+                                    new_non_hex_chunk_name,
                                     "",
                                     maidsafe_crypto::STRING_STRING,
                                     true),
@@ -862,7 +859,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
                        keys.private_key(),
                        maidsafe_crypto::STRING_STRING);
   testpdvault::PrepareCallbackResults();
-  pdclient_->UpdateChunk(chunk_name,
+  pdclient_->UpdateChunk(non_hex_chunk_name,
                         std::string("this is not a system packet"),
                         keys.public_key(),
                         sig_pubkey,
@@ -876,15 +873,16 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
 }
 
 TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
-  std::string chunk_name, chunk_content;
+  std::string non_hex_chunk_name, chunk_content;
   testpdvault::CreateBufferPacket("publicuser", client_public_key_,
       client_private_key_,
-    &chunk_name, &chunk_content);
-  std::string chunk_name_enc;
-  base::encode_to_hex(chunk_name, chunk_name_enc);
+    &non_hex_chunk_name, &chunk_content);
+  std::string hex_chunk_name("");
+  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
   std::string signed_request =
       crypto_.AsymSign(crypto_.Hash(client_public_key_ +
-                                    client_signed_public_key_ + chunk_name_enc,
+                                    client_signed_public_key_ +
+                                    non_hex_chunk_name,
                                     "",
                                     maidsafe_crypto::STRING_STRING,
                                     true),
@@ -892,7 +890,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
                        client_private_key_,
                        maidsafe_crypto::STRING_STRING);
   testpdvault::PrepareCallbackResults();
-  pdclient_->StoreChunk(chunk_name,
+  pdclient_->StoreChunk(non_hex_chunk_name,
                         chunk_content,
                         client_public_key_,
                         client_signed_public_key_,
@@ -917,8 +915,8 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
     keys.private_key(), maidsafe_crypto::STRING_STRING);
 
   signed_request =
-      crypto_.AsymSign(crypto_.Hash(keys.public_key() +
-                                    sig_pubkey + chunk_name_enc,
+      crypto_.AsymSign(crypto_.Hash(keys.public_key() + sig_pubkey +
+                                    non_hex_chunk_name,
                                     "",
                                     maidsafe_crypto::STRING_STRING,
                                     true),
@@ -926,7 +924,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
                        keys.private_key(),
                        maidsafe_crypto::STRING_STRING);
   testpdvault::PrepareCallbackResults();
-  pdclient_->UpdateChunk(chunk_name,
+  pdclient_->UpdateChunk(non_hex_chunk_name,
                          new_content,
                          keys.public_key(),
                          sig_pubkey,
@@ -939,7 +937,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
   ASSERT_FALSE(callback_timed_out_);
 
   testpdvault::PrepareCallbackResults();
-  pdclient_->UpdateChunk(chunk_name,
+  pdclient_->UpdateChunk(non_hex_chunk_name,
                          new_content,
                          keys.public_key(),
                          sig_pubkey,
@@ -953,7 +951,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
 
   // Getting the complete buffer packet
   testpdvault::PrepareCallbackResults();
-  pdclient_->GetChunk(chunk_name,
+  pdclient_->GetChunk(non_hex_chunk_name,
                       boost::bind(&testpdvault::GetChunkCallback, _1));
   testpdvault::BluddyWaitFunction(60, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
@@ -965,7 +963,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
 
   // Getting only the messages not owner
   testpdvault::PrepareCallbackResults();
-  pdclient_->GetMessages(chunk_name, keys.public_key(), sig_pubkey,
+  pdclient_->GetMessages(non_hex_chunk_name, keys.public_key(), sig_pubkey,
                       boost::bind(&testpdvault::GetMessagesCallback, _1));
   testpdvault::BluddyWaitFunction(60, &mutex_);
   ASSERT_FALSE(callback_succeeded_);
@@ -973,7 +971,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
 
   // Getting messages
   testpdvault::PrepareCallbackResults();
-  pdclient_->GetMessages(chunk_name,
+  pdclient_->GetMessages(non_hex_chunk_name,
                          client_public_key_,
                          client_signed_public_key_,
                          boost::bind(&testpdvault::GetMessagesCallback, _1));
@@ -984,7 +982,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
   ASSERT_EQ(expected_res, callback_msgs.front());
   // Deleting the messages not owner
   testpdvault::PrepareCallbackResults();
-  pdclient_->DeleteChunk(chunk_name,
+  pdclient_->DeleteChunk(non_hex_chunk_name,
                          keys.public_key(),
                          sig_pubkey,
                          signed_request,
@@ -997,7 +995,8 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
   // Deleting messages
   signed_request =
       crypto_.AsymSign(crypto_.Hash(client_public_key_ +
-                                    client_signed_public_key_ + chunk_name_enc,
+                                    client_signed_public_key_ +
+                                    non_hex_chunk_name,
                                     "",
                                     maidsafe_crypto::STRING_STRING,
                                     true),
@@ -1005,7 +1004,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
                        client_private_key_,
                        maidsafe_crypto::STRING_STRING);
   testpdvault::PrepareCallbackResults();
-  pdclient_->DeleteChunk(chunk_name,
+  pdclient_->DeleteChunk(non_hex_chunk_name,
                          client_public_key_,
                          client_signed_public_key_,
                          signed_request,
@@ -1017,7 +1016,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
 
   // Getting messages again
   testpdvault::PrepareCallbackResults();
-  pdclient_->GetMessages(chunk_name,
+  pdclient_->GetMessages(non_hex_chunk_name,
                          client_public_key_,
                          client_signed_public_key_,
                          boost::bind(&testpdvault::GetMessagesCallback, _1));

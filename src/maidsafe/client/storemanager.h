@@ -35,19 +35,26 @@ namespace maidsafe {
 
 class StoreManagerInterface {
  public:
-  virtual void StoreChunk(const std::string &chunk_name,
+  virtual ~StoreManagerInterface() {}
+  virtual void Init(base::callback_func_type cb)=0;
+  virtual void Close(base::callback_func_type cb)=0;
+  virtual void LoadChunk(const std::string &hex_chunk_name,
+                         base::callback_func_type cb)=0;
+  virtual void StoreChunk(const std::string &hex_chunk_name,
                           const std::string &content,
                           const std::string &signature,
                           const std::string &public_key,
                           const std::string &signed_public_key,
                           base::callback_func_type cb)=0;
-  virtual void LoadChunk(const std::string &chunk_name,
-                         base::callback_func_type cb)=0;
-  virtual void Init(base::callback_func_type cb)=0;
-  virtual void Close(base::callback_func_type cb)=0;
-  virtual void IsKeyUnique(const std::string &key,
+  virtual void IsKeyUnique(const std::string &hex_key,
                            base::callback_func_type cb)=0;
-  virtual void StorePacket(const std::string &key,
+  virtual void DeletePacket(const std::string &hex_key,
+                            const std::string &signature,
+                            const std::string &public_key,
+                            const std::string &signed_public_key,
+                            const value_types &type,
+                            base::callback_func_type cb)=0;
+  virtual void StorePacket(const std::string &hex_key,
                            const std::string &value,
                            const std::string &signature,
                            const std::string &public_key,
@@ -55,23 +62,15 @@ class StoreManagerInterface {
                            const value_types &type,
                            bool update,
                            base::callback_func_type cb)=0;
-  virtual void LoadPacket(const std::string &key,
+  virtual void LoadPacket(const std::string &hex_key,
                           base::callback_func_type cb)=0;
-  virtual void DeletePacket(const std::string &key,
-                            const std::string &signature,
-                            const std::string &public_key,
-                            const std::string &signed_public_key,
-                            const value_types &type,
-                            base::callback_func_type cb)=0;
 
   // The public_key is the one of the MPID and is signed by the MPID's
   // private key
-  virtual void GetMessages(const std::string &key,
+  virtual void GetMessages(const std::string &hex_key,
                            const std::string &public_key,
                            const std::string &signed_public_key,
                            base::callback_func_type cb)=0;
-
-  virtual ~StoreManagerInterface() {}
 };
 
 }  // namespace maidsafe

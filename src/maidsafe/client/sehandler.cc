@@ -377,20 +377,20 @@ bool SEHandler::MakeElement(const std::string &rel_entry,
 int SEHandler::GenerateUniqueKey(const DB_TYPE db_type,
                                  const std::string &msid,
                                  const int &attempt,
-                                 std::string *key) {
+                                 std::string *hex_key) {
   // get key, check for uniqueness on DHT, and baggsy this key
-  *key = base::RandomString(200);
-  *key = SHA512(*key, false);
+  *hex_key = base::RandomString(200);
+  *hex_key = SHA512(*hex_key, false);
   CallbackResult cbr;
-  storem_->IsKeyUnique(*key,
-    boost::bind(&CallbackResult::CallbackFunc, &cbr, _1));
+  storem_->IsKeyUnique(*hex_key,
+                       boost::bind(&CallbackResult::CallbackFunc, &cbr, _1));
   WaitForResult(cbr);
   base::GeneralResponse result;
   int count = attempt;
   while ((!result.ParseFromString(cbr.result) ||
          (result.result() == kCallbackFailure)) && count < 5) {
     ++count;
-    GenerateUniqueKey(db_type, msid, count, key);
+    GenerateUniqueKey(db_type, msid, count, hex_key);
   }
   if (count < 5) {
     // cbr.Reset();
@@ -401,15 +401,16 @@ int SEHandler::GenerateUniqueKey(const DB_TYPE db_type,
     else
       pd_dir_type_ = PDDIR_SIGNED;
     std::string ser_gp = CreateDataMapPacket("temp data", db_type, msid);
-    std::string pubkey(""), sig_pubkey(""), sig_request("");
+    std::string pubkey(""), sig_pubkey(""), sig_request(""), non_hex_key("");
+    base::decode_from_hex(*hex_key, &non_hex_key);
     GetSignedPubKeyAndRequest(db_type,
                               msid,
-                              *key,
+                              non_hex_key,
                               &pubkey,
                               &sig_pubkey,
                               &sig_request);
     storem_->StorePacket(
-        *key,
+        *hex_key,
         ser_gp,
         sig_request,
         pubkey,
@@ -513,8 +514,8 @@ int SEHandler::EncryptDb(const std::string &dir_path,
       uptodate_datamaps_.erase(it);
     }
   }
-//  std::string hex_dm;
-//  base::encode_to_hex(enc_dm_, hex_dm);
+//  std::string hex_dm("");
+//  base::encode_to_hex(enc_dm_, &hex_dm);
 //  printf("Inserting dir_path(%s) and enc_dm_(%s) into uptodate_datamaps_.\n",
 //    dir_path.c_str(), hex_dm.c_str());
   uptodate_datamaps_.insert(
@@ -563,9 +564,11 @@ int SEHandler::EncryptDb(const std::string &dir_path,
     pd_dir_type_ = PDDIR_SIGNED;
   std::string ser_gp = CreateDataMapPacket(enc_dm_, db_type, msid);
   std::string pubkey(""), sig_pubkey(""), sig_request("");
+  std::string non_hex_key("");
+  base::decode_from_hex(dir_key, &non_hex_key);
   GetSignedPubKeyAndRequest(db_type,
                             msid,
-                            dir_key,
+                            non_hex_key,
                             &pubkey,
                             &sig_pubkey,
                             &sig_request);
@@ -630,8 +633,8 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       gp.ParseFromString(enc_dm_);
       s = gp.data();
     }
-//    std::string hex_dm;
-//    base::encode_to_hex(s, hex_dm);
+//    std::string hex_dm("");
+//    base::encode_to_hex(s, &hex_dm);
 //    printf("Searching dir_path(%s) and enc_dm_(%s) into uptodate_datamaps_\n",
 //      dir_path.c_str(), hex_dm.c_str());
     std::map<std::string, std::string>::iterator it;
@@ -1046,9 +1049,11 @@ void SEHandler::StoreChunk(const std::string &chunk_name,
     std::string chunk_value(static_cast<const char*>(temp.get()),
                             static_cast<uint32_t>(size));
     std::string pubkey, sig_pubkey, sig_request;
+    std::string non_hex_chunk_name("");
+    base::decode_from_hex(chunk_name, &non_hex_chunk_name);
     GetSignedPubKeyAndRequest(data->db_type,
                               data->msid,
-                              chunk_name,
+                              non_hex_chunk_name,
                               &pubkey,
                               &sig_pubkey,
                               &sig_request);
@@ -1156,6 +1161,7 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
   co.set_hash_algorithm("SHA512");
   switch (db_type) {
     case PRIVATE_SHARE: {
+      printf("Getting signed request for PRIVATE_SHARE.\n\n");
       std::string private_key_("");
       if (0 != GetMsidKeys(msid, pubkey, &private_key_)) {
         *pubkey = "";
@@ -1177,6 +1183,7 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
       }
       break;
     case PUBLIC_SHARE:
+      printf("Getting signed request for PUBLIC_SHARE.\n\n");
       *pubkey = ss_->GetPublicKey(MPID_BP);
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
@@ -1191,11 +1198,13 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
                                     maidsafe_crypto::STRING_STRING);
       break;
     case ANONYMOUS:
+      printf("Getting signed request for ANONYMOUS.\n\n");
       *pubkey = " ";
       *signed_pubkey = " ";
       *signed_request = kAnonymousSignedRequest;
       break;
     default:
+      printf("Getting signed request for default.\n\n");
       *pubkey = ss_->GetPublicKey(MAID_BP);
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",

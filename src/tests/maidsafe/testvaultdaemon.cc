@@ -138,8 +138,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_NoPartners) {
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
     maidsafe_crypto::STRING_STRING, false);
-  std::string enc_chunk_name;
-  base::encode_to_hex(chunk_name, enc_chunk_name);
+  std::string enc_chunk_name("");
+  base::encode_to_hex(chunk_name, &enc_chunk_name);
   std::string result("");
   std::string sender_info("");
   kad::StoreChunkRequest args;
@@ -169,8 +169,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
     maidsafe_crypto::STRING_STRING, false);
-  std::string enc_chunk_name;
-  base::encode_to_hex(chunk_name, enc_chunk_name);
+  std::string enc_chunk_name("");
+  base::encode_to_hex(chunk_name, &enc_chunk_name);
   StoreResponse result;
   std::string ser_result("");
   std::string sender_info("");
@@ -236,8 +236,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
     std::string chunk_name = cry_obj.Hash(chunk_content, "",
       maidsafe_crypto::STRING_STRING, false);
     chunks[chunk_name]=chunk_content;
-    std::string enc_chunk_name;
-    base::encode_to_hex(chunk_name, enc_chunk_name);
+    std::string enc_chunk_name("");
+    base::encode_to_hex(chunk_name, &enc_chunk_name);
     std::string ser_args(""), ser_result(""), sender_info("");
     StoreResponse result;
     kad::StoreChunkRequest args;
@@ -268,8 +268,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
     std::string chunk_name = cry_obj.Hash(chunk_content, "",
       maidsafe_crypto::STRING_STRING, false);
     chunks[chunk_name]=chunk_content;
-    std::string enc_chunk_name;
-    base::encode_to_hex(chunk_name, enc_chunk_name);
+    std::string enc_chunk_name("");
+    base::encode_to_hex(chunk_name, &enc_chunk_name);
     std::string ser_args(""), ser_result(""), sender_info("");
     StoreResponse result;
     kad::StoreChunkRequest args;
@@ -320,8 +320,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
     std::string chunk_content = base::RandomString(512);
     std::string chunk_name = cry_obj.Hash(chunk_content, "",
       maidsafe_crypto::STRING_STRING, false);
-    std::string enc_chunk_name;
-    base::encode_to_hex(chunk_name, enc_chunk_name);
+    std::string enc_chunk_name("");
+    base::encode_to_hex(chunk_name, &enc_chunk_name);
     chunks[chunk_name]=chunk_content;
     std::string ser_args(""), ser_result(""), sender_info("");
     StoreResponse result;
@@ -353,7 +353,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
       maidsafe_crypto::STRING_STRING, false);
     chunks[chunk_name]=chunk_content;
     std::string enc_chunk_name("");
-    base::encode_to_hex(chunk_name, enc_chunk_name);
+    base::encode_to_hex(chunk_name, &enc_chunk_name);
     std::string ser_args(""), ser_result(""), sender_info("");
     StoreResponse result;
     kad::StoreChunkRequest args;
@@ -416,8 +416,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_RepublishChunkRef) {
     std::string chunk_content = base::RandomString(512);
     std::string chunk_name = cry_obj.Hash(chunk_content, "",
       maidsafe_crypto::STRING_STRING, false);
-    std::string enc_chunk_name;
-    base::encode_to_hex(chunk_name, enc_chunk_name);
+    std::string enc_chunk_name("");
+    base::encode_to_hex(chunk_name, &enc_chunk_name);
     std::string ser_args(""), ser_result(""), sender_info("");
     StoreResponse result;
     kad::StoreChunkRequest args;

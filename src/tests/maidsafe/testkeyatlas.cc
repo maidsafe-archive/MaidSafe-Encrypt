@@ -27,6 +27,7 @@ KeyAtlasTest() : db_name1_(".DbTest/1.db") {}
 
 
 TEST_F(KeyAtlasTest, BEH_MAID_CreateKeysDb) {
+  ASSERT_FALSE(fs::exists("M:\\"));
   int result_ = -1;
   boost::scoped_ptr<KeyAtlas> keys_db_(new KeyAtlas(db_name1_, CREATE, &result_));
   ASSERT_EQ(0, result_) << "Db creation returned result " << result_ << ".";

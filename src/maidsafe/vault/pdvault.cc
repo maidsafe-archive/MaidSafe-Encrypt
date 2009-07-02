@@ -71,15 +71,16 @@ PDVault::PDVault(const std::string &pmid_public,
 }
 
 PDVault::~PDVault() {
-#ifdef DEBUG
-  printf("In PDVault destructor, before Stop().\n");
-#endif
-  int result = Stop();
-#ifdef DEBUG
-  printf("In PDVault destructor, Stop() returned %i.\n", result);
-  if (vault_started_)
-    printf("Vault didn't stop correctly.");
-#endif
+//  #ifdef DEBUG
+//    printf("In PDVault destructor, before Stop().\n");
+//  #endif
+//    int result = Stop();
+//  #ifdef DEBUG
+//    printf("In PDVault destructor, Stop() returned %i.\n", result);
+//    if (vault_started_)
+//      printf("Vault didn't stop correctly.");
+//  #endif
+  Stop();
 }
 
 
@@ -494,8 +495,10 @@ void PDVault::IterativePublishChunkRef(
     printf("*");
     std::string chunk_name = data->chunk_names.front();
     data->chunk_names.pop_front();
+    std::string non_hex_chunk_name("");
+    base::decode_from_hex(chunk_name, &non_hex_chunk_name);
     std::string signed_request_ = co.AsymSign(
-        co.Hash(pmid_public_ + signed_pmid_public_ + chunk_name,
+        co.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
                 "",
                 maidsafe_crypto::STRING_STRING,
                 true),
@@ -928,8 +931,10 @@ void PDVault::SwapChunkAcceptChunk(
   chunkstore_->StoreChunk(chunk_name_,
                           swap_chunk_response->chunkcontent2());
   // Store chunk reference
+  std::string non_hex_chunk_name("");
+  base::decode_from_hex(chunk_name_, &non_hex_chunk_name);
   std::string signed_request = co.AsymSign(
-      co.Hash(pmid_public_ + signed_pmid_public_ + chunk_name_,
+      co.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
               "",
               maidsafe_crypto::STRING_STRING,
               true),
@@ -973,7 +978,7 @@ void PDVault::UnRegisterMaidService() {
 
 std::string PDVault::node_id() const {
   std::string hex_id("");
-  base::encode_to_hex(knode_.node_id(), hex_id);
+  base::encode_to_hex(knode_.node_id(), &hex_id);
   return hex_id;
 }
 }  // namespace maidsafe_vault

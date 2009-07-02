@@ -260,6 +260,9 @@ Return Value:
 
 		// delete DeviceObject
 		IoDeleteDevice(deviceObject);
+
+        // And free the string
+        RtlFreeUnicodeString(&symbolicLinkName);
 	}
 
 	DDbgPrint("<== DokanUnload\n");

@@ -243,19 +243,21 @@ bool ClientController::CreateUser(const std::string &username,
                                                  pin,
                                                  password,
                                                  ser_da_);
-#ifdef DEBUG
+//  #ifdef DEBUG
   printf("\n\n\n88888888888888888888888888888888888888\n");
   printf("88888888888888888888888888888888888888\n");
   printf("Finished with CreateUserSysPackets\n");
   printf("88888888888888888888888888888888888888\n");
   printf("88888888888888888888888888888888888888\n\n\n\n");
-#endif
+//  #endif
 
   if (result_ == OK) {
     ss_->SetSessionName(false);
     std::string root_db_key_;
     seh_ = new SEHandler(sm_, &mutex_);
+    printf("In ClientController::CreateUser 01\n");
     int result = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key_);
+    printf("In ClientController::CreateUser 02\n");
     ss_->SetRootDbKey(root_db_key_);
 //    fsys_.SetDirNames();
     fsys_.Mount();
@@ -265,6 +267,7 @@ bool ClientController::CreateUser(const std::string &username,
     DataAtlas da_;
 
     result += dah_->Init(true);
+    printf("In ClientController::CreateUser 03\n");
 
     // set up root subdirs
     for (int i = 0; i < kRootSubdirSize; ++i) {
@@ -281,7 +284,9 @@ bool ClientController::CreateUser(const std::string &username,
       mdm_.set_creation_time(current_time_);
       mdm_.SerializeToString(&ser_mdm_);
       if (kRootSubdir[i][1] == "") {
+        printf("In ClientController::CreateUser 04 - %i\n", i);
         seh_->GenerateUniqueKey(PRIVATE, "", 0, &key_);
+        printf("In ClientController::CreateUser 05 - %i\n", i);
       } else {
         key_ = kRootSubdir[i][1];
       }
@@ -290,12 +295,14 @@ bool ClientController::CreateUser(const std::string &username,
                                  "",
                                  key_,
                                  true);
+      printf("In ClientController::CreateUser 06 - %i\n", i);
       seh_->EncryptDb(base::TidyPath(kRootSubdir[i][0]),
                       PRIVATE,
                       key_,
                       "",
                       true,
                       &ser_dm_);
+      printf("In ClientController::CreateUser 07 - %i\n", i);
     }
 
     // set up share subdirs
@@ -315,18 +322,22 @@ bool ClientController::CreateUser(const std::string &username,
       mdm_.set_creation_time(current_time_);
       mdm_.SerializeToString(&ser_mdm_);
       if (kSharesSubdir[i][1] == "") {  // ie no preassigned key so not public
+        printf("In ClientController::CreateUser 08 - %i\n", i);
         seh_->GenerateUniqueKey(PRIVATE, "", 0, &key_);
+        printf("In ClientController::CreateUser 09 - %i\n", i);
         result += dah_->AddElement(base::TidyPath(kSharesSubdir[i][0]),
                                    ser_mdm_,
                                    "",
                                    key_,
                                    true);
+        printf("In ClientController::CreateUser 10 - %i\n", i);
         seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
                         PRIVATE,
                         key_,
                         "",
                         true,
                         &ser_dm_);
+        printf("In ClientController::CreateUser 11 - %i\n", i);
       } else {
         key_ = kSharesSubdir[i][1];
         result += dah_->AddElement(base::TidyPath(kSharesSubdir[i][0]),
@@ -334,6 +345,7 @@ bool ClientController::CreateUser(const std::string &username,
                                    "",
                                    key_,
                                    true);
+        printf("In ClientController::CreateUser 12 - %i\n", i);
         if (seh_->DecryptDb(base::TidyPath(kSharesSubdir[i][0]),
                             ANONYMOUS,
                             "",
@@ -341,6 +353,7 @@ bool ClientController::CreateUser(const std::string &username,
                             "",
                             true,
                             true)) {
+          printf("In ClientController::CreateUser 13 - %i\n", i);
           // ie Public and Anon have never been saved before on the network
           std::string ser_dm_;
           seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
@@ -349,6 +362,7 @@ bool ClientController::CreateUser(const std::string &username,
                           "",
                           true,
                           &ser_dm_);
+          printf("In ClientController::CreateUser 14 - %i\n", i);
         }
       }
     }
@@ -366,21 +380,27 @@ bool ClientController::CreateUser(const std::string &username,
                                 da_.keys(n).public_key().c_str());
       }
     }
+    printf("In ClientController::CreateUser 15\n");
     if (0 != result) {
+      printf("In ClientController::CreateUser 16\n");
       delete seh_;
       delete msgh_;
       return false;
     }
     result = SetVaultConfig(dah_->GetPublicKey(base::itos(PMID)),
                             dah_->GetPrivateKey(base::itos(PMID)));
+    printf("In ClientController::CreateUser 17\n");
     if (0 != result) {
+      printf("In ClientController::CreateUser 18\n");
       delete seh_;
       delete msgh_;
       return false;
     }
     return true;
   }
+  printf("In ClientController::CreateUser 19\n");
   ss_->ResetSession();
+  printf("In ClientController::CreateUser 20\n");
   return false;
 }
 

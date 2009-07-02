@@ -110,7 +110,7 @@ class SEHandler {
   int GenerateUniqueKey(const DB_TYPE db_type,
                         const std::string &msid,
                         const int &attempt,
-                        std::string *key);
+                        std::string *hex_key);
   //  Retrieves DHT keys for dir and its parent dir if msid == "" or sets
   //  parent_key to MSID public key if msid != ""
   int GetDirKeys(const std::string &dir_path,

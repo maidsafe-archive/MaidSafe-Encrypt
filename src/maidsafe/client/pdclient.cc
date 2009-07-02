@@ -58,11 +58,17 @@ void PDClient::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
                                     &PDClient::CheckChunkCallback,
                                     check_chunk_response_,
                                     get_args);
+#ifdef DEBUG
+  printf("\tIn PDClient::CheckChunk, before CheckContactLocalAddress.\n");
+#endif
   kad::connect_to_node conn_type =
       knode_->CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
                                        get_args->chunk_holder_.local_ip(),
                                        get_args->chunk_holder_.local_port(),
                                        get_args->chunk_holder_.host_ip());
+#ifdef DEBUG
+  printf("\tIn PDClient::CheckChunk, after CheckContactLocalAddress.\n");
+#endif
   bool local = false;
   std::string ip = get_args->chunk_holder_.host_ip();
   uint16_t port = static_cast<uint16_t>(
@@ -100,7 +106,13 @@ void PDClient::CheckChunkCallback(
       check_chunk_response->pmid_id() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote) {
       get_args->retry_remote = false;
+#ifdef DEBUG
+      printf("\tIn PDClient::CheckChunkCallback, before UpdatePDRTContac...\n");
+#endif
       knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+#ifdef DEBUG
+      printf("\tIn PDClient::CheckChunkCallback, after UpdatePDRTContact...\n");
+#endif
       boost::shared_ptr<CheckChunkResponse> resp(new CheckChunkResponse());
       google::protobuf::Closure* done =
           google::protobuf::NewCallback(this,
@@ -129,7 +141,9 @@ void PDClient::CheckChunkCallback(
       std::string local_result_str("");
       local_result.set_result(kRpcResultFailure);
       local_result.SerializeToString(&local_result_str);
+#ifdef DEBUG
       printf("check chunkcallback --- callback\n");
+#endif
       get_args->data_->cb(local_result_str);
       get_args->data_->is_callbacked = true;
     }
@@ -137,11 +151,17 @@ void PDClient::CheckChunkCallback(
     // only send one contact the get chunk request
     if (!get_args->data_->is_active) {
       get_args->data_->is_active = true;
+#ifdef DEBUG
+      printf("\tIn PDClient::CheckChunkCallback, before CheckContactLoca...\n");
+#endif
       kad::connect_to_node conn_type =
         knode_->CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
                                          get_args->chunk_holder_.local_ip(),
                                          get_args->chunk_holder_.local_port(),
                                          get_args->chunk_holder_.host_ip());
+#ifdef DEBUG
+      printf("\tIn PDClient::CheckChunkCallback, after CheckContactLocal...\n");
+#endif
       bool local = false;
       std::string ip = get_args->chunk_holder_.host_ip();
       uint16_t port = static_cast<uint16_t>(
@@ -218,7 +238,13 @@ void PDClient::GetMessagesCallback(
       get_messages_response->pmid_id() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote) {
       get_args->retry_remote = false;
+#ifdef DEBUG
+      printf("\tIn PDClient::GetMessagesCallback, before UpdatePDRTConta...\n");
+#endif
       knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+#ifdef DEBUG
+      printf("\tIn PDClient::GetMessagesCallback, after UpdatePDRTContac...\n");
+#endif
       boost::shared_ptr<GetMessagesResponse> resp(new GetMessagesResponse());
       google::protobuf::Closure* done =
           google::protobuf::NewCallback(this,
@@ -258,7 +284,13 @@ void PDClient::GetChunkCallback(
       get_response->pmid_id() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote) {
       get_args->retry_remote = false;
+#ifdef DEBUG
+      printf("\tIn PDClient::GetChunkCallback, before UpdatePDRTContactT...\n");
+#endif
       knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+#ifdef DEBUG
+      printf("\tIn PDClient::GetChunkCallback, after UpdatePDRTContactTo...\n");
+#endif
       boost::shared_ptr<GetResponse> resp(new GetResponse());
       google::protobuf::Closure* done =
           google::protobuf::NewCallback(this,
@@ -335,9 +367,15 @@ void PDClient::RetryGetChunk(boost::shared_ptr<LoadChunkData> data) {
 }
 
 void PDClient::FindChunkRef(boost::shared_ptr<LoadChunkData> data) {
+#ifdef DEBUG
+  printf("\tIn PDClient::FindChunkRef, before FindValue.\n");
+#endif
   knode_->FindValue(
       data->chunk_name,
       boost::bind(&PDClient::FindChunkRefCallback, this, _1, data));
+#ifdef DEBUG
+  printf("\tIn PDClient::FindChunkRef, after FindValue.\n");
+#endif
 }
 
 void PDClient::FindChunkRefCallback(const std::string &result,
@@ -421,7 +459,7 @@ void PDClient::StoreChunk(const std::string &chunk_name,
 void PDClient::IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data) {
   if (data->is_callbacked) {
 #ifdef DEBUG
-    printf("In PDClient::IterativeStoreChunk, data already callbacked\n");
+    printf("\tIn PDClient::IterativeStoreChunk, data already callbacked\n");
 #endif
     return;
   }
@@ -429,18 +467,20 @@ void PDClient::IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data) {
   StoreResponse store_chunk_result;
   std::string result_str;
 #ifdef DEBUG
-  printf("In PDClient::IterativeStoreChunk, stored copies: %d\n",
+  printf("\tIn PDClient::IterativeStoreChunk, stored copies: %d\n",
          data->stored_copies);
 #endif
   if (data->stored_copies >= kMinChunkCopies) {
-    printf("nalga de camello\n");
     store_chunk_result.set_result(kRpcResultSuccess);
-    printf("nalga de camello 2\n");
     store_chunk_result.SerializeToString(&result_str);
     data->is_callbacked = true;
-    printf("nalga de camello 3\n");
+#ifdef DEBUG
+    printf("\tIn PDClient::IterativeStoreChunk, store succeeded; callingback.\n");
+#endif
     data->cb(result_str);
+#ifdef DEBUG
     printf("nalga de camello 4\n");
+#endif
     return;
   }
   int missing_copies = kMinChunkCopies - data->stored_copies;
@@ -486,8 +526,13 @@ void PDClient::IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data) {
       data->cb(result_str);
       // Initiate the Kademlia joining sequence - perform a search for this
       // node's own ID
-      printf("2 stored copies: %d\n", data->stored_copies);
+#ifdef DEBUG
+      printf("\tIn PDClient::IterativeStoreChunk, before FindCloseNodes.\n");
+#endif
       knode_->FindCloseNodes(knode_->node_id(), &dummy_callback);
+#ifdef DEBUG
+      printf("\tIn PDClient::IterativeStoreChunk, after FindCloseNodes.\n");
+#endif
       return;
     }
     for (int i = 0; i < static_cast<int>(contacts.size()); ++i)
@@ -520,14 +565,18 @@ void PDClient::ExecuteStoreChunk(const kad::Contact &remote,
 //  printf("Signed Request: %s\n", send_args_->data_->sig_req.c_str());
 //  printf("Data Type: %i\n", send_args_->data_->data_type);
 //  printf("Host IP: %s\n", send_args_->chunk_holder_.host_ip().c_str());
-  printf("In PDClient::ExecuteStoreChunk, storing to: %i\n",
+  printf("\tIn PDClient::ExecuteStoreChunk, storing to: %i\n",
          send_args_->chunk_holder_.host_port());
+  printf("\tIn PDClient::ExecuteStoreChunk, before CheckContactLocalAddr...\n");
 #endif
   kad::connect_to_node conn_type =
     knode_->CheckContactLocalAddress(send_args_->chunk_holder_.node_id(),
                                      send_args_->chunk_holder_.local_ip(),
                                      send_args_->chunk_holder_.local_port(),
                                      send_args_->chunk_holder_.host_ip());
+#ifdef DEBUG
+  printf("\tIn PDClient::ExecuteStoreChunk, after CheckContactLocalAddress.\n");
+#endif
   bool local = false;
   std::string ip = send_args_->chunk_holder_.host_ip();
   uint16_t port = static_cast<uint16_t>(send_args_->chunk_holder_.host_port());
@@ -554,7 +603,7 @@ void PDClient::StoreChunkCallback(
     const boost::shared_ptr<StoreResponse> store_response,
     boost::shared_ptr<SendArgs> send_args) {
 #ifdef DEBUG
-  printf("In PDClient::StoreChunkCallback\n");
+  printf("\tIn PDClient::StoreChunkCallback\n");
 #endif
   if (send_args->data_->is_callbacked || !knode_->is_joined()) {
     // callback can only be called once
@@ -565,7 +614,13 @@ void PDClient::StoreChunkCallback(
       store_response->pmid_id() != send_args->chunk_holder_.node_id()) {
     if (send_args->retry_remote) {
       send_args->retry_remote = false;
+#ifdef DEBUG
+      printf("\tIn PDClient::StoreChunkCallback, before UpdatePDRTContac...\n");
+#endif
       knode_->UpdatePDRTContactToRemote(send_args->chunk_holder_.node_id());
+#ifdef DEBUG
+      printf("\tIn PDClient::StoreChunkCallback, after UpdatePDRTContact...\n");
+#endif
       boost::shared_ptr<StoreResponse> resp(new StoreResponse());
       google::protobuf::Closure* done =
           google::protobuf::NewCallback(this,
@@ -591,7 +646,7 @@ void PDClient::StoreChunkCallback(
       i < static_cast<int>(send_args->data_->active_contacts.size()); i++) {
     if (send_args->data_->active_contacts[i] == send_args->chunk_holder_) {
 #ifdef DEBUG
-      printf("In PDClient::StoreChunkCallback, cancelled active contact.\n");
+      printf("\tIn PDClient::StoreChunkCallback, cancelled active contact.\n");
 #endif
       send_args->data_->active_contacts.erase(
         send_args->data_->active_contacts.begin() + i);
@@ -601,7 +656,7 @@ void PDClient::StoreChunkCallback(
   // ++send_args->data_->active_contacts_done;
   if (!store_response->IsInitialized()) {
 #ifdef DEBUG
-    printf("In PDClient::StoreChunkCallback, response is not initialized.\n");
+    printf("\tIn PDClient::StoreChunkCallback, response is not initialized.\n");
 #endif
     send_args->data_->failed_contacts.push_back(send_args->chunk_holder_);
     // ++send_args->data_->active_contacts_done;
@@ -609,13 +664,13 @@ void PDClient::StoreChunkCallback(
     return;
   }
 #ifdef DEBUG
-  printf("In PDClient::StoreChunkCallback, response is initialized.\n");
+  printf("\tIn PDClient::StoreChunkCallback, response is initialized.\n");
 #endif
   if (store_response->result() != kRpcResultSuccess) {
     ++send_args->retry_;
     if (send_args->retry_ < kMaxChunkStoreRetries) {
 #ifdef DEBUG
-      printf("In PDClient::StoreChunkCallback, store failed - retry no.%i.\n",
+      printf("\tIn PDClient::StoreChunkCallback, store failed - retry no.%i.\n",
              send_args->retry_);
 #endif
       send_args->data_->active_contacts.push_back(send_args->chunk_holder_);
@@ -626,14 +681,14 @@ void PDClient::StoreChunkCallback(
     }
     send_args->data_->failed_contacts.push_back(send_args->chunk_holder_);
 #ifdef DEBUG
-    printf("In PDClient::StoreChunkCallback, store failed - no more tries.\n");
+    printf("\tIn PDClient::StoreChunkCallback, store failed; no more tries.\n");
 #endif
     // ++send_args->data_->active_contacts_done;
   } else {
     ++send_args->data_->stored_copies;
     send_args->data_->chunk_holders.push_back(send_args->chunk_holder_);
 #ifdef DEBUG
-    printf("In PDClient::StoreChunkCallback, store succeeded.\n");
+    printf("\tIn PDClient::StoreChunkCallback, store succeeded.\n");
 #endif
     // ++send_args->data_->active_contacts_done;
   }
@@ -644,7 +699,13 @@ void PDClient::GetRandomContacts(
     const int &count,
     const std::vector<kad::Contact> &exclude_contacts,
     std::vector<kad::Contact> *contacts) {
+#ifdef DEBUG
+  printf("\tIn PDClient::GetRandomContacts, before GetRandomContacts.\n");
+#endif
   knode_->GetRandomContacts(count, exclude_contacts, contacts);
+#ifdef DEBUG
+  printf("\tIn PDClient::GetRandomContacts, after GetRandomContacts.\n");
+#endif
 }
 
 void PDClient::UpdateChunk(const std::string &chunk_name,
@@ -656,6 +717,9 @@ void PDClient::UpdateChunk(const std::string &chunk_name,
                            base::callback_func_type cb) {
 //  boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
   // Look up the chunk references
+#ifdef DEBUG
+  printf("\tIn PDClient::UpdateChunk, before FindValue.\n");
+#endif
   knode_->FindValue(chunk_name,
                     boost::bind(&PDClient::IterativeCheckAlive,
                                 this,
@@ -667,6 +731,9 @@ void PDClient::UpdateChunk(const std::string &chunk_name,
                                 signed_request,
                                 data_type,
                                 cb));
+#ifdef DEBUG
+  printf("\tIn PDClient::UpdateChunk, after FindValue.\n");
+#endif
 }
 
 void PDClient::IterativeCheckAlive(const std::string &result,
@@ -681,6 +748,9 @@ void PDClient::IterativeCheckAlive(const std::string &result,
   if (!result_msg.ParseFromString(result) ||
       result_msg.result() == kRpcResultFailure ||
       result_msg.values_size() == 0) {
+#ifdef DEBUG
+    printf("No chunk reference found.\n");
+#endif
     // no chunk references were found
 //    TRI_LOG_STR("No chunk reference found.");
     UpdateResponse local_result;
@@ -706,17 +776,26 @@ void PDClient::IterativeCheckAlive(const std::string &result,
     if (remote.ParseFromString(contact_info)) {
       data->chunk_holders.push_back(remote);
       correct_info = true;
+#ifdef DEBUG
+      printf("\tIn PDClient::IterativeCheckAlive, before Ping.\n");
+#endif
       knode_->Ping(remote, boost::bind(&PDClient::IterativeCheckAliveCallback,
                                       this,
                                       _1,
                                       1,
                                       remote,
                                       data));
+#ifdef DEBUG
+      printf("\tIn PDClient::IterativeCheckAlive, after Ping.\n");
+#endif
     }
   }
   // chunk reference infomation corrupt? impossible? hacker did that? Oh, no
   if (!correct_info) {
 //    TRI_LOG_STR("No valid chunk references found for chunk: ");
+#ifdef DEBUG
+    printf("No valid chunk reference found.\n");
+#endif
     UpdateResponse local_result;
     std::string local_result_str("");
     local_result.set_result(kRpcResultFailure);
@@ -744,12 +823,18 @@ void PDClient::IterativeCheckAliveCallback(
       ++data->contacted_holders;
       IterativeUpdateChunk(data);
     } else {  // ping again
+#ifdef DEBUG
+      printf("\tIn PDClient::IterativeCheckAliveCallback, before Ping.\n");
+#endif
       knode_->Ping(remote, boost::bind(&PDClient::IterativeCheckAliveCallback,
                                       this,
                                       _1,
                                       ++retry,
                                       remote,
                                       data));
+#ifdef DEBUG
+      printf("\tIn PDClient::IterativeCheckAliveCallback, after Ping.\n");
+#endif
     }
   } else {  // alive contacts
     data->alive_holders.push_back(remote);
@@ -788,11 +873,17 @@ void PDClient::IterativeUpdateChunk(boost::shared_ptr<UpdateChunkData> data) {
                                       &PDClient::IterativeUpdateChunkCallback,
                                       update_response_,
                                       update_args_);
+#ifdef DEBUG
+    printf("\tIn PDClient::IterativeUpdateChunk, before CheckContactLoca...\n");
+#endif
     kad::connect_to_node conn_type =
       knode_->CheckContactLocalAddress(update_args_->chunk_holder_.node_id(),
                                        update_args_->chunk_holder_.local_ip(),
                                        update_args_->chunk_holder_.local_port(),
                                        update_args_->chunk_holder_.host_ip());
+#ifdef DEBUG
+    printf("\tIn PDClient::IterativeUpdateChunk, after CheckContactLocal...\n");
+#endif
     bool local = false;
     std::string ip = update_args_->chunk_holder_.host_ip();
     uint16_t port = static_cast<uint16_t>(
@@ -828,7 +919,13 @@ void PDClient::IterativeUpdateChunkCallback(
       update_response->pmid_id() != update_args->chunk_holder_.node_id()) {
     if (update_args->retry_remote) {
       update_args->retry_remote = false;
+#ifdef DEBUG
+      printf("\tIn PDClient::IterativeUpdateChunkCallback, before Update...\n");
+#endif
       knode_->UpdatePDRTContactToRemote(update_args->chunk_holder_.node_id());
+#ifdef DEBUG
+      printf("\tIn PDClient::IterativeUpdateChunkCallback, after UpdateP...\n");
+#endif
       boost::shared_ptr<UpdateResponse> resp(new UpdateResponse());
       google::protobuf::Closure* done =
           google::protobuf::NewCallback(this,
@@ -866,11 +963,17 @@ void PDClient::IterativeUpdateChunkCallback(
                                         &PDClient::IterativeUpdateChunkCallback,
                                         update_response_,
                                         update_args);
+#ifdef DEBUG
+      printf("\tIn PDClient::IterativeUpdateChunkCallback, before CheckC...\n");
+#endif
       kad::connect_to_node conn_type =
       knode_->CheckContactLocalAddress(update_args->chunk_holder_.node_id(),
                                        update_args->chunk_holder_.local_ip(),
                                        update_args->chunk_holder_.local_port(),
                                        update_args->chunk_holder_.host_ip());
+#ifdef DEBUG
+      printf("\tIn PDClient::IterativeUpdateChunkCallback, after CheckCo...\n");
+#endif
       bool local = false;
       std::string ip = update_args->chunk_holder_.host_ip();
       uint16_t port = static_cast<uint16_t>(
@@ -909,6 +1012,9 @@ void PDClient::DeleteChunk(const std::string &chunk_name,
                            base::callback_func_type cb) {
   // verify the chunk size
   // Look up the chunk references
+#ifdef DEBUG
+  printf("\tIn PDClient::DeleteChunk, before FindValue.\n");
+#endif
   knode_->FindValue(chunk_name,
                     boost::bind(&PDClient::DeleteChunk_IterativeCheckAlive,
                                 this,
@@ -919,6 +1025,9 @@ void PDClient::DeleteChunk(const std::string &chunk_name,
                                 signed_request,
                                 data_type,
                                 cb));
+#ifdef DEBUG
+  printf("\tIn PDClient::DeleteChunk, after FindValue.\n");
+#endif
 }
 
 void PDClient::DeleteChunk_IterativeCheckAlive(const std::string &result,
@@ -956,6 +1065,9 @@ void PDClient::DeleteChunk_IterativeCheckAlive(const std::string &result,
     if (remote.ParseFromString(contact_info)) {
       data->chunk_holders.push_back(remote);
       correct_info = true;
+#ifdef DEBUG
+      printf("\tIn PDClient::DeleteChunk_IterativeCheckAlive, before Ping.\n");
+#endif
       knode_->Ping(remote,
                    boost::bind(&PDClient::DeleteChunk_CheckAliveCallback,
                                this,
@@ -963,6 +1075,9 @@ void PDClient::DeleteChunk_IterativeCheckAlive(const std::string &result,
                                1,
                                remote,
                                data));
+#ifdef DEBUG
+      printf("\tIn PDClient::DeleteChunk_IterativeCheckAlive, after Ping.\n");
+#endif
     }
   }
   // chunk reference infomation corrupt? impossible? hacker did that? Oh, no
@@ -995,6 +1110,9 @@ void PDClient::DeleteChunk_CheckAliveCallback(
       ++data->contacted_holders;
       DeleteChunk_IterativeDeleteChunk(data);
     } else {  // ping again
+#ifdef DEBUG
+      printf("\tIn PDClient::DeleteChunk_CheckAliveCallback, before Ping.\n");
+#endif
       knode_->Ping(remote,
                    boost::bind(&PDClient::DeleteChunk_CheckAliveCallback,
                                this,
@@ -1002,6 +1120,9 @@ void PDClient::DeleteChunk_CheckAliveCallback(
                                ++retry,
                                remote,
                                data));
+#ifdef DEBUG
+      printf("\tIn PDClient::DeleteChunk_CheckAliveCallback, after Ping.\n");
+#endif
     }
   } else {  // alive contacts
     data->alive_holders.push_back(remote);
@@ -1041,11 +1162,17 @@ void PDClient::DeleteChunk_IterativeDeleteChunk(
             &PDClient::DeleteChunk_DeleteChunkCallback,
             delete_response_,
             delete_args_);
+#ifdef DEBUG
+    printf("\tIn PDClient::DeleteChunk_IterativeDeleteChunk, before Chec...\n");
+#endif
     kad::connect_to_node conn_type =
       knode_->CheckContactLocalAddress(delete_args_->chunk_holder_.node_id(),
                                        delete_args_->chunk_holder_.local_ip(),
                                        delete_args_->chunk_holder_.local_port(),
                                        delete_args_->chunk_holder_.host_ip());
+#ifdef DEBUG
+    printf("\tIn PDClient::DeleteChunk_IterativeDeleteChunk, after Chec....\n");
+#endif
     bool local = false;
     std::string ip = delete_args_->chunk_holder_.host_ip();
     uint16_t port = static_cast<uint16_t>(
@@ -1080,7 +1207,13 @@ void PDClient::DeleteChunk_DeleteChunkCallback(
       delete_response->pmid_id() != delete_args->chunk_holder_.node_id()) {
     if (delete_args->retry_remote) {
       delete_args->retry_remote = false;
+#ifdef DEBUG
+      printf("\tIn PDClient::DeleteChunk_DeleteChunkCallback, before Up....\n");
+#endif
       knode_->UpdatePDRTContactToRemote(delete_args->chunk_holder_.node_id());
+#ifdef DEBUG
+      printf("\tIn PDClient::DeleteChunk_DeleteChunkCallback, after Upd....\n");
+#endif
       boost::shared_ptr<DeleteResponse> resp(new DeleteResponse());
       google::protobuf::Closure* done =
           google::protobuf::NewCallback(this,
@@ -1117,20 +1250,29 @@ void PDClient::DeleteChunk_DeleteChunkCallback(
 
 void PDClient::Join(const std::string &node_id,
                     base::callback_func_type cb) {
+#ifdef DEBUG
+  printf("\tIn PDClient::Join, before Join.\n");
+#endif
   channel_manager_->StartTransport(port_,
-    boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_.get(),_1));
+    boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_.get(), _1));
   knode_->Join(node_id, kad_config_file_, cb, false);
+#ifdef DEBUG
+  printf("\tIn PDClient::Join, after Join.\n");
+#endif
 }
 
 void PDClient::Leave(base::callback_func_type cb) {
+#ifdef DEBUG
+  printf("\tIn PDClient::Leave, before Leave.\n");
+#endif
   knode_->Leave();
-  #ifdef DEBUG
-    printf("stopping transport\n");
-  #endif
+#ifdef DEBUG
+  printf("\tIn PDClient::Leave, after Leave. Stopping transport.\n");
+#endif
   channel_manager_->StopTransport();
-  #ifdef DEBUG
-    printf("transport stopped\n");
-  #endif
+#ifdef DEBUG
+  printf("\tIn PDClient::Leave, transport stopped.\n");
+#endif
   base::GeneralResponse result_msg;
   result_msg.set_result(kRpcResultSuccess);
   std::string result;
@@ -1140,7 +1282,13 @@ void PDClient::Leave(base::callback_func_type cb) {
 
 void PDClient::FindValue(const std::string &key,
                          base::callback_func_type cb) {
+#ifdef DEBUG
+  printf("\tIn PDClient::FindValue, before FindValue.\n");
+#endif
   knode_->FindValue(key, cb);
+#ifdef DEBUG
+  printf("\tIn PDClient::FindValue, after FindValue.\n");
+#endif
 }
 
 }  // namespace maidsafe

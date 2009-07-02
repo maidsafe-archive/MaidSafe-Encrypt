@@ -146,7 +146,7 @@ bool ChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
 
     int randindex = static_cast<int>(base::random_32bit_uinteger()
       % files_names.size());
-    base::decode_from_hex(files_names[randindex], *key);
+    base::decode_from_hex(files_names[randindex], key);
   }
   return LoadChunk(*key, value);
 }
@@ -185,16 +185,16 @@ void ChunkStore::GetAllChunks(std::list<std::string> *chunk_names) {
   fs::directory_iterator end_itr;
   for (fs::directory_iterator itr(chunkstore_dir_); itr != end_itr; ++itr) {
     if (!fs::is_directory(itr->path())) {
-      std::string dec_key;
-      base::decode_from_hex(itr->path().filename(), dec_key);
+      std::string dec_key("");
+      base::decode_from_hex(itr->path().filename(), &dec_key);
       chunk_names->push_back(dec_key);
     }
   }
 }
 
 fs::path ChunkStore::GetPathFromKey(const std::string &key) {
-  std::string enc_key;
-  base::encode_to_hex(key, enc_key);
+  std::string enc_key("");
+  base::encode_to_hex(key, &enc_key);
   fs::path filename(chunkstore_dir_, fs::native);
   filename /= enc_key;
   return filename;
@@ -232,8 +232,8 @@ int ChunkStore::HashCheckAllChunks(bool delete_failures,
          ++itr_) {
       if (!fs::is_directory(itr_->path())) {
         if (HashCheckChunk(itr_->path()) != 0) {
-          std::string key_;
-          base::decode_from_hex(itr_->path().filename(), key_);
+          std::string key_("");
+          base::decode_from_hex(itr_->path().filename(), &key_);
           failed_keys->push_back(key_);
           if (delete_failures)
             fs::remove(itr_->path());

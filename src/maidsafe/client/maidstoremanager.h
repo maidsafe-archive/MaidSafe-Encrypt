@@ -38,19 +38,25 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   MaidsafeStoreManager();
   ~MaidsafeStoreManager();
-  void StoreChunk(const std::string &chunk_name,
+  void Init(base::callback_func_type cb);
+  void Close(base::callback_func_type cb);
+  void LoadChunk(const std::string &hex_chunk_name,
+                 base::callback_func_type cb);
+  void StoreChunk(const std::string &hex_chunk_name,
                   const std::string &content,
                   const std::string &signature,
                   const std::string &public_key,
                   const std::string &signed_public_key,
                   base::callback_func_type cb);
-  void LoadChunk(const std::string &chunk_name,
-                 base::callback_func_type cb);
-  void Init(base::callback_func_type cb);
-  void Close(base::callback_func_type cb);
-  void IsKeyUnique(const std::string &key,
+  void IsKeyUnique(const std::string &hex_key,
                    base::callback_func_type cb);
-  void StorePacket(const std::string &key,
+  void DeletePacket(const std::string &hex_key,
+                    const std::string &signature,
+                    const std::string &public_key,
+                    const std::string &signed_public_key,
+                    const value_types &type,
+                    base::callback_func_type cb);
+  void StorePacket(const std::string &hex_key,
                    const std::string &value,
                    const std::string &signature,
                    const std::string &public_key,
@@ -58,22 +64,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    const value_types &type,
                    bool update,
                    base::callback_func_type cb);
-  void LoadPacket(const std::string &key, base::callback_func_type cb);
-  void DeletePacket(const std::string &key,
-                    const std::string &signature,
-                    const std::string &public_key,
-                    const std::string &signed_public_key,
-                    const value_types &type,
-                    base::callback_func_type cb);
-  void GetMessages(const std::string &key,
+  void LoadPacket(const std::string &hex_key, base::callback_func_type cb);
+  void GetMessages(const std::string &hex_key,
                    const std::string &public_key,
                    const std::string &signed_public_key,
                    base::callback_func_type cb);
 
  private:
-  MaidsafeStoreManager &operator=(const MaidsafeStoreManager&) {
-    return *this;
-  }
+  MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
 //  bool GetBootstrappingNodes(std::vector<kad::Contact> *bs_contacts);
   void LoadChunk_Callback(const std::string &result,

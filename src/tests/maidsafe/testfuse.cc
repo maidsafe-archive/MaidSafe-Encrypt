@@ -46,7 +46,7 @@
 namespace fuse_test {
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
-static const int kNetworkSize_ = 20;
+static const int kNetworkSize_ = 16;
 static const int kTestK_ = 4;
 static bool logged_in_;
 static std::vector<fs::path> test_file_;
@@ -140,6 +140,8 @@ class TestCallback {
 bool CreateRandomFile(const std::string &filename,
                       const boost::uint32_t &size,
                       std::string *hash) {
+  printf("In CreateRandomFile, filename = %s and size = %u\n",
+         filename.c_str(), size);
   std::string file_content = base::RandomString(size);
   file_system::FileSystem fsys;
   boost::filesystem::ofstream ofs;
@@ -155,9 +157,15 @@ bool CreateRandomFile(const std::string &filename,
   bool success = false;
   try {
     success = (fs::exists(filename) && (fs::file_size(filename) == size));
-    fs::path file_path(filename);
-    maidsafe::SelfEncryption se;
-    *hash = se.SHA512(file_path);
+    if (success) {
+      fs::path file_path(filename);
+      maidsafe::SelfEncryption se;
+      *hash = se.SHA512(file_path);
+    } else {
+      *hash = "";
+    }
+    printf("In CreateRandomFile, filename = %s and hashsize = %u\n",
+           filename.c_str(), hash->size());
   }
   catch(const std::exception &e2) {
     printf("%s\n", e2.what());
@@ -165,105 +173,6 @@ bool CreateRandomFile(const std::string &filename,
   }
   return success;
 };
-
-int CreateUser(maidsafe::ClientController *cc,
-               maidsafe::SessionSingleton *ss,
-               const std::string &user,
-               const std::string &pin,
-               const std::string &pw) {
-  printf("In Test CreateUser 01\n");
-  if (!cc->JoinKademlia())
-    return -1;
-  printf("In Test CreateUser 02\n");
-  if (!cc->Init())
-    return -2;
-  // check session reset OK
-  printf("In Test CreateUser 03\n");
-  if (ss->Username() != "")
-    return -3;
-  printf("In Test CreateUser 04\n");
-  if (ss->Pin() != "")
-    return -4;
-  printf("In Test CreateUser 05\n");
-  if (ss->Password() != "")
-    return -5;
-  printf("In Test CreateUser 06\n");
-  boost::mutex mutex;
-  TestCallback cb(&mutex);
-  maidsafe::exitcode result = cc->CheckUserExists(user, pin, boost::bind(
-      &TestCallback::CallbackFunc, &cb, _1), maidsafe::DEFCON2);
-  printf("In Test CreateUser 07\n");
-  if (maidsafe::NON_EXISTING_USER != result)
-    return -6;
-  // create user and logout
-  if (!cc->CreateUser(user, pin, pw))
-    return -7;
-  printf("In Test CreateUser 08\n");
-//  if (!cc->Logout())
-//    return -8;
-//  // login
-//  cb.Reset();
-//  result = cc->CheckUserExists(user, pin, boost::bind(
-//      &TestCallback::CallbackFunc, &cb, _1), maidsafe::DEFCON2);
-//  if (maidsafe::USER_EXISTS != result)
-//    return -9;
-  logged_in_ = true;
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
-  return 0;
-}
-
-int LoginAndMount(maidsafe::ClientController *cc,
-                  maidsafe::SessionSingleton *ss,
-                  const std::string &user,
-                  const std::string &pin,
-                  const std::string &pw,
-#ifdef MAIDSAFE_POSIX
-                  fs_l_fuse::FSLinux &fsl,
-#elif defined(MAIDSAFE_APPLE)
-                  fs_l_fuse::FSLinux &fsm,
-#endif
-                  fs::path *mount_path) {
-  if (logged_in_)
-    return 0;
-  // login
-  boost::mutex mutex;
-  TestCallback cb(&mutex);
-  maidsafe::exitcode result = cc->CheckUserExists(user, pin, boost::bind(
-      &TestCallback::CallbackFunc, &cb, _1), maidsafe::DEFCON2);
-  if (maidsafe::USER_EXISTS != result)
-    return -1;
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  if (!cc->ValidateUser(pw))
-    return -2;
-
-  ss->SetMounted(0);
-#ifdef MAIDSAFE_WIN32
-  char drive = cc->DriveLetter();
-  std::string mount_point(1, drive);
-  mount_point += ":\\";
-  *mount_path = fs::path(mount_point, fs::native);
-  Mount(drive);
-  ss->SetWinDrive(drive);
-#elif defined(MAIDSAFE_POSIX)
-  file_system::FileSystem fsys;
-  std::string mount_point = fsys.MaidsafeFuseDir();
-  *mount_path = fs::path(mount_point, fs::native);
-  std::string debug_mode("-d");
-  fsl.Mount(mount_point, debug_mode);
-#elif defined(MAIDSAFE_APPLE)
-  file_system::FileSystem fsys;
-  std::string mount_point = fsys.MaidsafeFuseDir();
-  *mount_path = fs::path(mount_point, fs::native);
-  std::string debug_mode("-d");
-  fsm.Mount(mount_point, debug_mode);
-#endif
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  if (ss->Mounted() != 0)
-    return -3;
-  logged_in_ = true;
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
-  return 0;
-}
 
 int UnmountAndLogout(maidsafe::ClientController *cc,
 #ifdef MAIDSAFE_WIN32
@@ -296,6 +205,110 @@ int UnmountAndLogout(maidsafe::ClientController *cc,
   if (!success)
     return -2;
   logged_in_ = false;
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  return 0;
+}
+
+int CreateUserLoginMount(maidsafe::ClientController *cc,
+                         maidsafe::SessionSingleton *ss,
+                         const std::string &user,
+                         const std::string &pin,
+                         const std::string &pw,
+#ifdef MAIDSAFE_POSIX
+                         fs_l_fuse::FSLinux &fsl,
+#elif defined(MAIDSAFE_APPLE)
+                         fs_l_fuse::FSLinux &fsm,
+#endif
+                         fs::path *mount_path) {
+  // If user already logged in, try to logout.
+  printf("In Test CreateAndOrLoginUser 01\n");
+  if (logged_in_) {
+#ifdef MAIDSAFE_WIN32
+    if (UnmountAndLogout(cc, ss) != 0)
+      return -1;
+#elif defined(MAIDSAFE_POSIX)
+    if (UnmountAndLogout(cc, fsl) != 0)
+      return -1;
+#elif defined(MAIDSAFE_APPLE)
+    if (UnmountAndLogout(cc, fsm) != 0)
+      return -1;
+#endif
+  }
+  // If user not logged in, check session has been started OK and login
+  printf("In Test CreateAndOrLoginUser 02\n");
+  if (!cc->JoinKademlia())
+    return -3;
+  printf("In Test CreateAndOrLoginUser 03\n");
+  if (!cc->Init())
+    return -4;
+  // check session reset OK
+  printf("In Test CreateAndOrLoginUser 04\n");
+  if (ss->Username() != "")
+    return -5;
+  printf("In Test CreateAndOrLoginUser 05\n");
+  if (ss->Pin() != "")
+    return -6;
+  printf("In Test CreateAndOrLoginUser 06\n");
+  if (ss->Password() != "")
+    return -7;
+  printf("In Test CreateAndOrLoginUser 07\n");
+  boost::mutex mutex;
+  TestCallback cb(&mutex);
+  maidsafe::exitcode result = cc->CheckUserExists(user, pin, boost::bind(
+      &TestCallback::CallbackFunc, &cb, _1), maidsafe::DEFCON2);
+
+  if (ss->Username() == user) {
+    printf("In Test CreateAndOrLoginUser 08\n");
+    if (maidsafe::USER_EXISTS != result)
+      return -8;
+    printf("In Test CreateAndOrLoginUser 09\n");
+    boost::this_thread::sleep(boost::posix_time::seconds(5));
+    if (!cc->ValidateUser(pw))
+      return -9;
+    printf("In Test CreateAndOrLoginUser 10\n");
+    logged_in_ = true;
+    boost::this_thread::sleep(boost::posix_time::seconds(5));
+  } else {  // If user not logged in and session not started, create user
+    printf("In Test CreateAndOrLoginUser 11\n");
+    if (maidsafe::NON_EXISTING_USER != result)
+      return -10;
+    if (!cc->CreateUser(user, pin, pw))
+      return -11;
+    printf("In Test CreateAndOrLoginUser 12\n");
+    logged_in_ = true;
+    boost::this_thread::sleep(boost::posix_time::seconds(10));
+  }
+  printf("In Test CreateAndOrLoginUser 13\n");
+  // Mount drive
+  ss->SetMounted(0);
+#ifdef MAIDSAFE_WIN32
+  char drive = cc->DriveLetter();
+  std::string mount_point(1, drive);
+  mount_point += ":\\";
+  *mount_path = fs::path(mount_point, fs::native);
+  Mount(drive);
+  printf("In Test CreateAndOrLoginUser 14\n");
+  ss->SetWinDrive(drive);
+  printf("In Test CreateAndOrLoginUser 15\n");
+#elif defined(MAIDSAFE_POSIX)
+  file_system::FileSystem fsys;
+  std::string mount_point = fsys.MaidsafeFuseDir();
+  *mount_path = fs::path(mount_point, fs::native);
+  std::string debug_mode("-d");
+  fsl.Mount(mount_point, debug_mode);
+  printf("In Test CreateAndOrLoginUser 16\n");
+#elif defined(MAIDSAFE_APPLE)
+  file_system::FileSystem fsys;
+  std::string mount_point = fsys.MaidsafeFuseDir();
+  *mount_path = fs::path(mount_point, fs::native);
+  std::string debug_mode("-d");
+  fsm.Mount(mount_point, debug_mode);
+  printf("In Test CreateAndOrLoginUser 17\n");
+#endif
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  if (ss->Mounted() != 0)
+    return -12;
+  printf("In Test CreateAndOrLoginUser 18\n");
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   return 0;
 }
@@ -341,19 +354,18 @@ class FuseTest : public testing::Test {
 };
 
 TEST_F(FuseTest, FUNC_FS_RepeatedMount) {
-  ASSERT_EQ(0, fuse_test::CreateUser(cc_, ss_, username1_, pin_, password_));
-  ASSERT_TRUE(cc_->Logout());
-  fuse_test::logged_in_ = false;
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < 2; ++i) {
 #ifdef MAIDSAFE_WIN32
-    ASSERT_EQ(0, fuse_test::LoginAndMount(cc_, ss_, username1_, pin_, password_,
-                                          &mount_path_));
+    ASSERT_EQ(0, fuse_test::CreateUserLoginMount(cc_, ss_, username1_, pin_,
+                                                 password_, &mount_path_));
 #elif defined(MAIDSAFE_POSIX)
-    ASSERT_EQ(0, fuse_test::LoginAndMount(cc_, ss_, username1_, pin_, password_,
-                                          fsl_, &mount_path_));
+    ASSERT_EQ(0, fuse_test::CreateUserLoginMount(cc_, ss_, username1_, pin_,
+                                                 password_, fsl_,
+                                                 &mount_path_));
 #elif defined(MAIDSAFE_APPLE)
-    ASSERT_EQ(0, fuse_test::LoginAndMount(cc_, ss_, username1_, pin_, password_,
-                                          fsm_, &mount_path_));
+    ASSERT_EQ(0, fuse_test::CreateUserLoginMount(cc_, ss_, username1_, pin_,
+                                                 password_, fsm_,
+                                                 &mount_path_));
 #endif
     printf("Logged in.\n");
     ASSERT_TRUE(fs::exists(mount_path_));
@@ -373,101 +385,35 @@ TEST_F(FuseTest, FUNC_FS_RepeatedMount) {
     printf("Logged out (%i)\n--------------------------------------\n\n", i+1);
     ASSERT_FALSE(fs::exists(mount_path_));
   }
+////  boost::this_thread::sleep(boost::posix_time::seconds(5));
+//  cc_->CloseConnection();
 //  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  cc_->CloseConnection();
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
 }
 /*
 TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
-  // try to logout in case previous test failed
-  if (logged_in_) {
-    try {
-      printf("At test start, trying to unmount m:\n");
-//      bool logout_ = false;
-      #ifdef MAIDSAFE_WIN32
-        SHELLEXECUTEINFO shell_info_;
-        memset(&shell_info_, 0, sizeof(shell_info_));
-        shell_info_.cbSize = sizeof(shell_info_);
-        shell_info_.hwnd = NULL;
-        shell_info_.lpVerb = L"open";
-        shell_info_.lpFile = L"dokanctl";
-        shell_info_.lpParameters = L" /u M";
-        shell_info_.nShow = SW_HIDE;
-        shell_info_.fMask = SEE_MASK_NOCLOSEPROCESS;
-        logout_ = ShellExecuteEx(&shell_info_);
-        if (logout_)
-          WaitForSingleObject(shell_info_.hProcess, INFINITE);
-        boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-      #else
-        fsl_.UnMount();
-      #endif
-      cc_->Logout();
-      logged_in_ = false;
-    }
-     catch(const std::exception &e) {
-      printf("Error: %s\n", e.what());
-    }
-  }
-  username1_ = "user1";
-  pin_ = "1234";
-  password_ = "password1";
-  cc_->JoinKademlia();
-  cc_->Init();
-  // check session reset OK
-  ASSERT_EQ("", ss_->Username());
-  ASSERT_EQ("", ss_->Pin());
-  ASSERT_EQ("", ss_->Password());
-  maidsafe::exitcode result_ = cc_->CheckUserExists(
-                                        username1_,
-                                        pin_,
-                                        boost::bind(
-                                            &FakeCallback::CallbackFunc,
-                                            &cb_,
-                                            _1),
-                                        maidsafe::DEFCON2);
-  ASSERT_EQ(maidsafe::NON_EXISTING_USER, result_);
-  // create user and logout
-  ASSERT_TRUE(cc_->CreateUser(username1_, pin_, password_));
-  ASSERT_TRUE(cc_->Logout());
-  // login
-  result_ = cc_->CheckUserExists(username1_,
-                                 pin_,
-                                 boost::bind(&FakeCallback::CallbackFunc,
-                                             &cb_,
-                                             _1),
-                                 maidsafe::DEFCON2);
-  ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  std::list<std::string> list;
-  ASSERT_TRUE(cc_->ValidateUser(password_, &list));
-  ss_->SetMounted(0);
-  #if defined MAIDSAFE_WIN32
-    Mount(cc_->DriveLetter());
-    fs::path mount_path_("m:\\", fs::native);
-  #elif defined MAIDSAFE_POSIX
-    file_system::FileSystem fsys_;
-    std::string mount_point_ = fsys_.MaidsafeFuseDir();
-    fs::path mount_path_(mount_point_, fs::native);
-    std::string debug_mode_("-d");
-    fsl_.Mount(mount_point_, debug_mode_);
-  #elif defined MAIDSAFE_APPLE
-    file_system::FileSystem fsys_;
-    std::string mount_point_ = fsys_.MaidsafeFuseDir();
-    fs::path mount_path_(mount_point_, fs::native);
-    std::string debug_mode_("-d");
-    fsm_.Mount(mount_point_, debug_mode_);
-  #endif
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  ASSERT_EQ(0, ss_->Mounted());
-  logged_in_ = true;
+#ifdef MAIDSAFE_WIN32
+  ASSERT_EQ(0, fuse_test::CreateUserLoginMount(cc_, ss_, username1_, pin_,
+                                               password_, &mount_path_));
+#elif defined(MAIDSAFE_POSIX)
+  ASSERT_EQ(0, fuse_test::CreateUserLoginMount(cc_, ss_, username1_, pin_,
+                                               password_, fsl_,
+                                               &mount_path_));
+#elif defined(MAIDSAFE_APPLE)
+  ASSERT_EQ(0, fuse_test::CreateUserLoginMount(cc_, ss_, username1_, pin_,
+                                               password_, fsm_,
+                                               &mount_path_));
+#endif
   printf("Logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
+      "didn't mount." << std::endl;
+
+  printf("Mount path = %s\n", mount_path_.string().c_str());
 
   // try to write file to root dir
   fs::path test_path_(mount_path_);
   test_path_ /= "test.txt";
   std::string hash_("");
-  ASSERT_FALSE(CreateRandomFile(test_path_.string(), 1, &hash_));
+  EXPECT_FALSE(fuse_test::CreateRandomFile(test_path_.string(), 1, &hash_));
 
   // write files and dirs to "/My Files" dir
   #if defined MAIDSAFE_WIN32
@@ -484,47 +430,80 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
   fs::path test_dir_1_(test_dir_0_);
   test_dir_1_ /= "TestDir1";
   for (int i = 0; i < 3; ++i)
-    test_file_.push_back(test_root_);
-  test_file_[0] /= "test0.txt";
-  test_file_[1] /= "test1.txt";
-  test_file_[2] /= "test2.txt";
-  test_file_.push_back(test_dir_0_);
-  test_file_.push_back(test_dir_1_);
-  test_file_[3] /= "test3.txt";  // /My Files/TestDir0/test3.txt
-  test_file_[4] /= "test4.txt";  // /My Files/TestDir0/TestDir1/test4.txt
+    fuse_test::test_file_.push_back(test_root_);
+  fuse_test::test_file_[0] /= "test0.txt";
+  fuse_test::test_file_[1] /= "test1.txt";
+  fuse_test::test_file_[2] /= "test2.txt";
+  fuse_test::test_file_.push_back(test_dir_0_);
+  fuse_test::test_file_.push_back(test_dir_1_);
+  // /My Files/TestDir0/test3.txt
+  fuse_test::test_file_[3] /= "test3.txt";
+  // /My Files/TestDir0/TestDir1/test4.txt
+  fuse_test::test_file_[4] /= "test4.txt";
   for (int i = 0; i < 5; ++i)
-    pre_hash_.push_back("");
+    fuse_test::pre_hash_.push_back("");
   bool success_ = false;
+  int success_count = 0;
   try {
+    ASSERT_TRUE(fs::exists(test_root_)) << test_root_ << " doesn't exist.";
     fs::create_directory(test_dir_0_.string());
     fs::create_directory(test_dir_1_.string());
+    boost::this_thread::sleep(boost::posix_time::seconds(10));
     success_ = (fs::exists(test_dir_0_) && fs::exists(test_dir_1_));
   }
   catch(const std::exception &e_) {
     printf("%s\n", e_.what());
   }
-  ASSERT_TRUE(success_);
-  printf("Trying to create %s\n", test_file_[0].string().c_str());
-  success_ = CreateRandomFile(test_file_[0].string(), 2, &pre_hash_[0]);
+  EXPECT_TRUE(success_);
+  printf("Trying to create %s\n", fuse_test::test_file_[0].string().c_str());
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[0].string(), 2,
+                                         &fuse_test::pre_hash_[0]);
   boost::this_thread::sleep(boost::posix_time::seconds(5));
-  ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[1].string(), 10, &pre_hash_[1]);
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[2].string(), 100, &pre_hash_[2]);
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
-  ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[3].string(), 100, &pre_hash_[3]);
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
-  ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[4].string(), 100, &pre_hash_[4]);
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
-  ASSERT_TRUE(success_);
-  maidsafe::SelfEncryption se_;
-  for (int i = 0; i < 5; ++i) {
-    ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
-    boost::this_thread::sleep(boost::posix_time::seconds(5));
+  EXPECT_TRUE(success_);
+  if (success_) {
+    ++success_count;
+    success_ = false;
   }
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[1].string(), 10,
+                                         &fuse_test::pre_hash_[1]);
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  EXPECT_TRUE(success_);
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[2].string(), 100,
+                                         &fuse_test::pre_hash_[2]);
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  EXPECT_TRUE(success_);
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[3].string(), 100,
+                                         &fuse_test::pre_hash_[3]);
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  EXPECT_TRUE(success_);
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[4].string(), 100,
+                                         &fuse_test::pre_hash_[4]);
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  EXPECT_TRUE(success_);
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  if (success_count == 5) {
+    maidsafe::SelfEncryption se;
+    for (int i = 0; i < 5; ++i) {
+      EXPECT_EQ(fuse_test::pre_hash_[i], se.SHA512(fuse_test::test_file_[i]));
+      boost::this_thread::sleep(boost::posix_time::seconds(5));
+    }
+  }
+
 //  test_root_ = root_;
 //
 //  // write files and dirs to "/Shares/Public" dir
@@ -534,16 +513,18 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
 //  test_dir_1_ = test_dir_0_;
 //  test_dir_1_ /= "TestDir1";
 //  for (int i = 0; i < 3; ++i)
-//    test_file_.push_back(test_root_);
-//  test_file_[5] /= "test0.txt";
-//  test_file_[6] /= "test1.txt";
-//  test_file_[7] /= "test2.txt";
-//  test_file_.push_back(test_dir_0_);
-//  test_file_.push_back(test_dir_1_);
-//  test_file_[8] /= "test3.txt";  // Shares/Public/TestDir0/test3.txt
-//  test_file_[9] /= "test4.txt";  // Shares/Public/TestDir0/TestDir1/test4.txt
+//    fuse_test::test_file_.push_back(test_root_);
+//  fuse_test::test_file_[5] /= "test0.txt";
+//  fuse_test::test_file_[6] /= "test1.txt";
+//  fuse_test::test_file_[7] /= "test2.txt";
+//  fuse_test::test_file_.push_back(test_dir_0_);
+//  fuse_test::test_file_.push_back(test_dir_1_);
+//  // Shares/Public/TestDir0/test3.txt
+//  fuse_test::test_file_[8] /= "test3.txt";
+//  // Shares/Public/TestDir0/TestDir1/test4.txt
+//  fuse_test::test_file_[9] /= "test4.txt";
 //  for (int i = 0; i < 5; ++i)
-//    pre_hash_.push_back("");
+//    fuse_test::pre_hash_.push_back("");
 //  success_ = false;
 //  try {
 //    fs::create_directory(test_dir_0_.string());
@@ -556,28 +537,33 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
 //  }
 //  boost::this_thread::sleep(boost::posix_time::seconds(30));
 //  ASSERT_TRUE(success_);
-//  printf("Trying to create %s\n", test_file_[5].string().c_str());
-//  success_ = CreateRandomFile(test_file_[5].string(), 2, &pre_hash_[5]);
+//  printf("Trying to create %s\n", fuse_test::test_file_[5].string().c_str());
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[5].string(),
+//                                         2, &fuse_test::pre_hash_[5]);
 //  boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  ASSERT_TRUE(success_);
-//  success_ = CreateRandomFile(test_file_[6].string(), 10, &pre_hash_[6]);
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[6].string(),
+//                                         10, &fuse_test::pre_hash_[6]);
 //  boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  ASSERT_TRUE(success_);
-//  success_ = CreateRandomFile(test_file_[7].string(), 100, &pre_hash_[7]);
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[7].string(),
+//                                         100, &fuse_test::pre_hash_[7]);
 //  boost::this_thread::sleep(boost::posix_time::seconds(10));
 //  ASSERT_TRUE(success_);
-//  success_ = CreateRandomFile(test_file_[8].string(), 100, &pre_hash_[8]);
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[8].string(),
+//                                         100, &fuse_test::pre_hash_[8]);
 //  boost::this_thread::sleep(boost::posix_time::seconds(60));
 //  ASSERT_TRUE(success_);
-//  success_ = CreateRandomFile(test_file_[9].string(), 100, &pre_hash_[9]);
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[9].string(),
+//                                         100, &fuse_test::pre_hash_[9]);
 //  boost::this_thread::sleep(boost::posix_time::seconds(60));
 //  ASSERT_TRUE(success_);
 //  for (int i = 5; i < 10; ++i) {
-//    ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
+//    ASSERT_EQ(fuse_test::pre_hash_[i], se_.SHA512(fuse_test::test_file_[i]));
 //    boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  }
-  test_root_ = root_;
 
+  test_root_ = root_;
   // write files and dirs to "/Shares/Anonymous" dir
   test_root_ /= kSharesSubdir[1][0];  // /Shares/Anonymous/
   test_dir_0_ = test_root_;
@@ -585,18 +571,21 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
   test_dir_1_ = test_dir_0_;
   test_dir_1_ /= "TestDir1";
   for (int i = 0; i < 3; ++i)
-    test_file_.push_back(test_root_);
-  test_file_[10] /= "test0.txt";
-  test_file_[11] /= "test1.txt";
-  test_file_[12] /= "test2.txt";
-  test_file_.push_back(test_dir_0_);
-  test_file_.push_back(test_dir_1_);
-  test_file_[13] /= "test3.txt";  // /Shares/Anonymous/TestDir0/test3.txt
-  test_file_[14] /= "test4.txt";  // /Shares/Anon.../TestDir0/TestDir1/test4.txt
+    fuse_test::test_file_.push_back(test_root_);
+  fuse_test::test_file_[5] /= "test0.txt";
+  fuse_test::test_file_[6] /= "test1.txt";
+  fuse_test::test_file_[7] /= "test2.txt";
+  fuse_test::test_file_.push_back(test_dir_0_);
+  fuse_test::test_file_.push_back(test_dir_1_);
+  // /Shares/Anonymous/TestDir0/test3.txt
+  fuse_test::test_file_[8] /= "test3.txt";
+  // /Shares/Anon.../TestDir0/TestDir1/test4.txt
+  fuse_test::test_file_[9] /= "test4.txt";
   for (int i = 0; i < 5; ++i)
-    pre_hash_.push_back("");
+    fuse_test::pre_hash_.push_back("");
   success_ = false;
   try {
+    ASSERT_TRUE(fs::exists(test_root_)) << test_root_ << " doesn't exist.";
     fs::create_directory(test_dir_0_.string());
     fs::create_directory(test_dir_1_.string());
     success_ = (fs::exists(test_dir_0_) && fs::exists(test_dir_1_));
@@ -605,87 +594,183 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_StoreFilesAndDirs) {
     printf("%s\n", e_.what());
   }
   boost::this_thread::sleep(boost::posix_time::seconds(30));
-  ASSERT_TRUE(success_);
-  printf("Trying to create %s\n", test_file_[10].string().c_str());
-  success_ = CreateRandomFile(test_file_[10].string(), 2, &pre_hash_[10]);
+  EXPECT_TRUE(success_);
+  success_ = false;
+  success_count = 0;
+  printf("Trying to create %s\n", fuse_test::test_file_[5].string().c_str());
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[5].string(),
+                                         2, &fuse_test::pre_hash_[5]);
   boost::this_thread::sleep(boost::posix_time::seconds(5));
-  ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[11].string(), 10, &pre_hash_[11]);
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[12].string(), 100, &pre_hash_[12]);
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
-  ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[13].string(), 100, &pre_hash_[13]);
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
-  ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[14].string(), 100, &pre_hash_[14]);
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
-  ASSERT_TRUE(success_);
-  for (int i = 10; i < 15; ++i) {
-    ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
-    boost::this_thread::sleep(boost::posix_time::seconds(5));
+  if (success_) {
+    ++success_count;
+    success_ = false;
   }
-  test_root_ = root_;
+  EXPECT_TRUE(success_);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[6].string(),
+                                         10, &fuse_test::pre_hash_[6]);
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  EXPECT_TRUE(success_);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[7].string(),
+                                         100, &fuse_test::pre_hash_[7]);
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  EXPECT_TRUE(success_);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[8].string(),
+                                         100, &fuse_test::pre_hash_[8]);
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  EXPECT_TRUE(success_);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[9].string(),
+                                         100, &fuse_test::pre_hash_[9]);
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  EXPECT_TRUE(success_);
+  if (success_count == 5) {
+    maidsafe::SelfEncryption se;
+    for (int i = 5; i < 10; ++i) {
+      EXPECT_EQ(fuse_test::pre_hash_[i], se.SHA512(fuse_test::test_file_[i]));
+      boost::this_thread::sleep(boost::posix_time::seconds(5));
+    }
+  }
 
+  test_root_ = root_;
   // try to write files and dirs to "/Shares/Private" dir
   test_root_ /= kSharesSubdir[0][0];  // /Shares/Private/
-  fs::path test_dir_(test_root_);
-  test_dir_ /= "TestDir";
-  fs::path test_txt_(test_root_);
-  test_txt_ /= "test.txt";
+  test_dir_0_ = test_root_;
+  test_dir_0_ /= "TestDir0";
+  test_dir_1_ = test_dir_0_;
+  test_dir_1_ /= "TestDir1";
+  for (int i = 0; i < 3; ++i)
+    fuse_test::test_file_.push_back(test_root_);
+  fuse_test::test_file_[10] /= "test0.txt";
+  fuse_test::test_file_[11] /= "test1.txt";
+  fuse_test::test_file_[12] /= "test2.txt";
+  fuse_test::test_file_.push_back(test_dir_0_);
+  fuse_test::test_file_.push_back(test_dir_1_);
+  // /Shares/Private/TestDir0/test3.txt
+  fuse_test::test_file_[13] /= "test3.txt";
+  // /Shares/Private/TestDir0/TestDir1/test4.txt
+  fuse_test::test_file_[14] /= "test4.txt";
+  for (int i = 0; i < 5; ++i)
+    fuse_test::pre_hash_.push_back("");
   success_ = false;
   try {
-    printf("Trying to create %s\n", test_dir_.string().c_str());
-    fs::create_directory(test_dir_.string());
-  }
-  catch(const std::exception &e_) {
-    printf("%s\n", e_.what());
-  }
-  try {
-    printf("Checking dir's existence.\n");
-    success_ = (fs::exists(test_dir_));
+    ASSERT_TRUE(fs::exists(test_root_)) << test_root_ << " doesn't exist.";
+    fs::create_directory(test_dir_0_.string());
+    fs::create_directory(test_dir_1_.string());
+    success_ = (fs::exists(test_dir_0_) && fs::exists(test_dir_1_));
   }
   catch(const std::exception &e_) {
     printf("%s\n", e_.what());
   }
   boost::this_thread::sleep(boost::posix_time::seconds(30));
-  ASSERT_FALSE(success_);
-  printf("Trying to create %s\n", test_txt_.string().c_str());
-  std::string file_hash_("");
-  success_ = CreateRandomFile(test_txt_.string(), 2, &file_hash_);
+  EXPECT_TRUE(success_);
+  success_ = false;
+  success_count = 0;
+  printf("Trying to create %s\n", fuse_test::test_file_[10].string().c_str());
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[10].string(),
+                                         2, &fuse_test::pre_hash_[10]);
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  EXPECT_TRUE(success_);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[11].string(),
+                                         10, &fuse_test::pre_hash_[11]);
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  EXPECT_TRUE(success_);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[12].string(),
+                                         100, &fuse_test::pre_hash_[12]);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
-  ASSERT_FALSE(success_);
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  EXPECT_TRUE(success_);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[13].string(),
+                                         100, &fuse_test::pre_hash_[13]);
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  EXPECT_TRUE(success_);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[14].string(),
+                                         100, &fuse_test::pre_hash_[14]);
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  if (success_) {
+    ++success_count;
+    success_ = false;
+  }
+  EXPECT_TRUE(success_);
+  if (success_count == 5) {
+    maidsafe::SelfEncryption se;
+    for (int i = 5; i < 10; ++i) {
+      EXPECT_EQ(fuse_test::pre_hash_[i], se.SHA512(fuse_test::test_file_[i]));
+      boost::this_thread::sleep(boost::posix_time::seconds(5));
+    }
+  }
 
-  // logout
-  bool logout_ = false;
-  #ifdef MAIDSAFE_WIN32
-    SHELLEXECUTEINFO shell_info_;
-    memset(&shell_info_, 0, sizeof(shell_info_));
-    shell_info_.cbSize = sizeof(shell_info_);
-    shell_info_.hwnd = NULL;
-    shell_info_.lpVerb = L"open";
-    shell_info_.lpFile = L"dokanctl";
-    shell_info_.lpParameters = L" /u M";
-    shell_info_.nShow = SW_HIDE;
-    shell_info_.fMask = SEE_MASK_NOCLOSEPROCESS;
-    logout_ = ShellExecuteEx(&shell_info_);
-    if (logout_)
-      WaitForSingleObject(shell_info_.hProcess, INFINITE);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-    logout_ = true;
-  #else
-    fsl_.UnMount();
-    logout_ = true;
-  #endif
-  ASSERT_TRUE(logout_);
-  ASSERT_TRUE(cc_->Logout());
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+//  test_root_ = root_;
+//  // try to write files and dirs to "/Shares/Private" dir
+//  test_root_ /= kSharesSubdir[0][0];  // /Shares/Private/
+//  fs::path test_dir_(test_root_);
+//  test_dir_ /= "TestDir";
+//  fs::path test_txt_(test_root_);
+//  test_txt_ /= "test.txt";
+//  success_ = false;
+//  try {
+//    printf("Trying to create %s\n", test_dir_.string().c_str());
+//    ASSERT_TRUE(fs::exists(test_root_)) << test_root_ << " doesn't exist.";
+//    fs::create_directory(test_dir_.string());
+//  }
+//  catch(const std::exception &e_) {
+//    printf("%s\n", e_.what());
+//  }
+//  try {
+//    printf("Checking dir's existence.\n");
+//    success_ = (fs::exists(test_dir_));
+//  }
+//  catch(const std::exception &e_) {
+//    printf("%s\n", e_.what());
+//  }
+//  boost::this_thread::sleep(boost::posix_time::seconds(30));
+//  EXPECT_FALSE(success_);
+//  printf("Trying to create %s\n", test_txt_.string().c_str());
+//  std::string file_hash_("");
+//  success_ = fuse_test::CreateRandomFile(test_txt_.string(), 2, &file_hash_);
+//  boost::this_thread::sleep(boost::posix_time::seconds(10));
+//  EXPECT_FALSE(success_);
+
+#ifdef MAIDSAFE_WIN32
+  ASSERT_EQ(0, fuse_test::UnmountAndLogout(cc_, ss_));
+#elif defined(MAIDSAFE_POSIX)
+  ASSERT_EQ(0, fuse_test::UnmountAndLogout(cc_, fsl_));
+#elif defined(MAIDSAFE_APPLE)
+  ASSERT_EQ(0, fuse_test::UnmountAndLogout(cc_, fsm_));
+#endif
   printf("Logged out\n--------------------------------------------------\n\n");
-  cc_->CloseConnection();
-  logged_in_ = false;
-  test_file_.clear();
-  pre_hash_.clear();
+  ASSERT_FALSE(fs::exists(mount_path_));
+  fuse_test::test_file_.clear();
+  fuse_test::pre_hash_.clear();
 }
 
 TEST_F(FuseTest, DISABLED_FUNC_FS_Rename_Dir) {
@@ -809,92 +894,30 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_Rename_Dir) {
 //  ASSERT_TRUE(renamation);
 //
 //  fs::path fileillo(test_dir_0_renamed / "summat.txt");
-//  success_ = CreateRandomFile(fileillo.string(), 100, &pre_hash_[2]);
+//  success_ = fuse_test::CreateRandomFile(fileillo.string(), 100, &fuse_test::pre_hash_[2]);
 //  boost::this_thread::sleep(boost::posix_time::seconds(10));
 
 // DO NOT ERASE. HAD TO COMMIT TO GENERATE BUILD.
-  SUCCEED();
 }
 
-TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
-  // try to logout in case previous test failed
-  if (logged_in_) {
-    try {
-//      bool logout_ = false;
-      #ifdef MAIDSAFE_WIN32
-        SHELLEXECUTEINFO shell_info_;
-        memset(&shell_info_, 0, sizeof(shell_info_));
-        shell_info_.cbSize = sizeof(shell_info_);
-        shell_info_.hwnd = NULL;
-        shell_info_.lpVerb = L"open";
-        shell_info_.lpFile = L"dokanctl";
-        shell_info_.lpParameters = L" /u M";
-        shell_info_.nShow = SW_HIDE;
-        shell_info_.fMask = SEE_MASK_NOCLOSEPROCESS;
-        logout_ = ShellExecuteEx(&shell_info_);
-        if (logout_)
-          WaitForSingleObject(shell_info_.hProcess, INFINITE);
-        boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-      #else
-        fsl_.UnMount();
-      #endif
-      cc_->Logout();
-      logged_in_ = false;
-    }
-     catch(const std::exception &e) {
-      printf("Error: %s\n", e.what());
-    }
-  }
-  username1_ = "user1";
-  public_username1_ = "XXXXX";
-  pin_ = "1234";
-  password_ = "password1";
-  cc_->JoinKademlia();
-  cc_->Init();
-  // check session reset OK
-  ASSERT_EQ("", ss_->Username());
-  ASSERT_EQ("", ss_->Pin());
-  ASSERT_EQ("", ss_->Password());
-  maidsafe::exitcode result_ = cc_->CheckUserExists(
-                                        username1_,
-                                        pin_,
-                                        boost::bind(
-                                            &FakeCallback::CallbackFunc,
-                                            &cb_,
-                                            _1),
-                                        maidsafe::DEFCON2);
-  ASSERT_EQ(maidsafe::NON_EXISTING_USER, result_);
-  // create user and logout
-  ASSERT_TRUE(cc_->CreateUser(username1_, pin_, password_));
-  ASSERT_TRUE(cc_->Logout());
-  // login
-  result_ = cc_->CheckUserExists(username1_,
-                                 pin_,
-                                 boost::bind(&FakeCallback::CallbackFunc,
-                                             &cb_,
-                                             _1),
-                                 maidsafe::DEFCON2);
-  ASSERT_EQ(maidsafe::USER_EXISTS, result_);
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  std::list<std::string> list;
-  ASSERT_TRUE(cc_->ValidateUser(password_, &list));
-  ss_->SetMounted(0);
-  #if defined MAIDSAFE_WIN32
-    Mount(cc_->DriveLetter());
-    fs::path mount_path_("m:", fs::native);
-  #elif defined MAIDSAFE_POSIX
-    file_system::FileSystem fsys_;
-    std::string mount_point_ = fsys_.MaidsafeFuseDir();
-    fs::path mount_path_(mount_point_, fs::native);
-    std::string debug_mode_("-d");
-    fsl_.Mount(mount_point_, debug_mode_);
-  #elif defined MAIDSAFE_APPLE
-    file_system::FileSystem fsys_;
-    std::string mount_point_ = fsys_.MaidsafeFuseDir();
-    fs::path mount_path_(mount_point_, fs::native);
-    std::string debug_mode_("-d");
-    fsm_.Mount(mount_point_, debug_mode_);
-  #endif
+TEST_F(FuseTest, FUNC_FS_RepeatStoreFilesAndDirs) {
+#ifdef MAIDSAFE_WIN32
+  ASSERT_EQ(0, fuse_test::CreateUserLoginMount(cc_, ss_, username1_, pin_,
+                                               password_, &mount_path_));
+#elif defined(MAIDSAFE_POSIX)
+  ASSERT_EQ(0, fuse_test::CreateUserLoginMount(cc_, ss_, username1_, pin_,
+                                               password_, fsl_,
+                                               &mount_path_));
+#elif defined(MAIDSAFE_APPLE)
+  ASSERT_EQ(0, fuse_test::CreateUserLoginMount(cc_, ss_, username1_, pin_,
+                                               password_, fsm_,
+                                               &mount_path_));
+#endif
+  printf("Logged in.\n");
+  ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
+      "didn't mount." << std::endl;
+
+
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss_->Mounted());
   logged_in_ = true;
@@ -905,7 +928,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   fs::path test_path_(mount_path_);
   test_path_ /= "test.txt";
   std::string hash_("");
-  ASSERT_FALSE(CreateRandomFile(test_path_.string(), 1, &hash_));
+  ASSERT_FALSE(fuse_test::CreateRandomFile(test_path_.string(), 1, &hash_));
 
   // write files and dirs to "/My Files" dir
   #if defined MAIDSAFE_WIN32
@@ -922,16 +945,16 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   fs::path test_dir_1_(test_dir_0_);
   test_dir_1_ /= "TestDir1";
   for (int i = 0; i < 3; ++i)
-    test_file_.push_back(test_root_);
-  test_file_[0] /= "test0.txt";
-  test_file_[1] /= "test1.txt";
-  test_file_[2] /= "test2.txt";
-  test_file_.push_back(test_dir_0_);
-  test_file_.push_back(test_dir_1_);
-  test_file_[3] /= "test3.txt";  // /My Files/TestDir0/test3.txt
-  test_file_[4] /= "test4.txt";  // /My Files/TestDir0/TestDir1/test4.txt
+    fuse_test::test_file_.push_back(test_root_);
+  fuse_test::test_file_[0] /= "test0.txt";
+  fuse_test::test_file_[1] /= "test1.txt";
+  fuse_test::test_file_[2] /= "test2.txt";
+  fuse_test::test_file_.push_back(test_dir_0_);
+  fuse_test::test_file_.push_back(test_dir_1_);
+  fuse_test::test_file_[3] /= "test3.txt";  // /My Files/TestDir0/test3.txt
+  fuse_test::test_file_[4] /= "test4.txt";  // /My Files/TestDir0/TestDir1/test4.txt
   for (int i = 0; i < 5; ++i)
-    pre_hash_.push_back("");
+    fuse_test::pre_hash_.push_back("");
   bool success_ = false;
   try {
     fs::create_directory(test_dir_0_.string());
@@ -943,25 +966,25 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   }
   boost::this_thread::sleep(boost::posix_time::seconds(30));
   ASSERT_TRUE(success_);
-  printf("Trying to create %s\n", test_file_[0].string().c_str());
-  success_ = CreateRandomFile(test_file_[0].string(), 2, &pre_hash_[0]);
+  printf("Trying to create %s\n", fuse_test::test_file_[0].string().c_str());
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[0].string(), 2, &fuse_test::pre_hash_[0]);
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[1].string(), 10, &pre_hash_[1]);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[1].string(), 10, &fuse_test::pre_hash_[1]);
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[2].string(), 100, &pre_hash_[2]);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[2].string(), 100, &fuse_test::pre_hash_[2]);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[3].string(), 100, &pre_hash_[3]);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[3].string(), 100, &fuse_test::pre_hash_[3]);
   boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[4].string(), 100, &pre_hash_[4]);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[4].string(), 100, &fuse_test::pre_hash_[4]);
   boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
   maidsafe::SelfEncryption se_;
   for (int i = 0; i < 5; ++i) {
-    ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
+    ASSERT_EQ(fuse_test::pre_hash_[i], se_.SHA512(fuse_test::test_file_[i]));
     boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
 //  test_root_ = root_;
@@ -973,16 +996,16 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
 //  test_dir_1_ = test_dir_0_;
 //  test_dir_1_ /= "TestDir1";
 //  for (int i = 0; i < 3; ++i)
-//    test_file_.push_back(test_root_);
-//  test_file_[5] /= "test0.txt";
-//  test_file_[6] /= "test1.txt";
-//  test_file_[7] /= "test2.txt";
-//  test_file_.push_back(test_dir_0_);
-//  test_file_.push_back(test_dir_1_);
-//  test_file_[8] /= "test3.txt";  // Shares/Public/TestDir0/test3.txt
-//  test_file_[9] /= "test4.txt";  // Shares/Public/TestDir0/TestDir1/test4.txt
+//    fuse_test::test_file_.push_back(test_root_);
+//  fuse_test::test_file_[5] /= "test0.txt";
+//  fuse_test::test_file_[6] /= "test1.txt";
+//  fuse_test::test_file_[7] /= "test2.txt";
+//  fuse_test::test_file_.push_back(test_dir_0_);
+//  fuse_test::test_file_.push_back(test_dir_1_);
+//  fuse_test::test_file_[8] /= "test3.txt";  // Shares/Public/TestDir0/test3.txt
+//  fuse_test::test_file_[9] /= "test4.txt";  // Shares/Public/TestDir0/TestDir1/test4.txt
 //  for (int i = 0; i < 5; ++i)
-//    pre_hash_.push_back("");
+//    fuse_test::pre_hash_.push_back("");
 //  success_ = false;
 //  try {
 //    fs::create_directory(test_dir_0_.string());
@@ -995,24 +1018,24 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
 //  }
 //  boost::this_thread::sleep(boost::posix_time::seconds(30));
 //  ASSERT_TRUE(success_);
-//  printf("Trying to create %s\n", test_file_[5].string().c_str());
-//  success_ = CreateRandomFile(test_file_[5].string(), 2, &pre_hash_[5]);
+//  printf("Trying to create %s\n", fuse_test::test_file_[5].string().c_str());
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[5].string(), 2, &fuse_test::pre_hash_[5]);
 //  boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  ASSERT_TRUE(success_);
-//  success_ = CreateRandomFile(test_file_[6].string(), 10, &pre_hash_[6]);
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[6].string(), 10, &fuse_test::pre_hash_[6]);
 //  boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  ASSERT_TRUE(success_);
-//  success_ = CreateRandomFile(test_file_[7].string(), 100, &pre_hash_[7]);
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[7].string(), 100, &fuse_test::pre_hash_[7]);
 //  boost::this_thread::sleep(boost::posix_time::seconds(10));
 //  ASSERT_TRUE(success_);
-//  success_ = CreateRandomFile(test_file_[8].string(), 100, &pre_hash_[8]);
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[8].string(), 100, &fuse_test::pre_hash_[8]);
 //  boost::this_thread::sleep(boost::posix_time::seconds(60));
 //  ASSERT_TRUE(success_);
-//  success_ = CreateRandomFile(test_file_[9].string(), 100, &pre_hash_[9]);
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[9].string(), 100, &fuse_test::pre_hash_[9]);
 //  boost::this_thread::sleep(boost::posix_time::seconds(60));
 //  ASSERT_TRUE(success_);
 //  for (int i = 5; i < 10; ++i) {
-//    ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
+//    ASSERT_EQ(fuse_test::pre_hash_[i], se_.SHA512(fuse_test::test_file_[i]));
 //    boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  }
   test_root_ = root_;
@@ -1024,16 +1047,16 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   test_dir_1_ = test_dir_0_;
   test_dir_1_ /= "TestDir1";
   for (int i = 0; i < 3; ++i)
-    test_file_.push_back(test_root_);
-  test_file_[10] /= "test0.txt";
-  test_file_[11] /= "test1.txt";
-  test_file_[12] /= "test2.txt";
-  test_file_.push_back(test_dir_0_);
-  test_file_.push_back(test_dir_1_);
-  test_file_[13] /= "test3.txt";  // /Shares/Anonymous/TestDir0/test3.txt
-  test_file_[14] /= "test4.txt";  // /Shares/Anon.../TestDir0/TestDir1/test4.txt
+    fuse_test::test_file_.push_back(test_root_);
+  fuse_test::test_file_[10] /= "test0.txt";
+  fuse_test::test_file_[11] /= "test1.txt";
+  fuse_test::test_file_[12] /= "test2.txt";
+  fuse_test::test_file_.push_back(test_dir_0_);
+  fuse_test::test_file_.push_back(test_dir_1_);
+  fuse_test::test_file_[13] /= "test3.txt";  // /Shares/Anonymous/TestDir0/test3.txt
+  fuse_test::test_file_[14] /= "test4.txt";  // /Shares/Anon.../TestDir0/TestDir1/test4.txt
   for (int i = 0; i < 5; ++i)
-    pre_hash_.push_back("");
+    fuse_test::pre_hash_.push_back("");
   success_ = false;
   try {
     fs::create_directory(test_dir_0_.string());
@@ -1045,24 +1068,24 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   }
   boost::this_thread::sleep(boost::posix_time::seconds(30));
   ASSERT_TRUE(success_);
-  printf("Trying to create %s\n", test_file_[10].string().c_str());
-  success_ = CreateRandomFile(test_file_[10].string(), 2, &pre_hash_[10]);
+  printf("Trying to create %s\n", fuse_test::test_file_[10].string().c_str());
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[10].string(), 2, &fuse_test::pre_hash_[10]);
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[11].string(), 10, &pre_hash_[11]);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[11].string(), 10, &fuse_test::pre_hash_[11]);
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[12].string(), 100, &pre_hash_[12]);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[12].string(), 100, &fuse_test::pre_hash_[12]);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[13].string(), 100, &pre_hash_[13]);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[13].string(), 100, &fuse_test::pre_hash_[13]);
   boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
-  success_ = CreateRandomFile(test_file_[14].string(), 100, &pre_hash_[14]);
+  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[14].string(), 100, &fuse_test::pre_hash_[14]);
   boost::this_thread::sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success_);
   for (int i = 10; i < 15; ++i) {
-    ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
+    ASSERT_EQ(fuse_test::pre_hash_[i], se_.SHA512(fuse_test::test_file_[i]));
     boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
   test_root_ = root_;
@@ -1091,7 +1114,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   ASSERT_FALSE(success_);
   printf("Trying to create %s\n", test_txt_.string().c_str());
   std::string file_hash_("");
-  success_ = CreateRandomFile(test_txt_.string(), 2, &file_hash_);
+  success_ = fuse_test::CreateRandomFile(test_txt_.string(), 2, &file_hash_);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_FALSE(success_);
 
@@ -1201,11 +1224,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_RepeatStoreFilesAndDirs) {
   // ensure all previous files are still there
   for (int i = 0; i < 15; ++i) {
     printf("Checking file %i\n", i);
-    printf("pre_hash[%i] = %s\n", i, pre_hash_[i].c_str());
-    printf("se_.SHA512(test_file_[%i]) = %s\n",
+    printf("pre_hash[%i] = %s\n", i, fuse_test::pre_hash_[i].c_str());
+    printf("se_.SHA512(fuse_test::test_file_[%i]) = %s\n",
            i,
-           se_.SHA512(test_file_[i]).c_str());
-    ASSERT_EQ(pre_hash_[i], se_.SHA512(test_file_[i]));
+           se_.SHA512(fuse_test::test_file_[i]).c_str());
+    ASSERT_EQ(fuse_test::pre_hash_[i], se_.SHA512(fuse_test::test_file_[i]));
     boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
   // TODO(Fraser#5#): ensure private shared files are still there
@@ -1361,9 +1384,9 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_CheckNewUserDirs) {
 //    try {
 //      if (fs::is_regular_file(itr_->status())) {
 //        for (int i = 5; i < 10; ++i) {
-//          if (itr_->path().filename() == test_file_[i].filename()) {
+//          if (itr_->path().filename() == fuse_test::test_file_[i].filename()) {
 //            ++file_count_;
-//            ASSERT_EQ(pre_hash_[i], se_.SHA512(itr_->path()));
+//            ASSERT_EQ(fuse_test::pre_hash_[i], se_.SHA512(itr_->path()));
 //            break;
 //          }
 //        }
@@ -1384,9 +1407,9 @@ TEST_F(FuseTest, DISABLED_FUNC_FS_CheckNewUserDirs) {
     try {
       if (fs::is_regular_file(itr_->status())) {
         for (int i = 10; i < 15; ++i) {
-          if (itr_->path().filename() == test_file_[i].filename()) {
+          if (itr_->path().filename() == fuse_test::test_file_[i].filename()) {
             ++file_count_;
-            ASSERT_EQ(pre_hash_[i], se_.SHA512(itr_->path()));
+            ASSERT_EQ(fuse_test::pre_hash_[i], se_.SHA512(itr_->path()));
             break;
           }
         }

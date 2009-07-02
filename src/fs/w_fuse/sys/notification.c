@@ -435,6 +435,7 @@ DokanDeleteDeviceObject(
 	UNICODE_STRING		symbolicLinkName;
 	WCHAR				symbolicLinkBuf[MAXIMUM_FILENAME_LENGTH];
 	PDokanVCB			vcb;
+	ULONG				mountIndex;
 
 	ASSERT(GetIdentifierType(Dcb) == DCB);
 	vcb = Dcb->Vcb;
@@ -449,8 +450,15 @@ DokanDeleteDeviceObject(
 	IoDeleteDevice(vcb->DeviceObject);
 
 	// delete DeviceObject
+	mountIndex = Dcb->MountId;
 	DDbgPrint("  Delete Disk DeviceObject\n");
 	IoDeleteDevice(Dcb->DeviceObject);
+
+	// Decrement the mount identifier so we can mount a dokan drive with this identified again
+	if (Dcb->Global != NULL)
+	{
+		InterlockedBitTestAndReset(&Dcb->Global->MountId,mountIndex);
+	}
 }
 
 
