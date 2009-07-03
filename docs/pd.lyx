@@ -1813,6 +1813,80 @@ y) and from the answers construct a new node list to ask.
 \end_layout
 
 \begin_layout Subsection
+Value Handling
+\end_layout
+
+\begin_layout Standard
+In Kademlia there are several methods of ensuring values are consistent
+ and protected at the same time.
+ The initial value to be considered is K and this should be chosen to be
+ the number of random nodes that can be allowed to go off line in a Refresh
+ (Refresh) time.
+ Also there is a republish time (Repub) which is the initial store of the
+ value and sets a time to live (TTL) value on the data.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Caching
+\end_layout
+
+\begin_layout Standard
+In kademlia values are cached distant from their natural location of the
+ K closest nodes.
+ The TTL is used in this instance to calculate how long a value can live
+ and the further away from the K closest determines the TTL value that each
+ value has.
+ This value is chosen as the reciprocal of the distance from K of the value
+ (so 2 steps away the TTL is halved and 4 steps the TTL is quarter etc.).
+ 
+\end_layout
+
+\begin_layout Standard
+This can present issues when the refresh time (usually 60 mins but configurable)
+ is due.
+ In this case the node must check it's in the K closest and if so refresh
+ (i.e.
+ send a store_value) the K closest nodes.
+ If a node is not in the K closest then this store RPC should not be sent,
+ unless all of the K closest nodes do not have the value and the TTL has
+ not expired, in this case only a node with a value which is not in the
+ k closest group will republish (the true TTL so reverse of inverse reciprocal)
+ to the K closest.
+ In maidsafe Beta refresh is used to vary in an evenly distributed way the
+ 60 minute intervals to reduce potential for race conditions in republishing
+ values.
+ If a value is deleted the closest nodes with the value (k closest) should
+ be updated with a -1 value and this should not be cached, this prevents
+ cached copies actually republishing values that are due to be removed anyway
+ (i.e.
+ ignoring or overriding the delete instruction)
+\end_layout
+
+\begin_layout Subsubsection
+Time To Live Values
+\end_layout
+
+\begin_layout Standard
+The TTL can be different for any different type of file from seconds to
+ a figure meaning do not delete ever (i.e.
+ -1).
+ For fast changing data the TTL should be small and for unchanging data
+ (like digital keys) the TTL may be very large or even infinite (relatively).
+ This value is reset only by the storing node unless another algorithm for
+ that value type is known by the kademlia node i.e.
+ in the case of vault validity check, it will be by one of the identified
+ kadmelia ID's watching the chunk, so the vlaue will hold the ID's allowed
+ to republish the data (also the ID will be allowed to delete himself from
+ the list but not the others).
+ Using this mechanism maidsafe uses a 24hr period for reference pointers
+ and a 60 day period for signature packets, which will also republish these
+ kademlia values in case of error etc.
+ at every validity check, this is done simply as a speed up as kademlia
+ values are retrieved much faster than maidsafe data.
+\end_layout
+
+\begin_layout Subsection
 Delete or modify values
 \end_layout
 
@@ -1865,14 +1939,14 @@ reference "alg:Alg-PKIID=SHA512Hash(RSA[pub]+Signed-[RSA[priv]])"
 
 \begin_layout Standard
 The only changeable data stored on the kadmelia network as far as a maidsafe
- implementation is conscerned is data deemed as, 
+ implementation is concerned is data deemed as, 
 \emph on
-multi value one of which should be correct
+Multi value one of which should be correct
 \emph default
-, by this it means a value shoudl have several results and as such one of
- the result shoule be likely correct, but not necessarily all of them.
+, by this it means a value should have several results and as such one of
+ the result should be correct, but not necessarily all of them.
  This seems weird but is in fact very simple, basically every value will
- hash to a key or will contain mutiple values (maidsafe uses signatures
+ hash to a key or will contain multiple values (maidsafe uses signatures
  in addition to ensure safety through validation) and of each value a correct
  answer should exist in one value.
  
@@ -1884,8 +1958,8 @@ maidsafe stores pointers to data chunks (data hashes to a key again) as
  The number of pointers is usually four (4).
  As this is a truly distributed network maidsafe expects nodes to be off
  or damaged or somehow unreachable and expects this on fairly regular terms.
- On retrieving a value, each piointer is tried to see if, not only the node
- is there, but also the node has the data (see Vauls, as data moves around
+ On retrieving a value, each pointer is tried to see if, not only the node
+ is there, but also the node has the data (see Vaults, as data moves around
  an awful lot).
  In this way a dead or incorrect value is allowed and catered for.
  
@@ -1895,13 +1969,13 @@ maidsafe stores pointers to data chunks (data hashes to a key again) as
 To add to this maidsafe makes use of a couple of features of the upgrades
  to kademlia explained earlier.
  This particular feature is the force-K feature to ensure close nodes are
- given a high priority, exusign the maximisation of near neighbor knowledge.
+ given a high priority, using the maximisation of near neighbor knowledge.
  A small addition to enhance this aspect is to flag all data cached throughout
  the network as cached and not a value within the k closest nodes to the
  value.
  In this manner values retrieved can be tried for validity in the knowledge
- it may be stale (only may be, very unlieklly) and if so continue the search
- for the data going to teh k closest nodes to ask for fresh data.
+ it may be stale (only may be, very unlikely) and if so continue the search
+ for the data going to the k closest nodes to ask for fresh data.
  
 \end_layout
 
@@ -1911,19 +1985,19 @@ To get to the k closest nodes we require that nodes do not return anything
  On finding no closer being returned would indicate we have got one of the
  k closest nodes.
  This is where we alter the workings of kademlia and ask the closest node
- once more for the k closest nodes to teh value were looking for.
+ once more for the k closest nodes to the value were looking for.
  With the force-k addition this would likely include the k closest nodes
  (this can be further enhanced if necessary by asking all nodes returned
- the saem question again and sort the answer by xor closeness).
- Assuming we have the closest nodes we cna do many things but initially
+ the same question again and sort the answer by xor closeness).
+ Assuming we have the closest nodes we can do many things but initially
  we can assume we have the valid freshest data.
- This should return pointers (from the above example) thaty are valid.
+ This should return pointers (from the above example) that are valid.
  
 \end_layout
 
 \begin_layout Example
 Nodes with flagged cache values will check using this process they are not
- in the k closest nodes and timout (exponentially) the cache value.
+ in the k closest nodes and timeout (exponentially) the cache value.
  
 \end_layout
 
@@ -1932,18 +2006,18 @@ Locks
 \end_layout
 
 \begin_layout Standard
-To achive reliability of data where multiple copies may exist and be altered
- from multiple locations is a problem that requires adressing, before changing
+To achieve reliability of data where multiple copies may exist and be altered
+ from multiple locations is a problem that requires addressing, before changing
  data.
  Using the above scenario a node intending (and allowed to, if required)
  tries to get all the k closest nodes via an iterative search.
  On success each node is sent a lock request which it answers with (Acknowledge)
  ACK or (Negative Acknowledge) NACK.
  Each node can pass this request to its known k closest nodes.
- On reciept of k ACK's the node then alters the value (if allowed as previously
+ On receipt of k ACK's the node then alters the value (if allowed as previously
  stated).
- On recieving an altered value the holding nodes release the lock.
- Failure to recieve a value update in 10 seconds should auto release the
+ On receiving an altered value the holding nodes release the lock.
+ Failure to receive a value update in 10 seconds should auto release the
  lock.
  
 \end_layout
@@ -2223,7 +2297,7 @@ Closing bad connections - i.e.
 \end_layout
 
 \begin_layout Enumerate
-Droping bad messages without harming the processes
+Dropping bad messages without harming the processes
 \end_layout
 
 \begin_layout Enumerate
@@ -3237,8 +3311,9 @@ s where users will port forward rather than have maidsafe hole punch or
  otherwise get through a firewall) and creates a config file which it will
  read on startup.
  The config file contains at a minimum an optional PORT and required PMID
- priv and PMID public key, MAID public key, signature of PMID pub key with
- MAID private key and node ID (which is hash of PMID_pub_key signed by MAID).
+ private and PMID public key, MAID public key, signature of PMID pub key
+ with MAID private key and node ID (which is hash of PMID_pub_key signed
+ by MAID).
 \end_layout
 
 \begin_layout Enumerate
