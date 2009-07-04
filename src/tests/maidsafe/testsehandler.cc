@@ -300,6 +300,7 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_ChunksPrevLoaded) {
 }
 
 TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
+  SessionSingleton::getInstance()->SetDefConLevel(DEFCON2);
   boost::scoped_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
   sm_->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));

@@ -475,7 +475,7 @@ void PDClient::IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data) {
     store_chunk_result.SerializeToString(&result_str);
     data->is_callbacked = true;
 #ifdef DEBUG
-    printf("\tIn PDClient::IterativeStoreChunk, store succeeded; callingback.\n");
+    printf("\tIn PDClient::IterativeStoreChunk, store OK; callingback.\n");
 #endif
     data->cb(result_str);
 #ifdef DEBUG

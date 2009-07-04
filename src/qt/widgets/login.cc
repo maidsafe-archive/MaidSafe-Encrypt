@@ -64,7 +64,7 @@ namespace
                     u,
                     p,
                     cb,
-                    maidsafe::DEFCON2);
+                    maidsafe::DEFCON3);
 
         return (result == maidsafe::USER_EXISTS);
     }

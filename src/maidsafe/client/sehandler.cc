@@ -415,7 +415,7 @@ int SEHandler::GenerateUniqueKey(const DB_TYPE db_type,
         sig_request,
         pubkey,
         sig_pubkey,
-        PDDIR_SIGNED,
+        pd_dir_type_,
         false,
         boost::bind(&CallbackResult::CallbackFunc, &cbr1, _1));
     WaitForResult(cbr1);
@@ -606,8 +606,8 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                          bool dm_encrypted,
                          bool overwrite) {
 #ifdef DEBUG
-  printf("SEHandler::DecryptDb dir_path(%s) type(%i)\n", dir_path.c_str(),
-    db_type);
+  printf("SEHandler::DecryptDb dir_path(%s) type(%i) ncrypted(%i)\n",
+         dir_path.c_str(), db_type, dm_encrypted);
 #endif
   std::string ser_dm_, enc_dm_;
   // get dm from DHT

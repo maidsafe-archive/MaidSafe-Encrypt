@@ -39,7 +39,7 @@ namespace maidsafe {
 enum DefConLevels {DEFCON1 = 1, DEFCON2, DEFCON3};
 
 struct UserDetails {
-  UserDetails() : defconlevel(DEFCON2), da_modified(false), username(""),
+  UserDetails() : defconlevel(DEFCON3), da_modified(false), username(""),
     pin(""), password(""), mid_rid(0), smid_rid(0), session_name(""),
     root_db_key(""), self_encrypting(true), authorised_users(),
     maid_authorised_users(), ids(ids), public_keys(public_keys),

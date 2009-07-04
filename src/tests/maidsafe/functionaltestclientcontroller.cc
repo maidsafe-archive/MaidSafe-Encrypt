@@ -365,7 +365,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                             &FakeCallback::CallbackFunc,
                                             &cb,
                                             _1),
-                                        DEFCON2);
+                                        DEFCON3);
   ASSERT_EQ(NON_EXISTING_USER, result);
   ASSERT_TRUE(cc->CreateUser(username, pin, password));
   ASSERT_EQ(username, ss->Username());
@@ -384,7 +384,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   GetResponse load_res;
@@ -408,7 +408,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(NON_EXISTING_USER, result);
   printf("Can't log in with fake details.\n");
 }
@@ -430,7 +430,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                             &FakeCallback::CallbackFunc,
                                             &cb,
                                             _1),
-                                        DEFCON2);
+                                        DEFCON3);
   ASSERT_EQ(NON_EXISTING_USER, result);
   ASSERT_TRUE(cc->CreateUser(username, pin, password));
   ASSERT_EQ(username, ss->Username());
@@ -449,7 +449,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 //                                      boost::bind(&FakeCallback::CallbackFunc,
 //                                                    &cb,
 //                                                    _1),
-//                                        DEFCON2);
+//                                        DEFCON3);
 //  ASSERT_EQ(USER_EXISTS, result);
 //  boost::this_thread::sleep(boost::posix_time::seconds(10));
 //  GetResponse load_res;
@@ -479,7 +479,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   GetResponse load_res;
@@ -510,7 +510,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   load_res.Clear();
@@ -540,7 +540,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   load_res.Clear();
@@ -564,7 +564,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(NON_EXISTING_USER, result);
 
   result = cc->CheckUserExists("juan.smer",
@@ -572,7 +572,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   load_res.Clear();
@@ -604,7 +604,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                             &FakeCallback::CallbackFunc,
                                             &cb,
                                             _1),
-                                        DEFCON2);
+                                        DEFCON3);
   ASSERT_EQ(NON_EXISTING_USER, result);
   ASSERT_TRUE(cc->CreateUser(username, pin, password));
   ASSERT_EQ(username, ss->Username());
@@ -623,7 +623,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 //                                      boost::bind(&FakeCallback::CallbackFunc,
 //                                                    &cb,
 //                                                    _1),
-//                                        DEFCON2);
+//                                        DEFCON3);
 //  ASSERT_EQ(USER_EXISTS, result);
 //  boost::this_thread::sleep(boost::posix_time::seconds(10));
 //  GetResponse load_res;
@@ -669,7 +669,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                             &FakeCallback::CallbackFunc,
                                             &cb,
                                             _1),
-                                        DEFCON2);
+                                        DEFCON3);
   ASSERT_EQ(NON_EXISTING_USER, result);
   ASSERT_TRUE(cc->CreateUser(username, pin, password));
   ASSERT_EQ(username, ss->Username());
@@ -682,7 +682,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   GetResponse load_res;
@@ -703,7 +703,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(NON_EXISTING_USER, result);
   printf("User no longer exists.\n");
 
@@ -712,7 +712,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(NON_EXISTING_USER, result);
   ASSERT_TRUE(cc->CreateUser(username, pin, password));
   ASSERT_EQ(username, ss->Username());
@@ -744,7 +744,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                             &FakeCallback::CallbackFunc,
                                             &cb,
                                             _1),
-                                        DEFCON2);
+                                        DEFCON3);
   ASSERT_EQ(NON_EXISTING_USER, result);
   ASSERT_TRUE(cc->CreateUser(username, pin, password));
   ASSERT_EQ(username, ss->Username());
@@ -757,7 +757,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 //                                      boost::bind(&FakeCallback::CallbackFunc,
 //                                                    &cb,
 //                                                    _1),
-//                                        DEFCON2);
+//                                        DEFCON3);
 //  ASSERT_EQ(USER_EXISTS, result);
 //  boost::this_thread::sleep(boost::posix_time::seconds(10));
 //  GetResponse load_res;
@@ -803,7 +803,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   GetResponse load_res;
@@ -848,7 +848,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                             &FakeCallback::CallbackFunc,
                                             &cb,
                                             _1),
-                                        DEFCON2);
+                                        DEFCON3);
   ASSERT_EQ(NON_EXISTING_USER, result);
   ASSERT_TRUE(cc->CreateUser(username, pin, password));
   ASSERT_EQ(username, ss->Username());
@@ -861,7 +861,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 //                                      boost::bind(&FakeCallback::CallbackFunc,
 //                                                    &cb,
 //                                                    _1),
-//                                        DEFCON2);
+//                                        DEFCON3);
 //  ASSERT_EQ(USER_EXISTS, result);
 //  boost::this_thread::sleep(boost::posix_time::seconds(10));
 //  GetResponse load_res;
@@ -890,7 +890,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   GetResponse load_res;
@@ -928,7 +928,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   load_res.Clear();
@@ -973,7 +973,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                boost::bind(&FakeCallback::CallbackFunc,
                                            &cb,
                                            _1),
-                               DEFCON2);
+                               DEFCON3);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   load_res.Clear();
@@ -1112,7 +1112,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
 //                                            &FakeCallback::CallbackFunc,
 //                                            &cb,
 //                                            _1),
-//                                        DEFCON2);
+//                                        DEFCON3);
 //  ASSERT_EQ(NON_EXISTING_USER, result);
 //  ASSERT_TRUE(cc->CreateUser(username, pin, password));
 //  ASSERT_EQ(username, ss->Username());
@@ -1126,7 +1126,7 @@ TEST_F(FunctionalMaidsafeClientControllerTest,
                                         boost::bind(&FakeCallback::CallbackFunc,
                                                     &cb,
                                                     _1),
-                                        DEFCON2);
+                                        DEFCON3);
   ASSERT_EQ(USER_EXISTS, result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   GetResponse load_res;

@@ -35,14 +35,14 @@ namespace maidsafe_vault {
 
 void vsvc_dummy_callback(const std::string &result) {
 #ifdef DEBUG
-  kad::StoreResponse result_msg;
-  if (!result_msg.ParseFromString(result))
-    printf("Can't parse store result.\n");
-  printf("%s\n", result_msg.DebugString().c_str());
-  if (result_msg.result() == kad::kRpcResultFailure)
-    printf("Storing chunk reference failed.\n");
-  else
-    printf("Storing chunk reference succeeded.\n");
+//  kad::StoreResponse result_msg;
+//  if (!result_msg.ParseFromString(result))
+//    printf("Can't parse store result.\n");
+//  printf("%s\n", result_msg.DebugString().c_str());
+//  if (result_msg.result() == kad::kRpcResultFailure)
+//    printf("Storing chunk reference failed.\n");
+//  else
+//    printf("Storing chunk reference succeeded.\n");
 #endif
 }
 
@@ -69,15 +69,16 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
                          const maidsafe::StoreRequest* request,
                          maidsafe::StoreResponse* response,
                          google::protobuf::Closure* done) {
+#ifdef DEBUG
 //  printf("Chunk name: %s\n", request->chunkname().c_str());
 //  printf("Chunk content: %s\n", request->data().c_str());
-#ifdef DEBUG
 //  printf("In VaultService::StoreChunk, Public Key: %s\n",
 //    request->public_key().c_str());
-#endif
 //  printf("Signed Pub Key: %s\n", request->signed_public_key().c_str());
 //  printf("Signed Request: %s\n", request->signed_request().c_str());
-//  printf("Data Type: %i\n", request->data_type());
+  printf("In VaultService::StoreChunk (%i), Data Type: %i\n",
+         knode_->host_port(), request->data_type());
+#endif
   std::string id("");
   base::decode_from_hex(pmid_, &id);
   response->set_pmid_id(id);
@@ -204,9 +205,11 @@ void VaultService::Update(google::protobuf::RpcController*,
                           const maidsafe::UpdateRequest* request,
                           maidsafe::UpdateResponse* response,
                           google::protobuf::Closure* done) {
-//  #ifdef DEBUG
+#ifdef DEBUG
 //    printf("Pub key: %s.\n", request->public_key().c_str());
-//  #endif
+  printf("In VaultService::Update (%i), Data Type: %i\n",
+         knode_->host_port(), request->data_type());
+#endif
   std::string id("");
   base::decode_from_hex(pmid_, &id);
   response->set_pmid_id(id);
@@ -218,6 +221,10 @@ void VaultService::Update(google::protobuf::RpcController*,
   if (!ValidateSignedRequest(request->public_key(),
        request->signed_public_key(), request->signed_request(),
        request->chunkname())) {
+#ifdef DEBUG
+    printf("In VaultService::Update (%i), request didn't validate.\n",
+           knode_->host_port());
+#endif
     response->set_result(kCallbackFailure);
     done->Run();
     return;
@@ -225,6 +232,10 @@ void VaultService::Update(google::protobuf::RpcController*,
   bool valid_data = false;
   std::string current_content;
   if (!LoadChunkLocal(request->chunkname(), &current_content)) {
+#ifdef DEBUG
+    printf("In VaultService::Update (%i), don't have chunk to update.\n",
+           knode_->host_port());
+#endif
     response->set_result(kCallbackFailure);
     done->Run();
     return;
@@ -278,11 +289,19 @@ void VaultService::Update(google::protobuf::RpcController*,
   if (valid_data) {
   std::string key = request->chunkname();
     if (!UpdateChunkLocal(key, updated_value)) {
+#ifdef DEBUG
+      printf("In VaultService::Update (%i), failed local chunk update.\n",
+             knode_->host_port());
+#endif
       response->set_result(kCallbackFailure);
       done->Run();
       return;
     }
   } else {
+#ifdef DEBUG
+    printf("In VaultService::Update (%i), data isn't valid.\n",
+           knode_->host_port());
+#endif
     response->set_result(kCallbackFailure);
     done->Run();
     return;

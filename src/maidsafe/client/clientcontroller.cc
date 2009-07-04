@@ -357,7 +357,7 @@ bool ClientController::CreateUser(const std::string &username,
           // ie Public and Anon have never been saved before on the network
           std::string ser_dm_;
           seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
-                          PRIVATE,
+                          ANONYMOUS,
                           kSharesSubdir[i][1],
                           "",
                           true,
@@ -595,9 +595,9 @@ bool ClientController::Logout() {
     messages_.clear();
     fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
     client_path /= "client";
-    if (boost::filesystem::exists(client_path)) {
+    if (fs::exists(client_path)) {
       try {
-        boost::filesystem::remove_all(client_path);
+        fs::remove_all(client_path);
       }
       catch(const std::exception &e) {
         printf("Couldn't delete client path\n");

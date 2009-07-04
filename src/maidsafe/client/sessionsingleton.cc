@@ -45,7 +45,7 @@ void SessionSingleton::Destroy() {
 
 bool SessionSingleton::ResetSession() {
   SetDaModified(false);
-  SetDefConLevel(DEFCON2);
+  SetDefConLevel(DEFCON3);
   SetUsername("");
   SetPin("");
   SetPassword("");

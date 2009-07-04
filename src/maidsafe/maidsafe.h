@@ -277,7 +277,7 @@ const int kValidityCheckRetry(2);  // retries for validity check (timeouts)
 const int kMinChunkCopies(1);
 const int kMaxPingRetries(2);  // max number of ping tries
 const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
-const int kMaxChunkStoreRetries(10);  // max number of tries to store or update
+const int kMaxChunkStoreRetries(2);  // max number of tries to store or update
                                      // a chunk
 const boost::uint32_t kSaveUpdatesTrigger(100);  // max no of dbs in save queue
                                                  // before running save queue

@@ -49,7 +49,7 @@ namespace fs = boost::filesystem;
 
 namespace file_system {
 
-FileSystem::FileSystem() : defcon_(maidsafe::DEFCON2) {}
+FileSystem::FileSystem() : defcon_(maidsafe::DEFCON3) {}
 
 FileSystem::~FileSystem() {}
 

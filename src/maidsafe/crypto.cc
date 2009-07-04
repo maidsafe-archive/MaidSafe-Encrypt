@@ -402,7 +402,7 @@ std::string Crypto::Hash(const std::string &input,
   return result;
 }
 
-//  SYNC
+// SYMMETRIC ENCRYPTION
 bool Crypto::set_symm_algorithm(const std::string &algorithmtype) {
   if ( algorithmtype == "AES_256")
     symm_algorithm_ = algorithmtype;

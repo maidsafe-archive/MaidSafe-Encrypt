@@ -75,8 +75,8 @@ class Crypto {
                    const operationtype &ot,
                    bool hex);
 
-  //  SYNC
-  //  Symmetric Encryption Algorithm
+  //  SYMMETRIC ENCRYPTION
+  //  Symmetric Encryption Algorithms
   //    -AES_256
   //  Encryption and Decryption return an empty string if the input from
   //  a file could not be read or cannot write the output to a file
@@ -92,7 +92,7 @@ class Crypto {
                           const operationtype &ot,
                           const std::string &key);
 
-  //  ASYMMETRIC
+  //  ASYMMETRIC ENCRYPTION (RSA)
   //  Encryption, Decryption and Sign return an empty string if
   //  the string passed for key is not a valid key or the type
   //  (public/private) is incorrect for the operation
