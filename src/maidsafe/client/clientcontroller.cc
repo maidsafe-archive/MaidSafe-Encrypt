@@ -1976,7 +1976,7 @@ DB_TYPE ClientController::GetDbType(const std::string &path_) {
   std::string myfiles = base::TidyPath(kRootSubdir[0][0]);
 //  std::string pub_shares = base::TidyPath(kSharesSubdir[1][0]);
   std::string priv_shares = base::TidyPath(kSharesSubdir[0][0]);
-  std::string anonymous_shares = base::TidyPath(kSharesSubdir[1][0]);
+//  std::string anonymous_shares = base::TidyPath(kSharesSubdir[1][0]);
   if (path_ == "/" || path_ == "\\" ||
       (path_.compare(0, myfiles.size(), myfiles) == 0))
     return PRIVATE;
@@ -1988,8 +1988,8 @@ DB_TYPE ClientController::GetDbType(const std::string &path_) {
     else
       return PRIVATE_SHARE;
   }
-  if (path_.compare(0, anonymous_shares.size(), anonymous_shares) == 0)
-    return ANONYMOUS;
+//  if (path_.compare(0, anonymous_shares.size(), anonymous_shares) == 0)
+//    return ANONYMOUS;
   return PRIVATE;
 }
 

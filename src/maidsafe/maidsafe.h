@@ -57,7 +57,9 @@ enum buffer_packet_type {
   MPID_BP, MAID_BP, PMID_BP
 };
 
-const std::string kAnonymousSignedRequest("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");  // NOLINT
+const std::string kAnonymousSignedRequest("ffffffffffffffffffffffffffffffffffff"
+    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    "ffffffffffffffffff");
 
 enum db_init_flag {CONNECT, CREATE, DISCONNECT};
 
@@ -71,17 +73,27 @@ const std::string kRoot("/");
 const std::string kKeysDb("/KeysDb");
 
 const int kRootSubdirSize = 2;
-const int kSharesSubdirSize = 2;
+const int kSharesSubdirSize = 1;
 
 const std::string kRootSubdir[kRootSubdirSize][2] = {
   {"/My Files", ""},
-  {"/Shares", "c7e625436063a42719208d02ff2bc12498502fd04240d64a4c8b5c8aafb3362ed2302ee117394fb06d291b78dd0195dcb9f371c3806732bdf872b46923079bc8"}  // NOLINT
+  {"/Shares", "c7e625436063a42719208d02ff2bc12498502fd04240d64a4c8b5c8aafb3362e"
+              "d2302ee117394fb06d291b78dd0195dcb9f371c3806732bdf872b46923079bc8"
+  }
 };
 
 const std::string kSharesSubdir[kSharesSubdirSize][2] = {
-  {"/Shares/Private", ""},
-//  {"/Shares/Public", "a0590baf0f811834de68fec77950c179595f5ecb5dc3c6abac67dc349714101e40b44531054196b4616f3314cee94d71babb5fbc7010d7fff958d8c8cc54836c"},  // NOLINT
-  {"/Shares/Anonymous", "63ed99cc9f91c7dd568247337fd5b479e2cec00e9054ec4c5797c319a80fe3ab07a01dca8200dfd63142b1ed376970bb3a9acd3fa55e9d631d3c0aff42f7660e"}  // NOLINT
+  {"/Shares/Private", ""} /*,*/
+//  {
+//  "/Shares/Public", "a0590baf0f811834de68fec77950c179595f5ecb5dc3c6abac67dc34
+//  "9714101e40b44531054196b4616f3314cee94d71babb5fbc7010d7fff958d8c8cc54836c"
+//  },
+//  {
+//    "/Shares/Anonymous",
+//    "63ed99cc9f91c7dd568247337fd5b479e2cec00e9054ec4c5797c3"
+//    "19a80fe3ab07a01dca8200dfd63142b1ed376970bb3a9acd3fa55e9"
+//    "d631d3c0aff42f7660e"
+//  }
 };
 
 // const std::string default_dir_[] = {

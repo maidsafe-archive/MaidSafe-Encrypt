@@ -27,13 +27,13 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "maidsafe/maidsafe.h"
+#include <maidsafe/maidsafe.h>
 #include "maidsafe/vault/vaultbufferpackethandler.h"
 #include "protobuf/kademlia_service_messages.pb.h"
 
 namespace maidsafe_vault {
 
-void vsvc_dummy_callback(const std::string &result) {
+void vsvc_dummy_callback(const std::string&) {
 #ifdef DEBUG
 //  kad::StoreResponse result_msg;
 //  if (!result_msg.ParseFromString(result))
