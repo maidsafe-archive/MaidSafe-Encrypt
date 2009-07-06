@@ -525,88 +525,89 @@ TEST_F(FuseTest, FUNC_FS_StoreFilesAndDirs) {
 //    boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  }
 
-  test_root_ = root_;
-  // write files and dirs to "/Shares/Anonymous" dir
-  test_root_ /= kSharesSubdir[1][0];  // /Shares/Anonymous/
-  test_dir_0_ = test_root_;
-  test_dir_0_ /= "TestDir0";
-  test_dir_1_ = test_dir_0_;
-  test_dir_1_ /= "TestDir1";
-  for (int i = 0; i < 3; ++i)
-    fuse_test::test_file_.push_back(test_root_);
-  fuse_test::test_file_[5] /= "test0.txt";
-  fuse_test::test_file_[6] /= "test1.txt";
-  fuse_test::test_file_[7] /= "test2.txt";
-  fuse_test::test_file_.push_back(test_dir_0_);
-  fuse_test::test_file_.push_back(test_dir_1_);
-  // /Shares/Anonymous/TestDir0/test3.txt
-  fuse_test::test_file_[8] /= "test3.txt";
-  // /Shares/Anon.../TestDir0/TestDir1/test4.txt
-  fuse_test::test_file_[9] /= "test4.txt";
-  for (int i = 0; i < 5; ++i)
-    fuse_test::pre_hash_.push_back("");
-  success_ = false;
-  try {
-    ASSERT_TRUE(fs::exists(test_root_)) << test_root_ << " doesn't exist.";
-    fs::create_directory(test_dir_0_);
-    fs::create_directory(test_dir_1_);
-    success_ = (fs::exists(test_dir_0_) && fs::exists(test_dir_1_));
-  }
-  catch(const std::exception &e_) {
-    printf("%s\n", e_.what());
-  }
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
-  ASSERT_TRUE(success_);
-  success_ = false;
-  success_count = 0;
-  printf("Trying to create %s\n", fuse_test::test_file_[5].string().c_str());
-  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[5].string(),
-                                         2, &fuse_test::pre_hash_[5]);
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  ASSERT_TRUE(success_);
-  if (success_) {
-    ++success_count;
-    success_ = false;
-  }
-  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[6].string(),
-                                         10, &fuse_test::pre_hash_[6]);
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  ASSERT_TRUE(success_);
-  if (success_) {
-    ++success_count;
-    success_ = false;
-  }
-  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[7].string(),
-                                         100, &fuse_test::pre_hash_[7]);
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
-  ASSERT_TRUE(success_);
-  if (success_) {
-    ++success_count;
-    success_ = false;
-  }
-  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[8].string(),
-                                         100, &fuse_test::pre_hash_[8]);
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
-  ASSERT_TRUE(success_);
-  if (success_) {
-    ++success_count;
-    success_ = false;
-  }
-  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[9].string(),
-                                         100, &fuse_test::pre_hash_[9]);
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
-  ASSERT_TRUE(success_);
-  if (success_) {
-    ++success_count;
-    success_ = false;
-  }
-  if (success_count == 5) {
-    maidsafe::SelfEncryption se;
-    for (int i = 5; i < 10; ++i) {
-      ASSERT_EQ(fuse_test::pre_hash_[i], se.SHA512(fuse_test::test_file_[i]));
-      boost::this_thread::sleep(boost::posix_time::seconds(5));
-    }
-  }
+/* Anonymous Shares are disabled at the moment. */
+//  test_root_ = root_;
+//  // write files and dirs to "/Shares/Anonymous" dir
+//  test_root_ /= kSharesSubdir[1][0];  // /Shares/Anonymous/
+//  test_dir_0_ = test_root_;
+//  test_dir_0_ /= "TestDir0";
+//  test_dir_1_ = test_dir_0_;
+//  test_dir_1_ /= "TestDir1";
+//  for (int i = 0; i < 3; ++i)
+//    fuse_test::test_file_.push_back(test_root_);
+//  fuse_test::test_file_[5] /= "test0.txt";
+//  fuse_test::test_file_[6] /= "test1.txt";
+//  fuse_test::test_file_[7] /= "test2.txt";
+//  fuse_test::test_file_.push_back(test_dir_0_);
+//  fuse_test::test_file_.push_back(test_dir_1_);
+//  // /Shares/Anonymous/TestDir0/test3.txt
+//  fuse_test::test_file_[8] /= "test3.txt";
+//  // /Shares/Anon.../TestDir0/TestDir1/test4.txt
+//  fuse_test::test_file_[9] /= "test4.txt";
+//  for (int i = 0; i < 5; ++i)
+//    fuse_test::pre_hash_.push_back("");
+//  success_ = false;
+//  try {
+//    ASSERT_TRUE(fs::exists(test_root_)) << test_root_ << " doesn't exist.";
+//    fs::create_directory(test_dir_0_);
+//    fs::create_directory(test_dir_1_);
+//    success_ = (fs::exists(test_dir_0_) && fs::exists(test_dir_1_));
+//  }
+//  catch(const std::exception &e_) {
+//    printf("%s\n", e_.what());
+//  }
+//  boost::this_thread::sleep(boost::posix_time::seconds(30));
+//  ASSERT_TRUE(success_);
+//  success_ = false;
+//  success_count = 0;
+//  printf("Trying to create %s\n", fuse_test::test_file_[5].string().c_str());
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[5].string(),
+//                                         2, &fuse_test::pre_hash_[5]);
+//  boost::this_thread::sleep(boost::posix_time::seconds(5));
+//  ASSERT_TRUE(success_);
+//  if (success_) {
+//    ++success_count;
+//    success_ = false;
+//  }
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[6].string(),
+//                                         10, &fuse_test::pre_hash_[6]);
+//  boost::this_thread::sleep(boost::posix_time::seconds(5));
+//  ASSERT_TRUE(success_);
+//  if (success_) {
+//    ++success_count;
+//    success_ = false;
+//  }
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[7].string(),
+//                                         100, &fuse_test::pre_hash_[7]);
+//  boost::this_thread::sleep(boost::posix_time::seconds(10));
+//  ASSERT_TRUE(success_);
+//  if (success_) {
+//    ++success_count;
+//    success_ = false;
+//  }
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[8].string(),
+//                                         100, &fuse_test::pre_hash_[8]);
+//  boost::this_thread::sleep(boost::posix_time::seconds(60));
+//  ASSERT_TRUE(success_);
+//  if (success_) {
+//    ++success_count;
+//    success_ = false;
+//  }
+//  success_ = fuse_test::CreateRandomFile(fuse_test::test_file_[9].string(),
+//                                         100, &fuse_test::pre_hash_[9]);
+//  boost::this_thread::sleep(boost::posix_time::seconds(60));
+//  ASSERT_TRUE(success_);
+//  if (success_) {
+//    ++success_count;
+//    success_ = false;
+//  }
+//  if (success_count == 5) {
+//    maidsafe::SelfEncryption se;
+//    for (int i = 5; i < 10; ++i) {
+//      ASSERT_EQ(fuse_test::pre_hash_[i], se.SHA512(fuse_test::test_file_[i]));
+//      boost::this_thread::sleep(boost::posix_time::seconds(5));
+//    }
+//  }
 
 //  test_root_ = root_;
 //  // try to write files and dirs to "/Shares/Private" dir without first
