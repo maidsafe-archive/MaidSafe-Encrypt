@@ -255,14 +255,8 @@ Return Value:
 	if (GetIdentifierType(deviceObject->DeviceExtension) == DGL) {
 		DDbgPrint("  Delete Global DeviceObject\n");
 		RtlInitUnicodeString(&symbolicLinkName, symbolicLinkBuf);
-
 		IoDeleteSymbolicLink(&symbolicLinkName);
-
-		// delete DeviceObject
 		IoDeleteDevice(deviceObject);
-
-        // And free the string
-        RtlFreeUnicodeString(&symbolicLinkName);
 	}
 
 	DDbgPrint("<== DokanUnload\n");

@@ -404,7 +404,6 @@ DokanEventStart(
 	PDokanDCB			dcb;
 	NTSTATUS			status;
 	DEVICE_TYPE			deviceType;
-	ULONG				mountIndex = 0;
 
 	DDbgPrint("==> DokanEventStart\n");
 
@@ -449,12 +448,9 @@ DokanEventStart(
 	KeEnterCriticalRegion();
 	ExAcquireResourceExclusiveLite(&dokanGlobal->Resource, TRUE);
 
-	mountIndex = 0;
-	while(InterlockedBitTestAndSet(&dokanGlobal->MountId,mountIndex)) mountIndex++;
-	
 	status = DokanCreateDiskDevice(
 				DeviceObject->DriverObject,
-				mountIndex,
+				dokanGlobal->MountId,
 				dokanGlobal,
 				deviceType,
 				&dcb);
@@ -466,8 +462,8 @@ DokanEventStart(
 	}
 
 	DDbgPrint("  MountId:%d\n", dcb->MountId);
-	driverInfo->DeviceNumber = mountIndex;
-	driverInfo->MountId = mountIndex;
+	driverInfo->DeviceNumber = dokanGlobal->MountId;
+	driverInfo->MountId = dokanGlobal->MountId;
 	driverInfo->Status = DOKAN_MOUNTED;
 	driverInfo->DriverVersion = DOKAN_VERSION;
 	dcb->Mounted = eventStart.DriveLetter;
@@ -491,6 +487,8 @@ DokanEventStart(
 
 	Irp->IoStatus.Status = STATUS_SUCCESS;
 	Irp->IoStatus.Information = sizeof(EVENT_DRIVER_INFO);
+
+	InterlockedIncrement(&dokanGlobal->MountId);
 
 	DDbgPrint("<== DokanEventStart\n");
 
