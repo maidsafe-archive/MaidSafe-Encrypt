@@ -26,13 +26,13 @@
 
 #include <stdint.h>
 
+#include <boost/filesystem.hpp>
+
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <exception>
 #include <map>
-
-#include "boost/filesystem.hpp"
 
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -41,23 +41,21 @@
 
 namespace fs = boost::filesystem;
 
+
 namespace maidsafe {
 
-
-KeyAtlas::KeyAtlas(const std::string &db_name,
-                   db_init_flag flag_,
-                   int *result_): db_name_(db_name), db_(new CppSQLite3DB()) {
-  *result_ = Init(flag_);
+KeyAtlas::KeyAtlas(const std::string &db_name, db_init_flag flag,
+                   int *result) : db_name_(db_name), db_(new CppSQLite3DB()),
+                   key_ring_() {
+  *result = Init(flag);
 }
-
 
 KeyAtlas::~KeyAtlas() {
   DisconnectKeysDb();
 }
 
-
-int KeyAtlas::Init(db_init_flag flag_) {
-  switch (flag_) {
+int KeyAtlas::Init(db_init_flag flag) {
+  switch (flag) {
     case CONNECT:
       if (ConnectKeysDb())
         return -1;
@@ -76,22 +74,20 @@ int KeyAtlas::Init(db_init_flag flag_) {
   return 0;
 }
 
-
 int KeyAtlas::ConnectKeysDb() {
   if (!fs::exists(db_name_))
     return -1;
   try {
     db_->open(db_name_.c_str());
   }
-  catch(const std::exception &exception_) {
+  catch(const std::exception &exception) {
 #ifdef DEBUG
-    printf("%s\n", exception_.what());
+    printf("%s\n", exception.what());
 #endif
     return -1;
   }
   return 0;
 }
-
 
 int KeyAtlas::CreateKeysDb() {
   if (fs::exists(db_name_))
@@ -105,29 +101,27 @@ int KeyAtlas::CreateKeysDb() {
     s += "primary key(type));";
     db_->execDML(s.c_str());
   }
-  catch(const std::exception &exception_) {
+  catch(const std::exception &exception) {
 #ifdef DEBUG
-    printf("%s\n", exception_.what());
+    printf("%s\n", exception.what());
 #endif
     return -1;
   }
   return 0;
 }
-
 
 int KeyAtlas::DisconnectKeysDb() {
   try {
     db_->close();
   }
-  catch(const std::exception &exception_) {
+  catch(const std::exception &exception) {
 #ifdef DEBUG
-    printf("%s\n", exception_.what());
+    printf("%s\n", exception.what());
 #endif
     return -1;
   }
   return 0;
 }
-
 
 int KeyAtlas::AddKeys(const std::string &package_type,
                       const std::string &package_id,
@@ -157,14 +151,13 @@ int KeyAtlas::AddKeys(const std::string &package_type,
     else
       return -1;
   }
-  catch(const std::exception &exception_) {
+  catch(const std::exception &exception) {
 #ifdef DEBUG
-    printf("%s\n", exception_.what());
+    printf("%s\n", exception.what());
 #endif
     return -1;
   }
 }  // AddKeys
-
 
 std::string KeyAtlas::GetKeyData(const std::string &package_type,
                                  char data_type) {
@@ -192,29 +185,25 @@ std::string KeyAtlas::GetKeyData(const std::string &package_type,
       return "";
     }
   }
-  catch(const std::exception &exception_) {
+  catch(const std::exception &exception) {
 #ifdef DEBUG
-    printf("%s\n", exception_.what());
+    printf("%s\n", exception.what());
 #endif
     return "";
   }
 }  // GetKeyData
 
-
 std::string KeyAtlas::GetPackageID(const std::string &package_type) {
   return GetKeyData(package_type, 'I');
 }
-
 
 std::string KeyAtlas::GetPrivateKey(const std::string &package_type) {
   return GetKeyData(package_type, 'R');
 }
 
-
 std::string KeyAtlas::GetPublicKey(const std::string &package_type) {
   return GetKeyData(package_type, 'U');
 }
-
 
 int KeyAtlas::RemoveKeys(const std::string &package_type) {
   try {
@@ -225,14 +214,13 @@ int KeyAtlas::RemoveKeys(const std::string &package_type) {
     else
       return -1;
   }
-  catch(const std::exception &exception_) {
+  catch(const std::exception &exception) {
 #ifdef DEBUG
-    printf("%s\n", exception_.what());
+    printf("%s\n", exception.what());
 #endif
     return -1;
   }
 }
-
 
 void KeyAtlas::GetKeyRing(std::list<Key_Type> *keyring) {
   try {
@@ -304,12 +292,84 @@ void KeyAtlas::GetKeyRing(std::list<Key_Type> *keyring) {
     q_keys2.finalize();
     return;
   }
-  catch(const std::exception &exception_) {
+  catch(const std::exception &exception) {
 #ifdef DEBUG
-    printf("%s\n", exception_.what());
+    printf("%s\n", exception.what());
 #endif
     return;
   }
 }
+
+
+int KeyAtlas::MI_AddKeys(const int &package_type, const std::string &package_id,
+    const std::string &private_key, const std::string &public_key) {
+  key_ring_.erase(package_type);
+  KeyAtlasRow kar(package_type, package_id, private_key, public_key);
+  key_atlas_set::iterator  it = key_ring_.find(package_type);
+  key_ring_.insert(kar);
+  return 0;
+}
+
+std::string KeyAtlas::MI_SearchKeyring(const int &package_type,
+                                       const int &field) {
+  std::string result;
+  if (field < 1 || field > 3) {
+#ifdef DEBUG
+    printf("Wrong column(%d)\n", field);
+#endif
+    return result;
+  }
+  key_atlas_set::iterator  it = key_ring_.find(package_type);
+  if (it == key_ring_.end()) {
+#ifdef DEBUG
+    printf("Key type(%d) not present in keyring\n", package_type);
+#endif
+    return result;
+  }
+  switch (field) {
+    case 1: result = (*it).id_; break;
+    case 2: result = (*it).private_key_; break;
+    case 3: result = (*it).public_key_; break;
+  }
+  return result;
+}
+
+std::string KeyAtlas::MI_PackageID(const int &package_type) {
+  return MI_SearchKeyring(package_type, 1);
+}
+
+std::string KeyAtlas::MI_PrivateKey(const int &package_type) {
+  return MI_SearchKeyring(package_type, 2);
+}
+
+std::string KeyAtlas::MI_PublicKey(const int &package_type) {
+  return MI_SearchKeyring(package_type, 3);
+}
+
+int KeyAtlas::MI_RemoveKeys(const int &package_type) {
+  key_atlas_set::iterator it = key_ring_.find(package_type);
+  if (it == key_ring_.end()) {
+#ifdef DEBUG
+    printf("Key type(%d) not present in keyring.\n", package_type);
+#endif
+    return -1801;
+  }
+  key_ring_.erase(package_type);
+  return 0;
+}
+
+void KeyAtlas::MI_GetKeyRing(std::list<KeyAtlasRow> *keyring) {
+  keyring->clear();
+  key_atlas_set::iterator it;
+  for (it = key_ring_.begin(); it != key_ring_.end(); it++) {
+    KeyAtlasRow kar((*it).type_, (*it).id_, (*it).private_key_,
+                   (*it).public_key_);
+    keyring->push_back(kar);
+  }
+}
+
+unsigned int KeyAtlas::MI_KeyRingSize() { return key_ring_.size(); }
+
+void KeyAtlas::MI_ClearKeyRing() { key_ring_.clear(); }
 
 }  // namespace maidsafe

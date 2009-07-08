@@ -35,6 +35,11 @@
 #ifndef MAIDSAFE_CLIENT_KEYATLAS_H_
 #define MAIDSAFE_CLIENT_KEYATLAS_H_
 
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/identity.hpp>
+#include <boost/multi_index/member.hpp>
+
 #include <list>
 #include <string>
 
@@ -44,6 +49,25 @@
 #include "maidsafe/maidsafe.h"
 
 namespace maidsafe {
+
+struct KeyAtlasRow {
+  KeyAtlasRow(int type, const std::string &id, const std::string &private_key,
+              const std::string &public_key)
+              : type_(type), id_(id), private_key_(private_key),
+              public_key_(public_key) { }
+  int type_;
+  std::string id_;
+  std::string private_key_;
+  std::string public_key_;
+};
+
+typedef boost::multi_index_container<
+  maidsafe::KeyAtlasRow,
+  boost::multi_index::indexed_by<
+      boost::multi_index::ordered_unique<boost::multi_index::member<KeyAtlasRow,
+          int, &KeyAtlasRow::type_> >
+  >
+> key_atlas_set;
 
 class KeyAtlas {
  public:
@@ -61,14 +85,31 @@ class KeyAtlas {
   // (ANMID, MAID, etc) List of structs
   void GetKeyRing(std::list<Key_Type> *keyring);
 
+  int MI_AddKeys(const int &package_type,
+                 const std::string &package_id,
+                 const std::string &private_key,
+                 const std::string &public_key);
+  std::string MI_PackageID(const int &packet_type);
+  std::string MI_PrivateKey(const int &packet_type);
+  std::string MI_PublicKey(const int &packet_type);
+  int MI_RemoveKeys(const int &package_type);
+  // GetKeyRing (only keys and id's of predifined sys packets
+  // (ANMID, MAID, etc) List of structs
+  void MI_GetKeyRing(std::list<KeyAtlasRow> *keyring);
+  unsigned int MI_KeyRingSize();
+  void MI_ClearKeyRing();
+
  private:
   int Init(db_init_flag flag_);
   std::string GetKeyData(const std::string &package_type, char data_type);
   int ConnectKeysDb();
   int CreateKeysDb();
   int DisconnectKeysDb();
+  std::string MI_SearchKeyring(const int &package_type, const int &field);
+
   std::string db_name_;
   boost::shared_ptr<CppSQLite3DB> db_;
+  key_atlas_set key_ring_;
 };
 
 }  // namespace maidsafe

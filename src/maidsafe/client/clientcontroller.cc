@@ -1327,7 +1327,8 @@ int ClientController::HandleAddContactRequest(
   cn->set_action(1);
 
   std::string message("\"");
-  message += sender + "\" has confirmed you as a contact.";
+  message += maidsafe::SessionSingleton::getInstance()->PublicUsername() +
+             "\" has confirmed you as a contact.";
   im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
   im.set_date(base::get_epoch_time());
   im.set_message(message);
