@@ -1,16 +1,40 @@
-#include "maidsafe/client/sehandler.h"
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/client/sessionsingleton.h"
-#include "fs/filesystem.h"
-#include "maidsafe/client/localstoremanager.h"
-#include "maidsafe/client/packetfactory.h"
-#include "protobuf/general_messages.pb.h"
+/*
+* ============================================================================
+*
+* Copyright [2009] maidsafe.net limited
+*
+* Description:  Tests functionality of Self Encryption Handler
+* Version:      1.0
+* Created:      2009-07-08-03.06.29
+* Revision:     none
+* Compiler:     gcc
+* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
+* Company:      maidsafe.net limited
+*
+* The following source code is property of maidsafe.net limited and is not
+* meant for external use.  The use of this code is governed by the license
+* file LICENSE.TXT found in the root of this directory and also on
+* www.maidsafe.net.
+*
+* You are not free to copy, amend or otherwise use this source code without
+* the explicit written permission of the board of directors of maidsafe.net.
+*
+* ============================================================================
+*/
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include <gtest/gtest.h>
+
+#include "fs/filesystem.h"
+#include "maidsafe/client/localstoremanager.h"
+#include "maidsafe/client/packetfactory.h"
+#include "maidsafe/client/sehandler.h"
+#include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/maidsafe.h"
+#include "protobuf/general_messages.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -120,27 +144,33 @@ class TestSEHandler : public testing::Test {
         ser_mdm_, "", key_, true);
     }
 
-    //set up Anon share subdir
-    fs::path subdir_(kSharesSubdir[1][0], fs::native);
-    std::string subdir_name_ = subdir_.filename();
-    MetaDataMap mdm_;
-    std::string ser_mdm_, key_;
-    mdm_.set_id(-2);
-    mdm_.set_display_name(subdir_name_);
-    mdm_.set_type(EMPTY_DIRECTORY);
-    mdm_.set_stats("");
-    mdm_.set_tag("");
-    mdm_.set_file_size_high(0);
-    mdm_.set_file_size_low(0);
-    boost::uint32_t current_time_ = base::get_epoch_time();
-    mdm_.set_creation_time(current_time_);
-    mdm_.SerializeToString(&ser_mdm_);
-    key_ = kSharesSubdir[1][1];
-    dah->AddElement(base::TidyPath(kSharesSubdir[1][0]),
-      ser_mdm_, "", key_, true);
-
+// *********************************************
+// Anonymous Shares are disabled at the moment *
+// *********************************************
+//    //set up Anon share subdir
+//    fs::path subdir_(kSharesSubdir[1][0], fs::native);
+//    std::string subdir_name_ = subdir_.filename();
+//    MetaDataMap mdm_;
+//    std::string ser_mdm_, key_;
+//    mdm_.set_id(-2);
+//    mdm_.set_display_name(subdir_name_);
+//    mdm_.set_type(EMPTY_DIRECTORY);
+//    mdm_.set_stats("");
+//    mdm_.set_tag("");
+//    mdm_.set_file_size_high(0);
+//    mdm_.set_file_size_low(0);
+//    boost::uint32_t current_time_ = base::get_epoch_time();
+//    mdm_.set_creation_time(current_time_);
+//    mdm_.SerializeToString(&ser_mdm_);
+//    key_ = kSharesSubdir[1][1];
+//    dah->AddElement(base::TidyPath(kSharesSubdir[1][0]),
+//      ser_mdm_, "", key_, true);
+//
     dah->GetDbPath(base::TidyPath(kRootSubdir[0][0]), CREATE, &db_str1_);
-    dah->GetDbPath(base::TidyPath(kSharesSubdir[1][0]), CREATE, &db_str2_);
+// *********************************************
+// Anonymous Shares are disabled at the moment *
+// *********************************************
+//    dah->GetDbPath(base::TidyPath(kSharesSubdir[1][0]), CREATE, &db_str2_);
     cb.Reset();
   }
   void TearDown() {
@@ -167,8 +197,8 @@ class TestSEHandler : public testing::Test {
   std::string db_str1_;
   std::string db_str2_;
  private:
-  TestSEHandler(const maidsafe::TestSEHandler&);
-  TestSEHandler &operator=(const maidsafe::TestSEHandler&);
+  TestSEHandler(const TestSEHandler&);
+  TestSEHandler &operator=(const TestSEHandler&);
 };
 
 
@@ -218,8 +248,8 @@ TEST_F(TestSEHandler, FUNC_MAID_Check_Entry) {
   std::string full_str6_ = full_path6_.string();
   std::string full_str7_ = full_path7_.string();
   std::string full_str8_ = CreateRandomFile(rel_str8_, size8_);
-  uint64_t returned_size1_, returned_size2_, returned_size3_/*, returned_size4_*/;
-  uint64_t /*returned_size5_, */returned_size6_, returned_size7_, returned_size8_;
+  uint64_t returned_size1_, returned_size2_, returned_size3_;
+  uint64_t returned_size6_, returned_size7_, returned_size8_;
   ASSERT_TRUE(EMPTY_FILE == seh->CheckEntry(full_str1_, &returned_size1_));
   ASSERT_EQ(size1_, static_cast<int>(returned_size1_));
   ASSERT_TRUE(SMALL_FILE == seh->CheckEntry(full_str2_, &returned_size2_));
@@ -230,7 +260,8 @@ TEST_F(TestSEHandler, FUNC_MAID_Check_Entry) {
   ASSERT_EQ(size6_, static_cast<int>(returned_size6_));
   ASSERT_TRUE(EMPTY_DIRECTORY == seh->CheckEntry(full_str7_, &returned_size7_));
   ASSERT_EQ(size7_, static_cast<int>(returned_size7_));
-  ASSERT_TRUE(NOT_FOR_PROCESSING == seh->CheckEntry(full_str8_, &returned_size8_));
+  ASSERT_TRUE(NOT_FOR_PROCESSING == seh->CheckEntry(full_str8_,
+                                                    &returned_size8_));
 }
 
 TEST_F(TestSEHandler, FUNC_MAID_EncryptFile) {
@@ -327,17 +358,17 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
     for (char c_ = '0'; c_ <= '9'; c_++) {
       std::stringstream out_;
       out_ << c_;
-      std::string file_=fsys_.MaidsafeDir() + "/" + out_.str();
+      std::string file_ = fsys_.MaidsafeDir() + "/" + out_.str();
       fs::remove_all(file_);
     }
     for (char c_ = 'a'; c_ <= 'f'; c_++) {
       std::stringstream out_;
       out_ << c_;
-      std::string file_=fsys_.MaidsafeDir() + "/" + out_.str();
+      std::string file_ = fsys_.MaidsafeDir() + "/" + out_.str();
       fs::remove_all(file_);
     }
   }
-  catch(std::exception& e) {
+  catch(const std::exception &e) {
     printf("%s\n", e.what());
   }
   ASSERT_FALSE(fs::exists(full_str_));
@@ -354,7 +385,7 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
 }
 
 //  TEST_F(TestSEHandler, FUNC_MAID_Decrypt_FailedToLoadChunk) {
-//    boost::scoped_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
+//   boost::scoped_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
 //    sm_->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
 //    boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));
 //    boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
@@ -380,16 +411,16 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
 //      for (char c_ = '0'; c_ <= '9'; c_++) {
 //        std::stringstream out_;
 //        out_ << c_;
-//        std::string file_ = fsys_.ApplicationDataDir() + "/client/" + out_.str();
-//        fs::remove_all(file_);
-//        printf("Removing %s\n", file_.c_str());
+//        std::string f = fsys_.ApplicationDataDir() + "/client/" + out_.str();
+//        fs::remove_all(f);
+//        printf("Removing %s\n", f.c_str());
 //      }
 //      for (char c_ = 'a'; c_ <= 'f'; c_++) {
 //        std::stringstream out_;
 //        out_ << c_;
-//        std::string file_ = fsys_.ApplicationDataDir() + "client/" + out_.str();
-//        fs::remove_all(file_);
-//        printf("Removing %s\n", file_.c_str());
+//        std::string f = fsys_.ApplicationDataDir() + "client/" + out_.str();
+//        fs::remove_all(f);
+//        printf("Removing %s\n", f.c_str());
 //      }
 //    }
 //    catch(std::exception& e) {
@@ -469,7 +500,7 @@ TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptPrivateDb) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
-TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptAnonDb) {
+TEST_F(TestSEHandler, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
   boost::scoped_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
   sm_->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));
@@ -479,19 +510,22 @@ TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptAnonDb) {
   ASSERT_TRUE(fs::exists(db_path_));
   std::string hash_before_ = seh->SHA512(db_str2_, true);
   std::string ser_dm_;
-  ASSERT_EQ(0, seh->EncryptDb(base::TidyPath(kSharesSubdir[1][0]),
-    ANONYMOUS, key_, "", false, &ser_dm_));
+// *********************************************
+// Anonymous Shares are disabled at the moment *
+// *********************************************
+//  ASSERT_EQ(0, seh->EncryptDb(base::TidyPath(kSharesSubdir[1][0]),
+//    ANONYMOUS, key_, "", false, &ser_dm_));
   fs::remove(db_path_);
   ASSERT_FALSE(fs::exists(db_path_));
-  ASSERT_EQ(0,
-    seh->RemoveKeyFromUptodateDms(base::TidyPath(kSharesSubdir[1][0]))) <<
-    "Didn't find the key in the map of DMs.";
-  ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kSharesSubdir[1][0]),
-    ANONYMOUS, ser_dm_, key_, "", false, false));
+//  ASSERT_EQ(0,
+//    seh->RemoveKeyFromUptodateDms(base::TidyPath(kSharesSubdir[1][0]))) <<
+//    "Didn't find the key in the map of DMs.";
+//  ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kSharesSubdir[1][0]),
+//    ANONYMOUS, ser_dm_, key_, "", false, false));
   ASSERT_TRUE(fs::exists(db_path_));
   ASSERT_EQ(hash_before_, seh->SHA512(db_str2_, true));
-  ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kSharesSubdir[1][0]),
-    ANONYMOUS, "", key_, "", false, false));
+//  ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kSharesSubdir[1][0]),
+//    ANONYMOUS, "", key_, "", false, false));
   ASSERT_TRUE(fs::exists(db_path_));
   ASSERT_EQ(hash_before_, seh->SHA512(db_str2_, true));
   fs::path key_path_(fsys_.MaidsafeDir(), fs::native);
@@ -500,5 +534,4 @@ TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptAnonDb) {
   sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
-
 }
