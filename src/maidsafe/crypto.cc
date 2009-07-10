@@ -85,7 +85,7 @@ std::string Crypto::SecurePassword(const std::string &password, int pin) {
     reinterpret_cast<const byte *>(password.data()),
     password.size(), reinterpret_cast<const byte *>(salt.data()),
     salt.size(), iter);
-  CryptoPP::HexEncoder enc(new CryptoPP::StringSink(derived_password));
+  CryptoPP::HexEncoder enc(new CryptoPP::StringSink(derived_password), false);
   enc.Put(derived, derived.size());
   return derived_password;
 }
@@ -545,25 +545,27 @@ std::string Crypto::AsymEncrypt(const std::string &input,
         CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
           input.length(), true,
           new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
-          new CryptoPP::HexEncoder(new CryptoPP::StringSink(result))));
+          new CryptoPP::HexEncoder(new CryptoPP::StringSink(result), false)));
         break;
       case STRING_FILE:
         result = output;
         CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
           input.length(), true,
           new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()))));
+          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
+                                   false)));
         break;
       case FILE_STRING:
         CryptoPP::FileSource(input.c_str(), true,
           new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
-          new CryptoPP::HexEncoder(new CryptoPP::StringSink(result))));
+          new CryptoPP::HexEncoder(new CryptoPP::StringSink(result), false)));
         break;
       case FILE_FILE:
         result = output;
         CryptoPP::FileSource(input.c_str(), true,
          new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
-         new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()))));
+         new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
+                                  false)));
         break;
     }
     return result;
@@ -629,25 +631,29 @@ std::string Crypto::AsymSign(const std::string &input,
         CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
           input.length(), true,
           new CryptoPP::SignerFilter(GlobalRNG(),
-          priv, new CryptoPP::HexEncoder(new CryptoPP::StringSink(result))));
+          priv, new CryptoPP::HexEncoder(new CryptoPP::StringSink(result),
+                                         false)));
         break;
       case STRING_FILE:
         result = output;
         CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
           input.length(), true,
           new CryptoPP::SignerFilter(GlobalRNG(), priv,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()))));
+          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
+                                   false)));
         break;
       case FILE_STRING:
         CryptoPP::FileSource(input.c_str(), true,
         new CryptoPP::SignerFilter(GlobalRNG(), priv,
-        new CryptoPP::HexEncoder(new CryptoPP::StringSink(result))));
+        new CryptoPP::HexEncoder(new CryptoPP::StringSink(result),
+                                 false)));
         break;
       case FILE_FILE:
         result = output;
         CryptoPP::FileSource(input.c_str(), true,
           new CryptoPP::SignerFilter(GlobalRNG(), priv,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()))));
+          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
+                                   false)));
         break;
     }
     return result;

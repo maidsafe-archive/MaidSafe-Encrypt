@@ -112,7 +112,7 @@ class DataAtlasHandler {
 //  std::string GetPrivateKey(const std::string &packet_type);
 //  std::string GetPublicKey(const std::string &packet_type);
 //  int RemoveKeys(const std::string &package_type);
-//  void GetKeyRing(std::list<Key_Type> *keyring);  // GetKeyRing List of structs
+//  void GetKeyRing(std::list<Key_Type> *keyring);  // GetKeyRing List of strcts
 };
 
 }  // namespace maidsafe

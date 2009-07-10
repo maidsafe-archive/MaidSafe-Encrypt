@@ -243,7 +243,7 @@ int ContactsHandler::Close() {
 
 int ContactsHandler::AddContact(const std::string &dbName, Contact &sc) {
 #ifdef DEBUG
-  // printf("Add Contact LastContact: %i\n", sc.LastContact());
+  printf("Add Contact LastContact: %i\n", sc.LastContact());
 #endif
   int n = Connect(dbName);
   if (n)
@@ -269,7 +269,7 @@ int ContactsHandler::AddContact(const std::string &dbName, Contact &sc) {
       return -3;
     stmt.reset();
   }
-  catch(CppSQLite3Exception& e) {  //NOLINT
+  catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%i: %s\n", e.errorCode(), e.errorMessage());
 #endif

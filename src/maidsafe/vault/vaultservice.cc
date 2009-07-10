@@ -33,7 +33,7 @@
 
 namespace maidsafe_vault {
 
-void vsvc_dummy_callback(const std::string&) {
+void vsvc_dummy_callback(const std::string &) {
 #ifdef DEBUG
 //  kad::StoreResponse result_msg;
 //  if (!result_msg.ParseFromString(result))
@@ -164,10 +164,17 @@ void VaultService::Get(google::protobuf::RpcController*,
                        const maidsafe::GetRequest* request,
                        maidsafe::GetResponse* response,
                        google::protobuf::Closure* done) {
+#ifdef DEBUG
+  printf("In VaultService::Get (%i)\n", knode_->host_port());
+#endif
   std::string id("");
   base::decode_from_hex(pmid_, &id);
   response->set_pmid_id(id);
   if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::Get (%i), request isn't initialised.\n",
+           knode_->host_port());
+#endif
     response->set_result(kCallbackFailure);
     done->Run();
     return;
@@ -177,6 +184,10 @@ void VaultService::Get(google::protobuf::RpcController*,
     response->set_result(kCallbackSuccess);
     response->set_content(content);
   } else {
+#ifdef DEBUG
+    printf("In VaultService::Get (%i), couldn't find chunk locally.\n",
+           knode_->host_port());
+#endif
     response->set_result(kCallbackFailure);
   }
   done->Run();

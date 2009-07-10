@@ -193,9 +193,9 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
       ResizeObfuscationHash(obfuscate_hash_, this_chunklet_size_,
                             &resized_obs_hash_);
 #ifdef DEBUG
-      printf("Chunk No. - %i\n\n%u - %s\n%u - %s\n\n",
-             chunk_no_, obfuscate_hash_no_, obfuscate_hash_.c_str(),
-              encryption_hash_no_, encryption_hash_.c_str());
+//      printf("Chunk No. - %i\n\n%u - %s\n%u - %s\n\n",
+//             chunk_no_, obfuscate_hash_no_, obfuscate_hash_.c_str(),
+//              encryption_hash_no_, encryption_hash_.c_str());
 #endif
       // output encrypted chunklet
       std::string post_enc_;
@@ -338,9 +338,9 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
             static_cast<uint16_t>(this_chunklet_.size()),
             &resized_obs_hash_);
 #ifdef DEBUG
-          printf("Chunk No. - %i\n\n%u - %s\n%u - %s\n\n",
-                 chunk_no_, obfuscate_hash_no_, obfuscate_hash_.c_str(),
-                 encryption_hash_no_, encryption_hash_.c_str());
+//          printf("Chunk No. - %i\n\n%u - %s\n%u - %s\n\n",
+//                 chunk_no_, obfuscate_hash_no_, obfuscate_hash_.c_str(),
+//                 encryption_hash_no_, encryption_hash_.c_str());
 #endif
         std::string decrypt_;
         maidsafe_crypto::Crypto dec_crypto_;
@@ -420,14 +420,14 @@ bool SelfEncryption::CreateProcessDirectory(fs::path *processing_path) {
   *processing_path = fs::path(fsys_.ProcessDir(), fs::native);
   *processing_path /= file_hash_.substr(0, 8);
 #ifdef DEBUG
-    printf("Removing directory first...\n");
+//    printf("Removing directory first...\n");
 #endif
   try {
     fs::remove_all(*processing_path);
   }
   catch(const std::exception &exception_) {
 #ifdef DEBUG
-    printf("Error creating process dir in self enc: %s\n", exception_.what());
+//    printf("Error creating process dir in self enc: %s\n", exception_.what());
 #endif
     return false;
   }
@@ -455,7 +455,7 @@ fs::path SelfEncryption::GetChunkPath(const std::string &chunk_name) {
     fs::create_directories(chunk_branch_);
   fs::path chunk_path_ = chunk_branch_ / chunk_name;
 #ifdef DEBUG
-  printf("Chunk path: %s\n\n", chunk_path_.string().c_str());
+//  printf("Chunk path: %s\n\n", chunk_path_.string().c_str());
 #endif
   return chunk_path_;
 }  // end GetChunkPath
@@ -513,7 +513,7 @@ bool SelfEncryption::CheckCompressibility(const fs::path &entry_path) {
 bool SelfEncryption::CalculateChunkSizes(const fs::path &entry_path,
                                          maidsafe::DataMap *dm) {
 #ifdef DEBUG
-  printf("file_hash_ = %s\n", file_hash_.c_str());
+//  printf("file_hash_ = %s\n", file_hash_.c_str());
 #endif
   uint64_t file_size_ = fs::file_size(entry_path);
   uint64_t this_avg_chunk_size_ = default_chunk_size_;
@@ -618,9 +618,9 @@ bool SelfEncryption::GeneratePreEncHashes(const fs::path &entry_path,
   uint64_t pointer_ = 0;
 
 #ifdef DEBUG
-  printf("file_hash_ = %s\n", file_hash_.c_str());
-  printf("chunk_count_ = %i\tmax_chunks_ = %u\n",
-         chunk_count_, max_chunks_);
+//  printf("file_hash_ = %s\n", file_hash_.c_str());
+//  printf("chunk_count_ = %i\tmax_chunks_ = %u\n",
+//         chunk_count_, max_chunks_);
 #endif
 
   for (int i = 0; i < chunk_count_; ++i) {
@@ -640,8 +640,8 @@ bool SelfEncryption::GeneratePreEncHashes(const fs::path &entry_path,
     // HashUnique(pre_enc_hash_, dm, true);
     dm->add_chunk_name(pre_enc_hash_);
 #ifdef DEBUG
-      printf("\tfin_.peek() = %c\n\n", fin_.peek());
-      printf("pre_enc_hash_%i: %s\n", i, pre_enc_hash_.c_str());
+//      printf("\tfin_.peek() = %c\n\n", fin_.peek());
+//      printf("pre_enc_hash_%i: %s\n", i, pre_enc_hash_.c_str());
 #endif
   }
   fin_.close();
@@ -661,7 +661,7 @@ bool SelfEncryption::HashUnique(const maidsafe::DataMap &dm,
   else
     hash_count_ = dm.encrypted_chunk_name_size();
 #ifdef DEBUG
-    printf("In HashUnique: hash_count_ = %i\n\n", hash_count_);
+//    printf("In HashUnique: hash_count_ = %i\n\n", hash_count_);
 #endif
   // check uniqueness of pre-encryption hash
   if (pre_enc) {
@@ -713,19 +713,19 @@ bool SelfEncryption::ResizeObfuscationHash(const std::string &obfuscate_hash,
   *resized_obs_hash = obfuscate_hash;
   int32_t length_difference_ = length_ - obfuscate_hash.size();
 #ifdef DEBUG
-  printf("hash: %s\tlength: %u\tlength_difference_: %i\n",
-         obfuscate_hash.c_str(), length_, length_difference_);
+//  printf("hash: %s\tlength: %u\tlength_difference_: %i\n",
+//         obfuscate_hash.c_str(), length_, length_difference_);
 #endif
   std::string appendix_ = obfuscate_hash;
   while (length_difference_ > 0) {
     resized_obs_hash->append(appendix_);
     length_difference_ = length_ - resized_obs_hash->size();
 #ifdef DEBUG
-  printf("%i\t", length_difference_);
+//  printf("%i\t", length_difference_);
 #endif
   }
 #ifdef DEBUG
-  printf("\n");
+//  printf("\n");
 #endif
   resized_obs_hash->resize(length_);
   return true;

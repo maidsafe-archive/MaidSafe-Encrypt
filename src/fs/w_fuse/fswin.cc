@@ -238,6 +238,13 @@ static int WinCreateFile(LPCWSTR FileName,
   WinCheckFlag(AccessMode, STANDARD_RIGHTS_EXECUTE);  // 0x00020000L
   if (fs::is_directory(filePathStr)) {
     DokanFileInfo->IsDirectory = TRUE;
+    // get db for *this* dir (we've already got db for parent)
+    std::string relPathStrElement(relPathStr), ser_mdm_dir("");
+    relPathStrElement += "/a";
+    if (maidsafe::ClientController::getInstance()->getattr(relPathStrElement,
+                                                           ser_mdm_dir)) {
+//      printf("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n");
+    }
 //    handle = CreateFile(
 //      filePath,
 //      0,

@@ -438,7 +438,7 @@ int SEHandler::GetDirKeys(const std::string &dir_path,
   // Get dir key for dir_path
   if (0 != dah_->GetDirKey(dir_.string(), key))
     return -1;
-  // Get dir key of parent folder.  If msid != "", set it to msid public key
+  // Get dir key of parent folder.  If msid != "", set it to hash(msid pub_key)
   if (msid == "") {
 #ifdef DEBUG
     printf("No keys needed because Shares/Private is not private itself.\n");
@@ -452,6 +452,7 @@ int SEHandler::GetDirKeys(const std::string &dir_path,
     std::string private_key_("");
     if (0 != GetMsidKeys(msid, parent_key, &private_key_))
       return -1;
+    *parent_key = SHA512(*parent_key, false);
   }
   return 0;
 }
@@ -471,7 +472,8 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   if (!fs::exists(db_path_))
     return -2;
 #ifdef DEBUG
-  // printf("Encrypting db %s\n", db_path_);
+  printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypting(%i)\n",
+         dir_path.c_str(), db_type, encrypt_dm);
 #endif
   file_hash_ = SHA512(db_path_, true);
 
@@ -595,6 +597,9 @@ int SEHandler::EncryptDb(const std::string &dir_path,
       return -1;
     }
   }
+#ifdef DEBUG
+  printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());
+#endif
   return 0;
 }
 
@@ -606,7 +611,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                          bool dm_encrypted,
                          bool overwrite) {
 #ifdef DEBUG
-  printf("SEHandler::DecryptDb dir_path(%s) type(%i) ncrypted(%i)\n",
+  printf("SEHandler::DecryptDb dir_path(%s) type(%i) encrypted(%i)\n",
          dir_path.c_str(), db_type, dm_encrypted);
 #endif
   std::string ser_dm_, enc_dm_;

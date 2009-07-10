@@ -25,6 +25,7 @@
 #ifndef MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
 #define MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
 
+#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -41,11 +42,24 @@ namespace maidsafe {
 enum DefConLevels {DEFCON1 = 1, DEFCON2, DEFCON3};
 
 struct UserDetails {
-  UserDetails() : defconlevel(DEFCON3), da_modified(false), username(""),
-    pin(""), password(""), mid_rid(0), smid_rid(0), session_name(""),
-    root_db_key(""), self_encrypting(true), authorised_users(),
-    maid_authorised_users(), /*ids(ids), public_keys(public_keys),
-    private_keys(),*/ mounted(0), win_drive('\0'), connection_status(0) {}
+  UserDetails() : defconlevel(DEFCON3),
+                  da_modified(false),
+                  username(""),
+                  pin(""),
+                  password(""),
+                  mid_rid(0),
+                  smid_rid(0),
+                  session_name(""),
+                  root_db_key(""),
+                  self_encrypting(true),
+                  authorised_users(),
+                  maid_authorised_users(),
+                  // ids(ids),
+                  // public_keys(public_keys),
+                  // private_keys(),
+                  mounted(0),
+                  win_drive('\0'),
+                  connection_status(0) {}
   DefConLevels defconlevel;
   bool da_modified;
   std::string username;

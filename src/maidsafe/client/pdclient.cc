@@ -190,8 +190,7 @@ void PDClient::CheckChunkCallback(
                                  callback,
                                  local);
       } else {
-       const boost::shared_ptr<GetResponse>
-          get_response_(new GetResponse());
+       const boost::shared_ptr<GetResponse> get_response_(new GetResponse());
        google::protobuf::Closure* callback =
             google::protobuf::NewCallback(this,
                                           &PDClient::GetChunkCallback,
@@ -224,6 +223,13 @@ void PDClient::GetChunk(const std::string &chunk_name,
                         base::callback_func_type cb) {
   // preparing the shared pointer with data for the LoadChunk operation
   // boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
+#ifdef DEBUG
+  std::string hex;
+  base::encode_to_hex(chunk_name, &hex);
+  hex = hex.substr(0, 10) + "...";
+  printf("In PDClient::GetChunk (%i), chunk_name = %s\n",
+         knode_->host_port(), hex.c_str());
+#endif
   boost::shared_ptr<LoadChunkData> data(new LoadChunkData(chunk_name, cb));
   FindChunkRef(data);
 }
@@ -360,7 +366,7 @@ void PDClient::RetryGetChunk(boost::shared_ptr<LoadChunkData> data) {
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
 #ifdef DEBUG
-    printf("retry callback -- returning kRpcResultFailure , \n");
+    printf("In PDClient::RetryGetChunk, returning kRpcResultFailure.\n");
 #endif
     data->cb(local_result_str);
   }
@@ -451,6 +457,13 @@ void PDClient::StoreChunk(const std::string &chunk_name,
                           const maidsafe::value_types &data_type,
                           base::callback_func_type cb) {
 //  boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
+#ifdef DEBUG
+  std::string hex;
+  base::encode_to_hex(chunk_name, &hex);
+  hex = hex.substr(0, 10) + "...";
+  printf("In PDClient::StoreChunk (%i), chunk_name = %s\n", knode_->host_port(),
+         hex.c_str());
+#endif
   boost::shared_ptr<StoreChunkData> data(new StoreChunkData(chunk_name,
     content, cb, public_key, signed_public_key, signed_request, data_type));
   IterativeStoreChunk(data);
@@ -716,10 +729,14 @@ void PDClient::UpdateChunk(const std::string &chunk_name,
                            const maidsafe::value_types &data_type,
                            base::callback_func_type cb) {
 //  boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
-  // Look up the chunk references
 #ifdef DEBUG
-  printf("\tIn PDClient::UpdateChunk, before FindValue.\n");
+  std::string hex;
+  base::encode_to_hex(chunk_name, &hex);
+  hex = hex.substr(0, 10) + "...";
+  printf("In PDClient::UpdateChunk (%i), chunk_name = %s\n",
+         knode_->host_port(), hex.c_str());
 #endif
+  // Look up the chunk references
   knode_->FindValue(chunk_name,
                     boost::bind(&PDClient::IterativeCheckAlive,
                                 this,

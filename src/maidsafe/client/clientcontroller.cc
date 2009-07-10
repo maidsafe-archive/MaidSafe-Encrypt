@@ -159,7 +159,8 @@ int ClientController::ParseDa() {
   DataMap dm_root, dm_keys, dm_shares;
   dm_root = data_atlas.dms(0);
 //  dm_keys = data_atlas.dms(1);
-  dm_shares = data_atlas.dms(2);
+//  dm_shares = data_atlas.dms(2);
+  dm_shares = data_atlas.dms(1);
   std::string ser_dm_root, ser_dm_keys, ser_dm_shares;
   dm_root.SerializeToString(&ser_dm_root);
 //  dm_keys.SerializeToString(&ser_dm_keys);
@@ -2081,7 +2082,6 @@ int ClientController::GetDb(const std::string &orig_path_,
 #endif
 
   if (fs::exists(db_path_) && *msid == "") {
-  // if (fs::exists(db_path_)) {
     *db_type = GetDbType(parent_path_);
     return 0;
   }
@@ -2180,14 +2180,15 @@ int ClientController::RunDbEncQueue() {
   std::map<std::string, std::pair<std::string, std::string> >::iterator it_;
   int result_ = 0;
   for (it_ = db_enc_queue_.begin(); it_ != db_enc_queue_.end(); ++it_) {
-#ifdef DEBUG
-    printf("\t\tCC::RunDbEncQueue: first: %s\tsec.first: %s\tsec.second: %s\n",
-           (*it_).first.c_str(),
-           (*it_).second.first.c_str(),
-           (*it_).second.second.c_str());
-#endif
     std::string ser_dm_="";
     DB_TYPE db_type_ = GetDbType((*it_).first);
+#ifdef DEBUG
+    printf("\t\tCC::RunDbEncQueue: first: %s\ttype: %i\tsec.first: %s\t",
+           (*it_).first.c_str(),
+           db_type_,
+           (*it_).second.first.c_str());
+    printf("sec.second: %s\n", (*it_).second.second.c_str());
+#endif
     int int_res_ = seh_->EncryptDb((*it_).first,
                                    db_type_,
                                    (*it_).second.first,

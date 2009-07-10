@@ -42,12 +42,12 @@ void RsaKeyPair::GenerateKeys(unsigned int keySize) {
                                                               seed.size());
 
   CryptoPP::RSAES_OAEP_SHA_Decryptor priv(rand_pool, keySize);  // 256 bytes
-  CryptoPP::HexEncoder privKey(new CryptoPP::StringSink(private_key_));
+  CryptoPP::HexEncoder privKey(new CryptoPP::StringSink(private_key_), false);
   priv.DEREncode(privKey);
   privKey.MessageEnd();
 
   CryptoPP::RSAES_OAEP_SHA_Encryptor pub(priv);
-  CryptoPP::HexEncoder pubKey(new CryptoPP::StringSink(public_key_));
+  CryptoPP::HexEncoder pubKey(new CryptoPP::StringSink(public_key_), false);
   pub.DEREncode(pubKey);
   pubKey.MessageEnd();
 }
