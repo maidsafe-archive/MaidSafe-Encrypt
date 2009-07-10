@@ -78,9 +78,9 @@ int DataAtlasHandler::Init(bool new_user_) {
 
     // create keys db
     std::string keys_db_name_;
-    GetKeyDbPath(&keys_db_name_);
-    int result_ = -1;
-    boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CREATE, &result_));
+//    GetKeyDbPath(&keys_db_name_);
+//    int result_ = -1;
+//    boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CREATE, &result_));
     return 0;
   }
 }
@@ -517,10 +517,10 @@ int DataAtlasHandler::DisconnectPdDir(const std::string &branch_path) {
 
 
 // methods for the Key Ring
+/*
 void DataAtlasHandler::GetKeyDbPath(std::string *keys_db_name_) {
   GetDbPath("/KeysDb", CREATE, keys_db_name_);
 }
-
 
 boost::shared_ptr<KeyAtlas> DataAtlasHandler::GetKeysDb(db_init_flag flag_,
                                                         int *result) {
@@ -534,13 +534,11 @@ boost::shared_ptr<KeyAtlas> DataAtlasHandler::GetKeysDb(db_init_flag flag_,
   return key_db_;
 }
 
-
 int DataAtlasHandler::DisconnectKeysDb() {
   int result_ = -1;
   boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(DISCONNECT, &result_));
   return 0;
 }
-
 
 int DataAtlasHandler::AddKeys(const std::string &package_type, const
   std::string &package_id, const std::string &private_key, const std::string
@@ -550,13 +548,11 @@ int DataAtlasHandler::AddKeys(const std::string &package_type, const
   return key_db_->AddKeys(package_type, package_id, private_key, public_key);
 }
 
-
 std::string DataAtlasHandler::GetPackageID(const std::string &packet_type) {
   int result_ = -1;
   boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CONNECT, &result_));
   return key_db_->GetPackageID(packet_type);
 }
-
 
 std::string DataAtlasHandler::GetPrivateKey(const std::string &packet_type) {
   int result_ = -1;
@@ -564,13 +560,11 @@ std::string DataAtlasHandler::GetPrivateKey(const std::string &packet_type) {
   return key_db_->GetPrivateKey(packet_type);
 }
 
-
 std::string DataAtlasHandler::GetPublicKey(const std::string &packet_type) {
   int result_ = -1;
   boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CONNECT, &result_));
   return key_db_->GetPublicKey(packet_type);
 }
-
 
 int DataAtlasHandler::RemoveKeys(const std::string &package_type) {
   int result_ = -1;
@@ -578,11 +572,10 @@ int DataAtlasHandler::RemoveKeys(const std::string &package_type) {
   return key_db_->RemoveKeys(package_type);
 }
 
-
 void DataAtlasHandler::GetKeyRing(std::list<Key_Type> *keyring) {
   int result_ = -1;
   boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CONNECT, &result_));
   key_db_->GetKeyRing(keyring);
 }
-
+*/
 }  // namespace maidsafe

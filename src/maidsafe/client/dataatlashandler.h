@@ -101,18 +101,18 @@ class DataAtlasHandler {
   int DisconnectPdDir(const std::string &branch_path);
 
   // methods for the Key Ring
-  void GetKeyDbPath(std::string *keys_db_name_);
-  int DisconnectKeysDb();
-  // int AddKeys(PacketType package_type, const std::string &package_id,
-  int AddKeys(const std::string &package_type,
-              const std::string &package_id,
-              const std::string &private_key,
-              const std::string &public_key);
-  std::string GetPackageID(const std::string &packet_type);
-  std::string GetPrivateKey(const std::string &packet_type);
-  std::string GetPublicKey(const std::string &packet_type);
-  int RemoveKeys(const std::string &package_type);
-  void GetKeyRing(std::list<Key_Type> *keyring);  // GetKeyRing List of structs
+//  void GetKeyDbPath(std::string *keys_db_name_);
+//  int DisconnectKeysDb();
+//  // int AddKeys(PacketType package_type, const std::string &package_id,
+//  int AddKeys(const std::string &package_type,
+//              const std::string &package_id,
+//              const std::string &private_key,
+//              const std::string &public_key);
+//  std::string GetPackageID(const std::string &packet_type);
+//  std::string GetPrivateKey(const std::string &packet_type);
+//  std::string GetPublicKey(const std::string &packet_type);
+//  int RemoveKeys(const std::string &package_type);
+//  void GetKeyRing(std::list<Key_Type> *keyring);  // GetKeyRing List of structs
 };
 
 }  // namespace maidsafe

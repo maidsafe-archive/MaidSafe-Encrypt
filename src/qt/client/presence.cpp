@@ -99,7 +99,7 @@ bool Presence::operator!=( const Presence& other ) const
 }
 
 // static
-Presence Presence::fromContact( /*const */ maidsafe::Contacts& mc )
+Presence Presence::fromContact( /*const */ maidsafe::Contact& mc )
 {
     return Presence();
 }

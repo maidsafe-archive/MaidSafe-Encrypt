@@ -1135,10 +1135,10 @@ std::string SEHandler::CreateDataMapPacket(const std::string &ser_dm,
       }
       break;
     case PUBLIC_SHARE:
-      private_key_ = ss_->GetPrivateKey(MPID_BP);
+      private_key_ = ss_->PrivateKey(MPID);
       break;
     default:
-      private_key_ = ss_->GetPrivateKey(MAID_BP);
+      private_key_ = ss_->PrivateKey(MAID);
       break;
   }
   gp.set_signature(co.AsymSign(gp.data(),
@@ -1184,17 +1184,17 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
       break;
     case PUBLIC_SHARE:
       printf("Getting signed request for PUBLIC_SHARE.\n\n");
-      *pubkey = ss_->GetPublicKey(MPID_BP);
+      *pubkey = ss_->PublicKey(MPID);
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
-                                   ss_->GetPrivateKey(MPID_BP),
+                                   ss_->PrivateKey(MPID),
                                    maidsafe_crypto::STRING_STRING);
       *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
                                             "",
                                             maidsafe_crypto::STRING_STRING,
                                             true),
                                     "",
-                                    ss_->GetPrivateKey(MPID_BP),
+                                    ss_->PrivateKey(MPID),
                                     maidsafe_crypto::STRING_STRING);
       break;
     case ANONYMOUS:
@@ -1205,17 +1205,17 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
       break;
     default:
       printf("Getting signed request for default.\n\n");
-      *pubkey = ss_->GetPublicKey(MAID_BP);
+      *pubkey = ss_->PublicKey(MAID);
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
-                                   ss_->GetPrivateKey(MAID_BP),
+                                   ss_->PrivateKey(MAID),
                                    maidsafe_crypto::STRING_STRING);
       *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
                                             "",
                                             maidsafe_crypto::STRING_STRING,
                                             true),
                                     "",
-                                    ss_->GetPrivateKey(MAID_BP),
+                                    ss_->PrivateKey(MAID),
                                     maidsafe_crypto::STRING_STRING);
       break;
   }

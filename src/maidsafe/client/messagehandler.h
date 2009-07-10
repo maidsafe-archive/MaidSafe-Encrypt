@@ -25,17 +25,17 @@
 #ifndef MAIDSAFE_CLIENT_MESSAGEHANDLER_H_
 #define MAIDSAFE_CLIENT_MESSAGEHANDLER_H_
 
+#include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
+
 #include <string>
 #include <vector>
-
-#include "boost/shared_ptr.hpp"
-#include "boost/thread/mutex.hpp"
 
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
-
+#include "protobuf/datamaps.pb.h"
 
 namespace maidsafe {
 
@@ -74,35 +74,35 @@ struct SendMessagesData {
 };
 
 class MessageHandler {
-  public:
-    MessageHandler(StoreManagerInterface *sm, boost::recursive_mutex *mutex);
-    void SendMessage(const std::string &msg,
-                     const std::vector<Receivers> &receivers,
-                     const buffer_packet_type &p_type,
-                     const packethandler::MessageType &m_type,
-                     base::callback_func_type cb);
-    // bool HandleMessages(std::list<dht::entry> msgs);
+ public:
+  MessageHandler(StoreManagerInterface *sm, boost::recursive_mutex *mutex);
+  void SendMessage(const std::string &msg,
+                   const std::vector<Receivers> &receivers,
+                   const buffer_packet_type &p_type,
+                   const packethandler::MessageType &m_type,
+                   base::callback_func_type cb);
 
-  private:
-    MessageHandler &operator=(const MessageHandler &) { return *this; }
-    MessageHandler(const MessageHandler &);
-    std::string CreateMessage(const std::string &msg,
-                              const std::string &rec_public_key,
-                              const packethandler::MessageType &type,
-                              const buffer_packet_type &p_type);
-    void CreateSignature(const std::string &buffer_name,
-                         const buffer_packet_type &type,
-                         std::string *signed_request,
-                         std::string *signed_public_key);
-    void IterativeStoreMsgs(boost::shared_ptr<SendMessagesData> data);
-    void StoreMessage_Callback(const std::string &result, int index,
-      boost::shared_ptr<SendMessagesData> data);
-    void StoreMessage(int index,
-      boost::shared_ptr<SendMessagesData> data);
-    SessionSingleton *ss_;
-    StoreManagerInterface *sm_;
-    maidsafe_crypto::Crypto co_;
-    boost::recursive_mutex *mutex_;
+ private:
+  MessageHandler &operator=(const MessageHandler &) { return *this; }
+  MessageHandler(const MessageHandler &);
+  std::string CreateMessage(const std::string &msg,
+                            const std::string &rec_public_key,
+                            const packethandler::MessageType &type,
+                            const buffer_packet_type &p_type);
+  void CreateSignature(const std::string &buffer_name,
+                       const buffer_packet_type &type,
+                       std::string *signed_request,
+                       std::string *signed_public_key);
+  void IterativeStoreMsgs(boost::shared_ptr<SendMessagesData> data);
+  void StoreMessage_Callback(const std::string &result, int index,
+                             boost::shared_ptr<SendMessagesData> data);
+  void StoreMessage(int index,
+                    boost::shared_ptr<SendMessagesData> data);
+  maidsafe::PacketType PacketHandler_PacketType(const buffer_packet_type &type);
+  SessionSingleton *ss_;
+  StoreManagerInterface *sm_;
+  maidsafe_crypto::Crypto co_;
+  boost::recursive_mutex *mutex_;
 };
 
 }  // namespace maidsafe

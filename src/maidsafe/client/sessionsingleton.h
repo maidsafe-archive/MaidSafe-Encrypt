@@ -33,6 +33,8 @@
 
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe.h"
+#include "maidsafe/client/keyatlas.h"
+#include "protobuf/datamaps.pb.h"
 
 namespace maidsafe {
 
@@ -42,8 +44,8 @@ struct UserDetails {
   UserDetails() : defconlevel(DEFCON3), da_modified(false), username(""),
     pin(""), password(""), mid_rid(0), smid_rid(0), session_name(""),
     root_db_key(""), self_encrypting(true), authorised_users(),
-    maid_authorised_users(), ids(ids), public_keys(public_keys),
-    private_keys(), mounted(0), win_drive('\0'), connection_status(0) {}
+    maid_authorised_users(), /*ids(ids), public_keys(public_keys),
+    private_keys(),*/ mounted(0), win_drive('\0'), connection_status(0) {}
   DefConLevels defconlevel;
   bool da_modified;
   std::string username;
@@ -56,9 +58,9 @@ struct UserDetails {
   bool self_encrypting;
   std::set<std::string> authorised_users;
   std::set<std::string> maid_authorised_users;
-  std::map<buffer_packet_type, std::string> ids;
-  std::map<buffer_packet_type, std::string> public_keys;
-  std::map<buffer_packet_type, std::string> private_keys;
+//  std::map<buffer_packet_type, std::string> ids;
+//  std::map<buffer_packet_type, std::string> public_keys;
+//  std::map<buffer_packet_type, std::string> private_keys;
   int mounted;
   char win_drive;
   int connection_status;
@@ -70,13 +72,17 @@ class SessionSingleton {
   static SessionSingleton* getInstance();
   static void Destroy();
 
+  ///////////////////////////////
+  //// User Details Handling ////
+  ///////////////////////////////
+
   // Assessors
   inline DefConLevels DefConLevel() { return ud_.defconlevel; }
   inline bool DaModified() { return ud_.da_modified; }
   inline std::string Username() { return ud_.username; }
   inline std::string Pin() { return ud_.pin; }
   inline std::string Password() { return ud_.password; }
-  inline std::string PublicUsername() { return GetId(MPID_BP); }
+  inline std::string PublicUsername() { return Id(MPID); }
   inline uint32_t MidRid() { return ud_.mid_rid; }
   inline uint32_t SmidRid() { return ud_.smid_rid; }
   inline std::string SessionName() { return ud_.session_name; }
@@ -88,13 +94,13 @@ class SessionSingleton {
   inline std::set<std::string> MaidAuthorisedUsers() {
     return ud_.maid_authorised_users;
   }
-  inline std::string GetPrivateKey(buffer_packet_type type) {
-    return ud_.private_keys[type];
-  }
-  inline std::string GetPublicKey(buffer_packet_type type) {
-    return ud_.public_keys[type];
-  }
-  inline std::string GetId(buffer_packet_type type) { return ud_.ids[type]; }
+//  inline std::string GetPrivateKey(buffer_packet_type type) {
+//    return ud_.private_keys[type];
+//  }
+//  inline std::string GetPublicKey(buffer_packet_type type) {
+//    return ud_.public_keys[type];
+//  }
+//  inline std::string GetId(buffer_packet_type type) { return ud_.ids[type]; }
   inline int Mounted() { return ud_.mounted; }
   inline char WinDrive() { return ud_.win_drive; }
   inline int ConnectionStatus() { return ud_.connection_status; }
@@ -120,9 +126,9 @@ class SessionSingleton {
     ud_.password = password;
     return true;
   }
-  inline bool SetPublicUsername(const std::string &public_username) {
-    return SetId(public_username, MPID_BP);
-  }
+//  inline bool SetPublicUsername(const std::string &public_username) {
+//    return SetId(public_username, MPID_BP);
+//  }
   inline bool SetMidRid(const int64_t &midrid) {
     ud_.mid_rid = midrid;
     return true;
@@ -162,20 +168,20 @@ class SessionSingleton {
     ud_.maid_authorised_users = maid_authorised_users;
     return true;
   }
-  inline bool SetPrivateKey(const std::string &private_key,
-                            buffer_packet_type type) {
-    ud_.private_keys[type] = private_key;
-    return true;
-  }
-  inline bool SetPublicKey(const std::string &public_key,
-                           buffer_packet_type type) {
-    ud_.public_keys[type] = public_key;
-    return true;
-  }
-  inline bool SetId(const std::string &id, buffer_packet_type type) {
-    ud_.ids[type] = id;
-    return true;
-  }
+//  inline bool SetPrivateKey(const std::string &private_key,
+//                            buffer_packet_type type) {
+//    ud_.private_keys[type] = private_key;
+//    return true;
+//  }
+//  inline bool SetPublicKey(const std::string &public_key,
+//                           buffer_packet_type type) {
+//    ud_.public_keys[type] = public_key;
+//    return true;
+//  }
+//  inline bool SetId(const std::string &id, buffer_packet_type type) {
+//    ud_.ids[type] = id;
+//    return true;
+//  }
   inline bool SetMounted(int mounted) {
     ud_.mounted = mounted;
     return true;
@@ -189,13 +195,27 @@ class SessionSingleton {
     return true;
   }
 
+  ///////////////////////////
+  //// Key Ring Handling ////
+  ///////////////////////////
+
+  int LoadKeys(std::list<Key> *keys);
+  void GetKeys(std::list<KeyAtlasRow> *keys);
+  void SerialisedKeyRing(std::string *ser_kr);
+  void AddKey(const PacketType &bpt, const std::string &id,
+              const std::string &private_key, const std::string &public_key);
+  std::string Id(const PacketType &bpt);
+  std::string PublicKey(const PacketType &bpt);
+  std::string PrivateKey(const PacketType &bpt);
+
  private:
   SessionSingleton &operator=(const SessionSingleton&);
   SessionSingleton(const SessionSingleton&);
   static SessionSingleton *single;
   ~SessionSingleton() {}
   UserDetails ud_;
-  SessionSingleton() : ud_() { ResetSession(); }
+  KeyAtlas ka_;
+  SessionSingleton() : ud_(), ka_() { ResetSession(); }
 };
 }  // namesapce maidsafe
 

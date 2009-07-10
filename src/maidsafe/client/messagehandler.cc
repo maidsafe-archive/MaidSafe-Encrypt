@@ -72,11 +72,12 @@ std::string MessageHandler::CreateMessage(
     const std::string &rec_public_key,
     const packethandler::MessageType &m_type,
     const buffer_packet_type &p_type) {
+  maidsafe::PacketType pt = PacketHandler_PacketType(p_type);
   packethandler::BufferPacketMessage bpm;
   packethandler::GenericPacket gp;
 
-  bpm.set_sender_id(ss_->GetId(p_type));
-  bpm.set_sender_public_key(ss_->GetPublicKey(p_type));
+  bpm.set_sender_id(ss_->Id(pt));
+  bpm.set_sender_public_key(ss_->PublicKey(pt));
   bpm.set_type(m_type);
   int iter = base::random_32bit_uinteger() % 1000 +1;
   std::string aes_key = co_.SecurePassword(
@@ -95,7 +96,7 @@ std::string MessageHandler::CreateMessage(
   gp.set_data(ser_bpm);
   gp.set_signature(co_.AsymSign(gp.data(),
                                 "",
-                                ss_->GetPrivateKey(p_type),
+                                ss_->PrivateKey(pt),
                                 maidsafe_crypto::STRING_STRING));
   std::string ser_gp;
   gp.SerializeToString(&ser_gp);
@@ -106,58 +107,20 @@ void MessageHandler::CreateSignature(const std::string &buffer_name,
                                      const buffer_packet_type &type,
                                      std::string *signed_request,
                                      std::string *signed_public_key) {
-  *signed_public_key = co_.AsymSign(ss_->GetPublicKey(type),
+  maidsafe::PacketType pt = PacketHandler_PacketType(type);
+  *signed_public_key = co_.AsymSign(ss_->PublicKey(pt),
                                     "",
-                                    ss_->GetPrivateKey(type),
+                                    ss_->PrivateKey(pt),
                                     maidsafe_crypto::STRING_STRING);
   std::string non_hex_buffer_name("");
   base::decode_from_hex(buffer_name, &non_hex_buffer_name);
   *signed_request = co_.AsymSign(
-      co_.Hash(ss_->GetPublicKey(type) + *signed_public_key +
+      co_.Hash(ss_->PublicKey(pt) + *signed_public_key +
                non_hex_buffer_name, "", maidsafe_crypto::STRING_STRING, true),
       "",
-      ss_->GetPrivateKey(type),
+      ss_->PrivateKey(pt),
       maidsafe_crypto::STRING_STRING);
 }
-
-// bool MessageHandler::HandleMessages(std::list<dht::entry> msgs) {
-//   while (!msgs.empty()){
-//     packethandler::ValidatedBufferPacketMessage msg;
-//     std::string ser_msg = msgs.front().string();
-//     msgs.pop_front();
-//     if (msg.ParseFromString(ser_msg)) {
-//       packethandler::ContactInfo ci;
-//       switch (msg.type()){
-//         case packethandler::SHARE:
-// #ifdef DEBUG
-//             printf("Msg Received: %s\n", msg.message);
-//             printf("Sender: %s\n", msg.sender());
-//             printf("msg is a share.");
-// #endif
-//             break;
-//         case packethandler::ADD_CONTACT_RQST:
-// #ifdef DEBUG
-//             printf("ADD_CONTACT_RQST received.");
-//             printf("Sender: %s\n", msg.sender().c_str());
-// #endif
-//             if (!ci.ParseFromString(msg.message())) {
-// #ifdef DEBUG
-//               printf("mesage didn't parse as contact info.\n");
-// #endif
-//               return false;
-//             }
-//             // TODO(Richard): return the message to be handled in Contacts
-//             // return choice to the user to accept/reject contact
-//             // 1. Add to my contacts & authorised users
-//             // 2. Send a response with my details to the contacter
-//             break;
-//         // case packethandler::ADD_CONTACT_RESPONSE:
-//         default: ;  // TODO define other type of messages
-//       }
-//     }
-//   }
-//   return true;
-// }
 
 void MessageHandler::IterativeStoreMsgs(
     boost::shared_ptr<SendMessagesData> data) {
@@ -256,7 +219,7 @@ void MessageHandler::StoreMessage(
   sm_->StorePacket(bufferpacketname,
                    ser_msg,
                    signed_request,
-                   ss_->GetPublicKey(data->p_type),
+                   ss_->PublicKey(PacketHandler_PacketType(data->p_type)),
                    signed_public_key,
                    BUFFER_PACKET_MESSAGE,
                    true,
@@ -284,6 +247,16 @@ void MessageHandler::StoreMessage_Callback(
   --data->active_sends;
   ++data->stores_done;
   IterativeStoreMsgs(data);
+}
+
+maidsafe::PacketType MessageHandler::PacketHandler_PacketType(
+    const buffer_packet_type &type) {
+  //  MPID_BP, MAID_BP, PMID_BP
+  switch (type) {
+    case MAID_BP: return maidsafe::MAID;
+    case PMID_BP: return maidsafe::PMID;
+    default: return maidsafe::MPID;
+  }
 }
 
 }  //  namespace maidsafe

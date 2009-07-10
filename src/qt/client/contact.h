@@ -40,7 +40,7 @@ public:
     void setProfile( const Profile& );
 
     // \TODO make accessors on maidsafe::Contacts const
-    static Contact* fromContact( /*const */maidsafe::Contacts& mc );
+    static Contact* fromContact( /*const */maidsafe::Contact& mc );
 
 signals:
     //! This user's presence has changed.

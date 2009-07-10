@@ -34,44 +34,34 @@
 #include "maidsafe/crypto.h"
 #include "maidsafe/rsakeypair.h"
 #include "maidsafe/maidsafe.h"
-#include "protobuf/packet.pb.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
+#include "protobuf/packet.pb.h"
+#include "protobuf/datamaps.pb.h"
 
 namespace packethandler {
 
 class ClientBufferPacketHandler {
  public:
   ClientBufferPacketHandler(maidsafe::StoreManagerInterface *sm,
-    boost::recursive_mutex *mutex);
+      boost::recursive_mutex *mutex);
   void CreateBufferPacket(const std::string &owner_id,
-    const std::string &public_key, const std::string &private_key,
-    base::callback_func_type cb);
+      const std::string &public_key, const std::string &private_key,
+      base::callback_func_type cb);
   void AddUsers(const std::set<std::string> &users, base::callback_func_type cb,
-    const buffer_packet_type &type);
+                const buffer_packet_type &type);
   void DeleteUsers(const std::set<std::string> &users,
-    base::callback_func_type cb, const buffer_packet_type &type);
-  // TODO(Jose): Implement this function if required
+      base::callback_func_type cb, const buffer_packet_type &type);
   void ChangeStatus(int status, base::callback_func_type cb,
-    const buffer_packet_type &type);
+                    const buffer_packet_type &type);
   // bool ListUsers(GenericPacket gp_info, std::set<std::string> *users);
   void GetMessages(const buffer_packet_type &type, base::callback_func_type cb);
   void GetBufferPacket(const buffer_packet_type &type,
-    base::callback_func_type cb);
+      base::callback_func_type cb);
   void ClearMessages(const buffer_packet_type &type,
-    base::callback_func_type cb);
+      base::callback_func_type cb);
   void GetBufferPacketInfo(const buffer_packet_type &type,
-    base::callback_func_type cb);
-
-  // void SendAddContactRequest(const std::string &contact_name,
-  //                            const std::string &contact_public_key,
-  //                            base::callback_func cb,
-  //                            const std::string &name = "",
-  //                            const std::string &birthday = "",
-  //                            const std::string &office_no = "",
-  //                            const std::string &gender = "",
-  //                            const std::string &country = "",
-  //                            const std::string &language = "");
+      base::callback_func_type cb);
 
  private:
   maidsafe_crypto::Crypto crypto_obj_;
@@ -82,23 +72,20 @@ class ClientBufferPacketHandler {
   bool UserList(std::set<std::string> *list, buffer_packet_type type);
   bool SetUserList(std::set<std::string> list, buffer_packet_type type);
   void AddUsers_Callback(const std::string &result,
-    const std::set<std::string> &users, const buffer_packet_type &type,
-    base::callback_func_type cb);
+      const std::set<std::string> &users, const buffer_packet_type &type,
+      base::callback_func_type cb);
   void DeleleteUsers_Callback(const std::string &result,
-    const std::set<std::string> &users,  const buffer_packet_type type,
-    base::callback_func_type cb);
+      const std::set<std::string> &users,  const buffer_packet_type type,
+      base::callback_func_type cb);
   void GetMessages_Callback(const std::string &result,
-    const buffer_packet_type &type, base::callback_func_type cb);
+      const buffer_packet_type &type, base::callback_func_type cb);
   void GetBufferPacket_Callback(const std::string &result,
-    const buffer_packet_type &type, base::callback_func_type cb);
+      const buffer_packet_type &type, base::callback_func_type cb);
   void GetBufferPacketInfo_Callback(const std::string &result,
-    base::callback_func_type cb);
+      base::callback_func_type cb);
   void ChangeStatus_Callback(const std::string &result,
-    base::callback_func_type cb);
-//   std::string CreateMessage(const std::string &sender_id,
-//     const std::string &msg, const MessageType &type, const std::string
-//     &contact_public_key, const std::string &sender_private_key, const
-//     std::string &sender_public_key="");
+      base::callback_func_type cb);
+  maidsafe::PacketType PacketHandler_PacketType(const buffer_packet_type &type);
   ClientBufferPacketHandler &operator=(const ClientBufferPacketHandler);
   ClientBufferPacketHandler(const ClientBufferPacketHandler&);
 };

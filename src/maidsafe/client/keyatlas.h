@@ -22,16 +22,6 @@
 * ============================================================================
 */
 
-
-// Table key:-
-// -----------
-// type (int)
-// id (char(64))
-// private_key (varchar(2048))
-// public_key (varchar(2048))
-// primary key(type)
-
-
 #ifndef MAIDSAFE_CLIENT_KEYATLAS_H_
 #define MAIDSAFE_CLIENT_KEYATLAS_H_
 
@@ -71,44 +61,23 @@ typedef boost::multi_index_container<
 
 class KeyAtlas {
  public:
-  KeyAtlas(const std::string &db_name, db_init_flag flag_, int *result_);
+  KeyAtlas();
   ~KeyAtlas();
-  int AddKeys(const std::string &package_type,
-              const std::string &package_id,
-              const std::string &private_key,
-              const std::string &public_key);
-  std::string GetPackageID(const std::string &packet_type);
-  std::string GetPrivateKey(const std::string &packet_type);
-  std::string GetPublicKey(const std::string &packet_type);
-  int RemoveKeys(const std::string &package_type);
-  // GetKeyRing (only keys and id's of predifined sys packets
-  // (ANMID, MAID, etc) List of structs
-  void GetKeyRing(std::list<Key_Type> *keyring);
 
-  int MI_AddKeys(const int &package_type,
+  int AddKey(const int &package_type,
                  const std::string &package_id,
                  const std::string &private_key,
                  const std::string &public_key);
-  std::string MI_PackageID(const int &packet_type);
-  std::string MI_PrivateKey(const int &packet_type);
-  std::string MI_PublicKey(const int &packet_type);
-  int MI_RemoveKeys(const int &package_type);
-  // GetKeyRing (only keys and id's of predifined sys packets
-  // (ANMID, MAID, etc) List of structs
-  void MI_GetKeyRing(std::list<KeyAtlasRow> *keyring);
-  unsigned int MI_KeyRingSize();
-  void MI_ClearKeyRing();
+  std::string PackageID(const int &packet_type);
+  std::string PrivateKey(const int &packet_type);
+  std::string PublicKey(const int &packet_type);
+  int RemoveKey(const int &package_type);
+  void GetKeyRing(std::list<KeyAtlasRow> *keyring);
+  unsigned int KeyRingSize();
+  void ClearKeyRing();
 
  private:
-  int Init(db_init_flag flag_);
-  std::string GetKeyData(const std::string &package_type, char data_type);
-  int ConnectKeysDb();
-  int CreateKeysDb();
-  int DisconnectKeysDb();
-  std::string MI_SearchKeyring(const int &package_type, const int &field);
-
-  std::string db_name_;
-  boost::shared_ptr<CppSQLite3DB> db_;
+  std::string SearchKeyring(const int &package_type, const int &field);
   key_atlas_set key_ring_;
 };
 

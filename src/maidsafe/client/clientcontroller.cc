@@ -141,20 +141,28 @@ int ClientController::ParseDa() {
   }
   ss_->SetRootDbKey(data_atlas.root_db_key());
 
-  if (data_atlas.dms_size() < 3) {
+  if (data_atlas.dms_size() < 2) {
 #ifdef DEBUG
     printf("Not enough datamaps in the DA.\n");
 #endif
     return -9002;
   }
 
+  std::list<Key> keys;
+  for (int n = 0; n < data_atlas.keys_size(); ++n) {
+    Key k = data_atlas.keys(n);
+    keys.push_back(k);
+  }
+  SessionSingleton::getInstance()->LoadKeys(&keys);
+
+
   DataMap dm_root, dm_keys, dm_shares;
   dm_root = data_atlas.dms(0);
-  dm_keys = data_atlas.dms(1);
+//  dm_keys = data_atlas.dms(1);
   dm_shares = data_atlas.dms(2);
   std::string ser_dm_root, ser_dm_keys, ser_dm_shares;
   dm_root.SerializeToString(&ser_dm_root);
-  dm_keys.SerializeToString(&ser_dm_keys);
+//  dm_keys.SerializeToString(&ser_dm_keys);
   dm_shares.SerializeToString(&ser_dm_shares);
 #ifdef DEBUG
   // printf("ser_dm_root_ = %s\n", ser_dm_root_);
@@ -168,15 +176,15 @@ int ClientController::ParseDa() {
                           false,
                           false);
 #ifdef DEBUG
-  // printf("result of decrypt root: %i\n", i);
+  printf("result of decrypt root: %i\n", i);
 #endif
-  i = seh_->DecryptDb(kKeysDb,
-                      PRIVATE,
-                      ser_dm_keys,
-                      "",
-                      "",
-                      false,
-                      false);
+//  i = seh_->DecryptDb(kKeysDb,
+//                      PRIVATE,
+//                      ser_dm_keys,
+//                      "",
+//                      "",
+//                      false,
+//                      false);
 #ifdef DEBUG
   // printf("result of decrypt keysdb: %i\n", i);
 #endif
@@ -209,9 +217,9 @@ int ClientController::SerialiseDa() {
   dm1_ = data_atlas_.add_dms();
   dm2_.ParseFromString(ser_dm_root_);
   *dm1_ = dm2_;
-  dm1_ = data_atlas_.add_dms();
-  dm2_.ParseFromString(ser_dm_keys_);
-  *dm1_ = dm2_;
+//  dm1_ = data_atlas_.add_dms();
+//  dm2_.ParseFromString(ser_dm_keys_);
+//  *dm1_ = dm2_;
   dm1_ = data_atlas_.add_dms();
   dm2_.ParseFromString(ser_dm_shares_);
   *dm1_ = dm2_;
@@ -221,6 +229,17 @@ int ClientController::SerialiseDa() {
   // printf("data_atlas_.dms(1).file_hash(): %s\n",
   //   data_atlas_.dms(1).file_hash());
 #endif
+  std::list<KeyAtlasRow> keyring;
+  ss_->GetKeys(&keyring);
+  while (!keyring.empty()) {
+    KeyAtlasRow kar = keyring.front();
+    Key *k = data_atlas_.add_keys();
+    k->set_type(maidsafe::PacketType(kar.type_));
+    k->set_id(kar.id_);
+    k->set_private_key(kar.private_key_);
+    k->set_public_key(kar.public_key_);
+    keyring.pop_front();
+  }
   data_atlas_.SerializeToString(&ser_da_);
   // delete dm1_;
   return 0;
@@ -238,148 +257,145 @@ exitcode ClientController::CheckUserExists(const std::string &username,
 bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password) {
-  ser_da_ = "";
-  exitcode result_ = auth_->CreateUserSysPackets(username,
-                                                 pin,
-                                                 password,
-                                                 ser_da_);
+  exitcode result = auth_->CreateUserSysPackets(username,
+                                                pin,
+                                                password);
 //  #ifdef DEBUG
-  printf("\n\n\n88888888888888888888888888888888888888\n");
+  printf("\n\n\n");
   printf("88888888888888888888888888888888888888\n");
-  printf("Finished with CreateUserSysPackets\n");
   printf("88888888888888888888888888888888888888\n");
-  printf("88888888888888888888888888888888888888\n\n\n\n");
+  printf("8 Finished with CreateUserSysPackets 8\n");
+  printf("88888888888888888888888888888888888888\n");
+  printf("88888888888888888888888888888888888888");
+  printf("\n\n\n\n");
 //  #endif
 
-  if (result_ == OK) {
+  if (result == OK) {
     ss_->SetSessionName(false);
-    std::string root_db_key_;
+    std::string root_db_key;
     seh_ = new SEHandler(sm_, &mutex_);
     printf("In ClientController::CreateUser 01\n");
-    int result = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key_);
+    int result = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
     printf("In ClientController::CreateUser 02\n");
-    ss_->SetRootDbKey(root_db_key_);
-//    fsys_.SetDirNames();
+    ss_->SetRootDbKey(root_db_key);
     fsys_.Mount();
     fsys_.FuseMountPoint();
-    boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
+    boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
     msgh_ = new MessageHandler(sm_, &mutex_);
-    DataAtlas da_;
+    DataAtlas da;
 
-    result += dah_->Init(true);
+    result += dah->Init(true);
     printf("In ClientController::CreateUser 03\n");
 
     // set up root subdirs
     for (int i = 0; i < kRootSubdirSize; ++i) {
-      MetaDataMap mdm_;
-      std::string ser_mdm_, ser_dm_, key_;
-      mdm_.set_id(-2);
-      mdm_.set_display_name(base::TidyPath(kRootSubdir[i][0]));
-      mdm_.set_type(EMPTY_DIRECTORY);
-      mdm_.set_stats("");
-      mdm_.set_tag("");
-      mdm_.set_file_size_high(0);
-      mdm_.set_file_size_low(0);
-      boost::uint32_t current_time_ = base::get_epoch_time();
-      mdm_.set_creation_time(current_time_);
-      mdm_.SerializeToString(&ser_mdm_);
+      MetaDataMap mdm;
+      std::string ser_mdm, ser_dm, key;
+      mdm.set_id(-2);
+      mdm.set_display_name(base::TidyPath(kRootSubdir[i][0]));
+      mdm.set_type(EMPTY_DIRECTORY);
+      mdm.set_stats("");
+      mdm.set_tag("");
+      mdm.set_file_size_high(0);
+      mdm.set_file_size_low(0);
+      boost::uint32_t current_time = base::get_epoch_time();
+      mdm.set_creation_time(current_time);
+      mdm.SerializeToString(&ser_mdm);
       if (kRootSubdir[i][1] == "") {
         printf("In ClientController::CreateUser 04 - %i\n", i);
-        seh_->GenerateUniqueKey(PRIVATE, "", 0, &key_);
+        seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
         printf("In ClientController::CreateUser 05 - %i\n", i);
       } else {
-        key_ = kRootSubdir[i][1];
+        key = kRootSubdir[i][1];
       }
-      result += dah_->AddElement(base::TidyPath(kRootSubdir[i][0]),
-                                 ser_mdm_,
-                                 "",
-                                 key_,
-                                 true);
+      result += dah->AddElement(base::TidyPath(kRootSubdir[i][0]),
+                                ser_mdm,
+                                "",
+                                key,
+                                true);
       printf("In ClientController::CreateUser 06 - %i\n", i);
       seh_->EncryptDb(base::TidyPath(kRootSubdir[i][0]),
                       PRIVATE,
-                      key_,
+                      key,
                       "",
                       true,
-                      &ser_dm_);
+                      &ser_dm);
       printf("In ClientController::CreateUser 07 - %i\n", i);
     }
 
     // set up share subdirs
     for (int i = 0; i < kSharesSubdirSize; ++i) {
-      fs::path subdir_(kSharesSubdir[i][0], fs::native);
-      std::string subdir_name_ = subdir_.filename();
-      MetaDataMap mdm_;
-      std::string ser_mdm_, ser_dm_, key_;
-      mdm_.set_id(-2);
-      mdm_.set_display_name(subdir_name_);
-      mdm_.set_type(EMPTY_DIRECTORY);
-      mdm_.set_stats("");
-      mdm_.set_tag("");
-      mdm_.set_file_size_high(0);
-      mdm_.set_file_size_low(0);
-      boost::uint32_t current_time_ = base::get_epoch_time();
-      mdm_.set_creation_time(current_time_);
-      mdm_.SerializeToString(&ser_mdm_);
+      fs::path subdir(kSharesSubdir[i][0], fs::native);
+      std::string subdir_name = subdir.filename();
+      MetaDataMap mdm;
+      std::string ser_mdm, ser_dm, key;
+      mdm.set_id(-2);
+      mdm.set_display_name(subdir_name);
+      mdm.set_type(EMPTY_DIRECTORY);
+      mdm.set_stats("");
+      mdm.set_tag("");
+      mdm.set_file_size_high(0);
+      mdm.set_file_size_low(0);
+      boost::uint32_t current_time = base::get_epoch_time();
+      mdm.set_creation_time(current_time);
+      mdm.SerializeToString(&ser_mdm);
       if (kSharesSubdir[i][1] == "") {  // ie no preassigned key so not public
         printf("In ClientController::CreateUser 08 - %i\n", i);
-        seh_->GenerateUniqueKey(PRIVATE, "", 0, &key_);
+        seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
         printf("In ClientController::CreateUser 09 - %i\n", i);
-        result += dah_->AddElement(base::TidyPath(kSharesSubdir[i][0]),
-                                   ser_mdm_,
-                                   "",
-                                   key_,
-                                   true);
+        result += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
+                                  ser_mdm,
+                                  "",
+                                  key,
+                                  true);
         printf("In ClientController::CreateUser 10 - %i\n", i);
         seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
                         PRIVATE,
-                        key_,
+                        key,
                         "",
                         true,
-                        &ser_dm_);
+                        &ser_dm);
         printf("In ClientController::CreateUser 11 - %i\n", i);
       } else {
-        key_ = kSharesSubdir[i][1];
-        result += dah_->AddElement(base::TidyPath(kSharesSubdir[i][0]),
-                                   ser_mdm_,
-                                   "",
-                                   key_,
-                                   true);
+        key = kSharesSubdir[i][1];
+        result += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
+                                  ser_mdm,
+                                  "",
+                                  key,
+                                  true);
         printf("In ClientController::CreateUser 12 - %i\n", i);
         if (seh_->DecryptDb(base::TidyPath(kSharesSubdir[i][0]),
                             ANONYMOUS,
                             "",
-                            key_,
+                            key,
                             "",
                             true,
                             true)) {
           printf("In ClientController::CreateUser 13 - %i\n", i);
           // ie Public and Anon have never been saved before on the network
-          std::string ser_dm_;
+          std::string ser_dm;
           seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
                           ANONYMOUS,
                           kSharesSubdir[i][1],
                           "",
                           true,
-                          &ser_dm_);
+                          &ser_dm);
           printf("In ClientController::CreateUser 14 - %i\n", i);
         }
       }
     }
 
-    if (result == 0)
-      result = !da_.ParseFromString(ser_da_);
-    if (result == 0) {
-      // insert keys
-      for (int n = 0; n < da_.keys_size(); ++n) {
-        std::stringstream out;
-        out << da_.keys(n).type();
-        result += dah_->AddKeys(out.str(),
-                                da_.keys(n).id().c_str(),
-                                da_.keys(n).private_key().c_str(),
-                                da_.keys(n).public_key().c_str());
-      }
-    }
+//    if (result == 0)
+//      result = !da.ParseFromString(ser_da_);
+//    if (result == 0) {
+//      // insert keys
+//      std::list<Key> keys;
+//      for (int n = 0; n < da.keys_size(); ++n) {
+//        Key k = da.keys(n);
+//        keys.push_back(k);
+//      }
+//      ss_->LoadKeys(&keys);
+//    }
     printf("In ClientController::CreateUser 15\n");
     if (0 != result) {
       printf("In ClientController::CreateUser 16\n");
@@ -387,8 +403,8 @@ bool ClientController::CreateUser(const std::string &username,
       delete msgh_;
       return false;
     }
-    result = SetVaultConfig(dah_->GetPublicKey(base::itos(PMID)),
-                            dah_->GetPrivateKey(base::itos(PMID)));
+    result = SetVaultConfig(ss_->PublicKey(PMID),
+                            ss_->PrivateKey(PMID));
     printf("In ClientController::CreateUser 17\n");
     if (0 != result) {
       printf("In ClientController::CreateUser 18\n");
@@ -478,6 +494,7 @@ bool ClientController::ValidateUser(const std::string &password) {
       return false;
     }
 
+/*
     // Setting on session singleton the MAID, MPID, and PMID keys
     std::stringstream out;
     out << MAID;
@@ -494,7 +511,7 @@ bool ClientController::ValidateUser(const std::string &password) {
     out.str("");
     out << MPID;
     ss_->SetPublicUsername(dah_->GetPackageID(out.str()));
-
+*/
     // Create the mount point directory
     fsys_.FuseMountPoint();
 
@@ -510,8 +527,8 @@ bool ClientController::ValidateUser(const std::string &password) {
 
       // Get BP info and put it to the session
       CC_CallbackResult cb;
-      ss_->SetPublicKey(dah_->GetPublicKey(out.str()), MPID_BP);
-      ss_->SetPrivateKey(dah_->GetPrivateKey(out.str()), MPID_BP);
+//      ss_->SetPublicKey(dah_->GetPublicKey(out.str()), MPID_BP);
+//      ss_->SetPrivateKey(dah_->GetPrivateKey(out.str()), MPID_BP);
       cbph_->GetBufferPacketInfo(MPID_BP, boost::bind(
           &CC_CallbackResult::CallbackFunc,
           &cb,
@@ -554,25 +571,24 @@ void ClientController::CloseConnection() {
 
 bool ClientController::Logout() {
   packethandler::PacketParams priv_keys, pub_keys;
-  std::list<Key_Type> keys;
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  dah_->GetKeyRing(&keys);
+  std::list<KeyAtlasRow> keys;
+  ss_->GetKeys(&keys);
 
   while (!keys.empty()) {
-    Key_Type kt = keys.front();
+    KeyAtlasRow kar = keys.front();
     keys.pop_front();
-    switch (kt.package_type) {
+    switch (kar.type_) {
       case ANMID:
-        priv_keys["ANMID"] = kt.private_key;
-        pub_keys["ANMID"] = kt.public_key;
+        priv_keys["ANMID"] = kar.private_key_;
+        pub_keys["ANMID"] = kar.public_key_;
         break;
       case ANTMID:
-        priv_keys["ANTMID"] = kt.private_key;
-        pub_keys["ANTMID"] = kt.public_key;
+        priv_keys["ANTMID"] = kar.private_key_;
+        pub_keys["ANTMID"] = kar.public_key_;
         break;
       case ANSMID:
-        priv_keys["ANSMID"] = kt.private_key;
-        pub_keys["ANSMID"] = kt.public_key;
+        priv_keys["ANSMID"] = kar.private_key_;
+        pub_keys["ANSMID"] = kar.public_key_;
         break;
       default: break;
     }
@@ -612,12 +628,12 @@ bool ClientController::Logout() {
 }
 
 bool ClientController::LeaveMaidsafeNetwork() {
-  std::list<Key_Type> keys;
+  std::list<KeyAtlasRow> keys;
   exitcode result;
   std::string dir_ = fsys_.MaidsafeDir();
   {
-    boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-    dah_->GetKeyRing(&keys);
+//    boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
+    ss_->GetKeys(&keys);
     result = auth_->RemoveMe(keys);
   }
   if (result == OK) {
@@ -642,25 +658,24 @@ bool ClientController::LeaveMaidsafeNetwork() {
 bool ClientController::ChangeUsername(std::string new_username) {
   packethandler::PacketParams priv_keys, pub_keys;
   SerialiseDa();
-  std::list<Key_Type> keys;
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  dah_->GetKeyRing(&keys);
+  std::list<KeyAtlasRow> keys;
+  ss_->GetKeys(&keys);
 
   while (!keys.empty()) {
-    Key_Type kt = keys.front();
+    KeyAtlasRow kt = keys.front();
     keys.pop_front();
-    switch (kt.package_type) {
+    switch (kt.type_) {
       case ANMID:
-        priv_keys["ANMID"] = kt.private_key;
-        pub_keys["ANMID"] = kt.public_key;
+        priv_keys["ANMID"] = kt.private_key_;
+        pub_keys["ANMID"] = kt.public_key_;
         break;
       case ANTMID:
-        priv_keys["ANTMID"] = kt.private_key;
-        pub_keys["ANTMID"] = kt.public_key;
+        priv_keys["ANTMID"] = kt.private_key_;
+        pub_keys["ANTMID"] = kt.public_key_;
         break;
       case ANSMID:
-        priv_keys["ANSMID"] = kt.private_key;
-        pub_keys["ANSMID"] = kt.public_key;
+        priv_keys["ANSMID"] = kt.private_key_;
+        pub_keys["ANSMID"] = kt.public_key_;
         break;
       default: {}
     }
@@ -681,25 +696,24 @@ bool ClientController::ChangeUsername(std::string new_username) {
 bool ClientController::ChangePin(std::string new_pin) {
   packethandler::PacketParams priv_keys, pub_keys;
   SerialiseDa();
-  std::list<Key_Type> keys;
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  dah_->GetKeyRing(&keys);
+  std::list<KeyAtlasRow> keys;
+  ss_->GetKeys(&keys);
 
   while (!keys.empty()) {
-    Key_Type kt = keys.front();
+    KeyAtlasRow kt = keys.front();
     keys.pop_front();
-    switch (kt.package_type) {
+    switch (kt.type_) {
       case ANMID:
-        priv_keys["ANMID"] = kt.private_key;
-        pub_keys["ANMID"] = kt.public_key;
+        priv_keys["ANMID"] = kt.private_key_;
+        pub_keys["ANMID"] = kt.public_key_;
         break;
       case ANTMID:
-        priv_keys["ANTMID"] = kt.private_key;
-        pub_keys["ANTMID"] = kt.public_key;
+        priv_keys["ANTMID"] = kt.private_key_;
+        pub_keys["ANTMID"] = kt.public_key_;
         break;
       case ANSMID:
-        priv_keys["ANSMID"] = kt.private_key;
-        pub_keys["ANSMID"] = kt.public_key;
+        priv_keys["ANSMID"] = kt.private_key_;
+        pub_keys["ANSMID"] = kt.public_key_;
         break;
       default: {}
     }
@@ -720,25 +734,24 @@ bool ClientController::ChangePin(std::string new_pin) {
 bool ClientController::ChangePassword(std::string new_password) {
   packethandler::PacketParams priv_keys, pub_keys;
   SerialiseDa();
-  std::list<Key_Type> keys;
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  dah_->GetKeyRing(&keys);
+  std::list<KeyAtlasRow> keys;
+  ss_->GetKeys(&keys);
 
   while (!keys.empty()) {
-    Key_Type kt = keys.front();
+    KeyAtlasRow kt = keys.front();
     keys.pop_front();
-    switch (kt.package_type) {
+    switch (kt.type_) {
       case ANMID:
-        priv_keys["ANMID"] = kt.private_key;
-        pub_keys["ANMID"] = kt.public_key;
+        priv_keys["ANMID"] = kt.private_key_;
+        pub_keys["ANMID"] = kt.public_key_;
         break;
       case ANTMID:
-        priv_keys["ANTMID"] = kt.private_key;
-        pub_keys["ANTMID"] = kt.public_key;
+        priv_keys["ANTMID"] = kt.private_key_;
+        pub_keys["ANTMID"] = kt.public_key_;
         break;
       case ANSMID:
-        priv_keys["ANSMID"] = kt.private_key;
-        pub_keys["ANSMID"] = kt.public_key;
+        priv_keys["ANSMID"] = kt.private_key_;
+        pub_keys["ANSMID"] = kt.public_key_;
         break;
       default: {}
     }
@@ -776,41 +789,12 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
     return false;
   }
 
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  std::stringstream out;
-  // if(dah_->AddKeys(ANMPID,
-  //                  keys_result["anmpid_name"].string(),
-  //                  keys_result["anmpid_private_key"].string(),
-  //                  keys_result["anmpid_public_key"].string()));
-  out << ANMPID;
-  if (dah_->AddKeys(out.str(),
-                    boost::any_cast<std::string>(keys_result["anmpid_name"]),
-                    boost::any_cast<std::string>(
-                      keys_result["anmpid_private_key"]),
-                    boost::any_cast<std::string>(
-                      keys_result["anmpid_public_key"]))) {
-#ifdef DEBUG
-    printf("Failed to add ANMPID to key ring\n.");
-#endif
-    return false;
-  }
-  // if (dah_->AddKeys(MPID,
-  //                   public_username,
-  //                   keys_result["mpid_private_key"].string(),
-  //                   keys_result["mpid_public_key"].string()));
-  out.str("");
-  out << MPID;
-  if (dah_->AddKeys(out.str(),
-                    public_username,
-                    boost::any_cast<std::string>(
-                      keys_result["mpid_private_key"]),
-                    boost::any_cast<std::string>(
-                      keys_result["mpid_public_key"]))) {
-#ifdef DEBUG
-    printf("Failed to add MPID to key ring\n.");
-#endif
-    return false;
-  }
+  ss_->AddKey(ANMPID, boost::any_cast<std::string>(keys_result["anmpid_name"]),
+              boost::any_cast<std::string>(keys_result["anmpid_private_key"]),
+              boost::any_cast<std::string>(keys_result["anmpid_public_key"]));
+  ss_->AddKey(MPID, public_username,
+              boost::any_cast<std::string>(keys_result["mpid_private_key"]),
+              boost::any_cast<std::string>(keys_result["mpid_public_key"]));
 
   CC_CallbackResult cb;
   cbph_->CreateBufferPacket(public_username,
@@ -830,11 +814,6 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
 #endif
     return false;
   }
-  ss_->SetPublicUsername(public_username);
-  ss_->SetPublicKey(boost::any_cast<std::string>(
-    keys_result["mpid_public_key"]), MPID_BP);
-  ss_->SetPrivateKey(boost::any_cast<std::string>(
-    keys_result["mpid_private_key"]), MPID_BP);
 
   fs::path dbPath(fsys_.MaidsafeHomeDir());
   dbPath /= ".contacts";
@@ -904,8 +883,8 @@ int ClientController::ChangeConnectionStatus(int status) {
     return -3;
   CC_CallbackResult cb;
   cbph_->ChangeStatus(status,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
-                     MPID_BP);
+                      boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
+                      MPID_BP);
   WaitForResult(cb);
   UpdateResponse change_connection_status;
   if (!change_connection_status.ParseFromString(cb.result))
@@ -998,7 +977,7 @@ int ClientController::HandleDeleteContactNotification(
   newDb /= ".contacts";
   std::string dbNameNew(newDb.string());
 
-  maidsafe::Contacts c;
+  maidsafe::Contact c;
   c.SetPublicName(im.sender());
   c.SetConfirmed('U');
   maidsafe::ContactsHandler ch;
@@ -1047,7 +1026,7 @@ int ClientController::HandleReceivedShare(
     fs::path db(fsys_.MaidsafeHomeDir());
     db /= ".contacts";
     std::string dbName(db.string());
-    std::vector<maidsafe::Contacts> contact_list;
+    std::vector<maidsafe::Contact> contact_list;
 
     for (int n = 0; n < psn.admins_size(); n++) {
       if (psn.admins(n) ==
@@ -1261,7 +1240,7 @@ int ClientController::HandleAddContactRequest(
   printf("Got sender's public key.\n");
 #endif
 
-  Contacts c;
+  Contact c;
   c.SetPublicName(sender);
   c.SetPublicKey(rec_public_key);
   c.SetFullName(ci.name());
@@ -1366,7 +1345,7 @@ int ClientController::HandleAddContactResponse(
 #endif
 
   // Check if contact exists in local DB
-  Contacts c;
+  Contact c;
   c.SetPublicName(sender);
   c.SetPublicKey("");
   c.SetFullName(ci.name());
@@ -1382,7 +1361,7 @@ int ClientController::HandleAddContactResponse(
   fs::path newDb(fsys_.MaidsafeHomeDir());
   newDb /= ".contacts";
   std::string dbNameNew(newDb.string());
-  std::vector<maidsafe::Contacts> list;
+  std::vector<maidsafe::Contact> list;
   int n = ch.GetContactList(dbNameNew, list, sender);
 #ifdef DEBUG
   printf("GetContactList result: %i\n", n);
@@ -1414,7 +1393,7 @@ int ClientController::HandleAddContactResponse(
 
 int ClientController::SendInstantMessage(const std::string &message,
                                          const std::string &contact_name) {
-  std::vector<Contacts> list;
+  std::vector<Contact> list;
   maidsafe::ContactsHandler ch;
   fs::path newDb(fsys_.MaidsafeHomeDir());
   newDb /= ".contacts";
@@ -1427,7 +1406,7 @@ int ClientController::SendInstantMessage(const std::string &message,
     return -9;
   }
 
-  maidsafe::Contacts c = list[0];
+  maidsafe::Contact c = list[0];
 
   maidsafe::Receivers rec;
   rec.id = contact_name;
@@ -1524,7 +1503,7 @@ int ClientController::SendInstantFile(std::string *filename,
   std::string ser_instant_file;
   im.SerializeToString(&ser_instant_file);
 
-  std::vector<Contacts> list;
+  std::vector<Contact> list;
   maidsafe::ContactsHandler ch;
   fs::path newDb(fsys_.MaidsafeHomeDir());
   newDb /= ".contacts";
@@ -1537,7 +1516,7 @@ int ClientController::SendInstantFile(std::string *filename,
     return -6666;
   }
 
-  maidsafe::Contacts c = list[0];
+  maidsafe::Contact c = list[0];
 
   maidsafe::Receivers rec;
   rec.id = contact_name;
@@ -1574,7 +1553,7 @@ int ClientController::SendInstantFile(std::string *filename,
 // Contact Operations //
 ////////////////////////
 
-int ClientController::ContactList(std::vector<maidsafe::Contacts> *c_list,
+int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
                                   const std::string &pub_name) {
   maidsafe::ContactsHandler ch;
   fs::path newDb(fsys_.MaidsafeHomeDir());
@@ -1643,7 +1622,7 @@ int ClientController::AddContact(const std::string &public_name) {
     if (!AuthoriseUsers(s))
       return -22;
 
-    maidsafe::Contacts c;
+    maidsafe::Contact c;
     maidsafe::ContactsHandler ch;
     fs::path newDb(fsys_.MaidsafeHomeDir());
     newDb /= ".contacts";
@@ -1680,9 +1659,9 @@ int ClientController::DeleteContact(const std::string &public_name) {
   newDb /= ".contacts";
   std::string dbNameNew(newDb.string());
 
-  maidsafe::Contacts c;
+  maidsafe::Contact c;
   maidsafe::ContactsHandler ch;
-  std::vector<Contacts> contact_list;
+  std::vector<Contact> contact_list;
   n = ch.GetContactList(dbNameNew, contact_list, public_name, false, 0);
   if (n != 0 || contact_list.size() != 1) {
 #ifdef DEBUG
@@ -1796,7 +1775,7 @@ int ClientController::CreateNewShare(const std::string &name,
   dbNameNew = std::string(newDb.string());
   for (it = admins.begin(); it != admins.end(); ++it) {
     maidsafe::ContactsHandler ch;
-    std::vector<maidsafe::Contacts> c_list;
+    std::vector<maidsafe::Contact> c_list;
     int n = ch.GetContactList(dbNameNew, c_list, *it, false);
     if (n == 0 && c_list.size() == 1) {
       maidsafe::ShareParticipants sp;
@@ -1809,7 +1788,7 @@ int ClientController::CreateNewShare(const std::string &name,
   }
   for (it = readonlys.begin(); it != readonlys.end(); ++it) {
     maidsafe::ContactsHandler ch;
-    std::vector<maidsafe::Contacts> c_list;
+    std::vector<maidsafe::Contact> c_list;
     int n = ch.GetContactList(dbNameNew, c_list, *it, false);
     if (n == 0 && c_list.size() == 1) {
       maidsafe::ShareParticipants sp;

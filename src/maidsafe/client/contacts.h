@@ -25,6 +25,10 @@
 #ifndef MAIDSAFE_CLIENT_CONTACTS_H_
 #define MAIDSAFE_CLIENT_CONTACTS_H_
 
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/identity.hpp>
+#include <boost/multi_index/member.hpp>
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <vector>
@@ -68,8 +72,9 @@ class Countries {
   int FindCountryId(const std::string &country, int &id);
 };
 
-class Contacts {
+class Contact {
  private:
+ public:
   std::string pub_name_;
   std::string pub_key_;
   std::string full_name_;
@@ -83,10 +88,9 @@ class Contacts {
   int rank_;
   int last_contact_;
 
- public:
   //  Constructors
-  Contacts();
-  explicit Contacts(const std::vector<std::string> &attributes);
+  Contact();
+  explicit Contact(const std::vector<std::string> &attributes);
 
   //  Getters
   inline std::string PublicName() { return pub_name_; }
@@ -153,6 +157,62 @@ class Contacts {
   }
 };
 
+struct mi_contact {
+  std::string pub_name_;
+  std::string pub_key_;
+  std::string full_name_;
+  std::string office_phone_;
+  std::string birthday_;
+  char gender_;
+  int language_;
+  int country_;
+  std::string city_;
+  char confirmed_;
+  int rank_;
+  int last_contact_;
+
+  mi_contact(std::string pub_name, std::string pub_key, std::string full_name,
+             std::string office_phone, std::string birthday, char gender,
+             int language, int country, std::string city, char confirmed,
+             int rank, int last_contact)
+             : pub_name_(pub_name), pub_key_(pub_key), full_name_(full_name),
+               office_phone_(office_phone), birthday_(birthday),
+               gender_(gender), language_(language), country_(country),
+               city_(city), confirmed_(confirmed), rank_(rank),
+               last_contact_(last_contact) {}
+};
+
+//  /* Tags */
+//  struct pub_name {};
+//  struct rank {};
+//  struct last_contact {};
+//
+//  typedef multi_index_container<
+//    employee,
+//    indexed_by<
+//        ordered_unique<
+//            tag<pub_name>,
+//            BOOST_MULTI_INDEX_MEMBER(mi_contact, std::string, pub_name_)>,
+//        ordered_non_unique<
+//            tag<rank>,
+//            BOOST_MULTI_INDEX_MEMBER(mi_contact, int, rank_)>,
+//        ordered_non_unique<
+//            tag<last_contact>,
+//            BOOST_MULTI_INDEX_MEMBER(mi_contact, int, last_contact_)>
+//    >
+//  > contact_set;
+typedef boost::multi_index_container<
+  maidsafe::mi_contact,
+  boost::multi_index::indexed_by<
+      boost::multi_index::ordered_unique<boost::multi_index::member<mi_contact,
+          std::string, &mi_contact::pub_name_> >,
+      boost::multi_index::ordered_non_unique<boost::multi_index::member<mi_contact,
+          int, &mi_contact::rank_> >,
+      boost::multi_index::ordered_non_unique<boost::multi_index::member<mi_contact,
+          int, &mi_contact::last_contact_> >
+  >
+> contact_set;
+
 class ContactsHandler {
  private:
   boost::shared_ptr<CppSQLite3DB> db_;
@@ -162,17 +222,17 @@ class ContactsHandler {
  public:
   ContactsHandler() : db_() { }
   int CreateContactDB(const std::string &dbName);
-  int AddContact(const std::string &dbName, Contacts &sc);
-  int DeleteContact(const std::string &dbName, Contacts &sc);
-  int UpdateContact(const std::string &dbName, Contacts &sc);
-  int SetLastContactRank(const std::string &dbName, Contacts &sc);
+  int AddContact(const std::string &dbName, Contact &sc);
+  int DeleteContact(const std::string &dbName, Contact &sc);
+  int UpdateContact(const std::string &dbName, Contact &sc);
+  int SetLastContactRank(const std::string &dbName, Contact &sc);
   // pub_name: if a certain public name is needed. can be used for the search
   //           with like=true, since the query is done with pub_name like
   //           %pub_name% in SQL.
   // type:     use 1 for most contacted, use 2 for most recent, 0 (default)
   //           gets all.
   int GetContactList(const std::string &dbName,
-                     std::vector<Contacts> &list,
+                     std::vector<Contact> &list,
                      const std::string &pub_name,
                      bool like = false,
                      int type = 0);

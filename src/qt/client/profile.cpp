@@ -31,7 +31,7 @@ Profile::~Profile()
 
 
 // static
-Profile Profile::fromContact( /*const */ maidsafe::Contacts& mc )
+Profile Profile::fromContact( /*const */ maidsafe::Contact& mc )
 {
     return Profile();
 }

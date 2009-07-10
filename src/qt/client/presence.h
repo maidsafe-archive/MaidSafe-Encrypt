@@ -57,7 +57,7 @@ public:
 
 
     // \TODO make accessors on maidsafe::Contacts const
-    static Presence fromContact( /*const */ maidsafe::Contacts& mc );
+    static Presence fromContact( /*const */ maidsafe::Contact& mc );
 private:
     State state_;
     QString message_;

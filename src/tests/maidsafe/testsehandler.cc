@@ -111,10 +111,8 @@ class TestSEHandler : public testing::Test {
     SessionSingleton::getInstance()->SetRootDbKey("whatever");
     maidsafe_crypto::RsaKeyPair rsa_kp;
     rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
-    SessionSingleton::getInstance()->SetPrivateKey(rsa_kp.private_key(),
-      MAID_BP);
-    SessionSingleton::getInstance()->SetPublicKey(rsa_kp.public_key(),
-      MAID_BP);
+    SessionSingleton::getInstance()->AddKey(MAID, "MAID", rsa_kp.private_key(),
+                                            rsa_kp.public_key());
     fsys_.Mount();
     boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
     boost::scoped_ptr<SEHandler>seh_(new SEHandler(sm.get(), rec_mutex));

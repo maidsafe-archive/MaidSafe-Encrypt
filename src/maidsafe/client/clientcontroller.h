@@ -109,7 +109,7 @@ class ClientController {
                      const std::string &location);
 
   // Contact operations
-  int ContactList(std::vector<maidsafe::Contacts> *c_list,
+  int ContactList(std::vector<maidsafe::Contact> *c_list,
                   const std::string &pub_name);
   int AddContact(const std::string &public_name);
   int DeleteContact(const std::string &public_name);

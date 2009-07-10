@@ -56,7 +56,7 @@ public:
     QDateTime last_contact;
 
     // \TODO make accessors on maidsafe::Contacts const
-    static Profile fromContact( /*const */ maidsafe::Contacts& mc );
+    static Profile fromContact( /*const */ maidsafe::Contact& mc );
 };
 
 

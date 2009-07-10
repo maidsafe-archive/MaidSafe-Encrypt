@@ -228,7 +228,7 @@ QDir ClientController::myFilesDirRoot( const QString& name ) const
 
 QStringList ClientController::contactsNames() const
 {
-    std::vector<maidsafe::Contacts> contact_list;
+    std::vector<maidsafe::Contact> contact_list;
     const int n =
         maidsafe::ClientController::getInstance()->ContactList(&contact_list, "");
     if ( n != 0 )
@@ -251,7 +251,7 @@ QStringList ClientController::contactsNames() const
 
 ContactList ClientController::contacts() const
 {
-    std::vector<maidsafe::Contacts> contact_list;
+    std::vector<maidsafe::Contact> contact_list;
     const int n =
         maidsafe::ClientController::getInstance()->ContactList(&contact_list, "");
     if ( n != 0 )
@@ -266,8 +266,8 @@ ContactList ClientController::contacts() const
     ContactList rv;
     for ( unsigned int i = 0; i < contact_list.size(); ++i )
     {
-        // accessors on maidsafe::Contacts are non-const so can't pass in const&
-        /*const*/ maidsafe::Contacts mcontact = contact_list[i];
+        // accessors on maidsafe::Contact are non-const so can't pass in const&
+        /*const*/ maidsafe::Contact mcontact = contact_list[i];
         Contact* contact = Contact::fromContact( mcontact );
 
         rv.push_back( contact );

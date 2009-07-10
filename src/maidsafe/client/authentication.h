@@ -68,12 +68,11 @@ class Authentication {
   exitcode GetUserData(const std::string &password, std::string &ser_da);
   exitcode CreateUserSysPackets(const std::string &username,
                                 const std::string &pin,
-                                const std::string &password,
-                                std::string &ser_da);
+                                const std::string &password);
   exitcode SaveSession(std::string ser_da,
                        ph::PacketParams priv_keys,
                        ph::PacketParams pub_keys);
-  exitcode RemoveMe(std::list<Key_Type> sig_keys);
+  exitcode RemoveMe(std::list<KeyAtlasRow> sig_keys);
   exitcode CreatePublicName(std::string public_username,
                             ph::PacketParams *result);
   exitcode ChangeUsername(std::string ser_da,
@@ -95,7 +94,6 @@ class Authentication {
  private:
   std::string createSignaturePackets(const packethandler::SystemPackets &type,
                                      const PacketType &type_da,
-                                     DataAtlas &da,
                                      std::string &public_key);
   bool CheckUsername(const std::string &username);
   bool CheckPin(const std::string &pin);

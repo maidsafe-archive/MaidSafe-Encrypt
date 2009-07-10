@@ -148,11 +148,11 @@ int Countries::FindCountryId(const std::string &country, int &id) {
 }
 
 //  Contacts
-Contacts::Contacts() :pub_name_(""), pub_key_(""), full_name_(""),
+Contact::Contact() :pub_name_(""), pub_key_(""), full_name_(""),
   office_phone_(""), birthday_(""), gender_('U'), language_(-1),
   country_(-1), city_(""), confirmed_('\0'), rank_(0),  last_contact_(-1) { }
 
-Contacts::Contacts(const std::vector<std::string> &attributes)
+Contact::Contact(const std::vector<std::string> &attributes)
     :pub_name_(""), pub_key_(""), full_name_(""),
     office_phone_(""), birthday_(""), gender_('U'), language_(-1),
     country_(-1), city_(""), confirmed_('\0'), rank_(0), last_contact_(-1) {
@@ -241,7 +241,7 @@ int ContactsHandler::Close() {
   }
 }
 
-int ContactsHandler::AddContact(const std::string &dbName, Contacts &sc) {
+int ContactsHandler::AddContact(const std::string &dbName, Contact &sc) {
 #ifdef DEBUG
   // printf("Add Contact LastContact: %i\n", sc.LastContact());
 #endif
@@ -284,7 +284,7 @@ int ContactsHandler::AddContact(const std::string &dbName, Contacts &sc) {
   return 0;
 }
 
-int ContactsHandler::DeleteContact(const std::string &dbName, Contacts &sc) {
+int ContactsHandler::DeleteContact(const std::string &dbName, Contact &sc) {
   int n = Connect(dbName);
   if (n)
     return n;
@@ -313,7 +313,7 @@ int ContactsHandler::DeleteContact(const std::string &dbName, Contacts &sc) {
   return 0;
 }
 
-int ContactsHandler::UpdateContact(const std::string &dbName, Contacts &sc) {
+int ContactsHandler::UpdateContact(const std::string &dbName, Contact &sc) {
 #ifdef DEBUG
   printf("In SQL Update Contact\n");
 #endif
@@ -516,7 +516,7 @@ int ContactsHandler::UpdateContact(const std::string &dbName, Contacts &sc) {
 }
 
 int ContactsHandler::GetContactList(const std::string &dbName,
-  std::vector<Contacts> &list, const std::string &pub_name,
+  std::vector<Contact> &list, const std::string &pub_name,
   bool like, int type) {
   int n = Connect(dbName);
   if (n)
@@ -540,7 +540,7 @@ int ContactsHandler::GetContactList(const std::string &dbName,
     int rows = 0;
     CppSQLite3Query q = db_->execQuery(query.c_str());
     while (!q.eof() && rows < 50) {
-      Contacts *sc = new Contacts();
+      Contact *sc = new Contact();
       sc->SetPublicName(q.getStringField(0));
       sc->SetPublicKey(q.getStringField(1));
       sc->SetFullName(q.getStringField(2));
@@ -575,7 +575,7 @@ int ContactsHandler::GetContactList(const std::string &dbName,
 }
 
 int ContactsHandler::SetLastContactRank(const std::string &dbName,
-  Contacts &sc) {
+  Contact &sc) {
   int n = Connect(dbName);
   if (n)
     return n;

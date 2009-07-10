@@ -64,7 +64,7 @@ TEST_F(ContactsTest, BEH_MAID_CreateDB_ListContacts) {
   test = 0;
   ASSERT_EQ(0, sch_->CreateContactDB(name_)) <<
     "Problem creating the DB." << std::endl;
-  std::vector<maidsafe::Contacts> list;
+  std::vector<maidsafe::Contact> list;
   std::string pub_name("");
   ASSERT_EQ(0, sch_->GetContactList(name_, list, pub_name)) <<
     "Problem getting contact list";
@@ -76,14 +76,14 @@ TEST_F(ContactsTest, BEH_MAID_CreateDB_ListContacts) {
 TEST_F(ContactsTest, BEH_MAID_AddContacts) {
   ASSERT_EQ(0, sch_->CreateContactDB(name_)) <<
     "Problem creating the DB." << std::endl;
-  std::vector<maidsafe::Contacts> list;
+  std::vector<maidsafe::Contact> list;
   std::string pub_name("");
   ASSERT_EQ(0, sch_->GetContactList(name_, list, pub_name)) <<
     "Problem getting contact list";
   ASSERT_EQ((unsigned)0, list.size()) <<
     "List came back not empty after DB creation.";
 
-  maidsafe::Contacts msc(contact_);
+  maidsafe::Contact msc(contact_);
 
   ASSERT_EQ(0, sch_->AddContact(name_, msc)) <<
     "Problem adding a contact";
@@ -92,7 +92,7 @@ TEST_F(ContactsTest, BEH_MAID_AddContacts) {
   ASSERT_EQ((unsigned)1, list.size()) <<
     "List came back empty after addition.";
 
-  maidsafe::Contacts sc;
+  maidsafe::Contact sc;
   sc = list[0];
   ASSERT_EQ(msc.PublicName(), sc.PublicName()) <<
     "Public name from DB not the same as the one inserted.";
@@ -121,14 +121,14 @@ TEST_F(ContactsTest, BEH_MAID_AddContacts) {
 TEST_F(ContactsTest, BEH_MAID_DeleteContacts) {
   ASSERT_EQ(0, sch_->CreateContactDB(name_)) <<
     "Problem creating the DB." << std::endl;
-  std::vector<maidsafe::Contacts> list;
+  std::vector<maidsafe::Contact> list;
   std::string pub_name("");
   ASSERT_EQ(0, sch_->GetContactList(name_, list, pub_name)) <<
     "Problem getting contact list";
   ASSERT_EQ((unsigned)0, list.size()) <<
     "List came back not empty after DB creation.";
 
-  maidsafe::Contacts msc(contact_);
+  maidsafe::Contact msc(contact_);
 
   ASSERT_EQ(0, sch_->AddContact(name_, msc)) <<
     "Problem adding a contact";
@@ -137,7 +137,7 @@ TEST_F(ContactsTest, BEH_MAID_DeleteContacts) {
   ASSERT_EQ((unsigned)1, list.size()) <<
     "List came back empty after addition.";
 
-  maidsafe::Contacts sc;
+  maidsafe::Contact sc;
   sc = list[0];
   ASSERT_EQ(msc.PublicName(), sc.PublicName()) <<
     "Public name from DB not the same as the one inserted.";
@@ -156,14 +156,14 @@ TEST_F(ContactsTest, BEH_MAID_DeleteContacts) {
 TEST_F(ContactsTest, BEH_MAID_Update_Select_PubName_Contacts) {
   ASSERT_EQ(0, sch_->CreateContactDB(name_)) <<
     "Problem creating the DB." << std::endl;
-  std::vector<maidsafe::Contacts> list;
+  std::vector<maidsafe::Contact> list;
   std::string pub_name("");
   ASSERT_EQ(0, sch_->GetContactList(name_, list, pub_name)) <<
     "Problem getting contact list";
   ASSERT_EQ((unsigned)0, list.size()) <<
     "List came back not empty after DB creation.";
 
-  maidsafe::Contacts msc(contact_);
+  maidsafe::Contact msc(contact_);
 
   ASSERT_EQ(0, sch_->AddContact(name_, msc)) <<
     "Problem adding a contact";
@@ -172,13 +172,13 @@ TEST_F(ContactsTest, BEH_MAID_Update_Select_PubName_Contacts) {
   ASSERT_EQ((unsigned)1, list.size()) <<
     "List came back empty after addition.";
 
-  maidsafe::Contacts sc;
+  maidsafe::Contact sc;
   sc = list[0];
   ASSERT_EQ(msc.PublicName(), sc.PublicName()) <<
     "Public name from DB not the same as the one inserted.";
 
   list.clear();
-  maidsafe::Contacts msc1;
+  maidsafe::Contact msc1;
   msc1.SetPublicName(msc.PublicName());
   msc1.SetPublicKey("zyxwvutsrq");
   msc1.SetFullName("Andale Tonto");
@@ -202,7 +202,7 @@ TEST_F(ContactsTest, BEH_MAID_Update_Select_PubName_Contacts) {
     "Birthday from DB not the same as the one inserted.";
 
   list.clear();
-  maidsafe::Contacts msc2;
+  maidsafe::Contact msc2;
   msc2.SetPublicName(msc.PublicName());
   msc2.SetConfirmed('U');
   pub_name = msc2.PublicName();
@@ -225,14 +225,14 @@ TEST_F(ContactsTest, BEH_MAID_Update_Select_PubName_Contacts) {
 TEST_F(ContactsTest, BEH_MAID_LastContact_Rank_Contacts) {
   ASSERT_EQ(0, sch_->CreateContactDB(name_)) <<
     "Problem creating the DB." << std::endl;
-  std::vector<maidsafe::Contacts> list;
+  std::vector<maidsafe::Contact> list;
   std::string pub_name("");
   ASSERT_EQ(0, sch_->GetContactList(name_, list, pub_name)) <<
     "Problem getting contact list";
   ASSERT_EQ((unsigned)0, list.size()) <<
     "List came back not empty after DB creation.";
 
-  maidsafe::Contacts msc(contact_);
+  maidsafe::Contact msc(contact_);
   ASSERT_EQ(0, sch_->AddContact(name_, msc)) <<
     "Problem adding a contact";
   ASSERT_EQ(0, sch_->GetContactList(name_, list, pub_name)) <<
@@ -250,7 +250,7 @@ TEST_F(ContactsTest, BEH_MAID_LastContact_Rank_Contacts) {
     "List came back with more or less entries than it should'ave.";
   int ct =  base::get_epoch_time();
 
-  maidsafe::Contacts sc;
+  maidsafe::Contact sc;
   sc = list[0];
   ASSERT_TRUE(sc.LastContact() == ct || sc.LastContact() == ct-1) <<
     "Last contact did not update";
@@ -276,7 +276,7 @@ TEST_F(ContactsTest, BEH_MAID_LastContact_Rank_Contacts) {
 TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
   ASSERT_EQ(0, sch_->CreateContactDB(name_)) <<
     "Problem creating the DB." << std::endl;
-  std::vector<maidsafe::Contacts> list;
+  std::vector<maidsafe::Contact> list;
   std::string pub_name("");
   ASSERT_EQ(0, sch_->GetContactList(name_, list, pub_name)) <<
     "Problem getting contact list";
@@ -299,7 +299,7 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
     contact.push_back(base::itos(r));
     int rt = base::get_epoch_time()-r;
     contact.push_back(base::itos(rt));
-    maidsafe::Contacts c(contact);
+    maidsafe::Contact c(contact);
     sch_->AddContact(name_, c);
   }
 
@@ -315,8 +315,8 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
     "List came back with wrong number of elements.";
 
   for (unsigned int n = 0; n < list.size()-1; n++) {
-    maidsafe::Contacts cn = list[n];
-    maidsafe::Contacts cn_1 = list[n+1];
+    maidsafe::Contact cn = list[n];
+    maidsafe::Contact cn_1 = list[n+1];
 // std::cout << cn.Rank() << " >= " << cn_1.Rank() << std::endl;
     ASSERT_GE(cn.Rank(), cn_1.Rank()) <<
       "Descending order broken by elements " << n << " and " << n+1;
@@ -329,8 +329,8 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
     "List came back with wrong number of elements.";
 
   for (unsigned int n = 0; n < list.size()-1; n++) {
-    maidsafe::Contacts cn = list[n];
-    maidsafe::Contacts cn_1 = list[n+1];
+    maidsafe::Contact cn = list[n];
+    maidsafe::Contact cn_1 = list[n+1];
 // std::cout << cn.LastContact() << " >= " << cn_1.LastContact() << std::endl;
     ASSERT_GE(cn.LastContact(), cn_1.LastContact()) <<
       "Descending order broken by elements " << n << " and " << n+1;
@@ -352,7 +352,7 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
     contact.push_back(base::itos(r));
     int rt = base::get_epoch_time()-r;
     contact.push_back(base::itos(rt));
-    maidsafe::Contacts c(contact);
+    maidsafe::Contact c(contact);
     sch_->AddContact(name_, c);
   }
 
@@ -363,8 +363,8 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
     "List came back with wrong number of elements.";
 
   for (unsigned int n = 0; n < list.size()-1; n++) {
-    maidsafe::Contacts cn = list[n];
-    maidsafe::Contacts cn_1 = list[n+1];
+    maidsafe::Contact cn = list[n];
+    maidsafe::Contact cn_1 = list[n+1];
 //     std::cout << cn.Rank() << " >= " << cn_1.Rank() << std::endl;
     ASSERT_GE(cn.Rank(), cn_1.Rank()) <<
       "Descending order broken by elements " << n << " and " << n+1;
@@ -377,8 +377,8 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
     "List came back with wrong number of elements.";
 
   for (unsigned int n = 0; n < list.size()-1; n++) {
-    maidsafe::Contacts cn = list[n];
-    maidsafe::Contacts cn_1 = list[n+1];
+    maidsafe::Contact cn = list[n];
+    maidsafe::Contact cn_1 = list[n+1];
 // std::cout << cn.LastContact() << " >= " << cn_1.LastContact() << std::endl;
     ASSERT_GE(cn.LastContact(), cn_1.LastContact()) <<
       "Descending order broken by elements " << n << " and " << n+1;
@@ -387,3 +387,31 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
   test++;
 }
 
+TEST_F(ContactsTest, BEH_MAID_MI_contact) {
+  maidsafe::contact_set cs;
+  for (int n = 1; n < 21; n++) {
+    int r = base::random_32bit_uinteger()%122;
+    int rt = base::get_epoch_time()-r;
+    maidsafe::mi_contact mic("pub_name_" + base::itos(n),
+                             "pub_key_" + base::itos(n),
+                             "full_name_" + base::itos(n),
+                             "office_phone_" + base::itos(n),
+                             "birthday_" + base::itos(n),
+                             'M', n, n, "city_" + base::itos(n),
+                             'C', r, rt);
+    cs.insert(mic);
+  }
+
+//  typedef maidsafe::contact_set::nth_index<1>::type name_index_t;
+//  name_index_t & name_index = cs.get<1>();
+//
+//  name_index_t::iterator it = name_index.find();
+//  employee anna = *it;
+//
+//  maidsafe::contact_set::nth_index<2>::type::iterator it = cs.get<2>().find();
+//  for (
+//      it != cs.get<1>().end(); ++it) {
+//    printf("%s\t\t%i\t\t%i\n", (*it).pub_name_.c_str(), (*it).rank_,
+//          (*it).last_contact_);
+//  }
+}

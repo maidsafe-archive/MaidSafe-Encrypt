@@ -60,7 +60,7 @@ void Contact::setProfile( const Profile& p )
 }
 
 // static
-Contact* Contact::fromContact( /*const */maidsafe::Contacts& mc )
+Contact* Contact::fromContact( /*const */maidsafe::Contact& mc )
 {
     Contact* contact = new Contact( QString::fromStdString( mc.PublicName() ) );
     contact->setPresence( Presence::fromContact( mc ) );
