@@ -402,16 +402,12 @@ TEST_F(ContactsTest, BEH_MAID_MI_contact) {
     cs.insert(mic);
   }
 
-//  typedef maidsafe::contact_set::nth_index<1>::type name_index_t;
-//  name_index_t & name_index = cs.get<1>();
-//
-//  name_index_t::iterator it = name_index.find();
-//  employee anna = *it;
-//
-//  maidsafe::contact_set::nth_index<2>::type::iterator it = cs.get<2>().find();
-//  for (
-//      it != cs.get<1>().end(); ++it) {
-//    printf("%s\t\t%i\t\t%i\n", (*it).pub_name_.c_str(), (*it).rank_,
-//          (*it).last_contact_);
-//  }
+  typedef maidsafe::contact_set::index<maidsafe::rank>::type
+          contact_set_by_rank;
+
+  for (contact_set_by_rank::iterator it = cs.get<maidsafe::rank>().begin();
+      it != cs.get<maidsafe::rank>().end(); it++) {
+    printf("%s\t\t%d\t\t%d\n", (*it).pub_name_.c_str(), (*it).rank_,
+          (*it).last_contact_);
+  }
 }

@@ -96,6 +96,7 @@ class DataAtlasHandlerTest : public testing::Test {
       FAIL();
       return;
     }
+    SessionSingleton::getInstance()->ResetSession();
     SessionSingleton::getInstance()->SetUsername("user1");
     SessionSingleton::getInstance()->SetPin("1234");
     SessionSingleton::getInstance()->SetPassword("password1");
@@ -138,7 +139,6 @@ class DataAtlasHandlerTest : public testing::Test {
   }
 
   void TearDown() {
-    // SessionSingleton::getInstance()->ResetSession();
     try {
       boost::this_thread::sleep(boost::posix_time::milliseconds(100));
       file_system::FileSystem fsys_;

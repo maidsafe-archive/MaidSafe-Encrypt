@@ -182,35 +182,23 @@ struct mi_contact {
                last_contact_(last_contact) {}
 };
 
-//  /* Tags */
-//  struct pub_name {};
-//  struct rank {};
-//  struct last_contact {};
-//
-//  typedef multi_index_container<
-//    employee,
-//    indexed_by<
-//        ordered_unique<
-//            tag<pub_name>,
-//            BOOST_MULTI_INDEX_MEMBER(mi_contact, std::string, pub_name_)>,
-//        ordered_non_unique<
-//            tag<rank>,
-//            BOOST_MULTI_INDEX_MEMBER(mi_contact, int, rank_)>,
-//        ordered_non_unique<
-//            tag<last_contact>,
-//            BOOST_MULTI_INDEX_MEMBER(mi_contact, int, last_contact_)>
-//    >
-//  > contact_set;
-typedef boost::multi_index_container<
-  maidsafe::mi_contact,
+/* Tags */
+struct pub_name {};
+struct rank {};
+struct last_contact {};
+
+typedef boost::multi_index::multi_index_container<
+  mi_contact,
   boost::multi_index::indexed_by<
-      boost::multi_index::ordered_unique< boost::multi_index::member<mi_contact,
-          std::string, &mi_contact::pub_name_> >,
-      boost::multi_index::ordered_non_unique< boost::multi_index::member<
-          mi_contact, int, &mi_contact::rank_> >,
-      boost::multi_index::ordered_non_unique< boost::multi_index::member<
-          mi_contact, int, &mi_contact::last_contact_> >
-  >
+    boost::multi_index::ordered_unique<
+      boost::multi_index::tag<pub_name>,
+      BOOST_MULTI_INDEX_MEMBER(mi_contact, std::string, pub_name_)>,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<rank>,
+      BOOST_MULTI_INDEX_MEMBER(mi_contact, int, rank_)>,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<last_contact>,
+      BOOST_MULTI_INDEX_MEMBER(mi_contact, int, last_contact_)> >
 > contact_set;
 
 class ContactsHandler {
