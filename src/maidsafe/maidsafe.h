@@ -25,6 +25,8 @@
 #ifndef MAIDSAFE_MAIDSAFE_H_
 #define MAIDSAFE_MAIDSAFE_H_
 
+
+
 #include <boost/cstdint.hpp>
 #include <stdint.h>
 
@@ -32,6 +34,11 @@
 
 #include "protobuf/datamaps.pb.h"
 #include "protobuf/packet.pb.h"
+#include "maidsafe/maidsafe-dht.h"
+#if MAIDSAFE_DHT_VERSION < 1
+#error this API is not compatible with the installed library
+#error Please update the maidsafe-dht library
+#endif
 
 // system constants
 const uint32_t kMinRegularFileSize = 512;
