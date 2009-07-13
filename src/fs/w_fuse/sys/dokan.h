@@ -54,13 +54,13 @@ int __cdecl swprintf(wchar_t *, const wchar_t *, ...);
 #define DRIVER_CONTEXT_IRP_ENTRY	3
 
 
-#define DOKAN_NOTIFICATION_TIMEOUT	15 // in seconds
+#define DOKAN_NOTIFICATION_TIMEOUT	60 // in seconds
 #define DOKAN_UNMOUNT_NOTIFICATION_TIMEOUT 5 // in seconds
 
-#define DOKAN_IPR_PENDING_TIMEOUT	15 // in seconds
+#define DOKAN_IPR_PENDING_TIMEOUT	60 // in seconds
 #define DOKAN_CHECK_INTERVAL		(1000 * 5) // in millisecond
 
-#define DOKAN_KEEPALIVE_TIMEOUT		15 // in seconds
+#define DOKAN_KEEPALIVE_TIMEOUT		60 // in seconds
 
 //#define USE_DBGPRINT 1
 
@@ -139,7 +139,7 @@ typedef struct _DokanDiskControlBlock {
 	PDOKAN_GLOBAL			Global;
 	PDRIVER_OBJECT			DriverObject;
 	PDEVICE_OBJECT			DeviceObject;
-	
+
 	PVOID					Vcb;
 
 	// the list of waiting Event
@@ -206,12 +206,12 @@ typedef struct _DokanFileControlBlock
 
 	FSRTL_ADVANCED_FCB_HEADER	AdvancedFCBHeader;
 	SECTION_OBJECT_POINTERS		SectionObjectPointers;
-	
+
 	FAST_MUTEX				AdvancedFCBHeaderMutex;
 
 	ERESOURCE				MainResource;
 	ERESOURCE				PagingIoResource;
-	
+
 	PDokanVCB				Vcb;
 	LIST_ENTRY				NextFCB;
 	ERESOURCE				Resource;
@@ -237,7 +237,7 @@ typedef struct _DokanContextControlBlock
 	LIST_ENTRY			NextCCB;
 	ULONG64				Context;
 	ULONG64				UserContext;
-	
+
 	PVOID				SearchPattern;
 	ULONG				SearchPatternLength;
 
