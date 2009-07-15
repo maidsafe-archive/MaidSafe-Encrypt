@@ -155,19 +155,21 @@ int ClientController::ParseDa() {
   }
   SessionSingleton::getInstance()->LoadKeys(&keys);
 
+  std::list<PublicContact> contacts;
+  for (int n = 0; n < data_atlas.contacts_size(); ++n) {
+    PublicContact pc = data_atlas.contacts(n);
+    contacts.push_back(pc);
+  }
+  SessionSingleton::getInstance()->LoadContacts(&contacts);
 
   DataMap dm_root, dm_keys, dm_shares;
   dm_root = data_atlas.dms(0);
-//  dm_keys = data_atlas.dms(1);
-//  dm_shares = data_atlas.dms(2);
   dm_shares = data_atlas.dms(1);
   std::string ser_dm_root, ser_dm_keys, ser_dm_shares;
   dm_root.SerializeToString(&ser_dm_root);
-//  dm_keys.SerializeToString(&ser_dm_keys);
   dm_shares.SerializeToString(&ser_dm_shares);
 #ifdef DEBUG
   // printf("ser_dm_root_ = %s\n", ser_dm_root_);
-  // printf("ser_dm_keys_ = %s\n", ser_dm_keys_);
 #endif
   int i = seh_->DecryptDb(kRoot,
                           PRIVATE,
@@ -178,16 +180,6 @@ int ClientController::ParseDa() {
                           false);
 #ifdef DEBUG
   printf("result of decrypt root: %i\n", i);
-#endif
-//  i = seh_->DecryptDb(kKeysDb,
-//                      PRIVATE,
-//                      ser_dm_keys,
-//                      "",
-//                      "",
-//                      false,
-//                      false);
-#ifdef DEBUG
-  // printf("result of decrypt keysdb: %i\n", i);
 #endif
   seh_->DecryptDb(base::TidyPath(kRootSubdir[1][0]),
                   PRIVATE,
@@ -203,10 +195,8 @@ int ClientController::SerialiseDa() {
   DataAtlas data_atlas_;
   data_atlas_.set_root_db_key(ss_->RootDbKey());
   std::string ser_dm_root_ = "Return the serialised datamap please old boy.";
-  std::string ser_dm_keys_ = "And for me too, old chap.";
   std::string ser_dm_shares_ = "I'd like one as well old chum.";
   seh_->EncryptDb(kRoot, PRIVATE, "", "", false, &ser_dm_root_);
-  seh_->EncryptDb(kKeysDb, PRIVATE, "", "", false, &ser_dm_keys_);
   seh_->EncryptDb(base::TidyPath(kRootSubdir[1][0]),
                   PRIVATE,
                   "",
@@ -218,9 +208,6 @@ int ClientController::SerialiseDa() {
   dm1_ = data_atlas_.add_dms();
   dm2_.ParseFromString(ser_dm_root_);
   *dm1_ = dm2_;
-//  dm1_ = data_atlas_.add_dms();
-//  dm2_.ParseFromString(ser_dm_keys_);
-//  *dm1_ = dm2_;
   dm1_ = data_atlas_.add_dms();
   dm2_.ParseFromString(ser_dm_shares_);
   *dm1_ = dm2_;
@@ -230,6 +217,7 @@ int ClientController::SerialiseDa() {
   // printf("data_atlas_.dms(1).file_hash(): %s\n",
   //   data_atlas_.dms(1).file_hash());
 #endif
+
   std::list<KeyAtlasRow> keyring;
   ss_->GetKeys(&keyring);
   while (!keyring.empty()) {
@@ -241,8 +229,28 @@ int ClientController::SerialiseDa() {
     k->set_public_key(kar.public_key_);
     keyring.pop_front();
   }
+
+  std::vector<maidsafe::mi_contact> contacts;
+  ss_->GetContactList(&contacts);
+  for (unsigned int n = 0; n < contacts.size(); ++n) {
+    PublicContact *pc = data_atlas_.add_contacts();
+    pc->set_pub_name(contacts[n].pub_name_);
+    pc->set_pub_key(contacts[n].pub_key_);
+    pc->set_full_name(contacts[n].full_name_);
+    pc->set_office_phone(contacts[n].office_phone_);
+    pc->set_birthday(contacts[n].birthday_);
+    std::string g(1, contacts[n].gender_);
+    pc->set_gender(g);
+    pc->set_language(contacts[n].language_);
+    pc->set_country(contacts[n].country_);
+    pc->set_city(contacts[n].city_);
+    std::string c(1, contacts[n].confirmed_);
+    pc->set_confirmed(c);
+    pc->set_rank(contacts[n].rank_);
+    pc->set_last_contact(contacts[n].last_contact_);
+  }
   data_atlas_.SerializeToString(&ser_da_);
-  // delete dm1_;
+
   return 0;
 }
 
@@ -816,25 +824,25 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
     return false;
   }
 
+//  fs::path dbPath;
+//  dbPath /= ".contacts";
+//  std::string dbName;
+
+//  maidsafe::ContactsHandler ch;
+//  int n = ch.CreateContactDB(dbName);
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("Couldn't create CONTACTS db.\n");
+//#endif
+//    return false;
+//  }
+
   fs::path dbPath(fsys_.MaidsafeHomeDir());
-  dbPath /= ".contacts";
+  dbPath /= ".shares";
   std::string dbName(dbPath.string());
 
-  maidsafe::ContactsHandler ch;
-  int n = ch.CreateContactDB(dbName);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("Couldn't create CONTACTS db.\n");
-#endif
-    return false;
-  }
-
-  dbPath = fs::path(fsys_.MaidsafeHomeDir());
-  dbPath /= ".shares";
-  dbName = dbPath.string();
-
   maidsafe::PrivateShareHandler psh;
-  n = psh.CreatePrivateShareDB(dbName);
+  int n = psh.CreatePrivateShareDB(dbName);
   if (n != 0) {
 #ifdef DEBUG
     printf("Couldn't create SHARES db.\n");
@@ -982,7 +990,7 @@ int ClientController::HandleDeleteContactNotification(
   c.SetPublicName(im.sender());
   c.SetConfirmed('U');
   maidsafe::ContactsHandler ch;
-  int n = ch.UpdateContact(dbNameNew, c);
+  int n = ss_->UpdateContactConfirmed(im.sender(), 'U');
   if (n != 0) {
 #ifdef DEBUG
     printf("Status on contact not updated.\n");
@@ -1038,9 +1046,11 @@ int ClientController::HandleReceivedShare(
       sp.role = 'A';
       contact_list.clear();
       maidsafe::ContactsHandler ch;
-      int r = ch.GetContactList(dbName, contact_list, psn.admins(n), false);
-      if (contact_list.size() == 1 && r == 0) {
-        sp.public_key = contact_list[0].PublicKey();
+      maidsafe::mi_contact mic;
+      int r = ss_->GetContactInfo(psn.admins(n), &mic);
+      // GetContactList(dbName, contact_list, psn.admins(n), false);
+      if (r == 0) {
+        sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
         std::string public_key("aaa");
         exitcode result =
@@ -1062,9 +1072,11 @@ int ClientController::HandleReceivedShare(
       sp.role = 'R';
       contact_list.clear();
       maidsafe::ContactsHandler ch;
-      int r = ch.GetContactList(dbName, contact_list, psn.readonlys(n), false);
-      if (contact_list.size() == 1 && r == 0) {
-        sp.public_key = contact_list[0].PublicKey();
+      maidsafe::mi_contact mic;
+      int r = ss_->GetContactInfo(psn.admins(n), &mic);
+//      int r = ch.GetContactList(dbName, contact_list, psn.readonlys(n), false);
+      if (r == 0) {
+        sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
         std::string public_key("aaa");
         exitcode result =
@@ -1262,7 +1274,9 @@ int ClientController::HandleAddContactRequest(
   newDb /= ".contacts";
   std::string dbNameNew(newDb.string());
 
-  int n = ch.AddContact(dbNameNew, c);
+  int n = ss_->AddContact(sender, rec_public_key, ci.name(),
+          ci.office_number(), ci.birthday(), ci.gender().at(0), ci.language(),
+          ci.country(), ci.city(), 'C');
 #ifdef DEBUG
   printf("Result add contact: %i\n", n);
 #endif
@@ -1363,7 +1377,9 @@ int ClientController::HandleAddContactResponse(
   newDb /= ".contacts";
   std::string dbNameNew(newDb.string());
   std::vector<maidsafe::Contact> list;
-  int n = ch.GetContactList(dbNameNew, list, sender);
+  maidsafe::mi_contact mic;
+  int n = ss_->GetContactInfo(sender, &mic);
+  // int n = ch.GetContactList(dbNameNew, list, sender);
 #ifdef DEBUG
   printf("GetContactList result: %i\n", n);
 #endif
@@ -1373,13 +1389,20 @@ int ClientController::HandleAddContactResponse(
 #endif
     return -88;
   }
-  if (list.size() != 1) {
-#ifdef DEBUG
-    printf("List came back empty. No contact.\n");
-#endif
-    return -888;
-  }
-  n = ch.UpdateContact(dbNameNew, c);
+//  if (list.size() != 1) {
+//#ifdef DEBUG
+//    printf("List came back empty. No contact.\n");
+//#endif
+//    return -888;
+//  }
+  n = ss_->UpdateContactFullName(sender, ci.name());
+  n += ss_->UpdateContactOfficePhone(sender, ci.office_number());
+  n += ss_->UpdateContactBirthday(sender, ci.birthday());
+  n += ss_->UpdateContactGender(sender, ci.gender().at(0));
+  n += ss_->UpdateContactLanguage(sender, ci.language());
+  n += ss_->UpdateContactCountry(sender, ci.country());
+  n += ss_->UpdateContactCity(sender, ci.city());
+  n += ss_->UpdateContactConfirmed(sender, 'C');
 #ifdef DEBUG
   printf("UpdateContact result: %i\n", n);
 #endif
@@ -1399,7 +1422,9 @@ int ClientController::SendInstantMessage(const std::string &message,
   fs::path newDb(fsys_.MaidsafeHomeDir());
   newDb /= ".contacts";
   std::string dbNameNew(newDb.string());
-  int n = ch.GetContactList(dbNameNew, list, contact_name);
+  maidsafe::mi_contact mic;
+  int n = ss_->GetContactInfo(contact_name, &mic);
+  // GetContactList(dbNameNew, list, contact_name);
   if (n != 0) {
 #ifdef DEBUG
     printf("Couldn't find contact: %i\n", n);
@@ -1407,11 +1432,11 @@ int ClientController::SendInstantMessage(const std::string &message,
     return -9;
   }
 
-  maidsafe::Contact c = list[0];
+//  maidsafe::Contact c = list[0];
 
   maidsafe::Receivers rec;
   rec.id = contact_name;
-  rec.public_key = c.PublicKey();
+  rec.public_key = mic.pub_key_;
   std::vector<Receivers> recs;
   recs.push_back(rec);
 
@@ -1509,7 +1534,9 @@ int ClientController::SendInstantFile(std::string *filename,
   fs::path newDb(fsys_.MaidsafeHomeDir());
   newDb /= ".contacts";
   std::string dbNameNew(newDb.string());
-  n = ch.GetContactList(dbNameNew, list, contact_name);
+  maidsafe::mi_contact mic;
+  n = ss_->GetContactInfo(contact_name, &mic);
+  // ch.GetContactList(dbNameNew, list, contact_name);
   if (n != 0) {
 #ifdef DEBUG
     printf("Couldn't find contact: %i\n", n);
@@ -1517,11 +1544,11 @@ int ClientController::SendInstantFile(std::string *filename,
     return -6666;
   }
 
-  maidsafe::Contact c = list[0];
+//  maidsafe::Contact c = list[0];
 
   maidsafe::Receivers rec;
   rec.id = contact_name;
-  rec.public_key = c.PublicKey();
+  rec.public_key = mic.pub_key_;
   std::vector<Receivers> recs;
   recs.push_back(rec);
 
@@ -1560,7 +1587,36 @@ int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
   fs::path newDb(fsys_.MaidsafeHomeDir());
   newDb /= ".contacts";
   std::string dbNameNew(newDb.string());
-  return ch.GetContactList(dbNameNew, *c_list, pub_name);
+  std::vector<maidsafe::mi_contact> mic_list;
+  if (pub_name.empty()) {
+    int n = ss_->GetContactList(&mic_list);
+    //GetContactList(dbNameNew, *c_list, pub_name);
+    if (n != 0)
+      return n;
+  } else {
+    maidsafe::mi_contact mic;
+    int n = ss_->GetContactInfo(pub_name, &mic);
+    if (n != 0)
+      return n;
+    mic_list.push_back(mic);
+  }
+  for (unsigned int a = 0; a < mic_list.size(); ++a) {
+    Contact c;
+    c.SetBirthday(mic_list[a].birthday_);
+    c.SetCity(mic_list[a].city_);
+    c.SetConfirmed(mic_list[a].confirmed_);
+    c.SetCountry(mic_list[a].country_);
+    c.SetFullName(mic_list[a].full_name_);
+    c.SetGender(mic_list[a].gender_);
+    c.SetLanguage(mic_list[a].language_);
+    c.SetLastContact(mic_list[a].last_contact_);
+    c.SetPublicKey(mic_list[a].pub_key_);
+    c.SetOfficePhone(mic_list[a].office_phone_);
+    c.SetPublicName(mic_list[a].pub_name_);
+    c.SetRank(mic_list[a].rank_);
+    c_list->push_back(c);
+  }
+  return 0;
 }
 
 int ClientController::AddContact(const std::string &public_name) {
@@ -1632,7 +1688,8 @@ int ClientController::AddContact(const std::string &public_name) {
     c.SetPublicKey(public_key);
     c.SetConfirmed('U');
 
-    return ch.AddContact(dbNameNew, c);
+    return ss_->AddContact(public_name, public_key, "", "", "", '-', -1,
+           -1, "", 'U');
   } else {
 #ifdef DEBUG
     printf("Couldn't find contact's public key.\n");
@@ -1663,8 +1720,9 @@ int ClientController::DeleteContact(const std::string &public_name) {
   maidsafe::Contact c;
   maidsafe::ContactsHandler ch;
   std::vector<Contact> contact_list;
-  n = ch.GetContactList(dbNameNew, contact_list, public_name, false, 0);
-  if (n != 0 || contact_list.size() != 1) {
+  maidsafe::mi_contact mic;
+  n = ss_->GetContactInfo(public_name, &mic);
+  if (n != 0) {
 #ifdef DEBUG
     printf("Selection from contacts DB failed: n - %i --- size:%i.\n",
       n, contact_list.size());
@@ -1672,9 +1730,9 @@ int ClientController::DeleteContact(const std::string &public_name) {
     return -502;
   }
 
-  c = contact_list[0];
+//  c = contact_list[0];
   std::string deletion_msg(base::itos(base::get_epoch_nanoseconds()));
-  deletion_msg += " deleted " + c.PublicName() + " update " +
+  deletion_msg += " deleted " + mic.pub_name_ + " update " +
     maidsafe::SessionSingleton::getInstance()->PublicUsername();
 #ifdef DEBUG
   printf("MSG: %s\n", deletion_msg.c_str());
@@ -1710,7 +1768,7 @@ int ClientController::DeleteContact(const std::string &public_name) {
     return -503;
   }
 
-  n = ch.DeleteContact(dbNameNew, c);
+  n = ss_->DeleteContact(public_name);
   if (n != 0) {
 #ifdef DEBUG
     printf("Deletion of the contact in DB failed.\n");
@@ -1777,11 +1835,13 @@ int ClientController::CreateNewShare(const std::string &name,
   for (it = admins.begin(); it != admins.end(); ++it) {
     maidsafe::ContactsHandler ch;
     std::vector<maidsafe::Contact> c_list;
-    int n = ch.GetContactList(dbNameNew, c_list, *it, false);
-    if (n == 0 && c_list.size() == 1) {
+    maidsafe::mi_contact mic;
+    int n = ss_->GetContactInfo(*it, &mic);
+    // GetContactList(dbNameNew, c_list, *it, false);
+    if (n == 0) {
       maidsafe::ShareParticipants sp;
       sp.id = *it;
-      sp.public_key = c_list[0].PublicKey();
+      sp.public_key = mic.pub_key_;
       sp.role = 'A';
       participants.push_back(sp);
       parts.push_back(sp);
@@ -1790,11 +1850,13 @@ int ClientController::CreateNewShare(const std::string &name,
   for (it = readonlys.begin(); it != readonlys.end(); ++it) {
     maidsafe::ContactsHandler ch;
     std::vector<maidsafe::Contact> c_list;
-    int n = ch.GetContactList(dbNameNew, c_list, *it, false);
-    if (n == 0 && c_list.size() == 1) {
+    maidsafe::mi_contact mic;
+    int n = ss_->GetContactInfo(*it, &mic);
+    // GetContactList(dbNameNew, c_list, *it, false);
+    if (n == 0) {
       maidsafe::ShareParticipants sp;
       sp.id = *it;
-      sp.public_key = c_list[0].PublicKey();
+      sp.public_key = mic.pub_key_;
       sp.role = 'R';
       participants.push_back(sp);
       parts.push_back(sp);

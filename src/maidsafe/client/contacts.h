@@ -74,7 +74,6 @@ class Countries {
 
 class Contact {
  private:
- public:
   std::string pub_name_;
   std::string pub_key_;
   std::string full_name_;
@@ -88,6 +87,7 @@ class Contact {
   int rank_;
   int last_contact_;
 
+ public:
   //  Constructors
   Contact();
   explicit Contact(const std::vector<std::string> &attributes);
@@ -171,6 +171,10 @@ struct mi_contact {
   int rank_;
   int last_contact_;
 
+  mi_contact() : pub_name_(), pub_key_(), full_name_(), office_phone_(),
+                 birthday_(), gender_(), language_(), country_(), city_(),
+                 confirmed_(), rank_(), last_contact_() {}
+
   mi_contact(std::string pub_name, std::string pub_key, std::string full_name,
              std::string office_phone, std::string birthday, char gender,
              int language, int country, std::string city, char confirmed,
@@ -192,13 +196,18 @@ typedef boost::multi_index::multi_index_container<
   boost::multi_index::indexed_by<
     boost::multi_index::ordered_unique<
       boost::multi_index::tag<pub_name>,
-      BOOST_MULTI_INDEX_MEMBER(mi_contact, std::string, pub_name_)>,
+      BOOST_MULTI_INDEX_MEMBER(mi_contact, std::string, pub_name_)
+    >,
     boost::multi_index::ordered_non_unique<
       boost::multi_index::tag<rank>,
-      BOOST_MULTI_INDEX_MEMBER(mi_contact, int, rank_)>,
+      BOOST_MULTI_INDEX_MEMBER(mi_contact, int, rank_), std::greater<int>
+    >,
     boost::multi_index::ordered_non_unique<
       boost::multi_index::tag<last_contact>,
-      BOOST_MULTI_INDEX_MEMBER(mi_contact, int, last_contact_)> >
+      BOOST_MULTI_INDEX_MEMBER(mi_contact, int, last_contact_),
+      std::greater<int>
+    >
+  >
 > contact_set;
 
 class ContactsHandler {
@@ -206,27 +215,52 @@ class ContactsHandler {
   boost::shared_ptr<CppSQLite3DB> db_;
   int Connect(const std::string &dbName);
   int Close();
+  contact_set cs_;
 
  public:
-  ContactsHandler() : db_() { }
-  int CreateContactDB(const std::string &dbName);
-  int AddContact(const std::string &dbName, Contact &sc);
-  int DeleteContact(const std::string &dbName, Contact &sc);
-  int UpdateContact(const std::string &dbName, Contact &sc);
-  int SetLastContactRank(const std::string &dbName, Contact &sc);
-  // pub_name: if a certain public name is needed. can be used for the search
-  //           with like=true, since the query is done with pub_name like
-  //           %pub_name% in SQL.
-  // type:     use 1 for most contacted, use 2 for most recent, 0 (default)
-  //           gets all.
-  int GetContactList(const std::string &dbName,
-                     std::vector<Contact> &list,
-                     const std::string &pub_name,
-                     bool like = false,
-                     int type = 0);
-  // Message handlers
-  int HandleAddRequest();
-  int HandleAddResponse();
+  ContactsHandler() : db_(), cs_() { }
+  int AddContact(const std::string &pub_name,
+                    const std::string &pub_key,
+                    const std::string &full_name,
+                    const std::string &office_phone,
+                    const std::string &birthday,
+                    const char &gender,
+                    const int &language,
+                    const int &country,
+                    const std::string &city,
+                    const char &confirmed,
+                    const int &rank = 0,
+                    const int &last_contact = 0);
+  int DeleteContact(const std::string &pub_name);
+  int UpdateContact(const mi_contact &mic);
+  int UpdateContactKey(const std::string &pub_name,
+                          const std::string &value);
+  int UpdateContactFullName(const std::string &pub_name,
+                               const std::string &value);
+  int UpdateContactOfficePhone(const std::string &pub_name,
+                                  const std::string &value);
+  int UpdateContactBirthday(const std::string &pub_name,
+                               const std::string &value);
+  int UpdateContactGender(const std::string &pub_name,
+                             const char &value);
+  int UpdateContactLanguage(const std::string &pub_name,
+                               const int &value);
+  int UpdateContactCountry(const std::string &pub_name,
+                              const int &value);
+  int UpdateContactCity(const std::string &pub_name,
+                           const std::string &value);
+  int UpdateContactConfirmed(const std::string &pub_name,
+                                const char &value);
+  int SetLastContactRank(const std::string &pub_name);
+  int GetContactInfo(const std::string &pub_name, mi_contact *mic);
+
+  // type:  1  - for most contacted
+  //        2  - for most recent
+  //        0  - (default) alphabetical
+  int GetContactList(std::vector<mi_contact> *list,
+                        int type = 0);
+
+  int ClearContacts();
 };
 
 }  // namespace maidsafe

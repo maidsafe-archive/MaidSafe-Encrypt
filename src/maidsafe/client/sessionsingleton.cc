@@ -57,17 +57,16 @@ bool SessionSingleton::ResetSession() {
   std::set<std::string> empty_set;
   SetAuthorisedUsers(empty_set);
   SetMaidAuthorisedUsers(empty_set);
-//  buffer_packet_type ids[3] = {MPID_BP, PMID_BP, MAID_BP};
-//  for (int i = 0; i < 3; ++i) {
-//    SetPrivateKey("", ids[i]);
-//    SetId("", ids[i]);
-//    SetPublicKey("", ids[i]);
-//  }
   SetMounted(0);
   SetWinDrive('\0');
   ka_.ClearKeyRing();
+  ch_.ClearContacts();
   return true;
 }
+
+/////////////////////////
+// Key ring operations //
+/////////////////////////
 
 int SessionSingleton::LoadKeys(std::list<Key> *keys) {
   if (keys->empty())
@@ -134,6 +133,100 @@ std::string SessionSingleton::PublicKey(const PacketType &pt) {
 
 std::string SessionSingleton::PrivateKey(const PacketType &pt) {
   return ka_.PrivateKey(pt);
+}
+
+////////////////////////
+// Contact operations //
+////////////////////////
+
+int SessionSingleton::LoadContacts(std::list<PublicContact> *contacts) {
+  int n = 0;
+  while (!contacts->empty()) {
+    PublicContact pc = contacts->front();
+    n += AddContact(pc.pub_name(), pc.pub_key(), pc.full_name(),
+                    pc.office_phone(), pc.birthday(), pc.gender().at(0),
+                    pc.language(), pc.country(), pc.city(),
+                    pc.confirmed().at(0), pc.rank(), pc.last_contact());
+    contacts->pop_front();
+  }
+  return n;
+}
+
+int SessionSingleton::AddContact(const std::string &pub_name,
+                                 const std::string &pub_key,
+                                 const std::string &full_name,
+                                 const std::string &office_phone,
+                                 const std::string &birthday,
+                                 const char &gender,
+                                 const int &language,
+                                 const int &country,
+                                 const std::string &city,
+                                 const char &confirmed,
+                                 const int &rank,
+                                 const int &last_contact) {
+  return ch_.AddContact(pub_name, pub_key, full_name, office_phone, birthday,
+                           gender, language, country, city, confirmed, rank,
+                           last_contact);
+}
+int SessionSingleton::DeleteContact(const std::string &pub_name) {
+  return ch_.DeleteContact(pub_name);
+}
+int SessionSingleton::UpdateContact(const mi_contact &mic) {
+  return ch_.UpdateContact(mic);
+}
+int SessionSingleton::UpdateContactKey(const std::string &pub_name,
+                                       const std::string &value) {
+  return ch_.UpdateContactKey(pub_name, value);
+}
+int SessionSingleton::UpdateContactFullName(const std::string &pub_name,
+                                            const std::string &value) {
+  return ch_.UpdateContactFullName(pub_name, value);
+}
+int SessionSingleton::UpdateContactOfficePhone(const std::string &pub_name,
+                                               const std::string &value) {
+  return ch_.UpdateContactOfficePhone(pub_name, value);
+}
+int SessionSingleton::UpdateContactBirthday(const std::string &pub_name,
+                                            const std::string &value) {
+  return ch_.UpdateContactBirthday(pub_name, value);
+}
+int SessionSingleton::UpdateContactGender(const std::string &pub_name,
+                                          const char &value) {
+  return ch_.UpdateContactGender(pub_name, value);
+}
+int SessionSingleton::UpdateContactLanguage(const std::string &pub_name,
+                                            const int &value) {
+  return ch_.UpdateContactLanguage(pub_name, value);
+}
+int SessionSingleton::UpdateContactCountry(const std::string &pub_name,
+                                           const int &value) {
+  return ch_.UpdateContactCountry(pub_name, value);
+}
+int SessionSingleton::UpdateContactCity(const std::string &pub_name,
+                                        const std::string &value) {
+  return ch_.UpdateContactCity(pub_name, value);
+}
+int SessionSingleton::UpdateContactConfirmed(const std::string &pub_name,
+                                             const char &value) {
+  return ch_.UpdateContactConfirmed(pub_name, value);
+}
+int SessionSingleton::SetLastContactRank(const std::string &pub_name) {
+  return ch_.SetLastContactRank(pub_name);
+}
+int SessionSingleton::GetContactInfo(const std::string &pub_name,
+                                     mi_contact *mic) {
+  return ch_.GetContactInfo(pub_name, mic);
+}
+
+// type:  1  - for most contacted
+//        2  - for most recent
+//        0  - (default) alphabetical
+int SessionSingleton::GetContactList(std::vector<mi_contact> *list,
+                                     int type) {
+  return ch_.GetContactList(list, type);
+}
+int SessionSingleton::ClearContacts() {
+  return ch_.ClearContacts();
 }
 
 }  // namespace maidsafe

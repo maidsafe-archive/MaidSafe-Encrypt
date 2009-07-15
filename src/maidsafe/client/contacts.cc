@@ -171,459 +171,265 @@ Contact::Contact(const std::vector<std::string> &attributes)
 }
 
 //  ContactsHandler
-int ContactsHandler::CreateContactDB(const std::string &dbName) {
-  int n = Connect(dbName);
-  if (n)
-    return n;
-
-  try {
-    // db_->execDML("drop table if exists share_contacts;");
-    std::string create_db("create table share_contacts( ");
-    create_db += "pub_name varchar(100) primary key, ";
-    create_db += "pub_key varchar(100) not null, ";
-    create_db += "full_name varchar(100), ";
-    create_db += "office_phone varchar(20), ";
-    create_db += "birthday varchar(20), ";
-    create_db += "gender char(1), ";
-    create_db += "language int, ";
-    create_db += "country int, ";
-    create_db += "city varchar(30), ";
-    create_db += "confirmed bool not null, ";
-    create_db += "rank int default 0, ";
-    create_db += "last_contact int default -1);";
-    db_->execDML(create_db.c_str());
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-#endif
-    n = Close();
-    return (-1*e.errorCode()-1000);
-  }
-
-  n = Close();
-  if (n)
-    return n;
-
+int ContactsHandler::AddContact(const std::string &pub_name,
+                                   const std::string &pub_key,
+                                   const std::string &full_name,
+                                   const std::string &office_phone,
+                                   const std::string &birthday,
+                                   const char &gender,
+                                   const int &language,
+                                   const int &country,
+                                   const std::string &city,
+                                   const char &confirmed,
+                                   const int &rank,
+                                   const int &last_contact) {
+  int lc = 0;
+  if (last_contact == 0)
+    lc = base::get_epoch_time();
+  mi_contact mic(pub_name, pub_key, full_name, office_phone, birthday, gender,
+                 language, country, city, confirmed, rank, lc);
+  cs_.insert(mic);
   return 0;
 }
 
-int ContactsHandler::Connect(const std::string &dbName) {
-  db_.reset(new CppSQLite3DB());
-  try {
-    db_->open(dbName.c_str());
-    return 0;
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
+int ContactsHandler::DeleteContact(const std::string &pub_name) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
 #ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
 #endif
-    return -1;
+    return -1901;
   }
-}
-
-int ContactsHandler::Close() {
-  try {
-    db_->close();
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-#endif
-    return (-1*e.errorCode()-1000);
-  }
-  try {
-    // delete db_;
-    return 0;
-  }
-  catch(const std::exception& e) {
-    return -2;
-  }
-}
-
-int ContactsHandler::AddContact(const std::string &dbName, Contact &sc) {
-#ifdef DEBUG
-  printf("Add Contact LastContact: %i\n", sc.LastContact());
-#endif
-  int n = Connect(dbName);
-  if (n)
-    return n;
-
-  try {
-    CppSQLite3Statement stmt = db_->compileStatement(
-      "insert into share_contacts values(?,?,?,?,?,?,?,?,?,?,?,?);");
-    stmt.bind(1, sc.PublicName().c_str());
-    stmt.bind(2, sc.PublicKey().c_str());
-    stmt.bind(3, sc.FullName().c_str());
-    stmt.bind(4, sc.OfficePhone().c_str());
-    stmt.bind(5, sc.Birthday().c_str());
-    stmt.bind(6, sc.Gender());
-    stmt.bind(7, sc.Language());
-    stmt.bind(8, sc.Country());
-    stmt.bind(9, sc.City().c_str());
-    stmt.bind(10, sc.Confirmed());
-    stmt.bind(11, sc.Rank());
-    stmt.bind(12, sc.LastContact());
-    n = stmt.execDML();
-    if (n != 1)
-      return -3;
-    stmt.reset();
-  }
-  catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-#endif
-    n = Close();
-    return -3;
-  }
-
-  n = Close();
-  if (n)
-    return n;
-
+  cs_.erase(pub_name);
   return 0;
 }
 
-int ContactsHandler::DeleteContact(const std::string &dbName, Contact &sc) {
-  int n = Connect(dbName);
-  if (n)
-    return n;
-
-  try {
-    CppSQLite3Statement stmt = db_->compileStatement(
-      "delete from share_contacts where pub_name=?;");
-    stmt.bind(1, sc.PublicName().c_str());
-    n = stmt.execDML();
-    stmt.reset();
-    if (n != 1)
-      return -4;
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
+int ContactsHandler::UpdateContact(const mi_contact &mic) {
+  contact_set::iterator it = cs_.find(mic.pub_name_);
+  if (it == cs_.end()) {
 #ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
+    printf("Contact(%s) not present in contact list.\n", mic.pub_name_.c_str());
 #endif
-    n = Close();
-    return -4;
+    return -1902;
   }
-
-  n = Close();
-  if (n)
-    return n;
-
+  mi_contact local_mic = *it;
+  local_mic.pub_key_ = mic.pub_key_;
+  local_mic.full_name_ = mic.full_name_;
+  local_mic.office_phone_ = mic.office_phone_;
+  local_mic.birthday_ = mic.birthday_;
+  local_mic.gender_ = mic.gender_;
+  local_mic.language_ = mic.language_;
+  local_mic.country_ = mic.country_;
+  local_mic.city_ = mic.city_;
+  local_mic.confirmed_ = mic.confirmed_;
+  local_mic.rank_ = mic.rank_;
+  local_mic.last_contact_ = mic.last_contact_;
+  cs_.replace(it, local_mic);
   return 0;
 }
 
-int ContactsHandler::UpdateContact(const std::string &dbName, Contact &sc) {
+int ContactsHandler::UpdateContactKey(const std::string &pub_name,
+                                         const std::string &value) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
 #ifdef DEBUG
-  printf("In SQL Update Contact\n");
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
 #endif
-
-  int n = Connect(dbName);
-  if (n)
-    return n;
-
-  //  Evaluation of elements to update
-  bool b_pub_key = false;
-  bool b_full_name = false;
-  bool b_office_phone = false;
-  bool b_birthday = false;
-  bool b_gender = false;
-  bool b_language = false;
-  bool b_country = false;
-  bool b_city = false;
-  bool b_confirmed = false;
-  bool b_rank = false;
-  bool b_last_contact = false;
-
-  bool first = true;
-
-  std::string update_query("update share_contacts set ");
-  if (sc.PublicKey() != "") {
-    if (first) {
-      first = false;
-      update_query += "pub_key=?";
-    } else {
-      update_query += " ,pub_key=?";
-    }
-    b_pub_key = true;
+    return -1903;
   }
-  if (sc.FullName() != "") {
-    if (first) {
-      first = false;
-      update_query += "full_name=?";
-    } else {
-      update_query += " ,full_name=?";
-    }
-    b_full_name = true;
-  }
-  if (sc.OfficePhone() != "") {
-    if (first) {
-      first = false;
-      update_query += "office_phone=?";
-    } else {
-      update_query += " ,office_phone=?";
-    }
-    b_office_phone = true;
-  }
-  if (sc.Birthday() != "") {
-    if (first) {
-      first = false;
-      update_query += "birthday=?";
-    } else {
-      update_query += " ,birthday=?";
-    }
-    b_birthday = true;
-  }
-  if (sc.Gender() != 'U') {
-    if (first) {
-      first = false;
-      update_query += "gender=?";
-    } else {
-      update_query += " ,gender=?";
-    }
-    b_gender = true;
-  }
-  if (sc.Language() != -1) {
-    if (first) {
-      first = false;
-      update_query += "language=?";
-    } else {
-      update_query += " ,language=?";
-    }
-    b_language = true;
-  }
-  if (sc.Country() != -1) {
-    if (first) {
-      first = false;
-      update_query += "country=?";
-    } else {
-      update_query += " ,country=?";
-    }
-    b_country = true;
-  }
-  if (sc.City() != "") {
-    if (first) {
-      first = false;
-      update_query += "city=?";
-    } else {
-      update_query += " ,city=?";
-    }
-    b_city = true;
-  }
-  if (sc.Confirmed() != '\0') {
-    if (first) {
-      first = false;
-      update_query += "confirmed=?";
-    } else {
-      update_query += " ,confirmed=?";
-    }
-    b_confirmed = true;
-  }
-  if (sc.Rank() != 0) {
-    if (first) {
-      first = false;
-      update_query += "rank=?";
-    } else {
-      update_query += " ,rank=?";
-    }
-    b_confirmed = true;
-    b_rank = true;
-  }
-  if (sc.LastContact() != -1) {
-    if (first) {
-      first = false;
-      update_query += "last_contact=?";
-    } else {
-      update_query += " ,last_contact=?";
-    }
-    b_confirmed = true;
-    b_last_contact = true;
-  }
-  update_query += " where pub_name=?;";
-
-#ifdef DEBUG
-  printf("SQL Update Contact: %s\n", update_query.c_str());
-#endif
-
-  try {
-    int element = 1;
-    CppSQLite3Statement stmt = db_->compileStatement(update_query.c_str());
-
-    if (b_pub_key) {
-      stmt.bind(element, sc.PublicKey().c_str());
-      ++element;
-    }
-    if (b_full_name) {
-      stmt.bind(element, sc.FullName().c_str());
-      ++element;
-    }
-    if (b_office_phone) {
-      stmt.bind(element, sc.OfficePhone().c_str());
-      ++element;
-    }
-    if (b_birthday) {
-      stmt.bind(element, sc.Birthday().c_str());
-      ++element;
-    }
-    if (b_gender) {
-      stmt.bind(element, sc.Gender());
-      ++element;
-    }
-    if (b_language) {
-      stmt.bind(element, sc.Language());
-      ++element;
-    }
-    if (b_country) {
-      stmt.bind(element, sc.Country());
-      ++element;
-    }
-    if (b_city) {
-      stmt.bind(element, sc.City().c_str());
-      ++element;
-    }
-    if (b_confirmed) {
-      stmt.bind(element, sc.Confirmed());
-      ++element;
-    }
-    if (b_rank) {
-      stmt.bind(element, sc.Rank());
-      ++element;
-    }
-    if (b_last_contact) {
-      stmt.bind(element, sc.LastContact());
-      ++element;
-    }
-
-    stmt.bind(element, sc.PublicName().c_str());
-    n = stmt.execDML();
-    stmt.reset();
-    if (n != 1)
-      return -5;
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-#endif
-    n = Close();
-    return -5;
-  }
-
-  n = Close();
-  if (n)
-    return n;
-
+  mi_contact mic = *it;
+  mic.pub_key_ = value;
+  cs_.replace(it, mic);
   return 0;
 }
 
-int ContactsHandler::GetContactList(const std::string &dbName,
-  std::vector<Contact> &list, const std::string &pub_name,
-  bool like, int type) {
-  int n = Connect(dbName);
-  if (n)
-    return n;
+int ContactsHandler::UpdateContactFullName(const std::string &pub_name,
+                                              const std::string &value) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
+#ifdef DEBUG
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
+#endif
+    return -1904;
+  }
+  mi_contact mic = *it;
+  mic.full_name_ = value;
+  cs_.replace(it, mic);
+  return 0;
+}
 
-  std::string query("select * from share_contacts");
+int ContactsHandler::UpdateContactOfficePhone(const std::string &pub_name,
+                                                 const std::string &value) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
+#ifdef DEBUG
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
+#endif
+    return -1905;
+  }
+  mi_contact mic = *it;
+  mic.office_phone_ = value;
+  cs_.replace(it, mic);
+  return 0;
+}
+
+int ContactsHandler::UpdateContactBirthday(const std::string &pub_name,
+                                              const std::string &value) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
+#ifdef DEBUG
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
+#endif
+    return -1906;
+  }
+  mi_contact mic = *it;
+  mic.birthday_ = value;
+  cs_.replace(it, mic);
+  return 0;
+}
+
+int ContactsHandler::UpdateContactGender(const std::string &pub_name,
+                                            const char &value) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
+#ifdef DEBUG
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
+#endif
+    return -1907;
+  }
+  mi_contact mic = *it;
+  mic.gender_ = value;
+  cs_.replace(it, mic);
+  return 0;
+}
+
+int ContactsHandler::UpdateContactLanguage(const std::string &pub_name,
+                                              const int &value) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
+#ifdef DEBUG
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
+#endif
+    return -1908;
+  }
+  mi_contact mic = *it;
+  mic.language_ = value;
+  cs_.replace(it, mic);
+  return 0;
+}
+
+int ContactsHandler::UpdateContactCountry(const std::string &pub_name,
+                                             const int &value) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
+#ifdef DEBUG
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
+#endif
+    return -1909;
+  }
+  mi_contact mic = *it;
+  mic.country_ = value;
+  cs_.replace(it, mic);
+  return 0;
+}
+
+int ContactsHandler::UpdateContactCity(const std::string &pub_name,
+                                          const std::string &value) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
+#ifdef DEBUG
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
+#endif
+    return -1910;
+  }
+  mi_contact mic = *it;
+  mic.city_ = value;
+  cs_.replace(it, mic);
+  return 0;
+}
+
+int ContactsHandler::UpdateContactConfirmed(const std::string &pub_name,
+                                               const char &value) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
+#ifdef DEBUG
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
+#endif
+    return -1911;
+  }
+  mi_contact mic = *it;
+  mic.confirmed_ = value;
+  cs_.replace(it, mic);
+  return 0;
+}
+
+int ContactsHandler::SetLastContactRank(const std::string &pub_name) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
+#ifdef DEBUG
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
+#endif
+    return -1912;
+  }
+  mi_contact mic = *it;
+  mic.rank_++;
+  mic.last_contact_ = base::get_epoch_time();
+  cs_.replace(it, mic);
+  return mic.last_contact_;
+}
+
+int ContactsHandler::GetContactInfo(const std::string &pub_name,
+                                       mi_contact *mic) {
+  contact_set::iterator it = cs_.find(pub_name);
+  if (it == cs_.end()) {
+#ifdef DEBUG
+    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
+#endif
+    return -1913;
+  }
+  *mic = *it;
+  return 0;
+}
+
+// type:  1  - for most contacted
+//        2  - for most recent
+//        0  - (default) alphabetical
+int ContactsHandler::GetContactList(std::vector<mi_contact> *list,
+                                       int type) {
+  list->clear();
   switch (type) {
-    case 0: if (pub_name != "") {
-              if (like)
-                query += " where pub_name like '%"+pub_name+"%'";
-              else
-                query += " where pub_name = '"+pub_name+"'";
+    case 0: typedef contact_set::index<pub_name>::type
+                    contact_set_by_pub_name;
+            for (contact_set_by_pub_name::iterator it =
+                 cs_.get<pub_name>().begin();
+                 it != cs_.get<pub_name>().end(); it++) {
+              mi_contact mic = *it;
+              list->push_back(mic);
             }
             break;
-    case 1: query += " order by rank desc"; break;
-    case 2: query += " order by last_contact desc"; break;
+    case 1: typedef contact_set::index<rank>::type
+                    contact_set_by_rank;
+            for (contact_set_by_rank::iterator it = cs_.get<rank>().begin();
+                 it != cs_.get<rank>().end(); it++) {
+              mi_contact mic = *it;
+              list->push_back(mic);
+            }
+            break;
+    case 2: typedef contact_set::index<last_contact>::type
+                    contact_set_by_last_contact;
+            for (contact_set_by_last_contact::iterator it =
+                 cs_.get<last_contact>().begin();
+                 it != cs_.get<last_contact>().end(); it++) {
+              mi_contact mic = *it;
+              list->push_back(mic);
+            }
+            break;
   }
-  query += ";";
-
-  try {
-    int rows = 0;
-    CppSQLite3Query q = db_->execQuery(query.c_str());
-    while (!q.eof() && rows < 50) {
-      Contact *sc = new Contact();
-      sc->SetPublicName(q.getStringField(0));
-      sc->SetPublicKey(q.getStringField(1));
-      sc->SetFullName(q.getStringField(2));
-      sc->SetOfficePhone(q.getStringField(3));
-      sc->SetBirthday(q.getStringField(4));
-      sc->SetGender(q.getIntField(5));
-      sc->SetLanguage(q.getIntField(6));
-      sc->SetCountry(q.getIntField(7));
-      sc->SetCity(q.getStringField(8));
-      sc->SetConfirmed(q.getIntField(9));
-      sc->SetRank(q.getIntField(10));
-      sc->SetLastContact(q.getIntField(11));
-      list.push_back(*sc);
-      delete sc;
-      q.nextRow();
-      ++rows;
-    }
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-#endif
-    n = Close();
-    return -10;
-  }
-
-  n = Close();
-  if (n)
-    return n;
-
   return 0;
 }
 
-int ContactsHandler::SetLastContactRank(const std::string &dbName,
-  Contact &sc) {
-  int n = Connect(dbName);
-  if (n)
-    return n;
-
-  std::string query("select * from share_contacts");
-  query += " where pub_name='"+sc.PublicName()+"'";
-  query += ";";
-
-  int current_rank = -2;
-
-  try {
-    CppSQLite3Query q = db_->execQuery(query.c_str());
-    current_rank = q.getIntField(10);
-    q.finalize();
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-#endif
-    n = Close();
-    return -10;
-  }
-
-  ++current_rank;
-
-  try {
-    CppSQLite3Statement stmt = db_->compileStatement(
-      "update share_contacts set last_contact=?, rank=? where pub_name=?;");
-    stmt.bind(1, static_cast<int>(base::get_epoch_time()));
-    stmt.bind(2, current_rank);
-    stmt.bind(3, sc.PublicName().c_str());
-    n = stmt.execDML();
-    stmt.reset();
-    if (n != 1)
-      return -11;
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-#endif
-    n = Close();
-    return -11;
-  }
-
-  n = Close();
-  if (n)
-    return n;
-
+int ContactsHandler::ClearContacts() {
+  cs_.clear();
   return 0;
 }
 

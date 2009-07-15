@@ -54,7 +54,7 @@ void wait_for_result_ta(const FakeCallback &cb, boost::recursive_mutex *mutex) {
       if (cb.result != "")
         return;
     }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(5));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(20));
   }
 };
 
@@ -227,26 +227,28 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
 }
 
-//  TEST_F(AuthenticationTest, 50_RemoveMe) {
-//    DataAtlas data_atlas;
-//    DataAtlasHandler dah;
-//    std::string ser_da;
-//    exitcode result = authentication->CreateUserSysPackets(username,
-//                                                           pin,
-//                                                           password,
-//                                                           ser_da);
-//    ASSERT_EQ(OK, result) << "Result not OK";
-//
-//    ASSERT_TRUE(dah.Init("DAH.db"));
-//    ASSERT_TRUE(dah.ParseFromStringDataAtlas(ser_da)) << "No DA --> Db";
-//
-//    std::list<Key_Type> lasquis;
-//    dah.GetKeyRing(lasquis);
-//    EXPECT_EQ((unsigned int)4,lasquis.size()) << "Not all keys perhaps...";
-//    ASSERT_EQ(OK, authentication->RemoveMe(lasquis))
-//      << "Not completely removed from maidsafe network";
-//    dah.Close();
-//  }
+/*
+  TEST_F(AuthenticationTest, 50_RemoveMe) {
+    DataAtlas data_atlas;
+    DataAtlasHandler dah;
+    std::string ser_da;
+    exitcode result = authentication->CreateUserSysPackets(username,
+                                                           pin,
+                                                           password,
+                                                           ser_da);
+    ASSERT_EQ(OK, result) << "Result not OK";
+
+    ASSERT_TRUE(dah.Init("DAH.db"));
+    ASSERT_TRUE(dah.ParseFromStringDataAtlas(ser_da)) << "No DA --> Db";
+
+    std::list<Key_Type> lasquis;
+    dah.GetKeyRing(lasquis);
+    EXPECT_EQ((unsigned int)4,lasquis.size()) << "Not all keys perhaps...";
+    ASSERT_EQ(OK, authentication->RemoveMe(lasquis))
+      << "Not completely removed from maidsafe network";
+    dah.Close();
+  }
+*/
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
@@ -362,6 +364,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
+  cb.Reset();
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex));
   sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -371,8 +374,9 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   DataAtlas data_atlas;
   std::string ser_da;
   exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
-    &FakeCallback::CallbackFunc, &cb, _1));
+                    &FakeCallback::CallbackFunc, &cb, _1));
   EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
+  cb.Reset();
   result = authentication->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
@@ -404,12 +408,13 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
             "elpasguord")) << "Unable to change password";
   ASSERT_EQ("elpasguord", ss->Password()) << "Password is still the old one";
   std::string ser_da_login;
-
+  cb.Reset();
+  FakeCallback fcb;
   result = authentication->GetUserInfo(username, pin, boost::bind(
-    &FakeCallback::CallbackFunc, &cb, _1));
+           &FakeCallback::CallbackFunc, &fcb, _1));
   cb.Reset();
   ASSERT_EQ(USER_EXISTS, result) << "User does not exist";
-  wait_for_result_ta(cb, mutex);
+  wait_for_result_ta(fcb, mutex);
   result = authentication->GetUserData("elpasguord", ser_da_login);
   ASSERT_EQ(OK, result) << "Can't login with new password";
   cb.Reset();

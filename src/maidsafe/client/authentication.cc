@@ -1203,14 +1203,14 @@ bool Authentication::GetSmid(const std::string &username,
 
 void Authentication::GetUserTmid(base::callback_func_type cb, bool smid) {
   ph::TmidPacket *tmidPacket = static_cast<ph::TmidPacket*>(
-    ph::PacketFactory::Factory(ph::TMID));
+                               ph::PacketFactory::Factory(ph::TMID));
   ph::PacketParams params;
   params["username"] = ss_->Username();
   params["PIN"] = ss_->Pin();
   params["rid"] = ss_->MidRid();
   std::string tmid_name = tmidPacket->PacketName(params);
   storemanager_->LoadPacket(tmid_name,
-    boost::bind(&Authentication::GetUserTmidCallback, this, _1, smid, cb));
+      boost::bind(&Authentication::GetUserTmidCallback, this, _1, smid, cb));
 }
 
 void Authentication::GetUserTmidCallback(const std::string& result,

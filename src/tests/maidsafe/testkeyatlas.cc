@@ -156,11 +156,11 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetKeyRing) {
               public_key)) << "Failed to add key " << i << ".";
   }
 
-  std::list<maidsafe::KeyAtlasRow> MI_keyring;
-  key_ring_.GetKeyRing(&MI_keyring);
-  ASSERT_EQ(static_cast<unsigned int>(7), MI_keyring.size())
+  std::list<maidsafe::KeyAtlasRow> keyring;
+  key_ring_.GetKeyRing(&keyring);
+  ASSERT_EQ(static_cast<unsigned int>(7), keyring.size())
             << "Keyring list size is not equal to the number of IDs.";
-  ASSERT_EQ(key_ring_.KeyRingSize(), MI_keyring.size())
+  ASSERT_EQ(key_ring_.KeyRingSize(), keyring.size())
             << "Keyring list size is not equal to the number of IDs.";
 
   for (int i = 0; i < 7; i++) {
@@ -168,8 +168,8 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetKeyRing) {
     std::string private_key = "Private Key " + base::itos(i);
     std::string public_key = "Public Key " + base::itos(i);
     bool found_key = false;
-    for (std::list<maidsafe::KeyAtlasRow>::iterator it = MI_keyring.begin();
-        it != MI_keyring.end(); it++) {
+    for (std::list<maidsafe::KeyAtlasRow>::iterator it = keyring.begin();
+        it != keyring.end(); it++) {
       if (it->type_ == i) {
         found_key = true;
         ASSERT_EQ(package_id, it->id_) <<

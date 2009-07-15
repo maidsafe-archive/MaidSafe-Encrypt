@@ -35,6 +35,7 @@
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/keyatlas.h"
+#include "maidsafe/client/contacts.h"
 #include "protobuf/datamaps.pb.h"
 
 namespace maidsafe {
@@ -54,9 +55,6 @@ struct UserDetails {
                   self_encrypting(true),
                   authorised_users(),
                   maid_authorised_users(),
-                  // ids(ids),
-                  // public_keys(public_keys),
-                  // private_keys(),
                   mounted(0),
                   win_drive('\0'),
                   connection_status(0) {}
@@ -72,9 +70,6 @@ struct UserDetails {
   bool self_encrypting;
   std::set<std::string> authorised_users;
   std::set<std::string> maid_authorised_users;
-//  std::map<buffer_packet_type, std::string> ids;
-//  std::map<buffer_packet_type, std::string> public_keys;
-//  std::map<buffer_packet_type, std::string> private_keys;
   int mounted;
   char win_drive;
   int connection_status;
@@ -90,7 +85,7 @@ class SessionSingleton {
   //// User Details Handling ////
   ///////////////////////////////
 
-  // Assessors
+  // Accessors
   inline DefConLevels DefConLevel() { return ud_.defconlevel; }
   inline bool DaModified() { return ud_.da_modified; }
   inline std::string Username() { return ud_.username; }
@@ -108,13 +103,6 @@ class SessionSingleton {
   inline std::set<std::string> MaidAuthorisedUsers() {
     return ud_.maid_authorised_users;
   }
-//  inline std::string GetPrivateKey(buffer_packet_type type) {
-//    return ud_.private_keys[type];
-//  }
-//  inline std::string GetPublicKey(buffer_packet_type type) {
-//    return ud_.public_keys[type];
-//  }
-//  inline std::string GetId(buffer_packet_type type) { return ud_.ids[type]; }
   inline int Mounted() { return ud_.mounted; }
   inline char WinDrive() { return ud_.win_drive; }
   inline int ConnectionStatus() { return ud_.connection_status; }
@@ -140,9 +128,6 @@ class SessionSingleton {
     ud_.password = password;
     return true;
   }
-//  inline bool SetPublicUsername(const std::string &public_username) {
-//    return SetId(public_username, MPID_BP);
-//  }
   inline bool SetMidRid(const int64_t &midrid) {
     ud_.mid_rid = midrid;
     return true;
@@ -182,20 +167,6 @@ class SessionSingleton {
     ud_.maid_authorised_users = maid_authorised_users;
     return true;
   }
-//  inline bool SetPrivateKey(const std::string &private_key,
-//                            buffer_packet_type type) {
-//    ud_.private_keys[type] = private_key;
-//    return true;
-//  }
-//  inline bool SetPublicKey(const std::string &public_key,
-//                           buffer_packet_type type) {
-//    ud_.public_keys[type] = public_key;
-//    return true;
-//  }
-//  inline bool SetId(const std::string &id, buffer_packet_type type) {
-//    ud_.ids[type] = id;
-//    return true;
-//  }
   inline bool SetMounted(int mounted) {
     ud_.mounted = mounted;
     return true;
@@ -222,6 +193,53 @@ class SessionSingleton {
   std::string PublicKey(const PacketType &bpt);
   std::string PrivateKey(const PacketType &bpt);
 
+  ///////////////////////////
+  //// Contacts Handling ////
+  ///////////////////////////
+
+  int LoadContacts(std::list<PublicContact> *contacts);
+  int AddContact(const std::string &pub_name,
+                 const std::string &pub_key,
+                 const std::string &full_name,
+                 const std::string &office_phone,
+                 const std::string &birthday,
+                 const char &gender,
+                 const int &language,
+                 const int &country,
+                 const std::string &city,
+                 const char &confirmed,
+                 const int &rank = 0,
+                 const int &last_contact = 0);
+  int DeleteContact(const std::string &pub_name);
+  int UpdateContact(const mi_contact &mic);
+  int UpdateContactKey(const std::string &pub_name,
+                       const std::string &value);
+  int UpdateContactFullName(const std::string &pub_name,
+                            const std::string &value);
+  int UpdateContactOfficePhone(const std::string &pub_name,
+                               const std::string &value);
+  int UpdateContactBirthday(const std::string &pub_name,
+                            const std::string &value);
+  int UpdateContactGender(const std::string &pub_name,
+                          const char &value);
+  int UpdateContactLanguage(const std::string &pub_name,
+                            const int &value);
+  int UpdateContactCountry(const std::string &pub_name,
+                           const int &value);
+  int UpdateContactCity(const std::string &pub_name,
+                        const std::string &value);
+  int UpdateContactConfirmed(const std::string &pub_name,
+                             const char &value);
+  int SetLastContactRank(const std::string &pub_name);
+  int GetContactInfo(const std::string &pub_name, mi_contact *mic);
+
+  // type:  1  - for most contacted
+  //        2  - for most recent
+  //        0  - (default) alphabetical
+  int GetContactList(std::vector<mi_contact> *list,
+                     int type = 0);
+  int ClearContacts();
+
  private:
   SessionSingleton &operator=(const SessionSingleton&);
   SessionSingleton(const SessionSingleton&);
@@ -229,7 +247,8 @@ class SessionSingleton {
   ~SessionSingleton() {}
   UserDetails ud_;
   KeyAtlas ka_;
-  SessionSingleton() : ud_(), ka_() { ResetSession(); }
+  ContactsHandler ch_;
+  SessionSingleton() : ud_(), ka_(), ch_() { ResetSession(); }
 };
 }  // namesapce maidsafe
 

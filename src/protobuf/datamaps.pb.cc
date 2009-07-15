@@ -11,6 +11,9 @@ namespace maidsafe {
 
 namespace {
 
+const ::google::protobuf::Descriptor* PublicContact_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  PublicContact_reflection_ = NULL;
 const ::google::protobuf::Descriptor* Key_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   Key_reflection_ = NULL;
@@ -38,7 +41,33 @@ void protobuf_AssignDesc_datamaps_2eproto() {
     ::google::protobuf::DescriptorPool::generated_pool()->FindFileByName(
       "datamaps.proto");
   GOOGLE_CHECK(file != NULL);
-  Key_descriptor_ = file->message_type(0);
+  PublicContact_descriptor_ = file->message_type(0);
+  static const int PublicContact_offsets_[12] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, pub_name_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, pub_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, full_name_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, office_phone_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, birthday_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, gender_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, language_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, country_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, city_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, confirmed_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, rank_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, last_contact_),
+  };
+  PublicContact_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      PublicContact_descriptor_,
+      PublicContact::default_instance_,
+      PublicContact_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PublicContact, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(PublicContact));
+  Key_descriptor_ = file->message_type(1);
   static const int Key_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Key, id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Key, type_),
@@ -56,7 +85,7 @@ void protobuf_AssignDesc_datamaps_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(Key));
-  DataMap_descriptor_ = file->message_type(1);
+  DataMap_descriptor_ = file->message_type(2);
   static const int DataMap_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataMap, file_hash_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataMap, se_version_),
@@ -76,7 +105,7 @@ void protobuf_AssignDesc_datamaps_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(DataMap));
-  MetaDataMap_descriptor_ = file->message_type(2);
+  MetaDataMap_descriptor_ = file->message_type(3);
   static const int MetaDataMap_offsets_[11] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(MetaDataMap, id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(MetaDataMap, display_name_),
@@ -101,7 +130,7 @@ void protobuf_AssignDesc_datamaps_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(MetaDataMap));
-  Chunk_descriptor_ = file->message_type(3);
+  Chunk_descriptor_ = file->message_type(4);
   static const int Chunk_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Chunk, compression_type_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Chunk, chunklet_),
@@ -118,12 +147,13 @@ void protobuf_AssignDesc_datamaps_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(Chunk));
-  DataAtlas_descriptor_ = file->message_type(4);
-  static const int DataAtlas_offsets_[4] = {
+  DataAtlas_descriptor_ = file->message_type(5);
+  static const int DataAtlas_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataAtlas, root_db_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataAtlas, keys_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataAtlas, mdms_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataAtlas, dms_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataAtlas, contacts_),
   };
   DataAtlas_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -151,6 +181,8 @@ inline void protobuf_AssignDescriptorsOnce() {
 void protobuf_RegisterTypes() {
   protobuf_AssignDescriptorsOnce();
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    PublicContact_descriptor_, &PublicContact::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     Key_descriptor_, &Key::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     DataMap_descriptor_, &DataMap::default_instance());
@@ -165,6 +197,8 @@ void protobuf_RegisterTypes() {
 }  // namespace
 
 void protobuf_ShutdownFile_datamaps_2eproto() {
+  delete PublicContact::default_instance_;
+  delete PublicContact_reflection_;
   delete Key::default_instance_;
   delete Key_reflection_;
   delete DataMap::default_instance_;
@@ -184,38 +218,47 @@ void protobuf_AddDesc_datamaps_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\016datamaps.proto\022\010maidsafe\"^\n\003Key\022\n\n\002id\030"
-    "\001 \002(\014\022\"\n\004type\030\002 \002(\0162\024.maidsafe.PacketTyp"
-    "e\022\023\n\013private_key\030\003 \002(\014\022\022\n\npublic_key\030\004 \002"
-    "(\014\"\225\001\n\007DataMap\022\021\n\tfile_hash\030\001 \002(\014\022\022\n\nse_"
-    "version\030\002 \001(\014\022\022\n\nchunk_name\030\003 \003(\014\022\034\n\024enc"
-    "rypted_chunk_name\030\004 \003(\014\022\022\n\nchunk_size\030\005 "
-    "\003(\004\022\035\n\016compression_on\030\006 \001(\010:\005false\"\362\001\n\013M"
-    "etaDataMap\022\n\n\002id\030\001 \002(\005\022\024\n\014display_name\030\002"
-    " \002(\014\022 \n\004type\030\003 \002(\0162\022.maidsafe.itemtype\022\021"
-    "\n\tfile_hash\030\004 \003(\014\022\r\n\005stats\030\005 \001(\014\022\013\n\003tag\030"
-    "\006 \001(\014\022\026\n\016file_size_high\030\007 \001(\005\022\025\n\rfile_si"
-    "ze_low\030\010 \001(\005\022\025\n\rcreation_time\030\t \001(\005\022\025\n\rl"
-    "ast_modified\030\n \001(\005\022\023\n\013last_access\030\013 \001(\005\""
-    "Z\n\005Chunk\022\030\n\020compression_type\030\001 \001(\014\022\020\n\010ch"
-    "unklet\030\002 \003(\014\022%\n\035pre_compression_chunklet"
-    "_size\030\003 \003(\005\"\202\001\n\tDataAtlas\022\023\n\013root_db_key"
-    "\030\001 \001(\014\022\033\n\004keys\030\002 \003(\0132\r.maidsafe.Key\022#\n\004m"
-    "dms\030\003 \003(\0132\025.maidsafe.MetaDataMap\022\036\n\003dms\030"
-    "\004 \003(\0132\021.maidsafe.DataMap*\240\001\n\010itemtype\022\020\n"
-    "\014REGULAR_FILE\020\000\022\016\n\nSMALL_FILE\020\001\022\016\n\nEMPTY"
-    "_FILE\020\002\022\017\n\013LOCKED_FILE\020\003\022\r\n\tDIRECTORY\020\004\022"
-    "\023\n\017EMPTY_DIRECTORY\020\005\022\010\n\004LINK\020\006\022\026\n\022NOT_FO"
-    "R_PROCESSING\020\007\022\013\n\007UNKNOWN\020\010*Y\n\nPacketTyp"
-    "e\022\t\n\005ANMID\020\000\022\n\n\006ANTMID\020\001\022\n\n\006ANSMID\020\002\022\010\n\004"
-    "MAID\020\003\022\010\n\004PMID\020\004\022\n\n\006ANMPID\020\005\022\010\n\004MPID\020\006", 998);
+    "\n\016datamaps.proto\022\010maidsafe\"\345\001\n\rPublicCon"
+    "tact\022\020\n\010pub_name\030\001 \002(\014\022\017\n\007pub_key\030\002 \002(\014\022"
+    "\021\n\tfull_name\030\003 \002(\014\022\024\n\014office_phone\030\004 \002(\014"
+    "\022\020\n\010birthday\030\005 \002(\014\022\016\n\006gender\030\006 \002(\014\022\020\n\010la"
+    "nguage\030\007 \002(\005\022\017\n\007country\030\010 \002(\005\022\014\n\004city\030\t "
+    "\002(\014\022\021\n\tconfirmed\030\n \002(\014\022\014\n\004rank\030\013 \002(\005\022\024\n\014"
+    "last_contact\030\014 \002(\005\"^\n\003Key\022\n\n\002id\030\001 \002(\014\022\"\n"
+    "\004type\030\002 \002(\0162\024.maidsafe.PacketType\022\023\n\013pri"
+    "vate_key\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\"\225\001\n\007D"
+    "ataMap\022\021\n\tfile_hash\030\001 \002(\014\022\022\n\nse_version\030"
+    "\002 \001(\014\022\022\n\nchunk_name\030\003 \003(\014\022\034\n\024encrypted_c"
+    "hunk_name\030\004 \003(\014\022\022\n\nchunk_size\030\005 \003(\004\022\035\n\016c"
+    "ompression_on\030\006 \001(\010:\005false\"\362\001\n\013MetaDataM"
+    "ap\022\n\n\002id\030\001 \002(\005\022\024\n\014display_name\030\002 \002(\014\022 \n\004"
+    "type\030\003 \002(\0162\022.maidsafe.itemtype\022\021\n\tfile_h"
+    "ash\030\004 \003(\014\022\r\n\005stats\030\005 \001(\014\022\013\n\003tag\030\006 \001(\014\022\026\n"
+    "\016file_size_high\030\007 \001(\005\022\025\n\rfile_size_low\030\010"
+    " \001(\005\022\025\n\rcreation_time\030\t \001(\005\022\025\n\rlast_modi"
+    "fied\030\n \001(\005\022\023\n\013last_access\030\013 \001(\005\"Z\n\005Chunk"
+    "\022\030\n\020compression_type\030\001 \001(\014\022\020\n\010chunklet\030\002"
+    " \003(\014\022%\n\035pre_compression_chunklet_size\030\003 "
+    "\003(\005\"\255\001\n\tDataAtlas\022\023\n\013root_db_key\030\001 \001(\014\022\033"
+    "\n\004keys\030\002 \003(\0132\r.maidsafe.Key\022#\n\004mdms\030\003 \003("
+    "\0132\025.maidsafe.MetaDataMap\022\036\n\003dms\030\004 \003(\0132\021."
+    "maidsafe.DataMap\022)\n\010contacts\030\005 \003(\0132\027.mai"
+    "dsafe.PublicContact*\240\001\n\010itemtype\022\020\n\014REGU"
+    "LAR_FILE\020\000\022\016\n\nSMALL_FILE\020\001\022\016\n\nEMPTY_FILE"
+    "\020\002\022\017\n\013LOCKED_FILE\020\003\022\r\n\tDIRECTORY\020\004\022\023\n\017EM"
+    "PTY_DIRECTORY\020\005\022\010\n\004LINK\020\006\022\026\n\022NOT_FOR_PRO"
+    "CESSING\020\007\022\013\n\007UNKNOWN\020\010*Y\n\nPacketType\022\t\n\005"
+    "ANMID\020\000\022\n\n\006ANTMID\020\001\022\n\n\006ANSMID\020\002\022\010\n\004MAID\020"
+    "\003\022\010\n\004PMID\020\004\022\n\n\006ANMPID\020\005\022\010\n\004MPID\020\006", 1273);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "datamaps.proto", &protobuf_RegisterTypes);
+  PublicContact::default_instance_ = new PublicContact();
   Key::default_instance_ = new Key();
   DataMap::default_instance_ = new DataMap();
   MetaDataMap::default_instance_ = new MetaDataMap();
   Chunk::default_instance_ = new Chunk();
   DataAtlas::default_instance_ = new DataAtlas();
+  PublicContact::default_instance_->InitAsDefaultInstance();
   Key::default_instance_->InitAsDefaultInstance();
   DataMap::default_instance_->InitAsDefaultInstance();
   MetaDataMap::default_instance_->InitAsDefaultInstance();
@@ -271,6 +314,702 @@ bool PacketType_IsValid(int value) {
   }
 }
 
+
+// ===================================================================
+
+const ::std::string PublicContact::_default_pub_name_;
+const ::std::string PublicContact::_default_pub_key_;
+const ::std::string PublicContact::_default_full_name_;
+const ::std::string PublicContact::_default_office_phone_;
+const ::std::string PublicContact::_default_birthday_;
+const ::std::string PublicContact::_default_gender_;
+const ::std::string PublicContact::_default_city_;
+const ::std::string PublicContact::_default_confirmed_;
+#ifndef _MSC_VER
+const int PublicContact::kPubNameFieldNumber;
+const int PublicContact::kPubKeyFieldNumber;
+const int PublicContact::kFullNameFieldNumber;
+const int PublicContact::kOfficePhoneFieldNumber;
+const int PublicContact::kBirthdayFieldNumber;
+const int PublicContact::kGenderFieldNumber;
+const int PublicContact::kLanguageFieldNumber;
+const int PublicContact::kCountryFieldNumber;
+const int PublicContact::kCityFieldNumber;
+const int PublicContact::kConfirmedFieldNumber;
+const int PublicContact::kRankFieldNumber;
+const int PublicContact::kLastContactFieldNumber;
+#endif  // !_MSC_VER
+
+PublicContact::PublicContact()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    pub_name_(const_cast< ::std::string*>(&_default_pub_name_)),
+    pub_key_(const_cast< ::std::string*>(&_default_pub_key_)),
+    full_name_(const_cast< ::std::string*>(&_default_full_name_)),
+    office_phone_(const_cast< ::std::string*>(&_default_office_phone_)),
+    birthday_(const_cast< ::std::string*>(&_default_birthday_)),
+    gender_(const_cast< ::std::string*>(&_default_gender_)),
+    language_(0),
+    country_(0),
+    city_(const_cast< ::std::string*>(&_default_city_)),
+    confirmed_(const_cast< ::std::string*>(&_default_confirmed_)),
+    rank_(0),
+    last_contact_(0) {
+  SharedCtor();
+}
+
+void PublicContact::InitAsDefaultInstance() {}
+
+PublicContact::PublicContact(const PublicContact& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    pub_name_(const_cast< ::std::string*>(&_default_pub_name_)),
+    pub_key_(const_cast< ::std::string*>(&_default_pub_key_)),
+    full_name_(const_cast< ::std::string*>(&_default_full_name_)),
+    office_phone_(const_cast< ::std::string*>(&_default_office_phone_)),
+    birthday_(const_cast< ::std::string*>(&_default_birthday_)),
+    gender_(const_cast< ::std::string*>(&_default_gender_)),
+    language_(0),
+    country_(0),
+    city_(const_cast< ::std::string*>(&_default_city_)),
+    confirmed_(const_cast< ::std::string*>(&_default_confirmed_)),
+    rank_(0),
+    last_contact_(0) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void PublicContact::SharedCtor() {
+  _cached_size_ = 0;
+  pub_name_ = const_cast< ::std::string*>(&_default_pub_name_);
+  pub_key_ = const_cast< ::std::string*>(&_default_pub_key_);
+  full_name_ = const_cast< ::std::string*>(&_default_full_name_);
+  office_phone_ = const_cast< ::std::string*>(&_default_office_phone_);
+  birthday_ = const_cast< ::std::string*>(&_default_birthday_);
+  gender_ = const_cast< ::std::string*>(&_default_gender_);
+  language_ = 0;
+  country_ = 0;
+  city_ = const_cast< ::std::string*>(&_default_city_);
+  confirmed_ = const_cast< ::std::string*>(&_default_confirmed_);
+  rank_ = 0;
+  last_contact_ = 0;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+PublicContact::~PublicContact() {
+  SharedDtor();
+}
+
+void PublicContact::SharedDtor() {
+  if (pub_name_ != &_default_pub_name_) {
+    delete pub_name_;
+  }
+  if (pub_key_ != &_default_pub_key_) {
+    delete pub_key_;
+  }
+  if (full_name_ != &_default_full_name_) {
+    delete full_name_;
+  }
+  if (office_phone_ != &_default_office_phone_) {
+    delete office_phone_;
+  }
+  if (birthday_ != &_default_birthday_) {
+    delete birthday_;
+  }
+  if (gender_ != &_default_gender_) {
+    delete gender_;
+  }
+  if (city_ != &_default_city_) {
+    delete city_;
+  }
+  if (confirmed_ != &_default_confirmed_) {
+    delete confirmed_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* PublicContact::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return PublicContact_descriptor_;
+}
+
+const PublicContact& PublicContact::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_datamaps_2eproto();  return *default_instance_;
+}
+
+PublicContact* PublicContact::default_instance_ = NULL;
+
+PublicContact* PublicContact::New() const {
+  return new PublicContact;
+}
+
+void PublicContact::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (_has_bit(0)) {
+      if (pub_name_ != &_default_pub_name_) {
+        pub_name_->clear();
+      }
+    }
+    if (_has_bit(1)) {
+      if (pub_key_ != &_default_pub_key_) {
+        pub_key_->clear();
+      }
+    }
+    if (_has_bit(2)) {
+      if (full_name_ != &_default_full_name_) {
+        full_name_->clear();
+      }
+    }
+    if (_has_bit(3)) {
+      if (office_phone_ != &_default_office_phone_) {
+        office_phone_->clear();
+      }
+    }
+    if (_has_bit(4)) {
+      if (birthday_ != &_default_birthday_) {
+        birthday_->clear();
+      }
+    }
+    if (_has_bit(5)) {
+      if (gender_ != &_default_gender_) {
+        gender_->clear();
+      }
+    }
+    language_ = 0;
+    country_ = 0;
+  }
+  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    if (_has_bit(8)) {
+      if (city_ != &_default_city_) {
+        city_->clear();
+      }
+    }
+    if (_has_bit(9)) {
+      if (confirmed_ != &_default_confirmed_) {
+        confirmed_->clear();
+      }
+    }
+    rank_ = 0;
+    last_contact_ = 0;
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool PublicContact::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required bytes pub_name = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pub_name()));
+        if (input->ExpectTag(18)) goto parse_pub_key;
+        break;
+      }
+      
+      // required bytes pub_key = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_pub_key:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pub_key()));
+        if (input->ExpectTag(26)) goto parse_full_name;
+        break;
+      }
+      
+      // required bytes full_name = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_full_name:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_full_name()));
+        if (input->ExpectTag(34)) goto parse_office_phone;
+        break;
+      }
+      
+      // required bytes office_phone = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_office_phone:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_office_phone()));
+        if (input->ExpectTag(42)) goto parse_birthday;
+        break;
+      }
+      
+      // required bytes birthday = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_birthday:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_birthday()));
+        if (input->ExpectTag(50)) goto parse_gender;
+        break;
+      }
+      
+      // required bytes gender = 6;
+      case 6: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_gender:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_gender()));
+        if (input->ExpectTag(56)) goto parse_language;
+        break;
+      }
+      
+      // required int32 language = 7;
+      case 7: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_language:
+        DO_(::google::protobuf::internal::WireFormat::ReadInt32(
+              input, &language_));
+        _set_bit(6);
+        if (input->ExpectTag(64)) goto parse_country;
+        break;
+      }
+      
+      // required int32 country = 8;
+      case 8: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_country:
+        DO_(::google::protobuf::internal::WireFormat::ReadInt32(
+              input, &country_));
+        _set_bit(7);
+        if (input->ExpectTag(74)) goto parse_city;
+        break;
+      }
+      
+      // required bytes city = 9;
+      case 9: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_city:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_city()));
+        if (input->ExpectTag(82)) goto parse_confirmed;
+        break;
+      }
+      
+      // required bytes confirmed = 10;
+      case 10: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_confirmed:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_confirmed()));
+        if (input->ExpectTag(88)) goto parse_rank;
+        break;
+      }
+      
+      // required int32 rank = 11;
+      case 11: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_rank:
+        DO_(::google::protobuf::internal::WireFormat::ReadInt32(
+              input, &rank_));
+        _set_bit(10);
+        if (input->ExpectTag(96)) goto parse_last_contact;
+        break;
+      }
+      
+      // required int32 last_contact = 12;
+      case 12: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_last_contact:
+        DO_(::google::protobuf::internal::WireFormat::ReadInt32(
+              input, &last_contact_));
+        _set_bit(11);
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void PublicContact::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    PublicContact::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required bytes pub_name = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->pub_name(), output);
+  }
+  
+  // required bytes pub_key = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->pub_key(), output);
+  }
+  
+  // required bytes full_name = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->full_name(), output);
+  }
+  
+  // required bytes office_phone = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->office_phone(), output);
+  }
+  
+  // required bytes birthday = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->birthday(), output);
+  }
+  
+  // required bytes gender = 6;
+  if (_has_bit(5)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(6, this->gender(), output);
+  }
+  
+  // required int32 language = 7;
+  if (_has_bit(6)) {
+    ::google::protobuf::internal::WireFormat::WriteInt32(7, this->language(), output);
+  }
+  
+  // required int32 country = 8;
+  if (_has_bit(7)) {
+    ::google::protobuf::internal::WireFormat::WriteInt32(8, this->country(), output);
+  }
+  
+  // required bytes city = 9;
+  if (_has_bit(8)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(9, this->city(), output);
+  }
+  
+  // required bytes confirmed = 10;
+  if (_has_bit(9)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(10, this->confirmed(), output);
+  }
+  
+  // required int32 rank = 11;
+  if (_has_bit(10)) {
+    ::google::protobuf::internal::WireFormat::WriteInt32(11, this->rank(), output);
+  }
+  
+  // required int32 last_contact = 12;
+  if (_has_bit(11)) {
+    ::google::protobuf::internal::WireFormat::WriteInt32(12, this->last_contact(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* PublicContact::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required bytes pub_name = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->pub_name(), target);
+  }
+  
+  // required bytes pub_key = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->pub_key(), target);
+  }
+  
+  // required bytes full_name = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->full_name(), target);
+  }
+  
+  // required bytes office_phone = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->office_phone(), target);
+  }
+  
+  // required bytes birthday = 5;
+  if (_has_bit(4)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->birthday(), target);
+  }
+  
+  // required bytes gender = 6;
+  if (_has_bit(5)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(6, this->gender(), target);
+  }
+  
+  // required int32 language = 7;
+  if (_has_bit(6)) {
+    target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(7, this->language(), target);
+  }
+  
+  // required int32 country = 8;
+  if (_has_bit(7)) {
+    target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(8, this->country(), target);
+  }
+  
+  // required bytes city = 9;
+  if (_has_bit(8)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(9, this->city(), target);
+  }
+  
+  // required bytes confirmed = 10;
+  if (_has_bit(9)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(10, this->confirmed(), target);
+  }
+  
+  // required int32 rank = 11;
+  if (_has_bit(10)) {
+    target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(11, this->rank(), target);
+  }
+  
+  // required int32 last_contact = 12;
+  if (_has_bit(11)) {
+    target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(12, this->last_contact(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int PublicContact::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required bytes pub_name = 1;
+    if (has_pub_name()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->pub_name());
+    }
+    
+    // required bytes pub_key = 2;
+    if (has_pub_key()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->pub_key());
+    }
+    
+    // required bytes full_name = 3;
+    if (has_full_name()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->full_name());
+    }
+    
+    // required bytes office_phone = 4;
+    if (has_office_phone()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->office_phone());
+    }
+    
+    // required bytes birthday = 5;
+    if (has_birthday()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->birthday());
+    }
+    
+    // required bytes gender = 6;
+    if (has_gender()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->gender());
+    }
+    
+    // required int32 language = 7;
+    if (has_language()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::Int32Size(
+          this->language());
+    }
+    
+    // required int32 country = 8;
+    if (has_country()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::Int32Size(
+          this->country());
+    }
+    
+  }
+  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    // required bytes city = 9;
+    if (has_city()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->city());
+    }
+    
+    // required bytes confirmed = 10;
+    if (has_confirmed()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->confirmed());
+    }
+    
+    // required int32 rank = 11;
+    if (has_rank()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::Int32Size(
+          this->rank());
+    }
+    
+    // required int32 last_contact = 12;
+    if (has_last_contact()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::Int32Size(
+          this->last_contact());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void PublicContact::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const PublicContact* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const PublicContact*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void PublicContact::MergeFrom(const PublicContact& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_pub_name(from.pub_name());
+    }
+    if (from._has_bit(1)) {
+      set_pub_key(from.pub_key());
+    }
+    if (from._has_bit(2)) {
+      set_full_name(from.full_name());
+    }
+    if (from._has_bit(3)) {
+      set_office_phone(from.office_phone());
+    }
+    if (from._has_bit(4)) {
+      set_birthday(from.birthday());
+    }
+    if (from._has_bit(5)) {
+      set_gender(from.gender());
+    }
+    if (from._has_bit(6)) {
+      set_language(from.language());
+    }
+    if (from._has_bit(7)) {
+      set_country(from.country());
+    }
+  }
+  if (from._has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    if (from._has_bit(8)) {
+      set_city(from.city());
+    }
+    if (from._has_bit(9)) {
+      set_confirmed(from.confirmed());
+    }
+    if (from._has_bit(10)) {
+      set_rank(from.rank());
+    }
+    if (from._has_bit(11)) {
+      set_last_contact(from.last_contact());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void PublicContact::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PublicContact::CopyFrom(const PublicContact& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PublicContact::Swap(PublicContact* other) {
+  if (other != this) {
+    std::swap(pub_name_, other->pub_name_);
+    std::swap(pub_key_, other->pub_key_);
+    std::swap(full_name_, other->full_name_);
+    std::swap(office_phone_, other->office_phone_);
+    std::swap(birthday_, other->birthday_);
+    std::swap(gender_, other->gender_);
+    std::swap(language_, other->language_);
+    std::swap(country_, other->country_);
+    std::swap(city_, other->city_);
+    std::swap(confirmed_, other->confirmed_);
+    std::swap(rank_, other->rank_);
+    std::swap(last_contact_, other->last_contact_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool PublicContact::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000fff) != 0x00000fff) return false;
+  
+  return true;
+}
+
+const ::google::protobuf::Descriptor* PublicContact::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* PublicContact::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return PublicContact_reflection_;
+}
 
 // ===================================================================
 
@@ -1964,6 +2703,7 @@ const int DataAtlas::kRootDbKeyFieldNumber;
 const int DataAtlas::kKeysFieldNumber;
 const int DataAtlas::kMdmsFieldNumber;
 const int DataAtlas::kDmsFieldNumber;
+const int DataAtlas::kContactsFieldNumber;
 #endif  // !_MSC_VER
 
 DataAtlas::DataAtlas()
@@ -1973,7 +2713,8 @@ DataAtlas::DataAtlas()
     root_db_key_(const_cast< ::std::string*>(&_default_root_db_key_)),
     keys_(),
     mdms_(),
-    dms_() {
+    dms_(),
+    contacts_() {
   SharedCtor();
 }
 
@@ -1986,7 +2727,8 @@ DataAtlas::DataAtlas(const DataAtlas& from)
     root_db_key_(const_cast< ::std::string*>(&_default_root_db_key_)),
     keys_(),
     mdms_(),
-    dms_() {
+    dms_(),
+    contacts_() {
   SharedCtor();
   MergeFrom(from);
 }
@@ -2035,6 +2777,7 @@ void DataAtlas::Clear() {
   keys_.Clear();
   mdms_.Clear();
   dms_.Clear();
+  contacts_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
 }
@@ -2094,6 +2837,20 @@ bool DataAtlas::MergePartialFromCodedStream(
         DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
              input, add_dms()));
         if (input->ExpectTag(34)) goto parse_dms;
+        if (input->ExpectTag(42)) goto parse_contacts;
+        break;
+      }
+      
+      // repeated .maidsafe.PublicContact contacts = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_contacts:
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, add_contacts()));
+        if (input->ExpectTag(42)) goto parse_contacts;
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -2142,6 +2899,11 @@ void DataAtlas::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(4, this->dms(i), output);
   }
   
+  // repeated .maidsafe.PublicContact contacts = 5;
+  for (int i = 0; i < this->contacts_size(); i++) {
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(5, this->contacts(i), output);
+  }
+  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -2168,6 +2930,11 @@ void DataAtlas::SerializeWithCachedSizes(
   // repeated .maidsafe.DataMap dms = 4;
   for (int i = 0; i < this->dms_size(); i++) {
     target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(4, this->dms(i), target);
+  }
+  
+  // repeated .maidsafe.PublicContact contacts = 5;
+  for (int i = 0; i < this->contacts_size(); i++) {
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(5, this->contacts(i), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -2212,6 +2979,14 @@ int DataAtlas::ByteSize() const {
         this->dms(i));
   }
   
+  // repeated .maidsafe.PublicContact contacts = 5;
+  total_size += 1 * this->contacts_size();
+  for (int i = 0; i < this->contacts_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+        this->contacts(i));
+  }
+  
   if (!unknown_fields().empty()) {
     total_size +=
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
@@ -2238,6 +3013,7 @@ void DataAtlas::MergeFrom(const DataAtlas& from) {
   keys_.MergeFrom(from.keys_);
   mdms_.MergeFrom(from.mdms_);
   dms_.MergeFrom(from.dms_);
+  contacts_.MergeFrom(from.contacts_);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from._has_bit(0)) {
       set_root_db_key(from.root_db_key());
@@ -2264,6 +3040,7 @@ void DataAtlas::Swap(DataAtlas* other) {
     keys_.Swap(&other->keys_);
     mdms_.Swap(&other->mdms_);
     dms_.Swap(&other->dms_);
+    contacts_.Swap(&other->contacts_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -2280,6 +3057,9 @@ bool DataAtlas::IsInitialized() const {
   }
   for (int i = 0; i < dms_size(); i++) {
     if (!this->dms(i).IsInitialized()) return false;
+  }
+  for (int i = 0; i < contacts_size(); i++) {
+    if (!this->contacts(i).IsInitialized()) return false;
   }
   return true;
 }

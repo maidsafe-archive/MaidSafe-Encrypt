@@ -29,6 +29,7 @@ void  protobuf_AddDesc_datamaps_2eproto();
 void protobuf_AssignDesc_datamaps_2eproto();
 void protobuf_ShutdownFile_datamaps_2eproto();
 
+class PublicContact;
 class Key;
 class DataMap;
 class MetaDataMap;
@@ -84,6 +85,213 @@ inline bool PacketType_Parse(
     PacketType_descriptor(), name, value);
 }
 // ===================================================================
+
+class PublicContact : public ::google::protobuf::Message {
+ public:
+  PublicContact();
+  virtual ~PublicContact();
+  
+  PublicContact(const PublicContact& from);
+  
+  inline PublicContact& operator=(const PublicContact& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const PublicContact& default_instance();
+  void Swap(PublicContact* other);
+  
+  // implements Message ----------------------------------------------
+  
+  PublicContact* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const PublicContact& from);
+  void MergeFrom(const PublicContact& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes pub_name = 1;
+  inline bool has_pub_name() const;
+  inline void clear_pub_name();
+  static const int kPubNameFieldNumber = 1;
+  inline const ::std::string& pub_name() const;
+  inline void set_pub_name(const ::std::string& value);
+  inline void set_pub_name(const char* value);
+  inline void set_pub_name(const void* value, size_t size);
+  inline ::std::string* mutable_pub_name();
+  
+  // required bytes pub_key = 2;
+  inline bool has_pub_key() const;
+  inline void clear_pub_key();
+  static const int kPubKeyFieldNumber = 2;
+  inline const ::std::string& pub_key() const;
+  inline void set_pub_key(const ::std::string& value);
+  inline void set_pub_key(const char* value);
+  inline void set_pub_key(const void* value, size_t size);
+  inline ::std::string* mutable_pub_key();
+  
+  // required bytes full_name = 3;
+  inline bool has_full_name() const;
+  inline void clear_full_name();
+  static const int kFullNameFieldNumber = 3;
+  inline const ::std::string& full_name() const;
+  inline void set_full_name(const ::std::string& value);
+  inline void set_full_name(const char* value);
+  inline void set_full_name(const void* value, size_t size);
+  inline ::std::string* mutable_full_name();
+  
+  // required bytes office_phone = 4;
+  inline bool has_office_phone() const;
+  inline void clear_office_phone();
+  static const int kOfficePhoneFieldNumber = 4;
+  inline const ::std::string& office_phone() const;
+  inline void set_office_phone(const ::std::string& value);
+  inline void set_office_phone(const char* value);
+  inline void set_office_phone(const void* value, size_t size);
+  inline ::std::string* mutable_office_phone();
+  
+  // required bytes birthday = 5;
+  inline bool has_birthday() const;
+  inline void clear_birthday();
+  static const int kBirthdayFieldNumber = 5;
+  inline const ::std::string& birthday() const;
+  inline void set_birthday(const ::std::string& value);
+  inline void set_birthday(const char* value);
+  inline void set_birthday(const void* value, size_t size);
+  inline ::std::string* mutable_birthday();
+  
+  // required bytes gender = 6;
+  inline bool has_gender() const;
+  inline void clear_gender();
+  static const int kGenderFieldNumber = 6;
+  inline const ::std::string& gender() const;
+  inline void set_gender(const ::std::string& value);
+  inline void set_gender(const char* value);
+  inline void set_gender(const void* value, size_t size);
+  inline ::std::string* mutable_gender();
+  
+  // required int32 language = 7;
+  inline bool has_language() const;
+  inline void clear_language();
+  static const int kLanguageFieldNumber = 7;
+  inline ::google::protobuf::int32 language() const;
+  inline void set_language(::google::protobuf::int32 value);
+  
+  // required int32 country = 8;
+  inline bool has_country() const;
+  inline void clear_country();
+  static const int kCountryFieldNumber = 8;
+  inline ::google::protobuf::int32 country() const;
+  inline void set_country(::google::protobuf::int32 value);
+  
+  // required bytes city = 9;
+  inline bool has_city() const;
+  inline void clear_city();
+  static const int kCityFieldNumber = 9;
+  inline const ::std::string& city() const;
+  inline void set_city(const ::std::string& value);
+  inline void set_city(const char* value);
+  inline void set_city(const void* value, size_t size);
+  inline ::std::string* mutable_city();
+  
+  // required bytes confirmed = 10;
+  inline bool has_confirmed() const;
+  inline void clear_confirmed();
+  static const int kConfirmedFieldNumber = 10;
+  inline const ::std::string& confirmed() const;
+  inline void set_confirmed(const ::std::string& value);
+  inline void set_confirmed(const char* value);
+  inline void set_confirmed(const void* value, size_t size);
+  inline ::std::string* mutable_confirmed();
+  
+  // required int32 rank = 11;
+  inline bool has_rank() const;
+  inline void clear_rank();
+  static const int kRankFieldNumber = 11;
+  inline ::google::protobuf::int32 rank() const;
+  inline void set_rank(::google::protobuf::int32 value);
+  
+  // required int32 last_contact = 12;
+  inline bool has_last_contact() const;
+  inline void clear_last_contact();
+  static const int kLastContactFieldNumber = 12;
+  inline ::google::protobuf::int32 last_contact() const;
+  inline void set_last_contact(::google::protobuf::int32 value);
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* pub_name_;
+  static const ::std::string _default_pub_name_;
+  ::std::string* pub_key_;
+  static const ::std::string _default_pub_key_;
+  ::std::string* full_name_;
+  static const ::std::string _default_full_name_;
+  ::std::string* office_phone_;
+  static const ::std::string _default_office_phone_;
+  ::std::string* birthday_;
+  static const ::std::string _default_birthday_;
+  ::std::string* gender_;
+  static const ::std::string _default_gender_;
+  ::google::protobuf::int32 language_;
+  ::google::protobuf::int32 country_;
+  ::std::string* city_;
+  static const ::std::string _default_city_;
+  ::std::string* confirmed_;
+  static const ::std::string _default_confirmed_;
+  ::google::protobuf::int32 rank_;
+  ::google::protobuf::int32 last_contact_;
+  friend void  protobuf_AddDesc_datamaps_2eproto();
+  friend void protobuf_AssignDesc_datamaps_2eproto();
+  friend void protobuf_ShutdownFile_datamaps_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(12 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static PublicContact* default_instance_;
+};
+// -------------------------------------------------------------------
 
 class Key : public ::google::protobuf::Message {
  public:
@@ -765,6 +973,16 @@ class DataAtlas : public ::google::protobuf::Message {
   inline ::maidsafe::DataMap* mutable_dms(int index);
   inline ::maidsafe::DataMap* add_dms();
   
+  // repeated .maidsafe.PublicContact contacts = 5;
+  inline int contacts_size() const;
+  inline void clear_contacts();
+  static const int kContactsFieldNumber = 5;
+  inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::PublicContact >& contacts() const;
+  inline ::google::protobuf::RepeatedPtrField< ::maidsafe::PublicContact >* mutable_contacts();
+  inline const ::maidsafe::PublicContact& contacts(int index) const;
+  inline ::maidsafe::PublicContact* mutable_contacts(int index);
+  inline ::maidsafe::PublicContact* add_contacts();
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -774,10 +992,11 @@ class DataAtlas : public ::google::protobuf::Message {
   ::google::protobuf::RepeatedPtrField< ::maidsafe::Key > keys_;
   ::google::protobuf::RepeatedPtrField< ::maidsafe::MetaDataMap > mdms_;
   ::google::protobuf::RepeatedPtrField< ::maidsafe::DataMap > dms_;
+  ::google::protobuf::RepeatedPtrField< ::maidsafe::PublicContact > contacts_;
   friend void  protobuf_AddDesc_datamaps_2eproto();
   friend void protobuf_AssignDesc_datamaps_2eproto();
   friend void protobuf_ShutdownFile_datamaps_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -800,6 +1019,410 @@ class DataAtlas : public ::google::protobuf::Message {
 
 
 // ===================================================================
+
+// PublicContact
+
+// required bytes pub_name = 1;
+inline bool PublicContact::has_pub_name() const {
+  return _has_bit(0);
+}
+inline void PublicContact::clear_pub_name() {
+  if (pub_name_ != &_default_pub_name_) {
+    pub_name_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& PublicContact::pub_name() const {
+  return *pub_name_;
+}
+inline void PublicContact::set_pub_name(const ::std::string& value) {
+  _set_bit(0);
+  if (pub_name_ == &_default_pub_name_) {
+    pub_name_ = new ::std::string;
+  }
+  pub_name_->assign(value);
+}
+inline void PublicContact::set_pub_name(const char* value) {
+  _set_bit(0);
+  if (pub_name_ == &_default_pub_name_) {
+    pub_name_ = new ::std::string;
+  }
+  pub_name_->assign(value);
+}
+inline void PublicContact::set_pub_name(const void* value, size_t size) {
+  _set_bit(0);
+  if (pub_name_ == &_default_pub_name_) {
+    pub_name_ = new ::std::string;
+  }
+  pub_name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* PublicContact::mutable_pub_name() {
+  _set_bit(0);
+  if (pub_name_ == &_default_pub_name_) {
+    pub_name_ = new ::std::string;
+  }
+  return pub_name_;
+}
+
+// required bytes pub_key = 2;
+inline bool PublicContact::has_pub_key() const {
+  return _has_bit(1);
+}
+inline void PublicContact::clear_pub_key() {
+  if (pub_key_ != &_default_pub_key_) {
+    pub_key_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& PublicContact::pub_key() const {
+  return *pub_key_;
+}
+inline void PublicContact::set_pub_key(const ::std::string& value) {
+  _set_bit(1);
+  if (pub_key_ == &_default_pub_key_) {
+    pub_key_ = new ::std::string;
+  }
+  pub_key_->assign(value);
+}
+inline void PublicContact::set_pub_key(const char* value) {
+  _set_bit(1);
+  if (pub_key_ == &_default_pub_key_) {
+    pub_key_ = new ::std::string;
+  }
+  pub_key_->assign(value);
+}
+inline void PublicContact::set_pub_key(const void* value, size_t size) {
+  _set_bit(1);
+  if (pub_key_ == &_default_pub_key_) {
+    pub_key_ = new ::std::string;
+  }
+  pub_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* PublicContact::mutable_pub_key() {
+  _set_bit(1);
+  if (pub_key_ == &_default_pub_key_) {
+    pub_key_ = new ::std::string;
+  }
+  return pub_key_;
+}
+
+// required bytes full_name = 3;
+inline bool PublicContact::has_full_name() const {
+  return _has_bit(2);
+}
+inline void PublicContact::clear_full_name() {
+  if (full_name_ != &_default_full_name_) {
+    full_name_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& PublicContact::full_name() const {
+  return *full_name_;
+}
+inline void PublicContact::set_full_name(const ::std::string& value) {
+  _set_bit(2);
+  if (full_name_ == &_default_full_name_) {
+    full_name_ = new ::std::string;
+  }
+  full_name_->assign(value);
+}
+inline void PublicContact::set_full_name(const char* value) {
+  _set_bit(2);
+  if (full_name_ == &_default_full_name_) {
+    full_name_ = new ::std::string;
+  }
+  full_name_->assign(value);
+}
+inline void PublicContact::set_full_name(const void* value, size_t size) {
+  _set_bit(2);
+  if (full_name_ == &_default_full_name_) {
+    full_name_ = new ::std::string;
+  }
+  full_name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* PublicContact::mutable_full_name() {
+  _set_bit(2);
+  if (full_name_ == &_default_full_name_) {
+    full_name_ = new ::std::string;
+  }
+  return full_name_;
+}
+
+// required bytes office_phone = 4;
+inline bool PublicContact::has_office_phone() const {
+  return _has_bit(3);
+}
+inline void PublicContact::clear_office_phone() {
+  if (office_phone_ != &_default_office_phone_) {
+    office_phone_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& PublicContact::office_phone() const {
+  return *office_phone_;
+}
+inline void PublicContact::set_office_phone(const ::std::string& value) {
+  _set_bit(3);
+  if (office_phone_ == &_default_office_phone_) {
+    office_phone_ = new ::std::string;
+  }
+  office_phone_->assign(value);
+}
+inline void PublicContact::set_office_phone(const char* value) {
+  _set_bit(3);
+  if (office_phone_ == &_default_office_phone_) {
+    office_phone_ = new ::std::string;
+  }
+  office_phone_->assign(value);
+}
+inline void PublicContact::set_office_phone(const void* value, size_t size) {
+  _set_bit(3);
+  if (office_phone_ == &_default_office_phone_) {
+    office_phone_ = new ::std::string;
+  }
+  office_phone_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* PublicContact::mutable_office_phone() {
+  _set_bit(3);
+  if (office_phone_ == &_default_office_phone_) {
+    office_phone_ = new ::std::string;
+  }
+  return office_phone_;
+}
+
+// required bytes birthday = 5;
+inline bool PublicContact::has_birthday() const {
+  return _has_bit(4);
+}
+inline void PublicContact::clear_birthday() {
+  if (birthday_ != &_default_birthday_) {
+    birthday_->clear();
+  }
+  _clear_bit(4);
+}
+inline const ::std::string& PublicContact::birthday() const {
+  return *birthday_;
+}
+inline void PublicContact::set_birthday(const ::std::string& value) {
+  _set_bit(4);
+  if (birthday_ == &_default_birthday_) {
+    birthday_ = new ::std::string;
+  }
+  birthday_->assign(value);
+}
+inline void PublicContact::set_birthday(const char* value) {
+  _set_bit(4);
+  if (birthday_ == &_default_birthday_) {
+    birthday_ = new ::std::string;
+  }
+  birthday_->assign(value);
+}
+inline void PublicContact::set_birthday(const void* value, size_t size) {
+  _set_bit(4);
+  if (birthday_ == &_default_birthday_) {
+    birthday_ = new ::std::string;
+  }
+  birthday_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* PublicContact::mutable_birthday() {
+  _set_bit(4);
+  if (birthday_ == &_default_birthday_) {
+    birthday_ = new ::std::string;
+  }
+  return birthday_;
+}
+
+// required bytes gender = 6;
+inline bool PublicContact::has_gender() const {
+  return _has_bit(5);
+}
+inline void PublicContact::clear_gender() {
+  if (gender_ != &_default_gender_) {
+    gender_->clear();
+  }
+  _clear_bit(5);
+}
+inline const ::std::string& PublicContact::gender() const {
+  return *gender_;
+}
+inline void PublicContact::set_gender(const ::std::string& value) {
+  _set_bit(5);
+  if (gender_ == &_default_gender_) {
+    gender_ = new ::std::string;
+  }
+  gender_->assign(value);
+}
+inline void PublicContact::set_gender(const char* value) {
+  _set_bit(5);
+  if (gender_ == &_default_gender_) {
+    gender_ = new ::std::string;
+  }
+  gender_->assign(value);
+}
+inline void PublicContact::set_gender(const void* value, size_t size) {
+  _set_bit(5);
+  if (gender_ == &_default_gender_) {
+    gender_ = new ::std::string;
+  }
+  gender_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* PublicContact::mutable_gender() {
+  _set_bit(5);
+  if (gender_ == &_default_gender_) {
+    gender_ = new ::std::string;
+  }
+  return gender_;
+}
+
+// required int32 language = 7;
+inline bool PublicContact::has_language() const {
+  return _has_bit(6);
+}
+inline void PublicContact::clear_language() {
+  language_ = 0;
+  _clear_bit(6);
+}
+inline ::google::protobuf::int32 PublicContact::language() const {
+  return language_;
+}
+inline void PublicContact::set_language(::google::protobuf::int32 value) {
+  _set_bit(6);
+  language_ = value;
+}
+
+// required int32 country = 8;
+inline bool PublicContact::has_country() const {
+  return _has_bit(7);
+}
+inline void PublicContact::clear_country() {
+  country_ = 0;
+  _clear_bit(7);
+}
+inline ::google::protobuf::int32 PublicContact::country() const {
+  return country_;
+}
+inline void PublicContact::set_country(::google::protobuf::int32 value) {
+  _set_bit(7);
+  country_ = value;
+}
+
+// required bytes city = 9;
+inline bool PublicContact::has_city() const {
+  return _has_bit(8);
+}
+inline void PublicContact::clear_city() {
+  if (city_ != &_default_city_) {
+    city_->clear();
+  }
+  _clear_bit(8);
+}
+inline const ::std::string& PublicContact::city() const {
+  return *city_;
+}
+inline void PublicContact::set_city(const ::std::string& value) {
+  _set_bit(8);
+  if (city_ == &_default_city_) {
+    city_ = new ::std::string;
+  }
+  city_->assign(value);
+}
+inline void PublicContact::set_city(const char* value) {
+  _set_bit(8);
+  if (city_ == &_default_city_) {
+    city_ = new ::std::string;
+  }
+  city_->assign(value);
+}
+inline void PublicContact::set_city(const void* value, size_t size) {
+  _set_bit(8);
+  if (city_ == &_default_city_) {
+    city_ = new ::std::string;
+  }
+  city_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* PublicContact::mutable_city() {
+  _set_bit(8);
+  if (city_ == &_default_city_) {
+    city_ = new ::std::string;
+  }
+  return city_;
+}
+
+// required bytes confirmed = 10;
+inline bool PublicContact::has_confirmed() const {
+  return _has_bit(9);
+}
+inline void PublicContact::clear_confirmed() {
+  if (confirmed_ != &_default_confirmed_) {
+    confirmed_->clear();
+  }
+  _clear_bit(9);
+}
+inline const ::std::string& PublicContact::confirmed() const {
+  return *confirmed_;
+}
+inline void PublicContact::set_confirmed(const ::std::string& value) {
+  _set_bit(9);
+  if (confirmed_ == &_default_confirmed_) {
+    confirmed_ = new ::std::string;
+  }
+  confirmed_->assign(value);
+}
+inline void PublicContact::set_confirmed(const char* value) {
+  _set_bit(9);
+  if (confirmed_ == &_default_confirmed_) {
+    confirmed_ = new ::std::string;
+  }
+  confirmed_->assign(value);
+}
+inline void PublicContact::set_confirmed(const void* value, size_t size) {
+  _set_bit(9);
+  if (confirmed_ == &_default_confirmed_) {
+    confirmed_ = new ::std::string;
+  }
+  confirmed_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* PublicContact::mutable_confirmed() {
+  _set_bit(9);
+  if (confirmed_ == &_default_confirmed_) {
+    confirmed_ = new ::std::string;
+  }
+  return confirmed_;
+}
+
+// required int32 rank = 11;
+inline bool PublicContact::has_rank() const {
+  return _has_bit(10);
+}
+inline void PublicContact::clear_rank() {
+  rank_ = 0;
+  _clear_bit(10);
+}
+inline ::google::protobuf::int32 PublicContact::rank() const {
+  return rank_;
+}
+inline void PublicContact::set_rank(::google::protobuf::int32 value) {
+  _set_bit(10);
+  rank_ = value;
+}
+
+// required int32 last_contact = 12;
+inline bool PublicContact::has_last_contact() const {
+  return _has_bit(11);
+}
+inline void PublicContact::clear_last_contact() {
+  last_contact_ = 0;
+  _clear_bit(11);
+}
+inline ::google::protobuf::int32 PublicContact::last_contact() const {
+  return last_contact_;
+}
+inline void PublicContact::set_last_contact(::google::protobuf::int32 value) {
+  _set_bit(11);
+  last_contact_ = value;
+}
+
+// -------------------------------------------------------------------
 
 // Key
 
@@ -1684,6 +2307,31 @@ inline ::maidsafe::DataMap* DataAtlas::mutable_dms(int index) {
 }
 inline ::maidsafe::DataMap* DataAtlas::add_dms() {
   return dms_.Add();
+}
+
+// repeated .maidsafe.PublicContact contacts = 5;
+inline int DataAtlas::contacts_size() const {
+  return contacts_.size();
+}
+inline void DataAtlas::clear_contacts() {
+  contacts_.Clear();
+}
+inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::PublicContact >&
+DataAtlas::contacts() const {
+  return contacts_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::maidsafe::PublicContact >*
+DataAtlas::mutable_contacts() {
+  return &contacts_;
+}
+inline const ::maidsafe::PublicContact& DataAtlas::contacts(int index) const {
+  return contacts_.Get(index);
+}
+inline ::maidsafe::PublicContact* DataAtlas::mutable_contacts(int index) {
+  return contacts_.Mutable(index);
+}
+inline ::maidsafe::PublicContact* DataAtlas::add_contacts() {
+  return contacts_.Add();
 }
 
 

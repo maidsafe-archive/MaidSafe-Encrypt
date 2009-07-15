@@ -22,6 +22,21 @@ enum PacketType {
   MPID = 6;
 };
 
+message PublicContact {
+  required bytes pub_name = 1;
+  required bytes pub_key = 2;
+  required bytes full_name = 3;
+  required bytes office_phone = 4;
+  required bytes birthday = 5;
+  required bytes gender = 6;
+  required int32 language = 7;
+  required int32 country = 8;
+  required bytes city = 9;
+  required bytes confirmed = 10;
+  required int32 rank = 11;
+  required int32 last_contact = 12;
+}
+
 message Key {
   required bytes id = 1;
   required PacketType type = 2;
@@ -63,4 +78,5 @@ message DataAtlas {
   repeated Key keys = 2;
   repeated MetaDataMap mdms = 3;
   repeated DataMap dms = 4;
+  repeated PublicContact contacts = 5;
 }
