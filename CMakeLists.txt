@@ -159,7 +159,6 @@ add_executable(perpetualdata MACOSX_BUNDLE ${M_QT_C})
 add_executable(pdlocal  MACOSX_BUNDLE  ${M_QT_C} )
 SET(SYS_LIB
 protobuf
-cryptopp
 sqlite3
 boost_system-xgcc40-mt-1_37
 boost_filesystem-xgcc40-mt-1_37
@@ -181,7 +180,6 @@ SET(SYS_LIB
 	/usr/lib/libprotobuf.a
 	/usr/lib/libboost_system-gcc43-mt.a
 	/usr/lib/libboost_filesystem-gcc43-mt.a
-	/usr/lib/libcryptopp.a
 	/usr/lib/libboost_regex-gcc43-mt.a
 	/usr/lib/libboost_date_time-gcc43-mt.a
 	-lrt
@@ -209,7 +207,6 @@ c:/usr/lib/libboost_regex-mgw43-mt-1_37.lib
 c:/usr/lib/libboost_thread-mgw43-mt-1_37.lib
 c:/usr/lib/libboost_date_time-mgw43-mt-1_37.lib
 c:/usr/lib/dokan.lib
-c:/usr/lib/libcryptopp.a
 c:/usr/lib/libprotobuf.a c:/usr/lib/libsqlite3.a -liphlpapi
 )
 ENDIF(APPLE)
