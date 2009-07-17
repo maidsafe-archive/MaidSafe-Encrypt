@@ -106,8 +106,15 @@ class DataAtlasHandlerTest : public testing::Test {
     rsakp.GenerateKeys(packethandler::kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(MAID, "MAID", rsakp.private_key(),
         rsakp.public_key());
-    file_system::FileSystem fsys_;
-    fsys_.Mount();
+    file_system::FileSystem fsys;
+    try {
+      if (fs::exists(fsys.MaidsafeDir()))
+        fs::remove_all(fsys.MaidsafeDir());
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
+    fsys.Mount();
     boost::scoped_ptr<DataAtlasHandler>dah_(new DataAtlasHandler());
     boost::shared_ptr<SEHandler>seh_(new SEHandler(sm.get(), rec_mutex));
     if (dah_->Init(true))
@@ -115,24 +122,24 @@ class DataAtlasHandlerTest : public testing::Test {
 
     //  set up default dirs
     for (int i = 0; i < kRootSubdirSize; i++) {
-      MetaDataMap mdm_;
-      std::string ser_mdm_, key_;
-      mdm_.set_id(-2);
-      mdm_.set_display_name(base::TidyPath(kRootSubdir[i][0]));
-      mdm_.set_type(EMPTY_DIRECTORY);
-      mdm_.set_stats("");
-      mdm_.set_tag("");
-      mdm_.set_file_size_high(0);
-      mdm_.set_file_size_low(0);
+      MetaDataMap mdm;
+      std::string ser_mdm, key;
+      mdm.set_id(-2);
+      mdm.set_display_name(base::TidyPath(kRootSubdir[i][0]));
+      mdm.set_type(EMPTY_DIRECTORY);
+      mdm.set_stats("");
+      mdm.set_tag("");
+      mdm.set_file_size_high(0);
+      mdm.set_file_size_low(0);
       boost::uint32_t current_time_ = base::get_epoch_time();
-      mdm_.set_creation_time(current_time_);
-      mdm_.SerializeToString(&ser_mdm_);
+      mdm.set_creation_time(current_time_);
+      mdm.SerializeToString(&ser_mdm);
       if (kRootSubdir[i][1] == "")
-        seh_->GenerateUniqueKey(PRIVATE, "", 0, &key_);
+        seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
       else
-        key_ = kRootSubdir[i][1];
-      fs::create_directories(fsys_.MaidsafeHomeDir()+kRootSubdir[i][0]);
-      dah_->AddElement(base::TidyPath(kRootSubdir[i][0]), ser_mdm_, "", key_,
+        key = kRootSubdir[i][1];
+      fs::create_directories(fsys.MaidsafeHomeDir() + kRootSubdir[i][0]);
+      dah_->AddElement(base::TidyPath(kRootSubdir[i][0]), ser_mdm, "", key,
                        true);
     }
     cb.Reset();
@@ -141,9 +148,8 @@ class DataAtlasHandlerTest : public testing::Test {
   void TearDown() {
     try {
       boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-      file_system::FileSystem fsys_;
-      fs::remove_all(fsys_.MaidsafeHomeDir());
-      fs::remove_all(fsys_.DbDir());
+      file_system::FileSystem fsys;
+      fs::remove_all(fsys.MaidsafeDir());
       fs::remove_all("StoreChunks");
       fs::remove("KademilaDb.db");
     }
@@ -539,7 +545,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFile) {
   // Test to check the removal of a MSFile and the removal of its ms_path
 
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  std::string ser_dm, ser_mdm, ser_dm_recovered, ser_mdm_recovered;
+  std::string ser_dm, ser_mdm, ser_dm_recovered, ser_mdmrecovered;
   std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name = "Doc3.doc";
   std::string element_path = dir_name+file_name;
@@ -578,7 +584,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFile) {
   // Check the added DM exists in the DataAtlas
   ASSERT_EQ(0, dah_->GetDataMap(element_path, &ser_dm_recovered)) <<
             "Didn't retrieve DataMap from DataAtlas";
-  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path, &ser_mdm_recovered)) <<
+  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path, &ser_mdmrecovered)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
 
   DataMap recovered_dm;
@@ -590,7 +596,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFile) {
   // Check sucessful deletion of the DM from the DataAtlas
   ASSERT_NE(0, dah_->GetDataMap(element_path, &ser_dm_recovered)) <<
             "DataMap is still in the DataAtlas";
-  ASSERT_NE(0, dah_->GetMetaDataMap(element_path, &ser_mdm_recovered)) <<
+  ASSERT_NE(0, dah_->GetMetaDataMap(element_path, &ser_mdmrecovered)) <<
             "ms_path still in DataAtlas";
 }
 
@@ -598,12 +604,12 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_CopyMSFile) {
   // Test to check copying a MSFile
 
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  std::string ser_dm_original, ser_mdm_original, ser_dm_recovered_original,
-      ser_mdm_recovered_original;
-  std::string ser_dm_recovered_copy1, ser_mdm_recovered_copy1,
-      ser_dm_recovered_copy2, ser_mdm_recovered_copy2;
-  std::string ser_dm_exists, ser_mdm_exists, ser_dm_recovered_exists,
-      ser_mdm_recovered_exists;
+  std::string ser_dm_original, ser_mdmoriginal, ser_dm_recovered_original,
+      ser_mdmrecovered_original;
+  std::string ser_dm_recovered_copy1, ser_mdmrecovered_copy1,
+      ser_dm_recovered_copy2, ser_mdmrecovered_copy2;
+  std::string ser_dm_exists, ser_mdmexists, ser_dm_recovered_exists,
+      ser_mdmrecovered_exists;
   std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name_original = "Original.doc";
   std::string file_name_copy = "Copy.doc";
@@ -635,37 +641,37 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_CopyMSFile) {
   dm_exists.SerializeToString(&ser_dm_exists);
 
   // Creating MetaDataMaps
-  MetaDataMap mdm_original, mdm_exists;
-  mdm_original.set_id(-2);
-  mdm_original.set_display_name(file_name_original);
-  mdm_original.set_type(REGULAR_FILE);
-  mdm_original.add_file_hash(file_hash_original);
-  mdm_original.set_stats("STATS_original");
-  mdm_original.set_tag("TAG_original");
-  mdm_original.set_file_size_high(4);
-  mdm_original.set_file_size_low(5);
-  mdm_original.set_creation_time(6);
-  mdm_original.set_last_modified(7);
-  mdm_original.set_last_access(8);
-  mdm_original.SerializeToString(&ser_mdm_original);
-  mdm_exists.set_id(-2);
-  mdm_exists.set_display_name(file_name_exists);
-  mdm_exists.set_type(REGULAR_FILE);
-  mdm_exists.add_file_hash(file_hash_exists);
-  mdm_exists.set_stats("STATS_exists");
-  mdm_exists.set_tag("TAG_exists");
-  mdm_exists.set_file_size_high(9);
-  mdm_exists.set_file_size_low(10);
-  mdm_exists.set_creation_time(11);
-  mdm_exists.set_last_modified(12);
-  mdm_exists.set_last_access(13);
-  mdm_exists.SerializeToString(&ser_mdm_exists);
+  MetaDataMap mdmoriginal, mdmexists;
+  mdmoriginal.set_id(-2);
+  mdmoriginal.set_display_name(file_name_original);
+  mdmoriginal.set_type(REGULAR_FILE);
+  mdmoriginal.add_file_hash(file_hash_original);
+  mdmoriginal.set_stats("STATS_original");
+  mdmoriginal.set_tag("TAG_original");
+  mdmoriginal.set_file_size_high(4);
+  mdmoriginal.set_file_size_low(5);
+  mdmoriginal.set_creation_time(6);
+  mdmoriginal.set_last_modified(7);
+  mdmoriginal.set_last_access(8);
+  mdmoriginal.SerializeToString(&ser_mdmoriginal);
+  mdmexists.set_id(-2);
+  mdmexists.set_display_name(file_name_exists);
+  mdmexists.set_type(REGULAR_FILE);
+  mdmexists.add_file_hash(file_hash_exists);
+  mdmexists.set_stats("STATS_exists");
+  mdmexists.set_tag("TAG_exists");
+  mdmexists.set_file_size_high(9);
+  mdmexists.set_file_size_low(10);
+  mdmexists.set_creation_time(11);
+  mdmexists.set_last_modified(12);
+  mdmexists.set_last_access(13);
+  mdmexists.SerializeToString(&ser_mdmexists);
 
   // Adding them to the DataAtlas
-  ASSERT_EQ(0, dah_->AddElement(element_path_original, ser_mdm_original,
+  ASSERT_EQ(0, dah_->AddElement(element_path_original, ser_mdmoriginal,
             ser_dm_original, "", true)) << "DataMap and Metadata of file were "
             "not added to DataAtlas";
-  ASSERT_EQ(0, dah_->AddElement(element_path_exists, ser_mdm_exists,
+  ASSERT_EQ(0, dah_->AddElement(element_path_exists, ser_mdmexists,
             ser_dm_exists, "", true)) << "DataMap and Metadata of file were "
             "not added to DataAtlas";
 
@@ -674,17 +680,17 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_CopyMSFile) {
             &ser_dm_recovered_original)) <<
             "Didn't retrieve DataMap from DataAtlas";
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_original,
-            &ser_mdm_recovered_original)) <<
+            &ser_mdmrecovered_original)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
   ASSERT_EQ(0, dah_->GetDataMap(element_path_exists,
             &ser_dm_recovered_exists)) <<
             "Didn't retrieve DataMap from DataAtlas";
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_exists,
-            &ser_mdm_recovered_exists)) <<
+            &ser_mdmrecovered_exists)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
 
   DataMap recovered_dm_copy1, recovered_dm_exists, recovered_dm_copy2;
-  MetaDataMap recovered_mdm_copy1, recovered_mdm_exists, recovered_mdm_copy2;
+  MetaDataMap recovered_mdmcopy1, recovered_mdmexists, recovered_mdmcopy2;
 
   // Check file is not copied to non-existant dir
   ASSERT_NE(0, dah_->CopyElement(element_path_original,
@@ -699,55 +705,55 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_CopyMSFile) {
             false));
   ASSERT_EQ(0, dah_->GetDataMap(element_path_copy, &ser_dm_recovered_copy1));
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_copy,
-            &ser_mdm_recovered_copy1));
+            &ser_mdmrecovered_copy1));
   ASSERT_TRUE(recovered_dm_copy1.ParseFromString(ser_dm_recovered_copy1));
-  ASSERT_TRUE(recovered_mdm_copy1.ParseFromString(ser_mdm_recovered_copy1));
+  ASSERT_TRUE(recovered_mdmcopy1.ParseFromString(ser_mdmrecovered_copy1));
   ASSERT_EQ(dm_original.file_hash(), recovered_dm_copy1.file_hash());
-  ASSERT_EQ(mdm_original.stats(), recovered_mdm_copy1.stats());
+  ASSERT_EQ(mdmoriginal.stats(), recovered_mdmcopy1.stats());
   ASSERT_EQ(0, dah_->GetDataMap(element_path_original,
             &ser_dm_recovered_original));
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_original,
-            &ser_mdm_recovered_original));
+            &ser_mdmrecovered_original));
 
   // Check file is not copied over existing file when force bool is set to false
   ASSERT_NE(0, dah_->CopyElement(element_path_original, element_path_exists, "",
             false));
   ASSERT_EQ(0, dah_->GetDataMap(element_path_exists, &ser_dm_recovered_exists));
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_exists,
-            &ser_mdm_recovered_exists));
+            &ser_mdmrecovered_exists));
   ASSERT_TRUE(recovered_dm_exists.ParseFromString(ser_dm_recovered_exists));
-  ASSERT_TRUE(recovered_mdm_exists.ParseFromString(ser_mdm_recovered_exists));
+  ASSERT_TRUE(recovered_mdmexists.ParseFromString(ser_mdmrecovered_exists));
   ASSERT_EQ(dm_exists.file_hash(), recovered_dm_exists.file_hash());
-  ASSERT_EQ(mdm_exists.stats(), recovered_mdm_exists.stats());
+  ASSERT_EQ(mdmexists.stats(), recovered_mdmexists.stats());
 
   // Check file is copied over existing file when force bool is set to true
   ASSERT_EQ(0, dah_->CopyElement(element_path_original, element_path_exists, "",
             true));
   ASSERT_EQ(0, dah_->GetDataMap(element_path_exists, &ser_dm_recovered_copy2));
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_exists,
-            &ser_mdm_recovered_copy2));
+            &ser_mdmrecovered_copy2));
   ASSERT_TRUE(recovered_dm_copy2.ParseFromString(ser_dm_recovered_copy2));
-  ASSERT_TRUE(recovered_mdm_copy2.ParseFromString(ser_mdm_recovered_copy2));
+  ASSERT_TRUE(recovered_mdmcopy2.ParseFromString(ser_mdmrecovered_copy2));
   ASSERT_EQ(dm_original.file_hash(), recovered_dm_copy2.file_hash());
-  ASSERT_EQ(mdm_original.stats(), recovered_mdm_copy2.stats());
+  ASSERT_EQ(mdmoriginal.stats(), recovered_mdmcopy2.stats());
   ser_dm_recovered_original="";
-  ser_mdm_recovered_original="";
+  ser_mdmrecovered_original="";
   ASSERT_EQ(0, dah_->GetDataMap(element_path_original,
             &ser_dm_recovered_original));
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_original,
-            &ser_mdm_recovered_original));
+            &ser_mdmrecovered_original));
 }
 
 TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
   // Test to check renaming a MSFile
 
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  std::string ser_dm_original, ser_mdm_original, ser_dm_recovered_original,
-      ser_mdm_recovered_original;
-  std::string ser_dm_recovered_copy1, ser_mdm_recovered_copy1,
-      ser_dm_recovered_copy2, ser_mdm_recovered_copy2;
-  std::string ser_dm_exists, ser_mdm_exists, ser_dm_recovered_exists,
-      ser_mdm_recovered_exists;
+  std::string ser_dm_original, ser_mdmoriginal, ser_dm_recovered_original,
+      ser_mdmrecovered_original;
+  std::string ser_dm_recovered_copy1, ser_mdmrecovered_copy1,
+      ser_dm_recovered_copy2, ser_mdmrecovered_copy2;
+  std::string ser_dm_exists, ser_mdmexists, ser_dm_recovered_exists,
+      ser_mdmrecovered_exists;
   std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name_original = "Original.doc";
   std::string file_name_copy = "Original.doc~.copy";
@@ -779,37 +785,37 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
   dm_exists.SerializeToString(&ser_dm_exists);
 
   // Creating MetaDataMaps
-  MetaDataMap mdm_original, mdm_exists;
-  mdm_original.set_id(-2);
-  mdm_original.set_display_name(file_name_original);
-  mdm_original.set_type(REGULAR_FILE);
-  mdm_original.add_file_hash(file_hash_original);
-  mdm_original.set_stats("STATS_original");
-  mdm_original.set_tag("TAG_original");
-  mdm_original.set_file_size_high(4);
-  mdm_original.set_file_size_low(5);
-  mdm_original.set_creation_time(6);
-  mdm_original.set_last_modified(7);
-  mdm_original.set_last_access(8);
-  mdm_original.SerializeToString(&ser_mdm_original);
-  mdm_exists.set_id(-2);
-  mdm_exists.set_display_name(file_name_exists);
-  mdm_exists.set_type(REGULAR_FILE);
-  mdm_exists.add_file_hash(file_hash_exists);
-  mdm_exists.set_stats("STATS_exists");
-  mdm_exists.set_tag("TAG_exists");
-  mdm_exists.set_file_size_high(9);
-  mdm_exists.set_file_size_low(10);
-  mdm_exists.set_creation_time(11);
-  mdm_exists.set_last_modified(12);
-  mdm_exists.set_last_access(13);
-  mdm_exists.SerializeToString(&ser_mdm_exists);
+  MetaDataMap mdmoriginal, mdmexists;
+  mdmoriginal.set_id(-2);
+  mdmoriginal.set_display_name(file_name_original);
+  mdmoriginal.set_type(REGULAR_FILE);
+  mdmoriginal.add_file_hash(file_hash_original);
+  mdmoriginal.set_stats("STATS_original");
+  mdmoriginal.set_tag("TAG_original");
+  mdmoriginal.set_file_size_high(4);
+  mdmoriginal.set_file_size_low(5);
+  mdmoriginal.set_creation_time(6);
+  mdmoriginal.set_last_modified(7);
+  mdmoriginal.set_last_access(8);
+  mdmoriginal.SerializeToString(&ser_mdmoriginal);
+  mdmexists.set_id(-2);
+  mdmexists.set_display_name(file_name_exists);
+  mdmexists.set_type(REGULAR_FILE);
+  mdmexists.add_file_hash(file_hash_exists);
+  mdmexists.set_stats("STATS_exists");
+  mdmexists.set_tag("TAG_exists");
+  mdmexists.set_file_size_high(9);
+  mdmexists.set_file_size_low(10);
+  mdmexists.set_creation_time(11);
+  mdmexists.set_last_modified(12);
+  mdmexists.set_last_access(13);
+  mdmexists.SerializeToString(&ser_mdmexists);
 
   // Adding them to the DataAtlas
-  ASSERT_EQ(0, dah_->AddElement(element_path_original, ser_mdm_original,
+  ASSERT_EQ(0, dah_->AddElement(element_path_original, ser_mdmoriginal,
             ser_dm_original, "", true)) << "DataMap and Metadata of file were "
             "not added to DataAtlas";
-  ASSERT_EQ(0, dah_->AddElement(element_path_exists, ser_mdm_exists,
+  ASSERT_EQ(0, dah_->AddElement(element_path_exists, ser_mdmexists,
             ser_dm_exists, "", true)) << "DataMap and Metadata of file were "
             "not added to DataAtlas";
 
@@ -818,17 +824,17 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
             &ser_dm_recovered_original)) <<
             "Didn't retrieve DataMap from DataAtlas";
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_original,
-            &ser_mdm_recovered_original)) <<
+            &ser_mdmrecovered_original)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
   ASSERT_EQ(0, dah_->GetDataMap(element_path_exists,
             &ser_dm_recovered_exists)) <<
             "Didn't retrieve DataMap from DataAtlas";
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_exists,
-            &ser_mdm_recovered_exists)) <<
+            &ser_mdmrecovered_exists)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
 
   DataMap recovered_dm_copy1, recovered_dm_exists, recovered_dm_copy2;
-  MetaDataMap recovered_mdm_copy1, recovered_mdm_exists, recovered_mdm_copy2;
+  MetaDataMap recovered_mdmcopy1, recovered_mdmexists, recovered_mdmcopy2;
 
   // Check file is not renamed to non-existant dir
   ASSERT_NE(0, dah_->RenameElement(element_path_original,
@@ -843,23 +849,23 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
             false));
   ASSERT_EQ(0, dah_->GetDataMap(element_path_copy, &ser_dm_recovered_copy1));
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_copy,
-            &ser_mdm_recovered_copy1));
+            &ser_mdmrecovered_copy1));
   ASSERT_TRUE(recovered_dm_copy1.ParseFromString(ser_dm_recovered_copy1));
-  ASSERT_TRUE(recovered_mdm_copy1.ParseFromString(ser_mdm_recovered_copy1));
+  ASSERT_TRUE(recovered_mdmcopy1.ParseFromString(ser_mdmrecovered_copy1));
   ASSERT_EQ(dm_original.file_hash(), recovered_dm_copy1.file_hash());
-  ASSERT_EQ(mdm_original.stats(), recovered_mdm_copy1.stats());
+  ASSERT_EQ(mdmoriginal.stats(), recovered_mdmcopy1.stats());
   ASSERT_NE(0, dah_->GetDataMap(element_path_original,
             &ser_dm_recovered_original));
   ASSERT_NE(0, dah_->GetMetaDataMap(element_path_original,
-            &ser_mdm_recovered_original));
+            &ser_mdmrecovered_original));
 
   // Add & check original element again to the DataAtlas
-  ASSERT_EQ(0, dah_->AddElement(element_path_original, ser_mdm_original,
+  ASSERT_EQ(0, dah_->AddElement(element_path_original, ser_mdmoriginal,
             ser_dm_original, "", true));
   ASSERT_EQ(0, dah_->GetDataMap(element_path_original,
             &ser_dm_recovered_original));
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_original,
-            &ser_mdm_recovered_original));
+            &ser_mdmrecovered_original));
 
   // Check file is not renamed over existing file
   // when force bool is set to false
@@ -867,28 +873,28 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
             false));
   ASSERT_EQ(0, dah_->GetDataMap(element_path_exists, &ser_dm_recovered_exists));
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_exists,
-            &ser_mdm_recovered_exists));
+            &ser_mdmrecovered_exists));
   ASSERT_TRUE(recovered_dm_exists.ParseFromString(ser_dm_recovered_exists));
-  ASSERT_TRUE(recovered_mdm_exists.ParseFromString(ser_mdm_recovered_exists));
+  ASSERT_TRUE(recovered_mdmexists.ParseFromString(ser_mdmrecovered_exists));
   ASSERT_EQ(dm_exists.file_hash(), recovered_dm_exists.file_hash());
-  ASSERT_EQ(mdm_exists.stats(), recovered_mdm_exists.stats());
+  ASSERT_EQ(mdmexists.stats(), recovered_mdmexists.stats());
 
   // Check file is renamed over existing file when force bool is set to true
   ASSERT_EQ(0, dah_->RenameElement(element_path_original, element_path_exists,
             true));
   ASSERT_EQ(0, dah_->GetDataMap(element_path_exists, &ser_dm_recovered_copy2));
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path_exists,
-            &ser_mdm_recovered_copy2));
+            &ser_mdmrecovered_copy2));
   ASSERT_TRUE(recovered_dm_copy2.ParseFromString(ser_dm_recovered_copy2));
-  ASSERT_TRUE(recovered_mdm_copy2.ParseFromString(ser_mdm_recovered_copy2));
+  ASSERT_TRUE(recovered_mdmcopy2.ParseFromString(ser_mdmrecovered_copy2));
   ASSERT_EQ(dm_original.file_hash(), recovered_dm_copy2.file_hash());
-  ASSERT_EQ(mdm_original.stats(), recovered_mdm_copy2.stats());
+  ASSERT_EQ(mdmoriginal.stats(), recovered_mdmcopy2.stats());
   ser_dm_recovered_original="";
-  ser_mdm_recovered_original="";
+  ser_mdmrecovered_original="";
   ASSERT_NE(0, dah_->GetDataMap(element_path_original,
             &ser_dm_recovered_original));
   ASSERT_NE(0, dah_->GetMetaDataMap(element_path_original,
-            &ser_mdm_recovered_original));
+            &ser_mdmrecovered_original));
 }
 
 TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileRepeatedDataMap) {
@@ -897,8 +903,8 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileRepeatedDataMap) {
 
   // declare a serialised DataMap and serialised MetaDataMap
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
-  std::string ser_dm, ser_mdm, ser_mdm2, ser_dm_recovered, ser_mdm_recovered,
-              ser_mdm_recovered2;
+  std::string ser_dm, ser_mdm, ser_mdm2, ser_dm_recovered, ser_mdmrecovered,
+              ser_mdmrecovered2;
   std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name = "Doc4.doc";
   std::string file_name2 = "MyFiLe.doc";
@@ -939,7 +945,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileRepeatedDataMap) {
   // Check the added DM exists in the DataAtlas
   ASSERT_EQ(0, dah->GetDataMap(element_path, &ser_dm_recovered)) <<
             "Didn't retrieve DataMap from DataAtlas";
-  ASSERT_EQ(0, dah->GetMetaDataMap(element_path, &ser_mdm_recovered)) <<
+  ASSERT_EQ(0, dah->GetMetaDataMap(element_path, &ser_mdmrecovered)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
 
   // Creating MetaDataMap
@@ -964,7 +970,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileRepeatedDataMap) {
   // Check the added DM exists in the DataAtlas
   ASSERT_EQ(0, dah->GetDataMap(element_path2, &ser_dm_recovered)) <<
             "Didn't retrieve DataMap from DataAtlas";
-  ASSERT_EQ(0, dah->GetMetaDataMap(element_path2, &ser_mdm_recovered2)) <<
+  ASSERT_EQ(0, dah->GetMetaDataMap(element_path2, &ser_mdmrecovered2)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
 
   // Check DM is sucessfully removed from the DataAtlas
@@ -974,7 +980,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileRepeatedDataMap) {
   // and that the DM is still there
   ASSERT_EQ(0, dah->GetDataMap(element_path2, &ser_dm_recovered)) <<
             "DataMap was removed from the DataAtlas";
-  ASSERT_NE(0, dah->GetMetaDataMap(element_path, &ser_mdm_recovered)) <<
+  ASSERT_NE(0, dah->GetMetaDataMap(element_path, &ser_mdmrecovered)) <<
             "ms_path still in DataAtlas";
 }
 
@@ -987,7 +993,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddRepeatedDataMap) {
   // declare a serialised DataMap and serialised MetaDataMap
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   std::string ser_dm, ser_mdm1, ser_mdm2, ser_dm_recovered1,
-      ser_dm_recovered2, ser_mdm_recovered1, ser_mdm_recovered2;
+      ser_dm_recovered2, ser_mdmrecovered1, ser_mdmrecovered2;
   std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name1 = "Doc5.doc";
   std::string file_name2 = "MyFiLe2.doc";
@@ -1047,12 +1053,12 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddRepeatedDataMap) {
   MetaDataMap recovered_mdm1;
   MetaDataMap recovered_mdm2;
 
-  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path1, &ser_mdm_recovered1)) <<
+  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path1, &ser_mdmrecovered1)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
-  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path2, &ser_mdm_recovered2)) <<
+  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path2, &ser_mdmrecovered2)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
-  EXPECT_TRUE(recovered_mdm1.ParseFromString(ser_mdm_recovered1));
-  EXPECT_TRUE(recovered_mdm2.ParseFromString(ser_mdm_recovered2));
+  EXPECT_TRUE(recovered_mdm1.ParseFromString(ser_mdmrecovered1));
+  EXPECT_TRUE(recovered_mdm2.ParseFromString(ser_mdmrecovered2));
 
   ASSERT_EQ(file_name1, recovered_mdm1.display_name());
   ASSERT_EQ(file_name2, recovered_mdm2.display_name());
@@ -1086,7 +1092,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddEmptyDir) {
   // to the directory
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   std::string ser_dm, ser_mdm1, ser_mdm2, ser_dm_recovered,
-    ser_mdm_recovered1, ser_mdm_recovered2;
+    ser_mdmrecovered1, ser_mdmrecovered2;
   std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name1 = "Docs";
   std::string file_name2 = "MyFiLe3.doc";
@@ -1135,9 +1141,9 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddEmptyDir) {
   //  Add and retrieve data for folder
   ASSERT_EQ(0, dah_->AddElement(element_path1, ser_mdm1, "", "Dir Key", true))
             << "Metadata of directory was not added to DataAtlas";
-  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path1, &ser_mdm_recovered1)) <<
+  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path1, &ser_mdmrecovered1)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
-  EXPECT_TRUE(recovered_mdm1.ParseFromString(ser_mdm_recovered1)) <<
+  EXPECT_TRUE(recovered_mdm1.ParseFromString(ser_mdmrecovered1)) <<
               "Metadata corrupted (cannot be parsed)";
   ASSERT_EQ(mdm1.display_name(), recovered_mdm1.display_name()) <<
             "Display name has changed in MetaDataMap";
@@ -1161,11 +1167,11 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddEmptyDir) {
   //  Add and retrieve data for file
   ASSERT_EQ(0, dah_->AddElement(element_path2, ser_mdm2, ser_dm, "", true)) <<
             "Metadata and DataMap of file was not added to DataAtlas";
-  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path2, &ser_mdm_recovered2)) <<
+  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path2, &ser_mdmrecovered2)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
   ASSERT_EQ(0, dah_->GetDataMap(element_path2, &ser_dm_recovered)) <<
             "Didn't retrieve DataMap from DataAtlas";
-  EXPECT_TRUE(recovered_mdm2.ParseFromString(ser_mdm_recovered2)) <<
+  EXPECT_TRUE(recovered_mdm2.ParseFromString(ser_mdmrecovered2)) <<
               "MetaDataMap corrupted (cannot be parsed)";
   ASSERT_EQ(mdm2.display_name(), recovered_mdm2.display_name()) <<
             "Display name has changed in MetaDataMap";
@@ -1195,8 +1201,8 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddEmptyDir) {
 TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
   // Adds an empty file to the directory, then changes the file to non-empty
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  std::string ser_dm1, ser_mdm1, ser_dm_recovered1, ser_mdm_recovered1;
-  std::string ser_dm2, ser_mdm2, ser_dm_recovered2, ser_mdm_recovered2;
+  std::string ser_dm1, ser_mdm1, ser_dm_recovered1, ser_mdmrecovered1;
+  std::string ser_dm2, ser_mdm2, ser_dm_recovered2, ser_mdmrecovered2;
   std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name = "MyFiLe4.doc";
   std::string element_path = dir_name+file_name;
@@ -1229,11 +1235,11 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
   //  Add and retrieve data for file
   ASSERT_EQ(0, dah_->AddElement(element_path, ser_mdm1, ser_dm1, "", true)) <<
             "Metadata and DataMap of file was not added to DataAtlas";
-  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path, &ser_mdm_recovered1)) <<
+  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path, &ser_mdmrecovered1)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
   ASSERT_EQ(0, dah_->GetDataMap(element_path, &ser_dm_recovered1)) <<
             "Didn't retrieve DataMap from DataAtlas";
-  EXPECT_TRUE(recovered_mdm1.ParseFromString(ser_mdm_recovered1)) <<
+  EXPECT_TRUE(recovered_mdm1.ParseFromString(ser_mdmrecovered1)) <<
               "MetaDataMap corrupted (cannot be parsed)";
   EXPECT_TRUE(recovered_dm1.ParseFromString(ser_dm_recovered1)) <<
               "DataMap corrupted (cannot be parsed)";
@@ -1273,11 +1279,11 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
 
   ASSERT_EQ(0, dah_->ModifyMetaDataMap(element_path, ser_mdm2, ser_dm2)) <<
             "Didn't modify DataAtlas";
-  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path, &ser_mdm_recovered2)) <<
+  ASSERT_EQ(0, dah_->GetMetaDataMap(element_path, &ser_mdmrecovered2)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
   ASSERT_EQ(0, dah_->GetDataMap(element_path, &ser_dm_recovered2)) <<
             "Didn't retrieve DataMap from DataAtlas";
-  EXPECT_TRUE(recovered_mdm2.ParseFromString(ser_mdm_recovered2)) <<
+  EXPECT_TRUE(recovered_mdm2.ParseFromString(ser_mdmrecovered2)) <<
               "MetaDataMap corrupted (cannot be parsed)";
   EXPECT_TRUE(recovered_dm2.ParseFromString(ser_dm_recovered2)) <<
               "DataMap corrupted (cannot be parsed)";

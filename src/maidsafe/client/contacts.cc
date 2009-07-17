@@ -229,7 +229,7 @@ int ContactsHandler::UpdateContact(const mi_contact &mic) {
 }
 
 int ContactsHandler::UpdateContactKey(const std::string &pub_name,
-                                         const std::string &value) {
+                                      const std::string &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
 #ifdef DEBUG
@@ -244,7 +244,7 @@ int ContactsHandler::UpdateContactKey(const std::string &pub_name,
 }
 
 int ContactsHandler::UpdateContactFullName(const std::string &pub_name,
-                                              const std::string &value) {
+                                           const std::string &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
 #ifdef DEBUG
@@ -259,7 +259,7 @@ int ContactsHandler::UpdateContactFullName(const std::string &pub_name,
 }
 
 int ContactsHandler::UpdateContactOfficePhone(const std::string &pub_name,
-                                                 const std::string &value) {
+                                              const std::string &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
 #ifdef DEBUG
@@ -274,7 +274,7 @@ int ContactsHandler::UpdateContactOfficePhone(const std::string &pub_name,
 }
 
 int ContactsHandler::UpdateContactBirthday(const std::string &pub_name,
-                                              const std::string &value) {
+                                           const std::string &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
 #ifdef DEBUG
@@ -289,7 +289,7 @@ int ContactsHandler::UpdateContactBirthday(const std::string &pub_name,
 }
 
 int ContactsHandler::UpdateContactGender(const std::string &pub_name,
-                                            const char &value) {
+                                         const char &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
 #ifdef DEBUG
@@ -304,7 +304,7 @@ int ContactsHandler::UpdateContactGender(const std::string &pub_name,
 }
 
 int ContactsHandler::UpdateContactLanguage(const std::string &pub_name,
-                                              const int &value) {
+                                           const int &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
 #ifdef DEBUG
@@ -319,7 +319,7 @@ int ContactsHandler::UpdateContactLanguage(const std::string &pub_name,
 }
 
 int ContactsHandler::UpdateContactCountry(const std::string &pub_name,
-                                             const int &value) {
+                                          const int &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
 #ifdef DEBUG
@@ -334,7 +334,7 @@ int ContactsHandler::UpdateContactCountry(const std::string &pub_name,
 }
 
 int ContactsHandler::UpdateContactCity(const std::string &pub_name,
-                                          const std::string &value) {
+                                       const std::string &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
 #ifdef DEBUG
@@ -349,7 +349,7 @@ int ContactsHandler::UpdateContactCity(const std::string &pub_name,
 }
 
 int ContactsHandler::UpdateContactConfirmed(const std::string &pub_name,
-                                               const char &value) {
+                                            const char &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
 #ifdef DEBUG
@@ -379,7 +379,7 @@ int ContactsHandler::SetLastContactRank(const std::string &pub_name) {
 }
 
 int ContactsHandler::GetContactInfo(const std::string &pub_name,
-                                       mi_contact *mic) {
+                                    mi_contact *mic) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
 #ifdef DEBUG

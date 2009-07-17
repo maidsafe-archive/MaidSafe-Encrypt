@@ -458,4 +458,246 @@ int PrivateShareHandler::DeleteContactsFromPrivateShare(
   return 0;
 }
 
+// Multi Index
+int PrivateShareHandler::MI_AddPrivateShare(
+    const std::vector<std::string> &attributes,
+    std::list<ShareParticipants> *participants) {
+  if (attributes.size() != 4)
+    return -2010;
+
+  bool ro_participation = false;
+  if (attributes[3] == "" && participants->empty())
+    ro_participation = true;
+
+  private_share ps(attributes[0], attributes[1], attributes[2], attributes[3]);
+  pss_.insert(ps);
+
+  if (!ro_participation) {
+    while (!participants->empty()) {
+      ShareParticipants sps = participants->front();
+      share_participant sp(ps.msid_, sps.id, sps.public_key, sps.role);
+      participants->pop_front();
+      psps_.insert(sp);
+    }
+  }
+
+  return 0;
+}
+
+int PrivateShareHandler::MI_DeletePrivateShare(
+    const std::string &value, const int &field) {
+  if (field < 0 || field > 1)
+    return -2011;
+  std::string msid(value);
+  if (field == 0) {
+    typedef private_share_set::index<private_share_name>::type
+            private_share_set_by_name;
+    private_share_set_by_name& private_share_index =
+        pss_.get<private_share_name>();
+    private_share_set_by_name::iterator it = private_share_index.find(value);
+    if (it == private_share_index.end())
+      return -2011;
+    msid = (*it).msid_;
+    private_share_index.erase(value);
+  } else {
+    typedef private_share_set::index<private_share_msid>::type
+            private_share_set_by_msid;
+    private_share_set_by_msid& private_share_index =
+        pss_.get<private_share_msid>();
+    private_share_set_by_msid::iterator it = private_share_index.find(msid);
+    if (it == private_share_index.end())
+      return -2011;
+    private_share_index.erase(msid);
+  }
+
+  typedef private_share_participant_set::index<share_participant_msid>::type
+          private_share_participant_set_by_msid;
+  private_share_participant_set_by_msid& private_share_participant_index =
+      psps_.get<share_participant_msid>();
+  private_share_participant_set_by_msid::iterator it =
+      private_share_participant_index.find(msid);
+  if (it == private_share_participant_index.end())
+    return -2011;
+  private_share_participant_index.erase(msid);
+
+  return 0;
+}
+
+int PrivateShareHandler::MI_AddContactsToPrivateShare(
+    const std::string &value, const int &field,
+    std::list<ShareParticipants> *participants) {
+  if (field < 0 || field > 1)
+    return -2012;
+  std::string msid(value);
+  if (field == 0) {
+    typedef private_share_set::index<private_share_name>::type
+            private_share_set_by_name;
+    private_share_set_by_name& private_share_index =
+        pss_.get<private_share_name>();
+    private_share_set_by_name::iterator it = private_share_index.find(value);
+    if (it == private_share_index.end())
+      return -2012;
+    msid = (*it).msid_;
+  }
+
+  while (!participants->empty()) {
+    ShareParticipants sps = participants->front();
+    share_participant sp(msid, sps.id, sps.public_key, sps.role);
+    participants->pop_front();
+    psps_.insert(sp);
+  }
+
+  return 0;
+}
+
+int PrivateShareHandler::MI_DeleteContactsFromPrivateShare(
+    const std::string &value, const int &field,
+    std::list<ShareParticipants> *participants) {
+  if (field < 0 || field > 1)
+    return -2013;
+  std::string msid(value);
+  if (field == 0) {
+    typedef private_share_set::index<private_share_name>::type
+            private_share_set_by_name;
+    private_share_set_by_name& private_share_index =
+        pss_.get<private_share_name>();
+    private_share_set_by_name::iterator it = private_share_index.find(value);
+    if (it == private_share_index.end())
+      return -2013;
+    msid = (*it).msid_;
+  }
+
+  while (!participants->empty()) {
+    ShareParticipants sps = participants->front();
+    typedef private_share_participant_set::index<share_participant_msid>::type
+            private_share_participant_set_msid;
+    private_share_participant_set_msid& private_share_participant_index =
+        psps_.get<share_participant_msid>();
+    for (private_share_participant_set_msid::iterator it =
+         private_share_participant_index.find(msid); it !=
+         private_share_participant_index.end(); it++) {
+      if ((*it).public_name_ == sps.id)
+        private_share_participant_index.erase((*it).msid_);
+    }
+    participants->pop_front();
+  }
+  return 0;
+}
+
+int PrivateShareHandler::MI_GetShareInfo(const std::string &value,
+    const int &field, PrivateShare *ps) {
+  if (field < 0 || field > 1)
+    return -2014;
+  std::string msid(value);
+  std::vector<std::string> share_attributes;
+  if (field == 0) {
+    typedef private_share_set::index<private_share_name>::type
+            private_share_set_by_name;
+    private_share_set_by_name& private_share_index =
+        pss_.get<private_share_name>();
+    private_share_set_by_name::iterator it = private_share_index.find(value);
+    if (it == private_share_index.end())
+      return -2014;
+    msid = (*it).msid_;
+    printf("LLEGO\n");
+  } else {
+    typedef private_share_set::index<private_share_msid>::type
+            private_share_set_by_msid;
+    private_share_set_by_msid& private_share_index =
+        pss_.get<private_share_msid>();
+    private_share_set_by_msid::iterator it = private_share_index.find(msid);
+    if (it == private_share_index.end())
+      return -2014;
+    share_attributes.push_back((*it).name_);
+    share_attributes.push_back((*it).msid_);
+    share_attributes.push_back((*it).msid_pub_key_);
+    share_attributes.push_back((*it).msid_priv_key_);
+  }
+  std::list<ShareParticipants> sps;
+  typedef private_share_participant_set::index<share_participant_msid>::type
+          private_share_participant_set_msid;
+  private_share_participant_set_msid& private_share_participant_index =
+      psps_.get<share_participant_msid>();
+  int n = 0;
+  private_share_participant_set_msid::iterator it =
+       private_share_participant_index.find(msid);
+  while (it != private_share_participant_index.end()) {
+    printf("%d ", n);
+    ShareParticipants sp;
+    printf("%d ", n);
+    sp.id = (*it).public_name_;
+    printf("%d ", n);
+    sp.public_key = (*it).public_key_;
+    printf("%d ", n);
+    sp.role = (*it).role_;
+    printf("%d ", n);
+    sps.push_back(sp);
+    printf("%d ", n);
+    it++;
+    printf("%d\n", n);
+    n++;
+  }
+
+  ps = new PrivateShare(share_attributes, sps);
+
+  return 0;
+}
+
+int PrivateShareHandler::MI_GetShareList(std::list<private_share> *ps_list) {
+  typedef private_share_set::index<private_share_name>::type
+          private_share_set_name;
+  private_share_set_name& private_share_index =
+      pss_.get<private_share_name>();
+  for (private_share_set_name::iterator it = private_share_index.begin();
+       it != private_share_index.end(); it++) {
+    private_share pr((*it).name_, (*it).msid_, (*it).msid_pub_key_,
+                    (*it).msid_priv_key_);
+    ps_list->push_back(pr);
+  }
+  return 0;
+}
+
+int PrivateShareHandler::MI_GetFullShareList(std::list<PrivateShare> *ps_list) {
+  std::list<private_share> share_list;
+  MI_GetShareList(&share_list);
+  while (!share_list.empty()) {
+    PrivateShare ps;
+    MI_GetShareInfo(share_list.front().name_, 0, &ps);
+    ps_list->push_back(ps);
+  }
+  return 0;
+}
+
+int PrivateShareHandler::MI_GetParticipantsList(const std::string &value,
+    const int &field, std::list<share_participant> *sp_list) {
+  if (field < 0 || field > 1)
+    return -2015;
+  std::string msid(value);
+  if (field == 0) {
+    typedef private_share_set::index<private_share_name>::type
+            private_share_set_by_name;
+    private_share_set_by_name& private_share_index =
+        pss_.get<private_share_name>();
+    private_share_set_by_name::iterator it = private_share_index.find(value);
+    if (it == private_share_index.end())
+      return -2015;
+    msid = (*it).msid_;
+  }
+
+  typedef private_share_participant_set::index<share_participant_msid>::type
+          private_share_participant_set_msid;
+  private_share_participant_set_msid& private_share_participant_index =
+      psps_.get<share_participant_msid>();
+  for (private_share_participant_set_msid::iterator it =
+       private_share_participant_index.begin(); it !=
+       private_share_participant_index.end(); it++) {
+    share_participant sp((*it).msid_, (*it).public_name_, (*it).public_key_,
+                        (*it).role_);
+    sp_list->push_back(sp);
+  }
+  if (sp_list->empty())
+    return -2015;
+  return 0;
+}
+
 }   // namespace

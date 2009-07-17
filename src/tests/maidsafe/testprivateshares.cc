@@ -381,3 +381,117 @@ TEST_F(PrivateSharesTest, BEH_MAID_AddReceivedPrivateShare) {
   }
   test++;
 }
+
+TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {
+  // Test share list to be empty
+  std::list<maidsafe::private_share> share_list;
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
+  ASSERT_EQ(0, share_list.size()) << "Share container not empty on creation.";
+
+  // Test full share list to be empty
+  std::list<maidsafe::PrivateShare> full_share_list;
+  ASSERT_EQ(0, psh_->MI_GetFullShareList(&full_share_list)) <<
+            "Failed getting full list";
+  ASSERT_EQ(0, full_share_list.size()) <<
+            "Share container not empty on creation.";
+
+  // Test lower bound of field index
+  maidsafe::PrivateShare ps;
+  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("aaa", -1, &ps)) <<
+            "Failed to recognise invalid field (-1).";
+  ASSERT_EQ("", ps.Name()) << "Share container Name was modified.";
+  ASSERT_EQ("", ps.Msid()) << "Share container Msid was modified.";
+  ASSERT_EQ("", ps.MsidPubKey()) << "Share container MsidPubKey was modified.";
+  ASSERT_EQ("", ps.MsidPriKey()) << "Share container MsidPriKey was modified.";
+  ASSERT_EQ(0, ps.Participants().size()) <<
+            "Share container Participants was modified.";
+
+  // Test upper bound of field index
+  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("aaa", 2, &ps)) <<
+            "Failed to recognise invalid field (2).";
+  ASSERT_EQ("", ps.Name()) << "Share container Name was modified.";
+  ASSERT_EQ("", ps.Msid()) << "Share container Msid was modified.";
+  ASSERT_EQ("", ps.MsidPubKey()) << "Share container MsidPubKey was modified.";
+  ASSERT_EQ("", ps.MsidPriKey()) << "Share container MsidPriKey was modified.";
+  ASSERT_EQ(0, ps.Participants().size()) <<
+            "Share container Participants was modified.";
+
+  // Test wrong share name
+  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("aaa", 0, &ps)) <<
+            "Failed to recognise invalid share name.";
+  ASSERT_EQ("", ps.Name()) << "Share container Name was modified.";
+  ASSERT_EQ("", ps.Msid()) << "Share container Msid was modified.";
+  ASSERT_EQ("", ps.MsidPubKey()) << "Share container MsidPubKey was modified.";
+  ASSERT_EQ("", ps.MsidPriKey()) << "Share container MsidPriKey was modified.";
+  ASSERT_EQ(0, ps.Participants().size()) <<
+            "Share container Participants was modified.";
+
+  // Test wrong share msid
+  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("aaa", 1, &ps)) <<
+            "Failed to recognise invalid share msid.";
+  ASSERT_EQ("", ps.Name()) << "Share container Name was modified.";
+  ASSERT_EQ("", ps.Msid()) << "Share container Msid was modified.";
+  ASSERT_EQ("", ps.MsidPubKey()) << "Share container MsidPubKey was modified.";
+  ASSERT_EQ("", ps.MsidPriKey()) << "Share container MsidPriKey was modified.";
+  ASSERT_EQ(0, ps.Participants().size()) <<
+            "Share container Participants was modified.";
+
+  // Test wrong index for field in share participant lookup
+  std::list<maidsafe::share_participant> sp_list;
+  ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("aaa", -1, &sp_list)) <<
+            "Failed to recognise lower bound.";
+  ASSERT_EQ(0, sp_list.size()) << "List should have remained empty.";
+  ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("aaa", 2, &sp_list)) <<
+            "Failed to recognise upper bound.";
+  ASSERT_EQ(0, sp_list.size()) << "List should have remained empty.";
+
+  // Test wrong share name for participant list
+  ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("aaa", 0, &sp_list)) <<
+            "Failed to recognise invalid share name.";
+  ASSERT_EQ(0, sp_list.size()) << "List should have remained empty.";
+
+  // Test wrong share msid for participant list
+  ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("aaa", 1, &sp_list)) <<
+            "Failed to recognise invalid share msid.";
+  ASSERT_EQ(0, sp_list.size()) << "List should have remained empty.";
+
+}
+
+/*
+TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShares) {
+  // Test share list to be empty
+  std::list<maidsafe::private_share> share_list;
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
+  ASSERT_EQ(0, share_list.size()) << "Share container not empty on creation.";
+
+  // Add private share
+  ASSERT_EQ(0, psh_->MI_AddPrivateShare(attributes, &participants)) <<
+            "Failed to add share";
+  printf("1\n");
+  // Check with GetShareInfo
+  maidsafe::PrivateShare by_name;
+  ASSERT_EQ(0, psh_->MI_GetShareInfo(attributes[0], 0, &by_name)) <<
+            "Failed to locate share by name";
+  printf("2\n");
+  ASSERT_EQ(attributes[0], by_name.Name()) << "Name different";
+  printf("3\n");
+  ASSERT_EQ(attributes[1], by_name.Msid()) << "Msid different";
+  printf("4\n");
+  ASSERT_EQ(attributes[2], by_name.MsidPubKey()) << "MsidPubKey different";
+  printf("5\n");
+  ASSERT_EQ(attributes[3], by_name.MsidPriKey()) << "MsidPriKey different";
+  printf("6\n");
+  ASSERT_EQ(participants.size(), by_name.Participants().size()) <<
+            "Participant lists different in size.";
+  printf("7\n");
+  maidsafe::PrivateShare by_msid;
+  ASSERT_EQ(0, psh_->MI_GetShareInfo(attributes[1], 1, &by_msid)) <<
+            "Failed to locate share by msid";
+  ASSERT_EQ(attributes[0], by_msid.Name()) << "Name different";
+  ASSERT_EQ(attributes[1], by_msid.Msid()) << "Msid different";
+  ASSERT_EQ(attributes[2], by_msid.MsidPubKey()) << "MsidPubKey different";
+  ASSERT_EQ(attributes[3], by_msid.MsidPriKey()) << "MsidPriKey different";
+  ASSERT_EQ(participants.size(), by_msid.Participants().size()) <<
+            "Participant lists different in size.";
+}
+*/
