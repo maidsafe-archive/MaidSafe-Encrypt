@@ -795,12 +795,12 @@ int SEHandler::EncryptDm(const std::string &dir_path,
   while (xor_hash_extended_.size() < ser_dm.size())
     xor_hash_extended_.append(xor_hash_);
   xor_hash_extended_ = xor_hash_extended_.substr(0, ser_dm.size());
-  maidsafe_crypto::Crypto encryptor_;
-  encryptor_.set_symm_algorithm("AES_256");
+  crypto::Crypto encryptor_;
+  encryptor_.set_symm_algorithm(crypto::AES_256);
   *enc_dm = encryptor_.SymmEncrypt((
-      encryptor_.Obfuscate(ser_dm, xor_hash_extended_, maidsafe_crypto::XOR)),
+      encryptor_.Obfuscate(ser_dm, xor_hash_extended_, crypto::XOR)),
       "",
-      maidsafe_crypto::STRING_STRING,
+      crypto::STRING_STRING,
       enc_hash_);
   return 0;
 }
@@ -827,11 +827,11 @@ int SEHandler::DecryptDm(const std::string &dir_path,
 
   enc_hash_ = SHA512(parent_key_ + key_, false);
   xor_hash_ = SHA512(key_ + parent_key_, false);
-  maidsafe_crypto::Crypto decryptor_;
-  decryptor_.set_symm_algorithm("AES_256");
+  crypto::Crypto decryptor_;
+  decryptor_.set_symm_algorithm(crypto::AES_256);
   intermediate_ = decryptor_.SymmDecrypt(enc_dm,
                                          "",
-                                         maidsafe_crypto::STRING_STRING,
+                                         crypto::STRING_STRING,
                                          enc_hash_);
   while (xor_hash_extended_.size() < intermediate_.size())
     xor_hash_extended_.append(xor_hash_);
@@ -839,7 +839,7 @@ int SEHandler::DecryptDm(const std::string &dir_path,
 
   *ser_dm = decryptor_.Obfuscate(intermediate_,
                                  xor_hash_extended_,
-                                 maidsafe_crypto::XOR);
+                                 crypto::XOR);
   if (*ser_dm == "") {
 #ifdef DEBUG
     printf("Error decrypting in SEHandler::DecryptDm.\n");
@@ -1126,8 +1126,8 @@ std::string SEHandler::CreateDataMapPacket(const std::string &ser_dm,
   if (db_type == ANONYMOUS)
     return ser_dm;
   packethandler::GenericPacket gp;
-  maidsafe_crypto::Crypto co;
-  co.set_symm_algorithm("AES_256");
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
   gp.set_data(ser_dm);
   std::string private_key_("");
   switch (db_type) {
@@ -1149,7 +1149,7 @@ std::string SEHandler::CreateDataMapPacket(const std::string &ser_dm,
   gp.set_signature(co.AsymSign(gp.data(),
                                "",
                                private_key_,
-                               maidsafe_crypto::STRING_STRING));
+                               crypto::STRING_STRING));
   std::string ser_gp;
   gp.SerializeToString(&ser_gp);
   return ser_gp;
@@ -1161,9 +1161,9 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
                                           std::string *pubkey,
                                           std::string *signed_pubkey,
                                           std::string *signed_request) {
-  maidsafe_crypto::Crypto co;
-  co.set_symm_algorithm("AES_256");
-  co.set_hash_algorithm("SHA512");
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
   switch (db_type) {
     case PRIVATE_SHARE: {
       printf("Getting signed request for PRIVATE_SHARE.\n\n");
@@ -1177,14 +1177,14 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
                                    private_key_,
-                                   maidsafe_crypto::STRING_STRING);
+                                   crypto::STRING_STRING);
       *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
                                             "",
-                                            maidsafe_crypto::STRING_STRING,
+                                            crypto::STRING_STRING,
                                             true),
                                     "",
                                     private_key_,
-                                    maidsafe_crypto::STRING_STRING);
+                                    crypto::STRING_STRING);
       }
       break;
     case PUBLIC_SHARE:
@@ -1193,14 +1193,14 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
                                    ss_->PrivateKey(MPID),
-                                   maidsafe_crypto::STRING_STRING);
+                                   crypto::STRING_STRING);
       *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
                                             "",
-                                            maidsafe_crypto::STRING_STRING,
+                                            crypto::STRING_STRING,
                                             true),
                                     "",
                                     ss_->PrivateKey(MPID),
-                                    maidsafe_crypto::STRING_STRING);
+                                    crypto::STRING_STRING);
       break;
     case ANONYMOUS:
       printf("Getting signed request for ANONYMOUS.\n\n");
@@ -1214,14 +1214,14 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
                                    ss_->PrivateKey(MAID),
-                                   maidsafe_crypto::STRING_STRING);
+                                   crypto::STRING_STRING);
       *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
                                             "",
-                                            maidsafe_crypto::STRING_STRING,
+                                            crypto::STRING_STRING,
                                             true),
                                     "",
                                     ss_->PrivateKey(MAID),
-                                    maidsafe_crypto::STRING_STRING);
+                                    crypto::STRING_STRING);
       break;
   }
 }

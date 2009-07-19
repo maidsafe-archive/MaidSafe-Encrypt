@@ -443,27 +443,24 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
 #endif
     return -1;
   }
-  maidsafe_crypto::Crypto co_;
-  co_.set_symm_algorithm("AES_256");
-  co_.set_hash_algorithm("SHA1");
+  crypto::Crypto co_;
+  co_.set_symm_algorithm(crypto::AES_256);
+  co_.set_hash_algorithm(crypto::SHA_1);
   fs::path config_file(vault_path);
   config_file /= ".config";
   base::VaultConfig vault_config;
   vault_config.set_pmid_public(pmid_public);
   vault_config.set_pmid_private(pmid_private);
   //  vault_config.set_port(6666);
-  vault_config.set_signed_pmid_public(
-      co_.AsymSign(pmid_public, "", pmid_private,
-      maidsafe_crypto::STRING_STRING));
+  vault_config.set_signed_pmid_public(co_.AsymSign(pmid_public, "",
+      pmid_private, crypto::STRING_STRING));
   fs::path chunkstore_path(vault_path);
   chunkstore_path /= "Chunkstore";
-  chunkstore_path /= co_.Hash(pmid_public, "", maidsafe_crypto::STRING_STRING,
-                              true);
+  chunkstore_path /= co_.Hash(pmid_public, "", crypto::STRING_STRING, true);
   vault_config.set_chunkstore_dir(chunkstore_path.string());
   fs::path datastore_path(vault_path);
   datastore_path /= "Datastore";
-  datastore_path /= co_.Hash(pmid_public, "", maidsafe_crypto::STRING_STRING,
-                             true);
+  datastore_path /= co_.Hash(pmid_public, "", crypto::STRING_STRING, true);
   vault_config.set_datastore_dir(datastore_path.string());
   std::fstream output(config_file.string().c_str(),
                       std::ios::out | std::ios::trunc | std::ios::binary);

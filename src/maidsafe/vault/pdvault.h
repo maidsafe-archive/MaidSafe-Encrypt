@@ -249,7 +249,7 @@ class PDVault {
   bool kad_left_calledback_;
   bool vault_started_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
-  maidsafe_crypto::Crypto co;
+  crypto::Crypto co;
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   std::string kad_config_file_;
 };

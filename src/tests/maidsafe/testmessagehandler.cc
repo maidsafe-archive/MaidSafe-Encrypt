@@ -82,8 +82,8 @@ class MsgHandlerTest : public testing::Test {
       FAIL();
       return;
     }
-    crypto_obj.set_hash_algorithm("SHA512");
-    crypto_obj.set_symm_algorithm("AES_256");
+    crypto_obj.set_hash_algorithm(crypto::SHA_512);
+    crypto_obj.set_symm_algorithm(crypto::AES_256);
     rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
     private_key = rsa_obj.private_key();
     public_key = rsa_obj.public_key();
@@ -108,8 +108,8 @@ class MsgHandlerTest : public testing::Test {
     ss->Destroy();
   }
 
-  maidsafe_crypto::Crypto crypto_obj;
-  maidsafe_crypto::RsaKeyPair rsa_obj;
+  crypto::Crypto crypto_obj;
+  crypto::RsaKeyPair rsa_obj;
   std::string private_key;
   std::string public_key;
   std::string public_username;
@@ -159,18 +159,18 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   packethandler::GenericPacket gp;
   gp.set_data(sender_pubkey);
   gp.set_signature(crypto_obj.AsymSign(gp.data(), "", rsa_obj.private_key(),
-                   maidsafe_crypto::STRING_STRING));
+                   crypto::STRING_STRING));
   std::string ser_gp;
   gp.SerializeToString(&ser_gp);
   std::string signed_pubkey = crypto_obj.AsymSign(rsa_obj.public_key(), "",
                               rsa_obj.private_key(),
-                              maidsafe_crypto::STRING_STRING);
-  sm->StorePacket(crypto_obj.Hash(sender, "", maidsafe_crypto::STRING_STRING,
+                              crypto::STRING_STRING);
+  sm->StorePacket(crypto_obj.Hash(sender, "", crypto::STRING_STRING,
                   true), ser_gp, crypto_obj.AsymSign(crypto_obj.Hash(
                   rsa_obj.public_key() + signed_pubkey + crypto_obj.Hash(
-                  sender, "", maidsafe_crypto::STRING_STRING, false), "",
-                  maidsafe_crypto::STRING_STRING, true), "",
-                  rsa_obj.private_key(), maidsafe_crypto::STRING_STRING),
+                  sender, "", crypto::STRING_STRING, false), "",
+                  crypto::STRING_STRING, true), "",
+                  rsa_obj.private_key(), crypto::STRING_STRING),
                   rsa_obj.public_key(), signed_pubkey, maidsafe::SYSTEM_PACKET,
                   false, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);

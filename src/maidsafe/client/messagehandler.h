@@ -101,7 +101,7 @@ class MessageHandler {
   maidsafe::PacketType PacketHandler_PacketType(const buffer_packet_type &type);
   SessionSingleton *ss_;
   StoreManagerInterface *sm_;
-  maidsafe_crypto::Crypto co_;
+  crypto::Crypto co_;
   boost::recursive_mutex *mutex_;
 };
 

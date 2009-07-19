@@ -42,7 +42,7 @@
 
 // system constants
 const uint32_t kMinRegularFileSize = 512;
-const std::string kHashSize("SHA512");
+// const crypto::hashtype kHashSize(crypto::SHA_512);
 
 struct Key_Type {
   Key_Type() : package_type(), id(""), private_key(""), public_key("") {}

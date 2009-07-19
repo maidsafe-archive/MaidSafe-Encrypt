@@ -55,7 +55,7 @@ class ChunkStore {
   int HashCheckChunk(const fs::path &filepath);
   std::string chunkstore_dir_;
   bool init_;
-  maidsafe_crypto::Crypto crypto_;
+  crypto::Crypto crypto_;
 };
 }  // namespace maidsafe_vault
 

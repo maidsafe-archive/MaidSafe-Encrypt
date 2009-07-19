@@ -120,7 +120,7 @@ class Authentication {
                           base::callback_func_type cb);
   UserDetails ud_;
   boost::recursive_mutex *mutex_;
-  maidsafe_crypto::Crypto crypto_;
+  crypto::Crypto crypto_;
   StoreManagerInterface *storemanager_;
   SessionSingleton *ss_;
   std::string tmid_content;

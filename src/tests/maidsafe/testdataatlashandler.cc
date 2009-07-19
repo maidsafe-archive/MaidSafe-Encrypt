@@ -102,7 +102,7 @@ class DataAtlasHandlerTest : public testing::Test {
     SessionSingleton::getInstance()->SetPassword("password1");
     SessionSingleton::getInstance()->SetSessionName(false);
     SessionSingleton::getInstance()->SetRootDbKey("whatever");
-    maidsafe_crypto::RsaKeyPair rsakp;
+    crypto::RsaKeyPair rsakp;
     rsakp.GenerateKeys(packethandler::kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(MAID, "MAID", rsakp.private_key(),
         rsakp.public_key());

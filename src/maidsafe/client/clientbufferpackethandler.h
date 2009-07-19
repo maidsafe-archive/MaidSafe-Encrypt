@@ -32,7 +32,6 @@
 #include "boost/thread/mutex.hpp"
 
 #include "maidsafe/crypto.h"
-#include "maidsafe/rsakeypair.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
@@ -64,7 +63,7 @@ class ClientBufferPacketHandler {
       base::callback_func_type cb);
 
  private:
-  maidsafe_crypto::Crypto crypto_obj_;
+  crypto::Crypto crypto_obj_;
   maidsafe::SessionSingleton *ss_;
   maidsafe::StoreManagerInterface *sm_;
   boost::recursive_mutex *mutex_;

@@ -67,8 +67,8 @@ MaidsafeStoreManager::MaidsafeStoreManager() : datastore_dir_(""),
   pdclient_ = new PDClient(datastore_dir_,
                            0,
                            kadconfig_str);
-  cry_obj.set_symm_algorithm("AES_256");
-  cry_obj.set_hash_algorithm("SHA512");
+  cry_obj.set_symm_algorithm(crypto::AES_256);
+  cry_obj.set_hash_algorithm(crypto::SHA_512);
 }
 
 MaidsafeStoreManager::~MaidsafeStoreManager() {

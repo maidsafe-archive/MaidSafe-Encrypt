@@ -31,7 +31,6 @@
 #include <map>
 
 #include "maidsafe/crypto.h"
-#include "maidsafe/rsakeypair.h"
 
 namespace packethandler {
 
@@ -63,7 +62,7 @@ class Packet {
   PacketParams GetData(std::string serialised_packet);
   virtual ~Packet()=0;
 // protected:
-  maidsafe_crypto::Crypto crypto_obj_;
+  crypto::Crypto crypto_obj_;
 };
 
 class PacketFactory {

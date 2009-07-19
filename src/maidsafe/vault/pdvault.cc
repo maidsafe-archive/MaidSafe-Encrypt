@@ -64,9 +64,9 @@ PDVault::PDVault(const std::string &pmid_public,
       co(),
       svc_channel_(),
       kad_config_file_(kad_config_file) {
-  co.set_symm_algorithm("AES_256");
-  co.set_hash_algorithm("SHA512");
-  pmid_ = co.Hash(signed_pmid_public_, "", maidsafe_crypto::STRING_STRING,
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  pmid_ = co.Hash(signed_pmid_public_, "", crypto::STRING_STRING,
                   true);
 }
 
@@ -385,7 +385,7 @@ void PDVault::ValidityCheckCallback(
   std::string local_content_("");
   chunkstore_->LoadChunk(validity_check_args->chunk_name_, &local_content_);
   std::string local_hash_content_(co.Hash(local_content_ +
-      validity_check_args->random_data_, "", maidsafe_crypto::STRING_STRING,
+      validity_check_args->random_data_, "", crypto::STRING_STRING,
       true));
   if (local_hash_content_ != remote_hash_content_) {
     // TODO(Fraser#5#): 2009-03-18 - if check fails do we retry once, or try
@@ -500,11 +500,11 @@ void PDVault::IterativePublishChunkRef(
     std::string signed_request_ = co.AsymSign(
         co.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
                 "",
-                maidsafe_crypto::STRING_STRING,
+                crypto::STRING_STRING,
                 true),
         "",
         pmid_private_,
-        maidsafe_crypto::STRING_STRING);
+        crypto::STRING_STRING);
     knode_.StoreValue(chunk_name,
                       pmid_,
                       pmid_public_,
@@ -936,11 +936,11 @@ void PDVault::SwapChunkAcceptChunk(
   std::string signed_request = co.AsymSign(
       co.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
               "",
-              maidsafe_crypto::STRING_STRING,
+              crypto::STRING_STRING,
               true),
       "",
       pmid_private_,
-      maidsafe_crypto::STRING_STRING);
+      crypto::STRING_STRING);
   knode_.StoreValue(swap_chunk_args->chunkname_,
                     pmid_,
                     pmid_public_,

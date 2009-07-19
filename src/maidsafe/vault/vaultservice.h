@@ -99,7 +99,7 @@ class VaultService : public maidsafe::MaidsafeService {
   bool LoadChunkLocal(const std::string &chunkname, std::string *content);
   bool DeleteChunkLocal(const std::string &chunkname);
   void StoreChunkReference(const std::string &non_hex_chunkname);
-  maidsafe_crypto::Crypto crypto_;
+  crypto::Crypto crypto_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
   boost::shared_ptr<ChunkStore>chunkstore_;
   kad::KNode *knode_;

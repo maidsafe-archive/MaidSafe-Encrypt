@@ -13,7 +13,6 @@
  */
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <cryptopp/hex.h>
 #include <vector>
 
 #include "maidsafe/utils.h"
@@ -80,8 +79,8 @@ void LocalStoreManager::Init(base::callback_func_type cb) {
       db_.open("KademilaDb.db");
       db_.execDML("create table network(key text primary key,value text);");
     }
-    crypto_obj_.set_symm_algorithm("AES_256");
-    crypto_obj_.set_hash_algorithm("SHA512");
+    crypto_obj_.set_symm_algorithm(crypto::AES_256);
+    crypto_obj_.set_hash_algorithm(crypto::SHA_512);
     if (!fs::exists("StoreChunks")) {
       fs::create_directory("StoreChunks");
     }
@@ -174,15 +173,15 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
                                      base::callback_func_type cb) {
   std::string key("");
   base::decode_from_hex(hex_key, &key);
-  if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key,
-    public_key, maidsafe_crypto::STRING_STRING)) {
+  if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key, public_key,
+      crypto::STRING_STRING)) {
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
     return;
   }
 
   if (!crypto_obj_.AsymCheckSig(crypto_obj_.Hash(
-    public_key + signed_public_key + key, "", maidsafe_crypto::STRING_STRING,
-    true), signature, public_key, maidsafe_crypto::STRING_STRING)) {
+      public_key + signed_public_key + key, "", crypto::STRING_STRING, true),
+      signature, public_key, crypto::STRING_STRING)) {
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
     return;
   }
@@ -196,9 +195,7 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
       return;
     }
     std::string val = q.fieldValue(static_cast<unsigned int>(0));
-
-    CryptoPP::StringSource(val, true,
-      new CryptoPP::HexDecoder(new CryptoPP::StringSink(result)));
+    base::decode_from_hex(val, &result);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
@@ -218,7 +215,7 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
           return;
         }
         if (!crypto_obj_.AsymCheckSig(syspacket.data(), syspacket.signature(),
-            public_key, maidsafe_crypto::STRING_STRING)) {
+            public_key, crypto::STRING_STRING)) {
           boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
           return;
         }
@@ -255,9 +252,8 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
         boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, mutex_));
         return;
       } else {
-        std::string enc_value;
-        CryptoPP::StringSource(result, true, new CryptoPP::HexEncoder(
-          new CryptoPP::StringSink(enc_value), false));
+        std::string enc_value("");
+        base::encode_to_hex(result, &enc_value);
         bufSQL.format("insert into network values ('%s', %Q);",
           hex_key.c_str(), enc_value.c_str());
         db_.execDML(bufSQL);
@@ -287,8 +283,8 @@ void LocalStoreManager::StorePacket(const std::string &hex_key,
   std::string key("");
   base::decode_from_hex(hex_key, &key);
   if (type != DATA && type != PDDIR_NOTSIGNED) {
-    if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key,
-      public_key, maidsafe_crypto::STRING_STRING)) {
+    if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key, public_key,
+        crypto::STRING_STRING)) {
 #ifdef DEBUG
       printf("\n\n\nFail check signed pubkey.\n\n\n");
 #endif
@@ -297,8 +293,8 @@ void LocalStoreManager::StorePacket(const std::string &hex_key,
     }
 
     if (!crypto_obj_.AsymCheckSig(crypto_obj_.Hash(
-      public_key + signed_public_key + key, "", maidsafe_crypto::STRING_STRING,
-      true), signature, public_key, maidsafe_crypto::STRING_STRING)) {
+        public_key + signed_public_key + key, "", crypto::STRING_STRING, true),
+        signature, public_key, crypto::STRING_STRING)) {
 #ifdef DEBUG
       printf("Fail check signed request.\n");
 #endif
@@ -380,8 +376,8 @@ void LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,
     CppSQLite3Query q = db_.execQuery(s.c_str());
     CppSQLite3Buffer bufSQL;
 
-    CryptoPP::StringSource(local_value, true,
-      new CryptoPP::HexEncoder(new CryptoPP::StringSink(enc_value), false));
+    enc_value = "";
+    base::encode_to_hex(local_value, &enc_value);
 
     if (!q.eof()) {
       std::string s1 = "delete from network where key='" + local_key + "';";
@@ -415,8 +411,8 @@ void LocalStoreManager::GetMessages(const std::string &hex_key,
                                     const std::string &signed_public_key,
                                     base::callback_func_type cb) {
   std::vector<std::string> result;
-  if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key,
-    public_key, maidsafe_crypto::STRING_STRING)) {
+  if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key, public_key,
+      crypto::STRING_STRING)) {
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
     return;
   }
@@ -442,8 +438,8 @@ bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
   packethandler::GenericPacket gp;
   if (!gp.ParseFromString(ser_gp))
     return false;
-  if (!crypto_obj_.AsymCheckSig(gp.data(), gp.signature(),
-    public_key, maidsafe_crypto::STRING_STRING))
+  if (!crypto_obj_.AsymCheckSig(gp.data(), gp.signature(), public_key,
+      crypto::STRING_STRING))
     return false;
   return true;
 }
@@ -457,7 +453,7 @@ bool LocalStoreManager::ModifyBufferPacketInfo(const std::string &hex_key,
 
   // Validating that owner is sending request
   CppSQLite3Binary blob;
-  std::string ser_bp;
+  std::string ser_bp("");
   try {
     std::string s = "select value from network where key='" + hex_key + "';";
     CppSQLite3Query q = db_.execQuery(s.c_str());
@@ -465,8 +461,7 @@ bool LocalStoreManager::ModifyBufferPacketInfo(const std::string &hex_key,
       return false;
     }
     std::string val = q.fieldValue(static_cast<unsigned int>(0));
-    CryptoPP::StringSource(val, true,
-      new CryptoPP::HexDecoder(new CryptoPP::StringSink(ser_bp)));
+    base::decode_from_hex(val, &ser_bp);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     return false;
@@ -479,7 +474,7 @@ bool LocalStoreManager::ModifyBufferPacketInfo(const std::string &hex_key,
 
 std::string LocalStoreManager::GetValue_FromDB(const std::string &hex_key) {
   CppSQLite3Binary blob;
-  std::string result;
+  std::string result("");
   try {
     std::string s = "select value from network where key='" + hex_key + "';";
     CppSQLite3Query q = db_.execQuery(s.c_str());
@@ -487,8 +482,7 @@ std::string LocalStoreManager::GetValue_FromDB(const std::string &hex_key) {
       return "";
     }
     std::string val = q.fieldValue(static_cast<unsigned int>(0));
-    CryptoPP::StringSource(val, true, new CryptoPP::HexDecoder(
-      new CryptoPP::StringSink(result)));
+    base::decode_from_hex(val, &result);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     return "";

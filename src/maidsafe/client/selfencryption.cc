@@ -39,7 +39,6 @@
 
 #include "boost/filesystem/fstream.hpp"
 #include "boost/scoped_ptr.hpp"
-#include "cryptopp/gzip.h"
 
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -172,15 +171,16 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
       fin_.read(bufferlet_.get(), this_chunklet_size_);
       this_chunklet_oss_.write(bufferlet_.get(), this_chunklet_size_);
       // compress if required and reset this chunklet size
+      crypto::Crypto enc_crypto_;
+      enc_crypto_.set_symm_algorithm(crypto::AES_256);
       if (compress_file_) {
         try {
-          CryptoPP::StringSource(this_chunklet_oss_.str(), true,
-            new CryptoPP::Gzip(
-              new CryptoPP::StringSink(this_chunklet_), 9));
+          this_chunklet_ = enc_crypto_.Compress(this_chunklet_oss_.str(), "", 9,
+              crypto::STRING_STRING);
         }
-        catch(const CryptoPP::Exception &exception_) {
+        catch(const std::exception &e) {
 #ifdef DEBUG
-//          printf("Failed to compress chunklet: %s\n", exception_.what());
+//          printf("Failed to compress chunklet: %s\n", e.what());
 #endif
           return -1;
         }
@@ -199,12 +199,10 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
 #endif
       // output encrypted chunklet
       std::string post_enc_;
-      maidsafe_crypto::Crypto enc_crypto_;
-      enc_crypto_.set_symm_algorithm("AES_256");
       post_enc_ = enc_crypto_.SymmEncrypt((
         enc_crypto_.Obfuscate(
-          this_chunklet_, resized_obs_hash_, maidsafe_crypto::XOR)),
-          "", maidsafe_crypto::STRING_STRING, encryption_hash_);
+          this_chunklet_, resized_obs_hash_, crypto::XOR)),
+          "", crypto::STRING_STRING, encryption_hash_);
 #ifdef DEBUG
 //      printf("chunklet's orig data     : %s\n", this_chunklet_.c_str());
 //      printf("chunklet's orig data size: %lu\n\n", this_chunklet_.size());
@@ -343,14 +341,14 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
 //                 encryption_hash_no_, encryption_hash_.c_str());
 #endif
         std::string decrypt_;
-        maidsafe_crypto::Crypto dec_crypto_;
-        dec_crypto_.set_symm_algorithm("AES_256");
+        crypto::Crypto dec_crypto_;
+        dec_crypto_.set_symm_algorithm(crypto::AES_256);
         decrypt_ = dec_crypto_.Obfuscate((
                        dec_crypto_.SymmDecrypt(
                        this_chunklet_,
                        "",
-                       maidsafe_crypto::STRING_STRING, encryption_hash_)),
-                       resized_obs_hash_, maidsafe_crypto::XOR);
+                       crypto::STRING_STRING, encryption_hash_)),
+                       resized_obs_hash_, crypto::XOR);
 #ifdef DEBUG
 //          printf("this chunklet's decrypted content: %s", decrypt_.c_str());
 //          printf("\nand size: %lu\n", decrypt_.size());
@@ -361,11 +359,8 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
 #endif
         // decompress if required
         if (compress_) {
-          std::string decompressed_chunklet_;
-          CryptoPP::StringSource(this_chunklet_, true,
-            new CryptoPP::Gunzip(
-              new CryptoPP::StringSink(decompressed_chunklet_)));
-          this_chunklet_ = decompressed_chunklet_;
+          this_chunklet_ = dec_crypto_.Uncompress(this_chunklet_, "",
+              crypto::STRING_STRING);
         }
         temp_ofstream_.write(this_chunklet_.c_str(), this_chunklet_.size());
       }
@@ -394,23 +389,23 @@ int SelfEncryption::CheckEntry(const fs::path &entry_path) {
 
 
 std::string SelfEncryption::SHA512(const fs::path &file_path) {  // files
-  maidsafe_crypto::Crypto filehash_crypto;
-  filehash_crypto.set_hash_algorithm("SHA512");
+  crypto::Crypto filehash_crypto;
+  filehash_crypto.set_hash_algorithm(crypto::SHA_512);
   std::string file_hash_ = filehash_crypto.Hash(file_path.string(),
                                                 "",
-                                                maidsafe_crypto::FILE_STRING,
+                                                crypto::FILE_STRING,
                                                 true);
   return file_hash_;
 }  // end SHA512 for files
 
 
 std::string SelfEncryption::SHA512(const std::string &content) {  // strings
-  maidsafe_crypto::Crypto stringhash_crypto;
-  stringhash_crypto.set_hash_algorithm("SHA512");
+  crypto::Crypto stringhash_crypto;
+  stringhash_crypto.set_hash_algorithm(crypto::SHA_512);
   std::string string_hash_ = stringhash_crypto.Hash(
                                  content,
                                  "",
-                                 maidsafe_crypto::STRING_STRING,
+                                 crypto::STRING_STRING,
                                  true);
   return string_hash_;
 }  // end SHA512 for strings
@@ -487,8 +482,9 @@ bool SelfEncryption::CheckCompressibility(const fs::path &entry_path) {
   std::string uncompressed_test_chunk_, compressed_test_chunk_;
   uncompressed_test_chunk_ = test_chunk_.str();
   try {
-    CryptoPP::StringSource(uncompressed_test_chunk_, true,
-      new CryptoPP::Gzip(new CryptoPP::StringSink(compressed_test_chunk_), 9));
+    crypto::Crypto crypto_obj;
+    compressed_test_chunk_ = crypto_obj.Compress(uncompressed_test_chunk_, "",
+        9, crypto::STRING_STRING);
     float ratio_ = static_cast<float>(compressed_test_chunk_.size()
         / test_chunk_size_);
 #ifdef DEBUG
@@ -501,9 +497,9 @@ bool SelfEncryption::CheckCompressibility(const fs::path &entry_path) {
     else
       return true;
   }
-  catch(const CryptoPP::Exception &exception_) {
+  catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("Error in checking compressibility: %s\n", exception_.what());
+    printf("Error in checking compressibility: %s\n", e.what());
 #endif
     return false;
   }

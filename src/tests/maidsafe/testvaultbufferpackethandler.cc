@@ -29,9 +29,9 @@ class VaultBufferPacketHandlerTest : public testing::Test {
                                    testuser(""), ser_bp(""), cry_obj() {}
  protected:
   void SetUp() {
-    maidsafe_crypto::RsaKeyPair rsakp;
-    cry_obj.set_symm_algorithm("AES_256");
-    cry_obj.set_hash_algorithm("SHA512");
+    crypto::RsaKeyPair rsakp;
+    cry_obj.set_symm_algorithm(crypto::AES_256);
+    cry_obj.set_hash_algorithm(crypto::SHA_512);
     testuser = "testuser";
     rsakp.GenerateKeys(4096);
     public_key = rsakp.public_key();
@@ -46,7 +46,7 @@ class VaultBufferPacketHandlerTest : public testing::Test {
     bpi.SerializeToString(&ser_bpi);
     info->set_data(ser_bpi);
     info->set_signature(cry_obj.AsymSign(ser_bpi, "", private_key,
-                        maidsafe_crypto::STRING_STRING));
+                        crypto::STRING_STRING));
     bp.SerializeToString(&ser_bp);
   }
 
@@ -55,12 +55,12 @@ class VaultBufferPacketHandlerTest : public testing::Test {
   std::string private_key;
   std::string testuser;
   std::string ser_bp;
-  maidsafe_crypto::Crypto cry_obj;
+  crypto::Crypto cry_obj;
 };
 
 TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ValidateOwnerSig) {
   ASSERT_TRUE(vbph.ValidateOwnerSignature(public_key, ser_bp));
-  maidsafe_crypto::RsaKeyPair rsakp;
+  crypto::RsaKeyPair rsakp;
   rsakp.GenerateKeys(1024);
   ASSERT_FALSE(vbph.ValidateOwnerSignature(rsakp.public_key(), ser_bp));
 }
@@ -78,7 +78,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ChangeOwnerInfo) {
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
   info->set_signature(cry_obj.AsymSign(ser_bpi, "", private_key,
-                      maidsafe_crypto::STRING_STRING));
+                      crypto::STRING_STRING));
   std::string ser_gp;
   info->SerializeToString(&ser_gp);
   ASSERT_TRUE(vbph.ChangeOwnerInfo(ser_gp, &ser_bp, public_key));
@@ -98,39 +98,39 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   std::string sender;
   packethandler::MessageType type;
   ASSERT_FALSE(vbph.CheckMsgStructure(ser_msg, sender, type));
-  maidsafe_crypto::RsaKeyPair rsakp;
+  crypto::RsaKeyPair rsakp;
   rsakp.GenerateKeys(1024);
   packethandler::GenericPacket gp_msg;
   packethandler::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("non authuser");
   std::string signed_public_key = cry_obj.AsymSign(rsakp.public_key(),
                                   "", rsakp.private_key(),
-                                  maidsafe_crypto::STRING_STRING);
+                                  crypto::STRING_STRING);
   std::string enc_key = cry_obj.AsymEncrypt("key", "", public_key,
-    maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING);
   bp_msg.set_rsaenc_key(enc_key);
   std::string enc_msg = cry_obj.SymmEncrypt("msj tonto", "",
-                        maidsafe_crypto::STRING_STRING, "key");
+                        crypto::STRING_STRING, "key");
   bp_msg.set_aesenc_message(enc_msg);
   bp_msg.set_type(packethandler::INSTANT_MSG);
   std::string ser_bp_msg;
   bp_msg.SerializeToString(&ser_bp_msg);
   gp_msg.set_data(ser_bp_msg);
   gp_msg.set_signature(cry_obj.AsymSign(ser_bp_msg, "", rsakp.private_key(),
-                       maidsafe_crypto::STRING_STRING));
+                       crypto::STRING_STRING));
   gp_msg.SerializeToString(&ser_msg);
   ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, sender, type));
   ASSERT_EQ("non authuser", sender);
   ASSERT_EQ(packethandler::INSTANT_MSG, type);
 
   std::string sender_id = cry_obj.Hash(rsakp.public_key() + signed_public_key,
-                          "", maidsafe_crypto::STRING_STRING, true);
+                          "", crypto::STRING_STRING, true);
   bp_msg.set_sender_id(sender_id);
   bp_msg.SerializeToString(&ser_bp_msg);
   bp_msg.set_sender_public_key(rsakp.public_key());
   gp_msg.set_data(ser_bp_msg);
   gp_msg.set_signature(cry_obj.AsymSign(ser_bp_msg, "", rsakp.private_key(),
-    maidsafe_crypto::STRING_STRING));
+    crypto::STRING_STRING));
   gp_msg.SerializeToString(&ser_msg);
   ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, sender, type));
   ASSERT_EQ(sender_id, sender);
@@ -152,14 +152,14 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   bpi.SerializeToString(&new_ser_bpi);
   bp_info_up->set_data(new_ser_bpi);
   bp_info_up->set_signature(cry_obj.AsymSign(new_ser_bpi, "", private_key,
-                            maidsafe_crypto::STRING_STRING));
+                            crypto::STRING_STRING));
   bp.SerializeToString(&ser_bp);
 
   bp_msg.set_sender_public_key(rsakp.public_key());
   bp_msg.SerializeToString(&ser_bp_msg);
   gp_msg.set_data(ser_bp_msg);
   gp_msg.set_signature(cry_obj.AsymSign(ser_bp_msg, "", rsakp.private_key(),
-                       maidsafe_crypto::STRING_STRING));
+                       crypto::STRING_STRING));
   gp_msg.SerializeToString(&ser_msg);
 
   ASSERT_TRUE(vbph.AddMessage(ser_bp, ser_msg, signed_public_key,
@@ -181,16 +181,16 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
   std::string ser_msg;
   std::string sender;
   packethandler::MessageType type;
-  maidsafe_crypto::RsaKeyPair rsakp;
+  crypto::RsaKeyPair rsakp;
   rsakp.GenerateKeys(1024);
   packethandler::GenericPacket gp_msg;
   packethandler::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("non authuser");
   std::string enc_key = cry_obj.AsymEncrypt("key", "", public_key,
-    maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING);
   bp_msg.set_rsaenc_key(enc_key);
   std::string enc_msg = cry_obj.SymmEncrypt("msj tonto auth req", "",
-                        maidsafe_crypto::STRING_STRING, "key");
+                        crypto::STRING_STRING, "key");
   bp_msg.set_aesenc_message(enc_msg);
   bp_msg.set_type(packethandler::ADD_CONTACT_RQST);
 
@@ -200,13 +200,13 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
   bp_msg.SerializeToString(&ser_bp_msg);
   gp_msg.set_data(ser_bp_msg);
   gp_msg.set_signature(cry_obj.AsymSign(ser_bp_msg, "", rsakp.private_key(),
-    maidsafe_crypto::STRING_STRING));
+    crypto::STRING_STRING));
   gp_msg.SerializeToString(&ser_msg);
   ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, sender, type));
   ASSERT_EQ("non authuser", sender);
   std::string signed_public_key = cry_obj.AsymSign(rsakp.public_key(),
                                   "", rsakp.private_key(),
-                                  maidsafe_crypto::STRING_STRING);
+                                  crypto::STRING_STRING);
   ASSERT_EQ(packethandler::ADD_CONTACT_RQST, type);
   ASSERT_FALSE(vbph.AddMessage(ser_bp, ser_msg, signed_public_key,
                                &str_bp_updated));
@@ -215,7 +215,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
   gp_msg.Clear();
   gp_msg.set_data(ser_bp_msg);
   gp_msg.set_signature(cry_obj.AsymSign(ser_bp_msg, "", rsakp.private_key(),
-                       maidsafe_crypto::STRING_STRING));
+                       crypto::STRING_STRING));
   gp_msg.SerializeToString(&ser_msg);
 
   packethandler::GenericPacket sig_packet;
@@ -247,23 +247,23 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
   info->set_signature(cry_obj.AsymSign(ser_bpi, "", private_key,
-                      maidsafe_crypto::STRING_STRING));
+                      crypto::STRING_STRING));
   std::string ser_gp;
   info->SerializeToString(&ser_gp);
   std::string ser_bp;
   bp.SerializeToString(&ser_bp);
 
   // Create the message
-  maidsafe_crypto::RsaKeyPair rsakp;
+  crypto::RsaKeyPair rsakp;
   rsakp.GenerateKeys(4096);
   packethandler::GenericPacket gp_msg;
   packethandler::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("newuser");
   std::string enc_key = cry_obj.AsymEncrypt("key", "", public_key,
-    maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING);
   bp_msg.set_rsaenc_key(enc_key);
   std::string enc_msg = cry_obj.SymmEncrypt("STATUS_CHECK", "",
-                        maidsafe_crypto::STRING_STRING, "key");
+                        crypto::STRING_STRING, "key");
   bp_msg.set_aesenc_message(enc_msg);
   bp_msg.set_type(packethandler::STATUS_CHECK);
   bp_msg.set_sender_public_key(rsakp.public_key());
@@ -271,14 +271,14 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
   bp_msg.SerializeToString(&ser_bp_msg);
   gp_msg.set_data(ser_bp_msg);
   gp_msg.set_signature(cry_obj.AsymSign(ser_bp_msg, "", rsakp.private_key(),
-                       maidsafe_crypto::STRING_STRING));
+                       crypto::STRING_STRING));
   std::string ser_msg;
   gp_msg.SerializeToString(&ser_msg);
 
   // Create the signed public key
   std::string sig_public_key = cry_obj.AsymSign(rsakp.public_key(), "",
                                rsakp.private_key(),
-                               maidsafe_crypto::STRING_STRING);
+                               crypto::STRING_STRING);
   // Testing the results
   int status = -1;
   ASSERT_TRUE(vbph.CheckStatus(ser_bp, ser_msg, sig_public_key, &status));

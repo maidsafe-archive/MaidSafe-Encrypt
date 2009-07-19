@@ -83,15 +83,15 @@ void GeneratePmidStuff(std::string *public_key,
                        std::string *private_key,
                        std::string *signed_key,
                        std::string *pmid) {
-  maidsafe_crypto::Crypto co_;
-  co_.set_hash_algorithm("SHA512");
-  maidsafe_crypto::RsaKeyPair keys;
+  crypto::Crypto co_;
+  co_.set_hash_algorithm(crypto::SHA_512);
+  crypto::RsaKeyPair keys;
   keys.GenerateKeys(packethandler::kRsaKeySize);
   *signed_key = co_.AsymSign(keys.public_key(), "", keys.private_key(),
-    maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING);
   *public_key = keys.public_key();
   *private_key = keys.private_key();
-  *pmid = co_.Hash(*signed_key, "", maidsafe_crypto::STRING_STRING, true);
+  *pmid = co_.Hash(*signed_key, "", crypto::STRING_STRING, true);
 };
 
 class RunPDVaults {
@@ -127,8 +127,8 @@ class RunPDVaults {
     fs::path temp_(test_dir_);
     fs::create_directories(datastore_dir_);
     fs::create_directories(chunkstore_dir_);
-    crypto_.set_hash_algorithm("SHA512");
-    crypto_.set_symm_algorithm("AES_256");
+    crypto_.set_hash_algorithm(crypto::SHA_512);
+    crypto_.set_symm_algorithm(crypto::AES_256);
   }
 
   ~RunPDVaults() {
@@ -296,7 +296,7 @@ class RunPDVaults {
   std::vector<fs::path> chunkstore_dirs_;
   std::vector< boost::shared_ptr<boost::mutex> > mutices_;
   base::callback_func_type cb_;
-  maidsafe_crypto::Crypto crypto_;
+  crypto::Crypto crypto_;
   boost::shared_ptr< std::vector< boost::shared_ptr<PDVault> > > pdvaults_;
   int current_nodes_created_;
   boost::mutex mutex_;
@@ -374,30 +374,30 @@ int main(int argc, char* argv[]) {
 //      std::string port_string(argv[2]);
 //      fs::path vault_path(app_dir, fs::native);
 //      vault_path /= "vault";
-//      maidsafe_crypto::Crypto co_;
-//      co_.set_symm_algorithm("AES_256");
-//      co_.set_hash_algorithm("SHA512");
+//      crypto::Crypto co_;
+//      co_.set_symm_algorithm(crypto::AES_256);
+//      co_.set_hash_algorithm(crypto::SHA_512);
 //      fs::path config_file(".config");
 //      base::VaultConfig vault_config;
 //      int port = base::stoi(port_string);
-//      maidsafe_crypto::RsaKeyPair keys;
+//      crypto::RsaKeyPair keys;
 //      keys.GenerateKeys(packethandler::kRsaKeySize);
 //      vault_config.set_pmid_public(keys.public_key());
 //      vault_config.set_pmid_private(keys.private_key());
 //      vault_config.set_signed_pmid_public(
 //          co_.AsymSign(keys.public_key(), "", keys.private_key(),
-//          maidsafe_crypto::STRING_STRING));
+//          crypto::STRING_STRING));
 //      vault_config.set_port(port);
 //      fs::path chunkstore_path(vault_path);
 //      chunkstore_path /= "Chunkstore";
-//      co_.set_hash_algorithm("SHA1");
+//      co_.set_hash_algorithm(crypto::SHA_1);
 //      chunkstore_path /= co_.Hash(keys.public_key(), "",
-//                                  maidsafe_crypto::STRING_STRING, true);
+//                                  crypto::STRING_STRING, true);
 //      vault_config.set_chunkstore_dir(chunkstore_path.string());
 //      fs::path datastore_path(vault_path);
 //      datastore_path /= "Datastore";
 //      datastore_path /= co_.Hash(keys.public_key(), "",
-//                                 maidsafe_crypto::STRING_STRING, true);
+//                                 crypto::STRING_STRING, true);
 //      vault_config.set_datastore_dir(datastore_path.string());
 //      std::fstream output(config_file.string().c_str(),
 //                          std::ios::out | std::ios::trunc | std::ios::binary);

@@ -49,8 +49,8 @@ StoreManagerTest() : cb(), storemanager(),
         FAIL();
         return;
       }
-      crypto_obj.set_symm_algorithm("AES_256");
-      crypto_obj.set_hash_algorithm("SHA512");
+      crypto_obj.set_symm_algorithm(crypto::AES_256);
+      crypto_obj.set_hash_algorithm(crypto::SHA_512);
       cb.Reset();
     }
     void TearDown(){
@@ -68,8 +68,8 @@ StoreManagerTest() : cb(), storemanager(),
     }
     FakeCallback cb;
     LocalStoreManager *storemanager;
-    maidsafe_crypto::Crypto crypto_obj;
-    maidsafe_crypto::RsaKeyPair rsa_obj;
+    crypto::Crypto crypto_obj;
+    crypto::RsaKeyPair rsa_obj;
     boost::recursive_mutex *mutex_;
     private:
     StoreManagerTest(const StoreManagerTest&);
@@ -81,9 +81,9 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   rsa_obj.GenerateKeys(1024);
   gp.set_data("Generic System Packet Data");
   gp.set_signature(crypto_obj.AsymSign(gp.data(), "",\
-    rsa_obj.private_key(),maidsafe_crypto::STRING_STRING));
+    rsa_obj.private_key(),crypto::STRING_STRING));
   std::string gp_name = crypto_obj.Hash(gp.data()+gp.signature(),"",\
-    maidsafe_crypto::STRING_STRING, true);
+    crypto::STRING_STRING, true);
   storemanager->IsKeyUnique(gp_name,\
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
@@ -95,13 +95,13 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   std::string gp_content;
   gp.SerializeToString(&gp_content);
   std::string signed_public_key = crypto_obj.AsymSign(rsa_obj.public_key(),"",\
-    rsa_obj.private_key(),maidsafe_crypto::STRING_STRING);
+    rsa_obj.private_key(),crypto::STRING_STRING);
   std::string non_hex_gp_name("");
   base::decode_from_hex(gp_name, &non_hex_gp_name);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(\
     rsa_obj.public_key()+signed_public_key+non_hex_gp_name, "",
-    maidsafe_crypto::STRING_STRING, true),\
-    "", rsa_obj.private_key(),maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING, true),\
+    "", rsa_obj.private_key(),crypto::STRING_STRING);
   storemanager->StorePacket(gp_name, gp_content, signed_request,\
     rsa_obj.public_key(),signed_public_key, SYSTEM_PACKET, false,\
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -133,19 +133,19 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket){
   rsa_obj.GenerateKeys(1024);
   gp.set_data("Generic System Packet Data");
   gp.set_signature(crypto_obj.AsymSign(gp.data(), "",rsa_obj.private_key(),\
-    maidsafe_crypto::STRING_STRING));
+    crypto::STRING_STRING));
   std::string gp_name = crypto_obj.Hash(gp.data()+gp.signature(),"",\
-    maidsafe_crypto::STRING_STRING, true);
+    crypto::STRING_STRING, true);
   std::string gp_content;
   gp.SerializeToString(&gp_content);
 
   std::string signed_public_key = crypto_obj.AsymSign(rsa_obj.public_key(), "",\
-    rsa_obj.private_key(),maidsafe_crypto::STRING_STRING);
+    rsa_obj.private_key(),crypto::STRING_STRING);
   std::string non_hex_gp_name("");
   base::decode_from_hex(gp_name, &non_hex_gp_name);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(\
-    rsa_obj.public_key()+signed_public_key+non_hex_gp_name,"", maidsafe_crypto::STRING_STRING, true),\
-    "",rsa_obj.private_key(),maidsafe_crypto::STRING_STRING);
+    rsa_obj.public_key()+signed_public_key+non_hex_gp_name,"", crypto::STRING_STRING, true),\
+    "",rsa_obj.private_key(),crypto::STRING_STRING);
   storemanager->StorePacket(gp_name, gp_content, signed_request,\
     rsa_obj.public_key(),signed_public_key, SYSTEM_PACKET, false,\
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -185,7 +185,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket){
 TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   std::string chunk_content = base::RandomString(256*1024);
   std::string chunk_name = crypto_obj.Hash(chunk_content, "",\
-    maidsafe_crypto::STRING_STRING, true);
+    crypto::STRING_STRING, true);
   storemanager->IsKeyUnique(chunk_name,\
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
@@ -228,7 +228,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   std::string private_key = rsa_obj.private_key();
 
   std::string bufferpacketname = crypto_obj.Hash\
-    (owner_id+"BUFFER","", maidsafe_crypto::STRING_STRING, true);
+    (owner_id+"BUFFER","", crypto::STRING_STRING, true);
   storemanager->IsKeyUnique(bufferpacketname, boost::bind\
     (&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
@@ -249,19 +249,19 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   buffer_packet_info.SerializeToString(&ser_info);
   ser_owner_info->set_data(ser_info);
   ser_owner_info->set_signature(crypto_obj.AsymSign(ser_info,"",private_key,\
-    maidsafe_crypto::STRING_STRING));
+    crypto::STRING_STRING));
 
   std::string ser_packet;
   buffer_packet.SerializeToString(&ser_packet);
   std::string ser_bp = ser_packet;
 
   std::string signed_public_key = crypto_obj.AsymSign(public_key,"",private_key,\
-    maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING);
   std::string non_hex_bufferpacketname("");
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(public_key+\
-    signed_public_key+non_hex_bufferpacketname, "", maidsafe_crypto::STRING_STRING, true),"",\
-    private_key, maidsafe_crypto::STRING_STRING);
+    signed_public_key+non_hex_bufferpacketname, "", crypto::STRING_STRING, true),"",\
+    private_key, crypto::STRING_STRING);
 
   storemanager->StorePacket(bufferpacketname, ser_bp, signed_request,\
     public_key,signed_public_key, BUFFER_PACKET, false,\
@@ -296,15 +296,15 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner){
   std::string public_key = rsa_obj.public_key();
   std::string private_key = rsa_obj.private_key();
   gp.set_data("Generic System Packet Data");
-  gp.set_signature(crypto_obj.AsymSign(gp.data(), "", private_key,maidsafe_crypto::STRING_STRING));
-  std::string gp_name = crypto_obj.Hash(gp.data()+gp.signature(),"", maidsafe_crypto::STRING_STRING, true);
+  gp.set_signature(crypto_obj.AsymSign(gp.data(), "", private_key,crypto::STRING_STRING));
+  std::string gp_name = crypto_obj.Hash(gp.data()+gp.signature(),"", crypto::STRING_STRING, true);
   std::string gp_content;
   gp.SerializeToString(&gp_content);
-  std::string signed_public_key = crypto_obj.AsymSign(public_key, "", private_key,maidsafe_crypto::STRING_STRING);
+  std::string signed_public_key = crypto_obj.AsymSign(public_key, "", private_key,crypto::STRING_STRING);
   std::string non_hex_gp_name("");
   base::decode_from_hex(gp_name, &non_hex_gp_name);
   std::string signed_request1 = crypto_obj.AsymSign(crypto_obj.Hash(rsa_obj.public_key()+signed_public_key+non_hex_gp_name,
-    "", maidsafe_crypto::STRING_STRING, true), "", rsa_obj.private_key(),maidsafe_crypto::STRING_STRING);
+    "", crypto::STRING_STRING, true), "", rsa_obj.private_key(),crypto::STRING_STRING);
 
   storemanager->StorePacket(gp_name, gp_content, signed_request1,\
     public_key,signed_public_key, SYSTEM_PACKET, false,\
@@ -327,11 +327,11 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner){
   // Creating new public/private keys
   rsa_obj.GenerateKeys(1024);
 
-  signed_public_key = crypto_obj.AsymSign(public_key, "", rsa_obj.private_key(),maidsafe_crypto::STRING_STRING);
+  signed_public_key = crypto_obj.AsymSign(public_key, "", rsa_obj.private_key(),crypto::STRING_STRING);
   non_hex_gp_name = "";
   base::decode_from_hex(gp_name, &non_hex_gp_name);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(rsa_obj.public_key()+signed_public_key+non_hex_gp_name,
-    "", maidsafe_crypto::STRING_STRING, true), "", rsa_obj.private_key(),maidsafe_crypto::STRING_STRING);
+    "", crypto::STRING_STRING, true), "", rsa_obj.private_key(),crypto::STRING_STRING);
 
   storemanager->DeletePacket(gp_name, signed_request, rsa_obj.public_key(),\
     signed_public_key, SYSTEM_PACKET, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -349,7 +349,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner){
   cb.Reset();
   is_unique_res.Clear();
 
-  signed_public_key = crypto_obj.AsymSign(rsa_obj.public_key(), "", rsa_obj.private_key(),maidsafe_crypto::STRING_STRING);
+  signed_public_key = crypto_obj.AsymSign(rsa_obj.public_key(), "", rsa_obj.private_key(),crypto::STRING_STRING);
 
   storemanager->DeletePacket(gp_name, signed_request, rsa_obj.public_key(),\
     signed_public_key, SYSTEM_PACKET, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -373,7 +373,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner){
   std::string public_key = rsa_obj.public_key();
   std::string private_key = rsa_obj.private_key();
 
-  std::string bufferpacketname = crypto_obj.Hash(owner_id+"BUFFER","", maidsafe_crypto::STRING_STRING, true);
+  std::string bufferpacketname = crypto_obj.Hash(owner_id+"BUFFER","", crypto::STRING_STRING, true);
   storemanager->IsKeyUnique(bufferpacketname, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   base::GeneralResponse is_unique_res;
@@ -392,17 +392,17 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner){
   std::string ser_info;
   buffer_packet_info.SerializeToString(&ser_info);
   ser_owner_info->set_data(ser_info);
-  ser_owner_info->set_signature(crypto_obj.AsymSign(ser_info,"",private_key,maidsafe_crypto::STRING_STRING));
+  ser_owner_info->set_signature(crypto_obj.AsymSign(ser_info,"",private_key,crypto::STRING_STRING));
 
   std::string ser_packet;
   buffer_packet.SerializeToString(&ser_packet);
   std::string ser_bp = ser_packet;
 
-  std::string signed_public_key = crypto_obj.AsymSign(public_key,"",private_key, maidsafe_crypto::STRING_STRING);
+  std::string signed_public_key = crypto_obj.AsymSign(public_key,"",private_key, crypto::STRING_STRING);
   std::string non_hex_bufferpacketname("");
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(public_key+signed_public_key+
-    non_hex_bufferpacketname, "", maidsafe_crypto::STRING_STRING, true),"", private_key, maidsafe_crypto::STRING_STRING);
+    non_hex_bufferpacketname, "", crypto::STRING_STRING, true),"", private_key, crypto::STRING_STRING);
 
   storemanager->StorePacket(bufferpacketname, ser_bp, signed_request,\
     public_key,signed_public_key, BUFFER_PACKET, false,\
@@ -424,12 +424,12 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner){
   rsa_obj.ClearKeys();
   rsa_obj.GenerateKeys(1024);
   std::string signed_public_key1 = crypto_obj.AsymSign(rsa_obj.public_key(),"",\
-    rsa_obj.private_key(), maidsafe_crypto::STRING_STRING);
+    rsa_obj.private_key(), crypto::STRING_STRING);
   non_hex_bufferpacketname = "";
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request1 = crypto_obj.AsymSign(crypto_obj.Hash(\
     rsa_obj.public_key()+signed_public_key1+non_hex_bufferpacketname, "",\
-    maidsafe_crypto::STRING_STRING, true),"", rsa_obj.private_key(), maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING, true),"", rsa_obj.private_key(), crypto::STRING_STRING);
   storemanager->DeletePacket(bufferpacketname, signed_request1, rsa_obj.public_key(),\
     signed_public_key1, BUFFER_PACKET, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
@@ -442,16 +442,16 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner){
 
 TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   std::string owner_id("Juan U. Smer");
-  maidsafe_crypto::RsaKeyPair rsa_kp1;
+  crypto::RsaKeyPair rsa_kp1;
   rsa_kp1.GenerateKeys(1024);
   rsa_obj.GenerateKeys(1024);
   std::string sig_private_key = rsa_kp1.private_key();
   std::string sig_public_key = rsa_kp1.public_key();
 
   std::string signed_public_key = crypto_obj.AsymSign(sig_public_key,"",sig_private_key,\
-    maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING);
 
-  maidsafe_crypto::RsaKeyPair rsa_kp;
+  crypto::RsaKeyPair rsa_kp;
   rsa_kp.GenerateKeys(1024);
   std::string mpidsender_privkey = rsa_kp.private_key();
   std::string mpidsender_pubkey = rsa_kp.public_key();
@@ -461,16 +461,16 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   packethandler::GenericPacket mpid;
   mpid.set_data(rsa_kp.public_key());
   mpid.set_signature(crypto_obj.AsymSign(rsa_kp.public_key(),"",sig_private_key,\
-    maidsafe_crypto::STRING_STRING));
+    crypto::STRING_STRING));
   std::string ser_mpid;
   mpid.SerializeToString(&ser_mpid);
   std::string sender("sender");
-  std::string mpid_name = crypto_obj.Hash(sender, "", maidsafe_crypto::STRING_STRING, true);
+  std::string mpid_name = crypto_obj.Hash(sender, "", crypto::STRING_STRING, true);
   std::string non_hex_mpid_name("");
   base::decode_from_hex(mpid_name, &non_hex_mpid_name);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(sig_public_key+\
-    signed_public_key+non_hex_mpid_name, "", maidsafe_crypto::STRING_STRING, true),"",\
-    sig_private_key, maidsafe_crypto::STRING_STRING);
+    signed_public_key+non_hex_mpid_name, "", crypto::STRING_STRING, true),"",\
+    sig_private_key, crypto::STRING_STRING);
   storemanager->StorePacket(mpid_name, ser_mpid, signed_request,\
     sig_public_key,signed_public_key, SYSTEM_PACKET, false,\
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -488,7 +488,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   ASSERT_NE(private_key, mpidsender_privkey);
 
   std::string bufferpacketname = crypto_obj.Hash\
-    (owner_id+"BUFFER","", maidsafe_crypto::STRING_STRING, true);
+    (owner_id+"BUFFER","", crypto::STRING_STRING, true);
   storemanager->IsKeyUnique(bufferpacketname, boost::bind\
     (&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
@@ -509,18 +509,18 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   buffer_packet_info.SerializeToString(&ser_info);
   ser_owner_info->set_data(ser_info);
   ser_owner_info->set_signature(crypto_obj.AsymSign(ser_info,"",private_key,\
-    maidsafe_crypto::STRING_STRING));
+    crypto::STRING_STRING));
   std::string ser_packet;
   buffer_packet.SerializeToString(&ser_packet);
   std::string ser_bp = ser_packet;
 
   signed_public_key = crypto_obj.AsymSign(public_key,"",private_key,\
-    maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING);
   std::string non_hex_bufferpacketname("");
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   signed_request = crypto_obj.AsymSign(crypto_obj.Hash(public_key+\
-    signed_public_key+non_hex_bufferpacketname, "", maidsafe_crypto::STRING_STRING, true),"",\
-    private_key, maidsafe_crypto::STRING_STRING);
+    signed_public_key+non_hex_bufferpacketname, "", crypto::STRING_STRING, true),"",\
+    private_key, crypto::STRING_STRING);
 
   storemanager->StorePacket(bufferpacketname, ser_bp, signed_request,\
     public_key,signed_public_key, BUFFER_PACKET, false,\
@@ -553,9 +553,9 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   packethandler::BufferPacketMessage bpmsg;
   bpmsg.set_sender_id(sender);
   bpmsg.set_rsaenc_key(crypto_obj.AsymEncrypt(key, "", public_key,
-    maidsafe_crypto::STRING_STRING));
+    crypto::STRING_STRING));
   bpmsg.set_aesenc_message(crypto_obj.SymmEncrypt("test msg", "",
-    maidsafe_crypto::STRING_STRING, key));
+    crypto::STRING_STRING, key));
   bpmsg.set_type(packethandler::INSTANT_MSG);
   bpmsg.set_sender_public_key(mpidsender_pubkey);
   std::string ser_bpmsg;
@@ -563,16 +563,16 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   packethandler::GenericPacket bpmsg_gp;
   bpmsg_gp.set_data(ser_bpmsg);
   bpmsg_gp.set_signature(crypto_obj.AsymSign(ser_bpmsg,"",mpidsender_privkey,\
-    maidsafe_crypto::STRING_STRING));
+    crypto::STRING_STRING));
   std::string ser_bpmsg_gp;
   bpmsg_gp.SerializeToString(&ser_bpmsg_gp);
 
   signed_public_key = crypto_obj.AsymSign(mpid.data(),"",mpidsender_privkey,\
-    maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING);
 
   signed_request = crypto_obj.AsymSign(crypto_obj.Hash(mpid.data()+\
-    signed_public_key+"incorrect name", "", maidsafe_crypto::STRING_STRING, true),"",\
-    mpidsender_privkey, maidsafe_crypto::STRING_STRING);
+    signed_public_key+"incorrect name", "", crypto::STRING_STRING, true),"",\
+    mpidsender_privkey, crypto::STRING_STRING);
 
   cb.Reset();
   storemanager->StorePacket("incorrect name", ser_bpmsg_gp, signed_request,\
@@ -587,8 +587,8 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   non_hex_bufferpacketname = "";
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   signed_request = crypto_obj.AsymSign(crypto_obj.Hash(mpid.data()+\
-    signed_public_key+non_hex_bufferpacketname, "", maidsafe_crypto::STRING_STRING, true),"",\
-    mpidsender_privkey, maidsafe_crypto::STRING_STRING);
+    signed_public_key+non_hex_bufferpacketname, "", crypto::STRING_STRING, true),"",\
+    mpidsender_privkey, crypto::STRING_STRING);
   storemanager->StorePacket(bufferpacketname, ser_bpmsg_gp, signed_request,\
     mpid.data(),signed_public_key, BUFFER_PACKET_MESSAGE, false,\
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -616,7 +616,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   bpmsg_gp.clear_signature();
   bpmsg_gp.set_data(ser_bpmsg);
   bpmsg_gp.set_signature(crypto_obj.AsymSign(ser_bpmsg,"",mpidsender_privkey,\
-    maidsafe_crypto::STRING_STRING));
+    crypto::STRING_STRING));
   bpmsg_gp.SerializeToString(&ser_bpmsg_gp);
   storemanager->StorePacket(bufferpacketname, ser_bpmsg_gp, signed_request,\
     mpid.data(),signed_public_key, BUFFER_PACKET_MESSAGE, false,\
@@ -642,7 +642,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
 
   // Getting the msgs
   std::string sig_mpid_pubkey = crypto_obj.AsymSign(mpid.data(), "",\
-    mpidsender_privkey, maidsafe_crypto::STRING_STRING);
+    mpidsender_privkey, crypto::STRING_STRING);
   storemanager->GetMessages(bufferpacketname, mpid.data(), sig_mpid_pubkey,\
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
@@ -653,7 +653,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   get_msg_res.Clear();
 
   signed_public_key = crypto_obj.AsymSign(public_key, "", private_key,\
-    maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING);
   storemanager->GetMessages(bufferpacketname, public_key, signed_public_key,\
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);

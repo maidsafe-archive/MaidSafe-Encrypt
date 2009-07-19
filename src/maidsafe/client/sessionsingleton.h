@@ -140,11 +140,11 @@ class SessionSingleton {
     if (clear) {
       ud_.session_name = "";
     } else {
-      maidsafe_crypto::Crypto c;
-      c.set_hash_algorithm("SHA1");
+      crypto::Crypto c;
+      c.set_hash_algorithm(crypto::SHA_1);
       ud_.session_name = c.Hash(Pin()+Username(),
                                 "",
-                                maidsafe_crypto::STRING_STRING,
+                                crypto::STRING_STRING,
                                 true);
     }
     return true;

@@ -21,7 +21,6 @@
 #include <map>
 #include <exception>
 #include "maidsafe/crypto.h"
-#include "maidsafe/rsakeypair.h"
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "maidsafe/utils.h"
 #include "kademlia/contact.h"
@@ -42,14 +41,14 @@ class VaultDaemonTest: public testing::Test {
     db = new boost::filesystem::path *[kNetworkSize];
     timers = new base::CallLaterTimer *[kNetworkSize];
     mutex = new boost::recursive_mutex *[kNetworkSize];
-    cry_obj.set_symm_algorithm("AES_256");
-    cry_obj.set_hash_algorithm("SHA512");
-    maidsafe_crypto::RsaKeyPair keys;
+    cry_obj.set_symm_algorithm(crypto::AES_256);
+    cry_obj.set_hash_algorithm(crypto::SHA_512);
+    crypto::RsaKeyPair keys;
     keys.GenerateKeys(1024);
     pub_key = keys.public_key();
     priv_key = keys.private_key();
     sig_pub_key = cry_obj.AsymSign(pub_key, "", priv_key,
-      maidsafe_crypto::STRING_STRING);
+      crypto::STRING_STRING);
   }
   virtual ~VaultDaemonTest() {
     delete [] nodes;
@@ -118,7 +117,7 @@ class VaultDaemonTest: public testing::Test {
   boost::filesystem::path **db;
   base::CallLaterTimer **timers;
   boost::recursive_mutex **mutex;
-  maidsafe_crypto::Crypto cry_obj;
+  crypto::Crypto cry_obj;
   std::string priv_key, pub_key, sig_pub_key;
   GeneralKadCallback cb;
 };
@@ -137,7 +136,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_NoPartners) {
   // store a chunk
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-    maidsafe_crypto::STRING_STRING, false);
+    crypto::STRING_STRING, false);
   std::string enc_chunk_name("");
   base::encode_to_hex(chunk_name, &enc_chunk_name);
   std::string result("");
@@ -148,8 +147,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_NoPartners) {
   args.set_public_key(pub_key);
   args.set_signed_public_key(sig_pub_key);
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-    chunk_name, "", maidsafe_crypto::STRING_STRING, true), "", priv_key,
-    maidsafe_crypto::STRING_STRING);
+    chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+    crypto::STRING_STRING);
   args.set_signed_request(sig_req);
   args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
   std::string ser_args;
@@ -168,7 +167,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
   // store a chunk
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
-    maidsafe_crypto::STRING_STRING, false);
+    crypto::STRING_STRING, false);
   std::string enc_chunk_name("");
   base::encode_to_hex(chunk_name, &enc_chunk_name);
   StoreResponse result;
@@ -180,8 +179,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
   args.set_public_key(pub_key);
   args.set_signed_public_key(sig_pub_key);
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-    chunk_name, "", maidsafe_crypto::STRING_STRING, true), "", priv_key,
-    maidsafe_crypto::STRING_STRING);
+    chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+    crypto::STRING_STRING);
   args.set_signed_request(sig_req);
   args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
   std::string ser_args;
@@ -234,7 +233,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
   for (int i = 0; i < 5; i++) {
     std::string chunk_content = base::RandomString(512);
     std::string chunk_name = cry_obj.Hash(chunk_content, "",
-      maidsafe_crypto::STRING_STRING, false);
+      crypto::STRING_STRING, false);
     chunks[chunk_name]=chunk_content;
     std::string enc_chunk_name("");
     base::encode_to_hex(chunk_name, &enc_chunk_name);
@@ -246,8 +245,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
     args.set_public_key(pub_key);
     args.set_signed_public_key(sig_pub_key);
     std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-      chunk_name, "", maidsafe_crypto::STRING_STRING, true), "", priv_key,
-      maidsafe_crypto::STRING_STRING);
+      chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+      crypto::STRING_STRING);
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
     args.SerializeToString(&ser_args);
@@ -266,7 +265,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
   for (int i = 0; i < 5; i++) {
     std::string chunk_content = base::RandomString(512);
     std::string chunk_name = cry_obj.Hash(chunk_content, "",
-      maidsafe_crypto::STRING_STRING, false);
+      crypto::STRING_STRING, false);
     chunks[chunk_name]=chunk_content;
     std::string enc_chunk_name("");
     base::encode_to_hex(chunk_name, &enc_chunk_name);
@@ -278,8 +277,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
     args.set_public_key(pub_key);
     args.set_signed_public_key(sig_pub_key);
     std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-      chunk_name, "", maidsafe_crypto::STRING_STRING, true), "", priv_key,
-      maidsafe_crypto::STRING_STRING);
+      chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+      crypto::STRING_STRING);
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
     args.SerializeToString(&ser_args);
@@ -319,7 +318,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
   for (int i = 0; i < 5; i++) {
     std::string chunk_content = base::RandomString(512);
     std::string chunk_name = cry_obj.Hash(chunk_content, "",
-      maidsafe_crypto::STRING_STRING, false);
+      crypto::STRING_STRING, false);
     std::string enc_chunk_name("");
     base::encode_to_hex(chunk_name, &enc_chunk_name);
     chunks[chunk_name]=chunk_content;
@@ -331,8 +330,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
     args.set_public_key(pub_key);
     args.set_signed_public_key(sig_pub_key);
     std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-      chunk_name, "", maidsafe_crypto::STRING_STRING, true), "", priv_key,
-      maidsafe_crypto::STRING_STRING);
+      chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+      crypto::STRING_STRING);
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
     args.SerializeToString(&ser_args);
@@ -350,7 +349,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
   for (int i = 0; i < 5; i++) {
     std::string chunk_content = base::RandomString(512);
     std::string chunk_name = cry_obj.Hash(chunk_content, "",
-      maidsafe_crypto::STRING_STRING, false);
+      crypto::STRING_STRING, false);
     chunks[chunk_name]=chunk_content;
     std::string enc_chunk_name("");
     base::encode_to_hex(chunk_name, &enc_chunk_name);
@@ -362,8 +361,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
     args.set_public_key(pub_key);
     args.set_signed_public_key(sig_pub_key);
     std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-      chunk_name, "", maidsafe_crypto::STRING_STRING, true), "", priv_key,
-      maidsafe_crypto::STRING_STRING);
+      chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+      crypto::STRING_STRING);
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
     args.SerializeToString(&ser_args);
@@ -415,7 +414,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_RepublishChunkRef) {
   for (int i = 0; i < 10; i++) {
     std::string chunk_content = base::RandomString(512);
     std::string chunk_name = cry_obj.Hash(chunk_content, "",
-      maidsafe_crypto::STRING_STRING, false);
+      crypto::STRING_STRING, false);
     std::string enc_chunk_name("");
     base::encode_to_hex(chunk_name, &enc_chunk_name);
     std::string ser_args(""), ser_result(""), sender_info("");
@@ -426,8 +425,8 @@ TEST_F(VaultDaemonTest, FUNC_KAD_RepublishChunkRef) {
     args.set_public_key(pub_key);
     args.set_signed_public_key(sig_pub_key);
     std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-      chunk_name, "", maidsafe_crypto::STRING_STRING, true), "", priv_key,
-      maidsafe_crypto::STRING_STRING);
+      chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+      crypto::STRING_STRING);
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
     args.SerializeToString(&ser_args);

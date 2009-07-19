@@ -71,8 +71,8 @@ Authentication::Authentication(StoreManagerInterface *storemanager,
                                      ss_(SessionSingleton::getInstance()),
                                      tmid_content() {
   ss_->ResetSession();
-  crypto_.set_hash_algorithm("SHA512");
-  crypto_.set_symm_algorithm("AES_256");
+  crypto_.set_hash_algorithm(crypto::SHA_512);
+  crypto_.set_symm_algorithm(crypto::AES_256);
 }
 
 exitcode Authentication::GetUserInfo(const std::string &username,
@@ -1098,21 +1098,21 @@ int Authentication::CreateSignedRequest(const std::string &private_key,
     std::string *signed_public_key, std::string *signed_request) {
   std::string non_hex_key("");
   base::decode_from_hex(hex_packet_name, &non_hex_key);
-  maidsafe_crypto::Crypto cry_obj_;
-  cry_obj_.set_symm_algorithm("AES_256");
-  cry_obj_.set_hash_algorithm("SHA512");
+  crypto::Crypto cry_obj_;
+  cry_obj_.set_symm_algorithm(crypto::AES_256);
+  cry_obj_.set_hash_algorithm(crypto::SHA_512);
   *signed_public_key = cry_obj_.AsymSign(public_key,
                                          "",
                                          private_key,
-                                         maidsafe_crypto::STRING_STRING);
+                                         crypto::STRING_STRING);
   *signed_request = cry_obj_.AsymSign(
       cry_obj_.Hash(public_key + *signed_public_key + non_hex_key,
                     "",
-                    maidsafe_crypto::STRING_STRING,
+                    crypto::STRING_STRING,
                     true),
       "",
       private_key,
-      maidsafe_crypto::STRING_STRING);
+      crypto::STRING_STRING);
   return 0;
 }
 

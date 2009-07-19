@@ -88,7 +88,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                             base::callback_func_type cb);
   std::string datastore_dir_;
   PDClient *pdclient_;
-  maidsafe_crypto::Crypto cry_obj;
+  crypto::Crypto cry_obj;
 };
 
 }  // namespace maidsafe

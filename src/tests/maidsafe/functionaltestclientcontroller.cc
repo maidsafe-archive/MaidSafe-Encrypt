@@ -33,7 +33,6 @@
 #include "gtest/gtest.h"
 
 #include "maidsafe/crypto.h"
-#include "maidsafe/rsakeypair.h"
 #include "maidsafe/utils.h"
 #include "fs/filesystem.h"
 #include "maidsafe/client/clientcontroller.h"
@@ -52,15 +51,15 @@ void GeneratePmidStuff(std::string *public_key,
                        std::string *private_key,
                        std::string *signed_key,
                        std::string *pmid) {
-  maidsafe_crypto::Crypto co_;
-  co_.set_hash_algorithm("SHA512");
-  maidsafe_crypto::RsaKeyPair keys;
+  crypto::Crypto co_;
+  co_.set_hash_algorithm(crypto::SHA_512);
+  crypto::RsaKeyPair keys;
   keys.GenerateKeys(packethandler::kRsaKeySize);
   *signed_key = co_.AsymSign(keys.public_key(), "", keys.private_key(),
-    maidsafe_crypto::STRING_STRING);
+    crypto::STRING_STRING);
   *public_key = keys.public_key();
   *private_key = keys.private_key();
-  *pmid = co_.Hash(*signed_key, "", maidsafe_crypto::STRING_STRING, true);
+  *pmid = co_.Hash(*signed_key, "", crypto::STRING_STRING, true);
 };
 
 class RunPDVaults {
@@ -98,8 +97,8 @@ class RunPDVaults {
     }
     fs::create_directories(datastore_dir_);
     fs::create_directories(chunkstore_dir_);
-    crypto_.set_hash_algorithm("SHA512");
-    crypto_.set_symm_algorithm("AES_256");
+    crypto_.set_hash_algorithm(crypto::SHA_512);
+    crypto_.set_symm_algorithm(crypto::AES_256);
   }
 
   ~RunPDVaults() {
@@ -150,7 +149,7 @@ class RunPDVaults {
                         &signed_key_,
                         &node_id_);
       ASSERT_TRUE(crypto_.AsymCheckSig(public_key_, signed_key_, public_key_,
-                                       maidsafe_crypto::STRING_STRING));
+                                       crypto::STRING_STRING));
       kad_config_file_ = datastore_local_ + "/.kadconfig";
       boost::shared_ptr<PDVault>
           pdvault_local_(new PDVault(public_key_,
@@ -234,7 +233,7 @@ class RunPDVaults {
   base::KadConfig kad_config_;
   std::string chunkstore_dir_, datastore_dir_, kad_config_file_;
   std::vector<fs::path> chunkstore_dirs_;
-  maidsafe_crypto::Crypto crypto_;
+  crypto::Crypto crypto_;
   boost::shared_ptr< std::vector< boost::shared_ptr<PDVault> > > pdvaults_;
   int current_nodes_created_;
   boost::mutex mutex_;

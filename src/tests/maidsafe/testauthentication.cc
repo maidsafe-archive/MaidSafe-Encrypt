@@ -433,9 +433,9 @@ TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
   packethandler::PacketParams result;
-  maidsafe_crypto::Crypto crypto_obj;
-  crypto_obj.set_symm_algorithm("AES_256");
-  crypto_obj.set_hash_algorithm("SHA512");
+  crypto::Crypto crypto_obj;
+  crypto_obj.set_symm_algorithm(crypto::AES_256);
+  crypto_obj.set_hash_algorithm(crypto::SHA_512);
   ASSERT_EQ(OK, authentication->CreatePublicName("el public iuserneim",
             &result)) << "Can't create public username";
   ASSERT_EQ(PUBLIC_USERNAME_EXISTS,
@@ -480,9 +480,9 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(new Authentication(
     sm.get(), mutex));
-  maidsafe_crypto::Crypto co;
-  co.set_symm_algorithm("AES_256");
-  co.set_hash_algorithm("SHA512");
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
   std::string msid_name, pub_key, priv_key;
   cb.Reset();
   authentication->CreateMSIDPacket(boost::bind(&FakeCallback::CallbackFunc,
@@ -515,9 +515,9 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   // Check packet is correct and signed
   ASSERT_EQ(pub_key, gp.data());
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(), pub_key,
-    maidsafe_crypto::STRING_STRING));
+    crypto::STRING_STRING));
   ASSERT_EQ(co.Hash(pub_key + gp.signature(), "",
-            maidsafe_crypto::STRING_STRING, true), msid_name);
+            crypto::STRING_STRING, true), msid_name);
 }
 
 }  // namespace maidsafe

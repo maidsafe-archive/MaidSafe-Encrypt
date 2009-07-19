@@ -43,8 +43,8 @@ bool ChunkStore::Init() {
     printf("ChunkStore::Init can not create dir %s\nException: %s\n",
            chunkstore_path_.string().c_str(), ex.what());
   }
-  crypto_.set_symm_algorithm("AES_256");
-  crypto_.set_hash_algorithm("SHA512");
+  crypto_.set_symm_algorithm(crypto::AES_256);
+  crypto_.set_hash_algorithm(crypto::SHA_512);
   return init_;
 }
 
@@ -212,7 +212,7 @@ int ChunkStore::HashCheckChunk(const std::string &key) {
 int ChunkStore::HashCheckChunk(const fs::path &filepath) {
   std::string file_hash_ = crypto_.Hash(filepath.string(),
                                         "",
-                                        maidsafe_crypto::FILE_STRING,
+                                        crypto::FILE_STRING,
                                         true);
   if (file_hash_ == filepath.filename())
     return 0;

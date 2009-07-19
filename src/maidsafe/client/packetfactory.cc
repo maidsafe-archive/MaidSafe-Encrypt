@@ -28,8 +28,8 @@
 namespace packethandler {
 
 Packet::Packet(): crypto_obj_() {
-  crypto_obj_.set_hash_algorithm("SHA512");
-  crypto_obj_.set_symm_algorithm("AES_256");
+  crypto_obj_.set_hash_algorithm(crypto::SHA_512);
+  crypto_obj_.set_symm_algorithm(crypto::AES_256);
 }
 
 bool Packet::ValidateSignature(const std::string &serialised_packet,
@@ -40,7 +40,7 @@ bool Packet::ValidateSignature(const std::string &serialised_packet,
   return crypto_obj_.AsymCheckSig(packet.data(),
                                   packet.signature(),
                                   public_key,
-                                  maidsafe_crypto::STRING_STRING);
+                                  crypto::STRING_STRING);
 }
 
 PacketParams Packet::GetData(std::string serialised_packet) {
