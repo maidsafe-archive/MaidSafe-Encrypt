@@ -49,12 +49,11 @@ void protobuf_AssignDesc_general_5fmessages_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(GeneralResponse));
   VaultConfig_descriptor_ = file->message_type(1);
-  static const int VaultConfig_offsets_[6] = {
+  static const int VaultConfig_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, pmid_public_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, pmid_private_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, signed_pmid_public_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, chunkstore_dir_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, datastore_dir_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, port_),
   };
   VaultConfig_reflection_ =
@@ -148,16 +147,15 @@ void protobuf_AddDesc_general_5fmessages_2eproto() {
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\026general_messages.proto\022\004base\"!\n\017Genera"
-    "lResponse\022\016\n\006result\030\001 \002(\014\"\221\001\n\013VaultConfi"
-    "g\022\023\n\013pmid_public\030\001 \002(\014\022\024\n\014pmid_private\030\002"
-    " \002(\014\022\032\n\022signed_pmid_public\030\003 \002(\014\022\026\n\016chun"
-    "kstore_dir\030\004 \001(\014\022\025\n\rdatastore_dir\030\005 \001(\014\022"
-    "\014\n\004port\030\006 \001(\005\"\320\001\n\tKadConfig\022\014\n\004port\030\001 \001("
-    "\005\022(\n\007contact\030\002 \003(\0132\027.base.KadConfig.Cont"
-    "act\032\212\001\n\007Contact\022\017\n\007node_id\030\001 \002(\014\022\n\n\002ip\030\002"
-    " \002(\014\022\014\n\004port\030\003 \002(\005\022\020\n\010local_ip\030\004 \001(\014\022\022\n\n"
-    "local_port\030\005 \001(\005\022\025\n\rrendezvouz_ip\030\006 \001(\014\022"
-    "\027\n\017rendezvouz_port\030\007 \001(\005", 424);
+    "lResponse\022\016\n\006result\030\001 \002(\014\"z\n\013VaultConfig"
+    "\022\023\n\013pmid_public\030\001 \002(\014\022\024\n\014pmid_private\030\002 "
+    "\002(\014\022\032\n\022signed_pmid_public\030\003 \002(\014\022\026\n\016chunk"
+    "store_dir\030\004 \001(\014\022\014\n\004port\030\005 \001(\005\"\320\001\n\tKadCon"
+    "fig\022\014\n\004port\030\001 \001(\005\022(\n\007contact\030\002 \003(\0132\027.bas"
+    "e.KadConfig.Contact\032\212\001\n\007Contact\022\017\n\007node_"
+    "id\030\001 \002(\014\022\n\n\002ip\030\002 \002(\014\022\014\n\004port\030\003 \002(\005\022\020\n\010lo"
+    "cal_ip\030\004 \001(\014\022\022\n\nlocal_port\030\005 \001(\005\022\025\n\rrend"
+    "ezvouz_ip\030\006 \001(\014\022\027\n\017rendezvouz_port\030\007 \001(\005", 400);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "general_messages.proto", &protobuf_RegisterTypes);
   GeneralResponse::default_instance_ = new GeneralResponse();
@@ -400,13 +398,11 @@ const ::std::string VaultConfig::_default_pmid_public_;
 const ::std::string VaultConfig::_default_pmid_private_;
 const ::std::string VaultConfig::_default_signed_pmid_public_;
 const ::std::string VaultConfig::_default_chunkstore_dir_;
-const ::std::string VaultConfig::_default_datastore_dir_;
 #ifndef _MSC_VER
 const int VaultConfig::kPmidPublicFieldNumber;
 const int VaultConfig::kPmidPrivateFieldNumber;
 const int VaultConfig::kSignedPmidPublicFieldNumber;
 const int VaultConfig::kChunkstoreDirFieldNumber;
-const int VaultConfig::kDatastoreDirFieldNumber;
 const int VaultConfig::kPortFieldNumber;
 #endif  // !_MSC_VER
 
@@ -418,7 +414,6 @@ VaultConfig::VaultConfig()
     pmid_private_(const_cast< ::std::string*>(&_default_pmid_private_)),
     signed_pmid_public_(const_cast< ::std::string*>(&_default_signed_pmid_public_)),
     chunkstore_dir_(const_cast< ::std::string*>(&_default_chunkstore_dir_)),
-    datastore_dir_(const_cast< ::std::string*>(&_default_datastore_dir_)),
     port_(0) {
   SharedCtor();
 }
@@ -433,7 +428,6 @@ VaultConfig::VaultConfig(const VaultConfig& from)
     pmid_private_(const_cast< ::std::string*>(&_default_pmid_private_)),
     signed_pmid_public_(const_cast< ::std::string*>(&_default_signed_pmid_public_)),
     chunkstore_dir_(const_cast< ::std::string*>(&_default_chunkstore_dir_)),
-    datastore_dir_(const_cast< ::std::string*>(&_default_datastore_dir_)),
     port_(0) {
   SharedCtor();
   MergeFrom(from);
@@ -445,7 +439,6 @@ void VaultConfig::SharedCtor() {
   pmid_private_ = const_cast< ::std::string*>(&_default_pmid_private_);
   signed_pmid_public_ = const_cast< ::std::string*>(&_default_signed_pmid_public_);
   chunkstore_dir_ = const_cast< ::std::string*>(&_default_chunkstore_dir_);
-  datastore_dir_ = const_cast< ::std::string*>(&_default_datastore_dir_);
   port_ = 0;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -466,9 +459,6 @@ void VaultConfig::SharedDtor() {
   }
   if (chunkstore_dir_ != &_default_chunkstore_dir_) {
     delete chunkstore_dir_;
-  }
-  if (datastore_dir_ != &_default_datastore_dir_) {
-    delete datastore_dir_;
   }
   if (this != default_instance_) {
   }
@@ -509,11 +499,6 @@ void VaultConfig::Clear() {
     if (_has_bit(3)) {
       if (chunkstore_dir_ != &_default_chunkstore_dir_) {
         chunkstore_dir_->clear();
-      }
-    }
-    if (_has_bit(4)) {
-      if (datastore_dir_ != &_default_datastore_dir_) {
-        datastore_dir_->clear();
       }
     }
     port_ = 0;
@@ -571,24 +556,12 @@ bool VaultConfig::MergePartialFromCodedStream(
         }
        parse_chunkstore_dir:
         DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_chunkstore_dir()));
-        if (input->ExpectTag(42)) goto parse_datastore_dir;
+        if (input->ExpectTag(40)) goto parse_port;
         break;
       }
       
-      // optional bytes datastore_dir = 5;
+      // optional int32 port = 5;
       case 5: {
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
-          goto handle_uninterpreted;
-        }
-       parse_datastore_dir:
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_datastore_dir()));
-        if (input->ExpectTag(48)) goto parse_port;
-        break;
-      }
-      
-      // optional int32 port = 6;
-      case 6: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
@@ -596,7 +569,7 @@ bool VaultConfig::MergePartialFromCodedStream(
        parse_port:
         DO_(::google::protobuf::internal::WireFormat::ReadInt32(
               input, &port_));
-        _set_bit(5);
+        _set_bit(4);
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -645,14 +618,9 @@ void VaultConfig::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBytes(4, this->chunkstore_dir(), output);
   }
   
-  // optional bytes datastore_dir = 5;
+  // optional int32 port = 5;
   if (_has_bit(4)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->datastore_dir(), output);
-  }
-  
-  // optional int32 port = 6;
-  if (_has_bit(5)) {
-    ::google::protobuf::internal::WireFormat::WriteInt32(6, this->port(), output);
+    ::google::protobuf::internal::WireFormat::WriteInt32(5, this->port(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -683,14 +651,9 @@ void VaultConfig::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->chunkstore_dir(), target);
   }
   
-  // optional bytes datastore_dir = 5;
+  // optional int32 port = 5;
   if (_has_bit(4)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->datastore_dir(), target);
-  }
-  
-  // optional int32 port = 6;
-  if (_has_bit(5)) {
-    target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(6, this->port(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(5, this->port(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -728,13 +691,7 @@ int VaultConfig::ByteSize() const {
         ::google::protobuf::internal::WireFormat::BytesSize(this->chunkstore_dir());
     }
     
-    // optional bytes datastore_dir = 5;
-    if (has_datastore_dir()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->datastore_dir());
-    }
-    
-    // optional int32 port = 6;
+    // optional int32 port = 5;
     if (has_port()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::Int32Size(
@@ -779,9 +736,6 @@ void VaultConfig::MergeFrom(const VaultConfig& from) {
       set_chunkstore_dir(from.chunkstore_dir());
     }
     if (from._has_bit(4)) {
-      set_datastore_dir(from.datastore_dir());
-    }
-    if (from._has_bit(5)) {
       set_port(from.port());
     }
   }
@@ -806,7 +760,6 @@ void VaultConfig::Swap(VaultConfig* other) {
     std::swap(pmid_private_, other->pmid_private_);
     std::swap(signed_pmid_public_, other->signed_pmid_public_);
     std::swap(chunkstore_dir_, other->chunkstore_dir_);
-    std::swap(datastore_dir_, other->datastore_dir_);
     std::swap(port_, other->port_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);

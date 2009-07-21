@@ -174,8 +174,7 @@ struct DeleteArgs {
 
 class PDClient {
  public:
-  PDClient(const std::string &datastore_dir,
-           const boost::uint16_t &port,
+  PDClient(const boost::uint16_t &port,
            const std::string &kad_config_file);
   ~PDClient();
   void CleanUp();
@@ -272,7 +271,6 @@ class PDClient {
       boost::shared_ptr<DeleteArgs> delete_args);
   PDClient(const PDClient&);
   PDClient& operator=(const PDClient&);
-  std::string datastore_dir_;
   boost::uint16_t port_;
   std::string kad_config_file_;
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;

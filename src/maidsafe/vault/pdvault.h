@@ -158,7 +158,6 @@ class PDVault {
           const std::string &pmid_private,
           const std::string &signed_pmid_public,
           const std::string &chunkstore_dir,
-          const std::string &datastore_dir,
           const boost::uint16_t &port,
           const std::string &kad_config_file);
   ~PDVault();

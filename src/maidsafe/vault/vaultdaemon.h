@@ -44,7 +44,6 @@ class VaultDaemon {
                                    pmid_private_(""),
                                    signed_pmid_public_(""),
                                    chunkstore_dir_(""),
-                                   datastore_dir_(""),
                                    port_(port) {
     TakeOwnership();
   }
@@ -69,7 +68,7 @@ class VaultDaemon {
   bool is_owned_;
   fs::path config_file_, local_config_file_, kad_config_file_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_;
-  std::string chunkstore_dir_, datastore_dir_;
+  std::string chunkstore_dir_;
   boost::uint16_t port_;
   VaultDaemon(const VaultDaemon&);
   VaultDaemon& operator=(const VaultDaemon&);

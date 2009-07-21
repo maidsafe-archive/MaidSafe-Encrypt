@@ -112,8 +112,7 @@ class RunPDVaults {
         initial_vault_port_(initial_vault_port),
         kad_config_(),
         chunkstore_dir_(test_dir_+"/Chunkstores"),
-        datastore_dir_(test_dir_+"/Datastores"),
-        kad_config_file_(datastore_dir_+"/.kadconfig"),
+        kad_config_file_(chunkstore_dir_+"/.kadconfig"),
         chunkstore_dirs_(),
         mutices_(),
         cb_(),
@@ -125,7 +124,6 @@ class RunPDVaults {
         bootstrap_local_ip_(local_ip),
         bootstrap_local_port_(local_port) {
     fs::path temp_(test_dir_);
-    fs::create_directories(datastore_dir_);
     fs::create_directories(chunkstore_dir_);
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
@@ -172,7 +170,7 @@ class RunPDVaults {
       kad_contact_->set_local_port(bootstrap_local_port_);
       for (int j = 0; j < no_of_vaults_; j++) {
         // Save kad_config to file
-        std::string dir = datastore_dir_+"/Datastore"+ base::itos(64001+j);
+        std::string dir = chunkstore_dir_+"/Chunkstore"+ base::itos(64001+j);
         if (!boost::filesystem::exists(boost::filesystem::path(dir)))
           boost::filesystem::create_directories(dir);
         kad_config_file_ = dir + "/.kadconfig";
@@ -195,9 +193,7 @@ class RunPDVaults {
           base::itos(64001+i);
       fs::path chunkstore_local_path_(chunkstore_local_, fs::native);
       chunkstore_dirs_.push_back(chunkstore_local_path_);
-      std::string datastore_local_ = datastore_dir_+"/Datastore"+
-          base::itos(64001+i);
-      kad_config_file_ = datastore_local_ + "/.kadconfig";
+      kad_config_file_ = chunkstore_local_ + "/.kadconfig";
       std::string public_key_(""), private_key_(""), signed_key_("");
       std::string node_id_("");
       GeneratePmidStuff(&public_key_,
@@ -212,7 +208,6 @@ class RunPDVaults {
                                      private_key_,
                                      signed_key_,
                                      chunkstore_local_,
-                                     datastore_local_,
                                      this_port,
                                      kad_config_file_));
       pdvaults_->push_back(pdvault_local_);
@@ -292,7 +287,7 @@ class RunPDVaults {
   boost::uint16_t bootstrap_port_;
   boost::uint16_t initial_vault_port_;
   base::KadConfig kad_config_;
-  std::string chunkstore_dir_, datastore_dir_, kad_config_file_;
+  std::string chunkstore_dir_, kad_config_file_;
   std::vector<fs::path> chunkstore_dirs_;
   std::vector< boost::shared_ptr<boost::mutex> > mutices_;
   base::callback_func_type cb_;

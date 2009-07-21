@@ -76,8 +76,6 @@ class RunPDVaults {
 //        bootstrap_port_(bootstrap_port),
         kad_config_(),
         chunkstore_dir_(test_dir_+"/Chunkstores"),
-        datastore_dir_(test_dir_+"/Datastores"),
-//        kad_config_file_(datastore_dir_+"/.kadconfig"),
         kad_config_file_(""),
         chunkstore_dirs_(),
         crypto_(),
@@ -95,7 +93,6 @@ class RunPDVaults {
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
-    fs::create_directories(datastore_dir_);
     fs::create_directories(chunkstore_dir_);
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
@@ -140,8 +137,6 @@ class RunPDVaults {
           base::itos(64101+i);
       fs::path chunkstore_local_path_(chunkstore_local_, fs::native);
       chunkstore_dirs_.push_back(chunkstore_local_path_);
-      std::string datastore_local_ = datastore_dir_+"/Datastore"+
-          base::itos(64101+i);
       std::string public_key_(""), private_key_(""), signed_key_("");
       std::string node_id_("");
       GeneratePmidStuff(&public_key_,
@@ -150,13 +145,12 @@ class RunPDVaults {
                         &node_id_);
       ASSERT_TRUE(crypto_.AsymCheckSig(public_key_, signed_key_, public_key_,
                                        crypto::STRING_STRING));
-      kad_config_file_ = datastore_local_ + "/.kadconfig";
+      kad_config_file_ = chunkstore_local_ + "/.kadconfig";
       boost::shared_ptr<PDVault>
           pdvault_local_(new PDVault(public_key_,
                                      private_key_,
                                      signed_key_,
                                      chunkstore_local_,
-                                     datastore_local_,
                                      64101+i,
                                      kad_config_file_));
       pdvaults_->push_back(pdvault_local_);
@@ -183,10 +177,9 @@ class RunPDVaults {
 //          kad_contact_->port());
         // Save kad_config to files
         for (int k = 1; k < no_of_vaults_; ++k) {
-          std::string dir = datastore_dir_+"/Datastore"+ base::itos(64101+k);
+          std::string dir = chunkstore_dir_+"/Chunkstore"+ base::itos(64101+k);
           fs::create_directories(dir);
-          kad_config_file_ = datastore_dir_+"/Datastore"+ base::itos(64101+k) +
-              "/.kadconfig";
+          kad_config_file_ = dir + "/.kadconfig";
           std::fstream output_(kad_config_file_.c_str(),
             std::ios::out | std::ios::trunc | std::ios::binary);
           ASSERT_TRUE(kad_config_.SerializeToOstream(&output_));
@@ -231,7 +224,7 @@ class RunPDVaults {
 //  std::string bootstrap_ip_;
 //  boost::uint16_t bootstrap_port_;
   base::KadConfig kad_config_;
-  std::string chunkstore_dir_, datastore_dir_, kad_config_file_;
+  std::string chunkstore_dir_, kad_config_file_;
   std::vector<fs::path> chunkstore_dirs_;
   crypto::Crypto crypto_;
   boost::shared_ptr< std::vector< boost::shared_ptr<PDVault> > > pdvaults_;

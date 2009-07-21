@@ -92,7 +92,6 @@ void VaultDaemon::TakeOwnership() {
       pmid_private_ = vault_config_.pmid_private();
       signed_pmid_public_ = vault_config_.signed_pmid_public();
       chunkstore_dir_ = vault_config_.chunkstore_dir();
-      datastore_dir_ = vault_config_.datastore_dir();
       // If a port between 5000 & 65535 inclusive is passed into VaultDaemon,
       // use that, otherwise try the config file.  As a last resort, set port to
       // 0 and PDVault will use a random port.
@@ -111,7 +110,6 @@ void VaultDaemon::TakeOwnership() {
                                                     pmid_private_,
                                                     signed_pmid_public_,
                                                     chunkstore_dir_,
-                                                    datastore_dir_,
                                                     port_,
                                                     kad_config_file_.string()));
   bool port_forwarded = false;

@@ -64,7 +64,6 @@ class Env: public testing::Environment {
       std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults)
       : vault_dir_("LocalVaults"),
         chunkstore_dir_(vault_dir_ + "/Chunkstores"),
-        datastore_dir_(vault_dir_ + "/Datastores"),
         kad_config_file_(".kadconfig"),
         chunkstore_dirs_(),
         crypto_(),
@@ -83,7 +82,7 @@ class Env: public testing::Environment {
     catch(const std::exception &e_) {
       printf("%s\n", e_.what());
     }
-    fs::create_directories(datastore_dir_);
+    fs::create_directories(chunkstore_dir_);
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
   }
@@ -109,18 +108,14 @@ class Env: public testing::Environment {
       fs::path chunkstore_local_path(chunkstore_local, fs::native);
       fs::create_directories(chunkstore_local_path);
       chunkstore_dirs_.push_back(chunkstore_local_path);
-      std::string datastore_local = datastore_dir_+"/Datastore"+
-          base::itos(i);
-      fs::create_directories(datastore_local);
       std::string public_key(""), private_key(""), signed_key(""), node_id("");
       GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
       ASSERT_TRUE(crypto_.AsymCheckSig(public_key, signed_key, public_key,
                                        crypto::STRING_STRING));
-      kad_config_file_ = datastore_local + "/.kadconfig";
+      kad_config_file_ = chunkstore_local + "/.kadconfig";
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
-              signed_key, chunkstore_local, datastore_local, 0,
-              kad_config_file_));
+              signed_key, chunkstore_local, 0, kad_config_file_));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
     }
@@ -140,7 +135,7 @@ class Env: public testing::Environment {
     kad_contact->set_port((*pdvaults_)[1]->host_port());
     kad_contact->set_local_ip((*pdvaults_)[1]->local_host_ip());
     kad_contact->set_local_port((*pdvaults_)[1]->local_host_port());
-    kad_config_file_ = datastore_dir_+"/Datastore0/.kadconfig";
+    kad_config_file_ = chunkstore_dir_+"/Chunkstore0/.kadconfig";
     std::fstream output1(kad_config_file_.c_str(),
                          std::ios::out | std::ios::trunc | std::ios::binary);
     ASSERT_TRUE(kad_config.SerializeToOstream(&output1));
@@ -168,7 +163,7 @@ class Env: public testing::Environment {
     ASSERT_FALSE((*pdvaults_)[1]->vault_started());
     // Save kad config to files and start all remaining vaults
     for (int k = 1; k < kNetworkSize_; ++k) {
-      kad_config_file_ = datastore_dir_+"/Datastore"+ base::itos(k) +
+      kad_config_file_ = chunkstore_dir_+"/Chunkstore"+ base::itos(k) +
           "/.kadconfig";
       std::fstream output(kad_config_file_.c_str(),
                           std::ios::out | std::ios::trunc | std::ios::binary);
@@ -243,7 +238,7 @@ class Env: public testing::Environment {
     printf("Finished vault tear down.\n");
   }
 
-  std::string vault_dir_, chunkstore_dir_, datastore_dir_, kad_config_file_;
+  std::string vault_dir_, chunkstore_dir_, kad_config_file_;
   std::vector<fs::path> chunkstore_dirs_;
   crypto::Crypto crypto_;
   std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults_;

@@ -258,7 +258,6 @@ class TestPDVault : public testing::Test {
  protected:
   TestPDVault() : kad_config_file_(".kadconfig"),
                   client_chunkstore_dir_("TestVault/ClientChunkstore"),
-                  client_datastore_dir_("TestVault/ClientDatastore"),
                   chunkstore_dirs_(),
                   pdclient_(),
                   client_keys_(),
@@ -276,7 +275,6 @@ class TestPDVault : public testing::Test {
 //      printf("%s\n", e.what());
 //    }
     fs::create_directories(client_chunkstore_dir_);
-    fs::create_directories(client_datastore_dir_);
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     client_keys_.GenerateKeys(packethandler::kRsaKeySize);
@@ -293,8 +291,7 @@ class TestPDVault : public testing::Test {
 
   virtual void SetUp() {
     boost::shared_ptr<maidsafe::PDClient>
-        pdclient_local_(new maidsafe::PDClient(client_datastore_dir_, 63001,
-                                               kad_config_file_));
+        pdclient_local_(new maidsafe::PDClient(63001, kad_config_file_));
     pdclient_ = pdclient_local_;
     testpdvault::PrepareCallbackResults();
     pdclient_->Join("", boost::bind(&testpdvault::GeneralCallback, _1));
@@ -313,7 +310,7 @@ class TestPDVault : public testing::Test {
     printf("#### CLIENT STOPPPED\n");
   }
 
-  std::string kad_config_file_, client_chunkstore_dir_, client_datastore_dir_;
+  std::string kad_config_file_, client_chunkstore_dir_;
   std::vector<fs::path> chunkstore_dirs_;
   boost::shared_ptr<maidsafe::PDClient> pdclient_;
   crypto::RsaKeyPair client_keys_;
@@ -577,13 +574,10 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
   ASSERT_FALSE(callback_timed_out_);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
-  std::string datastoredir("TestVault/ClientDatastore1");
-  maidsafe::PDClient *newclient =  new maidsafe::PDClient(datastoredir,
-                                                          63002,
-                                                          kad_config_file_);
+  maidsafe::PDClient *newclient = new maidsafe::PDClient(63002,
+                                                         kad_config_file_);
   testpdvault::PrepareCallbackResults();
-  newclient->Join("",
-                  boost::bind(&testpdvault::GeneralCallback, _1));
+  newclient->Join("", boost::bind(&testpdvault::GeneralCallback, _1));
   testpdvault::BluddyWaitFunction(60, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);

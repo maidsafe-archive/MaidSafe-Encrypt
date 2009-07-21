@@ -53,7 +53,7 @@ class ContactsTest : public testing::Test {
     }
 };
 
-TEST_F(ContactsTest, BEAH_MAID_ContactValueObject) {
+TEST_F(ContactsTest, BEH_MAID_ContactValueObject) {
   std::string pn("A");
   std::string pk("B");
   std::string fn("C");

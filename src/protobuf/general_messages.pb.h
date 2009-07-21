@@ -221,20 +221,10 @@ class VaultConfig : public ::google::protobuf::Message {
   inline void set_chunkstore_dir(const void* value, size_t size);
   inline ::std::string* mutable_chunkstore_dir();
   
-  // optional bytes datastore_dir = 5;
-  inline bool has_datastore_dir() const;
-  inline void clear_datastore_dir();
-  static const int kDatastoreDirFieldNumber = 5;
-  inline const ::std::string& datastore_dir() const;
-  inline void set_datastore_dir(const ::std::string& value);
-  inline void set_datastore_dir(const char* value);
-  inline void set_datastore_dir(const void* value, size_t size);
-  inline ::std::string* mutable_datastore_dir();
-  
-  // optional int32 port = 6;
+  // optional int32 port = 5;
   inline bool has_port() const;
   inline void clear_port();
-  static const int kPortFieldNumber = 6;
+  static const int kPortFieldNumber = 5;
   inline ::google::protobuf::int32 port() const;
   inline void set_port(::google::protobuf::int32 value);
   
@@ -250,13 +240,11 @@ class VaultConfig : public ::google::protobuf::Message {
   static const ::std::string _default_signed_pmid_public_;
   ::std::string* chunkstore_dir_;
   static const ::std::string _default_chunkstore_dir_;
-  ::std::string* datastore_dir_;
-  static const ::std::string _default_datastore_dir_;
   ::google::protobuf::int32 port_;
   friend void  protobuf_AddDesc_general_5fmessages_2eproto();
   friend void protobuf_AssignDesc_general_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_general_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -747,61 +735,19 @@ inline ::std::string* VaultConfig::mutable_chunkstore_dir() {
   return chunkstore_dir_;
 }
 
-// optional bytes datastore_dir = 5;
-inline bool VaultConfig::has_datastore_dir() const {
-  return _has_bit(4);
-}
-inline void VaultConfig::clear_datastore_dir() {
-  if (datastore_dir_ != &_default_datastore_dir_) {
-    datastore_dir_->clear();
-  }
-  _clear_bit(4);
-}
-inline const ::std::string& VaultConfig::datastore_dir() const {
-  return *datastore_dir_;
-}
-inline void VaultConfig::set_datastore_dir(const ::std::string& value) {
-  _set_bit(4);
-  if (datastore_dir_ == &_default_datastore_dir_) {
-    datastore_dir_ = new ::std::string;
-  }
-  datastore_dir_->assign(value);
-}
-inline void VaultConfig::set_datastore_dir(const char* value) {
-  _set_bit(4);
-  if (datastore_dir_ == &_default_datastore_dir_) {
-    datastore_dir_ = new ::std::string;
-  }
-  datastore_dir_->assign(value);
-}
-inline void VaultConfig::set_datastore_dir(const void* value, size_t size) {
-  _set_bit(4);
-  if (datastore_dir_ == &_default_datastore_dir_) {
-    datastore_dir_ = new ::std::string;
-  }
-  datastore_dir_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* VaultConfig::mutable_datastore_dir() {
-  _set_bit(4);
-  if (datastore_dir_ == &_default_datastore_dir_) {
-    datastore_dir_ = new ::std::string;
-  }
-  return datastore_dir_;
-}
-
-// optional int32 port = 6;
+// optional int32 port = 5;
 inline bool VaultConfig::has_port() const {
-  return _has_bit(5);
+  return _has_bit(4);
 }
 inline void VaultConfig::clear_port() {
   port_ = 0;
-  _clear_bit(5);
+  _clear_bit(4);
 }
 inline ::google::protobuf::int32 VaultConfig::port() const {
   return port_;
 }
 inline void VaultConfig::set_port(::google::protobuf::int32 value) {
-  _set_bit(5);
+  _set_bit(4);
   port_ = value;
 }
 

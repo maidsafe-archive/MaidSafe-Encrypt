@@ -27,16 +27,12 @@ namespace maidsafe {
 
 inline void dummy_callback(const std::string&) {}
 
-PDClient::PDClient(const std::string &datastore_dir,
-                   const boost::uint16_t &port,
+PDClient::PDClient(const boost::uint16_t &port,
                    const std::string &kad_config_file)
-    : datastore_dir_(datastore_dir),
-      port_(port),
+    : port_(port),
       kad_config_file_(kad_config_file),
       channel_manager_(new rpcprotocol::ChannelManager()),
-      knode_(new kad::KNode(datastore_dir,
-                            channel_manager_,
-                            kad::CLIENT)),
+      knode_(new kad::KNode(channel_manager_, kad::CLIENT)),
       client_rpcs_(channel_manager_) {}
 
 PDClient::~PDClient() {

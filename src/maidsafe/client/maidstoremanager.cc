@@ -40,12 +40,7 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-MaidsafeStoreManager::MaidsafeStoreManager() : datastore_dir_(""),
-                                               pdclient_(),
-                                               cry_obj() {
-  file_system::FileSystem fsys;
-  fs::path datastore_path(fsys.DbDir(), fs::native);
-  datastore_dir_ = datastore_path.string();
+MaidsafeStoreManager::MaidsafeStoreManager() : pdclient_(), cry_obj() {
   // If kad config file exists in dir we're in, use that, otherwise get default
   // path to file.
   std::string kadconfig_str("");
@@ -53,6 +48,7 @@ MaidsafeStoreManager::MaidsafeStoreManager() : datastore_dir_(""),
     if (fs::exists(".kadconfig")) {
       kadconfig_str = ".kadconfig";
     } else {
+      file_system::FileSystem fsys;
       fs::path kadconfig_path(fsys.ApplicationDataDir(), fs::native);
       kadconfig_path /= ".kadconfig";
       kadconfig_str = kadconfig_path.string();
@@ -64,22 +60,9 @@ MaidsafeStoreManager::MaidsafeStoreManager() : datastore_dir_(""),
 #endif
   }
   printf("kadconfig_path: %s\n", kadconfig_str.c_str());
-  pdclient_ = new PDClient(datastore_dir_,
-                           0,
-                           kadconfig_str);
+  pdclient_ = new PDClient(0, kadconfig_str);
   cry_obj.set_symm_algorithm(crypto::AES_256);
   cry_obj.set_hash_algorithm(crypto::SHA_512);
-}
-
-MaidsafeStoreManager::~MaidsafeStoreManager() {
-  try {
-    fs::remove_all(datastore_dir_);
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("error: %s\n", e.what());
-#endif
-  }
 }
 
 void MaidsafeStoreManager::Init(base::callback_func_type cb) {
@@ -103,155 +86,6 @@ void MaidsafeStoreManager::Close(base::callback_func_type cb) {
   pdclient_->CleanUp();
 }
 
-//  bool MaidsafeStoreManager::GetBootstrappingNodes(
-//    // TODO(Richard): we should put this to somewhere else instead here...
-//    fs::path config_file(datastore_dir_, fs::native);
-//    config_file /= kConfigFileName;
-//    if (!fs::exists(config_file)) {
-//      // create a default one if the config file doesn't exist
-//      try {
-//        fs::ofstream fstr;
-//        fstr.open(config_file, std::ios_base::binary);
-//        const int kBufSize = 200;
-//        char buf[kBufSize];
-//        snprintf(buf,
-//                 kBufSize,
-//                 "network:\r\n{\r\nbootstrap_nodes = (%s);\r\n};\r\n",
-//                 kOffcialBootStrapNode.c_str());
-//        fstr << buf;
-//        fstr.close();
-//      }
-//      catch(const std::exception &ex) {
-//  #ifdef DEBUG
-//        printf("MaidsafeStoreManager::GetBootstrappingNodes exception ");
-//        printf("creating config file: %s\n", ex.what());
-//  #endif
-//        return false;
-//      }
-//    }
-//    catch(const std::exception &ex) {
-// #ifdef DEBUG
-//      printf("MaidsafeStoreManager::GetBootstrappingNodes exception ");
-//      printf("creating config file: %s\n", ex.what());
-// #endif
-//      return false;
-//    }
-//    if (bootstrap_nodes.empty()) {
-//  #ifdef DEBUG
-//      printf("There are no bootstrapping nodes in the config file.\n");
-//  #endif
-//      return false;
-//    }
-//    for (uint32_t i = 0; i < bootstrap_nodes.size(); ++i) {
-//      // parse boostrapping node ip:port
-//      std::string bootstrap_str = bootstrap_nodes[i];
-//      if (bootstrap_str != "") {
-//        const int kBootstrapStrSize = bootstrap_str.size();
-//        boost::scoped_ptr<char>bootstrap_cstr_(new char[kBootstrapStrSize+1]);
-//        for (int i = 0; i <= kBootstrapStrSize; ++i) {
-//          bootstrap_cstr_.get()[i] = bootstrap_str.c_str()[i];
-//        }
-//        std::string boostrapping_ip("");
-//        uint16_t boostrapping_port = 0;
-//        try {
-//          boost::char_separator<char> sep(":");
-//          boost::tokenizer<boost::char_separator<char> >
-//          tok(bootstrap_str, sep);
-//          boost::tokenizer<boost::char_separator<char> >::iterator
-//          beg = tok.begin();
-//          boostrapping_ip = *beg;
-//          ++beg;
-//          boostrapping_port = static_cast<uint16_t>(base::stoi(*beg));
-//        }
-//        catch(const std::exception &e) {
-//  #ifdef DEBUG
-//          printf("Error with booststrapping node format.\n");
-//  #endif
-//          break;
-//        }
-//        if (boostrapping_ip == "" || boostrapping_port == 0) {
-//  #ifdef DEBUG
-//          printf("Error getting booststrapping node info.\n");
-//  #endif
-//          break;
-//        }
-//  #ifdef DEBUG
-//        printf("IP: %s, Port: %i\n",
-//               boostrapping_ip.c_str(),
-//               boostrapping_port);
-//  #endif
-//        kad::Contact bs_contact(kad::vault_random_id(),
-//                                boostrapping_ip,
-//                                boostrapping_port);
-//        bs_contacts->push_back(bs_contact);
-//      }
-//    }  // end of parsing
-//    if (bs_contacts->empty())
-//      return false;
-//    return true;
-//  }
-//  // read the bootstrapping nodes
-//  base::ConfigFileHandler cfh(config_file.file_string());
-//  std::vector<std::string> bootstrap_nodes;
-//  if (cfh.getAttributeList("network.bootstrap_nodes", bootstrap_nodes) != 0) {
-// #ifdef DEBUG
-//    printf("Failed to read bootstrapping nodes from the config file.\n");
-// #endif
-//    return false;
-//  }
-//  if (bootstrap_nodes.empty()) {
-// #ifdef DEBUG
-//    printf("There are no bootstrapping nodes in the config file.\n");
-// #endif
-//    return false;
-//  }
-//  for (uint32_t i = 0; i < bootstrap_nodes.size(); ++i) {
-//    // parse boostrapping node ip:port
-//    std::string bootstrap_str = bootstrap_nodes[i];
-//    if (bootstrap_str != "") {
-//      const int kBootstrapStrSize = bootstrap_str.size();
-//      boost::scoped_ptr<char> bootstrap_cstr_(new char[kBootstrapStrSize+1]);
-//      for (int i = 0; i <= kBootstrapStrSize; ++i) {
-//        bootstrap_cstr_.get()[i] = bootstrap_str.c_str()[i];
-//      }
-//      std::string boostrapping_ip("");
-//      uint16_t boostrapping_port = 0;
-//      try {
-//        boost::char_separator<char> sep(":");
-//        boost::tokenizer<boost::char_separator<char> >
-//        tok(bootstrap_str, sep);
-//        boost::tokenizer<boost::char_separator<char> >::iterator
-//        beg = tok.begin();
-//        boostrapping_ip = *beg;
-//        ++beg;
-//        boostrapping_port = static_cast<uint16_t>(base::stoi(*beg));
-//      }
-//      catch(const std::exception &e) {
-// #ifdef DEBUG
-//        printf("Error with booststrapping node format.\n");
-// #endif
-//        break;
-//      }
-//      if (boostrapping_ip == "" || boostrapping_port == 0) {
-// #ifdef DEBUG
-//        printf("Error getting booststrapping node info.\n");
-// #endif
-//        break;
-//      }
-// #ifdef DEBUG
-//     printf("IP: %s, Port: %i\n", boostrapping_ip.c_str(), boostrapping_port);
-// #endif
-//      kad::Contact bs_contact(kad::vault_random_id(),
-//                              boostrapping_ip,
-//                              boostrapping_port);
-//      bs_contacts->push_back(bs_contact);
-//    }
-//  }  // end of parsing
-//  if (bs_contacts->empty())
-//    return false;
-//  return true;
-// }
-
 void MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
                                      base::callback_func_type cb) {
   std::string chunk_name("");
@@ -268,17 +102,9 @@ void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
                                       base::callback_func_type cb) {
   std::string chunk_name("");
   base::decode_from_hex(hex_chunk_name, &chunk_name);
-  pdclient_->StoreChunk(chunk_name,
-                        content,
-                        public_key,
-                        signed_public_key,
-                        signature,
-                        DATA,
-                        boost::bind(
-                            &MaidsafeStoreManager::SimpleResult_Callback,
-                            this,
-                            _1,
-                            cb));
+  pdclient_->StoreChunk(chunk_name, content, public_key, signed_public_key,
+      signature, DATA, boost::bind(&MaidsafeStoreManager::SimpleResult_Callback,
+      this, _1, cb));
 }
 
 void MaidsafeStoreManager::IsKeyUnique(const std::string &hex_key,
@@ -286,10 +112,7 @@ void MaidsafeStoreManager::IsKeyUnique(const std::string &hex_key,
   std::string key("");
   base::decode_from_hex(hex_key, &key);
   pdclient_->FindValue(key,
-                       boost::bind(&MaidsafeStoreManager::IsKeyUnique_Callback,
-                                   this,
-                                   _1,
-                                   cb));
+      boost::bind(&MaidsafeStoreManager::IsKeyUnique_Callback, this, _1, cb));
 }
 
 void MaidsafeStoreManager::DeletePacket(const std::string &hex_key,
@@ -300,11 +123,8 @@ void MaidsafeStoreManager::DeletePacket(const std::string &hex_key,
                                         base::callback_func_type cb) {
   std::string key("");
   base::decode_from_hex(hex_key, &key);
-  pdclient_->DeleteChunk(key, public_key,
-                         signed_public_key, signature,
-                         type, boost::bind(
-                           &MaidsafeStoreManager::DeleteChunk_Callback,
-                           this, _1, cb));
+  pdclient_->DeleteChunk(key, public_key, signed_public_key, signature, type,
+      boost::bind(&MaidsafeStoreManager::DeleteChunk_Callback, this, _1, cb));
 }
 
 void MaidsafeStoreManager::StorePacket(const std::string &hex_key,
@@ -318,15 +138,13 @@ void MaidsafeStoreManager::StorePacket(const std::string &hex_key,
   std::string key("");
   base::decode_from_hex(hex_key, &key);
   if (update)
-    pdclient_->UpdateChunk(key, value, public_key,
-      signed_public_key, signature, type,
-      boost::bind(&MaidsafeStoreManager::StoreChunk_Callback, this, _1,
-                  update, cb));
+    pdclient_->UpdateChunk(key, value, public_key, signed_public_key, signature,
+        type, boost::bind(&MaidsafeStoreManager::StoreChunk_Callback, this, _1,
+        update, cb));
   else
-    pdclient_->StoreChunk(key, value, public_key,
-      signed_public_key, signature, type,
-      boost::bind(&MaidsafeStoreManager::StoreChunk_Callback, this, _1,
-                  update, cb));
+    pdclient_->StoreChunk(key, value, public_key, signed_public_key, signature,
+        type, boost::bind(&MaidsafeStoreManager::StoreChunk_Callback, this, _1,
+        update, cb));
 }
 
 void MaidsafeStoreManager::LoadPacket(const std::string &hex_key,
@@ -334,10 +152,7 @@ void MaidsafeStoreManager::LoadPacket(const std::string &hex_key,
   std::string key("");
   base::decode_from_hex(hex_key, &key);
   pdclient_->GetChunk(key,
-                      boost::bind(&MaidsafeStoreManager::LoadChunk_Callback,
-                                  this,
-                                  _1,
-                                  cb));
+      boost::bind(&MaidsafeStoreManager::LoadChunk_Callback, this, _1, cb));
 }
 
 void MaidsafeStoreManager::GetMessages(const std::string &hex_key,

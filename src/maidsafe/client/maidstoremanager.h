@@ -37,7 +37,7 @@ namespace maidsafe {
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   MaidsafeStoreManager();
-  ~MaidsafeStoreManager();
+  ~MaidsafeStoreManager() {}
   void Init(base::callback_func_type cb);
   void Close(base::callback_func_type cb);
   void LoadChunk(const std::string &hex_chunk_name,
@@ -73,7 +73,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
-//  bool GetBootstrappingNodes(std::vector<kad::Contact> *bs_contacts);
   void LoadChunk_Callback(const std::string &result,
                           base::callback_func_type cb);
   void SimpleResult_Callback(const std::string &result,
@@ -86,7 +85,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                            base::callback_func_type cb);
   void DeleteChunk_Callback(const std::string &result,
                             base::callback_func_type cb);
-  std::string datastore_dir_;
   PDClient *pdclient_;
   crypto::Crypto cry_obj;
 };
