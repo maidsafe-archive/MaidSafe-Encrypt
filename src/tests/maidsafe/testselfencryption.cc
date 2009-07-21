@@ -295,7 +295,8 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
     ASSERT_TRUE((file_size1 / max_chunks) < dm.chunk_size(i));
     chunk_size_total += static_cast<int>(dm.chunk_size(i));
   }
-  ASSERT_GT(dm.chunk_size(dm.chunk_size_size()-1), 0);
+  ASSERT_GT(dm.chunk_size(dm.chunk_size_size()-1),
+            static_cast<boost::uint32_t>(0));
   chunk_size_total += static_cast<int>(dm.chunk_size(dm.chunk_size_size()-1));
   ASSERT_EQ(file_size1, chunk_size_total);
   dm.Clear();
@@ -307,7 +308,8 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
     ASSERT_TRUE((file_size2 / max_chunks) < dm.chunk_size(i));
     chunk_size_total += static_cast<int>(dm.chunk_size(i));
   }
-  ASSERT_GT(dm.chunk_size(dm.chunk_size_size()-1), 0);
+  ASSERT_GT(dm.chunk_size(dm.chunk_size_size()-1),
+            static_cast<boost::uint32_t>(0));
   chunk_size_total += static_cast<int>(dm.chunk_size(dm.chunk_size_size()-1));
   ASSERT_EQ(file_size2, chunk_size_total);
   dm.Clear();
@@ -321,7 +323,8 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
     chunk_size_total += static_cast<int>(dm.chunk_size(i));
   }
   ASSERT_GT(dm.chunk_size(0), default_chunk_size_);
-  ASSERT_GT(dm.chunk_size(dm.chunk_size_size()-1), 0);
+  ASSERT_GT(dm.chunk_size(dm.chunk_size_size()-1),
+            static_cast<boost::uint32_t>(0));
   chunk_size_total += static_cast<int>(dm.chunk_size(0));
   chunk_size_total += static_cast<int>(dm.chunk_size(dm.chunk_size_size()-1));
   ASSERT_EQ(file_size3, chunk_size_total);
@@ -333,7 +336,8 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
   for (int i = 0; i < dm.chunk_size_size(); i++) {
     chunk_size_total += static_cast<int>(dm.chunk_size(i));
   }
-  ASSERT_GT(dm.chunk_size(dm.chunk_size_size()-1), 0);
+  ASSERT_GT(dm.chunk_size(dm.chunk_size_size()-1),
+            static_cast<boost::uint32_t>(0));
   ASSERT_EQ(file_size4, chunk_size_total);
   dm.Clear();
 
@@ -352,7 +356,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
   ASSERT_EQ(max_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size()-1; i++) {
     ASSERT_GT((file_size1/max_chunks), dm.chunk_size(i));
-    ASSERT_GT(dm.chunk_size(i), 0);
+    ASSERT_GT(dm.chunk_size(i), static_cast<boost::uint32_t>(0));
     chunk_size_total += static_cast<int>(dm.chunk_size(i));
   }
   chunk_size_total += static_cast<int>(dm.chunk_size(dm.chunk_size_size()-1));
@@ -364,7 +368,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
   ASSERT_EQ(max_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size()-1; i++) {
     ASSERT_GT((file_size2 / max_chunks), dm.chunk_size(i));
-    ASSERT_GT(dm.chunk_size(i), 0);
+    ASSERT_GT(dm.chunk_size(i), static_cast<boost::uint32_t>(0));
     chunk_size_total += static_cast<int>(dm.chunk_size(i));
   }
   chunk_size_total += static_cast<int>(dm.chunk_size(dm.chunk_size_size()-1));
@@ -377,7 +381,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
     // std::cout << "Default: " << default_chunk_size_ << "\tChunk[" << i << "]:
     //  " << dm.chunk_size(i) << std::endl;
     ASSERT_EQ(dm.chunk_size(i-1), dm.chunk_size(i));
-    ASSERT_GT(dm.chunk_size(i), 0);
+    ASSERT_GT(dm.chunk_size(i), static_cast<boost::uint32_t>(0));
     chunk_size_total += static_cast<int>(dm.chunk_size(i));
   }
   ASSERT_GT(dm.chunk_size(dm.chunk_size_size()-1), dm.chunk_size(0));
@@ -390,7 +394,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
   ASSERT_TRUE(se.CalculateChunkSizes(path4, &dm));
   ASSERT_EQ(min_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size(); i++) {
-    ASSERT_GT(dm.chunk_size(i), 0);
+    ASSERT_GT(dm.chunk_size(i), static_cast<boost::uint32_t>(0));
     chunk_size_total += static_cast<int>(dm.chunk_size(i));
   }
   ASSERT_EQ(file_size4, chunk_size_total);

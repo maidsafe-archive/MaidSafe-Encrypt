@@ -39,7 +39,7 @@ namespace maidsafe {
 
 struct ShareParticipants {
   ShareParticipants() : id(""), public_key(), role('R') {}
-  bool operator==(ShareParticipants& other) {
+  bool operator==(const ShareParticipants& other) {
     return static_cast<bool>(id == other.id &&
                              public_key == other.public_key &&
                              role == other.role);

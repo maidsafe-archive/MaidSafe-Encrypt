@@ -825,14 +825,14 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
 //  dbPath /= ".contacts";
 //  std::string dbName;
 
-//  maidsafe::ContactsHandler ch;
-//  int n = ch.CreateContactDB(dbName);
-//  if (n != 0) {
-//#ifdef DEBUG
-//    printf("Couldn't create CONTACTS db.\n");
-//#endif
-//    return false;
-//  }
+//    maidsafe::ContactsHandler ch;
+//    int n = ch.CreateContactDB(dbName);
+//    if (n != 0) {
+//  #ifdef DEBUG
+//      printf("Couldn't create CONTACTS db.\n");
+//  #endif
+//      return false;
+//    }
 
   fs::path dbPath(fsys_.MaidsafeHomeDir());
   dbPath /= ".shares";
@@ -922,8 +922,12 @@ bool ClientController::GetMessages() {
     // TODO(Richard): return code for no messages
     return true;
   std::list<std::string> msgs;
-  for (int i = 0; i < result.messages_size(); i++)
+  for (int i = 0; i < result.messages_size(); i++) {
+#ifdef DEBUG
+    printf("In ClientController::GetMessages, getting message %i\n", i);
+#endif
     msgs.push_back(result.messages(i));
+  }
   HandleMessages(&msgs);
   cb.Reset();
   cbph_->ClearMessages(MPID_BP,
@@ -1071,7 +1075,7 @@ int ClientController::HandleReceivedShare(
       maidsafe::ContactsHandler ch;
       maidsafe::mi_contact mic;
       int r = ss_->GetContactInfo(psn.admins(n), &mic);
-//      int r = ch.GetContactList(dbName, contact_list, psn.readonlys(n), false);
+//     int r = ch.GetContactList(dbName, contact_list, psn.readonlys(n), false);
       if (r == 0) {
         sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
@@ -1386,12 +1390,12 @@ int ClientController::HandleAddContactResponse(
 #endif
     return -88;
   }
-//  if (list.size() != 1) {
-//#ifdef DEBUG
-//    printf("List came back empty. No contact.\n");
-//#endif
-//    return -888;
-//  }
+//    if (list.size() != 1) {
+//  #ifdef DEBUG
+//      printf("List came back empty. No contact.\n");
+//  #endif
+//      return -888;
+//    }
   n = ss_->UpdateContactFullName(sender, ci.name());
   n += ss_->UpdateContactOfficePhone(sender, ci.office_number());
   n += ss_->UpdateContactBirthday(sender, ci.birthday());
@@ -1587,7 +1591,7 @@ int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
   std::vector<maidsafe::mi_contact> mic_list;
   if (pub_name.empty()) {
     int n = ss_->GetContactList(&mic_list);
-    //GetContactList(dbNameNew, *c_list, pub_name);
+//    GetContactList(dbNameNew, *c_list, pub_name);
     if (n != 0)
       return n;
   } else {
@@ -1873,6 +1877,29 @@ int ClientController::CreateNewShare(const std::string &name,
 //  DB_TYPE db_type;
 //  std::string msid("");
 //  n = GetDb(share_path, &db_type, &msid);
+
+//  #ifdef MAIDSAFE_WIN32
+//    std::string mount_point(1, ss_->WinDrive());
+//    mount_point += ":";
+//  #elif defined(MAIDSAFE_POSIX)
+//    std::string mount_point(fsys_.MaidsafeFuseDir());
+//  #elif defined(MAIDSAFE_APPLE)
+//    std::string mount_point(fsys_.MaidsafeFuseDir());
+//  #endif
+//    std::string full_share(mount_point + kSharesSubdir[0][0] + "/" + name);
+//  #ifdef DEBUG
+//    printf("In ClientController::CreateNewShare, trying to create dir %s\n",
+//           full_share.c_str());
+//  #endif
+//    if(!fs::create_directory(full_share)) {
+//  #ifdef DEBUG
+//      printf("In ClientController::CreateNewShare, didn't create dir %s\n",
+//             full_share.c_str());
+//  #endif
+//      return -1314;
+//    } else {
+//      n = 1314;
+//    }
   n = mkdir(share_path);
   if (n != 0)
     return n;
@@ -2335,7 +2362,7 @@ bool ClientController::ReadOnly(const std::string &path, bool gui) {
       int result = psh.GetPrivateShareList(dbName, &ps, msid, 1);
       if (ps.size() != 1 || result != 0) {
 #ifdef DEBUG
-        printf("Private share doen't exist.\n");
+        printf("Private share doesn't exist.\n");
 #endif
         return true;
       }

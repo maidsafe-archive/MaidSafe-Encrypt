@@ -463,6 +463,11 @@ int SEHandler::EncryptDb(const std::string &dir_path,
                          const std::string &msid,
                          const bool &encrypt_dm,
                          std::string *ser_dm) {
+#ifdef DEBUG
+  printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
+         dir_path.c_str(), db_type, encrypt_dm, dir_key.c_str());
+  printf(" msid(%s)\n", msid.c_str());
+#endif
   DataMap dm_;
   std::string ser_dm_="", file_hash_="", enc_dm_;
   SelfEncryption se_;
@@ -471,10 +476,6 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   dah_->GetDbPath(dir_path, CREATE, &db_path_);
   if (!fs::exists(db_path_))
     return -2;
-#ifdef DEBUG
-  printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypting(%i)\n",
-         dir_path.c_str(), db_type, encrypt_dm);
-#endif
   file_hash_ = SHA512(db_path_, true);
 
   // when encrypting root db and keys db (during logout), GetDbPath fails above,
@@ -516,10 +517,12 @@ int SEHandler::EncryptDb(const std::string &dir_path,
       uptodate_datamaps_.erase(it);
     }
   }
-//  std::string hex_dm("");
-//  base::encode_to_hex(enc_dm_, &hex_dm);
-//  printf("Inserting dir_path(%s) and enc_dm_(%s) into uptodate_datamaps_.\n",
-//    dir_path.c_str(), hex_dm.c_str());
+#ifdef DEBUG
+  std::string hex_dm("");
+  base::encode_to_hex(enc_dm_, &hex_dm);
+  printf("Inserting dir_path(%s) and enc_dm_(%s) into uptodate_datamaps_.\n",
+    dir_path.c_str(), hex_dm.c_str());
+#endif
   uptodate_datamaps_.insert(
     std::pair<std::string, std::string>(dir_path, enc_dm_));
 
@@ -534,7 +537,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
 
   if (dir_key == "") {
 #ifdef DEBUG
-    // printf("dm is not stored in kademlia.\n");
+    printf("dm is not stored in kademlia.\n");
 #endif
     if (db_type == ANONYMOUS) {
       *ser_dm = enc_dm_;
@@ -542,7 +545,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
       std::string ser_gp = CreateDataMapPacket(enc_dm_, db_type, msid);
       *ser_dm = ser_gp;
 #ifdef DEBUG
-      // printf("Passing back ser_dm as a generic packet.\n");
+      printf("Passing back ser_dm as a generic packet.\n");
 #endif
     }
     return 0;
@@ -611,8 +614,9 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                          bool dm_encrypted,
                          bool overwrite) {
 #ifdef DEBUG
-  printf("SEHandler::DecryptDb dir_path(%s) type(%i) encrypted(%i)\n",
-         dir_path.c_str(), db_type, dm_encrypted);
+  printf("SEHandler::DecryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
+         dir_path.c_str(), db_type, dm_encrypted, dir_key.c_str());
+  printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm_, enc_dm_;
   // get dm from DHT
@@ -631,17 +635,24 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       return -1;
     }
 
-    enc_dm_ = load_result.content();
     packethandler::GenericPacket gp;
-    std::string s;
-    if (dm_encrypted) {
-      gp.ParseFromString(enc_dm_);
-      s = gp.data();
+//    std::string s;
+//    if (dm_encrypted) {
+    gp.ParseFromString(load_result.content());
+    enc_dm_ = gp.data();
+//    }
+    if (enc_dm_ == "") {
+#ifdef DEBUG
+      printf("Enc dm is empty.\n");
+#endif
+      return -1;
     }
-//    std::string hex_dm("");
-//    base::encode_to_hex(s, &hex_dm);
-//    printf("Searching dir_path(%s) and enc_dm_(%s) into uptodate_datamaps_\n",
-//      dir_path.c_str(), hex_dm.c_str());
+#ifdef DEBUG
+    std::string hex_dm("");
+    base::encode_to_hex(enc_dm_, &hex_dm);
+    printf("Searching dir_path(%s) and enc_dm_(%s) in uptodate_datamaps_\n",
+      dir_path.c_str(), hex_dm.c_str());
+#endif
     std::map<std::string, std::string>::iterator it;
     it = uptodate_datamaps_.find(dir_path);
 
@@ -650,7 +661,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       printf("SEHandler::DecryptDb: Found dir_path in set.\n");
 #endif
       if (dm_encrypted) {
-        if (it->second == s) {
+        if (it->second == enc_dm_) {
 #ifdef DEBUG
           printf("SEHandler::DecryptDb: Found DM in set. ");
           printf("No need to go get it from the network.\n");
@@ -658,7 +669,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
           return 0;
         }
       } else {
-        if (it->second == enc_dm_) {
+        if (it->second == ser_dm) {
 #ifdef DEBUG
           printf("SEHandler::DecryptDb: Found DM in set. ");
           printf("No need to go get it from the network.\n");
@@ -669,31 +680,31 @@ int SEHandler::DecryptDb(const std::string &dir_path,
     } else {
       if (dm_encrypted) {
         uptodate_datamaps_.insert(
-          std::pair<std::string, std::string>(dir_path, s));
+          std::pair<std::string, std::string>(dir_path, enc_dm_));
       } else {
         uptodate_datamaps_.insert(
-          std::pair<std::string, std::string>(dir_path, enc_dm_));
+          std::pair<std::string, std::string>(dir_path, ser_dm));
       }
 #ifdef DEBUG
       printf("SEHandler::DecryptDb: DIDN'T find dir_path in set.\n");
 #endif
     }
 
-    if (db_type != ANONYMOUS) {
-      packethandler::GenericPacket gp;
-      if (!gp.ParseFromString(enc_dm_)) {
-#ifdef DEBUG
-        printf("Failed to parse generic packet.\n");
-#endif
-        return -1;
-      }
-      enc_dm_ = gp.data();
-      if (enc_dm_ == "") {
-#ifdef DEBUG
-        printf("Enc dm is empty.\n");
-#endif
-      }
-    }
+//      if (db_type != ANONYMOUS) {
+//        packethandler::GenericPacket gp;
+//        if (!gp.ParseFromString(enc_dm_)) {
+//  #ifdef DEBUG
+//          printf("Failed to parse generic packet.\n");
+//  #endif
+//          return -1;
+//        }
+//        enc_dm_ = gp.data();
+//        if (enc_dm_ == "") {
+//  #ifdef DEBUG
+//          printf("Enc dm is empty.\n");
+//  #endif
+//        }
+//      }
     if (dm_encrypted) {
 #ifdef DEBUG
       printf("Decrypting dm.\n");
@@ -778,19 +789,19 @@ int SEHandler::EncryptDm(const std::string &dir_path,
                          const std::string &msid,
                          std::string *enc_dm) {
   std::string key_, parent_key_, enc_hash_, xor_hash_, xor_hash_extended_="";
-  // The following function sets parent_key_ to MSID public key if msid != ""
-  // otherwise it sets it to the dir key of the parent folder
+  // The following function sets parent_key_ to SHA512 hash of MSID public key
+  // if msid != "" otherwise it sets it to the dir key of the parent folder
   GetDirKeys(dir_path, msid, &key_, &parent_key_);
 
   enc_hash_ = SHA512(parent_key_ + key_, false);
   xor_hash_ = SHA512(key_ + parent_key_, false);
 #ifdef DEBUG
-  if (msid != "") {
+//  if (msid != "") {
     printf("In EncryptDm dir_path: %s\n"
-           "key_: %s\nparent_key_: %s\nenc_hash_: %s\n",
+           "key_: %s\nparent_key_: %s\nenc_hash_: %s\nxor_hash_: %s\n",
             dir_path.c_str(), key_.c_str(),
-            parent_key_.c_str(), enc_hash_.c_str());
-  }
+            parent_key_.c_str(), enc_hash_.c_str(), xor_hash_.c_str());
+//  }
 #endif
   while (xor_hash_extended_.size() < ser_dm.size())
     xor_hash_extended_.append(xor_hash_);
@@ -811,8 +822,8 @@ int SEHandler::DecryptDm(const std::string &dir_path,
                          std::string *ser_dm) {
   std::string key_, parent_key_, enc_hash_, xor_hash_;
   std::string xor_hash_extended_="", intermediate_;
-  // The following function sets parent_key_ to MSID public key if msid != ""
-  // otherwise it sets it to the dir key of the parent folder
+  // The following function sets parent_key_ to SHA512 hash of MSID public key
+  // if msid != "" otherwise it sets it to the dir key of the parent folder
   int n = GetDirKeys(dir_path, msid, &key_, &parent_key_);
 #ifdef DEBUG
   printf("In DecryptDm dir_path: %s\tkey_: %s\tparent_key_: %s\n",
@@ -827,6 +838,14 @@ int SEHandler::DecryptDm(const std::string &dir_path,
 
   enc_hash_ = SHA512(parent_key_ + key_, false);
   xor_hash_ = SHA512(key_ + parent_key_, false);
+#ifdef DEBUG
+//  if (msid != "") {
+    printf("In DecryptDm dir_path: %s\n"
+           "key_: %s\nparent_key_: %s\nenc_hash_: %s\nxor_hash_: %s\n",
+            dir_path.c_str(), key_.c_str(),
+            parent_key_.c_str(), enc_hash_.c_str(), xor_hash_.c_str());
+//  }
+#endif
   crypto::Crypto decryptor_;
   decryptor_.set_symm_algorithm(crypto::AES_256);
   intermediate_ = decryptor_.SymmDecrypt(enc_dm,
@@ -1240,6 +1259,15 @@ int SEHandler::GetMsidKeys(const std::string &msid,
     return -1;
   *public_key = ps.front().MsidPubKey();
   *private_key = ps.front().MsidPriKey();
+#ifdef DEBUG
+//  std::string pubhex(""), prihex("");
+//  base::encode_to_hex(*public_key, &pubhex);
+//  base::encode_to_hex(*private_key, &prihex);
+  printf("In SEHandler::GetMsidKeys:\npub: %s\npri: %s\n",
+         public_key->c_str(), private_key->c_str());
+//  printf("In SEHandler::GetMsidKeys:\nhexpub: %s\nhexpri: %s\n",
+//         pubhex.c_str(), prihex.c_str());
+#endif
   return 0;
 }
 

@@ -29,6 +29,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "boost/thread/thread.hpp"
 

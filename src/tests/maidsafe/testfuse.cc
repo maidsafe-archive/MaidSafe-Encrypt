@@ -172,10 +172,8 @@ void UnmountAndLogout(maidsafe::ClientController *cc,
   printf("Logging out.\n");
   if (!logged_in_)
     return;
-  // Save contacts and shares databases
-  std::string newDb("/.contacts");
-  ASSERT_EQ(0, cc->write(newDb));
-  newDb = std::string("/.shares");
+  // Save shares databases
+  std::string newDb("/.shares");
   ASSERT_EQ(0, cc->write(newDb));
   // Unmount drive
 #ifdef MAIDSAFE_WIN32
@@ -268,9 +266,7 @@ void CreateUserLoginMount(maidsafe::ClientController *cc,
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss->Mounted());
   // Decrypt contacts and shares databases
-  std::string newDb("/.contacts");
-  maidsafe::ClientController::getInstance()->read(newDb);
-  newDb = std::string("/.shares");
+  std::string newDb("/.shares");
   maidsafe::ClientController::getInstance()->read(newDb);
   boost::this_thread::sleep(boost::posix_time::seconds(20));
 }
@@ -946,13 +942,16 @@ TEST_F(FuseTest, DISABLED_FUNC_FUSE_SharesAndMessages) {
   test_root = kRoot;
   test_root /= kSharesSubdir[0][0];  // /Shares/Private/
   ASSERT_TRUE(fs::exists(test_root)) << test_root << " doesn't exist.";
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   ASSERT_EQ(0, cc_->CreateNewShare(share_name, admins, readonlys));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  test_root /= share_name;  // /Shares/Private/TestShare/
+  ASSERT_TRUE(fs::exists(test_root)) << test_root << " doesn't exist.";
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
 
 
   // 06. Save 5 files to 2 subdirs in new share.
   // -------------------------------------------
-  test_root /= share_name;  // /Shares/Private/TestShare/
   test_dir_0 = test_root;
   test_dir_0 /= "TestDir0";
   test_dir_1 = test_dir_0;
@@ -972,7 +971,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FUSE_SharesAndMessages) {
   try {
     ASSERT_TRUE(fs::create_directory(test_dir_0)) << "Couldn't create " <<
         test_dir_0;
-    boost::this_thread::sleep(boost::posix_time::seconds(60));
+    boost::this_thread::sleep(boost::posix_time::seconds(30));
     success = (fs::exists(test_dir_0));
   }
   catch(const std::exception &e) {
@@ -983,7 +982,7 @@ TEST_F(FuseTest, DISABLED_FUNC_FUSE_SharesAndMessages) {
   try {
     ASSERT_TRUE(fs::create_directory(test_dir_1)) << "Couldn't create " <<
         test_dir_1;
-    boost::this_thread::sleep(boost::posix_time::seconds(60));
+    boost::this_thread::sleep(boost::posix_time::seconds(30));
     success = (fs::exists(test_dir_1));
   }
   catch(const std::exception &e) {
@@ -1043,6 +1042,31 @@ TEST_F(FuseTest, DISABLED_FUNC_FUSE_SharesAndMessages) {
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
   printf("Mount path = %s\n", mount_path_.string().c_str());
+  // Get messages to add share
+  ASSERT_TRUE(cc_->GetMessages());
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  std::list<packethandler::InstantMessage> messages;
+  packethandler::InstantMessage im;
+  ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
+  ASSERT_EQ(static_cast<unsigned int>(3), messages.size());
+  // message 1 from user 2 requesting add contact
+  im = messages.front();
+  messages.pop_front();
+  ASSERT_EQ(public_username2_, im.sender());
+  // message 2 from user 1 requesting add contact
+  im = messages.front();
+  messages.pop_front();
+  ASSERT_EQ(public_username1_, im.sender());
+  // message 3 from user 2 notifying of share
+  im = messages.front();
+  messages.pop_front();
+  ASSERT_EQ(public_username2_, im.sender());
+  ASSERT_TRUE(im.has_privateshare_notification());
+  test_root = kRoot;
+  test_root /= kSharesSubdir[0][0];  // /Shares/Private/
+  ASSERT_TRUE(fs::exists(test_root)) << test_root << " doesn't exist.";
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  ASSERT_EQ(0, cc_->HandleReceivedShare(im.privateshare_notification(), ""));
 
 
   // 08. Check /Shares/Private has files and that they are read-only.
@@ -1057,14 +1081,15 @@ TEST_F(FuseTest, DISABLED_FUNC_FUSE_SharesAndMessages) {
            i,
            hash.c_str());
     ASSERT_EQ(fuse_test::pre_hash_share_[i], hash);
-    ASSERT_FALSE(fs::remove(fuse_test::test_share_[i]));
-    success = false;
-    try {
-      fs::rename(fuse_test::test_share_[i], fs::path("renamed.txt"));
-      success = true;
-    }
-    catch(const std::exception&) {}
-    ASSERT_FALSE(success);
+    // TODO(Fraser#5#): 2009-07-16 - Uncomment two checks below:-
+//    ASSERT_FALSE(fs::remove(fuse_test::test_share_[i]));
+//    success = false;
+//    try {
+//      fs::rename(fuse_test::test_share_[i], fs::path("renamed.txt"));
+//      success = true;
+//    }
+//    catch(const std::exception&) {}
+//    ASSERT_FALSE(success);
   }
 
 
@@ -1095,6 +1120,30 @@ TEST_F(FuseTest, DISABLED_FUNC_FUSE_SharesAndMessages) {
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
   printf("Mount path = %s\n", mount_path_.string().c_str());
+  // Get messages to add share
+  ASSERT_TRUE(cc_->GetMessages());
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  messages.clear();
+  ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
+  ASSERT_EQ(static_cast<unsigned int>(3), messages.size());
+  // message 1 from user 3 requesting add contact
+  im = messages.front();
+  messages.pop_front();
+  ASSERT_EQ(public_username3_, im.sender());
+  // message 2 from user 2 requesting add contact
+  im = messages.front();
+  messages.pop_front();
+  ASSERT_EQ(public_username2_, im.sender());
+  // message 3 from user 2 notifying of share
+  im = messages.front();
+  messages.pop_front();
+  ASSERT_EQ(public_username2_, im.sender());
+  ASSERT_TRUE(im.has_privateshare_notification());
+  test_root = kRoot;
+  test_root /= kSharesSubdir[0][0];  // /Shares/Private/
+  ASSERT_TRUE(fs::exists(test_root)) << test_root << " doesn't exist.";
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  ASSERT_EQ(0, cc_->HandleReceivedShare(im.privateshare_notification(), ""));
 
 
   // 10. Check /Shares/Private has files and that they can be modified.
@@ -1119,10 +1168,10 @@ TEST_F(FuseTest, DISABLED_FUNC_FUSE_SharesAndMessages) {
   fs::path new_test_dir_1(test_dir_0);
   test_dir_1 /= "TestDir1";
   new_test_dir_1 /= "RenamedTestDir1";
-  fs::path new_test_file_0(test_root);
-  new_test_file_0 /= "renamed_test0.txt";
-  fs::path new_test_file_4(new_test_dir_1);
-  new_test_file_4 /= "test4.txt";
+  fs::path new_test_file_5(test_root);
+  new_test_file_5 /= "renamed_test0.txt";
+  fs::path new_test_file_9(new_test_dir_1);
+  new_test_file_9 /= "test4.txt";
   success = false;
   try {
     fs::rename(test_dir_1, new_test_dir_1);
@@ -1132,20 +1181,28 @@ TEST_F(FuseTest, DISABLED_FUNC_FUSE_SharesAndMessages) {
   ASSERT_TRUE(success);
   success = false;
   try {
-    fs::rename(fuse_test::test_share_[0], new_test_file_0);
+    fs::rename(fuse_test::test_share_[5], new_test_file_5);
     success = true;
   }
   catch(const std::exception&) {}
   ASSERT_TRUE(success);
-  ASSERT_TRUE(fs::remove(fuse_test::test_share_[1]));
+  success = false;
+  try {
+    printf("Trying to delete %s\n", fuse_test::test_share_[6].string().c_str());
+    success = fs::remove(fuse_test::test_share_[6]);
+  }
+  catch(const std::exception&) {}
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(fs::exists(fuse_test::test_share_[6]));
+//  ASSERT_TRUE(fs::remove(fuse_test::test_share_[6]));
 
 
   // 11. Send user 2 a message and file (with message = hash of file).
   // -----------------------------------------------------------------
-  ASSERT_EQ(0, cc_->SendInstantMessage(fuse_test::pre_hash_share_[2],
+  ASSERT_EQ(0, cc_->SendInstantMessage(fuse_test::pre_hash_share_[7],
                                        public_username2_));
   const std::string kTestMessage("Test message");
-  std::string test_file(fuse_test::test_share_[2].string());
+  std::string test_file(fuse_test::test_share_[7].string());
   ASSERT_EQ(0, cc_->SendInstantFile(&test_file,
                                     kTestMessage, public_username2_));
 
@@ -1185,11 +1242,11 @@ TEST_F(FuseTest, DISABLED_FUNC_FUSE_SharesAndMessages) {
   printf("Checking modified file 5\n");
   ASSERT_FALSE(fs::exists(fuse_test::test_share_[5]));
   boost::this_thread::sleep(boost::posix_time::seconds(10));
-  ASSERT_TRUE(fs::exists(new_test_file_0));
+  ASSERT_TRUE(fs::exists(new_test_file_5));
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   printf("pre_hash[5] = %s\n", fuse_test::pre_hash_share_[5].c_str());
-  hash = se.SHA512(new_test_file_0);
-  printf("se.SHA512(new_test_file_0) = %s\n", hash.c_str());
+  hash = se.SHA512(new_test_file_5);
+  printf("se.SHA512(new_test_file_5) = %s\n", hash.c_str());
   ASSERT_EQ(fuse_test::pre_hash_share_[5], hash);
 
   // Check deletion of file 6
@@ -1219,23 +1276,36 @@ TEST_F(FuseTest, DISABLED_FUNC_FUSE_SharesAndMessages) {
   printf("Checking modified file 9\n");
   ASSERT_FALSE(fs::exists(fuse_test::test_share_[9]));
   boost::this_thread::sleep(boost::posix_time::seconds(10));
-  ASSERT_TRUE(fs::exists(new_test_file_4));
+  ASSERT_TRUE(fs::exists(new_test_file_9));
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   printf("pre_hash[9] = %s\n", fuse_test::pre_hash_share_[9].c_str());
-  hash = se.SHA512(new_test_file_4);
-  printf("se.SHA512(new_test_file_4) = %s\n", hash.c_str());
+  hash = se.SHA512(new_test_file_9);
+  printf("se.SHA512(new_test_file_9) = %s\n", hash.c_str());
   ASSERT_EQ(fuse_test::pre_hash_share_[9], hash);
 
 
   // 14. Check file and message have been received correctly.
   // --------------------------------------------------------
-  std::list<packethandler::InstantMessage> messages;
+  messages.clear();
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
-  ASSERT_EQ(static_cast<unsigned int>(2), messages.size());
-  ASSERT_EQ(public_username1_, messages.front().sender());
-  ASSERT_EQ(fuse_test::pre_hash_share_[2], messages.front().message());
-  ASSERT_EQ(public_username1_, messages.back().sender());
-  ASSERT_EQ(kTestMessage, messages.back().message());
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  ASSERT_EQ(static_cast<unsigned int>(4), messages.size());
+  // message 1 from user 3 requesting add contact
+  im = messages.front();
+  messages.pop_front();
+  ASSERT_EQ(public_username3_, im.sender());
+  // message 2 from user 1 requesting add contact
+  im = messages.front();
+  messages.pop_front();
+  ASSERT_EQ(public_username1_, im.sender());
+  // message 3 from user 1 notifying of file transfer
+  packethandler::InstantMessage im1, im2;
+  im1 = messages.front();
+  messages.pop_front();
+  ASSERT_EQ(public_username1_, im1.sender());
+  ASSERT_EQ(fuse_test::pre_hash_share_[2], im1.message());
+  ASSERT_TRUE(im1.has_instantfile_notification());
+  ASSERT_EQ(0, cc_->AddInstantFile(im1.instantfile_notification(), ""));
   // File sent should be "/My Files/test2.txt"
   fs::path test_sent_file(kRoot);
   test_sent_file /= kRootSubdir[0][0];
@@ -1243,7 +1313,12 @@ TEST_F(FuseTest, DISABLED_FUNC_FUSE_SharesAndMessages) {
   ASSERT_TRUE(fs::exists(test_sent_file));
   hash = se.SHA512(test_sent_file);
   printf("se.SHA512(test_sent_file) = %s\n", hash.c_str());
-  ASSERT_EQ(messages.front().message(), hash);
+  ASSERT_EQ(im1.message(), hash);
+  // message 4 from user 1 - instant message
+  im2 = messages.front();
+  messages.pop_front();
+  ASSERT_EQ(public_username1_, im2.sender());
+  ASSERT_EQ(kTestMessage, im2.message());
 
 #ifdef MAIDSAFE_WIN32
   fuse_test::UnmountAndLogout(cc_, ss_);

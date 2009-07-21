@@ -74,8 +74,8 @@ int PrivateShareHandler::CreatePrivateShareDB(const std::string &dbName) {
     std::string create_db("create table private_share( ");
     create_db += "name varchar(100) primary key, ";
     create_db += "MSID varchar(256) not null, ";
-    create_db += "pub_key varchar(10240) not null, ";
-    create_db += "priv_key varchar(10240));";
+    create_db += "pub_key blob not null, ";
+    create_db += "priv_key blob);";
     db_->execDML(create_db.c_str());
   }
   catch(CppSQLite3Exception& e) {  //NOLINT
@@ -89,7 +89,7 @@ int PrivateShareHandler::CreatePrivateShareDB(const std::string &dbName) {
   try {
     std::string create_db("create table private_share_contact( ");
     create_db += "MSID varchar(256) not null, ";
-    create_db += "pub_key varchar(10240) not null, ";
+    create_db += "pub_key blob not null, ";
     create_db += "contact varchar(512) not null,";
     create_db += "role char(1));";
     db_->execDML(create_db.c_str());
@@ -143,7 +143,11 @@ int PrivateShareHandler::GetPrivateShareList(const std::string &dbName,
         while (!q1.eof()) {
           maidsafe::ShareParticipants sp;
           sp.id = q1.getStringField(0);
-          sp.public_key = q1.getStringField(1);
+//          sp.public_key = q1.getStringField(1);
+          std::string hex(q1.getStringField(1));
+          std::string non_hex("");
+          base::decode_from_hex(hex, &non_hex);
+          sp.public_key = non_hex;
           std::string role(q1.getStringField(2));
           sp.role = role.at(0);
           r_list.push_back(sp);
@@ -152,13 +156,21 @@ int PrivateShareHandler::GetPrivateShareList(const std::string &dbName,
         std::vector<std::string> v;
         v.push_back(q.getStringField(0));
         v.push_back(q.getStringField(1));
-        v.push_back(q.getStringField(2));
-        v.push_back(q.getStringField(3));
+//        v.push_back(q.getStringField(2));
+//        v.push_back(q.getStringField(3));
+        std::string hex(q.getStringField(2));
+        std::string non_hex("");
+        base::decode_from_hex(hex, &non_hex);
+        v.push_back(non_hex);
+        hex = q.getStringField(3);
+        non_hex = "";
+        base::decode_from_hex(hex, &non_hex);
+        v.push_back(non_hex);
         maidsafe::PrivateShare ps(v, r_list);
         participants->push_back(ps);
         q1.finalize();
       } else {
-        query = "select * from private_share";
+        query = "select * from private_share_contact";
         query += " where MSID = '";
         query += q.getStringField(0);
         query += "';";
@@ -166,7 +178,11 @@ int PrivateShareHandler::GetPrivateShareList(const std::string &dbName,
         std::list<ShareParticipants> r_list;
         maidsafe::ShareParticipants sp;
         sp.id = q.getStringField(2);
-        sp.public_key = q.getStringField(1);
+//        sp.public_key = q.getStringField(1);
+        std::string hex(q1.getStringField(1));
+        std::string non_hex("");
+        base::decode_from_hex(hex, &non_hex);
+        sp.public_key = non_hex;
         std::string role(q.getStringField(3));
         sp.role = role.at(0);
         r_list.push_back(sp);
@@ -174,8 +190,16 @@ int PrivateShareHandler::GetPrivateShareList(const std::string &dbName,
           std::vector<std::string> v;
           v.push_back(q.getStringField(0));
           v.push_back(q.getStringField(1));
-          v.push_back(q.getStringField(2));
-          v.push_back(q.getStringField(3));
+//          v.push_back(q.getStringField(2));
+//          v.push_back(q.getStringField(3));
+          std::string hex(q.getStringField(2));
+          std::string non_hex("");
+          base::decode_from_hex(hex, &non_hex);
+          v.push_back(non_hex);
+          hex = q.getStringField(3);
+          non_hex = "";
+          base::decode_from_hex(hex, &non_hex);
+          v.push_back(non_hex);
           maidsafe::PrivateShare ps(v, r_list);
           participants->push_back(ps);
         }
@@ -214,13 +238,18 @@ int PrivateShareHandler::AddPrivateShare(const std::string &dbName,
   if (n)
     return n;
 
+  std::string hexpub(""), hexpri("");
+  base::encode_to_hex(ps.MsidPubKey(), &hexpub);
+  base::encode_to_hex(ps.MsidPriKey(), &hexpri);
   try {
     CppSQLite3Statement stmt = db_->compileStatement(
         "insert into private_share values(?,?,?,?);");
     stmt.bind(1, ps.Name().c_str());
     stmt.bind(2, ps.Msid().c_str());
-    stmt.bind(3, ps.MsidPubKey().c_str());
-    stmt.bind(4, ps.MsidPriKey().c_str());
+//    stmt.bind(3, ps.MsidPubKey().c_str());
+//    stmt.bind(4, ps.MsidPriKey().c_str());
+    stmt.bind(3, hexpub.c_str());
+    stmt.bind(4, hexpri.c_str());
     n = stmt.execDML();
     stmt.finalize();
     if (n != 1) {
@@ -234,10 +263,13 @@ int PrivateShareHandler::AddPrivateShare(const std::string &dbName,
       maidsafe::ShareParticipants r;
       r = participants->front();
       participants->pop_front();
+      std::string hex("");
+      base::encode_to_hex(r.public_key, &hex);
       CppSQLite3Statement stmt1 = db_->compileStatement(
           "insert into private_share_contact values(?,?,?,?);");
       stmt1.bind(1, ps.Msid().c_str());
-      stmt1.bind(2, r.public_key.c_str());
+//      stmt1.bind(2, r.public_key.c_str());
+      stmt1.bind(2, hex.c_str());
       stmt1.bind(3, r.id.c_str());
       stmt1.bind(4, r.role);
       n = stmt1.execDML();
@@ -279,12 +311,17 @@ int PrivateShareHandler::AddReceivedShare(const std::string &dbName,
     return n;
 
   try {
+    std::string hexpub(""), hexpri("");
+    base::encode_to_hex(ps.MsidPubKey(), &hexpub);
+    base::encode_to_hex(ps.MsidPriKey(), &hexpri);
     CppSQLite3Statement stmt = db_->compileStatement(
         "insert into private_share values(?,?,?,?);");
     stmt.bind(1, ps.Name().c_str());
     stmt.bind(2, ps.Msid().c_str());
-    stmt.bind(3, ps.MsidPubKey().c_str());
-    stmt.bind(4, ps.MsidPriKey().c_str());
+//    stmt.bind(3, ps.MsidPubKey().c_str());
+//    stmt.bind(4, ps.MsidPriKey().c_str());
+    stmt.bind(3, hexpub.c_str());
+    stmt.bind(4, hexpri.c_str());
     n = stmt.execDML();
     stmt.finalize();
     if (n != 1) {
@@ -397,10 +434,13 @@ int PrivateShareHandler::AddContactsToPrivateShare(
       maidsafe::ShareParticipants r;
       r = participants->front();
       participants->pop_front();
+      std::string hex("");
+      base::encode_to_hex(r.public_key, &hex);
       CppSQLite3Statement stmt1 = db_->compileStatement(
           "insert into private_share_contact values(?,?,?,?);");
       stmt1.bind(1, msid.c_str());
-      stmt1.bind(2, r.public_key.c_str());
+//      stmt1.bind(2, r.public_key.c_str());
+      stmt1.bind(2, hex.c_str());
       stmt1.bind(3, r.id.c_str());
       stmt1.bind(4, r.role);
       n = stmt1.execDML();
@@ -700,4 +740,4 @@ int PrivateShareHandler::MI_GetParticipantsList(const std::string &value,
   return 0;
 }
 
-}   // namespace
+}  // namespace maidsafe
