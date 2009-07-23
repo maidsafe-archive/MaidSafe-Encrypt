@@ -31,7 +31,7 @@
 #elif defined MAIDSAFE_POSIX
   #include "fs/l_fuse/fslinux.h"
 #elif defined MAIDSAFE_APPLE
-  #include "fs/m_fuse/fsmac.h"
+  #include "fs/l_fuse/fslinux.h"
 #endif
 
 
