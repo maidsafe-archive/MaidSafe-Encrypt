@@ -40,7 +40,7 @@
 #elif defined MAIDSAFE_POSIX
   namespace fs_l_fuse {
 #elif defined MAIDSAFE_APPLE
-  namespace fs_m_fuse {
+  namespace fs_l_fuse {
 #endif
 
 namespace fuse_test {
