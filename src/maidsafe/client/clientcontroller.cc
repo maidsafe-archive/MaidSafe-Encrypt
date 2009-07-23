@@ -141,9 +141,9 @@ int ClientController::ParseDa() {
   }
   ss_->SetRootDbKey(data_atlas.root_db_key());
 
-  if (data_atlas.dms_size() < 2) {
+  if (data_atlas.dms_size() != 2) {
 #ifdef DEBUG
-    printf("Not enough datamaps in the DA.\n");
+    printf("Wrong number of datamaps in the DA.\n");
 #endif
     return -9002;
   }
@@ -162,10 +162,17 @@ int ClientController::ParseDa() {
   }
   SessionSingleton::getInstance()->LoadContacts(&contacts);
 
-  DataMap dm_root, dm_keys, dm_shares;
+  std::list<Share> shares;
+  for (int n = 0; n < data_atlas.shares_size(); ++n) {
+    Share sh = data_atlas.shares(n);
+    shares.push_back(sh);
+  }
+  SessionSingleton::getInstance()->LoadShares(&shares);
+
+  DataMap dm_root, dm_shares;
   dm_root = data_atlas.dms(0);
   dm_shares = data_atlas.dms(1);
-  std::string ser_dm_root, ser_dm_keys, ser_dm_shares;
+  std::string ser_dm_root, ser_dm_shares;
   dm_root.SerializeToString(&ser_dm_root);
   dm_shares.SerializeToString(&ser_dm_shares);
 #ifdef DEBUG
@@ -229,6 +236,7 @@ int ClientController::SerialiseDa() {
     k->set_public_key(kar.public_key_);
     keyring.pop_front();
   }
+  printf("ClientController::SerialiseDa() - Finished with Keys.\n");
 
   std::vector<maidsafe::mi_contact> contacts;
   ss_->GetContactList(&contacts);
@@ -249,6 +257,31 @@ int ClientController::SerialiseDa() {
     pc->set_rank(contacts[n].rank_);
     pc->set_last_contact(contacts[n].last_contact_);
   }
+  printf("ClientController::SerialiseDa() - Finished with Contacts.\n");
+
+  std::list<PrivateShare> ps_list;
+  ss_->GetFullShareList(&ps_list);
+  while (!ps_list.empty()) {
+    PrivateShare this_ps = ps_list.front();
+    Share *sh = data_atlas_.add_shares();
+    sh->set_name(this_ps.Name());
+    sh->set_msid(this_ps.Msid());
+    sh->set_msid_pub_key(this_ps.MsidPubKey());
+    sh->set_msid_pri_key(this_ps.MsidPriKey());
+    std::list<ShareParticipants> this_sp_list = this_ps.Participants();
+    while (!this_sp_list.empty()) {
+      ShareParticipants this_sp = this_sp_list.front();
+      ShareParticipant *shp = sh->add_participants();
+      shp->set_public_name(this_sp.id);
+      shp->set_public_name_pub_key(this_sp.public_key);
+      std::string role(1, this_sp.role);
+      shp->set_role(role);
+      this_sp_list.pop_front();
+    }
+    ps_list.pop_front();
+  }
+  printf("ClientController::SerialiseDa() - Finished with Shares.\n");
+
   data_atlas_.SerializeToString(&ser_da_);
 
   return 0;
@@ -394,17 +427,6 @@ bool ClientController::CreateUser(const std::string &username,
       }
     }
 
-//    if (result == 0)
-//      result = !da.ParseFromString(ser_da_);
-//    if (result == 0) {
-//      // insert keys
-//      std::list<Key> keys;
-//      for (int n = 0; n < da.keys_size(); ++n) {
-//        Key k = da.keys(n);
-//        keys.push_back(k);
-//      }
-//      ss_->LoadKeys(&keys);
-//    }
     printf("In ClientController::CreateUser 15\n");
     if (0 != result) {
       printf("In ClientController::CreateUser 16\n");
@@ -496,41 +518,21 @@ bool ClientController::ValidateUser(const std::string &password) {
       return false;
     }
 
-/*
-    // Setting on session singleton the MAID, MPID, and PMID keys
-    std::stringstream out;
-    out << MAID;
-    ss_->SetPublicKey(dah_->GetPublicKey(out.str()), MAID_BP);
-    ss_->SetPrivateKey(dah_->GetPrivateKey(out.str()), MAID_BP);
-
-    out.str("");
-    out << PMID;
-    if (dah_->GetPackageID(out.str()) != "") {
-      ss_->SetPublicKey(dah_->GetPublicKey(out.str()), PMID_BP);
-      ss_->SetPrivateKey(dah_->GetPrivateKey(out.str()), PMID_BP);
-    }
-
-    out.str("");
-    out << MPID;
-    ss_->SetPublicUsername(dah_->GetPackageID(out.str()));
-*/
     // Create the mount point directory
     fsys_.FuseMountPoint();
 
     // Do BP operations if need be
     if (ss_->PublicUsername() != "") {
       // CHANGE CONNECTION STATUS
-      int connection_status(1);
-      int n = ChangeConnectionStatus(connection_status);
-      if (n != 0) {
-        // Alert for BP problems
-      }
-      ss_->SetConnectionStatus(connection_status);
+//      int connection_status(1);
+//      int n = ChangeConnectionStatus(connection_status);
+//      if (n != 0) {
+//        // Alert for BP problems
+//      }
+//      ss_->SetConnectionStatus(connection_status);
 
       // Get BP info and put it to the session
       CC_CallbackResult cb;
-//      ss_->SetPublicKey(dah_->GetPublicKey(out.str()), MPID_BP);
-//      ss_->SetPrivateKey(dah_->GetPrivateKey(out.str()), MPID_BP);
       cbph_->GetBufferPacketInfo(MPID_BP, boost::bind(
           &CC_CallbackResult::CallbackFunc,
           &cb,
@@ -598,12 +600,12 @@ bool ClientController::Logout() {
 
   SerialiseDa();
   exitcode result = auth_->SaveSession(ser_da_, priv_keys, pub_keys);
-  int connection_status(0);
-  int n = ChangeConnectionStatus(connection_status);
-  if (n != 0) {
-    // Alert for BP problems
-  }
-  ss_->SetConnectionStatus(connection_status);
+//  int connection_status(0);
+//  int n = ChangeConnectionStatus(connection_status);
+//  if (n != 0) {
+//    // Alert for BP problems
+//  }
+//  ss_->SetConnectionStatus(connection_status);
 
   if (result == OK && !RunDbEncQueue()) {
     fsys_.UnMount();
@@ -634,15 +636,12 @@ bool ClientController::LeaveMaidsafeNetwork() {
   exitcode result;
   std::string dir_ = fsys_.MaidsafeDir();
   {
-//    boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
     ss_->GetKeys(&keys);
     result = auth_->RemoveMe(keys);
   }
   if (result == OK) {
     delete seh_;
     delete msgh_;
-    // if (fs::exists("MaidDataAtlas.db"))
-    // fs::remove("MaidDataAtlas.db");
     try {
       fs::remove_all(dir_);
     }
@@ -817,32 +816,6 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
     return false;
   }
 
-//  fs::path dbPath;
-//  dbPath /= ".contacts";
-//  std::string dbName;
-
-//    maidsafe::ContactsHandler ch;
-//    int n = ch.CreateContactDB(dbName);
-//    if (n != 0) {
-//  #ifdef DEBUG
-//      printf("Couldn't create CONTACTS db.\n");
-//  #endif
-//      return false;
-//    }
-
-  fs::path dbPath(fsys_.MaidsafeHomeDir());
-  dbPath /= ".shares";
-  std::string dbName(dbPath.string());
-
-  maidsafe::PrivateShareHandler psh;
-  int n = psh.CreatePrivateShareDB(dbName);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("Couldn't create SHARES db.\n");
-#endif
-    return false;
-  }
-
   return true;
 }
 
@@ -880,6 +853,7 @@ bool ClientController::DeauthoriseUsers(std::set<std::string> users) {
   return true;
 }
 
+/*
 int ClientController::ChangeConnectionStatus(int status) {
   if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() == status)
     return -3;
@@ -896,6 +870,7 @@ int ClientController::ChangeConnectionStatus(int status) {
 
   return 0;
 }
+*/
 
 ////////////////////////
 // Message Operations //
@@ -948,9 +923,6 @@ int ClientController::HandleMessages(std::list<std::string> *msgs) {
     if (msg.ParseFromString(ser_msg)) {
       switch (msg.type()) {
         case packethandler::ADD_CONTACT_RQST:
-//            result += HandleAddContactRequest(msg);
-//            SetBufferPacketMessages(true);
-//            break;
         case packethandler::INSTANT_MSG:
             result += HandleInstantMessage(msg);
             break;
@@ -978,15 +950,9 @@ int ClientController::HandleDeleteContactNotification(
     return -40002;
   }
 
-  file_system::FileSystem fsys;
-  fs::path newDb(fsys_.MaidsafeHomeDir());
-  newDb /= ".contacts";
-  std::string dbNameNew(newDb.string());
-
   maidsafe::Contact c;
   c.SetPublicName(im.sender());
   c.SetConfirmed('U');
-  maidsafe::ContactsHandler ch;
   int n = ss_->UpdateContactConfirmed(im.sender(), 'U');
   if (n != 0) {
 #ifdef DEBUG
@@ -1006,9 +972,6 @@ int ClientController::HandleReceivedShare(
   printf("Public key: %s", psn.public_key().c_str());
 #endif
 
-  fs::path newDb(fsys_.MaidsafeHomeDir());
-  newDb /= ".shares";
-  std::string dbNameNew(newDb.string());
   std::vector<std::string> attributes;
   std::list<ShareParticipants> participants;
   if (name.empty())
@@ -1019,19 +982,15 @@ int ClientController::HandleReceivedShare(
   attributes.push_back(psn.msid());
   attributes.push_back(psn.public_key());
   attributes.push_back("");
-  maidsafe::PrivateShareHandler psh;
 
   if (!psn.has_private_key()) {
-    int n = psh.AddReceivedShare(dbNameNew, attributes);
+    int n = ss_->AddPrivateShare(attributes, &participants);
     if (n != 0)
       return n;
   } else {
     attributes[3] = psn.private_key();
 
     // Get the public key of the contacts
-    fs::path db(fsys_.MaidsafeHomeDir());
-    db /= ".contacts";
-    std::string dbName(db.string());
     std::vector<maidsafe::Contact> contact_list;
 
     for (int n = 0; n < psn.admins_size(); n++) {
@@ -1042,7 +1001,6 @@ int ClientController::HandleReceivedShare(
       sp.id = psn.admins(n);
       sp.role = 'A';
       contact_list.clear();
-      maidsafe::ContactsHandler ch;
       maidsafe::mi_contact mic;
       int r = ss_->GetContactInfo(psn.admins(n), &mic);
       // GetContactList(dbName, contact_list, psn.admins(n), false);
@@ -1068,10 +1026,8 @@ int ClientController::HandleReceivedShare(
       sp.id = psn.readonlys(n);
       sp.role = 'R';
       contact_list.clear();
-      maidsafe::ContactsHandler ch;
       maidsafe::mi_contact mic;
       int r = ss_->GetContactInfo(psn.admins(n), &mic);
-//     int r = ch.GetContactList(dbName, contact_list, psn.readonlys(n), false);
       if (r == 0) {
         sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
@@ -1089,7 +1045,7 @@ int ClientController::HandleReceivedShare(
       participants.push_back(sp);
     }
 
-    int n = psh.AddPrivateShare(dbNameNew, attributes, &participants);
+    int n = ss_->AddPrivateShare(attributes, &participants);
     if (n != 0)
       return n;
   }
@@ -1126,8 +1082,6 @@ int ClientController::HandleReceivedShare(
     return -20006;
   }
   fs::path pp(share_path);
-//  msid = "";
-//  PathDistinction(pp.parent_path().string(), &msid);
   db_type = GetDbType(pp.parent_path().string());
 #ifdef DEBUG
   printf("CC::HandleReceivedShare, after GetDbType parent(%s): %i.\n",
@@ -1156,7 +1110,6 @@ int ClientController::HandleInstantMessage(
 #ifdef DEBUG
       printf("%s\n", vbpm.message().c_str());
 #endif
-//    }
     return 0;
   } else {
     return -1;
@@ -1256,24 +1209,16 @@ int ClientController::HandleAddContactRequest(
   c.SetFullName(ci.name());
   c.SetOfficePhone(ci.office_number());
   c.SetBirthday(ci.birthday());
-#ifdef DEBUG
-  // printf("Gender: %s\n", ci.gender().c_str());
-#endif
   c.SetGender(ci.gender().at(0));
   c.SetLanguage(ci.language());
   c.SetCountry(ci.country());
   c.SetCity(ci.city());
   c.SetConfirmed('C');
 
-  // Add to the contacts DB
-  maidsafe::ContactsHandler ch;
-  fs::path newDb(fsys_.MaidsafeHomeDir());
-  newDb /= ".contacts";
-  std::string dbNameNew(newDb.string());
-
+  // Add to the contacts MI
   int n = ss_->AddContact(sender, rec_public_key, ci.name(),
           ci.office_number(), ci.birthday(), ci.gender().at(0), ci.language(),
-          ci.country(), ci.city(), 'C');
+          ci.country(), ci.city(), 'C', 0, 0);
 #ifdef DEBUG
   printf("Result add contact: %i\n", n);
 #endif
@@ -1369,14 +1314,9 @@ int ClientController::HandleAddContactResponse(
   c.SetCity(ci.city());
   c.SetConfirmed('C');
 
-  maidsafe::ContactsHandler ch;
-  fs::path newDb(fsys_.MaidsafeHomeDir());
-  newDb /= ".contacts";
-  std::string dbNameNew(newDb.string());
   std::vector<maidsafe::Contact> list;
   maidsafe::mi_contact mic;
   int n = ss_->GetContactInfo(sender, &mic);
-  // int n = ch.GetContactList(dbNameNew, list, sender);
 #ifdef DEBUG
   printf("GetContactList result: %i\n", n);
 #endif
@@ -1386,12 +1326,6 @@ int ClientController::HandleAddContactResponse(
 #endif
     return -88;
   }
-//    if (list.size() != 1) {
-//  #ifdef DEBUG
-//      printf("List came back empty. No contact.\n");
-//  #endif
-//      return -888;
-//    }
   n = ss_->UpdateContactFullName(sender, ci.name());
   n += ss_->UpdateContactOfficePhone(sender, ci.office_number());
   n += ss_->UpdateContactBirthday(sender, ci.birthday());
@@ -1415,21 +1349,14 @@ int ClientController::HandleAddContactResponse(
 int ClientController::SendInstantMessage(const std::string &message,
                                          const std::string &contact_name) {
   std::vector<Contact> list;
-  maidsafe::ContactsHandler ch;
-  fs::path newDb(fsys_.MaidsafeHomeDir());
-  newDb /= ".contacts";
-  std::string dbNameNew(newDb.string());
   maidsafe::mi_contact mic;
   int n = ss_->GetContactInfo(contact_name, &mic);
-  // GetContactList(dbNameNew, list, contact_name);
   if (n != 0) {
 #ifdef DEBUG
     printf("Couldn't find contact: %i\n", n);
 #endif
     return -9;
   }
-
-//  maidsafe::Contact c = list[0];
 
   maidsafe::Receivers rec;
   rec.id = contact_name;
@@ -1527,21 +1454,14 @@ int ClientController::SendInstantFile(std::string *filename,
   im.SerializeToString(&ser_instant_file);
 
   std::vector<Contact> list;
-  maidsafe::ContactsHandler ch;
-  fs::path newDb(fsys_.MaidsafeHomeDir());
-  newDb /= ".contacts";
-  std::string dbNameNew(newDb.string());
   maidsafe::mi_contact mic;
   n = ss_->GetContactInfo(contact_name, &mic);
-  // ch.GetContactList(dbNameNew, list, contact_name);
   if (n != 0) {
 #ifdef DEBUG
     printf("Couldn't find contact: %i\n", n);
 #endif
     return -6666;
   }
-
-//  maidsafe::Contact c = list[0];
 
   maidsafe::Receivers rec;
   rec.id = contact_name;
@@ -1580,14 +1500,9 @@ int ClientController::SendInstantFile(std::string *filename,
 
 int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
                                   const std::string &pub_name) {
-  maidsafe::ContactsHandler ch;
-  fs::path newDb(fsys_.MaidsafeHomeDir());
-  newDb /= ".contacts";
-  std::string dbNameNew(newDb.string());
   std::vector<maidsafe::mi_contact> mic_list;
   if (pub_name.empty()) {
     int n = ss_->GetContactList(&mic_list);
-//    GetContactList(dbNameNew, *c_list, pub_name);
     if (n != 0)
       return n;
   } else {
@@ -1677,16 +1592,12 @@ int ClientController::AddContact(const std::string &public_name) {
       return -22;
 
     maidsafe::Contact c;
-    maidsafe::ContactsHandler ch;
-    fs::path newDb(fsys_.MaidsafeHomeDir());
-    newDb /= ".contacts";
-    std::string dbNameNew(newDb.string());
     c.SetPublicName(public_name);
     c.SetPublicKey(public_key);
     c.SetConfirmed('U');
 
     return ss_->AddContact(public_name, public_key, "", "", "", '-', -1,
-           -1, "", 'U');
+           -1, "", 'U', 0, 0);
   } else {
 #ifdef DEBUG
     printf("Couldn't find contact's public key.\n");
@@ -1710,12 +1621,7 @@ int ClientController::DeleteContact(const std::string &public_name) {
     return -501;
   }
 
-  fs::path newDb(fsys_.MaidsafeHomeDir());
-  newDb /= ".contacts";
-  std::string dbNameNew(newDb.string());
-
   maidsafe::Contact c;
-  maidsafe::ContactsHandler ch;
   std::vector<Contact> contact_list;
   maidsafe::mi_contact mic;
   n = ss_->GetContactInfo(public_name, &mic);
@@ -1727,7 +1633,6 @@ int ClientController::DeleteContact(const std::string &public_name) {
     return -502;
   }
 
-//  c = contact_list[0];
   std::string deletion_msg(base::itos(base::get_epoch_nanoseconds()));
   deletion_msg += " deleted " + mic.pub_name_ + " update " +
     maidsafe::SessionSingleton::getInstance()->PublicUsername();
@@ -1738,7 +1643,6 @@ int ClientController::DeleteContact(const std::string &public_name) {
   im.set_date(base::get_epoch_milliseconds());
   im.set_message(deletion_msg);
   im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
-//  im.set_type(packethandler::DELETE_CONTACT_NOTIF);
   std::string ser_im;
   im.SerializeToString(&ser_im);
 
@@ -1782,11 +1686,17 @@ int ClientController::DeleteContact(const std::string &public_name) {
 
 int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
                                    const std::string &value) {
-  maidsafe::PrivateShareHandler psh;
-  fs::path newDb(fsys_.MaidsafeHomeDir());
-  newDb /= ".shares";
-  std::string dbNameNew(newDb.string());
-  return psh.GetPrivateShareList(dbNameNew, ps_list, value, 22);
+  int n = 0;
+  if (value.empty()) {
+    n = ss_->GetFullShareList(ps_list);
+  } else {
+    PrivateShare ps;
+    n = ss_->GetShareInfo(value, 0,  &ps);
+    if (n != 0)
+      return n;
+    ps_list->push_back(ps);
+  }
+  return n;
 }
 
 int ClientController::CreateNewShare(const std::string &name,
@@ -1806,14 +1716,8 @@ int ClientController::CreateNewShare(const std::string &name,
     return -30002;
   }
 
-  maidsafe::PrivateShareHandler psh;
-  fs::path newDb(fsys_.MaidsafeHomeDir());
-  newDb /= ".shares";
-  std::string dbNameNew(newDb.string());
-
   std::vector<std::string> attributes;
   attributes.push_back(name);
-
 #ifdef DEBUG
   printf("Public key: %s\n", cmsidr.public_key().c_str());
   printf("MSID: %s\n", cmsidr.name().c_str());
@@ -1826,15 +1730,10 @@ int ClientController::CreateNewShare(const std::string &name,
   std::list<maidsafe::ShareParticipants> participants;
   std::vector<maidsafe::ShareParticipants> parts;
   std::set<std::string>::iterator it;
-  newDb = fs::path(fsys_.MaidsafeHomeDir());
-  newDb /= ".contacts";
-  dbNameNew = std::string(newDb.string());
   for (it = admins.begin(); it != admins.end(); ++it) {
-    maidsafe::ContactsHandler ch;
     std::vector<maidsafe::Contact> c_list;
     maidsafe::mi_contact mic;
     int n = ss_->GetContactInfo(*it, &mic);
-    // GetContactList(dbNameNew, c_list, *it, false);
     if (n == 0) {
       maidsafe::ShareParticipants sp;
       sp.id = *it;
@@ -1845,11 +1744,9 @@ int ClientController::CreateNewShare(const std::string &name,
     }
   }
   for (it = readonlys.begin(); it != readonlys.end(); ++it) {
-    maidsafe::ContactsHandler ch;
     std::vector<maidsafe::Contact> c_list;
     maidsafe::mi_contact mic;
     int n = ss_->GetContactInfo(*it, &mic);
-    // GetContactList(dbNameNew, c_list, *it, false);
     if (n == 0) {
       maidsafe::ShareParticipants sp;
       sp.id = *it;
@@ -1860,42 +1757,12 @@ int ClientController::CreateNewShare(const std::string &name,
     }
   }
 
-  newDb = fs::path(fsys_.MaidsafeHomeDir());
-  newDb /= ".shares";
-  dbNameNew = std::string(newDb.string());
-
-  int n = psh.AddPrivateShare(dbNameNew, attributes, &participants);
+  int n = ss_->AddPrivateShare(attributes, &participants);
   if (n != 0)
     return n;
 
   // Create directory in Shares/Private and get its dir key
   std::string share_path("Shares/Private/" + name);
-//  DB_TYPE db_type;
-//  std::string msid("");
-//  n = GetDb(share_path, &db_type, &msid);
-
-//  #ifdef MAIDSAFE_WIN32
-//    std::string mount_point(1, ss_->WinDrive());
-//    mount_point += ":";
-//  #elif defined(MAIDSAFE_POSIX)
-//    std::string mount_point(fsys_.MaidsafeFuseDir());
-//  #elif defined(MAIDSAFE_APPLE)
-//    std::string mount_point(fsys_.MaidsafeFuseDir());
-//  #endif
-//    std::string full_share(mount_point + kSharesSubdir[0][0] + "/" + name);
-//  #ifdef DEBUG
-//    printf("In ClientController::CreateNewShare, trying to create dir %s\n",
-//           full_share.c_str());
-//  #endif
-//    if(!fs::create_directory(full_share)) {
-//  #ifdef DEBUG
-//      printf("In ClientController::CreateNewShare, didn't create dir %s\n",
-//             full_share.c_str());
-//  #endif
-//      return -1314;
-//    } else {
-//      n = 1314;
-//    }
   n = mkdir(share_path);
   if (n != 0)
     return n;
@@ -1991,7 +1858,6 @@ int ClientController::CreateNewShare(const std::string &name,
                        packethandler::INSTANT_MSG,
                        boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
     WaitForResult(cbr);
-    // packethandler::StoreMessagesResult res;
     if ((!res.ParseFromString(cbr.result)) ||
         (res.result() == kCallbackFailure)) {
   #ifdef DEBUG
@@ -2017,7 +1883,6 @@ int ClientController::CreateNewShare(const std::string &name,
 int ClientController::BackupElement(const std::string &path,
                                     const DB_TYPE db_type,
                                     const std::string &msid) {
-  // return seh_->AddJob(path, REGULAR_ENCRYPT);
   return seh_->EncryptFile(path, db_type, msid);
 }
 
@@ -2068,7 +1933,6 @@ int ClientController::PathDistinction(const std::string &path,
   int n = 0;
   // Check if My Files is in the path
   size_t found = path_.find(search);
-  // printf("%i", std::string::npos);
   if (found != std::string::npos) {
     n = 1;
   } else {
@@ -2084,7 +1948,6 @@ int ClientController::PathDistinction(const std::string &path,
         return 0;
       }
       share = path_.substr(search.length() + 1);
-      // printf("\n\n\n\t\t\t\t%s\n\n\n", share.c_str());
       std::string share_name("");
       for (unsigned int nn = 0; nn < share.length(); nn++) {
         if (share.at(nn) == '/' || share.at(nn) == '\\')
@@ -2096,18 +1959,15 @@ int ClientController::PathDistinction(const std::string &path,
       newDb /= ".shares";
       std::string dbNameNew(newDb.string());
 
-      std::list<PrivateShare> shares;
-      PrivateShareHandler psh;
-      int r = psh.GetPrivateShareList(dbNameNew, &shares, share_name, 0);
-      if (shares.size() != 1 || r != 0) {
+      PrivateShare ps;
+      int r = ss_->GetShareInfo(share_name, 0, &ps);
+      if (r != 0) {
 #ifdef DEBUG
         printf("No MSID for that share name.\n");
 #endif
         return -30001;
       }
-      maidsafe::PrivateShare ps = shares.front();
       *msid = ps.Msid();
-      // printf("\n\n\n\t\t\t\t%s\n\n\n", share_name.c_str());
     } else {
       search = "Shares/Public";
       found = path_.find(search);
@@ -2133,7 +1993,6 @@ int ClientController::GetDb(const std::string &orig_path_,
                             DB_TYPE *db_type,
                             std::string *msid) {
   std::string path_ = orig_path_;
-  // std::string path_=fsys_.MakeRelativeMSPath(orig_path_);
 #ifdef DEBUG
   printf("\t\tCC::GetDb(%s) type(%i)\n", orig_path_.c_str(), *db_type);
 #endif
@@ -2157,7 +2016,6 @@ int ClientController::GetDb(const std::string &orig_path_,
   }
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   dah_->GetDbPath(path_, CONNECT, &db_path_);
-  // dah_->GetDbPath(path_, db_path_);
   PathDistinction(parent_path_, msid);
 #ifdef DEBUG
   printf("\t\tMSID: %s\n", msid->c_str());
@@ -2207,7 +2065,6 @@ int ClientController::SaveDb(const std::string &db_path,
       parent_path_ == base::TidyPath(kRootSubdir[1][0]))
     return 0;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  // dah_->GetDbPath(path_, db_path_); // yields db path of parent dir
   if (dah_->GetDirKey(parent_path_, &dir_key_))
     // yields dir key for parent of path_
     return -errno;
@@ -2243,7 +2100,6 @@ int ClientController::RemoveDb(const std::string &path_) {
       parent_path_ == base::TidyPath(kRootSubdir[1][0]))
     return 0;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  // dah_->GetDbPath(path_, db_path_); // yields db path of parent dir
   std::string dbpath_;
   dah_->GetDbPath(path_, CREATE, &dbpath_);
   try {
@@ -2350,26 +2206,22 @@ bool ClientController::ReadOnly(const std::string &path, bool gui) {
     std::string msid("");
     int n = PathDistinction(path, &msid);
     if (n == 2 && msid != "") {
-      PrivateShareHandler psh;
-      std::list<PrivateShare> ps;
-      fs::path dbPath(fsys_.MaidsafeHomeDir());
-      dbPath /= ".shares";
-      const std::string dbName(dbPath.string());
-      int result = psh.GetPrivateShareList(dbName, &ps, msid, 1);
-      if (ps.size() != 1 || result != 0) {
+      PrivateShare ps;
+      int result = ss_->GetShareInfo(msid, 1, &ps);
+      if (result != 0) {
 #ifdef DEBUG
         printf("Private share doesn't exist.\n");
 #endif
         return true;
       }
-      if (ps.front().MsidPriKey() == "") {
+      if (ps.MsidPriKey() == "") {
 #ifdef DEBUG
         printf("No priv key. Not admin. Readonly. Feck off.\n");
 #endif
         return true;
       }
 #ifdef DEBUG
-      std::string priv_key = ps.front().MsidPriKey();
+      std::string priv_key = ps.MsidPriKey();
       printf("Private key from DB: %s.\n", priv_key.c_str());
 #endif
     }

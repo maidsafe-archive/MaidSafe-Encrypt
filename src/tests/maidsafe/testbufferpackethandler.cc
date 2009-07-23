@@ -134,6 +134,7 @@ class BufferPacketHandlerTest : public testing::Test {
   BufferPacketHandlerTest &operator=(const BufferPacketHandlerTest&);
 };
 
+/*
 TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
     sm(new maidsafe::LocalStoreManager(mutex));
@@ -213,7 +214,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
               sig_sender_pubkey, &status));
   ASSERT_EQ(1, status);
 }
-
+*/
 TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex));

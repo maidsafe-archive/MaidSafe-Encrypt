@@ -37,6 +37,7 @@
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/keyatlas.h"
 #include "maidsafe/client/contacts.h"
+#include "maidsafe/client/privateshares.h"
 #include "protobuf/datamaps.pb.h"
 
 namespace maidsafe {
@@ -106,7 +107,7 @@ class SessionSingleton {
   }
   inline int Mounted() { return ud_.mounted; }
   inline char WinDrive() { return ud_.win_drive; }
-  inline int ConnectionStatus() { return ud_.connection_status; }
+//  inline int ConnectionStatus() { return ud_.connection_status; }
 
   // Mutators
   inline bool SetDefConLevel(DefConLevels defconlevel) {
@@ -141,6 +142,8 @@ class SessionSingleton {
     if (clear) {
       ud_.session_name = "";
     } else {
+      if (Username() == "" || Pin() == "")
+        return false;
       crypto::Crypto c;
       c.set_hash_algorithm(crypto::SHA_1);
       ud_.session_name = c.Hash(Pin()+Username(),
@@ -176,10 +179,10 @@ class SessionSingleton {
     ud_.win_drive = win_drive;
     return true;
   }
-  inline bool SetConnectionStatus(int status) {
-    ud_.connection_status = status;
-    return true;
-  }
+//  inline bool SetConnectionStatus(int status) {
+//    ud_.connection_status = status;
+//    return true;
+//  }
 
   ///////////////////////////
   //// Key Ring Handling ////
@@ -209,8 +212,8 @@ class SessionSingleton {
                  const int &country,
                  const std::string &city,
                  const char &confirmed,
-                 const int &rank = 0,
-                 const int &last_contact = 0);
+                 const int &rank,
+                 const int &last_contact);
   int DeleteContact(const std::string &pub_name);
   int UpdateContact(const mi_contact &mic);
   int UpdateContactKey(const std::string &pub_name,
@@ -241,6 +244,27 @@ class SessionSingleton {
                      int type = 0);
   int ClearContacts();
 
+  ////////////////////////////////
+  //// Private Share Handling ////
+  ////////////////////////////////
+
+  int LoadShares(std::list<Share> *shares);
+  int AddPrivateShare(const std::vector<std::string> &attributes,
+                      std::list<ShareParticipants> *participants);
+  int DeletePrivateShare(const std::string &value, const int &field);
+  int AddContactsToPrivateShare(const std::string &value, const int &field,
+                                std::list<ShareParticipants> *participants);
+  int DeleteContactsFromPrivateShare(const std::string &value,
+                                     const int &field,
+                                     std::list<std::string> *participants);
+  int GetShareInfo(const std::string &value, const int &field,
+                   PrivateShare *ps);
+  int GetShareList(std::list<maidsafe::private_share> *ps_list);
+  int GetFullShareList(std::list<PrivateShare> *ps_list);
+  int GetParticipantsList(const std::string &value, const int &field,
+                          std::list<share_participant> *sp_list);
+  void ClearPrivateShares();
+
  private:
   SessionSingleton &operator=(const SessionSingleton&);
   SessionSingleton(const SessionSingleton&);
@@ -249,7 +273,8 @@ class SessionSingleton {
   UserDetails ud_;
   KeyAtlas ka_;
   ContactsHandler ch_;
-  SessionSingleton() : ud_(), ka_(), ch_() { ResetSession(); }
+  PrivateShareHandler psh_;
+  SessionSingleton() : ud_(), ka_(), ch_(), psh_() { ResetSession(); }
 };
 }  // namesapce maidsafe
 

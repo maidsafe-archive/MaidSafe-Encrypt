@@ -126,7 +126,7 @@ TEST_F(ContactsTest, BEH_MAID_AddContacts) {
   ASSERT_EQ(0, sch_->AddContact(msc.PublicName(), msc.PublicKey(),
                msc.FullName(), msc.OfficePhone(), msc.Birthday(),
                msc.Gender(), msc.Language(), msc.Country(), msc.City(),
-               msc.Confirmed()))
+               msc.Confirmed(), 0, 0))
             << "MI - Problem adding a contact";
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
@@ -142,7 +142,7 @@ TEST_F(ContactsTest, BEH_MAID_AddContacts) {
   ASSERT_EQ(0, sch_->AddContact(msc.PublicName(), msc.PublicKey(),
                msc.FullName(), msc.OfficePhone(), msc.Birthday(),
                msc.Gender(), msc.Language(), msc.Country(), msc.City(),
-               msc.Confirmed()))
+               msc.Confirmed(), 0, 0))
             << "MI - Problem adding a contact";
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
@@ -153,7 +153,7 @@ TEST_F(ContactsTest, BEH_MAID_AddContacts) {
   ASSERT_EQ(0, sch_->AddContact(msc.PublicName(), msc.PublicKey(),
                msc.FullName(), msc.OfficePhone(), msc.Birthday(),
                msc.Gender(), msc.Language(), msc.Country(), msc.City(),
-               msc.Confirmed()))
+               msc.Confirmed(), 0, 0))
             << "MI - Problem adding a contact";
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
@@ -172,7 +172,7 @@ TEST_F(ContactsTest, BEH_MAID_DeleteContacts) {
   ASSERT_EQ(0, sch_->AddContact(msc.PublicName(), msc.PublicKey(),
                msc.FullName(), msc.OfficePhone(), msc.Birthday(),
                msc.Gender(), msc.Language(), msc.Country(), msc.City(),
-               msc.Confirmed()))
+               msc.Confirmed(), 0, 0))
             << "MI - Problem adding a contact";
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
@@ -208,7 +208,7 @@ TEST_F(ContactsTest, BEH_MAID_Update_Select_PubName_Contacts) {
   ASSERT_EQ(0, sch_->AddContact(msc.PublicName(), msc.PublicKey(),
                msc.FullName(), msc.OfficePhone(), msc.Birthday(),
                msc.Gender(), msc.Language(), msc.Country(), msc.City(),
-               msc.Confirmed()))
+               msc.Confirmed(), 0, 0))
             << "MI - Problem adding a contact";
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
@@ -321,7 +321,7 @@ TEST_F(ContactsTest, BEH_MAID_LastContact_Rank_Contacts) {
   ASSERT_EQ(0, sch_->AddContact(msc.PublicName(), msc.PublicKey(),
                msc.FullName(), msc.OfficePhone(), msc.Birthday(),
                msc.Gender(), msc.Language(), msc.Country(), msc.City(),
-               msc.Confirmed()))
+               msc.Confirmed(), 0, 0))
             << "MI - Problem adding a contact";
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
@@ -375,7 +375,7 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
     int rt = base::get_epoch_time() - r;
     contact.push_back(base::itos(rt));
     ASSERT_EQ(0, sch_->AddContact(contact[0], contact[1], contact[2],
-              contact[3], contact[4], 'M', n, n, contact[8], 'C'));
+              contact[3], contact[4], 'M', n, n, contact[8], 'C', 0, 0));
   }
 
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
@@ -423,7 +423,7 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
     int rt = base::get_epoch_time() - r;
     contact.push_back(base::itos(rt));
     ASSERT_EQ(0, sch_->AddContact(contact[0], contact[1], contact[2],
-              contact[3], contact[4], 'M', n, n, contact[8], 'C'));
+              contact[3], contact[4], 'M', n, n, contact[8], 'C', 0, 0));
   }
 
   ASSERT_EQ(0, sch_->GetContactList(&mi_list, 1)) <<

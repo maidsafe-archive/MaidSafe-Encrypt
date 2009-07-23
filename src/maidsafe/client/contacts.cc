@@ -19,134 +19,6 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-//  Languages
-int Languages::FindLanguage(const int &id, std::string &language) {
-  CppSQLite3DB db;
-  std::string dbName("");
-  try {
-    db.open(dbName.c_str());
-    std::string query = "select language from language_table where id="
-      + base::itos(id) + ";";
-    CppSQLite3Query q = db.execQuery(query.c_str());
-    if (q.eof())
-      return -6;
-    language = q.getStringField(0);
-    db.close();
-    return 0;
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-#endif
-    try {
-      db.close();
-    }
-    catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-      printf("%i: %s\n", e.errorCode(), e.errorMessage());
-      printf("DB probably never opened.\n");
-#endif
-    }
-    return -6;
-  }
-}
-
-int Languages::FindLanguageId(const std::string &language, int &id) {
-  CppSQLite3DB db;
-  std::string dbName("");
-  try {
-    db.open(dbName.c_str());
-    std::string query =
-      "select language_id from language_table where language='" +
-      language + "';";
-    CppSQLite3Query q = db.execQuery(query.c_str());
-    if (q.eof())
-      return -7;
-    id = q.getIntField(0);
-    db.close();
-    return 0;
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-#endif
-    try {
-      db.close();
-    }
-    catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-      printf("%i: %s\n", e.errorCode(), e.errorMessage());
-      printf("DB probably never opened.\n");
-#endif
-    }
-    return -7;
-  }
-}
-
-//  Countries
-int Countries::FindCountry(const int &id, std::string &country) {
-  CppSQLite3DB db;
-  std::string dbName("");
-  try {
-    db.open(dbName.c_str());
-    std::string query = "select country from country_table where id="
-      + base::itos(id) + ";";
-    CppSQLite3Query q = db.execQuery(query.c_str());
-    if (q.eof())
-      return -8;
-    country = q.getStringField(0);
-    db.close();
-    return 0;
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-#endif
-    try {
-      db.close();
-    }
-    catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-      printf("%i: %s\n", e.errorCode(), e.errorMessage());
-      printf("DB probably never opened.\n");
-#endif
-    }
-    return -8;
-  }
-}
-
-int Countries::FindCountryId(const std::string &country, int &id) {
-  CppSQLite3DB db;
-  std::string dbName("");
-  try {
-    db.open(dbName.c_str());
-    std::string query =
-      "select country_id from language_table where language='" +
-      country + "';";
-    CppSQLite3Query q = db.execQuery(query.c_str());
-    if (q.eof())
-      return -9;
-    id = q.getIntField(0);
-    db.close();
-    return 0;
-  }
-  catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-#endif
-    try {
-      db.close();
-    }
-  catch(CppSQLite3Exception& e) {  //NOLINT
-#ifdef DEBUG
-    printf("%i: %s\n", e.errorCode(), e.errorMessage());
-    printf("DB probably never opened.\n");
-#endif
-    }
-    return -9;
-  }
-}
-
 //  Contacts
 Contact::Contact() :pub_name_(""), pub_key_(""), full_name_(""),
   office_phone_(""), birthday_(""), gender_('U'), language_(-1),
@@ -186,6 +58,8 @@ int ContactsHandler::AddContact(const std::string &pub_name,
   int lc = 0;
   if (last_contact == 0)
     lc = base::get_epoch_time();
+  else
+    lc = last_contact;
   mi_contact mic(pub_name, pub_key, full_name, office_phone, birthday, gender,
                  language, country, city, confirmed, rank, lc);
   cs_.insert(mic);

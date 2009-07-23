@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/client/dataatlashandler.h"

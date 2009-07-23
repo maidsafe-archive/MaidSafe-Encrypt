@@ -25,10 +25,10 @@
 #ifndef MAIDSAFE_CLIENT_LOCALSTOREMANAGER_H_
 #define MAIDSAFE_CLIENT_LOCALSTOREMANAGER_H_
 
-#include <string>
+#include <boost/filesystem.hpp>
+#include <boost/thread/mutex.hpp>
 
-#include "boost/filesystem.hpp"
-#include "boost/thread/mutex.hpp"
+#include <string>
 
 #include "maidsafe/cppsqlite3.h"
 #include "maidsafe/client/storemanager.h"

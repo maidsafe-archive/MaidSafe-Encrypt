@@ -24,6 +24,12 @@
 
 #include "maidsafe/client/pddir.h"
 
+#include <boost/filesystem.hpp>
+
+#include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/crypto.h>
+#include <maidsafe/utils.h>
+
 #include <stdint.h>
 
 #include <algorithm>
@@ -35,14 +41,9 @@
 #include <string>
 #include <vector>
 
-#include "boost/filesystem.hpp"
 
-#include "maidsafe/cppsqlite3.h"
-#include "maidsafe/crypto.h"
-#include "maidsafe/utils.h"
 #include "protobuf/datamaps.pb.h"
 #include "maidsafe/maidsafe.h"
-#include "maidsafe/maidsafe-dht.h"
 
 namespace fs = boost::filesystem;
 

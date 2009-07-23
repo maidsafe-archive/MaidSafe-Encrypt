@@ -14,6 +14,12 @@ namespace {
 const ::google::protobuf::Descriptor* PublicContact_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   PublicContact_reflection_ = NULL;
+const ::google::protobuf::Descriptor* ShareParticipant_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  ShareParticipant_reflection_ = NULL;
+const ::google::protobuf::Descriptor* Share_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  Share_reflection_ = NULL;
 const ::google::protobuf::Descriptor* Key_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   Key_reflection_ = NULL;
@@ -67,7 +73,43 @@ void protobuf_AssignDesc_datamaps_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(PublicContact));
-  Key_descriptor_ = file->message_type(1);
+  ShareParticipant_descriptor_ = file->message_type(1);
+  static const int ShareParticipant_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ShareParticipant, public_name_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ShareParticipant, public_name_pub_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ShareParticipant, role_),
+  };
+  ShareParticipant_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      ShareParticipant_descriptor_,
+      ShareParticipant::default_instance_,
+      ShareParticipant_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ShareParticipant, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ShareParticipant, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(ShareParticipant));
+  Share_descriptor_ = file->message_type(2);
+  static const int Share_offsets_[5] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Share, name_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Share, msid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Share, msid_pub_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Share, msid_pri_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Share, participants_),
+  };
+  Share_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      Share_descriptor_,
+      Share::default_instance_,
+      Share_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Share, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Share, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(Share));
+  Key_descriptor_ = file->message_type(3);
   static const int Key_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Key, id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Key, type_),
@@ -85,7 +127,7 @@ void protobuf_AssignDesc_datamaps_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(Key));
-  DataMap_descriptor_ = file->message_type(2);
+  DataMap_descriptor_ = file->message_type(4);
   static const int DataMap_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataMap, file_hash_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataMap, se_version_),
@@ -105,7 +147,7 @@ void protobuf_AssignDesc_datamaps_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(DataMap));
-  MetaDataMap_descriptor_ = file->message_type(3);
+  MetaDataMap_descriptor_ = file->message_type(5);
   static const int MetaDataMap_offsets_[11] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(MetaDataMap, id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(MetaDataMap, display_name_),
@@ -130,7 +172,7 @@ void protobuf_AssignDesc_datamaps_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(MetaDataMap));
-  Chunk_descriptor_ = file->message_type(4);
+  Chunk_descriptor_ = file->message_type(6);
   static const int Chunk_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Chunk, compression_type_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Chunk, chunklet_),
@@ -147,13 +189,14 @@ void protobuf_AssignDesc_datamaps_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(Chunk));
-  DataAtlas_descriptor_ = file->message_type(5);
-  static const int DataAtlas_offsets_[5] = {
+  DataAtlas_descriptor_ = file->message_type(7);
+  static const int DataAtlas_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataAtlas, root_db_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataAtlas, keys_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataAtlas, mdms_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataAtlas, dms_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataAtlas, contacts_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DataAtlas, shares_),
   };
   DataAtlas_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -183,6 +226,10 @@ void protobuf_RegisterTypes() {
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     PublicContact_descriptor_, &PublicContact::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    ShareParticipant_descriptor_, &ShareParticipant::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    Share_descriptor_, &Share::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     Key_descriptor_, &Key::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     DataMap_descriptor_, &DataMap::default_instance());
@@ -199,6 +246,10 @@ void protobuf_RegisterTypes() {
 void protobuf_ShutdownFile_datamaps_2eproto() {
   delete PublicContact::default_instance_;
   delete PublicContact_reflection_;
+  delete ShareParticipant::default_instance_;
+  delete ShareParticipant_reflection_;
+  delete Share::default_instance_;
+  delete Share_reflection_;
   delete Key::default_instance_;
   delete Key_reflection_;
   delete DataMap::default_instance_;
@@ -224,41 +275,52 @@ void protobuf_AddDesc_datamaps_2eproto() {
     "\022\020\n\010birthday\030\005 \002(\014\022\016\n\006gender\030\006 \002(\014\022\020\n\010la"
     "nguage\030\007 \002(\005\022\017\n\007country\030\010 \002(\005\022\014\n\004city\030\t "
     "\002(\014\022\021\n\tconfirmed\030\n \002(\014\022\014\n\004rank\030\013 \002(\005\022\024\n\014"
-    "last_contact\030\014 \002(\005\"^\n\003Key\022\n\n\002id\030\001 \002(\014\022\"\n"
-    "\004type\030\002 \002(\0162\024.maidsafe.PacketType\022\023\n\013pri"
-    "vate_key\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\"\225\001\n\007D"
-    "ataMap\022\021\n\tfile_hash\030\001 \002(\014\022\022\n\nse_version\030"
-    "\002 \001(\014\022\022\n\nchunk_name\030\003 \003(\014\022\034\n\024encrypted_c"
-    "hunk_name\030\004 \003(\014\022\022\n\nchunk_size\030\005 \003(\004\022\035\n\016c"
-    "ompression_on\030\006 \001(\010:\005false\"\362\001\n\013MetaDataM"
-    "ap\022\n\n\002id\030\001 \002(\005\022\024\n\014display_name\030\002 \002(\014\022 \n\004"
-    "type\030\003 \002(\0162\022.maidsafe.itemtype\022\021\n\tfile_h"
-    "ash\030\004 \003(\014\022\r\n\005stats\030\005 \001(\014\022\013\n\003tag\030\006 \001(\014\022\026\n"
-    "\016file_size_high\030\007 \001(\005\022\025\n\rfile_size_low\030\010"
-    " \001(\005\022\025\n\rcreation_time\030\t \001(\005\022\025\n\rlast_modi"
-    "fied\030\n \001(\005\022\023\n\013last_access\030\013 \001(\005\"Z\n\005Chunk"
-    "\022\030\n\020compression_type\030\001 \001(\014\022\020\n\010chunklet\030\002"
-    " \003(\014\022%\n\035pre_compression_chunklet_size\030\003 "
-    "\003(\005\"\255\001\n\tDataAtlas\022\023\n\013root_db_key\030\001 \001(\014\022\033"
-    "\n\004keys\030\002 \003(\0132\r.maidsafe.Key\022#\n\004mdms\030\003 \003("
-    "\0132\025.maidsafe.MetaDataMap\022\036\n\003dms\030\004 \003(\0132\021."
-    "maidsafe.DataMap\022)\n\010contacts\030\005 \003(\0132\027.mai"
-    "dsafe.PublicContact*\240\001\n\010itemtype\022\020\n\014REGU"
-    "LAR_FILE\020\000\022\016\n\nSMALL_FILE\020\001\022\016\n\nEMPTY_FILE"
-    "\020\002\022\017\n\013LOCKED_FILE\020\003\022\r\n\tDIRECTORY\020\004\022\023\n\017EM"
-    "PTY_DIRECTORY\020\005\022\010\n\004LINK\020\006\022\026\n\022NOT_FOR_PRO"
-    "CESSING\020\007\022\013\n\007UNKNOWN\020\010*Y\n\nPacketType\022\t\n\005"
-    "ANMID\020\000\022\n\n\006ANTMID\020\001\022\n\n\006ANSMID\020\002\022\010\n\004MAID\020"
-    "\003\022\010\n\004PMID\020\004\022\n\n\006ANMPID\020\005\022\010\n\004MPID\020\006", 1273);
+    "last_contact\030\014 \002(\005\"R\n\020ShareParticipant\022\023"
+    "\n\013public_name\030\001 \002(\014\022\033\n\023public_name_pub_k"
+    "ey\030\002 \001(\014\022\014\n\004role\030\003 \002(\014\"\201\001\n\005Share\022\014\n\004name"
+    "\030\001 \002(\014\022\014\n\004msid\030\002 \002(\014\022\024\n\014msid_pub_key\030\003 \002"
+    "(\014\022\024\n\014msid_pri_key\030\004 \001(\014\0220\n\014participants"
+    "\030\005 \003(\0132\032.maidsafe.ShareParticipant\"^\n\003Ke"
+    "y\022\n\n\002id\030\001 \002(\014\022\"\n\004type\030\002 \002(\0162\024.maidsafe.P"
+    "acketType\022\023\n\013private_key\030\003 \002(\014\022\022\n\npublic"
+    "_key\030\004 \002(\014\"\225\001\n\007DataMap\022\021\n\tfile_hash\030\001 \002("
+    "\014\022\022\n\nse_version\030\002 \001(\014\022\022\n\nchunk_name\030\003 \003("
+    "\014\022\034\n\024encrypted_chunk_name\030\004 \003(\014\022\022\n\nchunk"
+    "_size\030\005 \003(\004\022\035\n\016compression_on\030\006 \001(\010:\005fal"
+    "se\"\362\001\n\013MetaDataMap\022\n\n\002id\030\001 \002(\005\022\024\n\014displa"
+    "y_name\030\002 \002(\014\022 \n\004type\030\003 \002(\0162\022.maidsafe.it"
+    "emtype\022\021\n\tfile_hash\030\004 \003(\014\022\r\n\005stats\030\005 \001(\014"
+    "\022\013\n\003tag\030\006 \001(\014\022\026\n\016file_size_high\030\007 \001(\005\022\025\n"
+    "\rfile_size_low\030\010 \001(\005\022\025\n\rcreation_time\030\t "
+    "\001(\005\022\025\n\rlast_modified\030\n \001(\005\022\023\n\013last_acces"
+    "s\030\013 \001(\005\"Z\n\005Chunk\022\030\n\020compression_type\030\001 \001"
+    "(\014\022\020\n\010chunklet\030\002 \003(\014\022%\n\035pre_compression_"
+    "chunklet_size\030\003 \003(\005\"\316\001\n\tDataAtlas\022\023\n\013roo"
+    "t_db_key\030\001 \001(\014\022\033\n\004keys\030\002 \003(\0132\r.maidsafe."
+    "Key\022#\n\004mdms\030\003 \003(\0132\025.maidsafe.MetaDataMap"
+    "\022\036\n\003dms\030\004 \003(\0132\021.maidsafe.DataMap\022)\n\010cont"
+    "acts\030\005 \003(\0132\027.maidsafe.PublicContact\022\037\n\006s"
+    "hares\030\006 \003(\0132\017.maidsafe.Share*\240\001\n\010itemtyp"
+    "e\022\020\n\014REGULAR_FILE\020\000\022\016\n\nSMALL_FILE\020\001\022\016\n\nE"
+    "MPTY_FILE\020\002\022\017\n\013LOCKED_FILE\020\003\022\r\n\tDIRECTOR"
+    "Y\020\004\022\023\n\017EMPTY_DIRECTORY\020\005\022\010\n\004LINK\020\006\022\026\n\022NO"
+    "T_FOR_PROCESSING\020\007\022\013\n\007UNKNOWN\020\010*Y\n\nPacke"
+    "tType\022\t\n\005ANMID\020\000\022\n\n\006ANTMID\020\001\022\n\n\006ANSMID\020\002"
+    "\022\010\n\004MAID\020\003\022\010\n\004PMID\020\004\022\n\n\006ANMPID\020\005\022\010\n\004MPID"
+    "\020\006", 1522);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "datamaps.proto", &protobuf_RegisterTypes);
   PublicContact::default_instance_ = new PublicContact();
+  ShareParticipant::default_instance_ = new ShareParticipant();
+  Share::default_instance_ = new Share();
   Key::default_instance_ = new Key();
   DataMap::default_instance_ = new DataMap();
   MetaDataMap::default_instance_ = new MetaDataMap();
   Chunk::default_instance_ = new Chunk();
   DataAtlas::default_instance_ = new DataAtlas();
   PublicContact::default_instance_->InitAsDefaultInstance();
+  ShareParticipant::default_instance_->InitAsDefaultInstance();
+  Share::default_instance_->InitAsDefaultInstance();
   Key::default_instance_->InitAsDefaultInstance();
   DataMap::default_instance_->InitAsDefaultInstance();
   MetaDataMap::default_instance_->InitAsDefaultInstance();
@@ -1009,6 +1071,702 @@ const ::google::protobuf::Descriptor* PublicContact::GetDescriptor() const {
 const ::google::protobuf::Reflection* PublicContact::GetReflection() const {
   protobuf_AssignDescriptorsOnce();
   return PublicContact_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string ShareParticipant::_default_public_name_;
+const ::std::string ShareParticipant::_default_public_name_pub_key_;
+const ::std::string ShareParticipant::_default_role_;
+#ifndef _MSC_VER
+const int ShareParticipant::kPublicNameFieldNumber;
+const int ShareParticipant::kPublicNamePubKeyFieldNumber;
+const int ShareParticipant::kRoleFieldNumber;
+#endif  // !_MSC_VER
+
+ShareParticipant::ShareParticipant()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    public_name_(const_cast< ::std::string*>(&_default_public_name_)),
+    public_name_pub_key_(const_cast< ::std::string*>(&_default_public_name_pub_key_)),
+    role_(const_cast< ::std::string*>(&_default_role_)) {
+  SharedCtor();
+}
+
+void ShareParticipant::InitAsDefaultInstance() {}
+
+ShareParticipant::ShareParticipant(const ShareParticipant& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    public_name_(const_cast< ::std::string*>(&_default_public_name_)),
+    public_name_pub_key_(const_cast< ::std::string*>(&_default_public_name_pub_key_)),
+    role_(const_cast< ::std::string*>(&_default_role_)) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void ShareParticipant::SharedCtor() {
+  _cached_size_ = 0;
+  public_name_ = const_cast< ::std::string*>(&_default_public_name_);
+  public_name_pub_key_ = const_cast< ::std::string*>(&_default_public_name_pub_key_);
+  role_ = const_cast< ::std::string*>(&_default_role_);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+ShareParticipant::~ShareParticipant() {
+  SharedDtor();
+}
+
+void ShareParticipant::SharedDtor() {
+  if (public_name_ != &_default_public_name_) {
+    delete public_name_;
+  }
+  if (public_name_pub_key_ != &_default_public_name_pub_key_) {
+    delete public_name_pub_key_;
+  }
+  if (role_ != &_default_role_) {
+    delete role_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* ShareParticipant::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return ShareParticipant_descriptor_;
+}
+
+const ShareParticipant& ShareParticipant::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_datamaps_2eproto();  return *default_instance_;
+}
+
+ShareParticipant* ShareParticipant::default_instance_ = NULL;
+
+ShareParticipant* ShareParticipant::New() const {
+  return new ShareParticipant;
+}
+
+void ShareParticipant::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (_has_bit(0)) {
+      if (public_name_ != &_default_public_name_) {
+        public_name_->clear();
+      }
+    }
+    if (_has_bit(1)) {
+      if (public_name_pub_key_ != &_default_public_name_pub_key_) {
+        public_name_pub_key_->clear();
+      }
+    }
+    if (_has_bit(2)) {
+      if (role_ != &_default_role_) {
+        role_->clear();
+      }
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool ShareParticipant::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required bytes public_name = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_name()));
+        if (input->ExpectTag(18)) goto parse_public_name_pub_key;
+        break;
+      }
+      
+      // optional bytes public_name_pub_key = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_public_name_pub_key:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_name_pub_key()));
+        if (input->ExpectTag(26)) goto parse_role;
+        break;
+      }
+      
+      // required bytes role = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_role:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_role()));
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void ShareParticipant::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    ShareParticipant::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required bytes public_name = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->public_name(), output);
+  }
+  
+  // optional bytes public_name_pub_key = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->public_name_pub_key(), output);
+  }
+  
+  // required bytes role = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->role(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* ShareParticipant::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required bytes public_name = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->public_name(), target);
+  }
+  
+  // optional bytes public_name_pub_key = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->public_name_pub_key(), target);
+  }
+  
+  // required bytes role = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->role(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int ShareParticipant::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required bytes public_name = 1;
+    if (has_public_name()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_name());
+    }
+    
+    // optional bytes public_name_pub_key = 2;
+    if (has_public_name_pub_key()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_name_pub_key());
+    }
+    
+    // required bytes role = 3;
+    if (has_role()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->role());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void ShareParticipant::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const ShareParticipant* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const ShareParticipant*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void ShareParticipant::MergeFrom(const ShareParticipant& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_public_name(from.public_name());
+    }
+    if (from._has_bit(1)) {
+      set_public_name_pub_key(from.public_name_pub_key());
+    }
+    if (from._has_bit(2)) {
+      set_role(from.role());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void ShareParticipant::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void ShareParticipant::CopyFrom(const ShareParticipant& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void ShareParticipant::Swap(ShareParticipant* other) {
+  if (other != this) {
+    std::swap(public_name_, other->public_name_);
+    std::swap(public_name_pub_key_, other->public_name_pub_key_);
+    std::swap(role_, other->role_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool ShareParticipant::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000005) != 0x00000005) return false;
+  
+  return true;
+}
+
+const ::google::protobuf::Descriptor* ShareParticipant::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* ShareParticipant::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return ShareParticipant_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string Share::_default_name_;
+const ::std::string Share::_default_msid_;
+const ::std::string Share::_default_msid_pub_key_;
+const ::std::string Share::_default_msid_pri_key_;
+#ifndef _MSC_VER
+const int Share::kNameFieldNumber;
+const int Share::kMsidFieldNumber;
+const int Share::kMsidPubKeyFieldNumber;
+const int Share::kMsidPriKeyFieldNumber;
+const int Share::kParticipantsFieldNumber;
+#endif  // !_MSC_VER
+
+Share::Share()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    name_(const_cast< ::std::string*>(&_default_name_)),
+    msid_(const_cast< ::std::string*>(&_default_msid_)),
+    msid_pub_key_(const_cast< ::std::string*>(&_default_msid_pub_key_)),
+    msid_pri_key_(const_cast< ::std::string*>(&_default_msid_pri_key_)),
+    participants_() {
+  SharedCtor();
+}
+
+void Share::InitAsDefaultInstance() {}
+
+Share::Share(const Share& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    name_(const_cast< ::std::string*>(&_default_name_)),
+    msid_(const_cast< ::std::string*>(&_default_msid_)),
+    msid_pub_key_(const_cast< ::std::string*>(&_default_msid_pub_key_)),
+    msid_pri_key_(const_cast< ::std::string*>(&_default_msid_pri_key_)),
+    participants_() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void Share::SharedCtor() {
+  _cached_size_ = 0;
+  name_ = const_cast< ::std::string*>(&_default_name_);
+  msid_ = const_cast< ::std::string*>(&_default_msid_);
+  msid_pub_key_ = const_cast< ::std::string*>(&_default_msid_pub_key_);
+  msid_pri_key_ = const_cast< ::std::string*>(&_default_msid_pri_key_);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+Share::~Share() {
+  SharedDtor();
+}
+
+void Share::SharedDtor() {
+  if (name_ != &_default_name_) {
+    delete name_;
+  }
+  if (msid_ != &_default_msid_) {
+    delete msid_;
+  }
+  if (msid_pub_key_ != &_default_msid_pub_key_) {
+    delete msid_pub_key_;
+  }
+  if (msid_pri_key_ != &_default_msid_pri_key_) {
+    delete msid_pri_key_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* Share::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return Share_descriptor_;
+}
+
+const Share& Share::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_datamaps_2eproto();  return *default_instance_;
+}
+
+Share* Share::default_instance_ = NULL;
+
+Share* Share::New() const {
+  return new Share;
+}
+
+void Share::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (_has_bit(0)) {
+      if (name_ != &_default_name_) {
+        name_->clear();
+      }
+    }
+    if (_has_bit(1)) {
+      if (msid_ != &_default_msid_) {
+        msid_->clear();
+      }
+    }
+    if (_has_bit(2)) {
+      if (msid_pub_key_ != &_default_msid_pub_key_) {
+        msid_pub_key_->clear();
+      }
+    }
+    if (_has_bit(3)) {
+      if (msid_pri_key_ != &_default_msid_pri_key_) {
+        msid_pri_key_->clear();
+      }
+    }
+  }
+  participants_.Clear();
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool Share::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required bytes name = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_name()));
+        if (input->ExpectTag(18)) goto parse_msid;
+        break;
+      }
+      
+      // required bytes msid = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_msid:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_msid()));
+        if (input->ExpectTag(26)) goto parse_msid_pub_key;
+        break;
+      }
+      
+      // required bytes msid_pub_key = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_msid_pub_key:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_msid_pub_key()));
+        if (input->ExpectTag(34)) goto parse_msid_pri_key;
+        break;
+      }
+      
+      // optional bytes msid_pri_key = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_msid_pri_key:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_msid_pri_key()));
+        if (input->ExpectTag(42)) goto parse_participants;
+        break;
+      }
+      
+      // repeated .maidsafe.ShareParticipant participants = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_participants:
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, add_participants()));
+        if (input->ExpectTag(42)) goto parse_participants;
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void Share::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    Share::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required bytes name = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->name(), output);
+  }
+  
+  // required bytes msid = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->msid(), output);
+  }
+  
+  // required bytes msid_pub_key = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->msid_pub_key(), output);
+  }
+  
+  // optional bytes msid_pri_key = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->msid_pri_key(), output);
+  }
+  
+  // repeated .maidsafe.ShareParticipant participants = 5;
+  for (int i = 0; i < this->participants_size(); i++) {
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(5, this->participants(i), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* Share::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required bytes name = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->name(), target);
+  }
+  
+  // required bytes msid = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->msid(), target);
+  }
+  
+  // required bytes msid_pub_key = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->msid_pub_key(), target);
+  }
+  
+  // optional bytes msid_pri_key = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->msid_pri_key(), target);
+  }
+  
+  // repeated .maidsafe.ShareParticipant participants = 5;
+  for (int i = 0; i < this->participants_size(); i++) {
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(5, this->participants(i), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int Share::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required bytes name = 1;
+    if (has_name()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->name());
+    }
+    
+    // required bytes msid = 2;
+    if (has_msid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->msid());
+    }
+    
+    // required bytes msid_pub_key = 3;
+    if (has_msid_pub_key()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->msid_pub_key());
+    }
+    
+    // optional bytes msid_pri_key = 4;
+    if (has_msid_pri_key()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->msid_pri_key());
+    }
+    
+  }
+  // repeated .maidsafe.ShareParticipant participants = 5;
+  total_size += 1 * this->participants_size();
+  for (int i = 0; i < this->participants_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+        this->participants(i));
+  }
+  
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void Share::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const Share* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const Share*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void Share::MergeFrom(const Share& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  participants_.MergeFrom(from.participants_);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_name(from.name());
+    }
+    if (from._has_bit(1)) {
+      set_msid(from.msid());
+    }
+    if (from._has_bit(2)) {
+      set_msid_pub_key(from.msid_pub_key());
+    }
+    if (from._has_bit(3)) {
+      set_msid_pri_key(from.msid_pri_key());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void Share::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void Share::CopyFrom(const Share& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void Share::Swap(Share* other) {
+  if (other != this) {
+    std::swap(name_, other->name_);
+    std::swap(msid_, other->msid_);
+    std::swap(msid_pub_key_, other->msid_pub_key_);
+    std::swap(msid_pri_key_, other->msid_pri_key_);
+    participants_.Swap(&other->participants_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool Share::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000007) != 0x00000007) return false;
+  
+  for (int i = 0; i < participants_size(); i++) {
+    if (!this->participants(i).IsInitialized()) return false;
+  }
+  return true;
+}
+
+const ::google::protobuf::Descriptor* Share::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* Share::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return Share_reflection_;
 }
 
 // ===================================================================
@@ -2704,6 +3462,7 @@ const int DataAtlas::kKeysFieldNumber;
 const int DataAtlas::kMdmsFieldNumber;
 const int DataAtlas::kDmsFieldNumber;
 const int DataAtlas::kContactsFieldNumber;
+const int DataAtlas::kSharesFieldNumber;
 #endif  // !_MSC_VER
 
 DataAtlas::DataAtlas()
@@ -2714,7 +3473,8 @@ DataAtlas::DataAtlas()
     keys_(),
     mdms_(),
     dms_(),
-    contacts_() {
+    contacts_(),
+    shares_() {
   SharedCtor();
 }
 
@@ -2728,7 +3488,8 @@ DataAtlas::DataAtlas(const DataAtlas& from)
     keys_(),
     mdms_(),
     dms_(),
-    contacts_() {
+    contacts_(),
+    shares_() {
   SharedCtor();
   MergeFrom(from);
 }
@@ -2778,6 +3539,7 @@ void DataAtlas::Clear() {
   mdms_.Clear();
   dms_.Clear();
   contacts_.Clear();
+  shares_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
 }
@@ -2851,6 +3613,20 @@ bool DataAtlas::MergePartialFromCodedStream(
         DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
              input, add_contacts()));
         if (input->ExpectTag(42)) goto parse_contacts;
+        if (input->ExpectTag(50)) goto parse_shares;
+        break;
+      }
+      
+      // repeated .maidsafe.Share shares = 6;
+      case 6: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_shares:
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, add_shares()));
+        if (input->ExpectTag(50)) goto parse_shares;
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -2904,6 +3680,11 @@ void DataAtlas::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(5, this->contacts(i), output);
   }
   
+  // repeated .maidsafe.Share shares = 6;
+  for (int i = 0; i < this->shares_size(); i++) {
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(6, this->shares(i), output);
+  }
+  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -2935,6 +3716,11 @@ void DataAtlas::SerializeWithCachedSizes(
   // repeated .maidsafe.PublicContact contacts = 5;
   for (int i = 0; i < this->contacts_size(); i++) {
     target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(5, this->contacts(i), target);
+  }
+  
+  // repeated .maidsafe.Share shares = 6;
+  for (int i = 0; i < this->shares_size(); i++) {
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(6, this->shares(i), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -2987,6 +3773,14 @@ int DataAtlas::ByteSize() const {
         this->contacts(i));
   }
   
+  // repeated .maidsafe.Share shares = 6;
+  total_size += 1 * this->shares_size();
+  for (int i = 0; i < this->shares_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+        this->shares(i));
+  }
+  
   if (!unknown_fields().empty()) {
     total_size +=
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
@@ -3014,6 +3808,7 @@ void DataAtlas::MergeFrom(const DataAtlas& from) {
   mdms_.MergeFrom(from.mdms_);
   dms_.MergeFrom(from.dms_);
   contacts_.MergeFrom(from.contacts_);
+  shares_.MergeFrom(from.shares_);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from._has_bit(0)) {
       set_root_db_key(from.root_db_key());
@@ -3041,6 +3836,7 @@ void DataAtlas::Swap(DataAtlas* other) {
     mdms_.Swap(&other->mdms_);
     dms_.Swap(&other->dms_);
     contacts_.Swap(&other->contacts_);
+    shares_.Swap(&other->shares_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -3060,6 +3856,9 @@ bool DataAtlas::IsInitialized() const {
   }
   for (int i = 0; i < contacts_size(); i++) {
     if (!this->contacts(i).IsInitialized()) return false;
+  }
+  for (int i = 0; i < shares_size(); i++) {
+    if (!this->shares(i).IsInitialized()) return false;
   }
   return true;
 }

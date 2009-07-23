@@ -50,12 +50,12 @@
 #ifndef MAIDSAFE_CLIENT_PDDIR_H_
 #define MAIDSAFE_CLIENT_PDDIR_H_
 
+#include <boost/shared_ptr.hpp>
+#include <gtest/gtest_prod.h>
+
 #include <map>
 #include <string>
 #include <vector>
-
-#include "boost/shared_ptr.hpp"
-#include "gtest/gtest_prod.h"
 
 #include "maidsafe/cppsqlite3.h"
 #include "maidsafe/maidsafe.h"

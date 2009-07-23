@@ -24,6 +24,12 @@
 
 #include "maidsafe/client/dataatlashandler.h"
 
+#include <boost/filesystem.hpp>
+#include <boost/shared_ptr.hpp>
+
+#include <maidsafe/utils.h>
+#include <maidsafe/crypto.h>
+
 #include <stdint.h>
 
 #include <algorithm>
@@ -32,13 +38,6 @@
 #include <exception>
 #include <sstream>
 
-#include "boost/filesystem.hpp"
-#include "boost/shared_ptr.hpp"
-// #include "boost/thread/mutex.hpp"
-
-#include "maidsafe/utils.h"
-#include "maidsafe/cppsqlite3.h"
-#include "maidsafe/crypto.h"
 #include "fs/filesystem.h"
 #include "protobuf/datamaps.pb.h"
 #include "maidsafe/maidsafe.h"

@@ -162,7 +162,7 @@ void ClientBufferPacketHandler::AddUsers(const std::set<std::string> &users,
 
   packet_info.set_owner(ss_->PublicUsername());
   packet_info.set_ownerpublickey(ss_->PublicKey(pt));
-  packet_info.set_online(ss_->ConnectionStatus());
+  packet_info.set_online(0);
 
   for (std::set<std::string>::iterator p = current_users.begin();
     p != current_users.end(); p++) {
@@ -251,7 +251,7 @@ void ClientBufferPacketHandler::DeleteUsers(const std::set<std::string> &users,
 
   packet_info.set_owner(ss_->PublicUsername());
   packet_info.set_ownerpublickey(ss_->PublicKey(pt));
-  packet_info.set_online(ss_->ConnectionStatus());
+  packet_info.set_online(0);
 
   std::string ser_info;
   packet_info.SerializeToString(&ser_info);
@@ -376,8 +376,11 @@ void ClientBufferPacketHandler::GetBufferPacket_Callback(
   bp.ParseFromString(local_result.content());
   bpi.ParseFromString(bp.owner_info(0).data());
   std::set<std::string> users;
-  for (int i = 0; i < bpi.users_size(); ++i)
+  for (int i = 0; i < bpi.users_size(); ++i) {
+    printf("ClientBufferPacketHandler::GetBufferPacket_Callback - AU: %s\n",
+            bpi.users(i).c_str());
     users.insert(bpi.users(i));
+  }
   ss_->SetAuthorisedUsers(users);
 
 

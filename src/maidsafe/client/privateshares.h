@@ -25,20 +25,29 @@
 #ifndef MAIDSAFE_CLIENT_PRIVATESHARES_H_
 #define MAIDSAFE_CLIENT_PRIVATESHARES_H_
 
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/multi_index/composite_key.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/identity.hpp>
+#include <boost/multi_index/member.hpp>
+
+#include <maidsafe/utils.h>
+#include <maidsafe/maidsafe-dht_config.h>
 
 #include <string>
 #include <list>
 #include <vector>
 
-#include "maidsafe/cppsqlite3.h"
-#include "maidsafe/utils.h"
-#include "maidsafe/client/messagehandler.h"
-
 namespace maidsafe {
 
 struct ShareParticipants {
   ShareParticipants() : id(""), public_key(), role('R') {}
+  ShareParticipants(const std::string &l_id,
+                    const std::string &l_public_key,
+                    const char &l_role)
+                    : id(l_id), public_key(l_public_key), role(l_role) {}
   bool operator==(const ShareParticipants& other) {
     return static_cast<bool>(id == other.id &&
                              public_key == other.public_key &&
@@ -47,6 +56,31 @@ struct ShareParticipants {
   std::string id;
   std::string public_key;
   char role;
+};
+
+class PrivateShare {
+ private:
+  std::string name_;
+  std::string msid_;
+  std::string msid_pub_key_;
+  std::string msid_priv_key_;
+  std::list<ShareParticipants> participants_;
+
+ public:
+  //  Constructors
+  PrivateShare();
+  PrivateShare(const std::vector<std::string> &attributes,
+               std::list<ShareParticipants> participants);
+  void Construct(const std::vector<std::string> &attributes,
+                 std::list<ShareParticipants> participants);
+
+  //  Getters
+  inline std::string Name() { return name_; }
+  inline std::string Msid() { return msid_; }
+  inline std::string MsidPubKey() { return msid_pub_key_; }
+  inline std::string MsidPriKey() { return msid_priv_key_; }
+  inline std::list<ShareParticipants> Participants() { return participants_; }
+  // Setters
 };
 
 struct private_share {
@@ -77,6 +111,7 @@ struct share_participant {
 /* Tags */
 struct private_share_name {};
 struct private_share_msid {};
+struct share_participant_key {};
 struct share_participant_msid {};
 struct share_participant_public_name {};
 
@@ -97,6 +132,14 @@ typedef boost::multi_index::multi_index_container<
 typedef boost::multi_index::multi_index_container<
   share_participant,
   boost::multi_index::indexed_by<
+    boost::multi_index::ordered_unique<
+      boost::multi_index::tag<share_participant_key>,
+      boost::multi_index::composite_key<
+        share_participant,
+        BOOST_MULTI_INDEX_MEMBER(share_participant, std::string, public_name_),
+        BOOST_MULTI_INDEX_MEMBER(share_participant, std::string, msid_)
+      >
+    >,
     boost::multi_index::ordered_non_unique<
       boost::multi_index::tag<share_participant_public_name>,
       BOOST_MULTI_INDEX_MEMBER(share_participant, std::string, public_name_)
@@ -108,58 +151,13 @@ typedef boost::multi_index::multi_index_container<
   >
 > private_share_participant_set;
 
-class PrivateShare {
- private:
-  std::string name_;
-  std::string msid_;
-  std::string msid_pub_key_;
-  std::string msid_priv_key_;
-  std::list<ShareParticipants> participants_;
-
- public:
-  //  Constructors
-  PrivateShare();
-  PrivateShare(const std::vector<std::string> &attributes,
-               std::list<ShareParticipants> participants);
-
-  //  Getters
-  inline std::string Name() { return name_; }
-  inline std::string Msid() { return msid_; }
-  inline std::string MsidPubKey() { return msid_pub_key_; }
-  inline std::string MsidPriKey() { return msid_priv_key_; }
-  inline std::list<ShareParticipants> Participants() { return participants_; }
-  // Setters
-};
-
 class PrivateShareHandler {
  private:
-  boost::shared_ptr<CppSQLite3DB> db_;
   private_share_set pss_;
   private_share_participant_set psps_;
-  int Connect(const std::string &dbName);
-  int Close();
 
  public:
-  PrivateShareHandler() : db_(), pss_(), psps_() { }
-  int CreatePrivateShareDB(const std::string &dbName);
-  int GetPrivateShareList(const std::string &dbName,
-                          std::list<PrivateShare> *participants,
-                          const std::string &value, const int &type);
-  int AddPrivateShare(const std::string &dbName,
-                      const std::vector<std::string> &attributes,
-                      std::list<ShareParticipants> *participants);
-  int AddReceivedShare(const std::string &dbName,
-                       const std::vector<std::string> &attributes);
-  int DeletePrivateShare(const std::string &dbName,
-                         const std::string &value,
-                         const int &field);
-  int AddContactsToPrivateShare(const std::string &dbName,
-                                std::list<ShareParticipants> *participants,
-                                const std::string &value, const int &type);
-  int DeleteContactsFromPrivateShare(const std::string &dbName,
-                                     std::list<ShareParticipants>
-                                                   *participants);
-
+  PrivateShareHandler() : pss_(), psps_() { }
   // Multi Index
   int MI_AddPrivateShare(const std::vector<std::string> &attributes,
                          std::list<ShareParticipants> *participants);
@@ -168,14 +166,14 @@ class PrivateShareHandler {
                                    std::list<ShareParticipants> *participants);
   int MI_DeleteContactsFromPrivateShare(const std::string &value,
                                         const int &field,
-                                        std::list<ShareParticipants>
-                                        *participants);
+                                        std::list<std::string> *participants);
   int MI_GetShareInfo(const std::string &value, const int &field,
                       PrivateShare *ps);
-  int MI_GetShareList(std::list<private_share> *ps_list);
+  int MI_GetShareList(std::list<maidsafe::private_share> *ps_list);
   int MI_GetFullShareList(std::list<PrivateShare> *ps_list);
   int MI_GetParticipantsList(const std::string &value, const int &field,
                              std::list<share_participant> *sp_list);
+  void MI_ClearPrivateShares();
 };
 
 }  // namespace

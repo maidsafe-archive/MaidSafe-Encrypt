@@ -104,14 +104,14 @@ bool UserSpaceFileSystem::mount()
     }
 
     //
-    const QString username = ClientController::instance()->publicUsername();
-    if ( !username.isEmpty() )
-    {
-        std::string newDb("/.contacts");
-        maidsafe::ClientController::getInstance()->read(newDb);
-        newDb = std::string("/.shares");
-        maidsafe::ClientController::getInstance()->read(newDb);
-    }
+//    const QString username = ClientController::instance()->publicUsername();
+//    if ( !username.isEmpty() )
+//    {
+//        std::string newDb("/.contacts");
+//        maidsafe::ClientController::getInstance()->read(newDb);
+//        newDb = std::string("/.shares");
+//        maidsafe::ClientController::getInstance()->read(newDb);
+//    }
 
     return true;
 }
@@ -119,16 +119,16 @@ bool UserSpaceFileSystem::mount()
 bool UserSpaceFileSystem::unmount()
 {
     // backup databases
-    const QString username = ClientController::instance()->publicUsername();
-    if ( !username.isEmpty() )
-    {
-        std::string newDb("/.contacts");
-        int res_ = maidsafe::ClientController::getInstance()->write(newDb);
-        printf("Backed up contacts db with result %i\n", res_);
-        newDb = std::string("/.shares");
-        res_ = maidsafe::ClientController::getInstance()->write(newDb);
-        printf("Backed up shares db with result %i\n", res_);
-    }
+//    const QString username = ClientController::instance()->publicUsername();
+//    if ( !username.isEmpty() )
+//    {
+//        std::string newDb("/.contacts");
+//        int res_ = maidsafe::ClientController::getInstance()->write(newDb);
+//        printf("Backed up contacts db with result %i\n", res_);
+//        newDb = std::string("/.shares");
+//        res_ = maidsafe::ClientController::getInstance()->write(newDb);
+//        printf("Backed up shares db with result %i\n", res_);
+//    }
 
     // unmount drive
     bool success = false;

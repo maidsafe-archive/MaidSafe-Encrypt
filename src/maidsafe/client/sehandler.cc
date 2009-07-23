@@ -1248,17 +1248,12 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
 int SEHandler::GetMsidKeys(const std::string &msid,
                            std::string *public_key,
                            std::string *private_key) {
-  PrivateShareHandler psh;
-  std::list<PrivateShare> ps;
-  file_system::FileSystem fsys;
-  fs::path dbPath(fsys.MaidsafeHomeDir());
-  dbPath /= ".shares";
-  const std::string dbName(dbPath.string());
-  int result = psh.GetPrivateShareList(dbName, &ps, msid, 1);
-  if (ps.size() != 1 || result != 0)
+  PrivateShare ps;
+  int result = ss_->GetShareInfo(msid, 1, &ps);
+  if (result != 0)
     return -1;
-  *public_key = ps.front().MsidPubKey();
-  *private_key = ps.front().MsidPriKey();
+  *public_key = ps.MsidPubKey();
+  *private_key = ps.MsidPriKey();
 #ifdef DEBUG
 //  std::string pubhex(""), prihex("");
 //  base::encode_to_hex(*public_key, &pubhex);

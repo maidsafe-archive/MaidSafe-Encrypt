@@ -29,13 +29,11 @@
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/member.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <list>
 #include <string>
 
-#include "boost/shared_ptr.hpp"
-
-#include "maidsafe/cppsqlite3.h"
 #include "maidsafe/maidsafe.h"
 
 namespace maidsafe {

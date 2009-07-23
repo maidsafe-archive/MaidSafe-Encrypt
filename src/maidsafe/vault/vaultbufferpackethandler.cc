@@ -253,13 +253,16 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
     bool flag = false;
     // TODO(dan): here ther should be no check for user in list
     // if it is decided to accept from all
-    for (int i = 0; i < bpi.users_size(); i++)
+    for (int i = 0; i < bpi.users_size(); i++) {
       if (bpi.users(i) == bpm.sender_id()) {
         i = bpi.users_size();
         flag = true;
+        break;
       }
+      printf("VaultBufferPacketHandler::AddMessage %d\n", i);
+    }
     if (!flag) {
-      printf("unauthorised user\n");
+      printf("unauthorised user %s\n", bpm.sender_id().c_str());
       return false;
     }
   }

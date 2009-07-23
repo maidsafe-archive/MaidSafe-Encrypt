@@ -30,6 +30,8 @@ void protobuf_AssignDesc_datamaps_2eproto();
 void protobuf_ShutdownFile_datamaps_2eproto();
 
 class PublicContact;
+class ShareParticipant;
+class Share;
 class Key;
 class DataMap;
 class MetaDataMap;
@@ -290,6 +292,259 @@ class PublicContact : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static PublicContact* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class ShareParticipant : public ::google::protobuf::Message {
+ public:
+  ShareParticipant();
+  virtual ~ShareParticipant();
+  
+  ShareParticipant(const ShareParticipant& from);
+  
+  inline ShareParticipant& operator=(const ShareParticipant& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ShareParticipant& default_instance();
+  void Swap(ShareParticipant* other);
+  
+  // implements Message ----------------------------------------------
+  
+  ShareParticipant* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const ShareParticipant& from);
+  void MergeFrom(const ShareParticipant& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes public_name = 1;
+  inline bool has_public_name() const;
+  inline void clear_public_name();
+  static const int kPublicNameFieldNumber = 1;
+  inline const ::std::string& public_name() const;
+  inline void set_public_name(const ::std::string& value);
+  inline void set_public_name(const char* value);
+  inline void set_public_name(const void* value, size_t size);
+  inline ::std::string* mutable_public_name();
+  
+  // optional bytes public_name_pub_key = 2;
+  inline bool has_public_name_pub_key() const;
+  inline void clear_public_name_pub_key();
+  static const int kPublicNamePubKeyFieldNumber = 2;
+  inline const ::std::string& public_name_pub_key() const;
+  inline void set_public_name_pub_key(const ::std::string& value);
+  inline void set_public_name_pub_key(const char* value);
+  inline void set_public_name_pub_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_name_pub_key();
+  
+  // required bytes role = 3;
+  inline bool has_role() const;
+  inline void clear_role();
+  static const int kRoleFieldNumber = 3;
+  inline const ::std::string& role() const;
+  inline void set_role(const ::std::string& value);
+  inline void set_role(const char* value);
+  inline void set_role(const void* value, size_t size);
+  inline ::std::string* mutable_role();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* public_name_;
+  static const ::std::string _default_public_name_;
+  ::std::string* public_name_pub_key_;
+  static const ::std::string _default_public_name_pub_key_;
+  ::std::string* role_;
+  static const ::std::string _default_role_;
+  friend void  protobuf_AddDesc_datamaps_2eproto();
+  friend void protobuf_AssignDesc_datamaps_2eproto();
+  friend void protobuf_ShutdownFile_datamaps_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static ShareParticipant* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class Share : public ::google::protobuf::Message {
+ public:
+  Share();
+  virtual ~Share();
+  
+  Share(const Share& from);
+  
+  inline Share& operator=(const Share& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const Share& default_instance();
+  void Swap(Share* other);
+  
+  // implements Message ----------------------------------------------
+  
+  Share* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const Share& from);
+  void MergeFrom(const Share& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes name = 1;
+  inline bool has_name() const;
+  inline void clear_name();
+  static const int kNameFieldNumber = 1;
+  inline const ::std::string& name() const;
+  inline void set_name(const ::std::string& value);
+  inline void set_name(const char* value);
+  inline void set_name(const void* value, size_t size);
+  inline ::std::string* mutable_name();
+  
+  // required bytes msid = 2;
+  inline bool has_msid() const;
+  inline void clear_msid();
+  static const int kMsidFieldNumber = 2;
+  inline const ::std::string& msid() const;
+  inline void set_msid(const ::std::string& value);
+  inline void set_msid(const char* value);
+  inline void set_msid(const void* value, size_t size);
+  inline ::std::string* mutable_msid();
+  
+  // required bytes msid_pub_key = 3;
+  inline bool has_msid_pub_key() const;
+  inline void clear_msid_pub_key();
+  static const int kMsidPubKeyFieldNumber = 3;
+  inline const ::std::string& msid_pub_key() const;
+  inline void set_msid_pub_key(const ::std::string& value);
+  inline void set_msid_pub_key(const char* value);
+  inline void set_msid_pub_key(const void* value, size_t size);
+  inline ::std::string* mutable_msid_pub_key();
+  
+  // optional bytes msid_pri_key = 4;
+  inline bool has_msid_pri_key() const;
+  inline void clear_msid_pri_key();
+  static const int kMsidPriKeyFieldNumber = 4;
+  inline const ::std::string& msid_pri_key() const;
+  inline void set_msid_pri_key(const ::std::string& value);
+  inline void set_msid_pri_key(const char* value);
+  inline void set_msid_pri_key(const void* value, size_t size);
+  inline ::std::string* mutable_msid_pri_key();
+  
+  // repeated .maidsafe.ShareParticipant participants = 5;
+  inline int participants_size() const;
+  inline void clear_participants();
+  static const int kParticipantsFieldNumber = 5;
+  inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::ShareParticipant >& participants() const;
+  inline ::google::protobuf::RepeatedPtrField< ::maidsafe::ShareParticipant >* mutable_participants();
+  inline const ::maidsafe::ShareParticipant& participants(int index) const;
+  inline ::maidsafe::ShareParticipant* mutable_participants(int index);
+  inline ::maidsafe::ShareParticipant* add_participants();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* name_;
+  static const ::std::string _default_name_;
+  ::std::string* msid_;
+  static const ::std::string _default_msid_;
+  ::std::string* msid_pub_key_;
+  static const ::std::string _default_msid_pub_key_;
+  ::std::string* msid_pri_key_;
+  static const ::std::string _default_msid_pri_key_;
+  ::google::protobuf::RepeatedPtrField< ::maidsafe::ShareParticipant > participants_;
+  friend void  protobuf_AddDesc_datamaps_2eproto();
+  friend void protobuf_AssignDesc_datamaps_2eproto();
+  friend void protobuf_ShutdownFile_datamaps_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static Share* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -983,6 +1238,16 @@ class DataAtlas : public ::google::protobuf::Message {
   inline ::maidsafe::PublicContact* mutable_contacts(int index);
   inline ::maidsafe::PublicContact* add_contacts();
   
+  // repeated .maidsafe.Share shares = 6;
+  inline int shares_size() const;
+  inline void clear_shares();
+  static const int kSharesFieldNumber = 6;
+  inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::Share >& shares() const;
+  inline ::google::protobuf::RepeatedPtrField< ::maidsafe::Share >* mutable_shares();
+  inline const ::maidsafe::Share& shares(int index) const;
+  inline ::maidsafe::Share* mutable_shares(int index);
+  inline ::maidsafe::Share* add_shares();
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -993,10 +1258,11 @@ class DataAtlas : public ::google::protobuf::Message {
   ::google::protobuf::RepeatedPtrField< ::maidsafe::MetaDataMap > mdms_;
   ::google::protobuf::RepeatedPtrField< ::maidsafe::DataMap > dms_;
   ::google::protobuf::RepeatedPtrField< ::maidsafe::PublicContact > contacts_;
+  ::google::protobuf::RepeatedPtrField< ::maidsafe::Share > shares_;
   friend void  protobuf_AddDesc_datamaps_2eproto();
   friend void protobuf_AssignDesc_datamaps_2eproto();
   friend void protobuf_ShutdownFile_datamaps_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -1420,6 +1686,333 @@ inline ::google::protobuf::int32 PublicContact::last_contact() const {
 inline void PublicContact::set_last_contact(::google::protobuf::int32 value) {
   _set_bit(11);
   last_contact_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// ShareParticipant
+
+// required bytes public_name = 1;
+inline bool ShareParticipant::has_public_name() const {
+  return _has_bit(0);
+}
+inline void ShareParticipant::clear_public_name() {
+  if (public_name_ != &_default_public_name_) {
+    public_name_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& ShareParticipant::public_name() const {
+  return *public_name_;
+}
+inline void ShareParticipant::set_public_name(const ::std::string& value) {
+  _set_bit(0);
+  if (public_name_ == &_default_public_name_) {
+    public_name_ = new ::std::string;
+  }
+  public_name_->assign(value);
+}
+inline void ShareParticipant::set_public_name(const char* value) {
+  _set_bit(0);
+  if (public_name_ == &_default_public_name_) {
+    public_name_ = new ::std::string;
+  }
+  public_name_->assign(value);
+}
+inline void ShareParticipant::set_public_name(const void* value, size_t size) {
+  _set_bit(0);
+  if (public_name_ == &_default_public_name_) {
+    public_name_ = new ::std::string;
+  }
+  public_name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ShareParticipant::mutable_public_name() {
+  _set_bit(0);
+  if (public_name_ == &_default_public_name_) {
+    public_name_ = new ::std::string;
+  }
+  return public_name_;
+}
+
+// optional bytes public_name_pub_key = 2;
+inline bool ShareParticipant::has_public_name_pub_key() const {
+  return _has_bit(1);
+}
+inline void ShareParticipant::clear_public_name_pub_key() {
+  if (public_name_pub_key_ != &_default_public_name_pub_key_) {
+    public_name_pub_key_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& ShareParticipant::public_name_pub_key() const {
+  return *public_name_pub_key_;
+}
+inline void ShareParticipant::set_public_name_pub_key(const ::std::string& value) {
+  _set_bit(1);
+  if (public_name_pub_key_ == &_default_public_name_pub_key_) {
+    public_name_pub_key_ = new ::std::string;
+  }
+  public_name_pub_key_->assign(value);
+}
+inline void ShareParticipant::set_public_name_pub_key(const char* value) {
+  _set_bit(1);
+  if (public_name_pub_key_ == &_default_public_name_pub_key_) {
+    public_name_pub_key_ = new ::std::string;
+  }
+  public_name_pub_key_->assign(value);
+}
+inline void ShareParticipant::set_public_name_pub_key(const void* value, size_t size) {
+  _set_bit(1);
+  if (public_name_pub_key_ == &_default_public_name_pub_key_) {
+    public_name_pub_key_ = new ::std::string;
+  }
+  public_name_pub_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ShareParticipant::mutable_public_name_pub_key() {
+  _set_bit(1);
+  if (public_name_pub_key_ == &_default_public_name_pub_key_) {
+    public_name_pub_key_ = new ::std::string;
+  }
+  return public_name_pub_key_;
+}
+
+// required bytes role = 3;
+inline bool ShareParticipant::has_role() const {
+  return _has_bit(2);
+}
+inline void ShareParticipant::clear_role() {
+  if (role_ != &_default_role_) {
+    role_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& ShareParticipant::role() const {
+  return *role_;
+}
+inline void ShareParticipant::set_role(const ::std::string& value) {
+  _set_bit(2);
+  if (role_ == &_default_role_) {
+    role_ = new ::std::string;
+  }
+  role_->assign(value);
+}
+inline void ShareParticipant::set_role(const char* value) {
+  _set_bit(2);
+  if (role_ == &_default_role_) {
+    role_ = new ::std::string;
+  }
+  role_->assign(value);
+}
+inline void ShareParticipant::set_role(const void* value, size_t size) {
+  _set_bit(2);
+  if (role_ == &_default_role_) {
+    role_ = new ::std::string;
+  }
+  role_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ShareParticipant::mutable_role() {
+  _set_bit(2);
+  if (role_ == &_default_role_) {
+    role_ = new ::std::string;
+  }
+  return role_;
+}
+
+// -------------------------------------------------------------------
+
+// Share
+
+// required bytes name = 1;
+inline bool Share::has_name() const {
+  return _has_bit(0);
+}
+inline void Share::clear_name() {
+  if (name_ != &_default_name_) {
+    name_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& Share::name() const {
+  return *name_;
+}
+inline void Share::set_name(const ::std::string& value) {
+  _set_bit(0);
+  if (name_ == &_default_name_) {
+    name_ = new ::std::string;
+  }
+  name_->assign(value);
+}
+inline void Share::set_name(const char* value) {
+  _set_bit(0);
+  if (name_ == &_default_name_) {
+    name_ = new ::std::string;
+  }
+  name_->assign(value);
+}
+inline void Share::set_name(const void* value, size_t size) {
+  _set_bit(0);
+  if (name_ == &_default_name_) {
+    name_ = new ::std::string;
+  }
+  name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* Share::mutable_name() {
+  _set_bit(0);
+  if (name_ == &_default_name_) {
+    name_ = new ::std::string;
+  }
+  return name_;
+}
+
+// required bytes msid = 2;
+inline bool Share::has_msid() const {
+  return _has_bit(1);
+}
+inline void Share::clear_msid() {
+  if (msid_ != &_default_msid_) {
+    msid_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& Share::msid() const {
+  return *msid_;
+}
+inline void Share::set_msid(const ::std::string& value) {
+  _set_bit(1);
+  if (msid_ == &_default_msid_) {
+    msid_ = new ::std::string;
+  }
+  msid_->assign(value);
+}
+inline void Share::set_msid(const char* value) {
+  _set_bit(1);
+  if (msid_ == &_default_msid_) {
+    msid_ = new ::std::string;
+  }
+  msid_->assign(value);
+}
+inline void Share::set_msid(const void* value, size_t size) {
+  _set_bit(1);
+  if (msid_ == &_default_msid_) {
+    msid_ = new ::std::string;
+  }
+  msid_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* Share::mutable_msid() {
+  _set_bit(1);
+  if (msid_ == &_default_msid_) {
+    msid_ = new ::std::string;
+  }
+  return msid_;
+}
+
+// required bytes msid_pub_key = 3;
+inline bool Share::has_msid_pub_key() const {
+  return _has_bit(2);
+}
+inline void Share::clear_msid_pub_key() {
+  if (msid_pub_key_ != &_default_msid_pub_key_) {
+    msid_pub_key_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& Share::msid_pub_key() const {
+  return *msid_pub_key_;
+}
+inline void Share::set_msid_pub_key(const ::std::string& value) {
+  _set_bit(2);
+  if (msid_pub_key_ == &_default_msid_pub_key_) {
+    msid_pub_key_ = new ::std::string;
+  }
+  msid_pub_key_->assign(value);
+}
+inline void Share::set_msid_pub_key(const char* value) {
+  _set_bit(2);
+  if (msid_pub_key_ == &_default_msid_pub_key_) {
+    msid_pub_key_ = new ::std::string;
+  }
+  msid_pub_key_->assign(value);
+}
+inline void Share::set_msid_pub_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (msid_pub_key_ == &_default_msid_pub_key_) {
+    msid_pub_key_ = new ::std::string;
+  }
+  msid_pub_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* Share::mutable_msid_pub_key() {
+  _set_bit(2);
+  if (msid_pub_key_ == &_default_msid_pub_key_) {
+    msid_pub_key_ = new ::std::string;
+  }
+  return msid_pub_key_;
+}
+
+// optional bytes msid_pri_key = 4;
+inline bool Share::has_msid_pri_key() const {
+  return _has_bit(3);
+}
+inline void Share::clear_msid_pri_key() {
+  if (msid_pri_key_ != &_default_msid_pri_key_) {
+    msid_pri_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& Share::msid_pri_key() const {
+  return *msid_pri_key_;
+}
+inline void Share::set_msid_pri_key(const ::std::string& value) {
+  _set_bit(3);
+  if (msid_pri_key_ == &_default_msid_pri_key_) {
+    msid_pri_key_ = new ::std::string;
+  }
+  msid_pri_key_->assign(value);
+}
+inline void Share::set_msid_pri_key(const char* value) {
+  _set_bit(3);
+  if (msid_pri_key_ == &_default_msid_pri_key_) {
+    msid_pri_key_ = new ::std::string;
+  }
+  msid_pri_key_->assign(value);
+}
+inline void Share::set_msid_pri_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (msid_pri_key_ == &_default_msid_pri_key_) {
+    msid_pri_key_ = new ::std::string;
+  }
+  msid_pri_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* Share::mutable_msid_pri_key() {
+  _set_bit(3);
+  if (msid_pri_key_ == &_default_msid_pri_key_) {
+    msid_pri_key_ = new ::std::string;
+  }
+  return msid_pri_key_;
+}
+
+// repeated .maidsafe.ShareParticipant participants = 5;
+inline int Share::participants_size() const {
+  return participants_.size();
+}
+inline void Share::clear_participants() {
+  participants_.Clear();
+}
+inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::ShareParticipant >&
+Share::participants() const {
+  return participants_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::maidsafe::ShareParticipant >*
+Share::mutable_participants() {
+  return &participants_;
+}
+inline const ::maidsafe::ShareParticipant& Share::participants(int index) const {
+  return participants_.Get(index);
+}
+inline ::maidsafe::ShareParticipant* Share::mutable_participants(int index) {
+  return participants_.Mutable(index);
+}
+inline ::maidsafe::ShareParticipant* Share::add_participants() {
+  return participants_.Add();
 }
 
 // -------------------------------------------------------------------
@@ -2332,6 +2925,31 @@ inline ::maidsafe::PublicContact* DataAtlas::mutable_contacts(int index) {
 }
 inline ::maidsafe::PublicContact* DataAtlas::add_contacts() {
   return contacts_.Add();
+}
+
+// repeated .maidsafe.Share shares = 6;
+inline int DataAtlas::shares_size() const {
+  return shares_.size();
+}
+inline void DataAtlas::clear_shares() {
+  shares_.Clear();
+}
+inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::Share >&
+DataAtlas::shares() const {
+  return shares_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::maidsafe::Share >*
+DataAtlas::mutable_shares() {
+  return &shares_;
+}
+inline const ::maidsafe::Share& DataAtlas::shares(int index) const {
+  return shares_.Get(index);
+}
+inline ::maidsafe::Share* DataAtlas::mutable_shares(int index) {
+  return shares_.Mutable(index);
+}
+inline ::maidsafe::Share* DataAtlas::add_shares() {
+  return shares_.Add();
 }
 
 

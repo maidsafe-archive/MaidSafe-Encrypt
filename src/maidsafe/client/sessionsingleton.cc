@@ -61,6 +61,7 @@ bool SessionSingleton::ResetSession() {
   SetWinDrive('\0');
   ka_.ClearKeyRing();
   ch_.ClearContacts();
+  psh_.MI_ClearPrivateShares();
   return true;
 }
 
@@ -79,18 +80,6 @@ int SessionSingleton::LoadKeys(std::list<Key> *keys) {
     AddKey(k.type(), k.id(), k.private_key(), k.public_key());
     ++n;
   }
-
-//  // MAID
-//  if (ka_.PackageID(3) != "") {
-//    SetPublicKey(ka_.PublicKey(3), MAID_BP);
-//    SetPublicKey(ka_.PrivateKey(3), MAID_BP);
-//  }
-//  // PMID
-//  if (ka_.PackageID(4) != "") {
-//    SetPublicUsername(ka_.PackageID(4));
-//    SetPublicKey(ka_.PublicKey(4), PMID_BP);
-//    SetPublicKey(ka_.PrivateKey(4), PMID_BP);
-//  }
 
   return n;
 }
@@ -227,6 +216,69 @@ int SessionSingleton::GetContactList(std::vector<mi_contact> *list,
 }
 int SessionSingleton::ClearContacts() {
   return ch_.ClearContacts();
+}
+
+//////////////////////////////
+// Private Share operations //
+//////////////////////////////
+
+int SessionSingleton::LoadShares(std::list<Share> *shares) {
+  int a = 0;
+  while (!shares->empty()) {
+    Share sh = shares->front();
+    std::list<ShareParticipants> sp;
+    for (int n = 0; n < sh.participants_size(); n++) {
+      sp.push_back(ShareParticipants(sh.participants(n).public_name(),
+                                     sh.participants(n).public_name_pub_key(),
+                                     sh.participants(n).role().at(0)));
+    }
+    std::vector<std::string> attributes;
+    attributes.push_back(sh.name());
+    attributes.push_back(sh.msid());
+    attributes.push_back(sh.msid_pub_key());
+    if (sh.has_msid_pri_key())
+      attributes.push_back(sh.msid_pri_key());
+    else
+      attributes.push_back("");
+    shares->pop_front();
+    a += AddPrivateShare(attributes, &sp);
+  }
+  return a;
+}
+int SessionSingleton::AddPrivateShare(
+    const std::vector<std::string> &attributes,
+    std::list<ShareParticipants> *participants) {
+  return psh_.MI_AddPrivateShare(attributes, participants);
+}
+int SessionSingleton::DeletePrivateShare(const std::string &value,
+    const int &field) {
+  return psh_.MI_DeletePrivateShare(value, field);
+}
+int SessionSingleton::AddContactsToPrivateShare(const std::string &value,
+    const int &field, std::list<ShareParticipants> *participants) {
+  return psh_.MI_AddContactsToPrivateShare(value, field, participants);
+}
+int SessionSingleton::DeleteContactsFromPrivateShare(const std::string &value,
+    const int &field, std::list<std::string> *participants) {
+  return psh_.MI_DeleteContactsFromPrivateShare(value, field, participants);
+}
+int SessionSingleton::GetShareInfo(const std::string &value, const int &field,
+    PrivateShare *ps) {
+  return psh_.MI_GetShareInfo(value, field, ps);
+}
+int SessionSingleton::GetShareList(
+    std::list<maidsafe::private_share> *ps_list) {
+  return psh_.MI_GetShareList(ps_list);
+}
+int SessionSingleton::GetFullShareList(std::list<PrivateShare> *ps_list) {
+  return psh_.MI_GetFullShareList(ps_list);
+}
+int SessionSingleton::GetParticipantsList(const std::string &value,
+    const int &field, std::list<share_participant> *sp_list) {
+  return psh_.MI_GetParticipantsList(value, field, sp_list);
+}
+void SessionSingleton::ClearPrivateShares() {
+  return psh_.MI_ClearPrivateShares();
 }
 
 }  // namespace maidsafe

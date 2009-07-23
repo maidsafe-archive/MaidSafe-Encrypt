@@ -97,6 +97,14 @@ class Env: public testing::Environment {
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
+    fs::path temp_("VaultTest");
+    try {
+      if (fs::exists(temp_))
+        fs::remove_all(temp_);
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
   }
 
   virtual void SetUp() {

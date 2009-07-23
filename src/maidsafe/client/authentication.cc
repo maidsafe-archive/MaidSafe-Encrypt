@@ -14,12 +14,10 @@
 
 #include "maidsafe/client/authentication.h"
 
+#include <boost/regex.hpp>
+#include <boost/thread/mutex.hpp>
 #include <cstdio>
 
-#include "boost/regex.hpp"
-#include "boost/thread/mutex.hpp"
-
-#include "maidsafe/cppsqlite3.h"
 #include "maidsafe/maidsafe.h"
 #include "protobuf/datamaps.pb.h"
 #include "protobuf/general_messages.pb.h"
@@ -294,10 +292,10 @@ exitcode Authentication::SaveSession(std::string ser_da,
                         &signed_request);
     cb.Reset();
     storemanager_->StorePacket(boost::any_cast<std::string>(result["name"]),
-      boost::any_cast<std::string>(result["ser_packet"]), signed_request,
-      boost::any_cast<std::string>(pub_keys["ANSMID"]),
-      signed_public_key, SYSTEM_PACKET, true,
-      boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+        boost::any_cast<std::string>(result["ser_packet"]), signed_request,
+        boost::any_cast<std::string>(pub_keys["ANSMID"]),
+        signed_public_key, SYSTEM_PACKET, true,
+        boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
     WaitForResult(cb);
     if ((!store_res.ParseFromString(cb.result)) ||
       (store_res.result() == kCallbackFailure)) {
@@ -314,8 +312,8 @@ exitcode Authentication::SaveSession(std::string ser_da,
     cb.Reset();
     store_res.Clear();
     storemanager_->DeletePacket(tmidname, signed_request,
-      boost::any_cast<std::string>(pub_keys["ANTMID"]), signed_public_key,
-      SYSTEM_PACKET, boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+        boost::any_cast<std::string>(pub_keys["ANTMID"]), signed_public_key,
+        SYSTEM_PACKET, boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
     WaitForResult(cb);
     DeleteResponse del_res;
     if ((!del_res.ParseFromString(cb.result)) ||
@@ -344,10 +342,10 @@ exitcode Authentication::SaveSession(std::string ser_da,
   cb.Reset();
   store_res.Clear();
   storemanager_->StorePacket(boost::any_cast<std::string>(tmidresult["name"]),
-    boost::any_cast<std::string>(tmidresult["ser_packet"]),
-    signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
-    signed_public_key, SYSTEM_PACKET, false,
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+      boost::any_cast<std::string>(tmidresult["ser_packet"]),
+      signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
+      signed_public_key, SYSTEM_PACKET, false,
+      boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
       (store_res.result() == kCallbackFailure)) {
@@ -362,10 +360,10 @@ exitcode Authentication::SaveSession(std::string ser_da,
   cb.Reset();
   store_res.Clear();
   storemanager_->StorePacket(boost::any_cast<std::string>(mid_result["name"]),
-    boost::any_cast<std::string>(mid_result["ser_packet"]), signed_request,
-    boost::any_cast<std::string>(pub_keys["ANMID"]),
-    signed_public_key, SYSTEM_PACKET, true,
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+      boost::any_cast<std::string>(mid_result["ser_packet"]), signed_request,
+      boost::any_cast<std::string>(pub_keys["ANMID"]),
+      signed_public_key, SYSTEM_PACKET, true,
+      boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
       (store_res.result() == kCallbackFailure)) {

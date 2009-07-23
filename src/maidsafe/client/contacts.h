@@ -34,44 +34,12 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/cppsqlite3.h"
 #include "maidsafe/utils.h"
-
-//  Return codes:
-//   0: Success
-//  -1: Can't connect to share contacts DB
-//  -2: Didn't delete pointer db_
-//  -3: Add contact failed
-//  -4: Delete contact failed
-//  -5: Update contact failed
-//  -6: Language not found
-//  -7: Language id not found
-//  -8: Country not found
-//  -9: Country id not found
-//  -10: Error getting list
-//  -11: Error updating last contact and rank
 
 namespace maidsafe {
 
-class Languages {
- private:
-  int language_id_;
-  std::string language_;
-
- public:
-  int FindLanguage(const int &id, std::string &language);
-  int FindLanguageId(const std::string &language, int &id);
-};
-
-class Countries {
- private:
-  int country_id_;
-  std::string country_;
-
- public:
-  int FindCountry(const int &id, std::string &country);
-  int FindCountryId(const std::string &country, int &id);
-};
+// TODO(Dan#5#): 2009-07-22 - Language and country lists to be decided on and
+//                            incorporated to the logic.
 
 class Contact {
  private:
@@ -213,13 +181,10 @@ typedef boost::multi_index::multi_index_container<
 
 class ContactsHandler {
  private:
-  boost::shared_ptr<CppSQLite3DB> db_;
-  int Connect(const std::string &dbName);
-  int Close();
   contact_set cs_;
 
  public:
-  ContactsHandler() : db_(), cs_() { }
+  ContactsHandler() : cs_() { }
   int AddContact(const std::string &pub_name,
                     const std::string &pub_key,
                     const std::string &full_name,
@@ -230,8 +195,8 @@ class ContactsHandler {
                     const int &country,
                     const std::string &city,
                     const char &confirmed,
-                    const int &rank = 0,
-                    const int &last_contact = 0);
+                    const int &rank,
+                    const int &last_contact);
   int DeleteContact(const std::string &pub_name);
   int UpdateContact(const mi_contact &mic);
   int UpdateContactKey(const std::string &pub_name,
