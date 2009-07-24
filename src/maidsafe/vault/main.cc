@@ -112,7 +112,7 @@ class RunPDVaults {
         initial_vault_port_(initial_vault_port),
         kad_config_(),
         chunkstore_dir_(test_dir_+"/Chunkstores"),
-        kad_config_file_(chunkstore_dir_+"/.kadconfig"),
+        kad_config_file_(".kadconfig"),
         chunkstore_dirs_(),
         mutices_(),
         cb_(),
@@ -123,7 +123,6 @@ class RunPDVaults {
         bootstrap_file_prepared_(false),
         bootstrap_local_ip_(local_ip),
         bootstrap_local_port_(local_port) {
-    fs::path temp_(test_dir_);
     fs::create_directories(chunkstore_dir_);
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
@@ -173,11 +172,11 @@ class RunPDVaults {
         std::string dir = chunkstore_dir_+"/Chunkstore"+ base::itos(64001+j);
         if (!boost::filesystem::exists(boost::filesystem::path(dir)))
           boost::filesystem::create_directories(dir);
-        kad_config_file_ = dir + "/.kadconfig";
-        std::fstream output(kad_config_file_.c_str(),
+        std::string kad_config_location_ = dir + "/" + kad_config_file_;
+        printf("kad config: %s\n", kad_config_location_.c_str());
+        std::fstream output(kad_config_location_.c_str(),
           std::ios::out | std::ios::trunc | std::ios::binary);
-        if(!kad_config_.SerializeToOstream(&output))
-          printf("WTF?\n");
+        kad_config_.SerializeToOstream(&output);
         output.close();
       }
       bootstrap_file_prepared_ = true;
@@ -194,7 +193,8 @@ class RunPDVaults {
           base::itos(64001+i);
       fs::path chunkstore_local_path_(chunkstore_local_, fs::native);
       chunkstore_dirs_.push_back(chunkstore_local_path_);
-      kad_config_file_ = chunkstore_local_ + "/.kadconfig";
+      std::string kad_config_location_ = chunkstore_local_ + "/" +
+          kad_config_file_;
       std::string public_key_(""), private_key_(""), signed_key_("");
       std::string node_id_("");
       GeneratePmidStuff(&public_key_,
@@ -210,35 +210,35 @@ class RunPDVaults {
                                      signed_key_,
                                      chunkstore_local_,
                                      this_port,
-                                     kad_config_file_));
+                                     kad_config_location_));
       pdvaults_->push_back(pdvault_local_);
       ++current_nodes_created_;
       printf(".");
-      if (i == 0 && !bootstrap_file_prepared_) {
-        // Make the first vault as bootstrapping node
-        kad_config_.Clear();
-        base::KadConfig::Contact *kad_contact_ = kad_config_.add_contact();
-//        std::string bin_id_("");
-//        std::string bin_ip_("");
-//        base::decode_from_hex(pdvault_local_->node_id(), &bin_id_);
-//        base::decode_from_hex(pdvault_local_->host_ip(), &bin_ip_);
-        kad_contact_->set_node_id(pdvault_local_->node_id());
-        kad_contact_->set_ip(pdvault_local_->host_ip());
-        kad_contact_->set_port(pdvault_local_->host_port());
-        kad_contact_->set_local_ip(pdvault_local_->local_host_ip());
-        kad_contact_->set_local_port(pdvault_local_->local_host_port());
-
-        printf("In kadcontact host ip: %s, host port: %d, kad config: %s\n",
-          kad_contact_->ip().c_str(),
-          kad_contact_->port(),
-          kad_config_file_.c_str());
+      if (!bootstrap_file_prepared_) {
+        if (i == 0) {
+          // Make the first vault as bootstrapping node
+          kad_config_.Clear();
+          base::KadConfig::Contact *kad_contact_ = kad_config_.add_contact();
+  //        std::string bin_id_("");
+  //        std::string bin_ip_("");
+  //        base::decode_from_hex(pdvault_local_->node_id(), &bin_id_);
+  //        base::decode_from_hex(pdvault_local_->host_ip(), &bin_ip_);
+          kad_contact_->set_node_id(pdvault_local_->node_id());
+          kad_contact_->set_ip(pdvault_local_->host_ip());
+          kad_contact_->set_port(pdvault_local_->host_port());
+          kad_contact_->set_local_ip(pdvault_local_->local_host_ip());
+          kad_contact_->set_local_port(pdvault_local_->local_host_port());
+//          printf("In kadcontact host ip: %s, host port: %d, kad config: %s\n",
+//            kad_contact_->ip().c_str(),
+//            kad_contact_->port(),
+//            kad_config_location_.c_str());
+        }
+        // Save kad_config to file
+        std::fstream output_(kad_config_location_.c_str(),
+          std::ios::out | std::ios::trunc | std::ios::binary);
+        kad_config_.SerializeToOstream(&output_);
+        output_.close();
       }
-      // Save kad_config to file
-      std::fstream output_(kad_config_file_.c_str(),
-        std::ios::out | std::ios::trunc | std::ios::binary);
-      if(!kad_config_.SerializeToOstream(&output_))
-        printf("Feck.\n");
-      output_.close();
     }
     printf("\n");
     // start vaults
