@@ -176,7 +176,8 @@ class RunPDVaults {
         kad_config_file_ = dir + "/.kadconfig";
         std::fstream output(kad_config_file_.c_str(),
           std::ios::out | std::ios::trunc | std::ios::binary);
-        kad_config_.SerializeToOstream(&output);
+        if(!kad_config_.SerializeToOstream(&output))
+          printf("WTF?\n");
         output.close();
       }
       bootstrap_file_prepared_ = true;
@@ -227,15 +228,17 @@ class RunPDVaults {
         kad_contact_->set_local_ip(pdvault_local_->local_host_ip());
         kad_contact_->set_local_port(pdvault_local_->local_host_port());
 
-//        printf("In kadcontact host ip: %s, host port: %d\n",
-//          kad_contact_->ip().c_str(),
-//          kad_contact_->port());
-        // Save kad_config to file
-        std::fstream output_(kad_config_file_.c_str(),
-          std::ios::out | std::ios::trunc | std::ios::binary);
-        kad_config_.SerializeToOstream(&output_);
-        output_.close();
+        printf("In kadcontact host ip: %s, host port: %d, kad config: %s\n",
+          kad_contact_->ip().c_str(),
+          kad_contact_->port(),
+          kad_config_file_.c_str());
       }
+      // Save kad_config to file
+      std::fstream output_(kad_config_file_.c_str(),
+        std::ios::out | std::ios::trunc | std::ios::binary);
+      if(!kad_config_.SerializeToOstream(&output_))
+        printf("Feck.\n");
+      output_.close();
     }
     printf("\n");
     // start vaults
@@ -326,7 +329,7 @@ int main(int argc, char* argv[]) {
     printf(" testvault 5 C:\\TestVault cf83e1357eefb8bdf15");
     printf("42850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff83");
     printf("18d2877eec2f63b931bd47417a81a538327af927da3e 192.168.2.104 61111");
-    printf(" 192.168.2.104 61111");
+    printf(" 192.168.2.104 61111 12345");
     printf("\n\n\tTo quit, press Ctrl+C.\n");
   } else {
     std::string number(argv[1]);
