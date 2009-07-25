@@ -27,9 +27,9 @@
 
 namespace fs = boost::filesystem;
 
-//#if defined(MAIDSAFE_APPLE)
-//  int WriteToLog(std::string str) { return 0; }
-//#endif
+//  #if defined(MAIDSAFE_APPLE)
+//    int WriteToLog(std::string str) { return 0; }
+//  #endif
 
 namespace maidsafe_vault {
 

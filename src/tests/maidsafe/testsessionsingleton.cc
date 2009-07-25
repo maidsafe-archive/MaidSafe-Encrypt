@@ -55,23 +55,23 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
-  ASSERT_EQ(0, ss_->MidRid());
-  ASSERT_EQ(0, ss_->SmidRid());
+  ASSERT_EQ(static_cast<unsigned int>(0), ss_->MidRid());
+  ASSERT_EQ(static_cast<unsigned int>(0), ss_->SmidRid());
   ASSERT_EQ("", ss_->SessionName());
   ASSERT_EQ("", ss_->RootDbKey());
-  ASSERT_EQ(0, ss_->AuthorisedUsers().size());
-  ASSERT_EQ(0, ss_->MaidAuthorisedUsers().size());
+  ASSERT_EQ(static_cast<unsigned int>(0), ss_->AuthorisedUsers().size());
+  ASSERT_EQ(static_cast<unsigned int>(0), ss_->MaidAuthorisedUsers().size());
   ASSERT_EQ(0, ss_->Mounted());
   ASSERT_EQ('\0', ss_->WinDrive());
   std::list<KeyAtlasRow> keys;
   ss_->GetKeys(&keys);
-  ASSERT_EQ(0, keys.size());
+  ASSERT_EQ(static_cast<unsigned int>(0), keys.size());
   std::vector<mi_contact> list;
   ASSERT_EQ(0, ss_->GetContactList(&list));
-  ASSERT_EQ(0, list.size());
+  ASSERT_EQ(static_cast<unsigned int>(0), list.size());
   std::list<PrivateShare> ps_list;
   ASSERT_EQ(0, ss_->GetFullShareList(&ps_list));
-  ASSERT_EQ(0, ps_list.size());
+  ASSERT_EQ(static_cast<unsigned int>(0), ps_list.size());
 
   // Modify session
   ASSERT_TRUE(ss_->SetDaModified(true));
@@ -108,14 +108,14 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ("aaa", ss_->Username());
   ASSERT_EQ("bbb", ss_->Pin());
   ASSERT_EQ("ccc", ss_->Password());
-  ASSERT_EQ(22, ss_->MidRid());
-  ASSERT_EQ(7, ss_->SmidRid());
+  ASSERT_EQ(static_cast<unsigned int>(22), ss_->MidRid());
+  ASSERT_EQ(static_cast<unsigned int>(7), ss_->SmidRid());
   ASSERT_NE("", ss_->SessionName());
   ASSERT_EQ("ddd", ss_->RootDbKey());
-  ASSERT_EQ(1, ss_->AuthorisedUsers().size());
+  ASSERT_EQ(static_cast<unsigned int>(1), ss_->AuthorisedUsers().size());
   std::set<std::string>::iterator it = ss_->AuthorisedUsers().find("eee");
   ASSERT_FALSE(ss_->AuthorisedUsers().end() == it);
-  ASSERT_EQ(2, ss_->MaidAuthorisedUsers().size());
+  ASSERT_EQ(static_cast<unsigned int>(2), ss_->MaidAuthorisedUsers().size());
   it = ss_->MaidAuthorisedUsers().find("eee");
   ASSERT_FALSE(ss_->MaidAuthorisedUsers().end() == it);
   it = ss_->MaidAuthorisedUsers().find("fff");
@@ -123,13 +123,13 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(1, ss_->Mounted());
   ASSERT_EQ('N', ss_->WinDrive());
   ss_->GetKeys(&keys);
-  ASSERT_EQ(1, keys.size());
+  ASSERT_EQ(static_cast<unsigned int>(1), keys.size());
   ASSERT_EQ(ANMID, keys.front().type_);
   ASSERT_EQ("id", keys.front().id_);
   ASSERT_EQ("pri_key", keys.front().private_key_);
   ASSERT_EQ("pub_key", keys.front().public_key_);
   ASSERT_EQ(0, ss_->GetContactList(&list));
-  ASSERT_EQ(1, list.size());
+  ASSERT_EQ(static_cast<unsigned int>(1), list.size());
   ASSERT_EQ("pub_name", list[0].pub_name_);
   ASSERT_EQ("pub_key", list[0].pub_key_);
   ASSERT_EQ("full_name", list[0].full_name_);
@@ -143,13 +143,13 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(0, list[0].rank_);
   ASSERT_NE(0, list[0].last_contact_);
   ASSERT_EQ(0, ss_->GetFullShareList(&ps_list));
-  ASSERT_EQ(1, ps_list.size());
+  ASSERT_EQ(static_cast<unsigned int>(1), ps_list.size());
   ASSERT_EQ("name", ps_list.front().Name());
   ASSERT_EQ("msid", ps_list.front().Msid());
   ASSERT_EQ("msid_pub_key", ps_list.front().MsidPubKey());
   ASSERT_EQ("msid_pri_key", ps_list.front().MsidPriKey());
   std::list<ShareParticipants> sp_list = ps_list.front().Participants();
-  ASSERT_EQ(1, sp_list.size());
+  ASSERT_EQ(static_cast<unsigned int>(1), sp_list.size());
   ASSERT_EQ("id", sp_list.front().id);
   ASSERT_EQ("id_pub_key", sp_list.front().public_key);
   ASSERT_EQ('A', sp_list.front().role);
@@ -163,20 +163,20 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
-  ASSERT_EQ(0, ss_->MidRid());
-  ASSERT_EQ(0, ss_->SmidRid());
+  ASSERT_EQ(static_cast<unsigned int>(0), ss_->MidRid());
+  ASSERT_EQ(static_cast<unsigned int>(0), ss_->SmidRid());
   ASSERT_EQ("", ss_->SessionName());
   ASSERT_EQ("", ss_->RootDbKey());
-  ASSERT_EQ(0, ss_->AuthorisedUsers().size());
-  ASSERT_EQ(0, ss_->MaidAuthorisedUsers().size());
+  ASSERT_EQ(static_cast<unsigned int>(0), ss_->AuthorisedUsers().size());
+  ASSERT_EQ(static_cast<unsigned int>(0), ss_->MaidAuthorisedUsers().size());
   ASSERT_EQ(0, ss_->Mounted());
   ASSERT_EQ('\0', ss_->WinDrive());
   ss_->GetKeys(&keys);
-  ASSERT_EQ(0, keys.size());
+  ASSERT_EQ(static_cast<unsigned int>(0), keys.size());
   ASSERT_EQ(0, ss_->GetContactList(&list));
-  ASSERT_EQ(0, list.size());
+  ASSERT_EQ(static_cast<unsigned int>(0), list.size());
   ASSERT_EQ(0, ss_->GetFullShareList(&ps_list));
-  ASSERT_EQ(0, ps_list.size());
+  ASSERT_EQ(static_cast<unsigned int>(0), ps_list.size());
 }
 
 TEST_F(SessionSingletonTest, BEH_MAID_PublicUsername) {
@@ -233,7 +233,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionKeyRingIO) {
 
   std::list<KeyAtlasRow> keys;
   ss_->GetKeys(&keys);
-  ASSERT_EQ(7, keys.size());
+  ASSERT_EQ(static_cast<unsigned int>(7), keys.size());
   int a = 0;
   while (!keys.empty()) {
     ASSERT_EQ(a, keys.front().type_);
@@ -261,7 +261,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionContactsIO) {
   // Check contacts are in session
   std::vector<mi_contact> list;
   ASSERT_EQ(0, ss_->GetContactList(&list));
-  ASSERT_EQ(10, list.size());
+  ASSERT_EQ(static_cast<unsigned int>(10), list.size());
 
   // Move contacts to a DA
   DataAtlas da;
@@ -297,7 +297,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionContactsIO) {
   // Get values from session again
   std::vector<mi_contact> second_list;
   ASSERT_EQ(0, ss_->GetContactList(&second_list));
-  ASSERT_EQ(10, second_list.size());
+  ASSERT_EQ(static_cast<unsigned int>(10), second_list.size());
 
   // Check the initial values against the seconda values
   for (unsigned int e = 0; e < second_list.size(); ++e) {
@@ -345,7 +345,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
   // Check shares are in session
   std::list<PrivateShare> ps_list;
   ASSERT_EQ(0, ss_->GetFullShareList(&ps_list));
-  ASSERT_EQ(10, ps_list.size());
+  ASSERT_EQ(static_cast<unsigned int>(10), ps_list.size());
   std::list<PrivateShare> ps_list1 = ps_list;
 
   // Move contacts to a DA
@@ -384,7 +384,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
   // Get values from session again
   std::list<PrivateShare> ps_list2;
   ASSERT_EQ(0, ss_->GetFullShareList(&ps_list2));
-  ASSERT_EQ(10, ps_list2.size());
+  ASSERT_EQ(static_cast<unsigned int>(10), ps_list2.size());
 
   // Check the initial values against the seconda values
   while (!ps_list1.empty()) {

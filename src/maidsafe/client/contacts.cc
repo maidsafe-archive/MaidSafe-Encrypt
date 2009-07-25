@@ -44,17 +44,17 @@ Contact::Contact(const std::vector<std::string> &attributes)
 
 //  ContactsHandler
 int ContactsHandler::AddContact(const std::string &pub_name,
-                                   const std::string &pub_key,
-                                   const std::string &full_name,
-                                   const std::string &office_phone,
-                                   const std::string &birthday,
-                                   const char &gender,
-                                   const int &language,
-                                   const int &country,
-                                   const std::string &city,
-                                   const char &confirmed,
-                                   const int &rank,
-                                   const int &last_contact) {
+                                const std::string &pub_key,
+                                const std::string &full_name,
+                                const std::string &office_phone,
+                                const std::string &birthday,
+                                const char &gender,
+                                const int &language,
+                                const int &country,
+                                const std::string &city,
+                                const char &confirmed,
+                                const int &rank,
+                                const int &last_contact) {
   int lc = 0;
   if (last_contact == 0)
     lc = base::get_epoch_time();

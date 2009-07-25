@@ -30,10 +30,11 @@
 #include "maidsafe/crypto.h"
 #include "maidsafe/utils.h"
 #include "maidsafe/maidsafe.h"
-#include "maidsafe/vault/chunkstore.h"
 #include "protobuf/maidsafe_service.pb.h"
 
 namespace maidsafe_vault {
+
+class ChunkStore;
 
 class VaultService : public maidsafe::MaidsafeService {
  public:

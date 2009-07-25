@@ -24,11 +24,13 @@
 
 #include "maidsafe/vault/pdvault.h"
 
+#include <boost/filesystem.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/xtime.hpp>
 #include <google/protobuf/descriptor.h>
 
 #include <maidsafe/maidsafe-dht.h>
+#include "maidsafe/vault/chunkstore.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
 

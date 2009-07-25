@@ -41,7 +41,10 @@
 #endif
 
 // system constants
-const uint32_t kMinRegularFileSize = 512;
+const boost::uint32_t kMinRegularFileSize = 512;
+// This is the size in bytes of the NON-HEX format strings used as keys.  When
+// encoded to hex the string size is doubled.
+const boost::uint32_t kKeySize = 64;
 // const crypto::hashtype kHashSize(crypto::SHA_512);
 
 struct Key_Type {

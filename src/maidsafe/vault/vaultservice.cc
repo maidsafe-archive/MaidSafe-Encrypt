@@ -28,6 +28,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include <maidsafe/maidsafe.h>
+#include "maidsafe/vault/chunkstore.h"
 #include "maidsafe/vault/vaultbufferpackethandler.h"
 #include "protobuf/kademlia_service_messages.pb.h"
 

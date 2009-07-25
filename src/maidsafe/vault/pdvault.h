@@ -35,7 +35,6 @@
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/utils.h"
-#include "maidsafe/vault/chunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
 
@@ -46,6 +45,8 @@ class Env;
 }  // namespace localvaults
 
 namespace maidsafe_vault {
+
+class ChunkStore;
 
 struct SyncVaultData {
   SyncVaultData() : chunk_names(), num_updated_chunks(0), num_chunks(0),
