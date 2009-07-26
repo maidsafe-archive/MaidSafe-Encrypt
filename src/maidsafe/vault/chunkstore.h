@@ -130,7 +130,7 @@ class ChunkStore {
                          std::list<std::string> *failed_keys);
   // By changing the chunk's type it will be moved to the appropriate directory
   int ChangeChunkType(const std::string &key, ChunkType type);
-  inline bool is_initialised() {return is_initialised_;}
+  bool is_initialised();
  private:
   ChunkStore(const ChunkStore&);
   ChunkStore& operator=(const ChunkStore&);
@@ -141,6 +141,7 @@ class ChunkStore {
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreChangeChunkType);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreCheckAllChunks);
+  void set_is_initialised(bool value);
   bool Init();
   // Populate map of <ChunkType, path to chunk root directory>
   bool PopulatePathMap();
@@ -176,7 +177,6 @@ class ChunkStore {
   const fs::path kChunkstorePath_;
   bool is_initialised_;
   boost::mutex initialised_mutex_, chunkstore_set_mutex_;
-  crypto::Crypto crypto_;
   // Leafs of directory paths that make up chunkstore
   const std::string kHashableLeaf_, kNonHashableLeaf_;
   const std::string kNormalLeaf_, kCacheLeaf_, kOutgoingLeaf_, kTempCacheLeaf_;

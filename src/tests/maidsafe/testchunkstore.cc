@@ -31,20 +31,38 @@ void WaitForInitialisation(
   }
 }
 
-// Makes (num_chunks) chunks of length between 3 and 32000 bytes.  If hashable
-// is true, Hash(value) == name for each chunk.
+// Makes (num_chunks) chunks of length between min_chunk_size and max_chunk_size
+// bytes.  min_chunk_size will be resized to 3 if too small and max_chunk_size
+// will be resized to 1048576 (1 Mb) if too large.  If hashable is true,
+// Hash(value) == name for each chunk.
 bool MakeChunks(const boost::uint32_t &num_chunks,
                 boost::shared_ptr<crypto::Crypto> cry_obj,
                 bool hashable,
+                const boost::uint64_t &min_chunk_size,
+                const boost::uint64_t &max_chunk_size,
                 std::vector<boost::uint64_t> *chunksize,
                 std::vector<std::string> *value,
                 std::vector<std::string> *name) {
   chunksize->clear();
   value->clear();
   name->clear();
+  boost::uint64_t lower = min_chunk_size;
+  boost::uint64_t upper = max_chunk_size;
+  if (lower < 3)
+    lower = 3;
+  if (upper > 1048576)
+    upper = 1048576;
+  if (lower >= upper) {
+    lower = 3;
+    upper = 32000;
+  }
   for (boost::uint32_t i = 0; i < num_chunks; ++i) {
-    // set chunk sizes between 3 and 32000
-    chunksize->push_back(3 + (rand() % 31997));  // NOLINT (Fraser)
+    boost::uint64_t factor = (upper - lower) / RAND_MAX;
+    boost::uint64_t chunk_size(lower + (rand() * factor));  // NOLINT (Fraser)
+    // just in case!
+    while (chunk_size > upper)
+      chunk_size = chunk_size / 2;
+    chunksize->push_back(chunk_size);
     value->push_back(base::RandomString(chunksize->at(i)));
     if (hashable) {
       name->push_back(cry_obj->Hash(value->at(i), "", crypto::STRING_STRING,
@@ -156,8 +174,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreInit) {
   std::string invalid_path_length(257, ' ');
   boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(invalid_path_length));
   ASSERT_FALSE(chunkstore->is_initialised());
-  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, &h_size, &h_value,
-              &h_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
+                                          &h_value, &h_name));
   ASSERT_FALSE(chunkstore->HasChunk(h_name.at(0)));
   ASSERT_FALSE(chunkstore->StoreChunk(h_name.at(0), h_value.at(0)));
   ASSERT_FALSE(chunkstore->DeleteChunk(h_name.at(0)));
@@ -193,8 +211,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStoreChunk) {
   ASSERT_TRUE(chunkstore->is_initialised());
   ASSERT_EQ(static_cast<unsigned int>(0), chunkstore->chunkstore_set_.size());
   // check using hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, &h_size, &h_value,
-              &h_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
+                                          &h_value, &h_name));
   int test_chunk = 0;
   ASSERT_TRUE(chunkstore->StoreChunk(h_name.at(test_chunk),
                                      h_value.at(test_chunk)));
@@ -217,8 +235,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStoreChunk) {
   std::string stored_value1(static_cast<const char*>(temp1.get()), chunk_size);
   ASSERT_EQ(h_value.at(test_chunk), stored_value1);
   // check using non-hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, &nh_size,
-              &nh_value, &nh_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, 3, 32000, &nh_size,
+                                          &nh_value, &nh_name));
   ASSERT_TRUE(chunkstore->StoreChunk(nh_name.at(test_chunk),
                                      nh_value.at(test_chunk)));
   ASSERT_EQ(static_cast<unsigned int>(2), chunkstore->chunkstore_set_.size());
@@ -251,8 +269,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadChunk) {
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, &h_size, &h_value,
-              &h_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
+                                          &h_value, &h_name));
   int test_chunk = 0;
   ASSERT_TRUE(chunkstore->StoreChunk(h_name.at(test_chunk),
                                      h_value.at(test_chunk)));
@@ -260,8 +278,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadChunk) {
   ASSERT_TRUE(chunkstore->LoadChunk(h_name.at(test_chunk), &rec_value));
   ASSERT_EQ(h_value.at(test_chunk), rec_value);
   // check using non-hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, &nh_size,
-              &nh_value, &nh_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, 3, 32000, &nh_size,
+                                          &nh_value, &nh_name));
   ASSERT_TRUE(chunkstore->StoreChunk(nh_name.at(test_chunk),
                                      nh_value.at(test_chunk)));
   rec_value = "Value";
@@ -281,15 +299,15 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHasChunk) {
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, &h_size, &h_value,
-              &h_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
+                                          &h_value, &h_name));
   int test_chunk = 0;
   ASSERT_TRUE(chunkstore->StoreChunk(h_name.at(test_chunk),
                                      h_value.at(test_chunk)));
   ASSERT_TRUE(chunkstore->HasChunk(h_name.at(test_chunk)));
   // check using non-hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, &nh_size,
-              &nh_value, &nh_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, 3, 32000, &nh_size,
+                                          &nh_value, &nh_name));
   ASSERT_TRUE(chunkstore->StoreChunk(nh_name.at(test_chunk),
                                      nh_value.at(test_chunk)));
   ASSERT_TRUE(chunkstore->HasChunk(nh_name.at(test_chunk)));
@@ -308,8 +326,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk) {
   ASSERT_TRUE(chunkstore->is_initialised());
   ASSERT_EQ(static_cast<unsigned int>(0), chunkstore->chunkstore_set_.size());
   // check using hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, &h_size, &h_value,
-              &h_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
+                                          &h_value, &h_name));
   int test_chunk = 0;
   ASSERT_TRUE(chunkstore->StoreChunk(h_name.at(test_chunk),
                                      h_value.at(test_chunk)));
@@ -327,8 +345,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk) {
   ASSERT_TRUE(chunkstore->DeleteChunk(h_name.at(test_chunk)));
   ASSERT_EQ(static_cast<unsigned int>(0), chunkstore->chunkstore_set_.size());
   // check using non-hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, &nh_size,
-              &nh_value, &nh_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, 3, 32000, &nh_size,
+                                          &nh_value, &nh_name));
   ASSERT_TRUE(chunkstore->StoreChunk(nh_name.at(test_chunk),
                                      nh_value.at(test_chunk)));
   ASSERT_EQ(static_cast<unsigned int>(1), chunkstore->chunkstore_set_.size());
@@ -362,10 +380,10 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk) {
   ASSERT_FALSE(chunkstore->LoadRandomChunk(&key, &val));
   ASSERT_EQ(key, std::string(""));
   ASSERT_EQ(val, std::string(""));
-  int kNumberOfChunks = 10;
+  const int kNumberOfChunks = 10;
   // test with no hashable chunks (shouldn't return any)
-  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, false,
-                                          &nh_size, &nh_value, &nh_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, false, 3,
+                                         32000, &nh_size, &nh_value, &nh_name));
   for (int i = 0; i < kNumberOfChunks; ++i)
     ASSERT_TRUE(chunkstore->StoreChunk(nh_name.at(i), nh_value.at(i)));
   ASSERT_EQ(static_cast<unsigned int>(kNumberOfChunks),
@@ -376,8 +394,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk) {
   ASSERT_EQ("", key);
   ASSERT_EQ("", val);
   // test with hashable chunks
-  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true,
-                                          &h_size, &h_value, &h_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true, 3,
+                                          32000, &h_size, &h_value, &h_name));
   for (int i = 0; i < kNumberOfChunks; ++i)
     ASSERT_TRUE(chunkstore->StoreChunk(h_name.at(i), h_value.at(i)));
   ASSERT_EQ(static_cast<unsigned int>(2 * kNumberOfChunks),
@@ -419,8 +437,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreUpdateChunk) {
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, true, &h_size, &h_value,
-                                          &h_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, true, 3, 32000, &h_size,
+                                          &h_value, &h_name));
   ASSERT_NE(h_value.at(0), h_value.at(1));
   ASSERT_TRUE(chunkstore->StoreChunk(h_name.at(0), h_value.at(0)));
   ASSERT_TRUE(chunkstore->UpdateChunk(h_name.at(0), h_value.at(1)));
@@ -428,8 +446,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreUpdateChunk) {
   ASSERT_TRUE(chunkstore->LoadChunk(h_name.at(0), &rec_value));
   ASSERT_EQ(h_value.at(1), rec_value);
   // check using non-hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, true, &nh_size, &nh_value,
-                                          &nh_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, true, 3, 32000, &nh_size,
+                                          &nh_value, &nh_name));
   ASSERT_NE(nh_value.at(0), nh_value.at(1));
   ASSERT_TRUE(chunkstore->StoreChunk(nh_name.at(0), nh_value.at(0)));
   ASSERT_TRUE(chunkstore->UpdateChunk(nh_name.at(0), nh_value.at(1)));
@@ -450,8 +468,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk) {
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, &h_size, &h_value,
-                                          &h_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
+                                          &h_value, &h_name));
   int test_chunk = 0;
   ASSERT_TRUE(chunkstore->StoreChunk(h_name.at(test_chunk),
                                      h_value.at(test_chunk)));
@@ -473,7 +491,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk) {
   ASSERT_GT(later_check_time - original_check_time,
             boost::posix_time::milliseconds(0));
   // check using non-hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, &nh_size,
+  ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, 3, 32000, &nh_size,
                                           &nh_value, &nh_name));
   ASSERT_TRUE(chunkstore->StoreChunk(nh_name.at(test_chunk),
                                      nh_value.at(test_chunk)));
@@ -491,10 +509,10 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreChangeChunkType) {
   boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
-  int kNumberOfChunks = chunkstore->path_map_.size();  // 8
-  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true,
-                                          &h_size, &h_value, &h_name));
-  ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, false, &nh_size,
+  const int kNumberOfChunks = chunkstore->path_map_.size();  // 8
+  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true, 3,
+                                          32000, &h_size, &h_value, &h_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, false, 3, 32000, &nh_size,
                                           &nh_value, &nh_name));
   for (int i = 0; i < kNumberOfChunks; ++i)
     ASSERT_TRUE(chunkstore->StoreChunk(h_name.at(i), h_value.at(i)));
@@ -596,9 +614,9 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreReuseDirectory) {
   boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
-  int kNumberOfChunks = 5 * chunkstore->path_map_.size();  // 40
-  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true,
-                                          &h_size, &h_value, &h_name));
+  const int kNumberOfChunks = 5 * chunkstore->path_map_.size();  // 40
+  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true, 3,
+                                          32000, &h_size, &h_value, &h_name));
   for (int i = 0; i < kNumberOfChunks; ++i)
     ASSERT_TRUE(chunkstore->StoreChunk(h_name.at(i), h_value.at(i)));
   // Move 5 chunks to each of the different types.
@@ -649,11 +667,11 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreGetAllChunks) {
   chunkstore->GetAllChunks(&ret_chunk_names);
   ASSERT_EQ(static_cast<unsigned int>(0), ret_chunk_names.size());
   // Put 50 hashable and 50 non-hashable chunks in and check again.
-  int kNumberOfChunks = 50;
-  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true,
-                                          &h_size, &h_value, &h_name));
-  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, false,
-                                          &nh_size, &nh_value, &nh_name));
+  const int kNumberOfChunks = 50;
+  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true, 3,
+                                          32000, &h_size, &h_value, &h_name));
+  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, false, 3,
+                                         32000, &nh_size, &nh_value, &nh_name));
   for (int i = 0; i < kNumberOfChunks; ++i) {
     ASSERT_TRUE(chunkstore->StoreChunk(h_name.at(i), h_value.at(i)));
     ASSERT_TRUE(chunkstore->StoreChunk(nh_name.at(i), nh_value.at(i)));
@@ -672,9 +690,9 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreCheckAllChunks) {
   boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
-  int kNumberOfChunks = 5 * chunkstore->path_map_.size();  // 40
-  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true,
-                                          &h_size, &h_value, &h_name));
+  const int kNumberOfChunks = 5 * chunkstore->path_map_.size();  // 40
+  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true, 3,
+                                          32000, &h_size, &h_value, &h_name));
   for (int i = 0; i < kNumberOfChunks; ++i)
     ASSERT_TRUE(chunkstore->StoreChunk(h_name.at(i), h_value.at(i)));
   // Move 5 chunks to each of the different types.
@@ -754,6 +772,50 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreCheckAllChunks) {
   failed_chunk_names.remove(h_name.at(10));
   failed_chunk_names.remove(h_name.at(15));
   ASSERT_EQ(static_cast<unsigned int>(0), failed_chunk_names.size());
+}
+
+TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreaded) {
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  test_chunkstore::WaitForInitialisation(chunkstore, 60000);
+  ASSERT_TRUE(chunkstore->is_initialised());
+  const int kNumberOfChunks = 20;
+  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true, 99000,
+                                          100000, &h_size, &h_value, &h_name));
+  boost::thread_group store_thread_group;
+  for (int i = 0; i < kNumberOfChunks; ++i) {
+    store_thread_group.create_thread(boost::bind(&ChunkStore::StoreChunk,
+        chunkstore, h_name.at(i), h_value.at(i)));
+  }
+  boost::thread_group update_thread_group;
+  for (int i = 0; i < kNumberOfChunks; ++i) {
+    update_thread_group.create_thread(boost::bind(&ChunkStore::UpdateChunk,
+        chunkstore, h_name.at(i), "Updated"));
+  }
+  update_thread_group.join_all();
+  store_thread_group.join_all();
+  std::vector<std::string*> rec_value;
+  for (int i = 0; i < kNumberOfChunks; ++i) {
+    std::string *newstr = new std::string("Value");
+    rec_value.push_back(newstr);
+  }
+  boost::thread_group load_thread_group;
+  for (int i = 0; i < kNumberOfChunks; ++i) {
+    load_thread_group.create_thread(boost::bind(&ChunkStore::LoadChunk,
+        chunkstore, h_name.at(i), rec_value.at(i)));
+  }
+  load_thread_group.join_all();
+  int stored(0), updated(0);
+  for (int i = 0; i < kNumberOfChunks; ++i) {
+    if (h_value.at(i) == (*rec_value.at(i)))
+      ++stored;
+    if ("Updated" == (*rec_value.at(i)))
+      ++updated;
+  }
+  printf("%i stored, %i updated\n", stored, updated);
+  ASSERT_EQ(kNumberOfChunks, stored + updated);
+  for (int i = 0; i < kNumberOfChunks; ++i) {
+    delete rec_value.at(i);
+  }
 }
 
 }  // namespace maidsafe_vault

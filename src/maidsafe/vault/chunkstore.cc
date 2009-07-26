@@ -27,7 +27,6 @@ ChunkStore::ChunkStore(const std::string &chunkstore_dir)
       is_initialised_(false),
       initialised_mutex_(),
       chunkstore_set_mutex_(),
-      crypto_(),
       kHashableLeaf_("Hashable"),
       kNonHashableLeaf_("NonHashable"),
       kNormalLeaf_("Normal"),
@@ -37,18 +36,27 @@ ChunkStore::ChunkStore(const std::string &chunkstore_dir)
   boost::thread init_thread(&ChunkStore::Init, this);
 }
 
+bool ChunkStore::is_initialised() {
+  bool init_result(false);
+  {
+    boost::mutex::scoped_lock lock(initialised_mutex_);
+    init_result = is_initialised_;
+  }
+  return init_result;
+}
+
+void ChunkStore::set_is_initialised(bool value) {
+  boost::mutex::scoped_lock lock(initialised_mutex_);
+  is_initialised_ = value;
+}
+
 bool ChunkStore::Init() {
-  if (is_initialised_)
-    return is_initialised_;
+  if (is_initialised())
+      return true;
   if (!PopulatePathMap()) {
-    {
-      boost::mutex::scoped_lock lock(initialised_mutex_);
-      is_initialised_ = false;
-    }
+    set_is_initialised(false);
     return false;
   }
-  crypto_.set_symm_algorithm(crypto::AES_256);
-  crypto_.set_hash_algorithm(crypto::SHA_512);
   chunkstore_set_.clear();
   // Check root directories exist and if not, create them.
   bool temp_result = true;
@@ -65,17 +73,15 @@ bool ChunkStore::Init() {
 //        printf("Created %s\n", (*path_map_itr).second.string().c_str());
       }
     }
-    {
-      boost::mutex::scoped_lock lock(initialised_mutex_);
-      is_initialised_ = temp_result;
-    }
+    set_is_initialised(temp_result);
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
     printf("ChunkStore::Init failed.\nException: %s\n", ex.what());
 #endif
+    set_is_initialised(false);
   }
-  return is_initialised_;
+  return is_initialised();
 }
 
 bool ChunkStore::PopulatePathMap() {
@@ -183,7 +189,7 @@ bool ChunkStore::PopulateChunkSet(ChunkType type, const fs::path &dir_path) {
 }
 
 bool ChunkStore::HasChunk(const std::string &key) {
-  if (!is_initialised_) {
+  if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::HasChunk.\n");
 #endif
@@ -221,8 +227,10 @@ ChunkType ChunkStore::GetChunkType(const std::string &key,
   if (!new_chunk)
     return type;
   // otherwise this is a new chunk
+  crypto::Crypto crypto;
+  crypto.set_hash_algorithm(crypto::SHA_512);
   if (value != "" &&
-      key != crypto_.Hash(value, "", crypto::STRING_STRING, false))
+      key != crypto.Hash(value, "", crypto::STRING_STRING, false))
     type = kNonHashable | kNormal;
   return type;
 }
@@ -279,7 +287,7 @@ ChunkInfo ChunkStore::GetOldestChecked() {
 }
 
 bool ChunkStore::StoreChunk(const std::string &key, const std::string &value) {
-  if (!is_initialised_) {
+  if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::StoreChunk.\n");
 #endif
@@ -335,7 +343,7 @@ bool ChunkStore::StoreChunkFunction(const std::string &key,
 }
 
 bool ChunkStore::DeleteChunk(const std::string &key) {
-  if (!is_initialised_) {
+  if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::DeleteChunk.\n");
 #endif
@@ -395,7 +403,7 @@ bool ChunkStore::DeleteChunkFunction(const std::string &key,
 }
 
 bool ChunkStore::UpdateChunk(const std::string &key, const std::string &value) {
-  if (!is_initialised_) {
+  if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::UpdateChunk.\n");
 #endif
@@ -430,7 +438,7 @@ bool ChunkStore::UpdateChunk(const std::string &key, const std::string &value) {
 
 bool ChunkStore::LoadChunk(const std::string &key, std::string *value) {
   value->clear();
-  if (!is_initialised_) {
+  if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::LoadChunk.\n");
 #endif
@@ -468,7 +476,7 @@ bool ChunkStore::LoadChunk(const std::string &key, std::string *value) {
 bool ChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
   key->clear();
   value->clear();
-  if (!is_initialised_) {
+  if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::LoadRandomChunk.\n");
 #endif
@@ -514,7 +522,7 @@ bool ChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
 
 void ChunkStore::GetAllChunks(std::list<std::string> *chunk_names) {
   chunk_names->clear();
-  if (!is_initialised_) {
+  if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::GetAllChunks.\n");
 #endif
@@ -529,7 +537,7 @@ void ChunkStore::GetAllChunks(std::list<std::string> *chunk_names) {
 }
 
 int ChunkStore::HashCheckChunk(const std::string &key) {
-  if (!is_initialised_) {
+  if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::HashCheckChunk.\n");
 #endif
@@ -550,7 +558,9 @@ int ChunkStore::HashCheckChunk(const std::string &key) {
 
 int ChunkStore::HashCheckChunk(const std::string &key,
                                const fs::path &chunk_path) {
-  std::string file_hash = crypto_.Hash(chunk_path.string(), "",
+  crypto::Crypto crypto;
+  crypto.set_hash_algorithm(crypto::SHA_512);
+  std::string file_hash = crypto.Hash(chunk_path.string(), "",
                                        crypto::FILE_STRING, false);
   std::string non_hex_filename("");
   boost::posix_time::ptime now(boost::posix_time::microsec_clock::local_time());
@@ -568,7 +578,7 @@ int ChunkStore::HashCheckChunk(const std::string &key,
 int ChunkStore::HashCheckAllChunks(bool delete_failures,
                                    std::list<std::string> *failed_keys) {
   failed_keys->clear();
-  if (!is_initialised_) {
+  if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::HashCheckAllChunks.\n");
 #endif
