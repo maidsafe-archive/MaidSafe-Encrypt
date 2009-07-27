@@ -561,7 +561,7 @@ int ChunkStore::HashCheckChunk(const std::string &key,
   crypto::Crypto crypto;
   crypto.set_hash_algorithm(crypto::SHA_512);
   std::string file_hash = crypto.Hash(chunk_path.string(), "",
-                                       crypto::FILE_STRING, false);
+                                      crypto::FILE_STRING, false);
   std::string non_hex_filename("");
   boost::posix_time::ptime now(boost::posix_time::microsec_clock::local_time());
   {
@@ -569,10 +569,12 @@ int ChunkStore::HashCheckChunk(const std::string &key,
     chunk_set_by_non_hex_name &non_hex_name_index =
         chunkstore_set_.get<non_hex_name>();
     chunk_set_by_non_hex_name::iterator itr = non_hex_name_index.find(key);
+    if (itr == chunkstore_set_.end())
+      return -1;
     non_hex_filename = (*itr).non_hex_name_;
     non_hex_name_index.modify(itr, change_last_checked(now));
   }
-  return file_hash == non_hex_filename ? 0 : -1;
+  return file_hash == non_hex_filename ? 0 : -2;
 }
 
 int ChunkStore::HashCheckAllChunks(bool delete_failures,

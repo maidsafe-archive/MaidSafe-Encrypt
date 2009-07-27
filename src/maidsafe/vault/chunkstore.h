@@ -141,6 +141,7 @@ class ChunkStore {
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreChangeChunkType);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreCheckAllChunks);
+  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreThreadedChangeType);
   void set_is_initialised(bool value);
   bool Init();
   // Populate map of <ChunkType, path to chunk root directory>
