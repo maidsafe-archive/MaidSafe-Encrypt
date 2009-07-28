@@ -85,38 +85,47 @@ bool ChunkStore::Init() {
 }
 
 bool ChunkStore::PopulatePathMap() {
-  path_map_iterator path_map_itr;
-  fs::path hashable_parent(kChunkstorePath_ / kHashableLeaf_);
-  path_map_.insert(std::pair<ChunkType, fs::path>(kHashable | kNormal,
-      fs::path(hashable_parent / kNormalLeaf_)));
-  path_map_itr = path_map_.begin();
-  path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-      (kHashable | kCache, fs::path(hashable_parent / kCacheLeaf_)));
-  ++path_map_itr;
-  path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-      (kHashable | kOutgoing, fs::path(hashable_parent / kOutgoingLeaf_)));
-  ++path_map_itr;
-  path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-      (kHashable | kTempCache, fs::path(hashable_parent / kTempCacheLeaf_)));
-  ++path_map_itr;
-  fs::path non_hashable_parent(kChunkstorePath_ / kNonHashableLeaf_);
-  path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-      (kNonHashable | kNormal, fs::path(non_hashable_parent / kNormalLeaf_)));
-  ++path_map_itr;
-  path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-      (kNonHashable | kCache, fs::path(non_hashable_parent / kCacheLeaf_)));
-  ++path_map_itr;
-  path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-      (kNonHashable | kOutgoing,
-      fs::path(non_hashable_parent / kOutgoingLeaf_)));
-  ++path_map_itr;
-  path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-      (kNonHashable | kTempCache,
-      fs::path(non_hashable_parent / kTempCacheLeaf_)));
-  if (static_cast<boost::uint32_t>(8) != path_map_.size())
+  try {
+    path_map_iterator path_map_itr;
+    fs::path hashable_parent(kChunkstorePath_ / kHashableLeaf_);
+    path_map_.insert(std::pair<ChunkType, fs::path>(kHashable | kNormal,
+        fs::path(hashable_parent / kNormalLeaf_)));
+    path_map_itr = path_map_.begin();
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
+        (kHashable | kCache, fs::path(hashable_parent / kCacheLeaf_)));
+    ++path_map_itr;
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
+        (kHashable | kOutgoing, fs::path(hashable_parent / kOutgoingLeaf_)));
+    ++path_map_itr;
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
+        (kHashable | kTempCache, fs::path(hashable_parent / kTempCacheLeaf_)));
+    ++path_map_itr;
+    fs::path non_hashable_parent(kChunkstorePath_ / kNonHashableLeaf_);
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
+        (kNonHashable | kNormal, fs::path(non_hashable_parent / kNormalLeaf_)));
+    ++path_map_itr;
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
+        (kNonHashable | kCache, fs::path(non_hashable_parent / kCacheLeaf_)));
+    ++path_map_itr;
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
+        (kNonHashable | kOutgoing,
+        fs::path(non_hashable_parent / kOutgoingLeaf_)));
+    ++path_map_itr;
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
+        (kNonHashable | kTempCache,
+        fs::path(non_hashable_parent / kTempCacheLeaf_)));
+    if (static_cast<boost::uint32_t>(8) != path_map_.size())
+      return false;
+    else
+      return true;
+  }
+  catch(const std::exception &ex) {
+#ifdef DEBUG
+    printf("%s\n", ex.what());
+#endif
     return false;
-  else
-    return true;
+  }
+
 }
 
 void ChunkStore::FindFiles(const fs::path &root_dir_path,
@@ -125,38 +134,45 @@ void ChunkStore::FindFiles(const fs::path &root_dir_path,
                            bool delete_failures,
                            boost::uint64_t *filecount,
                            std::list<std::string> *failed_keys) {
-  if (!fs::exists(root_dir_path))
-    return;
-  std::string non_hex_name("");
-  fs::directory_iterator end_itr;
-  for (fs::directory_iterator itr(root_dir_path); itr != end_itr; ++itr) {
-//    printf("Iter at %s\n", itr->path().filename().c_str());
-    if (fs::is_directory(itr->status())) {
-      FindFiles(itr->path(), type, hash_check, delete_failures, filecount,
-                failed_keys);
-    } else  {
-      ++(*filecount);
-      if (base::decode_from_hex(itr->path().filename(), &non_hex_name) &&
-          fs::file_size(itr->path()) >= 2) {
-        ChunkInfo chunk(non_hex_name,
-            boost::posix_time::microsec_clock::local_time(), type);
-        {
-          boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
-          chunkstore_set_.insert(chunk);
-        }
-        if ((type == (kHashable | kNormal) || type == (kHashable | kCache) ||
-            type == (kHashable | kOutgoing) || type == (kHashable | kTempCache))
-            && hash_check) {
-          if (HashCheckChunk(non_hex_name, itr->path()) != 0) {
-            failed_keys->push_back(non_hex_name);
-            if (delete_failures) {
-              if (DeleteChunkFunction(non_hex_name, itr->path()))
-                --(*filecount);
+  try {
+    if (!fs::exists(root_dir_path))
+      return;
+    std::string non_hex_name("");
+    fs::directory_iterator end_itr;
+    for (fs::directory_iterator itr(root_dir_path); itr != end_itr; ++itr) {
+  //    printf("Iter at %s\n", itr->path().filename().c_str());
+      if (fs::is_directory(itr->status())) {
+        FindFiles(itr->path(), type, hash_check, delete_failures, filecount,
+                  failed_keys);
+      } else  {
+        ++(*filecount);
+        if (base::decode_from_hex(itr->path().filename(), &non_hex_name) &&
+            fs::file_size(itr->path()) >= 2) {
+          ChunkInfo chunk(non_hex_name,
+              boost::posix_time::microsec_clock::local_time(), type);
+          {
+            boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
+            chunkstore_set_.insert(chunk);
+          }
+          if ((type == (kHashable | kNormal) || type == (kHashable | kCache) ||
+              type == (kHashable | kOutgoing) || type == (kHashable | kTempCache))
+              && hash_check) {
+            if (HashCheckChunk(non_hex_name, itr->path()) != 0) {
+              failed_keys->push_back(non_hex_name);
+              if (delete_failures) {
+                if (DeleteChunkFunction(non_hex_name, itr->path()))
+                  --(*filecount);
+              }
             }
           }
         }
       }
     }
+  }
+  catch(const std::exception &ex) {
+#ifdef DEBUG
+    printf("%s\n", ex.what());
+#endif
   }
 }
 
@@ -252,22 +268,23 @@ fs::path ChunkStore::GetChunkPath(const std::string &key,
   dir_two = hex_key.substr(1, 1);
   dir_three = hex_key.substr(2, 1);
   fs::path chunk_path((*path_map_itr).second / dir_one / dir_two / dir_three);
-  if (!fs::exists(chunk_path)) {
-    if (create_path) {
-      try {
-        fs::create_directories(chunk_path);
+  try {
+    if (!fs::exists(chunk_path)) {
+      if (create_path) {
+          fs::create_directories(chunk_path);
+        chunk_path /= hex_key;
+      } else {
+        chunk_path = fs::path("");
       }
-      catch(const std::exception &e) {
-#ifdef DEBUG
-        printf("%s\n", e.what());
-#endif
-      }
-      chunk_path /= hex_key;
     } else {
-      chunk_path = fs::path("");
+      chunk_path /= hex_key;
     }
-  } else {
-    chunk_path /= hex_key;
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    chunk_path = fs::path("");
   }
 #ifdef DEBUG
 //  printf("Chunk path: %s\n\n", chunk_path.string().c_str());
@@ -362,7 +379,17 @@ bool ChunkStore::DeleteChunk(const std::string &key) {
 
 bool ChunkStore::DeleteChunkFunction(const std::string &key,
                                      const fs::path &chunk_path) {
-  if (!fs::exists(chunk_path)) {
+  bool exists(false);
+  try {
+    exists = fs::exists(chunk_path);
+  }
+  catch(const std::exception &ex) {
+#ifdef DEBUG
+    printf("ChunkStore::DeleteChunkFunction: %s\n", ex.what());
+#endif
+    return false;
+  }
+  if (!exists) {
     {
 #ifdef DEBUG
       printf("In ChunkStore::DeleteChunk, file didn't exist.\n");
@@ -375,22 +402,22 @@ bool ChunkStore::DeleteChunkFunction(const std::string &key,
     }
     return true;
   }
+  {
+    boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
+    chunk_set_by_non_hex_name::iterator itr =
+        chunkstore_set_.get<non_hex_name>().find(key);
+    if (itr != chunkstore_set_.end())  // i.e. we have the chunk's details
+      chunkstore_set_.erase(itr);
+  }
+  // Doesn't matter if we don't actually remove chunk file.
   try {
     fs::remove(chunk_path);
-    {
-      boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
-      chunk_set_by_non_hex_name::iterator itr =
-          chunkstore_set_.get<non_hex_name>().find(key);
-      if (itr != chunkstore_set_.end())  // i.e. we have the chunk's details
-        chunkstore_set_.erase(itr);
-    }
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("Couldn't remove file in ChunkStore::DeleteChunk.\n");
     printf("%s\n", e.what());
 #endif
-    return false;
   }
   bool result(false);
   {
@@ -457,20 +484,21 @@ bool ChunkStore::LoadChunk(const std::string &key, std::string *value) {
   boost::uint64_t chunk_size(0);
   try {
     chunk_size = fs::file_size(chunk_path);
+    boost::scoped_array<char> temp(new char[chunk_size]);
+    fs::ifstream fstr;
+    fstr.open(chunk_path, std::ios_base::binary);
+    fstr.read(temp.get(), chunk_size);
+    fstr.close();
+    std::string result(static_cast<const char*>(temp.get()), chunk_size);
+    *value = result;
+    return true;
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
     printf("%s\n", ex.what());
 #endif
+    return false;
   }
-  boost::scoped_array<char> temp(new char[chunk_size]);
-  fs::ifstream fstr;
-  fstr.open(chunk_path, std::ios_base::binary);
-  fstr.read(temp.get(), chunk_size);
-  fstr.close();
-  std::string result(static_cast<const char*>(temp.get()), chunk_size);
-  *value = result;
-  return true;
 }
 
 bool ChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
@@ -630,13 +658,28 @@ int ChunkStore::ChangeChunkType(const std::string &key, ChunkType type) {
 #endif
     return -1;
   }
+  // Try to rename file.  If this fails try to copy.  If this fails, return
+  // negative int.
+  bool renamed(false);
   try {
     fs::rename(current_chunk_path, new_chunk_path);
+    renamed = true;
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("%s\n", e.what());
 #endif
+  }
+  if (!renamed) {
+    try {
+      fs::copy_file(current_chunk_path, new_chunk_path);
+    }
+    catch(const std::exception &e) {
+  #ifdef DEBUG
+      printf("%s\n", e.what());
+  #endif
+      return -1;
+    }
   }
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);

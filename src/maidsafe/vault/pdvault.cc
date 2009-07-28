@@ -50,7 +50,7 @@ PDVault::PDVault(const std::string &pmid_public,
       mutex0_(),
       mutex1_(),
       channel_manager_(new rpcprotocol::ChannelManager()),
-      knode_(channel_manager_, kad::VAULT),
+      knode_(channel_manager_, kad::VAULT, pmid_private, pmid_public),
       vault_rpcs_(channel_manager_),
       chunkstore_(new ChunkStore(chunkstore_dir)),
       vault_service_(),
@@ -511,6 +511,7 @@ void PDVault::IterativePublishChunkRef(
                       pmid_public_,
                       signed_pmid_public_,
                       signed_request_,
+                      86400,
                       boost::bind(&PDVault::IterativePublishChunkRef_Next,
                                   this,
                                   _1,
@@ -947,6 +948,7 @@ void PDVault::SwapChunkAcceptChunk(
                     pmid_public_,
                     signed_pmid_public_,
                     signed_request,
+                    86400,
                     &pdv_dummy_callback);
   maidsafe::SwapChunkResponse local_result;
   std::string local_result_str("");

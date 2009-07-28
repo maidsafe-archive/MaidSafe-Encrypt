@@ -134,6 +134,7 @@ class ChunkStore {
  private:
   ChunkStore(const ChunkStore&);
   ChunkStore& operator=(const ChunkStore&);
+  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreInit);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreStoreChunk);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk);

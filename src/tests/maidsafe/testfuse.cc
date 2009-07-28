@@ -172,9 +172,6 @@ void UnmountAndLogout(maidsafe::ClientController *cc,
   printf("Logging out.\n");
   if (!logged_in_)
     return;
-  // Save shares databases
-  std::string newDb("/.shares");
-  ASSERT_EQ(0, cc->write(newDb));
   // Unmount drive
 #ifdef MAIDSAFE_WIN32
   std::locale loc;
@@ -265,9 +262,6 @@ void CreateUserLoginMount(maidsafe::ClientController *cc,
 #endif
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss->Mounted());
-  // Decrypt contacts and shares databases
-  std::string newDb("/.shares");
-  maidsafe::ClientController::getInstance()->read(newDb);
   boost::this_thread::sleep(boost::posix_time::seconds(20));
 }
 

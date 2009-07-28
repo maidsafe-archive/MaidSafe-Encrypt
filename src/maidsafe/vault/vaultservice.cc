@@ -615,6 +615,7 @@ void VaultService::StoreChunkReference(const std::string &non_hex_chunkname) {
                      pmid_public_,
                      signed_pmid_public_,
                      signed_request_,
+                     86400,
                      &vsvc_dummy_callback);
   return;
 }

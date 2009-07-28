@@ -164,6 +164,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
                                                 pin,
                                                 password);
   ASSERT_EQ(OK, result)<< "Unable to register user";
+  cb.Reset();
   result = authentication->GetUserInfo(username, pin, boost::bind(
     &FakeCallback::CallbackFunc, &cb, _1));
   ASSERT_EQ(USER_EXISTS, result) << "User does not exist";
