@@ -19,7 +19,7 @@
      <item>
       <widget class="QLineEdit" name="contactLineEdit">
        <property name="text">
-        <string>Search (or add) contacts</string>
+        <string></string>
        </property>
       </widget>
      </item>

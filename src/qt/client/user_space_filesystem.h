@@ -12,61 +12,59 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_FILESYSTEM_H_
-#define QT_CLIENT_FILESYSTEM_H_
+#ifndef QT_CLIENT_USER_SPACE_FILESYSTEM_H_
+#define QT_CLIENT_USER_SPACE_FILESYSTEM_H_
 
 // qt
 #include <QObject>
 #include <QString>
 
 
-//! Manages access and control of the user space file systems
+// Manages access and control of the user space file systems
 /*!
 
 */
-class UserSpaceFileSystem : public QObject
-{
+class UserSpaceFileSystem : public QObject {
     Q_OBJECT
-public:
-    static UserSpaceFileSystem* instance();
+ public:
+  static UserSpaceFileSystem* instance();
 
-    //! Mount the user space filesystem
-    /*!
-        This is blocking and takes a while.  Should normally only ever be
-        called by MountThread
-    */
-    bool mount();
+  // Mount the user space filesystem
+  /*!
+      This is blocking and takes a while.  Should normally only ever be
+      called by MountThread
+  */
+  bool mount();
 
-    //! Unmount the user space filesystem
-    /*!
-        This is blocking and takes a while.  Should normally only ever be
-        called by MountThread
-    */
-    bool unmount();
+  // Unmount the user space filesystem
+  /*!
+      This is blocking and takes a while.  Should normally only ever be
+      called by MountThread
+  */
+  bool unmount();
 
-    enum Location
-    {
-        MY_FILES,
-        PRIVATE_SHARES
-    };
+  enum Location {
+      MY_FILES,
+      PRIVATE_SHARES
+  };
 
-    //! Explore a filesystem location
-    /*!
+  // Explore a filesystem location
+  /*!
 
-    */
-    void explore( Location l, QString subDir = QString() );
+  */
+  void explore(Location l, QString subDir = QString());
 
-private:
-    explicit UserSpaceFileSystem( QObject* parent = 0 );
-    virtual ~UserSpaceFileSystem();
+ private:
+  explicit UserSpaceFileSystem(QObject* parent = 0);
+  virtual ~UserSpaceFileSystem();
 
-    class UserSpaceFileSystemImpl;
-    UserSpaceFileSystemImpl* impl_;
+  class UserSpaceFileSystemImpl;
+  UserSpaceFileSystemImpl* impl_;
 };
 
 
 
-#endif  // QT_CLIENT_FILESYSTEM_H_
+#endif  // QT_CLIENT_USER_SPACE_FILESYSTEM_H_
 
 
 

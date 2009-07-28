@@ -12,31 +12,29 @@
  *      Author: Team
  */
 
-#ifndef QT_PANEL_H_
-#define QT_PANEL_H_
+#ifndef QT_WIDGETS_PANEL_H_
+#define QT_WIDGETS_PANEL_H_
 
 // qt
 #include <QWidget>
 
 
-//! Base class for UI Panels
+// Base class for UI Panels
 /*!
     Panels are used to display user information.
     The application uses a series of panels to display information
     and switches between them.
 */
-class Panel : public QWidget
-{
-    Q_OBJECT
+class Panel : public QWidget {
+  Q_OBJECT
 
-public:
-    Panel( QWidget* parent = 0 )
-        : QWidget( parent )
-    {}
-    virtual ~Panel() {}
+ public:
+  explicit Panel(QWidget* parent = 0)
+           : QWidget(parent ) {}
+  virtual ~Panel() {}
 
-    virtual void reset() {};
-    virtual void setActive( bool ) {}
+  virtual void reset() {}
+  virtual void setActive(bool) {}
 };
 
-#endif // QT_PANEL_H_
+#endif  // QT_WIDGETS_PANEL_H_

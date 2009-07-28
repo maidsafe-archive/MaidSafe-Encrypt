@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_PUBLIC_USERNAME_H_
-#define QT_PUBLIC_USERNAME_H_
+#ifndef QT_WIDGETS_PUBLIC_USERNAME_H_
+#define QT_WIDGETS_PUBLIC_USERNAME_H_
 
 // local
 #include "panel.h"
@@ -21,33 +21,32 @@
 // generated
 #include "ui_user_public_username_panel.h"
 
-//! Custom widget that prompts user for a public username
+// Custom widget that prompts user for a public username
 /*!
     When a public username has been successfully set the complete()
     signal is emitted
 */
-class PublicUsername : public Panel
-{
-    Q_OBJECT
-public:
-    PublicUsername( QWidget* parent = 0 );
-    virtual ~PublicUsername();
+class PublicUsername : public Panel {
+  Q_OBJECT
+ public:
+  explicit PublicUsername(QWidget* parent = 0);
+  virtual ~PublicUsername();
 
-    virtual void setActive( bool );
-    virtual void reset();
+  virtual void setActive(bool);
+  virtual void reset();
+  void clearPubUsername();
 
+ signals:
+  void complete();
 
-signals:
-    void complete();
-
-private slots:
+  private slots:
     void onCreateUsernameClicked();
 
-    void onCreateUsernameCompleted( bool );
+  void onCreateUsernameCompleted(bool);
 
-private:
-    Ui::PublicUsernamePage ui_;
-    bool init_;
+ private:
+  Ui::PublicUsernamePage ui_;
+  bool init_;
 };
 
-#endif // QT_PUBLIC_USERNAME_H_
+#endif  // QT_WIDGETS_PUBLIC_USERNAME_H_

@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CONTACTS_H_
-#define QT_CONTACTS_H_
+#ifndef QT_WIDGETS_CONTACTS_H_
+#define QT_WIDGETS_CONTACTS_H_
 
 // local
 #include "panel.h"
@@ -22,28 +22,33 @@
 // generated
 #include "ui_user_contacts_panel.h"
 
-//! Custom widget that displays contacts
+// Custom widget that displays contacts
 /*!
     Displays a list of contacts and lets you add them.
 */
-class Contacts : public Panel
-{
+class Contacts : public Panel {
     Q_OBJECT
-public:
-    Contacts( QWidget* parent = 0 );
-    virtual ~Contacts();
+ public:
+  explicit Contacts(QWidget* parent = 0);
+  virtual ~Contacts();
 
-    virtual void setActive( bool );
-    virtual void reset();
+  virtual void setActive(bool);
+  virtual void reset();
 
-private slots:
+ private:
+  // Add a new entry in the listing of contacts
+  void addContact(Contact*);
+  Ui::ContactsPage ui_;
+  bool init_;
+  ContactList contacts_;
+
+  Contact* currentContact();
+
+  private slots:
     void onAddContactClicked();
     void onClearSearchClicked();
-    void onLostFocus();
-//    void focusInEvent(QFocusEvent* );
-//    void onFocus();
 
-    void onItemDoubleClicked( QListWidgetItem* );
+    void onItemDoubleClicked(QListWidgetItem*);
     void onItemSelectionChanged();
 
     void onDeleteUserClicked();
@@ -51,17 +56,8 @@ private slots:
     void onSendMessageClicked();
     void onFileSendClicked();
 
-    void onAddedContact( const QString &name );
-
-private:
-    //! Add a new entry in the listing of contacts
-    void addContact( Contact* );
-    Ui::ContactsPage ui_;
-    bool init_;
-    ContactList contacts_;
-
-    Contact* currentContact();
-
+    void onAddedContact(const QString &name);
+    void onConfirmedContact(const QString &name);
 };
 
-#endif // QT_CONTACTS_H_
+#endif  // QT_WIDGETS_CONTACTS_H_

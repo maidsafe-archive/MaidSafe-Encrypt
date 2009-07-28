@@ -12,12 +12,17 @@
  *      Author: Team
  */
 
-#include "user_space_filesystem.h"
+#include "qt/client/user_space_filesystem.h"
 
 // qt
 #include <QObject>
 #include <QDebug>
 #include <QProcess>
+
+// os
+#ifdef MAIDSAFE_WIN32
+  #include <shellapi.h>
+#endif
 
 // core
 #include "fs/filesystem.h"
@@ -32,226 +37,174 @@
 #include "fs/l_fuse/fslinux.h"
 #endif
 
-// os
-#ifdef MAIDSAFE_WIN32
-  #include <shellapi.h>
-#endif
-
 // local
 #include "qt/client/client_controller.h"
 
-class UserSpaceFileSystem::UserSpaceFileSystemImpl
-{
+class UserSpaceFileSystem::UserSpaceFileSystemImpl {
+ public:
+  UserSpaceFileSystemImpl() { }
 
-public:
-    UserSpaceFileSystemImpl()
-    {
-    }
-
-    file_system::FileSystem fsys_;
+  file_system::FileSystem fsys_;
 #ifdef MAIDSAFE_WIN32
-    // none needed
+  // none needed
 #elif defined(MAIDSAFE_POSIX)
-    fs_l_fuse::FSLinux fsl_;
+  fs_l_fuse::FSLinux fsl_;
 #elif defined(MAIDSAFE_APPLE)
-    fs_l_fuse::FSLinux fsl_;
-    // fs_m_fuse::FSMac fsm_;
+  fs_l_fuse::FSLinux fsl_;
+  // fs_m_fuse::FSMac fsm_;
 #endif
-
 };
 
-UserSpaceFileSystem* UserSpaceFileSystem::instance()
-{
-    static UserSpaceFileSystem usfp;
-    return &usfp;
+UserSpaceFileSystem* UserSpaceFileSystem::instance() {
+  static UserSpaceFileSystem usfp;
+  return &usfp;
 }
 
-UserSpaceFileSystem::UserSpaceFileSystem( QObject* parent )
-    : QObject( parent )
-    , impl_( new UserSpaceFileSystemImpl )
-{
+UserSpaceFileSystem::UserSpaceFileSystem(QObject* parent)
+    : QObject(parent)
+    , impl_(new UserSpaceFileSystemImpl) { }
 
+UserSpaceFileSystem::~UserSpaceFileSystem() {
+  delete impl_;
+  impl_ = NULL;
 }
 
-UserSpaceFileSystem::~UserSpaceFileSystem()
-{
-    delete impl_;
-    impl_ = NULL;
-}
+bool UserSpaceFileSystem::mount() {
+  maidsafe::SessionSingleton::getInstance()->SetMounted(0);
 
-bool UserSpaceFileSystem::mount()
-{
-    maidsafe::SessionSingleton::getInstance()->SetMounted(0);
-
-    std::string debug_mode("-d");
+  std::string debug_mode("-d");
 #ifdef MAIDSAFE_WIN32
-    char drive = maidsafe::ClientController::getInstance()->DriveLetter();
-    fs_w_fuse::Mount(drive);
-    maidsafe::SessionSingleton::getInstance()->SetWinDrive(drive);
+  char drive = maidsafe::ClientController::getInstance()->DriveLetter();
+  fs_w_fuse::Mount(drive);
+  maidsafe::SessionSingleton::getInstance()->SetWinDrive(drive);
 #elif defined(MAIDSAFE_POSIX)
-    // std::string mount_point = fsys->MaidsafeFuseDir();
-    std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
-    impl_->fsl_.Mount(mount_point, debug_mode);
+  std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
+  impl_->fsl_.Mount(mount_point, debug_mode);
 #elif defined(MAIDSAFE_APPLE)
-    std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
-    impl_->fsl_.Mount(mount_point, debug_mode);
+  std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
+  impl_->fsl_.Mount(mount_point, debug_mode);
 #endif
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
 
-    if ( maidsafe::SessionSingleton::getInstance()->Mounted() != 0 )
-    {
-        return false;
-    }
-
-    //
-//    const QString username = ClientController::instance()->publicUsername();
-//    if ( !username.isEmpty() )
-//    {
-//        std::string newDb("/.contacts");
-//        maidsafe::ClientController::getInstance()->read(newDb);
-//        newDb = std::string("/.shares");
-//        maidsafe::ClientController::getInstance()->read(newDb);
-//    }
-
-    return true;
+  if (maidsafe::SessionSingleton::getInstance()->Mounted() != 0) {
+      return false;
+  }
+  return true;
 }
 
-bool UserSpaceFileSystem::unmount()
-{
-    // backup databases
-//    const QString username = ClientController::instance()->publicUsername();
-//    if ( !username.isEmpty() )
-//    {
-//        std::string newDb("/.contacts");
-//        int res_ = maidsafe::ClientController::getInstance()->write(newDb);
-//        printf("Backed up contacts db with result %i\n", res_);
-//        newDb = std::string("/.shares");
-//        res_ = maidsafe::ClientController::getInstance()->write(newDb);
-//        printf("Backed up shares db with result %i\n", res_);
-//    }
-
-    // unmount drive
-    bool success = false;
-    std::string ms_dir = impl_->fsys_.MaidsafeDir();
-    std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
+bool UserSpaceFileSystem::unmount() {
+  // unmount drive
+  qDebug() << "UserSpaceFileSystem::unmount() -";
+  bool success = false;
+  qDebug() << "UserSpaceFileSystem::unmount() - -";
+  std::string ms_dir = impl_->fsys_.MaidsafeDir();
+  qDebug() << "UserSpaceFileSystem::unmount() - - -";
+  std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
+  qDebug() << "UserSpaceFileSystem::unmount() - - - -";
 #ifdef MAIDSAFE_WIN32
-    std::locale loc;
-    wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
-        (loc).widen(maidsafe::SessionSingleton::getInstance()->WinDrive());
-    success = fs_w_fuse::DokanUnmount(drive_letter);
+  std::locale loc;
+  wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
+      (loc).widen(maidsafe::SessionSingleton::getInstance()->WinDrive());
+  success = fs_w_fuse::DokanUnmount(drive_letter);
 
-//    // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
-//    // invoking using QProcess doesn't work if the path has spaces in the name
-//    // so we need to go old skool...
-//    QString operation( "open" );
-//    QString command( "dokanctl" );
-//    QString parameters( " /u " );
-//    parameters.append(maidsafe::SessionSingleton::getInstance()->WinDrive());
-//    quintptr returnValue;
-//    QT_WA(
-//        {
-//            returnValue = (quintptr)ShellExecute(0,
-//                                                (TCHAR *)operation.utf16(),
-//                                                (TCHAR *)command.utf16(),
-//                                                (TCHAR *)parameters.utf16(),
-//                                                0,
-//                                                SW_HIDE);
-//        } ,
-//        {
-//            returnValue = (quintptr)ShellExecuteA(0,
-//                                                  operation.toLocal8Bit().constData(),
-//                                                  command.toLocal8Bit().constData(),
-//                                                  parameters.toLocal8Bit().constData(),
-//                                                  0,
-//                                                  SW_HIDE);
-//        }
-//    );
+/*
+  // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
+  // invoking using QProcess doesn't work if the path has spaces in the name
+  // so we need to go old skool...
+  QString operation("open");
+  QString command("dokanctl");
+  QString parameters(" /u ");
+  parameters.append(maidsafe::SessionSingleton::getInstance()->WinDrive());
+  quintptr returnValue;
+  QT_WA(
+      {
+          returnValue = (quintptr)ShellExecute(0,
+                                  (TCHAR *)operation.utf16(),
+                                  (TCHAR *)command.utf16(),
+                                  (TCHAR *)parameters.utf16(),
+                                  0,
+                                  SW_HIDE);
+      } ,
+      {
+          returnValue = (quintptr)ShellExecuteA(0,
+                                  operation.toLocal8Bit().constData(),
+                                  command.toLocal8Bit().constData(),
+                                  parameters.toLocal8Bit().constData(),
+                                  0,
+                                  SW_HIDE);
+      }
+ );
+*/
 
-    if ( !success )
-//    {
-      qWarning() << "UserSpaceFileSystem::unmount: failed to unmount dokan de mierrrrrda: "
-          << success;
-//    } else {
-//      success = true;
-//    }
+  if (!success)
+    qWarning() << "UserSpaceFileSystem::unmount: failed to unmount dokan"
+               << success;
 #else
-    // un-mount fuse
-    impl_->fsl_.UnMount();
-    success = true;
+  // un-mount fuse
+  impl_->fsl_.UnMount();
+  success = true;
 #endif
 
-    // logout from client controller
-    const int n = maidsafe::ClientController::getInstance()->Logout();
-    if ( n != 0 )
-    {
-        // TODO verify n!=0 means failure
-    }
+  // logout from client controller
+  const int n = maidsafe::ClientController::getInstance()->Logout();
+  if (n != 0) {
+      // TODO(Dan#5#): 2009-06-25 - verify n!=0 means failure
+  }
 
-    return success;
+  return success;
 }
 
 
-void UserSpaceFileSystem::explore( Location l, QString subDir )
-{
-    QDir dir;
-    if ( l == MY_FILES )
-    {
-        dir = ClientController::instance()->myFilesDirRoot( subDir );
-    }
-    else // PRIVATE_SHARES
-    {
-        dir = ClientController::instance()->shareDirRoot( subDir );
-    }
-
+void UserSpaceFileSystem::explore(Location l, QString subDir) {
+  QDir dir;
+  if (l == MY_FILES) {
+    dir = ClientController::instance()->myFilesDirRoot(subDir);
+  } else {  // PRIVATE_SHARES
+    dir = ClientController::instance()->shareDirRoot(subDir);
+  }
 
 #ifdef MAIDSAFE_WIN32
-    // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
-    // invoking using QProcess doesn't work if the path has spaces in the name
-    // so we need to go old skool...
-    QString operation( "explore" );
-    quintptr returnValue;
-    QT_WA(
-        {
-            returnValue = (quintptr)ShellExecute(0,
-                                                (TCHAR *)operation.utf16(),
-                                                (TCHAR *)dir.absolutePath().utf16(),
-                                                0,
-                                                0,
-                                                SW_SHOWNORMAL);
-        } ,
-        {
-            returnValue = (quintptr)ShellExecuteA(0,
-                                                  operation.toLocal8Bit().constData(),
-                                                  dir.absolutePath().toLocal8Bit().constData(),
-                                                  0,
-                                                  0,
-                                                  SW_SHOWNORMAL);
-        }
-    );
+  // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
+  // invoking using QProcess doesn't work if the path has spaces in the name
+  // so we need to go old skool...
+  QString operation("explore");
+  quintptr returnValue;
+  QT_WA({
+        returnValue = (quintptr)ShellExecute(0,
+                          reinterpret_cast<TCHAR *>(operation.utf16()),
+                          reinterpret_cast<TCHAR *>(dir.absolutePath().utf16()_,
+                          0,
+                          0,
+                          SW_SHOWNORMAL);
+      } , {
+        returnValue = (quintptr)ShellExecuteA(0,
+                                  operation.toLocal8Bit().constData(),
+                                  dir.absolutePath().toLocal8Bit().constData(),
+                                  0,
+                                  0,
+                                  SW_SHOWNORMAL);
+      });
 
-    if ( returnValue <= 32 )
-    {
-        qWarning() << "UserSpaceFileSystem::explore: failed to open"
-                   << dir.absolutePath();
-    }
+  if (returnValue <= 32) {
+    qWarning() << "UserSpaceFileSystem::explore: failed to open"
+               << dir.absolutePath();
+  }
 
 #else
-    // nautilus FuseHomeDir()/Shares/Private/"name"
-    QString app( "nautilus" );
-    QStringList args;
-    args <<  QString( "%1" ).arg( dir.absolutePath() );
+  // nautilus FuseHomeDir()/Shares/Private/"name"
+  QString app("nautilus");
+  QStringList args;
+  args <<  QString("%1").arg(dir.absolutePath());
 
-    qDebug() << "explore:" << app << args;
+  qDebug() << "explore:" << app << args;
 
-    if ( !QProcess::startDetached( app, args ) )
-    {
-        qWarning() << "UserSpaceFileSystem::explore: failed to start"
-                   << app
-                   << "with args"
-                   << args;
-    }
+  if (!QProcess::startDetached(app, args)) {
+    qWarning() << "UserSpaceFileSystem::explore: failed to start"
+               << app
+               << "with args"
+               << args;
+  }
 
 #endif
-
 }
 

@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "public_username.h"
+#include "qt/widgets/public_username.h"
 
 // qt
 #include <QMessageBox>
@@ -20,74 +20,62 @@
 // local
 #include "qt/client/create_public_username_thread.h"
 
-PublicUsername::PublicUsername( QWidget* parent )
-    : Panel( parent )
-    , init_( false )
-{
-    ui_.setupUi( this );
-    ui_.create->setAutoDefault(true);
+PublicUsername::PublicUsername(QWidget* parent)
+    : Panel(parent)
+    , init_(false) {
+  ui_.setupUi(this);
+  ui_.create->setAutoDefault(true);
 
-    connect( ui_.create, SIGNAL( clicked(bool) ),
-             this,       SLOT( onCreateUsernameClicked() ) );
+  connect(ui_.create, SIGNAL(clicked(bool)),
+          this,       SLOT(onCreateUsernameClicked()));
 
-    connect( ui_.contactLineEdit, SIGNAL( returnPressed() ),
-             this,                SLOT( onCreateUsernameClicked() ) );
+  connect(ui_.contactLineEdit, SIGNAL(returnPressed()),
+          this,                SLOT(onCreateUsernameClicked()));
 
-    ui_.progressLabel->setVisible( false );
-    ui_.progressBar->setVisible( false );
+  ui_.progressLabel->setVisible(false);
+  ui_.progressBar->setVisible(false);
 }
 
-
-void PublicUsername::setActive( bool b )
-{
-    if ( b && !init_ )
-    {
-        init_ = true;
-    }
+void PublicUsername::clearPubUsername() {
+  ui_.contactLineEdit->setText("");
 }
 
-void PublicUsername::reset()
-{
-    init_ = false;
-    ui_.progressLabel->setVisible( false );
-    ui_.progressBar->setVisible( false );
+void PublicUsername::setActive(bool b) {
+  if (b && !init_) {
+    init_ = true;
+  }
 }
 
-PublicUsername::~PublicUsername()
-{
+void PublicUsername::reset() {
+  init_ = false;
+  ui_.progressLabel->setVisible(false);
+  ui_.progressBar->setVisible(false);
 }
 
-void PublicUsername::onCreateUsernameClicked()
-{
-    QString text = ui_.contactLineEdit->text().trimmed();
-    if ( text.isEmpty() )
-    {
-        // TODO default message?
-        return;
-    }
+PublicUsername::~PublicUsername() { }
 
-    CreatePublicUsernameThread* cput =
-                                new CreatePublicUsernameThread( text, this );
+void PublicUsername::onCreateUsernameClicked() {
+  QString text = ui_.contactLineEdit->text().trimmed();
+  if (text.isEmpty()) {
+    QMessageBox::warning(this, tr("Problem!"),
+                         tr("please specify a Username."));
+    return;
+  }
 
-    connect( cput, SIGNAL( completed( bool ) ),
-             this, SLOT( onCreateUsernameCompleted( bool ) ) );
+  CreatePublicUsernameThread* cput =
+                              new CreatePublicUsernameThread(text, this);
 
-    cput->start();
+  connect(cput, SIGNAL(completed(bool)),
+          this, SLOT(onCreateUsernameCompleted(bool)));
 
+  cput->start();
 }
 
-void PublicUsername::onCreateUsernameCompleted( bool success )
-{
-    if ( success )
-    {
-        ui_.contactLineEdit->setText( tr("") );
-        emit complete();
-    }
-    else
-    {
-        QMessageBox::warning( this,
-                          tr( "Problem!" ),
-                          tr( "Error setting Username." )
-                        );
-    }
+void PublicUsername::onCreateUsernameCompleted(bool success) {
+  if (success) {
+    ui_.contactLineEdit->setText(tr(""));
+    emit complete();
+  } else {
+    QMessageBox::warning(this, tr("Problem!"), tr("Error setting Username."));
+  }
 }

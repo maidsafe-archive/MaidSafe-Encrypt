@@ -434,8 +434,7 @@ bool ClientController::CreateUser(const std::string &username,
       delete msgh_;
       return false;
     }
-    result = SetVaultConfig(ss_->PublicKey(PMID),
-                            ss_->PrivateKey(PMID));
+    result = SetVaultConfig(ss_->PublicKey(PMID), ss_->PrivateKey(PMID));
     printf("In ClientController::CreateUser 17\n");
     if (0 != result) {
       printf("In ClientController::CreateUser 18\n");
@@ -547,7 +546,7 @@ bool ClientController::ValidateUser(const std::string &password) {
   }
 
   // Password validation failed
-  maidsafe::SessionSingleton::getInstance()->ResetSession();
+  ss_->ResetSession();
 #ifdef DEBUG
   printf("Invalid password.\n");
 #endif
@@ -855,7 +854,7 @@ bool ClientController::DeauthoriseUsers(std::set<std::string> users) {
 
 /*
 int ClientController::ChangeConnectionStatus(int status) {
-  if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() == status)
+  if (ss_->ConnectionStatus() == status)
     return -3;
   CC_CallbackResult cb;
   cbph_->ChangeStatus(status,
@@ -995,7 +994,7 @@ int ClientController::HandleReceivedShare(
 
     for (int n = 0; n < psn.admins_size(); n++) {
       if (psn.admins(n) ==
-          maidsafe::SessionSingleton::getInstance()->PublicUsername())
+          ss_->PublicUsername())
         continue;  // Not to add myself to the share DB
       maidsafe::ShareParticipants sp;
       sp.id = psn.admins(n);
@@ -1263,9 +1262,9 @@ int ClientController::HandleAddContactRequest(
   cn->set_action(1);
 
   std::string message("\"");
-  message += maidsafe::SessionSingleton::getInstance()->PublicUsername() +
+  message += ss_->PublicUsername() +
              "\" has confirmed you as a contact.";
-  im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
+  im.set_sender(ss_->PublicUsername());
   im.set_date(base::get_epoch_time());
   im.set_message(message);
   std::string ser_im;
@@ -1366,7 +1365,7 @@ int ClientController::SendInstantMessage(const std::string &message,
 
   std::string ser_im;
   packethandler::InstantMessage im;
-  im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
+  im.set_sender(ss_->PublicUsername());
   im.set_message(message);
   im.set_date(base::get_epoch_time());
   im.SerializeToString(&ser_im);
@@ -1558,7 +1557,7 @@ int ClientController::AddContact(const std::string &public_name) {
 
     cn->set_action(0);
 
-    im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
+    im.set_sender(ss_->PublicUsername());
     im.set_date(base::get_epoch_time());
     std::string message("\"");
     message += im.sender() + "\" has requested to add you as a contact.";
@@ -1621,35 +1620,32 @@ int ClientController::DeleteContact(const std::string &public_name) {
     return -501;
   }
 
-  maidsafe::Contact c;
-  std::vector<Contact> contact_list;
   maidsafe::mi_contact mic;
   n = ss_->GetContactInfo(public_name, &mic);
   if (n != 0) {
 #ifdef DEBUG
-    printf("Selection from contacts DB failed: n - %i --- size:%i.\n",
-      n, contact_list.size());
+    printf("Selection from contacts list failed: n - %i.\n", n);
 #endif
     return -502;
   }
 
   std::string deletion_msg(base::itos(base::get_epoch_nanoseconds()));
   deletion_msg += " deleted " + mic.pub_name_ + " update " +
-    maidsafe::SessionSingleton::getInstance()->PublicUsername();
+    ss_->PublicUsername();
 #ifdef DEBUG
   printf("MSG: %s\n", deletion_msg.c_str());
 #endif
   packethandler::InstantMessage im;
   im.set_date(base::get_epoch_milliseconds());
   im.set_message(deletion_msg);
-  im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
+  im.set_sender(ss_->PublicUsername());
   std::string ser_im;
   im.SerializeToString(&ser_im);
 
   std::vector<Receivers> recs;
   Receivers r;
-  r.id = c.PublicName();
-  r.public_key = c.PublicKey();
+  r.id = mic.pub_name_;
+  r.public_key = mic.pub_key_;
   recs.push_back(r);
 
   CC_CallbackResult cb;
@@ -1787,7 +1783,7 @@ int ClientController::CreateNewShare(const std::string &name,
   psn->set_msid(cmsidr.name());
   psn->set_public_key(cmsidr.public_key());
   psn->set_dir_db_key(share_dir_key);
-  im.set_sender(maidsafe::SessionSingleton::getInstance()->PublicUsername());
+  im.set_sender(ss_->PublicUsername());
   im.set_date(base::get_epoch_time());
   std::string message("\"");
   message += im.sender() + "\" has added you as a Read Only participant to" +
@@ -1834,7 +1830,7 @@ int ClientController::CreateNewShare(const std::string &name,
   // Send to ADMINS
   if (admins.size() > 0) {
     std::string *me = psn->add_admins();
-    *me = maidsafe::SessionSingleton::getInstance()->PublicUsername();
+    *me = ss_->PublicUsername();
     psn->set_private_key(cmsidr.private_key());
     message = std::string("\"");
     message += im.sender() +
@@ -2243,22 +2239,22 @@ bool ClientController::ReadOnly(const std::string &path, bool gui) {
 //////////////////////////////
 
 char ClientController::DriveLetter() {
-  for (char drive_ = 'm'; drive_ <= 'z'; ++drive_) {
-    std::ostringstream oss_;
-    oss_ << drive_;
-    std::string dr_ = oss_.str();
-    dr_ += ":";
-    bool exists_ = true;
+  for (char drive = 'm'; drive <= 'z'; ++drive) {
+    std::ostringstream oss;
+    oss << drive;
+    std::string dr = oss.str();
+    dr += ":";
+    bool exists = true;
     try {
-      exists_ = fs::exists(dr_);
+      exists = fs::exists(dr);
     }
-    catch(const std::exception &exception_) {
+    catch(const std::exception &exception) {
 #ifdef DEBUG
-      printf("Error: %s\n", exception_.what());
+      printf("Error: %s\n", exception.what());
 #endif
     }
-    if (!exists_) {
-      return drive_;
+    if (!exists) {
+      return drive;
     }
   }
   return '!';
