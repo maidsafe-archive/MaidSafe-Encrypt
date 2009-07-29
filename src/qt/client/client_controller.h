@@ -131,11 +131,12 @@ class ClientController : public QObject,
                        const QString& to);
 
   enum MessageType {
-      TEXT,             // Instant message received from someone
-      SHARE,            // Someone has shared something
-      FILE,             // Someone has sent a file
-      CONTACT_REQUEST,  // Someone has requested to add us
-      CONTACT_RESPONSE  // Someone has responed to our request
+      TEXT,               // Instant message received from someone
+      SHARE,              // Someone has shared something
+      FILE,               // Someone has sent a file
+      CONTACT_REQUEST,    // Someone has requested to add us
+      CONTACT_RESPONSE,   // Someone has responed to our request
+      CONTACT_DELETE
   };
 
  signals:
@@ -152,6 +153,7 @@ class ClientController : public QObject,
   */
   void addedContact(const QString& name);
   void confirmedContact(const QString& name);
+  void deletedContact(const QString& name);
 
   // We've added a private share
   void addedPrivateShare(const QString& name);

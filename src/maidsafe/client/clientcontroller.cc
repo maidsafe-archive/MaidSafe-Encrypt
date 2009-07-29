@@ -933,26 +933,8 @@ int ClientController::HandleMessages(std::list<std::string> *msgs) {
 }
 
 int ClientController::HandleDeleteContactNotification(
-    packethandler::ValidatedBufferPacketMessage &vbpm) {
-  packethandler::InstantMessage im;
-  if (!im.ParseFromString(vbpm.message())) {
-#ifdef DEBUG
-    printf("Message doesn't parse as an Instant Message.\n");
-#endif
-    return -40001;
-  }
-
-  if (vbpm.sender() != im.sender()) {
-#ifdef DEBUG
-    printf("Senders do not match.\n");
-#endif
-    return -40002;
-  }
-
-  maidsafe::Contact c;
-  c.SetPublicName(im.sender());
-  c.SetConfirmed('U');
-  int n = ss_->UpdateContactConfirmed(im.sender(), 'U');
+    const std::string &sender) {
+  int n = ss_->UpdateContactConfirmed(sender, 'U');
   if (n != 0) {
 #ifdef DEBUG
     printf("Status on contact not updated.\n");
@@ -1629,13 +1611,16 @@ int ClientController::DeleteContact(const std::string &public_name) {
     return -502;
   }
 
+  packethandler::InstantMessage im;
+  packethandler::ContactNotification *cn = im.mutable_contact_notification();
+  cn->set_action(2);
+
   std::string deletion_msg(base::itos(base::get_epoch_nanoseconds()));
   deletion_msg += " deleted " + mic.pub_name_ + " update " +
     ss_->PublicUsername();
 #ifdef DEBUG
   printf("MSG: %s\n", deletion_msg.c_str());
 #endif
-  packethandler::InstantMessage im;
   im.set_date(base::get_epoch_milliseconds());
   im.set_message(deletion_msg);
   im.set_sender(ss_->PublicUsername());

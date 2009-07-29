@@ -92,8 +92,7 @@ class ClientController {
   }
   int HandleReceivedShare(const packethandler::PrivateShareNotification &psn,
                           const std::string &name);
-  int HandleDeleteContactNotification(
-    packethandler::ValidatedBufferPacketMessage &vbpm);
+  int HandleDeleteContactNotification(const std::string &sender);
   int HandleInstantMessage(
     packethandler::ValidatedBufferPacketMessage &vbpm);
   int HandleAddContactRequest(const packethandler::ContactInfo &ci,

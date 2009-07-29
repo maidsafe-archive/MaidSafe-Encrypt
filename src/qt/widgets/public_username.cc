@@ -58,7 +58,7 @@ void PublicUsername::onCreateUsernameClicked() {
   QString text = ui_.contactLineEdit->text().trimmed();
   if (text.isEmpty()) {
     QMessageBox::warning(this, tr("Problem!"),
-                         tr("please specify a Username."));
+                         tr("Please specify a Username."));
     return;
   }
 

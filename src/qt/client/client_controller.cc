@@ -232,6 +232,10 @@ ContactList ClientController::contacts() const {
     // accessors on maidsafe::Contact are non-const so can't pass in const&
     /*const*/ maidsafe::Contact mcontact = contact_list[i];
     Contact* contact = Contact::fromContact(mcontact);
+    if (mcontact.Confirmed() == 'U')
+      contact->setPresence(Presence::INVALID);
+    else
+      contact->setPresence(Presence::AVAILABLE);
 
     rv.push_back(contact);
   }
@@ -382,6 +386,20 @@ int ClientController::analyseMessage(const packethandler::InstantMessage& im) {
               if (n == 0) {
                 emit confirmedContact(QString::fromStdString(im.sender()));
                 type = CONTACT_RESPONSE;
+              }
+              break;
+            }
+      // DELETE CONTACT - a contact has deleted you from their list
+      case 2:
+            {
+              qDebug() << "HANDLING Deletecontact";
+              n = maidsafe::ClientController::getInstance()->
+                                   HandleDeleteContactNotification(im.sender());
+
+              qDebug() << "HANDLING Deletecontact result " << n;
+              if (n == 0) {
+                emit deletedContact(QString::fromStdString(im.sender()));
+                type = CONTACT_DELETE;
               }
               break;
             }

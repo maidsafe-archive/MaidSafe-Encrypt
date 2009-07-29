@@ -73,6 +73,10 @@ Contacts::Contacts(QWidget* parent)
           SIGNAL(confirmedContact(const QString&)),
           this, SLOT(onConfirmedContact(const QString&)));
 
+  connect(ClientController::instance(),
+          SIGNAL(deletedContact(const QString&)),
+          this, SLOT(onDeletedContact(const QString&)));
+
   connect(ui_.listWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
           this,           SLOT(onItemDoubleClicked(QListWidgetItem*)));
 
@@ -84,7 +88,6 @@ void Contacts::setActive(bool b) {
   if (b && !init_) {
     ContactList contact_list = ClientController::instance()->contacts();
     foreach(Contact* contact, contact_list) {
-      contact->setPresence(Presence::AVAILABLE);
       addContact(contact);
     }
     init_ = true;
@@ -205,11 +208,12 @@ void Contacts::onDeleteUserClicked() {
                                     contact_->publicName(),
                                     Qt::MatchCaseSensitive);
 
-    contacts_.removeAll(contact_);
+    int n = contacts_.removeAll(contact_);
     delete contact_;
 
     foreach(QListWidgetItem* item, items) {
       ui_.listWidget->removeItemWidget(item);
+      delete item;
     }
   } else {
     QMessageBox::warning(this, tr("Error"),
@@ -283,7 +287,7 @@ void Contacts::onFileSendClicked() {
   QString text = QInputDialog::getText(this,
                                        tr("Messsage entry"),
                                        tr("Please Enter a message if you "
-                                           "wish to accompany the file(s)"),
+                                          "wish to accompany the file(s)"),
                                        QLineEdit::Normal,
                                        QString(),
                                        &ok);
@@ -333,6 +337,19 @@ void Contacts::onConfirmedContact(const QString &name) {
   foreach(QListWidgetItem* item, items) {
     if (item->text() == name) {
       QPixmap pixmap(":/icons/16/tick");
+      item->setIcon(pixmap);
+    }
+  }
+}
+
+void Contacts::onDeletedContact(const QString &name) {
+  qDebug() << "Contacts::onConfirmedContact()";
+  QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
+                                  Qt::MatchCaseSensitive);
+
+  foreach(QListWidgetItem* item, items) {
+    if (item->text() == name) {
+      QPixmap pixmap(":/icons/16/question");
       item->setIcon(pixmap);
     }
   }
