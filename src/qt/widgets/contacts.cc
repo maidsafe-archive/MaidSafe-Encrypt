@@ -84,6 +84,7 @@ Contacts::Contacts(QWidget* parent)
           this,           SLOT(onItemSelectionChanged()));
 }
 
+
 void Contacts::setActive(bool b) {
   if (b && !init_) {
     ContactList contact_list = ClientController::instance()->contacts();
