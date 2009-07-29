@@ -1171,47 +1171,66 @@ int ClientController::HandleAddContactRequest(
 
   // TODO(Richard): return choice to the user to accept/reject contact
 
-  // Get contacts public key
+  // Check if contact is on the list and has unconfirmed status
   std::string rec_public_key;
-  exitcode result = auth_->PublicUsernamePublicKey(sender, rec_public_key);
-  if (result != OK) {
+  mi_contact mic;
+  if (ss_->GetContactInfo(sender, &mic) == 0) {  // Contact exists
+    if (mic.confirmed_ == 'C') {
 #ifdef DEBUG
-    printf("Can't get sender's public key.\n");
+      printf("Sender's already confirmed.\n");
 #endif
-    return -77;
-  }
+      return -70;
+    }
+    int n =  ss_->UpdateContactConfirmed(sender, 'C');
+    if (n != 0) {
 #ifdef DEBUG
-  printf("Got sender's public key.\n");
+      printf("Couldn't update sender's confirmed status.\n");
+#endif
+      return -770;
+    }
+    rec_public_key = mic.pub_key_;
+  } else {  // Contact didn't exist. Add from scratch.
+    // Get contact's public key
+    exitcode result = auth_->PublicUsernamePublicKey(sender, rec_public_key);
+    if (result != OK) {
+#ifdef DEBUG
+      printf("Can't get sender's public key.\n");
+#endif
+      return -77;
+    }
+#ifdef DEBUG
+    printf("Got sender's public key.\n");
 #endif
 
-  Contact c;
-  c.SetPublicName(sender);
-  c.SetPublicKey(rec_public_key);
-  c.SetFullName(ci.name());
-  c.SetOfficePhone(ci.office_number());
-  c.SetBirthday(ci.birthday());
-  c.SetGender(ci.gender().at(0));
-  c.SetLanguage(ci.language());
-  c.SetCountry(ci.country());
-  c.SetCity(ci.city());
-  c.SetConfirmed('C');
+    Contact c;
+    c.SetPublicName(sender);
+    c.SetPublicKey(rec_public_key);
+    c.SetFullName(ci.name());
+    c.SetOfficePhone(ci.office_number());
+    c.SetBirthday(ci.birthday());
+    c.SetGender(ci.gender().at(0));
+    c.SetLanguage(ci.language());
+    c.SetCountry(ci.country());
+    c.SetCity(ci.city());
+    c.SetConfirmed('C');
 
-  // Add to the contacts MI
-  int n = ss_->AddContact(sender, rec_public_key, ci.name(),
-          ci.office_number(), ci.birthday(), ci.gender().at(0), ci.language(),
-          ci.country(), ci.city(), 'C', 0, 0);
+    // Add to the contacts MI
+    int n = ss_->AddContact(sender, rec_public_key, ci.name(),
+            ci.office_number(), ci.birthday(), ci.gender().at(0), ci.language(),
+            ci.country(), ci.city(), 'C', 0, 0);
 #ifdef DEBUG
-  printf("Result add contact: %i\n", n);
+    printf("Result add contact: %i\n", n);
 #endif
-  if (n != 0) {
+    if (n != 0) {
 #ifdef DEBUG
-    printf("Adding contact failed.\n");
+      printf("Adding contact failed.\n");
 #endif
-    return -777;
+      return -777;
+    }
+#ifdef DEBUG
+    printf("Added Contact.\n");
+#endif
   }
-#ifdef DEBUG
-  printf("Added Contact.\n");
-#endif
 
   // Add to authorised users in BP
   std::set<std::string> s;
@@ -1244,8 +1263,7 @@ int ClientController::HandleAddContactRequest(
   cn->set_action(1);
 
   std::string message("\"");
-  message += ss_->PublicUsername() +
-             "\" has confirmed you as a contact.";
+  message += ss_->PublicUsername() + "\" has confirmed you as a contact.";
   im.set_sender(ss_->PublicUsername());
   im.set_date(base::get_epoch_time());
   im.set_message(message);

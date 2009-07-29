@@ -368,6 +368,7 @@ int ClientController::analyseMessage(const packethandler::InstantMessage& im) {
       // ADD REQUEST - we have requested to add a user
       case 0:
             {
+              qDebug() << "HANDLING AddContactRequest";
               n = maidsafe::ClientController::getInstance()->
                                       HandleAddContactRequest(ci, im.sender());
               if (n == 0) {

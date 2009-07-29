@@ -123,7 +123,6 @@ void Contacts::onItemSelectionChanged() {
   ui_.share_file->setEnabled(enable);
 }
 
-
 void Contacts::onAddContactClicked() {
   const QString contact_name = ui_.contactLineEdit->text().trimmed();
 
@@ -222,7 +221,6 @@ void Contacts::onDeleteUserClicked() {
   }
 }
 
-
 void Contacts::onSendMessageClicked() {
   Contact* contact_ = currentContact();
   if (!contact_)
@@ -307,7 +305,6 @@ void Contacts::onFileSendClicked() {
   }
 }
 
-
 Contact* Contacts::currentContact() {
   if (!ui_.listWidget->currentItem())
     return NULL;
@@ -323,10 +320,16 @@ Contact* Contacts::currentContact() {
 }
 
 void Contacts::onAddedContact(const QString &name) {
-    qDebug() << "Contacts::onAddedContact()";
+  qDebug() << "Contacts::onAddedContact()";
+  QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
+                                  Qt::MatchCaseSensitive);
+  if (items.size() == 1) {  // Contact had changed confirmed status only
+    onConfirmedContact(name);
+  } else {  // Contact wasn't present
     Contact *c = new Contact(name);
     c->setPresence(Presence::AVAILABLE);
     addContact(c);
+  }
 }
 
 void Contacts::onConfirmedContact(const QString &name) {
