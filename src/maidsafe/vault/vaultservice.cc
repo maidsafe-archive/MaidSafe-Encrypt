@@ -63,8 +63,8 @@ VaultService::VaultService(const std::string &pmid_public,
 //  printf("In VaultService contructor.\n");
   crypto_.set_symm_algorithm(crypto::AES_256);
   crypto_.set_hash_algorithm(crypto::SHA_512);
-  pmid_ = crypto_.Hash(signed_pmid_public_, "", crypto::STRING_STRING,
-                       true);
+  pmid_ = crypto_.Hash(pmid_public + signed_pmid_public_, "",
+                       crypto::STRING_STRING, true);
 }
 
 void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
@@ -617,7 +617,6 @@ bool VaultService::ValidateDataChunk(const std::string &chunkname,
 }
 
 int VaultService::Storable(const boost::uint64_t &data_size) {
-// TODO(Fraser#5#): 2009-07-30 - Fill in - check avail space.
   if (data_size > chunkstore_->FreeSpace())
     return -1;
   return 0;
