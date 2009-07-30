@@ -663,7 +663,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       if (dm_encrypted) {
         if (it->second == enc_dm_) {
 #ifdef DEBUG
-          printf("SEHandler::DecryptDb: Found DM in set. ");
+          printf("SEHandler::DecryptDb: Found enc DM in set. ");
           printf("No need to go get it from the network.\n");
 #endif
           return 0;
@@ -671,20 +671,13 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       } else {
         if (it->second == ser_dm) {
 #ifdef DEBUG
-          printf("SEHandler::DecryptDb: Found DM in set. ");
+          printf("SEHandler::DecryptDb: Found ser DM in set. ");
           printf("No need to go get it from the network.\n");
 #endif
           return 0;
         }
       }
     } else {
-      if (dm_encrypted) {
-        uptodate_datamaps_.insert(
-          std::pair<std::string, std::string>(dir_path, enc_dm_));
-      } else {
-        uptodate_datamaps_.insert(
-          std::pair<std::string, std::string>(dir_path, ser_dm));
-      }
 #ifdef DEBUG
       printf("SEHandler::DecryptDb: DIDN'T find dir_path in set.\n");
 #endif
@@ -780,6 +773,13 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 #endif
     return -1;
   } else {
+    if (dm_encrypted) {
+      uptodate_datamaps_.insert(
+        std::pair<std::string, std::string>(dir_path, enc_dm_));
+    } else {
+      uptodate_datamaps_.insert(
+        std::pair<std::string, std::string>(dir_path, ser_dm));
+    }
     return 0;
   }
 }

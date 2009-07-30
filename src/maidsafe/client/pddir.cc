@@ -92,7 +92,7 @@ int PdDir::Connect() {
 #ifdef DEBUG
     printf("In PdDir Connect: No DB\n");
 #endif
-    return -1;
+    return -1357;
   }
   try {
 #ifdef DEBUG
