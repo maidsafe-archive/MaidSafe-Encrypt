@@ -1993,7 +1993,7 @@ int ClientController::GetDb(const std::string &orig_path_,
                             std::string *msid) {
   std::string path_ = orig_path_;
 #ifdef DEBUG
-  printf("\t\tCC::GetDb(%s) type(%i)\n", orig_path_.c_str(), *db_type);
+  printf("\t\tCC::GetDb(%s)\n", orig_path_.c_str());
 #endif
   std::string db_path_, parent_path_, dir_key_;
   if (path_.size() <= 1) {  // i.e. root

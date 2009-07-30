@@ -125,7 +125,6 @@ bool ChunkStore::PopulatePathMap() {
 #endif
     return false;
   }
-
 }
 
 void ChunkStore::FindFiles(const fs::path &root_dir_path,
@@ -155,7 +154,8 @@ void ChunkStore::FindFiles(const fs::path &root_dir_path,
             chunkstore_set_.insert(chunk);
           }
           if ((type == (kHashable | kNormal) || type == (kHashable | kCache) ||
-              type == (kHashable | kOutgoing) || type == (kHashable | kTempCache))
+              type == (kHashable | kOutgoing) ||
+              type == (kHashable | kTempCache))
               && hash_check) {
             if (HashCheckChunk(non_hex_name, itr->path()) != 0) {
               failed_keys->push_back(non_hex_name);

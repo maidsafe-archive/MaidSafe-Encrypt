@@ -172,7 +172,7 @@ void UserSpaceFileSystem::explore(Location l, QString subDir) {
   QT_WA({
         returnValue = (quintptr)ShellExecute(0,
                           reinterpret_cast<TCHAR *>(operation.utf16()),
-                          reinterpret_cast<TCHAR *>(dir.absolutePath().utf16()_,
+                          reinterpret_cast<TCHAR *>(dir.absolutePath().utf16()),
                           0,
                           0,
                           SW_SHOWNORMAL);
