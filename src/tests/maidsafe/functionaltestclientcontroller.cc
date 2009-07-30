@@ -152,7 +152,9 @@ class RunPDVaults {
                                      signed_key_,
                                      chunkstore_local_,
                                      64101+i,
-                                     kad_config_file_));
+                                     kad_config_file_,
+                                     1024*1024*1024,
+                                     0));
       pdvaults_->push_back(pdvault_local_);
       ++current_nodes_created_;
       bool port_forwarded = false;
