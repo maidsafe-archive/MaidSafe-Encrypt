@@ -19,6 +19,9 @@
 #include <QDebug>
 #include <QProcess>
 
+// dht
+#include <maidsafe/maidsafe-dht_config.h>
+
 // os
 #ifdef MAIDSAFE_WIN32
   #include <shellapi.h>
@@ -33,8 +36,8 @@
 #include "fs/w_fuse/fswin.h"
 #elif defined(MAIDSAFE_POSIX)
 #include "fs/l_fuse/fslinux.h"
-#elif defined(MAIDSAFE_APPLE)
-#include "fs/l_fuse/fslinux.h"
+//  #elif defined(MAIDSAFE_APPLE)
+//  #include "fs/l_fuse/fslinux.h"
 #endif
 
 // local
@@ -171,8 +174,8 @@ void UserSpaceFileSystem::explore(Location l, QString subDir) {
   quintptr returnValue;
   QT_WA({
         returnValue = (quintptr)ShellExecute(0,
-                          reinterpret_cast<TCHAR *>(operation.utf16()),
-                          reinterpret_cast<TCHAR *>(dir.absolutePath().utf16()),
+                          (TCHAR *)(operation.utf16()),
+                          (TCHAR *)(dir.absolutePath().utf16()),
                           0,
                           0,
                           SW_SHOWNORMAL);
