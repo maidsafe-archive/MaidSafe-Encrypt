@@ -82,30 +82,30 @@
         <item>
          <widget class="QPushButton" name="view_profile">
           <property name="toolTip">
-           <string>See this persons profile</string>
+           <string>See this person's profile</string>
           </property>
           <property name="text">
-           <string>profile</string>
+           <string>View profile</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="share_file">
           <property name="toolTip">
-           <string>Send file(s) to </string>
+           <string>Send file to this user</string>
           </property>
           <property name="text">
-           <string>share</string>
+           <string>Send file</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="send_message">
           <property name="toolTip">
-           <string>Send message to</string>
+           <string>Send message to this user</string>
           </property>
           <property name="text">
-           <string>message</string>
+           <string>Send message</string>
           </property>
          </widget>
         </item>
@@ -125,7 +125,7 @@
         <item>
          <widget class="QPushButton" name="delete_user">
           <property name="text">
-           <string>delete</string>
+           <string>Delete</string>
           </property>
          </widget>
         </item>
