@@ -3,6 +3,7 @@ import "maidsafe_service_messages.proto";
 package maidsafe;
 
 service MaidsafeService {
+  rpc StoreChunkPrep( StorePrepRequest ) returns ( StorePrepResponse );
   rpc StoreChunk( StoreRequest ) returns ( StoreResponse );
   // check if a chunk exists
   rpc CheckChunk( CheckChunkRequest ) returns ( CheckChunkResponse );

@@ -228,6 +228,20 @@ class VaultConfig : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 port() const;
   inline void set_port(::google::protobuf::int32 value);
   
+  // optional uint64 available_space = 6;
+  inline bool has_available_space() const;
+  inline void clear_available_space();
+  static const int kAvailableSpaceFieldNumber = 6;
+  inline ::google::protobuf::uint64 available_space() const;
+  inline void set_available_space(::google::protobuf::uint64 value);
+  
+  // optional uint64 used_space = 7;
+  inline bool has_used_space() const;
+  inline void clear_used_space();
+  static const int kUsedSpaceFieldNumber = 7;
+  inline ::google::protobuf::uint64 used_space() const;
+  inline void set_used_space(::google::protobuf::uint64 value);
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -241,10 +255,12 @@ class VaultConfig : public ::google::protobuf::Message {
   ::std::string* chunkstore_dir_;
   static const ::std::string _default_chunkstore_dir_;
   ::google::protobuf::int32 port_;
+  ::google::protobuf::uint64 available_space_;
+  ::google::protobuf::uint64 used_space_;
   friend void  protobuf_AddDesc_general_5fmessages_2eproto();
   friend void protobuf_AssignDesc_general_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_general_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -749,6 +765,38 @@ inline ::google::protobuf::int32 VaultConfig::port() const {
 inline void VaultConfig::set_port(::google::protobuf::int32 value) {
   _set_bit(4);
   port_ = value;
+}
+
+// optional uint64 available_space = 6;
+inline bool VaultConfig::has_available_space() const {
+  return _has_bit(5);
+}
+inline void VaultConfig::clear_available_space() {
+  available_space_ = GOOGLE_ULONGLONG(0);
+  _clear_bit(5);
+}
+inline ::google::protobuf::uint64 VaultConfig::available_space() const {
+  return available_space_;
+}
+inline void VaultConfig::set_available_space(::google::protobuf::uint64 value) {
+  _set_bit(5);
+  available_space_ = value;
+}
+
+// optional uint64 used_space = 7;
+inline bool VaultConfig::has_used_space() const {
+  return _has_bit(6);
+}
+inline void VaultConfig::clear_used_space() {
+  used_space_ = GOOGLE_ULONGLONG(0);
+  _clear_bit(6);
+}
+inline ::google::protobuf::uint64 VaultConfig::used_space() const {
+  return used_space_;
+}
+inline void VaultConfig::set_used_space(::google::protobuf::uint64 value) {
+  _set_bit(6);
+  used_space_ = value;
 }
 
 // -------------------------------------------------------------------

@@ -67,6 +67,10 @@ enum buffer_packet_type {
   MPID_BP, MAID_BP, PMID_BP
 };
 
+enum maidsafe_rpc_result {
+  ACK, NACK, NO_SPACE, BUSY
+};
+
 const std::string kAnonymousSignedRequest("ffffffffffffffffffffffffffffffffffff"
     "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     "ffffffffffffffffff");
@@ -305,7 +309,6 @@ const boost::uint32_t kSaveUpdatesTrigger(100);  // max no of dbs in save queue
                                                  // before running save queue
 const int kMinSuccessfulPecentageOfUpdating(0.9);
 
-// TODO(jose): change the namespace to base
 namespace maidsafe {
 
 enum value_types {

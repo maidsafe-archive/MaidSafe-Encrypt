@@ -58,12 +58,65 @@ VaultService::VaultService(const std::string &pmid_public,
       signed_pmid_public_(signed_pmid_public),
       pmid_(""),
       chunkstore_(chunkstore),
-      knode_(knode) {
+      knode_(knode),
+      pending_store_mutex_() {
 //  printf("In VaultService contructor.\n");
   crypto_.set_symm_algorithm(crypto::AES_256);
   crypto_.set_hash_algorithm(crypto::SHA_512);
   pmid_ = crypto_.Hash(signed_pmid_public_, "", crypto::STRING_STRING,
                        true);
+}
+
+void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
+                                  const maidsafe::StorePrepRequest* request,
+                                  maidsafe::StorePrepResponse* response,
+                                  google::protobuf::Closure* done) {
+#ifdef DEBUG
+  printf("In VaultService::StoreChunkPrep (%i)\n", knode_->host_port());
+#endif
+  std::string id("");
+  base::decode_from_hex(pmid_, &id);
+  response->set_pmid_id(id);
+  if (!request->IsInitialized()) {
+    response->set_result(NACK);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkPrep (%i), request isn't initialized.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+  if (!ValidateSignedRequest(request->pmid(), request->public_key(),
+       request->signed_public_key(), request->signed_request(),
+       request->chunkname())) {
+    response->set_result(NACK);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkPrep (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
+#endif
+    return;
+  }
+  boost::uint64_t data_size = request->data_size();
+  if (Storable(data_size) != 0) {
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkPrep (%i), no space.\n",
+           knode_->host_port());
+#endif
+    response->set_result(NO_SPACE);
+    done->Run();
+    return;
+  }
+  if (AddPendingStore(request->chunkname(), request->pmid()) != 0) {
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkPrep (%i), can't add pending store.\n",
+           knode_->host_port());
+#endif
+    response->set_result(BUSY);
+  } else {
+    response->set_result(ACK);
+  }
+  done->Run();
 }
 
 void VaultService::StoreChunk(google::protobuf::RpcController*,
@@ -92,7 +145,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
 #endif
     return;
   }
-  if (!ValidateSignedRequest(request->public_key(),
+  if (!ValidateSignedRequest("", request->public_key(),
        request->signed_public_key(), request->signed_request(),
        request->chunkname())) {
     response->set_result(kCallbackFailure);
@@ -230,7 +283,7 @@ void VaultService::Update(google::protobuf::RpcController*,
     done->Run();
     return;
   }
-  if (!ValidateSignedRequest(request->public_key(),
+  if (!ValidateSignedRequest("", request->public_key(),
        request->signed_public_key(), request->signed_request(),
        request->chunkname())) {
 #ifdef DEBUG
@@ -375,7 +428,7 @@ void VaultService::Delete(google::protobuf::RpcController*,
     done->Run();
     return;
   }
-  if (!ValidateSignedRequest(request->public_key(),
+  if (!ValidateSignedRequest("", request->public_key(),
       request->signed_public_key(), request->signed_request(),
       request->chunkname())) {
     response->set_result(kCallbackFailure);
@@ -519,12 +572,18 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
   done->Run();
 }
 
-bool VaultService::ValidateSignedRequest(const std::string &public_key,
+bool VaultService::ValidateSignedRequest(const std::string &pmid,
+                                         const std::string &public_key,
                                          const std::string &signed_public_key,
                                          const std::string &signed_request,
                                          const std::string &key) {
   if (signed_request == kAnonymousSignedRequest)
     return true;
+  if (pmid != "") {
+    if (crypto_.Hash(public_key + signed_public_key, "", crypto::STRING_STRING,
+        true) != pmid)
+      return false;
+  }
   if (crypto_.AsymCheckSig(public_key, signed_public_key, public_key,
                            crypto::STRING_STRING)) {
     return crypto_.AsymCheckSig(crypto_.Hash(public_key + signed_public_key +
@@ -555,6 +614,20 @@ bool VaultService::ValidateDataChunk(const std::string &chunkname,
     return true;
   else
     return false;
+}
+
+int VaultService::Storable(const boost::uint64_t &data_size) {
+// TODO(Fraser#5#): 2009-07-30 - Fill in - check avail space.
+  if (data_size > chunkstore_->FreeSpace())
+    return -1;
+  return 0;
+}
+
+int VaultService::AddPendingStore(const std::string &chunkname,
+                                  const std::string &pmid) {
+  boost::mutex::scoped_lock lock(pending_store_mutex_);
+// TODO(Fraser#5#): 2009-07-30 - Fill in.
+  return 0;
 }
 
 bool VaultService::ModifyBufferPacketInfo(const std::string &new_info,

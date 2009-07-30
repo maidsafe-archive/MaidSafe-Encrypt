@@ -50,6 +50,10 @@ class MaidsafeService : public ::google::protobuf::Service {
   
   static const ::google::protobuf::ServiceDescriptor* descriptor();
   
+  virtual void StoreChunkPrep(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::StorePrepRequest* request,
+                       ::maidsafe::StorePrepResponse* response,
+                       ::google::protobuf::Closure* done);
   virtual void StoreChunk(::google::protobuf::RpcController* controller,
                        const ::maidsafe::StoreRequest* request,
                        ::maidsafe::StoreResponse* response,
@@ -111,6 +115,10 @@ class MaidsafeService_Stub : public MaidsafeService {
   
   // implements MaidsafeService ------------------------------------------
   
+  void StoreChunkPrep(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::StorePrepRequest* request,
+                       ::maidsafe::StorePrepResponse* response,
+                       ::google::protobuf::Closure* done);
   void StoreChunk(::google::protobuf::RpcController* controller,
                        const ::maidsafe::StoreRequest* request,
                        ::maidsafe::StoreResponse* response,

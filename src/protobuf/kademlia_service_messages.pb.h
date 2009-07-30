@@ -1759,16 +1759,6 @@ class NatDetectionPingResponse : public ::google::protobuf::Message {
   inline void set_echo(const void* value, size_t size);
   inline ::std::string* mutable_echo();
   
-  // optional bytes node_id = 3;
-  inline bool has_node_id() const;
-  inline void clear_node_id();
-  static const int kNodeIdFieldNumber = 3;
-  inline const ::std::string& node_id() const;
-  inline void set_node_id(const ::std::string& value);
-  inline void set_node_id(const char* value);
-  inline void set_node_id(const void* value, size_t size);
-  inline ::std::string* mutable_node_id();
-  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -1777,12 +1767,10 @@ class NatDetectionPingResponse : public ::google::protobuf::Message {
   static const ::std::string _default_result_;
   ::std::string* echo_;
   static const ::std::string _default_echo_;
-  ::std::string* node_id_;
-  static const ::std::string _default_node_id_;
   friend void  protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_kademlia_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -3619,48 +3607,6 @@ inline ::std::string* NatDetectionPingResponse::mutable_echo() {
     echo_ = new ::std::string;
   }
   return echo_;
-}
-
-// optional bytes node_id = 3;
-inline bool NatDetectionPingResponse::has_node_id() const {
-  return _has_bit(2);
-}
-inline void NatDetectionPingResponse::clear_node_id() {
-  if (node_id_ != &_default_node_id_) {
-    node_id_->clear();
-  }
-  _clear_bit(2);
-}
-inline const ::std::string& NatDetectionPingResponse::node_id() const {
-  return *node_id_;
-}
-inline void NatDetectionPingResponse::set_node_id(const ::std::string& value) {
-  _set_bit(2);
-  if (node_id_ == &_default_node_id_) {
-    node_id_ = new ::std::string;
-  }
-  node_id_->assign(value);
-}
-inline void NatDetectionPingResponse::set_node_id(const char* value) {
-  _set_bit(2);
-  if (node_id_ == &_default_node_id_) {
-    node_id_ = new ::std::string;
-  }
-  node_id_->assign(value);
-}
-inline void NatDetectionPingResponse::set_node_id(const void* value, size_t size) {
-  _set_bit(2);
-  if (node_id_ == &_default_node_id_) {
-    node_id_ = new ::std::string;
-  }
-  node_id_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* NatDetectionPingResponse::mutable_node_id() {
-  _set_bit(2);
-  if (node_id_ == &_default_node_id_) {
-    node_id_ = new ::std::string;
-  }
-  return node_id_;
 }
 
 

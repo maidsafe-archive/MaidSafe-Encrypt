@@ -105,6 +105,7 @@ class Env: public testing::Environment {
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
+    pdvaults_->clear();
   }
 
   virtual void SetUp() {
@@ -123,7 +124,7 @@ class Env: public testing::Environment {
       kad_config_file_ = chunkstore_local + "/.kadconfig";
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
-              signed_key, chunkstore_local, 0, kad_config_file_));
+          signed_key, chunkstore_local, 0, kad_config_file_, 1073741824, 0));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
     }

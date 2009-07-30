@@ -20,7 +20,9 @@
 
 namespace maidsafe_vault {
 
-ChunkStore::ChunkStore(const std::string &chunkstore_dir)
+ChunkStore::ChunkStore(const std::string &chunkstore_dir,
+                       const boost::uint64_t &available_space,
+                       const boost::uint64_t &used_space)
     : chunkstore_set_(),
       path_map_(),
       kChunkstorePath_(chunkstore_dir),
@@ -32,7 +34,9 @@ ChunkStore::ChunkStore(const std::string &chunkstore_dir)
       kNormalLeaf_("Normal"),
       kCacheLeaf_("Cache"),
       kOutgoingLeaf_("Outgoing"),
-      kTempCacheLeaf_("TempCache") {
+      kTempCacheLeaf_("TempCache"),
+      available_space_(available_space),
+      used_space_(used_space) {
   boost::thread init_thread(&ChunkStore::Init, this);
 }
 

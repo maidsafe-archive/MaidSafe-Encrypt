@@ -1,7 +1,21 @@
 // Maidsafe rpc arguments and responses
-// data_type is defined in  base/utils.h as the enum value_types
+// data_type is defined in  maidsafe/maidsafe.h as the enum value_types
 
 package maidsafe;
+
+message StorePrepRequest {
+  required bytes chunkname = 1;
+  required uint64 data_size = 2;
+  required bytes pmid = 3;
+  required bytes public_key = 4;
+  required bytes signed_public_key = 5;
+  required bytes signed_request = 6;
+};
+
+message StorePrepResponse {
+  required int32 result = 1;
+  optional bytes pmid_id = 2;
+};
 
 message StoreRequest {
   required bytes chunkname = 1;

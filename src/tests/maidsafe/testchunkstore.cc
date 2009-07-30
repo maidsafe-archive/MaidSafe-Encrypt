@@ -251,7 +251,8 @@ class TestChunkstore : public testing::Test {
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreInit) {
   std::string invalid_path_length(257, ' ');
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(invalid_path_length));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   ASSERT_FALSE(chunkstore->is_initialised());
   ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
                                           &h_value, &h_name));
@@ -279,14 +280,16 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreInit) {
   ASSERT_EQ(static_cast<unsigned int>(0), failed_keys.size());
   ChunkType type = kHashable | kNormal;
   ASSERT_NE(0, chunkstore->ChangeChunkType(h_name.at(0), type));
-  boost::shared_ptr<ChunkStore> chunkstore1(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore1(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore1, 60000);
   ASSERT_TRUE(chunkstore1->is_initialised());
   ASSERT_TRUE(chunkstore1->Init());
   ASSERT_TRUE(chunkstore1->is_initialised());}
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStoreChunk) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   ASSERT_EQ(static_cast<unsigned int>(0), chunkstore->chunkstore_set_.size());
@@ -349,7 +352,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStoreChunk) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadChunk) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
@@ -379,7 +383,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadChunk) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHasChunk) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
@@ -405,7 +410,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHasChunk) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   ASSERT_EQ(static_cast<unsigned int>(0), chunkstore->chunkstore_set_.size());
@@ -456,7 +462,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // test when chunkstore is empty
@@ -517,7 +524,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreUpdateChunk) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
@@ -548,7 +556,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreUpdateChunk) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
@@ -590,7 +599,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreChangeChunkType) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = chunkstore->path_map_.size();  // 8
@@ -695,7 +705,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreChangeChunkType) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreReuseDirectory) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 5 * chunkstore->path_map_.size();  // 40
@@ -721,7 +732,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreReuseDirectory) {
     }
   }
   // Create a new chunkstore that has same root dir
-  boost::shared_ptr<ChunkStore> chunkstore1(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore1(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore1, 60000);
   ASSERT_TRUE(chunkstore1->is_initialised());
   ASSERT_EQ(static_cast<unsigned int>(kNumberOfChunks),
@@ -734,7 +746,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreReuseDirectory) {
   // creating a new chunkstore that has same root dir but with one of the
   // hashable chunks modified to fail hash check
   ASSERT_TRUE(chunkstore->UpdateChunk(h_name.at(0), "modified content"));
-  boost::shared_ptr<ChunkStore> chunkstore2(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore2(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore2, 60000);
   ASSERT_TRUE(chunkstore2->is_initialised());
   ASSERT_EQ(static_cast<unsigned int>(kNumberOfChunks - 1),
@@ -743,7 +756,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreReuseDirectory) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreGetAllChunks) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // Check with empty chunkstore.
@@ -771,7 +785,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreGetAllChunks) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreCheckAllChunks) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 5 * chunkstore->path_map_.size();  // 40
@@ -859,7 +874,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreCheckAllChunks) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedStoreAndLoad) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -930,7 +946,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedStoreAndLoad) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedUpdate) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -1015,7 +1032,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedUpdate) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedDelete) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -1088,7 +1106,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedDelete) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedRandLoad) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -1141,7 +1160,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedRandLoad) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedCheckSingle) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -1199,7 +1219,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedCheckSingle) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedCheckAll) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -1247,7 +1268,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedCheckAll) {
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedChangeType) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string()));
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+      1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 80;

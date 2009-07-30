@@ -28,13 +28,13 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
-
+#include <maidsafe/crypto.h>
+#include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/utils.h>
 #include <string>
 #include <list>
 #include <vector>
-#include "maidsafe/crypto.h"
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/vault/chunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
 
@@ -45,8 +45,6 @@ class Env;
 }  // namespace localvaults
 
 namespace maidsafe_vault {
-
-class ChunkStore;
 
 struct SyncVaultData {
   SyncVaultData() : chunk_names(), num_updated_chunks(0), num_chunks(0),
@@ -160,7 +158,9 @@ class PDVault {
           const std::string &signed_pmid_public,
           const std::string &chunkstore_dir,
           const boost::uint16_t &port,
-          const std::string &kad_config_file);
+          const std::string &kad_config_file,
+          const boost::uint64_t &available_space,
+          const boost::uint64_t &vault_used_space);
   ~PDVault();
   void Start(const bool &port_forwarded);
   int Stop();
@@ -185,6 +185,11 @@ class PDVault {
   boost::uint16_t local_host_port() { return knode_.local_host_port(); }
   std::string rv_ip() const { return knode_.rv_ip(); }
   boost::uint16_t rv_port() const { return knode_.rv_port(); }
+  inline boost::uint64_t available_space() {
+    return chunkstore_->available_space();
+  }
+  inline boost::uint64_t UsedSpace() { return chunkstore_->used_space(); }
+  inline boost::uint64_t FreeSpace() { return chunkstore_->FreeSpace(); }
   friend class localvaults::Env;
  private:
   PDVault(const PDVault&);

@@ -25,10 +25,11 @@
 #ifndef MAIDSAFE_VAULT_VAULTSERVICE_H_
 #define MAIDSAFE_VAULT_VAULTSERVICE_H_
 
+#include <maidsafe/crypto.h>
+#include <maidsafe/utils.h>
+
 #include <string>
 
-#include "maidsafe/crypto.h"
-#include "maidsafe/utils.h"
 #include "maidsafe/maidsafe.h"
 #include "protobuf/maidsafe_service.pb.h"
 
@@ -46,6 +47,10 @@ class VaultService : public maidsafe::MaidsafeService {
   ~VaultService() {
 //    printf("In VaultService destructor.\n");
   }
+  virtual void StoreChunkPrep(google::protobuf::RpcController* controller,
+             const maidsafe::StorePrepRequest* request,
+             maidsafe::StorePrepResponse* response,
+             google::protobuf::Closure* done);
   virtual void StoreChunk(google::protobuf::RpcController* controller,
              const maidsafe::StoreRequest* request,
              maidsafe::StoreResponse* response,
@@ -81,7 +86,8 @@ class VaultService : public maidsafe::MaidsafeService {
  private:
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
-  bool ValidateSignedRequest(const std::string &public_key,
+  bool ValidateSignedRequest(const std::string &pmid,
+                             const std::string &public_key,
                              const std::string &signed_public_key,
                              const std::string &signed_request,
                              const std::string &key);
@@ -89,6 +95,8 @@ class VaultService : public maidsafe::MaidsafeService {
                             const std::string &public_key);
   bool ValidateDataChunk(const std::string &chunkname,
                          const std::string &content);
+  int Storable(const boost::uint64_t &data_size);
+  int AddPendingStore(const std::string &chunkname, const std::string &pmid);
   bool ModifyBufferPacketInfo(const std::string &new_info,
                               const std::string &pub_key,
                               std::string *updated_bp);
@@ -104,6 +112,7 @@ class VaultService : public maidsafe::MaidsafeService {
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
   boost::shared_ptr<ChunkStore>chunkstore_;
   kad::KNode *knode_;
+  boost::mutex pending_store_mutex_;
 };
 }  // namespace maidsafe_vault
 

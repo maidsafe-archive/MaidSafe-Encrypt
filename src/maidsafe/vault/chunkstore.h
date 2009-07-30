@@ -9,29 +9,29 @@
  * explicit written permission of the board of directors of maidsafe.net
  *
  *  Created on: Sep 29, 2008
- *      Author: Haiyang, Jose
+ *      Author: Team
  */
 
 #ifndef MAIDSAFE_VAULT_CHUNKSTORE_H_
 #define MAIDSAFE_VAULT_CHUNKSTORE_H_
 
+#include <boost/cstdint.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/mutex.hpp>
+#include <gtest/gtest_prod.h>
+#include <maidsafe/crypto.h>
+#include <maidsafe/maidsafe-dht.h>
 #include <list>
 #include <map>
 #include <string>
 
-#include "gtest/gtest_prod.h"
-
-#include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe.h"
-#include "maidsafe/maidsafe-dht.h"
 
 namespace fs = boost::filesystem;
 
@@ -111,7 +111,9 @@ struct change_type {
 
 class ChunkStore {
  public:
-  explicit ChunkStore(const std::string &chunkstore_dir);
+  ChunkStore(const std::string &chunkstore_dir,
+             const boost::uint64_t &available_space,
+             const boost::uint64_t &used_space);
   ~ChunkStore() {}
   bool HasChunk(const std::string &key);
   bool StoreChunk(const std::string &key, const std::string &value);
@@ -131,6 +133,9 @@ class ChunkStore {
   // By changing the chunk's type it will be moved to the appropriate directory
   int ChangeChunkType(const std::string &key, ChunkType type);
   bool is_initialised();
+  inline boost::uint64_t available_space() { return available_space_; }
+  inline boost::uint64_t used_space() { return used_space_; }
+  inline boost::uint64_t FreeSpace() { return available_space_ - used_space_; }
  private:
   ChunkStore(const ChunkStore&);
   ChunkStore& operator=(const ChunkStore&);
@@ -174,6 +179,12 @@ class ChunkStore {
   bool DeleteChunkFunction(const std::string &key, const fs::path &chunk_path);
   // Check that hash of value == key for appropriate chunks
   int HashCheckChunk(const std::string &key, const fs::path &chunk_path);
+  inline void set_available_space(boost::uint64_t avail) {
+    available_space_ = avail;
+  }
+  inline void IncrementUsedSpace(boost::uint64_t file_size) {
+    used_space_ += file_size;
+  }
   chunk_set chunkstore_set_;
   std::map<ChunkType, fs::path> path_map_;
   const fs::path kChunkstorePath_;
@@ -182,6 +193,7 @@ class ChunkStore {
   // Leafs of directory paths that make up chunkstore
   const std::string kHashableLeaf_, kNonHashableLeaf_;
   const std::string kNormalLeaf_, kCacheLeaf_, kOutgoingLeaf_, kTempCacheLeaf_;
+  boost::uint64_t available_space_, used_space_;
 };
 }  // namespace maidsafe_vault
 

@@ -29,6 +29,8 @@ void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
 void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
 void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
 
+class StorePrepRequest;
+class StorePrepResponse;
 class StoreRequest;
 class StoreResponse;
 class DeleteRequest;
@@ -47,6 +49,252 @@ class SwapChunkRequest;
 class SwapChunkResponse;
 
 // ===================================================================
+
+class StorePrepRequest : public ::google::protobuf::Message {
+ public:
+  StorePrepRequest();
+  virtual ~StorePrepRequest();
+  
+  StorePrepRequest(const StorePrepRequest& from);
+  
+  inline StorePrepRequest& operator=(const StorePrepRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const StorePrepRequest& default_instance();
+  void Swap(StorePrepRequest* other);
+  
+  // implements Message ----------------------------------------------
+  
+  StorePrepRequest* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const StorePrepRequest& from);
+  void MergeFrom(const StorePrepRequest& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes chunkname = 1;
+  inline bool has_chunkname() const;
+  inline void clear_chunkname();
+  static const int kChunknameFieldNumber = 1;
+  inline const ::std::string& chunkname() const;
+  inline void set_chunkname(const ::std::string& value);
+  inline void set_chunkname(const char* value);
+  inline void set_chunkname(const void* value, size_t size);
+  inline ::std::string* mutable_chunkname();
+  
+  // required uint64 data_size = 2;
+  inline bool has_data_size() const;
+  inline void clear_data_size();
+  static const int kDataSizeFieldNumber = 2;
+  inline ::google::protobuf::uint64 data_size() const;
+  inline void set_data_size(::google::protobuf::uint64 value);
+  
+  // required bytes pmid = 3;
+  inline bool has_pmid() const;
+  inline void clear_pmid();
+  static const int kPmidFieldNumber = 3;
+  inline const ::std::string& pmid() const;
+  inline void set_pmid(const ::std::string& value);
+  inline void set_pmid(const char* value);
+  inline void set_pmid(const void* value, size_t size);
+  inline ::std::string* mutable_pmid();
+  
+  // required bytes public_key = 4;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 4;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // required bytes signed_public_key = 5;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 5;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
+  // required bytes signed_request = 6;
+  inline bool has_signed_request() const;
+  inline void clear_signed_request();
+  static const int kSignedRequestFieldNumber = 6;
+  inline const ::std::string& signed_request() const;
+  inline void set_signed_request(const ::std::string& value);
+  inline void set_signed_request(const char* value);
+  inline void set_signed_request(const void* value, size_t size);
+  inline ::std::string* mutable_signed_request();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* chunkname_;
+  static const ::std::string _default_chunkname_;
+  ::google::protobuf::uint64 data_size_;
+  ::std::string* pmid_;
+  static const ::std::string _default_pmid_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
+  ::std::string* signed_request_;
+  static const ::std::string _default_signed_request_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static StorePrepRequest* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class StorePrepResponse : public ::google::protobuf::Message {
+ public:
+  StorePrepResponse();
+  virtual ~StorePrepResponse();
+  
+  StorePrepResponse(const StorePrepResponse& from);
+  
+  inline StorePrepResponse& operator=(const StorePrepResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const StorePrepResponse& default_instance();
+  void Swap(StorePrepResponse* other);
+  
+  // implements Message ----------------------------------------------
+  
+  StorePrepResponse* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const StorePrepResponse& from);
+  void MergeFrom(const StorePrepResponse& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required int32 result = 1;
+  inline bool has_result() const;
+  inline void clear_result();
+  static const int kResultFieldNumber = 1;
+  inline ::google::protobuf::int32 result() const;
+  inline void set_result(::google::protobuf::int32 value);
+  
+  // optional bytes pmid_id = 2;
+  inline bool has_pmid_id() const;
+  inline void clear_pmid_id();
+  static const int kPmidIdFieldNumber = 2;
+  inline const ::std::string& pmid_id() const;
+  inline void set_pmid_id(const ::std::string& value);
+  inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
+  inline ::std::string* mutable_pmid_id();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::int32 result_;
+  ::std::string* pmid_id_;
+  static const ::std::string _default_pmid_id_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static StorePrepResponse* default_instance_;
+};
+// -------------------------------------------------------------------
 
 class StoreRequest : public ::google::protobuf::Message {
  public:
@@ -1950,6 +2198,298 @@ class SwapChunkResponse : public ::google::protobuf::Message {
 
 
 // ===================================================================
+
+// StorePrepRequest
+
+// required bytes chunkname = 1;
+inline bool StorePrepRequest::has_chunkname() const {
+  return _has_bit(0);
+}
+inline void StorePrepRequest::clear_chunkname() {
+  if (chunkname_ != &_default_chunkname_) {
+    chunkname_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& StorePrepRequest::chunkname() const {
+  return *chunkname_;
+}
+inline void StorePrepRequest::set_chunkname(const ::std::string& value) {
+  _set_bit(0);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(value);
+}
+inline void StorePrepRequest::set_chunkname(const char* value) {
+  _set_bit(0);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(value);
+}
+inline void StorePrepRequest::set_chunkname(const void* value, size_t size) {
+  _set_bit(0);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* StorePrepRequest::mutable_chunkname() {
+  _set_bit(0);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  return chunkname_;
+}
+
+// required uint64 data_size = 2;
+inline bool StorePrepRequest::has_data_size() const {
+  return _has_bit(1);
+}
+inline void StorePrepRequest::clear_data_size() {
+  data_size_ = GOOGLE_ULONGLONG(0);
+  _clear_bit(1);
+}
+inline ::google::protobuf::uint64 StorePrepRequest::data_size() const {
+  return data_size_;
+}
+inline void StorePrepRequest::set_data_size(::google::protobuf::uint64 value) {
+  _set_bit(1);
+  data_size_ = value;
+}
+
+// required bytes pmid = 3;
+inline bool StorePrepRequest::has_pmid() const {
+  return _has_bit(2);
+}
+inline void StorePrepRequest::clear_pmid() {
+  if (pmid_ != &_default_pmid_) {
+    pmid_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& StorePrepRequest::pmid() const {
+  return *pmid_;
+}
+inline void StorePrepRequest::set_pmid(const ::std::string& value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void StorePrepRequest::set_pmid(const char* value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void StorePrepRequest::set_pmid(const void* value, size_t size) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* StorePrepRequest::mutable_pmid() {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  return pmid_;
+}
+
+// required bytes public_key = 4;
+inline bool StorePrepRequest::has_public_key() const {
+  return _has_bit(3);
+}
+inline void StorePrepRequest::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& StorePrepRequest::public_key() const {
+  return *public_key_;
+}
+inline void StorePrepRequest::set_public_key(const ::std::string& value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void StorePrepRequest::set_public_key(const char* value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void StorePrepRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* StorePrepRequest::mutable_public_key() {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// required bytes signed_public_key = 5;
+inline bool StorePrepRequest::has_signed_public_key() const {
+  return _has_bit(4);
+}
+inline void StorePrepRequest::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(4);
+}
+inline const ::std::string& StorePrepRequest::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void StorePrepRequest::set_signed_public_key(const ::std::string& value) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void StorePrepRequest::set_signed_public_key(const char* value) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void StorePrepRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* StorePrepRequest::mutable_signed_public_key() {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
+}
+
+// required bytes signed_request = 6;
+inline bool StorePrepRequest::has_signed_request() const {
+  return _has_bit(5);
+}
+inline void StorePrepRequest::clear_signed_request() {
+  if (signed_request_ != &_default_signed_request_) {
+    signed_request_->clear();
+  }
+  _clear_bit(5);
+}
+inline const ::std::string& StorePrepRequest::signed_request() const {
+  return *signed_request_;
+}
+inline void StorePrepRequest::set_signed_request(const ::std::string& value) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void StorePrepRequest::set_signed_request(const char* value) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void StorePrepRequest::set_signed_request(const void* value, size_t size) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* StorePrepRequest::mutable_signed_request() {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  return signed_request_;
+}
+
+// -------------------------------------------------------------------
+
+// StorePrepResponse
+
+// required int32 result = 1;
+inline bool StorePrepResponse::has_result() const {
+  return _has_bit(0);
+}
+inline void StorePrepResponse::clear_result() {
+  result_ = 0;
+  _clear_bit(0);
+}
+inline ::google::protobuf::int32 StorePrepResponse::result() const {
+  return result_;
+}
+inline void StorePrepResponse::set_result(::google::protobuf::int32 value) {
+  _set_bit(0);
+  result_ = value;
+}
+
+// optional bytes pmid_id = 2;
+inline bool StorePrepResponse::has_pmid_id() const {
+  return _has_bit(1);
+}
+inline void StorePrepResponse::clear_pmid_id() {
+  if (pmid_id_ != &_default_pmid_id_) {
+    pmid_id_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& StorePrepResponse::pmid_id() const {
+  return *pmid_id_;
+}
+inline void StorePrepResponse::set_pmid_id(const ::std::string& value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void StorePrepResponse::set_pmid_id(const char* value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void StorePrepResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* StorePrepResponse::mutable_pmid_id() {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  return pmid_id_;
+}
+
+// -------------------------------------------------------------------
 
 // StoreRequest
 

@@ -25,11 +25,12 @@
 #ifndef MAIDSAFE_CLIENT_CLIENTRPC_H_
 #define MAIDSAFE_CLIENT_CLIENTRPC_H_
 
+#include <maidsafe/maidsafe-dht.h>
+
 #include <string>
 
-#include "protobuf/maidsafe_service.pb.h"
 #include "maidsafe/maidsafe.h"
-#include "maidsafe/maidsafe-dht.h"
+#include "protobuf/maidsafe_service.pb.h"
 
 namespace maidsafe {
 

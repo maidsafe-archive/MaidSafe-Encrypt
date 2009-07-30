@@ -45,14 +45,16 @@ PDVault::PDVault(const std::string &pmid_public,
                  const std::string &signed_pmid_public,
                  const std::string &chunkstore_dir,
                  const boost::uint16_t &port,
-                 const std::string &kad_config_file)
+                 const std::string &kad_config_file,
+                 const boost::uint64_t &available_space,
+                 const boost::uint64_t &used_space)
     : port_(port),
       mutex0_(),
       mutex1_(),
       channel_manager_(new rpcprotocol::ChannelManager()),
       knode_(channel_manager_, kad::VAULT, pmid_private, pmid_public),
       vault_rpcs_(channel_manager_),
-      chunkstore_(new ChunkStore(chunkstore_dir)),
+      chunkstore_(new ChunkStore(chunkstore_dir, available_space, used_space)),
       vault_service_(),
       kad_joined_(false),
       kad_joined_calledback_(false),
@@ -67,7 +69,7 @@ PDVault::PDVault(const std::string &pmid_public,
       kad_config_file_(kad_config_file) {
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  pmid_ = co.Hash(signed_pmid_public_, "", crypto::STRING_STRING,
+  pmid_ = co.Hash(pmid_public_ + signed_pmid_public_, "", crypto::STRING_STRING,
                   true);
 }
 
@@ -89,15 +91,11 @@ void PDVault::Start(const bool &port_forwarded) {
   if (vault_started_)
     return;
   channel_manager_->StartTransport(port_,
-      boost::bind(&kad::KNode::HandleDeadRendezvousServer,
-                  &knode_,
-                  _1));
+      boost::bind(&kad::KNode::HandleDeadRendezvousServer, &knode_, _1));
   kad_joined_calledback_ = false;
   RegisterMaidService();
-  knode_.Join(pmid_,
-              kad_config_file_,
-              boost::bind(&PDVault::KadJoinedCallback, this, _1),
-              port_forwarded);
+  knode_.Join(pmid_, kad_config_file_,
+      boost::bind(&PDVault::KadJoinedCallback, this, _1), port_forwarded);
   // Hash check all current chunks in chunkstore
   std::list<std::string> failed_keys;
   if (0 != chunkstore_->HashCheckAllChunks(true, &failed_keys)) {

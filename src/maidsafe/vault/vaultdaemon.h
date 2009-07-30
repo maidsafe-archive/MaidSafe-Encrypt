@@ -44,7 +44,9 @@ class VaultDaemon {
                                    pmid_private_(""),
                                    signed_pmid_public_(""),
                                    chunkstore_dir_(""),
-                                   port_(port) {
+                                   port_(port),
+                                   vault_available_space_(0),
+                                   used_space_(0) {
     TakeOwnership();
   }
   ~VaultDaemon();
@@ -70,6 +72,7 @@ class VaultDaemon {
   std::string pmid_public_, pmid_private_, signed_pmid_public_;
   std::string chunkstore_dir_;
   boost::uint16_t port_;
+  boost::uint64_t vault_available_space_, used_space_;
   VaultDaemon(const VaultDaemon&);
   VaultDaemon& operator=(const VaultDaemon&);
 };

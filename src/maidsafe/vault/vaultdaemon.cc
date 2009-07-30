@@ -92,6 +92,8 @@ void VaultDaemon::TakeOwnership() {
       pmid_private_ = vault_config_.pmid_private();
       signed_pmid_public_ = vault_config_.signed_pmid_public();
       chunkstore_dir_ = vault_config_.chunkstore_dir();
+      vault_available_space_ = vault_config_.available_space();
+      used_space_ = vault_config_.used_space();
       // If a port between 5000 & 65535 inclusive is passed into VaultDaemon,
       // use that, otherwise try the config file.  As a last resort, set port to
       // 0 and PDVault will use a random port.
@@ -111,7 +113,9 @@ void VaultDaemon::TakeOwnership() {
                                                     signed_pmid_public_,
                                                     chunkstore_dir_,
                                                     port_,
-                                                    kad_config_file_.string()));
+                                                    kad_config_file_.string(),
+                                                    vault_available_space_,
+                                                    used_space_));
   bool port_forwarded = false;
   pdvault_->Start(port_forwarded);
   val_check_ = boost::shared_ptr<ValCheck>

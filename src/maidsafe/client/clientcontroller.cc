@@ -479,6 +479,8 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
   chunkstore_path /= "Chunkstore";
   chunkstore_path /= co_.Hash(pmid_public, "", crypto::STRING_STRING, true);
   vault_config.set_chunkstore_dir(chunkstore_path.string());
+  vault_config.set_available_space(1024 * 1024 * 1024);
+  vault_config.set_used_space(0);
   std::fstream output(config_file.string().c_str(),
                       std::ios::out | std::ios::trunc | std::ios::binary);
   if (!vault_config.SerializeToOstream(&output)) {
