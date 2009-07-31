@@ -8,7 +8,7 @@
 * Created:      2009-01-28-23.19.56
 * Revision:     none
 * Compiler:     gcc
-* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
+* Author:       Team maidsafe.net
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
