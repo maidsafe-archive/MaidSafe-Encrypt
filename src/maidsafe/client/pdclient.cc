@@ -421,13 +421,18 @@ void PDClient::FindChunkRefCallback(const std::string &result,
   printf("No. de values %d.\n", result_msg.values_size());
 #endif
   for (int i = 0; i < result_msg.values_size(); ++i) {
-    std::string contact_info = result_msg.values(i);
-    kad::Contact remote;
-    if (remote.ParseFromString(contact_info)) {
-      data->chunk_holders.push_back(remote);
-      correct_info = true;
-      boost::shared_ptr<GetArgs> get_args_(new GetArgs(remote, data));
-      CheckChunk(get_args_);
+    kad::SignedValue signed_value;
+    if (signed_value.ParseFromString(result_msg.values(i))) {
+      std::string contact_info = signed_value.value();
+      kad::Contact remote;
+      if (remote.ParseFromString(contact_info)) {
+        data->chunk_holders.push_back(remote);
+        correct_info = true;
+        boost::shared_ptr<GetArgs> get_args_(new GetArgs(remote, data));
+        CheckChunk(get_args_);
+      } else {
+        --data->number_holders;
+      }
     } else {
       --data->number_holders;
     }
@@ -765,7 +770,6 @@ void PDClient::IterativeCheckAlive(const std::string &result,
     printf("No chunk reference found.\n");
 #endif
     // no chunk references were found
-//    TRI_LOG_STR("No chunk reference found.");
     UpdateResponse local_result;
     std::string local_result_str("");
     local_result.set_result(kRpcResultFailure);
@@ -784,28 +788,29 @@ void PDClient::IterativeCheckAlive(const std::string &result,
                                data_type));
   bool correct_info(false);
   for (int i = 0; i < result_msg.values_size(); ++i) {
-    std::string contact_info = result_msg.values(i);
-    kad::Contact remote;
-    if (remote.ParseFromString(contact_info)) {
-      data->chunk_holders.push_back(remote);
-      correct_info = true;
+    kad::SignedValue signed_value;
+    if (signed_value.ParseFromString(result_msg.values(i))) {
+      std::string contact_info = signed_value.value();
+      kad::Contact remote;
+      if (remote.ParseFromString(contact_info)) {
+        data->chunk_holders.push_back(remote);
+        correct_info = true;
 #ifdef DEBUG
-      printf("\tIn PDClient::IterativeCheckAlive, before Ping.\n");
+        printf("\tIn PDClient::IterativeCheckAlive, before Ping.\n");
 #endif
-      knode_->Ping(remote, boost::bind(&PDClient::IterativeCheckAliveCallback,
-                                      this,
-                                      _1,
-                                      1,
-                                      remote,
-                                      data));
+        knode_->Ping(remote, boost::bind(&PDClient::IterativeCheckAliveCallback,
+                                        this,
+                                        _1,
+                                        1,
+                                        remote,
+                                        data));
 #ifdef DEBUG
-      printf("\tIn PDClient::IterativeCheckAlive, after Ping.\n");
+        printf("\tIn PDClient::IterativeCheckAlive, after Ping.\n");
 #endif
+      }
     }
   }
-  // chunk reference infomation corrupt? impossible? hacker did that? Oh, no
   if (!correct_info) {
-//    TRI_LOG_STR("No valid chunk references found for chunk: ");
 #ifdef DEBUG
     printf("No valid chunk reference found.\n");
 #endif
@@ -962,12 +967,16 @@ void PDClient::IterativeUpdateChunkCallback(
   if (!update_response->IsInitialized() ||
       update_response->result() == kRpcResultFailure) {
     if (update_args->retry_ > kMaxChunkStoreRetries) {
-      // failed to update ...
+#ifdef DEBUG
+      printf("Failed to update chunk.\n");
+#endif
       --update_args->data_->active_updating;
       ++update_args->data_->contacted_holders;
       IterativeUpdateChunk(update_args->data_);
     } else {
-      // retry ...
+#ifdef DEBUG
+      printf("Re-trying to update chunk.\n");
+#endif
       ++update_args->retry_;
       const boost::shared_ptr<UpdateResponse>
           update_response_(new UpdateResponse());
@@ -1009,7 +1018,10 @@ void PDClient::IterativeUpdateChunkCallback(
                           callback,
                           local);
     }
-  } else {  // update chunk successfully
+  } else {
+#ifdef DEBUG
+    printf("Updated chunk successfully.\n");
+#endif
     --update_args->data_->active_updating;
     ++update_args->data_->contacted_holders;
     ++update_args->data_->updated_copies;
@@ -1055,7 +1067,6 @@ void PDClient::DeleteChunk_IterativeCheckAlive(const std::string &result,
       result_msg.result() == kRpcResultFailure ||
       result_msg.values_size() == 0) {
     // no chunk references were found
-//    TRI_LOG_STR("No chunk reference found.");
     DeleteResponse local_result;
     std::string local_result_str("");
     local_result.set_result(kRpcResultFailure);
@@ -1073,29 +1084,30 @@ void PDClient::DeleteChunk_IterativeCheckAlive(const std::string &result,
                                data_type));
   bool correct_info = false;
   for (int i = 0; i < result_msg.values_size(); ++i) {
-    std::string contact_info = result_msg.values(i);
-    kad::Contact remote;
-    if (remote.ParseFromString(contact_info)) {
-      data->chunk_holders.push_back(remote);
-      correct_info = true;
+    kad::SignedValue signed_value;
+    if (signed_value.ParseFromString(result_msg.values(i))) {
+      std::string contact_info = signed_value.value();
+      kad::Contact remote;
+      if (remote.ParseFromString(contact_info)) {
+        data->chunk_holders.push_back(remote);
+        correct_info = true;
 #ifdef DEBUG
-      printf("\tIn PDClient::DeleteChunk_IterativeCheckAlive, before Ping.\n");
+        printf("\tIn PDClient::DeleteChunk_IterativeCheckAlive, before Ping\n");
 #endif
-      knode_->Ping(remote,
-                   boost::bind(&PDClient::DeleteChunk_CheckAliveCallback,
-                               this,
-                               _1,
-                               1,
-                               remote,
-                               data));
+        knode_->Ping(remote,
+                     boost::bind(&PDClient::DeleteChunk_CheckAliveCallback,
+                                 this,
+                                 _1,
+                                 1,
+                                 remote,
+                                 data));
 #ifdef DEBUG
-      printf("\tIn PDClient::DeleteChunk_IterativeCheckAlive, after Ping.\n");
+        printf("\tIn PDClient::DeleteChunk_IterativeCheckAlive, after Ping.\n");
 #endif
+      }
     }
   }
-  // chunk reference infomation corrupt? impossible? hacker did that? Oh, no
   if (!correct_info) {
-//    TRI_LOG_STR("No valid chunk references found for chunk: ");
     DeleteResponse local_result;
     std::string local_result_str("");
     local_result.set_result(kRpcResultFailure);

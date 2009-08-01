@@ -161,8 +161,6 @@ int VaultDaemon::SetPaths() {
   }
   config_file_ = vault_path;
   config_file_ /= ".config";
-
-
   kad_config_file_ = vault_path;
   kad_config_file_ /= ".kadconfig";
   local_config_file_ = fs::path(".config", fs::native);

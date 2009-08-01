@@ -217,7 +217,6 @@ void PDVault::SyncVault_FindAlivePartner(const std::string& result,
       result_msg.result() == kRpcResultFailure ||
       result_msg.values_size() == 0) {
     // no chunk references were found
-//    TRI_LOG_STR("No chunk reference found.");
     // TODO(Haiyang): shall we remove the chunk?!
     --data->active_updating;
     IterativeSyncVault(data);
@@ -230,24 +229,27 @@ void PDVault::SyncVault_FindAlivePartner(const std::string& result,
   partner_data->data = data;
   bool correct_info = false;
   for (int i = 0; i < result_msg.values_size(); ++i) {
-    std::string contact_info = result_msg.values(i);
-    kad::Contact remote;
-    if (remote.ParseFromString(contact_info) &&
-        remote.node_id() != knode_.node_id()) {
-      correct_info = true;
-      knode_.Ping(remote,
-                  boost::bind(&PDVault::SyncVault_FindAlivePartner_Callback,
-                              this,
-                              _1,
-                              partner_data,
-                              remote));
+    kad::SignedValue signed_value;
+    if (signed_value.ParseFromString(result_msg.values(i))) {
+      std::string contact_info = signed_value.value();
+      kad::Contact remote;
+      if (remote.ParseFromString(contact_info) &&
+          remote.node_id() != knode_.node_id()) {
+        correct_info = true;
+        knode_.Ping(remote,
+                    boost::bind(&PDVault::SyncVault_FindAlivePartner_Callback,
+                                this,
+                                _1,
+                                partner_data,
+                                remote));
+      } else {
+        --partner_data->number_partners;
+      }
     } else {
       --partner_data->number_partners;
     }
   }
-  // chunk reference infomation corrupt? impossible? hacker did that? Oh, no
   if (!correct_info) {
-//    TRI_LOG_STR("No valid chunk references found for chunk: ");
     // TODO(Haiyang): shall we remove the chunk?!
     --data->active_updating;
     IterativeSyncVault(data);
@@ -267,7 +269,6 @@ void PDVault::SyncVault_FindAlivePartner_Callback(
       result_msg.echo() != "pong") {
     if (partner_data->contacted_partners == partner_data->number_partners &&
         !partner_data->is_found) {
-//      TRI_LOG_STR("No alive partners found.");
       // TODO(Haiyang): shall we remove the chunk?!
       --partner_data->data->active_updating;
       IterativeSyncVault(partner_data->data);
@@ -445,7 +446,6 @@ void PDVault::IterativeSyncVault_UpdateChunk(
   maidsafe::GetResponse result_msg;
   if (!get_chunk_response_->IsInitialized() ||
       get_chunk_response_->result() == kRpcResultFailure) {
-//    TRI_LOG_STR("Failed to synchronize the chunk.");
     // TODO(Haiyang): chunk deleted? shall we remove the chunk?!
   } else {
     chunkstore_->UpdateChunk(synch_args_->chunk_name_,
@@ -566,13 +566,18 @@ void PDVault::FindChunkRefCallback(
   data->number_holders = result_msg.values_size();
   bool correct_info(false);
   for (int i = 0; i < result_msg.values_size(); ++i) {
-    std::string contact_info = result_msg.values(i);
-    kad::Contact remote;
-    if (remote.ParseFromString(contact_info)) {
-      data->chunk_holders.push_back(remote);
-      correct_info = true;
-      boost::shared_ptr<GetArgs> get_args_(new GetArgs(remote, data));
-      CheckChunk(get_args_);
+    kad::SignedValue signed_value;
+    if (signed_value.ParseFromString(result_msg.values(i))) {
+      std::string contact_info = signed_value.value();
+      kad::Contact remote;
+      if (remote.ParseFromString(contact_info)) {
+        data->chunk_holders.push_back(remote);
+        correct_info = true;
+        boost::shared_ptr<GetArgs> get_args_(new GetArgs(remote, data));
+        CheckChunk(get_args_);
+      } else {
+        --data->number_holders;
+      }
     } else {
       --data->number_holders;
     }
