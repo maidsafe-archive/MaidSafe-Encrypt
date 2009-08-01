@@ -46,7 +46,7 @@ class PendingStoreContainerTest : public testing::Test {
 
 TEST_F(PendingStoreContainerTest, BEH_VAULT_PendingStoreInit) {
   ASSERT_EQ(0, psh_.PendingStoresCount());
-  ASSERT_EQ(0, psh_.QueuedSpace());
+  ASSERT_EQ(static_cast<unsigned int>(0), psh_.QueuedSpace());
 
   // Getting next on all phases returns the empty result
   maidsafe_vault::PendingStoreRow psr;
@@ -58,12 +58,12 @@ TEST_F(PendingStoreContainerTest, BEH_VAULT_PendingStoreInit) {
 
 TEST_F(PendingStoreContainerTest, BEH_VAULT_AddPendingStore) {
   ASSERT_EQ(0, psh_.PendingStoresCount());
-  ASSERT_EQ(0, psh_.QueuedSpace());
+  ASSERT_EQ(static_cast<unsigned int>(0), psh_.QueuedSpace());
 
   // Add a pending store
   ASSERT_EQ(0, psh_.AddPendingStore("abc", "def", 123456789));
   ASSERT_EQ(1, psh_.PendingStoresCount());
-  ASSERT_EQ(123456789, psh_.QueuedSpace());
+  ASSERT_EQ(static_cast<unsigned int>(123456789), psh_.QueuedSpace());
   maidsafe_vault::PendingStoreRow psr;
   ASSERT_EQ(-2703, psh_.NextPendingStore(1, &psr));
   ASSERT_EQ(-2703, psh_.NextPendingStore(2, &psr));
@@ -72,19 +72,19 @@ TEST_F(PendingStoreContainerTest, BEH_VAULT_AddPendingStore) {
   ASSERT_EQ(0, psh_.NextPendingStore(0, &psr));
   ASSERT_EQ("abc", psr.pmid_);
   ASSERT_EQ("def", psr.chunk_name_);
-  ASSERT_EQ(0, psr.contacts_.size());
-  ASSERT_EQ(123456789, psr.chunk_size_);
+  ASSERT_EQ(static_cast<unsigned int>(0), psr.contacts_.size());
+  ASSERT_EQ(static_cast<unsigned int>(123456789), psr.chunk_size_);
   ASSERT_EQ(0, psr.phase_);
-  ASSERT_NE(0, psr.timestamp_);
+  ASSERT_NE(static_cast<unsigned int>(0), psr.timestamp_);
 
   ASSERT_EQ(0, psh_.PendingStoresCount());
-  ASSERT_EQ(0, psh_.QueuedSpace());
+  ASSERT_EQ(static_cast<unsigned int>(0), psh_.QueuedSpace());
   ASSERT_EQ(-2703, psh_.NextPendingStore(0, &psr));
 }
 
 TEST_F(PendingStoreContainerTest, BEH_VAULT_AddInvalidPendingStore) {
   ASSERT_EQ(0, psh_.PendingStoresCount());
-  ASSERT_EQ(0, psh_.QueuedSpace());
+  ASSERT_EQ(static_cast<unsigned int>(0), psh_.QueuedSpace());
 
   // Add a pending store
   ASSERT_EQ(-2700, psh_.AddPendingStore("", "def", 123456789));
@@ -97,7 +97,7 @@ TEST_F(PendingStoreContainerTest, BEH_VAULT_AddInvalidPendingStore) {
 
 TEST_F(PendingStoreContainerTest, BEH_VAULT_AddMultiplePendingStores) {
   ASSERT_EQ(0, psh_.PendingStoresCount());
-  ASSERT_EQ(0, psh_.QueuedSpace());
+  ASSERT_EQ(static_cast<unsigned int>(0), psh_.QueuedSpace());
 
   // Add cycle
   std::string pmid("abc");
@@ -115,17 +115,17 @@ TEST_F(PendingStoreContainerTest, BEH_VAULT_AddMultiplePendingStores) {
     ASSERT_EQ(0, psh_.NextPendingStore(0, &psr));
     ASSERT_EQ(pmid + base::itos(n), psr.pmid_);
     ASSERT_EQ(chunkname + base::itos(n), psr.chunk_name_);
-    ASSERT_EQ(0, psr.contacts_.size());
+    ASSERT_EQ(static_cast<unsigned int>(0), psr.contacts_.size());
     ASSERT_EQ(chunk_size + n, psr.chunk_size_);
     ASSERT_EQ(0, psr.phase_);
-    ASSERT_NE(0, psr.timestamp_);
+    ASSERT_NE(static_cast<unsigned int>(0), psr.timestamp_);
     ASSERT_EQ(21 - n, psh_.PendingStoresCount());
   }
 }
 
 TEST_F(PendingStoreContainerTest, BEH_VAULT_ClearPendingStores) {
   ASSERT_EQ(0, psh_.PendingStoresCount());
-  ASSERT_EQ(0, psh_.QueuedSpace());
+  ASSERT_EQ(static_cast<unsigned int>(0), psh_.QueuedSpace());
 
   // Add cycle
   std::string pmid("abc");
@@ -140,5 +140,5 @@ TEST_F(PendingStoreContainerTest, BEH_VAULT_ClearPendingStores) {
 
   psh_.ClearPendingStores();
   ASSERT_EQ(0, psh_.PendingStoresCount());
-  ASSERT_EQ(0, psh_.QueuedSpace());
+  ASSERT_EQ(static_cast<unsigned int>(0), psh_.QueuedSpace());
 }

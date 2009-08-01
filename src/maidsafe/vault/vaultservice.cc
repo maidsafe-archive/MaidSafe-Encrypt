@@ -26,11 +26,11 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
+#include <maidsafe/kademlia_service_messages.pb.h>
 
-#include <maidsafe/maidsafe.h>
+#include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/chunkstore.h"
 #include "maidsafe/vault/vaultbufferpackethandler.h"
-#include "protobuf/kademlia_service_messages.pb.h"
 
 namespace maidsafe_vault {
 
@@ -677,13 +677,17 @@ void VaultService::StoreChunkReference(const std::string &non_hex_chunkname) {
   kad::ContactInfo ci = knode_->contact_info();
   std::string contact_info;
   ci.SerializeToString(&contact_info);
-#ifdef DEBUG
-  if (!crypto_.AsymCheckSig(pmid_public_, signed_pmid_public_, pmid_public_,
-      crypto::STRING_STRING))
-    printf("Pa variar, la firma valio vergaaaaaaaa!");
-#endif
+//  #ifdef DEBUG
+//    if (!crypto_.AsymCheckSig(pmid_public_, signed_pmid_public_, pmid_public_,
+//        crypto::STRING_STRING))
+//      printf("Pa variar, la firma valio vergaaaaaaaa!");
+//  #endif
+  kad::SignedValue signed_value;
+  signed_value.set_value(contact_info);
+  signed_value.set_value_signature(crypto_.AsymSign(contact_info, "",
+      pmid_private_, crypto::STRING_STRING));
   knode_->StoreValue(non_hex_chunkname,
-                     contact_info,
+                     signed_value,
                      pmid_public_,
                      signed_pmid_public_,
                      signed_request_,

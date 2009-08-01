@@ -28,11 +28,11 @@
 #include <boost/thread/thread.hpp>
 #include <boost/thread/xtime.hpp>
 #include <google/protobuf/descriptor.h>
-
+#include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
+
 #include "maidsafe/vault/chunkstore.h"
 #include "protobuf/general_messages.pb.h"
-#include "protobuf/kademlia_service_messages.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -504,8 +504,12 @@ void PDVault::IterativePublishChunkRef(
         "",
         pmid_private_,
         crypto::STRING_STRING);
+    kad::SignedValue signed_value;
+    signed_value.set_value(pmid_);
+    signed_value.set_value_signature(co.AsymSign(pmid_, "", pmid_private_,
+        crypto::STRING_STRING));
     knode_.StoreValue(chunk_name,
-                      pmid_,
+                      signed_value,
                       pmid_public_,
                       signed_pmid_public_,
                       signed_request_,
@@ -941,8 +945,12 @@ void PDVault::SwapChunkAcceptChunk(
       "",
       pmid_private_,
       crypto::STRING_STRING);
+  kad::SignedValue signed_value;
+  signed_value.set_value(pmid_);
+  signed_value.set_value_signature(co.AsymSign(pmid_, "", pmid_private_,
+      crypto::STRING_STRING));
   knode_.StoreValue(swap_chunk_args->chunkname_,
-                    pmid_,
+                    signed_value,
                     pmid_public_,
                     signed_pmid_public_,
                     signed_request,

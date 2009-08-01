@@ -16,11 +16,11 @@
 
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
+#include <maidsafe/kademlia_service_messages.pb.h>
+#include <maidsafe/maidsafe-dht.h>
 
 #include "maidsafe/maidsafe.h"
-#include "maidsafe/maidsafe-dht.h"
 #include "protobuf/general_messages.pb.h"
-#include "protobuf/kademlia_service_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 namespace maidsafe {

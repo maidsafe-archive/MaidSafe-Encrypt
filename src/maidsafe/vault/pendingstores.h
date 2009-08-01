@@ -30,13 +30,13 @@
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <maidsafe/contact_info.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 
 #include <string>
 #include <vector>
 
 #include "maidsafe/maidsafe.h"
-#include "protobuf/contact_info.pb.h"
 
 namespace maidsafe_vault {
 

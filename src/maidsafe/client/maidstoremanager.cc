@@ -29,11 +29,11 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/tokenizer.hpp>
+#include <maidsafe/kademlia_service_messages.pb.h>
 
 #include "fs/filesystem.h"
 #include "maidsafe/maidsafe.h"
 #include "protobuf/general_messages.pb.h"
-#include "protobuf/kademlia_service_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 namespace fs = boost::filesystem;
