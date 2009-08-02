@@ -42,7 +42,7 @@ class Contacts : public Panel {
   bool init_;
   ContactList contacts_;
 
-  Contact* currentContact();
+  QList<QListWidgetItem *> currentContact();
 
   private slots:
     void onAddContactClicked();

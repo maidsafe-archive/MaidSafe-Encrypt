@@ -41,6 +41,7 @@ Contacts::Contacts(QWidget* parent)
   ui_.view_profile->setAutoDefault(true);
   ui_.send_message->setAutoDefault(true);
   ui_.share_file->setAutoDefault(true);
+  ui_.listWidget->setSelectionMode(QAbstractItemView::MultiSelection);
 
   connect(ui_.add, SIGNAL(clicked(bool)),
           this, SLOT(onAddContactClicked()));
@@ -116,7 +117,7 @@ void Contacts::onItemDoubleClicked(QListWidgetItem* item) {
 }
 
 void Contacts::onItemSelectionChanged() {
-  const bool enable = currentContact() != NULL;
+  const bool enable = currentContact().size() == 0;
 
   ui_.delete_user->setEnabled(enable);
   ui_.view_profile->setEnabled(enable);
@@ -176,9 +177,16 @@ void Contacts::addContact(Contact* contact) {
 }
 
 void Contacts::onViewProfileClicked() {
-  Contact* contact_ = currentContact();
-  if (!contact_)
+  QList<QListWidgetItem *> contacts = currentContact();
+  if (contacts.size() == 0)
       return;
+
+  if (contacts.size() > 1) {
+    QMessageBox::warning(this, tr("Error"),
+                         QString(tr("Please select only one user.")));
+  }
+
+  Contact* contact_ = (Contact*)contacts.front();
 
   // \TODO QString/html/%1,%2 etc - inline view of details?
   QString details("Public Username: ");
@@ -199,9 +207,16 @@ void Contacts::onViewProfileClicked() {
 }
 
 void Contacts::onDeleteUserClicked() {
-  Contact* contact_ = currentContact();
-  if (!contact_)
+  QList<QListWidgetItem *> contacts = currentContact();
+  if (contacts.size() == 0)
     return;
+
+  if (contacts.size() > 1) {
+    QMessageBox::warning(this, tr("Error"),
+                         QString(tr("Please select only one user.")));
+  }
+
+  Contact* contact_ = (Contact*)contacts.front();
 
   if (ClientController::instance()->removeContact(contact_->publicName())) {
     QList<QListWidgetItem*> items = ui_.listWidget->findItems(
@@ -223,9 +238,16 @@ void Contacts::onDeleteUserClicked() {
 }
 
 void Contacts::onSendMessageClicked() {
-  Contact* contact_ = currentContact();
-  if (!contact_)
+  QList<QListWidgetItem *> contacts = currentContact();
+  if (contacts.size() == 0)
     return;
+
+  if (contacts.size() > 1) {
+    QMessageBox::warning(this, tr("Error"),
+                         QString(tr("Please select only one user.")));
+  }
+
+  Contact* contact_ = (Contact*)contacts.front();
 
   bool ok;
   QString text = QInputDialog::getText(this,
@@ -250,9 +272,16 @@ void Contacts::onSendMessageClicked() {
 }
 
 void Contacts::onFileSendClicked() {
-  Contact* contact_ = currentContact();
-  if (!contact_)
+  QList<QListWidgetItem *> contacts = currentContact();
+  if (contacts.size() == 0)
     return;
+
+  if (contacts.size() > 1) {
+    QMessageBox::warning(this, tr("Error"),
+                         QString(tr("Please select only one user.")));
+  }
+
+  Contact* contact_ = (Contact*)contacts.front();
 
   // choose a file
   // starting directoty should be the maidafe one.
@@ -306,18 +335,18 @@ void Contacts::onFileSendClicked() {
   }
 }
 
-Contact* Contacts::currentContact() {
-  if (!ui_.listWidget->currentItem())
-    return NULL;
+QList<QListWidgetItem *> Contacts::currentContact() {
+//  if (!ui_.listWidget->currentItem())
+//    return NULL;
 
-  const QString name = ui_.listWidget->currentItem()->text();
+  const QList<QListWidgetItem *> names = ui_.listWidget->selectedItems();
 
-  foreach(Contact* contact, contacts_) {
-    if (contact->publicName() == name)
-      return contact;
-  }
+//  foreach(Contact* contact, contacts_) {
+//    if (contact->publicName() == name)
+//      return contact;
+//  }
 
-  return NULL;
+  return names;
 }
 
 void Contacts::onAddedContact(const QString &name) {

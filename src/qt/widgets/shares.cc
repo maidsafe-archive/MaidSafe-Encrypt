@@ -66,6 +66,16 @@ void Shares::onCreateShareClicked() {
   // 3 - choose ro contacts
   // 4 - submit
 
+  // Check if share name isn't already in list
+  const QString share_name = ui_.shareNameLineEdit->text().trimmed();
+  QList<QListWidgetItem*> items = ui_.listWidget->findItems(share_name,
+                                Qt::MatchCaseSensitive);
+  if (items.size() > 0) {
+    QMessageBox::warning(this, tr("Problem!"),
+                 tr("You already have a share with this name."));
+    return;
+  }
+
   // Check for contacts to share with
   if (ClientController::instance()->contactsNames().size() == 0) {
     QMessageBox::warning(this, tr("Problem!"),
@@ -79,7 +89,6 @@ void Shares::onCreateShareClicked() {
                          tr("Please type a valid name for the share."));
     return;
   }
-  const QString share_name = ui_.shareNameLineEdit->text().trimmed();
 
   QStringList admin_set;
   ShareParticipantsChoice spc_admin(this, tr("Administrators"), &admin_set);
