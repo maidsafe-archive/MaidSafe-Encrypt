@@ -251,7 +251,7 @@ class TestChunkstore : public testing::Test {
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreInit) {
   std::string invalid_path_length(257, ' ');
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(storedir.string(),
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore(invalid_path_length,
       1073741824, 0));
   ASSERT_FALSE(chunkstore->is_initialised());
   ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
@@ -573,6 +573,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk) {
         chunkstore_set_.get<non_hex_name>().find(h_name.at(test_chunk));
     original_check_time = (*itr).last_checked_;
   }
+  // Allow thread to sleep to ensure different check times.
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(0, chunkstore->HashCheckChunk(h_name.at(test_chunk)));
   boost::posix_time::ptime later_check_time;
   {
@@ -887,7 +889,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedStoreAndLoad) {
   std::vector<boost::shared_ptr<bool> > store_result;
   boost::thread_group store_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     store_result.push_back(res);
     store_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::StoreChunk, tester, store_delay,
@@ -897,7 +899,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedStoreAndLoad) {
   bool result(false);
   std::vector<boost::shared_ptr<bool> > has_chunk;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     has_chunk.push_back(res);
   }
   const boost::uint64_t kTimeout(5000);
@@ -930,7 +932,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedStoreAndLoad) {
   for (int i = 0; i < kNumberOfChunks; ++i) {
     boost::shared_ptr<std::string> val(new std::string("Value"));
     load_value.push_back(val);
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     load_result.push_back(res);
     load_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::LoadChunk, tester, load_delay,
@@ -960,7 +962,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedUpdate) {
   std::vector<boost::shared_ptr<bool> > update_result;
   boost::thread_group update_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     update_result.push_back(res);
   }
   // Store chunks
@@ -968,7 +970,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedUpdate) {
   std::vector<boost::shared_ptr<bool> > store_result;
   boost::thread_group store_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     store_result.push_back(res);
     store_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::StoreChunk, tester, store_delay,
@@ -1004,7 +1006,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedUpdate) {
   for (int i = 0; i < kNumberOfChunks; ++i) {
     boost::shared_ptr<std::string> val(new std::string("Value"));
     load_value.push_back(val);
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     load_result.push_back(res);
     load_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::LoadChunk, tester, load_delay,
@@ -1046,7 +1048,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedDelete) {
   std::vector<boost::shared_ptr<bool> > delete_result;
   boost::thread_group delete_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     delete_result.push_back(res);
   }
   // Store chunks
@@ -1054,7 +1056,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedDelete) {
   std::vector<boost::shared_ptr<bool> > store_result;
   boost::thread_group store_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     store_result.push_back(res);
     store_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::StoreChunk, tester, store_delay,
@@ -1092,7 +1094,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedDelete) {
   for (int i = 0; i < kNumberOfChunks; ++i) {
     boost::shared_ptr<std::string> val(new std::string("Value"));
     load_value.push_back(val);
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     load_result.push_back(res);
     load_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::LoadChunk, tester, load_delay,
@@ -1119,7 +1121,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedRandLoad) {
   std::vector<boost::shared_ptr<bool> > store_result;
   boost::thread_group store_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     store_result.push_back(res);
     store_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::StoreChunk, tester, store_delay,
@@ -1139,7 +1141,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedRandLoad) {
     rand_load_name.push_back(key);
     boost::shared_ptr<std::string> val(new std::string("Value"));
     rand_load_value.push_back(val);
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     rand_load_result.push_back(res);
     rand_load_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::LoadRandomChunk, tester,
@@ -1174,7 +1176,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedCheckSingle) {
   std::vector<boost::shared_ptr<int> > check_result;
   boost::thread_group check_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<int> res(new int(5318008));
+    boost::shared_ptr<int> res(new int(5318008));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     check_result.push_back(res);
   }
   // Store chunks
@@ -1182,7 +1184,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedCheckSingle) {
   std::vector<boost::shared_ptr<bool> > store_result;
   boost::thread_group store_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     store_result.push_back(res);
     store_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::StoreChunk, tester, store_delay,
@@ -1233,7 +1235,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedCheckAll) {
   std::vector<boost::shared_ptr<bool> > store_result;
   boost::thread_group store_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     store_result.push_back(res);
     store_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::StoreChunk, tester, store_delay,
@@ -1243,7 +1245,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedCheckAll) {
     boost::this_thread::yield();
   // Check all chunks
   boost::posix_time::milliseconds check_all_delay(0);
-  boost::shared_ptr<int> check_all_result(new int(5318008));
+  boost::shared_ptr<int> check_all_result(new int(5318008));  // NOLINT (Fraser) - Incorrect interpretation by lint.
   boost::shared_ptr< std::list<std::string> >
       failed_chunks(new std::list<std::string>);
   boost::thread check_all_thread(
@@ -1293,7 +1295,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedChangeType) {
   }
   boost::thread_group change_type_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<int> res(new int(5318008));
+    boost::shared_ptr<int> res(new int(5318008));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     change_type_result.push_back(res);
   }
   // Store chunks
@@ -1301,7 +1303,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedChangeType) {
   std::vector<boost::shared_ptr<bool> > store_result;
   boost::thread_group store_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     store_result.push_back(res);
     store_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::StoreChunk, tester, store_delay,
@@ -1347,7 +1349,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedChangeType) {
   for (int i = 0; i < kNumberOfChunks; ++i) {
     boost::shared_ptr<std::string> val(new std::string("Value"));
     load_value.push_back(val);
-    boost::shared_ptr<bool> res(new bool(false));
+    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     load_result.push_back(res);
     load_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::LoadChunk, tester, load_delay,
