@@ -125,8 +125,8 @@ ENDIF(APPLE)
 ######################################################################################
 #All Platforms:  Add Test Exes and Create all PD libs                                 #
 #######################################################################################
-add_executable(TESTfuse "${SOURCE_DIR}/tests/maidsafe/testfuse.cc" )
-add_executable(TESTclientcontroller "${SOURCE_DIR}/tests/maidsafe/functionaltestclientcontroller.cc")
+#add_executable(TESTfuse "${SOURCE_DIR}/tests/maidsafe/testfuse.cc" )
+#add_executable(TESTclientcontroller "${SOURCE_DIR}/tests/maidsafe/functionaltestclientcontroller.cc")
 add_executable(TESTpdvault "${SOURCE_DIR}/tests/maidsafe/testpdvault.cc")
 add_executable(TESTmaidsafe ${T_MAIDSAFE_DIR})
 add_executable(TESTfs ${T_MAIN} ${T_FS})
