@@ -1348,22 +1348,22 @@ int ClientController::HandleAddContactResponse(
 }
 
 int ClientController::SendInstantMessage(const std::string &message,
-                                         const std::string &contact_name) {
-  std::vector<Contact> list;
-  maidsafe::mi_contact mic;
-  int n = ss_->GetContactInfo(contact_name, &mic);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("Couldn't find contact: %i\n", n);
-#endif
-    return -9;
-  }
-
-  maidsafe::Receivers rec;
-  rec.id = contact_name;
-  rec.public_key = mic.pub_key_;
+    const std::vector<std::string> &contact_names) {
   std::vector<Receivers> recs;
-  recs.push_back(rec);
+  for (unsigned int a = 0; a < contact_names.size(); ++a) {
+    maidsafe::mi_contact mic;
+    int n = ss_->GetContactInfo(contact_names[a], &mic);
+    if (n != 0) {
+  #ifdef DEBUG
+      printf("Couldn't find contact: %i\n", n);
+  #endif
+      return -9;
+    }
+    maidsafe::Receivers rec;
+    rec.id = mic.pub_name_;
+    rec.public_key = mic.pub_key_;
+    recs.push_back(rec);
+  }
 
   std::string ser_im;
   packethandler::InstantMessage im;
@@ -1387,8 +1387,13 @@ int ClientController::SendInstantMessage(const std::string &message,
 #endif
     return -99;
   }
-  if (store_res.stored_msgs() != 1)
+  if (store_res.stored_msgs() != static_cast<int>(recs.size())) {
+#ifdef DEBUG
+    printf("Not all recepients got the message -- %d -- %d.\n",
+            store_res.stored_msgs(), recs.size());
+#endif
     return -999;
+  }
   return 0;
 }
 
@@ -1400,8 +1405,7 @@ int ClientController::GetInstantMessages(
 }
 
 int ClientController::SendInstantFile(std::string *filename,
-                                      const std::string &msg,
-                                      const std::string &contact_name) {
+    const std::string &msg, const std::vector<std::string> &contact_names) {
   std::string path = *filename;
   DB_TYPE db_type;
   std::string msid("");
@@ -1454,21 +1458,21 @@ int ClientController::SendInstantFile(std::string *filename,
   std::string ser_instant_file;
   im.SerializeToString(&ser_instant_file);
 
-  std::vector<Contact> list;
-  maidsafe::mi_contact mic;
-  n = ss_->GetContactInfo(contact_name, &mic);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("Couldn't find contact: %i\n", n);
-#endif
-    return -6666;
-  }
-
-  maidsafe::Receivers rec;
-  rec.id = contact_name;
-  rec.public_key = mic.pub_key_;
   std::vector<Receivers> recs;
-  recs.push_back(rec);
+  for (unsigned int a = 0; a < contact_names.size(); ++a) {
+    maidsafe::mi_contact mic;
+    int n = ss_->GetContactInfo(contact_names[a], &mic);
+    if (n != 0) {
+  #ifdef DEBUG
+      printf("Couldn't find contact: %i\n", n);
+  #endif
+      return -6666;
+    }
+    maidsafe::Receivers rec;
+    rec.id = mic.pub_name_;
+    rec.public_key = mic.pub_key_;
+    recs.push_back(rec);
+  }
 
   CC_CallbackResult cb;
   msgh_->SendMessage(ser_instant_file,
@@ -1485,9 +1489,10 @@ int ClientController::SendInstantFile(std::string *filename,
 #endif
     return -66666;
   }
-  if (res.stored_msgs() != 1) {
+  if (res.stored_msgs() != static_cast<int>(recs.size())) {
 #ifdef DEBUG
-    printf("Messages sent: %i\n", res.stored_msgs());
+    printf("Messages sent: %i -- Received: %i\n",
+            res.stored_msgs(), recs.size());
 #endif
     return -666666;
   }

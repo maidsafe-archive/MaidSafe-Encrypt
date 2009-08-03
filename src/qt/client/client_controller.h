@@ -116,7 +116,7 @@ class ClientController : public QObject,
 
       TODO - any length or format restrictions?
   */
-  bool sendInstantMessage(const QString& txt, const QString& to);
+  bool sendInstantMessage(const QString& txt, const QList<QString>& to);
 
   // Send a file to someone
   /*!
@@ -128,7 +128,7 @@ class ClientController : public QObject,
   */
   bool sendInstantFile(const QString& filePath,
                        const QString& txt,
-                       const QString& to);
+                       const QList<QString>& to);
 
   enum MessageType {
       TEXT,               // Instant message received from someone

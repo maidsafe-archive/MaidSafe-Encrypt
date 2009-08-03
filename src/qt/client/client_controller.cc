@@ -276,19 +276,25 @@ bool ClientController::removeContact(const QString& name) {
 
 
 bool ClientController::sendInstantMessage(const QString& txt,
-                                          const QString& to) {
-  qDebug() << "ClientController::sendInstantMessage:" << txt << to;
+                                          const QList<QString> &to) {
+  qDebug() << "ClientController::sendInstantMessage: " << txt;
 
+  std::vector<std::string> contacts;
+  foreach(QString c, to) {
+    contacts.push_back(c.toStdString());
+  }
   const int n = maidsafe::ClientController::getInstance()->
-                SendInstantMessage(txt.toStdString(), to.toStdString());
+                SendInstantMessage(txt.toStdString(), contacts);
 
+  qDebug() << "ClientController::sendInstantMessage res: " << n;
   return (n == 0);
 }
 
 bool ClientController::sendInstantFile(const QString& filePath,
                                        const QString& txt,
-                                       const QString& to) {
-  qDebug() << "ClientController::sendInstantFile:" << filePath << txt << to;
+                                       const QList<QString>& to) {
+  qDebug() << "ClientController::sendInstantFile: " << filePath
+           << " -- " << txt;
 
   file_system::FileSystem fsys;
   std::string rel_filename(fsys.MakeRelativeMSPath(filePath.toStdString()));
@@ -302,9 +308,13 @@ bool ClientController::sendInstantFile(const QString& filePath,
   rel_filename = base::TidyPath(rel_filename);
   qDebug() << "Tidied Path:" << rel_filename.c_str();
 
+  std::vector<std::string> contacts;
+  foreach(QString c, to) {
+    contacts.push_back(c.toStdString());
+  }
   const int n = maidsafe::ClientController::getInstance()->
-                SendInstantFile(&rel_filename, txt.toStdString(),
-                to.toStdString());
+                SendInstantFile(&rel_filename, txt.toStdString(), contacts);
+  qDebug() << "ClientController::sendInstantFile res: " << n;
 
   return (n == 0);
 }

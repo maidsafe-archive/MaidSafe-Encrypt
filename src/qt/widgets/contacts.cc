@@ -117,12 +117,18 @@ void Contacts::onItemDoubleClicked(QListWidgetItem* item) {
 }
 
 void Contacts::onItemSelectionChanged() {
-  const bool enable = currentContact().size() == 0;
+  bool singles = false;
+  bool doubles = false;
+  if (currentContact().size() > 0) {
+    if (currentContact().size() == 1)
+      singles = true;
+    doubles = true;
+  }
 
-  ui_.delete_user->setEnabled(enable);
-  ui_.view_profile->setEnabled(enable);
-  ui_.send_message->setEnabled(enable);
-  ui_.share_file->setEnabled(enable);
+  ui_.delete_user->setEnabled(singles);
+  ui_.view_profile->setEnabled(singles);
+  ui_.send_message->setEnabled(doubles);
+  ui_.share_file->setEnabled(doubles);
 }
 
 void Contacts::onAddContactClicked() {
@@ -184,24 +190,30 @@ void Contacts::onViewProfileClicked() {
   if (contacts.size() > 1) {
     QMessageBox::warning(this, tr("Error"),
                          QString(tr("Please select only one user.")));
+    return;
   }
 
-  Contact* contact_ = (Contact*)contacts.front();
+  QListWidgetItem *contact = contacts.front();
+  maidsafe::mi_contact mic;
+  int n = maidsafe::SessionSingleton::getInstance()->GetContactInfo(
+          contact->text().toStdString(), &mic);
+
+  if (n != 0) {
+    QMessageBox::warning(this, tr("Error"),
+                         QString(tr("contact doesn't exist.")));
+    return;
+  }
 
   // \TODO QString/html/%1,%2 etc - inline view of details?
   QString details("Public Username: ");
-  details += contact_->publicName() + "\n";
-  details += "Full Name: " + contact_->profile().full_name + "\n";
-  details += "Office Phone: " + contact_->profile().office_phone + "\n";
-  details += "Birthday: " + contact_->profile().birthday.toString() + "\n";
-  details += "Gender: " +
-              QString(contact_->profile().gender == Profile::MALE ? "M" : "F") +
-              "\n";
-  details += "Language: " +
-              QLocale::languageToString(contact_->profile().language) + "\n";
-  details += "City: " + contact_->profile().city + "\n";
-  details += "Country: " +
-              QLocale::countryToString(contact_->profile().country) + "\n";
+  details += QString(mic.pub_name_.c_str()) + "\n";
+  details += "Full Name: " + QString(mic.full_name_.c_str()) + "\n";
+  details += "Office Phone: " + QString(mic.office_phone_.c_str()) + "\n";
+  details += "Birthday: " + QString(mic.birthday_.c_str()) + "\n";
+  details += "Gender: " + QString(1, QChar(mic.gender_)) + "\n";
+  details += "Language: English\n";
+  details += "City: " + QString(mic.city_.c_str()) + "\n";
+  details += "Country: UK\n";
 
   QMessageBox::information(this, tr("Contact Details"), details);
 }
@@ -214,6 +226,7 @@ void Contacts::onDeleteUserClicked() {
   if (contacts.size() > 1) {
     QMessageBox::warning(this, tr("Error"),
                          QString(tr("Please select only one user.")));
+    return;
   }
 
   Contact* contact_ = (Contact*)contacts.front();
@@ -242,12 +255,15 @@ void Contacts::onSendMessageClicked() {
   if (contacts.size() == 0)
     return;
 
+  QList<QString> conts;
   if (contacts.size() > 1) {
-    QMessageBox::warning(this, tr("Error"),
-                         QString(tr("Please select only one user.")));
+    foreach(QListWidgetItem *item, contacts) {
+      qDebug() << "Contacts::onSendMessageClicked()";
+      conts.push_back(item->text());
+    }
+  } else {
+    conts.push_back(contacts.front()->text());
   }
-
-  Contact* contact_ = (Contact*)contacts.front();
 
   bool ok;
   QString text = QInputDialog::getText(this,
@@ -260,13 +276,10 @@ void Contacts::onSendMessageClicked() {
       return;
   }
 
-  if (ClientController::instance()->sendInstantMessage(text,
-      contact_->publicName())) {
-    qDebug() << "Message sent to:" << contact_->publicName();
+  if (ClientController::instance()->sendInstantMessage(text, conts)) {
+    qDebug() << "Message sent to " << conts.size() << " contacts.";
   } else {
-    const QString msg = tr("Error sending a message to: %1")
-                            .arg(contact_->publicName());
-
+    const QString msg = tr("Error sending message.");
     QMessageBox::warning(this, tr("Error"), msg);
   }
 }
@@ -276,12 +289,15 @@ void Contacts::onFileSendClicked() {
   if (contacts.size() == 0)
     return;
 
+  QList<QString> conts;
   if (contacts.size() > 1) {
-    QMessageBox::warning(this, tr("Error"),
-                         QString(tr("Please select only one user.")));
+    foreach(QListWidgetItem *item, contacts) {
+      qDebug() << "Contacts::onSendMessageClicked()";
+      conts.push_back(item->text());
+    }
+  } else {
+    conts.push_back(contacts.front()->text());
   }
-
-  Contact* contact_ = (Contact*)contacts.front();
 
   // choose a file
   // starting directoty should be the maidafe one.
@@ -323,14 +339,12 @@ void Contacts::onFileSendClicked() {
       return;
   }
 
-  if (ClientController::instance()->sendInstantFile(filename, text,
-      contact_->publicName())) {
+  if (ClientController::instance()->sendInstantFile(filename, text, conts)) {
     QMessageBox::information(this, tr("File Sent"),
                               tr("Success sending file: %1").arg(filename));
   } else {
     const QString msg = tr("There was an error sending the file: %1")
                        .arg(filename);
-
     QMessageBox::warning(this, tr("File Not Sent"), msg);
   }
 }

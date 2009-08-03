@@ -1209,11 +1209,13 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   test_path /= share_name;
   test_path /= "/test2.txt";
   std::string test_file(test_path.string());
+  std::vector<std::string> recs;
+  recs.push_back(public_username2_);
   ASSERT_EQ(0, cc_->SendInstantFile(&test_file,
-                                    kTestMessage, public_username2_));
+                                    kTestMessage, recs));
   boost::this_thread::sleep(boost::posix_time::seconds(30));
   ASSERT_EQ(0, cc_->SendInstantMessage(fuse_test::pre_hash_share_[7],
-                                       public_username2_));
+                                       recs));
   boost::this_thread::sleep(boost::posix_time::seconds(30));
 
 
