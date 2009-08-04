@@ -3573,7 +3573,7 @@ reference "sub:Rank-Packets-(or"
 
 \end_inset
 
-) is decremented by a value of 1.
+) is decremented by a value of the number of kilobytes of the chunk.
 \end_layout
 
 \begin_layout Enumerate
@@ -3621,6 +3621,19 @@ reference "sub:Chunk-References"
  it.
 \end_layout
 
+\begin_layout Standard
+In this document rank is described in a fashion that basically is a count
+ of how much data any PMID has on the network any any one time and this
+ is incremented or decremented to allow a node to recover space, i.e.
+ when a user deletes a file the cline tpart of the system will instruct
+ the vault to depete the equivelent number of chunks that make up the file.
+ This deletion means the vault moves some chunks to a cache dir, but only
+ after instructing the network for a reduce rank message.
+ Failure to intruct a reduce rank message will in fact cuase the network
+ to reduce the rank by a factor of 2 or 3 times the actual amount of data
+ the vault deletes.
+\end_layout
+
 \begin_layout Subsubsection
 Rank Decrement
 \end_layout
@@ -3634,8 +3647,9 @@ On receipt of an decrement rank message - the signature is checked , confirm
 \end_layout
 
 \begin_layout Enumerate
-The rank is decremented and the validation packet described above is passed
- to the K closest nodes to do likewise.
+The rank is decremented, again by the size of the chunk in Kilobytes and
+ the validation packet described above is passed to the K closest nodes
+ to do likewise.
 \end_layout
 
 \begin_layout Enumerate
@@ -3651,6 +3665,7 @@ Rank Increment
 \begin_layout Standard
 In this case the actual PMID to be incremented is responsible for acquiring
  the increment notice.
+ Again the number to increment by is the size of the chunk in Kilobytes.
  This is done using the following process.
 \end_layout
 
@@ -3923,6 +3938,16 @@ So there's a couple of rules to stop that and enhance the system 1: Chunk
 
 \begin_layout Subsection
 Validity Check
+\end_layout
+
+\begin_layout Standard
+To ensure data validity is constant on the network validity checks are performed
+ at regular intervals.
+ For each chunk a vault holds it will carry out a vailidity check from time
+ to time on the chunk.
+ Chunks health checks (or validity checks) are required to ensure data is,
+ actually in existance and also not been tampered with or damaged.
+ 
 \end_layout
 
 \begin_layout Standard
