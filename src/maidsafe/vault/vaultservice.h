@@ -31,6 +31,7 @@
 #include <string>
 
 #include "maidsafe/maidsafe.h"
+#include "maidsafe/vault/pendingious.h"
 #include "protobuf/maidsafe_service.pb.h"
 
 namespace maidsafe_vault {
@@ -50,6 +51,10 @@ class VaultService : public maidsafe::MaidsafeService {
   virtual void StoreChunkPrep(google::protobuf::RpcController* controller,
              const maidsafe::StorePrepRequest* request,
              maidsafe::StorePrepResponse* response,
+             google::protobuf::Closure* done);
+  virtual void StoreIOU(google::protobuf::RpcController* controller,
+             const maidsafe::StoreIOURequest* request,
+             maidsafe::StoreIOUResponse* response,
              google::protobuf::Closure* done);
   virtual void StoreChunk(google::protobuf::RpcController* controller,
              const maidsafe::StoreRequest* request,
@@ -110,9 +115,9 @@ class VaultService : public maidsafe::MaidsafeService {
   void StoreChunkReference(const std::string &non_hex_chunkname);
   crypto::Crypto crypto_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
-  boost::shared_ptr<ChunkStore>chunkstore_;
+  boost::shared_ptr<ChunkStore> chunkstore_;
+  PendingIOUHandler pih_;
   kad::KNode *knode_;
-  boost::mutex pending_store_mutex_;
 };
 }  // namespace maidsafe_vault
 

@@ -17,6 +17,21 @@ message StorePrepResponse {
   optional bytes pmid_id = 2;
 };
 
+message StoreIOURequest {
+  required int64 data_size = 1;
+  required bytes pmid = 2;
+  required bytes authority = 3;
+  optional bytes chunk_name = 4;
+  required bytes public_key = 5;
+  required bytes signed_public_key = 6;
+  required bytes signed_request = 7;
+};
+
+message StoreIOUResponse {
+  required int32 result = 1;
+  optional bytes pmid_id = 2;
+};
+
 message StoreRequest {
   required bytes chunkname = 1;
   required bytes data = 2;
