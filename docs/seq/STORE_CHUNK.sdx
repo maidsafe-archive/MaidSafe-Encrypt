@@ -9,11 +9,11 @@ RankHolder:vault
 
 
 
-Client:Vault.STORE REQUEST [PMID:CHUNKNAME:SIZE]
+Client:IOU Auth        {SIZE|CLIENT_PMID|[signed with vault PMID]}=Vault.STORE REQUEST [PMID:CHUNKNAME:SIZE]
 Vault:Vault.check clients pmid rank ok
 
 [c: Loop for K nodes]
-Client:RefHolder.new(store_iou (ttl=24hrs))
+Client:RefHolder.new( STORE_IOU    {IOU Auth|[signed with client PMID] })
 RefHolder: store iou in queue
 [/c]
 Client:ChunkName STORED (buffer message)=Vault. STORE CHUNK [PMID]
@@ -72,6 +72,6 @@ Client: Mark datamap chunk stored]]></source>
 <property name="threadNumbersVisible" value="false"/>
 <property name="threaded" value="true"/>
 <property name="upperMargin" value="5"/>
-<property name="verticallySplit" value="true"/>
+<property name="verticallySplit" value="false"/>
 </configuration>
 </diagram>
