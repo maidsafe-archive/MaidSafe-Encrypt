@@ -1,22 +1,33 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram>
 <source><![CDATA[#![maidsafe store chunk]
+/WatchList:vault
 Client:Object
+/StoreManager:Object
 Vault:vault
 /RefHolder:vault
-RankHolder:vault
-/WatchList:vault
+/RankHolder:vault
 
 
 
-Client:Vault.STORE REQUEST [PMID:CHUNKNAME:SIZE]
+Client:Client.Does chunk exist on network
+
+
+[c: If chunk does not exist on network]
+Client:>StoreManager.new(Store Chunk)
+*1 StoreManager
+List all nodes by rank, then RTT, 
+select nodes ranked sames or less and 
+4 nodes at distances closest to 0,33,66,100%.
+*1
+StoreManager:IOU Auth {SIZE|CLIENT_PMID|[signed with vault PMID]}=Vault.STORE REQUEST [PMID:CHUNKNAME:SIZE]
 Vault:Vault.check clients pmid rank ok
 
 [c: Loop for K nodes]
-Client:RefHolder.new(store_iou (ttl=24hrs))
+StoreManager:RefHolder.new( STORE_IOU    {IOU Auth|[signed with client PMID]})
 RefHolder: store iou in queue
 [/c]
-Client:ChunkName STORED (buffer message)=Vault. STORE CHUNK [PMID]
+StoreManager:ChunkName STORED (buffer message)=Vault. STORE CHUNK [PMID]
 
 #Add reference 
 [c: Loop for K nodes]
@@ -26,13 +37,22 @@ RefHolder:  add reference
 [/c]
 
 [c: Loop for K nodes]
-Vault:ACK/NACK=RankHolder. INC RANK, auth=[Reciept:CHUNKNAME]
-RankHolder:ACK/NACK=RefHolder. Delete IOU 
+Vault:ACK/NACK=RankHolder.new(INC RANK, auth=[Reciept:CHUNKNAME]
+RankHolder:ACK/NACK=RefHolder. Delete IOU) 
 [/c]
+[/c]
+StoreManager:destroy()
 
 [c: Loop for K nodes]
 #RefHolder:Vault.ACK NACK
-Client:WatchList.new(Add me to list [auth=[key:PMID,CHUNKNAME])
+Client:WatchList.new(Add me to list)
+
+*2WatchList
+The authorisation for watchlist is an IOU with maidsafe as the 
+PMID who can reclaim space. In case of watchilst cration it's 
+a copy of the IOU used as payment of storing the chunk.
+*2
+
 [/c]
 
 Client: Mark datamap chunk stored]]></source>
@@ -51,7 +71,7 @@ Client: Mark datamap chunk stored]]></source>
 <property name="headWidth" value="100"/>
 <property name="initialSpace" value="10"/>
 <property name="leftMargin" value="5"/>
-<property name="lineWrap" value="false"/>
+<property name="lineWrap" value="true"/>
 <property name="lowerMargin" value="5"/>
 <property name="mainLifelineWidth" value="8"/>
 <property name="messageLabelSpace" value="3"/>
@@ -72,6 +92,6 @@ Client: Mark datamap chunk stored]]></source>
 <property name="threadNumbersVisible" value="false"/>
 <property name="threaded" value="true"/>
 <property name="upperMargin" value="5"/>
-<property name="verticallySplit" value="true"/>
+<property name="verticallySplit" value="false"/>
 </configuration>
 </diagram>

@@ -3842,6 +3842,16 @@ To store a bit of data - we want to find nodes to store this on - so what
  4: do a swap chunk 
 \end_layout
 
+\begin_layout Standard
+\begin_inset Graphics
+	filename seq/STORE_CHUNK.png
+	scale 20
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Subsection
 Swap Chunk 
 \end_layout
