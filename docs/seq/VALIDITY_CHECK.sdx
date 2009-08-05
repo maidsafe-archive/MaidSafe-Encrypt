@@ -5,12 +5,12 @@
 SelfEncryption:Object
 do_check:external[ep]
 vault:vault
-/vault2:vault
-/vault3:Furthest existing vault (or lost rank)
-/vault4:new further vault
-/RefHolder:vault
-/RankHolder:vault
-/RankHolder2:vault
+vault2:vault
+vault3:Furthest existing vault (or lost rank)
+vault4:new further vault
+RefHolder:vault
+RankHolder:vault
+RankHolder2:vault
 ChunkTable:DbObject
 RoutingTable:DbObject
 Kademlia:Object
@@ -38,8 +38,8 @@ vault:test3 check reference packet exists
 [c: If test passes all nodes]
 vault:RoutingTable.Get same rank and TTL
 vault:find further away nodes than farthest you have
-vault:ACK/NACK=vault4.new(can you swap with PMID (vault3))
-vault:vault3.new(Ready to copy with this PMID (vault4))
+vault:ACK/NACK=vault4.can you swap with PMID (vault3)
+vault:vault3.Ready to copy with this PMID (vault4)
 vault3:copy chunk with ref add autheority=vault4.copy chunk with ref add authority
 vault4:self delete from ref packet of existing chunk (cache chunk lose rank)
 vault4:add to new ref packet (get rank)
@@ -60,12 +60,12 @@ List all nodes by rank, then RTT,
 select nodes ranked sames or less, find 
 furthest node.
 *2
-vault:vault2.new(Make a copy chunk (cache for now))
+vault:vault2.Make a copy chunk (cache for now)
 vault2:vault.OK
 [/c:]
-vault:>RankHolder.new(Ran-- message {their PMID|ChunkName|Size[signed by vault]}
+vault:>RankHolder.Ran-- message {their PMID|ChunkName|Size[signed by vault]}
 #
-RankHolder:ACK/NACK=RefHolder.new(are both MID in ref packet)
+RankHolder:ACK/NACK=RefHolder.are both MID in ref packet
 vault:RefHolder.chunk cached at PMID (vault2) (also self add if lost reference)
 RankHolder:Trigger other vaults in refpacket
 RankHolder:RankHolder.Wait for result (10 mins)
@@ -82,7 +82,7 @@ than an IOU number and increases the rank by 1%*SIZE
 of machines total rank. Only refholder can ask this question.
 *1
 vault2:RefHolder.Add reference
-RefHolder:RankHolder2.new(Increment rank PMID) {PMID|SIZE|signed[RefHolder PMID} 
+RefHolder:RankHolder2.Increment rank PMID {PMID|SIZE|signed[RefHolder PMID} 
 [/c:]
 [/c:]]]></source>
 <configuration>
