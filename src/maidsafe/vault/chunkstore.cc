@@ -38,6 +38,7 @@ ChunkStore::ChunkStore(const std::string &chunkstore_dir,
       available_space_(available_space),
       used_space_(used_space) {
   boost::thread init_thread(&ChunkStore::Init, this);
+  init_thread.join();
 }
 
 bool ChunkStore::is_initialised() {

@@ -266,14 +266,6 @@ class TestPDVault : public testing::Test {
                   client_signed_public_key_(""),
                   mutex_(),
                   crypto_() {
-//    fs::path temp_("PDVaultTest");
-//    try {
-//      if (fs::exists(temp_))
-//        fs::remove_all(temp_);
-//    }
-//    catch(const std::exception &e) {
-//      printf("%s\n", e.what());
-//    }
     fs::create_directories(client_chunkstore_dir_);
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
@@ -287,7 +279,16 @@ class TestPDVault : public testing::Test {
                                     crypto::STRING_STRING);
   }
 
-  virtual ~TestPDVault() {}
+  virtual ~TestPDVault() {
+    fs::path temp("VaultTest");
+    try {
+      if (fs::exists(temp))
+        fs::remove_all(temp);
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
 
   virtual void SetUp() {
     boost::shared_ptr<maidsafe::PDClient>
