@@ -36,8 +36,6 @@
 #include "fs/w_fuse/fswin.h"
 #elif defined(MAIDSAFE_POSIX)
 #include "fs/l_fuse/fslinux.h"
-//  #elif defined(MAIDSAFE_APPLE)
-//  #include "fs/l_fuse/fslinux.h"
 #endif
 
 // local
@@ -52,9 +50,6 @@ class UserSpaceFileSystem::UserSpaceFileSystemImpl {
   // none needed
 #elif defined(MAIDSAFE_POSIX)
   fs_l_fuse::FSLinux fsl_;
-#elif defined(MAIDSAFE_APPLE)
-  fs_l_fuse::FSLinux fsl_;
-  // fs_m_fuse::FSMac fsm_;
 #endif
 };
 
