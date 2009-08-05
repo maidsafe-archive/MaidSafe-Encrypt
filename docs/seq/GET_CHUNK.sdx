@@ -10,9 +10,21 @@ vault5: has chunk vault
 RefHolder:RefHolder
 
 vault:No try vault3=vault2. Do you have chunk
+vault2:Check kadmelia
+vault2:check maidsafe store
 vault:No try vault4=vault3. Do you have chunk
+vault3:Check kadmelia
+vault3:check maidsafe store
 vault:No try vault5=vault4. Do you have chunk
+vault4:Check kadmelia
+vault4:check maidsafe store
 vault: Yes, here it is=vault5. Do you have chunk
+vault5:Check kadmelia
+vault5:check maidsafe store, got it!
+*1vault
+Ask last node that did not have 
+the chunk to cache it 
+*1
 vault:>vault4. Cache chunk 
 vault4:Yes you can take copy=RefHolder. Does chunk have all storage nodes]]></source>
 <configuration>
