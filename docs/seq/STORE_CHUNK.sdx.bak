@@ -4,7 +4,7 @@
 /WatchList:vault
 Client:Object
 /StoreManager:Object
-Vault:vault
+/Vault:vault
 /RefHolder:vault
 /RankHolder:vault
 
@@ -12,22 +12,25 @@ Vault:vault
 
 Client:Client.Does chunk exist on network
 
+Client:>StoreManager.new(Store Chunk, if not exist)
 
-[c: If chunk does not exist on network]
-Client:>StoreManager.new(Store Chunk)
+[c: If chunk does not exist on network, loop till saved]
+
+StoreManager:StoreManager.Wait till on line is ok
 *1 StoreManager
 List all nodes by rank, then RTT, 
 select nodes ranked sames or less and 
 4 nodes at distances closest to 0,33,66,100%.
 *1
-StoreManager:IOU Auth {SIZE|CLIENT_PMID|[signed with vault PMID]}=Vault.STORE REQUEST [PMID:CHUNKNAME:SIZE]
+StoreManager:IOU Auth {SIZE|CLIENT_PMID|[signed with vault PMID]}=Vault.new(STORE REQUEST [PMID:CHUNKNAME:SIZE]
 Vault:Vault.check clients pmid rank ok
-
+StoreManager:Vault.Send chunk data
 [c: Loop for K nodes]
 StoreManager:RefHolder.new( STORE_IOU    {IOU Auth|[signed with client PMID]})
 RefHolder: store iou in queue
 [/c]
-StoreManager:ChunkName STORED (buffer message)=Vault. STORE CHUNK [PMID]
+
+StoreManager:Vault. IOU Ready [PMID]
 
 #Add reference 
 [c: Loop for K nodes]
@@ -40,18 +43,25 @@ RefHolder:  add reference
 Vault:ACK/NACK=RankHolder.new(INC RANK, auth=[Reciept:CHUNKNAME]
 RankHolder:ACK/NACK=RefHolder. Delete IOU) 
 [/c]
+Vault:
+
 [/c]
+*2StoreManager
+After wating for the max RPC timeouts
+for the vault to add a reference StoreManager will confirm 
+the reference packet is saved Otherwise this will repeat, forever.
+*2
 StoreManager:destroy()
 
 [c: Loop for K nodes]
 #RefHolder:Vault.ACK NACK
 Client:WatchList.new(Add me to list)
 
-*2WatchList
+*3WatchList
 The authorisation for watchlist is an IOU with maidsafe as the 
-PMID who can reclaim space. In case of watchilst cration it's 
+PMID who can reclaim space. In case of watchilst creation it's 
 a copy of the IOU used as payment of storing the chunk.
-*2
+*3
 
 [/c]
 
