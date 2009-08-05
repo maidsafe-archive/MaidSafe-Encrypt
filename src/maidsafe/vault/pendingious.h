@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_VAULT_PENDINGSTORES_H_
-#define MAIDSAFE_VAULT_PENDINGSTORES_H_
+#ifndef MAIDSAFE_VAULT_PENDINGIOUS_H_
+#define MAIDSAFE_VAULT_PENDINGIOUS_H_
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/identity.hpp>
@@ -109,4 +109,4 @@ class PendingIOUHandler {
 
 }  // namespace maidsafe_vault
 
-#endif  // MAIDSAFE_VAULT_PENDINGSTORES_H_
+#endif  // MAIDSAFE_VAULT_PENDINGIOUS_H_

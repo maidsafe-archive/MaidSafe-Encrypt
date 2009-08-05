@@ -28,6 +28,7 @@
 #include <maidsafe/crypto.h>
 #include <maidsafe/utils.h>
 
+#include <map>
 #include <string>
 
 #include "maidsafe/maidsafe.h"
