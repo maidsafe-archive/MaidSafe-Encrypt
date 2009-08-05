@@ -232,3 +232,22 @@ TEST_F(PendingIOUContainerTest, BEH_VAULT_DeletePrunableIOUs) {
   ASSERT_EQ(0, pih_.PrunableIOUsCount(0));
   ASSERT_EQ(0, pih_.PendingIOUsCount());
 }
+
+TEST_F(PendingIOUContainerTest, BEH_VAULT_FindIOUs) {
+  ASSERT_EQ(0, pih_.PendingIOUsCount());
+
+  unsigned int cycles = 10;
+  std::string authority(63, 'N');
+  boost::uint64_t chunk_size(1234567);
+  for (unsigned int n = 0; n < cycles; ++n) {
+    ASSERT_EQ(0, pih_.AddPendingIOU("abc" + base::itos(n), chunk_size + n,
+              authority + base::itos(n), n));
+  }
+  ASSERT_EQ(cycles, pih_.PendingIOUsCount());
+  for (unsigned int a = 0; a < cycles; ++a) {
+    ASSERT_EQ(authority + base::itos(a), pih_.GetIOU("abc" + base::itos(a),
+              chunk_size + a));
+  }
+  ASSERT_EQ("", pih_.GetIOU("abcd", chunk_size + 22));
+  ASSERT_EQ(cycles, pih_.PendingIOUsCount());
+}

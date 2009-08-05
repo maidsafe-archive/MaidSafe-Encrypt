@@ -59,6 +59,7 @@ struct PendingIOURow {
 };
 
 // Tags
+struct pending_iou_pmid_cs {};
 struct pending_iou_pmid_cs_auth {};
 struct pending_iou_timestamp {};
 
@@ -95,6 +96,8 @@ class PendingIOUHandler {
   bool IOUExists(const std::string &pmid,
                  const boost::uint64_t &chunk_size,
                  const std::string &authority);
+  std::string GetIOU(const std::string &pmid,
+                     const boost::uint64_t &chunk_size);
   void ClearPendingIOUs();
   int PendingIOUsCount();
   int PrunePendingIOUs(const boost::uint32_t &margin);

@@ -88,6 +88,25 @@ bool PendingIOUHandler::IOUExists(const std::string &pmid,
   return true;
 }
 
+std::string PendingIOUHandler::GetIOU(const std::string &pmid,
+                                      const boost::uint64_t &chunk_size) {
+  std::string authority;
+  multi_index_mutex_.lock();
+  std::pair<pending_iou_set::iterator, pending_iou_set::iterator> p =
+      pending_ious_.equal_range(boost::make_tuple(pmid, chunk_size));
+  if (p.first == p.second) {
+#ifdef DEBUG
+    printf("PendingIOU not found (%s) -- (%llu)\n", pmid.c_str(),
+            chunk_size);
+#endif
+    multi_index_mutex_.unlock();
+    return authority;
+  }
+  authority = (*p.first).authority_;
+  multi_index_mutex_.unlock();
+  return authority;
+}
+
 void PendingIOUHandler::ClearPendingIOUs() {
   boost::mutex::scoped_lock loch(multi_index_mutex_);
   pending_ious_.clear();

@@ -6,6 +6,8 @@ service MaidsafeService {
   rpc StoreChunkPrep( StorePrepRequest ) returns ( StorePrepResponse );
   rpc StoreIOU( StoreIOURequest ) returns ( StoreIOUResponse );
   rpc StoreChunk( StoreRequest ) returns ( StoreResponse );
+  rpc StoreChunkReference( StoreReferenceRequest )
+      returns ( StoreReferenceResponse );
   // check if a chunk exists
   rpc CheckChunk( CheckChunkRequest ) returns ( CheckChunkResponse );
   rpc Get( GetRequest ) returns ( GetResponse );

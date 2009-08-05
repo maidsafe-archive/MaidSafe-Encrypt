@@ -59,6 +59,8 @@ VaultService::VaultService(const std::string &pmid_public,
       pmid_(""),
       chunkstore_(chunkstore),
       pih_(),
+      pending_stores_(),
+      pending_store_mutex_(),
       knode_(knode) {
 //  printf("In VaultService contructor.\n");
   crypto_.set_symm_algorithm(crypto::AES_256);
@@ -281,6 +283,68 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
 #endif
   done->Run();
 }
+
+void VaultService::StoreChunkReference(google::protobuf::RpcController*,
+                                const maidsafe::StoreReferenceRequest* request,
+                                maidsafe::StoreReferenceResponse* response,
+                                google::protobuf::Closure* done) {
+#ifdef DEBUG
+  printf("In VaultService::StoreChunkReference (%i)\n", knode_->host_port());
+#endif
+  std::string id("");
+  base::decode_from_hex(pmid_, &id);
+  response->set_pmid_id(id);
+  if (!request->IsInitialized()) {
+    response->set_result(NACK);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkReference (%i), "
+           "request isn't initialized.\n", knode_->host_port());
+#endif
+    return;
+  }
+  if (!ValidateSignedRequest("", request->public_key(),
+       request->signed_public_key(), request->signed_request(), "")) {
+    response->set_result(NACK);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkReference (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
+#endif
+    return;
+  }
+
+  std::string iou = pih_.GetIOU(request->pmid(), request->data_size());
+  if (iou != "") {
+    response->set_result(NACK);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkReference (%i), ", knode_->host_port());
+    printf("failed find chunkname in pending IOUs.\n");
+#endif
+    return;
+  }
+  response->set_iou(iou);
+
+  if (!knode_->StoreValueLocal(request->chunkname(), request->pmid(), 86000)) {
+    response->set_result(NACK);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkReference (%i), ", knode_->host_port());
+    printf("failed to store kademlia key,value locally.\n");
+#endif
+    return;
+  }
+  maidsafe::RankAuthorisation ra;
+  ra.set_pmid(request->pmid());
+  ra.set_chunkname(request->chunkname());
+  std::string ser_ra;
+  ra.SerializeToString(&ser_ra);
+  response->set_rank_authority(crypto_.AsymSign(ser_ra, "", pmid_private_,
+      crypto::STRING_STRING));
+  done->Run();
+}
+
 
 void VaultService::Get(google::protobuf::RpcController*,
                        const maidsafe::GetRequest* request,
@@ -692,10 +756,26 @@ int VaultService::Storable(const boost::uint64_t &data_size) {
 
 int VaultService::AddPendingStore(const std::string &chunkname,
                                   const std::string &pmid) {
-//  boost::mutex::scoped_lock lock(pending_store_mutex_);
-// TODO(Fraser#5#): 2009-07-30 - Fill in.
+  boost::mutex::scoped_lock loch(pending_store_mutex_);
+  if (pending_stores_.size() > 100)
+    return -1;
+  std::pair<std::map<std::string, std::string>::iterator, bool> ret;
+  ret = pending_stores_.insert(
+        std::pair<std::string, std::string>(chunkname, pmid));
+  if (ret.second == false)
+    return -1;
   return 0;
 }
+
+int VaultService::FindPendingStore(const std::string &chunkname) {
+  boost::mutex::scoped_lock loch(pending_store_mutex_);
+  std::map<std::string, std::string>::iterator it =
+      pending_stores_.find(chunkname);
+  if (it == pending_stores_.end())
+    return -1;
+  return 0;
+}
+
 
 bool VaultService::ModifyBufferPacketInfo(const std::string &new_info,
                                           const std::string &pub_key,

@@ -17,6 +17,11 @@ message StorePrepResponse {
   optional bytes pmid_id = 2;
 };
 
+message IOU {
+  required bytes pmid = 1;
+  required int64 data_size = 2;
+};
+
 message StoreIOURequest {
   required int64 data_size = 1;
   required bytes pmid = 2;
@@ -44,6 +49,27 @@ message StoreRequest {
 message StoreResponse {
   required bytes result = 1;
   optional bytes pmid_id = 2;
+};
+
+message RankAuthorisation {
+  required bytes chunkname = 1;
+  required bytes pmid = 2;
+};
+
+message StoreReferenceRequest {
+  required bytes chunkname = 1;
+  required bytes pmid = 2;
+  required int64 data_size = 3;
+  required bytes public_key = 4;
+  required bytes signed_public_key = 5;
+  required bytes signed_request = 6;
+};
+
+message StoreReferenceResponse {
+  required int32 result = 1;
+  optional bytes rank_authority = 2;
+  optional bytes iou = 3;
+  optional bytes pmid_id = 4;
 };
 
 message DeleteRequest {
