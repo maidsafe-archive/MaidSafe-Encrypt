@@ -53,7 +53,7 @@ vault3:new validity check (no move)
 [c: If test fails]
 
 [c: Loop till successful]
-vault:RoutingTable.Get same rank and TTL
+vault:RoutingTable.Get same rank and RTT
 vault:Select suitable node
 *2 vault
 List all nodes by rank, then RTT, 
