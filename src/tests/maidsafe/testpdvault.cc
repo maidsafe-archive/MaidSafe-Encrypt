@@ -266,7 +266,20 @@ class TestPDVault : public testing::Test {
                   client_signed_public_key_(""),
                   mutex_(),
                   crypto_() {
-    fs::create_directories(client_chunkstore_dir_);
+    fs::path temp("VaultTest");
+    try {
+      if (fs::exists(temp))
+        fs::remove_all(temp);
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+    try {
+      fs::create_directories(client_chunkstore_dir_);
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     client_keys_.GenerateKeys(packethandler::kRsaKeySize);
