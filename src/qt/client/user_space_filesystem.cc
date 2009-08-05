@@ -78,9 +78,6 @@ bool UserSpaceFileSystem::mount() {
 #elif defined(MAIDSAFE_POSIX)
   std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
   impl_->fsl_.Mount(mount_point, debug_mode);
-#elif defined(MAIDSAFE_APPLE)
-  std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
-  impl_->fsl_.Mount(mount_point, debug_mode);
 #endif
   boost::this_thread::sleep(boost::posix_time::seconds(1));
 
@@ -137,7 +134,7 @@ bool UserSpaceFileSystem::unmount() {
   if (!success)
     qWarning() << "UserSpaceFileSystem::unmount: failed to unmount dokan"
                << success;
-#else
+#elif defined(MAIDSAFE_POSIX)
   // un-mount fuse
   impl_->fsl_.UnMount();
   success = true;
