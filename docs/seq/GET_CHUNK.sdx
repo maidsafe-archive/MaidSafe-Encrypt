@@ -13,7 +13,7 @@ vault:No try vault3=vault2. Do you have chunk
 vault:No try vault4=vault3. Do you have chunk
 vault:No try vault5=vault4. Do you have chunk
 vault: Yes, here it is=vault5. Do you have chunk
-vault:OK=vault4. Cache chunk 
+vault:>vault4. Cache chunk 
 vault4:Yes you can take copy=RefHolder. Does chunk have all storage nodes]]></source>
 <configuration>
 <property name="actorWidth" value="25"/>
