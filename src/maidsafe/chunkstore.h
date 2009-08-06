@@ -114,7 +114,7 @@ class ChunkStore {
   ChunkStore(const std::string &chunkstore_dir,
              const boost::uint64_t &available_space,
              const boost::uint64_t &used_space);
-  ~ChunkStore() {}
+  virtual ~ChunkStore() {}
   bool HasChunk(const std::string &key);
   bool StoreChunk(const std::string &key, const std::string &value);
   bool StoreChunk(const std::string &key, const fs::path &file);
