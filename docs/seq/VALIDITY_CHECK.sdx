@@ -20,22 +20,26 @@ do_check:vault.Internal Trigger
 This trigger happens on 
 1: Chunk requested from this vault
 2: 20 hr timer exceeded
-3: swapped chunk (no move)
+3: Swapped chunk (no move)
 4: Any node shows dirty data (check all own chunks)
 5: Holders rank decreases (move this instead of farthest)
+6: Vault startup (test1 only, plus self check 10%, on fail test all)
+7: hourly check (test1 only)
 *3
 vault:ChunkTable.Get Chunk Partners
 ChunkTable:RoutingTable.Get Contact info
 RoutingTable:Kademlia.Get missing contacts
 [c: Loop for all chunk partners]
-vault:SelfEncryption.create random data
-vault:test1 send random data to partner
-vault:test2 check rank of partner
-vault:test3 check reference packet exists
+
+vault:test1, check availability only (must be at least 3 on line)
+vault:SelfEncryption.test2 create random data
+vault:test2 send random data to partner
+vault:test3 check rank of partner
+vault:test4 check reference packet exists
 
 [/c:]
 
-[c: If test passes all nodes]
+[c: If test passes fo a node]
 vault:RoutingTable.Get same rank and TTL
 vault:find further away nodes than farthest you have
 vault:ACK/NACK=vault4.can you swap with PMID (vault3)
@@ -50,7 +54,7 @@ vault3:new validity check (no move)
 [/c:]
 
 
-[c: If test fails]
+[c: If test fails for any node]
 
 [c: Loop till successful]
 vault:RoutingTable.Get same rank and RTT
@@ -63,16 +67,16 @@ furthest node.
 vault:vault2.Make a copy chunk (cache for now)
 vault2:vault.OK
 [/c:]
-vault:>RankHolder.Ran-- message {their PMID|ChunkName|Size[signed by vault]}
+vault:>RankHolder.--Rank message {their PMID|ChunkName|Size[signed by vault]}
 #
 RankHolder:ACK/NACK=RefHolder.are both MID in ref packet
 vault:RefHolder.chunk cached at PMID (vault2) (also self add if lost reference)
 RankHolder:Trigger other vaults in refpacket
 RankHolder:RankHolder.Wait for result (10 mins)
-RankHolder:If another member of ref does 
-RankHolder:a rank-- we accept it 
-[c: If another matching Rank-- is sent from other members of ref]
-RankHolder:vault.Make a copy chunk permenant
+RankHolder:If another member of ref sends 
+RankHolder:a --rank we accept it 
+[c: If another matching --Rank is sent from other members of ref]
+RankHolder:vault.Make a copy chunk permenent
 RefHolder:OK=vault2.request store chunk (no IOU)
 vault2:Check PMID of request matches RefHolder
 *1vault
