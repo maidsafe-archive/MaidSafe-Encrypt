@@ -22,8 +22,10 @@ List all nodes by rank, then RTT,
 select nodes ranked sames or less and 
 4 nodes at distances closest to 0,33,66,100%.
 *1
+[c: loop through nodes till true]
 StoreManager:IOU Auth {SIZE|CLIENT_PMID|[signed with vault PMID]}=Vault.STORE REQUEST [PMID:CHUNKNAME:SIZE]
 Vault:Vault.check clients pmid rank ok
+[/c:]
 StoreManager:Vault.Send chunk data
 [c: Loop for K nodes]
 StoreManager:RefHolder.STORE_IOU    {IOU Auth|[signed with client PMID]}
