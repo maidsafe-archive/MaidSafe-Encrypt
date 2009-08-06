@@ -24,6 +24,7 @@
 
 #include <gtest/gtest.h>
 
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "protobuf/datamaps.pb.h"
@@ -63,11 +64,27 @@ class AuthenticationTest : public testing::Test {
  public:
   AuthenticationTest() : ss(),
                          storemanager(),
+                         client_chunkstore_(),
                          username("user1"),
                          pin("1234"),
                          password("password1"),
                          mutex(),
-                         cb() {}
+                         cb() {
+    try {
+      boost::filesystem::remove_all("./TestAuth");
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
+  ~AuthenticationTest() {
+    try {
+      boost::filesystem::remove_all("./TestAuth");
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
  protected:
   void SetUp() {
     if (boost::filesystem::exists("KademilaDb.db"))
@@ -80,9 +97,16 @@ class AuthenticationTest : public testing::Test {
     pin = "1234";
     password = "password1";
     mutex = new boost::recursive_mutex();
+    client_chunkstore_ =
+        boost::shared_ptr<ChunkStore>(new ChunkStore("./TestAuth", 0, 0));
+    int count(0);
+    while (!client_chunkstore_->is_initialised() && count < 10000) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      count += 10;
+    }
     boost::shared_ptr<LocalStoreManager>
-        storemanager(new LocalStoreManager(mutex));
-    storemanager->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+        storemanager(new LocalStoreManager(mutex, client_chunkstore_));
+    storemanager->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_ta(cb, mutex);
     base::GeneralResponse res;
     if ((!res.ParseFromString(cb.result)) ||
@@ -106,25 +130,26 @@ class AuthenticationTest : public testing::Test {
 
   SessionSingleton *ss;
   boost::shared_ptr<LocalStoreManager> storemanager;
+  boost::shared_ptr<ChunkStore> client_chunkstore_;
   std::string username;
   std::string pin;
   std::string password;
   boost::recursive_mutex *mutex;
   FakeCallback cb;
  private:
-  explicit AuthenticationTest(const maidsafe::AuthenticationTest&);
-  AuthenticationTest &operator=(const maidsafe::AuthenticationTest&);
+  explicit AuthenticationTest(const AuthenticationTest&);
+  AuthenticationTest &operator=(const AuthenticationTest&);
 };
 
 TEST_F(AuthenticationTest, BEH_MAID_Login) {
-  boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<LocalStoreManager>
+      sm(new LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
   DataAtlas data_atlas;
   std::string ser_da_login, ser_da_register;
-  exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
+  Exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
     &FakeCallback::CallbackFunc, &cb, _1));
   EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
@@ -152,12 +177,12 @@ TEST_F(AuthenticationTest, BEH_MAID_Login) {
 
 TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
   boost::scoped_ptr<LocalStoreManager>
-      sm(new LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
   std::string ser_da, ser_da_login;
-  exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
+  Exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
     &FakeCallback::CallbackFunc, &cb, _1));
   EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
@@ -174,15 +199,15 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
 }
 
 TEST_F(AuthenticationTest, BEH_MAID_RegisterUser) {
-  boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<LocalStoreManager>
+      sm(new LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
   DataAtlas data_atlas;
   std::string ser_da;
 
-  exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
+  Exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
                     &FakeCallback::CallbackFunc, &cb, _1));
   EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
@@ -200,15 +225,15 @@ TEST_F(AuthenticationTest, BEH_MAID_RegisterUser) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
-  boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<LocalStoreManager>
+      sm(new LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
   DataAtlas data_atlas;
   std::string ser_da;
 
-  exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
+  Exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
                     &FakeCallback::CallbackFunc, &cb, _1));
   EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
@@ -233,7 +258,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
     DataAtlas data_atlas;
     DataAtlasHandler dah;
     std::string ser_da;
-    exitcode result = authentication->CreateUserSysPackets(username,
+    Exitcode result = authentication->CreateUserSysPackets(username,
                                                            pin,
                                                            password,
                                                            ser_da);
@@ -252,16 +277,16 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
 */
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
-  boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<LocalStoreManager>
+      sm(new LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
   DataAtlas data_atlas;
   std::string ser_da;
   packethandler::PacketParams lasquis, pubkeys;
 
-  exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
+  Exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
                     &FakeCallback::CallbackFunc, &cb, _1));
   EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
@@ -275,15 +300,15 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   for (int i = 0; i < data_atlas.keys_size(); ++i) {
     Key key = data_atlas.keys(i);
     switch (key.type()) {
-      case maidsafe::ANMID:
+      case ANMID:
         lasquis["ANMID"] = key.private_key();
         pubkeys["ANMID"] = key.public_key();
         break;
-      case maidsafe::ANTMID:
+      case ANTMID:
         lasquis["ANTMID"] = key.private_key();
         pubkeys["ANTMID"] = key.public_key();
         break;
-      case maidsafe::ANSMID:
+      case ANSMID:
         lasquis["ANSMID"] = key.private_key();
         pubkeys["ANSMID"] = key.public_key();
         break;
@@ -312,15 +337,15 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
-  boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<LocalStoreManager>
+      sm(new LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
   packethandler::PacketParams lasquis, pubkeys;
   DataAtlas data_atlas;
   std::string ser_da;
-  exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
+  Exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
     &FakeCallback::CallbackFunc, &cb, _1));
   EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
@@ -334,15 +359,15 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   for (int i = 0; i < data_atlas.keys_size(); ++i) {
     Key key = data_atlas.keys(i);
     switch (key.type()) {
-      case maidsafe::ANMID:
+      case ANMID:
         lasquis["ANMID"] = key.private_key();
         pubkeys["ANMID"] = key.public_key();
         break;
-      case maidsafe::ANTMID:
+      case ANTMID:
         lasquis["ANTMID"] = key.private_key();
         pubkeys["ANTMID"] = key.public_key();
         break;
-      case maidsafe::ANSMID:
+      case ANSMID:
         lasquis["ANSMID"] = key.private_key();
         pubkeys["ANSMID"] = key.public_key();
         break;
@@ -366,15 +391,15 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   cb.Reset();
-  boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<LocalStoreManager>
+      sm(new LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
   packethandler::PacketParams lasquis, pubkeys;
   DataAtlas data_atlas;
   std::string ser_da;
-  exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
+  Exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
                     &FakeCallback::CallbackFunc, &cb, _1));
   EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
   cb.Reset();
@@ -390,15 +415,15 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   for (int i = 0; i < data_atlas.keys_size(); ++i) {
     Key key = data_atlas.keys(i);
     switch (key.type()) {
-      case maidsafe::ANMID:
+      case ANMID:
         lasquis["ANMID"] = key.private_key();
         pubkeys["ANMID"] = key.public_key();
         break;
-      case maidsafe::ANTMID:
+      case ANTMID:
         lasquis["ANTMID"] = key.private_key();
         pubkeys["ANTMID"] = key.public_key();
         break;
-      case maidsafe::ANSMID:
+      case ANSMID:
         lasquis["ANSMID"] = key.private_key();
         pubkeys["ANSMID"] = key.public_key();
         break;
@@ -428,9 +453,9 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
 }
 
 TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
-  boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<LocalStoreManager>
+      sm(new LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
   packethandler::PacketParams result;
@@ -445,9 +470,9 @@ TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
 }
 
 TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
-  boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<LocalStoreManager>
+      sm(new LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::MidPacket *midPacket = static_cast<packethandler::MidPacket*>
       (packethandler::PacketFactory::Factory(packethandler::MID));
   packethandler::PacketParams params;
@@ -470,15 +495,15 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   cb.Reset();
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
-  exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
+  Exitcode result = authentication->GetUserInfo(username, pin, boost::bind(
     &FakeCallback::CallbackFunc, &cb, _1));
   EXPECT_EQ(INVALID_USERNAME_PIN, result);
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
-  boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<LocalStoreManager>
+      sm(new LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(new Authentication(
     sm.get(), mutex));
   crypto::Crypto co;

@@ -48,7 +48,7 @@ class DataAtlasHandler {
   std::string db_dir_;
   // static DataAtlasHandler *single;
   boost::shared_ptr<PdDir> GetPdDir(const std::string &element_path,
-                                    db_init_flag flag_,
+                                    DbInitFlag flag_,
                                     int *result);
   std::string GetElementNameFromPath(const std::string &element_path);
   // file_system::FileSystem *fsys_;
@@ -61,7 +61,7 @@ class DataAtlasHandler {
                  const std::string &target_path_);
 
   // methods for the Key Ring
-  boost::shared_ptr<KeyAtlas> GetKeysDb(db_init_flag flag_, int *result);
+  boost::shared_ptr<KeyAtlas> GetKeysDb(DbInitFlag flag_, int *result);
 
  public:
   // static DataAtlasHandler *getInstance();
@@ -71,7 +71,7 @@ class DataAtlasHandler {
 
   // methods for normal folder Data Atlases
   void GetDbPath(const std::string &element_path,
-                 db_init_flag flag_,
+                 DbInitFlag flag_,
                  std::string *db_path);
   int AddElement(const std::string &element_path,
                  const std::string &ser_mdm,

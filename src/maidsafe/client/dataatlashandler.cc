@@ -94,7 +94,7 @@ std::string DataAtlasHandler::GetElementNameFromPath(
 }
 
 void DataAtlasHandler::GetDbPath(const std::string &element_path,
-                                 db_init_flag flag_,
+                                 DbInitFlag flag_,
                                  std::string *db_path) {
   fs::path path_(element_path, fs::native);
 
@@ -127,7 +127,7 @@ void DataAtlasHandler::GetDbPath(const std::string &element_path,
 
 boost::shared_ptr<PdDir> DataAtlasHandler::GetPdDir(
     const std::string &element_path,
-    db_init_flag flag_,
+    DbInitFlag flag_,
     int *result) {
   std::string db_name;
 #ifdef DEBUG
@@ -520,7 +520,7 @@ void DataAtlasHandler::GetKeyDbPath(std::string *keys_db_name_) {
   GetDbPath("/KeysDb", CREATE, keys_db_name_);
 }
 
-boost::shared_ptr<KeyAtlas> DataAtlasHandler::GetKeysDb(db_init_flag flag_,
+boost::shared_ptr<KeyAtlas> DataAtlasHandler::GetKeysDb(DbInitFlag flag_,
                                                         int *result) {
   std::string keys_db_name_;
   GetDbPath("/KeysDb", CREATE, &keys_db_name_);

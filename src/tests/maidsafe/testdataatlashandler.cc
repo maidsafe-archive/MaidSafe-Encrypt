@@ -23,13 +23,14 @@
 
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
+#include <maidsafe/crypto.h>
+#include <maidsafe/utils.h>
 #include <stdint.h>
 
 #include <string>
 #include <vector>
 
-#include "maidsafe/crypto.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/keyatlas.h"
 #include "maidsafe/client/pddir.h"
@@ -74,21 +75,55 @@ namespace fs = boost::filesystem;
 
 class DataAtlasHandlerTest : public testing::Test {
  public:
-  DataAtlasHandlerTest() : rec_mutex(), sm(), cb() {}
+  DataAtlasHandlerTest() : rec_mutex(), sm(), cb() {
+    try {
+      if (fs::exists("KademilaDb.db"))
+        fs::remove(fs::path("KademilaDb.db"));
+      if (fs::exists("StoreChunks"))
+        fs::remove_all("StoreChunks");
+      if (fs::exists("./TestDAH"))
+        fs::remove_all("./TestDAH");
+      if (fs::exists("KademilaDb.db"))
+        printf("Kademila.db still there.\n");
+      if (fs::exists("StoreChunks"))
+        printf("StoreChunks still there.\n");
+      if (fs::exists("./TestDAH"))
+        printf("./TestDAH still there.\n");
+      file_system::FileSystem fsys_;
+      if (fs::exists(fsys_.MaidsafeDir()))
+        fs::remove_all(fsys_.MaidsafeDir());
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
+  }
+  ~DataAtlasHandlerTest() {
+    try {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+      file_system::FileSystem fsys;
+      fs::remove_all(fsys.MaidsafeDir());
+      fs::remove_all("./TestDAH");
+      fs::remove_all("StoreChunks");
+      fs::remove("KademilaDb.db");
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
+  }
  protected:
   void SetUp() {
-    if (fs::exists("KademilaDb.db"))
-      fs::remove(fs::path("KademilaDb.db"));
-    if (fs::exists("StoreChunks"))
-      fs::remove_all("StoreChunks");
-    if (fs::exists("KademilaDb.db"))
-      printf("Kademila.db still there.\n");
-    if (fs::exists("StoreChunks"))
-      printf("StoreChunks still there.\n");
+    boost::shared_ptr<ChunkStore>
+        client_chunkstore_(new ChunkStore("./TestDAH", 0, 0));
+    int count(0);
+    while (!client_chunkstore_->is_initialised() && count < 10000) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      count += 10;
+    }
     rec_mutex = new boost::recursive_mutex();
-    boost::shared_ptr<LocalStoreManager>sm(new LocalStoreManager(rec_mutex));
+    boost::shared_ptr<LocalStoreManager>
+        sm(new LocalStoreManager(rec_mutex, client_chunkstore_));
     // sm = sm_;
-    sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+    sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_seh_(cb, rec_mutex);
     base::GeneralResponse res;
     if ((!res.ParseFromString(cb.result)) ||
@@ -104,19 +139,16 @@ class DataAtlasHandlerTest : public testing::Test {
     SessionSingleton::getInstance()->SetRootDbKey("whatever");
     crypto::RsaKeyPair rsakp;
     rsakp.GenerateKeys(packethandler::kRsaKeySize);
+    SessionSingleton::getInstance()->AddKey(PMID, "PMID", rsakp.private_key(),
+                                            rsakp.public_key());
+    rsakp.GenerateKeys(packethandler::kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(MAID, "MAID", rsakp.private_key(),
         rsakp.public_key());
     file_system::FileSystem fsys;
-    try {
-      if (fs::exists(fsys.MaidsafeDir()))
-        fs::remove_all(fsys.MaidsafeDir());
-    }
-    catch(const std::exception& e) {
-      printf("%s\n", e.what());
-    }
     fsys.Mount();
     boost::scoped_ptr<DataAtlasHandler>dah_(new DataAtlasHandler());
-    boost::shared_ptr<SEHandler>seh_(new SEHandler(sm.get(), rec_mutex));
+    boost::shared_ptr<SEHandler>seh_(new SEHandler(sm.get(), client_chunkstore_,
+        rec_mutex));
     if (dah_->Init(true))
       FAIL();
 
@@ -144,19 +176,7 @@ class DataAtlasHandlerTest : public testing::Test {
     }
     cb.Reset();
   }
-
-  void TearDown() {
-    try {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-      file_system::FileSystem fsys;
-      fs::remove_all(fsys.MaidsafeDir());
-      fs::remove_all("StoreChunks");
-      fs::remove("KademilaDb.db");
-    }
-    catch(const std::exception& e) {
-      printf("%s\n", e.what());
-    }
-  }
+  void TearDown() {}
   // LocalStoreManager *sm;
   boost::recursive_mutex *rec_mutex;
   boost::shared_ptr<LocalStoreManager> sm;

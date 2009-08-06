@@ -43,8 +43,10 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 SEHandler::SEHandler(StoreManagerInterface *storem,
+                     boost::shared_ptr<ChunkStore> client_chunkstore,
                      boost::recursive_mutex *mutex)
                          : storem_(storem),
+                           client_chunkstore_(client_chunkstore),
                            ss_(SessionSingleton::getInstance()),
                            mutex_(mutex),
                            fsys_(),
@@ -113,7 +115,7 @@ itemtype SEHandler::CheckEntry(const std::string &full_entry,
 
 std::string SEHandler::SHA512(const std::string &full_entry,
                               bool hash_contents) {
-  SelfEncryption se_;
+  SelfEncryption se_(client_chunkstore_);
   if (hash_contents) {
     fs::path path_(full_entry, fs::native);
     return se_.SHA512(path_);
@@ -123,7 +125,7 @@ std::string SEHandler::SHA512(const std::string &full_entry,
 }
 
 int SEHandler::EncryptFile(const std::string &rel_entry,
-                           const DB_TYPE db_type,
+                           const DirType dir_type,
                            const std::string &msid) {
   // boost::mutex::scoped_lock lock(mutex1_);
 #ifdef DEBUG
@@ -138,7 +140,7 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
   DataMap dm_, dm_retrieved_;
   std::string ser_dm_retrieved_="", ser_dm_="", ser_mdm_="";
   std::string file_hash_="", dir_key_="";
-  SelfEncryption se_;
+  SelfEncryption se_(client_chunkstore_);
 #ifdef DEBUG
   // printf("Full entry: %s\n", full_entry_.c_str());
   // printf("Type: %i\n", type_);
@@ -192,12 +194,14 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
 //          }
 // #endif
 //        }
-        CallbackResult cbr;
-        StoreChunks(dm_,
-                    db_type,
-                    msid,
-                    boost::bind(&CallbackResult::CallbackFunc, &cbr, _1));
-        WaitForResult(cbr);
+
+//        CallbackResult cbr;
+//        StoreChunks(dm_,
+//                    dir_type,
+//                    msid,
+//                    boost::bind(&CallbackResult::CallbackFunc, &cbr, _1));
+//        WaitForResult(cbr);
+        StoreChunks(dm_, dir_type, msid);
         dm_.SerializeToString(&ser_dm_);
       }
       break;
@@ -328,7 +332,7 @@ int SEHandler::DecryptFile(const std::string &rel_entry) {
 #endif
       return -1;
     }
-    SelfEncryption se_;
+    SelfEncryption se_(client_chunkstore_);
     if (se_.Decrypt(dm_, decrypted_path_, 0, false))
       return -1;
     else
@@ -339,7 +343,7 @@ int SEHandler::DecryptFile(const std::string &rel_entry) {
 
 bool SEHandler::MakeElement(const std::string &rel_entry,
                             const itemtype type,
-                            const DB_TYPE db_type,
+                            const DirType dir_type,
                             const std::string &msid,
                             const std::string &dir_key) {
   std::string ser_mdm_ = "", ser_dm_ = "", dir_key_(dir_key);
@@ -351,7 +355,7 @@ bool SEHandler::MakeElement(const std::string &rel_entry,
   }
   if (type == EMPTY_DIRECTORY) {
     if (dir_key_ == "")
-      GenerateUniqueKey(db_type, msid, 0, &dir_key_);
+      GenerateUniqueKey(dir_type, msid, 0, &dir_key_);
   } else if (type == EMPTY_FILE) {
     DataMap dm_;
     dm_.set_file_hash(SHA512("", false));
@@ -374,7 +378,7 @@ bool SEHandler::MakeElement(const std::string &rel_entry,
   }
 }
 
-int SEHandler::GenerateUniqueKey(const DB_TYPE db_type,
+int SEHandler::GenerateUniqueKey(const DirType dir_type,
                                  const std::string &msid,
                                  const int &attempt,
                                  std::string *hex_key) {
@@ -390,20 +394,20 @@ int SEHandler::GenerateUniqueKey(const DB_TYPE db_type,
   while ((!result.ParseFromString(cbr.result) ||
          (result.result() == kCallbackFailure)) && count < 5) {
     ++count;
-    GenerateUniqueKey(db_type, msid, count, hex_key);
+    GenerateUniqueKey(dir_type, msid, count, hex_key);
   }
   if (count < 5) {
     // cbr.Reset();
     CallbackResult cbr1;
-    value_types pd_dir_type_;
-    if (db_type == ANONYMOUS)
+    ValueType pd_dir_type_;
+    if (dir_type == ANONYMOUS)
       pd_dir_type_ = PDDIR_NOTSIGNED;
     else
       pd_dir_type_ = PDDIR_SIGNED;
-    std::string ser_gp = CreateDataMapPacket("temp data", db_type, msid);
+    std::string ser_gp = CreateDataMapPacket("temp data", dir_type, msid);
     std::string pubkey(""), sig_pubkey(""), sig_request(""), non_hex_key("");
     base::decode_from_hex(*hex_key, &non_hex_key);
-    GetSignedPubKeyAndRequest(db_type,
+    GetSignedPubKeyAndRequest(dir_type,
                               msid,
                               non_hex_key,
                               &pubkey,
@@ -449,8 +453,8 @@ int SEHandler::GetDirKeys(const std::string &dir_path,
 #ifdef DEBUG
     printf("Keys needed because inside of Shares/Private.\n");
 #endif
-    std::string private_key_("");
-    if (0 != GetMsidKeys(msid, parent_key, &private_key_))
+    std::string private_key("");
+    if (0 != ss_->GetShareKeys(msid, parent_key, &private_key))
       return -1;
     *parent_key = SHA512(*parent_key, false);
   }
@@ -458,19 +462,19 @@ int SEHandler::GetDirKeys(const std::string &dir_path,
 }
 
 int SEHandler::EncryptDb(const std::string &dir_path,
-                         const DB_TYPE db_type,
+                         const DirType dir_type,
                          const std::string &dir_key,
                          const std::string &msid,
                          const bool &encrypt_dm,
                          std::string *ser_dm) {
 #ifdef DEBUG
   printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
-         dir_path.c_str(), db_type, encrypt_dm, dir_key.c_str());
+         dir_path.c_str(), dir_type, encrypt_dm, dir_key.c_str());
   printf(" msid(%s)\n", msid.c_str());
 #endif
   DataMap dm_;
   std::string ser_dm_="", file_hash_="", enc_dm_;
-  SelfEncryption se_;
+  SelfEncryption se_(client_chunkstore_);
   std::string db_path_;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler);
   dah_->GetDbPath(dir_path, CREATE, &db_path_);
@@ -489,17 +493,18 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   if (se_.Encrypt(db_path_, &dm_)) {
     return -1;
   }
-  CallbackResult cbr1;
-  StoreChunks(dm_,
-              db_type,
-              msid,
-              boost::bind(&CallbackResult::CallbackFunc, &cbr1, _1));
-  WaitForResult(cbr1);
-  StoreResponse storechunks_result;
-  if ((!storechunks_result.ParseFromString(cbr1.result)) ||
-      (storechunks_result.result() == kCallbackFailure)) {
-    return -1;
-  }
+//  CallbackResult cbr1;
+//  StoreChunks(dm_,
+//              dir_type,
+//              msid,
+//              boost::bind(&CallbackResult::CallbackFunc, &cbr1, _1));
+//  WaitForResult(cbr1);
+//  StoreResponse storechunks_result;
+//  if ((!storechunks_result.ParseFromString(cbr1.result)) ||
+//      (storechunks_result.result() == kCallbackFailure)) {
+//    return -1;
+//  }
+  StoreChunks(dm_, dir_type, msid);
   dm_.SerializeToString(&ser_dm_);
   // if (ser_dm != "")
   //   ser_dm = ser_dm_;
@@ -508,7 +513,6 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   } else {
     enc_dm_ = ser_dm_;
   }
-
 
   std::map<std::string, std::string>::iterator it;
   it = uptodate_datamaps_.find(dir_path);
@@ -539,10 +543,10 @@ int SEHandler::EncryptDb(const std::string &dir_path,
 #ifdef DEBUG
     printf("dm is not stored in kademlia.\n");
 #endif
-    if (db_type == ANONYMOUS) {
+    if (dir_type == ANONYMOUS) {
       *ser_dm = enc_dm_;
     } else {
-      std::string ser_gp = CreateDataMapPacket(enc_dm_, db_type, msid);
+      std::string ser_gp = CreateDataMapPacket(enc_dm_, dir_type, msid);
       *ser_dm = ser_gp;
 #ifdef DEBUG
       printf("Passing back ser_dm as a generic packet.\n");
@@ -562,16 +566,16 @@ int SEHandler::EncryptDb(const std::string &dir_path,
     update_ = false;
   else
     update_ = true;
-  value_types pd_dir_type_;
-  if (db_type == ANONYMOUS)
+  ValueType pd_dir_type_;
+  if (dir_type == ANONYMOUS)
     pd_dir_type_ = PDDIR_NOTSIGNED;
   else
     pd_dir_type_ = PDDIR_SIGNED;
-  std::string ser_gp = CreateDataMapPacket(enc_dm_, db_type, msid);
+  std::string ser_gp = CreateDataMapPacket(enc_dm_, dir_type, msid);
   std::string pubkey(""), sig_pubkey(""), sig_request("");
   std::string non_hex_key("");
   base::decode_from_hex(dir_key, &non_hex_key);
-  GetSignedPubKeyAndRequest(db_type,
+  GetSignedPubKeyAndRequest(dir_type,
                             msid,
                             non_hex_key,
                             &pubkey,
@@ -607,7 +611,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
 }
 
 int SEHandler::DecryptDb(const std::string &dir_path,
-                         const DB_TYPE db_type,
+                         const DirType dir_type,
                          const std::string &ser_dm,
                          const std::string &dir_key,
                          const std::string &msid,
@@ -615,7 +619,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                          bool overwrite) {
 #ifdef DEBUG
   printf("SEHandler::DecryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
-         dir_path.c_str(), db_type, dm_encrypted, dir_key.c_str());
+         dir_path.c_str(), dir_type, dm_encrypted, dir_key.c_str());
   printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm_, enc_dm_;
@@ -683,7 +687,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 #endif
     }
 
-//      if (db_type != ANONYMOUS) {
+//      if (dir_type != ANONYMOUS) {
 //        packethandler::GenericPacket gp;
 //        if (!gp.ParseFromString(enc_dm_)) {
 //  #ifdef DEBUG
@@ -714,7 +718,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       ser_dm_ = enc_dm_;
     }
   } else {
-    if (db_type != ANONYMOUS) {
+    if (dir_type != ANONYMOUS) {
       packethandler::GenericPacket gp;
       if (!gp.ParseFromString(ser_dm)) {
 #ifdef DEBUG
@@ -766,7 +770,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 #endif
     return -1;
   }
-  SelfEncryption se_;
+  SelfEncryption se_(client_chunkstore_);
   if (se_.Decrypt(dm_, db_path_, 0, overwrite)) {
 #ifdef DEBUG
     printf("Failed to self decrypt.\n");
@@ -871,9 +875,9 @@ int SEHandler::DecryptDm(const std::string &dir_path,
 void SEHandler::LoadChunks(const DataMap &dm,
                            base::callback_func_type cb) {
   base::pd_scoped_lock gaurd(*mutex_);
-  DB_TYPE db_type = PRIVATE;
+  DirType dir_type = PRIVATE;
   std::string msid("");
-  boost::shared_ptr<ChunksData> data(new ChunksData(dm, db_type, msid, cb));
+  boost::shared_ptr<ChunksData> data(new ChunksData(dm, dir_type, msid, cb));
   IterativeLoadChunks(data);
 }
 
@@ -919,7 +923,7 @@ void SEHandler::LoadChunk(const std::string &chunk_name,
     return;
   }
   if (retry < kMaxLoadRetries) {
-    SelfEncryption se_;
+    SelfEncryption se_(client_chunkstore_);
     fs::path chunk_path = se_.GetChunkPath(chunk_name);
     if (!fs::exists(chunk_path)) {
       storem_->LoadChunk(chunk_name,
@@ -959,7 +963,7 @@ void SEHandler::LoadChunkCallback(const std::string &result,
       (result_msg.has_content())) {
     ++data->chunks_done;
     --data->active_chunks;
-    SelfEncryption se;
+    SelfEncryption se(client_chunkstore_);
     fs::path chunk_path = se.GetChunkPath(chunk_name);
     fs::ofstream ofs;
     ofs.open(chunk_path, std::ios_base::binary);
@@ -972,12 +976,13 @@ void SEHandler::LoadChunkCallback(const std::string &result,
 }
 
 void SEHandler::StoreChunks(const DataMap &dm,
-                            const DB_TYPE db_type,
-                            const std::string &msid,
-                            base::callback_func_type cb) {
-  base::pd_scoped_lock gaurd(*mutex_);
-  boost::shared_ptr<ChunksData> data(new ChunksData(dm, db_type, msid, cb));
-  IterativeStoreChunks(data);
+                            const DirType dir_type,
+                            const std::string &msid) {
+//  base::pd_scoped_lock gaurd(*mutex_);
+//  boost::shared_ptr<ChunksData> data(new ChunksData(dm, dir_type, msid, cb));
+//  IterativeStoreChunks(data);
+  for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i)
+    storem_->StoreChunk(dm.encrypted_chunk_name(i), dir_type, msid);
 }
 
 void SEHandler::IterativeStoreChunks(
@@ -1062,7 +1067,7 @@ void SEHandler::StoreChunk(const std::string &chunk_name,
     return;
 
   if (retry < kMaxStoreRetries) {
-    SelfEncryption se;
+    SelfEncryption se(client_chunkstore_);
     fs::path chunk_path = se.GetChunkPath(chunk_name);
     uint32_t size = fs::file_size(chunk_path);
     boost::scoped_ptr<char> temp(new char[static_cast<unsigned int>(size)]);
@@ -1075,7 +1080,7 @@ void SEHandler::StoreChunk(const std::string &chunk_name,
     std::string pubkey, sig_pubkey, sig_request;
     std::string non_hex_chunk_name("");
     base::decode_from_hex(chunk_name, &non_hex_chunk_name);
-    GetSignedPubKeyAndRequest(data->db_type,
+    GetSignedPubKeyAndRequest(data->dir_type,
                               data->msid,
                               non_hex_chunk_name,
                               &pubkey,
@@ -1083,9 +1088,9 @@ void SEHandler::StoreChunk(const std::string &chunk_name,
                               &sig_request);
     storem_->StoreChunk(chunk_name,
                         chunk_value,
-                        sig_request,
                         pubkey,
                         sig_pubkey,
+                        sig_request,
                         boost::bind(&SEHandler::StoreChunkCallback,
                                     this,
                                     _1,
@@ -1140,19 +1145,19 @@ void SEHandler::WaitForResult(const CallbackResult &cb) {
 }
 
 std::string SEHandler::CreateDataMapPacket(const std::string &ser_dm,
-                                           const DB_TYPE db_type,
+                                           const DirType dir_type,
                                            const std::string &msid) {
-  if (db_type == ANONYMOUS)
+  if (dir_type == ANONYMOUS)
     return ser_dm;
   packethandler::GenericPacket gp;
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   gp.set_data(ser_dm);
   std::string private_key_("");
-  switch (db_type) {
+  switch (dir_type) {
     case PRIVATE_SHARE: {
         std::string public_key_("");
-        if (0 != GetMsidKeys(msid, &public_key_, &private_key_)) {
+        if (0 != ss_->GetShareKeys(msid, &public_key_, &private_key_)) {
           private_key_ = "";
           return "";
         }
@@ -1174,7 +1179,7 @@ std::string SEHandler::CreateDataMapPacket(const std::string &ser_dm,
   return ser_gp;
 }
 
-void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
+void SEHandler::GetSignedPubKeyAndRequest(const DirType dir_type,
                                           const std::string &msid,
                                           const std::string &non_hex_name,
                                           std::string *pubkey,
@@ -1183,11 +1188,11 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  switch (db_type) {
+  switch (dir_type) {
     case PRIVATE_SHARE: {
-      printf("Getting signed request for PRIVATE_SHARE.\n\n");
+//      printf("Getting signed request for PRIVATE_SHARE.\n\n");
       std::string private_key_("");
-      if (0 != GetMsidKeys(msid, pubkey, &private_key_)) {
+      if (0 != ss_->GetShareKeys(msid, pubkey, &private_key_)) {
         *pubkey = "";
         *signed_pubkey = "";
         *signed_request = "";
@@ -1207,7 +1212,7 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
       }
       break;
     case PUBLIC_SHARE:
-      printf("Getting signed request for PUBLIC_SHARE.\n\n");
+//      printf("Getting signed request for PUBLIC_SHARE.\n\n");
       *pubkey = ss_->PublicKey(MPID);
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
@@ -1222,48 +1227,27 @@ void SEHandler::GetSignedPubKeyAndRequest(const DB_TYPE db_type,
                                     crypto::STRING_STRING);
       break;
     case ANONYMOUS:
-      printf("Getting signed request for ANONYMOUS.\n\n");
+//      printf("Getting signed request for ANONYMOUS.\n\n");
       *pubkey = " ";
       *signed_pubkey = " ";
       *signed_request = kAnonymousSignedRequest;
       break;
     default:
-      printf("Getting signed request for default.\n\n");
-      *pubkey = ss_->PublicKey(MAID);
+//      printf("Getting signed request for default.\n\n");
+      *pubkey = ss_->PublicKey(PMID);
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
-                                   ss_->PrivateKey(MAID),
+                                   ss_->PrivateKey(PMID),
                                    crypto::STRING_STRING);
       *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
                                             "",
                                             crypto::STRING_STRING,
                                             true),
                                     "",
-                                    ss_->PrivateKey(MAID),
+                                    ss_->PrivateKey(PMID),
                                     crypto::STRING_STRING);
       break;
   }
-}
-
-int SEHandler::GetMsidKeys(const std::string &msid,
-                           std::string *public_key,
-                           std::string *private_key) {
-  PrivateShare ps;
-  int result = ss_->GetShareInfo(msid, 1, &ps);
-  if (result != 0)
-    return -1;
-  *public_key = ps.MsidPubKey();
-  *private_key = ps.MsidPriKey();
-#ifdef DEBUG
-//  std::string pubhex(""), prihex("");
-//  base::encode_to_hex(*public_key, &pubhex);
-//  base::encode_to_hex(*private_key, &prihex);
-  printf("In SEHandler::GetMsidKeys:\npub: %s\npri: %s\n",
-         public_key->c_str(), private_key->c_str());
-//  printf("In SEHandler::GetMsidKeys:\nhexpub: %s\nhexpri: %s\n",
-//         pubhex.c_str(), prihex.c_str());
-#endif
-  return 0;
 }
 
 int SEHandler::RemoveKeyFromUptodateDms(const std::string &key) {

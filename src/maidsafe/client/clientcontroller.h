@@ -25,13 +25,14 @@
 #ifndef MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
 #define MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
 
+#include <maidsafe/utils.h>
+
 #include <list>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
 
-#include "maidsafe/utils.h"
 #include "fs/filesystem.h"
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/client/clientbufferpackethandler.h"
@@ -41,6 +42,8 @@
 #include "maidsafe/client/sehandler.h"
 
 namespace maidsafe {
+
+class ChunkStore;
 
 class CC_CallbackResult {
  public:
@@ -61,7 +64,7 @@ class ClientController {
 
   int ParseDa();
   int SerialiseDa();
-  exitcode CheckUserExists(const std::string &username,
+  Exitcode CheckUserExists(const std::string &username,
                            const std::string &pin,
                            base::callback_func_type cb,
                            DefConLevels level);
@@ -171,25 +174,26 @@ class ClientController {
   ClientController(const ClientController&);
   void WaitForResult(const CC_CallbackResult &cb);
   int BackupElement(const std::string &path,
-                    const DB_TYPE db_type,
+                    const DirType dir_type,
                     const std::string &msid);
   int RetrieveElement(const std::string &path);
   int RemoveElement(std::string path);
   // If the database of the parent doesn't exist, it is decrypted.  GetDb also
   // sets db type and msid if it exists for parent dir or sets it to "" if not.
-  int GetDb(const std::string &path_, DB_TYPE *db_type, std::string *msid);
+  int GetDb(const std::string &path_, DirType *dir_type, std::string *msid);
   // Add db to encryption queue (to be saved during session save) if bool ==
   // false or saves db immediately otherwise.
   int SaveDb(const std::string &db_path,
-             const DB_TYPE db_type,
+             const DirType dir_type,
              const std::string &msid,
              const bool &immediate_save);
   int RemoveDb(const std::string &path_);
-  DB_TYPE GetDbType(const std::string &path_);
+  DirType GetDirType(const std::string &path_);
   int PathDistinction(const std::string &path, std::string *msid);
 
   // Variables
   Authentication *auth_;
+  boost::shared_ptr<ChunkStore> client_chunkstore_;
   StoreManagerInterface *sm_;
   SessionSingleton *ss_;
   MessageHandler *msgh_;

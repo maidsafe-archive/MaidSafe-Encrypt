@@ -36,7 +36,7 @@ namespace ph = packethandler;
 
 namespace maidsafe {
 
-enum exitcode {
+enum Exitcode {
   OK,
   FAIL,
   PASSWORD_FAIL,
@@ -62,33 +62,33 @@ class Authentication {
  public:
   Authentication(StoreManagerInterface *storemanager,
                  boost::recursive_mutex *mutex);
-  exitcode GetUserInfo(const std::string &username,
+  Exitcode GetUserInfo(const std::string &username,
                       const std::string &pin,
                       base::callback_func_type cb);
-  exitcode GetUserData(const std::string &password, std::string &ser_da);
-  exitcode CreateUserSysPackets(const std::string &username,
+  Exitcode GetUserData(const std::string &password, std::string &ser_da);
+  Exitcode CreateUserSysPackets(const std::string &username,
                                 const std::string &pin,
                                 const std::string &password);
-  exitcode SaveSession(std::string ser_da,
+  Exitcode SaveSession(std::string ser_da,
                        ph::PacketParams priv_keys,
                        ph::PacketParams pub_keys);
-  exitcode RemoveMe(std::list<KeyAtlasRow> sig_keys);
-  exitcode CreatePublicName(std::string public_username,
+  Exitcode RemoveMe(std::list<KeyAtlasRow> sig_keys);
+  Exitcode CreatePublicName(std::string public_username,
                             ph::PacketParams *result);
-  exitcode ChangeUsername(std::string ser_da,
+  Exitcode ChangeUsername(std::string ser_da,
                           ph::PacketParams priv_keys,
                           ph::PacketParams pub_keys,
                           std::string new_username);
-  exitcode ChangePin(std::string ser_da,
+  Exitcode ChangePin(std::string ser_da,
                      ph::PacketParams priv_keys,
                      ph::PacketParams pub_keys,
                      std::string new_pin);
-  exitcode ChangePassword(std::string ser_da,
+  Exitcode ChangePassword(std::string ser_da,
                           ph::PacketParams priv_keys,
                           ph::PacketParams pub_keys,
                           std::string new_password);
   bool CheckUserExists(std::string username, std::string pin);
-  exitcode PublicUsernamePublicKey(const std::string &public_username,
+  Exitcode PublicUsernamePublicKey(const std::string &public_username,
                                    std::string &public_key);
   void CreateMSIDPacket(base::callback_func_type cb);
  private:

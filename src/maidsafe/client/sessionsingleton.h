@@ -259,6 +259,9 @@ class SessionSingleton {
                                      std::list<std::string> *participants);
   int GetShareInfo(const std::string &value, const int &field,
                    PrivateShare *ps);
+  int GetShareKeys(const std::string &msid,
+                   std::string *public_key,
+                   std::string *private_key);
   int GetShareList(std::list<maidsafe::private_share> *ps_list);
   int GetFullShareList(std::list<PrivateShare> *ps_list);
   int GetParticipantsList(const std::string &value, const int &field,

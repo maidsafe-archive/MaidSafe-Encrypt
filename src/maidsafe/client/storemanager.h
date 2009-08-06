@@ -36,30 +36,33 @@ namespace maidsafe {
 class StoreManagerInterface {
  public:
   virtual ~StoreManagerInterface() {}
-  virtual void Init(base::callback_func_type cb)=0;
+  virtual void Init(int port, base::callback_func_type cb)=0;
   virtual void Close(base::callback_func_type cb)=0;
   virtual void LoadChunk(const std::string &hex_chunk_name,
                          base::callback_func_type cb)=0;
   virtual void StoreChunk(const std::string &hex_chunk_name,
                           const std::string &content,
-                          const std::string &signature,
                           const std::string &public_key,
                           const std::string &signed_public_key,
+                          const std::string &signature,
                           base::callback_func_type cb)=0;
+  virtual void StoreChunk(const std::string &hex_chunk_name,
+                          const DirType dir_type,
+                          const std::string &msid)=0;
   virtual void IsKeyUnique(const std::string &hex_key,
                            base::callback_func_type cb)=0;
   virtual void DeletePacket(const std::string &hex_key,
                             const std::string &signature,
                             const std::string &public_key,
                             const std::string &signed_public_key,
-                            const value_types &type,
+                            const ValueType &type,
                             base::callback_func_type cb)=0;
   virtual void StorePacket(const std::string &hex_key,
                            const std::string &value,
                            const std::string &signature,
                            const std::string &public_key,
                            const std::string &signed_public_key,
-                           const value_types &type,
+                           const ValueType &type,
                            bool update,
                            base::callback_func_type cb)=0;
   virtual void LoadPacket(const std::string &hex_key,

@@ -29,6 +29,7 @@
 #include <gtest/gtest.h>
 
 #include "fs/filesystem.h"
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/packetfactory.h"
 #include "maidsafe/client/sehandler.h"
@@ -79,24 +80,62 @@ namespace maidsafe {
 
 class TestSEHandler : public testing::Test {
  protected:
-  TestSEHandler() : sm(), rec_mutex(NULL),
-    cb(), db_str1_(""), db_str2_("")  { }
-  void SetUp() {
-    if (fs::exists("KademilaDb.db"))
-      fs::remove(fs::path("KademilaDb.db"));
-    if (fs::exists("StoreChunks"))
-      fs::remove_all("StoreChunks");
-    if (fs::exists("KademilaDb.db"))
-      printf("Kademila.db still there.\n");
-    if (fs::exists("StoreChunks"))
-      printf("StoreChunks still there.\n");
-    file_system::FileSystem fsys_;
-    if (fs::exists(fsys_.MaidsafeDir()))
+  TestSEHandler() : sm(),
+                    rec_mutex(NULL),
+                    client_chunkstore_(),
+                    cb(),
+                    db_str1_(""),
+                    db_str2_("")  {
+    try {
+      if (fs::exists("KademilaDb.db"))
+        fs::remove(fs::path("KademilaDb.db"));
+      if (fs::exists("StoreChunks"))
+        fs::remove_all("StoreChunks");
+      if (fs::exists("./TestSEH"))
+        fs::remove_all("./TestSEH");
+      if (fs::exists("KademilaDb.db"))
+        printf("Kademila.db still there.\n");
+      if (fs::exists("StoreChunks"))
+        printf("StoreChunks still there.\n");
+      if (fs::exists("./TestSEH"))
+        printf("./TestSEH still there.\n");
+      file_system::FileSystem fsys_;
+      if (fs::exists(fsys_.MaidsafeDir()))
+        fs::remove_all(fsys_.MaidsafeDir());
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
+  }
+  ~TestSEHandler() {
+    fs::path db("MaidDataAtlas.db");
+    try {
+      if (fs::exists(db))
+        fs::remove(db);
+      file_system::FileSystem fsys_;
       fs::remove_all(fsys_.MaidsafeDir());
+      fs::remove_all("./TestSEH");
+      fs::remove_all("StoreChunks");
+      fs::path kaddb("KademilaDb.db");
+      fs::remove(kaddb);
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
+  void SetUp() {
+    client_chunkstore_ =
+        boost::shared_ptr<ChunkStore>(new ChunkStore("./TestSEH", 0, 0));
+    int count(0);
+    while (!client_chunkstore_->is_initialised() && count < 10000) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      count += 10;
+    }
     rec_mutex = new boost::recursive_mutex();
-    boost::shared_ptr<LocalStoreManager> sm(new LocalStoreManager(rec_mutex));
+    boost::shared_ptr<LocalStoreManager>
+        sm(new LocalStoreManager(rec_mutex, client_chunkstore_));
     cb.Reset();
-    sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+    sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_seh(cb, rec_mutex);
     base::GeneralResponse result;
     if ((!result.ParseFromString(cb.result)) ||
@@ -111,11 +150,16 @@ class TestSEHandler : public testing::Test {
     SessionSingleton::getInstance()->SetRootDbKey("whatever");
     crypto::RsaKeyPair rsa_kp;
     rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
+    SessionSingleton::getInstance()->AddKey(PMID, "PMID", rsa_kp.private_key(),
+                                            rsa_kp.public_key());
+    rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(MAID, "MAID", rsa_kp.private_key(),
                                             rsa_kp.public_key());
+    file_system::FileSystem fsys_;
     fsys_.Mount();
     boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
-    boost::scoped_ptr<SEHandler>seh_(new SEHandler(sm.get(), rec_mutex));
+    boost::scoped_ptr<SEHandler>seh_(new SEHandler(sm.get(), client_chunkstore_,
+        rec_mutex));
     if (dah->Init(true) )
       FAIL();
 
@@ -173,24 +217,12 @@ class TestSEHandler : public testing::Test {
   }
   void TearDown() {
     cb.Reset();
-    fs::path db("MaidDataAtlas.db");
-    try {
-      if (fs::exists(db))
-        fs::remove(db);
-      file_system::FileSystem fsys_;
-      fs::remove_all(fsys_.MaidsafeDir());
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-    fs::remove_all("StoreChunks");
-    fs::path kaddb("KademilaDb.db");
-    fs::remove(kaddb);
     delete rec_mutex;
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
   boost::shared_ptr<LocalStoreManager> sm;
   boost::recursive_mutex *rec_mutex;
+  boost::shared_ptr<ChunkStore> client_chunkstore_;
   FakeCallback cb;
   std::string db_str1_;
   std::string db_str2_;
@@ -201,7 +233,8 @@ class TestSEHandler : public testing::Test {
 
 
 TEST_F(TestSEHandler, FUNC_MAID_Check_Entry) {
-  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm.get(), rec_mutex));
+  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm.get(), client_chunkstore_,
+      rec_mutex));
   boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
 
   fs::path rel_path_(kRootSubdir[0][0], fs::native);
@@ -263,9 +296,11 @@ TEST_F(TestSEHandler, FUNC_MAID_Check_Entry) {
 }
 
 TEST_F(TestSEHandler, FUNC_MAID_EncryptFile) {
-  boost::scoped_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
-  sm_->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));
+  boost::scoped_ptr<LocalStoreManager>
+      sm_(new LocalStoreManager(rec_mutex, client_chunkstore_));
+  sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), client_chunkstore_,
+      rec_mutex));
   boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
 
   fs::path rel_path_(kRootSubdir[0][0]);
@@ -297,9 +332,11 @@ TEST_F(TestSEHandler, FUNC_MAID_EncryptFile) {
 }
 
 TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_ChunksPrevLoaded) {
-  boost::scoped_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
-  sm_->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));
+  boost::scoped_ptr<LocalStoreManager>
+      sm_(new LocalStoreManager(rec_mutex, client_chunkstore_));
+  sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), client_chunkstore_,
+      rec_mutex));
   boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
 
   fs::path rel_path_(kRootSubdir[0][0]);
@@ -308,7 +345,7 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_ChunksPrevLoaded) {
 
   std::string full_str_ = CreateRandomFile(rel_str_);
   std::string hash_before_, hash_after_;
-  SelfEncryption se_;
+  SelfEncryption se_(client_chunkstore_);
   hash_before_ = se_.SHA512(fs::path(full_str_));
   int result = seh->EncryptFile(rel_str_, PRIVATE, "");
   ASSERT_EQ(0, result);
@@ -330,9 +367,11 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_ChunksPrevLoaded) {
 
 TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
   SessionSingleton::getInstance()->SetDefConLevel(DEFCON2);
-  boost::scoped_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
-  sm_->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));
+  boost::scoped_ptr<LocalStoreManager>
+      sm_(new LocalStoreManager(rec_mutex, client_chunkstore_));
+  sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), client_chunkstore_,
+      rec_mutex));
   boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
 
   fs::path rel_path_(kRootSubdir[0][0]);
@@ -341,37 +380,34 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
 
   std::string full_str_ = CreateRandomFile(rel_str_);
   std::string hash_before_, hash_after_;
-  SelfEncryption se_;
+  SelfEncryption se_(client_chunkstore_);
   fs::path full_path_(full_str_, fs::native);
   hash_before_ = se_.SHA512(full_path_);
   int result = seh->EncryptFile(rel_str_, PRIVATE, "");
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
   file_system::FileSystem fsys_;
+  // All dirs are removed on fsys_.Mount() below.  We need to temporarily rename
+  // DbDir (which contains dir's db files) to avoid deletion.
+  std::string db_dir_original = fsys_.DbDir();
+  std::string db_dir_new = "./W";
   try {
-    fs::remove_all(fsys_.MaidsafeHomeDir());
-    //  NB we can't remove DbDir (which contains dir's db files)
-    //  unless a proper logout/login is run
-    fs::remove_all(fsys_.ProcessDir());
-    for (char c_ = '0'; c_ <= '9'; c_++) {
-      std::stringstream out_;
-      out_ << c_;
-      std::string file_ = fsys_.MaidsafeDir() + "/" + out_.str();
-      fs::remove_all(file_);
-    }
-    for (char c_ = 'a'; c_ <= 'f'; c_++) {
-      std::stringstream out_;
-      out_ << c_;
-      std::string file_ = fsys_.MaidsafeDir() + "/" + out_.str();
-      fs::remove_all(file_);
-    }
+    fs::remove_all(db_dir_new);
+    fs::rename(db_dir_original, db_dir_new);
   }
   catch(const std::exception &e) {
     printf("%s\n", e.what());
   }
-  ASSERT_FALSE(fs::exists(full_str_));
   fsys_.Mount();
+  ASSERT_FALSE(fs::exists(full_str_));
   fs::create_directories(fsys_.MaidsafeHomeDir() + kRootSubdir[0][0]);
+  try {
+    fs::remove_all(db_dir_original);
+    fs::rename(db_dir_new, db_dir_original);
+  }
+  catch(const std::exception &e) {
+    printf("%s\n", e.what());
+  }
   result = seh->DecryptFile(rel_str_);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
@@ -384,7 +420,7 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
 
 //  TEST_F(TestSEHandler, FUNC_MAID_Decrypt_FailedToLoadChunk) {
 //   boost::scoped_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
-//    sm_->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+//    sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
 //    boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));
 //    boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
 //
@@ -447,9 +483,11 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
 //  }
 
 TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptPrivateDb) {
-  boost::scoped_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
-  sm_->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));
+  boost::scoped_ptr<LocalStoreManager>
+      sm_(new LocalStoreManager(rec_mutex, client_chunkstore_));
+  sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), client_chunkstore_,
+      rec_mutex));
   boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
   file_system::FileSystem fsys_;
   fs::path db_path_(db_str1_, fs::native);
@@ -499,9 +537,11 @@ TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptPrivateDb) {
 }
 
 TEST_F(TestSEHandler, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
-  boost::scoped_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
-  sm_->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));
+  boost::scoped_ptr<LocalStoreManager>
+      sm_(new LocalStoreManager(rec_mutex, client_chunkstore_));
+  sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), client_chunkstore_,
+      rec_mutex));
   file_system::FileSystem fsys_;
   fs::path db_path_(db_str2_, fs::native);
   std::string key_ = "testkey";

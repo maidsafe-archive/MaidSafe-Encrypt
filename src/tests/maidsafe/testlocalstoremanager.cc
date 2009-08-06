@@ -24,6 +24,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/utils.h>
 
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
@@ -55,14 +56,45 @@ void wait_for_result_lsm(const FakeCallback &cb,
 
 class StoreManagerTest : public testing::Test {
  public:
-  StoreManagerTest() : cb(), storemanager(),
-      crypto_obj(), rsa_obj(), mutex_() {}
+  StoreManagerTest() : cb(), client_chunkstore_(), storemanager(),
+      crypto_obj(), rsa_obj(), mutex_() {
+    try {
+      boost::filesystem::remove_all("./TestStoreManager");
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
+  ~StoreManagerTest() {
+    try {
+      boost::filesystem::remove_all("./TestStoreManager");
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
  protected:
   void SetUp() {
+    try {
+      if (boost::filesystem::exists("KademilaDb.db"))
+        boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
+      if (boost::filesystem::exists("StoreChunks"))
+        boost::filesystem::remove_all(boost::filesystem::path("StoreChunks"));
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
     mutex_ = new boost::recursive_mutex();
-    storemanager = new maidsafe::LocalStoreManager(mutex_);
+    client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
+         (new maidsafe::ChunkStore("./TestStoreManager", 0, 0));
+    int count(0);
+    while (!client_chunkstore_->is_initialised() && count < 10000) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      count += 10;
+    }
+    storemanager = new maidsafe::LocalStoreManager(mutex_, client_chunkstore_);
     // storemanager = new LocalStoreManager();
-    storemanager->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+    storemanager->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_lsm(cb, mutex_);
     base::GeneralResponse res;
     ASSERT_TRUE(res.ParseFromString(cb.result_));
@@ -81,13 +113,19 @@ class StoreManagerTest : public testing::Test {
     base::GeneralResponse res;
     ASSERT_TRUE(res.ParseFromString(cb.result_));
     if (res.result() == kCallbackSuccess) {
-      if (boost::filesystem::exists("KademilaDb.db"))
-        boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
-      if (boost::filesystem::exists("StoreChunks"))
-        boost::filesystem::remove_all(boost::filesystem::path("StoreChunks"));
+      try {
+        if (boost::filesystem::exists("KademilaDb.db"))
+          boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
+        if (boost::filesystem::exists("StoreChunks"))
+          boost::filesystem::remove_all(boost::filesystem::path("StoreChunks"));
+      }
+      catch(const std::exception &e) {
+        printf("%s\n", e.what());
+      }
     }
   }
   FakeCallback cb;
+  boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore_;
   maidsafe::LocalStoreManager *storemanager;
   crypto::Crypto crypto_obj;
   crypto::RsaKeyPair rsa_obj;
@@ -218,6 +256,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   cb.Reset();
   is_unique_res.Clear();
 
+//  storemanager->StoreChunk(chunk_name, chunk_content, "", "", "");
   storemanager->StoreChunk(chunk_name, chunk_content, "", "", "",
                            boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);

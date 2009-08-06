@@ -15,7 +15,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <vector>
 
-#include "maidsafe/utils.h"
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
@@ -68,10 +68,16 @@ void ExeCallbackGetMsgs(const base::callback_func_type &cb,
   cb(ser_result);
 }
 
-LocalStoreManager::LocalStoreManager(boost::recursive_mutex *mutex)
-    : db_(), vbph_(), crypto_obj_(), mutex_(mutex) {}
+LocalStoreManager::LocalStoreManager(
+    boost::recursive_mutex *mutex,
+    boost::shared_ptr<ChunkStore> client_chunkstore)
+        : db_(),
+          vbph_(),
+          crypto_obj_(),
+          mutex_(mutex),
+          client_chunkstore_(client_chunkstore) {}
 
-void LocalStoreManager::Init(base::callback_func_type cb) {
+void LocalStoreManager::Init(int, base::callback_func_type cb) {
   try {
     if (fs::exists("KademilaDb.db")) {
       db_.open("KademilaDb.db");
@@ -133,8 +139,19 @@ void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,
   ofs.open(file_path, std::ios_base::binary);
   ofs << content;
   ofs.close();
-
   boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, mutex_));
+}
+
+void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,
+                                   const DirType,
+                                   const std::string&) {
+  fs::path file_path("StoreChunks");
+  file_path = file_path / hex_chunk_name;
+  std::string non_hex("");
+  base::decode_from_hex(hex_chunk_name, &non_hex);
+  ChunkType type = client_chunkstore_->chunk_type(non_hex);
+  fs::path current = client_chunkstore_->GetChunkPath(non_hex, type, false);
+  fs::copy_file(current, file_path);
 }
 
 void LocalStoreManager::IsKeyUnique(const std::string &hex_key,
@@ -169,7 +186,7 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
                                      const std::string &signature,
                                      const std::string &public_key,
                                      const std::string &signed_public_key,
-                                     const value_types &type,
+                                     const ValueType &type,
                                      base::callback_func_type cb) {
   std::string key("");
   base::decode_from_hex(hex_key, &key);
@@ -277,7 +294,7 @@ void LocalStoreManager::StorePacket(const std::string &hex_key,
                                     const std::string &signature,
                                     const std::string &public_key,
                                     const std::string &signed_public_key,
-                                    const value_types &type,
+                                    const ValueType &type,
                                     bool,
                                     base::callback_func_type cb) {
   std::string key("");

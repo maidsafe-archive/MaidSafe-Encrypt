@@ -22,12 +22,13 @@
 * ============================================================================
 */
 #include <gtest/gtest.h>
+#include <maidsafe/utils.h>
 #include <stdio.h>
 
 #include <string>
 #include <cstdlib>
 
-#include "maidsafe/utils.h"
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/client/clientbufferpackethandler.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/packetfactory.h"
@@ -68,10 +69,27 @@ class BufferPacketHandlerTest : public testing::Test {
                               private_key(rsa_obj.private_key()),
                               public_key(rsa_obj.public_key()),
                               public_username("el tonto smer"),
+                              client_chunkstore_(),
                               sm(),
                               ss(),
                               mutex(),
-                              cb() {}
+                              cb() {
+
+    try {
+      boost::filesystem::remove_all("./TestBuffer");
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
+  ~BufferPacketHandlerTest() {
+    try {
+      boost::filesystem::remove_all("./TestBuffer");
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
  protected:
   virtual void SetUp() {
     try {
@@ -84,9 +102,16 @@ class BufferPacketHandlerTest : public testing::Test {
       printf("%s\n", ex_.what());
     }
     mutex = new boost::recursive_mutex();
+    client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
+         (new maidsafe::ChunkStore("./TestBuffer", 0, 0));
+    int count(0);
+    while (!client_chunkstore_->is_initialised() && count < 10000) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      count += 10;
+    }
     boost::shared_ptr<maidsafe::LocalStoreManager>
-        sm(new maidsafe::LocalStoreManager(mutex));
-    sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+        sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+    sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_tbph(cb, mutex);
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     base::GeneralResponse res;
@@ -125,6 +150,7 @@ class BufferPacketHandlerTest : public testing::Test {
   std::string private_key;
   std::string public_key;
   std::string public_username;
+  boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore_;
   boost::shared_ptr<maidsafe::LocalStoreManager> sm;
   maidsafe::SessionSingleton *ss;
   boost::recursive_mutex *mutex;
@@ -138,7 +164,7 @@ class BufferPacketHandlerTest : public testing::Test {
 TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
     sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
@@ -217,8 +243,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
 */
 TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   packethandler::GenericPacket ser_owner_info;
@@ -274,8 +300,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
 
 TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   packethandler::BufferPacketInfo buffer_packet_info;
@@ -333,8 +359,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
 
 TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-    sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
@@ -437,8 +463,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
 
 TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
@@ -513,8 +539,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
 
 TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckOwner) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
@@ -555,8 +581,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckOwner) {
 
 TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   packethandler::BufferPacketInfo buffer_packet_info;
@@ -628,8 +654,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
 
 TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckSignature) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
@@ -665,8 +691,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckSignature) {
 
 TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
@@ -813,8 +839,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
 
 TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
@@ -909,8 +935,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
 
 TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
@@ -989,8 +1015,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
 
 TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   clientbufferpackethandler.CreateBufferPacket(public_username, public_key,

@@ -73,7 +73,7 @@ Authentication::Authentication(StoreManagerInterface *storemanager,
   crypto_.set_symm_algorithm(crypto::AES_256);
 }
 
-exitcode Authentication::GetUserInfo(const std::string &username,
+Exitcode Authentication::GetUserInfo(const std::string &username,
                                      const std::string &pin,
                                      base::callback_func_type cb) {
   ss_->SetSmidRid(0);
@@ -101,7 +101,7 @@ exitcode Authentication::GetUserInfo(const std::string &username,
   return USER_EXISTS;
 }
 
-exitcode Authentication::GetUserData(const std::string &password,
+Exitcode Authentication::GetUserData(const std::string &password,
                                      std::string &ser_da) {
   //  still have not recovered the tmid
   if (tmid_content == "")
@@ -119,7 +119,7 @@ exitcode Authentication::GetUserData(const std::string &password,
   return OK;
 }
 
-exitcode Authentication::CreateUserSysPackets(const std::string &username,
+Exitcode Authentication::CreateUserSysPackets(const std::string &username,
                                               const std::string &pin,
                                               const std::string &password) {
   int fakerid = 0;
@@ -255,7 +255,7 @@ exitcode Authentication::CreateUserSysPackets(const std::string &username,
   return OK;
 }
 
-exitcode Authentication::SaveSession(std::string ser_da,
+Exitcode Authentication::SaveSession(std::string ser_da,
                                      ph::PacketParams priv_keys,
                                      ph::PacketParams pub_keys) {
   ph::PacketParams params;
@@ -378,7 +378,7 @@ exitcode Authentication::SaveSession(std::string ser_da,
   return OK;
 }
 
-exitcode Authentication::RemoveMe(std::list<KeyAtlasRow> sig_keys) {
+Exitcode Authentication::RemoveMe(std::list<KeyAtlasRow> sig_keys) {
   ph::MidPacket *midPacket =
     static_cast<ph::MidPacket*>(ph::PacketFactory::Factory(ph::MID));
   ph::SmidPacket *smidPacket =
@@ -504,7 +504,7 @@ exitcode Authentication::RemoveMe(std::list<KeyAtlasRow> sig_keys) {
   return OK;
 }
 
-exitcode Authentication::CreatePublicName(std::string public_username,
+Exitcode Authentication::CreatePublicName(std::string public_username,
                                           ph::PacketParams *result) {
   ph::PacketParams params;
   ph::PacketParams local_result;
@@ -592,7 +592,7 @@ exitcode Authentication::CreatePublicName(std::string public_username,
   return OK;
 }
 
-exitcode Authentication::ChangeUsername(std::string ser_da,
+Exitcode Authentication::ChangeUsername(std::string ser_da,
                                         ph::PacketParams priv_keys,
                                         ph::PacketParams pub_keys,
                                         std::string new_username) {
@@ -799,7 +799,7 @@ exitcode Authentication::ChangeUsername(std::string ser_da,
   return OK;
 }
 
-exitcode Authentication::ChangePin(std::string ser_da,
+Exitcode Authentication::ChangePin(std::string ser_da,
                                    ph::PacketParams priv_keys,
                                    ph::PacketParams pub_keys,
                                    std::string new_pin) {
@@ -1012,7 +1012,7 @@ exitcode Authentication::ChangePin(std::string ser_da,
   return OK;
 }
 
-exitcode Authentication::ChangePassword(std::string ser_da,
+Exitcode Authentication::ChangePassword(std::string ser_da,
                                         ph::PacketParams priv_keys,
                                         ph::PacketParams pub_keys,
                                         std::string new_password) {
@@ -1267,7 +1267,7 @@ void Authentication::GetUserTmidCallback(const std::string& result,
   cb(result);
 }
 
-exitcode Authentication::PublicUsernamePublicKey(
+Exitcode Authentication::PublicUsernamePublicKey(
     const std::string &public_username,
     std::string &public_key) {
   ph::PacketParams params;

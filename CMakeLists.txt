@@ -220,7 +220,7 @@ TARGET_LINK_LIBRARIES(TESTpdvault PDmsclientlib PDmaidsafelib PDmsvaultlib PDfsl
 #TARGET_LINK_LIBRARIES(TESTclientcontroller PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} gtest ${SYS_LIB})
 #TARGET_LINK_LIBRARIES(TESTfuse PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${FUSE} gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTfs PDmaidsafelib PDfslib ${FUSE} gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(testvault PDmsclientlib PDmaidsafelib PDmsvaultlib PDpbmsgslib ${SYS_LIB})
+TARGET_LINK_LIBRARIES(testvault PDmsvaultlib PDmaidsafelib PDpbmsgslib ${SYS_LIB})
 TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmaidsafelib PDpbmsgslib ${SYS_LIB})
 
 
@@ -249,7 +249,7 @@ IF(MSVC)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /DUNICODE /D_WIN32_WINDOWS /DDEBUG /D_CONSOLE")
 ELSE(MSVC)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wfloat-equal -Wlong-long  -Wstrict-overflow=5 -D_FORTIFY_SOURCE=2 -fno-stack-protector  -D_FILE_OFFSET_BITS=64")
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -fprofile-arcs")
+  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG") # -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wuninitialized")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I c:/usr/include -DMAIDSAFE_WIN32 -D_FORTIFY_SOURCE=2   -DWIN32_LEAN_AND_MEAN  -D__MINGW__  -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static   -mthreads -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32  -D_WIN32_WINNT=0x0501  -mthreads ")
   SET_TARGET_PROPERTIES( pdlocal perpetualdata  PROPERTIES COMPILE_FLAGS -w )

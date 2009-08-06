@@ -34,12 +34,40 @@ ClientRpcs::ClientRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
 //  printf("In ClientRpcs constructor.\n");
 }
 
+void ClientRpcs::StorePrep(const std::string &chunkname,
+                           const boost::uint64_t &data_size,
+                           const std::string &pmid,
+                           const std::string &public_key,
+                           const std::string &signed_public_key,
+                           const std::string &signed_request,
+                           const std::string &remote_ip,
+                           const uint16_t &remote_port,
+                           StorePrepResponse* response,
+                           google::protobuf::Closure* done,
+                           const bool &local) {
+  StorePrepRequest args;
+  args.set_chunkname(chunkname);
+  args.set_data_size(data_size);
+  args.set_pmid(pmid);
+  args.set_public_key(public_key);
+  args.set_signed_public_key(signed_public_key);
+  args.set_signed_request(signed_request);
+  rpcprotocol::Controller controller;
+  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
+      channel_manager_.get(),
+      remote_ip,
+      remote_port,
+      local));
+  MaidsafeService::Stub service(channel.get());
+  service.StoreChunkPrep(&controller, &args, response, done);
+}
+
 void ClientRpcs::Store(const std::string &chunkname,
                        const std::string &data,
                        const std::string &public_key,
                        const std::string &signed_public_key,
                        const std::string &signed_request,
-                       const value_types &data_type,
+                       const ValueType &data_type,
                        const std::string &remote_ip,
                        const uint16_t &remote_port,
                        StoreResponse* response,
@@ -103,7 +131,7 @@ void ClientRpcs::Update(const std::string &chunkname,
                         const std::string &public_key,
                         const std::string &signed_public_key,
                         const std::string &signed_request,
-                        const value_types &data_type,
+                        const ValueType &data_type,
                         const std::string &remote_ip,
                         const uint16_t &remote_port,
                         UpdateResponse* response,
@@ -130,7 +158,7 @@ void ClientRpcs::Delete(const std::string &chunkname,
                         const std::string &public_key,
                         const std::string &signed_public_key,
                         const std::string &signed_request,
-                        const value_types &data_type,
+                        const ValueType &data_type,
                         const std::string &remote_ip,
                         const uint16_t &remote_port,
                         DeleteResponse* response,

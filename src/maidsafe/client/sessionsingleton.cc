@@ -266,6 +266,19 @@ int SessionSingleton::GetShareInfo(const std::string &value, const int &field,
     PrivateShare *ps) {
   return psh_.MI_GetShareInfo(value, field, ps);
 }
+int SessionSingleton::GetShareKeys(const std::string &msid,
+                                   std::string *public_key,
+                                   std::string *private_key) {
+  PrivateShare ps;
+  if (GetShareInfo(msid, 1, &ps) != 0) {
+    *public_key = "";
+    *private_key = "";
+    return -1;
+  }
+  *public_key = ps.MsidPubKey();
+  *private_key = ps.MsidPriKey();
+  return 0;
+}
 int SessionSingleton::GetShareList(
     std::list<maidsafe::private_share> *ps_list) {
   return psh_.MI_GetShareList(ps_list);

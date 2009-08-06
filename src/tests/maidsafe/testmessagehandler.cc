@@ -22,9 +22,10 @@
 */
 
 #include <gtest/gtest.h>
+#include <maidsafe/utils.h>
 #include <cstdlib>
 #include <string>
-#include "maidsafe/utils.h"
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/clientbufferpackethandler.h"
 #include "maidsafe/client/messagehandler.h"
@@ -65,16 +66,39 @@ class MsgHandlerTest : public testing::Test {
                      private_key(rsa_obj.private_key()),
                      public_key(rsa_obj.public_key()),
                      public_username("el tonto smer"),
+                     client_chunkstore_(),
                      sm(),
                      ss(),
                      mutex(),
-                     cb() {}
+                     cb() {
+    try {
+      boost::filesystem::remove_all("./TestMsgHandler");
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
+  ~MsgHandlerTest() {
+    try {
+      boost::filesystem::remove_all("./TestMsgHandler");
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
  protected:
   void SetUp() {
     mutex = new boost::recursive_mutex();
+    client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
+         (new maidsafe::ChunkStore("./TestMsgHandler", 0, 0));
     boost::shared_ptr<maidsafe::LocalStoreManager>
-        sm(new maidsafe::LocalStoreManager(mutex));
-    sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+        sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+    int count(0);
+    while (!client_chunkstore_->is_initialised() && count < 10000) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      count += 10;
+    }
+    sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_tmsgh(cb, mutex);
     base::GeneralResponse result;
     if ((!result.ParseFromString(cb.result)) ||
@@ -113,6 +137,7 @@ class MsgHandlerTest : public testing::Test {
   std::string private_key;
   std::string public_key;
   std::string public_username;
+  boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore_;
   boost::shared_ptr<maidsafe::LocalStoreManager> sm;
   maidsafe::SessionSingleton *ss;
   boost::recursive_mutex *mutex;
@@ -124,8 +149,8 @@ class MsgHandlerTest : public testing::Test {
 
 TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
-      sm(new maidsafe::LocalStoreManager(mutex));
-  sm->Init(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+      sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
+  sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   maidsafe::MessageHandler msghandler(sm.get(), mutex);

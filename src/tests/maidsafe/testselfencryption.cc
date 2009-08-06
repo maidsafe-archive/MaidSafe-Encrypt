@@ -27,11 +27,12 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
+#include <maidsafe/utils.h>
+#include <maidsafe/maidsafe-dht.h>
 
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/selfencryption.h"
-#include "maidsafe/utils.h"
-#include "maidsafe/maidsafe-dht.h"
 #include "fs/filesystem.h"
 
 namespace fs = boost::filesystem;
@@ -53,9 +54,38 @@ namespace maidsafe {
 
 class TestSelfEncryption : public testing::Test {
  public:
-  TestSelfEncryption() : ss(NULL) {}
+  TestSelfEncryption()
+      : ss(NULL),
+        client_chunkstore_() {
+    try {
+      file_system::FileSystem fsys;
+      if (fs::exists(fsys.MaidsafeDir()))
+        fs::remove_all(fsys.MaidsafeDir());
+      if (fs::exists("./TestSE"))
+        fs::remove_all("./TestSE");
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
+  }
+  ~TestSelfEncryption() {
+    try {
+      if (fs::exists("./TestSE"))
+        fs::remove_all("./TestSE");
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
+  }
  protected:
   void SetUp() {
+    client_chunkstore_ =
+        boost::shared_ptr<ChunkStore>(new ChunkStore("./TestSE", 0, 0));
+    int count(0);
+    while (!client_chunkstore_->is_initialised() && count < 10000) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      count += 10;
+    }
     ss = SessionSingleton::getInstance();
     ss->ResetSession();
     ss->SetUsername("user1");
@@ -64,13 +94,6 @@ class TestSelfEncryption : public testing::Test {
     ss->SetSessionName(false);
     ss->SetRootDbKey("whatever");
     file_system::FileSystem fsys;
-    try {
-      if (fs::exists(fsys.MaidsafeDir()))
-        fs::remove_all(fsys.MaidsafeDir());
-    }
-    catch(const std::exception& e) {
-      printf("%s\n", e.what());
-    }
     fsys.Mount();
   }
   void TearDown() {
@@ -84,6 +107,7 @@ class TestSelfEncryption : public testing::Test {
     }
   }
   SessionSingleton *ss;
+  boost::shared_ptr<ChunkStore> client_chunkstore_;
  private:
   explicit TestSelfEncryption(const maidsafe::TestSelfEncryption&);
   TestSelfEncryption &operator=(const maidsafe::TestSelfEncryption&);
@@ -98,7 +122,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CheckEntry) {
   fs::path path2(CreateRandomFile(test_file2, 1), fs::native);
   fs::path path3(CreateRandomFile(test_file3, 2), fs::native);
   fs::path path4(CreateRandomFile(test_file4, 1234567), fs::native);
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   ASSERT_EQ(-1, se.CheckEntry(path1));
   ASSERT_EQ(-1, se.CheckEntry(path2));
   ASSERT_EQ(0, se.CheckEntry(path3));
@@ -107,7 +131,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CheckEntry) {
 
 TEST_F(TestSelfEncryption, BEH_MAID_CreateProcessDirectory) {
   fs::path process_path("");
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   se.file_hash_ = "TheFileHash";
   ASSERT_TRUE(se.CreateProcessDirectory(&process_path));
   file_system::FileSystem fsys;
@@ -159,14 +183,14 @@ TEST_F(TestSelfEncryption, BEH_MAID_CheckCompressibility) {
     ofs3 << "repeated text ";
   ofs3.close();
 
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   ASSERT_TRUE(se.CheckCompressibility(path1));
   ASSERT_FALSE(se.CheckCompressibility(path2));
   ASSERT_FALSE(se.CheckCompressibility(path3));
 }
 
 TEST_F(TestSelfEncryption, BEH_MAID_ChunkAddition) {
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   ASSERT_EQ(-8, se.ChunkAddition('0'));
   ASSERT_EQ(-7, se.ChunkAddition('1'));
   ASSERT_EQ(-6, se.ChunkAddition('2'));
@@ -194,7 +218,7 @@ TEST_F(TestSelfEncryption, BEH_MAID_ChunkAddition) {
 }
 
 TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   uint16_t min_chunks = se.min_chunks_;
   uint16_t max_chunks = se.max_chunks_;
   uint64_t default_chunk_size_ = se.default_chunk_size_;
@@ -410,7 +434,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
 }
 
 TEST_F(TestSelfEncryption, BEH_MAID_HashFile) {
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   file_system::FileSystem fsys;
   fs::path ms_home(fsys.MaidsafeHomeDir());
 
@@ -437,7 +461,7 @@ TEST_F(TestSelfEncryption, BEH_MAID_HashFile) {
 }
 
 TEST_F(TestSelfEncryption, BEH_MAID_HashString) {
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   ASSERT_EQ(se.SHA512(static_cast<std::string>("abc")),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
@@ -449,7 +473,7 @@ TEST_F(TestSelfEncryption, BEH_MAID_HashString) {
 }
 
 TEST_F(TestSelfEncryption, FUNC_MAID_GeneratePreEncHashes) {
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   file_system::FileSystem fsys;
   fs::path ms_home(fsys.MaidsafeHomeDir());
 
@@ -483,7 +507,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_GeneratePreEncHashes) {
 }
 
 TEST_F(TestSelfEncryption, FUNC_MAID_HashUnique) {
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   std::string hash = se.SHA512(static_cast<std::string>("abc"));
   DataMap dm;
   dm.add_chunk_name(hash);
@@ -507,7 +531,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_HashUnique) {
 }
 
 TEST_F(TestSelfEncryption, FUNC_MAID_ResizeObfuscationHash) {
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   std::string hash = se.SHA512(static_cast<std::string>("abc"));
   ASSERT_EQ(hash,
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
@@ -539,7 +563,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_EncryptFile) {
   fs::path path5(CreateRandomFile(test_file5, 1024), fs::native);
   DataMap dm1, dm2, dm3, dm4, dm5;
 
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   dm1.set_file_hash(se.SHA512(path1));
   dm2.set_file_hash(se.SHA512(path2));
   dm3.set_file_hash(se.SHA512(path3));
@@ -571,7 +595,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_DecryptFile) {
   fs::path path4(CreateRandomFile(test_file4, 1024), fs::native);
   DataMap dm1, dm2, dm3, dm4;
 
-  SelfEncryption se;
+  SelfEncryption se(client_chunkstore_);
   dm1.set_file_hash(se.SHA512(path1));
   dm2.set_file_hash(se.SHA512(path2));
   dm3.set_file_hash(se.SHA512(path3));

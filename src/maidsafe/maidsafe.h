@@ -63,19 +63,19 @@ struct bufferpacket_messages {
   packethandler::MessageType type;
 };
 
-enum buffer_packet_type {
+enum BufferPacketType {
   MPID_BP, MAID_BP, PMID_BP
 };
 
-enum maidsafe_rpc_result {
-  ACK, NACK, NO_SPACE, BUSY
+enum MaidsafeRpcResult {
+  kAck, kNack, kNoSpace, kBusy
 };
 
 const std::string kAnonymousSignedRequest("ffffffffffffffffffffffffffffffffffff"
     "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     "ffffffffffffffffff");
 
-enum db_init_flag {CONNECT, CREATE, DISCONNECT};
+enum DbInitFlag {CONNECT, CREATE, DISCONNECT};
 
 // struct seh_processed_jobs {
 //   std::string path;
@@ -308,10 +308,13 @@ const int kMaxChunkStoreRetries(2);  // max number of tries to store or update
 const boost::uint32_t kSaveUpdatesTrigger(100);  // max no of dbs in save queue
                                                  // before running save queue
 const int kMinSuccessfulPecentageOfUpdating(0.9);
+const boost::uint16_t kMaxStoreThreads(6);
 
 namespace maidsafe {
 
-enum value_types {
+enum DirType {ANONYMOUS, PRIVATE, PRIVATE_SHARE, PUBLIC_SHARE};
+
+enum ValueType {
   SYSTEM_PACKET, BUFFER_PACKET, BUFFER_PACKET_INFO, BUFFER_PACKET_MESSAGE,
   CHUNK_REFERENCE, WATCH_LIST, DATA, PDDIR_SIGNED, PDDIR_NOTSIGNED
 };

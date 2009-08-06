@@ -65,7 +65,7 @@ namespace maidsafe {
 class PdDir {
  public:
   PdDir() : db_name_(""), db_() {}
-  PdDir(const std::string &db_name, db_init_flag flag_, int *result_);
+  PdDir(const std::string &db_name, DbInitFlag flag_, int *result_);
   ~PdDir();
   int GetDirKey(const std::string &file_name, std::string *dir_key);
   // retrieve dir_key so that db can be built
@@ -94,7 +94,7 @@ class PdDir {
   std::string db_name_;
   boost::shared_ptr<CppSQLite3DB> db_;
   // CppSQLite3DB *db_;
-  int Init(db_init_flag flag_);
+  int Init(DbInitFlag flag_);
   // call one of connect, create, or build
   FRIEND_TEST(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDA);
   int Connect();

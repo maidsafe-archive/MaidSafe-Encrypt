@@ -59,7 +59,7 @@ namespace
         const std::string u = username.toStdString();
         const std::string p = pin.toStdString();
 
-        const maidsafe::exitcode result =
+        const maidsafe::Exitcode result =
                 maidsafe::ClientController::getInstance()->CheckUserExists(
                     u,
                     p,

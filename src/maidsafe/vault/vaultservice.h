@@ -30,6 +30,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/pendingious.h"
@@ -37,14 +38,14 @@
 
 namespace maidsafe_vault {
 
-class ChunkStore;
+class VaultChunkStore;
 
 class VaultService : public maidsafe::MaidsafeService {
  public:
   VaultService(const std::string &pmid_public,
                const std::string &pmid_private,
                const std::string &signed_pmid_public,
-               boost::shared_ptr<ChunkStore>chunkstore,
+               boost::shared_ptr<VaultChunkStore> vault_chunkstore,
                kad::KNode *knode);
   ~VaultService() {
 //    printf("In VaultService destructor.\n");
@@ -96,8 +97,7 @@ class VaultService : public maidsafe::MaidsafeService {
  private:
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
-  bool ValidateSignedRequest(const std::string &pmid,
-                             const std::string &public_key,
+  bool ValidateSignedRequest(const std::string &public_key,
                              const std::string &signed_public_key,
                              const std::string &signed_request,
                              const std::string &key);
@@ -119,9 +119,11 @@ class VaultService : public maidsafe::MaidsafeService {
   bool LoadChunkLocal(const std::string &chunkname, std::string *content);
   bool DeleteChunkLocal(const std::string &chunkname);
   void StoreChunkReference(const std::string &non_hex_chunkname);
+  void FindCloseNodesCallback(const std::string &result,
+                              std::vector<std::string> *close_nodes);
   crypto::Crypto crypto_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
-  boost::shared_ptr<ChunkStore> chunkstore_;
+  boost::shared_ptr<VaultChunkStore> vault_chunkstore_;
   PendingIOUHandler pih_;
   std::map<std::string, std::string> pending_stores_;
   boost::mutex pending_store_mutex_;

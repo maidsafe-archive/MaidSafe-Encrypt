@@ -32,35 +32,37 @@
 //
 #include "maidsafe/client/selfencryption.h"
 
+#include <boost/filesystem/fstream.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <maidsafe/crypto.h>
+#include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/utils.h>
+
 #include <stdint.h>
 #include <cstdio>
 #include <string>
 #include <vector>
 
-#include "boost/filesystem/fstream.hpp"
-#include "boost/scoped_ptr.hpp"
-
-#include "maidsafe/crypto.h"
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/chunkstore.h"
 
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-  SelfEncryption::SelfEncryption()
-      : version_("Mk II"),
-        min_chunks_(3),
-        max_chunks_(40),
-        default_chunk_size_(262144),
-        default_chunklet_size_(16384),  // static_cast<uint16_t>MUST be a
-                                        // multiple of 2*IV for AES encryption,
-                                        // i.e. multiple of 32.
-        min_chunklet_size_(32),
-        compress_(true),
-        file_hash_(""),
-        chunk_count_(0),
-        fsys_() {
+SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
+    : client_chunkstore_(client_chunkstore),
+      version_("Mk II"),
+      min_chunks_(3),
+      max_chunks_(40),
+      default_chunk_size_(262144),
+      default_chunklet_size_(16384),  // static_cast<uint16_t>MUST be a
+                                      // multiple of 2*IV for AES encryption,
+                                      // i.e. multiple of 32.
+      min_chunklet_size_(32),
+      compress_(true),
+      file_hash_(""),
+      chunk_count_(0),
+      fsys_() {
 #ifdef DEBUG
 //          printf("version_ = %s\n", version_);
 //          printf("min_chunks_ = %u\n", min_chunks_);
@@ -219,30 +221,43 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
     fs::path temp_chunk_name_ = processing_path_;
     temp_chunk_name_ /= dm->chunk_name(chunk_no_);
     // remove any old copies of the chunk
-    if (fs::exists(temp_chunk_name_))
-      fs::remove(temp_chunk_name_);
+    try {
+      if (fs::exists(temp_chunk_name_))
+        fs::remove(temp_chunk_name_);
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("%s\n", e.what());
+#endif
+      return -1;
+    }
     // serialise the chunk to the temp output fstream
     std::ofstream this_chunk_out_(temp_chunk_name_.string().c_str(),
                                   std::ofstream::binary);
     chunk_.SerializeToOstream(&this_chunk_out_);
     this_chunk_out_.close();
-    // rename chunk to hash of contents, move to appropriate directory
-    // and store post-encryption hash to datamap
+    // store chunk via client_chunkstore.  If it has already been saved
+    // or queued to be saved, StoreChunk does not try to re-store chunk.
     std::string post_enc_hash_ = SHA512(temp_chunk_name_);
+    std::string non_hex("");
+    base::decode_from_hex(post_enc_hash_, &non_hex);
     // ensure uniqueness of post-encryption hash
     // HashUnique(post_enc_hash_, dm, false);
-    // get chunk's dir and delete chunk if it already exists there
-    fs::path chunk_name_ = GetChunkPath(post_enc_hash_);
-    if (fs::exists(chunk_name_))
-      fs::remove(chunk_name_);
-    // move chunk to correct directory
-    fs::rename(temp_chunk_name_, chunk_name_);
+    client_chunkstore_->AddChunkToOutgoing(non_hex, temp_chunk_name_);
+    // store the post-encryption hash to datamap
     dm->add_encrypted_chunk_name(post_enc_hash_);
   }
   fin_.close();
   // delete process dir
-  if (fs::exists(processing_path_))
-    fs::remove(processing_path_);
+  try {
+    if (fs::exists(processing_path_))
+      fs::remove_all(processing_path_);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+  }
   return 0;
 }  // end encrypt
 
@@ -251,11 +266,19 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
                             const std::string &entry_str,
                             const uint64_t &offset,
                             bool overwrite) {
-  if (fs::exists(entry_str)) {
-    if (overwrite)
-      fs::remove(fs::path(entry_str));
-    else
-      return 0;
+  try {
+    if (fs::exists(entry_str)) {
+      if (overwrite)
+        fs::remove(fs::path(entry_str));
+      else
+        return 0;
+    }
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return -1;
   }
 
   file_hash_ = dm.file_hash();
@@ -369,10 +392,17 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
     temp_ofstream_.close();
     // move file to correct location and delete process dir
     fs::path final_path_(entry_str, fs::native);
-    if (fs::exists(final_path_))
-      fs::remove(final_path_);
-    fs::rename(temp_file_path_, final_path_);
-    fs::remove(processing_path_);
+    try {
+      if (fs::exists(final_path_))
+        fs::remove(final_path_);
+      fs::rename(temp_file_path_, final_path_);
+      fs::remove(processing_path_);
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("%s\n", e.what());
+#endif
+    }
   }
   return 0;
 }  // end decrypt
@@ -380,11 +410,16 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
 
 int SelfEncryption::CheckEntry(const fs::path &entry_path) {
   // if file size < 2 bytes, it's too small to chunk
-  uint64_t filesize_ = fs::file_size(entry_path);
-  if (filesize_ < 2)
-    return -1;
-  else
-    return 0;
+  uint64_t filesize(0);
+  try {
+    filesize = fs::file_size(entry_path);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+  }
+  return filesize < 2 ? -1 : 0;
 }  // end CheckEntry
 
 
@@ -419,13 +454,6 @@ bool SelfEncryption::CreateProcessDirectory(fs::path *processing_path) {
 #endif
   try {
     fs::remove_all(*processing_path);
-  }
-  catch(const std::exception &exception_) {
-#ifdef DEBUG
-//    printf("Error creating process dir in self enc: %s\n", exception_.what());
-#endif
-    return false;
-  }
 #ifdef DEBUG
 //    printf("Trying to create %s\n", *processing_path.c_str());
 #endif
@@ -433,26 +461,22 @@ bool SelfEncryption::CreateProcessDirectory(fs::path *processing_path) {
 #ifdef DEBUG
 //     printf("Created %s\n", *processing_path.c_str());
 #endif
-  if (fs::exists(*processing_path))
-    return true;
-  return false;
+    return fs::exists(*processing_path);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return false;
+  }
 }  // end CreateProcessDirectory
 
 
-fs::path SelfEncryption::GetChunkPath(const std::string &chunk_name) {
-  std::string dir_one, dir_two, dir_three;
-  dir_one = chunk_name.substr(0, 1);
-  dir_two = chunk_name.substr(1, 1);
-  dir_three = chunk_name.substr(2, 1);
-  fs::path chunk_branch_ = fs::path(fsys_.ApplicationDataDir(), fs::native)
-    / "client" / dir_one / dir_two / dir_three;
-  if (!fs::exists(chunk_branch_))
-    fs::create_directories(chunk_branch_);
-  fs::path chunk_path_ = chunk_branch_ / chunk_name;
-#ifdef DEBUG
-//  printf("Chunk path: %s\n\n", chunk_path_.string().c_str());
-#endif
-  return chunk_path_;
+fs::path SelfEncryption::GetChunkPath(const std::string &hex_chunk_name) {
+  std::string non_hex("");
+  base::decode_from_hex(hex_chunk_name, &non_hex);
+  return client_chunkstore_->GetChunkPath(non_hex, (kHashable | kOutgoing),
+      true);
 }  // end GetChunkPath
 
 
@@ -460,7 +484,15 @@ bool SelfEncryption::CheckCompressibility(const fs::path &entry_path) {
   int nElements = sizeof(no_compress_type) / sizeof(no_compress_type[0]);
   std::set<std::string> no_comp(no_compress_type, no_compress_type+nElements);
   std::set<std::string>::iterator it;
-  it = no_comp.find(fs::extension(entry_path));
+  try {
+    it = no_comp.find(fs::extension(entry_path));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return false;
+  }
   if (it != no_comp.end())
     return false;
   fs::ifstream fin_comp_test_(entry_path, std::ifstream::binary);
@@ -468,7 +500,16 @@ bool SelfEncryption::CheckCompressibility(const fs::path &entry_path) {
     return false;
   uint64_t test_chunk_size_ = 256;
   uint64_t pointer_ = 0;
-  uint64_t pre_comp_file_size_ = fs::file_size(entry_path);
+  uint64_t pre_comp_file_size_ = 0;
+  try {
+    pre_comp_file_size_ = fs::file_size(entry_path);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return -1;
+  }
   if (2*test_chunk_size_ > pre_comp_file_size_)
     test_chunk_size_ = static_cast<uint16_t>(pre_comp_file_size_);
   else
@@ -511,7 +552,16 @@ bool SelfEncryption::CalculateChunkSizes(const fs::path &entry_path,
 #ifdef DEBUG
 //  printf("file_hash_ = %s\n", file_hash_.c_str());
 #endif
-  uint64_t file_size_ = fs::file_size(entry_path);
+  uint64_t file_size_ = 0;
+  try {
+    file_size_ = fs::file_size(entry_path);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return false;
+  }
   uint64_t this_avg_chunk_size_ = default_chunk_size_;
 #ifdef DEBUG
 //    printf("Start CalculateChunkSize...\n");

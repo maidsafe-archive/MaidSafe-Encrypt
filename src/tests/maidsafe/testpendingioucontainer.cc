@@ -120,24 +120,25 @@ TEST_F(PendingIOUContainerTest, BEH_VAULT_DeletePendingIOUs) {
   for (unsigned int a = 0; a < cycles; ++a) {
     ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, 0));
   }
-  ASSERT_EQ(cycles, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles, static_cast<unsigned int>(pih_.PendingIOUsCount()));
   for (unsigned int a = 0; a < cycles; ++a) {
     ASSERT_EQ(0, pih_.AddPendingIOU("def", chunk_size, authority, 0));
   }
-  ASSERT_EQ(cycles * 2, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PendingIOUsCount()));
 
   ASSERT_EQ(0, pih_.DeletePendingIOU("abc", chunk_size, authority));
-  ASSERT_EQ((cycles * 2) - 1, pih_.PendingIOUsCount());
+  ASSERT_EQ((cycles * 2) - 1,
+      static_cast<unsigned int>(pih_.PendingIOUsCount()));
   ASSERT_TRUE(pih_.IOUExists("abc", chunk_size, authority));
 
   unsigned int y = cycles - 1;
   while (0 == pih_.DeletePendingIOU("abc", chunk_size, authority))
     --y;
 
-  ASSERT_EQ(0, y);
+  ASSERT_EQ(static_cast<unsigned int>(0), y);
   ASSERT_FALSE(pih_.IOUExists("abc", chunk_size, authority));
   ASSERT_TRUE(pih_.IOUExists("def", chunk_size, authority));
-  ASSERT_EQ(cycles, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles, static_cast<unsigned int>(pih_.PendingIOUsCount()));
 
   y = cycles;
   while (0 == pih_.DeletePendingIOU("def", chunk_size, authority))
@@ -155,13 +156,13 @@ TEST_F(PendingIOUContainerTest, BEH_VAULT_PrunableIOUCount) {
   for (unsigned int a = 0; a < 2 * cycles; ++a) {
     ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, 1));
   }
-  ASSERT_EQ(cycles * 2, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PendingIOUsCount()));
   for (unsigned int a = 0; a < 3 * cycles; ++a) {
     ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, 10));
   }
-  ASSERT_EQ(cycles * 5, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(pih_.PendingIOUsCount()));
 
-  ASSERT_EQ(cycles * 2, pih_.PrunableIOUsCount(5));
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PrunableIOUsCount(5)));
 
   pih_.ClearPendingIOUs();
   ASSERT_EQ(0, pih_.PendingIOUsCount());
@@ -171,16 +172,16 @@ TEST_F(PendingIOUContainerTest, BEH_VAULT_PrunableIOUCount) {
   for (unsigned int a = 0; a < 2 * cycles; ++a) {
     ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, now));
   }
-  ASSERT_EQ(cycles * 2, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PendingIOUsCount()));
   for (unsigned int a = 0; a < 3 * cycles; ++a) {
     ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, now + 10));
   }
-  ASSERT_EQ(cycles * 5, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(pih_.PendingIOUsCount()));
   printf("Before 5 sec sleep.\n");
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   printf("After 5 sec sleep.\n");
 
-  ASSERT_EQ(cycles * 2, pih_.PrunableIOUsCount(0));
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PrunableIOUsCount(0)));
 }
 
 TEST_F(PendingIOUContainerTest, BEH_VAULT_DeletePrunableIOUs) {
@@ -192,16 +193,16 @@ TEST_F(PendingIOUContainerTest, BEH_VAULT_DeletePrunableIOUs) {
   for (unsigned int a = 0; a < 2 * cycles; ++a) {
     ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, 1));
   }
-  ASSERT_EQ(cycles * 2, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PendingIOUsCount()));
   for (unsigned int a = 0; a < 3 * cycles; ++a) {
     ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, 10));
   }
-  ASSERT_EQ(cycles * 5, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(pih_.PendingIOUsCount()));
 
-  ASSERT_EQ(cycles * 2, pih_.PrunableIOUsCount(5));
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PrunableIOUsCount(5)));
   ASSERT_EQ(0, pih_.PrunePendingIOUs(5));
   ASSERT_EQ(0, pih_.PrunableIOUsCount(5));
-  ASSERT_EQ(cycles * 3, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles * 3, static_cast<unsigned int>(pih_.PendingIOUsCount()));
 
   pih_.ClearPendingIOUs();
   ASSERT_EQ(0, pih_.PendingIOUsCount());
@@ -211,23 +212,23 @@ TEST_F(PendingIOUContainerTest, BEH_VAULT_DeletePrunableIOUs) {
   for (unsigned int a = 0; a < 2 * cycles; ++a) {
     ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, now));
   }
-  ASSERT_EQ(cycles * 2, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PendingIOUsCount()));
   for (unsigned int a = 0; a < 3 * cycles; ++a) {
     ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, now + 10));
   }
-  ASSERT_EQ(cycles * 5, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(pih_.PendingIOUsCount()));
   printf("Before 5 sec sleep.\n");
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   printf("After 5 sec sleep.\n");
 
-  ASSERT_EQ(cycles * 2, pih_.PrunableIOUsCount(0));
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PrunableIOUsCount(0)));
   ASSERT_EQ(0, pih_.PrunePendingIOUs(0));
   ASSERT_EQ(0, pih_.PrunableIOUsCount(0));
-  ASSERT_EQ(cycles * 3, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles * 3, static_cast<unsigned int>(pih_.PendingIOUsCount()));
   while (pih_.PrunableIOUsCount(0) == 0)
     boost::this_thread::sleep(boost::posix_time::seconds(1));
 
-  ASSERT_EQ(cycles * 3, pih_.PrunableIOUsCount(0));
+  ASSERT_EQ(cycles * 3, static_cast<unsigned int>(pih_.PrunableIOUsCount(0)));
   ASSERT_EQ(0, pih_.PrunePendingIOUs(0));
   ASSERT_EQ(0, pih_.PrunableIOUsCount(0));
   ASSERT_EQ(0, pih_.PendingIOUsCount());
@@ -243,11 +244,11 @@ TEST_F(PendingIOUContainerTest, BEH_VAULT_FindIOUs) {
     ASSERT_EQ(0, pih_.AddPendingIOU("abc" + base::itos(n), chunk_size + n,
               authority + base::itos(n), n));
   }
-  ASSERT_EQ(cycles, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles, static_cast<unsigned int>(pih_.PendingIOUsCount()));
   for (unsigned int a = 0; a < cycles; ++a) {
     ASSERT_EQ(authority + base::itos(a), pih_.GetIOU("abc" + base::itos(a),
               chunk_size + a));
   }
   ASSERT_EQ("", pih_.GetIOU("abcd", chunk_size + 22));
-  ASSERT_EQ(cycles, pih_.PendingIOUsCount());
+  ASSERT_EQ(cycles, static_cast<unsigned int>(pih_.PendingIOUsCount()));
 }

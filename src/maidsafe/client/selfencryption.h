@@ -39,9 +39,11 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+class ChunkStore;
+
 class SelfEncryption {
  public:
-  SelfEncryption();
+  explicit SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore);
   ~SelfEncryption() {}
   // encrypt entire file
   int Encrypt(const std::string &entry_str, maidsafe::DataMap *dm);
@@ -52,7 +54,7 @@ class SelfEncryption {
               bool overwrite);
   std::string SHA512(const fs::path &file_path);
   std::string SHA512(const std::string &content);
-  fs::path GetChunkPath(const std::string &chunk_name);
+  fs::path GetChunkPath(const std::string &hex_chunk_name);
 
  private:
   // check to ensure entry is encryptable
@@ -86,6 +88,7 @@ class SelfEncryption {
   FRIEND_TEST(TestSelfEncryption, FUNC_MAID_ResizeObfuscationHash);
   FRIEND_TEST(TestSelfEncryption, FUNC_MAID_EncryptFile);
   FRIEND_TEST(TestSelfEncryption, FUNC_MAID_DecryptFile);
+  boost::shared_ptr<ChunkStore> client_chunkstore_;
   const std::string version_;
   const uint16_t min_chunks_;
   const uint16_t max_chunks_;

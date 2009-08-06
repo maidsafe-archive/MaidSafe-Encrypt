@@ -58,31 +58,32 @@ bool FileSystem::Mount() {
   // is session valid ?
   if (maidsafe::SessionSingleton::getInstance()->Username() == "")
     return false;
-  if (!FileSystem::DeleteDirs()) {
+  if (!DeleteDirs()) {
 #ifdef DEBUG
-    printf("Didn't delete the dirs on log in. They might have not existed.\n");
+//    printf("Didn't delete the dirs on login. They might have not existed.\n");
 #endif
-  }
-  if (!FileSystem::CreateDirs())
     return false;
-  return true;
+  }
+  return CreateDirs();
 }
 
 bool FileSystem::UnMount() {
   if (maidsafe::SessionSingleton::getInstance()->Username() == "") {
+#ifdef DEBUG
     printf("fs.cc blank username (returned false): %s\n",
            maidsafe::SessionSingleton::getInstance()->Username().c_str());
+#endif
     return false;
   }
 
   if (FileSystem::DeleteDirs()) {
 #ifdef DEBUG
-    printf("fs.cc delete dirs was sucessful\n");
+//    printf("FileSystem::UnMount sucess.\n");
 #endif
     return true;
   } else {
 #ifdef DEBUG
-     printf("fs.cc delete dirs returned false\n");
+     printf("FileSystem::UnMount failure.\n");
 #endif
     return false;
   }
@@ -144,13 +145,13 @@ std::vector<fs::path> FileSystem::CacheDirs(std::vector<fs::path> cachedir_) {
 }
 
 std::string FileSystem::MaidsafeHomeDir() {
-  fs::path ms_dir(FileSystem::MaidsafeDir(), fs::native);
+  fs::path ms_dir(MaidsafeDir(), fs::native);
   fs::path home_dir = ms_dir / "msroot";
   return home_dir.string();
 }
 
 std::string FileSystem::MaidsafeFuseDir() {
-  fs::path ms_dir(FileSystem::MaidsafeDir(), fs::native);
+  fs::path ms_dir(MaidsafeDir(), fs::native);
   std::string mount_dir("maidsafe-");
   mount_dir +=
     maidsafe::SessionSingleton::getInstance()->SessionName().substr(0, 8);
@@ -159,13 +160,13 @@ std::string FileSystem::MaidsafeFuseDir() {
 }
 
 std::string FileSystem::ProcessDir() {
-  fs::path ms_dir(FileSystem::MaidsafeDir(), fs::native);
+  fs::path ms_dir(MaidsafeDir(), fs::native);
   fs::path process_dir = ms_dir / "process";
   return process_dir.string();
 }
 
 std::string FileSystem::DbDir() {
-  fs::path ms_dir(FileSystem::MaidsafeDir(), fs::native);
+  fs::path ms_dir(MaidsafeDir(), fs::native);
   fs::path db_dir = ms_dir / "dir";
   return db_dir.string();
 }
@@ -235,99 +236,114 @@ std::string FileSystem::FullMSPathFromRelPath(const char *path_) {
 
 
 bool FileSystem::CreateDirs() {
-  fs::path ms_home_path_(MaidsafeHomeDir(), fs::native);
-  // if this is created OK, so is MaidsafeDir
-  // TODO(username): If exists but is a read only dir or a file,throw exception
+  try {
+    fs::path ms_home_path_(MaidsafeHomeDir(), fs::native);
+    // if this is created OK, so is MaidsafeDir
 #ifdef DEBUG
-  if (fs::exists(ms_home_path_))
-    printf("fs.cc Already Exists: %s\n", ms_home_path_.string().c_str());
+  //  if (fs::exists(ms_home_path_))
+  //    printf("fs.cc Already Exists: %s\n", ms_home_path_.string().c_str());
 #endif
-  if (!fs::exists(ms_home_path_)) {
+    if (!fs::exists(ms_home_path_)) {
 #ifdef DEBUG
-    printf("fs.cc Creating %s\n", ms_home_path_.string().c_str());
+  //    printf("fs.cc Creating %s\n", ms_home_path_.string().c_str());
 #endif
-  fs::create_directories(ms_home_path_);
-  }
-  //  create cache dirs, and process dir
-  fs::path ms_path_(MaidsafeDir(), fs::native);
-  std::vector<fs::path> dir_;
-  dir_.push_back(ms_path_);
-  // dir_ = CacheDirs(CacheDirs(CacheDirs(dir_)));
-  // dir_.push_back(fs::path(NetDir(), fs::native));
-  dir_.push_back(fs::path(ProcessDir(), fs::native));
-  dir_.push_back(fs::path(DbDir(), fs::native));
-//  dir_.push_back(fs::path(MaidsafeFuseDir(), fs::native));
-  for (unsigned int i = 0; i != dir_.size() ;i++) {
-  // TODO(user): If exists but is a read only dir or a file, throw exception
-    if (fs::exists(dir_[i])) {
-#ifdef DEBUG
-      printf("fs.cc Already Exists: %s\n", dir_[i].string().c_str());
-#endif
+      fs::create_directories(ms_home_path_);
     }
-    if (!fs::exists(dir_[i])) {
+    //  create cache dirs, and process dir
+    fs::path ms_path_(MaidsafeDir(), fs::native);
+    std::vector<fs::path> dir_;
+    dir_.push_back(ms_path_);
+    // dir_ = CacheDirs(CacheDirs(CacheDirs(dir_)));
+    // dir_.push_back(fs::path(NetDir(), fs::native));
+    dir_.push_back(fs::path(ProcessDir(), fs::native));
+    dir_.push_back(fs::path(DbDir(), fs::native));
+  //  dir_.push_back(fs::path(MaidsafeFuseDir(), fs::native));
+    for (unsigned int i = 0; i != dir_.size() ;i++) {
 #ifdef DEBUG
-      printf("fs.cc Creating %s\n", dir_[i].string().c_str());
+//      if (fs::exists(dir_[i])) {
+//        printf("fs.cc Already Exists: %s\n", dir_[i].string().c_str());
+//      }
 #endif
-      fs::create_directories(dir_[i]);
+      if (!fs::exists(dir_[i])) {
+#ifdef DEBUG
+//        printf("fs.cc Creating %s\n", dir_[i].string().c_str());
+#endif
+        fs::create_directories(dir_[i]);
+      }
     }
+    return true;
   }
-  return true;
+  catch(const std::exception& e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return false;
+  }
 }
 
 bool FileSystem::FuseMountPoint() {
-  if (!fs::exists(fs::path(MaidsafeFuseDir(), fs::native))) {
-  #ifdef DEBUG
-    std::cout <<  "fs.cc Creating " << MaidsafeFuseDir() <<std::endl;
-  #endif
-    fs::create_directories(fs::path(MaidsafeFuseDir(), fs::native));
+  try {
+    if (!fs::exists(fs::path(MaidsafeFuseDir(), fs::native))) {
+#ifdef DEBUG
+//      std::cout <<  "fs.cc Creating " << MaidsafeFuseDir() <<std::endl;
+#endif
+      fs::create_directories(fs::path(MaidsafeFuseDir(), fs::native));
+    }
+    return true;
   }
-  return true;
+  catch(const std::exception& e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return false;
+  }
 }
 
 bool FileSystem::DeleteDirs() {
-  bool result = false;
-  defcon_ = maidsafe::SessionSingleton::getInstance()->DefConLevel();
-  switch (defcon_) {
-    case 1: {
-      boost::scoped_ptr<fs::path> process_dir(new fs::path(
-        FileSystem::ProcessDir()));
-      boost::scoped_ptr<fs::path> db_dir(new fs::path(FileSystem::DbDir()));
-      result = ((fs::remove_all(*process_dir)) && (fs::remove_all(*db_dir)));
+  try {
+    bool result = true;
+    defcon_ = maidsafe::SessionSingleton::getInstance()->DefConLevel();
+    switch (defcon_) {
+      case 1:
+        if (fs::exists(ProcessDir()))
+          result = result && fs::remove_all(ProcessDir());
+        if (fs::exists(DbDir()))
+          result = result && fs::remove_all(DbDir());
 #ifdef DEBUG
-      printf("fs.cc tidying db and process dirs only, as in DefCon 1 mode.\n");
+//     printf("fs.cc tidying db and process dirs only, as in DefCon 1 mode.\n");
 #endif
-      break;}
-
-    case 2: {
-      boost::scoped_ptr<fs::path> home_dir(new fs::path(
-        FileSystem::MaidsafeHomeDir()));
-      // boost::scoped_ptr<fs::path> net_dir(new fs::path(FileSystem::NetDir();
-      boost::scoped_ptr<fs::path> process_dir(new fs::path(
-        FileSystem::ProcessDir()));
-      boost::scoped_ptr<fs::path> db_dir(new fs::path(FileSystem::DbDir()));
-
-      // delete home, process and db dir, leave cache dir only
-      result = ((fs::remove_all(*home_dir)) && (fs::remove_all(*process_dir))
-        && (fs::remove_all(*db_dir)));
+        break;
+      case 2:
+        if (fs::exists(MaidsafeHomeDir()))
+          result = result && fs::remove_all(MaidsafeHomeDir());
+        if (fs::exists(ProcessDir()))
+          result = result && fs::remove_all(ProcessDir());
+        if (fs::exists(DbDir()))
+          result = result && fs::remove_all(DbDir());
 #ifdef DEBUG
-      printf("fs.cc deleting all dirs apart from maidsafe/cache dir, ");
-      printf("as in DefCon 2 mode.\n");
+//        printf("fs.cc deleting all dirs apart from maidsafe/cache dir, ");
+//        printf("as in DefCon 2 mode.\n");
 #endif
-      break;}
+        break;
 
-    case 3: {
-      boost::scoped_ptr<fs::path> maidsafe_dir(new fs::path(
-        FileSystem::MaidsafeDir()));
+      case 3:
 #ifdef DEBUG
-      printf("fs.cc deleting all dirs since in DefCon 3 mode.\n");
+//        printf("fs.cc deleting all dirs since in DefCon 3 mode.\n");
 #endif
-
-      // delete maidsafe root dir
-      result = fs::remove_all(*maidsafe_dir);
-      break;}
-    default: result = false;
+        if (fs::exists(MaidsafeDir()))
+          result = fs::remove_all(MaidsafeDir());
+        break;
+      default:
+        result = false;
+    }
+    return result;
   }
-  return result;
+  catch(const std::exception& e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return false;
+  }
 }
 
 }  // namespace file_system

@@ -26,12 +26,11 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/thread/xtime.hpp>
 #include <google/protobuf/descriptor.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 
-#include "maidsafe/vault/chunkstore.h"
+#include "maidsafe/vault/vaultchunkstore.h"
 #include "protobuf/general_messages.pb.h"
 
 namespace fs = boost::filesystem;
@@ -54,7 +53,8 @@ PDVault::PDVault(const std::string &pmid_public,
       channel_manager_(new rpcprotocol::ChannelManager()),
       knode_(channel_manager_, kad::VAULT, pmid_private, pmid_public),
       vault_rpcs_(channel_manager_),
-      chunkstore_(new ChunkStore(chunkstore_dir, available_space, used_space)),
+      vault_chunkstore_(new VaultChunkStore(chunkstore_dir, available_space,
+                                            used_space)),
       vault_service_(),
       kad_joined_(false),
       kad_joined_calledback_(false),
@@ -98,7 +98,7 @@ void PDVault::Start(const bool &port_forwarded) {
       boost::bind(&PDVault::KadJoinedCallback, this, _1), port_forwarded);
   // Hash check all current chunks in chunkstore
   std::list<std::string> failed_keys;
-  if (0 != chunkstore_->HashCheckAllChunks(true, &failed_keys)) {
+  if (0 != vault_chunkstore_->HashCheckAllChunks(true, &failed_keys)) {
     return;
   }
 //  const int kTimeout_(300);
@@ -157,7 +157,7 @@ void PDVault::SyncVault(base::callback_func_type cb) {
   // 3. If chunk content is stale, synchronize chunk content with the partner.
   // otherwise, do the next vadility check.
   boost::shared_ptr<SyncVaultData> data(new struct SyncVaultData());
-  chunkstore_->GetAllChunks(&data->chunk_names);
+  vault_chunkstore_->GetAllChunks(&data->chunk_names);
   if (!data->chunk_names.empty()) {
     printf("Synchronising vault (One * represents one chunk):\n");
     data->num_chunks = data->chunk_names.size();
@@ -383,7 +383,8 @@ void PDVault::ValidityCheckCallback(
   }
   std::string remote_hash_content_(validity_check_response->hash_content());
   std::string local_content_("");
-  chunkstore_->LoadChunk(validity_check_args->chunk_name_, &local_content_);
+  vault_chunkstore_->LoadChunk(validity_check_args->chunk_name_,
+                               &local_content_);
   std::string local_hash_content_(co.Hash(local_content_ +
       validity_check_args->random_data_, "", crypto::STRING_STRING,
       true));
@@ -448,7 +449,7 @@ void PDVault::IterativeSyncVault_UpdateChunk(
       get_chunk_response_->result() == kRpcResultFailure) {
     // TODO(Haiyang): chunk deleted? shall we remove the chunk?!
   } else {
-    chunkstore_->UpdateChunk(synch_args_->chunk_name_,
+    vault_chunkstore_->UpdateChunk(synch_args_->chunk_name_,
                             get_chunk_response_->content());
   }
   --synch_args_->data_->active_updating;
@@ -459,7 +460,7 @@ void PDVault::IterativeSyncVault_UpdateChunk(
 void PDVault::RepublishChunkRef(base::callback_func_type cb) {
   boost::shared_ptr<RepublishChunkRefData>
     data(new struct RepublishChunkRefData());
-  chunkstore_->GetAllChunks(&data->chunk_names);
+  vault_chunkstore_->GetAllChunks(&data->chunk_names);
   if (!data->chunk_names.empty()) {
     printf("Republishing chunk references (One * represents one chunk):\n");
     data->num_chunks = data->chunk_names.size();
@@ -862,7 +863,8 @@ void PDVault::SwapChunk(const std::string &chunk_name,
                                     swap_chunk_response,
                                     swap_chunk_args);
   std::string chunkcontent1;
-  if (!chunkstore_->LoadChunk(swap_chunk_args->chunkname_, &chunkcontent1)) {
+  if (!vault_chunkstore_->LoadChunk(swap_chunk_args->chunkname_,
+                                    &chunkcontent1)) {
     maidsafe::SwapChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_request_type(1);
@@ -895,7 +897,8 @@ void PDVault::SwapChunkSendChunk(
     return;
   }
   std::string chunkcontent1;
-  if (!chunkstore_->LoadChunk(swap_chunk_args->chunkname_, &chunkcontent1)) {
+  if (!vault_chunkstore_->LoadChunk(swap_chunk_args->chunkname_,
+                                    &chunkcontent1)) {
     maidsafe::SwapChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_request_type(1);
@@ -937,8 +940,8 @@ void PDVault::SwapChunkAcceptChunk(
   }
   // Accept the swapped chunk
   std::string chunk_name_ = swap_chunk_response->chunkname2();
-  chunkstore_->StoreChunk(chunk_name_,
-                          swap_chunk_response->chunkcontent2());
+  vault_chunkstore_->StoreChunk(chunk_name_,
+                                swap_chunk_response->chunkcontent2());
   // Store chunk reference
   std::string non_hex_chunk_name("");
   base::decode_from_hex(chunk_name_, &non_hex_chunk_name);
@@ -974,7 +977,7 @@ void PDVault::RegisterMaidService() {
     new VaultService(pmid_public_,
                      pmid_private_,
                      signed_pmid_public_,
-                     chunkstore_,
+                     vault_chunkstore_,
                      &knode_));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
       new rpcprotocol::Channel(channel_manager_.get()));

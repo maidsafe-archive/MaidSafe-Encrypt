@@ -44,7 +44,7 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-enum DB_TYPE {ANONYMOUS, PRIVATE, PRIVATE_SHARE, PUBLIC_SHARE};
+class ChunkStore;
 
 const int kMaxStoreRetries = 2;
 const int kMaxLoadRetries = 2;
@@ -53,12 +53,12 @@ const int kParallelLoads = 3;
 
 struct ChunksData {
   ChunksData(const DataMap &datamap,
-             const DB_TYPE dbtype,
+             const DirType dir_type,
              const std::string &ms_id,
              base::callback_func_type cbf)
                  : dm(datamap),
                    msid(ms_id),
-                   db_type(dbtype),
+                   dir_type(dir_type),
                    total_chunks(dm.encrypted_chunk_name_size()),
                    chunks_done(0),
                    index(-1),
@@ -67,7 +67,7 @@ struct ChunksData {
                    cb(cbf) {}
   const DataMap dm;
   const std::string msid;
-  const DB_TYPE db_type;
+  const DirType dir_type;
   const int total_chunks;
   int chunks_done;
   int index;
@@ -86,14 +86,15 @@ class CallbackResult {
 
 class SEHandler {
  public:
-  SEHandler(StoreManagerInterface *storem, boost::recursive_mutex *mutex);
-  SEHandler &operator=(const SEHandler &) { return *this; }
-  SEHandler(const SEHandler &);
+  SEHandler(StoreManagerInterface *storem,
+            boost::shared_ptr<ChunkStore> client_chunkstore,
+            boost::recursive_mutex *mutex);
+  ~SEHandler() {}
   itemtype CheckEntry(const std::string &full_entry, uint64_t *file_size);
   //  Get the hash of the file contents if bool = true, else hash filename
   std::string SHA512(const std::string &full_entry, bool hash_contents);
   int EncryptFile(const std::string &rel_entry,
-                  const DB_TYPE db_type,
+                  const DirType dir_type,
                   const std::string &msid);
   bool ProcessMetaData(const std::string &rel_entry,
                        const itemtype type,
@@ -103,11 +104,11 @@ class SEHandler {
   int DecryptFile(const std::string &rel_entry);
   bool MakeElement(const std::string &rel_entry,
                    const itemtype type,
-                   const DB_TYPE db_type,
+                   const DirType dir_type,
                    const std::string &msid,
                    const std::string &dir_key);
   //  Gets a unique DHT key for dir's db identifier
-  int GenerateUniqueKey(const DB_TYPE db_type,
+  int GenerateUniqueKey(const DirType dir_type,
                         const std::string &msid,
                         const int &attempt,
                         std::string *hex_key);
@@ -119,21 +120,20 @@ class SEHandler {
                  std::string *parent_key);
   //  Encrypts dir's db and sets ser_dm_ to encrypted datamap of db
   int EncryptDb(const std::string &dir_path,
-                const DB_TYPE db_type,
+                const DirType dir_type,
                 const std::string &dir_key,
                 const std::string &msid,
                 const bool &encrypt_dm,
                 std::string *ser_dm);
   //  Decrypts dir's db by extracting datamap from ser_dm_
   int DecryptDb(const std::string &dir_path,
-                const DB_TYPE db_type,
+                const DirType dir_type,
                 const std::string &ser_dm,
                 const std::string &dir_key,
                 const std::string &msid,
                 bool dm_encrypted,
                 bool overwrite);
   int RemoveKeyFromUptodateDms(const std::string &key);
-  ~SEHandler() {}
   // void Init();
   // static void finish();
   // bool AddJob(std::string path, seh_job_type jobtype);
@@ -145,6 +145,8 @@ class SEHandler {
   // int GetThreadCount() { return thread_count_; }
 
  private:
+  SEHandler &operator=(const SEHandler &);
+  SEHandler(const SEHandler &);
   //  Encrypt db's datamap for storing on DHT
   int EncryptDm(const std::string &dir_path,
                 const std::string &ser_dm,
@@ -157,9 +159,8 @@ class SEHandler {
                 std::string *ser_dm);
   void WaitForResult(const CallbackResult &cb);
   void StoreChunks(const DataMap &dm,
-                   const DB_TYPE db_type,
-                   const std::string &msid,
-                   base::callback_func_type cb);
+                   const DirType dir_type,
+                   const std::string &msid);
   void IterativeStoreChunks(boost::shared_ptr<ChunksData> data);
   void StoreChunk(const std::string &chunk_name,
                   int retry,
@@ -185,18 +186,16 @@ class SEHandler {
                          boost::shared_ptr<ChunksData> data);
   // returns the serialised packet to store the DB's data map
   std::string CreateDataMapPacket(const std::string &ser_dm,
-                                  const DB_TYPE db_type,
+                                  const DirType dir_type,
                                   const std::string &msid);
-  void GetSignedPubKeyAndRequest(const DB_TYPE db_type,
+  void GetSignedPubKeyAndRequest(const DirType dir_type,
                                  const std::string &msid,
                                  const std::string &non_hex_name,
                                  std::string *pubkey,
                                  std::string *signed_pubkey,
                                  std::string *signed_request);
-  int GetMsidKeys(const std::string &msid,
-                  std::string *public_key,
-                  std::string *private_key);
   StoreManagerInterface *storem_;
+  boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;
   boost::recursive_mutex *mutex_;
   file_system::FileSystem fsys_;

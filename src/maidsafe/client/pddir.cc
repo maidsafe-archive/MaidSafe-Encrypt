@@ -49,7 +49,7 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-PdDir::PdDir(const std::string &db_name, db_init_flag flag_, int *result_)
+PdDir::PdDir(const std::string &db_name, DbInitFlag flag_, int *result_)
 :db_name_(), db_() {
   boost::shared_ptr<CppSQLite3DB> db(new CppSQLite3DB());
   db_ = db;
@@ -63,7 +63,7 @@ PdDir::~PdDir() {
 }
 
 
-int PdDir::Init(db_init_flag flag_) {
+int PdDir::Init(DbInitFlag flag_) {
   switch (flag_) {
     case CONNECT:
 #ifdef DEBUG

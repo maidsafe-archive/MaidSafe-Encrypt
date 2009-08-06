@@ -36,34 +36,40 @@
 
 namespace maidsafe {
 
+class ChunkStore;
+
 class LocalStoreManager : public StoreManagerInterface {
  public:
-  explicit LocalStoreManager(boost::recursive_mutex *mutex);
+  LocalStoreManager(boost::recursive_mutex *mutex,
+                    boost::shared_ptr<ChunkStore> client_chunkstore);
   virtual ~LocalStoreManager() {}
-  virtual void Init(base::callback_func_type cb);
+  virtual void Init(int, base::callback_func_type cb);
   virtual void Close(base::callback_func_type cb);
   virtual void LoadChunk(const std::string &hex_chunk_name,
                          base::callback_func_type cb);
   virtual void StoreChunk(const std::string &hex_chunk_name,
                           const std::string &content,
-                          const std::string &signature,
                           const std::string &public_key,
                           const std::string &signed_public_key,
+                          const std::string &signature,
                           base::callback_func_type cb);
+  virtual void StoreChunk(const std::string &hex_chunk_name,
+                          const DirType,
+                          const std::string&);
   virtual void IsKeyUnique(const std::string &hex_key,
                            base::callback_func_type cb);
   virtual void DeletePacket(const std::string &hex_key,
                             const std::string &signature,
                             const std::string &public_key,
                             const std::string &signed_public_key,
-                            const value_types &type,
+                            const ValueType &type,
                             base::callback_func_type cb);
   virtual void StorePacket(const std::string &hex_key,
                            const std::string &value,
                            const std::string &signature,
                            const std::string &public_key,
                            const std::string &signed_public_key,
-                           const value_types &type,
+                           const ValueType &type,
                            bool update,
                            base::callback_func_type cb);
   virtual void LoadPacket(const std::string &hex_key,
@@ -80,6 +86,7 @@ class LocalStoreManager : public StoreManagerInterface {
   packethandler::VaultBufferPacketHandler vbph_;
   crypto::Crypto crypto_obj_;
   boost::recursive_mutex *mutex_;
+  boost::shared_ptr<ChunkStore> client_chunkstore_;
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
   // bool AddMessageToBufferPacket(std::string &key,
   //                               std::string &value,

@@ -47,7 +47,7 @@ MessageHandler::MessageHandler(StoreManagerInterface *sm,
 
 void MessageHandler::SendMessage(const std::string &msg,
                                  const std::vector<Receivers> &receivers,
-                                 const buffer_packet_type &p_type,
+                                 const BufferPacketType &p_type,
                                  const packethandler::MessageType &m_type,
                                  base::callback_func_type cb) {
   base::pd_scoped_lock gaurd(*mutex_);
@@ -71,7 +71,7 @@ std::string MessageHandler::CreateMessage(
     const std::string &msg,
     const std::string &rec_public_key,
     const packethandler::MessageType &m_type,
-    const buffer_packet_type &p_type) {
+    const BufferPacketType &p_type) {
   maidsafe::PacketType pt = PacketHandler_PacketType(p_type);
   packethandler::BufferPacketMessage bpm;
   packethandler::GenericPacket gp;
@@ -104,7 +104,7 @@ std::string MessageHandler::CreateMessage(
 }
 
 void MessageHandler::CreateSignature(const std::string &buffer_name,
-                                     const buffer_packet_type &type,
+                                     const BufferPacketType &type,
                                      std::string *signed_request,
                                      std::string *signed_public_key) {
   maidsafe::PacketType pt = PacketHandler_PacketType(type);
@@ -250,7 +250,7 @@ void MessageHandler::StoreMessage_Callback(
 }
 
 maidsafe::PacketType MessageHandler::PacketHandler_PacketType(
-    const buffer_packet_type &type) {
+    const BufferPacketType &type) {
   //  MPID_BP, MAID_BP, PMID_BP
   switch (type) {
     case MAID_BP: return maidsafe::MAID;

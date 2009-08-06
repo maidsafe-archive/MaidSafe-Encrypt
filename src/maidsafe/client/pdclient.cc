@@ -19,6 +19,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 
+#include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/maidsafe.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
@@ -26,25 +27,6 @@
 namespace maidsafe {
 
 inline void dummy_callback(const std::string&) {}
-
-PDClient::PDClient(const boost::uint16_t &port,
-                   const std::string &kad_config_file)
-    : port_(port),
-      kad_config_file_(kad_config_file),
-      channel_manager_(new rpcprotocol::ChannelManager()),
-      knode_(new kad::KNode(channel_manager_, kad::CLIENT)),
-      client_rpcs_(channel_manager_) {}
-
-PDClient::~PDClient() {
-#ifdef DEBUG
-  printf("calling pdclient destructor\n");
-#endif
-  knode_.reset();
-}
-
-void PDClient::CleanUp() {
-  channel_manager_->CleanUpTransport();
-}
 
 void PDClient::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
   const boost::shared_ptr<CheckChunkResponse>
@@ -75,7 +57,7 @@ void PDClient::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
     local = true;
     get_args->retry_remote = true;
   }
-  client_rpcs_.CheckChunk(get_args->data_->chunk_name,
+  client_rpcs_->CheckChunk(get_args->data_->chunk_name,
                           ip,
                           port,
                           check_chunk_response_.get(),
@@ -115,7 +97,7 @@ void PDClient::CheckChunkCallback(
                                         &PDClient::CheckChunkCallback,
                                         resp,
                                         get_args);
-      client_rpcs_.CheckChunk(get_args->data_->chunk_name,
+      client_rpcs_->CheckChunk(get_args->data_->chunk_name,
                           get_args->chunk_holder_.host_ip(),
                           get_args->chunk_holder_.host_port(),
                           resp.get(),
@@ -177,7 +159,7 @@ void PDClient::CheckChunkCallback(
                                           &PDClient::GetMessagesCallback,
                                           get_messages_response_,
                                           get_args);
-        client_rpcs_.GetMessages(get_args->data_->chunk_name,
+        client_rpcs_->GetMessages(get_args->data_->chunk_name,
                                  get_args->data_->pub_key,
                                  get_args->data_->sig_pub_key,
                                  ip,
@@ -192,7 +174,7 @@ void PDClient::CheckChunkCallback(
                                           &PDClient::GetChunkCallback,
                                           get_response_,
                                           get_args);
-        client_rpcs_.Get(get_args->data_->chunk_name,
+        client_rpcs_->Get(get_args->data_->chunk_name,
                          ip,
                          port,
                          get_response_.get(),
@@ -253,7 +235,7 @@ void PDClient::GetMessagesCallback(
                                         &PDClient::GetMessagesCallback,
                                         resp,
                                         get_args);
-      client_rpcs_.GetMessages(get_args->data_->chunk_name,
+      client_rpcs_->GetMessages(get_args->data_->chunk_name,
                                get_args->data_->pub_key,
                                get_args->data_->sig_pub_key,
                                get_args->chunk_holder_.host_ip(),
@@ -299,7 +281,7 @@ void PDClient::GetChunkCallback(
                                         &PDClient::GetChunkCallback,
                                         resp,
                                         get_args);
-      client_rpcs_.Get(get_args->data_->chunk_name,
+      client_rpcs_->Get(get_args->data_->chunk_name,
                        get_args->chunk_holder_.host_ip(),
                        get_args->chunk_holder_.host_port(),
                        resp.get(),
@@ -455,7 +437,7 @@ void PDClient::StoreChunk(const std::string &chunk_name,
                           const std::string &public_key,
                           const std::string &signed_public_key,
                           const std::string &signed_request,
-                          const maidsafe::value_types &data_type,
+                          const maidsafe::ValueType &data_type,
                           base::callback_func_type cb) {
 //  boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
 #ifdef DEBUG
@@ -560,17 +542,50 @@ void PDClient::IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data) {
   }
 }
 
+int PDClient::StoreChunkPrep(const std::string &chunkname,
+                             const boost::uint64_t &data_size,
+                             const std::string &public_key,
+                             const std::string &signed_public_key,
+                             const std::string &signed_request,
+                             const std::string &remote_ip,
+                             const uint16_t &remote_port,
+                             bool local,
+                             const std::string &remote_id) {
+//  std::string pmid = SessionSingleton::getInstance()->Id(PMID);
+  std::string pmid('9', 64);
+  const boost::shared_ptr<StorePrepResponse>
+      store_prep_response_(new StorePrepResponse());
+  bool store_prep_response_returned(false);
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &PDClient::StoreChunkPrepCallback, &store_prep_response_returned);
+  client_rpcs_->StorePrep(chunkname, data_size, pmid, public_key,
+      signed_public_key, signed_request, remote_ip, remote_port,
+      store_prep_response_.get(), callback, local);
+  int count(0), timeout(10000);
+  while (count < timeout && !store_prep_response_returned) {
+    count += 10;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  }
+  if (store_prep_response_->pmid_id() == remote_id &&
+      store_prep_response_->result() == kAck) {
+printf("PDClient::StoreChunkPrep returning 0.\n");
+    return 0;
+  }
+printf("PDClient::StoreChunkPrep returning -1.\n");
+  return -1;
+}
+
+void PDClient::StoreChunkPrepCallback(bool *store_prep_response_returned) {
+#ifdef DEBUG
+  printf("In PDClient::StoreChunkPrepCallback.\n");
+#endif
+  *store_prep_response_returned = true;
+}
+
 void PDClient::ExecuteStoreChunk(const kad::Contact &remote,
                                  int retry,
                                  boost::shared_ptr<StoreChunkData> data) {
   boost::shared_ptr<SendArgs> send_args_(new SendArgs(remote, retry, data));
-  const boost::shared_ptr<StoreResponse>
-      store_response_(new StoreResponse());
-  google::protobuf::Closure* callback =
-      google::protobuf::NewCallback(this,
-                                    &PDClient::StoreChunkCallback,
-                                    store_response_,
-                                    send_args_);
 #ifdef DEBUG
 //  printf("Chunk name: %s\n", hex_.c_str());
 //  printf("Chunk content: %s\n", send_args_->data_->content.c_str());
@@ -600,7 +615,26 @@ void PDClient::ExecuteStoreChunk(const kad::Contact &remote,
     local = true;
     send_args_->retry_remote = true;
   }
-  client_rpcs_.Store(send_args_->data_->chunk_name,
+  if (StoreChunkPrep(send_args_->data_->chunk_name,
+                     send_args_->data_->content.size(),
+                     send_args_->data_->pub_key,
+                     send_args_->data_->sig_pub_key,
+                     send_args_->data_->sig_req,
+                     ip,
+                     port,
+                     local,
+                     send_args_->chunk_holder_.node_id()) != 0) {
+#ifdef DEBUG
+    printf("\tIn PDClient::ExecuteStoreChunk, StoreChunkPrep failed.\n");
+#endif
+    send_args_->data_->failed_contacts.push_back(send_args_->chunk_holder_);
+    IterativeStoreChunk(send_args_->data_);
+    return;
+  }
+  const boost::shared_ptr<StoreResponse> store_response_(new StoreResponse());
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &PDClient::StoreChunkCallback, store_response_, send_args_);
+  client_rpcs_->Store(send_args_->data_->chunk_name,
                      send_args_->data_->content,
                      send_args_->data_->pub_key,
                      send_args_->data_->sig_pub_key,
@@ -641,7 +675,7 @@ void PDClient::StoreChunkCallback(
                                         &PDClient::StoreChunkCallback,
                                         resp,
                                         send_args);
-      client_rpcs_.Store(send_args->data_->chunk_name,
+      client_rpcs_->Store(send_args->data_->chunk_name,
                          send_args->data_->content,
                          send_args->data_->pub_key,
                          send_args->data_->sig_pub_key,
@@ -727,7 +761,7 @@ void PDClient::UpdateChunk(const std::string &chunk_name,
                            const std::string &public_key,
                            const std::string &signed_public_key,
                            const std::string &signed_request,
-                           const maidsafe::value_types &data_type,
+                           const maidsafe::ValueType &data_type,
                            base::callback_func_type cb) {
 //  boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
 #ifdef DEBUG
@@ -760,7 +794,7 @@ void PDClient::IterativeCheckAlive(const std::string &result,
                                    std::string public_key,
                                    std::string signed_public_key,
                                    std::string signed_request,
-                                   maidsafe::value_types data_type,
+                                   maidsafe::ValueType data_type,
                                    base::callback_func_type cb) {
   kad::FindResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
@@ -912,7 +946,7 @@ void PDClient::IterativeUpdateChunk(boost::shared_ptr<UpdateChunkData> data) {
       local = true;
       update_args_->retry_remote = true;
     }
-    client_rpcs_.Update(update_args_->data_->chunk_name,
+    client_rpcs_->Update(update_args_->data_->chunk_name,
                         update_args_->data_->content,
                         update_args_->data_->pub_key,
                         update_args_->data_->sig_pub_key,
@@ -950,7 +984,7 @@ void PDClient::IterativeUpdateChunkCallback(
                                         &PDClient::IterativeUpdateChunkCallback,
                                         resp,
                                         update_args);
-      client_rpcs_.Update(update_args->data_->chunk_name,
+      client_rpcs_->Update(update_args->data_->chunk_name,
                           update_args->data_->content,
                           update_args->data_->pub_key,
                           update_args->data_->sig_pub_key,
@@ -1006,7 +1040,7 @@ void PDClient::IterativeUpdateChunkCallback(
         local = true;
         update_args->retry_remote = true;
       }
-      client_rpcs_.Update(update_args->data_->chunk_name,
+      client_rpcs_->Update(update_args->data_->chunk_name,
                           update_args->data_->content,
                           update_args->data_->pub_key,
                           update_args->data_->sig_pub_key,
@@ -1033,7 +1067,7 @@ void PDClient::DeleteChunk(const std::string &chunk_name,
                            const std::string &public_key,
                            const std::string &signed_public_key,
                            const std::string &signed_request,
-                           const maidsafe::value_types &data_type,
+                           const maidsafe::ValueType &data_type,
                            base::callback_func_type cb) {
   // verify the chunk size
   // Look up the chunk references
@@ -1060,7 +1094,7 @@ void PDClient::DeleteChunk_IterativeCheckAlive(const std::string &result,
                                                std::string public_key,
                                                std::string signed_public_key,
                                                std::string signed_request,
-                                               maidsafe::value_types data_type,
+                                               maidsafe::ValueType data_type,
                                                base::callback_func_type cb) {
   kad::FindResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
@@ -1208,7 +1242,7 @@ void PDClient::DeleteChunk_IterativeDeleteChunk(
       local = true;
       delete_args_->retry_remote = true;
     }
-    client_rpcs_.Delete(delete_args_->data_->chunk_name,
+    client_rpcs_->Delete(delete_args_->data_->chunk_name,
                         delete_args_->data_->pub_key,
                         delete_args_->data_->sig_pub_key,
                         delete_args_->data_->sig_req,
@@ -1245,7 +1279,7 @@ void PDClient::DeleteChunk_DeleteChunkCallback(
                                     &PDClient::DeleteChunk_DeleteChunkCallback,
                                     resp,
                                     delete_args);
-      client_rpcs_.Delete(delete_args->data_->chunk_name,
+      client_rpcs_->Delete(delete_args->data_->chunk_name,
                           delete_args->data_->pub_key,
                           delete_args->data_->sig_pub_key,
                           delete_args->data_->sig_req,
@@ -1271,38 +1305,6 @@ void PDClient::DeleteChunk_DeleteChunkCallback(
     ++delete_args->data_->deleted_copies;
     DeleteChunk_IterativeDeleteChunk(delete_args->data_);
   }
-}
-
-void PDClient::Join(const std::string &node_id,
-                    base::callback_func_type cb) {
-#ifdef DEBUG
-  printf("\tIn PDClient::Join, before Join.\n");
-#endif
-  channel_manager_->StartTransport(port_,
-    boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_.get(), _1));
-  knode_->Join(node_id, kad_config_file_, cb, false);
-#ifdef DEBUG
-  printf("\tIn PDClient::Join, after Join.\n");
-#endif
-}
-
-void PDClient::Leave(base::callback_func_type cb) {
-#ifdef DEBUG
-  printf("\tIn PDClient::Leave, before Leave.\n");
-#endif
-  knode_->Leave();
-#ifdef DEBUG
-  printf("\tIn PDClient::Leave, after Leave. Stopping transport.\n");
-#endif
-  channel_manager_->StopTransport();
-#ifdef DEBUG
-  printf("\tIn PDClient::Leave, transport stopped.\n");
-#endif
-  base::GeneralResponse result_msg;
-  result_msg.set_result(kRpcResultSuccess);
-  std::string result;
-  result_msg.SerializeToString(&result);
-  cb(result);
 }
 
 void PDClient::FindValue(const std::string &key,

@@ -38,15 +38,24 @@ class ClientRpcs {
  public:
   explicit ClientRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
       channel_manager);
-  ~ClientRpcs() {
-//  printf("In ClientRpcs destructor.\n");
-}
+  ~ClientRpcs() {}
+  void StorePrep(const std::string &chunkname,
+                 const boost::uint64_t &data_size,
+                 const std::string &pmid,
+                 const std::string &public_key,
+                 const std::string &signed_public_key,
+                 const std::string &signed_request,
+                 const std::string &remote_ip,
+                 const uint16_t &remote_port,
+                 StorePrepResponse* response,
+                 google::protobuf::Closure* done,
+                 const bool &local);
   void Store(const std::string &chunkname,
              const std::string &data,
              const std::string &public_key,
              const std::string &signed_public_key,
              const std::string &signed_request,
-             const value_types &data_type,
+             const ValueType &data_type,
              const std::string &remote_ip,
              const uint16_t &remote_port,
              StoreResponse* response,
@@ -69,7 +78,7 @@ class ClientRpcs {
               const std::string &public_key,
               const std::string &signed_public_key,
               const std::string &signed_request,
-              const value_types &data_type,
+              const ValueType &data_type,
               const std::string &remote_ip,
               const uint16_t &remote_port,
               UpdateResponse* response,
@@ -79,7 +88,7 @@ class ClientRpcs {
               const std::string &public_key,
               const std::string &signed_public_key,
               const std::string &signed_request,
-              const value_types &data_type,
+              const ValueType &data_type,
               const std::string &remote_ip,
               const uint16_t &remote_port,
               DeleteResponse* response,

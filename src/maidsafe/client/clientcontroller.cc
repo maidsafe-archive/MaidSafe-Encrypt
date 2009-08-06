@@ -33,6 +33,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <cstdio>
 
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/privateshares.h"
@@ -74,13 +75,37 @@ void ClientController::WaitForResult(const CC_CallbackResult &cb) {
 
 ClientController *ClientController::single = 0;
 
-ClientController::ClientController(): auth_(), sm_(), ss_(),
-  msgh_(), cbph_(), ser_da_(), db_enc_queue_(), seh_(),  mutex_(),
-  messages_(), bp_messages_(false), fsys_() {
+ClientController::ClientController() : auth_(),
+                                       client_chunkstore_(),
+                                       sm_(),
+                                       ss_(),
+                                       msgh_(),
+                                       cbph_(),
+                                       ser_da_(),
+                                       db_enc_queue_(),
+                                       seh_(),
+                                       mutex_(),
+                                       messages_(),
+                                       bp_messages_(false),
+                                       fsys_() {
+  fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
+  client_path /= "client";
+  try {
+    if (!fs::exists(client_path)) {
+      fs::create_directories(client_path);
+    }
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("Couldn't create client path: %s\n", e.what());
+#endif
+  }
+  client_chunkstore_ = boost::shared_ptr<ChunkStore>
+      (new ChunkStore(client_path.string(), 0, 0));
 #ifdef LOCAL_PDVAULT
-    sm_ = new LocalStoreManager(&mutex_);
+    sm_ = new LocalStoreManager(&mutex_, client_chunkstore_);
 #else
-    sm_ = new MaidsafeStoreManager();
+    sm_ = new MaidsafeStoreManager(client_chunkstore_);
 #endif
 }
 
@@ -112,7 +137,7 @@ bool ClientController::JoinKademlia() {
 #ifdef DEBUG
   printf("Before bootstrap in CC.\n");
 #endif
-  sm_->Init(boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
+  sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
 #ifdef DEBUG
   printf("After bootstrap in CC.\n");
 #endif
@@ -287,7 +312,7 @@ int ClientController::SerialiseDa() {
   return 0;
 }
 
-exitcode ClientController::CheckUserExists(const std::string &username,
+Exitcode ClientController::CheckUserExists(const std::string &username,
                                            const std::string &pin,
                                            base::callback_func_type cb,
                                            DefConLevels level) {
@@ -299,7 +324,7 @@ exitcode ClientController::CheckUserExists(const std::string &username,
 bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password) {
-  exitcode result = auth_->CreateUserSysPackets(username,
+  Exitcode result = auth_->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
 //  #ifdef DEBUG
@@ -315,7 +340,7 @@ bool ClientController::CreateUser(const std::string &username,
   if (result == OK) {
     ss_->SetSessionName(false);
     std::string root_db_key;
-    seh_ = new SEHandler(sm_, &mutex_);
+    seh_ = new SEHandler(sm_, client_chunkstore_, &mutex_);
     printf("In ClientController::CreateUser 01\n");
     int result = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
     printf("In ClientController::CreateUser 02\n");
@@ -495,13 +520,13 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
 
 bool ClientController::ValidateUser(const std::string &password) {
   ser_da_ = "";
-  exitcode result = auth_->GetUserData(password, ser_da_);
+  Exitcode result = auth_->GetUserData(password, ser_da_);
 
   if (result == OK) {
     ss_->SetSessionName(false);
     fsys_.Mount();
     boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-    seh_ = new SEHandler(sm_, &mutex_);
+    seh_ = new SEHandler(sm_, client_chunkstore_, &mutex_);
     msgh_ = new MessageHandler(sm_, &mutex_);
     int result = ParseDa();
     if (result != 0) {
@@ -600,7 +625,7 @@ bool ClientController::Logout() {
   }
 
   SerialiseDa();
-  exitcode result = auth_->SaveSession(ser_da_, priv_keys, pub_keys);
+  Exitcode result = auth_->SaveSession(ser_da_, priv_keys, pub_keys);
 //  int connection_status(0);
 //  int n = ChangeConnectionStatus(connection_status);
 //  if (n != 0) {
@@ -634,7 +659,7 @@ bool ClientController::Logout() {
 
 bool ClientController::LeaveMaidsafeNetwork() {
   std::list<KeyAtlasRow> keys;
-  exitcode result;
+  Exitcode result;
   std::string dir_ = fsys_.MaidsafeDir();
   {
     ss_->GetKeys(&keys);
@@ -683,7 +708,7 @@ bool ClientController::ChangeUsername(std::string new_username) {
     }
   }
 
-  exitcode result = auth_->ChangeUsername(ser_da_,
+  Exitcode result = auth_->ChangeUsername(ser_da_,
                                           priv_keys,
                                           pub_keys,
                                           new_username);
@@ -721,7 +746,7 @@ bool ClientController::ChangePin(std::string new_pin) {
     }
   }
 
-  exitcode result = auth_->ChangePin(ser_da_,
+  Exitcode result = auth_->ChangePin(ser_da_,
                                      priv_keys,
                                      pub_keys,
                                      new_pin);
@@ -759,7 +784,7 @@ bool ClientController::ChangePassword(std::string new_password) {
     }
   }
 
-  exitcode result = auth_->ChangePassword(ser_da_,
+  Exitcode result = auth_->ChangePassword(ser_da_,
                                           priv_keys,
                                           pub_keys,
                                           new_password);
@@ -783,7 +808,7 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
     return false;
   }
   packethandler::PacketParams keys_result;
-  exitcode result = auth_->CreatePublicName(public_username, &keys_result);
+  Exitcode result = auth_->CreatePublicName(public_username, &keys_result);
   if (result != OK) {
 #ifdef DEBUG
     printf("Error in CreatePublicName.\n");
@@ -991,7 +1016,7 @@ int ClientController::HandleReceivedShare(
         sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
         std::string public_key("aaa");
-        exitcode result =
+        Exitcode result =
           auth_->PublicUsernamePublicKey(sp.id, public_key);
         if (result != OK) {
 #ifdef DEBUG
@@ -1015,7 +1040,7 @@ int ClientController::HandleReceivedShare(
         sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
         std::string public_key("aaa");
-        exitcode result =
+        Exitcode result =
           auth_->PublicUsernamePublicKey(sp.id, public_key);
         if (result != OK) {
 #ifdef DEBUG
@@ -1035,10 +1060,10 @@ int ClientController::HandleReceivedShare(
 
   // Create directory in Shares/Private
   std::string share_path("Shares/Private/" + psn.name());
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
 
-  int n = GetDb(share_path, &db_type, &msid);
+  int n = GetDb(share_path, &dir_type, &msid);
   if (n != 0) {
 #ifdef DEBUG
     printf("Didn't get the DB.\n");
@@ -1048,7 +1073,7 @@ int ClientController::HandleReceivedShare(
   std::string ser_mdm("");
   msid = "";
   PathDistinction(share_path, &msid);
-  db_type = GetDbType(share_path);
+  dir_type = GetDirType(share_path);
   if (!seh_->ProcessMetaData(share_path, EMPTY_DIRECTORY, "", 0, &ser_mdm)) {
 #ifdef DEBUG
     printf("Didn't process metadata.\n");
@@ -1065,13 +1090,13 @@ int ClientController::HandleReceivedShare(
     return -20006;
   }
   fs::path pp(share_path);
-  db_type = GetDbType(pp.parent_path().string());
+  dir_type = GetDirType(pp.parent_path().string());
 #ifdef DEBUG
-  printf("CC::HandleReceivedShare, after GetDbType parent(%s): %i.\n",
-    share_path.c_str(), static_cast<int>(db_type));
+  printf("CC::HandleReceivedShare, after GetDirType parent(%s): %i.\n",
+    share_path.c_str(), static_cast<int>(dir_type));
 #endif
 
-  if (SaveDb(share_path, db_type, "", false)) {
+  if (SaveDb(share_path, dir_type, "", false)) {
 #ifdef DEBUG
     printf("CC::HandleReceivedShare, SaveDb(%s) failed.\n", share_path.c_str());
 #endif
@@ -1132,9 +1157,9 @@ int ClientController::AddInstantFile(
     path_with_filename = fs::path(base::TidyPath(location));
   }
   std::string path_add_element(path_with_filename.string());
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  int n = GetDb(path_add_element, &db_type, &msid);
+  int n = GetDb(path_add_element, &dir_type, &msid);
   n = dah_->AddElement(path_add_element,
     ser_mdm, ifm.ser_dm(), dir_key, false);
   if (n != 0) {
@@ -1146,15 +1171,15 @@ int ClientController::AddInstantFile(
 
   std::string path_save_db(path_with_filename.string());
   if (msid == "") {
-    if (SaveDb(path_save_db, db_type, msid, false)) {
+    if (SaveDb(path_save_db, dir_type, msid, false)) {
 #ifdef DEBUG
       printf("\t\tCC::AddInstantFile failed to save the db to queue. %i %s\n",
-        db_type, path_save_db.c_str());
+        dir_type, path_save_db.c_str());
 #endif
       return -11111;
     }
   } else {
-    if (SaveDb(path_save_db, db_type, msid, true)) {
+    if (SaveDb(path_save_db, dir_type, msid, true)) {
 #ifdef DEBUG
       printf("\t\tCC::AddInstantFile failed to save the db immediately.\n");
 #endif
@@ -1193,7 +1218,7 @@ int ClientController::HandleAddContactRequest(
     rec_public_key = mic.pub_key_;
   } else {  // Contact didn't exist. Add from scratch.
     // Get contact's public key
-    exitcode result = auth_->PublicUsernamePublicKey(sender, rec_public_key);
+    Exitcode result = auth_->PublicUsernamePublicKey(sender, rec_public_key);
     if (result != OK) {
 #ifdef DEBUG
       printf("Can't get sender's public key.\n");
@@ -1407,9 +1432,9 @@ int ClientController::GetInstantMessages(
 int ClientController::SendInstantFile(std::string *filename,
     const std::string &msg, const std::vector<std::string> &contact_names) {
   std::string path = *filename;
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  int n = GetDb(*filename, &db_type, &msid);
+  int n = GetDb(*filename, &dir_type, &msid);
   if (n != 0) {
 #ifdef DEBUG
     printf("GetDb for file location failed.\n");
@@ -1539,7 +1564,7 @@ int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
 
 int ClientController::AddContact(const std::string &public_name) {
   std::string public_key("aaa");
-  exitcode result = auth_->PublicUsernamePublicKey(public_name, public_key);
+  Exitcode result = auth_->PublicUsernamePublicKey(public_name, public_key);
   if (result == OK) {
     // Sending the request to add the contact
     // TODO(Richard): the info is empty because there is no way
@@ -1887,9 +1912,9 @@ int ClientController::CreateNewShare(const std::string &name,
 ///////////////////
 
 int ClientController::BackupElement(const std::string &path,
-                                    const DB_TYPE db_type,
+                                    const DirType dir_type,
                                     const std::string &msid) {
-  return seh_->EncryptFile(path, db_type, msid);
+  return seh_->EncryptFile(path, dir_type, msid);
 }
 
 int ClientController::RetrieveElement(const std::string &path) {
@@ -1906,7 +1931,7 @@ int ClientController::RemoveElement(std::string path) {
   return 0;
 }
 
-DB_TYPE ClientController::GetDbType(const std::string &path_) {
+DirType ClientController::GetDirType(const std::string &path_) {
   std::string myfiles = base::TidyPath(kRootSubdir[0][0]);
 //  std::string pub_shares = base::TidyPath(kSharesSubdir[1][0]);
   std::string priv_shares = base::TidyPath(kSharesSubdir[0][0]);
@@ -1996,7 +2021,7 @@ int ClientController::PathDistinction(const std::string &path,
 }
 
 int ClientController::GetDb(const std::string &orig_path_,
-                            DB_TYPE *db_type,
+                            DirType *dir_type,
                             std::string *msid) {
   std::string path_ = orig_path_;
 #ifdef DEBUG
@@ -2028,7 +2053,7 @@ int ClientController::GetDb(const std::string &orig_path_,
 #endif
 
   if (fs::exists(db_path_) && *msid == "") {
-    *db_type = GetDbType(parent_path_);
+    *dir_type = GetDirType(parent_path_);
     return 0;
   }
   if (dah_->GetDirKey(parent_path_, &dir_key_)) {
@@ -2039,13 +2064,13 @@ int ClientController::GetDb(const std::string &orig_path_,
   }
   bool overwrite = false;
   if (*msid == "") {
-    *db_type = GetDbType(parent_path_);
+    *dir_type = GetDirType(parent_path_);
   } else {
-    *db_type = GetDbType(path_);
+    *dir_type = GetDirType(path_);
     overwrite = true;
   }
 
-  if (seh_->DecryptDb(parent_path_, *db_type, "", dir_key_,
+  if (seh_->DecryptDb(parent_path_, *dir_type, "", dir_key_,
       *msid, true, overwrite)) {
 #ifdef DEBUG
     printf("\t\tFailed trying to decrypt dm of db with dir key: %s\n",
@@ -2057,7 +2082,7 @@ int ClientController::GetDb(const std::string &orig_path_,
 }
 
 int ClientController::SaveDb(const std::string &db_path,
-                             const DB_TYPE db_type,
+                             const DirType dir_type,
                              const std::string &msid,
                              const bool &immediate_save) {
 #ifdef DEBUG
@@ -2084,7 +2109,7 @@ int ClientController::SaveDb(const std::string &db_path,
     return 0;
   } else {
     if (seh_->EncryptDb(parent_path_,
-                        db_type,
+                        dir_type,
                         dir_key_,
                         msid,
                         true,
@@ -2125,7 +2150,7 @@ int ClientController::RunDbEncQueue() {
   int result_ = 0;
   for (it_ = db_enc_queue_.begin(); it_ != db_enc_queue_.end(); ++it_) {
     std::string ser_dm_="";
-    DB_TYPE db_type_ = GetDbType((*it_).first);
+    DirType db_type_ = GetDirType((*it_).first);
 #ifdef DEBUG
     printf("\t\tCC::RunDbEncQueue: first: %s\ttype: %i\tsec.first: %s\t",
            (*it_).first.c_str(),
@@ -2212,22 +2237,21 @@ bool ClientController::ReadOnly(const std::string &path, bool gui) {
     std::string msid("");
     int n = PathDistinction(path, &msid);
     if (n == 2 && msid != "") {
-      PrivateShare ps;
-      int result = ss_->GetShareInfo(msid, 1, &ps);
+      std::string pub_key(""), priv_key("");
+      int result = ss_->GetShareKeys(msid, &pub_key, &priv_key);
       if (result != 0) {
 #ifdef DEBUG
         printf("Private share doesn't exist.\n");
 #endif
         return true;
       }
-      if (ps.MsidPriKey() == "") {
+      if (priv_key == "") {
 #ifdef DEBUG
         printf("No priv key. Not admin. Readonly. Feck off.\n");
 #endif
         return true;
       }
 #ifdef DEBUG
-      std::string priv_key = ps.MsidPriKey();
       printf("Private key from DB: %s.\n", priv_key.c_str());
 #endif
     }
@@ -2274,9 +2298,9 @@ int ClientController::mkdir(const std::string &path) {
 #ifdef DEBUG
   printf("\t\tCC::mkdir %s\n", path.c_str());
 #endif
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  if (GetDb(path, &db_type, &msid)) {
+  if (GetDb(path, &dir_type, &msid)) {
 #ifdef DEBUG
     printf("\t\tIn CC::mkdir, GetDb (%s) failed.\n", path.c_str());
 #endif
@@ -2287,8 +2311,8 @@ int ClientController::mkdir(const std::string &path) {
 #endif
   msid = "";
   PathDistinction(path, &msid);
-  db_type = GetDbType(path);
-  if (!seh_->MakeElement(path, EMPTY_DIRECTORY, db_type, msid, "")) {
+  dir_type = GetDirType(path);
+  if (!seh_->MakeElement(path, EMPTY_DIRECTORY, dir_type, msid, "")) {
 #ifdef DEBUG
     printf("\t\tIn CC::mkdir, seh_->MakeElement(%s, EMPTY_DIRECTORY) failed\n",
            path.c_str());
@@ -2297,24 +2321,24 @@ int ClientController::mkdir(const std::string &path) {
   }
 
 #ifdef DEBUG
-  printf("MSID after MakeElement: %s -- type: %i\n", msid.c_str(), db_type);
+  printf("MSID after MakeElement: %s -- type: %i\n", msid.c_str(), dir_type);
 #endif
   fs::path pp(path);
   msid = "";
   PathDistinction(pp.parent_path().string(), &msid);
-  db_type = GetDbType(pp.parent_path().string());
+  dir_type = GetDirType(pp.parent_path().string());
 #ifdef DEBUG
   printf("MSID after PathDis parent: %s. Path: %s -- type: %i\n", msid.c_str(),
-    pp.parent_path().string().c_str(), db_type);
+    pp.parent_path().string().c_str(), dir_type);
 #endif
   bool immediate_save = true;
   if (msid == "") {
     immediate_save = false;
-//    db_type = maidsafe::PRIVATE;
+//    dir_type = maidsafe::PRIVATE;
 //  } else {
-//    db_type = maidsafe::PRIVATE_SHARE;
+//    dir_type = maidsafe::PRIVATE_SHARE;
   }
-  if (SaveDb(path, db_type, msid, immediate_save)) {
+  if (SaveDb(path, dir_type, msid, immediate_save)) {
 #ifdef DEBUG
     printf("\t\tIn CC::mkdir, SaveDb(%s) failed.\n", path.c_str());
 #endif
@@ -2327,18 +2351,18 @@ int ClientController::mkdir(const std::string &path) {
   imaginary_ /= "a";
   msid = "";
   PathDistinction(imaginary_.string(), &msid);
-  db_type = GetDbType(imaginary_.string());
+  dir_type = GetDirType(imaginary_.string());
 #ifdef DEBUG
   printf("MSID after imaginary string: %s -- type: %i\n", msid.c_str(),
-    db_type);
+    dir_type);
 #endif
   immediate_save = true;
   if (msid == "")
     immediate_save = false;
 //  else
-//    db_type = maidsafe::PRIVATE_SHARE;
+//    dir_type = maidsafe::PRIVATE_SHARE;
 
-  if (SaveDb(imaginary_.string(), db_type, msid, immediate_save)) {
+  if (SaveDb(imaginary_.string(), dir_type, msid, immediate_save)) {
 #ifdef DEBUG
     printf("\t\tIn CC::mkdir, SaveDb(%s) failed.\n",
           imaginary_.string().c_str());
@@ -2354,11 +2378,11 @@ int ClientController::rename(const std::string &path,
 #ifdef DEBUG
   printf("\t\tCC::rename %s to %s\n", path.c_str(), path2.c_str());
 #endif
-  DB_TYPE db_type;
-  DB_TYPE db_type2;
+  DirType dir_type;
+  DirType db_type2;
   std::string msid("");
   std::string msid2("");
-  if (GetDb(path, &db_type, &msid) || GetDb(path2, &db_type2, &msid2)) {
+  if (GetDb(path, &dir_type, &msid) || GetDb(path2, &db_type2, &msid2)) {
 #ifdef DEBUG
     printf("\t\tCC::rename failed to get one of the dbs\n");
 #endif
@@ -2374,14 +2398,14 @@ int ClientController::rename(const std::string &path,
 
   // Original dir db
   if (msid == "") {
-    if (SaveDb(path, db_type, msid, false)) {
+    if (SaveDb(path, dir_type, msid, false)) {
 #ifdef DEBUG
       printf("\t\tCC::rename failed to save the original db to queue.\n");
 #endif
       return -1;
     }
   } else {
-    if (SaveDb(path, db_type, msid, true)) {
+    if (SaveDb(path, dir_type, msid, true)) {
 #ifdef DEBUG
       printf("\t\tCC::rename failed to save the original db immediately.\n");
 #endif
@@ -2420,9 +2444,9 @@ int ClientController::rmdir(const std::string &path) {
 #ifdef DEBUG
   printf("\t\tCC::rmdir %s\n", path.c_str());
 #endif
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  if (GetDb(path, &db_type, &msid))
+  if (GetDb(path, &dir_type, &msid))
     return -1;
   std::map<std::string, itemtype> children;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
@@ -2432,14 +2456,14 @@ int ClientController::rmdir(const std::string &path) {
   if (RemoveElement(path))
     return -1;
   if (msid == "") {
-    if (SaveDb(path, db_type, msid, false)) {
+    if (SaveDb(path, dir_type, msid, false)) {
 #ifdef DEBUG
       printf("\t\tCC::rename failed to save the original db to queue.\n");
 #endif
       return -1;
     }
   } else {
-    if (SaveDb(path, db_type, msid, true)) {
+    if (SaveDb(path, dir_type, msid, true)) {
 #ifdef DEBUG
       printf("\t\tCC::rename failed to save the original db immediately.\n");
 #endif
@@ -2457,9 +2481,9 @@ int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
 #ifdef DEBUG
   printf("\t\tCC::getattr %s\n", path.c_str());
 #endif
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  if (GetDb(path, &db_type, &msid))
+  if (GetDb(path, &dir_type, &msid))
     return -1;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   if (dah_->GetMetaDataMap(path, &ser_mdm))
@@ -2474,9 +2498,9 @@ int ClientController::readdir(const std::string &path,  // NOLINT
 #ifdef DEBUG
   printf("\t\tCC::readdir %s\n", path.c_str());
 #endif
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  if (GetDb(path, &db_type, &msid))
+  if (GetDb(path, &dir_type, &msid))
     return -1;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   if (dah_->ListFolder(path, &children))
@@ -2488,24 +2512,24 @@ int ClientController::mknod(const std::string &path) {
 #ifdef DEBUG
   printf("\t\tCC::mknod %s\n", path.c_str());
 #endif
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  if (GetDb(path, &db_type, &msid))
+  if (GetDb(path, &dir_type, &msid))
     return -1;
 #ifdef DEBUG
   printf("MSID after GetDb: %s\n", msid.c_str());
 #endif
 
-  if (!seh_->MakeElement(path, EMPTY_FILE, db_type, msid, ""))
+  if (!seh_->MakeElement(path, EMPTY_FILE, dir_type, msid, ""))
     return -1;
 #ifdef DEBUG
   printf("MSID after MakeElement: %s\n", msid.c_str());
 #endif
   if (msid != "") {
-    if (SaveDb(path, db_type, msid, true))
+    if (SaveDb(path, dir_type, msid, true))
       return -1;
   } else {
-    if (SaveDb(path, db_type, msid, false))
+    if (SaveDb(path, dir_type, msid, false))
       return -1;
   }
   return 0;
@@ -2515,21 +2539,21 @@ int ClientController::unlink(const std::string &path) {
 #ifdef DEBUG
   printf("\t\tCC::unlink %s\n", path.c_str());
 #endif
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  if (GetDb(path, &db_type, &msid))
+  if (GetDb(path, &dir_type, &msid))
     return -1;
   if (RemoveElement(path))
     return -1;
   if (msid == "") {
-    if (SaveDb(path, db_type, msid, false)) {
+    if (SaveDb(path, dir_type, msid, false)) {
 #ifdef DEBUG
       printf("\t\tCC::rename failed to save the original db to queue.\n");
 #endif
       return -1;
     }
   } else {
-    if (SaveDb(path, db_type, msid, true)) {
+    if (SaveDb(path, dir_type, msid, true)) {
 #ifdef DEBUG
       printf("\t\tCC::rename failed to save the original db immediately.\n");
 #endif
@@ -2544,11 +2568,11 @@ int ClientController::link(const std::string &path, const std::string &path2) {
 #ifdef DEBUG
   printf("\t\tCC::link %s to %s\n", path.c_str(), path2.c_str());
 #endif
-  DB_TYPE db_type;
-  DB_TYPE db_type2;
+  DirType dir_type;
+  DirType db_type2;
   std::string msid("");
   std::string msid2("");
-  if (GetDb(path, &db_type, &msid) || GetDb(path2, &db_type2, &msid2))
+  if (GetDb(path, &dir_type, &msid) || GetDb(path2, &db_type2, &msid2))
     return -1;
   std::string ms_old_rel_entry_ = path;
   std::string ms_new_rel_entry_ = path2;
@@ -2582,11 +2606,11 @@ int ClientController::cpdir(const std::string &path,
 #ifdef DEBUG
   printf("\t\tCC::cpdir %s to %s\n", path.c_str(), path2.c_str());
 #endif
-  DB_TYPE db_type;
-  DB_TYPE db_type2;
+  DirType dir_type;
+  DirType db_type2;
   std::string msid("");
   std::string msid2("");
-  if (GetDb(path, &db_type, &msid) || GetDb(path2, &db_type2, &msid2))
+  if (GetDb(path, &dir_type, &msid) || GetDb(path2, &db_type2, &msid2))
     return -1;
   std::string ms_old_rel_entry_ = path;
   std::string ms_new_rel_entry_ = path2;
@@ -2642,23 +2666,23 @@ int ClientController::utime(const std::string &path) {
 #ifdef DEBUG
   printf("\t\tCC::utime %s\n", path.c_str());
 #endif
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  if (GetDb(path, &db_type, &msid))
+  if (GetDb(path, &dir_type, &msid))
     return -1;
   std::string thepath = path;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   if (dah_->ChangeMtime(thepath))
     return -1;
   if (msid == "") {
-    if (SaveDb(path, db_type, msid, false)) {
+    if (SaveDb(path, dir_type, msid, false)) {
 #ifdef DEBUG
       printf("\t\tCC::rename failed to save the original db to queue.\n");
 #endif
       return -1;
     }
   } else {
-    if (SaveDb(path, db_type, msid, true)) {
+    if (SaveDb(path, dir_type, msid, true)) {
 #ifdef DEBUG
       printf("\t\tCC::rename failed to save the original db immediately.\n");
 #endif
@@ -2672,9 +2696,9 @@ int ClientController::atime(const std::string &path) {
 #ifdef DEBUG
   printf("\t\tCC::atime %s\n", path.c_str());
 #endif
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  if (GetDb(path, &db_type, &msid))
+  if (GetDb(path, &dir_type, &msid))
     return -1;
   std::string thepath = path;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
@@ -2683,7 +2707,7 @@ int ClientController::atime(const std::string &path) {
   // We're not saving the db everytime the access time changes. I said NO!
   // OK, maybe we'll make the following amendments
   if (msid == "") {
-    if (SaveDb(path, db_type, msid, false))
+    if (SaveDb(path, dir_type, msid, false))
       return -1;
   }
 
@@ -2694,9 +2718,9 @@ int ClientController::open(const std::string &path) {
 #ifdef DEBUG
   printf("\t\tCC::open %s\n", path.c_str());
 #endif
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  if (GetDb(path, &db_type, &msid))
+  if (GetDb(path, &dir_type, &msid))
     return -1;
   return RetrieveElement(path);
 }
@@ -2705,9 +2729,9 @@ int ClientController::read(const std::string &path) {
 #ifdef DEBUG
   printf("\t\tCC::read %s\n", path.c_str());
 #endif
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  if (GetDb(path, &db_type, &msid))
+  if (GetDb(path, &dir_type, &msid))
     return -1;
   return RetrieveElement(path);
 }
@@ -2716,15 +2740,15 @@ int ClientController::write(const std::string &path) {
 #ifdef DEBUG
   printf("\t\tCC::write %s\n", path.c_str());
 #endif
-  DB_TYPE db_type;
+  DirType dir_type;
   std::string msid("");
-  if (GetDb(path, &db_type, &msid)) {
+  if (GetDb(path, &dir_type, &msid)) {
 #ifdef DEBUG
     printf("\t\tCC::write GetDb failed.\n");
 #endif
     return -1;
   }
-  if (BackupElement(path, db_type, msid)) {
+  if (BackupElement(path, dir_type, msid)) {
 #ifdef DEBUG
     printf("\t\tCC::write BackupElement failed.\n");
 #endif
@@ -2733,7 +2757,7 @@ int ClientController::write(const std::string &path) {
   bool immediate = false;
   if (msid != "")
     immediate = true;
-  if (SaveDb(path, db_type, msid, immediate)) {
+  if (SaveDb(path, dir_type, msid, immediate)) {
 #ifdef DEBUG
     printf("\t\tCC::write SaveDb failed.\n");
 #endif

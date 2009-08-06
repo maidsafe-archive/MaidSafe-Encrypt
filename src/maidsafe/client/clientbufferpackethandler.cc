@@ -76,7 +76,7 @@ void ClientBufferPacketHandler::CreateBufferPacket(
 }
 
 void ClientBufferPacketHandler::ChangeStatus(int status,
-    base::callback_func_type cb, const buffer_packet_type &type) {
+    base::callback_func_type cb, const BufferPacketType &type) {
   maidsafe::PacketType pt = PacketHandler_PacketType(type);
   BufferPacketInfo packet_info;
   GenericPacket user_info;
@@ -118,7 +118,7 @@ void ClientBufferPacketHandler::ChangeStatus(int status,
 }
 
 bool ClientBufferPacketHandler::UserList(
-    std::set<std::string> *list, buffer_packet_type type) {
+    std::set<std::string> *list, BufferPacketType type) {
   switch (type) {
     case MPID_BP: *list = ss_->AuthorisedUsers(); break;
     case MAID_BP: *list = ss_->MaidAuthorisedUsers(); break;
@@ -128,7 +128,7 @@ bool ClientBufferPacketHandler::UserList(
 }
 
 bool ClientBufferPacketHandler::SetUserList(std::set<std::string> list,
-    buffer_packet_type type) {
+    BufferPacketType type) {
   switch (type) {
     case MPID_BP: ss_->SetAuthorisedUsers(list); break;
     case MAID_BP: ss_->SetMaidAuthorisedUsers(list); break;
@@ -138,7 +138,7 @@ bool ClientBufferPacketHandler::SetUserList(std::set<std::string> list,
 }
 
 void ClientBufferPacketHandler::AddUsers(const std::set<std::string> &users,
-    base::callback_func_type cb, const buffer_packet_type &type) {
+    base::callback_func_type cb, const BufferPacketType &type) {
   maidsafe::PacketType pt = PacketHandler_PacketType(type);
   // Why is a thread created here???
   // TODO(jose): remove thread and just call the callback function with
@@ -211,7 +211,7 @@ void ClientBufferPacketHandler::ChangeStatus_Callback(const std::string &result,
 }
 
 void ClientBufferPacketHandler::AddUsers_Callback(const std::string &result,
-  const std::set<std::string> &users, const buffer_packet_type &type,
+  const std::set<std::string> &users, const BufferPacketType &type,
   base::callback_func_type cb) {
   maidsafe::UpdateResponse local_result;
   std::string str_local_result;
@@ -229,7 +229,7 @@ void ClientBufferPacketHandler::AddUsers_Callback(const std::string &result,
 }
 
 void ClientBufferPacketHandler::DeleteUsers(const std::set<std::string> &users,
-    base::callback_func_type cb, const buffer_packet_type &type) {
+    base::callback_func_type cb, const BufferPacketType &type) {
   maidsafe::PacketType pt = PacketHandler_PacketType(type);
   std::set<std::string> current_users;
   if (type == MPID_BP)
@@ -279,7 +279,7 @@ void ClientBufferPacketHandler::DeleteUsers(const std::set<std::string> &users,
 
 void ClientBufferPacketHandler::DeleleteUsers_Callback(
     const std::string &result, const std::set<std::string> &users,
-    const buffer_packet_type type, base::callback_func_type cb) {
+    const BufferPacketType type, base::callback_func_type cb) {
   maidsafe::UpdateResponse local_result;
   std::string str_local_result;
   if (!local_result.ParseFromString(result)) {
@@ -298,7 +298,7 @@ void ClientBufferPacketHandler::DeleleteUsers_Callback(
   cb(str_local_result);
 }
 
-void ClientBufferPacketHandler::GetMessages(const buffer_packet_type &type,
+void ClientBufferPacketHandler::GetMessages(const BufferPacketType &type,
     base::callback_func_type cb) {
   maidsafe::PacketType pt = PacketHandler_PacketType(type);
   base::pd_scoped_lock gaurd(*mutex_);
@@ -313,7 +313,7 @@ void ClientBufferPacketHandler::GetMessages(const buffer_packet_type &type,
 }
 
 void ClientBufferPacketHandler::GetMessages_Callback(const std::string &result,
-    const buffer_packet_type &type, base::callback_func_type cb) {
+    const BufferPacketType &type, base::callback_func_type cb) {
   maidsafe::PacketType pt = PacketHandler_PacketType(type);
   maidsafe::GetMessagesResponse local_result;
   std::string str_local_result;
@@ -347,7 +347,7 @@ void ClientBufferPacketHandler::GetMessages_Callback(const std::string &result,
   cb(str_local_result);
 }
 
-void ClientBufferPacketHandler::GetBufferPacket(const buffer_packet_type &type,
+void ClientBufferPacketHandler::GetBufferPacket(const BufferPacketType &type,
     base::callback_func_type cb) {
   std::string bufferpacketname = crypto_obj_.Hash(
       ss_->Id(PacketHandler_PacketType(type)) + "BUFFER", "",
@@ -358,7 +358,7 @@ void ClientBufferPacketHandler::GetBufferPacket(const buffer_packet_type &type,
 }
 
 void ClientBufferPacketHandler::GetBufferPacket_Callback(
-    const std::string &result, const buffer_packet_type &type,
+    const std::string &result, const BufferPacketType &type,
     base::callback_func_type cb) {
   maidsafe::GetResponse local_result;
   std::string str_local_result;
@@ -412,7 +412,7 @@ void ClientBufferPacketHandler::GetBufferPacket_Callback(
 }
 
 void ClientBufferPacketHandler::GetBufferPacketInfo(
-    const buffer_packet_type &type, base::callback_func_type cb) {
+    const BufferPacketType &type, base::callback_func_type cb) {
   std::string bufferpacketname = crypto_obj_.Hash(
       ss_->Id(PacketHandler_PacketType(type)) + "BUFFER", "",
       crypto::STRING_STRING, true);
@@ -447,7 +447,7 @@ void ClientBufferPacketHandler::GetBufferPacketInfo_Callback(
   cb(str_local_result);
 }
 
-void ClientBufferPacketHandler::ClearMessages(const buffer_packet_type &type,
+void ClientBufferPacketHandler::ClearMessages(const BufferPacketType &type,
     base::callback_func_type cb) {
   maidsafe::PacketType pt = PacketHandler_PacketType(type);
   std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(pt) + "BUFFER", "",
@@ -467,7 +467,7 @@ void ClientBufferPacketHandler::ClearMessages(const buffer_packet_type &type,
 }
 
 maidsafe::PacketType ClientBufferPacketHandler::PacketHandler_PacketType(
-    const buffer_packet_type &type) {
+    const BufferPacketType &type) {
   //  MPID_BP, MAID_BP, PMID_BP
   switch (type) {
     case MAID_BP: return maidsafe::MAID;

@@ -54,7 +54,7 @@ struct StoreChunkData {
   StoreChunkData(const std::string &chunkname, const std::string &content,
     base::callback_func_type cb, const std::string &pub_key, const
     std::string &sig_pub_key, const std::string &sig_req,
-    const maidsafe::value_types &type)
+    const maidsafe::ValueType &type)
     : chunk_holders(), failed_contacts(), active_contacts(),
     chunk_name(chunkname), content(content), index(0), stored_copies(0),
     parallelstores(0), active_contacts_done(0), retry(0), cb(cb),
@@ -78,14 +78,14 @@ struct StoreChunkData {
   std::string pub_key;
   std::string sig_pub_key;
   std::string sig_req;
-  maidsafe::value_types data_type;
+  maidsafe::ValueType data_type;
 };
 
 struct UpdateChunkData {
   UpdateChunkData(const std::string &chunkname, const std::string &content,
     base::callback_func_type cb, const std::string &pub_key,
     const std::string &sig_pub_key, const std::string &sig_req,
-    const maidsafe::value_types &type) : chunk_holders(), alive_holders(),
+    const maidsafe::ValueType &type) : chunk_holders(), alive_holders(),
     chunk_name(chunkname), content(content), updated_copies(0),
     active_updating(0), contacted_holders(0), index(0), cb(cb),
     is_callbacked(false), pub_key(pub_key), sig_pub_key(sig_pub_key),
@@ -103,14 +103,14 @@ struct UpdateChunkData {
   std::string pub_key;
   std::string sig_pub_key;
   std::string sig_req;
-  maidsafe::value_types data_type;
+  maidsafe::ValueType data_type;
 };
 
 struct DeleteChunkData {
   DeleteChunkData(const std::string &chunkname,
     base::callback_func_type cb, const std::string &pub_key,
     const std::string &sig_pub_key, const std::string &sig_req,
-    const maidsafe::value_types &type) : chunk_holders(), alive_holders(),
+    const maidsafe::ValueType &type) : chunk_holders(), alive_holders(),
     chunk_name(chunkname), deleted_copies(0), active_deleting(0),
     contacted_holders(0), index(0), cb(cb), is_callbacked(false),
     pub_key(pub_key), sig_pub_key(sig_pub_key), sig_req(sig_req),
@@ -127,7 +127,7 @@ struct DeleteChunkData {
   std::string pub_key;
   std::string sig_pub_key;
   std::string sig_req;
-  maidsafe::value_types data_type;
+  maidsafe::ValueType data_type;
 };
 
 struct GetArgs {
@@ -174,10 +174,13 @@ struct DeleteArgs {
 
 class PDClient {
  public:
-  PDClient(const boost::uint16_t &port,
-           const std::string &kad_config_file);
-  ~PDClient();
-  void CleanUp();
+  PDClient(boost::shared_ptr<rpcprotocol::ChannelManager> ch_mangr,
+           boost::shared_ptr<kad::KNode> knode,
+           ClientRpcs *client_rpcs) : channel_manager_(ch_mangr),
+                                      knode_(knode),
+                                      client_rpcs_(client_rpcs) {}
+
+  ~PDClient() {}
   void GetMessages(const std::string &chunk_name,
                    const std::string &public_key,
                    const std::string &signed_public_key,
@@ -188,7 +191,7 @@ class PDClient {
                   const std::string &public_key,
                   const std::string &signed_public_key,
                   const std::string &signed_request,
-                  const maidsafe::value_types &data_type,
+                  const maidsafe::ValueType &data_type,
                   base::callback_func_type cb);
   // Update the existing chunk with the new content
   void UpdateChunk(const std::string &chunk_name,
@@ -196,19 +199,15 @@ class PDClient {
                    const std::string &public_key,
                    const std::string &signed_public_key,
                    const std::string &signed_request,
-                   const maidsafe::value_types &data_type,
+                   const maidsafe::ValueType &data_type,
                    base::callback_func_type cb);
   // Delete signed chunks (system packets, buffer packets, signed DB)
   void DeleteChunk(const std::string &chunk_name,
                    const std::string &public_key,
                    const std::string &signed_public_key,
                    const std::string &signed_request,
-                   const maidsafe::value_types &data_type,
+                   const maidsafe::ValueType &data_type,
                    base::callback_func_type cb);
-  // if node_id is equal to "", node_id will be generated
-  void Join(const std::string &node_id,
-            base::callback_func_type cb);
-  void Leave(base::callback_func_type cb);
   void FindValue(const std::string &key, base::callback_func_type cb);
 
  private:
@@ -229,6 +228,16 @@ class PDClient {
   void FindChunkRefCallback(const std::string &result,
                             boost::shared_ptr<LoadChunkData> data);
   void IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data);
+  int StoreChunkPrep(const std::string &chunkname,
+                     const boost::uint64_t &data_size,
+                     const std::string &public_key,
+                     const std::string &signed_public_key,
+                     const std::string &signed_request,
+                     const std::string &remote_ip,
+                     const uint16_t &remote_port,
+                     bool local,
+                     const std::string &remote_id);
+  void StoreChunkPrepCallback(bool *store_prep_response_returned);
   void ExecuteStoreChunk(const kad::Contact &remote,
                          int retry,
                          boost::shared_ptr<StoreChunkData> data);
@@ -243,7 +252,7 @@ class PDClient {
                            std::string public_key,
                            std::string signed_public_key,
                            std::string signed_request,
-                           maidsafe::value_types data_type,
+                           maidsafe::ValueType data_type,
                            base::callback_func_type cb);
   void IterativeCheckAliveCallback(const std::string &result,
                                    int retry,
@@ -258,7 +267,7 @@ class PDClient {
                                        std::string public_key,
                                        std::string signed_public_key,
                                        std::string signed_request,
-                                       maidsafe::value_types data_type,
+                                       maidsafe::ValueType data_type,
                                        base::callback_func_type cb);
   void DeleteChunk_CheckAliveCallback(const std::string &result,
                                       int retry,
@@ -271,11 +280,9 @@ class PDClient {
       boost::shared_ptr<DeleteArgs> delete_args);
   PDClient(const PDClient&);
   PDClient& operator=(const PDClient&);
-  boost::uint16_t port_;
-  std::string kad_config_file_;
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
-  ClientRpcs client_rpcs_;
+  ClientRpcs *client_rpcs_;
 };
 }  // namespace maidsafe
 
