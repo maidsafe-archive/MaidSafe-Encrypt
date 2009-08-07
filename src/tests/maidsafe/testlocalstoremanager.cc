@@ -167,7 +167,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, store_res.result());
+  ASSERT_EQ(kAck, store_res.result());
   cb.Reset();
   store_res.Clear();
   is_unique_res.Clear();
@@ -213,7 +213,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, store_res.result());
+  ASSERT_EQ(kAck, store_res.result());
   cb.Reset();
   store_res.Clear();
 
@@ -262,7 +262,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, store_res.result());
+  ASSERT_EQ(kAck, store_res.result());
   cb.Reset();
   store_res.Clear();
 
@@ -331,7 +331,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, store_res.result());
+  ASSERT_EQ(kAck, store_res.result());
   cb.Reset();
   store_res.Clear();
 
@@ -379,7 +379,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, store_res.result());
+  ASSERT_EQ(kAck, store_res.result());
   cb.Reset();
   store_res.Clear();
 
@@ -491,7 +491,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, store_res.result());
+  ASSERT_EQ(kAck, store_res.result());
   cb.Reset();
   store_res.Clear();
 
@@ -563,7 +563,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, store_res.result());
+  ASSERT_EQ(kAck, store_res.result());
   cb.Reset();
   store_res.Clear();
 
@@ -614,7 +614,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
       boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, store_res.result());
+  ASSERT_EQ(kAck, store_res.result());
   cb.Reset();
   store_res.Clear();
 
@@ -668,7 +668,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
       boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, store_res.result());
+  ASSERT_EQ(kNack, store_res.result());
   cb.Reset();
   store_res.Clear();
 
@@ -684,7 +684,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, store_res.result());
+  ASSERT_EQ(kNack, store_res.result());
   cb.Reset();
   store_res.Clear();
 
@@ -713,7 +713,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
       boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, store_res.result());
+  ASSERT_EQ(kAck, store_res.result());
   cb.Reset();
   store_res.Clear();
 

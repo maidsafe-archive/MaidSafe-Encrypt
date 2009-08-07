@@ -268,6 +268,7 @@ class PDVault {
   crypto::Crypto co;
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   std::string kad_config_file_;
+  PendingOperationsHandler poh_;
 };
 
 }  // namespace maidsafe_vault

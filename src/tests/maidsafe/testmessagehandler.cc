@@ -159,7 +159,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   wait_for_result_tmsgh(cb, mutex);
   maidsafe::StoreResponse store_result;
   ASSERT_TRUE(store_result.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, store_result.result());
+  ASSERT_EQ(kAck, store_result.result());
   cb.Reset();
   store_result.Clear();
 
@@ -174,7 +174,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
     sender_privkey, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(store_result.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, store_result.result());
+  ASSERT_EQ(kAck, store_result.result());
   cb.Reset();
   store_result.Clear();
 
@@ -200,7 +200,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
                   false, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(store_result.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, store_result.result());
+  ASSERT_EQ(kAck, store_result.result());
   cb.Reset();
   store_result.Clear();
 

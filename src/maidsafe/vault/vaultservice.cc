@@ -51,17 +51,16 @@ VaultService::VaultService(const std::string &pmid_public,
                            const std::string &pmid_private,
                            const std::string &signed_pmid_public,
                            boost::shared_ptr<VaultChunkStore>vault_chunkstore,
-                           kad::KNode *knode)
+                           kad::KNode *knode,
+                           PendingOperationsHandler *poh)
     : crypto_(),
       pmid_public_(pmid_public),
       pmid_private_(pmid_private),
       signed_pmid_public_(signed_pmid_public),
       pmid_(""),
       vault_chunkstore_(vault_chunkstore),
-      pih_(),
-      pending_stores_(),
-      pending_store_mutex_(),
-      knode_(knode) {
+      knode_(knode),
+      poh_(poh) {
 //  printf("In VaultService contructor.\n");
   crypto_.set_symm_algorithm(crypto::AES_256);
   crypto_.set_hash_algorithm(crypto::SHA_512);
@@ -109,77 +108,21 @@ void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
     done->Run();
     return;
   }
-  response->set_result(kAck);
-  done->Run();
-}
-
-void VaultService::StoreIOU(google::protobuf::RpcController*,
-                            const maidsafe::StoreIOURequest* request,
-                            maidsafe::StoreIOUResponse* response,
-                            google::protobuf::Closure* done) {
-#ifdef DEBUG
-  printf("In VaultService::StoreIOU (%i)\n", knode_->host_port());
-#endif
-  std::string id("");
-  base::decode_from_hex(pmid_, &id);
-  response->set_pmid_id(id);
-  if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StoreIOU (%i), request isn't initialized.\n",
-           knode_->host_port());
-#endif
-    return;
-  }
-  if (!ValidateSignedRequest(request->public_key(),
-       request->signed_public_key(), request->signed_request(), "")) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StoreIOU (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
-#endif
-    return;
-  }
-  boost::uint64_t data_size = request->data_size();
-  if (data_size == 0) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StoreIOU (%i), ", knode_->host_port());
-    printf("invalid data size.\n");
-#endif
-    return;
-  }
-  if (request->authority() == "") {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StoreIOU (%i), ", knode_->host_port());
-    printf("authority empty.\n");
-#endif
-    return;
-  }
-
-  // Add IOU to holding structure
-  int n = pih_.AddPendingIOU(request->pmid(), request->data_size(),
-          request->authority(), 0);
+  int n = poh_->AddPendingOperation(request->chunkname(), request->pmid(),
+                                    request->data_size(), "", "", 0,
+                                    request->public_key(), STORE_ACCEPTED);
   if (n != 0) {
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkPrep (%i), no size in pending store "
+           "queue.\n", knode_->host_port());
+#endif
     response->set_result(kNack);
     done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StoreIOU (%i), ", knode_->host_port());
-    printf("failed to add IOU.\n");
-#endif
     return;
   }
-
   response->set_result(kAck);
   done->Run();
-  return;
 }
-
 
 void VaultService::StoreChunk(google::protobuf::RpcController*,
                               const maidsafe::StoreRequest* request,
@@ -199,7 +142,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
   base::decode_from_hex(pmid_, &id);
   response->set_pmid_id(id);
   if (!request->IsInitialized()) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::StoreChunk (%i), request is not initialized.\n",
@@ -210,7 +153,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
   if (!ValidateSignedRequest(request->public_key(),
        request->signed_public_key(), request->signed_request(),
        request->chunkname())) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::StoreChunk (%i), ", knode_->host_port());
@@ -248,7 +191,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
   if (valid_data) {
     std::string key = request->chunkname();
     if (!StoreChunkLocal(key, request->data())) {
-      response->set_result(kCallbackFailure);
+      response->set_result(kNack);
       done->Run();
 #ifdef DEBUG
       printf("In VaultService::StoreChunk (%i), ", knode_->host_port());
@@ -260,20 +203,100 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
       printf("In VaultService::StoreChunk (%i), stored chunk locally.\n",
              knode_->host_port());
 #endif
-    StoreChunkReference(key);
-    response->set_result(kCallbackSuccess);
+    int n = poh_->AdvanceStatus(request->chunkname(), request->pmid(),
+                                request->data().size(), "", "", "",
+                                STORE_DONE);
+    if (n != 0) {
+#ifdef DEBUG
+      printf("In VaultService::StoreChunk (%i), failed to advance to status "
+             "STORE_DONE.\n", knode_->host_port());
+#endif
+      response->set_result(kNack);
+      done->Run();
+      return;
+    }
+    response->set_result(kAck);
   } else {
 #ifdef DEBUG
     printf("In VaultService::StoreChunk (%i), failed to validate data.\n",
            knode_->host_port());
 #endif
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
   }
 #ifdef DEBUG
-  printf("In VaultService::StoreChunk (%i), returning result %s\n",
-         knode_->host_port(), response->result().c_str());
+  printf("In VaultService::StoreChunk (%i), returning result (%i)\n",
+         knode_->host_port(), response->result());
 #endif
   done->Run();
+}
+
+void VaultService::StoreIOU(google::protobuf::RpcController*,
+                            const maidsafe::StoreIOURequest* request,
+                            maidsafe::StoreIOUResponse* response,
+                            google::protobuf::Closure* done) {
+#ifdef DEBUG
+  printf("In VaultService::StoreIOU (%i)\n", knode_->host_port());
+#endif
+  std::string id("");
+  base::decode_from_hex(pmid_, &id);
+  response->set_pmid_id(id);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StoreIOU (%i), request isn't initialized.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+  if (!ValidateSignedRequest(request->public_key(),
+      request->signed_public_key(), request->signed_request(),
+      request->own_pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StoreIOU (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
+#endif
+    return;
+  }
+  boost::uint64_t data_size = request->data_size();
+  if (data_size == 0) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StoreIOU (%i), ", knode_->host_port());
+    printf("invalid data size.\n");
+#endif
+    return;
+  }
+  if (request->iou() == "") {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StoreIOU (%i), ", knode_->host_port());
+    printf("authority empty.\n");
+#endif
+    return;
+  }
+
+  int n = poh_->AddPendingOperation(request->chunkname(),
+                                    request->collector_pmid(),
+                                    request->data_size(), request->iou(), "",
+                                    0, "", IOU_RECEIVED);
+  if (n != 0) {
+#ifdef DEBUG
+    printf("In VaultService::StoreIOU (%i), failed to add operation with status"
+           " IOU_RECEIVED.\n", knode_->host_port());
+#endif
+    response->set_result(kNack);
+    done->Run();
+    return;
+  }
+
+  response->set_result(kAck);
+  done->Run();
+  return;
 }
 
 void VaultService::StoreChunkReference(google::protobuf::RpcController*,
@@ -306,37 +329,42 @@ void VaultService::StoreChunkReference(google::protobuf::RpcController*,
     return;
   }
 
-  std::string iou = pih_.GetIOU(request->pmid(), request->data_size());
-  if (iou != "") {
+  std::string iou;
+  boost::uint64_t chunksize;
+  int n = poh_->GetSizeAndIOU(request->pmid(), request->chunkname(), &chunksize,
+          &iou);
+  if (n != 0) {
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkReference (%i), failed to get IOU.\n",
+           knode_->host_port());
+#endif
     response->set_result(kNack);
     done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StoreChunkReference (%i), ", knode_->host_port());
-    printf("failed find chunkname in pending IOUs.\n");
-#endif
     return;
   }
   response->set_iou(iou);
 
-  if (!knode_->StoreValueLocal(request->chunkname(), request->pmid(), 86000)) {
+  n = poh_->AdvanceStatus(request->chunkname(), request->pmid(), 0, "", "", "",
+                          IOU_COLLECTED);
+  if (n != 0) {
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkReference (%i), failed to advance to "
+           "status IOU_COLLECTED.\n", knode_->host_port());
+#endif
     response->set_result(kNack);
     done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StoreChunkReference (%i), ", knode_->host_port());
-    printf("failed to store kademlia key,value locally.\n");
-#endif
     return;
   }
-  maidsafe::RankAuthorisation ra;
-  ra.set_pmid(request->pmid());
-  ra.set_chunkname(request->chunkname());
-  std::string ser_ra;
-  ra.SerializeToString(&ser_ra);
-  response->set_rank_authority(crypto_.AsymSign(ser_ra, "", pmid_private_,
-      crypto::STRING_STRING));
+
+  std::string ra;
+  std::string signed_ra;
+  RankAuthorityGenerator(request->chunkname(), chunksize, request->pmid(),
+                         &ra, &signed_ra);
+  response->set_rank_authority(ra);
+  response->set_signed_rank_authority(signed_ra);
+
   done->Run();
 }
-
 
 void VaultService::Get(google::protobuf::RpcController*,
                        const maidsafe::GetRequest* request,
@@ -736,24 +764,6 @@ int VaultService::Storable(const boost::uint64_t &data_size) {
   return data_size <= vault_chunkstore_->FreeSpace() ? 0 : -1;
 }
 
-int VaultService::AddPendingStore(const std::string &chunkname,
-                                  const std::string &pmid) {
-  boost::mutex::scoped_lock loch(pending_store_mutex_);
-  if (pending_stores_.size() > 100)
-    return -1;
-  std::pair<std::map<std::string, std::string>::iterator, bool> ret;
-  ret = pending_stores_.insert(
-        std::pair<std::string, std::string>(chunkname, pmid));
-  return ret.second ? 0 : -1;
-}
-
-int VaultService::FindPendingStore(const std::string &chunkname) {
-  boost::mutex::scoped_lock loch(pending_store_mutex_);
-  std::map<std::string, std::string>::iterator it =
-      pending_stores_.find(chunkname);
-  return it == pending_stores_.end() ? -1 : 0;
-}
-
 bool VaultService::ModifyBufferPacketInfo(const std::string &new_info,
                                           const std::string &pub_key,
                                           std::string *updated_bp) {
@@ -830,4 +840,21 @@ void VaultService::FindCloseNodesCallback(const std::string &result,
     close_nodes->push_back(result_msg.closest_nodes(i));
   }
 }
+
+void VaultService::RankAuthorityGenerator(const std::string &chunkname,
+                                          const boost::uint64_t &data_size,
+                                          const std::string &pmid,
+                                          std::string *rank_authority,
+                                          std::string *signed_rank_authority) {
+  *rank_authority = "";
+  *signed_rank_authority = "";
+  maidsafe::RankAuthority ra;
+  ra.set_chunkname(chunkname);
+  ra.set_data_size(data_size);
+  ra.set_pmid(pmid);
+  ra.SerializeToString(rank_authority);
+  *signed_rank_authority = crypto_.AsymSign(*rank_authority, "", pmid_private_,
+                           crypto::STRING_STRING);
+}
+
 }  // namespace maidsafe_vault

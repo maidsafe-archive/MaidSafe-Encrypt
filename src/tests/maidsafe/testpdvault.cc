@@ -96,7 +96,7 @@ static void GeneralCallback(const std::string &result) {
 static void StoreChunkCallback(const std::string &result) {
   maidsafe::StoreResponse result_msg;
   if ((!result_msg.ParseFromString(result))||
-      (result_msg.result() != kCallbackSuccess)) {
+      (result_msg.result() != kAck)) {
     callback_succeeded_ = false;
     callback_timed_out_ = false;
   } else {

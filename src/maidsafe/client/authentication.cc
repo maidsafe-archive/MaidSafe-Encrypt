@@ -150,7 +150,7 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
   WaitForResult(cb);
   StoreResponse store_res;
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure)) {
+      (store_res.result() == kNack)) {
     return FAIL;
   }
 
@@ -173,7 +173,7 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure)) {
+      (store_res.result() == kNack)) {
     return FAIL;
   }
 
@@ -200,7 +200,7 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure)) {
+      (store_res.result() == kNack)) {
     return FAIL;
   }
 
@@ -237,7 +237,7 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure)) {
+      (store_res.result() == kNack)) {
     return FAIL;
   }
 
@@ -298,7 +298,7 @@ Exitcode Authentication::SaveSession(std::string ser_da,
         boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
     WaitForResult(cb);
     if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure)) {
+      (store_res.result() == kNack)) {
       return FAIL;
     }
 
@@ -348,7 +348,7 @@ Exitcode Authentication::SaveSession(std::string ser_da,
       boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure)) {
+      (store_res.result() == kNack)) {
     return FAIL;
   }
 
@@ -366,7 +366,7 @@ Exitcode Authentication::SaveSession(std::string ser_da,
       boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure)) {
+      (store_res.result() == kNack)) {
     return FAIL;
   }
 
@@ -555,7 +555,7 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
   WaitForResult(cb);
   StoreResponse store_res;
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure))
+      (store_res.result() == kNack))
     return FAIL;
   store_res.Clear();
   local_result["anmpid_name"] = boost::any_cast<std::string>(params["name"]);
@@ -579,7 +579,7 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
     if ((!store_res.ParseFromString(cb.result)) ||
-        (store_res.result() == kCallbackFailure))
+        (store_res.result() == kNack))
     return FAIL;
   local_result["mpid_public_key"] = boost::any_cast<std::string>(
       mpid_result["publicKey"]);
@@ -643,7 +643,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   WaitForResult(cb);
   StoreResponse store_res;
   if ((!store_res.ParseFromString(cb.result)) ||
-    (store_res.result() == kCallbackFailure))
+    (store_res.result() == kNack))
     return FAIL;
   store_res.Clear();
 
@@ -665,7 +665,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
-    (store_res.result() == kCallbackFailure))
+    (store_res.result() == kNack))
     return FAIL;
   store_res.Clear();
   //  Creating new TMID-->MID with new MID Rid
@@ -689,7 +689,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
-    (store_res.result() == kCallbackFailure))
+    (store_res.result() == kNack))
     return FAIL;
   store_res.Clear();
   //  Creating new TMID-->SMID with old MID Rid and pointing to old DA
@@ -732,7 +732,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure))
+      (store_res.result() == kNack))
     return FAIL;
 
   user_params["username"] = ss_->Username();
@@ -851,7 +851,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   WaitForResult(cb);
   StoreResponse store_res;
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure))
+      (store_res.result() == kNack))
     return FAIL;
   store_res.Clear();
 
@@ -873,7 +873,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure))
+      (store_res.result() == kNack))
     return FAIL;
   store_res.Clear();
 
@@ -898,7 +898,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure))
+      (store_res.result() == kNack))
     return FAIL;
   store_res.Clear();
 
@@ -942,7 +942,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure))
+      (store_res.result() == kNack))
     return FAIL;
   store_res.Clear();
 
@@ -1356,7 +1356,7 @@ void Authentication::StoreMSID_Callback(const std::string &result,
   ph::CreateMSIDResult local_result;
   std::string str_local_result;
   if ((!result_msg.ParseFromString(result)) ||
-      (result_msg.result() != kCallbackSuccess)) {
+      (result_msg.result() != kAck)) {
     local_result.set_result(kCallbackFailure);
   } else {
     local_result.set_result(kCallbackSuccess);

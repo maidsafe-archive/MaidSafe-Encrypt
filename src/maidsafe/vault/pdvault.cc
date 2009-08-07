@@ -66,7 +66,8 @@ PDVault::PDVault(const std::string &pmid_public,
       pmid_(""),
       co(),
       svc_channel_(),
-      kad_config_file_(kad_config_file) {
+      kad_config_file_(kad_config_file),
+      poh_() {
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co.Hash(pmid_public_ + signed_pmid_public_, "", crypto::STRING_STRING,
@@ -934,7 +935,8 @@ void PDVault::RegisterMaidService() {
                      pmid_private_,
                      signed_pmid_public_,
                      vault_chunkstore_,
-                     &knode_));
+                     &knode_,
+                     &poh_));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
       new rpcprotocol::Channel(channel_manager_.get()));
   svc_channel_->SetService(vault_service_.get());

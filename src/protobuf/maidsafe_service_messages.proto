@@ -3,6 +3,16 @@
 
 package maidsafe;
 
+message IOUAuthority {
+  required uint64 data_size = 1;
+  required bytes pmid = 2;
+};
+
+message IOU {
+  required bytes signed_iou_authority = 1;
+  required bytes signature = 2;
+}
+
 message StorePrepRequest {
   required bytes chunkname = 1;
   required uint64 data_size = 2;
@@ -13,63 +23,77 @@ message StorePrepRequest {
 };
 
 message StorePrepResponse {
-  required int32 result = 1;
+  required uint32 result = 1;
   optional bytes pmid_id = 2;
-};
-
-message IOU {
-  required bytes pmid = 1;
-  required int64 data_size = 2;
-};
-
-message StoreIOURequest {
-  required int64 data_size = 1;
-  required bytes pmid = 2;
-  required bytes authority = 3;
-  optional bytes chunk_name = 4;
-  required bytes public_key = 5;
-  required bytes signed_public_key = 6;
-  required bytes signed_request = 7;
-};
-
-message StoreIOUResponse {
-  required int32 result = 1;
-  optional bytes pmid_id = 2;
+  optional bytes iou_authority = 3;  // ie, serialised IOUAuthority
+  optional bytes signed_iou_authority = 4; // ie, signed serialised IOUAuthority
 };
 
 message StoreRequest {
   required bytes chunkname = 1;
   required bytes data = 2;
-  required bytes public_key = 3;
-  required bytes signed_public_key = 4;
-  required bytes signed_request = 5;
-  required int32 data_type = 6;
+  required bytes pmid = 3;
+  required bytes public_key = 4;
+  required bytes signed_public_key = 5;
+  required bytes signed_request = 6;
+  required uint32 data_type = 7;
+  optional uint32 offset = 8;
+  optional uint32 chunklet_size = 9;
 };
 
 message StoreResponse {
-  required bytes result = 1;
+  required uint32 result = 1;
   optional bytes pmid_id = 2;
 };
 
-message RankAuthorisation {
+message StoreIOURequest {
   required bytes chunkname = 1;
-  required bytes pmid = 2;
+  required uint64 data_size = 2;
+  required bytes collector_pmid = 3;
+  required bytes iou = 4;  // id est, serialised IOU message
+  required bytes own_pmid = 5;
+  required bytes public_key = 6;
+  required bytes signed_public_key = 7;
+  required bytes signed_request = 8;
+};
+
+message StoreIOUResponse {
+  required uint32 result = 1;
+  optional bytes pmid_id = 2;
+};
+
+message IOUDoneRequest {
+  required bytes chunkname = 1;
+  required bytes public_key = 2;
+  required bytes signed_public_key = 3;
+  required bytes signed_request = 4;
+};
+
+message IOUDoneResponse {
+  required uint32 result = 1;
+  optional bytes pmid_id = 2;
+};
+
+message RankAuthority {
+  required bytes chunkname = 1;
+  required uint64 data_size = 2;
+  required bytes pmid = 3;
 };
 
 message StoreReferenceRequest {
   required bytes chunkname = 1;
   required bytes pmid = 2;
-  required int64 data_size = 3;
-  required bytes public_key = 4;
-  required bytes signed_public_key = 5;
-  required bytes signed_request = 6;
+  required bytes public_key = 3;
+  required bytes signed_public_key = 4;
+  required bytes signed_request = 5;
 };
 
 message StoreReferenceResponse {
-  required int32 result = 1;
-  optional bytes rank_authority = 2;
-  optional bytes iou = 3;
-  optional bytes pmid_id = 4;
+  required uint32 result = 1;
+  optional bytes rank_authority = 2; // ie, serialised RankAuthority
+  optional bytes signed_rank_authority = 3; // ie, signed serialised RankAuthority
+  optional bytes iou = 4;
+  optional bytes pmid_id = 5;
 };
 
 message DeleteRequest {

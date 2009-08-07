@@ -25,6 +25,8 @@
 #ifndef MAIDSAFE_VAULT_VAULTSERVICE_H_
 #define MAIDSAFE_VAULT_VAULTSERVICE_H_
 
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 #include <maidsafe/crypto.h>
 #include <maidsafe/utils.h>
 
@@ -33,7 +35,7 @@
 #include <vector>
 
 #include "maidsafe/maidsafe.h"
-#include "maidsafe/vault/pendingious.h"
+#include "maidsafe/vault/pendingoperations.h"
 #include "protobuf/maidsafe_service.pb.h"
 
 namespace maidsafe_vault {
@@ -46,7 +48,8 @@ class VaultService : public maidsafe::MaidsafeService {
                const std::string &pmid_private,
                const std::string &signed_pmid_public,
                boost::shared_ptr<VaultChunkStore> vault_chunkstore,
-               kad::KNode *knode);
+               kad::KNode *knode,
+               PendingOperationsHandler *poh);
   ~VaultService() {
 //    printf("In VaultService destructor.\n");
   }
@@ -54,13 +57,13 @@ class VaultService : public maidsafe::MaidsafeService {
              const maidsafe::StorePrepRequest* request,
              maidsafe::StorePrepResponse* response,
              google::protobuf::Closure* done);
-  virtual void StoreIOU(google::protobuf::RpcController* controller,
-             const maidsafe::StoreIOURequest* request,
-             maidsafe::StoreIOUResponse* response,
-             google::protobuf::Closure* done);
   virtual void StoreChunk(google::protobuf::RpcController* controller,
              const maidsafe::StoreRequest* request,
              maidsafe::StoreResponse* response,
+             google::protobuf::Closure* done);
+  virtual void StoreIOU(google::protobuf::RpcController* controller,
+             const maidsafe::StoreIOURequest* request,
+             maidsafe::StoreIOUResponse* response,
              google::protobuf::Closure* done);
   virtual void StoreChunkReference(google::protobuf::RpcController*,
              const maidsafe::StoreReferenceRequest* request,
@@ -106,8 +109,6 @@ class VaultService : public maidsafe::MaidsafeService {
   bool ValidateDataChunk(const std::string &chunkname,
                          const std::string &content);
   int Storable(const boost::uint64_t &data_size);
-  int AddPendingStore(const std::string &chunkname, const std::string &pmid);
-  int FindPendingStore(const std::string &chunkname);
   bool ModifyBufferPacketInfo(const std::string &new_info,
                               const std::string &pub_key,
                               std::string *updated_bp);
@@ -121,13 +122,16 @@ class VaultService : public maidsafe::MaidsafeService {
   void StoreChunkReference(const std::string &non_hex_chunkname);
   void FindCloseNodesCallback(const std::string &result,
                               std::vector<std::string> *close_nodes);
+  void RankAuthorityGenerator(const std::string &chunkname,
+                              const boost::uint64_t &data_size,
+                              const std::string &pmid,
+                              std::string *rank_authority,
+                              std::string *signed_rank_authority);
   crypto::Crypto crypto_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
   boost::shared_ptr<VaultChunkStore> vault_chunkstore_;
-  PendingIOUHandler pih_;
-  std::map<std::string, std::string> pending_stores_;
-  boost::mutex pending_store_mutex_;
   kad::KNode *knode_;
+  PendingOperationsHandler *poh_;
 };
 }  // namespace maidsafe_vault
 

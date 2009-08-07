@@ -425,7 +425,7 @@ int SEHandler::GenerateUniqueKey(const DirType dir_type,
     WaitForResult(cbr1);
     StoreResponse store_result;
     if ((!store_result.ParseFromString(cbr1.result)) ||
-        (store_result.result() == kCallbackFailure))
+        (store_result.result() == kNack))
       return -1;
     return 0;
   }
@@ -600,7 +600,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   } else {
     StoreResponse store_result;
     if ((!store_result.ParseFromString(cbr3.result)) ||
-        (store_result.result() == kCallbackFailure)) {
+        (store_result.result() == kNack)) {
       return -1;
     }
   }
@@ -993,7 +993,7 @@ void SEHandler::IterativeStoreChunks(
   StoreResponse local_result;
   std::string str_local_result;
   if (data->chunks_done == data->total_chunks) {
-    local_result.set_result(kCallbackSuccess);
+    local_result.set_result(kAck);
     data->is_calledback = true;
     local_result.SerializeToString(&str_local_result);
     data->cb(str_local_result);
@@ -1002,7 +1002,7 @@ void SEHandler::IterativeStoreChunks(
 
   if ((data->index >= data->total_chunks) &&
       (data->active_chunks == 0)) {
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
     data->is_calledback = true;
     local_result.SerializeToString(&str_local_result);
     data->cb(str_local_result);
@@ -1100,7 +1100,7 @@ void SEHandler::StoreChunk(const std::string &chunk_name,
   } else {
     StoreResponse local_result;
     std::string str_local_result;
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
     data->is_calledback = true;
     local_result.SerializeToString(&str_local_result);
     data->cb(str_local_result);
@@ -1121,7 +1121,7 @@ void SEHandler::StoreChunkCallback(
     printf("Failed to store chunk, retrying...\n");
 #endif
     StoreChunk(chunk_name, ++retry, data);
-  } else if (result_msg.result() == kCallbackSuccess) {
+  } else if (result_msg.result() == kAck) {
 #ifdef DEBUG
     // printf("Stored chunk.\n");
 #endif

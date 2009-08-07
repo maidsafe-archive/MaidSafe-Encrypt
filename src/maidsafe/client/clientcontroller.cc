@@ -829,7 +829,7 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
   WaitForResult(cb);
   StoreResponse bufpacket_res;
   if ((!bufpacket_res.ParseFromString(cb.result)) ||
-      (bufpacket_res.result() == kCallbackFailure)) {
+      (bufpacket_res.result() == kNack)) {
 #ifdef DEBUG
     printf("Error creating the buffer packet.\n");
 #endif

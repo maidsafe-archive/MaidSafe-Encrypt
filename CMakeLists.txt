@@ -38,7 +38,7 @@ set(SOURCE_DIR ${PD_SOURCE_DIR}/src)
 set(Boost_USE_STATIC_LIBS ON)
 set(BUILD_SHARED_LIBS OFF)
 #set(CMAKE_EXE_LINKER_FLAGS "-static")
-SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
+#SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
 #message ("---------------------------------------------------")
 
 

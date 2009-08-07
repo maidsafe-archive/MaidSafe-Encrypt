@@ -483,7 +483,7 @@ void PDClient::IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data) {
          data->stored_copies);
 #endif
   if (data->stored_copies >= kMinChunkCopies) {
-    store_chunk_result.set_result(kRpcResultSuccess);
+    store_chunk_result.set_result(kAck);
     store_chunk_result.SerializeToString(&result_str);
     data->is_callbacked = true;
 #ifdef DEBUG
@@ -508,7 +508,7 @@ void PDClient::IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data) {
 #ifdef DEBUG
       printf("Total of copies stored: %i\n", data->stored_copies);
 #endif
-      store_chunk_result.set_result(kRpcResultFailure);
+      store_chunk_result.set_result(kNack);
       store_chunk_result.SerializeToString(&result_str);
       data->is_callbacked = true;
       data->cb(result_str);
@@ -532,7 +532,7 @@ void PDClient::IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data) {
     GetRandomContacts(data->parallelstores, ex_contacts, &contacts);
     if (contacts.empty()) {
       // No contacts
-      store_chunk_result.set_result(kRpcResultFailure);
+      store_chunk_result.set_result(kNack);
       store_chunk_result.SerializeToString(&result_str);
       data->is_callbacked = true;
       data->cb(result_str);
@@ -735,7 +735,7 @@ void PDClient::StoreChunkCallback(
 #ifdef DEBUG
   printf("\tIn PDClient::StoreChunkCallback, response is initialized.\n");
 #endif
-  if (store_response->result() != kRpcResultSuccess) {
+  if (store_response->result() != kAck) {
     ++send_args->retry_;
     if (send_args->retry_ < kMaxChunkStoreRetries) {
 #ifdef DEBUG

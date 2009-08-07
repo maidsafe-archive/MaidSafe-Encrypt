@@ -110,7 +110,7 @@ void MaidsafeStoreManager::Close(base::callback_func_type cb) {
   // Try again to kill the main storing thread in case it failed earlier.
   StopStoring();
   base::GeneralResponse result_msg;
-  result_msg.set_result(kRpcResultSuccess);
+  result_msg.set_result(kCallbackSuccess);
   std::string result;
   result_msg.SerializeToString(&result);
   cb(result);
@@ -239,7 +239,7 @@ void MaidsafeStoreManager::SimpleResult_Callback(const std::string &result,
 #endif
   base::GeneralResponse result_msg;
   if ((!result_msg.ParseFromString(result))||
-      (result_msg.result() != kad::kRpcResultSuccess)) {
+      (result_msg.result() != kCallbackSuccess)) {
     result_msg.clear_result();
     result_msg.set_result(kCallbackFailure);
   } else {
@@ -283,7 +283,7 @@ void MaidsafeStoreManager::GetMsgs_Callback(const std::string &result,
   base::callback_func_type cb) {
   GetMessagesResponse result_msg;
   if ((!result_msg.ParseFromString(result))||
-      (result_msg.result() != kad::kRpcResultSuccess)) {
+      (result_msg.result() != kCallbackSuccess)) {
     result_msg.set_result(kCallbackFailure);
   } else {
     result_msg.clear_result();
@@ -301,7 +301,7 @@ void MaidsafeStoreManager::StoreChunk_Callback(const std::string &result,
     UpdateResponse result_msg;
     if (!result_msg.ParseFromString(result)) {
       result_msg.set_result(kCallbackFailure);
-    } else if (result_msg.result() == kad::kRpcResultSuccess) {
+    } else if (result_msg.result() == kCallbackSuccess) {
       result_msg.clear_result();
       result_msg.set_result(kCallbackSuccess);
     } else {
@@ -313,13 +313,13 @@ void MaidsafeStoreManager::StoreChunk_Callback(const std::string &result,
   } else {
     StoreResponse result_msg;
     if (!result_msg.ParseFromString(result)) {
-      result_msg.set_result(kCallbackFailure);
-    } else if (result_msg.result() == kad::kRpcResultSuccess) {
+      result_msg.set_result(kNack);
+    } else if (result_msg.result() == kAck) {
       result_msg.clear_result();
-      result_msg.set_result(kCallbackSuccess);
+      result_msg.set_result(kAck);
     } else {
       result_msg.clear_result();
-      result_msg.set_result(kCallbackFailure);
+      result_msg.set_result(kNack);
     }
     result_msg.SerializeToString(&ser_result);
     cb(result);
@@ -332,7 +332,7 @@ void MaidsafeStoreManager::DeleteChunk_Callback(const std::string &result,
   if (!result_msg.ParseFromString(result)) {
     result_msg.set_result(kCallbackFailure);
   } else {
-    if (result_msg.result() == kad::kRpcResultSuccess) {
+    if (result_msg.result() == kCallbackSuccess) {
       result_msg.clear_result();
       result_msg.set_result(kCallbackSuccess);
     } else {

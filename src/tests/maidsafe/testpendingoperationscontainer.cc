@@ -29,21 +29,22 @@
 
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/utils.h>
-#include "maidsafe/vault/pendingious.h"
+#include "maidsafe/vault/pendingoperations.h"
 
 namespace fs = boost::filesystem;
 
 class PendingIOUContainerTest : public testing::Test {
  public:
-  PendingIOUContainerTest() : pih_() {}
+  PendingIOUContainerTest() : poh_() {}
  protected:
   void SetUp() {
-    pih_.ClearPendingIOUs();
+    poh_.ClearPendingOperations();
   }
   void TearDown() {}
-  maidsafe_vault::PendingIOUHandler pih_;
+  maidsafe_vault::PendingOperationsHandler poh_;
 };
 
+/*
 TEST_F(PendingIOUContainerTest, BEH_VAULT_PendingIOUInit) {
   ASSERT_EQ(0, pih_.PendingIOUsCount());
   ASSERT_EQ(0, pih_.PrunableIOUsCount(0));
@@ -252,3 +253,4 @@ TEST_F(PendingIOUContainerTest, BEH_VAULT_FindIOUs) {
   ASSERT_EQ("", pih_.GetIOU("abcd", chunk_size + 22));
   ASSERT_EQ(cycles, static_cast<unsigned int>(pih_.PendingIOUsCount()));
 }
+*/

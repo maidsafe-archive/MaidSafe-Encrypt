@@ -490,7 +490,7 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   wait_for_result_ta(cb, mutex);
   StoreResponse res;
   ASSERT_TRUE(res.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, res.result());
+  ASSERT_EQ(kAck, res.result());
 
   cb.Reset();
   boost::scoped_ptr<Authentication> authentication(
