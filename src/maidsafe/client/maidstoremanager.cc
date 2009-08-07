@@ -79,10 +79,12 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
   }
 #ifdef DEBUG
   printf("kadconfig_path: %s\n", kadconfig_str.c_str());
-  printf("\tIn MaidsafeStoreManager::Init, before Join.\n");
 #endif
   channel_manager_->StartTransport(port,
     boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_.get(), _1));
+#ifdef DEBUG
+  printf("\tIn MaidsafeStoreManager::Init, before Join.\n");
+#endif
   knode_->Join("", kadconfig_str, cb, false);
 #ifdef DEBUG
   printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
@@ -112,8 +114,11 @@ void MaidsafeStoreManager::Close(base::callback_func_type cb) {
   std::string result;
   result_msg.SerializeToString(&result);
   cb(result);
-  channel_manager_->CleanUpTransport();
 //  knode_.reset();
+}
+
+void MaidsafeStoreManager::CleanUpTransport() {
+  channel_manager_->CleanUpTransport();
 }
 
 void MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
@@ -357,16 +362,36 @@ void MaidsafeStoreManager::StopStoring() {
       return;
     store_thread_running_ = false;
   }
-  store_thread_running_ = !main_store_thread_.timed_join(
-      boost::posix_time::seconds(8));
+  printf("Trying to join store thread.\n");
+  try {
+    store_thread_running_ = !main_store_thread_.timed_join(
+        boost::posix_time::seconds(8));
+  }
+  catch(const std::exception &e) {
+    store_thread_running_ = true;
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+  }
 }
 
 bool MaidsafeStoreManager::StoreThreadRunning() {
+  bool result;
+  {
+    boost::mutex::scoped_lock lock(store_thread_running_mutex_);
+    result = store_thread_running_;
+  }
+  return result;
+}
+
+void MaidsafeStoreManager::StoreThreadStopping() {
   boost::mutex::scoped_lock lock(store_thread_running_mutex_);
-  return store_thread_running_;
+  store_thread_running_ = false;
 }
 
 void MaidsafeStoreManager::StoreThread() {
+  boost::this_thread::at_thread_exit(boost::bind(
+      &MaidsafeStoreManager::StoreThreadStopping, this));
   while (StoreThreadRunning()) {
     if (store_thread_pool_.size() < kMaxStoreThreads) {
       boost::mutex::scoped_lock lock_ps(ps_queue_mutex_);
@@ -389,7 +414,7 @@ void MaidsafeStoreManager::StoreThread() {
         store_thread_pool_.AddThread(thr);
       }
     }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
 }
 
@@ -470,7 +495,6 @@ void MaidsafeStoreManager::SendChunk(const StoreTuple &store_tuple) {
 #endif
   boost::this_thread::at_thread_exit(boost::bind(&ThreadPool::DeleteThread,
       &store_thread_pool_, boost::this_thread::get_id()));
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
   std::string chunk_name(""), msid(""), chunk_content("");
   std::string public_key(""), signed_public_key(""), signed_request("");
   DirType dir_type;

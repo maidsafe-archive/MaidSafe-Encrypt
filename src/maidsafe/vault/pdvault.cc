@@ -312,38 +312,33 @@ void PDVault::ValidityCheck(const std::string &chunk_name,
         base::RandomString((base::random_32bit_uinteger() % 512) + 512);
   else
     random_data_ = random_data;
-  boost::shared_ptr<ValidityCheckArgs> validity_check_args_(
+  boost::shared_ptr<ValidityCheckArgs> validity_check_args(
       new ValidityCheckArgs(chunk_name, random_data_, remote, cb));
   boost::shared_ptr<maidsafe::ValidityCheckResponse>
-      validity_check_response_(new maidsafe::ValidityCheckResponse());
-  google::protobuf::Closure* callback =
-      google::protobuf::NewCallback(this,
-                                    &PDVault::ValidityCheckCallback,
-                                    validity_check_response_,
-                                    validity_check_args_);
+      validity_check_response(new maidsafe::ValidityCheckResponse());
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &PDVault::ValidityCheckCallback, validity_check_response,
+      validity_check_args);
   kad::connect_to_node conn_type =
       knode_.CheckContactLocalAddress(
-          validity_check_args_->chunk_holder_.node_id(),
-          validity_check_args_->chunk_holder_.local_ip(),
-          validity_check_args_->chunk_holder_.local_port(),
-          validity_check_args_->chunk_holder_.host_ip());
-  bool local = false;
-  std::string ip = validity_check_args_->chunk_holder_.host_ip();
+          validity_check_args->chunk_holder_.node_id(),
+          validity_check_args->chunk_holder_.local_ip(),
+          validity_check_args->chunk_holder_.local_port(),
+          validity_check_args->chunk_holder_.host_ip());
+  std::string ip = validity_check_args->chunk_holder_.host_ip();
   uint16_t port = static_cast<uint16_t>(
-                      validity_check_args_->chunk_holder_.host_port());
+                      validity_check_args->chunk_holder_.host_port());
   if (conn_type == kad::LOCAL) {
-    ip = validity_check_args_->chunk_holder_.local_ip();
-    port = validity_check_args_->chunk_holder_.local_port();
-    local = true;
-    validity_check_args_->retry_remote = true;
+    ip = validity_check_args->chunk_holder_.local_ip();
+    port = validity_check_args->chunk_holder_.local_port();
+    validity_check_args->retry_remote = true;
   }
-  vault_rpcs_.ValidityCheck(validity_check_args_->chunk_name_,
-                            validity_check_args_->random_data_,
-                            ip,
-                            port,
-                            validity_check_response_.get(),
-                            callback,
-                            local);
+  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  vault_rpcs_.ValidityCheck(validity_check_args->chunk_name_,
+      validity_check_args->random_data_, ip, port,
+      validity_check_args->chunk_holder_.rendezvous_ip(),
+      validity_check_args->chunk_holder_.rendezvous_port(),
+      validity_check_response.get(), controller, callback);
 }
 
 void PDVault::ValidityCheckCallback(
@@ -359,18 +354,18 @@ void PDVault::ValidityCheckCallback(
     if (validity_check_args->retry_remote) {
       validity_check_args->retry_remote = false;
       boost::shared_ptr<maidsafe::ValidityCheckResponse>
-          resp(new maidsafe::ValidityCheckResponse());
-      google::protobuf::Closure* done = google::protobuf::NewCallback(this,
-                                          &PDVault::ValidityCheckCallback,
-                                          resp,
-                                          validity_check_args);
+          validity_check_response(new maidsafe::ValidityCheckResponse());
+      google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+          &PDVault::ValidityCheckCallback, validity_check_response,
+          validity_check_args);
+      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
       vault_rpcs_.ValidityCheck(validity_check_args->chunk_name_,
-                                validity_check_args->random_data_,
-                                validity_check_args->chunk_holder_.host_ip(),
-                                validity_check_args->chunk_holder_.host_port(),
-                                resp.get(),
-                                done,
-                                false);
+          validity_check_args->random_data_,
+          validity_check_args->chunk_holder_.host_ip(),
+          validity_check_args->chunk_holder_.host_port(),
+          validity_check_args->chunk_holder_.rendezvous_ip(),
+          validity_check_args->chunk_holder_.rendezvous_port(),
+          validity_check_response.get(), controller, callback);
       return;
     }
   }
@@ -405,34 +400,29 @@ void PDVault::IterativeSyncVault_SyncChunk(
       result_msg.result() == kRpcResultFailure) {
     // chunk content is stale, synchronize the chunk
     boost::shared_ptr<SynchArgs>
-        synch_args_(new SynchArgs(chunk_name, remote, data));
+        synch_args(new SynchArgs(chunk_name, remote, data));
     boost::shared_ptr<maidsafe::GetResponse>
-        get_chunk_response_(new maidsafe::GetResponse());
-    google::protobuf::Closure* callback =
-        google::protobuf::NewCallback(this,
-                                      &PDVault::IterativeSyncVault_UpdateChunk,
-                                      get_chunk_response_,
-                                      synch_args_);
+        get_chunk_response(new maidsafe::GetResponse());
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &PDVault::IterativeSyncVault_UpdateChunk, get_chunk_response,
+        synch_args);
     kad::connect_to_node conn_type =
-      knode_.CheckContactLocalAddress(synch_args_->chunk_holder_.node_id(),
-                                      synch_args_->chunk_holder_.local_ip(),
-                                      synch_args_->chunk_holder_.local_port(),
-                                      synch_args_->chunk_holder_.host_ip());
-    bool local = false;
-    std::string ip = synch_args_->chunk_holder_.host_ip();
+      knode_.CheckContactLocalAddress(synch_args->chunk_holder_.node_id(),
+                                      synch_args->chunk_holder_.local_ip(),
+                                      synch_args->chunk_holder_.local_port(),
+                                      synch_args->chunk_holder_.host_ip());
+    std::string ip = synch_args->chunk_holder_.host_ip();
     uint16_t port =
-        static_cast<uint16_t>(synch_args_->chunk_holder_.host_port());
+        static_cast<uint16_t>(synch_args->chunk_holder_.host_port());
     if (conn_type == kad::LOCAL) {
-      ip = synch_args_->chunk_holder_.local_ip();
-      port = synch_args_->chunk_holder_.local_port();
-      local = true;
+      ip = synch_args->chunk_holder_.local_ip();
+      port = synch_args->chunk_holder_.local_port();
     }
-    vault_rpcs_.Get(synch_args_->chunk_name_,
-                    ip,
-                    port,
-                    get_chunk_response_.get(),
-                    callback,
-                    local);
+    rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+    vault_rpcs_.Get(synch_args->chunk_name_, ip, port,
+        synch_args->chunk_holder_.rendezvous_ip(),
+        synch_args->chunk_holder_.rendezvous_port(), get_chunk_response.get(),
+        controller, callback);
   } else {
     // chunk is consistent with the partner, move on to the next updating
     --data->active_updating;
@@ -442,19 +432,19 @@ void PDVault::IterativeSyncVault_SyncChunk(
 }
 
 void PDVault::IterativeSyncVault_UpdateChunk(
-    boost::shared_ptr<maidsafe::GetResponse> get_chunk_response_,
-    boost::shared_ptr<SynchArgs> synch_args_) {
+    boost::shared_ptr<maidsafe::GetResponse> get_chunk_response,
+    boost::shared_ptr<SynchArgs> synch_args) {
   maidsafe::GetResponse result_msg;
-  if (!get_chunk_response_->IsInitialized() ||
-      get_chunk_response_->result() == kRpcResultFailure) {
+  if (!get_chunk_response->IsInitialized() ||
+      get_chunk_response->result() == kRpcResultFailure) {
     // TODO(Haiyang): chunk deleted? shall we remove the chunk?!
   } else {
-    vault_chunkstore_->UpdateChunk(synch_args_->chunk_name_,
-                            get_chunk_response_->content());
+    vault_chunkstore_->UpdateChunk(synch_args->chunk_name_,
+                            get_chunk_response->content());
   }
-  --synch_args_->data_->active_updating;
-  ++synch_args_->data_->num_updated_chunks;
-  IterativeSyncVault(synch_args_->data_);
+  --synch_args->data_->active_updating;
+  ++synch_args->data_->num_updated_chunks;
+  IterativeSyncVault(synch_args->data_);
 }
 
 void PDVault::RepublishChunkRef(base::callback_func_type cb) {
@@ -597,32 +587,26 @@ void PDVault::FindChunkRefCallback(
 
 void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
   boost::shared_ptr<maidsafe::CheckChunkResponse>
-      check_chunk_response_(new maidsafe::CheckChunkResponse());
-  google::protobuf::Closure* callback =
-      google::protobuf::NewCallback(this,
-                                    &PDVault::CheckChunkCallback,
-                                    check_chunk_response_,
-                                    get_args);
+      check_chunk_response(new maidsafe::CheckChunkResponse());
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &PDVault::CheckChunkCallback, check_chunk_response, get_args);
   kad::connect_to_node conn_type =
       knode_.CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
                                       get_args->chunk_holder_.local_ip(),
                                       get_args->chunk_holder_.local_port(),
                                       get_args->chunk_holder_.host_ip());
-  bool local = false;
   std::string ip = get_args->chunk_holder_.host_ip();
   uint16_t port = static_cast<uint16_t>(get_args->chunk_holder_.host_port());
   if (conn_type == kad::LOCAL) {
     ip = get_args->chunk_holder_.local_ip();
     port = get_args->chunk_holder_.local_port();
-    local = true;
     get_args->retry_remote = true;
   }
-  vault_rpcs_.CheckChunk(get_args->data_->chunk_name,
-                         ip,
-                         port,
-                         check_chunk_response_.get(),
-                         callback,
-                         local);
+  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  vault_rpcs_.CheckChunk(get_args->data_->chunk_name, ip, port,
+      get_args->chunk_holder_.rendezvous_ip(),
+      get_args->chunk_holder_.rendezvous_port(), check_chunk_response.get(),
+      controller, callback);
 }
 
 void PDVault::CheckChunkCallback(
@@ -640,18 +624,16 @@ void PDVault::CheckChunkCallback(
       get_args->retry_remote = false;
       knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::CheckChunkResponse>
-          resp(new maidsafe::CheckChunkResponse());
-      google::protobuf::Closure* done =
-          google::protobuf::NewCallback(this,
-                                        &PDVault::CheckChunkCallback,
-                                        resp,
-                                        get_args);
+          check_chunk_response(new maidsafe::CheckChunkResponse());
+      google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+          &PDVault::CheckChunkCallback, check_chunk_response, get_args);
+      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
       vault_rpcs_.CheckChunk(get_args->data_->chunk_name,
-                             get_args->chunk_holder_.host_ip(),
-                             get_args->chunk_holder_.host_port(),
-                             resp.get(),
-                             done,
-                             false);
+          get_args->chunk_holder_.host_ip(),
+          get_args->chunk_holder_.host_port(),
+          get_args->chunk_holder_.rendezvous_ip(),
+          get_args->chunk_holder_.rendezvous_port(),
+          check_chunk_response.get(), controller, callback);
       return;
     }
   }
@@ -678,45 +660,35 @@ void PDVault::CheckChunkCallback(
                                         get_args->chunk_holder_.local_ip(),
                                         get_args->chunk_holder_.local_port(),
                                         get_args->chunk_holder_.host_ip());
-      bool local = false;
       std::string ip = get_args->chunk_holder_.host_ip();
       uint16_t port = static_cast<uint16_t>(
                           get_args->chunk_holder_.host_port());
       if (conn_type == kad::LOCAL) {
         ip = get_args->chunk_holder_.local_ip();
         port = get_args->chunk_holder_.local_port();
-        local = true;
       }
       if (get_args->data_->get_msgs) {
           boost::shared_ptr<maidsafe::GetMessagesResponse>
-              get_messages_response_(new maidsafe::GetMessagesResponse());
+              get_messages_response(new maidsafe::GetMessagesResponse());
         google::protobuf::Closure* callback =
-            google::protobuf::NewCallback(this,
-                                          &PDVault::GetMessagesCallback,
-                                          get_messages_response_,
-                                          get_args);
+            google::protobuf::NewCallback(this, &PDVault::GetMessagesCallback,
+            get_messages_response, get_args);
+        rpcprotocol::Controller *controller = new rpcprotocol::Controller;
         vault_rpcs_.GetMessages(get_args->data_->chunk_name,
-                                get_args->data_->pub_key,
-                                get_args->data_->sig_pub_key,
-                                ip,
-                                port,
-                                get_messages_response_.get(),
-                                callback,
-                                local);
+            get_args->data_->pub_key, get_args->data_->sig_pub_key, ip, port,
+            get_args->chunk_holder_.rendezvous_ip(),
+            get_args->chunk_holder_.rendezvous_port(),
+            get_messages_response.get(), controller, callback);
       } else {
        boost::shared_ptr<maidsafe::GetResponse>
-          get_response_(new maidsafe::GetResponse());
-       google::protobuf::Closure* callback =
-            google::protobuf::NewCallback(this,
-                                          &PDVault::GetChunkCallback,
-                                          get_response_,
-                                          get_args);
-        vault_rpcs_.Get(get_args->data_->chunk_name,
-                        ip,
-                        port,
-                        get_response_.get(),
-                        callback,
-                        local);
+          get_response(new maidsafe::GetResponse());
+       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+           &PDVault::GetChunkCallback, get_response, get_args);
+        rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+        vault_rpcs_.Get(get_args->data_->chunk_name, ip, port,
+            get_args->chunk_holder_.rendezvous_ip(),
+            get_args->chunk_holder_.rendezvous_port(), get_response.get(),
+            controller, callback);
       }
     }
   }
@@ -745,20 +717,17 @@ void PDVault::GetMessagesCallback(
       get_args->retry_remote = false;
       knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::GetMessagesResponse>
-          resp(new maidsafe::GetMessagesResponse());
-      google::protobuf::Closure* done =
-          google::protobuf::NewCallback(this,
-                                        &PDVault::GetMessagesCallback,
-                                        resp,
-                                        get_args);
+          get_messages_response(new maidsafe::GetMessagesResponse());
+      google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+          &PDVault::GetMessagesCallback, get_messages_response, get_args);
+      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
       vault_rpcs_.GetMessages(get_args->data_->chunk_name,
-                              get_args->data_->pub_key,
-                              get_args->data_->sig_pub_key,
-                              get_args->chunk_holder_.host_ip(),
-                              get_args->chunk_holder_.host_port(),
-                              resp.get(),
-                              done,
-                              false);
+          get_args->data_->pub_key, get_args->data_->sig_pub_key,
+          get_args->chunk_holder_.host_ip(),
+          get_args->chunk_holder_.host_port(),
+          get_args->chunk_holder_.rendezvous_ip(),
+          get_args->chunk_holder_.rendezvous_port(),
+          get_messages_response.get(), controller, callback);
       return;
     }
   }
@@ -784,18 +753,16 @@ void PDVault::GetChunkCallback(
       get_args->retry_remote = false;
       knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::GetResponse>
-          resp(new maidsafe::GetResponse());
-      google::protobuf::Closure* done =
-          google::protobuf::NewCallback(this,
-                                        &PDVault::GetChunkCallback,
-                                        resp,
-                                        get_args);
+          get_response(new maidsafe::GetResponse());
+      google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+          &PDVault::GetChunkCallback, get_response, get_args);
+      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
       vault_rpcs_.Get(get_args->data_->chunk_name,
-                      get_args->chunk_holder_.host_ip(),
-                      get_args->chunk_holder_.host_port(),
-                      resp.get(),
-                      done,
-                      false);
+          get_args->chunk_holder_.host_ip(),
+          get_args->chunk_holder_.host_port(),
+          get_args->chunk_holder_.rendezvous_ip(),
+          get_args->chunk_holder_.rendezvous_port(), get_response.get(),
+          controller, callback);
       return;
     }
   }
@@ -850,18 +817,18 @@ void PDVault::RetryGetChunk(boost::shared_ptr<struct LoadChunkData> data) {
 }
 
 void PDVault::SwapChunk(const std::string &chunk_name,
-    const std::string &remote_ip,
-    const uint16_t &remote_port,
-    base::callback_func_type cb) {
+                        const std::string &remote_ip,
+                        const boost::uint16_t &remote_port,
+                        const std::string &rendezvous_ip,
+                        const boost::uint16_t &rendezvous_port,
+                        base::callback_func_type cb) {
   boost::shared_ptr<SwapChunkArgs> swap_chunk_args(
-      new SwapChunkArgs(chunk_name, remote_ip, remote_port, cb));
+      new SwapChunkArgs(chunk_name, remote_ip, remote_port, rendezvous_ip,
+      rendezvous_port, cb));
   boost::shared_ptr<maidsafe::SwapChunkResponse>
       swap_chunk_response(new maidsafe::SwapChunkResponse());
-  google::protobuf::Closure* callback =
-      google::protobuf::NewCallback(this,
-                                    &PDVault::SwapChunkSendChunk,
-                                    swap_chunk_response,
-                                    swap_chunk_args);
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &PDVault::SwapChunkSendChunk, swap_chunk_response, swap_chunk_args);
   std::string chunkcontent1;
   if (!vault_chunkstore_->LoadChunk(swap_chunk_args->chunkname_,
                                     &chunkcontent1)) {
@@ -872,15 +839,10 @@ void PDVault::SwapChunk(const std::string &chunk_name,
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
   }
-  vault_rpcs_.SwapChunk(0,
-                        chunk_name,
-                        "",
-                        chunkcontent1.size(),
-                        remote_ip,
-                        remote_port,
-                        swap_chunk_response.get(),
-                        callback,
-                        false);
+  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  vault_rpcs_.SwapChunk(0, chunk_name, "", chunkcontent1.size(), remote_ip,
+      remote_port, rendezvous_ip, rendezvous_port, swap_chunk_response.get(),
+      controller, callback);
 }
 
 void PDVault::SwapChunkSendChunk(
@@ -906,20 +868,14 @@ void PDVault::SwapChunkSendChunk(
     local_result.SerializeToString(&local_result_str);
     swap_chunk_args->cb_(local_result_str);
   }
-  google::protobuf::Closure* callback =
-      google::protobuf::NewCallback(this,
-                                    &PDVault::SwapChunkAcceptChunk,
-                                    swap_chunk_response,
-                                    swap_chunk_args);
-  vault_rpcs_.SwapChunk(1,
-                        swap_chunk_args->chunkname_,
-                        chunkcontent1,
-                        chunkcontent1.size(),
-                        swap_chunk_args->remote_ip_,
-                        swap_chunk_args->remote_port_,
-                        swap_chunk_response.get(),
-                        callback,
-                        false);
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &PDVault::SwapChunkAcceptChunk, swap_chunk_response, swap_chunk_args);
+  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  vault_rpcs_.SwapChunk(1, swap_chunk_args->chunkname_, chunkcontent1,
+      chunkcontent1.size(), swap_chunk_args->remote_ip_,
+      swap_chunk_args->remote_port_, swap_chunk_args->rendezvous_ip_,
+      swap_chunk_args->rendezvous_port_, swap_chunk_response.get(), controller,
+      callback);
 }
 
 void PDVault::SwapChunkAcceptChunk(

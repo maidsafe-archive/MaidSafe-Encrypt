@@ -38,10 +38,12 @@ void VaultRpcs::StoreChunk(const std::string &chunkname,
                       const std::string &signed_request,
                       const maidsafe::ValueType &data_type,
                       const std::string &remote_ip,
-                      const uint16_t &remote_port,
-                      maidsafe::StoreResponse* response,
-                      google::protobuf::Closure* done,
-                      const bool &local) {
+                      const boost::uint16_t &remote_port,
+                      const std::string &rendezvous_ip,
+                      const boost::uint16_t &rendezvous_port,
+                      maidsafe::StoreResponse *response,
+                      rpcprotocol::Controller *controller,
+                      google::protobuf::Closure *done) {
   maidsafe::StoreRequest args;
   args.set_chunkname(chunkname);
   args.set_data(data);
@@ -49,50 +51,42 @@ void VaultRpcs::StoreChunk(const std::string &chunkname,
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
   args.set_data_type(data_type);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  maidsafe::MaidsafeService::Stub service(channel.get());
-  service.StoreChunk(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.StoreChunk(controller, &args, response, done);
 }
 
 void VaultRpcs::CheckChunk(const std::string &chunkname,
                            const std::string &remote_ip,
-                           const uint16_t &remote_port,
-                           maidsafe::CheckChunkResponse* response,
-                           google::protobuf::Closure* done,
-                           const bool &local) {
+                           const boost::uint16_t &remote_port,
+                           const std::string &rendezvous_ip,
+                           const boost::uint16_t &rendezvous_port,
+                           maidsafe::CheckChunkResponse *response,
+                           rpcprotocol::Controller *controller,
+                           google::protobuf::Closure *done) {
   maidsafe::CheckChunkRequest args;
   args.set_chunkname(chunkname);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  maidsafe::MaidsafeService::Stub service(channel.get());
-  service.CheckChunk(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.CheckChunk(controller, &args, response, done);
 }
 
 void VaultRpcs::Get(const std::string &chunkname,
                     const std::string &remote_ip,
-                    const uint16_t &remote_port,
-                    maidsafe::GetResponse* response,
-                    google::protobuf::Closure* done,
-                    const bool &local) {
+                    const boost::uint16_t &remote_port,
+                    const std::string &rendezvous_ip,
+                    const boost::uint16_t &rendezvous_port,
+                    maidsafe::GetResponse *response,
+                    rpcprotocol::Controller *controller,
+                    google::protobuf::Closure *done) {
   maidsafe::GetRequest args;
   args.set_chunkname(chunkname);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  maidsafe::MaidsafeService::Stub service(channel.get());
-  service.Get(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.Get(controller, &args, response, done);
 }
 
 void VaultRpcs::Update(const std::string &chunkname,
@@ -102,10 +96,12 @@ void VaultRpcs::Update(const std::string &chunkname,
                        const std::string &signed_request,
                        const maidsafe::ValueType &data_type,
                        const std::string &remote_ip,
-                       const uint16_t &remote_port,
-                       maidsafe::UpdateResponse* response,
-                       google::protobuf::Closure* done,
-                       const bool &local) {
+                       const boost::uint16_t &remote_port,
+                       const std::string &rendezvous_ip,
+                       const boost::uint16_t &rendezvous_port,
+                       maidsafe::UpdateResponse *response,
+                       rpcprotocol::Controller *controller,
+                       google::protobuf::Closure *done) {
   maidsafe::UpdateRequest args;
   args.set_chunkname(chunkname);
   args.set_data(data);
@@ -113,14 +109,10 @@ void VaultRpcs::Update(const std::string &chunkname,
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
   args.set_data_type(data_type);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  maidsafe::MaidsafeService::Stub service(channel.get());
-  service.Update(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.Update(controller, &args, response, done);
 }
 
 void VaultRpcs::Delete(const std::string &chunkname,
@@ -129,66 +121,60 @@ void VaultRpcs::Delete(const std::string &chunkname,
                        const std::string &signed_request,
                        const maidsafe::ValueType &data_type,
                        const std::string &remote_ip,
-                       const uint16_t &remote_port,
-                       maidsafe::DeleteResponse* response,
-                       google::protobuf::Closure* done,
-                       const bool &local) {
+                       const boost::uint16_t &remote_port,
+                       const std::string &rendezvous_ip,
+                       const boost::uint16_t &rendezvous_port,
+                       maidsafe::DeleteResponse *response,
+                       rpcprotocol::Controller *controller,
+                       google::protobuf::Closure *done) {
   maidsafe::DeleteRequest args;
   args.set_chunkname(chunkname);
   args.set_public_key(public_key);
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
   args.set_data_type(data_type);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  maidsafe::MaidsafeService::Stub service(channel.get());
-  service.Delete(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.Delete(controller, &args, response, done);
 }
 
 void VaultRpcs::ValidityCheck(const std::string &chunkname,
                               const std::string &random_data,
                               const std::string &remote_ip,
-                              const uint16_t &remote_port,
-                              maidsafe::ValidityCheckResponse* response,
-                              google::protobuf::Closure* done,
-                              const bool &local) {
+                              const boost::uint16_t &remote_port,
+                              const std::string &rendezvous_ip,
+                              const boost::uint16_t &rendezvous_port,
+                              maidsafe::ValidityCheckResponse *response,
+                              rpcprotocol::Controller *controller,
+                              google::protobuf::Closure *done) {
   maidsafe::ValidityCheckRequest args;
   args.set_chunkname(chunkname);
   args.set_random_data(random_data);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  maidsafe::MaidsafeService::Stub service(channel.get());
-  service.ValidityCheck(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.ValidityCheck(controller, &args, response, done);
 }
 
 void VaultRpcs::GetMessages(const std::string &buffer_packet_name,
                             const std::string &public_key,
                             const std::string &signed_public_key,
                             const std::string &remote_ip,
-                            const uint16_t &remote_port,
-                            maidsafe::GetMessagesResponse* response,
-                            google::protobuf::Closure* done,
-                            const bool &local) {
+                            const boost::uint16_t &remote_port,
+                            const std::string &rendezvous_ip,
+                            const boost::uint16_t &rendezvous_port,
+                            maidsafe::GetMessagesResponse *response,
+                            rpcprotocol::Controller *controller,
+                            google::protobuf::Closure *done) {
   maidsafe::GetMessagesRequest args;
   args.set_buffer_packet_name(buffer_packet_name);
   args.set_public_key(public_key);
   args.set_signed_public_key(signed_public_key);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  maidsafe::MaidsafeService::Stub service(channel.get());
-  service.GetMessages(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.GetMessages(controller, &args, response, done);
 }
 
 void VaultRpcs::SwapChunk(const boost::uint32_t request_type,
@@ -196,10 +182,12 @@ void VaultRpcs::SwapChunk(const boost::uint32_t request_type,
                           const std::string &chunkcontent1,
                           const boost::uint32_t size1,
                           const std::string &remote_ip,
-                          const uint16_t &remote_port,
-                          maidsafe::SwapChunkResponse* response,
-                          google::protobuf::Closure* done,
-                          const bool &local) {
+                          const boost::uint16_t &remote_port,
+                          const std::string &rendezvous_ip,
+                          const boost::uint16_t &rendezvous_port,
+                          maidsafe::SwapChunkResponse *response,
+                          rpcprotocol::Controller *controller,
+                          google::protobuf::Closure *done) {
   maidsafe::SwapChunkRequest args;
   args.set_request_type(request_type);
   args.set_chunkname1(chunkname1);
@@ -208,13 +196,9 @@ void VaultRpcs::SwapChunk(const boost::uint32_t request_type,
   } else {
     args.set_chunkcontent1(chunkcontent1);
   }
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  maidsafe::MaidsafeService::Stub service(channel.get());
-  service.SwapChunk(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.SwapChunk(controller, &args, response, done);
 }
 }  // namespace maidsafe_vault

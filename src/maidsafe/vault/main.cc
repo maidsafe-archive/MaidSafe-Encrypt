@@ -51,7 +51,7 @@ void PrepareCallbackResults() {
   callback_prepared_ = true;
 }
 
-void BluddyWaitFunction(int seconds, boost::mutex* mutex) {
+void WaitFunction(int seconds, boost::mutex* mutex) {
   if (!callback_prepared_) {
     printf("Callback result variables were not set.\n");
     return;

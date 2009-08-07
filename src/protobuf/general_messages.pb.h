@@ -376,22 +376,22 @@ class KadConfig_Contact : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 local_port() const;
   inline void set_local_port(::google::protobuf::int32 value);
   
-  // optional bytes rendezvouz_ip = 6;
-  inline bool has_rendezvouz_ip() const;
-  inline void clear_rendezvouz_ip();
-  static const int kRendezvouzIpFieldNumber = 6;
-  inline const ::std::string& rendezvouz_ip() const;
-  inline void set_rendezvouz_ip(const ::std::string& value);
-  inline void set_rendezvouz_ip(const char* value);
-  inline void set_rendezvouz_ip(const void* value, size_t size);
-  inline ::std::string* mutable_rendezvouz_ip();
+  // optional bytes rendezvous_ip = 6;
+  inline bool has_rendezvous_ip() const;
+  inline void clear_rendezvous_ip();
+  static const int kRendezvousIpFieldNumber = 6;
+  inline const ::std::string& rendezvous_ip() const;
+  inline void set_rendezvous_ip(const ::std::string& value);
+  inline void set_rendezvous_ip(const char* value);
+  inline void set_rendezvous_ip(const void* value, size_t size);
+  inline ::std::string* mutable_rendezvous_ip();
   
-  // optional int32 rendezvouz_port = 7;
-  inline bool has_rendezvouz_port() const;
-  inline void clear_rendezvouz_port();
-  static const int kRendezvouzPortFieldNumber = 7;
-  inline ::google::protobuf::int32 rendezvouz_port() const;
-  inline void set_rendezvouz_port(::google::protobuf::int32 value);
+  // optional int32 rendezvous_port = 7;
+  inline bool has_rendezvous_port() const;
+  inline void clear_rendezvous_port();
+  static const int kRendezvousPortFieldNumber = 7;
+  inline ::google::protobuf::int32 rendezvous_port() const;
+  inline void set_rendezvous_port(::google::protobuf::int32 value);
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -405,9 +405,9 @@ class KadConfig_Contact : public ::google::protobuf::Message {
   ::std::string* local_ip_;
   static const ::std::string _default_local_ip_;
   ::google::protobuf::int32 local_port_;
-  ::std::string* rendezvouz_ip_;
-  static const ::std::string _default_rendezvouz_ip_;
-  ::google::protobuf::int32 rendezvouz_port_;
+  ::std::string* rendezvous_ip_;
+  static const ::std::string _default_rendezvous_ip_;
+  ::google::protobuf::int32 rendezvous_port_;
   friend void  protobuf_AddDesc_general_5fmessages_2eproto();
   friend void protobuf_AssignDesc_general_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_general_5fmessages_2eproto();
@@ -961,62 +961,62 @@ inline void KadConfig_Contact::set_local_port(::google::protobuf::int32 value) {
   local_port_ = value;
 }
 
-// optional bytes rendezvouz_ip = 6;
-inline bool KadConfig_Contact::has_rendezvouz_ip() const {
+// optional bytes rendezvous_ip = 6;
+inline bool KadConfig_Contact::has_rendezvous_ip() const {
   return _has_bit(5);
 }
-inline void KadConfig_Contact::clear_rendezvouz_ip() {
-  if (rendezvouz_ip_ != &_default_rendezvouz_ip_) {
-    rendezvouz_ip_->clear();
+inline void KadConfig_Contact::clear_rendezvous_ip() {
+  if (rendezvous_ip_ != &_default_rendezvous_ip_) {
+    rendezvous_ip_->clear();
   }
   _clear_bit(5);
 }
-inline const ::std::string& KadConfig_Contact::rendezvouz_ip() const {
-  return *rendezvouz_ip_;
+inline const ::std::string& KadConfig_Contact::rendezvous_ip() const {
+  return *rendezvous_ip_;
 }
-inline void KadConfig_Contact::set_rendezvouz_ip(const ::std::string& value) {
+inline void KadConfig_Contact::set_rendezvous_ip(const ::std::string& value) {
   _set_bit(5);
-  if (rendezvouz_ip_ == &_default_rendezvouz_ip_) {
-    rendezvouz_ip_ = new ::std::string;
+  if (rendezvous_ip_ == &_default_rendezvous_ip_) {
+    rendezvous_ip_ = new ::std::string;
   }
-  rendezvouz_ip_->assign(value);
+  rendezvous_ip_->assign(value);
 }
-inline void KadConfig_Contact::set_rendezvouz_ip(const char* value) {
+inline void KadConfig_Contact::set_rendezvous_ip(const char* value) {
   _set_bit(5);
-  if (rendezvouz_ip_ == &_default_rendezvouz_ip_) {
-    rendezvouz_ip_ = new ::std::string;
+  if (rendezvous_ip_ == &_default_rendezvous_ip_) {
+    rendezvous_ip_ = new ::std::string;
   }
-  rendezvouz_ip_->assign(value);
+  rendezvous_ip_->assign(value);
 }
-inline void KadConfig_Contact::set_rendezvouz_ip(const void* value, size_t size) {
+inline void KadConfig_Contact::set_rendezvous_ip(const void* value, size_t size) {
   _set_bit(5);
-  if (rendezvouz_ip_ == &_default_rendezvouz_ip_) {
-    rendezvouz_ip_ = new ::std::string;
+  if (rendezvous_ip_ == &_default_rendezvous_ip_) {
+    rendezvous_ip_ = new ::std::string;
   }
-  rendezvouz_ip_->assign(reinterpret_cast<const char*>(value), size);
+  rendezvous_ip_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* KadConfig_Contact::mutable_rendezvouz_ip() {
+inline ::std::string* KadConfig_Contact::mutable_rendezvous_ip() {
   _set_bit(5);
-  if (rendezvouz_ip_ == &_default_rendezvouz_ip_) {
-    rendezvouz_ip_ = new ::std::string;
+  if (rendezvous_ip_ == &_default_rendezvous_ip_) {
+    rendezvous_ip_ = new ::std::string;
   }
-  return rendezvouz_ip_;
+  return rendezvous_ip_;
 }
 
-// optional int32 rendezvouz_port = 7;
-inline bool KadConfig_Contact::has_rendezvouz_port() const {
+// optional int32 rendezvous_port = 7;
+inline bool KadConfig_Contact::has_rendezvous_port() const {
   return _has_bit(6);
 }
-inline void KadConfig_Contact::clear_rendezvouz_port() {
-  rendezvouz_port_ = 0;
+inline void KadConfig_Contact::clear_rendezvous_port() {
+  rendezvous_port_ = 0;
   _clear_bit(6);
 }
-inline ::google::protobuf::int32 KadConfig_Contact::rendezvouz_port() const {
-  return rendezvouz_port_;
+inline ::google::protobuf::int32 KadConfig_Contact::rendezvous_port() const {
+  return rendezvous_port_;
 }
-inline void KadConfig_Contact::set_rendezvouz_port(::google::protobuf::int32 value) {
+inline void KadConfig_Contact::set_rendezvous_port(::google::protobuf::int32 value) {
   _set_bit(6);
-  rendezvouz_port_ = value;
+  rendezvous_port_ = value;
 }
 
 // -------------------------------------------------------------------

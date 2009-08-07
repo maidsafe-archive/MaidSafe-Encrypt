@@ -92,8 +92,8 @@ void protobuf_AssignDesc_general_5fmessages_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(KadConfig_Contact, port_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(KadConfig_Contact, local_ip_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(KadConfig_Contact, local_port_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(KadConfig_Contact, rendezvouz_ip_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(KadConfig_Contact, rendezvouz_port_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(KadConfig_Contact, rendezvous_ip_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(KadConfig_Contact, rendezvous_port_),
   };
   KadConfig_Contact_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -158,7 +158,7 @@ void protobuf_AddDesc_general_5fmessages_2eproto() {
     "2\027.base.KadConfig.Contact\032\212\001\n\007Contact\022\017\n"
     "\007node_id\030\001 \002(\014\022\n\n\002ip\030\002 \002(\014\022\014\n\004port\030\003 \002(\005"
     "\022\020\n\010local_ip\030\004 \001(\014\022\022\n\nlocal_port\030\005 \001(\005\022\025"
-    "\n\rrendezvouz_ip\030\006 \001(\014\022\027\n\017rendezvouz_port"
+    "\n\rrendezvous_ip\030\006 \001(\014\022\027\n\017rendezvous_port"
     "\030\007 \001(\005", 446);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "general_messages.proto", &protobuf_RegisterTypes);
@@ -871,15 +871,15 @@ const ::google::protobuf::Reflection* VaultConfig::GetReflection() const {
 const ::std::string KadConfig_Contact::_default_node_id_;
 const ::std::string KadConfig_Contact::_default_ip_;
 const ::std::string KadConfig_Contact::_default_local_ip_;
-const ::std::string KadConfig_Contact::_default_rendezvouz_ip_;
+const ::std::string KadConfig_Contact::_default_rendezvous_ip_;
 #ifndef _MSC_VER
 const int KadConfig_Contact::kNodeIdFieldNumber;
 const int KadConfig_Contact::kIpFieldNumber;
 const int KadConfig_Contact::kPortFieldNumber;
 const int KadConfig_Contact::kLocalIpFieldNumber;
 const int KadConfig_Contact::kLocalPortFieldNumber;
-const int KadConfig_Contact::kRendezvouzIpFieldNumber;
-const int KadConfig_Contact::kRendezvouzPortFieldNumber;
+const int KadConfig_Contact::kRendezvousIpFieldNumber;
+const int KadConfig_Contact::kRendezvousPortFieldNumber;
 #endif  // !_MSC_VER
 
 KadConfig_Contact::KadConfig_Contact()
@@ -891,8 +891,8 @@ KadConfig_Contact::KadConfig_Contact()
     port_(0),
     local_ip_(const_cast< ::std::string*>(&_default_local_ip_)),
     local_port_(0),
-    rendezvouz_ip_(const_cast< ::std::string*>(&_default_rendezvouz_ip_)),
-    rendezvouz_port_(0) {
+    rendezvous_ip_(const_cast< ::std::string*>(&_default_rendezvous_ip_)),
+    rendezvous_port_(0) {
   SharedCtor();
 }
 
@@ -907,8 +907,8 @@ KadConfig_Contact::KadConfig_Contact(const KadConfig_Contact& from)
     port_(0),
     local_ip_(const_cast< ::std::string*>(&_default_local_ip_)),
     local_port_(0),
-    rendezvouz_ip_(const_cast< ::std::string*>(&_default_rendezvouz_ip_)),
-    rendezvouz_port_(0) {
+    rendezvous_ip_(const_cast< ::std::string*>(&_default_rendezvous_ip_)),
+    rendezvous_port_(0) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -920,8 +920,8 @@ void KadConfig_Contact::SharedCtor() {
   port_ = 0;
   local_ip_ = const_cast< ::std::string*>(&_default_local_ip_);
   local_port_ = 0;
-  rendezvouz_ip_ = const_cast< ::std::string*>(&_default_rendezvouz_ip_);
-  rendezvouz_port_ = 0;
+  rendezvous_ip_ = const_cast< ::std::string*>(&_default_rendezvous_ip_);
+  rendezvous_port_ = 0;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -939,8 +939,8 @@ void KadConfig_Contact::SharedDtor() {
   if (local_ip_ != &_default_local_ip_) {
     delete local_ip_;
   }
-  if (rendezvouz_ip_ != &_default_rendezvouz_ip_) {
-    delete rendezvouz_ip_;
+  if (rendezvous_ip_ != &_default_rendezvous_ip_) {
+    delete rendezvous_ip_;
   }
   if (this != default_instance_) {
   }
@@ -981,11 +981,11 @@ void KadConfig_Contact::Clear() {
     }
     local_port_ = 0;
     if (_has_bit(5)) {
-      if (rendezvouz_ip_ != &_default_rendezvouz_ip_) {
-        rendezvouz_ip_->clear();
+      if (rendezvous_ip_ != &_default_rendezvous_ip_) {
+        rendezvous_ip_->clear();
       }
     }
-    rendezvouz_port_ = 0;
+    rendezvous_port_ = 0;
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
@@ -1056,31 +1056,31 @@ bool KadConfig_Contact::MergePartialFromCodedStream(
         DO_(::google::protobuf::internal::WireFormat::ReadInt32(
               input, &local_port_));
         _set_bit(4);
-        if (input->ExpectTag(50)) goto parse_rendezvouz_ip;
+        if (input->ExpectTag(50)) goto parse_rendezvous_ip;
         break;
       }
       
-      // optional bytes rendezvouz_ip = 6;
+      // optional bytes rendezvous_ip = 6;
       case 6: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
-       parse_rendezvouz_ip:
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_rendezvouz_ip()));
-        if (input->ExpectTag(56)) goto parse_rendezvouz_port;
+       parse_rendezvous_ip:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_rendezvous_ip()));
+        if (input->ExpectTag(56)) goto parse_rendezvous_port;
         break;
       }
       
-      // optional int32 rendezvouz_port = 7;
+      // optional int32 rendezvous_port = 7;
       case 7: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
-       parse_rendezvouz_port:
+       parse_rendezvous_port:
         DO_(::google::protobuf::internal::WireFormat::ReadInt32(
-              input, &rendezvouz_port_));
+              input, &rendezvous_port_));
         _set_bit(6);
         if (input->ExpectAtEnd()) return true;
         break;
@@ -1135,14 +1135,14 @@ void KadConfig_Contact::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteInt32(5, this->local_port(), output);
   }
   
-  // optional bytes rendezvouz_ip = 6;
+  // optional bytes rendezvous_ip = 6;
   if (_has_bit(5)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(6, this->rendezvouz_ip(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(6, this->rendezvous_ip(), output);
   }
   
-  // optional int32 rendezvouz_port = 7;
+  // optional int32 rendezvous_port = 7;
   if (_has_bit(6)) {
-    ::google::protobuf::internal::WireFormat::WriteInt32(7, this->rendezvouz_port(), output);
+    ::google::protobuf::internal::WireFormat::WriteInt32(7, this->rendezvous_port(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -1178,14 +1178,14 @@ void KadConfig_Contact::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(5, this->local_port(), target);
   }
   
-  // optional bytes rendezvouz_ip = 6;
+  // optional bytes rendezvous_ip = 6;
   if (_has_bit(5)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(6, this->rendezvouz_ip(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(6, this->rendezvous_ip(), target);
   }
   
-  // optional int32 rendezvouz_port = 7;
+  // optional int32 rendezvous_port = 7;
   if (_has_bit(6)) {
-    target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(7, this->rendezvouz_port(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(7, this->rendezvous_port(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -1231,17 +1231,17 @@ int KadConfig_Contact::ByteSize() const {
           this->local_port());
     }
     
-    // optional bytes rendezvouz_ip = 6;
-    if (has_rendezvouz_ip()) {
+    // optional bytes rendezvous_ip = 6;
+    if (has_rendezvous_ip()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->rendezvouz_ip());
+        ::google::protobuf::internal::WireFormat::BytesSize(this->rendezvous_ip());
     }
     
-    // optional int32 rendezvouz_port = 7;
-    if (has_rendezvouz_port()) {
+    // optional int32 rendezvous_port = 7;
+    if (has_rendezvous_port()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::Int32Size(
-          this->rendezvouz_port());
+          this->rendezvous_port());
     }
     
   }
@@ -1285,10 +1285,10 @@ void KadConfig_Contact::MergeFrom(const KadConfig_Contact& from) {
       set_local_port(from.local_port());
     }
     if (from._has_bit(5)) {
-      set_rendezvouz_ip(from.rendezvouz_ip());
+      set_rendezvous_ip(from.rendezvous_ip());
     }
     if (from._has_bit(6)) {
-      set_rendezvouz_port(from.rendezvouz_port());
+      set_rendezvous_port(from.rendezvous_port());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -1313,8 +1313,8 @@ void KadConfig_Contact::Swap(KadConfig_Contact* other) {
     std::swap(port_, other->port_);
     std::swap(local_ip_, other->local_ip_);
     std::swap(local_port_, other->local_port_);
-    std::swap(rendezvouz_ip_, other->rendezvouz_ip_);
-    std::swap(rendezvouz_port_, other->rendezvouz_port_);
+    std::swap(rendezvous_ip_, other->rendezvous_ip_);
+    std::swap(rendezvous_port_, other->rendezvous_port_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

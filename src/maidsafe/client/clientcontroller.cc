@@ -203,24 +203,18 @@ int ClientController::ParseDa() {
 #ifdef DEBUG
   // printf("ser_dm_root_ = %s\n", ser_dm_root_);
 #endif
-  int i = seh_->DecryptDb(kRoot,
-                          PRIVATE,
-                          ser_dm_root,
-                          "",
-                          "",
-                          false,
-                          false);
+  int i = seh_->DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
 #ifdef DEBUG
   printf("result of decrypt root: %i\n", i);
 #endif
-  seh_->DecryptDb(base::TidyPath(kRootSubdir[1][0]),
-                  PRIVATE,
-                  ser_dm_shares,
-                  "",
-                  "",
-                  false,
-                  false);
-  return 0;
+  if (i != 0)
+    return -1;
+  i = seh_->DecryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, ser_dm_shares,
+                      "", "", false, false);
+#ifdef DEBUG
+  printf("result of decrypt %s: %i\n", kRootSubdir[1][0].c_str(), i);
+#endif
+  return (i == 0) ? 0 : -1;
 }
 
 int ClientController::SerialiseDa() {

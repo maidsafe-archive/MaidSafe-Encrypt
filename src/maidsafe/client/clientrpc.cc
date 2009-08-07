@@ -29,10 +29,7 @@
 namespace maidsafe {
 
 ClientRpcs::ClientRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
-    channel_manager)
-        : channel_manager_(channel_manager) {
-//  printf("In ClientRpcs constructor.\n");
-}
+    channel_manager) : channel_manager_(channel_manager) {}
 
 void ClientRpcs::StorePrep(const std::string &chunkname,
                            const boost::uint64_t &data_size,
@@ -41,10 +38,12 @@ void ClientRpcs::StorePrep(const std::string &chunkname,
                            const std::string &signed_public_key,
                            const std::string &signed_request,
                            const std::string &remote_ip,
-                           const uint16_t &remote_port,
-                           StorePrepResponse* response,
-                           google::protobuf::Closure* done,
-                           const bool &local) {
+                           const boost::uint16_t &remote_port,
+                           const std::string &rendezvous_ip,
+                           const boost::uint16_t &rendezvous_port,
+                           StorePrepResponse *response,
+                           rpcprotocol::Controller *controller,
+                           google::protobuf::Closure *done) {
   StorePrepRequest args;
   args.set_chunkname(chunkname);
   args.set_data_size(data_size);
@@ -52,14 +51,10 @@ void ClientRpcs::StorePrep(const std::string &chunkname,
   args.set_public_key(public_key);
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  MaidsafeService::Stub service(channel.get());
-  service.StoreChunkPrep(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.StoreChunkPrep(controller, &args, response, done);
 }
 
 void ClientRpcs::Store(const std::string &chunkname,
@@ -69,10 +64,12 @@ void ClientRpcs::Store(const std::string &chunkname,
                        const std::string &signed_request,
                        const ValueType &data_type,
                        const std::string &remote_ip,
-                       const uint16_t &remote_port,
-                       StoreResponse* response,
-                       google::protobuf::Closure* done,
-                       const bool &local) {
+                       const boost::uint16_t &remote_port,
+                       const std::string &rendezvous_ip,
+                       const boost::uint16_t &rendezvous_port,
+                       StoreResponse *response,
+                       rpcprotocol::Controller *controller,
+                       google::protobuf::Closure *done) {
   StoreRequest args;
   args.set_chunkname(chunkname);
   args.set_data(data);
@@ -80,50 +77,42 @@ void ClientRpcs::Store(const std::string &chunkname,
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
   args.set_data_type(data_type);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  MaidsafeService::Stub service(channel.get());
-  service.StoreChunk(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.StoreChunk(controller, &args, response, done);
 }
 
 void ClientRpcs::CheckChunk(const std::string &chunkname,
                             const std::string &remote_ip,
-                            const uint16_t &remote_port,
-                            CheckChunkResponse* response,
-                            google::protobuf::Closure* done,
-                            const bool &local) {
+                            const boost::uint16_t &remote_port,
+                            const std::string &rendezvous_ip,
+                            const boost::uint16_t &rendezvous_port,
+                            CheckChunkResponse *response,
+                            rpcprotocol::Controller *controller,
+                            google::protobuf::Closure *done) {
   CheckChunkRequest args;
   args.set_chunkname(chunkname);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  MaidsafeService::Stub service(channel.get());
-  service.CheckChunk(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.CheckChunk(controller, &args, response, done);
 }
 
 void ClientRpcs::Get(const std::string &chunkname,
                      const std::string &remote_ip,
-                     const uint16_t &remote_port,
-                     GetResponse* response,
-                     google::protobuf::Closure* done,
-                     const bool &local) {
+                     const boost::uint16_t &remote_port,
+                     const std::string &rendezvous_ip,
+                     const boost::uint16_t &rendezvous_port,
+                     GetResponse *response,
+                     rpcprotocol::Controller *controller,
+                     google::protobuf::Closure *done) {
   GetRequest args;
   args.set_chunkname(chunkname);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  MaidsafeService::Stub service(channel.get());
-  service.Get(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.Get(controller, &args, response, done);
 }
 
 void ClientRpcs::Update(const std::string &chunkname,
@@ -133,10 +122,12 @@ void ClientRpcs::Update(const std::string &chunkname,
                         const std::string &signed_request,
                         const ValueType &data_type,
                         const std::string &remote_ip,
-                        const uint16_t &remote_port,
-                        UpdateResponse* response,
-                        google::protobuf::Closure* done,
-                        const bool &local) {
+                        const boost::uint16_t &remote_port,
+                        const std::string &rendezvous_ip,
+                        const boost::uint16_t &rendezvous_port,
+                        UpdateResponse *response,
+                        rpcprotocol::Controller *controller,
+                        google::protobuf::Closure *done) {
   UpdateRequest args;
   args.set_chunkname(chunkname);
   args.set_data(data);
@@ -144,14 +135,10 @@ void ClientRpcs::Update(const std::string &chunkname,
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
   args.set_data_type(data_type);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  MaidsafeService::Stub service(channel.get());
-  service.Update(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.Update(controller, &args, response, done);
 }
 
 void ClientRpcs::Delete(const std::string &chunkname,
@@ -160,46 +147,42 @@ void ClientRpcs::Delete(const std::string &chunkname,
                         const std::string &signed_request,
                         const ValueType &data_type,
                         const std::string &remote_ip,
-                        const uint16_t &remote_port,
-                        DeleteResponse* response,
-                        google::protobuf::Closure* done,
-                        const bool &local) {
+                        const boost::uint16_t &remote_port,
+                        const std::string &rendezvous_ip,
+                        const boost::uint16_t &rendezvous_port,
+                        DeleteResponse *response,
+                        rpcprotocol::Controller *controller,
+                        google::protobuf::Closure *done) {
   DeleteRequest args;
   args.set_chunkname(chunkname);
   args.set_public_key(public_key);
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
   args.set_data_type(data_type);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  MaidsafeService::Stub service(channel.get());
-  service.Delete(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.Delete(controller, &args, response, done);
 }
 
 void ClientRpcs::GetMessages(const std::string &buffer_packet_name,
                              const std::string &public_key,
                              const std::string &signed_public_key,
                              const std::string &remote_ip,
-                             const uint16_t &remote_port,
-                             GetMessagesResponse* response,
-                             google::protobuf::Closure* done,
-                             const bool &local) {
+                             const boost::uint16_t &remote_port,
+                             const std::string &rendezvous_ip,
+                             const boost::uint16_t &rendezvous_port,
+                             GetMessagesResponse *response,
+                             rpcprotocol::Controller *controller,
+                             google::protobuf::Closure *done) {
   GetMessagesRequest args;
   args.set_buffer_packet_name(buffer_packet_name);
   args.set_public_key(public_key);
   args.set_signed_public_key(signed_public_key);
-  rpcprotocol::Controller controller;
-  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      channel_manager_.get(),
-      remote_ip,
-      remote_port,
-      local));
-  MaidsafeService::Stub service(channel.get());
-  service.GetMessages(&controller, &args, response, done);
+  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
+      rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.GetMessages(controller, &args, response, done);
 }
 
 }  // namespace maidsafe

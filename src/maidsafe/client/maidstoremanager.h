@@ -42,7 +42,6 @@ class CallbackObj {
  public:
   CallbackObj() : mutex_(), called_(false), result_("") {}
   void CallbackFunc(const std::string &result) {
-    printf("In CallBackObj - calling back, by God!\n\n\n\n");
     boost::mutex::scoped_lock lock(mutex_);
     result_ = result;
     called_ = true;
@@ -73,6 +72,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   ~MaidsafeStoreManager() {}
   void Init(int port, base::callback_func_type cb);
   void Close(base::callback_func_type cb);
+  void CleanUpTransport();
   void LoadChunk(const std::string &hex_chunk_name,
                  base::callback_func_type cb);
 // TODO(Fraser#5#): 2009-08-04 - Delete this version of StoreChunk
@@ -130,6 +130,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                            base::callback_func_type cb);
   void DeleteChunk_Callback(const std::string &result,
                             base::callback_func_type cb);
+  // Used to amend store_thread_running_ bool by main store thread on exit.
+  void StoreThreadStopping();
   // Function run in main store thread which spawns up to kMaxStoreThreads
   // child threads.  Always leaves room for at least one priority store thread.
   void StoreThread();

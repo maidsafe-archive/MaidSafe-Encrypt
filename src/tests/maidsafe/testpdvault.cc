@@ -118,7 +118,7 @@ static void GetChunkCallback(const std::string &result) {
   }
 }
 
-void BluddyWaitFunction(int seconds, boost::mutex* mutex) {
+void WaitFunction(int seconds, boost::mutex* mutex) {
   if (!callback_prepared_) {
     printf("Callback result variables were not set.\n");
     return;
@@ -270,14 +270,6 @@ class TestPDVault : public testing::Test {
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
-//    fs::path temp_("PDVaultTest");
-//    try {
-//      if (fs::exists(temp_))
-//        fs::remove_all(temp_);
-//    }
-//    catch(const std::exception &e) {
-//      printf("%s\n", e.what());
-//    }
     fs::create_directories("./TestVault");
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
@@ -287,15 +279,6 @@ class TestPDVault : public testing::Test {
     client_keys_.GenerateKeys(packethandler::kRsaKeySize);
     maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::MAID, "MAID",
         client_keys_.private_key(), client_keys_.public_key());
-//
-//    client_keys_.GenerateKeys(packethandler::kRsaKeySize);
-//    client_public_key_ = client_keys_.public_key();
-//    client_private_key_ = client_keys_.private_key();
-//    client_signed_public_key_ = crypto_.AsymSign(
-//                                    client_keys_.public_key(),
-//                                    "",
-//                                    client_keys_.private_key(),
-//                                    crypto::STRING_STRING);
   }
 
   virtual ~TestPDVault() {
@@ -308,9 +291,6 @@ class TestPDVault : public testing::Test {
   }
 
   virtual void SetUp() {
-//    boost::shared_ptr<maidsafe::PDClient>
-//        pdclient_local_(new maidsafe::PDClient(63001, kad_config_file_));
-//    pdclient_ = pdclient_local_;
     client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
         (new maidsafe::ChunkStore(client_chunkstore_dir_, 0, 0));
     boost::shared_ptr<maidsafe::MaidsafeStoreManager>
@@ -318,31 +298,23 @@ class TestPDVault : public testing::Test {
     sm_ = sm_local_;
     testpdvault::PrepareCallbackResults();
     sm_->Init(0, boost::bind(&testpdvault::GeneralCallback, _1));
-//    pdclient_->Join("", boost::bind(&testpdvault::GeneralCallback, _1));
-    testpdvault::BluddyWaitFunction(60, &mutex_);
+    testpdvault::WaitFunction(60, &mutex_);
+    ASSERT_TRUE(callback_succeeded_);
+    ASSERT_FALSE(callback_timed_out_);
+  }
+  virtual void TearDown() {
+    testpdvault::PrepareCallbackResults();
+    sm_->Close(boost::bind(&testpdvault::GeneralCallback, _1));
+    testpdvault::WaitFunction(60, &mutex_);
     ASSERT_TRUE(callback_succeeded_);
     ASSERT_FALSE(callback_timed_out_);
   }
 
-  virtual void TearDown() {
-//    testpdvault::PrepareCallbackResults();
-//    pdclient_->Leave(boost::bind(&testpdvault::GeneralCallback, _1));
-//    testpdvault::BluddyWaitFunction(60, &mutex_);
-//    ASSERT_TRUE(callback_succeeded_);
-//    ASSERT_FALSE(callback_timed_out_);
-//    pdclient_.reset();
-//    printf("#### CLIENT STOPPPED\n");
-  }
-
-//  std::string kad_config_file_, client_chunkstore_dir_;
   std::string client_chunkstore_dir_;
   boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore_;
   std::vector<fs::path> chunkstore_dirs_;
-//  boost::shared_ptr<maidsafe::PDClient> pdclient_;
   boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm_;
   crypto::RsaKeyPair client_keys_;
-//  std::string client_public_key_, client_private_key_;
-//  std::string client_signed_public_key_;
   boost::mutex mutex_;
   crypto::Crypto crypto_;
 
@@ -378,28 +350,26 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
     ++i;
   }
-//  // iterate through all vault chunkstores to ensure each chunk stored
-//  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
-//  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
-//    std::string hash_("");
-//    base::encode_to_hex((*it_).first, &hash_);
-//    int chunk_count_ = 0;
-//    for (int vault_no_ = 0; vault_no_ < kNetworkSize_; ++vault_no_) {
-//      fs::directory_iterator end_itr_;
-//      for (fs::directory_iterator itr_(chunkstore_dirs_[vault_no_]);
-//           itr_ != end_itr_;
-//           ++itr_) {
-//        if (!is_directory(itr_->status())) {
-//          if (itr_->filename() == hash_) {
-//            // printf("Chunk: %s\n", itr_->path().string().c_str());
-//            ++chunk_count_;
-//          }
-//        }
-//      }
-//    }
-//    ASSERT_EQ(kTestK_, chunk_count_);
-//  }
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
+//  while (not got chunk)
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name("");
+    base::decode_from_hex(hex_chunk_name, &non_hex_name);
+    int chunk_count = 0;
+    for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+      if (pdvaults_[vault_no]->vault_chunkstore_->HasChunk(non_hex_name)) {
+        std::string trace = "Vault[" + base::itos(vault_no) + "] has the chunk";
+        SCOPED_TRACE(trace);
+        ++chunk_count;
+        ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_->
+            HashCheckChunk(non_hex_name));
+      }
+    }
+    ASSERT_EQ(kMinChunkCopies, chunk_count);
+  }
 }
 
 TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
@@ -413,7 +383,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
     ++i;
   }
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   // Check each chunk can be retrieved correctly
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     printf("Getting chunk.\n");
@@ -421,15 +391,15 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
     testpdvault::PrepareCallbackResults();
     sm_->LoadChunk(hex_chunk_name,
                    boost::bind(&testpdvault::GetChunkCallback, _1));
-    testpdvault::BluddyWaitFunction(60, &mutex_);
+    testpdvault::WaitFunction(60, &mutex_);
     ASSERT_TRUE(callback_succeeded_);
     ASSERT_EQ(callback_content_, (*it_).second);
     ASSERT_FALSE(callback_timed_out_);
     std::string hash = crypto_.Hash(callback_content_, "",
         crypto::STRING_STRING, true);
     ASSERT_EQ(hex_chunk_name, hash);
-    boost::this_thread::sleep(boost::posix_time::seconds(8));
   }
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
 }
 
 //TEST_F(TestPDVault, FUNC_MAID_StoreChunkInvalidRequest) {
@@ -474,7 +444,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::DATA,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                      _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_FALSE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  testpdvault::PrepareCallbackResults();
@@ -487,7 +457,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::DATA,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                      _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_FALSE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  testpdvault::PrepareCallbackResults();
@@ -511,7 +481,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::DATA,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                      _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_FALSE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //}
@@ -541,7 +511,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::SYSTEM_PACKET,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                    _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
@@ -550,13 +520,13 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                                                         kad_config_file_);
 //  testpdvault::PrepareCallbackResults();
 //  newclient->Join("", boost::bind(&testpdvault::GeneralCallback, _1));
-//  testpdvault::BluddyWaitFunction(60, &mutex_);
+//  testpdvault::WaitFunction(60, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  testpdvault::PrepareCallbackResults();
 //  newclient->GetChunk(non_hex_chunk_name,
 //                      boost::bind(&testpdvault::GetChunkCallback, _1));
-//  testpdvault::BluddyWaitFunction(60, &mutex_);
+//  testpdvault::WaitFunction(60, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_EQ(callback_content_, chunk_content);
 //  ASSERT_FALSE(callback_timed_out_);
@@ -569,7 +539,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //  ASSERT_TRUE(gp.ParseFromString(callback_content_));
 //  testpdvault::PrepareCallbackResults();
 //  newclient->Leave(boost::bind(&testpdvault::GeneralCallback, _1));
-//  testpdvault::BluddyWaitFunction(60, &mutex_);
+//  testpdvault::WaitFunction(60, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  delete newclient;
@@ -602,7 +572,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::SYSTEM_PACKET,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                    _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_FALSE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //
@@ -615,7 +585,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::SYSTEM_PACKET,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                    _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_FALSE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //}
@@ -645,7 +615,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::PDDIR_NOTSIGNED,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                    _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
@@ -660,7 +630,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 ////                        maidsafe::PDDIR_NOTSIGNED,
 ////                        boost::bind(&testpdvault::StoreChunkCallback,
 ////                                    _1));
-////  testpdvault::BluddyWaitFunction(120, recursive_mutex_client_.get());
+////  testpdvault::WaitFunction(120, recursive_mutex_client_.get());
 ////  ASSERT_FALSE(callback_succeeded_);
 ////  ASSERT_FALSE(callback_timed_out_);
 //
@@ -674,7 +644,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                         maidsafe::PDDIR_NOTSIGNED,
 //                         boost::bind(&testpdvault::StoreChunkCallback,
 //                                     _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -683,7 +653,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //  testpdvault::PrepareCallbackResults();
 //  pdclient_->GetChunk(non_hex_chunk_name,
 //                      boost::bind(&testpdvault::GetChunkCallback, _1));
-//  testpdvault::BluddyWaitFunction(60, &mutex_);
+//  testpdvault::WaitFunction(60, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_EQ(callback_content_, new_chunk_content);
 //  ASSERT_FALSE(callback_timed_out_);
@@ -714,7 +684,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::SYSTEM_PACKET,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                    _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
@@ -734,7 +704,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::SYSTEM_PACKET,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                    _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -742,7 +712,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //  testpdvault::PrepareCallbackResults();
 //  pdclient_->GetChunk(non_hex_chunk_name,
 //                      boost::bind(&testpdvault::GetChunkCallback, _1));
-//  testpdvault::BluddyWaitFunction(60, &mutex_);
+//  testpdvault::WaitFunction(60, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_EQ(callback_content_, new_chunk_content);
 //  ASSERT_FALSE(callback_timed_out_);
@@ -773,7 +743,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::SYSTEM_PACKET,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                    _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
@@ -787,7 +757,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                         maidsafe::SYSTEM_PACKET,
 //                         boost::bind(&testpdvault::StoreChunkCallback,
 //                                     _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_FALSE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //
@@ -801,7 +771,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                         maidsafe::PDDIR_NOTSIGNED,
 //                         boost::bind(&testpdvault::StoreChunkCallback,
 //                                     _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_FALSE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //
@@ -833,7 +803,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::SYSTEM_PACKET,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                    _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_FALSE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //}
@@ -864,7 +834,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                        maidsafe::BUFFER_PACKET,
 //                        boost::bind(&testpdvault::StoreChunkCallback,
 //                                    _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  boost::this_thread::sleep(boost::posix_time::seconds(3));
@@ -898,7 +868,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                         maidsafe::BUFFER_PACKET_INFO,
 //                         boost::bind(&testpdvault::StoreChunkCallback,
 //                                    _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_FALSE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //
@@ -911,7 +881,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                         maidsafe::BUFFER_PACKET_MESSAGE,
 //                         boost::bind(&testpdvault::StoreChunkCallback,
 //                                    _1));
-//  testpdvault::BluddyWaitFunction(120, &mutex_);
+//  testpdvault::WaitFunction(120, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //
@@ -919,7 +889,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //  testpdvault::PrepareCallbackResults();
 //  pdclient_->GetChunk(non_hex_chunk_name,
 //                      boost::bind(&testpdvault::GetChunkCallback, _1));
-//  testpdvault::BluddyWaitFunction(60, &mutex_);
+//  testpdvault::WaitFunction(60, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  // verifying the buffer packet
@@ -931,7 +901,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //  testpdvault::PrepareCallbackResults();
 //  pdclient_->GetMessages(non_hex_chunk_name, keys.public_key(), sig_pubkey,
 //                      boost::bind(&testpdvault::GetMessagesCallback, _1));
-//  testpdvault::BluddyWaitFunction(60, &mutex_);
+//  testpdvault::WaitFunction(60, &mutex_);
 //  ASSERT_FALSE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //
@@ -941,7 +911,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                         client_public_key_,
 //                         client_signed_public_key_,
 //                         boost::bind(&testpdvault::GetMessagesCallback, _1));
-//  testpdvault::BluddyWaitFunction(60, &mutex_);
+//  testpdvault::WaitFunction(60, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  ASSERT_EQ(static_cast<unsigned int>(1), callback_msgs.size());
@@ -954,7 +924,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                         signed_request,
 //                         maidsafe::BUFFER_PACKET_MESSAGE,
 //                         boost::bind(&testpdvault::DeleteCallback, _1));
-//  testpdvault::BluddyWaitFunction(60, &mutex_);
+//  testpdvault::WaitFunction(60, &mutex_);
 //  ASSERT_FALSE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //
@@ -976,7 +946,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                         signed_request,
 //                         maidsafe::BUFFER_PACKET_MESSAGE,
 //                         boost::bind(&testpdvault::DeleteCallback, _1));
-//  testpdvault::BluddyWaitFunction(60, &mutex_);
+//  testpdvault::WaitFunction(60, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //
@@ -986,7 +956,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
 //                         client_public_key_,
 //                         client_signed_public_key_,
 //                         boost::bind(&testpdvault::GetMessagesCallback, _1));
-//  testpdvault::BluddyWaitFunction(60, &mutex_);
+//  testpdvault::WaitFunction(60, &mutex_);
 //  ASSERT_TRUE(callback_succeeded_);
 //  ASSERT_FALSE(callback_timed_out_);
 //  ASSERT_EQ(static_cast<unsigned int>(0), callback_msgs.size());

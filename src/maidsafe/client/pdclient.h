@@ -16,14 +16,14 @@
 #define MAIDSAFE_CLIENT_PDCLIENT_H_
 
 #include <boost/filesystem.hpp>
+#include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/utils.h>
 
 #include <map>
 #include <string>
 #include <vector>
 
 #include "maidsafe/client/clientrpc.h"
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
 
 namespace fs = boost::filesystem;
 
@@ -235,7 +235,8 @@ class PDClient {
                      const std::string &signed_request,
                      const std::string &remote_ip,
                      const uint16_t &remote_port,
-                     bool local,
+                     const std::string &rendezvous_ip,
+                     const uint16_t &rendezvous_port,
                      const std::string &remote_id);
   void StoreChunkPrepCallback(bool *store_prep_response_returned);
   void ExecuteStoreChunk(const kad::Contact &remote,

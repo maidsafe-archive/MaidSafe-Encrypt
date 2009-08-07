@@ -31,9 +31,11 @@
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/utils.h>
+
 #include <string>
 #include <list>
 #include <vector>
+
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
@@ -138,16 +140,22 @@ struct GetArgs {
 
 struct SwapChunkArgs {
   SwapChunkArgs(const std::string &chunkname,
-  const std::string &remote_ip,
-  const boost::uint16_t &remote_port,
-  base::callback_func_type cb)
+                const std::string &remote_ip,
+                const boost::uint16_t &remote_port,
+                const std::string &rendezvous_ip,
+                const boost::uint16_t &rendezvous_port,
+                base::callback_func_type cb)
      : chunkname_(chunkname),
        remote_ip_(remote_ip),
        remote_port_(remote_port),
+       rendezvous_ip_(rendezvous_ip),
+       rendezvous_port_(rendezvous_port),
        cb_(cb) {}
   std::string chunkname_;
   std::string remote_ip_;
   boost::uint16_t remote_port_;
+  std::string rendezvous_ip_;
+  boost::uint16_t rendezvous_port_;
   base::callback_func_type cb_;
 };
 
@@ -176,7 +184,9 @@ class PDVault {
   void GetChunk(const std::string &chunk_name, base::callback_func_type cb);
   void SwapChunk(const std::string &chunk_name,
                  const std::string &remote_ip,
-                 const uint16_t &remote_port,
+                 const boost::uint16_t &remote_port,
+                 const std::string &rendezvous_ip,
+                 const boost::uint16_t &rendezvous_port,
                  base::callback_func_type cb);
   std::string node_id() const;
   std::string host_ip() const { return knode_.host_ip(); }
@@ -194,6 +204,7 @@ class PDVault {
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
+  FRIEND_TEST(TestPDVault, FUNC_MAID_StoreChunks);
   void KadJoinedCallback(const std::string &result);
   void IterativeSyncVault(boost::shared_ptr<SyncVaultData> data);
   void SyncVault_FindAlivePartner(
@@ -212,8 +223,8 @@ class PDVault {
       boost::shared_ptr<SyncVaultData> data,
       std::string chunk_name, kad::Contact remote);
   void IterativeSyncVault_UpdateChunk(
-      boost::shared_ptr<maidsafe::GetResponse> get_chunk_response_,
-      boost::shared_ptr<SynchArgs> synch_args_);
+      boost::shared_ptr<maidsafe::GetResponse> get_chunk_response,
+      boost::shared_ptr<SynchArgs> synch_args);
   void IterativePublishChunkRef(
       boost::shared_ptr<RepublishChunkRefData> data);
   void IterativePublishChunkRef_Next(const std::string &result,
@@ -235,7 +246,7 @@ class PDVault {
                    base::callback_func_type cb);
   void SwapChunkSendChunk(
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
-      boost::shared_ptr<SwapChunkArgs> swap_chunk_argsb);
+      boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   void SwapChunkAcceptChunk(
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);

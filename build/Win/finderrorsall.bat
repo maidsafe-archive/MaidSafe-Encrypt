@@ -18,7 +18,7 @@ del filelist.txt filelist2.txt code_style_errors.txt
 set count=0
 for /f  %%g in (code_style_errors2) do (call :s_do_sums)
 cls & echo. & echo. & echo.
-if %count% geq 1 echo There are %count% errors! & echo Good God, man - that's totally pish.  Get it sorted out, ya jobby.
+if %count% geq 2 echo There are %count% errors! & echo Good God, man - that's totally pish.  Get it sorted out, ya jobby.
 if %count% equ 1 echo Only one error left.  I bet you wish you'd fixed it, ya fanny.
 if %count% equ 0 echo There aren't any errors just now.  Not too bad I suppose. & echo I'm sure it won't be long 'till they're back though.
 echo. & echo.

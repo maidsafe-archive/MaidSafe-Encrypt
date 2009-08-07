@@ -16,13 +16,13 @@ ELSE(UNIX)
 ENDIF(UNIX)
 
 IF(CMAKE_BUILD_TYPE MATCHES "Release")
-message("building an ok to release package")
+message("Building a package which is OK to release.")
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/bin/)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/lib)
 ELSE()
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/bin/)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/lib)
-message("building a not for release package")
+message("Building a package which is NOT OK to release.")
 	SET(pddate "DEVELOPER_${pddate}")
 ENDIF()
 
@@ -38,7 +38,9 @@ set(SOURCE_DIR ${PD_SOURCE_DIR}/src)
 set(Boost_USE_STATIC_LIBS ON)
 set(BUILD_SHARED_LIBS OFF)
 #set(CMAKE_EXE_LINKER_FLAGS "-static")
+SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
 #message ("---------------------------------------------------")
+
 
 
 ###################################################################################
