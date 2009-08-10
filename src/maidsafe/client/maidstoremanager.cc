@@ -465,6 +465,7 @@ void MaidsafeStoreManager::SendChunk(StoreTuple store_tuple) {
   if (GetStoreRequests(store_tuple, &store_prep_request, &store_request) != 0)
     return;
   boost::uint64_t data_size = store_prep_request.data_size();
+// TODO(Fraser#5#): 2009-08-10 - account for online status in while loop also
   while (duplicate_count < kMinChunkCopies) {
     printf("dup count: %i\tmin copies: %i\n", duplicate_count, kMinChunkCopies);
     kad::Contact peer;
@@ -477,16 +478,19 @@ void MaidsafeStoreManager::SendChunk(StoreTuple store_tuple) {
     else
       exclude.push_back(peer);  // whether we succeed in storing or not, we'll
                                 // not be trying this peer again
-    if (!duplicate_count)
-//      largest_rtt = peer.rtt();
-// TODO(Fraser#5#): 2009-08-09 - get rtt properly
-      largest_rtt = 1.0;
-//    StorePrepRequest store_prep_request = store_prep_req;
+    if (duplicate_count == 0) {  // set largest_rtt from first peer
+// TODO(Fraser#5#): 2009-08-10 - Uncomment following lines
+//      base::PDRoutingTableHandler rt_handler;
+//      base::PDRoutingTableTuple peer_details;
+//      if (rt_handler.GetTupleInfo(peer.node_id(), &peer_details) != 0)
+//        break;
+//      largest_rtt = peer_details.rtt();
+      largest_rtt = 1.0f;
+    }
     if (SendPrep(peer, local, &store_prep_request) != 0)
       break;  // try another peer
     int failed_attempt_count = 0;
     while (failed_attempt_count < kMaxChunkStoreTries) {
-//      StoreRequest store_request = store_req;
       if (SendContent(peer, local, data_size, &store_request) == 0) {
         printf("In MSM::SendChunk - success storing.\n");
         break;  // succeeded in storing to this peer

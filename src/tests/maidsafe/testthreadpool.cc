@@ -22,26 +22,30 @@
 * ============================================================================
 */
 
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <gtest/gtest.h>
-#include "maidsafe/threadpool.h"
+#include <vector>
+// #include "maidsafe/threadpool.h"
+#include "boost/threadpool.hpp"
 
 namespace test_threadpool {
 
-class ThreadedTest {
+class Task {
  public:
-  ThreadedTest() : running_(false) {}
-  ~ThreadedTest() {}
-  void ThreadedFunction(const boost::posix_time::milliseconds &delay,
-                        maidsafe::ThreadPool *thread_pool) {
-    running_ = true;
-    boost::this_thread::at_thread_exit(boost::bind(
-        &maidsafe::ThreadPool::DeleteThread, thread_pool,
-        boost::this_thread::get_id()));
-    boost::this_thread::sleep(delay);
-    running_ = false;
+  Task() {}
+  ~Task() {}
+  void TaskFunction(const int &task_no,
+                    const int &delay,
+                    std::vector<int> *result_order,
+                    boost::mutex *mutex) {
+    printf("Started Task %i - sleeping for %i milliseconds.\n", task_no, delay);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
+    {
+      boost::mutex::scoped_lock lock(*mutex);
+      result_order->push_back(task_no);
+    }
+    printf("Finished Task %i\n", task_no);
   }
- private:
-  bool running_;
 };
 
 }  // namespace test_threadpool
@@ -50,25 +54,62 @@ namespace maidsafe {
 
 class TestThreadPool : public testing::Test {
  protected:
-  TestThreadPool() : thread_pool_() {}
-  ThreadPool thread_pool_;
+  TestThreadPool() {}
+  ~TestThreadPool() {}
+//  ThreadPool thread_pool_;
  private:
   TestThreadPool(const TestThreadPool&);
   TestThreadPool &operator=(const TestThreadPool&);
 };
 
 TEST_F(TestThreadPool, BEH_MAID_ThreadPool) {
-  test_threadpool::ThreadedTest test_object;
-  // The call to new boost::thread makes an internal copy of test_object, so it
-  // needn't be threadsafe.
-  for (int i = 0; i < 123; ++i) {
-    boost::shared_ptr<boost::thread> thr(new boost::thread(
-              &test_threadpool::ThreadedTest::ThreadedFunction, test_object,
-              boost::posix_time::milliseconds(500), &thread_pool_));
-    thread_pool_.AddThread(thr);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(6));
+  test_threadpool::Task task;
+  std::vector<int> result_order;
+  boost::mutex result_order_mutex;
+  // Create a thread pool.
+  boost::threadpool::pool tp(2);
+  // Add some tasks to the pool.
+  tp.schedule(boost::bind(&test_threadpool::Task::TaskFunction, &task, 0,
+                          50, &result_order, &result_order_mutex));
+  tp.schedule(boost::bind(&test_threadpool::Task::TaskFunction, &task, 1,
+                          3000, &result_order, &result_order_mutex));
+  tp.schedule(boost::bind(&test_threadpool::Task::TaskFunction, &task, 2,
+                          150, &result_order, &result_order_mutex));
+  tp.schedule(boost::bind(&test_threadpool::Task::TaskFunction, &task, 3,
+                          100, &result_order, &result_order_mutex));
+  tp.wait();
+  ASSERT_EQ(static_cast<unsigned int>(4), result_order.size());
+  ASSERT_EQ(0, result_order.at(0));
+  ASSERT_EQ(2, result_order.at(1));
+  ASSERT_EQ(3, result_order.at(2));
+  ASSERT_EQ(1, result_order.at(3));
+}
+
+TEST_F(TestThreadPool, BEH_MAID_ThreadPoolCancel) {
+  test_threadpool::Task task;
+  std::vector<int> result_order;
+  boost::mutex result_order_mutex;
+  {
+    // Create a thread pool.
+    boost::threadpool::thread_pool<boost::threadpool::task_func,
+                                   boost::threadpool::fifo_scheduler,
+                                   boost::threadpool::static_size,
+                                   boost::threadpool::resize_controller,
+                                   boost::threadpool::immediately> tp(2);
+    // Add some tasks to the pool.
+    tp.schedule(boost::bind(&test_threadpool::Task::TaskFunction, &task, 0,
+                            50, &result_order, &result_order_mutex));
+    tp.schedule(boost::bind(&test_threadpool::Task::TaskFunction, &task, 1,
+                            10000, &result_order, &result_order_mutex));
+    tp.schedule(boost::bind(&test_threadpool::Task::TaskFunction, &task, 2,
+                            150, &result_order, &result_order_mutex));
+    tp.schedule(boost::bind(&test_threadpool::Task::TaskFunction, &task, 3,
+                            100, &result_order, &result_order_mutex));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(400));
   }
-  while (thread_pool_.size())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(static_cast<unsigned int>(3), result_order.size());
+  ASSERT_EQ(0, result_order.at(0));
+  ASSERT_EQ(2, result_order.at(1));
+  ASSERT_EQ(3, result_order.at(2));
 }
 }  // namespace maidsafe
