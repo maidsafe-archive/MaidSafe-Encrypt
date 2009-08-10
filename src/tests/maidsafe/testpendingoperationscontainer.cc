@@ -33,224 +33,300 @@
 
 namespace fs = boost::filesystem;
 
-class PendingIOUContainerTest : public testing::Test {
+namespace maidsafe_vault {
+
+class PendingOperationContainerTest : public testing::Test {
  public:
-  PendingIOUContainerTest() : poh_() {}
+  PendingOperationContainerTest() : poh_() {}
  protected:
   void SetUp() {
     poh_.ClearPendingOperations();
   }
   void TearDown() {}
-  maidsafe_vault::PendingOperationsHandler poh_;
+  PendingOperationsHandler poh_;
 };
 
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_PendingOpsInit) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+}
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_AddPendingOp) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  // Add a pending operation
+  ASSERT_EQ(0, poh_.AddPendingOperation("pmid", "chunkname", 123456, "", "", 0,
+                                        "public_key", STORE_ACCEPTED));
+  ASSERT_EQ(1, poh_.PendingOperationsCount());
+  ASSERT_EQ(0, poh_.AddPendingOperation("pmid", "chunkname", 123456, "iou", "",
+                                        0, "", IOU_RECEIVED));
+  ASSERT_EQ(2, poh_.PendingOperationsCount());
+}
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_ParameterAnalysis) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+  printf ("\nThe following messages are appropriate debug output.\n\n");
+
+  // STORE_ACCEPTED
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("", "chunkname", 123456, "", "",
+                                          "public_key", STORE_ACCEPTED));
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("pmid", "", 123456, "", "",
+                                          "public_key", STORE_ACCEPTED));
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("pmid", "chunkname", 123456, "", "",
+                                          "", STORE_ACCEPTED));
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("pmid", "chunkname", 0, "", "",
+                                          "public_key", STORE_ACCEPTED));
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("pmid", "chunkname", 1234, "a", "b",
+                                          "public_key", STORE_ACCEPTED));
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  // STORE_DONE
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("", "chunkname", 123456, "", "",
+                                          "", STORE_DONE));
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("pmid", "", 123456, "", "",
+                                          "", STORE_DONE));
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("pmid", "chunkname", 0, "", "",
+                                          "", STORE_DONE));
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("pmid", "chunkname", 1234, "a", "b",
+                                          "public_key", STORE_ACCEPTED));
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  // IOU_READY/AWAITING_IOU
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("", "", 123456, "", "",
+                                          "public_key", IOU_READY));
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("", "", 123456, "", "",
+                                          "public_key", AWAITING_IOU));
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  // IOU_RANK_RETREIVED
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("", "", 123456, "iou", "rank",
+                                          "", IOU_RANK_RETREIVED));
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("", "chunkname", 123456, "", "rank",
+                                          "", IOU_RANK_RETREIVED));
+  ASSERT_EQ(-1496, poh_.AnalyseParameters("", "chunkname", 123456, "iou", "",
+                                        "", IOU_RANK_RETREIVED));
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  // IOU_RECEIVED
+  ASSERT_EQ(-1497, poh_.AnalyseParameters("", "chunkname", 123456, "iou", "",
+                                          "", IOU_RECEIVED));
+  ASSERT_EQ(-1497, poh_.AnalyseParameters("pmid", "", 123456, "iou", "",
+                                          "", IOU_RECEIVED));
+  ASSERT_EQ(-1497, poh_.AnalyseParameters("pmid", "chunkname", 0, "iou", "",
+                                          "", IOU_RECEIVED));
+  ASSERT_EQ(-1497, poh_.AnalyseParameters("pmid", "chunkname", 0, "", "",
+                                          "", IOU_RECEIVED));
+  ASSERT_EQ(-1497, poh_.AnalyseParameters("pmid", "chunkname", 0, "", "rank",
+                                          "", IOU_RECEIVED));
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  // IOU_COLLECTED
+  ASSERT_EQ(-1497, poh_.AnalyseParameters("", "chunkname", 0, "", "",
+                                          "", IOU_COLLECTED));
+  ASSERT_EQ(-1497, poh_.AnalyseParameters("pmid", "", 0, "", "",
+                                          "", IOU_COLLECTED));
+  ASSERT_EQ(-1497, poh_.AnalyseParameters("pmid", "chunkname", 123456, "", "",
+                                          "", IOU_COLLECTED));
+  ASSERT_EQ(-1497, poh_.AnalyseParameters("pmid", "chunkname", 0, "iou", "",
+                                          "", IOU_COLLECTED));
+  ASSERT_EQ(-1497, poh_.AnalyseParameters("pmid", "chunkname", 0, "", "rank",
+                                          "", IOU_COLLECTED));
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+}
+
+TEST_F(PendingOperationContainerTest,
+       BEH_VAULT_AddAndClearMultiplePendingStores) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  // Add cycle
+  unsigned int cycles = 22;
+  for (unsigned int n = 0; n < cycles; ++n) {
+    ASSERT_EQ(0, poh_.AddPendingOperation("pmid" + base::itos(n),
+              "chunkname" + base::itos(n), 123456 + n, "", "", 0, "public_key",
+              STORE_ACCEPTED));
+    ASSERT_EQ(n + 1, poh_.PendingOperationsCount());
+  }
+  poh_.ClearPendingOperations();
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  for (unsigned int a = 0; a < cycles; ++a) {
+    ASSERT_EQ(0, poh_.AddPendingOperation("pmid" + base::itos(a),
+              "chunkname" + base::itos(a), 123456 + a, "iou", "", 0, "",
+              IOU_RECEIVED));
+    ASSERT_EQ(a + 1, poh_.PendingOperationsCount());
+  }
+  poh_.ClearPendingOperations();
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+}
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_AddInvalidPendingStores) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  ASSERT_EQ(0, poh_.AddPendingOperation("pmid", "chunkname", 123456, "", "",
+            0, "public_key", STORE_ACCEPTED));
+  ASSERT_EQ(1, poh_.PendingOperationsCount());
+  ASSERT_EQ(-1492, poh_.AddPendingOperation("pmid", "chunkname", 123456, "", "",
+            0, "public_key", STORE_ACCEPTED));
+  ASSERT_EQ(1, poh_.PendingOperationsCount());
+
+  ASSERT_EQ(0, poh_.AddPendingOperation("pmid", "chunkname", 123456, "iou", "",
+            0, "", IOU_RECEIVED));
+  ASSERT_EQ(2, poh_.PendingOperationsCount());
+  ASSERT_EQ(-1492, poh_.AddPendingOperation("pmid", "chunkname", 123456, "iou",
+            "", 0, "", IOU_RECEIVED));
+  ASSERT_EQ(2, poh_.PendingOperationsCount());
+}
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_FindPendingStores) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  // Add cycle
+  unsigned int cycles = 22;
+  for (unsigned int n = 0; n < cycles; ++n) {
+    ASSERT_EQ(0, poh_.AddPendingOperation("pmid" + base::itos(n),
+              "chunkname" + base::itos(n), 123456 + n, "", "", 0, "public_key",
+              STORE_ACCEPTED));
+    ASSERT_EQ(n + 1, poh_.PendingOperationsCount());
+  }
+
+  // Check size
+  for (unsigned int a = 0; a < cycles; ++a) {
+    ASSERT_EQ(0, poh_.FindOperation("pmid" + base::itos(a),
+              "chunkname" + base::itos(a), 123456 + a, "", "", STORE_ACCEPTED));
+  }
+}
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_AdvanceStatus) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  ASSERT_EQ(0, poh_.AddPendingOperation("pmid", "chunkname", 123456, "", "", 0,
+            "public_key", STORE_ACCEPTED));
+  ASSERT_EQ(0, poh_.AdvanceStatus("pmid", "chunkname", 123456, "", "", "",
+            STORE_DONE));
+  ASSERT_EQ(-1493, poh_.AdvanceStatus("pmid", "chunkname", 123456, "", "", "",
+            STORE_DONE));
+  ASSERT_EQ(0, poh_.AdvanceStatus("pmid", "chunkname", 123456, "", "", "",
+            AWAITING_IOU));
+  ASSERT_EQ(-1493, poh_.AdvanceStatus("pmid", "chunkname", 123456, "", "", "",
+            AWAITING_IOU));
+  ASSERT_EQ(0, poh_.AdvanceStatus("", "chunkname", 0, "", "", "",
+            IOU_READY));
+  ASSERT_EQ(-1493, poh_.AdvanceStatus("", "chunkname", 0, "", "", "",
+            IOU_READY));
+  ASSERT_EQ(1, poh_.PendingOperationsCount());
+
+  ASSERT_EQ(0, poh_.AddPendingOperation("pmid", "chunkname", 123456, "", "", 0,
+            "public_key", STORE_ACCEPTED));
+  ASSERT_EQ(2, poh_.PendingOperationsCount());
+}
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_GetSizeAndIOU) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  ASSERT_EQ(0, poh_.AddPendingOperation("pmid", "chunkname", 123456, "iou", "",
+                                        0, "", IOU_RECEIVED));
+
+  boost::uint64_t chunk_size = 0;
+  std::string iou;
+  ASSERT_EQ(0, poh_.GetSizeAndIOU("pmid", "chunkname", &chunk_size, &iou));
+  ASSERT_EQ(123456, chunk_size);
+  ASSERT_EQ("iou", iou);
+  ASSERT_EQ(1, poh_.PendingOperationsCount());
+
+  ASSERT_EQ(-1495, poh_.GetSizeAndIOU("pmid", "chunk", &chunk_size, &iou));
+  ASSERT_EQ(0, chunk_size);
+  ASSERT_EQ("", iou);
+  ASSERT_EQ(1, poh_.PendingOperationsCount());
+}
+
 /*
-TEST_F(PendingIOUContainerTest, BEH_VAULT_PendingIOUInit) {
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-  ASSERT_EQ(0, pih_.PrunableIOUsCount(0));
-}
 
-TEST_F(PendingIOUContainerTest, BEH_VAULT_AddPendingIOU) {
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-
-  // Add a pending store
-  ASSERT_EQ(0, pih_.AddPendingIOU("abc", 123456789, "maidsafe", 0));
-  ASSERT_EQ(1, pih_.PendingIOUsCount());
-  ASSERT_TRUE(pih_.IOUExists("abc", 123456789, "maidsafe"));
-}
-
-TEST_F(PendingIOUContainerTest, BEH_VAULT_AddInvalidPendingIOU) {
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-
-  // Add a pending store
-  std::string authority = base::RandomString(64);
-  ASSERT_EQ(-2700, pih_.AddPendingIOU("", 123456789, authority, 0));
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-  ASSERT_EQ(-2700, pih_.AddPendingIOU("abc", 123456789, "", 0));
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-  ASSERT_EQ(-2700, pih_.AddPendingIOU("abc", 0, authority, 0));
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-  ASSERT_EQ(-2700, pih_.AddPendingIOU("abc", 123456789, "lalalala", 0));
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-}
-
-TEST_F(PendingIOUContainerTest, BEH_VAULT_AddMultiplePendingStores) {
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-
-  // Add cycle
-  unsigned int cycles = 22;
-  std::string authority[22];
-  for (unsigned int n = 0; n < cycles; ++n)
-    authority[n] = base::RandomString(64);
-  boost::uint64_t chunk_size(1234567);
-  for (unsigned int a = 0; a < cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority[a], 0));
-  }
-  ASSERT_EQ(22, pih_.PendingIOUsCount());
-}
-
-
-TEST_F(PendingIOUContainerTest, BEH_VAULT_ClearPendingIOUs) {
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-  ASSERT_EQ(0, pih_.PrunableIOUsCount(0));
-
-  // Add cycle
-  unsigned int cycles = 22;
-  std::string authority[22];
-  for (unsigned int n = 0; n < cycles; ++n)
-    authority[n] = base::RandomString(64);
-  boost::uint64_t chunk_size(1234567);
-  for (unsigned int a = 0; a < cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority[a], 0));
-  }
-  ASSERT_EQ(22, pih_.PendingIOUsCount());
-
-  pih_.ClearPendingIOUs();
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-  ASSERT_EQ(0, pih_.PrunableIOUsCount(0));
-  ASSERT_FALSE(pih_.IOUExists("abc", chunk_size, authority[cycles - 1]));
-}
-
-TEST_F(PendingIOUContainerTest, BEH_VAULT_DeletePendingIOUs) {
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-
-  // Add cycle
-  unsigned int cycles = 5;
-  std::string authority = base::RandomString(64);
-  boost::uint64_t chunk_size(1234567);
-  for (unsigned int a = 0; a < cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, 0));
-  }
-  ASSERT_EQ(cycles, static_cast<unsigned int>(pih_.PendingIOUsCount()));
-  for (unsigned int a = 0; a < cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("def", chunk_size, authority, 0));
-  }
-  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PendingIOUsCount()));
-
-  ASSERT_EQ(0, pih_.DeletePendingIOU("abc", chunk_size, authority));
-  ASSERT_EQ((cycles * 2) - 1,
-      static_cast<unsigned int>(pih_.PendingIOUsCount()));
-  ASSERT_TRUE(pih_.IOUExists("abc", chunk_size, authority));
-
-  unsigned int y = cycles - 1;
-  while (0 == pih_.DeletePendingIOU("abc", chunk_size, authority))
-    --y;
-
-  ASSERT_EQ(static_cast<unsigned int>(0), y);
-  ASSERT_FALSE(pih_.IOUExists("abc", chunk_size, authority));
-  ASSERT_TRUE(pih_.IOUExists("def", chunk_size, authority));
-  ASSERT_EQ(cycles, static_cast<unsigned int>(pih_.PendingIOUsCount()));
-
-  y = cycles;
-  while (0 == pih_.DeletePendingIOU("def", chunk_size, authority))
-    --y;
-  ASSERT_FALSE(pih_.IOUExists("def", chunk_size, authority));
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-}
-
-TEST_F(PendingIOUContainerTest, BEH_VAULT_PrunableIOUCount) {
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
+TEST_F(PendingOperationContainerTest, BEH_VAULT_PrunableIOUCount) {
+  ASSERT_EQ(0, poh_.PendingIOUsCount());
 
   unsigned int cycles = 5;
   std::string authority = base::RandomString(64);
   boost::uint64_t chunk_size(1234567);
   for (unsigned int a = 0; a < 2 * cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, 1));
+    ASSERT_EQ(0, poh_.AddPendingIOU("abc", chunk_size, authority, 1));
   }
-  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PendingIOUsCount()));
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(poh_.PendingIOUsCount()));
   for (unsigned int a = 0; a < 3 * cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, 10));
+    ASSERT_EQ(0, poh_.AddPendingIOU("abc", chunk_size, authority, 10));
   }
-  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(pih_.PendingIOUsCount()));
+  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(poh_.PendingIOUsCount()));
 
-  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PrunableIOUsCount(5)));
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(poh_.PrunableIOUsCount(5)));
 
-  pih_.ClearPendingIOUs();
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-  ASSERT_EQ(0, pih_.PrunableIOUsCount(11));
+  poh_.ClearPendingIOUs();
+  ASSERT_EQ(0, poh_.PendingIOUsCount());
+  ASSERT_EQ(0, poh_.PrunableIOUsCount(11));
 
   boost::uint32_t now = base::get_epoch_time() - 86400;
   for (unsigned int a = 0; a < 2 * cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, now));
+    ASSERT_EQ(0, poh_.AddPendingIOU("abc", chunk_size, authority, now));
   }
-  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PendingIOUsCount()));
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(poh_.PendingIOUsCount()));
   for (unsigned int a = 0; a < 3 * cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, now + 10));
+    ASSERT_EQ(0, poh_.AddPendingIOU("abc", chunk_size, authority, now + 10));
   }
-  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(pih_.PendingIOUsCount()));
+  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(poh_.PendingIOUsCount()));
   printf("Before 5 sec sleep.\n");
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   printf("After 5 sec sleep.\n");
 
-  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PrunableIOUsCount(0)));
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(poh_.PrunableIOUsCount(0)));
 }
 
-TEST_F(PendingIOUContainerTest, BEH_VAULT_DeletePrunableIOUs) {
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
+TEST_F(PendingOperationContainerTest, BEH_VAULT_DeletePrunableIOUs) {
+  ASSERT_EQ(0, poh_.PendingIOUsCount());
 
   unsigned int cycles = 5;
   std::string authority = base::RandomString(64);
   boost::uint64_t chunk_size(1234567);
   for (unsigned int a = 0; a < 2 * cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, 1));
+    ASSERT_EQ(0, poh_.AddPendingIOU("abc", chunk_size, authority, 1));
   }
-  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PendingIOUsCount()));
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(poh_.PendingIOUsCount()));
   for (unsigned int a = 0; a < 3 * cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, 10));
+    ASSERT_EQ(0, poh_.AddPendingIOU("abc", chunk_size, authority, 10));
   }
-  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(pih_.PendingIOUsCount()));
+  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(poh_.PendingIOUsCount()));
 
-  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PrunableIOUsCount(5)));
-  ASSERT_EQ(0, pih_.PrunePendingIOUs(5));
-  ASSERT_EQ(0, pih_.PrunableIOUsCount(5));
-  ASSERT_EQ(cycles * 3, static_cast<unsigned int>(pih_.PendingIOUsCount()));
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(poh_.PrunableIOUsCount(5)));
+  ASSERT_EQ(0, poh_.PrunePendingIOUs(5));
+  ASSERT_EQ(0, poh_.PrunableIOUsCount(5));
+  ASSERT_EQ(cycles * 3, static_cast<unsigned int>(poh_.PendingIOUsCount()));
 
-  pih_.ClearPendingIOUs();
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-  ASSERT_EQ(0, pih_.PrunableIOUsCount(11));
+  poh_.ClearPendingIOUs();
+  ASSERT_EQ(0, poh_.PendingIOUsCount());
+  ASSERT_EQ(0, poh_.PrunableIOUsCount(11));
 
   boost::uint32_t now = base::get_epoch_time() - 86400;
   for (unsigned int a = 0; a < 2 * cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, now));
+    ASSERT_EQ(0, poh_.AddPendingIOU("abc", chunk_size, authority, now));
   }
-  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PendingIOUsCount()));
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(poh_.PendingIOUsCount()));
   for (unsigned int a = 0; a < 3 * cycles; ++a) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc", chunk_size, authority, now + 10));
+    ASSERT_EQ(0, poh_.AddPendingIOU("abc", chunk_size, authority, now + 10));
   }
-  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(pih_.PendingIOUsCount()));
+  ASSERT_EQ(cycles * 5, static_cast<unsigned int>(poh_.PendingIOUsCount()));
   printf("Before 5 sec sleep.\n");
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   printf("After 5 sec sleep.\n");
 
-  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(pih_.PrunableIOUsCount(0)));
-  ASSERT_EQ(0, pih_.PrunePendingIOUs(0));
-  ASSERT_EQ(0, pih_.PrunableIOUsCount(0));
-  ASSERT_EQ(cycles * 3, static_cast<unsigned int>(pih_.PendingIOUsCount()));
-  while (pih_.PrunableIOUsCount(0) == 0)
+  ASSERT_EQ(cycles * 2, static_cast<unsigned int>(poh_.PrunableIOUsCount(0)));
+  ASSERT_EQ(0, poh_.PrunePendingIOUs(0));
+  ASSERT_EQ(0, poh_.PrunableIOUsCount(0));
+  ASSERT_EQ(cycles * 3, static_cast<unsigned int>(poh_.PendingIOUsCount()));
+  while (poh_.PrunableIOUsCount(0) == 0)
     boost::this_thread::sleep(boost::posix_time::seconds(1));
 
-  ASSERT_EQ(cycles * 3, static_cast<unsigned int>(pih_.PrunableIOUsCount(0)));
-  ASSERT_EQ(0, pih_.PrunePendingIOUs(0));
-  ASSERT_EQ(0, pih_.PrunableIOUsCount(0));
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-}
-
-TEST_F(PendingIOUContainerTest, BEH_VAULT_FindIOUs) {
-  ASSERT_EQ(0, pih_.PendingIOUsCount());
-
-  unsigned int cycles = 10;
-  std::string authority(63, 'N');
-  boost::uint64_t chunk_size(1234567);
-  for (unsigned int n = 0; n < cycles; ++n) {
-    ASSERT_EQ(0, pih_.AddPendingIOU("abc" + base::itos(n), chunk_size + n,
-              authority + base::itos(n), n));
-  }
-  ASSERT_EQ(cycles, static_cast<unsigned int>(pih_.PendingIOUsCount()));
-  for (unsigned int a = 0; a < cycles; ++a) {
-    ASSERT_EQ(authority + base::itos(a), pih_.GetIOU("abc" + base::itos(a),
-              chunk_size + a));
-  }
-  ASSERT_EQ("", pih_.GetIOU("abcd", chunk_size + 22));
-  ASSERT_EQ(cycles, static_cast<unsigned int>(pih_.PendingIOUsCount()));
+  ASSERT_EQ(cycles * 3, static_cast<unsigned int>(poh_.PrunableIOUsCount(0)));
+  ASSERT_EQ(0, poh_.PrunePendingIOUs(0));
+  ASSERT_EQ(0, poh_.PrunableIOUsCount(0));
+  ASSERT_EQ(0, poh_.PendingIOUsCount());
 }
 */
+
+}  // namespace maidsafe_vault

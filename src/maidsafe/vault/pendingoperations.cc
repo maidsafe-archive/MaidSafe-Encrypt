@@ -115,11 +115,31 @@ int PendingOperationsHandler::FindOperation(const std::string &pmid,
     const std::string &iou, const std::string &rank_authority,
     const vault_operation_status &status) {
   boost::mutex::scoped_lock loch(multi_index_mutex_);
-  if (AnalyseParameters(pmid, chunkname, chunk_size, iou,
-      rank_authority, "", status) < 0) {
+  if (pmid.empty() || chunkname.empty() || chunk_size == 0) {
 #ifdef DEBUG
-    printf("PendingOperationsHandler::AddPendingOperation: Parameter incorrect "
-           "for this status (%d).\n", status);
+    printf("PendingOperationsHandler::FindOperation: Parameter incorrect "
+           "for this search (%d).\n", status);
+#endif
+    return -1494;
+  }
+
+  // Need to add indexes for these two in the mult index
+  if (iou != "" || rank_authority != "")
+    return -1494;
+
+  std::pair<pending_operation_set::iterator, pending_operation_set::iterator> p;
+  p = pending_ops_.equal_range(boost::make_tuple(status, chunkname,
+                               pmid, chunk_size));
+  if (p.first == p.second) {
+#ifdef DEBUG
+    printf("Pending operation not found (%s).\n", chunkname.c_str());
+#endif
+    return -1494;
+  }
+  p.first++;
+  if (p.first != p.second) {
+#ifdef DEBUG
+    printf("More than one found (%s).\n", chunkname.c_str());
 #endif
     return -1494;
   }
@@ -130,6 +150,8 @@ int PendingOperationsHandler::GetSizeAndIOU(const std::string &pmid,
                                             const std::string &chunkname,
                                             boost::uint64_t *chunk_size,
                                             std::string *iou) {
+  *chunk_size = 0;
+  *iou = "";
   std::pair<pending_operation_set::iterator, pending_operation_set::iterator> p;
   p = pending_ops_.equal_range(boost::make_tuple(IOU_RECEIVED, chunkname,
                                pmid));
@@ -143,7 +165,6 @@ int PendingOperationsHandler::GetSizeAndIOU(const std::string &pmid,
   *iou = (*p.first).iou_;
   return 0;
 }
-
 
 int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
     const std::string &chunkname, const boost::uint64_t &chunk_size,
@@ -174,7 +195,7 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       }
       break;
     case IOU_RANK_RETREIVED:
-      if (iou.empty() || rank_authority.empty()) {
+      if (chunkname.empty() || iou.empty() || rank_authority.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s)\n", iou.c_str(),
                rank_authority.c_str());

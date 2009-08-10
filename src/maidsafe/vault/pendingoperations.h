@@ -30,6 +30,7 @@
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <gtest/gtest_prod.h>
 #include <maidsafe/contact_info.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 
@@ -159,6 +160,7 @@ class PendingOperationsHandler {
 //  int PrunePendingIOUs(const boost::uint32_t &margin);
 //  int PrunableIOUsCount(const boost::uint32_t &margin);
  private:
+  FRIEND_TEST(PendingOperationContainerTest, BEH_VAULT_ParameterAnalysis);
   int AnalyseParameters(const std::string &pmid,
                         const std::string &chunkname,
                         const boost::uint64_t &chunk_size,
