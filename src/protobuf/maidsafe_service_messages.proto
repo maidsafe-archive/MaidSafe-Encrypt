@@ -1,22 +1,26 @@
 // Maidsafe rpc arguments and responses
 // data_type is defined in  maidsafe/maidsafe.h as the enum value_types
+// In comments throughout, where a client is requesting a store to a vault, the
+// requester provides the pmid of (one of) his vault(s) - known as "client's
+// PMID" and the recipient's is know as "vault's PMID".
 
 package maidsafe;
 
 message IOUAuthority {
   required uint64 data_size = 1;
-  required bytes pmid = 2;
+  required bytes pmid = 2;  // client's PMID
 };
 
 message IOU {
-  required bytes signed_iou_authority = 1;
-  required bytes signature = 2;
+  required bytes signed_iou_authority = 1;  // serialised IOUAuthority, signed
+                                            // by vault's PMID
+  required bytes signature = 2;  // signed_iou_authority signed by client's PMID
 }
 
 message StorePrepRequest {
   required bytes chunkname = 1;
   required uint64 data_size = 2;
-  required bytes pmid = 3;
+  required bytes pmid = 3;  // client's PMID
   required bytes public_key = 4;
   required bytes signed_public_key = 5;
   required bytes signed_request = 6;
@@ -24,15 +28,16 @@ message StorePrepRequest {
 
 message StorePrepResponse {
   required uint32 result = 1;
-  optional bytes pmid_id = 2;
-  optional bytes iou_authority = 3;  // ie, serialised IOUAuthority
-  optional bytes signed_iou_authority = 4; // ie, signed serialised IOUAuthority
+  optional bytes pmid_id = 2;  // vault's PMID
+  optional bytes iou_authority = 3;  // serialised IOUAuthority
+  optional bytes signed_iou_authority = 4;  // serialised IOUAuthority, signed
+                                            // by vault's PMID
 };
 
 message StoreRequest {
   required bytes chunkname = 1;
   required bytes data = 2;
-  required bytes pmid = 3;
+  required bytes pmid = 3;  // client's PMID
   required bytes public_key = 4;
   required bytes signed_public_key = 5;
   required bytes signed_request = 6;
@@ -43,15 +48,15 @@ message StoreRequest {
 
 message StoreResponse {
   required uint32 result = 1;
-  optional bytes pmid_id = 2;
+  optional bytes pmid_id = 2;  // vault's PMID
 };
 
 message StoreIOURequest {
   required bytes chunkname = 1;
   required uint64 data_size = 2;
-  required bytes collector_pmid = 3;
-  required bytes iou = 4;  // id est, serialised IOU message
-  required bytes own_pmid = 5;
+  required bytes collector_pmid = 3;  // vault's PMID
+  required bytes iou = 4;  // serialised IOU
+  required bytes own_pmid = 5;  // client's PMID
   required bytes public_key = 6;
   required bytes signed_public_key = 7;
   required bytes signed_request = 8;
@@ -59,7 +64,7 @@ message StoreIOURequest {
 
 message StoreIOUResponse {
   required uint32 result = 1;
-  optional bytes pmid_id = 2;
+  optional bytes pmid_id = 2;  // ref-holder's PMID
 };
 
 message IOUDoneRequest {
@@ -71,18 +76,18 @@ message IOUDoneRequest {
 
 message IOUDoneResponse {
   required uint32 result = 1;
-  optional bytes pmid_id = 2;
+  optional bytes pmid_id = 2;  // vault's PMID
 };
 
 message RankAuthority {
   required bytes chunkname = 1;
   required uint64 data_size = 2;
-  required bytes pmid = 3;
+  required bytes pmid = 3;  // vault's PMID
 };
 
 message StoreReferenceRequest {
   required bytes chunkname = 1;
-  required bytes pmid = 2;
+  required bytes pmid = 2;  // vault's PMID
   required bytes public_key = 3;
   required bytes signed_public_key = 4;
   required bytes signed_request = 5;
@@ -90,10 +95,11 @@ message StoreReferenceRequest {
 
 message StoreReferenceResponse {
   required uint32 result = 1;
-  optional bytes rank_authority = 2; // ie, serialised RankAuthority
-  optional bytes signed_rank_authority = 3; // ie, signed serialised RankAuthority
-  optional bytes iou = 4;
-  optional bytes pmid_id = 5;
+  optional bytes rank_authority = 2;  // serialised RankAuthority
+  optional bytes signed_rank_authority = 3;  // rank_authority signed by
+                                             // ref-holder's PMID
+  optional bytes iou = 4;  // serialised IOU
+  optional bytes pmid_id = 5;  // ref-holder's PMID
 };
 
 message DeleteRequest {
@@ -105,7 +111,7 @@ message DeleteRequest {
 };
 
 message DeleteResponse {
-  required bytes result = 1;
+  required uint32 result = 1;
   optional bytes pmid_id = 2;
 };
 
@@ -114,7 +120,7 @@ message GetRequest {
 };
 
 message GetResponse {
-  required bytes result = 1;
+  required uint32 result = 1;
   optional bytes content = 2;
   optional bytes pmid_id = 3;
 };
@@ -124,7 +130,7 @@ message CheckChunkRequest {
 };
 
 message CheckChunkResponse {
-  required bytes result = 1;
+  required uint32 result = 1;
   required bytes pmid_id = 2;
 };
 
@@ -134,7 +140,7 @@ message ValidityCheckRequest {
 };
 
 message ValidityCheckResponse {
-  required bytes result = 1;
+  required uint32 result = 1;
   optional bytes hash_content = 2;
   required bytes pmid_id = 3;
 };
@@ -149,7 +155,7 @@ message UpdateRequest {
 };
 
 message UpdateResponse {
-  required bytes result = 1;
+  required uint32 result = 1;
   optional bytes pmid_id = 2;
 };
 
@@ -160,7 +166,7 @@ message GetMessagesRequest {
 };
 
 message GetMessagesResponse {
-  required bytes result = 1;
+  required uint32 result = 1;
   repeated bytes messages = 2;
   optional bytes pmid_id = 3;
 };
@@ -175,7 +181,7 @@ message SwapChunkRequest {
 
 message SwapChunkResponse {
   required int32 request_type = 1;
-  required bytes result = 2;
+  required uint32 result = 2;
   optional bytes chunkname1 = 3;
   optional bytes chunkcontent1 = 4;
   optional int32 size1 = 5;

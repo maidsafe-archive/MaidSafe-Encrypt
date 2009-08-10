@@ -35,7 +35,7 @@
 #include "maidsafe/client/sehandler.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/maidsafe.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -137,9 +137,9 @@ class TestSEHandler : public testing::Test {
     cb.Reset();
     sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_seh(cb, rec_mutex);
-    base::GeneralResponse result;
+    GenericResponse result;
     if ((!result.ParseFromString(cb.result)) ||
-        (result.result() == kCallbackFailure)) {
+        (result.result() == kNack)) {
       FAIL();
       return;
     }
@@ -322,9 +322,9 @@ TEST_F(TestSEHandler, FUNC_MAID_EncryptFile) {
       &FakeCallback::CallbackFunc, &cb, _1));
     boost::this_thread::sleep(boost::posix_time::seconds(1));
     wait_for_result_seh(cb, rec_mutex);
-    base::GeneralResponse result;
+    GenericResponse result;
     ASSERT_TRUE(result.ParseFromString(cb.result));
-    ASSERT_EQ(kCallbackFailure, result.result());
+    ASSERT_EQ(kNack, result.result());
     cb.Reset();
   }
   sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));

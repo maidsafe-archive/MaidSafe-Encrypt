@@ -27,6 +27,7 @@
 
 #include <boost/tuple/tuple.hpp>
 #include <maidsafe/crypto.h>
+#include <maidsafe/maidsafe-dht_config.h>
 
 #include <queue>
 #include <string>
@@ -54,6 +55,14 @@ class CallbackObj {
     boost::mutex::scoped_lock lock(mutex_);
     return result_;
   }
+  //  Block until callback happens or timeout (milliseconds) passes.
+  void WaitForCallback(const int &timeout) {
+    int count = 0;
+    while (!called() && count < timeout) {
+      count +=10;
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    }
+  }
  private:
   boost::mutex mutex_;
   bool called_;
@@ -65,6 +74,7 @@ typedef boost::tuple<std::string, DirType, std::string> StoreTuple;
 typedef std::queue<StoreTuple>StoreQueue;
 
 class ChunkStore;
+class SessionSingleton;
 
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
@@ -135,29 +145,44 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Function run in main store thread which spawns up to kMaxStoreThreads
   // child threads.  Always leaves room for at least one priority store thread.
   void StoreThread();
+  void AddToPriorityStoreQueue(const StoreTuple &store_tuple);
+  void AddToNormalStoreQueue(const StoreTuple &store_tuple);
+  // Store an individual chunk onto the network
+  void SendChunk(StoreTuple store_tuple);
+  // Set up the requests needed to perform the store RPCs
+  int GetStoreRequests(const StoreTuple &store_tuple,
+                       StorePrepRequest *store_prep_request,
+                       StoreRequest *store_request);
+  // Get the public key, signed public key, and signed request for a chunk
   void GetSignedPubKeyAndRequest(const std::string &non_hex_name,
                                  const DirType dir_type,
                                  const std::string &msid,
                                  std::string *pubkey,
                                  std::string *signed_pubkey,
                                  std::string *signed_request);
-  void AddToPriorityStoreQueue(const StoreTuple &store_tuple);
-  void AddToNormalStoreQueue(const StoreTuple &store_tuple);
-  // Store an individual chunk onto the network
-  void SendChunk(const StoreTuple &store_tuple);
-  // Set up the values needed to perform the store RPCs
-  int PrepareToStore(const StoreTuple &store_tuple,
-                     std::string *chunk_name,
-                     DirType *dir_type,
-                     std::string *msid,
-                     std::string *chunk_content,
-                     std::string *public_key,
-                     std::string *signed_public_key,
-                     std::string *signed_request);
+  // Get a new contact from the routing table to try and store a chunk on.  The
+  // closest to the ideal_rtt will be chosen from those not in the vector to
+  // exclude.  If the ideal_rtt is -1.0, then the contact with the highest rtt
+  // will be chosen.
+  int GetStorePeer(const float &ideal_rtt,
+                   const std::vector<kad::Contact> &exclude,
+                   kad::Contact *new_peer,
+                   bool *local);
+  // Send the "preparation to store" message and wait until called back
+  int SendPrep(const kad::Contact &peer,
+               bool local,
+               StorePrepRequest *store_prep_request);
+  void SendPrepCallback(bool *send_prep_returned, boost::mutex *mutex);
+  int SendContent(const kad::Contact &peer,
+                  bool local,
+                  boost::uint64_t &data_size,
+                  StoreRequest *store_request);
+  void SendContentCallback(bool *send_content_returned, boost::mutex *mutex);
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
   ClientRpcs client_rpcs_;
   PDClient *pdclient_;
+  SessionSingleton *ss_;
   crypto::Crypto co_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   boost::thread main_store_thread_;

@@ -31,56 +31,40 @@ namespace maidsafe {
 ClientRpcs::ClientRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
     channel_manager) : channel_manager_(channel_manager) {}
 
-void ClientRpcs::StorePrep(const std::string &chunkname,
-                           const boost::uint64_t &data_size,
-                           const std::string &pmid,
-                           const std::string &public_key,
-                           const std::string &signed_public_key,
-                           const std::string &signed_request,
-                           const std::string &remote_ip,
-                           const boost::uint16_t &remote_port,
-                           const std::string &rendezvous_ip,
-                           const boost::uint16_t &rendezvous_port,
+void ClientRpcs::StorePrep(const kad::Contact &peer,
+                           bool local,
+                           StorePrepRequest *store_prep_request,
                            StorePrepResponse *response,
                            rpcprotocol::Controller *controller,
                            google::protobuf::Closure *done) {
-  StorePrepRequest args;
-  args.set_chunkname(chunkname);
-  args.set_data_size(data_size);
-  args.set_pmid(pmid);
-  args.set_public_key(public_key);
-  args.set_signed_public_key(signed_public_key);
-  args.set_signed_request(signed_request);
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      rendezvous_ip, rendezvous_port);
+  std::string ip = peer.host_ip();
+  boost::uint16_t port = peer.host_port();
+  if (local) {
+    ip = peer.local_ip();
+    port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_.get(), ip, port,
+      peer.rendezvous_ip(), peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.StoreChunkPrep(controller, &args, response, done);
+  service.StoreChunkPrep(controller, store_prep_request, response, done);
 }
 
-void ClientRpcs::Store(const std::string &chunkname,
-                       const std::string &data,
-                       const std::string &public_key,
-                       const std::string &signed_public_key,
-                       const std::string &signed_request,
-                       const ValueType &data_type,
-                       const std::string &remote_ip,
-                       const boost::uint16_t &remote_port,
-                       const std::string &rendezvous_ip,
-                       const boost::uint16_t &rendezvous_port,
+void ClientRpcs::Store(const kad::Contact &peer,
+                       bool local,
+                       StoreRequest *store_request,
                        StoreResponse *response,
                        rpcprotocol::Controller *controller,
                        google::protobuf::Closure *done) {
-  StoreRequest args;
-  args.set_chunkname(chunkname);
-  args.set_data(data);
-  args.set_public_key(public_key);
-  args.set_signed_public_key(signed_public_key);
-  args.set_signed_request(signed_request);
-  args.set_data_type(data_type);
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      rendezvous_ip, rendezvous_port);
+  std::string ip = peer.host_ip();
+  boost::uint16_t port = peer.host_port();
+  if (local) {
+    ip = peer.local_ip();
+    port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_.get(), ip, port,
+      peer.rendezvous_ip(), peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.StoreChunk(controller, &args, response, done);
+  service.StoreChunk(controller, store_request, response, done);
 }
 
 void ClientRpcs::CheckChunk(const std::string &chunkname,

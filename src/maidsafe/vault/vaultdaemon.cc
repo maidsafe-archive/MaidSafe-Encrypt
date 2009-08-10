@@ -23,7 +23,7 @@
 
 #include "fs/filesystem.h"
 #include "maidsafe/vault/pdvault.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -81,7 +81,7 @@ void VaultDaemon::TakeOwnership() {
     if (file_ != "") {
       std::ifstream input_(file_.string().c_str(),
                            std::ios::in | std::ios::binary);
-      base::VaultConfig vault_config_;
+      maidsafe::VaultConfig vault_config_;
       if (!vault_config_.ParseFromIstream(&input_)) {
         WriteToLog("Failed to parse configuration file.\n");
         return;

@@ -26,13 +26,15 @@
 
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <maidsafe/general_messages.pb.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/privateshares.h"
-#include "protobuf/general_messages.pb.h"
+#include "maidsafe/client/sessionsingleton.h"
+#include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 namespace fs = boost::filesystem;
@@ -44,6 +46,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       knode_(new kad::KNode(channel_manager_, kad::CLIENT)),
       client_rpcs_(channel_manager_),
       pdclient_(),
+      ss_(SessionSingleton::getInstance()),
       co_(),
       client_chunkstore_(cstore),
       main_store_thread_(),
@@ -85,7 +88,25 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
 #ifdef DEBUG
   printf("\tIn MaidsafeStoreManager::Init, before Join.\n");
 #endif
-  knode_->Join("", kadconfig_str, cb, false);
+  CallbackObj kad_cb_obj;
+  knode_->Join("", kadconfig_str, boost::bind(&CallbackObj::CallbackFunc,
+      &kad_cb_obj, _1), false);
+  kad_cb_obj.WaitForCallback(60000);
+  base::GeneralResponse kad_response;
+  GenericResponse maid_response;
+  std::string kad_result = kad_cb_obj.result();
+  std::string maid_result;
+  if (!kad_response.ParseFromString(kad_result) ||
+      kad_response.result() != kad::kRpcResultSuccess) {
+    maid_response.set_result(kNack);
+    maid_response.SerializeToString(&maid_result);
+    cb(maid_result);
+    return;
+  } else {
+    maid_response.set_result(kAck);
+    maid_response.SerializeToString(&maid_result);
+    cb(maid_result);
+  }
 #ifdef DEBUG
   printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
 #endif
@@ -109,8 +130,8 @@ void MaidsafeStoreManager::Close(base::callback_func_type cb) {
 #endif
   // Try again to kill the main storing thread in case it failed earlier.
   StopStoring();
-  base::GeneralResponse result_msg;
-  result_msg.set_result(kCallbackSuccess);
+  GenericResponse result_msg;
+  result_msg.set_result(kAck);
   std::string result;
   result_msg.SerializeToString(&result);
   cb(result);
@@ -214,17 +235,17 @@ void MaidsafeStoreManager::LoadChunk_Callback(const std::string &result,
 #ifdef DEBUG
     printf("Load chunk callback doesn't parse.\n");
 #endif
-    result_msg.set_result(kCallbackFailure);
+    result_msg.set_result(kNack);
   } else {
     if (result_msg.has_content()) {
       result_msg.clear_result();
-      result_msg.set_result(kCallbackSuccess);
+      result_msg.set_result(kAck);
     } else {
 #ifdef DEBUG
       printf("Load chunk callback came back with no content.\n");
 #endif
       result_msg.clear_result();
-      result_msg.set_result(kCallbackFailure);
+      result_msg.set_result(kNack);
     }
   }
   std::string ser_result;
@@ -237,14 +258,14 @@ void MaidsafeStoreManager::SimpleResult_Callback(const std::string &result,
 #ifdef DEBUG
   printf("Inside MaidsafeStoreManager::SimpleResult_Callback\n");
 #endif
-  base::GeneralResponse result_msg;
+  GenericResponse result_msg;
   if ((!result_msg.ParseFromString(result))||
-      (result_msg.result() != kCallbackSuccess)) {
+      (result_msg.result() != kAck)) {
     result_msg.clear_result();
-    result_msg.set_result(kCallbackFailure);
+    result_msg.set_result(kNack);
   } else {
     result_msg.clear_result();
-    result_msg.set_result(kCallbackSuccess);
+    result_msg.set_result(kAck);
   }
   std::string ser_result;
   result_msg.SerializeToString(&ser_result);
@@ -254,26 +275,26 @@ void MaidsafeStoreManager::SimpleResult_Callback(const std::string &result,
 void MaidsafeStoreManager::IsKeyUnique_Callback(const std::string &result,
   base::callback_func_type cb) {
   kad::FindResponse result_msg;
-  base::GeneralResponse local_result;
+  GenericResponse local_result;
   std::string ser_result;
   if (!result_msg.ParseFromString(result)) {
-    local_result.set_result(kCallbackSuccess);
+    local_result.set_result(kAck);
     local_result.SerializeToString(&ser_result);
     cb(ser_result);
     return;
   }
 
-  if (result_msg.result() == kad::kRpcResultFailure) {
-    local_result.set_result(kCallbackSuccess);
+  if (result_msg.result() == kad::kRpcResultSuccess) {
+    local_result.set_result(kAck);
     local_result.SerializeToString(&ser_result);
     cb(ser_result);
     return;
   }
 
   if (result_msg.values_size() == 0) {
-    local_result.set_result(kCallbackSuccess);
+    local_result.set_result(kAck);
   } else {
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
   }
   local_result.SerializeToString(&ser_result);
   cb(ser_result);
@@ -283,11 +304,11 @@ void MaidsafeStoreManager::GetMsgs_Callback(const std::string &result,
   base::callback_func_type cb) {
   GetMessagesResponse result_msg;
   if ((!result_msg.ParseFromString(result))||
-      (result_msg.result() != kCallbackSuccess)) {
-    result_msg.set_result(kCallbackFailure);
+      (result_msg.result() != kAck)) {
+    result_msg.set_result(kNack);
   } else {
     result_msg.clear_result();
-    result_msg.set_result(kCallbackSuccess);
+    result_msg.set_result(kAck);
   }
   std::string ser_result;
   result_msg.SerializeToString(&ser_result);
@@ -300,13 +321,13 @@ void MaidsafeStoreManager::StoreChunk_Callback(const std::string &result,
   if (update) {
     UpdateResponse result_msg;
     if (!result_msg.ParseFromString(result)) {
-      result_msg.set_result(kCallbackFailure);
-    } else if (result_msg.result() == kCallbackSuccess) {
+      result_msg.set_result(kNack);
+    } else if (result_msg.result() == kAck) {
       result_msg.clear_result();
-      result_msg.set_result(kCallbackSuccess);
+      result_msg.set_result(kAck);
     } else {
       result_msg.clear_result();
-      result_msg.set_result(kCallbackFailure);
+      result_msg.set_result(kNack);
     }
     result_msg.SerializeToString(&ser_result);
     cb(result);
@@ -330,14 +351,14 @@ void MaidsafeStoreManager::DeleteChunk_Callback(const std::string &result,
   base::callback_func_type cb) {
   DeleteResponse result_msg;
   if (!result_msg.ParseFromString(result)) {
-    result_msg.set_result(kCallbackFailure);
+    result_msg.set_result(kNack);
   } else {
-    if (result_msg.result() == kCallbackSuccess) {
+    if (result_msg.result() == kAck) {
       result_msg.clear_result();
-      result_msg.set_result(kCallbackSuccess);
+      result_msg.set_result(kAck);
     } else {
       result_msg.clear_result();
-      result_msg.set_result(kCallbackFailure);
+      result_msg.set_result(kNack);
     }
   }
   std::string ser_result;
@@ -418,6 +439,126 @@ void MaidsafeStoreManager::StoreThread() {
   }
 }
 
+void MaidsafeStoreManager::AddToPriorityStoreQueue(
+    const StoreTuple &store_tuple) {
+  boost::mutex::scoped_lock lock(ps_queue_mutex_);
+  priority_store_queue_.push(store_tuple);
+}
+
+void MaidsafeStoreManager::AddToNormalStoreQueue(
+    const StoreTuple &store_tuple) {
+  boost::mutex::scoped_lock lock(ns_queue_mutex_);
+  normal_store_queue_.push(store_tuple);
+}
+
+void MaidsafeStoreManager::SendChunk(StoreTuple store_tuple) {
+#ifdef DEBUG
+  printf("In MaidsafeStoreManager::SendChunk\n");
+#endif
+  boost::this_thread::at_thread_exit(boost::bind(&ThreadPool::DeleteThread,
+      &store_thread_pool_, boost::this_thread::get_id()));
+  int duplicate_count = 0;
+  float largest_rtt = -1;  // set to -1 so that first store is to furthest peer
+  std::vector<kad::Contact> exclude;
+  StorePrepRequest store_prep_request;
+  StoreRequest store_request;
+  if (GetStoreRequests(store_tuple, &store_prep_request, &store_request) != 0)
+    return;
+  boost::uint64_t data_size = store_prep_request.data_size();
+  while (duplicate_count < kMinChunkCopies) {
+    printf("dup count: %i\tmin copies: %i\n", duplicate_count, kMinChunkCopies);
+    kad::Contact peer;
+    bool local;
+    printf("largest: %f\t", largest_rtt);
+    float ideal_rtt = largest_rtt * (1 - (duplicate_count/kMinChunkCopies));
+    printf("ideal: %f\n", ideal_rtt);
+    if (GetStorePeer(ideal_rtt, exclude, &peer, &local) != 0)
+      break;  // try another peer
+    else
+      exclude.push_back(peer);  // whether we succeed in storing or not, we'll
+                                // not be trying this peer again
+    if (!duplicate_count)
+//      largest_rtt = peer.rtt();
+// TODO(Fraser#5#): 2009-08-09 - get rtt properly
+      largest_rtt = 1.0;
+//    StorePrepRequest store_prep_request = store_prep_req;
+    if (SendPrep(peer, local, &store_prep_request) != 0)
+      break;  // try another peer
+    int failed_attempt_count = 0;
+    while (failed_attempt_count < kMaxChunkStoreTries) {
+//      StoreRequest store_request = store_req;
+      if (SendContent(peer, local, data_size, &store_request) == 0) {
+        printf("In MSM::SendChunk - success storing.\n");
+        break;  // succeeded in storing to this peer
+      } else {
+        ++failed_attempt_count;
+        printf("In MSM::SendChunk - failed storing.\n");
+      }
+    }
+    printf("Fails: %i\tMax Tries: %i\n", failed_attempt_count,
+           kMaxChunkStoreTries);
+    if (failed_attempt_count < kMaxChunkStoreTries)
+      ++duplicate_count;
+    if (!duplicate_count)  // if this is failed 1st duplicate, reset largest rtt
+      largest_rtt = -1;
+  }
+}
+
+int MaidsafeStoreManager::GetStoreRequests(const StoreTuple &store_tuple,
+                                           StorePrepRequest *store_prep_request,
+                                           StoreRequest *store_request) {
+  std::string chunk_name = store_tuple.get<0>();
+  DirType dir_type = store_tuple.get<1>();
+  ValueType data_type = DATA;
+  if (dir_type == ANONYMOUS)
+    data_type = PDDIR_NOTSIGNED;
+  std::string msid = store_tuple.get<2>();
+  ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
+  fs::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
+                                                       false));
+  if (chunk_path == fs::path(""))
+    return -1;
+  std::string chunk_content("");
+  uint64_t chunk_size(0);
+  try {
+    chunk_size = fs::file_size(chunk_path);
+    boost::scoped_ptr<char>
+        temp(new char[static_cast<unsigned int>(chunk_size)]);
+    fs::ifstream fstr;
+    fstr.open(chunk_path, std::ios_base::binary);
+    fstr.read(temp.get(), static_cast<std::streamsize>(chunk_size));
+    fstr.close();
+    chunk_content = std::string(static_cast<const char*>(temp.get()),
+                                static_cast<boost::uint64_t>(chunk_size));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return -2;
+  }
+  std::string public_key(""), signed_public_key(""), signed_request("");
+  GetSignedPubKeyAndRequest(chunk_name, dir_type, msid, &public_key,
+                            &signed_public_key, &signed_request);
+  if (public_key == "" || signed_public_key == "" || signed_request == "")
+    return -3;
+  std::string pmid = ss_->Id(PMID);
+  store_prep_request->set_chunkname(chunk_name);
+  store_prep_request->set_data_size(chunk_size);
+  store_prep_request->set_pmid(pmid);
+  store_prep_request->set_public_key(public_key);
+  store_prep_request->set_signed_public_key(signed_public_key);
+  store_prep_request->set_signed_request(signed_request);
+  store_request->set_chunkname(chunk_name);
+  store_request->set_data(chunk_content);
+  store_request->set_pmid(pmid);
+  store_request->set_public_key(public_key);
+  store_request->set_signed_public_key(signed_public_key);
+  store_request->set_signed_request(signed_request);
+  store_request->set_data_type(data_type);
+  return 0;
+}
+
 void MaidsafeStoreManager::GetSignedPubKeyAndRequest(
     const std::string &non_hex_name,
     const DirType dir_type,
@@ -425,7 +566,6 @@ void MaidsafeStoreManager::GetSignedPubKeyAndRequest(
     std::string *pubkey,
     std::string *signed_pubkey,
     std::string *signed_request) {
-  SessionSingleton *ss_ = SessionSingleton::getInstance();
   switch (dir_type) {
     case PRIVATE_SHARE: {
 #ifdef DEBUG
@@ -477,80 +617,100 @@ void MaidsafeStoreManager::GetSignedPubKeyAndRequest(
   }
 }
 
-void MaidsafeStoreManager::AddToPriorityStoreQueue(
-    const StoreTuple &store_tuple) {
-  boost::mutex::scoped_lock lock(ps_queue_mutex_);
-  priority_store_queue_.push(store_tuple);
-}
-
-void MaidsafeStoreManager::AddToNormalStoreQueue(
-    const StoreTuple &store_tuple) {
-  boost::mutex::scoped_lock lock(ns_queue_mutex_);
-  normal_store_queue_.push(store_tuple);
-}
-
-void MaidsafeStoreManager::SendChunk(const StoreTuple &store_tuple) {
-#ifdef DEBUG
-  printf("In MaidsafeStoreManager::SendChunk\n");
-#endif
-  boost::this_thread::at_thread_exit(boost::bind(&ThreadPool::DeleteThread,
-      &store_thread_pool_, boost::this_thread::get_id()));
-  std::string chunk_name(""), msid(""), chunk_content("");
-  std::string public_key(""), signed_public_key(""), signed_request("");
-  DirType dir_type;
-  if (PrepareToStore(store_tuple, &chunk_name, &dir_type, &msid, &chunk_content,
-      &public_key, &signed_public_key, &signed_request) != 0)
-    return;
-
-  CallbackObj cbo;
-  pdclient_->StoreChunk(chunk_name, chunk_content, public_key,
-      signed_public_key, signed_request, DATA,
-      boost::bind(&CallbackObj::CallbackFunc, &cbo, _1));
-  int count(0);
-  while (count < 6000 && !cbo.called()) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    count += 10;
-  }
-  if (cbo.result() == "")
-    printf("MaidsafeStoreManager::SendChunk failed.\n");
-}
-
-int MaidsafeStoreManager::PrepareToStore(const StoreTuple &store_tuple,
-                                         std::string *chunk_name,
-                                         DirType *dir_type,
-                                         std::string *msid,
-                                         std::string *chunk_content,
-                                         std::string *public_key,
-                                         std::string *signed_public_key,
-                                         std::string *signed_request) {
-  *chunk_name = store_tuple.get<0>();
-  *dir_type = store_tuple.get<1>();
-  *msid = store_tuple.get<2>();
-  ChunkType chunk_type = client_chunkstore_->chunk_type(*chunk_name);
-  fs::path chunk_path(client_chunkstore_->GetChunkPath(*chunk_name, chunk_type,
-                                                       false));
-  if (chunk_path == fs::path(""))
+int MaidsafeStoreManager::GetStorePeer(const float &,
+                                       const std::vector<kad::Contact> &exclude,
+                                       kad::Contact *new_peer,
+                                       bool *local) {
+// TODO(Fraser#5#): 2009-08-08 - complete this so that rtt & rank is considered.
+  std::vector<kad::Contact> result;
+  knode_->GetRandomContacts(1, exclude, &result);
+  if (result.size() == static_cast<unsigned int>(0))
     return -1;
-  try {
-    uint64_t size = fs::file_size(chunk_path);
-    boost::scoped_ptr<char> temp(new char[static_cast<unsigned int>(size)]);
-    fs::ifstream fstr;
-    fstr.open(chunk_path, std::ios_base::binary);
-    fstr.read(temp.get(), static_cast<std::streamsize>(size));
-    fstr.close();
-    *chunk_content = std::string(static_cast<const char*>(temp.get()),
-                                 static_cast<boost::uint64_t>(size));
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("%s\n", e.what());
-#endif
-    return -2;
-  }
-  GetSignedPubKeyAndRequest(*chunk_name, *dir_type, *msid, public_key,
-                            signed_public_key, signed_request);
-  return (*public_key == "" || *signed_public_key == "" ||
-      *signed_request == "") ? -3 : 0;
+  *new_peer = result.at(0);
+  *local = (knode_->CheckContactLocalAddress(new_peer->node_id(),
+      new_peer->local_ip(), new_peer->local_port(), new_peer->host_ip()) ==
+      kad::LOCAL);
+  return 0;
 }
 
+int MaidsafeStoreManager::SendPrep(const kad::Contact &peer,
+                                   bool local,
+                                   StorePrepRequest *store_prep_request) {
+  const boost::shared_ptr<StorePrepResponse>
+      store_prep_response(new StorePrepResponse());
+  bool store_prep_response_returned(false);
+  boost::mutex mutex;
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &MaidsafeStoreManager::SendPrepCallback, &store_prep_response_returned,
+      &mutex);
+  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  client_rpcs_.StorePrep(peer, local, store_prep_request,
+      store_prep_response.get(), controller, callback);
+  int count(0), timeout(10000);
+  while (count < timeout) {
+    {
+      boost::mutex::scoped_lock lock(mutex);
+      if (store_prep_response_returned)
+        break;
+    }
+    count += 10;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  }
+  return (store_prep_response->pmid_id() == peer.node_id() &&
+          store_prep_response->result() == kAck) ? 0 : -1;
+}
+
+void MaidsafeStoreManager::SendPrepCallback(bool *send_prep_returned,
+                                            boost::mutex *mutex) {
+#ifdef DEBUG
+  printf("In MaidsafeStoreManager::SendPrepCallback.\n");
+#endif
+  boost::mutex::scoped_lock lock(*mutex);
+  *send_prep_returned = true;
+}
+
+int MaidsafeStoreManager::SendContent(const kad::Contact &peer,
+                                      bool local,
+                                      boost::uint64_t &data_size,
+                                      StoreRequest *store_request) {
+  const boost::shared_ptr<StoreResponse>store_response(new StoreResponse());
+  bool store_response_returned(false);
+  boost::mutex mutex;
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &MaidsafeStoreManager::SendContentCallback, &store_response_returned,
+      &mutex);
+  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  client_rpcs_.Store(peer, local, store_request, store_response.get(),
+      controller, callback);
+  int count(0), timeout(data_size * 100);  // timeout if speed < 10 bytes / sec
+  while (count < timeout) {
+    {
+      boost::mutex::scoped_lock lock(mutex);
+      if (store_response_returned)
+        break;
+    }
+    count += 10;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  }
+// TODO(Fraser#5#): 2009-08-09 - cancel rpc if timed out
+  if (store_response->pmid_id() == peer.node_id())
+    printf("In MSM::SendContent, ids are OK.\n");
+  else
+    printf("In MSM::SendContent, ids are not OK.\n");
+  if (store_response->result() == kAck)
+    printf("In MSM::SendContent, result kAck.\n");
+  else
+    printf("In MSM::SendContent, result not kAck.\n");
+  return (store_response->pmid_id() == peer.node_id() &&
+          store_response->result() == kAck) ? 0 : -1;
+}
+
+void MaidsafeStoreManager::SendContentCallback(bool *send_content_returned,
+                                               boost::mutex *mutex) {
+#ifdef DEBUG
+  printf("In MaidsafeStoreManager::SendContentCallback.\n");
+#endif
+  boost::mutex::scoped_lock lock(*mutex);
+  *send_content_returned = true;
+}
 }  // namespace maidsafe

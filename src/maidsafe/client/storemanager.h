@@ -25,11 +25,12 @@
 #ifndef MAIDSAFE_CLIENT_STOREMANAGER_H_
 #define MAIDSAFE_CLIENT_STOREMANAGER_H_
 
+#include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/utils.h>
+
 #include <string>
 
 #include "maidsafe/maidsafe.h"
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
 
 namespace maidsafe {
 
@@ -38,6 +39,7 @@ class StoreManagerInterface {
   virtual ~StoreManagerInterface() {}
   virtual void Init(int port, base::callback_func_type cb)=0;
   virtual void Close(base::callback_func_type cb)=0;
+  virtual void CleanUpTransport()=0;
   virtual void LoadChunk(const std::string &hex_chunk_name,
                          base::callback_func_type cb)=0;
   virtual void StoreChunk(const std::string &hex_chunk_name,

@@ -21,7 +21,7 @@
 
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/maidsafe.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 namespace maidsafe {
@@ -112,7 +112,7 @@ void PDClient::CheckChunkCallback(
     }
   }
   if (!check_chunk_response->IsInitialized() ||
-      check_chunk_response->result() == kRpcResultFailure) {
+      check_chunk_response->result() == kNack) {
 #ifdef DEBUG
     printf("Doesn't have the chunk.\n");
 #endif
@@ -122,7 +122,7 @@ void PDClient::CheckChunkCallback(
       // the chunk references did not respond to the check
       GetResponse local_result;
       std::string local_result_str("");
-      local_result.set_result(kRpcResultFailure);
+      local_result.set_result(kNack);
       local_result.SerializeToString(&local_result_str);
 #ifdef DEBUG
       printf("check chunkcallback --- callback\n");
@@ -260,7 +260,7 @@ void PDClient::GetMessagesCallback(
     }
   }
   if (!get_messages_response->IsInitialized() ||
-      get_messages_response->result() == kRpcResultFailure) {
+      get_messages_response->result() == kNack) {
     get_args->data_->failed_chunk_holders.push_back(get_args->chunk_holder_);
     RetryGetChunk(get_args->data_);
   } else {
@@ -307,12 +307,12 @@ void PDClient::GetChunkCallback(
     }
   }
   if (!get_response->IsInitialized() ||
-      get_response->result() == kRpcResultFailure ||
+      get_response->result() == kNack ||
       !get_response->has_content()) {
 #ifdef DEBUG
     if (!get_response->IsInitialized())
       printf("Response in GetChunkCallback isn't initialised.\n");
-    else if (get_response->result() == kRpcResultFailure)
+    else if (get_response->result() == kNack)
       printf("GetChunkCallback response came back failed.\n");
     else
       printf("Response has no chunk content.\n");
@@ -356,11 +356,11 @@ void PDClient::RetryGetChunk(boost::shared_ptr<LoadChunkData> data) {
   if (!send_request) {
     GetResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
 #ifdef DEBUG
-    printf("In PDClient::RetryGetChunk, returning kRpcResultFailure.\n");
+    printf("In PDClient::RetryGetChunk, returning kNack.\n");
 #endif
     data->cb(local_result_str);
   }
@@ -392,14 +392,14 @@ void PDClient::FindChunkRefCallback(const std::string &result,
   }
   kad::FindResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
-      result_msg.result() == kRpcResultFailure ||
+      result_msg.result() == kad::kRpcResultFailure ||
       result_msg.values_size() == 0) {
     // no chunk references were found
 #ifdef DEBUG
     if (!result_msg.ParseFromString(result)) {
       printf("not initialized\n");
-    } else if (result_msg.result() == kRpcResultFailure) {
-      printf("result = kRpcResultFailure\n");
+    } else if (result_msg.result() == kad::kRpcResultFailure) {
+      printf("result = kNack\n");
     } else {
       printf("result_msg.values_size() == 0\n");
     }
@@ -407,7 +407,7 @@ void PDClient::FindChunkRefCallback(const std::string &result,
 #endif
     GetResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
     data->cb(local_result_str);
@@ -441,7 +441,7 @@ void PDClient::FindChunkRefCallback(const std::string &result,
 #endif
     GetResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
     data->cb(local_result_str);
@@ -504,7 +504,7 @@ void PDClient::IterativeStoreChunk(boost::shared_ptr<StoreChunkData> data) {
     // finished with the active contacts and did not
     // store the minimum number of copies
     ++data->retry;
-    if (data->retry > kMaxChunkStoreRetries) {
+    if (data->retry > kMaxChunkStoreTries) {
 #ifdef DEBUG
       printf("Total of copies stored: %i\n", data->stored_copies);
 #endif
@@ -568,27 +568,27 @@ int PDClient::StoreChunkPrep(const std::string &chunkname,
                              const std::string &rendezvous_ip,
                              const uint16_t &rendezvous_port,
                              const std::string &remote_id) {
-  std::string pmid = SessionSingleton::getInstance()->Id(PMID);
-  printf("In PDClient::StoreChunkPrep, pmid: %s\n", pmid.c_str());
-  const boost::shared_ptr<StorePrepResponse>
-      store_prep_response(new StorePrepResponse());
-  bool store_prep_response_returned(false);
-  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-      &PDClient::StoreChunkPrepCallback, &store_prep_response_returned);
-  printf("In PDClient::StoreChunkPrep before RPC sent.\n");
-  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-  client_rpcs_->StorePrep(chunkname, data_size, pmid, public_key,
-      signed_public_key, signed_request, remote_ip, remote_port, rendezvous_ip,
-      rendezvous_port, store_prep_response.get(), controller, callback);
-  printf("In PDClient::StoreChunkPrep after RPC sent.\n");
-  int count(0), timeout(10000);
-  while (count < timeout && !store_prep_response_returned) {
-    count += 10;
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  }
-  printf("In PDClient::StoreChunkPrep after RPC returned.\n");
-  return (store_prep_response->pmid_id() == remote_id &&
-      store_prep_response->result() == kAck) ? 0 : -1;
+//  std::string pmid = SessionSingleton::getInstance()->Id(PMID);
+//  printf("In PDClient::StoreChunkPrep, pmid: %s\n", pmid.c_str());
+//  const boost::shared_ptr<StorePrepResponse>
+//      store_prep_response(new StorePrepResponse());
+//  bool store_prep_response_returned(false);
+//  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+//      &PDClient::StoreChunkPrepCallback, &store_prep_response_returned);
+//  printf("In PDClient::StoreChunkPrep before RPC sent.\n");
+//  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+//  client_rpcs_->StorePrep(chunkname, data_size, pmid, public_key,
+//     signed_public_key, signed_request, remote_ip, remote_port, rendezvous_ip,
+//      rendezvous_port, store_prep_response.get(), controller, callback);
+//  printf("In PDClient::StoreChunkPrep after RPC sent.\n");
+//  int count(0), timeout(10000);
+//  while (count < timeout && !store_prep_response_returned) {
+//    count += 10;
+//    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//  }
+//  printf("In PDClient::StoreChunkPrep after RPC returned.\n");
+//  return (store_prep_response->pmid_id() == remote_id &&
+//      store_prep_response->result() == kAck) ? 0 : -1;
 }
 
 void PDClient::StoreChunkPrepCallback(bool *store_prep_response_returned) {
@@ -650,19 +650,19 @@ void PDClient::ExecuteStoreChunk(const kad::Contact &remote,
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &PDClient::StoreChunkCallback, store_response, send_args);
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-  client_rpcs_->Store(send_args->data_->chunk_name,
-                      send_args->data_->content,
-                      send_args->data_->pub_key,
-                      send_args->data_->sig_pub_key,
-                      send_args->data_->sig_req,
-                      send_args->data_->data_type,
-                      ip,
-                      port,
-                      send_args->chunk_holder_.rendezvous_ip(),
-                      send_args->chunk_holder_.rendezvous_port(),
-                      store_response.get(),
-                      controller,
-                      callback);
+//  client_rpcs_->Store(send_args->data_->chunk_name,
+//                      send_args->data_->content,
+//                      send_args->data_->pub_key,
+//                      send_args->data_->sig_pub_key,
+//                      send_args->data_->sig_req,
+//                      send_args->data_->data_type,
+//                      ip,
+//                      port,
+//                      send_args->chunk_holder_.rendezvous_ip(),
+//                      send_args->chunk_holder_.rendezvous_port(),
+//                      store_response.get(),
+//                      controller,
+//                      callback);
 }
 
 void PDClient::StoreChunkCallback(
@@ -694,19 +694,19 @@ void PDClient::StoreChunkCallback(
                                         store_response,
                                         send_args);
       rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-      client_rpcs_->Store(send_args->data_->chunk_name,
-                          send_args->data_->content,
-                          send_args->data_->pub_key,
-                          send_args->data_->sig_pub_key,
-                          send_args->data_->sig_req,
-                          send_args->data_->data_type,
-                          send_args->chunk_holder_.host_ip(),
-                          send_args->chunk_holder_.host_port(),
-                          send_args->chunk_holder_.rendezvous_ip(),
-                          send_args->chunk_holder_.rendezvous_port(),
-                          store_response.get(),
-                          controller,
-                          callback);
+//      client_rpcs_->Store(send_args->data_->chunk_name,
+//                          send_args->data_->content,
+//                          send_args->data_->pub_key,
+//                          send_args->data_->sig_pub_key,
+//                          send_args->data_->sig_req,
+//                          send_args->data_->data_type,
+//                          send_args->chunk_holder_.host_ip(),
+//                          send_args->chunk_holder_.host_port(),
+//                          send_args->chunk_holder_.rendezvous_ip(),
+//                          send_args->chunk_holder_.rendezvous_port(),
+//                          store_response.get(),
+//                          controller,
+//                          callback);
       return;
     }
   }
@@ -737,7 +737,7 @@ void PDClient::StoreChunkCallback(
 #endif
   if (store_response->result() != kAck) {
     ++send_args->retry_;
-    if (send_args->retry_ < kMaxChunkStoreRetries) {
+    if (send_args->retry_ < kMaxChunkStoreTries) {
 #ifdef DEBUG
       printf("\tIn PDClient::StoreChunkCallback, store failed - retry no.%i.\n",
              send_args->retry_);
@@ -819,7 +819,7 @@ void PDClient::IterativeCheckAlive(const std::string &result,
                                    base::callback_func_type cb) {
   kad::FindResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
-      result_msg.result() == kRpcResultFailure ||
+      result_msg.result() == kad::kRpcResultFailure ||
       result_msg.values_size() == 0) {
 #ifdef DEBUG
     printf("No chunk reference found.\n");
@@ -827,7 +827,7 @@ void PDClient::IterativeCheckAlive(const std::string &result,
     // no chunk references were found
     UpdateResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
     return;
@@ -871,7 +871,7 @@ void PDClient::IterativeCheckAlive(const std::string &result,
 #endif
     UpdateResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
     data->cb(local_result_str);
@@ -888,7 +888,7 @@ void PDClient::IterativeCheckAliveCallback(
   }
   kad::PingResponse result_msg;
   if ((!result_msg.ParseFromString(result)) ||
-      (result_msg.result() == kRpcResultFailure)) {
+      (result_msg.result() == kad::kRpcResultFailure)) {
     // we assume the node to be dead if it fails to respond to kMaxPingRetries
     // consecutive pings
     if (retry > kMaxPingRetries) {
@@ -923,9 +923,9 @@ void PDClient::IterativeUpdateChunk(boost::shared_ptr<UpdateChunkData> data) {
     std::string local_result_str("");
     if (data->updated_copies >= kMinChunkCopies ||
         data->updated_copies == static_cast<int>(data->alive_holders.size()))
-      local_result.set_result(kRpcResultSuccess);
+      local_result.set_result(kAck);
     else
-      local_result.set_result(kRpcResultFailure);
+      local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
     data->cb(local_result_str);
@@ -1024,8 +1024,8 @@ void PDClient::IterativeUpdateChunkCallback(
     }
   }
   if (!update_response->IsInitialized() ||
-      update_response->result() == kRpcResultFailure) {
-    if (update_args->retry_ > kMaxChunkStoreRetries) {
+      update_response->result() == kNack) {
+    if (update_args->retry_ > kMaxChunkStoreTries) {
 #ifdef DEBUG
       printf("Failed to update chunk.\n");
 #endif
@@ -1124,12 +1124,12 @@ void PDClient::DeleteChunk_IterativeCheckAlive(const std::string &result,
                                                base::callback_func_type cb) {
   kad::FindResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
-      result_msg.result() == kRpcResultFailure ||
+      result_msg.result() == kad::kRpcResultFailure ||
       result_msg.values_size() == 0) {
     // no chunk references were found
     DeleteResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
     return;
@@ -1170,7 +1170,7 @@ void PDClient::DeleteChunk_IterativeCheckAlive(const std::string &result,
   if (!correct_info) {
     DeleteResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
     data->cb(local_result_str);
@@ -1187,7 +1187,7 @@ void PDClient::DeleteChunk_CheckAliveCallback(
   }
   kad::PingResponse result_msg;
   if ((!result_msg.ParseFromString(result)) ||
-      (result_msg.result() == kRpcResultFailure)) {
+      (result_msg.result() == kad::kRpcResultFailure)) {
     // we assume the node to be dead if it fails to respond to kMaxPingRetries
     // consecutive pings
     if (retry > kMaxPingRetries) {
@@ -1223,9 +1223,9 @@ void PDClient::DeleteChunk_IterativeDeleteChunk(
     std::string local_result_str("");
     if (data->deleted_copies >= kMinChunkCopies ||
         data->deleted_copies == static_cast<int>(data->alive_holders.size()))
-      local_result.set_result(kRpcResultSuccess);
+      local_result.set_result(kAck);
     else
-      local_result.set_result(kRpcResultFailure);
+      local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
     data->cb(local_result_str);
@@ -1323,7 +1323,7 @@ void PDClient::DeleteChunk_DeleteChunkCallback(
     }
   }
   if (!delete_response->IsInitialized() ||
-      delete_response->result() == kRpcResultFailure) {
+      delete_response->result() == kNack) {
     // failed to delete ...
     // we don't retry with same arguments to delete
     --delete_args->data_->active_deleting;

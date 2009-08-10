@@ -26,17 +26,19 @@
 
 #include <boost/thread/thread.hpp>
 #include <boost/thread/xtime.hpp>
+#include <maidsafe/crypto.h>
+#include <maidsafe/general_messages.pb.h>
+#include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/utils.h>
+
 #include <map>
 #include <vector>
 #include <fstream>  // NOLINT (Fraser) - for protobuf config file
 
-#include "maidsafe/crypto.h"
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
 #include "maidsafe/client/pdclient.h"
 #include "maidsafe/client/systempackets.h"
 #include "maidsafe/vault/pdvault.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 
 namespace maidsafe_vault {
 
@@ -378,7 +380,7 @@ int main(int argc, char* argv[]) {
 //      co_.set_symm_algorithm(crypto::AES_256);
 //      co_.set_hash_algorithm(crypto::SHA_512);
 //      fs::path config_file(".config");
-//      base::VaultConfig vault_config;
+//      maidsafe::VaultConfig vault_config;
 //      int port = base::stoi(port_string);
 //      crypto::RsaKeyPair keys;
 //      keys.GenerateKeys(packethandler::kRsaKeySize);

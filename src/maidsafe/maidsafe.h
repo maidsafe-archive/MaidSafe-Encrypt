@@ -25,20 +25,18 @@
 #ifndef MAIDSAFE_MAIDSAFE_H_
 #define MAIDSAFE_MAIDSAFE_H_
 
-
-
 #include <boost/cstdint.hpp>
+#include <maidsafe/maidsafe-dht.h>
+#if MAIDSAFE_DHT_VERSION < 6
+#error this API is not compatible with the installed library
+#error Please update the maidsafe-dht library
+#endif
 #include <stdint.h>
 
 #include <string>
 
 #include "protobuf/datamaps.pb.h"
 #include "protobuf/packet.pb.h"
-#include "maidsafe/maidsafe-dht.h"
-#if MAIDSAFE_DHT_VERSION < 3
-#error this API is not compatible with the installed library
-#error Please update the maidsafe-dht library
-#endif
 
 // system constants
 const boost::uint32_t kMinRegularFileSize = 512;
@@ -68,7 +66,7 @@ enum BufferPacketType {
 };
 
 enum MaidsafeRpcResult {
-  kAck, kNack, kNoSpace, kBusy
+  kNack, kAck, kNoSpace, kBusy
 };
 
 const std::string kAnonymousSignedRequest("ffffffffffffffffffffffffffffffffffff"
@@ -281,15 +279,11 @@ const std::string no_compress_type[] =  {
   ".zz"
 };
 
-const std::string kCallbackSuccess("T");
-const std::string kCallbackFailure("F");
 // config file name
 const std::string kConfigFileName("maidsafe.cfg");
 const int kMaxPort = 65535;
 const int kMinPort = 5000;
 
-const std::string kRpcResultSuccess("T");
-const std::string kRpcResultFailure("F");
 const int kValidityCheckMinTime(1800);  // 30 min
 const int kValidityCheckMaxTime(86400);  // 24 hours
 // frequency to execute validity check process
@@ -300,11 +294,11 @@ const int kCheckPartnerRefDelay(300);  // 5 minutes
 const std::string kValidityCheckClean("C");
 const std::string kValidityCheckDirty("D");
 const int kValidityCheckRetry(2);  // retries for validity check (timeouts)
-const int kMinChunkCopies(1);
+const int kMinChunkCopies(4);
 const int kMaxPingRetries(2);  // max number of ping tries
 const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
-const int kMaxChunkStoreRetries(2);  // max number of tries to store or update
-                                     // a chunk
+const int kMaxChunkStoreTries(1);  // max number of tries to store or update a
+                                   // chunk
 const boost::uint32_t kSaveUpdatesTrigger(100);  // max no of dbs in save queue
                                                  // before running save queue
 const int kMinSuccessfulPecentageOfUpdating(0.9);

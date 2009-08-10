@@ -36,7 +36,7 @@
 #include "maidsafe/client/privateshares.h"
 #include "protobuf/packet.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -326,7 +326,7 @@ int SEHandler::DecryptFile(const std::string &rel_entry) {
     WaitForResult(cbr);
     GetResponse result;
     if ((!result.ParseFromString(cbr.result)) ||
-        (result.result() == kCallbackFailure)) {
+        (result.result() == kNack)) {
 #ifdef DEBUG
       printf("Failed to get all chunks.\n");
 #endif
@@ -389,10 +389,10 @@ int SEHandler::GenerateUniqueKey(const DirType dir_type,
   storem_->IsKeyUnique(*hex_key,
                        boost::bind(&CallbackResult::CallbackFunc, &cbr, _1));
   WaitForResult(cbr);
-  base::GeneralResponse result;
+  GenericResponse result;
   int count = attempt;
   while ((!result.ParseFromString(cbr.result) ||
-         (result.result() == kCallbackFailure)) && count < 5) {
+         (result.result() == kNack)) && count < 5) {
     ++count;
     GenerateUniqueKey(dir_type, msid, count, hex_key);
   }
@@ -501,7 +501,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
 //  WaitForResult(cbr1);
 //  StoreResponse storechunks_result;
 //  if ((!storechunks_result.ParseFromString(cbr1.result)) ||
-//      (storechunks_result.result() == kCallbackFailure)) {
+//      (storechunks_result.result() == kNack)) {
 //    return -1;
 //  }
   StoreChunks(dm_, dir_type, msid);
@@ -558,11 +558,11 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   storem_->IsKeyUnique(dir_key,
     boost::bind(&CallbackResult::CallbackFunc, &cbr2, _1));
   WaitForResult(cbr2);
-  base::GeneralResponse is_unique_result;
+  GenericResponse is_unique_result;
   // If the chunk is not there, set the update bool to false.
   bool update_;
   if ((!is_unique_result.ParseFromString(cbr2.result)) ||
-      (is_unique_result.result() == kCallbackSuccess))
+      (is_unique_result.result() == kAck))
     update_ = false;
   else
     update_ = true;
@@ -594,7 +594,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   if (update_) {
     UpdateResponse update_result;
     if ((!update_result.ParseFromString(cbr3.result)) ||
-        (update_result.result() == kCallbackFailure)) {
+        (update_result.result() == kNack)) {
       return -1;
     }
   } else {
@@ -631,7 +631,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
     WaitForResult(cbr);
     GetResponse load_result;
     if ((!load_result.ParseFromString(cbr.result)) ||
-        (load_result.result() != kCallbackSuccess) ||
+        (load_result.result() != kAck) ||
         (!load_result.has_content())) {
 #ifdef DEBUG
       printf("Failed to load packet.\n");
@@ -764,7 +764,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
   GetResponse load_result;
   load_result.Clear();
   if ((!load_result.ParseFromString(cbr.result)) ||
-      (load_result.result() == kCallbackFailure)) {
+      (load_result.result() == kNack)) {
 #ifdef DEBUG
     printf("Failed to get chunks.\n");
 #endif
@@ -889,7 +889,7 @@ void SEHandler::IterativeLoadChunks(
   GetResponse local_result;
   std::string str_local_result;
   if (data->chunks_done == data->total_chunks) {
-    local_result.set_result(kCallbackSuccess);
+    local_result.set_result(kAck);
     data->is_calledback = true;
     local_result.SerializeToString(&str_local_result);
     data->cb(str_local_result);
@@ -897,7 +897,7 @@ void SEHandler::IterativeLoadChunks(
   }
   if ((data->index >= data->total_chunks) &&
       (data->active_chunks == 0)) {
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
     data->is_calledback = true;
     local_result.SerializeToString(&str_local_result);
     data->cb(str_local_result);
@@ -943,7 +943,7 @@ void SEHandler::LoadChunk(const std::string &chunk_name,
   } else {
     GetResponse local_result;
     std::string str_local_result;
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
     data->is_calledback = true;
     local_result.SerializeToString(&str_local_result);
     data->cb(str_local_result);
@@ -959,7 +959,7 @@ void SEHandler::LoadChunkCallback(const std::string &result,
   }
   GetResponse result_msg;
   if ((result_msg.ParseFromString(result)) &&
-      (result_msg.result() == kCallbackSuccess) &&
+      (result_msg.result() == kAck) &&
       (result_msg.has_content())) {
     ++data->chunks_done;
     --data->active_chunks;
@@ -1042,13 +1042,13 @@ void SEHandler::CheckChunkCallback(
   if (data->is_calledback) {
     return;
   }
-  base::GeneralResponse result_msg;
+  GenericResponse result_msg;
   if ((result_msg.ParseFromString(result)) &&
-      (result_msg.result() == kCallbackSuccess)) {
+      (result_msg.result() == kAck)) {
     // chunk not in network
     StoreChunk(chunk_name, 0, data);
   } else if ((result_msg.ParseFromString(result)) &&
-            (result_msg.result() == kCallbackFailure)) {
+            (result_msg.result() == kNack)) {
 #ifdef DEBUG
     // printf("Chunk already in network.\n");
 #endif

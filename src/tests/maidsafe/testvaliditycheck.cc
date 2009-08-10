@@ -59,7 +59,7 @@ TEST_F(ValidityCheckTest, TestAddchunk) {
   partners.push_back(partner2);
   partners.push_back(partner1);
   result["values"] = partners;
-  result["result"] = kad::kRpcResultSuccess;
+  result["result"] = kad::kRpcResultFailure;
   vdcheck.AddChunkToCheck_Callback(result, chunk_name);
   std::vector<str_tuple> corrupt_chunks;
   ASSERT_TRUE(vdcheck.GetCurruptChunks(corrupt_chunks));
@@ -73,7 +73,7 @@ TEST_F(ValidityCheckTest, TestAddchunk) {
   std::string hash_chunk = cry_obj.Hash(chunk_content+randomdata,"",
     crypto::STRING_STRING,false);
   dht::entry validityres;
-  validityres["result"] = kad::kRpcResultSuccess;
+  validityres["result"] = kad::kRpcResultFailure;
   validityres["hashcontent"] = hash_chunk;
   vdcheck.ValidityCheckProcess();
   vdcheck.CheckValidity_Callback(validityres, partner1, chunk_name, randomdata, 0);
@@ -101,7 +101,7 @@ TEST_F(ValidityCheckTest, TestAddchunk) {
   newpartners.push_back(partner3);
   newpartners.push_back(partner4);
   result["values"] = newpartners;
-  result["result"] = kad::kRpcResultSuccess;
+  result["result"] = kad::kRpcResultFailure;
   vdcheck.AddChunkToCheck_Callback(result, chunk_name);
   vdcheck.CheckValidity_Callback(validityres, partner4, chunk_name, randomdata, 0);
 
@@ -116,7 +116,7 @@ TEST_F(ValidityCheckTest, TestAddchunk) {
   newpartners.clear();
   newpartners.push_back(partner3);
   result["values"] = newpartners;
-  result["result"] = kad::kRpcResultSuccess;
+  result["result"] = kad::kRpcResultFailure;
   vdcheck.AddChunkToCheck_Callback(result, new_chunk_name);
   ASSERT_TRUE(vdcheck.PartnerExists(partner3, new_chunk_name));
   ASSERT_TRUE(vdcheck.RemoveChunkFromList(chunk_name));

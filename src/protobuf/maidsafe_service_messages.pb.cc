@@ -753,29 +753,29 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
     "\022\022\n\npublic_key\030\002 \002(\014\022\031\n\021signed_public_ke"
     "y\030\003 \002(\014\022\026\n\016signed_request\030\004 \002(\014\022\021\n\tdata_"
     "type\030\005 \002(\005\"1\n\016DeleteResponse\022\016\n\006result\030\001"
-    " \002(\014\022\017\n\007pmid_id\030\002 \001(\014\"\037\n\nGetRequest\022\021\n\tc"
+    " \002(\r\022\017\n\007pmid_id\030\002 \001(\014\"\037\n\nGetRequest\022\021\n\tc"
     "hunkname\030\001 \002(\014\"?\n\013GetResponse\022\016\n\006result\030"
-    "\001 \002(\014\022\017\n\007content\030\002 \001(\014\022\017\n\007pmid_id\030\003 \001(\014\""
+    "\001 \002(\r\022\017\n\007content\030\002 \001(\014\022\017\n\007pmid_id\030\003 \001(\014\""
     "&\n\021CheckChunkRequest\022\021\n\tchunkname\030\001 \002(\014\""
-    "5\n\022CheckChunkResponse\022\016\n\006result\030\001 \002(\014\022\017\n"
+    "5\n\022CheckChunkResponse\022\016\n\006result\030\001 \002(\r\022\017\n"
     "\007pmid_id\030\002 \002(\014\">\n\024ValidityCheckRequest\022\021"
     "\n\tchunkname\030\001 \002(\014\022\023\n\013random_data\030\002 \002(\014\"N"
-    "\n\025ValidityCheckResponse\022\016\n\006result\030\001 \002(\014\022"
+    "\n\025ValidityCheckResponse\022\016\n\006result\030\001 \002(\r\022"
     "\024\n\014hash_content\030\002 \001(\014\022\017\n\007pmid_id\030\003 \002(\014\"\212"
     "\001\n\rUpdateRequest\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004d"
     "ata\030\002 \002(\014\022\022\n\npublic_key\030\003 \002(\014\022\031\n\021signed_"
     "public_key\030\004 \002(\014\022\026\n\016signed_request\030\005 \002(\014"
     "\022\021\n\tdata_type\030\006 \002(\005\"1\n\016UpdateResponse\022\016\n"
-    "\006result\030\001 \002(\014\022\017\n\007pmid_id\030\002 \001(\014\"_\n\022GetMes"
+    "\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\"_\n\022GetMes"
     "sagesRequest\022\032\n\022buffer_packet_name\030\001 \002(\014"
     "\022\022\n\npublic_key\030\002 \002(\014\022\031\n\021signed_public_ke"
     "y\030\003 \002(\014\"H\n\023GetMessagesResponse\022\016\n\006result"
-    "\030\001 \002(\014\022\020\n\010messages\030\002 \003(\014\022\017\n\007pmid_id\030\003 \001("
+    "\030\001 \002(\r\022\020\n\010messages\030\002 \003(\014\022\017\n\007pmid_id\030\003 \001("
     "\014\"v\n\020SwapChunkRequest\022\024\n\014request_type\030\001 "
     "\002(\005\022\022\n\nchunkname1\030\002 \002(\014\022\025\n\rchunkcontent1"
     "\030\003 \001(\014\022\r\n\005size1\030\004 \001(\005\022\022\n\nchunkname2\030\005 \001("
     "\014\"\276\001\n\021SwapChunkResponse\022\024\n\014request_type\030"
-    "\001 \002(\005\022\016\n\006result\030\002 \002(\014\022\022\n\nchunkname1\030\003 \001("
+    "\001 \002(\005\022\016\n\006result\030\002 \002(\r\022\022\n\nchunkname1\030\003 \001("
     "\014\022\025\n\rchunkcontent1\030\004 \001(\014\022\r\n\005size1\030\005 \001(\005\022"
     "\022\n\nchunkname2\030\006 \001(\014\022\025\n\rchunkcontent2\030\007 \001"
     "(\014\022\r\n\005size2\030\010 \001(\005\022\017\n\007pmid_id\030\t \002(\014", 2554);
@@ -5824,7 +5824,6 @@ const ::google::protobuf::Reflection* DeleteRequest::GetReflection() const {
 
 // ===================================================================
 
-const ::std::string DeleteResponse::_default_result_;
 const ::std::string DeleteResponse::_default_pmid_id_;
 #ifndef _MSC_VER
 const int DeleteResponse::kResultFieldNumber;
@@ -5835,7 +5834,7 @@ DeleteResponse::DeleteResponse()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
 }
@@ -5846,7 +5845,7 @@ DeleteResponse::DeleteResponse(const DeleteResponse& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
   MergeFrom(from);
@@ -5854,7 +5853,7 @@ DeleteResponse::DeleteResponse(const DeleteResponse& from)
 
 void DeleteResponse::SharedCtor() {
   _cached_size_ = 0;
-  result_ = const_cast< ::std::string*>(&_default_result_);
+  result_ = 0u;
   pmid_id_ = const_cast< ::std::string*>(&_default_pmid_id_);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -5864,9 +5863,6 @@ DeleteResponse::~DeleteResponse() {
 }
 
 void DeleteResponse::SharedDtor() {
-  if (result_ != &_default_result_) {
-    delete result_;
-  }
   if (pmid_id_ != &_default_pmid_id_) {
     delete pmid_id_;
   }
@@ -5891,11 +5887,7 @@ DeleteResponse* DeleteResponse::New() const {
 
 void DeleteResponse::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
-      if (result_ != &_default_result_) {
-        result_->clear();
-      }
-    }
+    result_ = 0u;
     if (_has_bit(1)) {
       if (pmid_id_ != &_default_pmid_id_) {
         pmid_id_->clear();
@@ -5912,13 +5904,15 @@ bool DeleteResponse::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes result = 1;
+      // required uint32 result = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_result()));
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(0);
         if (input->ExpectTag(18)) goto parse_pmid_id;
         break;
       }
@@ -5959,9 +5953,9 @@ void DeleteResponse::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->result(), output);
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
   }
   
   // optional bytes pmid_id = 2;
@@ -5977,9 +5971,9 @@ void DeleteResponse::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* DeleteResponse::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->result(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
   }
   
   // optional bytes pmid_id = 2;
@@ -5998,10 +5992,11 @@ int DeleteResponse::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes result = 1;
+    // required uint32 result = 1;
     if (has_result()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->result());
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
     }
     
     // optional bytes pmid_id = 2;
@@ -6299,7 +6294,6 @@ const ::google::protobuf::Reflection* GetRequest::GetReflection() const {
 
 // ===================================================================
 
-const ::std::string GetResponse::_default_result_;
 const ::std::string GetResponse::_default_content_;
 const ::std::string GetResponse::_default_pmid_id_;
 #ifndef _MSC_VER
@@ -6312,7 +6306,7 @@ GetResponse::GetResponse()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     content_(const_cast< ::std::string*>(&_default_content_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
@@ -6324,7 +6318,7 @@ GetResponse::GetResponse(const GetResponse& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     content_(const_cast< ::std::string*>(&_default_content_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
@@ -6333,7 +6327,7 @@ GetResponse::GetResponse(const GetResponse& from)
 
 void GetResponse::SharedCtor() {
   _cached_size_ = 0;
-  result_ = const_cast< ::std::string*>(&_default_result_);
+  result_ = 0u;
   content_ = const_cast< ::std::string*>(&_default_content_);
   pmid_id_ = const_cast< ::std::string*>(&_default_pmid_id_);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -6344,9 +6338,6 @@ GetResponse::~GetResponse() {
 }
 
 void GetResponse::SharedDtor() {
-  if (result_ != &_default_result_) {
-    delete result_;
-  }
   if (content_ != &_default_content_) {
     delete content_;
   }
@@ -6374,11 +6365,7 @@ GetResponse* GetResponse::New() const {
 
 void GetResponse::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
-      if (result_ != &_default_result_) {
-        result_->clear();
-      }
-    }
+    result_ = 0u;
     if (_has_bit(1)) {
       if (content_ != &_default_content_) {
         content_->clear();
@@ -6400,13 +6387,15 @@ bool GetResponse::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes result = 1;
+      // required uint32 result = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_result()));
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(0);
         if (input->ExpectTag(18)) goto parse_content;
         break;
       }
@@ -6459,9 +6448,9 @@ void GetResponse::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->result(), output);
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
   }
   
   // optional bytes content = 2;
@@ -6482,9 +6471,9 @@ void GetResponse::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* GetResponse::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->result(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
   }
   
   // optional bytes content = 2;
@@ -6508,10 +6497,11 @@ int GetResponse::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes result = 1;
+    // required uint32 result = 1;
     if (has_result()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->result());
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
     }
     
     // optional bytes content = 2;
@@ -6819,7 +6809,6 @@ const ::google::protobuf::Reflection* CheckChunkRequest::GetReflection() const {
 
 // ===================================================================
 
-const ::std::string CheckChunkResponse::_default_result_;
 const ::std::string CheckChunkResponse::_default_pmid_id_;
 #ifndef _MSC_VER
 const int CheckChunkResponse::kResultFieldNumber;
@@ -6830,7 +6819,7 @@ CheckChunkResponse::CheckChunkResponse()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
 }
@@ -6841,7 +6830,7 @@ CheckChunkResponse::CheckChunkResponse(const CheckChunkResponse& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
   MergeFrom(from);
@@ -6849,7 +6838,7 @@ CheckChunkResponse::CheckChunkResponse(const CheckChunkResponse& from)
 
 void CheckChunkResponse::SharedCtor() {
   _cached_size_ = 0;
-  result_ = const_cast< ::std::string*>(&_default_result_);
+  result_ = 0u;
   pmid_id_ = const_cast< ::std::string*>(&_default_pmid_id_);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -6859,9 +6848,6 @@ CheckChunkResponse::~CheckChunkResponse() {
 }
 
 void CheckChunkResponse::SharedDtor() {
-  if (result_ != &_default_result_) {
-    delete result_;
-  }
   if (pmid_id_ != &_default_pmid_id_) {
     delete pmid_id_;
   }
@@ -6886,11 +6872,7 @@ CheckChunkResponse* CheckChunkResponse::New() const {
 
 void CheckChunkResponse::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
-      if (result_ != &_default_result_) {
-        result_->clear();
-      }
-    }
+    result_ = 0u;
     if (_has_bit(1)) {
       if (pmid_id_ != &_default_pmid_id_) {
         pmid_id_->clear();
@@ -6907,13 +6889,15 @@ bool CheckChunkResponse::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes result = 1;
+      // required uint32 result = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_result()));
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(0);
         if (input->ExpectTag(18)) goto parse_pmid_id;
         break;
       }
@@ -6954,9 +6938,9 @@ void CheckChunkResponse::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->result(), output);
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
   }
   
   // required bytes pmid_id = 2;
@@ -6972,9 +6956,9 @@ void CheckChunkResponse::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* CheckChunkResponse::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->result(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
   }
   
   // required bytes pmid_id = 2;
@@ -6993,10 +6977,11 @@ int CheckChunkResponse::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes result = 1;
+    // required uint32 result = 1;
     if (has_result()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->result());
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
     }
     
     // required bytes pmid_id = 2;
@@ -7339,7 +7324,6 @@ const ::google::protobuf::Reflection* ValidityCheckRequest::GetReflection() cons
 
 // ===================================================================
 
-const ::std::string ValidityCheckResponse::_default_result_;
 const ::std::string ValidityCheckResponse::_default_hash_content_;
 const ::std::string ValidityCheckResponse::_default_pmid_id_;
 #ifndef _MSC_VER
@@ -7352,7 +7336,7 @@ ValidityCheckResponse::ValidityCheckResponse()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     hash_content_(const_cast< ::std::string*>(&_default_hash_content_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
@@ -7364,7 +7348,7 @@ ValidityCheckResponse::ValidityCheckResponse(const ValidityCheckResponse& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     hash_content_(const_cast< ::std::string*>(&_default_hash_content_)),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
@@ -7373,7 +7357,7 @@ ValidityCheckResponse::ValidityCheckResponse(const ValidityCheckResponse& from)
 
 void ValidityCheckResponse::SharedCtor() {
   _cached_size_ = 0;
-  result_ = const_cast< ::std::string*>(&_default_result_);
+  result_ = 0u;
   hash_content_ = const_cast< ::std::string*>(&_default_hash_content_);
   pmid_id_ = const_cast< ::std::string*>(&_default_pmid_id_);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -7384,9 +7368,6 @@ ValidityCheckResponse::~ValidityCheckResponse() {
 }
 
 void ValidityCheckResponse::SharedDtor() {
-  if (result_ != &_default_result_) {
-    delete result_;
-  }
   if (hash_content_ != &_default_hash_content_) {
     delete hash_content_;
   }
@@ -7414,11 +7395,7 @@ ValidityCheckResponse* ValidityCheckResponse::New() const {
 
 void ValidityCheckResponse::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
-      if (result_ != &_default_result_) {
-        result_->clear();
-      }
-    }
+    result_ = 0u;
     if (_has_bit(1)) {
       if (hash_content_ != &_default_hash_content_) {
         hash_content_->clear();
@@ -7440,13 +7417,15 @@ bool ValidityCheckResponse::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes result = 1;
+      // required uint32 result = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_result()));
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(0);
         if (input->ExpectTag(18)) goto parse_hash_content;
         break;
       }
@@ -7499,9 +7478,9 @@ void ValidityCheckResponse::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->result(), output);
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
   }
   
   // optional bytes hash_content = 2;
@@ -7522,9 +7501,9 @@ void ValidityCheckResponse::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* ValidityCheckResponse::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->result(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
   }
   
   // optional bytes hash_content = 2;
@@ -7548,10 +7527,11 @@ int ValidityCheckResponse::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes result = 1;
+    // required uint32 result = 1;
     if (has_result()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->result());
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
     }
     
     // optional bytes hash_content = 2;
@@ -8079,7 +8059,6 @@ const ::google::protobuf::Reflection* UpdateRequest::GetReflection() const {
 
 // ===================================================================
 
-const ::std::string UpdateResponse::_default_result_;
 const ::std::string UpdateResponse::_default_pmid_id_;
 #ifndef _MSC_VER
 const int UpdateResponse::kResultFieldNumber;
@@ -8090,7 +8069,7 @@ UpdateResponse::UpdateResponse()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
 }
@@ -8101,7 +8080,7 @@ UpdateResponse::UpdateResponse(const UpdateResponse& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
   MergeFrom(from);
@@ -8109,7 +8088,7 @@ UpdateResponse::UpdateResponse(const UpdateResponse& from)
 
 void UpdateResponse::SharedCtor() {
   _cached_size_ = 0;
-  result_ = const_cast< ::std::string*>(&_default_result_);
+  result_ = 0u;
   pmid_id_ = const_cast< ::std::string*>(&_default_pmid_id_);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -8119,9 +8098,6 @@ UpdateResponse::~UpdateResponse() {
 }
 
 void UpdateResponse::SharedDtor() {
-  if (result_ != &_default_result_) {
-    delete result_;
-  }
   if (pmid_id_ != &_default_pmid_id_) {
     delete pmid_id_;
   }
@@ -8146,11 +8122,7 @@ UpdateResponse* UpdateResponse::New() const {
 
 void UpdateResponse::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
-      if (result_ != &_default_result_) {
-        result_->clear();
-      }
-    }
+    result_ = 0u;
     if (_has_bit(1)) {
       if (pmid_id_ != &_default_pmid_id_) {
         pmid_id_->clear();
@@ -8167,13 +8139,15 @@ bool UpdateResponse::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes result = 1;
+      // required uint32 result = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_result()));
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(0);
         if (input->ExpectTag(18)) goto parse_pmid_id;
         break;
       }
@@ -8214,9 +8188,9 @@ void UpdateResponse::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->result(), output);
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
   }
   
   // optional bytes pmid_id = 2;
@@ -8232,9 +8206,9 @@ void UpdateResponse::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* UpdateResponse::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->result(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
   }
   
   // optional bytes pmid_id = 2;
@@ -8253,10 +8227,11 @@ int UpdateResponse::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes result = 1;
+    // required uint32 result = 1;
     if (has_result()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->result());
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
     }
     
     // optional bytes pmid_id = 2;
@@ -8644,7 +8619,6 @@ const ::google::protobuf::Reflection* GetMessagesRequest::GetReflection() const 
 
 // ===================================================================
 
-const ::std::string GetMessagesResponse::_default_result_;
 const ::std::string GetMessagesResponse::_default_pmid_id_;
 #ifndef _MSC_VER
 const int GetMessagesResponse::kResultFieldNumber;
@@ -8656,7 +8630,7 @@ GetMessagesResponse::GetMessagesResponse()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     messages_(),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
@@ -8668,7 +8642,7 @@ GetMessagesResponse::GetMessagesResponse(const GetMessagesResponse& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     messages_(),
     pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
   SharedCtor();
@@ -8677,7 +8651,7 @@ GetMessagesResponse::GetMessagesResponse(const GetMessagesResponse& from)
 
 void GetMessagesResponse::SharedCtor() {
   _cached_size_ = 0;
-  result_ = const_cast< ::std::string*>(&_default_result_);
+  result_ = 0u;
   pmid_id_ = const_cast< ::std::string*>(&_default_pmid_id_);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -8687,9 +8661,6 @@ GetMessagesResponse::~GetMessagesResponse() {
 }
 
 void GetMessagesResponse::SharedDtor() {
-  if (result_ != &_default_result_) {
-    delete result_;
-  }
   if (pmid_id_ != &_default_pmid_id_) {
     delete pmid_id_;
   }
@@ -8714,11 +8685,7 @@ GetMessagesResponse* GetMessagesResponse::New() const {
 
 void GetMessagesResponse::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
-      if (result_ != &_default_result_) {
-        result_->clear();
-      }
-    }
+    result_ = 0u;
     if (_has_bit(2)) {
       if (pmid_id_ != &_default_pmid_id_) {
         pmid_id_->clear();
@@ -8736,13 +8703,15 @@ bool GetMessagesResponse::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes result = 1;
+      // required uint32 result = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_result()));
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(0);
         if (input->ExpectTag(18)) goto parse_messages;
         break;
       }
@@ -8797,9 +8766,9 @@ void GetMessagesResponse::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->result(), output);
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
   }
   
   // repeated bytes messages = 2;
@@ -8820,9 +8789,9 @@ void GetMessagesResponse::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* GetMessagesResponse::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->result(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
   }
   
   // repeated bytes messages = 2;
@@ -8846,10 +8815,11 @@ int GetMessagesResponse::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes result = 1;
+    // required uint32 result = 1;
     if (has_result()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->result());
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
     }
     
     // optional bytes pmid_id = 3;
@@ -9326,7 +9296,6 @@ const ::google::protobuf::Reflection* SwapChunkRequest::GetReflection() const {
 
 // ===================================================================
 
-const ::std::string SwapChunkResponse::_default_result_;
 const ::std::string SwapChunkResponse::_default_chunkname1_;
 const ::std::string SwapChunkResponse::_default_chunkcontent1_;
 const ::std::string SwapChunkResponse::_default_chunkname2_;
@@ -9349,7 +9318,7 @@ SwapChunkResponse::SwapChunkResponse()
     _unknown_fields_(),
     _cached_size_(0),
     request_type_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     chunkname1_(const_cast< ::std::string*>(&_default_chunkname1_)),
     chunkcontent1_(const_cast< ::std::string*>(&_default_chunkcontent1_)),
     size1_(0),
@@ -9367,7 +9336,7 @@ SwapChunkResponse::SwapChunkResponse(const SwapChunkResponse& from)
     _unknown_fields_(),
     _cached_size_(0),
     request_type_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     chunkname1_(const_cast< ::std::string*>(&_default_chunkname1_)),
     chunkcontent1_(const_cast< ::std::string*>(&_default_chunkcontent1_)),
     size1_(0),
@@ -9382,7 +9351,7 @@ SwapChunkResponse::SwapChunkResponse(const SwapChunkResponse& from)
 void SwapChunkResponse::SharedCtor() {
   _cached_size_ = 0;
   request_type_ = 0;
-  result_ = const_cast< ::std::string*>(&_default_result_);
+  result_ = 0u;
   chunkname1_ = const_cast< ::std::string*>(&_default_chunkname1_);
   chunkcontent1_ = const_cast< ::std::string*>(&_default_chunkcontent1_);
   size1_ = 0;
@@ -9398,9 +9367,6 @@ SwapChunkResponse::~SwapChunkResponse() {
 }
 
 void SwapChunkResponse::SharedDtor() {
-  if (result_ != &_default_result_) {
-    delete result_;
-  }
   if (chunkname1_ != &_default_chunkname1_) {
     delete chunkname1_;
   }
@@ -9438,11 +9404,7 @@ SwapChunkResponse* SwapChunkResponse::New() const {
 void SwapChunkResponse::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     request_type_ = 0;
-    if (_has_bit(1)) {
-      if (result_ != &_default_result_) {
-        result_->clear();
-      }
-    }
+    result_ = 0u;
     if (_has_bit(2)) {
       if (chunkname1_ != &_default_chunkname1_) {
         chunkname1_->clear();
@@ -9492,18 +9454,20 @@ bool SwapChunkResponse::MergePartialFromCodedStream(
         DO_(::google::protobuf::internal::WireFormat::ReadInt32(
               input, &request_type_));
         _set_bit(0);
-        if (input->ExpectTag(18)) goto parse_result;
+        if (input->ExpectTag(16)) goto parse_result;
         break;
       }
       
-      // required bytes result = 2;
+      // required uint32 result = 2;
       case 2: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
        parse_result:
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_result()));
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(1);
         if (input->ExpectTag(26)) goto parse_chunkname1;
         break;
       }
@@ -9625,9 +9589,9 @@ void SwapChunkResponse::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteInt32(1, this->request_type(), output);
   }
   
-  // required bytes result = 2;
+  // required uint32 result = 2;
   if (_has_bit(1)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->result(), output);
+    ::google::protobuf::internal::WireFormat::WriteUInt32(2, this->result(), output);
   }
   
   // optional bytes chunkname1 = 3;
@@ -9678,9 +9642,9 @@ void SwapChunkResponse::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(1, this->request_type(), target);
   }
   
-  // required bytes result = 2;
+  // required uint32 result = 2;
   if (_has_bit(1)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->result(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(2, this->result(), target);
   }
   
   // optional bytes chunkname1 = 3;
@@ -9736,10 +9700,11 @@ int SwapChunkResponse::ByteSize() const {
           this->request_type());
     }
     
-    // required bytes result = 2;
+    // required uint32 result = 2;
     if (has_result()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->result());
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
     }
     
     // optional bytes chunkname1 = 3;

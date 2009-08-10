@@ -31,7 +31,7 @@
 #include "maidsafe/client/messagehandler.h"
 #include "maidsafe/client/packetfactory.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/datamaps.pb.h"
 #include "protobuf/packet.pb.h"
 
@@ -100,9 +100,9 @@ class MsgHandlerTest : public testing::Test {
     }
     sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_tmsgh(cb, mutex);
-    base::GeneralResponse result;
+    maidsafe::GenericResponse result;
     if ((!result.ParseFromString(cb.result)) ||
-        (result.result() == kCallbackFailure)) {
+        (result.result() == kNack)) {
       FAIL();
       return;
     }
@@ -234,7 +234,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(200));
   packethandler::StoreMessagesResult store_msg_result;
   ASSERT_TRUE(store_msg_result.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, store_msg_result.result());
+  ASSERT_EQ(kAck, store_msg_result.result());
   ASSERT_EQ(1, store_msg_result.stored_msgs());
   ASSERT_EQ(0, store_msg_result.failed_size());
   cb.Reset();
@@ -247,7 +247,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   wait_for_result_tmsgh(cb, mutex);
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, add_users_res.result());
+  ASSERT_EQ(kAck, add_users_res.result());
   cb.Reset();
   add_users_res.Clear();
 
@@ -261,7 +261,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   wait_for_result_tmsgh(cb, mutex);
   maidsafe::GetMessagesResponse get_msgs_res;
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, get_msgs_res.result());
+  ASSERT_EQ(kAck, get_msgs_res.result());
   // Must have one message and no authorised users
   ASSERT_EQ(1, get_msgs_res.messages_size());
   ASSERT_EQ(static_cast<unsigned int>(0), ss->AuthorisedUsers().size());
@@ -288,7 +288,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
       &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, get_msgs_res.result());
+  ASSERT_EQ(kAck, get_msgs_res.result());
   ASSERT_EQ(1, get_msgs_res.messages_size());
   std::string ser_msg1 = get_msgs_res.messages(0);
   packethandler::ValidatedBufferPacketMessage vbpm1;
@@ -312,7 +312,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
       boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, add_users_res.result());
+  ASSERT_EQ(kAck, add_users_res.result());
   cb.Reset();
   add_users_res.Clear();
 
@@ -322,7 +322,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   wait_for_result_tmsgh(cb, mutex);
   maidsafe::DeleteResponse del_res;
   ASSERT_TRUE(del_res.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, del_res.result());
+  ASSERT_EQ(kAck, del_res.result());
   cb.Reset();
   del_res.Clear();
 
@@ -331,7 +331,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
       &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, get_msgs_res.result());
+  ASSERT_EQ(kAck, get_msgs_res.result());
   ASSERT_EQ(0, get_msgs_res.messages_size());
   ASSERT_EQ(static_cast<unsigned int>(1), ss->AuthorisedUsers().size());
   cb.Reset();
@@ -362,7 +362,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
     boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(store_msg_result.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, store_msg_result.result());
+  ASSERT_EQ(kAck, store_msg_result.result());
   ASSERT_EQ(1, store_msg_result.stored_msgs());
   ASSERT_EQ(0, store_msg_result.failed_size());
   cb.Reset();
@@ -377,7 +377,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
       &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, get_msgs_res.result());
+  ASSERT_EQ(kAck, get_msgs_res.result());
   // Must have one message and no authorised users
   ASSERT_EQ(1, get_msgs_res.messages_size());
   ASSERT_EQ(static_cast<unsigned int>(1), ss->AuthorisedUsers().size());
@@ -389,7 +389,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
       &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, get_msgs_res.result());
+  ASSERT_EQ(kAck, get_msgs_res.result());
   printf("Messages: %i\n", get_msgs_res.messages_size());
   ASSERT_EQ(1, get_msgs_res.messages_size());
   ser_msg1 = get_msgs_res.messages(0);

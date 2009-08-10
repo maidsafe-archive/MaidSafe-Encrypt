@@ -54,7 +54,7 @@ enum vault_operation_status {
   IOU_RECEIVED,
   IOU_COLLECTED,
 
-  //Rank holder vault
+  // Rank holder vault
   IOU_RANK_DELIVERED,
   IOU_ERASED
 };

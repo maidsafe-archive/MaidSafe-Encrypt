@@ -40,7 +40,7 @@
 #include "maidsafe/client/packetfactory.h"
 #include "fs/filesystem.h"
 #include "protobuf/datamaps.pb.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 
@@ -125,9 +125,9 @@ class DataAtlasHandlerTest : public testing::Test {
     // sm = sm_;
     sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_seh_(cb, rec_mutex);
-    base::GeneralResponse res;
+    GenericResponse res;
     if ((!res.ParseFromString(cb.result)) ||
-        (res.result() == kCallbackFailure)) {
+        (res.result() == kNack)) {
       FAIL();
       return;
     }

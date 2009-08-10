@@ -29,7 +29,7 @@
 #include "maidsafe/client/dataatlashandler.h"
 #include "protobuf/datamaps.pb.h"
 #include "maidsafe/client/localstoremanager.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "maidsafe/client/packetfactory.h"
 
@@ -108,9 +108,9 @@ class AuthenticationTest : public testing::Test {
         storemanager(new LocalStoreManager(mutex, client_chunkstore_));
     storemanager->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_ta(cb, mutex);
-    base::GeneralResponse res;
+    GenericResponse res;
     if ((!res.ParseFromString(cb.result)) ||
-        (res.result() == kCallbackFailure)) {
+        (res.result() == kNack)) {
       FAIL();
       return;
     }
@@ -480,13 +480,13 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   params["PIN"] = pin;
   std::string mid_name = midPacket->PacketName(params);
   sm->StorePacket(mid_name,
-                            "rubish data with same mid name",
-                            "",
-                            "",
-                            "",
-                            DATA,
-                            false,
-                            boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+                  "rubish data with same mid name",
+                  "",
+                  "",
+                  "",
+                  DATA,
+                  false,
+                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_ta(cb, mutex);
   StoreResponse res;
   ASSERT_TRUE(res.ParseFromString(cb.result));
@@ -517,7 +517,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   packethandler::CreateMSIDResult msid_result;
   ASSERT_TRUE(msid_result.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, msid_result.result());
+  ASSERT_EQ(kAck, msid_result.result());
   msid_name = msid_result.name();
   priv_key = msid_result.private_key();
   pub_key = msid_result.public_key();
@@ -534,7 +534,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   wait_for_result_ta(cb, mutex);
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
-  ASSERT_EQ(kCallbackSuccess, load_res.result());
+  ASSERT_EQ(kAck, load_res.result());
   packethandler::GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(load_res.content()));
 

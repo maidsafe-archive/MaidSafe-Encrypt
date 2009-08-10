@@ -82,13 +82,13 @@ message InstantMessage {
 }
 
 message StoreMessagesResult {
-  required bytes result = 1;
+  required uint32 result = 1;
   required int32 stored_msgs = 2;
   repeated bytes failed = 3;
 }
 
 message CreateMSIDResult {
-  required bytes result = 1;
+  required uint32 result = 1;
   optional bytes name = 2;
   optional bytes private_key = 3;
   optional bytes public_key = 4;

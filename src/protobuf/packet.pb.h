@@ -1380,15 +1380,12 @@ class StoreMessagesResult : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   inline bool has_result() const;
   inline void clear_result();
   static const int kResultFieldNumber = 1;
-  inline const ::std::string& result() const;
-  inline void set_result(const ::std::string& value);
-  inline void set_result(const char* value);
-  inline void set_result(const void* value, size_t size);
-  inline ::std::string* mutable_result();
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
   
   // required int32 stored_msgs = 2;
   inline bool has_stored_msgs() const;
@@ -1417,8 +1414,7 @@ class StoreMessagesResult : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* result_;
-  static const ::std::string _default_result_;
+  ::google::protobuf::uint32 result_;
   ::google::protobuf::int32 stored_msgs_;
   ::google::protobuf::RepeatedPtrField< ::std::string> failed_;
   friend void  protobuf_AddDesc_packet_2eproto();
@@ -1496,15 +1492,12 @@ class CreateMSIDResult : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   inline bool has_result() const;
   inline void clear_result();
   static const int kResultFieldNumber = 1;
-  inline const ::std::string& result() const;
-  inline void set_result(const ::std::string& value);
-  inline void set_result(const char* value);
-  inline void set_result(const void* value, size_t size);
-  inline ::std::string* mutable_result();
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
   
   // optional bytes name = 2;
   inline bool has_name() const;
@@ -1540,8 +1533,7 @@ class CreateMSIDResult : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* result_;
-  static const ::std::string _default_result_;
+  ::google::protobuf::uint32 result_;
   ::std::string* name_;
   static const ::std::string _default_name_;
   ::std::string* private_key_;
@@ -3073,46 +3065,20 @@ inline ::packethandler::PrivateShareNotification* InstantMessage::mutable_privat
 
 // StoreMessagesResult
 
-// required bytes result = 1;
+// required uint32 result = 1;
 inline bool StoreMessagesResult::has_result() const {
   return _has_bit(0);
 }
 inline void StoreMessagesResult::clear_result() {
-  if (result_ != &_default_result_) {
-    result_->clear();
-  }
+  result_ = 0u;
   _clear_bit(0);
 }
-inline const ::std::string& StoreMessagesResult::result() const {
-  return *result_;
-}
-inline void StoreMessagesResult::set_result(const ::std::string& value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void StoreMessagesResult::set_result(const char* value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void StoreMessagesResult::set_result(const void* value, size_t size) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* StoreMessagesResult::mutable_result() {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
+inline ::google::protobuf::uint32 StoreMessagesResult::result() const {
   return result_;
+}
+inline void StoreMessagesResult::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
 }
 
 // required int32 stored_msgs = 2;
@@ -3179,46 +3145,20 @@ inline void StoreMessagesResult::add_failed(const void* value, size_t size) {
 
 // CreateMSIDResult
 
-// required bytes result = 1;
+// required uint32 result = 1;
 inline bool CreateMSIDResult::has_result() const {
   return _has_bit(0);
 }
 inline void CreateMSIDResult::clear_result() {
-  if (result_ != &_default_result_) {
-    result_->clear();
-  }
+  result_ = 0u;
   _clear_bit(0);
 }
-inline const ::std::string& CreateMSIDResult::result() const {
-  return *result_;
-}
-inline void CreateMSIDResult::set_result(const ::std::string& value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void CreateMSIDResult::set_result(const char* value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void CreateMSIDResult::set_result(const void* value, size_t size) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* CreateMSIDResult::mutable_result() {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
+inline ::google::protobuf::uint32 CreateMSIDResult::result() const {
   return result_;
+}
+inline void CreateMSIDResult::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
 }
 
 // optional bytes name = 2;

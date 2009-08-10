@@ -17,7 +17,7 @@
 
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/localstoremanager.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 namespace fs = boost::filesystem;
@@ -28,8 +28,8 @@ void ExecuteSuccessCallback(const base::callback_func_type &cb,
                             boost::recursive_mutex *mutex) {
   base::pd_scoped_lock gaurd(*mutex);
   std::string ser_result;
-  base::GeneralResponse result;
-  result.set_result(kCallbackSuccess);
+  GenericResponse result;
+  result.set_result(kAck);
   result.SerializeToString(&ser_result);
   cb(ser_result);
 }
@@ -38,8 +38,8 @@ void ExecuteFailureCallback(const base::callback_func_type &cb,
                             boost::recursive_mutex *mutex) {
   base::pd_scoped_lock gaurd(*mutex);
   std::string ser_result;
-  base::GeneralResponse result;
-  result.set_result(kCallbackFailure);
+  GenericResponse result;
+  result.set_result(kNack);
   result.SerializeToString(&ser_result);
   cb(ser_result);
 }
@@ -49,7 +49,7 @@ void ExeCallbackLoad(const base::callback_func_type &cb, std::string content,
   base::pd_scoped_lock gaurd(*mutex);
   GetResponse result;
   std::string ser_result;
-  result.set_result(kCallbackSuccess);
+  result.set_result(kAck);
   result.set_content(content);
   result.SerializeToString(&ser_result);
   cb(ser_result);
@@ -61,7 +61,7 @@ void ExeCallbackGetMsgs(const base::callback_func_type &cb,
   base::pd_scoped_lock gaurd(*mutex);
   GetMessagesResponse result;
   std::string ser_result;
-  result.set_result(kCallbackSuccess);
+  result.set_result(kAck);
   for (uint16_t i = 0; i < msgs.size(); i++)
     result.add_messages(msgs[i]);
   result.SerializeToString(&ser_result);

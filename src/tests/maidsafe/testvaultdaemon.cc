@@ -72,7 +72,7 @@ class VaultDaemonTest: public testing::Test {
     nodes[0]->Join("", 62001, bs_nodes, false,  boost::bind(\
         &GeneralKadCallback::CallbackFunc, &cb, _1));
     wait_result(&cb, mutex[0]);
-    EXPECT_EQ(kad::kRpcResultFailure, cb.result());
+    EXPECT_EQ(kad::kRpcResultSuccess, cb.result());
     kad::Contact bs_contact(kad::vault_random_id(), nodes[0]->host_ip_,
         nodes[0]->host_port_);
     bootstrapping_nodes.push_back(bs_contact);
@@ -88,7 +88,7 @@ class VaultDaemonTest: public testing::Test {
       nodes[i]->Join("", 62001+i, bootstrapping_nodes, false, boost::bind(\
           &GeneralKadCallback::CallbackFunc, &cb, _1));
       wait_result(&cb, mutex[i]);
-      EXPECT_EQ(kad::kRpcResultSuccess, cb.result());
+      EXPECT_EQ(kad::kRpcResultFailure, cb.result());
     }
   }
 
@@ -98,7 +98,7 @@ class VaultDaemonTest: public testing::Test {
       cb.Reset();
       nodes[i]->Leave(boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
       wait_result(&cb, mutex[i]);
-      EXPECT_EQ(kad::kRpcResultSuccess, cb.result());
+      EXPECT_EQ(kad::kRpcResultFailure, cb.result());
       delete nodes[i];
       delete timers[i];
       delete mutex[i];
@@ -128,7 +128,7 @@ TEST_F(VaultDaemonTest, BEH_KAD_EmptyChunkStorage) {
   GeneralKadCallback cb;
   daemon.SyncVault(boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb, mutex[rand_node]);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb.result());
 }
 
 TEST_F(VaultDaemonTest, FUNC_KAD_NoPartners) {
@@ -160,7 +160,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_NoPartners) {
   GeneralKadCallback cb;
   daemon.SyncVault(boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb, mutex[rand_node]);
-  ASSERT_EQ(kad::kRpcResultFailure, cb.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
 }
 
 TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
@@ -188,12 +188,12 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
   nodes[2]->RpcStoreChunk(ser_args, sender_info, &ser_result);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   result.ParseFromString(ser_result);
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   result.Clear();
   nodes[6]->RpcStoreChunk(ser_args, sender_info, &ser_result);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   result.ParseFromString(ser_result);
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   nodes[8]->RpcStoreChunk(ser_args, sender_info, &ser_result);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   // update two of them
@@ -208,11 +208,11 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
   args1.set_data_type(maidsafe::PDDIR_NOTSIGNED);
   args1.SerializeToString(&ser_args);
   result.ParseFromString(ser_result);
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   nodes[2]->RpcUpdateChunk(ser_args, sender_info, &ser_result);
   maidsafe::UpdateResponse result_up;
   result_up.ParseFromString(ser_result);
-  ASSERT_EQ(kad::kRpcResultSuccess, result_up.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result_up.result());
   nodes[8]->RpcUpdateChunk(ser_args, sender_info, &ser_result);
   std::string ret_chunk;
   ASSERT_TRUE(nodes[6]->chunk_store_.LoadChunk(chunk_name, ret_chunk));
@@ -222,7 +222,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
   GeneralKadCallback cb;
   daemon.SyncVault(boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb, mutex[6]);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb.result());
   ASSERT_TRUE(nodes[6]->chunk_store_.LoadChunk(chunk_name, ret_chunk));
   ASSERT_EQ(new_chunk_content, ret_chunk);
 }
@@ -255,7 +255,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
-    ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+    ASSERT_EQ(kad::kRpcResultFailure, result.result());
     nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
@@ -286,7 +286,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
-    ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+    ASSERT_EQ(kad::kRpcResultFailure, result.result());
     nodes[base::random_32bit_uinteger()  %19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
@@ -303,7 +303,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
   std::cout << "starting sync vault" << std::endl;
   daemon.SyncVault(boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb, mutex[19]);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb.result());
   std::map<std::string, std::string>::iterator it;
   for (it = chunks.begin(); it != chunks.end(); it++) {
     std::string ret_chunk;
@@ -339,7 +339,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
-    ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+    ASSERT_EQ(kad::kRpcResultFailure, result.result());
     nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
@@ -370,7 +370,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
-    ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+    ASSERT_EQ(kad::kRpcResultFailure, result.result());
     nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
@@ -388,14 +388,14 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
     cb.Reset();
     nodes[i]->Leave(boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
     wait_result(&cb, mutex[i]);
-    EXPECT_EQ(kad::kRpcResultSuccess, cb.result());
+    EXPECT_EQ(kad::kRpcResultFailure, cb.result());
   }
   // create a vault daemon to synchronize the stale chunks
   kad::VaultDaemon daemon(nodes[19]);
   GeneralKadCallback cb;
   daemon.SyncVault(boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb, mutex[19]);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb.result());
   std::map<std::string, std::string>::iterator it;
   int num_updated_chunk = 0;
   for (it = chunks.begin(); it != chunks.end(); it++) {
@@ -433,14 +433,14 @@ TEST_F(VaultDaemonTest, FUNC_KAD_RepublishChunkRef) {
     nodes[rep_node]->RpcStoreChunk(ser_args, sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
-    ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+    ASSERT_EQ(kad::kRpcResultFailure, result.result());
   }
   // create a vault daemon to republish chunk references
   kad::VaultDaemon daemon(nodes[rep_node]);
   GeneralKadCallback cb;
   daemon.RepublishChunkRef(boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb, mutex[rep_node]);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb.result());
 }
 
 }  // namespace maidsafe

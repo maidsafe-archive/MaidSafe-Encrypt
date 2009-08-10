@@ -68,7 +68,7 @@ protected:
     nodes[0]->Join("", 62001, bs_nodes, false, boost::bind(
         &GeneralKadCallback::CallbackFunc, &cb, _1));
     wait_result(&cb, mutex[0]);
-    EXPECT_EQ(kad::kRpcResultFailure, cb.result());
+    EXPECT_EQ(kad::kRpcResultSuccess, cb.result());
     kad::Contact bs_contact(kad::vault_random_id(), nodes[0]->host_ip_,
         nodes[0]->host_port_);
     bootstrapping_nodes.push_back(bs_contact);
@@ -85,7 +85,7 @@ protected:
       nodes[i]->Join("", 62001 + i, bootstrapping_nodes, false, boost::bind(
           &GeneralKadCallback::CallbackFunc, &cb, _1));
       wait_result(&cb, mutex[i]);
-      EXPECT_EQ(kad::kRpcResultSuccess, cb.result());
+      EXPECT_EQ(kad::kRpcResultFailure, cb.result());
     }
     client_mutex = new boost::recursive_mutex();
     client_timer = new base::CallLaterTimer(client_mutex);
@@ -98,7 +98,7 @@ protected:
     pdclient->Join("", 62001 + kNetworkSize, bootstrapping_nodes, false, boost::bind(
       &GeneralKadCallback::CallbackFunc, &cb, _1));
     wait_result(&cb, client_mutex);
-    ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
+    ASSERT_EQ(kad::kRpcResultFailure, cb.result());
   }
   virtual void TearDown(){
     for (int i = 0; i<kNetworkSize; i++) {
@@ -173,7 +173,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk) {
   nodes[2]->RpcStoreChunk(args_str, sender_info, &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_TRUE(result.ParseFromString(result_str));
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   nodes[5]->RpcStoreChunk(args_str, sender_info, &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   nodes[4]->RpcStoreChunk(args_str, sender_info, &result_str);
@@ -182,7 +182,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk) {
   pdclient->FindValue(chunk_name,
       boost::bind(&FindCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   ASSERT_EQ(3, cb1.values().size());
   std::string data = cb1.values().front();
   kad::Contact chunkholder;
@@ -193,7 +193,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk) {
   pdclient->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb2.result());
   ASSERT_EQ(chunk_content, cb2.content());
 }
 
@@ -219,7 +219,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_HolderLeaves) {
   nodes[2]->RpcStoreChunk(args_str, sender_info, &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   nodes[5]->RpcStoreChunk(args_str, sender_info, &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   nodes[4]->RpcStoreChunk(args_str, sender_info, &result_str);
@@ -228,7 +228,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_HolderLeaves) {
   pdclient->FindValue(chunk_name,
       boost::bind(&FindCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   ASSERT_EQ(3, cb1.values().size());
   std::string data = cb1.values().front();
   kad::Contact chunkholder;
@@ -242,7 +242,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_HolderLeaves) {
   pdclient->LoadChunk(chunk_name,
       boost::bind(&FakeCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
 }
 
@@ -256,7 +256,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_AllChunkHoldersLeave) {
   pdclient->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   kad::StoreChunkRequest args;
   StoreResponse result;
   std::string args_str(""), result_str(""), sender_info("");
@@ -273,7 +273,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_AllChunkHoldersLeave) {
   nodes[2]->RpcStoreChunk(args_str, sender_info, &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   nodes[5]->RpcStoreChunk(args_str, sender_info, &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   nodes[4]->RpcStoreChunk(args_str, sender_info, &result_str);
@@ -283,7 +283,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_AllChunkHoldersLeave) {
   pdclient->FindValue(chunk_name,
       boost::bind(&FindCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb2.result());
   ASSERT_EQ(3, cb2.values().size());
   std::string data = cb2.values().front();
   kad::Contact chunkholder;
@@ -304,7 +304,7 @@ TEST_F(PDClientTest, FUNC_KAD_LoadChunk_AllChunkHoldersLeave) {
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb1, _1));
   std::cout << "waiting for load chunk" << std::endl;
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
 }
 
 TEST_F(PDClientTest, BEH_KAD_Test_StoreChunk) {
@@ -321,7 +321,7 @@ TEST_F(PDClientTest, BEH_KAD_Test_StoreChunk) {
     sig_pub_key, sig_req, maidsafe::DATA,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   int copies = 0;
   kad::CheckChunkRequest params;
   kad::CheckChunkResponse result;
@@ -331,7 +331,7 @@ TEST_F(PDClientTest, BEH_KAD_Test_StoreChunk) {
   for (int i = 0; i < kNetworkSize; i++) {
     nodes[i]->RpcCheckChunk(params_str, sender_info, &result_str);
     if ((result.ParseFromString(result_str)) &&
-        (result.result() == kad::kRpcResultSuccess)) {
+        (result.result() == kad::kRpcResultFailure)) {
       copies++;
       kad::LoadChunkRequest args;
       maidsafe::GetResponse load_res;
@@ -340,7 +340,7 @@ TEST_F(PDClientTest, BEH_KAD_Test_StoreChunk) {
       args.SerializeToString(&ser_args);
       nodes[i]->RpcLoadChunk(ser_args, sender_info, &result_str);
       ASSERT_TRUE(load_res.ParseFromString(result_str));
-      ASSERT_EQ(kad::kRpcResultSuccess, load_res.result());
+      ASSERT_EQ(kad::kRpcResultFailure, load_res.result());
       ASSERT_EQ(chunk_content, load_res.content());
     }
   }
@@ -350,7 +350,7 @@ TEST_F(PDClientTest, BEH_KAD_Test_StoreChunk) {
   pdclient->FindValue(chunk_name,
     boost::bind(&FindCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
 }
 
 TEST_F(PDClientTest, BEH_KAD_StoreChunk_InvalidRequest) {
@@ -370,21 +370,21 @@ TEST_F(PDClientTest, BEH_KAD_StoreChunk_InvalidRequest) {
     sig_pub_key, sig_req, maidsafe::DATA,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   cb1.Reset();
   ASSERT_NE(keys.public_key(), otherkeys.public_key());
   pdclient->StoreChunk(chunk_name, chunk_content, "bad key",
     sig_pub_key, sig_req, maidsafe::DATA,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   cb1.Reset();
   ASSERT_NE(keys.public_key(), otherkeys.public_key());
   pdclient->StoreChunk(chunk_name, chunk_content, keys.public_key(),
     sig_pub_key, "bad_sig_req", maidsafe::DATA,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   cb1.Reset();
   std::string data_incorrect_name = cry_obj.Hash("chunk_content", "",
     crypto::STRING_STRING, false);
@@ -392,7 +392,7 @@ TEST_F(PDClientTest, BEH_KAD_StoreChunk_InvalidRequest) {
     sig_pub_key, sig_req, maidsafe::DATA,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
 }
 
 TEST_F(PDClientTest, FUNC_KAD_StoreChunkNoContacts) {
@@ -412,7 +412,7 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkNoContacts) {
   pdclient1->Join("", 62001+kNetworkSize+1, bs, false, boost::bind(
       &GeneralKadCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
     crypto::STRING_STRING, false);
@@ -426,7 +426,7 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkNoContacts) {
     sig_pub_key, sig_req, maidsafe::DATA,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb2.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result());
   pdclient1->Leave(boost::bind(&FakeCallback::CallbackFunc, &cb2, _1));
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   delete pdclient1;
@@ -455,7 +455,7 @@ TEST_F(PDClientTest, FUNC_KAD_Store_LoadChunk) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::DATA,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   // joining a new client to retrieve the chunk
   boost::recursive_mutex *mutex;
   mutex = new boost::recursive_mutex();
@@ -472,12 +472,12 @@ TEST_F(PDClientTest, FUNC_KAD_Store_LoadChunk) {
   pdclient1->Join("", 62001 + kNetworkSize + 1, bootstrapping_nodes, false,
       boost::bind(&GeneralKadCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb2.result());
   LoadChunkCallback cb3;
   pdclient1->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
   pdclient1->Leave(boost::bind(&GeneralKadCallback::CallbackFunc, &cb2, _1));
   boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -507,7 +507,7 @@ TEST_F(PDClientTest, FUNC_KAD_BasicUpdateChunk) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_NOTSIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   boost::this_thread::sleep(boost::posix_time::seconds(1)); // make sure all chunk references are saved!
   std::string new_chunk_content = base::RandomString(250*1024);
   ASSERT_NE(chunk_content, new_chunk_content);
@@ -516,7 +516,7 @@ TEST_F(PDClientTest, FUNC_KAD_BasicUpdateChunk) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_NOTSIGNED,
     boost::bind(&UpdateChunkCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result())
+  ASSERT_EQ(kad::kRpcResultFailure, cb2.result())
         << "Failed to update chunk.";
   int copies = 0;
   kad::CheckChunkRequest params;
@@ -527,7 +527,7 @@ TEST_F(PDClientTest, FUNC_KAD_BasicUpdateChunk) {
     kad::CheckChunkResponse result;
     nodes[i]->RpcCheckChunk(params_str, "", &result_str);
     result.ParseFromString(result_str);
-    if (result.result() == kad::kRpcResultSuccess) {
+    if (result.result() == kad::kRpcResultFailure) {
       copies ++;
       kad::LoadChunkRequest loadchunkreq;
       maidsafe::GetResponse loadres;
@@ -536,7 +536,7 @@ TEST_F(PDClientTest, FUNC_KAD_BasicUpdateChunk) {
       loadchunkreq.SerializeToString(&loadchunkreq_str);
       nodes[i]->RpcLoadChunk(loadchunkreq_str, "", &loadchunkres_str);
       ASSERT_TRUE(loadres.ParseFromString(loadchunkres_str));
-      ASSERT_EQ(kad::kRpcResultSuccess, loadres.result());
+      ASSERT_EQ(kad::kRpcResultFailure, loadres.result());
       ASSERT_EQ(new_chunk_content, loadres.content());
     }
   }
@@ -545,7 +545,7 @@ TEST_F(PDClientTest, FUNC_KAD_BasicUpdateChunk) {
   pdclient->FindValue(chunk_name,
     boost::bind(&FindCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
 }
 
 TEST_F(PDClientTest, FUNC_KAD_UpdateChunkWithChunkHolderLeave) {
@@ -562,7 +562,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateChunkWithChunkHolderLeave) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_NOTSIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   // kill one node
   int copies = 0;
   int killed_node = 0;
@@ -574,7 +574,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateChunkWithChunkHolderLeave) {
     nodes[i]->RpcCheckChunk(params_str, "", &result_str);
     kad::CheckChunkResponse result;
     result.ParseFromString(result_str);
-    if (result.result() == kad::kRpcResultSuccess) {
+    if (result.result() == kad::kRpcResultFailure) {
       copies ++;
       kad::LoadChunkRequest loadchunkreq;
       maidsafe::GetResponse loadres;
@@ -583,7 +583,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateChunkWithChunkHolderLeave) {
       loadchunkreq.SerializeToString(&loadchunkreq_str);
       nodes[i]->RpcLoadChunk(loadchunkreq_str, "", &loadchunkres_str);
       loadres.ParseFromString(loadchunkres_str);
-      ASSERT_EQ(kad::kRpcResultSuccess, loadres.result());
+      ASSERT_EQ(kad::kRpcResultFailure, loadres.result());
       ASSERT_EQ(chunk_content, loadres.content());
       GeneralKadCallback cbi;
       nodes[i]->Leave(boost::bind(&GeneralKadCallback::CallbackFunc, &cbi, _1));
@@ -601,7 +601,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateChunkWithChunkHolderLeave) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_NOTSIGNED,
     boost::bind(&UpdateChunkCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result())
+  ASSERT_EQ(kad::kRpcResultFailure, cb2.result())
         << "Failed to update chunk.";
   copies = 0;
   //params, result;
@@ -610,7 +610,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateChunkWithChunkHolderLeave) {
     kad::CheckChunkResponse result;
     result.ParseFromString(result_str);
     if (i != killed_node
-        && result.result() == kad::kRpcResultSuccess) {
+        && result.result() == kad::kRpcResultFailure) {
       copies ++;
       kad::LoadChunkRequest loadchunkreq;
       maidsafe::GetResponse loadres;
@@ -619,7 +619,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateChunkWithChunkHolderLeave) {
       loadchunkreq.SerializeToString(&loadchunkreq_str);
       nodes[i]->RpcLoadChunk(loadchunkreq_str, "", &loadchunkres_str);
       loadres.ParseFromString(loadchunkres_str);
-      ASSERT_EQ(kad::kRpcResultSuccess, loadres.result());
+      ASSERT_EQ(kad::kRpcResultFailure, loadres.result());
       ASSERT_EQ(new_chunk_content, loadres.content());
     }
   }
@@ -628,7 +628,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateChunkWithChunkHolderLeave) {
   pdclient->FindValue(chunk_name,
     boost::bind(&FindCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
 }
 
 TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
@@ -653,37 +653,37 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
   nodes[1]->RpcStoreChunk(args_str, "", &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   nodes[2]->RpcStoreChunk(args_str, "", &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   nodes[4]->RpcStoreChunk(args_str, "", &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   nodes[6]->RpcStoreChunk(args_str, "", &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   nodes[7]->RpcStoreChunk(args_str, "", &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   nodes[8]->RpcStoreChunk(args_str, "", &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   nodes[9]->RpcStoreChunk(args_str, "", &result_str);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_TRUE(result.ParseFromString(result_str));
-  ASSERT_EQ(kad::kRpcResultSuccess, result.result());
+  ASSERT_EQ(kad::kRpcResultFailure, result.result());
   boost::this_thread::sleep(boost::posix_time::seconds(1));  // make sure all chunk references are saved!
   FindCallback cb1;
   nodes[3]->FindValue(chunk_name,
       boost::bind(&FindCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, mutex[3]);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   ASSERT_EQ(7, cb1.values().size());
   std::string data = cb1.values().front();
   std::string new_chunk_content = base::RandomString(250*1024);
@@ -693,7 +693,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_NOTSIGNED,
     boost::bind(&UpdateChunkCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result())
+  ASSERT_EQ(kad::kRpcResultFailure, cb2.result())
       << "Failed to update chunk.";
   int copies = 0;
   kad::CheckChunkRequest params;
@@ -704,7 +704,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
     kad::CheckChunkResponse result;
     nodes[i]->RpcCheckChunk(params_str, "", &result_str);
     result.ParseFromString(result_str);
-    if (result.result() == kad::kRpcResultSuccess) {
+    if (result.result() == kad::kRpcResultFailure) {
       copies++;
       kad::LoadChunkRequest loadchunkreq;
       maidsafe::GetResponse loadres;
@@ -713,7 +713,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
       loadchunkreq.SerializeToString(&loadchunkreq_str);
       nodes[i]->RpcLoadChunk(loadchunkreq_str, "", &loadchunkres_str);
       loadres.ParseFromString(loadchunkres_str);
-      ASSERT_EQ(kad::kRpcResultSuccess, loadres.result());
+      ASSERT_EQ(kad::kRpcResultFailure, loadres.result());
       ASSERT_EQ(new_chunk_content, loadres.content());
     }
   }
@@ -722,7 +722,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
   pdclient->FindValue(chunk_name,
     boost::bind(&FindCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   // kill some nodes
   GeneralKadCallback cb5;
   nodes[1]->Leave(boost::bind(&GeneralKadCallback::CallbackFunc, &cb5, _1));
@@ -740,7 +740,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_NOTSIGNED,
     boost::bind(&UpdateChunkCallback::CallbackFunc, &cb7, _1));
   wait_result(&cb7, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb7.result())
+  ASSERT_EQ(kad::kRpcResultFailure, cb7.result())
       << "Failed to update chunk.";
   copies = 0;
   for (int i = 0; i < kNetworkSize; i++) {
@@ -748,7 +748,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
     nodes[i]->RpcCheckChunk(params_str, "", &result_str);
     result.ParseFromString(result_str);
     if (i != 1 && i != 8
-        && result.result() == kad::kRpcResultSuccess) {
+        && result.result() == kad::kRpcResultFailure) {
       copies ++;
       kad::LoadChunkRequest loadchunkreq;
       maidsafe::GetResponse loadres;
@@ -757,7 +757,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
       loadchunkreq.SerializeToString(&loadchunkreq_str);
       nodes[i]->RpcLoadChunk(loadchunkreq_str, "", &loadchunkres_str);
       ASSERT_TRUE(loadres.ParseFromString(loadchunkres_str));
-      ASSERT_EQ(kad::kRpcResultSuccess, loadres.result());
+      ASSERT_EQ(kad::kRpcResultFailure, loadres.result());
       ASSERT_EQ(new_chunk_content1, loadres.content());
     }
   }
@@ -783,7 +783,7 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkSystemPacket) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::SYSTEM_PACKET,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   // joining a new client to retrieve the chunk
   boost::recursive_mutex *mutex;
   mutex = new boost::recursive_mutex();
@@ -800,12 +800,12 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkSystemPacket) {
   pdclient1->Join("", 62001 + kNetworkSize + 1, bootstrapping_nodes, false,
       boost::bind(&GeneralKadCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb2.result());
   LoadChunkCallback cb3;
   pdclient1->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
   packethandler::GenericPacket gp_rec;
   ASSERT_TRUE(gp_rec.ParseFromString(cb3.content()));
@@ -844,42 +844,42 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkSystemPacket_InvalidPacket) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::SYSTEM_PACKET,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   cb1.Reset();
   FindCallback cb2;
   pdclient->FindValue(chunk_name,
     boost::bind(&FindCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb2.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result());
   cb2.Reset();
   pdclient->StoreChunk(chunk_name, chunk_content,
     "incorrect pub key", sig_pub_key, sig_req, maidsafe::SYSTEM_PACKET,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
     wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   cb1.Reset();
   pdclient->FindValue(chunk_name,
     boost::bind(&FindCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb2.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result());
   cb1.Reset();
   pdclient->StoreChunk(chunk_name, base::RandomString(4096),
     keys.public_key(), sig_pub_key, sig_req, maidsafe::BUFFER_PACKET,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   cb1.Reset();
   pdclient->StoreChunk(chunk_name, base::RandomString(4096),
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_SIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   cb1.Reset();
   pdclient->StoreChunk(chunk_name, chunk_content,
     keys.public_key(), sig_pub_key, sig_req, maidsafe::BUFFER_PACKET,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
 }
 
 TEST_F(PDClientTest, FUNC_KAD_StoreSignedPDDir) {
@@ -901,12 +901,12 @@ TEST_F(PDClientTest, FUNC_KAD_StoreSignedPDDir) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_SIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   LoadChunkCallback cb3;
   pdclient->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
   packethandler::GenericPacket gp_rec;
   ASSERT_TRUE(gp_rec.ParseFromString(cb3.content()));
@@ -928,13 +928,13 @@ TEST_F(PDClientTest, FUNC_KAD_StoreUnSignedPDDir) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_NOTSIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   LoadChunkCallback cb3;
   pdclient->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
 }
 
@@ -958,13 +958,13 @@ TEST_F(PDClientTest, FUNC_KAD_StoreBUFFER_PACKET) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::BUFFER_PACKET,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   LoadChunkCallback cb3;
   pdclient->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
   packethandler::BufferPacket gp_rec;
   ASSERT_TRUE(gp_rec.ParseFromString(cb3.content()));
@@ -990,13 +990,13 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateSignedPDDir) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_SIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   LoadChunkCallback cb3;
   pdclient->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
   packethandler::GenericPacket gp_rec;
   ASSERT_TRUE(gp_rec.ParseFromString(cb3.content()));
@@ -1013,19 +1013,19 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateSignedPDDir) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_SIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   cb1.Reset();
   pdclient->UpdateChunk(chunk_name, chunk_content,
     keys.public_key(), sig_pub_key, sig_req, maidsafe::PDDIR_SIGNED,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   cb1.Reset();
   cb3.Reset();
   pdclient->LoadChunk(chunk_name,
       boost::bind(&LoadChunkCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
   gp_rec.Clear();
   ASSERT_TRUE(gp_rec.ParseFromString(cb3.content()));
@@ -1062,7 +1062,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
     keys.public_key(), sig_pub_key, sig_req, maidsafe::BUFFER_PACKET,
     boost::bind(&StoreChunkCallback::CallbackFunc, &cb1, _1));
   wait_result(&cb1, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
   cb1.Reset();
   // sleeping one second to allow chunk references to be stored
   boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -1070,7 +1070,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
   pdclient->LoadChunk(chunk_name,
     boost::bind(&LoadChunkCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb2.result());
   ASSERT_EQ(chunk_content, cb2.content());
   cb2.Reset();
 
@@ -1114,25 +1114,25 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
     newkeys.public_key(), new_sig_pk, new_sig_req, maidsafe::BUFFER_PACKET_INFO,
     boost::bind(&UpdateChunkCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
   cb3.Reset();
   //Adding a message invalid Req
   pdclient->UpdateChunk(chunk_name, ser_bpmsg_gp,
     keys.public_key(), "inv_pub_key", sig_req, maidsafe::BUFFER_PACKET_MESSAGE,
     boost::bind(&UpdateChunkCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
   cb3.Reset();
 
   pdclient->UpdateChunk(chunk_name, ser_bpmsg_gp,
     keys.public_key(), sig_pub_key, sig_req, maidsafe::BUFFER_PACKET_MESSAGE,
     boost::bind(&UpdateChunkCallback::CallbackFunc, &cb3, _1));
   wait_result(&cb3, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb3.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   pdclient->LoadChunk(chunk_name,
     boost::bind(&LoadChunkCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb2.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb2.result());
   packethandler::BufferPacket rec_bp;
   ASSERT_TRUE(rec_bp.ParseFromString(cb2.content()));
   ASSERT_EQ(1, rec_bp.messages_size());
@@ -1140,7 +1140,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
   pdclient->GetMessages(chunk_name, keys.public_key(), sig_pub_key,
     boost::bind(&GetMsgsCallback::CallbackFunc, &cb4, _1));
   wait_result(&cb4, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb4.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb4.result());
   ASSERT_EQ(1, cb4.messages().size());
   ASSERT_EQ(ser_val_msg, cb4.messages().front());
   //Clearing Msgs
@@ -1149,11 +1149,11 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
     sig_pub_key, sig_req, maidsafe::BUFFER_PACKET_MESSAGE,
     boost::bind(&DeleteChunkCallback::CallbackFunc, &cb5, _1));
   wait_result(&cb5, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb5.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb5.result());
   cb4.Reset();
   pdclient->GetMessages(chunk_name, keys.public_key(), sig_pub_key,
     boost::bind(&GetMsgsCallback::CallbackFunc, &cb4, _1));
   wait_result(&cb4, client_mutex);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb4.result());
+  ASSERT_EQ(kad::kRpcResultFailure, cb4.result());
   ASSERT_EQ(0, cb4.messages().size());
 }*/

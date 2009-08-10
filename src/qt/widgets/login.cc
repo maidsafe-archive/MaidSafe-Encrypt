@@ -398,7 +398,7 @@ void Login::UserExists_Callback( const std::string& result )
 {
     maidsafe::GetResponse res;
     got_enc_data_ = (res.ParseFromString(result) &&
-                   (res.result() == kCallbackSuccess));
+                   (res.result() == kAck));
 
     state_ = EDIT_PASSWORD;
 

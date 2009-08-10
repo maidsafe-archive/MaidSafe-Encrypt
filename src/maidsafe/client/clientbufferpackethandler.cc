@@ -13,7 +13,7 @@
  */
 
 #include "maidsafe/client/clientbufferpackethandler.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 namespace packethandler {
@@ -21,8 +21,8 @@ namespace packethandler {
 void ExecuteFailureCallback(base::callback_func_type cb,
     boost::recursive_mutex *mutex) {
   base::pd_scoped_lock gaurd(*mutex);
-  base::GeneralResponse result;
-  result.set_result(kCallbackFailure);
+  maidsafe::GenericResponse result;
+  result.set_result(kNack);
   std::string ser_result;
   result.SerializeToString(&ser_result);
   cb(ser_result);
@@ -198,12 +198,12 @@ void ClientBufferPacketHandler::ChangeStatus_Callback(const std::string &result,
   maidsafe::UpdateResponse local_result;
   std::string str_local_result;
   if (!local_result.ParseFromString(result)) {
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&str_local_result);
     cb(str_local_result);
     return;
   }
-//  if (local_result.result() == kCallbackSuccess) {
+//  if (local_result.result() == kAck) {
 //    ss_->SetConnectionStatus(status);
 //  }
   local_result.SerializeToString(&str_local_result);
@@ -216,12 +216,12 @@ void ClientBufferPacketHandler::AddUsers_Callback(const std::string &result,
   maidsafe::UpdateResponse local_result;
   std::string str_local_result;
   if (!local_result.ParseFromString(result)) {
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&str_local_result);
     cb(str_local_result);
     return;
   }
-  if (local_result.result() == kCallbackSuccess) {
+  if (local_result.result() == kAck) {
     SetUserList(users, type);
   }
   local_result.SerializeToString(&str_local_result);
@@ -283,12 +283,12 @@ void ClientBufferPacketHandler::DeleleteUsers_Callback(
   maidsafe::UpdateResponse local_result;
   std::string str_local_result;
   if (!local_result.ParseFromString(result)) {
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&str_local_result);
     cb(str_local_result);
     return;
   }
-  if (local_result.result() == kCallbackSuccess) {
+  if (local_result.result() == kAck) {
     if (type == MPID_BP)
       ss_->SetAuthorisedUsers(users);
     else
@@ -318,14 +318,14 @@ void ClientBufferPacketHandler::GetMessages_Callback(const std::string &result,
   maidsafe::GetMessagesResponse local_result;
   std::string str_local_result;
   if (!local_result.ParseFromString(result)) {
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&str_local_result);
     cb(str_local_result);
     return;
   }
-  if (local_result.result() == kCallbackSuccess) {
+  if (local_result.result() == kAck) {
     maidsafe::GetMessagesResponse result_dec_msgs;
-    result_dec_msgs.set_result(kCallbackSuccess);
+    result_dec_msgs.set_result(kAck);
     for (int i = 0; i < local_result.messages_size() ; i++) {
       ValidatedBufferPacketMessage msg;
       std::string ser_msg = local_result.messages(i);
@@ -364,13 +364,13 @@ void ClientBufferPacketHandler::GetBufferPacket_Callback(
   std::string str_local_result;
   if ((!local_result.ParseFromString(result))||
       (!local_result.has_content())) {
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&str_local_result);
     cb(str_local_result);
     return;
   }
   maidsafe::GetMessagesResponse msgs_result;
-  msgs_result.set_result(kCallbackSuccess);
+  msgs_result.set_result(kAck);
   BufferPacket bp;
   BufferPacketInfo bpi;
   bp.ParseFromString(local_result.content());
@@ -427,13 +427,13 @@ void ClientBufferPacketHandler::GetBufferPacketInfo_Callback(
   std::string str_local_result;
   if ((!local_result.ParseFromString(result))||
       (!local_result.has_content())) {
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&str_local_result);
     cb(str_local_result);
     return;
   }
   maidsafe::GetMessagesResponse msgs_result;
-  msgs_result.set_result(kCallbackSuccess);
+  msgs_result.set_result(kAck);
   BufferPacket bp;
   BufferPacketInfo bpi;
   bp.ParseFromString(local_result.content());
@@ -442,7 +442,7 @@ void ClientBufferPacketHandler::GetBufferPacketInfo_Callback(
   for (int i = 0; i < bpi.users_size(); ++i)
     users.insert(bpi.users(i));
   ss_->SetAuthorisedUsers(users);
-  local_result.set_result(kCallbackSuccess);
+  local_result.set_result(kAck);
   local_result.SerializeToString(&str_local_result);
   cb(str_local_result);
 }

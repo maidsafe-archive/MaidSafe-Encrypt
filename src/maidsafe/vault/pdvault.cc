@@ -27,11 +27,12 @@
 #include <boost/filesystem.hpp>
 #include <boost/thread/thread.hpp>
 #include <google/protobuf/descriptor.h>
+#include <maidsafe/general_messages.pb.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 
 #include "maidsafe/vault/vaultchunkstore.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -125,7 +126,7 @@ void PDVault::KadJoinedCallback(const std::string &result) {
   base::GeneralResponse result_;
   if (!result_.ParseFromString(result)) {
     kad_joined_ = false;
-  } else if (result_.result() != kRpcResultSuccess) {
+  } else if (result_.result() != kad::kRpcResultSuccess) {
     UnRegisterMaidService();
     kad_joined_ = false;
   } else {
@@ -174,7 +175,7 @@ void PDVault::SyncVault(base::callback_func_type cb) {
   } else {  // no chunks on this vault node
     maidsafe::UpdateResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultSuccess);
+    local_result.set_result(kAck);
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
   }
@@ -189,9 +190,9 @@ void PDVault::IterativeSyncVault(boost::shared_ptr<SyncVaultData> data) {
     std::string local_result_str("");
     if (static_cast<float>(data->num_updated_chunks) >=
         kMinSuccessfulPecentageOfUpdating*(data->num_chunks))
-      local_result.set_result(kRpcResultSuccess);
+      local_result.set_result(kAck);
     else
-      local_result.set_result(kRpcResultFailure);
+      local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
     data->cb(local_result_str);
@@ -215,7 +216,7 @@ void PDVault::SyncVault_FindAlivePartner(const std::string& result,
                                          std::string chunk_name) {
   kad::FindResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
-      result_msg.result() == kRpcResultFailure ||
+      result_msg.result() == kad::kRpcResultFailure ||
       result_msg.values_size() == 0) {
     // no chunk references were found
     // TODO(Haiyang): shall we remove the chunk?!
@@ -265,7 +266,7 @@ void PDVault::SyncVault_FindAlivePartner_Callback(
   ++partner_data->contacted_partners;
   kad::PingResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
-      result_msg.result() == kRpcResultFailure ||
+      result_msg.result() == kad::kRpcResultFailure ||
       !result_msg.has_echo() ||
       result_msg.echo() != "pong") {
     if (partner_data->contacted_partners == partner_data->number_partners &&
@@ -296,9 +297,9 @@ void PDVault::ValidityCheck(const std::string &chunk_name,
                             int attempt,
                             base::callback_func_type cb) {
   if (attempt > kValidityCheckRetry) {
-    base::GeneralResponse local_result;
+    maidsafe::GenericResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
     return;
@@ -370,7 +371,7 @@ void PDVault::ValidityCheckCallback(
       return;
     }
   }
-  if (validity_check_response->result() == kRpcResultFailure ||
+  if (validity_check_response->result() == kNack ||
       !validity_check_response->has_hash_content()) {
     // TODO(Fraser#5#): 2009-03-18 - We should probably self-check our chunk
     //                  (hash contents == name) then if OK try validity check
@@ -398,7 +399,7 @@ void PDVault::IterativeSyncVault_SyncChunk(
     kad::Contact remote) {
   maidsafe::ValidityCheckResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
-      result_msg.result() == kRpcResultFailure) {
+      result_msg.result() == kNack) {
     // chunk content is stale, synchronize the chunk
     boost::shared_ptr<SynchArgs>
         synch_args(new SynchArgs(chunk_name, remote, data));
@@ -437,7 +438,7 @@ void PDVault::IterativeSyncVault_UpdateChunk(
     boost::shared_ptr<SynchArgs> synch_args) {
   maidsafe::GetResponse result_msg;
   if (!get_chunk_response->IsInitialized() ||
-      get_chunk_response->result() == kRpcResultFailure) {
+      get_chunk_response->result() == kNack) {
     // TODO(Haiyang): chunk deleted? shall we remove the chunk?!
   } else {
     vault_chunkstore_->UpdateChunk(synch_args->chunk_name_,
@@ -458,9 +459,9 @@ void PDVault::RepublishChunkRef(base::callback_func_type cb) {
     data->cb = cb;
     IterativePublishChunkRef(data);
   } else {  // no chunks on this vault node
-    base::GeneralResponse local_result;
+    maidsafe::GenericResponse local_result;
     std::string local_result_str;
-    local_result.set_result(kRpcResultSuccess);
+    local_result.set_result(kAck);
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
   }
@@ -471,14 +472,14 @@ void PDVault::IterativePublishChunkRef(
   if (data->is_callbacked) return;
   if (data->chunk_names.empty()) {
     // no more chunks need to be republished, job done!
-    base::GeneralResponse local_result;
+    maidsafe::GenericResponse local_result;
     std::string local_result_str;
     printf("\nVault republished!\n");
     if (static_cast<float>(data->num_republished_chunks) >=
         kMinSuccessfulPecentageOfUpdating*(data->num_chunks))
-      local_result.set_result(kRpcResultSuccess);
+      local_result.set_result(kAck);
     else
-      local_result.set_result(kRpcResultFailure);
+      local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
     data->cb(local_result_str);
@@ -518,7 +519,7 @@ void PDVault::IterativePublishChunkRef_Next(
     boost::shared_ptr<RepublishChunkRefData> data) {
   kad::StoreResponse result_msg;
   if (result_msg.ParseFromString(result))
-    if (result_msg.result() == kRpcResultSuccess)
+    if (result_msg.result() == kad::kRpcResultFailure)
       ++data->num_republished_chunks;
   IterativePublishChunkRef(data);
 }
@@ -544,12 +545,12 @@ void PDVault::FindChunkRefCallback(
   }
   kad::FindResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
-      result_msg.result() == kRpcResultFailure ||
+      result_msg.result() == kad::kRpcResultFailure ||
       result_msg.values_size() == 0) {
     // no chunk references were found
     maidsafe::GetResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
     data->cb(local_result_str);
@@ -578,7 +579,7 @@ void PDVault::FindChunkRefCallback(
     // could not get contact info from the values retrieved
     maidsafe::GetResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
     data->cb(local_result_str);
@@ -639,14 +640,14 @@ void PDVault::CheckChunkCallback(
     }
   }
   if (!check_chunk_response->IsInitialized() ||
-      check_chunk_response->result() == kRpcResultFailure) {
+      check_chunk_response->result() == kNack) {
     ++get_args->data_->failed_holders;
     if (get_args->data_->failed_holders >=
         get_args->data_->number_holders) {
       // the chunk references did not respond to the check
       maidsafe::GetResponse local_result;
       std::string local_result_str("");
-      local_result.set_result(kRpcResultFailure);
+      local_result.set_result(kNack);
       local_result.SerializeToString(&local_result_str);
       get_args->data_->cb(local_result_str);
       get_args->data_->is_callbacked = true;
@@ -733,12 +734,15 @@ void PDVault::GetMessagesCallback(
     }
   }
   if (!get_messages_response->IsInitialized() ||
-      get_messages_response->result() == kRpcResultFailure) {
+      get_messages_response->result() == kNack) {
     get_args->data_->failed_chunk_holders.push_back(get_args->chunk_holder_);
     RetryGetChunk(get_args->data_);
   } else {
     get_args->data_->is_callbacked = true;
-    get_args->data_->cb(get_messages_response->result());
+    if (get_messages_response->result() == kAck)
+      get_args->data_->cb(kad::kRpcResultSuccess);
+    else
+      get_args->data_->cb(kad::kRpcResultFailure);
   }
 }
 
@@ -768,7 +772,7 @@ void PDVault::GetChunkCallback(
     }
   }
   if (!get_response->IsInitialized() ||
-      get_response->result() == kRpcResultFailure) {
+      get_response->result() == kNack) {
     get_args->data_->failed_chunk_holders.push_back(get_args->chunk_holder_);
     RetryGetChunk(get_args->data_);
   } else {
@@ -810,7 +814,7 @@ void PDVault::RetryGetChunk(boost::shared_ptr<struct LoadChunkData> data) {
   if (!send_request) {
     maidsafe::GetResponse local_result;
     std::string local_result_str("");
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     data->is_callbacked = true;
     data->cb(local_result_str);
@@ -836,7 +840,7 @@ void PDVault::SwapChunk(const std::string &chunk_name,
     maidsafe::SwapChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_request_type(1);
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
   }
@@ -850,11 +854,11 @@ void PDVault::SwapChunkSendChunk(
     boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
     boost::shared_ptr<SwapChunkArgs> swap_chunk_args) {
   if (!swap_chunk_response->IsInitialized()
-      ||(swap_chunk_response->result() == kRpcResultFailure)) {
+      ||(swap_chunk_response->result() == kNack)) {
     maidsafe::SwapChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_request_type(1);
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     swap_chunk_args->cb_(local_result_str);
     return;
@@ -865,7 +869,7 @@ void PDVault::SwapChunkSendChunk(
     maidsafe::SwapChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_request_type(1);
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     swap_chunk_args->cb_(local_result_str);
   }
@@ -883,14 +887,14 @@ void PDVault::SwapChunkAcceptChunk(
     boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
     boost::shared_ptr<SwapChunkArgs> swap_chunk_args) {
   if (!swap_chunk_response->IsInitialized()
-      || (swap_chunk_response->result() == kRpcResultFailure
+      || (swap_chunk_response->result() == kNack
       || (swap_chunk_response->request_type() != 1)
       || (!swap_chunk_response->has_chunkname2())
       || (!swap_chunk_response->has_chunkcontent2()))) {
     maidsafe::SwapChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_request_type(1);
-    local_result.set_result(kRpcResultFailure);
+    local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
     swap_chunk_args->cb_(local_result_str);
     return;
@@ -924,7 +928,7 @@ void PDVault::SwapChunkAcceptChunk(
   maidsafe::SwapChunkResponse local_result;
   std::string local_result_str("");
   local_result.set_request_type(1);
-  local_result.set_result(kRpcResultSuccess);
+  local_result.set_result(kAck);
   local_result.SerializeToString(&local_result_str);
   swap_chunk_args->cb_(local_result_str);
 }

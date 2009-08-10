@@ -60,7 +60,10 @@ class ClientController {
 
   bool Init();
   bool JoinKademlia();
-  void CloseConnection();  // close connection to kademlia/stub storage
+  // Close connection to kademlia/stub storage.  Currently with UDT, if
+  // clean_up_transport is true, UDT cannot be restarted, so this is a
+  // permanent cessation of the transport layer.
+  void CloseConnection(bool clean_up_transport);
 
   int ParseDa();
   int SerialiseDa();

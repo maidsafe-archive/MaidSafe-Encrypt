@@ -40,7 +40,7 @@ void vsvc_dummy_callback(const std::string &result) {
   if (!result_msg.ParseFromString(result))
     printf("Can't parse store result.\n");
   printf("%s\n", result_msg.DebugString().c_str());
-  if (result_msg.result() == kad::kRpcResultFailure)
+  if (result_msg.result() == kad::kRpcResultSuccess)
     printf("Storing chunk reference failed.\n");
   else
     printf("Storing chunk reference succeeded.\n");
@@ -381,20 +381,20 @@ void VaultService::Get(google::protobuf::RpcController*,
     printf("In VaultService::Get (%i), request isn't initialised.\n",
            knode_->host_port());
 #endif
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
   std::string content;
   if (LoadChunkLocal(request->chunkname(), &content)) {
-    response->set_result(kCallbackSuccess);
+    response->set_result(kAck);
     response->set_content(content);
   } else {
 #ifdef DEBUG
     printf("In VaultService::Get (%i), couldn't find chunk locally.\n",
            knode_->host_port());
 #endif
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
   }
   done->Run();
 }
@@ -407,14 +407,14 @@ void VaultService::CheckChunk(google::protobuf::RpcController*,
   base::decode_from_hex(pmid_, &id);
   response->set_pmid_id(id);
   if (!request->IsInitialized()) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
   if (HasChunkLocal(request->chunkname()))
-    response->set_result(kCallbackSuccess);
+    response->set_result(kAck);
   else
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
   done->Run();
 }
 
@@ -431,7 +431,7 @@ void VaultService::Update(google::protobuf::RpcController*,
   base::decode_from_hex(pmid_, &id);
   response->set_pmid_id(id);
   if (!request->IsInitialized()) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
@@ -442,7 +442,7 @@ void VaultService::Update(google::protobuf::RpcController*,
     printf("In VaultService::Update (%i), request didn't validate.\n",
            knode_->host_port());
 #endif
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
@@ -453,7 +453,7 @@ void VaultService::Update(google::protobuf::RpcController*,
     printf("In VaultService::Update (%i), don't have chunk to update.\n",
            knode_->host_port());
 #endif
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
@@ -510,7 +510,7 @@ void VaultService::Update(google::protobuf::RpcController*,
       printf("In VaultService::Update (%i), failed local chunk update.\n",
              knode_->host_port());
 #endif
-      response->set_result(kCallbackFailure);
+      response->set_result(kNack);
       done->Run();
       return;
     }
@@ -519,11 +519,11 @@ void VaultService::Update(google::protobuf::RpcController*,
     printf("In VaultService::Update (%i), data isn't valid.\n",
            knode_->host_port());
 #endif
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
-  response->set_result(kCallbackSuccess);
+  response->set_result(kAck);
   done->Run();
   return;
 }
@@ -536,13 +536,13 @@ void VaultService::GetMessages(google::protobuf::RpcController*,
   base::decode_from_hex(pmid_, &id);
   response->set_pmid_id(id);
   if (!request->IsInitialized()) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
   if (!crypto_.AsymCheckSig(request->public_key(), request->signed_public_key(),
       request->public_key(), crypto::STRING_STRING)) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
@@ -550,20 +550,20 @@ void VaultService::GetMessages(google::protobuf::RpcController*,
   if (LoadChunkLocal(request->buffer_packet_name(), &content)) {
     packethandler::VaultBufferPacketHandler vbph;
     if (!vbph.ValidateOwnerSignature(request->public_key(), content)) {
-      response->set_result(kCallbackFailure);
+      response->set_result(kNack);
       done->Run();
       return;
     }
     std::vector<std::string> msgs;
     if (!vbph.GetMessages(content, &msgs)) {
-      response->set_result(kCallbackFailure);
+      response->set_result(kNack);
     } else {
       for (int i = 0; i < static_cast<int>(msgs.size()); i++)
         response->add_messages(msgs[i]);
-      response->set_result(kCallbackSuccess);
+      response->set_result(kAck);
     }
   } else {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
   }
   done->Run();
 }
@@ -576,20 +576,20 @@ void VaultService::Delete(google::protobuf::RpcController*,
   base::decode_from_hex(pmid_, &id);
   response->set_pmid_id(id);
   if (!request->IsInitialized()) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
   if (!ValidateSignedRequest(request->public_key(),
       request->signed_public_key(), request->signed_request(),
       request->chunkname())) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
   std::string content;
   if (!LoadChunkLocal(request->chunkname(), &content)) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
@@ -621,17 +621,17 @@ void VaultService::Delete(google::protobuf::RpcController*,
   if (can_delete) {
     if (request->data_type() != maidsafe::BUFFER_PACKET_MESSAGE) {
       if (DeleteChunkLocal(request->chunkname()))
-        response->set_result(kCallbackSuccess);
+        response->set_result(kAck);
       else
-        response->set_result(kCallbackFailure);
+        response->set_result(kNack);
     } else {
       if (UpdateChunkLocal(request->chunkname(), content))
-        response->set_result(kCallbackSuccess);
+        response->set_result(kAck);
       else
-        response->set_result(kCallbackFailure);
+        response->set_result(kNack);
     }
   } else {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
   }
   done->Run();
 }
@@ -644,22 +644,22 @@ void VaultService::ValidityCheck(google::protobuf::RpcController*,
   base::decode_from_hex(pmid_, &id);
   response->set_pmid_id(id);
   if (!request->IsInitialized()) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
   std::string chunk_content;
   if (!LoadChunkLocal(request->chunkname(), &chunk_content)) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
   // TODO(Fraser#5#): 2009-03-18 - we should probably do a self-check here and
-  //                  return kCallbackFailure if we fail and try and get another
+  //                  return kNack if we fail and try and get another
   //                  uncorrupted copy.
   std::string hcontent = crypto_.Hash(chunk_content +
       request->random_data(), "", crypto::STRING_STRING, false);
-  response->set_result(kCallbackSuccess);
+  response->set_result(kAck);
   response->set_hash_content(hcontent);
   done->Run();
 }
@@ -672,7 +672,7 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
   base::decode_from_hex(pmid_, &id);
   response->set_pmid_id(id);
   if (!request->IsInitialized()) {
-    response->set_result(kCallbackFailure);
+    response->set_result(kNack);
     done->Run();
     return;
   }
@@ -681,7 +681,7 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
   if (request->request_type() == 0) {
     // negotiate, Make request type constant layer
     if (HasChunkLocal(request->chunkname1())) {
-      response->set_result(kCallbackFailure);
+      response->set_result(kNack);
       done->Run();
       return;
     }
@@ -690,7 +690,7 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
     std::string chunkname2;
     std::string chunkcontent2;
     if (!vault_chunkstore_->LoadRandomChunk(&chunkname2, &chunkcontent2)) {
-      response->set_result(kCallbackFailure);
+      response->set_result(kNack);
       done->Run();
       return;
     }
@@ -701,14 +701,14 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
     if (request->has_chunkname2() && request->has_chunkcontent1()) {
       std::string key = request->chunkname1();
       if (!StoreChunkLocal(key, request->chunkcontent1())) {
-        response->set_result(kCallbackFailure);
+        response->set_result(kNack);
         done->Run();
         return;
       }
       StoreChunkReference(key);
       std::string chunkcontent2;
       if (!LoadChunkLocal(request->chunkname2(), &chunkcontent2)) {
-        response->set_result(kCallbackFailure);
+        response->set_result(kNack);
         done->Run();
         return;
       }
@@ -716,11 +716,11 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
       response->set_chunkcontent2(chunkcontent2);
     }
   } else {
-      response->set_result(kCallbackFailure);
+      response->set_result(kNack);
       done->Run();
       return;
   }
-  response->set_result(kCallbackSuccess);
+  response->set_result(kAck);
   done->Run();
 }
 

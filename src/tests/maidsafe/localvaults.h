@@ -27,6 +27,7 @@
 #define TESTS_MAIDSAFE_LOCALVAULTS_H_
 
 #include <gtest/gtest.h>
+#include <maidsafe/general_messages.pb.h>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -36,7 +37,7 @@
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/crypto.h"
 #include "maidsafe/vault/pdvault.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 
 namespace fs = boost::filesystem;
 

@@ -130,9 +130,9 @@ void MessageHandler::IterativeStoreMsgs(
   if (data->stores_done == static_cast<int>(data->receivers.size())) {
     packethandler::StoreMessagesResult result;
     if (data->successful_stores == 0)
-      result.set_result(kCallbackFailure);
+      result.set_result(kNack);
     else
-      result.set_result(kCallbackSuccess);
+      result.set_result(kAck);
     result.set_stored_msgs(data->successful_stores);
     for (int i = 0; i < static_cast<int>(data->no_auth_rec.size()); ++i) {
       result.add_failed(data->no_auth_rec[i]);
@@ -239,7 +239,7 @@ void MessageHandler::StoreMessage_Callback(
   }
   UpdateResponse result_msg;
   if ((result_msg.ParseFromString(result)) &&
-      (result_msg.result() == kCallbackSuccess)) {
+      (result_msg.result() == kAck)) {
     ++data->successful_stores;
   } else {
     data->no_auth_rec.push_back(data->receivers[index].id);

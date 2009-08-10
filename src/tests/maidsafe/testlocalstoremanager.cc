@@ -26,7 +26,7 @@
 
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/localstoremanager.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 class FakeCallback {
@@ -96,9 +96,9 @@ class StoreManagerTest : public testing::Test {
     // storemanager = new LocalStoreManager();
     storemanager->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_lsm(cb, mutex_);
-    base::GeneralResponse res;
+    maidsafe::GenericResponse res;
     ASSERT_TRUE(res.ParseFromString(cb.result_));
-    if (res.result() == kCallbackFailure) {
+    if (res.result() == kNack) {
       FAIL();
       return;
     }
@@ -110,9 +110,9 @@ class StoreManagerTest : public testing::Test {
     cb.Reset();
     storemanager->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_lsm(cb, mutex_);
-    base::GeneralResponse res;
+    maidsafe::GenericResponse res;
     ASSERT_TRUE(res.ParseFromString(cb.result_));
-    if (res.result() == kCallbackSuccess) {
+    if (res.result() == kAck) {
       try {
         if (boost::filesystem::exists("KademilaDb.db"))
           boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
@@ -146,9 +146,9 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   storemanager->IsKeyUnique(gp_name,
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
-  base::GeneralResponse is_unique_res;
+  maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, is_unique_res.result());
+  ASSERT_EQ(kAck, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
   std::string gp_content;
@@ -175,7 +175,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, is_unique_res.result());
+  ASSERT_EQ(kNack, is_unique_res.result());
   cb.Reset();
   std::string result;
   storemanager->LoadPacket(gp_name,
@@ -183,7 +183,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, load_res.result());
+  ASSERT_EQ(kAck, load_res.result());
   ASSERT_EQ(gp_content, load_res.content());
 }
 
@@ -220,9 +220,9 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
   storemanager->IsKeyUnique(gp_name,
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
-  base::GeneralResponse is_unique_res;
+  maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, is_unique_res.result());
+  ASSERT_EQ(kNack, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 
@@ -232,14 +232,14 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::DeleteResponse del_res;
   ASSERT_TRUE(del_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, del_res.result());
+  ASSERT_EQ(kAck, del_res.result());
   cb.Reset();
 
   storemanager->IsKeyUnique(gp_name,
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, is_unique_res.result());
+  ASSERT_EQ(kAck, is_unique_res.result());
   cb.Reset();
 }
 
@@ -250,9 +250,9 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   storemanager->IsKeyUnique(chunk_name,
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
-  base::GeneralResponse is_unique_res;
+  maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, is_unique_res.result());
+  ASSERT_EQ(kAck, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 
@@ -270,7 +270,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, is_unique_res.result());
+  ASSERT_EQ(kNack, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 
@@ -279,7 +279,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, load_res.result());
+  ASSERT_EQ(kAck, load_res.result());
   ASSERT_EQ(chunk_content, load_res.content());
 }
 
@@ -294,9 +294,9 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   storemanager->IsKeyUnique(bufferpacketname,
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
-  base::GeneralResponse is_unique_res;
+  maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, is_unique_res.result());
+  ASSERT_EQ(kAck, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 
@@ -339,7 +339,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, is_unique_res.result());
+  ASSERT_EQ(kNack, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 
@@ -348,7 +348,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, load_res.result());
+  ASSERT_EQ(kAck, load_res.result());
   ASSERT_EQ(ser_bp, load_res.content());
 }
 
@@ -386,9 +386,9 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   storemanager->IsKeyUnique(gp_name,
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
-  base::GeneralResponse is_unique_res;
+  maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, is_unique_res.result());
+  ASSERT_EQ(kNack, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 
@@ -410,7 +410,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::DeleteResponse del_res;
   ASSERT_TRUE(del_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, del_res.result());
+  ASSERT_EQ(kNack, del_res.result());
   cb.Reset();
   del_res.Clear();
 
@@ -418,7 +418,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, is_unique_res.result());
+  ASSERT_EQ(kNack, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 
@@ -430,7 +430,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(del_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, del_res.result());
+  ASSERT_EQ(kNack, del_res.result());
   cb.Reset();
   del_res.Clear();
 
@@ -438,7 +438,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, is_unique_res.result());
+  ASSERT_EQ(kNack, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 }
@@ -454,9 +454,9 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   storemanager->IsKeyUnique(bufferpacketname,
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
-  base::GeneralResponse is_unique_res;
+  maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, is_unique_res.result());
+  ASSERT_EQ(kAck, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 
@@ -499,7 +499,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, is_unique_res.result());
+  ASSERT_EQ(kNack, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 
@@ -520,7 +520,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::DeleteResponse del_res;
   ASSERT_TRUE(del_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, del_res.result());
+  ASSERT_EQ(kNack, del_res.result());
   cb.Reset();
   del_res.Clear();
 }
@@ -578,9 +578,9 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   storemanager->IsKeyUnique(bufferpacketname,
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
-  base::GeneralResponse is_unique_res;
+  maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, is_unique_res.result());
+  ASSERT_EQ(kAck, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 
@@ -622,7 +622,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, is_unique_res.result());
+  ASSERT_EQ(kNack, is_unique_res.result());
   cb.Reset();
   is_unique_res.Clear();
 
@@ -631,7 +631,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, load_res.result());
+  ASSERT_EQ(kAck, load_res.result());
   ASSERT_EQ(ser_bp, load_res.content());
 
   // Creating msgs to insert
@@ -693,7 +693,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                            boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, load_res.result());
+  ASSERT_EQ(kAck, load_res.result());
   ASSERT_EQ(ser_bp, load_res.content());
   cb.Reset();
 
@@ -722,7 +722,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                            boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, load_res.result());
+  ASSERT_EQ(kAck, load_res.result());
   ser_bp = load_res.content();
   packethandler::BufferPacket bp;
   bp.ParseFromString(ser_bp);
@@ -738,7 +738,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GetMessagesResponse get_msg_res;
   ASSERT_TRUE(get_msg_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackFailure, get_msg_res.result());
+  ASSERT_EQ(kNack, get_msg_res.result());
   cb.Reset();
   get_msg_res.Clear();
 
@@ -748,7 +748,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(get_msg_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kCallbackSuccess, get_msg_res.result());
+  ASSERT_EQ(kAck, get_msg_res.result());
   ASSERT_EQ(1, get_msg_res.messages_size());
   cb.Reset();
 }

@@ -40,7 +40,7 @@
 #include "maidsafe/client/selfencryption.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "protobuf/packet.pb.h"
 #ifdef LOCAL_PDVAULT
@@ -142,9 +142,9 @@ bool ClientController::JoinKademlia() {
   printf("After bootstrap in CC.\n");
 #endif
   WaitForResult(cb);
-  base::GeneralResponse result;
+  GenericResponse result;
   if ((!result.ParseFromString(cb.result)) ||
-      (result.result() == kCallbackFailure))
+      (result.result() == kNack))
     return false;
   else
     return true;
@@ -488,7 +488,7 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
   co_.set_hash_algorithm(crypto::SHA_1);
   fs::path config_file(vault_path);
   config_file /= ".config";
-  base::VaultConfig vault_config;
+  VaultConfig vault_config;
   vault_config.set_pmid_public(pmid_public);
   vault_config.set_pmid_private(pmid_private);
   //  vault_config.set_port(6666);
@@ -574,13 +574,13 @@ bool ClientController::ValidateUser(const std::string &password) {
   return false;
 }
 
-void ClientController::CloseConnection() {
+void ClientController::CloseConnection(bool clean_up_transport) {
   CC_CallbackResult cb;
   sm_->Close(boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
-  base::GeneralResponse result;
+  GenericResponse result;
   if ((!result.ParseFromString(cb.result)) ||
-      (result.result() == kCallbackFailure)) {
+      (result.result() == kNack)) {
 #ifdef DEBUG
     printf("Error leaving network.\n");
 #endif
@@ -589,6 +589,8 @@ void ClientController::CloseConnection() {
 #ifdef DEBUG
     printf("Successfully left kademlia.\n");
 #endif
+    if (clean_up_transport)
+      sm_->CleanUpTransport();
     return;
   }
 }
@@ -851,7 +853,7 @@ bool ClientController::AuthoriseUsers(std::set<std::string> users) {
   WaitForResult(cb);
   UpdateResponse add_users_res;
   if ((!add_users_res.ParseFromString(cb.result)) ||
-      (add_users_res.result() == kCallbackFailure))
+      (add_users_res.result() == kNack))
     return false;
 
   return true;
@@ -867,7 +869,7 @@ bool ClientController::DeauthoriseUsers(std::set<std::string> users) {
   WaitForResult(cb);
   UpdateResponse del_users_res;
   if ((!del_users_res.ParseFromString(cb.result)) ||
-      (del_users_res.result() == kCallbackFailure))
+      (del_users_res.result() == kNack))
     return false;
 
   return true;
@@ -885,7 +887,7 @@ int ClientController::ChangeConnectionStatus(int status) {
   UpdateResponse change_connection_status;
   if (!change_connection_status.ParseFromString(cb.result))
     return -1;
-  if (change_connection_status.result() == kCallbackFailure)
+  if (change_connection_status.result() == kNack)
     return -2;
 
   return 0;
@@ -907,7 +909,7 @@ bool ClientController::GetMessages() {
   WaitForResult(cb);
   GetMessagesResponse result;
   if ((!result.ParseFromString(cb.result)) ||
-      (result.result() == kCallbackFailure))
+      (result.result() == kNack))
     return false;
   if (result.messages_size() == 0)
     // TODO(Richard): return code for no messages
@@ -926,7 +928,7 @@ bool ClientController::GetMessages() {
   WaitForResult(cb);
   DeleteResponse clear_result;
   if ((!clear_result.ParseFromString(cb.result)) ||
-       (clear_result.result() == kCallbackFailure)) {
+       (clear_result.result() == kNack)) {
 #ifdef DEBUG
     printf("Error clearing messages from buffer packet.");
 #endif
@@ -1301,7 +1303,7 @@ int ClientController::HandleAddContactRequest(
   WaitForResult(cb);
   packethandler::StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
-      (res.result() == kCallbackFailure)) {
+      (res.result() == kNack)) {
 #ifdef DEBUG
     printf("Callbackfailure send msg.\n");
 #endif
@@ -1400,7 +1402,7 @@ int ClientController::SendInstantMessage(const std::string &message,
   WaitForResult(cb);
   packethandler::StoreMessagesResult store_res;
   if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kCallbackFailure)) {
+      (store_res.result() == kNack)) {
 #ifdef DEBUG
     printf("Callback failure sending instant message.\n");
 #endif
@@ -1502,7 +1504,7 @@ int ClientController::SendInstantFile(std::string *filename,
   WaitForResult(cb);
   packethandler::StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
-      (res.result() == kCallbackFailure)) {
+      (res.result() == kNack)) {
 #ifdef DEBUG
     printf("Callbackfailure send msg.\n");
 #endif
@@ -1601,7 +1603,7 @@ int ClientController::AddContact(const std::string &public_name) {
     WaitForResult(cb);
     packethandler::StoreMessagesResult res;
     if ((!res.ParseFromString(cb.result)) ||
-        (res.result() == kCallbackFailure)) {
+        (res.result() == kNack)) {
 #ifdef DEBUG
       printf("Callbackfailure send msg.\n");
 #endif
@@ -1686,7 +1688,7 @@ int ClientController::DeleteContact(const std::string &public_name) {
   WaitForResult(cb);
   packethandler::StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
-      (res.result() == kCallbackFailure) ||
+      (res.result() == kNack) ||
       (res.stored_msgs() != 1)) {
 #ifdef DEBUG
     printf("Callbackfailure in sending the deletion notification.\n");
@@ -1736,7 +1738,7 @@ int ClientController::CreateNewShare(const std::string &name,
     printf("Result doesn't parse.\n");
     return -30001;
   }
-  if (cmsidr.result() == kCallbackFailure) {
+  if (cmsidr.result() == kNack) {
     printf("The creation of the MSID failed.\n");
     return -30002;
   }
@@ -1846,7 +1848,7 @@ int ClientController::CreateNewShare(const std::string &name,
                        boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
     WaitForResult(cbr);
     if ((!res.ParseFromString(cbr.result)) ||
-        (res.result() == kCallbackFailure)) {
+        (res.result() == kNack)) {
 #ifdef DEBUG
       printf("Callback failure send msg to readonlys.\n");
 #endif
@@ -1884,7 +1886,7 @@ int ClientController::CreateNewShare(const std::string &name,
                        boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
     WaitForResult(cbr);
     if ((!res.ParseFromString(cbr.result)) ||
-        (res.result() == kCallbackFailure)) {
+        (res.result() == kNack)) {
   #ifdef DEBUG
       printf("Callback failure send msg to admins.\n");
   #endif

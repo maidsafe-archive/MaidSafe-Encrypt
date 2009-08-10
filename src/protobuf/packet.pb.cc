@@ -383,9 +383,9 @@ void protobuf_AddDesc_packet_2eproto() {
     "ntFileNotification\022J\n\031privateshare_notif"
     "ication\030\006 \001(\0132\'.packethandler.PrivateSha"
     "reNotification\"J\n\023StoreMessagesResult\022\016\n"
-    "\006result\030\001 \002(\014\022\023\n\013stored_msgs\030\002 \002(\005\022\016\n\006fa"
+    "\006result\030\001 \002(\r\022\023\n\013stored_msgs\030\002 \002(\005\022\016\n\006fa"
     "iled\030\003 \003(\014\"Y\n\020CreateMSIDResult\022\016\n\006result"
-    "\030\001 \002(\014\022\014\n\004name\030\002 \001(\014\022\023\n\013private_key\030\003 \001("
+    "\030\001 \002(\r\022\014\n\004name\030\002 \001(\014\022\023\n\013private_key\030\003 \001("
     "\014\022\022\n\npublic_key\030\004 \001(\014*F\n\013MessageType\022\024\n\020"
     "ADD_CONTACT_RQST\020\001\022\017\n\013INSTANT_MSG\020\002\022\020\n\014S"
     "TATUS_CHECK\020\003", 1533);
@@ -3966,7 +3966,6 @@ const ::google::protobuf::Reflection* InstantMessage::GetReflection() const {
 
 // ===================================================================
 
-const ::std::string StoreMessagesResult::_default_result_;
 #ifndef _MSC_VER
 const int StoreMessagesResult::kResultFieldNumber;
 const int StoreMessagesResult::kStoredMsgsFieldNumber;
@@ -3977,7 +3976,7 @@ StoreMessagesResult::StoreMessagesResult()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     stored_msgs_(0),
     failed_() {
   SharedCtor();
@@ -3989,7 +3988,7 @@ StoreMessagesResult::StoreMessagesResult(const StoreMessagesResult& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     stored_msgs_(0),
     failed_() {
   SharedCtor();
@@ -3998,7 +3997,7 @@ StoreMessagesResult::StoreMessagesResult(const StoreMessagesResult& from)
 
 void StoreMessagesResult::SharedCtor() {
   _cached_size_ = 0;
-  result_ = const_cast< ::std::string*>(&_default_result_);
+  result_ = 0u;
   stored_msgs_ = 0;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -4008,9 +4007,6 @@ StoreMessagesResult::~StoreMessagesResult() {
 }
 
 void StoreMessagesResult::SharedDtor() {
-  if (result_ != &_default_result_) {
-    delete result_;
-  }
   if (this != default_instance_) {
   }
 }
@@ -4032,11 +4028,7 @@ StoreMessagesResult* StoreMessagesResult::New() const {
 
 void StoreMessagesResult::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
-      if (result_ != &_default_result_) {
-        result_->clear();
-      }
-    }
+    result_ = 0u;
     stored_msgs_ = 0;
   }
   failed_.Clear();
@@ -4050,13 +4042,15 @@ bool StoreMessagesResult::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes result = 1;
+      // required uint32 result = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_result()));
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(0);
         if (input->ExpectTag(16)) goto parse_stored_msgs;
         break;
       }
@@ -4113,9 +4107,9 @@ void StoreMessagesResult::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->result(), output);
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
   }
   
   // required int32 stored_msgs = 2;
@@ -4136,9 +4130,9 @@ void StoreMessagesResult::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* StoreMessagesResult::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->result(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
   }
   
   // required int32 stored_msgs = 2;
@@ -4162,10 +4156,11 @@ int StoreMessagesResult::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes result = 1;
+    // required uint32 result = 1;
     if (has_result()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->result());
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
     }
     
     // required int32 stored_msgs = 2;
@@ -4258,7 +4253,6 @@ const ::google::protobuf::Reflection* StoreMessagesResult::GetReflection() const
 
 // ===================================================================
 
-const ::std::string CreateMSIDResult::_default_result_;
 const ::std::string CreateMSIDResult::_default_name_;
 const ::std::string CreateMSIDResult::_default_private_key_;
 const ::std::string CreateMSIDResult::_default_public_key_;
@@ -4273,7 +4267,7 @@ CreateMSIDResult::CreateMSIDResult()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     name_(const_cast< ::std::string*>(&_default_name_)),
     private_key_(const_cast< ::std::string*>(&_default_private_key_)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)) {
@@ -4286,7 +4280,7 @@ CreateMSIDResult::CreateMSIDResult(const CreateMSIDResult& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    result_(const_cast< ::std::string*>(&_default_result_)),
+    result_(0u),
     name_(const_cast< ::std::string*>(&_default_name_)),
     private_key_(const_cast< ::std::string*>(&_default_private_key_)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)) {
@@ -4296,7 +4290,7 @@ CreateMSIDResult::CreateMSIDResult(const CreateMSIDResult& from)
 
 void CreateMSIDResult::SharedCtor() {
   _cached_size_ = 0;
-  result_ = const_cast< ::std::string*>(&_default_result_);
+  result_ = 0u;
   name_ = const_cast< ::std::string*>(&_default_name_);
   private_key_ = const_cast< ::std::string*>(&_default_private_key_);
   public_key_ = const_cast< ::std::string*>(&_default_public_key_);
@@ -4308,9 +4302,6 @@ CreateMSIDResult::~CreateMSIDResult() {
 }
 
 void CreateMSIDResult::SharedDtor() {
-  if (result_ != &_default_result_) {
-    delete result_;
-  }
   if (name_ != &_default_name_) {
     delete name_;
   }
@@ -4341,11 +4332,7 @@ CreateMSIDResult* CreateMSIDResult::New() const {
 
 void CreateMSIDResult::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
-      if (result_ != &_default_result_) {
-        result_->clear();
-      }
-    }
+    result_ = 0u;
     if (_has_bit(1)) {
       if (name_ != &_default_name_) {
         name_->clear();
@@ -4372,13 +4359,15 @@ bool CreateMSIDResult::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes result = 1;
+      // required uint32 result = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_result()));
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(0);
         if (input->ExpectTag(18)) goto parse_name;
         break;
       }
@@ -4443,9 +4432,9 @@ void CreateMSIDResult::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->result(), output);
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
   }
   
   // optional bytes name = 2;
@@ -4471,9 +4460,9 @@ void CreateMSIDResult::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* CreateMSIDResult::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes result = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->result(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
   }
   
   // optional bytes name = 2;
@@ -4502,10 +4491,11 @@ int CreateMSIDResult::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes result = 1;
+    // required uint32 result = 1;
     if (has_result()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->result());
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
     }
     
     // optional bytes name = 2;

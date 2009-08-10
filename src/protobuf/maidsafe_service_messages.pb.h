@@ -1875,15 +1875,12 @@ class DeleteResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   inline bool has_result() const;
   inline void clear_result();
   static const int kResultFieldNumber = 1;
-  inline const ::std::string& result() const;
-  inline void set_result(const ::std::string& value);
-  inline void set_result(const char* value);
-  inline void set_result(const void* value, size_t size);
-  inline ::std::string* mutable_result();
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
   
   // optional bytes pmid_id = 2;
   inline bool has_pmid_id() const;
@@ -1899,8 +1896,7 @@ class DeleteResponse : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* result_;
-  static const ::std::string _default_result_;
+  ::google::protobuf::uint32 result_;
   ::std::string* pmid_id_;
   static const ::std::string _default_pmid_id_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
@@ -2069,15 +2065,12 @@ class GetResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   inline bool has_result() const;
   inline void clear_result();
   static const int kResultFieldNumber = 1;
-  inline const ::std::string& result() const;
-  inline void set_result(const ::std::string& value);
-  inline void set_result(const char* value);
-  inline void set_result(const void* value, size_t size);
-  inline ::std::string* mutable_result();
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
   
   // optional bytes content = 2;
   inline bool has_content() const;
@@ -2103,8 +2096,7 @@ class GetResponse : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* result_;
-  static const ::std::string _default_result_;
+  ::google::protobuf::uint32 result_;
   ::std::string* content_;
   static const ::std::string _default_content_;
   ::std::string* pmid_id_;
@@ -2275,15 +2267,12 @@ class CheckChunkResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   inline bool has_result() const;
   inline void clear_result();
   static const int kResultFieldNumber = 1;
-  inline const ::std::string& result() const;
-  inline void set_result(const ::std::string& value);
-  inline void set_result(const char* value);
-  inline void set_result(const void* value, size_t size);
-  inline ::std::string* mutable_result();
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
   
   // required bytes pmid_id = 2;
   inline bool has_pmid_id() const;
@@ -2299,8 +2288,7 @@ class CheckChunkResponse : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* result_;
-  static const ::std::string _default_result_;
+  ::google::protobuf::uint32 result_;
   ::std::string* pmid_id_;
   static const ::std::string _default_pmid_id_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
@@ -2481,15 +2469,12 @@ class ValidityCheckResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   inline bool has_result() const;
   inline void clear_result();
   static const int kResultFieldNumber = 1;
-  inline const ::std::string& result() const;
-  inline void set_result(const ::std::string& value);
-  inline void set_result(const char* value);
-  inline void set_result(const void* value, size_t size);
-  inline ::std::string* mutable_result();
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
   
   // optional bytes hash_content = 2;
   inline bool has_hash_content() const;
@@ -2515,8 +2500,7 @@ class ValidityCheckResponse : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* result_;
-  static const ::std::string _default_result_;
+  ::google::protobuf::uint32 result_;
   ::std::string* hash_content_;
   static const ::std::string _default_hash_content_;
   ::std::string* pmid_id_;
@@ -2743,15 +2727,12 @@ class UpdateResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   inline bool has_result() const;
   inline void clear_result();
   static const int kResultFieldNumber = 1;
-  inline const ::std::string& result() const;
-  inline void set_result(const ::std::string& value);
-  inline void set_result(const char* value);
-  inline void set_result(const void* value, size_t size);
-  inline ::std::string* mutable_result();
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
   
   // optional bytes pmid_id = 2;
   inline bool has_pmid_id() const;
@@ -2767,8 +2748,7 @@ class UpdateResponse : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* result_;
-  static const ::std::string _default_result_;
+  ::google::protobuf::uint32 result_;
   ::std::string* pmid_id_;
   static const ::std::string _default_pmid_id_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
@@ -2961,15 +2941,12 @@ class GetMessagesResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes result = 1;
+  // required uint32 result = 1;
   inline bool has_result() const;
   inline void clear_result();
   static const int kResultFieldNumber = 1;
-  inline const ::std::string& result() const;
-  inline void set_result(const ::std::string& value);
-  inline void set_result(const char* value);
-  inline void set_result(const void* value, size_t size);
-  inline ::std::string* mutable_result();
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
   
   // repeated bytes messages = 2;
   inline int messages_size() const;
@@ -3001,8 +2978,7 @@ class GetMessagesResponse : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* result_;
-  static const ::std::string _default_result_;
+  ::google::protobuf::uint32 result_;
   ::google::protobuf::RepeatedPtrField< ::std::string> messages_;
   ::std::string* pmid_id_;
   static const ::std::string _default_pmid_id_;
@@ -3219,15 +3195,12 @@ class SwapChunkResponse : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 request_type() const;
   inline void set_request_type(::google::protobuf::int32 value);
   
-  // required bytes result = 2;
+  // required uint32 result = 2;
   inline bool has_result() const;
   inline void clear_result();
   static const int kResultFieldNumber = 2;
-  inline const ::std::string& result() const;
-  inline void set_result(const ::std::string& value);
-  inline void set_result(const char* value);
-  inline void set_result(const void* value, size_t size);
-  inline ::std::string* mutable_result();
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
   
   // optional bytes chunkname1 = 3;
   inline bool has_chunkname1() const;
@@ -3298,8 +3271,7 @@ class SwapChunkResponse : public ::google::protobuf::Message {
   mutable int _cached_size_;
   
   ::google::protobuf::int32 request_type_;
-  ::std::string* result_;
-  static const ::std::string _default_result_;
+  ::google::protobuf::uint32 result_;
   ::std::string* chunkname1_;
   static const ::std::string _default_chunkname1_;
   ::std::string* chunkcontent1_;
@@ -5537,46 +5509,20 @@ inline void DeleteRequest::set_data_type(::google::protobuf::int32 value) {
 
 // DeleteResponse
 
-// required bytes result = 1;
+// required uint32 result = 1;
 inline bool DeleteResponse::has_result() const {
   return _has_bit(0);
 }
 inline void DeleteResponse::clear_result() {
-  if (result_ != &_default_result_) {
-    result_->clear();
-  }
+  result_ = 0u;
   _clear_bit(0);
 }
-inline const ::std::string& DeleteResponse::result() const {
-  return *result_;
-}
-inline void DeleteResponse::set_result(const ::std::string& value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void DeleteResponse::set_result(const char* value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void DeleteResponse::set_result(const void* value, size_t size) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* DeleteResponse::mutable_result() {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
+inline ::google::protobuf::uint32 DeleteResponse::result() const {
   return result_;
+}
+inline void DeleteResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
 }
 
 // optional bytes pmid_id = 2;
@@ -5671,46 +5617,20 @@ inline ::std::string* GetRequest::mutable_chunkname() {
 
 // GetResponse
 
-// required bytes result = 1;
+// required uint32 result = 1;
 inline bool GetResponse::has_result() const {
   return _has_bit(0);
 }
 inline void GetResponse::clear_result() {
-  if (result_ != &_default_result_) {
-    result_->clear();
-  }
+  result_ = 0u;
   _clear_bit(0);
 }
-inline const ::std::string& GetResponse::result() const {
-  return *result_;
-}
-inline void GetResponse::set_result(const ::std::string& value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void GetResponse::set_result(const char* value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void GetResponse::set_result(const void* value, size_t size) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* GetResponse::mutable_result() {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
+inline ::google::protobuf::uint32 GetResponse::result() const {
   return result_;
+}
+inline void GetResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
 }
 
 // optional bytes content = 2;
@@ -5847,46 +5767,20 @@ inline ::std::string* CheckChunkRequest::mutable_chunkname() {
 
 // CheckChunkResponse
 
-// required bytes result = 1;
+// required uint32 result = 1;
 inline bool CheckChunkResponse::has_result() const {
   return _has_bit(0);
 }
 inline void CheckChunkResponse::clear_result() {
-  if (result_ != &_default_result_) {
-    result_->clear();
-  }
+  result_ = 0u;
   _clear_bit(0);
 }
-inline const ::std::string& CheckChunkResponse::result() const {
-  return *result_;
-}
-inline void CheckChunkResponse::set_result(const ::std::string& value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void CheckChunkResponse::set_result(const char* value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void CheckChunkResponse::set_result(const void* value, size_t size) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* CheckChunkResponse::mutable_result() {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
+inline ::google::protobuf::uint32 CheckChunkResponse::result() const {
   return result_;
+}
+inline void CheckChunkResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
 }
 
 // required bytes pmid_id = 2;
@@ -6023,46 +5917,20 @@ inline ::std::string* ValidityCheckRequest::mutable_random_data() {
 
 // ValidityCheckResponse
 
-// required bytes result = 1;
+// required uint32 result = 1;
 inline bool ValidityCheckResponse::has_result() const {
   return _has_bit(0);
 }
 inline void ValidityCheckResponse::clear_result() {
-  if (result_ != &_default_result_) {
-    result_->clear();
-  }
+  result_ = 0u;
   _clear_bit(0);
 }
-inline const ::std::string& ValidityCheckResponse::result() const {
-  return *result_;
-}
-inline void ValidityCheckResponse::set_result(const ::std::string& value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void ValidityCheckResponse::set_result(const char* value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void ValidityCheckResponse::set_result(const void* value, size_t size) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* ValidityCheckResponse::mutable_result() {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
+inline ::google::protobuf::uint32 ValidityCheckResponse::result() const {
   return result_;
+}
+inline void ValidityCheckResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
 }
 
 // optional bytes hash_content = 2;
@@ -6383,46 +6251,20 @@ inline void UpdateRequest::set_data_type(::google::protobuf::int32 value) {
 
 // UpdateResponse
 
-// required bytes result = 1;
+// required uint32 result = 1;
 inline bool UpdateResponse::has_result() const {
   return _has_bit(0);
 }
 inline void UpdateResponse::clear_result() {
-  if (result_ != &_default_result_) {
-    result_->clear();
-  }
+  result_ = 0u;
   _clear_bit(0);
 }
-inline const ::std::string& UpdateResponse::result() const {
-  return *result_;
-}
-inline void UpdateResponse::set_result(const ::std::string& value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void UpdateResponse::set_result(const char* value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void UpdateResponse::set_result(const void* value, size_t size) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* UpdateResponse::mutable_result() {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
+inline ::google::protobuf::uint32 UpdateResponse::result() const {
   return result_;
+}
+inline void UpdateResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
 }
 
 // optional bytes pmid_id = 2;
@@ -6601,46 +6443,20 @@ inline ::std::string* GetMessagesRequest::mutable_signed_public_key() {
 
 // GetMessagesResponse
 
-// required bytes result = 1;
+// required uint32 result = 1;
 inline bool GetMessagesResponse::has_result() const {
   return _has_bit(0);
 }
 inline void GetMessagesResponse::clear_result() {
-  if (result_ != &_default_result_) {
-    result_->clear();
-  }
+  result_ = 0u;
   _clear_bit(0);
 }
-inline const ::std::string& GetMessagesResponse::result() const {
-  return *result_;
-}
-inline void GetMessagesResponse::set_result(const ::std::string& value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void GetMessagesResponse::set_result(const char* value) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void GetMessagesResponse::set_result(const void* value, size_t size) {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* GetMessagesResponse::mutable_result() {
-  _set_bit(0);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
+inline ::google::protobuf::uint32 GetMessagesResponse::result() const {
   return result_;
+}
+inline void GetMessagesResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
 }
 
 // repeated bytes messages = 2;
@@ -6911,46 +6727,20 @@ inline void SwapChunkResponse::set_request_type(::google::protobuf::int32 value)
   request_type_ = value;
 }
 
-// required bytes result = 2;
+// required uint32 result = 2;
 inline bool SwapChunkResponse::has_result() const {
   return _has_bit(1);
 }
 inline void SwapChunkResponse::clear_result() {
-  if (result_ != &_default_result_) {
-    result_->clear();
-  }
+  result_ = 0u;
   _clear_bit(1);
 }
-inline const ::std::string& SwapChunkResponse::result() const {
-  return *result_;
-}
-inline void SwapChunkResponse::set_result(const ::std::string& value) {
-  _set_bit(1);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void SwapChunkResponse::set_result(const char* value) {
-  _set_bit(1);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(value);
-}
-inline void SwapChunkResponse::set_result(const void* value, size_t size) {
-  _set_bit(1);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
-  result_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* SwapChunkResponse::mutable_result() {
-  _set_bit(1);
-  if (result_ == &_default_result_) {
-    result_ = new ::std::string;
-  }
+inline ::google::protobuf::uint32 SwapChunkResponse::result() const {
   return result_;
+}
+inline void SwapChunkResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(1);
+  result_ = value;
 }
 
 // optional bytes chunkname1 = 3;

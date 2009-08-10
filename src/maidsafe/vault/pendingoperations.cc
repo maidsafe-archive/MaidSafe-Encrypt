@@ -79,18 +79,18 @@ int PendingOperationsHandler::AdvanceStatus(const std::string &pmid,
     return -1493;
   }
   std::pair<pending_operation_set::iterator, pending_operation_set::iterator> p;
-  switch(status) {
-    case STORE_ACCEPTED :
+  switch (status) {
+    case STORE_ACCEPTED:
       break;
-    case STORE_DONE :
+    case STORE_DONE:
       p = pending_ops_.equal_range(boost::make_tuple(STORE_ACCEPTED, chunkname,
           pmid, chunk_size));
       break;
-    case AWAITING_IOU :
+    case AWAITING_IOU:
       p = pending_ops_.equal_range(boost::make_tuple(STORE_DONE, chunkname,
           pmid, chunk_size));
       break;
-    case IOU_READY :
+    case IOU_READY:
       p = pending_ops_.equal_range(boost::make_tuple(AWAITING_IOU, chunkname));
       break;
     default: break;
@@ -150,11 +150,11 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
     const std::string &iou, const std::string &rank_authority,
     const std::string &public_key, const vault_operation_status &status) {
   int res = 0;
-  switch(status) {
+  switch (status) {
     // Storing vault
     case STORE_ACCEPTED: if (public_key.empty()) return -1496;
     case STORE_DONE:
-      if(pmid.empty() || chunkname.empty() || chunk_size == 0 ||
+      if (pmid.empty() || chunkname.empty() || chunk_size == 0 ||
           !iou.empty() || !rank_authority.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s) -- (%llu)-- (%s) -- (%s)\n",
@@ -166,7 +166,7 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       break;
     case IOU_READY:
     case AWAITING_IOU:
-      if(chunkname.empty()) {
+      if (chunkname.empty()) {
 #ifdef DEBUG
         printf("Wrong parameter: (%s)\n", chunkname.c_str());
 #endif
@@ -174,7 +174,7 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       }
       break;
     case IOU_RANK_RETREIVED:
-      if(iou.empty() || rank_authority.empty()) {
+      if (iou.empty() || rank_authority.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s)\n", iou.c_str(),
                rank_authority.c_str());
@@ -185,7 +185,7 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
 
     // Reference holder vault
     case IOU_RECEIVED:
-      if(pmid.empty() || chunkname.empty() || chunk_size == 0 ||
+      if (pmid.empty() || chunkname.empty() || chunk_size == 0 ||
          iou.empty() || !rank_authority.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s) -- (%llu)-- (%s) -- (%s)\n",
@@ -196,7 +196,7 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       }
       break;
     case IOU_COLLECTED:
-      if(pmid.empty() || chunkname.empty() || chunk_size != 0 ||
+      if (pmid.empty() || chunkname.empty() || chunk_size != 0 ||
           !iou.empty() || !rank_authority.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s) -- (%llu)-- (%s) -- (%s)\n",
@@ -207,7 +207,7 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       }
       break;
 
-    //Rank holder vault
+    // Rank holder vault
     case IOU_RANK_DELIVERED: break;
     case IOU_ERASED: break;
   }
@@ -254,7 +254,7 @@ int PendingOperationsHandler::DeletePendingIOU(const std::string &pmid,
   pending_ious_.erase(it);
   multi_index_mutex_.unlock();
   return 0;
-}
+ }
 
 bool PendingOperationsHandler::IOUExists(const std::string &pmid,
                                   const boost::uint64_t &chunk_size,

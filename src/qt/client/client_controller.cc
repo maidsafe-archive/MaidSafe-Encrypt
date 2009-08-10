@@ -70,7 +70,7 @@ void ClientController::StopCheckingMessages() {
 }
 
 void ClientController::shutdown() {
-  maidsafe::ClientController::getInstance()->CloseConnection();
+  maidsafe::ClientController::getInstance()->CloseConnection(true);
 }
 
 QString ClientController::publicUsername() const {

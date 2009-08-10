@@ -20,7 +20,7 @@
 
 #include "maidsafe/maidsafe.h"
 #include "protobuf/datamaps.pb.h"
-#include "protobuf/general_messages.pb.h"
+#include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service.pb.h"
 
 namespace maidsafe {
@@ -317,7 +317,7 @@ Exitcode Authentication::SaveSession(std::string ser_da,
     WaitForResult(cb);
     DeleteResponse del_res;
     if ((!del_res.ParseFromString(cb.result)) ||
-      (del_res.result() == kCallbackFailure)) {
+      (del_res.result() == kNack)) {
       return FAIL;
     }
 
@@ -519,9 +519,9 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
   storemanager_->IsKeyUnique(mpidname,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
-  base::GeneralResponse is_unique_res;
+  GenericResponse is_unique_res;
   is_unique_res.ParseFromString(cb.result);
-  if (is_unique_res.result() == kCallbackFailure)
+  if (is_unique_res.result() == kNack)
     return PUBLIC_USERNAME_EXISTS;
   is_unique_res.Clear();
 
@@ -535,7 +535,7 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
       boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
     WaitForResult(cb);
     is_unique_res.ParseFromString(cb.result);
-    if (is_unique_res.result() == kCallbackSuccess)
+    if (is_unique_res.result() == kAck)
       sigpacket_result = true;
     else
       params = sigPacket->Create(params);
@@ -704,7 +704,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   WaitForResult(cb);
   GetResponse load_res;
   if ((!load_res.ParseFromString(cb.result)) ||
-      (load_res.result() == kCallbackFailure) ||
+      (load_res.result() == kNack) ||
       (!load_res.has_content()))
     return FAIL;
   std::string ser_tmid = load_res.content();
@@ -914,7 +914,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   WaitForResult(cb);
   GetResponse load_res;
   if ((!load_res.ParseFromString(cb.result)) ||
-      (load_res.result() != kCallbackSuccess) ||
+      (load_res.result() != kAck) ||
       (!load_res.has_content()))
     return FAIL;
   std::string ser_tmid = load_res.content();
@@ -1043,9 +1043,9 @@ std::string Authentication::createSignaturePackets(
     storemanager_->IsKeyUnique(boost::any_cast<std::string>(params["name"]),
       boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
     WaitForResult(cb);
-    base::GeneralResponse is_unique_res;
+    GenericResponse is_unique_res;
     is_unique_res.ParseFromString(cb.result);
-    if (is_unique_res.result() == kCallbackSuccess)
+    if (is_unique_res.result() == kAck)
       result = true;
     else
       params = sigPacket->Create(params);
@@ -1141,7 +1141,7 @@ bool Authentication::GetMid(const std::string &username,
   WaitForResult(cb);
   GetResponse load_res;
   if ((!load_res.ParseFromString(cb.result)) ||
-      (load_res.result() != kCallbackSuccess) ||
+      (load_res.result() != kAck) ||
       (!load_res.has_content())) {
     delete midPacket;
     return false;
@@ -1178,7 +1178,7 @@ bool Authentication::GetSmid(const std::string &username,
   WaitForResult(cb);
   GetResponse load_res;
   if ((!load_res.ParseFromString(cb.result)) ||
-      (load_res.result() != kCallbackSuccess) ||
+      (load_res.result() != kAck) ||
       (!load_res.has_content())) {
     delete smidPacket;
     return false;
@@ -1216,19 +1216,19 @@ void Authentication::GetUserTmidCallback(const std::string& result,
                                          base::callback_func_type cb) {
   GetResponse load_res;
   if ((!load_res.ParseFromString(result)) ||
-      (load_res.result() != kCallbackSuccess) ||
+      (load_res.result() != kAck) ||
       (!load_res.has_content())) {
 #ifdef DEBUG
     if (!load_res.ParseFromString(result))
       printf("Doesn't parse as GetUserTmidCallback.\n");
-    if (load_res.result() != kCallbackSuccess)
+    if (load_res.result() != kAck)
       printf("GetUserTmidCallback came back with failure.\n");
     if (!load_res.has_content())
       printf("GetUserTmidCallback came back with no content.\n");
 #endif
     if (smid) {
       load_res.Clear();
-      load_res.set_result(kCallbackFailure);
+      load_res.set_result(kNack);
       std::string ser_res;
       load_res.SerializeToString(&ser_res);
       cb(ser_res);
@@ -1238,7 +1238,7 @@ void Authentication::GetUserTmidCallback(const std::string& result,
       int rid;
       if (!GetSmid(ss_->Username(), ss_->Pin(), &rid)) {
         load_res.Clear();
-        load_res.set_result(kCallbackFailure);
+        load_res.set_result(kNack);
         std::string ser_res;
         load_res.SerializeToString(&ser_res);
         cb(ser_res);
@@ -1250,7 +1250,7 @@ void Authentication::GetUserTmidCallback(const std::string& result,
       return;
     } else {
       load_res.Clear();
-      load_res.set_result(kCallbackFailure);
+      load_res.set_result(kNack);
       std::string ser_res;
       load_res.SerializeToString(&ser_res);
 #ifdef DEBUG
@@ -1281,7 +1281,7 @@ Exitcode Authentication::PublicUsernamePublicKey(
   WaitForResult(cb);
   GetResponse load_res;
   if ((!load_res.ParseFromString(cb.result)) ||
-      (load_res.result() != kCallbackSuccess) ||
+      (load_res.result() != kAck) ||
       (!load_res.has_content())) {
     return NON_EXISTING_USER;
   }
@@ -1313,16 +1313,16 @@ void Authentication::CheckMSIDUnique_Callback(const std::string &result,
   // up to 10 retries to try to create a unique msid name
   if (retry > 10) {
     ph::CreateMSIDResult local_result;
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
     std::string ser_local_result;
     local_result.SerializeToString(&ser_local_result);
     cb(ser_local_result);
     return;
   }
 
-  base::GeneralResponse is_unique_res;
+  GenericResponse is_unique_res;
   if ((!is_unique_res.ParseFromString(result)) ||
-      (is_unique_res.result() != kCallbackSuccess)) {
+      (is_unique_res.result() != kAck)) {
     // msid name already exists in kademlia.  creating a new msid
     ph::SignaturePacket *sigPacket = static_cast<ph::SignaturePacket*>\
       (ph::PacketFactory::Factory(ph::MSID));
@@ -1357,9 +1357,9 @@ void Authentication::StoreMSID_Callback(const std::string &result,
   std::string str_local_result;
   if ((!result_msg.ParseFromString(result)) ||
       (result_msg.result() != kAck)) {
-    local_result.set_result(kCallbackFailure);
+    local_result.set_result(kNack);
   } else {
-    local_result.set_result(kCallbackSuccess);
+    local_result.set_result(kAck);
     local_result.set_private_key(boost::any_cast<std::string>(
         params["privateKey"]));
     local_result.set_public_key(boost::any_cast<std::string>(

@@ -192,7 +192,7 @@ void ValCheck::AddChunkToCheck_Callback(const dht::entry &result,
     // invalid result
     return;
   }
-  if (result["result"].string() == kRpcResultFailure) {
+  if (result["result"].string() == kNack) {
     std::cout << "--RPCResult is Failure" << std::endl;
     return;
   }
@@ -218,7 +218,7 @@ void ValCheck::CheckValidity_Callback(const dht::entry &result,
   const std::string &random_data, const int &retry) {
   std::string hcontent;
   std::string chunkstatus = DIRTY;
-  if (result["result"].string() == kRpcResultSuccess) {
+  if (result["result"].string() == kAck) {
     std::string remote_hash = result["hashcontent"].string();
     std::string content;
     crypto::Crypto cry_obj;
@@ -231,7 +231,7 @@ void ValCheck::CheckValidity_Callback(const dht::entry &result,
   }
   // Update the DB only if passed the number of retries
   // retries are only for timeouts, not incorrect hashes
-  if ((result["result"].string() == kRpcResultSuccess) || retry < vchRetry) {
+  if ((result["result"].string() == kAck) || retry < vchRetry) {
     try {
       boost::int32_t curr_time = base::get_epoch_time();
       CppSQLite3Statement stmt;
@@ -385,7 +385,7 @@ void ValCheck::IterativeCheck(boost::shared_ptr<IterativeCheckData> data){
 
 void ValCheck::IterativeCheck_Callback(const dht::entry &result, \
   boost::shared_ptr<IterativeCheckData> data){
-  if (result["result"].string() == kRpcResultSuccess){
+  if (result["result"].string() == kAck){
     // valid chunk and partner
     IterativeCheck(data);
   }
