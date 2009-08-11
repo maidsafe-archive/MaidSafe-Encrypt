@@ -33,13 +33,13 @@ namespace boost { namespace threadpool
   *
   * \see boost function library
   *
-  */ 
+  */
   typedef function0<void> task_func;
 
 
 
 
-  /*! \brief Prioritized task function object. 
+  /*! \brief Prioritized task function object.
   *
   * This function object wraps a task_func object and binds a priority to it.
   * prio_task_funcs can be compared using the operator < which realises a partial ordering.
@@ -47,7 +47,7 @@ namespace boost { namespace threadpool
   *
   * \see prio_scheduler
   *
-  */ 
+  */
   class prio_task_func
   {
   private:
@@ -84,26 +84,26 @@ namespace boost { namespace threadpool
     */
     bool operator< (const prio_task_func& rhs) const
     {
-      return m_priority < rhs.m_priority; 
+      return m_priority < rhs.m_priority;
     }
 
   };  // prio_task_func
 
 
 
- 
 
 
 
 
-  /*! \brief Looped task function object. 
+
+  /*! \brief Looped task function object.
   *
   * This function object wraps a boolean thread function object.
-  * The wrapped task function is invoked by calling the operator () and it is executed in regular 
+  * The wrapped task function is invoked by calling the operator () and it is executed in regular
   * time intervals until false is returned. The interval length may be zero.
   * Please note that a pool's thread is engaged as long as the task is looped.
   *
-  */ 
+  */
   class looped_task_func
   {
   private:
@@ -120,7 +120,7 @@ namespace boost { namespace threadpool
     * \param interval The minimum break time in milli seconds before the first execution of the task function and between the following ones.
     */
     looped_task_func(function0<bool> const & function, unsigned int const interval = 0)
-      : m_function(function)
+      : m_function(function), m_break_s(0), m_break_ns(0)
     {
       m_break_s  = interval / 1000;
       m_break_ns = (interval - m_break_s * 1000) * 1000 * 1000;
@@ -138,7 +138,7 @@ namespace boost { namespace threadpool
           xtime_get(&xt, TIME_UTC);
           xt.nsec += m_break_ns;
           xt.sec += m_break_s;
-          thread::sleep(xt); 
+          thread::sleep(xt);
         }
 
         while(m_function())
@@ -149,7 +149,7 @@ namespace boost { namespace threadpool
             xtime_get(&xt, TIME_UTC);
             xt.nsec += m_break_ns;
             xt.sec += m_break_s;
-            thread::sleep(xt); 
+            thread::sleep(xt);
           }
           else
           {

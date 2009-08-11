@@ -1,7 +1,7 @@
 /*! \file
 * \brief TODO.
 *
-* TODO. 
+* TODO.
 *
 * Copyright (c) 2005-2007 Philipp Henkel
 *
@@ -22,7 +22,7 @@
 #include <boost/function.hpp>
 
 
-namespace boost { namespace threadpool { namespace detail 
+namespace boost { namespace threadpool { namespace detail
 {
 
 // TODO documentation

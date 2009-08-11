@@ -150,6 +150,7 @@ int PendingOperationsHandler::GetSizeAndIOU(const std::string &pmid,
                                             const std::string &chunkname,
                                             boost::uint64_t *chunk_size,
                                             std::string *iou) {
+  boost::mutex::scoped_lock loch(multi_index_mutex_);
   *chunk_size = 0;
   *iou = "";
   std::pair<pending_operation_set::iterator, pending_operation_set::iterator> p;
@@ -164,6 +165,40 @@ int PendingOperationsHandler::GetSizeAndIOU(const std::string &pmid,
   *chunk_size = (*p.first).chunk_size_;
   *iou = (*p.first).iou_;
   return 0;
+}
+
+int PendingOperationsHandler::PrunePendingOps() {
+  boost::mutex::scoped_lock loch(multi_index_mutex_);
+  int deletes = 0;
+  typedef pending_operation_set::index<pending_op_timestamp>::type
+          pending_operation_set_timestamp;
+  pending_operation_set_timestamp& pending_op_index =
+      pending_ops_.get<pending_op_timestamp>();
+  if (pending_op_index.begin() == pending_op_index.end()) {
+#ifdef DEBUG
+    printf("NO pending ops.\n");
+#endif
+    return deletes;
+  }
+  boost::uint32_t bound = base::get_epoch_time() - 14;
+  pending_operation_set_timestamp::iterator it = pending_op_index.begin();
+  pending_operation_set_timestamp::iterator limit =
+      pending_op_index.lower_bound(bound);
+  if (pending_op_index.begin() == limit) {
+#ifdef DEBUG
+    printf("NO prunable ops.\n");
+#endif
+    return deletes;
+  }
+  while (it != limit) {
+    if ((*it).status_ != STORE_ACCEPTED) {
+      pending_op_index.erase(it);
+      ++deletes;
+    }
+    ++it;
+  }
+
+  return deletes;
 }
 
 int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
@@ -234,156 +269,5 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
   }
   return res;
 }
-
-/*
-int PendingOperationsHandler::AddPendingIOU(const std::string &pmid,
-                                     const boost::uint64_t &chunk_size,
-                                     const std::string &authority,
-                                     const boost::uint32_t &timestamp) {
-  multi_index_mutex_.lock();
-  if (pmid == "" || chunk_size == 0 || authority == "" ||
-     (authority.size() == 8 && authority != "maidsafe")) {
-#ifdef DEBUG
-    printf("Parameters passed invalid (%s) -- (%s)  -- (%llu)\n", pmid.c_str(),
-            authority.c_str(), chunk_size);
-#endif
-    multi_index_mutex_.unlock();
-    return -2700;
-  }
-
-  PendingIOURow pir(pmid, chunk_size, authority, timestamp);
-  pending_ious_.insert(pir);
-  multi_index_mutex_.unlock();
-  return 0;
-}
-
-int PendingOperationsHandler::DeletePendingIOU(const std::string &pmid,
-                                        const boost::uint64_t &chunk_size,
-                                        const std::string &authority) {
-  multi_index_mutex_.lock();
-  pending_iou_set::iterator it =
-      pending_ious_.get<pending_iou_pmid_cs_auth>().find(
-      boost::make_tuple(pmid, chunk_size, authority));
-  if (it == pending_ious_.end()) {
-#ifdef DEBUG
-    printf("PendingIOU not found (%s) -- (%s)\n", pmid.c_str(),
-            authority.c_str());
-#endif
-    multi_index_mutex_.unlock();
-    return -2701;
-  }
-  pending_ious_.erase(it);
-  multi_index_mutex_.unlock();
-  return 0;
- }
-
-bool PendingOperationsHandler::IOUExists(const std::string &pmid,
-                                  const boost::uint64_t &chunk_size,
-                                  const std::string &authority) {
-  multi_index_mutex_.lock();
-  pending_iou_set::iterator it =
-      pending_ious_.get<pending_iou_pmid_cs_auth>().find(
-      boost::make_tuple(pmid, chunk_size, authority));
-  if (it == pending_ious_.end()) {
-#ifdef DEBUG
-    printf("PendingIOU not found (%s) -- (%s)\n", pmid.c_str(),
-            authority.c_str());
-#endif
-    multi_index_mutex_.unlock();
-    return false;
-  }
-  multi_index_mutex_.unlock();
-  return true;
-}
-
-std::string PendingOperationsHandler::GetIOU(const std::string &pmid,
-                                      const boost::uint64_t &chunk_size) {
-  std::string authority;
-  multi_index_mutex_.lock();
-  std::pair<pending_iou_set::iterator, pending_iou_set::iterator> p =
-      pending_ious_.equal_range(boost::make_tuple(pmid, chunk_size));
-  if (p.first == p.second) {
-#ifdef DEBUG
-    printf("PendingIOU not found (%s) -- (%llu)\n", pmid.c_str(),
-            chunk_size);
-#endif
-    multi_index_mutex_.unlock();
-    return authority;
-  }
-  authority = (*p.first).authority_;
-  multi_index_mutex_.unlock();
-  return authority;
-}
-
-void PendingOperationsHandler::ClearPendingIOUs() {
-  boost::mutex::scoped_lock loch(multi_index_mutex_);
-  pending_ious_.clear();
-}
-
-int PendingOperationsHandler::PendingIOUsCount() {
-  boost::mutex::scoped_lock loch(multi_index_mutex_);
-  return pending_ious_.size();
-}
-
-int PendingOperationsHandler::PrunePendingIOUs(const boost::uint32_t &margin) {
-  multi_index_mutex_.lock();
-  typedef pending_iou_set::index<pending_iou_timestamp>::type
-          pending_iou_set_timestamp;
-  pending_iou_set_timestamp& pending_iou_index =
-      pending_ious_.get<pending_iou_timestamp>();
-  if (pending_iou_index.begin() == pending_iou_index.end()) {
-#ifdef DEBUG
-    printf("NO IOUs.\n");
-#endif
-    multi_index_mutex_.unlock();
-    return -2702;
-  }
-  boost::uint32_t bound = margin;
-  if (bound == 0)
-    bound = base::get_epoch_time() - 86400;
-  pending_iou_set_timestamp::iterator it = pending_iou_index.begin();
-  pending_iou_set_timestamp::iterator limit =
-      pending_iou_index.lower_bound(bound);
-  if (pending_iou_index.begin() == limit) {
-#ifdef DEBUG
-    printf("NO prunable IOUs.\n");
-#endif
-    multi_index_mutex_.unlock();
-    return -2702;
-  }
-  pending_iou_index.erase(pending_iou_index.begin(), limit);
-
-  multi_index_mutex_.unlock();
-  return 0;
-}
-
-int PendingOperationsHandler::PrunableIOUsCount(const boost::uint32_t &margin) {
-  multi_index_mutex_.lock();
-  typedef pending_iou_set::index<pending_iou_timestamp>::type
-          pending_iou_set_timestamp;
-  pending_iou_set_timestamp& pending_iou_index =
-      pending_ious_.get<pending_iou_timestamp>();
-  if (pending_iou_index.begin() == pending_iou_index.end()) {
-#ifdef DEBUG
-    printf("NO IOUs.\n");
-#endif
-    multi_index_mutex_.unlock();
-    return 0;
-  }
-  boost::uint32_t bound = margin;
-  if (bound == 0)
-    bound = base::get_epoch_time() - 86400;
-  pending_iou_set_timestamp::iterator it = pending_iou_index.begin();
-  pending_iou_set_timestamp::iterator limit =
-      pending_iou_index.lower_bound(bound);
-  int count = 0;
-  while (it != limit) {
-    ++count;
-    ++it;
-  }
-  multi_index_mutex_.unlock();
-  return count;
-}
-*/
 
 }  // namespace maidsafe_vault

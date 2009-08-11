@@ -91,6 +91,8 @@ struct PendingOperationRow {
 
 // Tags
 struct pending_op_all {};
+struct pending_op_timestamp {};
+struct pending_op_status {};
 
 typedef boost::multi_index_container<
   PendingOperationRow,
@@ -107,6 +109,16 @@ typedef boost::multi_index_container<
         BOOST_MULTI_INDEX_MEMBER(PendingOperationRow, boost::uint64_t,
                                  chunk_size_)
       >
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<pending_op_timestamp>,
+      BOOST_MULTI_INDEX_MEMBER(PendingOperationRow, boost::uint32_t,
+                               timestamp_)
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<pending_op_status>,
+      BOOST_MULTI_INDEX_MEMBER(PendingOperationRow, vault_operation_status,
+                               status_)
     >
   >
 > pending_operation_set;
@@ -145,20 +157,9 @@ class PendingOperationsHandler {
                     const std::string &chunkname,
                     boost::uint64_t *chunk_size,
                     std::string *iou);
-//  int AddPendingIOU(const std::string &pmid,
-//                    const boost::uint64_t &chunk_size,
-//                    const std::string &authority,
-//                    const boost::uint32_t &timestamp);
-//  int DeletePendingIOU(const std::string &pmid,
-//                       const boost::uint64_t &chunk_size,
-//                       const std::string &authority);
-//  bool IOUExists(const std::string &pmid,
-//                 const boost::uint64_t &chunk_size,
-//                 const std::string &authority);
-//  std::string GetIOU(const std::string &pmid,
-//                     const boost::uint64_t &chunk_size);
-//  int PrunePendingIOUs(const boost::uint32_t &margin);
-//  int PrunableIOUsCount(const boost::uint32_t &margin);
+
+  int PrunePendingOps();
+
  private:
   FRIEND_TEST(PendingOperationContainerTest, BEH_VAULT_ParameterAnalysis);
   int AnalyseParameters(const std::string &pmid,

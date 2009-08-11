@@ -1,12 +1,12 @@
 /*! \file
 * \brief Task scheduling policies.
 *
-* This file contains some fundamental scheduling policies for the pool class. 
+* This file contains some fundamental scheduling policies for the pool class.
 * A scheduling policy is realized by a task container which controls the access to
 * the tasks. 	Fundamentally the container determines the order the tasks are processed
-* by the thread pool. 
-* The task containers need not to be thread-safe because they are used by the pool 
-* in thread-safe way. 
+* by the thread pool.
+* The task containers need not to be thread-safe because they are used by the pool
+* in thread-safe way.
 *
 * Copyright (c) 2005-2007 Philipp Henkel
 *
@@ -31,31 +31,32 @@
 namespace boost { namespace threadpool
 {
 
-  /*! \brief SchedulingPolicy which implements FIFO ordering. 
+  /*! \brief SchedulingPolicy which implements FIFO ordering.
   *
   * This container implements a FIFO scheduling policy.
   * The first task to be added to the scheduler will be the first to be removed.
-  * The processing proceeds sequentially in the same order. 
+  * The processing proceeds sequentially in the same order.
   * FIFO stands for "first in, first out".
   *
   * \param Task A function object which implements the operator()(void).
   *
-  */ 
-  template <typename Task = task_func>  
+  */
+  template <typename Task = task_func>
   class fifo_scheduler
   {
   public:
     typedef Task task_type; //!< Indicates the scheduler's task type.
 
   protected:
-    std::deque<task_type> m_container;  //!< Internal task container.	
+    std::deque<task_type> m_container;  //!< Internal task container.
 
 
   public:
     /*! Adds a new task to the scheduler.
     * \param task The task object.
-    * \return true, if the task could be scheduled and false otherwise. 
+    * \return true, if the task could be scheduled and false otherwise.
     */
+    fifo_scheduler() : m_container() {}
     bool push(task_type const & task)
     {
       m_container.push_back(task);
@@ -88,7 +89,7 @@ namespace boost { namespace threadpool
 
     /*! Checks if the scheduler is empty.
     *  \return true if the scheduler contains no tasks, false otherwise.
-    *  \remarks Is more efficient than size() == 0. 
+    *  \remarks Is more efficient than size() == 0.
     */
     bool empty() const
     {
@@ -96,16 +97,16 @@ namespace boost { namespace threadpool
     }
 
     /*! Removes all tasks from the scheduler.
-    */  
+    */
     void clear()
-    {   
+    {
       m_container.clear();
-    } 
+    }
   };
 
 
 
-  /*! \brief SchedulingPolicy which implements LIFO ordering. 
+  /*! \brief SchedulingPolicy which implements LIFO ordering.
   *
   * This container implements a LIFO scheduling policy.
   * The last task to be added to the scheduler will be the first to be removed.
@@ -113,20 +114,20 @@ namespace boost { namespace threadpool
   *
   * \param Task A function object which implements the operator()(void).
   *
-  */ 
-  template <typename Task = task_func>  
+  */
+  template <typename Task = task_func>
   class lifo_scheduler
   {
   public:
     typedef Task task_type;  //!< Indicates the scheduler's task type.
 
   protected:
-    std::deque<task_type> m_container;  //!< Internal task container.	
+    std::deque<task_type> m_container;  //!< Internal task container.
 
   public:
     /*! Adds a new task to the scheduler.
     * \param task The task object.
-    * \return true, if the task could be scheduled and false otherwise. 
+    * \return true, if the task could be scheduled and false otherwise.
     */
     bool push(task_type const & task)
     {
@@ -160,7 +161,7 @@ namespace boost { namespace threadpool
 
     /*! Checks if the scheduler is empty.
     *  \return true if the scheduler contains no tasks, false otherwise.
-    *  \remarks Is more efficient than size() == 0. 
+    *  \remarks Is more efficient than size() == 0.
     */
     bool empty() const
     {
@@ -168,28 +169,28 @@ namespace boost { namespace threadpool
     }
 
     /*! Removes all tasks from the scheduler.
-    */  
+    */
     void clear()
-    {    
+    {
       m_container.clear();
-    } 
+    }
 
   };
 
 
 
-  /*! \brief SchedulingPolicy which implements prioritized ordering. 
+  /*! \brief SchedulingPolicy which implements prioritized ordering.
   *
   * This container implements a scheduling policy based on task priorities.
   * The task with highest priority will be the first to be removed.
-  * It must be possible to compare two tasks using operator<. 
+  * It must be possible to compare two tasks using operator<.
   *
   * \param Task A function object which implements the operator() and operator<. operator< must be a partial ordering.
   *
   * \see prio_thread_func
   *
-  */ 
-  template <typename Task = prio_task_func>  
+  */
+  template <typename Task = prio_task_func>
   class prio_scheduler
   {
   public:
@@ -202,7 +203,7 @@ namespace boost { namespace threadpool
   public:
     /*! Adds a new task to the scheduler.
     * \param task The task object.
-    * \return true, if the task could be scheduled and false otherwise. 
+    * \return true, if the task could be scheduled and false otherwise.
     */
     bool push(task_type const & task)
     {
@@ -236,7 +237,7 @@ namespace boost { namespace threadpool
 
     /*! Checks if the scheduler is empty.
     *  \return true if the scheduler contains no tasks, false otherwise.
-    *  \remarks Is more efficient than size() == 0. 
+    *  \remarks Is more efficient than size() == 0.
     */
     bool empty() const
     {
@@ -244,14 +245,14 @@ namespace boost { namespace threadpool
     }
 
     /*! Removes all tasks from the scheduler.
-    */  
+    */
     void clear()
-    {    
+    {
       while(!m_container.empty())
       {
         m_container.pop();
       }
-    } 
+    }
   };
 
 
