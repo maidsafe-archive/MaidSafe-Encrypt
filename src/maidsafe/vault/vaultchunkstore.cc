@@ -144,10 +144,7 @@ int VaultChunkStore::HashCheckAllChunks(bool delete_failures,
   for (maidsafe::path_map_iterator path_map_itr = path_map_.begin();
        path_map_itr != path_map_.end(); ++path_map_itr) {
     maidsafe::ChunkType type = path_map_itr->first;
-    if (type == (maidsafe::kHashable | maidsafe::kNormal) ||
-        type == (maidsafe::kHashable | maidsafe::kCache) ||
-        type == (maidsafe::kHashable | maidsafe::kOutgoing) ||
-        type == (maidsafe::kHashable | maidsafe::kTempCache)) {
+    if (type & maidsafe::kHashable) {
       FindFiles(path_map_itr->second, type, true, delete_failures, &filecount,
                 failed_keys);
     }

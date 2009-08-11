@@ -53,7 +53,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       store_thread_running_(false),
       priority_store_queue_(),
       normal_store_queue_(),
-      store_thread_pool_(),
+      store_thread_pool_(5),
       store_thread_running_mutex_(),
       ps_queue_mutex_(),
       ns_queue_mutex_() {
@@ -168,8 +168,7 @@ void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
 #endif
     return;
   }
-  if (chunk_type == (kHashable | kOutgoing) ||
-      chunk_type == (kNonHashable | kOutgoing))
+  if (chunk_type & kOutgoing)
     AddToNormalStoreQueue(StoreTuple(chunk_name, dir_type, msid));
 }
 
@@ -414,25 +413,23 @@ void MaidsafeStoreManager::StoreThread() {
   boost::this_thread::at_thread_exit(boost::bind(
       &MaidsafeStoreManager::StoreThreadStopping, this));
   while (StoreThreadRunning()) {
-    if (store_thread_pool_.size() < kMaxStoreThreads) {
+    {
       boost::mutex::scoped_lock lock_ps(ps_queue_mutex_);
       if (!priority_store_queue_.empty()) {
         StoreTuple store_tuple = priority_store_queue_.front();
         priority_store_queue_.pop();
-        boost::shared_ptr<boost::thread> thr(new boost::thread(
+        store_thread_pool_.schedule(boost::bind(
             &MaidsafeStoreManager::SendChunk, this, store_tuple));
-        store_thread_pool_.AddThread(thr);
       }
     }
     // Leave room for a further priority store thread
-    if (store_thread_pool_.size() < kMaxStoreThreads - 1) {
+    {
       boost::mutex::scoped_lock lock_ns(ns_queue_mutex_);
       if (!normal_store_queue_.empty()) {
         StoreTuple store_tuple = normal_store_queue_.front();
         normal_store_queue_.pop();
-        boost::shared_ptr<boost::thread> thr(new boost::thread(
+        store_thread_pool_.schedule(boost::bind(
             &MaidsafeStoreManager::SendChunk, this, store_tuple));
-        store_thread_pool_.AddThread(thr);
       }
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -455,8 +452,8 @@ void MaidsafeStoreManager::SendChunk(StoreTuple store_tuple) {
 #ifdef DEBUG
   printf("In MaidsafeStoreManager::SendChunk\n");
 #endif
-  boost::this_thread::at_thread_exit(boost::bind(&ThreadPool::DeleteThread,
-      &store_thread_pool_, boost::this_thread::get_id()));
+//  boost::this_thread::at_thread_exit(boost::bind(&ThreadPool::DeleteThread,
+//      &store_thread_pool_, boost::this_thread::get_id()));
   int duplicate_count = 0;
   float largest_rtt = -1;  // set to -1 so that first store is to furthest peer
   std::vector<kad::Contact> exclude;
@@ -696,17 +693,40 @@ int MaidsafeStoreManager::SendContent(const kad::Contact &peer,
     count += 10;
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
-// TODO(Fraser#5#): 2009-08-09 - cancel rpc if timed out
-  if (store_response->pmid_id() == peer.node_id())
-    printf("In MSM::SendContent, ids are OK.\n");
-  else
+  if (!store_response_returned) {
+#ifdef DEBUG
+    printf("In MSM::SendContent, fail - timeout.\n");
+#endif
+// TODO(Fraser#5#): 2009-08-09 - cancel rpc
+    return -1;
+  }
+  if (store_response->pmid_id() != peer.node_id()) {
+#ifdef DEBUG
     printf("In MSM::SendContent, ids are not OK.\n");
-  if (store_response->result() == kAck)
-    printf("In MSM::SendContent, result kAck.\n");
-  else
+#endif
+    return -1;
+  }
+  if (store_response->result() != kAck) {
+#ifdef DEBUG
     printf("In MSM::SendContent, result not kAck.\n");
-  return (store_response->pmid_id() == peer.node_id() &&
-          store_response->result() == kAck) ? 0 : -1;
+#endif
+    return -1;
+  }
+#ifdef DEBUG
+  printf("In MSM::SendContent, succeeded.\n");
+#endif
+  // Move chunk from Outgoing to Normal.  If this operation fails, still return
+  // 0 as this is non-critical.
+  ChunkType chunk_type =
+      client_chunkstore_->chunk_type(store_request->chunkname());
+  ChunkType new_type = chunk_type ^ (kOutgoing | kNormal);
+  if (client_chunkstore_->ChangeChunkType(store_request->chunkname(),
+                                          new_type) != 0) {
+#ifdef DEBUG
+    printf("In MSM::SendContent, failed to change chunk type.\n");
+#endif
+  }
+  return 0;
 }
 
 void MaidsafeStoreManager::SendContentCallback(bool *send_content_returned,

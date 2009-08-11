@@ -160,10 +160,7 @@ void ChunkStore::FindFiles(const fs::path &root_dir_path,
             boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
             chunkstore_set_.insert(chunk);
           }
-          if ((type == (kHashable | kNormal) || type == (kHashable | kCache) ||
-              type == (kHashable | kOutgoing) ||
-              type == (kHashable | kTempCache))
-              && hash_check) {
+          if ((type & kHashable) && hash_check) {
             if (HashCheckChunk(non_hex_name, itr->path()) != 0) {
               failed_keys->push_back(non_hex_name);
               if (delete_failures) {
@@ -461,8 +458,7 @@ bool ChunkStore::StoreChunkFunction(const std::string &key,
     // If the chunk is hashable then set last checked time to now, otherwise
     // set it to max allowable time.
     boost::posix_time::ptime lastcheckedtime(boost::posix_time::max_date_time);
-    if (type == (kHashable | kNormal) || type == (kHashable | kCache) ||
-        type == (kHashable | kOutgoing) || type == (kHashable | kTempCache)) {
+    if (type & kHashable) {
       lastcheckedtime = boost::posix_time::microsec_clock::local_time();
     }
     ChunkInfo chunk(key, lastcheckedtime, type);
@@ -490,8 +486,7 @@ bool ChunkStore::StoreChunkFunction(const std::string &key,
     // If the chunk is hashable then set last checked time to now, otherwise
     // set it to max allowable time.
     boost::posix_time::ptime lastcheckedtime(boost::posix_time::max_date_time);
-    if (type == (kHashable | kNormal) || type == (kHashable | kCache) ||
-        type == (kHashable | kOutgoing) || type == (kHashable | kTempCache)) {
+    if (type & kHashable) {
       lastcheckedtime = boost::posix_time::microsec_clock::local_time();
     }
     ChunkInfo chunk(key, lastcheckedtime, type);

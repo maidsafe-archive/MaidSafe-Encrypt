@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/threadpool.h"
+#include "boost/threadpool.hpp"  // NB - This is NOT an accepted boost lib.
 #include "maidsafe/client/pdclient.h"
 #include "maidsafe/client/storemanager.h"
 
@@ -189,7 +189,12 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   bool store_thread_running_;
   StoreQueue priority_store_queue_;
   StoreQueue normal_store_queue_;
-  ThreadPool store_thread_pool_;
+  boost::threadpool::thread_pool<
+      boost::threadpool::task_func,
+      boost::threadpool::fifo_scheduler,
+      boost::threadpool::static_size,
+      boost::threadpool::resize_controller,
+      boost::threadpool::immediately>store_thread_pool_;
   boost::mutex store_thread_running_mutex_, ps_queue_mutex_, ns_queue_mutex_;
 };
 
