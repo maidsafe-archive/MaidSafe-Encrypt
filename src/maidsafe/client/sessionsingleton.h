@@ -196,6 +196,7 @@ class SessionSingleton {
   std::string Id(const PacketType &bpt);
   std::string PublicKey(const PacketType &bpt);
   std::string PrivateKey(const PacketType &bpt);
+  std::string SignedPublicKey(const PacketType &bpt);
 
   ///////////////////////////
   //// Contacts Handling ////

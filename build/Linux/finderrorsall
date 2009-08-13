@@ -3,7 +3,7 @@ echo  "checking please wait (3mins) ....."
  find ../../src/$1 -name "*.cc" -exec python ../../src/cpplint.py {} \;   > code_style_errors 2>&1
  find ../../src/$1 -name "*.h" -exec python ../../src/cpplint.py {} \;   >> code_style_errors 2>&1
 
-for k in ../../src/talk/ ../../src/protobuf/ ../../src/tools/ Done Total ../../src/examples/ ../../src/gui/img/images.cc *\.pb\.* ../../src/gui/3rdparty/ ../../src/fs/w_fuse/dokan/ ../../src/fs/w_fuse/dokan_control/ ../../src/fs/w_fuse/dokan_mount/ ../../src/fs/w_fuse/sys/
+for k in ../../src/protobuf/ ../../src/tools/ Done Total ../../src/examples/ *\.pb\.* ../../src/fs/w_fuse/dokan/ ../../src/fs/w_fuse/dokan_control/ ../../src/fs/w_fuse/dokan_mount/ ../../src/fs/w_fuse/sys/
 do
   egrep -v $k code_style_errors > code_style_errors2
   cat code_style_errors2 > code_style_errors

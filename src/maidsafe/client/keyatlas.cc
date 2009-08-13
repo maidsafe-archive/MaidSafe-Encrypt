@@ -42,31 +42,33 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-KeyAtlas::KeyAtlas() : key_ring_() {}
+KeyAtlas::KeyAtlas() : key_ring_(), co_() {}
 KeyAtlas::~KeyAtlas() {}
 
-int KeyAtlas::AddKey(const int &package_type, const std::string &package_id,
+int KeyAtlas::AddKey(const int &packet_type, const std::string &packet_id,
     const std::string &private_key, const std::string &public_key) {
-  key_ring_.erase(package_type);
-  KeyAtlasRow kar(package_type, package_id, private_key, public_key);
-  key_atlas_set::iterator  it = key_ring_.find(package_type);
+  key_ring_.erase(packet_type);
+  std::string signed_public_key = co_.AsymSign(public_key, "", private_key,
+                                               crypto::STRING_STRING);
+  KeyAtlasRow kar(packet_type, packet_id, private_key, public_key,
+                  signed_public_key);
   key_ring_.insert(kar);
   return 0;
 }
 
-std::string KeyAtlas::SearchKeyring(const int &package_type,
+std::string KeyAtlas::SearchKeyring(const int &packet_type,
                                     const int &field) {
   std::string result;
-  if (field < 1 || field > 3) {
+  if (field < 1 || field > 4) {
 #ifdef DEBUG
     printf("Wrong column(%d)\n", field);
 #endif
     return result;
   }
-  key_atlas_set::iterator  it = key_ring_.find(package_type);
+  key_atlas_set::iterator  it = key_ring_.find(packet_type);
   if (it == key_ring_.end()) {
 #ifdef DEBUG
-    printf("Key type(%d) not present in keyring\n", package_type);
+    printf("Key type(%d) not present in keyring\n", packet_type);
 #endif
     return result;
   }
@@ -74,31 +76,36 @@ std::string KeyAtlas::SearchKeyring(const int &package_type,
     case 1: result = (*it).id_; break;
     case 2: result = (*it).private_key_; break;
     case 3: result = (*it).public_key_; break;
+    case 4: result = (*it).signed_public_key_; break;
   }
   return result;
 }
 
-std::string KeyAtlas::PackageID(const int &package_type) {
-  return SearchKeyring(package_type, 1);
+std::string KeyAtlas::PackageID(const int &packet_type) {
+  return SearchKeyring(packet_type, 1);
 }
 
-std::string KeyAtlas::PrivateKey(const int &package_type) {
-  return SearchKeyring(package_type, 2);
+std::string KeyAtlas::PrivateKey(const int &packet_type) {
+  return SearchKeyring(packet_type, 2);
 }
 
-std::string KeyAtlas::PublicKey(const int &package_type) {
-  return SearchKeyring(package_type, 3);
+std::string KeyAtlas::PublicKey(const int &packet_type) {
+  return SearchKeyring(packet_type, 3);
 }
 
-int KeyAtlas::RemoveKey(const int &package_type) {
-  key_atlas_set::iterator it = key_ring_.find(package_type);
+std::string KeyAtlas::SignedPublicKey(const int &packet_type) {
+  return SearchKeyring(packet_type, 4);
+}
+
+int KeyAtlas::RemoveKey(const int &packet_type) {
+  key_atlas_set::iterator it = key_ring_.find(packet_type);
   if (it == key_ring_.end()) {
 #ifdef DEBUG
-    printf("Key type(%d) not present in keyring.\n", package_type);
+    printf("Key type(%d) not present in keyring.\n", packet_type);
 #endif
     return -1801;
   }
-  key_ring_.erase(package_type);
+  key_ring_.erase(packet_type);
   return 0;
 }
 
@@ -107,7 +114,7 @@ void KeyAtlas::GetKeyRing(std::list<KeyAtlasRow> *keyring) {
   key_atlas_set::iterator it;
   for (it = key_ring_.begin(); it != key_ring_.end(); it++) {
     KeyAtlasRow kar((*it).type_, (*it).id_, (*it).private_key_,
-                   (*it).public_key_);
+                    (*it).public_key_, "");
     keyring->push_back(kar);
   }
 }

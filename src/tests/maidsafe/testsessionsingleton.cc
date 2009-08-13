@@ -218,16 +218,31 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
 }
 
 TEST_F(SessionSingletonTest, BEH_MAID_SessionKeyRingIO) {
+  std::string pub_keys[7];
+  std::string pri_keys[7];
   DataAtlas da;
   for (int n = 0; n < 7; ++n) {
+    crypto::RsaKeyPair rskp;
+    rskp.GenerateKeys(4096);
+    pri_keys[n] = rskp.private_key();
+    pub_keys[n] = rskp.public_key();
     Key *k = da.add_keys();
     k->set_type(PacketType(n));
     k->set_id("id" + base::itos(n));
-    k->set_private_key("private_key_" + base::itos(n));
-    k->set_public_key("public_key_" + base::itos(n));
+    k->set_private_key(pri_keys[n]);
+    k->set_public_key(pub_keys[n]);
     ss_->AddKey(PacketType(n), "id" + base::itos(n),
-                "private_key_" + base::itos(n), "public_key_" + base::itos(n));
+                pri_keys[n], pub_keys[n]);
   }
+  // get signed public key
+  for (int i = 0; i < 7; i++) {
+    std::string public_key = pub_keys[i];
+    std::string private_key = pri_keys[i];
+    crypto::Crypto co;
+    ASSERT_TRUE(co.AsymCheckSig(public_key, ss_->SignedPublicKey(PacketType(i)),
+                public_key, crypto::STRING_STRING));
+  }
+
   std::string ser_da;
   da.SerializeToString(&ser_da);
 
@@ -238,8 +253,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionKeyRingIO) {
   while (!keys.empty()) {
     ASSERT_EQ(a, keys.front().type_);
     ASSERT_EQ("id" + base::itos(a), keys.front().id_);
-    ASSERT_EQ("private_key_" + base::itos(a), keys.front().private_key_);
-    ASSERT_EQ("public_key_" + base::itos(a), keys.front().public_key_);
+    ASSERT_EQ(pri_keys[a], keys.front().private_key_);
+    ASSERT_EQ(pub_keys[a], keys.front().public_key_);
     keys.pop_front();
     ++a;
   }

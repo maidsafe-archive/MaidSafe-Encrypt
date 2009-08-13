@@ -205,6 +205,7 @@ namespace boost { namespace threadpool
     * \param task The task object.
     * \return true, if the task could be scheduled and false otherwise.
     */
+    prio_scheduler() : m_container() { }
     bool push(task_type const & task)
     {
       m_container.push(task);

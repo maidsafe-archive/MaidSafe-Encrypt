@@ -17,46 +17,37 @@
 #ifndef THREADPOOL_DETAIL_SCOPE_GUARD_HPP_INCLUDED
 #define THREADPOOL_DETAIL_SCOPE_GUARD_HPP_INCLUDED
 
-
-
 #include <boost/function.hpp>
 
+namespace boost {
 
-namespace boost { namespace threadpool { namespace detail
-{
+namespace threadpool {
+
+namespace detail {
 
 // TODO documentation
-class scope_guard
-: private boost::noncopyable
-{
+class scope_guard {
 	function0<void> const m_function;
 	bool                  m_is_active;
 
-public:
+ public:
 	scope_guard(function0<void> const & call_on_exit)
-	: m_function(call_on_exit)
-	, m_is_active(true)
-	{
-	}
+    : m_function(call_on_exit)
+    , m_is_active(true) { }
 
-	~scope_guard()
-	{
-		if(m_is_active && m_function)
-		{
+	~scope_guard() {
+		if(m_is_active && m_function) {
 			m_function();
 		}
 	}
 
-	void disable()
-	{
+	void disable() {
 		m_is_active = false;
 	}
+ private:
+  scope_guard(const scope_guard&);
+  scope_guard& operator=(const scope_guard&);
 };
-
-
-
-
-
 
 } } } // namespace boost::threadpool::detail
 

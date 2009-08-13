@@ -37,25 +37,25 @@ class TestTask {
                     const int &delay,
                     std::vector<int> *result_order,
                     boost::mutex *mutex) {
-//    printf("Started task %i - sleeping for %i ms.\n", task_no, delay);
+    printf("Started task %i - sleeping for %i ms.\n", task_no, delay);
     boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
     {
       boost::mutex::scoped_lock lock(*mutex);
       result_order->push_back(task_no);
     }
-//    printf("Finished task %i\n", task_no);
+    printf("Finished task %i\n", task_no);
   }
   bool BoolTaskFunction(int *task_no,
                         const int &delay,
                         std::vector<int> *result_order,
                         boost::mutex *mutex) {
-//    printf("Started task %i - sleeping for %i ms.\n", *task_no, delay);
+    printf("Started task %i - sleeping for %i ms.\n", *task_no, delay);
     boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
     {
       boost::mutex::scoped_lock lock(*mutex);
       result_order->push_back(*task_no);
     }
-//    printf("Finished task %i\n", *task_no);
+    printf("Finished task %i\n", *task_no);
     ++(*task_no);
     return *task_no < 10 ? true : false;
   }
@@ -127,6 +127,9 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolCancel) {
   ASSERT_EQ(0, result_order.at(0));
   ASSERT_EQ(2, result_order.at(1));
   ASSERT_EQ(3, result_order.at(2));
+
+  // Warning! This thread pool is turning out to be shit!
+  boost::this_thread::sleep(boost::posix_time::milliseconds(3000));
 }
 
 TEST_F(TestThreadPool, BEH_MAID_ThreadPoolClear) {
@@ -157,6 +160,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolClear) {
   ASSERT_EQ(0, result_order.at(0));
   ASSERT_EQ(2, result_order.at(1));
   ASSERT_EQ(1, result_order.at(2));
+  printf("end of BEH_MAID_ThreadPoolClear\n");
 }
 
 TEST_F(TestThreadPool, BEH_MAID_ThreadPoolSizes) {

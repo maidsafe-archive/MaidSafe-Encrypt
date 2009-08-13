@@ -112,16 +112,20 @@ void SessionSingleton::AddKey(const PacketType &pt,
   ka_.AddKey(pt, id, private_key, public_key);
 }
 
-std::string SessionSingleton::Id(const PacketType &pt) {
-  return ka_.PackageID(pt);
+std::string SessionSingleton::Id(const PacketType &bpt) {
+  return ka_.PackageID(bpt);
 }
 
-std::string SessionSingleton::PublicKey(const PacketType &pt) {
-  return ka_.PublicKey(pt);
+std::string SessionSingleton::PublicKey(const PacketType &bpt) {
+  return ka_.PublicKey(bpt);
 }
 
-std::string SessionSingleton::PrivateKey(const PacketType &pt) {
-  return ka_.PrivateKey(pt);
+std::string SessionSingleton::PrivateKey(const PacketType &bpt) {
+  return ka_.PrivateKey(bpt);
+}
+
+std::string SessionSingleton::SignedPublicKey(const PacketType &bpt) {
+  return ka_.SignedPublicKey(bpt);
 }
 
 ////////////////////////

@@ -35,7 +35,6 @@ namespace boost { namespace threadpool { namespace detail
  */
   template <typename T, typename Mutex>
   class locking_ptr
-  : private noncopyable
   {
     T* m_obj;                     //!< The instance pointer.
     Mutex & m_mutex;              //!< Mutex is used for scoped locking.

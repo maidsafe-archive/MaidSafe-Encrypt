@@ -39,14 +39,17 @@
 namespace maidsafe {
 
 struct KeyAtlasRow {
-  KeyAtlasRow(int type, const std::string &id, const std::string &private_key,
-              const std::string &public_key)
+  KeyAtlasRow(int type, const std::string &id,
+              const std::string &private_key,
+              const std::string &public_key,
+              const std::string &signed_public_key)
               : type_(type), id_(id), private_key_(private_key),
-              public_key_(public_key) { }
+              public_key_(public_key), signed_public_key_(signed_public_key) { }
   int type_;
   std::string id_;
   std::string private_key_;
   std::string public_key_;
+  std::string signed_public_key_;
 };
 
 typedef boost::multi_index_container<
@@ -62,21 +65,23 @@ class KeyAtlas {
   KeyAtlas();
   ~KeyAtlas();
 
-  int AddKey(const int &package_type,
-                 const std::string &package_id,
-                 const std::string &private_key,
-                 const std::string &public_key);
+  int AddKey(const int &packet_type,
+             const std::string &packet_id,
+             const std::string &private_key,
+             const std::string &public_key);
   std::string PackageID(const int &packet_type);
   std::string PrivateKey(const int &packet_type);
   std::string PublicKey(const int &packet_type);
-  int RemoveKey(const int &package_type);
+  std::string SignedPublicKey(const int &packet_type);
+  int RemoveKey(const int &packet_type);
   void GetKeyRing(std::list<KeyAtlasRow> *keyring);
   unsigned int KeyRingSize();
   void ClearKeyRing();
 
  private:
-  std::string SearchKeyring(const int &package_type, const int &field);
+  std::string SearchKeyring(const int &packet_type, const int &field);
   key_atlas_set key_ring_;
+  crypto::Crypto co_;
 };
 
 }  // namespace maidsafe

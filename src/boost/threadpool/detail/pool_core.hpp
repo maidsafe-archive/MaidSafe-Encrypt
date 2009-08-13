@@ -74,7 +74,6 @@ namespace boost { namespace threadpool { namespace detail
   >
   class pool_core
   : public enable_shared_from_this< pool_core<Task, SchedulingPolicy, SizePolicy, SizePolicyController, ShutdownPolicy > >
-  , private noncopyable
   {
 
   public: // Type definitions
@@ -121,6 +120,8 @@ namespace boost { namespace threadpool { namespace detail
 
 
   private: // The following members are accessed only by _one_ thread at the same time:
+    pool_core(const pool_core&);
+    pool_core& operator=(const pool_core&);
     scheduler_type  m_scheduler;
     scoped_ptr<size_policy_type> m_size_policy; // is never null
 
