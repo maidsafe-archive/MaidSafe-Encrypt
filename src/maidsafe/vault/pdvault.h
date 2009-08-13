@@ -36,6 +36,7 @@
 #include <list>
 #include <vector>
 
+#include "boost/threadpool.hpp"  // NB - This is NOT an accepted boost lib.
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
@@ -47,6 +48,43 @@ class Env;
 }  // namespace localvaults
 
 namespace maidsafe_vault {
+
+// Tuple of pmid, non-hex chunkname, chunksize, and pmid_publickey in that order
+typedef boost::tuple<std::string, std::string, boost::uint64_t,
+                     std::string> IouReadyTuple;
+
+enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
+
+class KadCallback {
+ public:
+  KadCallback() : response_(""), mutex_() {}
+  ~KadCallback() {}
+  void SetResponse(const std::string &response) {
+    boost::mutex::scoped_lock lock(mutex_);
+    response_ = response;
+  }
+  std::string response() {
+    boost::mutex::scoped_lock lock(mutex_);
+    return response_;
+  }
+ private:
+  KadCallback(const KadCallback&);
+  KadCallback& operator=(const KadCallback&);
+  std::string response_;
+  boost::mutex mutex_;
+};
+
+struct StoreRefResultHolder {
+  StoreRefResultHolder()
+      : store_ref_response_(),
+        store_ref_response_returned_(false),
+        mutex_(new boost::mutex()),
+        rpc_id_(0) {}
+  maidsafe::StoreReferenceResponse store_ref_response_;
+  bool store_ref_response_returned_;
+  boost::shared_ptr<boost::mutex> mutex_;
+  boost::uint32_t rpc_id_;
+};
 
 struct SyncVaultData {
   SyncVaultData() : chunk_names(), num_updated_chunks(0), num_chunks(0),
@@ -170,10 +208,27 @@ class PDVault {
           const boost::uint64_t &available_space,
           const boost::uint64_t &vault_used_space);
   ~PDVault();
-  void Start(const bool &port_forwarded);
-  int Stop();
+  void Start(bool port_forwarded);
+  int Stop(bool cancel_pending_ops);
   void CleanUp();
-  inline bool vault_started() {return vault_started_;}
+  VaultStatus vault_status();
+  void SetVaultStatus(const VaultStatus &vault_status);
+  std::string node_id() const;
+  std::string host_ip() const { return knode_.host_ip(); }
+  boost::uint16_t host_port() const { return knode_.host_port(); }
+  std::string local_host_ip() const { return knode_.local_host_ip(); }
+  boost::uint16_t local_host_port() { return knode_.local_host_port(); }
+  std::string rv_ip() const { return knode_.rv_ip(); }
+  boost::uint16_t rv_port() const { return knode_.rv_port(); }
+  inline boost::uint64_t available_space() {
+    return vault_chunkstore_->available_space();
+  }
+  inline boost::uint64_t UsedSpace() { return vault_chunkstore_->used_space(); }
+  inline boost::uint64_t FreeSpace() { return vault_chunkstore_->FreeSpace(); }
+
+
+
+
   void SyncVault(base::callback_func_type cb);
   void RepublishChunkRef(base::callback_func_type cb);
   void ValidityCheck(const std::string &chunk_name,
@@ -188,24 +243,43 @@ class PDVault {
                  const std::string &rendezvous_ip,
                  const boost::uint16_t &rendezvous_port,
                  base::callback_func_type cb);
-  std::string node_id() const;
-  std::string host_ip() const { return knode_.host_ip(); }
-  boost::uint16_t host_port() const { return knode_.host_port(); }
-  std::string local_host_ip() const { return knode_.local_host_ip(); }
-  boost::uint16_t local_host_port() { return knode_.local_host_port(); }
-  std::string rv_ip() const { return knode_.rv_ip(); }
-  boost::uint16_t rv_port() const { return knode_.rv_port(); }
-  inline boost::uint64_t available_space() {
-    return vault_chunkstore_->available_space();
-  }
-  inline boost::uint64_t UsedSpace() { return vault_chunkstore_->used_space(); }
-  inline boost::uint64_t FreeSpace() { return vault_chunkstore_->FreeSpace(); }
   friend class localvaults::Env;
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
   FRIEND_TEST(TestPDVault, FUNC_MAID_StoreChunks);
-  void KadJoinedCallback(const std::string &result);
+  void KadJoinedCallback(const std::string &result,
+                         boost::mutex *mutex,
+                         bool *kad_join_called_back);
+  void RegisterMaidService();
+  void UnRegisterMaidService();
+  // This runs in a continuous loop until vault_status_ becomes kVaultStopping.
+  bool PrunePendingOperations();
+  // This runs in a continuous loop until vault_status_ becomes kVaultStopping
+  // and on receipt of an IOU_Ready messgage, it adds an AddToRefPacket task.
+  bool CheckPendingIOUs();
+  // Returns a signature for validation by recipient of RPC
+  std::string GetSignedRequest(const std::string &non_hex_name,
+                               const std::string &recipient_id);
+  // Runs in a worker thread to add this vault's ID to a chunk reference packet
+  // and increment this vault's rank.
+  void AddToRefPacket(const IouReadyTuple &iou_ready_details);
+  // Finds k closest nodes to the kad_key
+  int FindKNodes(const std::string &kad_key,
+                 std::vector<kad::Contact> *contacts);
+  // Add this vault's ID to a chunk reference packet on a
+  int SendToRefPacket(
+      const kad::Contact &ref_holder,
+      const IouReadyTuple &iou_ready_details,
+      StoreRefResultHolder *store_ref_result_holder);
+  void SendToRefPacketCallback(bool *store_ref_response_returned,
+                               boost::mutex *mutex);
+  int HandleStoreRefResponse(const IouReadyTuple &iou_ready_details,
+      const StoreRefResultHolder &store_ref_result_holder,
+      bool *got_valid_iou);
+
+
+
   void IterativeSyncVault(boost::shared_ptr<SyncVaultData> data);
   void SyncVault_FindAlivePartner(
       const std::string& result,
@@ -250,25 +324,29 @@ class PDVault {
   void SwapChunkAcceptChunk(
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
-  void RegisterMaidService();
-  void UnRegisterMaidService();
   void StopRvPing() { knode_.StopRvPing(); }
   boost::uint16_t port_;
-  boost::mutex mutex0_, mutex1_;
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
   kad::KNode knode_;
   VaultRpcs vault_rpcs_;
   boost::shared_ptr<VaultChunkStore> vault_chunkstore_;
   boost::shared_ptr<VaultService> vault_service_;
   bool kad_joined_;
-  bool kad_joined_calledback_;
-  bool kad_left_calledback_;
-  bool vault_started_;
+  VaultStatus vault_status_;
+  boost::mutex vault_status_mutex_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
-  crypto::Crypto co;
+  std::string non_hex_pmid_;
+  crypto::Crypto co_;
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   std::string kad_config_file_;
   PendingOperationsHandler poh_;
+  boost::threadpool::thread_pool<
+      boost::threadpool::task_func,
+      boost::threadpool::fifo_scheduler,
+      boost::threadpool::static_size,
+      boost::threadpool::resize_controller,
+      boost::threadpool::immediately> thread_pool_;
+  const boost::uint16_t kKadStoreThreshold_;
 };
 
 }  // namespace maidsafe_vault

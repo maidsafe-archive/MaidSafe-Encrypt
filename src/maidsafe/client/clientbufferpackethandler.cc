@@ -69,7 +69,7 @@ void ClientBufferPacketHandler::CreateBufferPacket(
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request =
     crypto_obj_.AsymSign(crypto_obj_.Hash(public_key + signed_public_key +
-    non_hex_bufferpacketname, "", crypto::STRING_STRING, true), "",
+    non_hex_bufferpacketname, "", crypto::STRING_STRING, false), "",
     private_key, crypto::STRING_STRING);
   sm_->StorePacket(bufferpacketname, ser_bp, signed_request, public_key,
     signed_public_key, maidsafe::BUFFER_PACKET, false, cb);
@@ -106,7 +106,7 @@ void ClientBufferPacketHandler::ChangeStatus(int status,
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request = crypto_obj_.AsymSign(
     crypto_obj_.Hash(ss_->PublicKey(pt) + signed_public_key +
-    non_hex_bufferpacketname, "", crypto::STRING_STRING, true), "",
+    non_hex_bufferpacketname, "", crypto::STRING_STRING, false), "",
     ss_->PrivateKey(pt), crypto::STRING_STRING);
   std::string ser_gp;
   user_info.SerializeToString(&ser_gp);
@@ -182,7 +182,7 @@ void ClientBufferPacketHandler::AddUsers(const std::set<std::string> &users,
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request = crypto_obj_.AsymSign(
       crypto_obj_.Hash(ss_->PublicKey(pt) + signed_public_key +
-      non_hex_bufferpacketname, "", crypto::STRING_STRING, true), "",
+      non_hex_bufferpacketname, "", crypto::STRING_STRING, false), "",
       ss_->PrivateKey(pt), crypto::STRING_STRING);
   std::string ser_gp;
   user_info.SerializeToString(&ser_gp);
@@ -268,7 +268,7 @@ void ClientBufferPacketHandler::DeleteUsers(const std::set<std::string> &users,
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request = crypto_obj_.AsymSign(
     crypto_obj_.Hash(ss_->PublicKey(pt) + signed_public_key +
-    non_hex_bufferpacketname, "", crypto::STRING_STRING, true), "",
+    non_hex_bufferpacketname, "", crypto::STRING_STRING, false), "",
     ss_->PrivateKey(pt), crypto::STRING_STRING);
 
   sm_->StorePacket(bufferpacketname, ser_gp, signed_request,
@@ -458,7 +458,7 @@ void ClientBufferPacketHandler::ClearMessages(const BufferPacketType &type,
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request = crypto_obj_.AsymSign(
     crypto_obj_.Hash(ss_->PublicKey(pt) + signed_public_key +
-    non_hex_bufferpacketname, "", crypto::STRING_STRING, true), "",
+    non_hex_bufferpacketname, "", crypto::STRING_STRING, false), "",
     ss_->PrivateKey(pt), crypto::STRING_STRING);
 
   sm_->DeletePacket(bufferpacketname, signed_request,

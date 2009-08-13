@@ -24,10 +24,10 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
+#include <gtest/gtest.h>
+#include <maidsafe/utils.h>
 #include "maidsafe/client/privateshares.h"
-#include "maidsafe/utils.h"
 
 void RefillParticipants(std::list<maidsafe::ShareParticipants> *participants) {
   participants->clear();

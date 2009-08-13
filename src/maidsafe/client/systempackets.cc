@@ -23,17 +23,11 @@
 */
 
 #include "maidsafe/client/systempackets.h"
-
+#include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/utils.h>
 #include <cstdlib>
 #include <ctime>
 #include <cstdio>
-
-// #include "cryptopp/osrng.h"
-// #include "cryptopp/des.h"
-// #include "cryptopp/randpool.h"
-
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
 
 namespace packethandler {
 

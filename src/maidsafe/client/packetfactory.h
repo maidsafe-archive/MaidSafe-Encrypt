@@ -26,11 +26,11 @@
 #define MAIDSAFE_CLIENT_PACKETFACTORY_H_
 
 #include <boost/any.hpp>
+#include <maidsafe/crypto.h>
 #include <list>
-#include <string>
 #include <map>
+#include <string>
 
-#include "maidsafe/crypto.h"
 
 namespace packethandler {
 

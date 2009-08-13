@@ -25,11 +25,11 @@
 #ifndef MAIDSAFE_VAULT_VAULTRPC_H_
 #define MAIDSAFE_VAULT_VAULTRPC_H_
 
+#include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/utils.h>
 #include <string>
 
 #include "maidsafe/maidsafe.h"
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
 #include "protobuf/maidsafe_service.pb.h"
 
 namespace maidsafe_vault {
@@ -39,6 +39,13 @@ class VaultRpcs {
   explicit VaultRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
       channel_manager);
   ~VaultRpcs() {}
+  void StoreChunkReference(const kad::Contact &peer,
+                           bool local,
+                           maidsafe::StoreReferenceRequest *store_ref_request,
+                           maidsafe::StoreReferenceResponse *response,
+                           rpcprotocol::Controller *controller,
+                           google::protobuf::Closure *done);
+
   void StoreChunk(const std::string &chunkname,
              const std::string &data,
              const std::string &public_key,

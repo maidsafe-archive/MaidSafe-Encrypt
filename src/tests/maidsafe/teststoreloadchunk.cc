@@ -11,9 +11,9 @@
  *  Created on: Sep 29, 2008
  *      Author: Haiyang, Jose
  */
-/*#include "maidsafe/utils.h"
+/*#include <maidsafe/utils.h>
 #include "maidsafe/client/pdclient.h"
-#include "maidsafe/crypto.h"
+#include <maidsafe/crypto.h>
 #include "base/calllatertimer.h"
 #include <exception>
 #include <boost/bind.hpp>
@@ -22,7 +22,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <vector>
-#include "boost/date_time/posix_time/posix_time.hpp"
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include<gtest/gtest.h>
 #include "tests/kademlia/fake_callbacks.h"
 #include "protobuf/packet.pb.h"

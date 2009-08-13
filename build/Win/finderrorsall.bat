@@ -3,7 +3,7 @@ setlocal
 echo Checking files - each "." represents a single file.
 dir ..\..\src\*.cc /s /b >filelist.txt
 dir ..\..\src\*.h /s /b >>filelist.txt
-findstr /i /v "src\talk src\qt src\transport src\protobuf src\tools Done Total src\examples src\tests src\gui\img\images.cc .pb. src\gui\3rdparty src\fs\w_fuse\dokan src\fs\w_fuse\dokan_control src\fs\w_fuse\dokan_mount src\fs\w_fuse\sys src\doxys_" filelist.txt > filelist2.txt
+findstr /i /v "src\qt src\protobuf src\tools Done Total src\examples src\gui\img\images.cc .pb. src\gui\3rdparty src\fs\w_fuse\dokan src\fs\w_fuse\dokan_control src\fs\w_fuse\dokan_mount src\fs\w_fuse\sys src\doxys_" filelist.txt > filelist2.txt
 cd ..\..\
 set rootpath=%cd%
 cd build\Win

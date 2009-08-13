@@ -31,6 +31,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 
+
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "protobuf/maidsafe_messages.pb.h"
 
@@ -49,8 +50,6 @@ PDVault::PDVault(const std::string &pmid_public,
                  const boost::uint64_t &available_space,
                  const boost::uint64_t &used_space)
     : port_(port),
-      mutex0_(),
-      mutex1_(),
       channel_manager_(new rpcprotocol::ChannelManager()),
       knode_(channel_manager_, kad::VAULT, pmid_private, pmid_public),
       vault_rpcs_(channel_manager_),
@@ -58,92 +57,114 @@ PDVault::PDVault(const std::string &pmid_public,
                                             used_space)),
       vault_service_(),
       kad_joined_(false),
-      kad_joined_calledback_(false),
-      kad_left_calledback_(false),
-      vault_started_(false),
+      vault_status_(kVaultStopped),
+      vault_status_mutex_(),
       pmid_public_(pmid_public),
       pmid_private_(pmid_private),
       signed_pmid_public_(signed_pmid_public),
       pmid_(""),
-      co(),
+      non_hex_pmid_(""),
+      co_(),
       svc_channel_(),
       kad_config_file_(kad_config_file),
-      poh_() {
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  pmid_ = co.Hash(pmid_public_ + signed_pmid_public_, "", crypto::STRING_STRING,
-                  true);
+      poh_(),
+      thread_pool_(5),
+      kKadStoreThreshold_(kad::K * kad::kMinSuccessfulPecentageStore) {
+  co_.set_symm_algorithm(crypto::AES_256);
+  co_.set_hash_algorithm(crypto::SHA_512);
+  pmid_ = co_.Hash(pmid_public_ + signed_pmid_public_, "",
+                   crypto::STRING_STRING, true);
+  base::decode_from_hex(pmid_, &non_hex_pmid_);
 }
 
 PDVault::~PDVault() {
-//  #ifdef DEBUG
-//    printf("In PDVault destructor, before Stop().\n");
-//  #endif
-//    int result = Stop();
-//  #ifdef DEBUG
-//    printf("In PDVault destructor, Stop() returned %i.\n", result);
-//    if (vault_started_)
-//      printf("Vault didn't stop correctly.");
-//  #endif
-  Stop();
+  Stop(true);
 }
 
-
-void PDVault::Start(const bool &port_forwarded) {
-  if (vault_started_)
+void PDVault::Start(bool port_forwarded) {
+  if (vault_status() == kVaultStarted)
     return;
   channel_manager_->StartTransport(port_,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer, &knode_, _1));
-  kad_joined_calledback_ = false;
   RegisterMaidService();
+  bool kad_join_called_back(false);
+  boost::mutex kad_join_mutex;
   knode_.Join(pmid_, kad_config_file_,
-      boost::bind(&PDVault::KadJoinedCallback, this, _1), port_forwarded);
+      boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex,
+      &kad_join_called_back), port_forwarded);
   // Hash check all current chunks in chunkstore
   std::list<std::string> failed_keys;
   if (0 != vault_chunkstore_->HashCheckAllChunks(true, &failed_keys)) {
     return;
   }
-//  const int kTimeout_(300);
-//  int count_(0);
+  // Block until we've joined the Kademlia network.
   bool finished_bootstrap = false;
   while (!finished_bootstrap) {
     {
-      boost::mutex::scoped_lock guard(mutex0_);
-      if (kad_joined_calledback_) {  // || count_ >= kTimeout_) {
+      boost::mutex::scoped_lock guard(kad_join_mutex);
+      if (kad_join_called_back) {
         finished_bootstrap = true;
       }
     }
     boost::this_thread::sleep(boost::posix_time::seconds(1));
-    // ++count_;
   }
   // Set port, so that if vault is restarted before it is destroyed, it re-uses
   // port (unless this port has become unavailable).
   port_ = knode_.host_port();
-  vault_started_ = kad_joined_;
+  if (kad_joined_)
+    SetVaultStatus(kVaultStarted);
+  // Start repeating pruning worker thread
+  thread_pool_.schedule(boost::threadpool::looped_task_func(boost::bind(
+      &PDVault::PrunePendingOperations, this), 10000));
+  // Start repeating pending IOU worker thread
+  thread_pool_.schedule(boost::threadpool::looped_task_func(boost::bind(
+      &PDVault::CheckPendingIOUs, this), 10000));
 }
 
-void PDVault::KadJoinedCallback(const std::string &result) {
+void PDVault::KadJoinedCallback(const std::string &result,
+                                boost::mutex *mutex,
+                                bool *kad_join_called_back) {
   base::GeneralResponse result_;
   if (!result_.ParseFromString(result)) {
+    boost::mutex::scoped_lock lock(*mutex);
     kad_joined_ = false;
+    *kad_join_called_back = true;
   } else if (result_.result() != kad::kRpcResultSuccess) {
     UnRegisterMaidService();
+    boost::mutex::scoped_lock lock(*mutex);
     kad_joined_ = false;
+    *kad_join_called_back = true;
   } else {
+    boost::mutex::scoped_lock lock(*mutex);
     kad_joined_ = true;
+    *kad_join_called_back = true;
   }
-  kad_joined_calledback_ = true;
 }
 
-int PDVault::Stop() {
-  if (!vault_started_) {
+int PDVault::Stop(bool cancel_pending_ops) {
+  if (vault_status() == kVaultStopped) {
+#ifdef DEBUG
     printf("In PDVault::Stop(), already stopped.\n");
+#endif
     return -1;
   }
+  if (vault_status() == kVaultStopping) {
+#ifdef DEBUG
+    printf("In PDVault::Stop(), already stopping.\n");
+#endif
+    return -2;
+  }
+  SetVaultStatus(kVaultStopping);
+  if (cancel_pending_ops)
+    thread_pool_.clear();
+  thread_pool_.wait();
   UnRegisterMaidService();
   knode_.Leave();
   kad_joined_ = knode_.is_joined();
-  vault_started_ = kad_joined_;
+  if (kad_joined_)
+    SetVaultStatus(kVaultStarted);
+  else
+    SetVaultStatus(kVaultStopped);
   channel_manager_->StopTransport();
   return 0;
 }
@@ -151,6 +172,313 @@ int PDVault::Stop() {
 void PDVault::CleanUp() {
   channel_manager_->CleanUpTransport();
 }
+
+void PDVault::RegisterMaidService() {
+  vault_service_ = boost::shared_ptr<VaultService>(
+    new VaultService(pmid_public_,
+                     pmid_private_,
+                     signed_pmid_public_,
+                     vault_chunkstore_,
+                     &knode_,
+                     &poh_));
+  svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
+      new rpcprotocol::Channel(channel_manager_.get()));
+  svc_channel_->SetService(vault_service_.get());
+  channel_manager_->RegisterChannel(
+    vault_service_->GetDescriptor()->name(), svc_channel_.get());
+}
+
+void PDVault::UnRegisterMaidService() {
+  channel_manager_->UnRegisterChannel(
+    vault_service_->GetDescriptor()->name());
+  svc_channel_.reset();
+  vault_service_.reset();
+}
+
+std::string PDVault::node_id() const {
+  std::string hex_id("");
+  base::encode_to_hex(knode_.node_id(), &hex_id);
+  return hex_id;
+}
+
+VaultStatus PDVault::vault_status() {
+  boost::mutex::scoped_lock lock(vault_status_mutex_);
+  return vault_status_;
+}
+
+void PDVault::SetVaultStatus(const VaultStatus &vault_status) {
+  boost::mutex::scoped_lock lock(vault_status_mutex_);
+  vault_status_ = vault_status;
+}
+
+bool PDVault::PrunePendingOperations() {
+  poh_.PrunePendingOps();
+  return vault_status() == kVaultStarted;
+}
+
+bool PDVault::CheckPendingIOUs() {
+  std::list<IouReadyTuple> iou_readys;
+  if (poh_.GetAllIouReadys(&iou_readys) == 0) {
+    for (boost::uint16_t i = 0; i < iou_readys.size(); ++i) {
+      IouReadyTuple iou_ready_details = iou_readys.front();
+      thread_pool_.schedule(boost::bind(&PDVault::AddToRefPacket, this,
+          iou_ready_details));
+      iou_readys.pop_front();
+    }
+  }
+  return vault_status() == kVaultStarted;
+}
+
+std::string PDVault::GetSignedRequest(const std::string &non_hex_name,
+                                      const std::string &recipient_id) {
+  return co_.AsymSign(co_.Hash(signed_pmid_public_ + non_hex_name +
+      recipient_id, "", crypto::STRING_STRING, false), "", pmid_private_,
+      crypto::STRING_STRING);
+}
+
+void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
+  // Find the chunk reference holders
+  std::vector<kad::Contact> ref_holders;
+  if ((FindKNodes(iou_ready_details.get<1>(), &ref_holders) != 0) ||
+      (ref_holders.size() < kKadStoreThreshold_)) {
+    poh_.EraseOperation(IOU_READY, iou_ready_details.get<0>(),
+                        iou_ready_details.get<1>());
+    return;
+  }
+  bool got_valid_iou(false);
+  int successful_count(0);
+  std::vector<StoreRefResultHolder> results;
+  for (boost::uint16_t i = 0; i < ref_holders.size(); ++i) {
+    StoreRefResultHolder store_ref_result_holder;
+    SendToRefPacket(ref_holders.at(i), iou_ready_details,
+                    &store_ref_result_holder);
+    results.push_back(store_ref_result_holder);
+  }
+  while (successful_count < kKadStoreThreshold_) {
+    for (boost::uint16_t i = 0; i < results.size(); ++i) {
+// TODO(Fraser#5#): 2009-08-12 - Team scrutinisation of requirement for mutex.
+      bool res(false);
+      {
+        boost::mutex::scoped_lock loch(*results.at(i).mutex_);
+        res = results.at(i).store_ref_response_returned_;
+      }
+      if (res) {
+        int n = HandleStoreRefResponse(iou_ready_details, results.at(i),
+                                       &got_valid_iou);
+        if (n == 0)
+          ++successful_count;
+        results.erase(results.begin() + i);
+        --i;
+      }
+    }
+  }
+  for (boost::uint16_t j = 0; j < results.size(); ++j) {
+    channel_manager_->DeletePendingRequest(results.at(j).rpc_id_);
+  }
+  poh_.AdvanceStatus("", iou_ready_details.get<1>(), 0, "", "", "",
+                     IOU_RANK_RETREIVED);
+
+// TODO(Fraser#5#): 2009-08-12 - Increment our rank and clear pending op.
+}
+
+int PDVault::HandleStoreRefResponse(
+    const IouReadyTuple &iou_ready_details,
+    const StoreRefResultHolder &store_ref_result_holder,
+    bool *got_valid_iou) {
+  maidsafe::StoreReferenceResponse srr =
+      store_ref_result_holder.store_ref_response_;
+  if (srr.result() == kNack) {
+#ifdef DEBUG
+    printf("Response from rpc id %d came back failed (%d).\n",
+           store_ref_result_holder.rpc_id_, knode_.host_port());
+    return -1;
+#endif
+  }
+
+  if (srr.pmid_id() != co_.Hash(srr.public_key() + srr.signed_public_key(),
+      "", crypto::STRING_STRING, false)) {
+#ifdef DEBUG
+    printf("Some fecker on rpc id %d is trying to fake identity (%d).\n",
+           store_ref_result_holder.rpc_id_, knode_.host_port());
+    return -1;
+#endif
+  }
+
+  if (!*got_valid_iou) {
+    if (!co_.AsymCheckSig(srr.rank_authority(), srr.signed_rank_authority(),
+        srr.public_key(), crypto::STRING_STRING)) {
+#ifdef DEBUG
+      printf("Rank authrty from rpc id %d didn't pass signature check (%d).\n",
+             store_ref_result_holder.rpc_id_, knode_.host_port());
+      return -1;
+#endif
+    }
+
+    maidsafe::RankAuthority ra;
+    if (!ra.ParseFromString(srr.rank_authority())) {
+#ifdef DEBUG
+      printf("Rank authority from rpc id %d didn't parse (%d).\n",
+             store_ref_result_holder.rpc_id_, knode_.host_port());
+      return -1;
+#endif
+    }
+
+    if (ra.data_size() != iou_ready_details.get<2>()) {
+#ifdef DEBUG
+      printf("Rank authority from rpc id %d has invalid size (%d).\n",
+             store_ref_result_holder.rpc_id_, knode_.host_port());
+      return -1;
+#endif
+    }
+
+    if (ra.pmid() != iou_ready_details.get<0>()) {
+#ifdef DEBUG
+      printf("Rank authority from rpc id %d is not for this vault (%d).\n",
+             store_ref_result_holder.rpc_id_, knode_.host_port());
+      return -1;
+#endif
+    }
+
+    maidsafe::IOU iou;
+    if (!iou.ParseFromString(srr.iou())) {
+#ifdef DEBUG
+      printf("IOU from rpc id %d didn't parse (%d).\n",
+             store_ref_result_holder.rpc_id_, knode_.host_port());
+      return -1;
+#endif
+    }
+
+    if (!co_.AsymCheckSig(iou.signed_iou_authority(), iou.signature(),
+        iou_ready_details.get<3>(), crypto::STRING_STRING)) {
+#ifdef DEBUG
+      printf("IOU from rpc id %d didn't pass client signature check (%d).\n",
+             store_ref_result_holder.rpc_id_, knode_.host_port());
+      return -1;
+#endif
+    }
+
+    if (!co_.AsymCheckSig(iou.serialised_iou_authority(),
+        iou.signed_iou_authority(), pmid_public_, crypto::STRING_STRING)) {
+#ifdef DEBUG
+      printf("IOUAuthority from rpc id %d didn't pass vault signature check "
+             "(%d).\n", store_ref_result_holder.rpc_id_, knode_.host_port());
+      return -1;
+#endif
+    }
+
+    maidsafe::IOUAuthority iou_authority;
+    if (!iou_authority.ParseFromString(iou.serialised_iou_authority())) {
+#ifdef DEBUG
+      printf("IOUAuthority from rpc id %d didn't parse (%d).\n",
+             store_ref_result_holder.rpc_id_, knode_.host_port());
+      return -1;
+#endif
+    }
+
+    if (iou_authority.data_size() != iou_ready_details.get<2>()) {
+#ifdef DEBUG
+      printf("IOUAuthority from rpc id %d has invalid size (%d).\n",
+             store_ref_result_holder.rpc_id_, knode_.host_port());
+      return -1;
+#endif
+    }
+
+    if (iou_authority.pmid() != pmid_) {
+#ifdef DEBUG
+      printf("IOUAuthority from rpc id %d is not from this vault (%d).\n",
+             store_ref_result_holder.rpc_id_, knode_.host_port());
+      return -1;
+#endif
+    }
+    *got_valid_iou = true;
+  }
+  return 0;
+}
+
+
+int PDVault::FindKNodes(const std::string &kad_key,
+                        std::vector<kad::Contact> *contacts) {
+  KadCallback kad_callback;
+  knode_.FindCloseNodes(kad_key, boost::bind(&KadCallback::SetResponse,
+      &kad_callback, _1));
+// TODO(Fraser#5#): 2009-08-12 - make timeout a maidsafe constant
+  int count(0), timeout(7500);
+  while (count < timeout) {
+    if (kad_callback.response() != "")
+      break;
+    count += 10;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  }
+  if (kad_callback.response() == "") {
+#ifdef DEBUG
+    printf("In PDVault::FindKNodes, fail - timeout.\n");
+#endif
+    return -1;
+  }
+  kad::FindResponse find_response;
+  if (!find_response.ParseFromString(kad_callback.response())) {
+#ifdef DEBUG
+    printf("In PDVault::FindKNodes, can't parse result.\n");
+#endif
+    return -2;
+  }
+  if (find_response.result() != kad::kRpcResultSuccess) {
+#ifdef DEBUG
+    printf("In PDVault::FindKNodes, Kademlia operation failed.\n");
+#endif
+    return -3;
+  }
+  for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
+    kad::Contact contact;
+    contact.ParseFromString(find_response.closest_nodes(i));
+    contacts->push_back(contact);
+  }
+#ifdef DEBUG
+  printf("In PDVault::FindKNodes, succeeded.\n");
+#endif
+  return 0;
+}
+
+int PDVault::SendToRefPacket(
+    const kad::Contact &ref_holder,
+    const IouReadyTuple &iou_ready_details,
+    StoreRefResultHolder *store_ref_result_holder) {
+  maidsafe::StoreReferenceRequest store_ref_request;
+  std::string chunk_name = iou_ready_details.get<1>();
+  std::string signed_request =  GetSignedRequest(chunk_name,
+                                                 ref_holder.node_id());
+  store_ref_request.set_chunkname(chunk_name);
+  store_ref_request.set_pmid(pmid_);
+  store_ref_request.set_public_key(pmid_public_);
+  store_ref_request.set_signed_public_key(signed_pmid_public_);
+  store_ref_request.set_signed_request(signed_request);
+  bool local = (knode_.CheckContactLocalAddress(ref_holder.node_id(),
+      ref_holder.local_ip(), ref_holder.local_port(), ref_holder.host_ip())
+      == kad::LOCAL);
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &PDVault::SendToRefPacketCallback,
+      &store_ref_result_holder->store_ref_response_returned_,
+      store_ref_result_holder->mutex_.get());
+  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  vault_rpcs_.StoreChunkReference(ref_holder, local, &store_ref_request,
+      &store_ref_result_holder->store_ref_response_, controller, callback);
+  store_ref_result_holder->rpc_id_ = controller->req_id();
+  return 0;
+}
+
+void PDVault::SendToRefPacketCallback(bool *store_ref_response_returned,
+                                      boost::mutex *mutex) {
+#ifdef DEBUG
+  printf("In PDVault::SendToRefPacketCallback.\n");
+#endif
+  boost::mutex::scoped_lock loch(*mutex);
+  *store_ref_response_returned = true;
+}
+
+
+
+
+
 
 void PDVault::SyncVault(base::callback_func_type cb) {
   // Process of updating vault:
@@ -382,7 +710,7 @@ void PDVault::ValidityCheckCallback(
   std::string local_content_("");
   vault_chunkstore_->LoadChunk(validity_check_args->chunk_name_,
                                &local_content_);
-  std::string local_hash_content_(co.Hash(local_content_ +
+  std::string local_hash_content_(co_.Hash(local_content_ +
       validity_check_args->random_data_, "", crypto::STRING_STRING,
       true));
   if (local_hash_content_ != remote_hash_content_) {
@@ -489,17 +817,17 @@ void PDVault::IterativePublishChunkRef(
     data->chunk_names.pop_front();
     std::string non_hex_chunk_name("");
     base::decode_from_hex(chunk_name, &non_hex_chunk_name);
-    std::string signed_request_ = co.AsymSign(
-        co.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
+    std::string signed_request_ = co_.AsymSign(
+        co_.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
                 "",
                 crypto::STRING_STRING,
-                true),
+                false),
         "",
         pmid_private_,
         crypto::STRING_STRING);
     kad::SignedValue signed_value;
     signed_value.set_value(pmid_);
-    signed_value.set_value_signature(co.AsymSign(pmid_, "", pmid_private_,
+    signed_value.set_value_signature(co_.AsymSign(pmid_, "", pmid_private_,
         crypto::STRING_STRING));
     knode_.StoreValue(chunk_name,
                       signed_value,
@@ -906,17 +1234,17 @@ void PDVault::SwapChunkAcceptChunk(
   // Store chunk reference
   std::string non_hex_chunk_name("");
   base::decode_from_hex(chunk_name_, &non_hex_chunk_name);
-  std::string signed_request = co.AsymSign(
-      co.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
+  std::string signed_request = co_.AsymSign(
+      co_.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
               "",
               crypto::STRING_STRING,
-              true),
+              false),
       "",
       pmid_private_,
       crypto::STRING_STRING);
   kad::SignedValue signed_value;
   signed_value.set_value(pmid_);
-  signed_value.set_value_signature(co.AsymSign(pmid_, "", pmid_private_,
+  signed_value.set_value_signature(co_.AsymSign(pmid_, "", pmid_private_,
       crypto::STRING_STRING));
   knode_.StoreValue(swap_chunk_args->chunkname_,
                     signed_value,
@@ -933,31 +1261,4 @@ void PDVault::SwapChunkAcceptChunk(
   swap_chunk_args->cb_(local_result_str);
 }
 
-void PDVault::RegisterMaidService() {
-  vault_service_ = boost::shared_ptr<VaultService>(
-    new VaultService(pmid_public_,
-                     pmid_private_,
-                     signed_pmid_public_,
-                     vault_chunkstore_,
-                     &knode_,
-                     &poh_));
-  svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
-      new rpcprotocol::Channel(channel_manager_.get()));
-  svc_channel_->SetService(vault_service_.get());
-  channel_manager_->RegisterChannel(
-    vault_service_->GetDescriptor()->name(), svc_channel_.get());
-}
-
-void PDVault::UnRegisterMaidService() {
-  channel_manager_->UnRegisterChannel(
-    vault_service_->GetDescriptor()->name());
-  svc_channel_.reset();
-  vault_service_.reset();
-}
-
-std::string PDVault::node_id() const {
-  std::string hex_id("");
-  base::encode_to_hex(knode_.node_id(), &hex_id);
-  return hex_id;
-}
 }  // namespace maidsafe_vault

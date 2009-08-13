@@ -98,7 +98,7 @@ void LocalStoreManager::Init(int, base::callback_func_type cb) {
   }
 }
 
-void LocalStoreManager::Close(base::callback_func_type cb) {
+void LocalStoreManager::Close(base::callback_func_type cb, bool) {
   try {
     db_.close();
     boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, mutex_));
@@ -197,7 +197,7 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
   }
 
   if (!crypto_obj_.AsymCheckSig(crypto_obj_.Hash(
-      public_key + signed_public_key + key, "", crypto::STRING_STRING, true),
+      public_key + signed_public_key + key, "", crypto::STRING_STRING, false),
       signature, public_key, crypto::STRING_STRING)) {
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
     return;
@@ -310,7 +310,7 @@ void LocalStoreManager::StorePacket(const std::string &hex_key,
     }
 
     if (!crypto_obj_.AsymCheckSig(crypto_obj_.Hash(
-        public_key + signed_public_key + key, "", crypto::STRING_STRING, true),
+        public_key + signed_public_key + key, "", crypto::STRING_STRING, false),
         signature, public_key, crypto::STRING_STRING)) {
 #ifdef DEBUG
       printf("Fail check signed request.\n");

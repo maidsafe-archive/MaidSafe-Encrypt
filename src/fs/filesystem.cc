@@ -34,6 +34,7 @@
 #include <boost/filesystem/convenience.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <maidsafe/maidsafe-dht.h>
 #ifdef MAIDSAFE_WIN32
 #include <shlwapi.h>
 #endif
@@ -41,7 +42,6 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/maidsafe.h"
 

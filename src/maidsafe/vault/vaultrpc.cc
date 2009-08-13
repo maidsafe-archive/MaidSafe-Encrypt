@@ -31,6 +31,26 @@ namespace maidsafe_vault {
 VaultRpcs::VaultRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
     channel_manager) : channel_manager_(channel_manager) {}
 
+void VaultRpcs::StoreChunkReference(
+    const kad::Contact &peer,
+    bool local,
+    maidsafe::StoreReferenceRequest *store_ref_request,
+    maidsafe::StoreReferenceResponse *response,
+    rpcprotocol::Controller *controller,
+    google::protobuf::Closure *done) {
+  std::string ip = peer.host_ip();
+  boost::uint16_t port = peer.host_port();
+  if (local) {
+    ip = peer.local_ip();
+    port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_.get(), ip, port,
+      peer.rendezvous_ip(), peer.rendezvous_port());
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.StoreChunkReference(controller, store_ref_request, response, done);
+}
+
+
 void VaultRpcs::StoreChunk(const std::string &chunkname,
                       const std::string &data,
                       const std::string &public_key,

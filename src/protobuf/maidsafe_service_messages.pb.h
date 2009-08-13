@@ -212,20 +212,30 @@ class IOU : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes signed_iou_authority = 1;
+  // required bytes serialised_iou_authority = 1;
+  inline bool has_serialised_iou_authority() const;
+  inline void clear_serialised_iou_authority();
+  static const int kSerialisedIouAuthorityFieldNumber = 1;
+  inline const ::std::string& serialised_iou_authority() const;
+  inline void set_serialised_iou_authority(const ::std::string& value);
+  inline void set_serialised_iou_authority(const char* value);
+  inline void set_serialised_iou_authority(const void* value, size_t size);
+  inline ::std::string* mutable_serialised_iou_authority();
+  
+  // required bytes signed_iou_authority = 2;
   inline bool has_signed_iou_authority() const;
   inline void clear_signed_iou_authority();
-  static const int kSignedIouAuthorityFieldNumber = 1;
+  static const int kSignedIouAuthorityFieldNumber = 2;
   inline const ::std::string& signed_iou_authority() const;
   inline void set_signed_iou_authority(const ::std::string& value);
   inline void set_signed_iou_authority(const char* value);
   inline void set_signed_iou_authority(const void* value, size_t size);
   inline ::std::string* mutable_signed_iou_authority();
   
-  // required bytes signature = 2;
+  // required bytes signature = 3;
   inline bool has_signature() const;
   inline void clear_signature();
-  static const int kSignatureFieldNumber = 2;
+  static const int kSignatureFieldNumber = 3;
   inline const ::std::string& signature() const;
   inline void set_signature(const ::std::string& value);
   inline void set_signature(const char* value);
@@ -236,6 +246,8 @@ class IOU : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
+  ::std::string* serialised_iou_authority_;
+  static const ::std::string _default_serialised_iou_authority_;
   ::std::string* signed_iou_authority_;
   static const ::std::string _default_signed_iou_authority_;
   ::std::string* signature_;
@@ -243,7 +255,7 @@ class IOU : public ::google::protobuf::Message {
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -1652,6 +1664,26 @@ class StoreReferenceResponse : public ::google::protobuf::Message {
   inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
   
+  // optional bytes public_key = 6;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 6;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // optional bytes signed_public_key = 7;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 7;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -1665,10 +1697,14 @@ class StoreReferenceResponse : public ::google::protobuf::Message {
   static const ::std::string _default_iou_;
   ::std::string* pmid_id_;
   static const ::std::string _default_pmid_id_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -3375,84 +3411,126 @@ inline ::std::string* IOUAuthority::mutable_pmid() {
 
 // IOU
 
-// required bytes signed_iou_authority = 1;
-inline bool IOU::has_signed_iou_authority() const {
+// required bytes serialised_iou_authority = 1;
+inline bool IOU::has_serialised_iou_authority() const {
   return _has_bit(0);
+}
+inline void IOU::clear_serialised_iou_authority() {
+  if (serialised_iou_authority_ != &_default_serialised_iou_authority_) {
+    serialised_iou_authority_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& IOU::serialised_iou_authority() const {
+  return *serialised_iou_authority_;
+}
+inline void IOU::set_serialised_iou_authority(const ::std::string& value) {
+  _set_bit(0);
+  if (serialised_iou_authority_ == &_default_serialised_iou_authority_) {
+    serialised_iou_authority_ = new ::std::string;
+  }
+  serialised_iou_authority_->assign(value);
+}
+inline void IOU::set_serialised_iou_authority(const char* value) {
+  _set_bit(0);
+  if (serialised_iou_authority_ == &_default_serialised_iou_authority_) {
+    serialised_iou_authority_ = new ::std::string;
+  }
+  serialised_iou_authority_->assign(value);
+}
+inline void IOU::set_serialised_iou_authority(const void* value, size_t size) {
+  _set_bit(0);
+  if (serialised_iou_authority_ == &_default_serialised_iou_authority_) {
+    serialised_iou_authority_ = new ::std::string;
+  }
+  serialised_iou_authority_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* IOU::mutable_serialised_iou_authority() {
+  _set_bit(0);
+  if (serialised_iou_authority_ == &_default_serialised_iou_authority_) {
+    serialised_iou_authority_ = new ::std::string;
+  }
+  return serialised_iou_authority_;
+}
+
+// required bytes signed_iou_authority = 2;
+inline bool IOU::has_signed_iou_authority() const {
+  return _has_bit(1);
 }
 inline void IOU::clear_signed_iou_authority() {
   if (signed_iou_authority_ != &_default_signed_iou_authority_) {
     signed_iou_authority_->clear();
   }
-  _clear_bit(0);
+  _clear_bit(1);
 }
 inline const ::std::string& IOU::signed_iou_authority() const {
   return *signed_iou_authority_;
 }
 inline void IOU::set_signed_iou_authority(const ::std::string& value) {
-  _set_bit(0);
+  _set_bit(1);
   if (signed_iou_authority_ == &_default_signed_iou_authority_) {
     signed_iou_authority_ = new ::std::string;
   }
   signed_iou_authority_->assign(value);
 }
 inline void IOU::set_signed_iou_authority(const char* value) {
-  _set_bit(0);
+  _set_bit(1);
   if (signed_iou_authority_ == &_default_signed_iou_authority_) {
     signed_iou_authority_ = new ::std::string;
   }
   signed_iou_authority_->assign(value);
 }
 inline void IOU::set_signed_iou_authority(const void* value, size_t size) {
-  _set_bit(0);
+  _set_bit(1);
   if (signed_iou_authority_ == &_default_signed_iou_authority_) {
     signed_iou_authority_ = new ::std::string;
   }
   signed_iou_authority_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* IOU::mutable_signed_iou_authority() {
-  _set_bit(0);
+  _set_bit(1);
   if (signed_iou_authority_ == &_default_signed_iou_authority_) {
     signed_iou_authority_ = new ::std::string;
   }
   return signed_iou_authority_;
 }
 
-// required bytes signature = 2;
+// required bytes signature = 3;
 inline bool IOU::has_signature() const {
-  return _has_bit(1);
+  return _has_bit(2);
 }
 inline void IOU::clear_signature() {
   if (signature_ != &_default_signature_) {
     signature_->clear();
   }
-  _clear_bit(1);
+  _clear_bit(2);
 }
 inline const ::std::string& IOU::signature() const {
   return *signature_;
 }
 inline void IOU::set_signature(const ::std::string& value) {
-  _set_bit(1);
+  _set_bit(2);
   if (signature_ == &_default_signature_) {
     signature_ = new ::std::string;
   }
   signature_->assign(value);
 }
 inline void IOU::set_signature(const char* value) {
-  _set_bit(1);
+  _set_bit(2);
   if (signature_ == &_default_signature_) {
     signature_ = new ::std::string;
   }
   signature_->assign(value);
 }
 inline void IOU::set_signature(const void* value, size_t size) {
-  _set_bit(1);
+  _set_bit(2);
   if (signature_ == &_default_signature_) {
     signature_ = new ::std::string;
   }
   signature_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* IOU::mutable_signature() {
-  _set_bit(1);
+  _set_bit(2);
   if (signature_ == &_default_signature_) {
     signature_ = new ::std::string;
   }
@@ -5315,6 +5393,90 @@ inline ::std::string* StoreReferenceResponse::mutable_pmid_id() {
     pmid_id_ = new ::std::string;
   }
   return pmid_id_;
+}
+
+// optional bytes public_key = 6;
+inline bool StoreReferenceResponse::has_public_key() const {
+  return _has_bit(5);
+}
+inline void StoreReferenceResponse::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(5);
+}
+inline const ::std::string& StoreReferenceResponse::public_key() const {
+  return *public_key_;
+}
+inline void StoreReferenceResponse::set_public_key(const ::std::string& value) {
+  _set_bit(5);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void StoreReferenceResponse::set_public_key(const char* value) {
+  _set_bit(5);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void StoreReferenceResponse::set_public_key(const void* value, size_t size) {
+  _set_bit(5);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* StoreReferenceResponse::mutable_public_key() {
+  _set_bit(5);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// optional bytes signed_public_key = 7;
+inline bool StoreReferenceResponse::has_signed_public_key() const {
+  return _has_bit(6);
+}
+inline void StoreReferenceResponse::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(6);
+}
+inline const ::std::string& StoreReferenceResponse::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void StoreReferenceResponse::set_signed_public_key(const ::std::string& value) {
+  _set_bit(6);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void StoreReferenceResponse::set_signed_public_key(const char* value) {
+  _set_bit(6);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void StoreReferenceResponse::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(6);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* StoreReferenceResponse::mutable_signed_public_key() {
+  _set_bit(6);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
 }
 
 // -------------------------------------------------------------------

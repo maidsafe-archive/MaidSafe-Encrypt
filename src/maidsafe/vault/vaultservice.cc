@@ -58,6 +58,7 @@ VaultService::VaultService(const std::string &pmid_public,
       pmid_private_(pmid_private),
       signed_pmid_public_(signed_pmid_public),
       pmid_(""),
+      non_hex_pmid_(""),
       vault_chunkstore_(vault_chunkstore),
       knode_(knode),
       poh_(poh) {
@@ -66,6 +67,7 @@ VaultService::VaultService(const std::string &pmid_public,
   crypto_.set_hash_algorithm(crypto::SHA_512);
   pmid_ = crypto_.Hash(pmid_public + signed_pmid_public_, "",
                        crypto::STRING_STRING, true);
+  base::decode_from_hex(pmid_, &non_hex_pmid_);
 }
 
 void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
@@ -120,7 +122,15 @@ void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
     done->Run();
     return;
   }
+  maidsafe::IOUAuthority iou_authority;
+  iou_authority.set_data_size(data_size);
+  iou_authority.set_pmid(pmid_);
+  std::string iou_authority_str;
+  iou_authority.SerializeToString(&iou_authority_str);
   response->set_result(kAck);
+  response->set_iou_authority(iou_authority_str);
+  response->set_signed_iou_authority(crypto_.AsymSign(iou_authority_str, "",
+      pmid_private_, crypto::STRING_STRING));
   done->Run();
 }
 
@@ -362,6 +372,8 @@ void VaultService::StoreChunkReference(google::protobuf::RpcController*,
                          &ra, &signed_ra);
   response->set_rank_authority(ra);
   response->set_signed_rank_authority(signed_ra);
+  response->set_public_key(pmid_public_);
+  response->set_signed_public_key(signed_pmid_public_);
 
   done->Run();
 }
@@ -732,9 +744,13 @@ bool VaultService::ValidateSignedRequest(const std::string &public_key,
     return true;
   if (crypto_.AsymCheckSig(public_key, signed_public_key, public_key,
                            crypto::STRING_STRING)) {
+    if (crypto_.AsymCheckSig(crypto_.Hash(signed_public_key + key +
+        non_hex_pmid_, "", crypto::STRING_STRING, false), signed_request,
+        public_key, crypto::STRING_STRING))
+      return true;
     return crypto_.AsymCheckSig(crypto_.Hash(public_key + signed_public_key +
-      key, "", crypto::STRING_STRING, true), signed_request,
-      public_key, crypto::STRING_STRING);
+      key, "", crypto::STRING_STRING, false), signed_request, public_key,
+      crypto::STRING_STRING);
   } else {
 #ifdef DEBUG
     printf("Failed to check signature.\n");
@@ -802,7 +818,7 @@ void VaultService::StoreChunkReference(const std::string &non_hex_chunkname) {
       crypto_.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunkname,
                    "",
                    crypto::STRING_STRING,
-                   true),
+                   false),
       "",
       pmid_private_,
       crypto::STRING_STRING);

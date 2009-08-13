@@ -93,6 +93,9 @@ int PendingOperationsHandler::AdvanceStatus(const std::string &pmid,
     case IOU_READY:
       p = pending_ops_.equal_range(boost::make_tuple(AWAITING_IOU, chunkname));
       break;
+    case IOU_RANK_RETREIVED:
+      p = pending_ops_.equal_range(boost::make_tuple(IOU_READY, chunkname));
+      break;
     default: break;
   }
   if (p.first == p.second) {
@@ -136,13 +139,30 @@ int PendingOperationsHandler::FindOperation(const std::string &pmid,
 #endif
     return -1494;
   }
-  p.first++;
+  ++p.first;
   if (p.first != p.second) {
 #ifdef DEBUG
     printf("More than one found (%s).\n", chunkname.c_str());
 #endif
     return -1494;
   }
+  return 0;
+}
+
+int PendingOperationsHandler::EraseOperation(
+    const vault_operation_status &status,
+    const std::string &pmid,
+    const std::string &chunkname) {
+  boost::mutex::scoped_lock loch(multi_index_mutex_);
+  std::pair<pending_operation_set::iterator, pending_operation_set::iterator> p;
+  p = pending_ops_.equal_range(boost::make_tuple(status, chunkname, pmid));
+  if (p.first == p.second) {
+#ifdef DEBUG
+    printf("Pending operation not found (%s).\n", chunkname.c_str());
+#endif
+    return -1495;
+  }
+  pending_ops_.erase(p.first);
   return 0;
 }
 
@@ -160,7 +180,7 @@ int PendingOperationsHandler::GetSizeAndIOU(const std::string &pmid,
 #ifdef DEBUG
     printf("Pending operation not found (%s).\n", chunkname.c_str());
 #endif
-    return -1495;
+    return -1496;
   }
   *chunk_size = (*p.first).chunk_size_;
   *iou = (*p.first).iou_;
@@ -197,8 +217,22 @@ int PendingOperationsHandler::PrunePendingOps() {
     }
     ++it;
   }
-
   return deletes;
+}
+
+int PendingOperationsHandler::GetAllIouReadys(
+    std::list< boost::tuple<std::string, std::string, boost::uint64_t,
+                            std::string> > *iou_readys) {
+  boost::mutex::scoped_lock loch(multi_index_mutex_);
+  iou_readys->clear();
+  std::pair<pending_operation_set::iterator, pending_operation_set::iterator> p;
+  p = pending_ops_.equal_range(boost::make_tuple(IOU_READY));
+  for (; p.first != p.second; ++p.first) {
+    iou_readys->push_back(boost::make_tuple((*p.first).pmid_,
+        (*p.first).chunk_name_, (*p.first).chunk_size_,
+        (*p.first).public_key_));
+  }
+  return 0;
 }
 
 int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
@@ -222,15 +256,8 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       break;
     case IOU_READY:
     case AWAITING_IOU:
-      if (chunkname.empty()) {
-#ifdef DEBUG
-        printf("Wrong parameter: (%s)\n", chunkname.c_str());
-#endif
-        res = -1496;
-      }
-      break;
     case IOU_RANK_RETREIVED:
-      if (chunkname.empty() || iou.empty() || rank_authority.empty()) {
+      if (chunkname.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s)\n", iou.c_str(),
                rank_authority.c_str());

@@ -25,12 +25,12 @@
 #ifndef MAIDSAFE_VAULT_VAULTBUFFERPACKETHANDLER_H_
 #define MAIDSAFE_VAULT_VAULTBUFFERPACKETHANDLER_H_
 
+#include <maidsafe/crypto.h>
+#include <maidsafe/utils.h>
 #include <list>
 #include <string>
 #include <vector>
 
-#include "maidsafe/crypto.h"
-#include "maidsafe/utils.h"
 #include "maidsafe/maidsafe.h"
 
 namespace packethandler {

@@ -576,7 +576,7 @@ bool ClientController::ValidateUser(const std::string &password) {
 
 void ClientController::CloseConnection(bool clean_up_transport) {
   CC_CallbackResult cb;
-  sm_->Close(boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
+  sm_->Close(boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1), true);
   WaitForResult(cb);
   GenericResponse result;
   if ((!result.ParseFromString(cb.result)) ||

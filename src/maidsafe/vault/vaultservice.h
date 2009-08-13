@@ -129,6 +129,7 @@ class VaultService : public maidsafe::MaidsafeService {
                               std::string *signed_rank_authority);
   crypto::Crypto crypto_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
+  std::string non_hex_pmid_;
   boost::shared_ptr<VaultChunkStore> vault_chunkstore_;
   kad::KNode *knode_;
   PendingOperationsHandler *poh_;

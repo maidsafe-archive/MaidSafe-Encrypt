@@ -25,13 +25,13 @@
 #ifndef MAIDSAFE_CLIENT_CLIENTBUFFERPACKETHANDLER_H_
 #define MAIDSAFE_CLIENT_CLIENTBUFFERPACKETHANDLER_H_
 
+#include <boost/thread/mutex.hpp>
+#include <maidsafe/crypto.h>
+
 #include <list>
 #include <set>
 #include <string>
 
-#include "boost/thread/mutex.hpp"
-
-#include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"

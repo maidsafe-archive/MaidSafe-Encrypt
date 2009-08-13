@@ -25,8 +25,10 @@
 #include "maidsafe/client/keyatlas.h"
 
 #include <stdint.h>
-
 #include <boost/filesystem.hpp>
+#include <maidsafe/crypto.h>
+#include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/utils.h>
 
 #include <algorithm>
 #include <cctype>
@@ -34,9 +36,6 @@
 #include <exception>
 #include <map>
 
-#include "maidsafe/crypto.h"
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
 #include "protobuf/datamaps.pb.h"
 
 namespace fs = boost::filesystem;

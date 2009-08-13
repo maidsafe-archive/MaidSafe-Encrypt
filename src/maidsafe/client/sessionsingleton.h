@@ -25,15 +25,15 @@
 #ifndef MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
 #define MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
 
+#include <boost/thread/thread.hpp>
+#include <maidsafe/crypto.h>
+
 #include <list>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
 
-#include "boost/thread/thread.hpp"
-
-#include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/keyatlas.h"
 #include "maidsafe/client/contacts.h"

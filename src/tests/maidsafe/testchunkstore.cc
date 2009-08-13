@@ -15,8 +15,8 @@
 
 #include <boost/filesystem/fstream.hpp>
 #include <gtest/gtest.h>
-#include "maidsafe/utils.h"
-#include "maidsafe/crypto.h"
+#include <maidsafe/utils.h>
+#include <maidsafe/crypto.h>
 #include "maidsafe/vault/vaultchunkstore.h"
 
 namespace test_chunkstore {

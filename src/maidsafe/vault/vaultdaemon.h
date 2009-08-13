@@ -16,11 +16,11 @@
 #define MAIDSAFE_VAULT_VAULTDAEMON_H_
 
 #include <boost/filesystem.hpp>
+#include <maidsafe/utils.h>
 #include <string>
 
 #include "gtest/gtest_prod.h"
 
-#include "maidsafe/utils.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/pdvault.h"
 #include "maidsafe/vault/validitycheck.h"

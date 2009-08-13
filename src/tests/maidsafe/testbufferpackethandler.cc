@@ -74,7 +74,6 @@ class BufferPacketHandlerTest : public testing::Test {
                               ss(),
                               mutex(),
                               cb() {
-
     try {
       boost::filesystem::remove_all("./TestBuffer");
     }
@@ -178,7 +177,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   ss->SetConnectionStatus(1);
   cb.Reset();
   store_res.Clear();
@@ -196,7 +195,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, add_users_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
   cb.Reset();
   add_users_res.Clear();
 
@@ -258,7 +257,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
   sm->IsKeyUnique(crypto_obj.Hash(public_username+"BUFFER",
@@ -270,7 +269,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result));
-  ASSERT_EQ(kNack, is_unique_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   is_unique_res.Clear();
   cb.Reset();
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
@@ -313,7 +312,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -329,7 +328,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, add_users_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
   cb.Reset();
 
   sm->LoadPacket(crypto_obj.Hash(public_username+"BUFFER",
@@ -373,7 +372,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -389,7 +388,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, add_users_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
   cb.Reset();
   add_users_res.Clear();
 
@@ -477,7 +476,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -493,7 +492,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, add_users_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
   cb.Reset();
   add_users_res.Clear();
 
@@ -553,7 +552,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckOwner) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
@@ -594,7 +593,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -611,7 +610,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, add_users_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
   cb.Reset();
   add_users_res.Clear();
   boost::this_thread::sleep(boost::posix_time::milliseconds(100));
@@ -626,7 +625,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::DeleteResponse del_res;
   ASSERT_TRUE(del_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, del_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(del_res.result()));
   cb.Reset();
   del_res.Clear();
 
@@ -668,7 +667,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckSignature) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -705,7 +704,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -721,7 +720,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, add_users_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
   cb.Reset();
   add_users_res.Clear();
 
@@ -734,7 +733,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, load_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   std::string ser_bp = load_res.content();
   load_res.Clear();
   cb.Reset();
@@ -783,7 +782,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
                                signed_public_key + crypto_obj.Hash(
                                public_username + "BUFFER", "",
                                crypto::STRING_STRING, false), "",
-                               crypto::STRING_STRING, true), "",
+                               crypto::STRING_STRING, false), "",
                                private_key, crypto::STRING_STRING);
   sm->StorePacket(crypto_obj.Hash(public_username + "BUFFER",
                                   "",
@@ -799,7 +798,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   wait_for_result_tbph(cb, mutex);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
   ASSERT_TRUE(buffer_packet.ParseFromString(ser_bp)) << "Wrong serialization";
@@ -823,7 +822,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetMessagesResponse get_msg_res;
   ASSERT_TRUE(get_msg_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, get_msg_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(get_msg_res.result()));
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(3, get_msg_res.messages_size());
 
@@ -853,7 +852,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -870,7 +869,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, add_users_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
   cb.Reset();
   add_users_res.Clear();
 
@@ -883,7 +882,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, load_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   std::string ser_bp = load_res.content();
   load_res.Clear();
   cb.Reset();
@@ -949,7 +948,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
   sm->IsKeyUnique(crypto_obj.Hash(public_username + "BUFFER",
@@ -961,7 +960,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   wait_for_result_tbph(cb, mutex);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result));
-  ASSERT_EQ(kNack, is_unique_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   is_unique_res.Clear();
   cb.Reset();
 
@@ -1025,7 +1024,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
   clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(\
@@ -1034,7 +1033,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetMessagesResponse get_msgs_res;
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, get_msgs_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(get_msgs_res.result()));
   ASSERT_EQ(0, get_msgs_res.messages_size());
   ASSERT_EQ(static_cast<unsigned int>(0), ss->AuthorisedUsers().size());
   cb.Reset();
@@ -1052,7 +1051,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::UpdateResponse add_users_res;
   ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, add_users_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
   cb.Reset();
   add_users_res.Clear();
 
@@ -1061,7 +1060,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   wait_for_result_tbph(cb, mutex);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, get_msgs_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(get_msgs_res.result()));
   ASSERT_EQ(0, get_msgs_res.messages_size());
   ASSERT_EQ(static_cast<unsigned int>(3), ss->AuthorisedUsers().size());
   ASSERT_TRUE(users == ss->AuthorisedUsers());

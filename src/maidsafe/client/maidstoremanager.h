@@ -71,7 +71,6 @@ class CallbackObj {
 
 // Tuple of non_hex_chunk_name, dir_type, msid in that order.
 typedef boost::tuple<std::string, DirType, std::string> StoreTuple;
-typedef std::queue<StoreTuple>StoreQueue;
 
 class ChunkStore;
 class SessionSingleton;
@@ -81,7 +80,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
   ~MaidsafeStoreManager() {}
   void Init(int port, base::callback_func_type cb);
-  void Close(base::callback_func_type cb);
+  void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
   void LoadChunk(const std::string &hex_chunk_name,
                  base::callback_func_type cb);
@@ -140,23 +139,22 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                            base::callback_func_type cb);
   void DeleteChunk_Callback(const std::string &result,
                             base::callback_func_type cb);
-  // Used to amend store_thread_running_ bool by main store thread on exit.
-  void StoreThreadStopping();
-  // Function run in main store thread which spawns up to kMaxStoreThreads
-  // child threads.  Always leaves room for at least one priority store thread.
-  void StoreThread();
-  void AddToPriorityStoreQueue(const StoreTuple &store_tuple);
-  void AddToNormalStoreQueue(const StoreTuple &store_tuple);
+
+
+  void AddPriorityStoreTask(const StoreTuple &store_tuple);
+  void AddNormalStoreTask(const StoreTuple &store_tuple);
   // Store an individual chunk onto the network
   void SendChunk(StoreTuple store_tuple);
   // Set up the requests needed to perform the store RPCs
   int GetStoreRequests(const StoreTuple &store_tuple,
+                       const std::string &recipient_id,
                        StorePrepRequest *store_prep_request,
                        StoreRequest *store_request);
   // Get the public key, signed public key, and signed request for a chunk
   void GetSignedPubKeyAndRequest(const std::string &non_hex_name,
                                  const DirType dir_type,
                                  const std::string &msid,
+                                 const std::string &recipient_id,
                                  std::string *pubkey,
                                  std::string *signed_pubkey,
                                  std::string *signed_request);
@@ -175,7 +173,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void SendPrepCallback(bool *send_prep_returned, boost::mutex *mutex);
   int SendContent(const kad::Contact &peer,
                   bool local,
-                  boost::uint64_t &data_size,
                   StoreRequest *store_request);
   void SendContentCallback(bool *send_content_returned, boost::mutex *mutex);
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
@@ -185,17 +182,12 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   SessionSingleton *ss_;
   crypto::Crypto co_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
-  boost::thread main_store_thread_;
-  bool store_thread_running_;
-  StoreQueue priority_store_queue_;
-  StoreQueue normal_store_queue_;
   boost::threadpool::thread_pool<
-      boost::threadpool::task_func,
-      boost::threadpool::fifo_scheduler,
+      boost::threadpool::prio_task_func,
+      boost::threadpool::prio_scheduler,
       boost::threadpool::static_size,
       boost::threadpool::resize_controller,
-      boost::threadpool::immediately>store_thread_pool_;
-  boost::mutex store_thread_running_mutex_, ps_queue_mutex_, ns_queue_mutex_;
+      boost::threadpool::immediately> store_thread_pool_;
 };
 
 }  // namespace maidsafe

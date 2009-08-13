@@ -1107,7 +1107,7 @@ int Authentication::CreateSignedRequest(const std::string &private_key,
       cry_obj_.Hash(public_key + *signed_public_key + non_hex_key,
                     "",
                     crypto::STRING_STRING,
-                    true),
+                    false),
       "",
       private_key,
       crypto::STRING_STRING);

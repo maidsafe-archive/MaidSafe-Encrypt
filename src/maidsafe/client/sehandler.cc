@@ -25,12 +25,11 @@
 
 #include "maidsafe/client/sehandler.h"
 
+#include <boost/filesystem/fstream.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <maidsafe/utils.h>
 #include <cstdio>
 
-#include "boost/filesystem/fstream.hpp"
-#include "boost/scoped_ptr.hpp"
-
-#include "maidsafe/utils.h"
 #include "fs/filesystem.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/privateshares.h"
@@ -1190,7 +1189,7 @@ void SEHandler::GetSignedPubKeyAndRequest(const DirType dir_type,
   co.set_hash_algorithm(crypto::SHA_512);
   switch (dir_type) {
     case PRIVATE_SHARE: {
-//      printf("Getting signed request for PRIVATE_SHARE.\n\n");
+      printf("Getting signed request for PRIVATE_SHARE.\n\n");
       std::string private_key_("");
       if (0 != ss_->GetShareKeys(msid, pubkey, &private_key_)) {
         *pubkey = "";
@@ -1205,14 +1204,14 @@ void SEHandler::GetSignedPubKeyAndRequest(const DirType dir_type,
       *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
                                             "",
                                             crypto::STRING_STRING,
-                                            true),
+                                            false),
                                     "",
                                     private_key_,
                                     crypto::STRING_STRING);
       }
       break;
     case PUBLIC_SHARE:
-//      printf("Getting signed request for PUBLIC_SHARE.\n\n");
+      printf("Getting signed request for PUBLIC_SHARE.\n\n");
       *pubkey = ss_->PublicKey(MPID);
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
@@ -1221,19 +1220,19 @@ void SEHandler::GetSignedPubKeyAndRequest(const DirType dir_type,
       *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
                                             "",
                                             crypto::STRING_STRING,
-                                            true),
+                                            false),
                                     "",
                                     ss_->PrivateKey(MPID),
                                     crypto::STRING_STRING);
       break;
     case ANONYMOUS:
-//      printf("Getting signed request for ANONYMOUS.\n\n");
+      printf("Getting signed request for ANONYMOUS.\n\n");
       *pubkey = " ";
       *signed_pubkey = " ";
       *signed_request = kAnonymousSignedRequest;
       break;
     default:
-//      printf("Getting signed request for default.\n\n");
+      printf("Getting signed request for default.\n\n");
       *pubkey = ss_->PublicKey(PMID);
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
@@ -1242,7 +1241,7 @@ void SEHandler::GetSignedPubKeyAndRequest(const DirType dir_type,
       *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
                                             "",
                                             crypto::STRING_STRING,
-                                            true),
+                                            false),
                                     "",
                                     ss_->PrivateKey(PMID),
                                     crypto::STRING_STRING);

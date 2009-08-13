@@ -251,7 +251,8 @@ class RunPDVaults {
       success_ = false;
       (*(pdvaults_))[i]->Start(false);
       for (int n = 0; n < 6000; ++n) {
-        if ((*(pdvaults_))[i]->vault_started()) {
+        if ((*(pdvaults_))[i]->vault_status() ==
+            maidsafe_vault::kVaultStarted) {
           success_ = true;
           break;
         }
@@ -266,9 +267,10 @@ class RunPDVaults {
     bool success_(false);
     for (int i = no_of_vaults_-1; i >= 0; --i) {
       success_ = false;
-      (*(pdvaults_))[i]->Stop();
+      (*(pdvaults_))[i]->Stop(true);
       for (int j = 0; j < 6000; ++j) {
-        if (!(*(pdvaults_))[i]->vault_started()) {
+        if ((*(pdvaults_))[i]->vault_status() ==
+            maidsafe_vault::kVaultStarted) {
           success_ = true;
           break;
         }

@@ -12,9 +12,9 @@ message IOUAuthority {
 };
 
 message IOU {
-  required bytes signed_iou_authority = 1;  // serialised IOUAuthority, signed
-                                            // by vault's PMID
-  required bytes signature = 2;  // signed_iou_authority signed by client's PMID
+  required bytes serialised_iou_authority = 1;
+  required bytes signed_iou_authority = 2;  // field 1, signed by vault's PMID
+  required bytes signature = 3;  // signed_iou_authority signed by client's PMID
 }
 
 message StorePrepRequest {
@@ -100,6 +100,8 @@ message StoreReferenceResponse {
                                              // ref-holder's PMID
   optional bytes iou = 4;  // serialised IOU
   optional bytes pmid_id = 5;  // ref-holder's PMID
+  optional bytes public_key = 6;
+  optional bytes signed_public_key = 7;
 };
 
 message DeleteRequest {

@@ -24,12 +24,10 @@
 */
 
 #include "maidsafe/vault/validitycheck.h"
-
 #include <boost/bind.hpp>
+#include <maidsafe/utils.h>
+#include <maidsafe/crypto.h>
 #include <list>
-
-#include "maidsafe/utils.h"
-#include "maidsafe/crypto.h"
 
 namespace fs = boost::filesystem;
 

@@ -25,14 +25,14 @@
 #ifndef MAIDSAFE_CLIENT_SELFENCRYPTION_H_
 #define MAIDSAFE_CLIENT_SELFENCRYPTION_H_
 
+#include <boost/filesystem.hpp>
 #include <stdint.h>
 
 #include <string>
 
-#include "boost/filesystem.hpp"
-#include "gtest/gtest_prod.h"
 
 #include "fs/filesystem.h"
+#include "gtest/gtest_prod.h"
 #include "protobuf/datamaps.pb.h"
 
 namespace fs = boost::filesystem;

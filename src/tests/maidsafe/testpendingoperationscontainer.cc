@@ -23,10 +23,8 @@
 */
 
 #include <gtest/gtest.h>
-
 #include <boost/filesystem.hpp>
 #include <boost/scoped_ptr.hpp>
-
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/utils.h>
 #include "maidsafe/vault/pendingoperations.h"
@@ -45,6 +43,20 @@ class PendingOperationContainerTest : public testing::Test {
   void TearDown() {}
   PendingOperationsHandler poh_;
 };
+
+// Tuple of pmid, non-hex chunkname, chunksize, and pmid_publickey in that order
+typedef boost::tuple<std::string, std::string, boost::uint64_t,
+                     std::string> IouReadyTuple;
+
+bool CompareTupleByChunkSize(IouReadyTuple first, IouReadyTuple second) {
+  try {
+  return (first.get<2>() < second.get<2>());
+  }
+  catch(const std::exception &e) {
+    printf("%s\n", e.what());
+  }
+  return false;
+}
 
 
 TEST_F(PendingOperationContainerTest, BEH_VAULT_PendingOpsInit) {
@@ -101,10 +113,6 @@ TEST_F(PendingOperationContainerTest, BEH_VAULT_ParameterAnalysis) {
   // IOU_RANK_RETREIVED
   ASSERT_EQ(-1496, poh_.AnalyseParameters("", "", 123456, "iou", "rank",
                                           "", IOU_RANK_RETREIVED));
-  ASSERT_EQ(-1496, poh_.AnalyseParameters("", "chunkname", 123456, "", "rank",
-                                          "", IOU_RANK_RETREIVED));
-  ASSERT_EQ(-1496, poh_.AnalyseParameters("", "chunkname", 123456, "iou", "",
-                                        "", IOU_RANK_RETREIVED));
   ASSERT_EQ(0, poh_.PendingOperationsCount());
 
   // IOU_RECEIVED
@@ -144,7 +152,7 @@ TEST_F(PendingOperationContainerTest,
     ASSERT_EQ(0, poh_.AddPendingOperation("pmid" + base::itos(n),
               "chunkname" + base::itos(n), 123456 + n, "", "", 0, "public_key",
               STORE_ACCEPTED));
-    ASSERT_EQ(n + 1, poh_.PendingOperationsCount());
+    ASSERT_EQ(static_cast<int>(n + 1), poh_.PendingOperationsCount());
   }
   poh_.ClearPendingOperations();
   ASSERT_EQ(0, poh_.PendingOperationsCount());
@@ -153,7 +161,7 @@ TEST_F(PendingOperationContainerTest,
     ASSERT_EQ(0, poh_.AddPendingOperation("pmid" + base::itos(a),
               "chunkname" + base::itos(a), 123456 + a, "iou", "", 0, "",
               IOU_RECEIVED));
-    ASSERT_EQ(a + 1, poh_.PendingOperationsCount());
+    ASSERT_EQ(static_cast<int>(a + 1), poh_.PendingOperationsCount());
   }
   poh_.ClearPendingOperations();
   ASSERT_EQ(0, poh_.PendingOperationsCount());
@@ -186,7 +194,7 @@ TEST_F(PendingOperationContainerTest, BEH_VAULT_FindPendingStores) {
     ASSERT_EQ(0, poh_.AddPendingOperation("pmid" + base::itos(n),
               "chunkname" + base::itos(n), 123456 + n, "", "", 0, "public_key",
               STORE_ACCEPTED));
-    ASSERT_EQ(n + 1, poh_.PendingOperationsCount());
+    ASSERT_EQ(static_cast<int>(n + 1), poh_.PendingOperationsCount());
   }
 
   // Check size
@@ -231,17 +239,17 @@ TEST_F(PendingOperationContainerTest, BEH_VAULT_GetSizeAndIOU) {
   boost::uint64_t chunk_size = 0;
   std::string iou;
   ASSERT_EQ(0, poh_.GetSizeAndIOU("pmid", "chunkname", &chunk_size, &iou));
-  ASSERT_EQ(123456, chunk_size);
+  ASSERT_EQ(static_cast<unsigned int>(123456), chunk_size);
   ASSERT_EQ("iou", iou);
   ASSERT_EQ(1, poh_.PendingOperationsCount());
 
-  ASSERT_EQ(-1495, poh_.GetSizeAndIOU("pmid", "chunk", &chunk_size, &iou));
-  ASSERT_EQ(0, chunk_size);
+  ASSERT_EQ(-1496, poh_.GetSizeAndIOU("pmid", "chunk", &chunk_size, &iou));
+  ASSERT_EQ(static_cast<unsigned int>(0), chunk_size);
   ASSERT_EQ("", iou);
   ASSERT_EQ(1, poh_.PendingOperationsCount());
 }
 
-TEST_F(PendingOperationContainerTest, BEH_VAULT_PrunePendingOps) {
+TEST_F(PendingOperationContainerTest, FUNC_VAULT_PrunePendingOps) {
   ASSERT_EQ(0, poh_.PendingOperationsCount());
 
   // Add cycle
@@ -250,34 +258,84 @@ TEST_F(PendingOperationContainerTest, BEH_VAULT_PrunePendingOps) {
     ASSERT_EQ(0, poh_.AddPendingOperation("pmid" + base::itos(a),
               "chunkname" + base::itos(a), 123456 + a, "iou", "", 0, "",
               IOU_RECEIVED));
-    ASSERT_EQ(a + 1, poh_.PendingOperationsCount());
+    ASSERT_EQ(static_cast<int>(a + 1), poh_.PendingOperationsCount());
   }
   ASSERT_EQ(0, poh_.PrunePendingOps());
 
   printf("Before 15 sec sleep.\n");
   boost::this_thread::sleep(boost::posix_time::seconds(15));
   printf("After 15 sec sleep.\n");
-  ASSERT_EQ(cycles, poh_.PrunePendingOps());
+  ASSERT_EQ(static_cast<int>(cycles), poh_.PrunePendingOps());
   ASSERT_EQ(0, poh_.PendingOperationsCount());
 
   for (unsigned int n = 0; n < cycles; ++n) {
     ASSERT_EQ(0, poh_.AddPendingOperation("pmid" + base::itos(n),
               "chunkname" + base::itos(n), 123456 + n, "", "", 0, "public_key",
               STORE_ACCEPTED));
-    ASSERT_EQ(n + 1, poh_.PendingOperationsCount());
+    ASSERT_EQ(static_cast<int>(n + 1), poh_.PendingOperationsCount());
   }
   for (unsigned int a = 0; a < cycles; ++a) {
     ASSERT_EQ(0, poh_.AddPendingOperation("pmid" + base::itos(a),
               "chunkname" + base::itos(a), 123456 + a, "iou", "", 0, "",
               IOU_RECEIVED));
-    ASSERT_EQ(a + cycles + 1, poh_.PendingOperationsCount());
+    ASSERT_EQ(static_cast<int>(a + cycles + 1), poh_.PendingOperationsCount());
   }
 
   printf("Before 15 sec sleep.\n");
   boost::this_thread::sleep(boost::posix_time::seconds(15));
   printf("After 15 sec sleep.\n");
-  ASSERT_EQ(cycles, poh_.PrunePendingOps());
-  ASSERT_EQ(cycles, poh_.PendingOperationsCount());
+  ASSERT_EQ(static_cast<int>(cycles), poh_.PrunePendingOps());
+  ASSERT_EQ(static_cast<int>(cycles), poh_.PendingOperationsCount());
 }
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_GetAllIouReadys) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+  std::list<IouReadyTuple> iou_readys;
+  iou_readys.push_back(boost::make_tuple("A", "B", 3, "C"));
+  ASSERT_EQ(static_cast<unsigned int>(1), iou_readys.size());
+  ASSERT_EQ(0, poh_.GetAllIouReadys(&iou_readys));
+  ASSERT_EQ(static_cast<unsigned int>(0), iou_readys.size());
+  // Add pending operations with status IOU_READY
+  int test_size = 21;
+  for (int i = 0; i < test_size; ++i) {
+    ASSERT_EQ(0, poh_.AddPendingOperation("pmid" + base::itos(i),
+        "chunkname" + base::itos(i), 123450 + i, "", "", 0,
+        "pmid_public" + base::itos(i), IOU_READY));
+    ASSERT_EQ(static_cast<int>(i + 1), poh_.PendingOperationsCount());
+  }
+  ASSERT_EQ(0, poh_.GetAllIouReadys(&iou_readys));
+  ASSERT_EQ(static_cast<unsigned int>(test_size), iou_readys.size());
+  iou_readys.sort(CompareTupleByChunkSize);
+  for (int i = 0; i < test_size; ++i) {
+    ASSERT_EQ("pmid" + base::itos(i), iou_readys.front().get<0>());
+    ASSERT_EQ("chunkname" + base::itos(i), iou_readys.front().get<1>());
+    ASSERT_EQ(static_cast<unsigned int>(123450 + i),
+              iou_readys.front().get<2>());
+    iou_readys.pop_front();
+  }
+}
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_ErasePendingOp) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+  std::list<IouReadyTuple> iou_readys;
+  // Add pending operations
+  int test_size = 21;
+  for (int i = 0; i < test_size; ++i) {
+    ASSERT_EQ(0, poh_.AddPendingOperation("pmid" + base::itos(i),
+        "chunkname" + base::itos(i), 123450 + i, "", "", 0, "", IOU_READY));
+    ASSERT_EQ(static_cast<int>(i + 1), poh_.PendingOperationsCount());
+  }
+  ASSERT_EQ(0, poh_.GetAllIouReadys(&iou_readys));
+  ASSERT_EQ(static_cast<unsigned int>(test_size), iou_readys.size());
+  for (int i = 0; i < test_size / 2; ++i) {
+    ASSERT_EQ(0, poh_.EraseOperation(IOU_READY, iou_readys.front().get<0>(),
+        iou_readys.front().get<1>()));
+    iou_readys.pop_front();
+    iou_readys.pop_front();
+    ASSERT_EQ(static_cast<int>(test_size - i - 1),
+        poh_.PendingOperationsCount());
+  }
+}
+
 
 }  // namespace maidsafe_vault

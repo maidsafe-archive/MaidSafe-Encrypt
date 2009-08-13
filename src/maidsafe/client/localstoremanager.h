@@ -44,7 +44,7 @@ class LocalStoreManager : public StoreManagerInterface {
                     boost::shared_ptr<ChunkStore> client_chunkstore);
   virtual ~LocalStoreManager() {}
   virtual void Init(int, base::callback_func_type cb);
-  virtual void Close(base::callback_func_type cb);
+  virtual void Close(base::callback_func_type cb, bool);
   virtual void CleanUpTransport() {}
   virtual void LoadChunk(const std::string &hex_chunk_name,
                          base::callback_func_type cb);

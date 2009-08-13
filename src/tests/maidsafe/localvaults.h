@@ -26,16 +26,16 @@
 #ifndef TESTS_MAIDSAFE_LOCALVAULTS_H_
 #define TESTS_MAIDSAFE_LOCALVAULTS_H_
 
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <boost/thread/thread.hpp>
 #include <gtest/gtest.h>
+#include <maidsafe/crypto.h>
 #include <maidsafe/general_messages.pb.h>
 #include <string>
 #include <vector>
-#include <fstream>
-#include "boost/filesystem.hpp"
-#include "boost/filesystem/fstream.hpp"
-#include "boost/thread/thread.hpp"
+#include <fstream>  // NOLINT (Fraser) - for protobuf config file
 #include "maidsafe/client/authentication.h"
-#include "maidsafe/crypto.h"
 #include "maidsafe/vault/pdvault.h"
 #include "protobuf/maidsafe_messages.pb.h"
 
@@ -133,11 +133,11 @@ class Env: public testing::Environment {
     (*pdvaults_)[1]->Start(false);
     boost::posix_time::ptime stop =
         boost::posix_time::second_clock::local_time() + single_function_timeout;
-    while (!(*pdvaults_)[1]->vault_started() &&
+    while (((*pdvaults_)[1]->vault_status() != maidsafe_vault::kVaultStarted) &&
            boost::posix_time::second_clock::local_time() < stop) {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
-    ASSERT_TRUE((*pdvaults_)[1]->vault_started());
+    ASSERT_EQ(maidsafe_vault::kVaultStarted, (*pdvaults_)[1]->vault_status());
     base::KadConfig kad_config;
     base::KadConfig::Contact *kad_contact = kad_config.add_contact();
     kad_contact->set_node_id((*pdvaults_)[1]->node_id());
@@ -155,11 +155,11 @@ class Env: public testing::Environment {
     (*pdvaults_)[0]->Start(false);
     stop = boost::posix_time::second_clock::local_time() +
         single_function_timeout;
-    while (!(*pdvaults_)[0]->vault_started() &&
+    while (((*pdvaults_)[0]->vault_status() != maidsafe_vault::kVaultStarted) &&
            boost::posix_time::second_clock::local_time() < stop) {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
-    ASSERT_TRUE((*pdvaults_)[0]->vault_started());
+    ASSERT_EQ(maidsafe_vault::kVaultStarted, (*pdvaults_)[0]->vault_status());
     printf("Vault 0 started.\n");
     kad_contact->Clear();
     kad_config.Clear();
@@ -169,8 +169,8 @@ class Env: public testing::Environment {
     kad_contact->set_port((*pdvaults_)[0]->host_port());
     kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
     kad_contact->set_local_port((*pdvaults_)[0]->local_host_port());
-    ASSERT_EQ(0, (*pdvaults_)[1]->Stop());
-    ASSERT_FALSE((*pdvaults_)[1]->vault_started());
+    ASSERT_EQ(0, (*pdvaults_)[1]->Stop(true));
+    ASSERT_NE(maidsafe_vault::kVaultStarted, (*pdvaults_)[1]->vault_status());
     // Save kad config to files and start all remaining vaults
     for (int k = 1; k < kNetworkSize_; ++k) {
       kad_config_file_ = chunkstore_dir_+"/Chunkstore"+ base::itos(k) +
@@ -182,11 +182,12 @@ class Env: public testing::Environment {
       (*pdvaults_)[k]->Start(false);
       stop = boost::posix_time::second_clock::local_time() +
           single_function_timeout;
-      while (!(*pdvaults_)[k]->vault_started() &&
-             boost::posix_time::second_clock::local_time() < stop) {
+      while (((*pdvaults_)[k]->vault_status() != maidsafe_vault::kVaultStarted)
+             && boost::posix_time::second_clock::local_time() < stop) {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
       }
-      ASSERT_TRUE((*pdvaults_)[k]->vault_started());
+      ASSERT_EQ(maidsafe_vault::kVaultStarted,
+                (*pdvaults_)[k]->vault_status());
       printf("Vault %i started.\n", k);
 //      boost::this_thread::sleep(boost::posix_time::seconds(15));
     }
@@ -227,8 +228,8 @@ class Env: public testing::Environment {
     for (int i = 0; i < current_nodes_created_; ++i) {
       printf("Trying to stop vault %i.\n", i);
       success = false;
-      (*pdvaults_)[i]->Stop();
-      if (!(*pdvaults_)[i]->vault_started())
+      (*pdvaults_)[i]->Stop(true);
+      if ((*pdvaults_)[i]->vault_status() != maidsafe_vault::kVaultStarted)
         printf("Vault %i stopped.\n", i);
       else
         printf("Vault %i failed to stop correctly.\n", i);

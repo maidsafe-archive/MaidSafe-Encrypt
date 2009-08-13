@@ -155,7 +155,7 @@ TEST_F(AuthenticationTest, BEH_MAID_Login) {
   result = authentication->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
-  ASSERT_EQ(OK, result)<< "Unable to register user";
+  ASSERT_EQ(OK, result) << "Unable to register user";
   ss->SerialisedKeyRing(&ser_da_register);
   cb.Reset();
   result = authentication->GetUserInfo(username, pin, boost::bind(
@@ -490,7 +490,7 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   wait_for_result_ta(cb, mutex);
   StoreResponse res;
   ASSERT_TRUE(res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, res.result());
+  ASSERT_EQ(kAck, static_cast<int>(res.result()));
 
   cb.Reset();
   boost::scoped_ptr<Authentication> authentication(
@@ -517,7 +517,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   packethandler::CreateMSIDResult msid_result;
   ASSERT_TRUE(msid_result.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, msid_result.result());
+  ASSERT_EQ(kAck, static_cast<int>(msid_result.result()));
   msid_name = msid_result.name();
   priv_key = msid_result.private_key();
   pub_key = msid_result.public_key();
@@ -534,7 +534,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   wait_for_result_ta(cb, mutex);
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, load_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   packethandler::GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(load_res.content()));
 

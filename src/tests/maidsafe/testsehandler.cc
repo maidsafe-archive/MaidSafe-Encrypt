@@ -324,10 +324,10 @@ TEST_F(TestSEHandler, FUNC_MAID_EncryptFile) {
     wait_for_result_seh(cb, rec_mutex);
     GenericResponse result;
     ASSERT_TRUE(result.ParseFromString(cb.result));
-    ASSERT_EQ(kNack, result.result());
+    ASSERT_EQ(kNack, static_cast<int>(result.result()));
     cb.Reset();
   }
-  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1), true);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
@@ -361,7 +361,7 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_ChunksPrevLoaded) {
   ASSERT_TRUE(fs::exists(full_str_));
   hash_after_ = se_.SHA512(fs::path(full_str_));
   ASSERT_EQ(hash_before_, hash_after_);
-  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1), true);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
@@ -414,7 +414,7 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
   ASSERT_TRUE(fs::exists(full_str_));
   hash_after_ = se_.SHA512(fs::path(full_str_));
   ASSERT_EQ(hash_before_, hash_after_);
-  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1), true);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
@@ -478,7 +478,7 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
 //    boost::this_thread::sleep(boost::posix_time::seconds(1));
 //    ASSERT_EQ(0, result);
 //    ASSERT_FALSE(fs::exists(full_str_));
-//    sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+//    sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1), true);
 //    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 //  }
 
@@ -532,7 +532,7 @@ TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptPrivateDb) {
   fs::path key_path_(fsys_.MaidsafeDir(), fs::native);
   key_path_ /= key_;
   fs::remove(key_path_);
-  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1), true);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
@@ -569,7 +569,7 @@ TEST_F(TestSEHandler, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
   fs::path key_path_(fsys_.MaidsafeDir(), fs::native);
   key_path_ /= key_;
   fs::remove(key_path_);
-  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1), true);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 }

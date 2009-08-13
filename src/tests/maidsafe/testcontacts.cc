@@ -12,11 +12,11 @@
  *      Author: Team
  */
 
-#include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
+#include <gtest/gtest.h>
+#include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/utils.h>
 #include "maidsafe/client/contacts.h"
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
 
 class ContactsTest : public testing::Test {
   protected:

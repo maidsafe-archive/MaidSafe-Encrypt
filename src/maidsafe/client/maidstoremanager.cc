@@ -49,14 +49,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       ss_(SessionSingleton::getInstance()),
       co_(),
       client_chunkstore_(cstore),
-      main_store_thread_(),
-      store_thread_running_(false),
-      priority_store_queue_(),
-      normal_store_queue_(),
-      store_thread_pool_(5),
-      store_thread_running_mutex_(),
-      ps_queue_mutex_(),
-      ns_queue_mutex_() {
+      store_thread_pool_(kMaxStoreThreads) {
   co_.set_symm_algorithm(crypto::AES_256);
   co_.set_hash_algorithm(crypto::SHA_512);
 }
@@ -111,15 +104,16 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
   printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
 #endif
   pdclient_ = new PDClient(channel_manager_, knode_, &client_rpcs_);
-  StartStoring();
 }
 
-void MaidsafeStoreManager::Close(base::callback_func_type cb) {
+void MaidsafeStoreManager::Close(base::callback_func_type cb,
+                                 bool cancel_pending_ops) {
 #ifdef DEBUG
   printf("\tIn MaidsafeStoreManager::Close, before Leave.\n");
 #endif
-  // Try to kill the main storing thread;
-  StopStoring();
+  if (cancel_pending_ops)
+    store_thread_pool_.clear();
+  store_thread_pool_.wait();
   knode_->Leave();
 #ifdef DEBUG
   printf("\tIn MaidsafeStoreManager::Close, after Leave. Stopping transport\n");
@@ -129,7 +123,6 @@ void MaidsafeStoreManager::Close(base::callback_func_type cb) {
   printf("\tIn MaidsafeStoreManager::Close, transport stopped.\n");
 #endif
   // Try again to kill the main storing thread in case it failed earlier.
-  StopStoring();
   GenericResponse result_msg;
   result_msg.set_result(kAck);
   std::string result;
@@ -169,7 +162,7 @@ void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
     return;
   }
   if (chunk_type & kOutgoing)
-    AddToNormalStoreQueue(StoreTuple(chunk_name, dir_type, msid));
+    AddNormalStoreTask(StoreTuple(chunk_name, dir_type, msid));
 }
 
 void MaidsafeStoreManager::IsKeyUnique(const std::string &hex_key,
@@ -365,87 +358,23 @@ void MaidsafeStoreManager::DeleteChunk_Callback(const std::string &result,
   cb(ser_result);
 }
 
-void MaidsafeStoreManager::StartStoring() {
-  {
-    boost::mutex::scoped_lock lock(store_thread_running_mutex_);
-    if (store_thread_running_)
-      return;
-    store_thread_running_ = true;
-  }
-  main_store_thread_ = boost::thread(&MaidsafeStoreManager::StoreThread, this);
+
+
+
+
+void MaidsafeStoreManager::AddPriorityStoreTask(const StoreTuple &store_tuple) {
+  store_thread_pool_.schedule(boost::threadpool::prio_task_func(10, boost::bind(
+      &MaidsafeStoreManager::SendChunk, this, store_tuple)));
+  size_t pool_size = store_thread_pool_.size();
+  if (pool_size < kMaxPriorityStoreThreads + kMaxStoreThreads)
+    store_thread_pool_.size_controller().resize(pool_size + 1);
 }
 
-void MaidsafeStoreManager::StopStoring() {
-  {
-    boost::mutex::scoped_lock lock(store_thread_running_mutex_);
-    if (!store_thread_running_)
-      return;
-    store_thread_running_ = false;
-  }
-  printf("Trying to join store thread.\n");
-  try {
-    store_thread_running_ = !main_store_thread_.timed_join(
-        boost::posix_time::seconds(8));
-  }
-  catch(const std::exception &e) {
-    store_thread_running_ = true;
-#ifdef DEBUG
-    printf("%s\n", e.what());
-#endif
-  }
-}
-
-bool MaidsafeStoreManager::StoreThreadRunning() {
-  bool result;
-  {
-    boost::mutex::scoped_lock lock(store_thread_running_mutex_);
-    result = store_thread_running_;
-  }
-  return result;
-}
-
-void MaidsafeStoreManager::StoreThreadStopping() {
-  boost::mutex::scoped_lock lock(store_thread_running_mutex_);
-  store_thread_running_ = false;
-}
-
-void MaidsafeStoreManager::StoreThread() {
-  boost::this_thread::at_thread_exit(boost::bind(
-      &MaidsafeStoreManager::StoreThreadStopping, this));
-  while (StoreThreadRunning()) {
-    {
-      boost::mutex::scoped_lock lock_ps(ps_queue_mutex_);
-      if (!priority_store_queue_.empty()) {
-        StoreTuple store_tuple = priority_store_queue_.front();
-        priority_store_queue_.pop();
-        store_thread_pool_.schedule(boost::bind(
-            &MaidsafeStoreManager::SendChunk, this, store_tuple));
-      }
-    }
-    // Leave room for a further priority store thread
-    {
-      boost::mutex::scoped_lock lock_ns(ns_queue_mutex_);
-      if (!normal_store_queue_.empty()) {
-        StoreTuple store_tuple = normal_store_queue_.front();
-        normal_store_queue_.pop();
-        store_thread_pool_.schedule(boost::bind(
-            &MaidsafeStoreManager::SendChunk, this, store_tuple));
-      }
-    }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  }
-}
-
-void MaidsafeStoreManager::AddToPriorityStoreQueue(
-    const StoreTuple &store_tuple) {
-  boost::mutex::scoped_lock lock(ps_queue_mutex_);
-  priority_store_queue_.push(store_tuple);
-}
-
-void MaidsafeStoreManager::AddToNormalStoreQueue(
-    const StoreTuple &store_tuple) {
-  boost::mutex::scoped_lock lock(ns_queue_mutex_);
-  normal_store_queue_.push(store_tuple);
+void MaidsafeStoreManager::AddNormalStoreTask(const StoreTuple &store_tuple) {
+  store_thread_pool_.schedule(boost::threadpool::prio_task_func(5, boost::bind(
+      &MaidsafeStoreManager::SendChunk, this, store_tuple)));
+  if (store_thread_pool_.size() > kMaxStoreThreads)
+    store_thread_pool_.size_controller().resize(kMaxStoreThreads);
 }
 
 void MaidsafeStoreManager::SendChunk(StoreTuple store_tuple) {
@@ -457,14 +386,11 @@ void MaidsafeStoreManager::SendChunk(StoreTuple store_tuple) {
   int duplicate_count = 0;
   float largest_rtt = -1;  // set to -1 so that first store is to furthest peer
   std::vector<kad::Contact> exclude;
-  StorePrepRequest store_prep_request;
-  StoreRequest store_request;
-  if (GetStoreRequests(store_tuple, &store_prep_request, &store_request) != 0)
-    return;
-  boost::uint64_t data_size = store_prep_request.data_size();
 // TODO(Fraser#5#): 2009-08-10 - account for online status in while loop also
   while (duplicate_count < kMinChunkCopies) {
     printf("dup count: %i\tmin copies: %i\n", duplicate_count, kMinChunkCopies);
+    StorePrepRequest store_prep_request;
+    StoreRequest store_request;
     kad::Contact peer;
     bool local;
     printf("largest: %f\t", largest_rtt);
@@ -484,11 +410,14 @@ void MaidsafeStoreManager::SendChunk(StoreTuple store_tuple) {
 //      largest_rtt = peer_details.rtt();
       largest_rtt = 1.0f;
     }
+    if (GetStoreRequests(store_tuple, peer.node_id(), &store_prep_request,
+        &store_request) != 0)
+      return;
     if (SendPrep(peer, local, &store_prep_request) != 0)
       break;  // try another peer
     int failed_attempt_count = 0;
     while (failed_attempt_count < kMaxChunkStoreTries) {
-      if (SendContent(peer, local, data_size, &store_request) == 0) {
+      if (SendContent(peer, local, &store_request) == 0) {
         printf("In MSM::SendChunk - success storing.\n");
         break;  // succeeded in storing to this peer
       } else {
@@ -506,6 +435,7 @@ void MaidsafeStoreManager::SendChunk(StoreTuple store_tuple) {
 }
 
 int MaidsafeStoreManager::GetStoreRequests(const StoreTuple &store_tuple,
+                                           const std::string &recipient_id,
                                            StorePrepRequest *store_prep_request,
                                            StoreRequest *store_request) {
   std::string chunk_name = store_tuple.get<0>();
@@ -539,8 +469,8 @@ int MaidsafeStoreManager::GetStoreRequests(const StoreTuple &store_tuple,
     return -2;
   }
   std::string public_key(""), signed_public_key(""), signed_request("");
-  GetSignedPubKeyAndRequest(chunk_name, dir_type, msid, &public_key,
-                            &signed_public_key, &signed_request);
+  GetSignedPubKeyAndRequest(chunk_name, dir_type, msid, recipient_id,
+                            &public_key, &signed_public_key, &signed_request);
   if (public_key == "" || signed_public_key == "" || signed_request == "")
     return -3;
   std::string pmid = ss_->Id(PMID);
@@ -564,6 +494,7 @@ void MaidsafeStoreManager::GetSignedPubKeyAndRequest(
     const std::string &non_hex_name,
     const DirType dir_type,
     const std::string &msid,
+    const std::string &recipient_id,
     std::string *pubkey,
     std::string *signed_pubkey,
     std::string *signed_request) {
@@ -581,8 +512,8 @@ void MaidsafeStoreManager::GetSignedPubKeyAndRequest(
       }
       *signed_pubkey = co_.AsymSign(*pubkey, "", prikey, crypto::STRING_STRING);
       *signed_request = co_.AsymSign(co_.Hash(
-          *pubkey + *signed_pubkey + non_hex_name, "", crypto::STRING_STRING,
-          true), "", prikey, crypto::STRING_STRING);
+          *signed_pubkey + non_hex_name + recipient_id, "",
+          crypto::STRING_STRING, false), "", prikey, crypto::STRING_STRING);
       }
       break;
     case PUBLIC_SHARE:
@@ -593,8 +524,9 @@ void MaidsafeStoreManager::GetSignedPubKeyAndRequest(
       *signed_pubkey = co_.AsymSign(*pubkey, "", ss_->PrivateKey(MPID),
           crypto::STRING_STRING);
       *signed_request = co_.AsymSign(co_.Hash(
-          *pubkey + *signed_pubkey + non_hex_name, "", crypto::STRING_STRING,
-          true), "", ss_->PrivateKey(MPID), crypto::STRING_STRING);
+          *signed_pubkey + non_hex_name + recipient_id, "",
+          crypto::STRING_STRING, false), "", ss_->PrivateKey(MPID),
+          crypto::STRING_STRING);
       break;
     case ANONYMOUS:
 #ifdef DEBUG
@@ -612,8 +544,9 @@ void MaidsafeStoreManager::GetSignedPubKeyAndRequest(
       *signed_pubkey = co_.AsymSign(*pubkey, "", ss_->PrivateKey(PMID),
           crypto::STRING_STRING);
       *signed_request = co_.AsymSign(co_.Hash(
-          *pubkey+*signed_pubkey+non_hex_name, "", crypto::STRING_STRING, true),
-          "", ss_->PrivateKey(PMID), crypto::STRING_STRING);
+          *signed_pubkey + non_hex_name + recipient_id, "",
+          crypto::STRING_STRING, false), "", ss_->PrivateKey(PMID),
+          crypto::STRING_STRING);
       break;
   }
 }
@@ -647,6 +580,7 @@ int MaidsafeStoreManager::SendPrep(const kad::Contact &peer,
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   client_rpcs_.StorePrep(peer, local, store_prep_request,
       store_prep_response.get(), controller, callback);
+// TODO(Fraser#5#): 2009-08-12 - make timeout a maidsafe constant
   int count(0), timeout(10000);
   while (count < timeout) {
     {
@@ -672,7 +606,6 @@ void MaidsafeStoreManager::SendPrepCallback(bool *send_prep_returned,
 
 int MaidsafeStoreManager::SendContent(const kad::Contact &peer,
                                       bool local,
-                                      boost::uint64_t &data_size,
                                       StoreRequest *store_request) {
   const boost::shared_ptr<StoreResponse>store_response(new StoreResponse());
   bool store_response_returned(false);
@@ -683,22 +616,13 @@ int MaidsafeStoreManager::SendContent(const kad::Contact &peer,
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   client_rpcs_.Store(peer, local, store_request, store_response.get(),
       controller, callback);
-  int count(0), timeout(data_size * 100);  // timeout if speed < 10 bytes / sec
-  while (count < timeout) {
+  while (true) {
     {
       boost::mutex::scoped_lock lock(mutex);
       if (store_response_returned)
         break;
     }
-    count += 10;
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  }
-  if (!store_response_returned) {
-#ifdef DEBUG
-    printf("In MSM::SendContent, fail - timeout.\n");
-#endif
-// TODO(Fraser#5#): 2009-08-09 - cancel rpc
-    return -1;
   }
   if (store_response->pmid_id() != peer.node_id()) {
 #ifdef DEBUG

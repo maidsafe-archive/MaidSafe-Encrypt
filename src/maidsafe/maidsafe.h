@@ -302,7 +302,10 @@ const int kMaxChunkStoreTries(1);  // max number of tries to store or update a
 const boost::uint32_t kSaveUpdatesTrigger(100);  // max no of dbs in save queue
                                                  // before running save queue
 const int kMinSuccessfulPecentageOfUpdating(0.9);
-const boost::uint16_t kMaxStoreThreads(6);
+// max no of normal store worker threads running concurrently
+const size_t kMaxStoreThreads(5);
+// max no of priority store threads allowed over and above normal store threads
+const size_t kMaxPriorityStoreThreads(2);
 
 namespace maidsafe {
 

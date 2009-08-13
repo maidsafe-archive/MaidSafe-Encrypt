@@ -460,7 +460,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_ObscureFilename) {
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   std::string ser_dm, ser_mdm;
   std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
-  std::string file_name("Doc¬!£$%^&()-_+={}[];@~#,'''.doc");  // NOLINT
+  std::string file_name("Doc!$%^&()-_+={}[];@~#,'''.doc");
   std::string element_path = dir_name + file_name;
   std::string file_hash("file hash obscure");
 

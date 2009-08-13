@@ -12,7 +12,8 @@
  *      Author: haiyang
  */
 
-/*#include <boost/bind.hpp>
+/*
+#include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/thread/recursive_mutex.hpp>
@@ -20,13 +21,10 @@
 #include <vector>
 #include <map>
 #include <exception>
-#include "maidsafe/crypto.h"
-#include "boost/date_time/posix_time/posix_time.hpp"
-#include "maidsafe/utils.h"
-#include "kademlia/contact.h"
-#include "kademlia/knode.h"
+#include <maidsafe/crypto.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <maidsafe/utils.h>
 #include "maidsafe/vault/vaultdaemon.h"
-#include "tests/kademlia/fake_callbacks.h"
 
 
 const int kNetworkSize = 20;
@@ -147,7 +145,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_NoPartners) {
   args.set_public_key(pub_key);
   args.set_signed_public_key(sig_pub_key);
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-    chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+    chunk_name, "", crypto::STRING_STRING, false), "", priv_key,
     crypto::STRING_STRING);
   args.set_signed_request(sig_req);
   args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
@@ -179,7 +177,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
   args.set_public_key(pub_key);
   args.set_signed_public_key(sig_pub_key);
   std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-    chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+    chunk_name, "", crypto::STRING_STRING, false), "", priv_key,
     crypto::STRING_STRING);
   args.set_signed_request(sig_req);
   args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
@@ -245,7 +243,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
     args.set_public_key(pub_key);
     args.set_signed_public_key(sig_pub_key);
     std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-      chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+      chunk_name, "", crypto::STRING_STRING, false), "", priv_key,
       crypto::STRING_STRING);
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
@@ -277,7 +275,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
     args.set_public_key(pub_key);
     args.set_signed_public_key(sig_pub_key);
     std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-      chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+      chunk_name, "", crypto::STRING_STRING, false), "", priv_key,
       crypto::STRING_STRING);
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
@@ -330,7 +328,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
     args.set_public_key(pub_key);
     args.set_signed_public_key(sig_pub_key);
     std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-      chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+      chunk_name, "", crypto::STRING_STRING, false), "", priv_key,
       crypto::STRING_STRING);
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
@@ -361,7 +359,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
     args.set_public_key(pub_key);
     args.set_signed_public_key(sig_pub_key);
     std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-      chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+      chunk_name, "", crypto::STRING_STRING, false), "", priv_key,
       crypto::STRING_STRING);
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
@@ -425,7 +423,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_RepublishChunkRef) {
     args.set_public_key(pub_key);
     args.set_signed_public_key(sig_pub_key);
     std::string sig_req = cry_obj.AsymSign(cry_obj.Hash(pub_key + sig_pub_key +
-      chunk_name, "", crypto::STRING_STRING, true), "", priv_key,
+      chunk_name, "", crypto::STRING_STRING, false), "", priv_key,
       crypto::STRING_STRING);
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);

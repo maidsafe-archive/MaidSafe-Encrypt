@@ -34,6 +34,7 @@
 #include <maidsafe/contact_info.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 
+#include <list>
 #include <string>
 #include <vector>
 
@@ -153,12 +154,21 @@ class PendingOperationsHandler {
                     const std::string &rank_authority,
                     const vault_operation_status &status);
 
+  int EraseOperation(const vault_operation_status &status,
+                     const std::string &pmid,
+                     const std::string &chunkname);
+
   int GetSizeAndIOU(const std::string &pmid,
                     const std::string &chunkname,
                     boost::uint64_t *chunk_size,
                     std::string *iou);
 
   int PrunePendingOps();
+
+  int GetAllIouReadys(
+      std::list< boost::tuple<std::string, std::string, boost::uint64_t,
+                              std::string> >
+      *iou_readys);
 
  private:
   FRIEND_TEST(PendingOperationContainerTest, BEH_VAULT_ParameterAnalysis);

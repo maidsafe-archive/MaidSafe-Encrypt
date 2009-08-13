@@ -26,12 +26,11 @@
 #ifndef MAIDSAFE_CLIENT_SEHANDLER_H_
 #define MAIDSAFE_CLIENT_SEHANDLER_H_
 
+#include <boost/filesystem.hpp>
 #include <stdint.h>
 
 #include <map>
 #include <string>
-
-#include "boost/filesystem.hpp"
 
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/maidsafe.h"

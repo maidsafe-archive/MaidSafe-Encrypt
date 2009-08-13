@@ -108,7 +108,8 @@ class StoreManagerTest : public testing::Test {
   }
   void TearDown() {
     cb.Reset();
-    storemanager->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+    storemanager->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1),
+                        true);
     wait_for_result_lsm(cb, mutex_);
     maidsafe::GenericResponse res;
     ASSERT_TRUE(res.ParseFromString(cb.result_));
@@ -148,7 +149,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, is_unique_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
   std::string gp_content;
@@ -159,7 +160,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   base::decode_from_hex(gp_name, &non_hex_gp_name);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(
       rsa_obj.public_key() + signed_public_key + non_hex_gp_name, "",
-      crypto::STRING_STRING, true),
+      crypto::STRING_STRING, false),
       "", rsa_obj.private_key(), crypto::STRING_STRING);
   storemanager->StorePacket(gp_name, gp_content, signed_request,
       rsa_obj.public_key(), signed_public_key, maidsafe::SYSTEM_PACKET, false,
@@ -167,7 +168,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
   is_unique_res.Clear();
@@ -175,7 +176,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, is_unique_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   std::string result;
   storemanager->LoadPacket(gp_name,
@@ -183,7 +184,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, load_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ASSERT_EQ(gp_content, load_res.content());
 }
 
@@ -204,7 +205,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
   base::decode_from_hex(gp_name, &non_hex_gp_name);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(
       rsa_obj.public_key() + signed_public_key + non_hex_gp_name, "",
-      crypto::STRING_STRING, true),
+      crypto::STRING_STRING, false),
       "", rsa_obj.private_key(), crypto::STRING_STRING);
   storemanager->StorePacket(gp_name, gp_content, signed_request,
                 rsa_obj.public_key(), signed_public_key,
@@ -213,7 +214,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -222,7 +223,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, is_unique_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 
@@ -232,14 +233,14 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::DeleteResponse del_res;
   ASSERT_TRUE(del_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, del_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(del_res.result()));
   cb.Reset();
 
   storemanager->IsKeyUnique(gp_name,
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, is_unique_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(is_unique_res.result()));
   cb.Reset();
 }
 
@@ -252,7 +253,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, is_unique_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 
@@ -262,7 +263,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -270,7 +271,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, is_unique_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 
@@ -279,7 +280,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, load_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ASSERT_EQ(chunk_content, load_res.content());
 }
 
@@ -296,7 +297,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, is_unique_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 
@@ -323,7 +324,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(public_key +
       signed_public_key + non_hex_bufferpacketname, "", crypto::STRING_STRING,
-      true), "", private_key, crypto::STRING_STRING);
+      false), "", private_key, crypto::STRING_STRING);
 
   storemanager->StorePacket(bufferpacketname, ser_bp, signed_request,
       public_key, signed_public_key, maidsafe::BUFFER_PACKET, false,
@@ -331,7 +332,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -339,7 +340,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, is_unique_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 
@@ -348,7 +349,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, load_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ASSERT_EQ(ser_bp, load_res.content());
 }
 
@@ -370,7 +371,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   base::decode_from_hex(gp_name, &non_hex_gp_name);
   std::string signed_request1 = crypto_obj.AsymSign(crypto_obj.Hash(
       rsa_obj.public_key() + signed_public_key + non_hex_gp_name,
-      "", crypto::STRING_STRING, true), "", rsa_obj.private_key(),
+      "", crypto::STRING_STRING, false), "", rsa_obj.private_key(),
       crypto::STRING_STRING);
 
   storemanager->StorePacket(gp_name, gp_content, signed_request1,
@@ -379,7 +380,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -388,7 +389,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, is_unique_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 
@@ -401,7 +402,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   base::decode_from_hex(gp_name, &non_hex_gp_name);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(
       rsa_obj.public_key() + signed_public_key + non_hex_gp_name, "",
-      crypto::STRING_STRING, true), "", rsa_obj.private_key(),
+      crypto::STRING_STRING, false), "", rsa_obj.private_key(),
       crypto::STRING_STRING);
 
   storemanager->DeletePacket(gp_name, signed_request, rsa_obj.public_key(),
@@ -410,7 +411,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::DeleteResponse del_res;
   ASSERT_TRUE(del_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, del_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(del_res.result()));
   cb.Reset();
   del_res.Clear();
 
@@ -418,7 +419,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, is_unique_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 
@@ -430,7 +431,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(del_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, del_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(del_res.result()));
   cb.Reset();
   del_res.Clear();
 
@@ -438,7 +439,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, is_unique_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 }
@@ -456,7 +457,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, is_unique_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 
@@ -483,7 +484,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(
       public_key + signed_public_key + non_hex_bufferpacketname, "",
-      crypto::STRING_STRING, true), "", private_key, crypto::STRING_STRING);
+      crypto::STRING_STRING, false), "", private_key, crypto::STRING_STRING);
 
   storemanager->StorePacket(bufferpacketname, ser_bp, signed_request,
       public_key, signed_public_key, maidsafe::BUFFER_PACKET, false,
@@ -491,7 +492,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -499,7 +500,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, is_unique_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 
@@ -512,7 +513,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request1 = crypto_obj.AsymSign(crypto_obj.Hash(
       rsa_obj.public_key() + signed_public_key1 + non_hex_bufferpacketname, "",
-      crypto::STRING_STRING, true), "", rsa_obj.private_key(),
+      crypto::STRING_STRING, false), "", rsa_obj.private_key(),
       crypto::STRING_STRING);
   storemanager->DeletePacket(bufferpacketname, signed_request1,
       rsa_obj.public_key(), signed_public_key1, maidsafe::BUFFER_PACKET,
@@ -520,7 +521,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::DeleteResponse del_res;
   ASSERT_TRUE(del_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, del_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(del_res.result()));
   cb.Reset();
   del_res.Clear();
 }
@@ -556,14 +557,15 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   base::decode_from_hex(mpid_name, &non_hex_mpid_name);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(
       sig_public_key + signed_public_key + non_hex_mpid_name, "",
-      crypto::STRING_STRING, true), "", sig_private_key, crypto::STRING_STRING);
+      crypto::STRING_STRING, false), "", sig_private_key,
+      crypto::STRING_STRING);
   storemanager->StorePacket(mpid_name, ser_mpid, signed_request,
       sig_public_key, signed_public_key, maidsafe::SYSTEM_PACKET, false,
       boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   maidsafe::StoreResponse store_res;
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -580,7 +582,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GenericResponse is_unique_res;
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, is_unique_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 
@@ -606,7 +608,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   signed_request = crypto_obj.AsymSign(crypto_obj.Hash(public_key +
                    signed_public_key + non_hex_bufferpacketname, "",
-                   crypto::STRING_STRING, true), "", private_key,
+                   crypto::STRING_STRING, false), "", private_key,
                    crypto::STRING_STRING);
 
   storemanager->StorePacket(bufferpacketname, ser_bp, signed_request,
@@ -614,7 +616,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
       boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -622,7 +624,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, is_unique_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
 
@@ -631,7 +633,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, load_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ASSERT_EQ(ser_bp, load_res.content());
 
   // Creating msgs to insert
@@ -659,7 +661,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
 
   signed_request = crypto_obj.AsymSign(crypto_obj.Hash(mpid.data()+
                    signed_public_key + "incorrect name", "",
-                   crypto::STRING_STRING, true), "", mpidsender_privkey,
+                   crypto::STRING_STRING, false), "", mpidsender_privkey,
                    crypto::STRING_STRING);
 
   cb.Reset();
@@ -668,7 +670,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
       boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, store_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -676,7 +678,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   signed_request = crypto_obj.AsymSign(crypto_obj.Hash(mpid.data()+
                    signed_public_key + non_hex_bufferpacketname, "",
-                   crypto::STRING_STRING, true), "", mpidsender_privkey,
+                   crypto::STRING_STRING, false), "", mpidsender_privkey,
                    crypto::STRING_STRING);
   storemanager->StorePacket(bufferpacketname, ser_bpmsg_gp, signed_request,
                             mpid.data(), signed_public_key,
@@ -684,7 +686,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, store_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -693,7 +695,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                            boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, load_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ASSERT_EQ(ser_bp, load_res.content());
   cb.Reset();
 
@@ -713,7 +715,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
       boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, store_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
   cb.Reset();
   store_res.Clear();
 
@@ -722,7 +724,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                            boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(load_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, load_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ser_bp = load_res.content();
   packethandler::BufferPacket bp;
   bp.ParseFromString(ser_bp);
@@ -738,7 +740,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GetMessagesResponse get_msg_res;
   ASSERT_TRUE(get_msg_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kNack, get_msg_res.result());
+  ASSERT_EQ(kNack, static_cast<int>(get_msg_res.result()));
   cb.Reset();
   get_msg_res.Clear();
 
@@ -748,7 +750,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(get_msg_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, get_msg_res.result());
+  ASSERT_EQ(kAck, static_cast<int>(get_msg_res.result()));
   ASSERT_EQ(1, get_msg_res.messages_size());
   cb.Reset();
 }
