@@ -73,7 +73,7 @@ int PendingOperationsHandler::AdvanceStatus(const std::string &pmid,
   if (AnalyseParameters(pmid, chunkname, chunk_size, iou,
       rank_authority, public_key, status) < 0) {
 #ifdef DEBUG
-    printf("PendingOperationsHandler::AddPendingOperation: Parameter incorrect "
+    printf("PendingOperationsHandler::AdvanceStatus: Parameter incorrect "
            "for this status (%d).\n", status);
 #endif
     return -1493;
@@ -91,16 +91,26 @@ int PendingOperationsHandler::AdvanceStatus(const std::string &pmid,
           pmid, chunk_size));
       break;
     case IOU_READY:
-      p = pending_ops_.equal_range(boost::make_tuple(AWAITING_IOU, chunkname));
+      p = pending_ops_.equal_range(boost::make_tuple(STORE_DONE, chunkname));
       break;
-    case IOU_RANK_RETREIVED:
+    case IOU_PROCESSING:
       p = pending_ops_.equal_range(boost::make_tuple(IOU_READY, chunkname));
       break;
+    case IOU_RANK_RETRIEVED:
+      p = pending_ops_.equal_range(boost::make_tuple(IOU_PROCESSING,
+                                   chunkname));
+      break;
+    case IOU_COLLECTED:
+      p = pending_ops_.equal_range(boost::make_tuple(IOU_RECEIVED, chunkname,
+          pmid));
     default: break;
   }
   if (p.first == p.second) {
 #ifdef DEBUG
-    printf("Pending operation not found (%s).\n", chunkname.c_str());
+    std::string hex_chunkname;
+    base::encode_to_hex(chunkname, &hex_chunkname);
+    printf("In POH::AdvanceStatus, Pending operation not found (%s...)\n",
+           hex_chunkname.substr(0, 10).c_str());
 #endif
     return -1493;
   }
@@ -135,7 +145,10 @@ int PendingOperationsHandler::FindOperation(const std::string &pmid,
                                pmid, chunk_size));
   if (p.first == p.second) {
 #ifdef DEBUG
-    printf("Pending operation not found (%s).\n", chunkname.c_str());
+    std::string hex_chunkname;
+    base::encode_to_hex(chunkname, &hex_chunkname);
+    printf("In POH::FindOperation, Pending operation not found (%s...)\n",
+           hex_chunkname.substr(0, 10).c_str());
 #endif
     return -1494;
   }
@@ -158,7 +171,10 @@ int PendingOperationsHandler::EraseOperation(
   p = pending_ops_.equal_range(boost::make_tuple(status, chunkname, pmid));
   if (p.first == p.second) {
 #ifdef DEBUG
-    printf("Pending operation not found (%s).\n", chunkname.c_str());
+    std::string hex_chunkname;
+    base::encode_to_hex(chunkname, &hex_chunkname);
+    printf("In POH::EraseOperation, Pending operation not found (%s...)\n",
+           hex_chunkname.substr(0, 10).c_str());
 #endif
     return -1495;
   }
@@ -175,10 +191,10 @@ int PendingOperationsHandler::GetSizeAndIOU(const std::string &pmid,
   *iou = "";
   std::pair<pending_operation_set::iterator, pending_operation_set::iterator> p;
   p = pending_ops_.equal_range(boost::make_tuple(IOU_RECEIVED, chunkname,
-                               pmid));
+                                                 pmid));
   if (p.first == p.second) {
 #ifdef DEBUG
-    printf("Pending operation not found (%s).\n", chunkname.c_str());
+    printf("In POH::GetSizeAndIOU, Pending operation not found.\n");
 #endif
     return -1496;
   }
@@ -256,7 +272,8 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       break;
     case IOU_READY:
     case AWAITING_IOU:
-    case IOU_RANK_RETREIVED:
+    case IOU_PROCESSING:
+    case IOU_RANK_RETRIEVED:
       if (chunkname.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s)\n", iou.c_str(),
@@ -279,12 +296,10 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       }
       break;
     case IOU_COLLECTED:
-      if (pmid.empty() || chunkname.empty() || chunk_size != 0 ||
-          !iou.empty() || !rank_authority.empty()) {
+      if (pmid.empty() || chunkname.empty()) {
 #ifdef DEBUG
-        printf("Wrong parameters (%s) -- (%s) -- (%llu)-- (%s) -- (%s)\n",
-               pmid.c_str(), chunkname.c_str(), chunk_size,
-               iou.c_str(), rank_authority.c_str());
+        printf("Wrong parameters (%s) -- (%s)\n",
+               pmid.c_str(), chunkname.c_str());
 #endif
         res = -1497;
       }

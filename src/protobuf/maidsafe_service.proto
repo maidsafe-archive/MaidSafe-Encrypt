@@ -5,6 +5,7 @@ package maidsafe;
 service MaidsafeService {
   rpc StoreChunkPrep( StorePrepRequest ) returns ( StorePrepResponse );
   rpc StoreIOU( StoreIOURequest ) returns ( StoreIOUResponse );
+  rpc IOUDone( IOUDoneRequest ) returns ( IOUDoneResponse );
   rpc StoreChunk( StoreRequest ) returns ( StoreResponse );
   rpc StoreChunkReference( StoreReferenceRequest )
       returns ( StoreReferenceResponse );

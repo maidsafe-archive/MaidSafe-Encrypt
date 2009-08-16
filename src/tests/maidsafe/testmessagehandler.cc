@@ -264,7 +264,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   ASSERT_EQ(kAck, static_cast<int>(get_msgs_res.result()));
   // Must have one message and no authorised users
   ASSERT_EQ(1, get_msgs_res.messages_size());
-  ASSERT_EQ(static_cast<unsigned int>(0), ss->AuthorisedUsers().size());
+  ASSERT_EQ(size_t(0), ss->AuthorisedUsers().size());
 
   // Get message and validate its ADD_CONTACT_RQST and contents
   std::string ser_msg = get_msgs_res.messages(0);
@@ -333,7 +333,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
   ASSERT_EQ(kAck, static_cast<int>(get_msgs_res.result()));
   ASSERT_EQ(0, get_msgs_res.messages_size());
-  ASSERT_EQ(static_cast<unsigned int>(1), ss->AuthorisedUsers().size());
+  ASSERT_EQ(size_t(1), ss->AuthorisedUsers().size());
   cb.Reset();
   get_msgs_res.Clear();
   // TODO(Dan#5#): 2009-07-10 - Maybe check the user is really the one added
@@ -380,7 +380,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   ASSERT_EQ(kAck, static_cast<int>(get_msgs_res.result()));
   // Must have one message and no authorised users
   ASSERT_EQ(1, get_msgs_res.messages_size());
-  ASSERT_EQ(static_cast<unsigned int>(1), ss->AuthorisedUsers().size());
+  ASSERT_EQ(size_t(1), ss->AuthorisedUsers().size());
   cb.Reset();
   get_msgs_res.Clear();
 

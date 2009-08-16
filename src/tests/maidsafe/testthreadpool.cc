@@ -37,25 +37,25 @@ class TestTask {
                     const int &delay,
                     std::vector<int> *result_order,
                     boost::mutex *mutex) {
-    printf("Started task %i - sleeping for %i ms.\n", task_no, delay);
+//    printf("Started task %i - sleeping for %i ms.\n", task_no, delay);
     boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
     {
       boost::mutex::scoped_lock lock(*mutex);
       result_order->push_back(task_no);
     }
-    printf("Finished task %i\n", task_no);
+//    printf("Finished task %i\n", task_no);
   }
   bool BoolTaskFunction(int *task_no,
                         const int &delay,
                         std::vector<int> *result_order,
                         boost::mutex *mutex) {
-    printf("Started task %i - sleeping for %i ms.\n", *task_no, delay);
+//    printf("Started task %i - sleeping for %i ms.\n", *task_no, delay);
     boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
     {
       boost::mutex::scoped_lock lock(*mutex);
       result_order->push_back(*task_no);
     }
-    printf("Finished task %i\n", *task_no);
+//    printf("Finished task %i\n", *task_no);
     ++(*task_no);
     return *task_no < 10 ? true : false;
   }
@@ -90,7 +90,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPool) {
   ASSERT_TRUE(tp.schedule(boost::bind(&test_threadpool::TestTask::TaskFunction,
       &task, 3, 100, &result_order, &result_order_mutex)));
   tp.wait();
-  ASSERT_EQ(static_cast<unsigned int>(4), result_order.size());
+  ASSERT_EQ(size_t(4), result_order.size());
   ASSERT_EQ(0, result_order.at(0));
   ASSERT_EQ(2, result_order.at(1));
   ASSERT_EQ(3, result_order.at(2));
@@ -123,7 +123,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolCancel) {
         &result_order_mutex)));
     boost::this_thread::sleep(boost::posix_time::milliseconds(400));
   }
-  ASSERT_EQ(static_cast<unsigned int>(3), result_order.size());
+  ASSERT_EQ(size_t(3), result_order.size());
   ASSERT_EQ(0, result_order.at(0));
   ASSERT_EQ(2, result_order.at(1));
   ASSERT_EQ(3, result_order.at(2));
@@ -151,16 +151,16 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolClear) {
       &task, 2, 2000, &result_order, &result_order_mutex)));
   ASSERT_TRUE(tp.schedule(boost::bind(&test_threadpool::TestTask::TaskFunction,
       &task, 3, 100, &result_order, &result_order_mutex)));
-  ASSERT_EQ(static_cast<unsigned int>(0), result_order.size());
+  ASSERT_EQ(size_t(0), result_order.size());
   boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
   tp.clear();
   tp.wait();
   boost::this_thread::sleep(boost::posix_time::milliseconds(3000));
-  ASSERT_EQ(static_cast<unsigned int>(3), result_order.size());
+  ASSERT_EQ(size_t(3), result_order.size());
   ASSERT_EQ(0, result_order.at(0));
   ASSERT_EQ(2, result_order.at(1));
   ASSERT_EQ(1, result_order.at(2));
-  printf("end of BEH_MAID_ThreadPoolClear\n");
+//  printf("end of BEH_MAID_ThreadPoolClear\n");
 }
 
 TEST_F(TestThreadPool, BEH_MAID_ThreadPoolSizes) {
@@ -179,13 +179,13 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolSizes) {
   ASSERT_TRUE(tp.schedule(boost::bind(&test_threadpool::TestTask::TaskFunction,
       &task, 1, 200, &result_order, &result_order_mutex)));
   boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-  ASSERT_EQ(static_cast<unsigned int>(2), tp.active());
-  ASSERT_EQ(static_cast<unsigned int>(0), tp.pending());
-  ASSERT_EQ(static_cast<unsigned int>(2), tp.size());
+  ASSERT_EQ(size_t(2), tp.active());
+  ASSERT_EQ(size_t(0), tp.pending());
+  ASSERT_EQ(size_t(2), tp.size());
   boost::this_thread::sleep(boost::posix_time::milliseconds(600));
-  ASSERT_EQ(static_cast<unsigned int>(1), tp.active());
-  ASSERT_EQ(static_cast<unsigned int>(0), tp.pending());
-  ASSERT_EQ(static_cast<unsigned int>(2), tp.size());
+  ASSERT_EQ(size_t(1), tp.active());
+  ASSERT_EQ(size_t(0), tp.pending());
+  ASSERT_EQ(size_t(2), tp.size());
   ASSERT_TRUE(tp.schedule(boost::bind(&test_threadpool::TestTask::TaskFunction,
       &task, 2, 3000, &result_order, &result_order_mutex)));
   ASSERT_TRUE(tp.schedule(boost::bind(&test_threadpool::TestTask::TaskFunction,
@@ -195,18 +195,18 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolSizes) {
   ASSERT_TRUE(tp.schedule(boost::bind(&test_threadpool::TestTask::TaskFunction,
       &task, 5, 1000, &result_order, &result_order_mutex)));
   boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-  ASSERT_EQ(static_cast<unsigned int>(2), tp.active());
-  ASSERT_EQ(static_cast<unsigned int>(3), tp.pending());
-  ASSERT_EQ(static_cast<unsigned int>(2), tp.size());
+  ASSERT_EQ(size_t(2), tp.active());
+  ASSERT_EQ(size_t(3), tp.pending());
+  ASSERT_EQ(size_t(2), tp.size());
   boost::this_thread::sleep(boost::posix_time::milliseconds(900));
-  ASSERT_EQ(static_cast<unsigned int>(2), tp.active());
-  ASSERT_EQ(static_cast<unsigned int>(2), tp.pending());
-  ASSERT_EQ(static_cast<unsigned int>(2), tp.size());
+  ASSERT_EQ(size_t(2), tp.active());
+  ASSERT_EQ(size_t(2), tp.pending());
+  ASSERT_EQ(size_t(2), tp.size());
   tp.wait();
-  ASSERT_EQ(static_cast<unsigned int>(0), tp.active());
-  ASSERT_EQ(static_cast<unsigned int>(0), tp.pending());
-  ASSERT_EQ(static_cast<unsigned int>(2), tp.size());
-  ASSERT_EQ(static_cast<unsigned int>(6), result_order.size());
+  ASSERT_EQ(size_t(0), tp.active());
+  ASSERT_EQ(size_t(0), tp.pending());
+  ASSERT_EQ(size_t(2), tp.size());
+  ASSERT_EQ(size_t(6), result_order.size());
   ASSERT_EQ(1, result_order.at(0));
   ASSERT_EQ(0, result_order.at(1));
   ASSERT_EQ(3, result_order.at(2));
@@ -235,7 +235,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolResize) {
   ASSERT_TRUE(tp.schedule(boost::bind(&test_threadpool::TestTask::TaskFunction,
       &task, 3, 500, &result_order, &result_order_mutex)));
   tp.wait();
-  ASSERT_EQ(static_cast<unsigned int>(4), result_order.size());
+  ASSERT_EQ(size_t(4), result_order.size());
   ASSERT_EQ(0, result_order.at(0));
   ASSERT_EQ(1, result_order.at(1));
   ASSERT_EQ(2, result_order.at(2));
@@ -254,7 +254,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolResize) {
       &task, 8, 50, &result_order, &result_order_mutex)));
   ASSERT_TRUE(tp.size_controller().resize(5));
   tp.wait();
-  ASSERT_EQ(static_cast<unsigned int>(9), result_order.size());
+  ASSERT_EQ(size_t(9), result_order.size());
   ASSERT_EQ(8, result_order.at(4));
   ASSERT_EQ(7, result_order.at(5));
   ASSERT_EQ(6, result_order.at(6));
@@ -277,7 +277,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolLooped) {
       &test_threadpool::TestTask::BoolTaskFunction, &task, &task_no, 50,
       &result_order, &result_order_mutex), 200));
   tp.wait();
-  ASSERT_EQ(static_cast<unsigned int>(10), result_order.size());
+  ASSERT_EQ(size_t(10), result_order.size());
 }
 
 TEST_F(TestThreadPool, BEH_MAID_ThreadPoolPriority) {
@@ -329,7 +329,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolPriority) {
   // Start one worker thread
   ASSERT_TRUE(tp.size_controller().resize(1));
   tp.wait();
-  ASSERT_EQ(static_cast<unsigned int>(8), result_order.size());
+  ASSERT_EQ(size_t(8), result_order.size());
   ASSERT_EQ(7, result_order.at(4));
   ASSERT_EQ(6, result_order.at(5));
   ASSERT_EQ(5, result_order.at(6));

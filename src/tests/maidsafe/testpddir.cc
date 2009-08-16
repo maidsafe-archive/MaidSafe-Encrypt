@@ -411,8 +411,7 @@ TEST_F(PdDirTest, BEH_MAID_ListFolder) {
   // recover list of children
   std::map<std::string, itemtype> children_;
   ASSERT_EQ(0, da_->ListFolder(&children_)) << "Retrieved list incorrectly.";
-  ASSERT_EQ(static_cast<unsigned int>(6), children_.size()) <<
-      "List size incorrect.";
+  ASSERT_EQ(size_t(6), children_.size()) << "List size incorrect.";
   ASSERT_EQ(EMPTY_DIRECTORY, children_[dir_name2_]) <<
       "Error retrieving dir2 type.";
   ASSERT_EQ(SMALL_FILE, children_[file_name3_]) <<
@@ -492,8 +491,7 @@ TEST_F(PdDirTest, BEH_MAID_ListSubDirs) {
   // recover list of subdirs
   std::vector<std::string> subdirs_;
   ASSERT_EQ(0, da_->ListSubDirs(&subdirs_)) << "Retrieved list incorrectly.";
-  ASSERT_EQ(static_cast<unsigned int>(3), subdirs_.size()) <<
-      "List size incorrect.";
+  ASSERT_EQ(size_t(3), subdirs_.size()) << "List size incorrect.";
 }
 
 TEST_F(PdDirTest, BEH_MAID_GetDmFromHash) {

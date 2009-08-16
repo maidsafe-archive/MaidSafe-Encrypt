@@ -61,6 +61,10 @@ class VaultService : public maidsafe::MaidsafeService {
              const maidsafe::StoreRequest* request,
              maidsafe::StoreResponse* response,
              google::protobuf::Closure* done);
+  virtual void IOUDone(google::protobuf::RpcController*,
+                       const maidsafe::IOUDoneRequest* request,
+                       maidsafe::IOUDoneResponse* response,
+                       google::protobuf::Closure* done);
   virtual void StoreIOU(google::protobuf::RpcController* controller,
              const maidsafe::StoreIOURequest* request,
              maidsafe::StoreIOUResponse* response,
@@ -127,7 +131,6 @@ class VaultService : public maidsafe::MaidsafeService {
                               const std::string &pmid,
                               std::string *rank_authority,
                               std::string *signed_rank_authority);
-  crypto::Crypto crypto_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
   std::string non_hex_pmid_;
   boost::shared_ptr<VaultChunkStore> vault_chunkstore_;

@@ -113,12 +113,12 @@ void PDVault::Start(bool port_forwarded) {
   port_ = knode_.host_port();
   if (kad_joined_)
     SetVaultStatus(kVaultStarted);
-  // Start repeating pruning worker thread
-  thread_pool_.schedule(boost::threadpool::looped_task_func(boost::bind(
-      &PDVault::PrunePendingOperations, this), 10000));
+//  // Start repeating pruning worker thread
+//  thread_pool_.schedule(boost::threadpool::looped_task_func(boost::bind(
+//      &PDVault::PrunePendingOperations, this), 1000));
   // Start repeating pending IOU worker thread
   thread_pool_.schedule(boost::threadpool::looped_task_func(boost::bind(
-      &PDVault::CheckPendingIOUs, this), 10000));
+      &PDVault::CheckPendingIOUs, this), 1000));
 }
 
 void PDVault::KadJoinedCallback(const std::string &result,
@@ -195,7 +195,7 @@ void PDVault::UnRegisterMaidService() {
   vault_service_.reset();
 }
 
-std::string PDVault::node_id() const {
+std::string PDVault::hex_node_id() const {
   std::string hex_id("");
   base::encode_to_hex(knode_.node_id(), &hex_id);
   return hex_id;
@@ -223,6 +223,8 @@ bool PDVault::CheckPendingIOUs() {
       IouReadyTuple iou_ready_details = iou_readys.front();
       thread_pool_.schedule(boost::bind(&PDVault::AddToRefPacket, this,
           iou_ready_details));
+      poh_.AdvanceStatus("", iou_ready_details.get<1>(), 0, "", "", "",
+                         IOU_PROCESSING);
       iou_readys.pop_front();
     }
   }
@@ -247,37 +249,45 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
   }
   bool got_valid_iou(false);
   int successful_count(0);
+  int called_back_count(0);
   std::vector<StoreRefResultHolder> results;
   for (boost::uint16_t i = 0; i < ref_holders.size(); ++i) {
     StoreRefResultHolder store_ref_result_holder;
-    SendToRefPacket(ref_holders.at(i), iou_ready_details,
-                    &store_ref_result_holder);
     results.push_back(store_ref_result_holder);
   }
-  while (successful_count < kKadStoreThreshold_) {
+  boost::mutex store_ref_mutex;
+  for (boost::uint16_t i = 0; i < ref_holders.size(); ++i) {
+    SendToRefPacket(ref_holders.at(i), iou_ready_details, &store_ref_mutex,
+                    &results.at(i));
+  }
+// TODO(Fraser#5#): 2009-08-15 - This loop logic needs tidied - also need to
+//                               break out of it.
+  while (successful_count < kKadStoreThreshold_ && called_back_count < kad::K) {
     for (boost::uint16_t i = 0; i < results.size(); ++i) {
-// TODO(Fraser#5#): 2009-08-12 - Team scrutinisation of requirement for mutex.
-      bool res(false);
-      {
-        boost::mutex::scoped_lock loch(*results.at(i).mutex_);
-        res = results.at(i).store_ref_response_returned_;
-      }
-      if (res) {
+      boost::mutex::scoped_lock loch(store_ref_mutex);
+      if (results.at(i).store_ref_response_returned_) {
+        ++called_back_count;
         int n = HandleStoreRefResponse(iou_ready_details, results.at(i),
                                        &got_valid_iou);
         if (n == 0)
           ++successful_count;
-        results.erase(results.begin() + i);
-        --i;
+        results.at(i).store_ref_response_returned_ = false;
+        break;
       }
     }
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   for (boost::uint16_t j = 0; j < results.size(); ++j) {
     channel_manager_->DeletePendingRequest(results.at(j).rpc_id_);
   }
+#ifdef DEBUG
+  printf("In PDVault::AddToRefPacket: count = %i (success if count > 11)\n",
+         successful_count);
+#endif
+  if (successful_count < kKadStoreThreshold_ || !got_valid_iou)
+    return;  // We've not received enough successful responses or got valid IOU
   poh_.AdvanceStatus("", iou_ready_details.get<1>(), 0, "", "", "",
-                     IOU_RANK_RETREIVED);
-
+                     IOU_RANK_RETRIEVED);
 // TODO(Fraser#5#): 2009-08-12 - Increment our rank and clear pending op.
 }
 
@@ -298,7 +308,7 @@ int PDVault::HandleStoreRefResponse(
   if (srr.pmid_id() != co_.Hash(srr.public_key() + srr.signed_public_key(),
       "", crypto::STRING_STRING, false)) {
 #ifdef DEBUG
-    printf("Some fecker on rpc id %d is trying to fake identity (%d).\n",
+    printf("Someone on rpc id %d is trying to fake identity (%d).\n",
            store_ref_result_holder.rpc_id_, knode_.host_port());
     return -1;
 #endif
@@ -331,7 +341,7 @@ int PDVault::HandleStoreRefResponse(
 #endif
     }
 
-    if (ra.pmid() != iou_ready_details.get<0>()) {
+    if (ra.pmid() != non_hex_pmid_) {
 #ifdef DEBUG
       printf("Rank authority from rpc id %d is not for this vault (%d).\n",
              store_ref_result_holder.rpc_id_, knode_.host_port());
@@ -383,7 +393,7 @@ int PDVault::HandleStoreRefResponse(
 #endif
     }
 
-    if (iou_authority.pmid() != pmid_) {
+    if (iou_authority.pmid() != non_hex_pmid_) {
 #ifdef DEBUG
       printf("IOUAuthority from rpc id %d is not from this vault (%d).\n",
              store_ref_result_holder.rpc_id_, knode_.host_port());
@@ -395,14 +405,13 @@ int PDVault::HandleStoreRefResponse(
   return 0;
 }
 
-
 int PDVault::FindKNodes(const std::string &kad_key,
                         std::vector<kad::Contact> *contacts) {
   KadCallback kad_callback;
   knode_.FindCloseNodes(kad_key, boost::bind(&KadCallback::SetResponse,
       &kad_callback, _1));
-// TODO(Fraser#5#): 2009-08-12 - make timeout a maidsafe constant
-  int count(0), timeout(7500);
+// TODO(Fraser#5#): 2009-08-12 - Make timeout a maidsafe constant
+  int count(0), timeout(3000000);
   while (count < timeout) {
     if (kad_callback.response() != "")
       break;
@@ -434,7 +443,7 @@ int PDVault::FindKNodes(const std::string &kad_key,
     contacts->push_back(contact);
   }
 #ifdef DEBUG
-  printf("In PDVault::FindKNodes, succeeded.\n");
+//  printf("In PDVault::FindKNodes, succeeded.\n");
 #endif
   return 0;
 }
@@ -442,13 +451,14 @@ int PDVault::FindKNodes(const std::string &kad_key,
 int PDVault::SendToRefPacket(
     const kad::Contact &ref_holder,
     const IouReadyTuple &iou_ready_details,
+    boost::mutex *store_ref_mutex,
     StoreRefResultHolder *store_ref_result_holder) {
   maidsafe::StoreReferenceRequest store_ref_request;
   std::string chunk_name = iou_ready_details.get<1>();
   std::string signed_request =  GetSignedRequest(chunk_name,
                                                  ref_holder.node_id());
   store_ref_request.set_chunkname(chunk_name);
-  store_ref_request.set_pmid(pmid_);
+  store_ref_request.set_pmid(non_hex_pmid_);
   store_ref_request.set_public_key(pmid_public_);
   store_ref_request.set_signed_public_key(signed_pmid_public_);
   store_ref_request.set_signed_request(signed_request);
@@ -457,8 +467,7 @@ int PDVault::SendToRefPacket(
       == kad::LOCAL);
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &PDVault::SendToRefPacketCallback,
-      &store_ref_result_holder->store_ref_response_returned_,
-      store_ref_result_holder->mutex_.get());
+      &store_ref_result_holder->store_ref_response_returned_, store_ref_mutex);
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   vault_rpcs_.StoreChunkReference(ref_holder, local, &store_ref_request,
       &store_ref_result_holder->store_ref_response_, controller, callback);
@@ -467,11 +476,11 @@ int PDVault::SendToRefPacket(
 }
 
 void PDVault::SendToRefPacketCallback(bool *store_ref_response_returned,
-                                      boost::mutex *mutex) {
+                                      boost::mutex *store_ref_mutex) {
 #ifdef DEBUG
-  printf("In PDVault::SendToRefPacketCallback.\n");
+//  printf("In PDVault::SendToRefPacketCallback.\n");
 #endif
-  boost::mutex::scoped_lock loch(*mutex);
+  boost::mutex::scoped_lock loch(*store_ref_mutex);
   *store_ref_response_returned = true;
 }
 
@@ -633,7 +642,7 @@ void PDVault::ValidityCheck(const std::string &chunk_name,
     return;
   }
   std::string random_data_("");
-  // TODO(Fraser#5#): 2009-03-18 - make limits for data maidsafe constants
+  // TODO(Fraser#5#): 2009-03-18 - Make limits for data maidsafe constants
   if (random_data == "" ||
       random_data.size() < 512 ||
       random_data.size() > 1023)
@@ -674,7 +683,7 @@ void PDVault::ValidityCheck(const std::string &chunk_name,
 void PDVault::ValidityCheckCallback(
     boost::shared_ptr<maidsafe::ValidityCheckResponse> validity_check_response,
     boost::shared_ptr<ValidityCheckArgs> validity_check_args) {
-  // TODO(Fraser#5#): 2009-03-18 -handle timeout: call ValdtyChck with ++attempt
+  // TODO(Fraser#5#): 2009-03-18 -Handle timeout: call ValdtyChck with ++attempt
 
   if (!validity_check_response->IsInitialized())
     return;
@@ -714,7 +723,7 @@ void PDVault::ValidityCheckCallback(
       validity_check_args->random_data_, "", crypto::STRING_STRING,
       true));
   if (local_hash_content_ != remote_hash_content_) {
-    // TODO(Fraser#5#): 2009-03-18 - if check fails do we retry once, or try
+    // TODO(Fraser#5#): 2009-03-18 - If check fails do we retry once, or try
     //                  with another chunk holder (if available) and/or alert
     //                  the current holder that he has a dirty chunk?
   }

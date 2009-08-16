@@ -642,8 +642,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   load_res.Clear();
   cb.Reset();
   users.erase(usuarios[1]);
-  ASSERT_EQ(static_cast<unsigned int>(2), ss->AuthorisedUsers().size())
-      << "User not deleted";
+  ASSERT_EQ(size_t(2), ss->AuthorisedUsers().size()) << "User not deleted";
   ASSERT_TRUE(users == ss->AuthorisedUsers());
 
   buffer_packet.ParseFromString(ser_bp);
@@ -806,7 +805,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
 
   std::vector<std::string> msgs;
   ASSERT_TRUE(vaultbufferpackethandler.GetMessages(ser_bp, &msgs));
-  ASSERT_EQ(static_cast<unsigned int>(3), msgs.size());
+  ASSERT_EQ(size_t(3), msgs.size());
   for (unsigned int j = 0; j < 3; ++j) {
     packethandler::ValidatedBufferPacketMessage msg;
     std::string ser_msg = msgs[j];
@@ -1035,7 +1034,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
   ASSERT_EQ(kAck, static_cast<int>(get_msgs_res.result()));
   ASSERT_EQ(0, get_msgs_res.messages_size());
-  ASSERT_EQ(static_cast<unsigned int>(0), ss->AuthorisedUsers().size());
+  ASSERT_EQ(size_t(0), ss->AuthorisedUsers().size());
   cb.Reset();
   get_msgs_res.Clear();
 
@@ -1062,6 +1061,6 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
   ASSERT_EQ(kAck, static_cast<int>(get_msgs_res.result()));
   ASSERT_EQ(0, get_msgs_res.messages_size());
-  ASSERT_EQ(static_cast<unsigned int>(3), ss->AuthorisedUsers().size());
+  ASSERT_EQ(size_t(3), ss->AuthorisedUsers().size());
   ASSERT_TRUE(users == ss->AuthorisedUsers());
 }

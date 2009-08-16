@@ -240,8 +240,8 @@ void CreateMessage(const std::string &message,
 namespace maidsafe_vault {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
-static const int kNetworkSize_ = 10;
-static const int kTestK_ = 4;
+static const int kNetworkSize_ = 20;
+static const int kTestK_ = 16;
 
 class TestPDVault : public testing::Test {
  protected:
@@ -262,7 +262,8 @@ class TestPDVault : public testing::Test {
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     client_keys_.GenerateKeys(packethandler::kRsaKeySize);
-    maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::PMID, "PMID",
+    maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::PMID,
+        crypto_.Hash("PMID", "", crypto::STRING_STRING, true),
         client_keys_.private_key(), client_keys_.public_key());
     client_keys_.GenerateKeys(packethandler::kRsaKeySize);
     maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::MAID, "MAID",
@@ -339,7 +340,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
     ++i;
   }
 //  while (not got chunk)
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(120));
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times and each chunk copy is valid (i.e. name == Hash(contents))
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
@@ -371,7 +372,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
     ++i;
   }
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  boost::this_thread::sleep(boost::posix_time::seconds(120));
   // Check each chunk can be retrieved correctly
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     printf("Getting chunk.\n");
@@ -902,7 +903,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
   testpdvault::WaitFunction(60, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
-  ASSERT_EQ(static_cast<unsigned int>(1), callback_msgs.size());
+  ASSERT_EQ(size_t(1), callback_msgs.size());
   ASSERT_EQ(expected_res, callback_msgs.front());
   // Deleting the messages not owner
   testpdvault::PrepareCallbackResults();
@@ -947,7 +948,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
   testpdvault::WaitFunction(60, &mutex_);
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
-  ASSERT_EQ(static_cast<unsigned int>(0), callback_msgs.size());
+  ASSERT_EQ(size_t(0), callback_msgs.size());
 }
 */
 TEST_F(TestPDVault, DISABLED_FUNC_MAID_SwapChunk) {

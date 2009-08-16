@@ -88,14 +88,14 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
-  ASSERT_EQ(static_cast<unsigned int>(0), share_list.size()) <<
+  ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
   // Test full share list to be empty
   std::list<maidsafe::PrivateShare> full_share_list;
   ASSERT_EQ(0, psh_->MI_GetFullShareList(&full_share_list)) <<
             "Failed getting full list";
-  ASSERT_EQ(static_cast<unsigned int>(0), full_share_list.size()) <<
+  ASSERT_EQ(size_t(0), full_share_list.size()) <<
             "Share container not empty on creation.";
 
   // Test lower bound of field index
@@ -106,7 +106,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {
   ASSERT_EQ("", ps.Msid()) << "Share container Msid was modified.";
   ASSERT_EQ("", ps.MsidPubKey()) << "Share container MsidPubKey was modified.";
   ASSERT_EQ("", ps.MsidPriKey()) << "Share container MsidPriKey was modified.";
-  ASSERT_EQ(static_cast<unsigned int>(0), ps.Participants().size()) <<
+  ASSERT_EQ(size_t(0), ps.Participants().size()) <<
             "Share container Participants was modified.";
 
   // Test upper bound of field index
@@ -116,7 +116,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {
   ASSERT_EQ("", ps.Msid()) << "Share container Msid was modified.";
   ASSERT_EQ("", ps.MsidPubKey()) << "Share container MsidPubKey was modified.";
   ASSERT_EQ("", ps.MsidPriKey()) << "Share container MsidPriKey was modified.";
-  ASSERT_EQ(static_cast<unsigned int>(0), ps.Participants().size()) <<
+  ASSERT_EQ(size_t(0), ps.Participants().size()) <<
             "Share container Participants was modified.";
 
   // Test wrong share name
@@ -126,7 +126,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {
   ASSERT_EQ("", ps.Msid()) << "Share container Msid was modified.";
   ASSERT_EQ("", ps.MsidPubKey()) << "Share container MsidPubKey was modified.";
   ASSERT_EQ("", ps.MsidPriKey()) << "Share container MsidPriKey was modified.";
-  ASSERT_EQ(static_cast<unsigned int>(0), ps.Participants().size()) <<
+  ASSERT_EQ(size_t(0), ps.Participants().size()) <<
             "Share container Participants was modified.";
 
   // Test wrong share msid
@@ -136,38 +136,34 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {
   ASSERT_EQ("", ps.Msid()) << "Share container Msid was modified.";
   ASSERT_EQ("", ps.MsidPubKey()) << "Share container MsidPubKey was modified.";
   ASSERT_EQ("", ps.MsidPriKey()) << "Share container MsidPriKey was modified.";
-  ASSERT_EQ(static_cast<unsigned int>(0), ps.Participants().size()) <<
+  ASSERT_EQ(size_t(0), ps.Participants().size()) <<
             "Share container Participants was modified.";
 
   // Test wrong index for field in share participant lookup
   std::list<maidsafe::share_participant> sp_list;
   ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("aaa", -1, &sp_list)) <<
             "Failed to recognise lower bound.";
-  ASSERT_EQ(static_cast<unsigned int>(0), sp_list.size()) <<
-            "List should have remained empty.";
+  ASSERT_EQ(size_t(0), sp_list.size()) << "List should have remained empty.";
   ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("aaa", 2, &sp_list)) <<
             "Failed to recognise upper bound.";
-  ASSERT_EQ(static_cast<unsigned int>(0), sp_list.size()) <<
-            "List should have remained empty.";
+  ASSERT_EQ(size_t(0), sp_list.size()) << "List should have remained empty.";
 
   // Test wrong share name for participant list
   ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("aaa", 0, &sp_list)) <<
             "Failed to recognise invalid share name.";
-  ASSERT_EQ(static_cast<unsigned int>(0), sp_list.size()) <<
-            "List should have remained empty.";
+  ASSERT_EQ(size_t(0), sp_list.size()) << "List should have remained empty.";
 
   // Test wrong share msid for participant list
   ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("aaa", 1, &sp_list)) <<
             "Failed to recognise invalid share msid.";
-  ASSERT_EQ(static_cast<unsigned int>(0), sp_list.size()) <<
-            "List should have remained empty.";
+  ASSERT_EQ(size_t(0), sp_list.size()) << "List should have remained empty.";
 }
 
 TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
-  ASSERT_EQ(static_cast<unsigned int>(0), share_list.size()) <<
+  ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
   // Copy the list for comparison
@@ -199,7 +195,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
 
   // Check with GetShareList
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
-  ASSERT_EQ(static_cast<unsigned int>(1), share_list.size()) <<
+  ASSERT_EQ(size_t(1), share_list.size()) <<
             "Share container empty on selection.";
   ASSERT_EQ(attributes[0], share_list.front().name_) << "Name different.";
   ASSERT_EQ(attributes[1], share_list.front().msid_) << "Msid different.";
@@ -212,7 +208,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
   std::list<maidsafe::share_participant> sp_list;
   ASSERT_EQ(0, psh_->MI_GetParticipantsList(attributes[0], 0, &sp_list)) <<
             "Failed to acquire participant list.";
-  ASSERT_EQ(static_cast<unsigned int>(2), participants.size()) <<
+  ASSERT_EQ(size_t(2), participants.size()) <<
             "Probably forgot to refill original list.";
   ASSERT_EQ(participants.size(), sp_list.size()) <<
             "Retrived list size does not match.";
@@ -220,8 +216,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
   sp_list.pop_front();
   maidsafe::share_participant sp2 = sp_list.front();
   sp_list.pop_front();
-  ASSERT_EQ(static_cast<unsigned int>(0), sp_list.size()) <<
-            "Retrived list not empty.";
+  ASSERT_EQ(size_t(0), sp_list.size()) << "Retrived list not empty.";
 
   for (std::list<maidsafe::ShareParticipants>::iterator it =
        participants.begin(); it != participants.end(); it++) {
@@ -237,7 +232,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
   // Check Participants with share msid
   ASSERT_EQ(0, psh_->MI_GetParticipantsList(attributes[1], 1, &sp_list)) <<
             "Failed to acquire participant list.";
-  ASSERT_EQ(static_cast<unsigned int>(2), participants.size()) <<
+  ASSERT_EQ(size_t(2), participants.size()) <<
             "Probably forgot to refill original list.";
   ASSERT_EQ(participants.size(), sp_list.size()) <<
             "Retrived list size does not match.";
@@ -245,8 +240,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
   sp_list.pop_front();
   sp2 = sp_list.front();
   sp_list.pop_front();
-  ASSERT_EQ(static_cast<unsigned int>(0), sp_list.size()) <<
-            "Retrived list not empty.";
+  ASSERT_EQ(size_t(0), sp_list.size()) << "Retrived list not empty.";
 
   for (std::list<maidsafe::ShareParticipants>::iterator it =
        participants.begin(); it != participants.end(); it++) {
@@ -266,7 +260,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
             "Failed to add share";
   // Check with GetShareList
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
-  ASSERT_EQ(static_cast<unsigned int>(1), share_list.size()) <<
+  ASSERT_EQ(size_t(1), share_list.size()) <<
             "Share container empty or with > 1 element.";
 }
 
@@ -274,7 +268,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
-  ASSERT_EQ(static_cast<unsigned int>(0), share_list.size()) <<
+  ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
   // Copy the list for comparison
@@ -308,7 +302,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
   std::list<maidsafe::PrivateShare> full_share_list;
   ASSERT_EQ(0, psh_->MI_GetFullShareList(&full_share_list)) <<
             "Failed getting full list";
-  ASSERT_EQ(static_cast<unsigned int>(10), full_share_list.size()) <<
+  ASSERT_EQ(size_t(10), full_share_list.size()) <<
             "Share container not empty on creation.";
   int y = 0;
   while (!full_share_list.empty()) {
@@ -322,7 +316,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
     ASSERT_EQ("MSID_PRI_KEY_" + base::itos(y), ps.MsidPriKey()) <<
               "MsidPriKey not equal.";
     std::list<maidsafe::ShareParticipants> sps = ps.Participants();
-    ASSERT_EQ(static_cast<unsigned int>(y + 1), sps.size()) <<
+    ASSERT_EQ(size_t(y + 1), sps.size()) <<
               "Participants number not the one expected.";
     while (!sps.empty()) {
       maidsafe::ShareParticipants sp = sps.front();
@@ -347,7 +341,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
             "MsidPubKey different.";
   ASSERT_EQ("MSID_PRI_KEY_" + base::itos(l), by_name.MsidPriKey()) <<
             "MsidPriKey different.";
-  ASSERT_EQ(static_cast<unsigned int>(l + 1), by_name.Participants().size()) <<
+  ASSERT_EQ(size_t(l + 1), by_name.Participants().size()) <<
             "Participant lists different in size.";
   std::list<maidsafe::ShareParticipants> sps = by_name.Participants();
   int i = 0;
@@ -367,7 +361,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
-  ASSERT_EQ(static_cast<unsigned int>(0), share_list.size()) <<
+  ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
   // Copy the list for comparison
@@ -401,7 +395,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
   std::list<maidsafe::PrivateShare> full_share_list;
   ASSERT_EQ(0, psh_->MI_GetFullShareList(&full_share_list)) <<
             "Failed getting full list";
-  ASSERT_EQ(static_cast<unsigned int>(10), full_share_list.size()) <<
+  ASSERT_EQ(size_t(10), full_share_list.size()) <<
             "Share container not empty on creation.";
 
   // Delete random share by name
@@ -412,7 +406,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
   // Full share list
   ASSERT_EQ(0, psh_->MI_GetFullShareList(&full_share_list)) <<
             "Failed getting full list";
-  ASSERT_EQ(static_cast<unsigned int>(9), full_share_list.size()) <<
+  ASSERT_EQ(size_t(9), full_share_list.size()) <<
             "Share container not empty on creation.";
 
   maidsafe::PrivateShare by_name, by_msid;
@@ -426,7 +420,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
   // Find the participants of the share
   ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("MSID_" + base::itos(l), 1,
             &sp_list)) << "Some participants of the share remain.";
-  ASSERT_EQ(static_cast<unsigned int>(0), sp_list.size()) << "List not empty.";
+  ASSERT_EQ(size_t(0), sp_list.size()) << "List not empty.";
 
   unsigned int e = l;
   while (e == l)
@@ -439,7 +433,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
   // Full share list
   ASSERT_EQ(0, psh_->MI_GetFullShareList(&full_share_list)) <<
             "Failed getting full list";
-  ASSERT_EQ(static_cast<unsigned int>(8), full_share_list.size()) <<
+  ASSERT_EQ(size_t(8), full_share_list.size()) <<
             "Share container not empty on creation.";
 
   // Find by share name
@@ -457,7 +451,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
-  ASSERT_EQ(static_cast<unsigned int>(0), share_list.size()) <<
+  ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
   // Copy the list for comparison
@@ -476,7 +470,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
   std::list<maidsafe::share_participant> sp_list;
   ASSERT_EQ(0, psh_->MI_GetParticipantsList(attributes[1], 1, &sp_list)) <<
             "Failed to acquire participant list.";
-  ASSERT_EQ(static_cast<unsigned int>(2), participants.size()) <<
+  ASSERT_EQ(size_t(2), participants.size()) <<
             "Probably forgot to refill original list.";
   ASSERT_EQ(participants.size(), sp_list.size()) <<
             "Retrived list size does not match.";
@@ -496,8 +490,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
   // Get list by share name
   ASSERT_EQ(0, psh_->MI_GetParticipantsList(attributes[0], 0, &sp_list)) <<
             "Failed to acquire participant list.";
-  ASSERT_EQ(static_cast<unsigned int>(5), sp_list.size()) <<
-            "Retrived list size does not match.";
+  ASSERT_EQ(size_t(5), sp_list.size()) << "Retrived list size does not match.";
 
   // Add same contacts by msid
   sps.clear();
@@ -514,8 +507,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
   // Get list by share msid
   ASSERT_EQ(0, psh_->MI_GetParticipantsList(attributes[1], 1, &sp_list)) <<
             "Failed to acquire participant list.";
-  ASSERT_EQ(static_cast<unsigned int>(5), sp_list.size()) <<
-            "Retrived list size does not match.";
+  ASSERT_EQ(size_t(5), sp_list.size()) << "Retrived list size does not match.";
 
   // Add more contacts by name
   sps.clear();
@@ -532,8 +524,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
   // Get list by share name
   ASSERT_EQ(0, psh_->MI_GetParticipantsList(attributes[0], 0, &sp_list)) <<
             "Failed to acquire participant list.";
-  ASSERT_EQ(static_cast<unsigned int>(9), sp_list.size()) <<
-            "Retrived list size does not match.";
+  ASSERT_EQ(size_t(9), sp_list.size()) << "Retrived list size does not match.";
 
   int n = 0;
   while (!sp_list.empty()) {
@@ -555,7 +546,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteContactFromShare) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
-  ASSERT_EQ(static_cast<unsigned int>(0), share_list.size()) <<
+  ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
   // Copy the list for comparison
@@ -586,8 +577,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteContactFromShare) {
   std::list<maidsafe::share_participant> sp_list;
   ASSERT_EQ(0, psh_->MI_GetParticipantsList(attributes[0], 0, &sp_list)) <<
             "Failed to acquire participant list.";
-  ASSERT_EQ(static_cast<unsigned int>(9), sp_list.size()) <<
-            "Retrived list size does not match.";
+  ASSERT_EQ(size_t(9), sp_list.size()) << "Retrived list size does not match.";
 
   // Delete random contact
   unsigned int l = base::random_32bit_uinteger() % 7;
@@ -599,15 +589,13 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteContactFromShare) {
   // Get list by share name
   ASSERT_EQ(0, psh_->MI_GetParticipantsList(attributes[0], 0, &sp_list)) <<
             "Failed to acquire participant list.";
-  ASSERT_EQ(static_cast<unsigned int>(8), sp_list.size()) <<
-            "Retrived list size does not match.";
+  ASSERT_EQ(size_t(8), sp_list.size()) << "Retrived list size does not match.";
 
   // Try to delete same participant from same share
   del_list.push_back("PUB_NAME_" + base::itos(l));
   ASSERT_EQ(-2013, psh_->MI_DeleteContactsFromPrivateShare(attributes[1], 1,
             &del_list)) << "Failed to delete the participant.";
-  ASSERT_EQ(static_cast<unsigned int>(8), sp_list.size()) <<
-            "Retrived list size does not match.";
+  ASSERT_EQ(size_t(8), sp_list.size()) << "Retrived list size does not match.";
 
   // create new share details
   std::string msid1 = attributes[1];
@@ -628,14 +616,13 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteContactFromShare) {
   ASSERT_EQ(0, psh_->MI_AddPrivateShare(attributes, &sps)) <<
             "Failed to add share";
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
-  ASSERT_EQ(static_cast<unsigned int>(2), share_list.size()) <<
+  ASSERT_EQ(size_t(2), share_list.size()) <<
             "Share container empty after insertions.";
 
   // Get list by share name
   ASSERT_EQ(0, psh_->MI_GetParticipantsList(attributes[0], 0, &sp_list)) <<
             "Failed to acquire participant list.";
-  ASSERT_EQ(static_cast<unsigned int>(7), sp_list.size()) <<
-            "Retrived list size does not match.";
+  ASSERT_EQ(size_t(7), sp_list.size()) << "Retrived list size does not match.";
 
   // New random participant to delete
   unsigned int e = l;
@@ -648,15 +635,13 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteContactFromShare) {
   // Get list by share name
   ASSERT_EQ(0, psh_->MI_GetParticipantsList(attributes[0], 0, &sp_list)) <<
             "Failed to acquire participant list.";
-  ASSERT_EQ(static_cast<unsigned int>(6), sp_list.size()) <<
-            "Retrived list size does not match.";
+  ASSERT_EQ(size_t(6), sp_list.size()) << "Retrived list size does not match.";
 
   // Check other share to see that the contact
   // wasn't deleted from the other share
   ASSERT_EQ(0, psh_->MI_GetParticipantsList(msid1, 1, &sp_list)) <<
             "Failed to acquire participant list.";
-  ASSERT_EQ(static_cast<unsigned int>(8), sp_list.size()) <<
-            "Retrived list size does not match.";
+  ASSERT_EQ(size_t(8), sp_list.size()) << "Retrived list size does not match.";
   bool found = false;
   while (!sp_list.empty() && !found) {
     if (sp_list.front().public_name_ == "PUB_NAME_" + base::itos(e))

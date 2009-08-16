@@ -120,7 +120,7 @@ void VaultDaemon::TakeOwnership() {
   pdvault_->Start(port_forwarded);
   val_check_ = boost::shared_ptr<ValCheck>
       (new ValCheck(pdvault_, chunkstore_dir_));
-  WriteToLog("Vault ID:         "+pdvault_->node_id());
+  WriteToLog("Vault ID:         "+pdvault_->hex_node_id());
   WriteToLog("Vault IP & port:  "+pdvault_->host_ip()+":"+
       base::itos(pdvault_->host_port()));
 }

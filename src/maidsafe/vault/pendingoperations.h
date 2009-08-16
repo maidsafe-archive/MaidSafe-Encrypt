@@ -50,7 +50,8 @@ enum vault_operation_status {
   STORE_DONE,
   AWAITING_IOU,
   IOU_READY,
-  IOU_RANK_RETREIVED,
+  IOU_PROCESSING,
+  IOU_RANK_RETRIEVED,
 
   // Reference holder vault
   IOU_RECEIVED,
@@ -64,7 +65,7 @@ enum vault_operation_status {
 struct PendingOperationRow {
   PendingOperationRow()
       : pmid_(), chunk_name_(), chunk_size_(0), iou_(),
-        rank_authority_(), timestamp_(0), public_key_(), status_() { }
+        rank_authority_(), timestamp_(0), public_key_(), status_() {}
   PendingOperationRow(const std::string &pmid,
                       const std::string &chunkname,
                       const boost::uint64_t &chunk_size,
@@ -74,8 +75,7 @@ struct PendingOperationRow {
                       const std::string &public_key,
                       const vault_operation_status &status)
       : pmid_(pmid), chunk_name_(chunkname), chunk_size_(chunk_size),
-        iou_(iou),
-        rank_authority_(rank_authority), timestamp_(timestamp),
+        iou_(iou), rank_authority_(rank_authority), timestamp_(timestamp),
         public_key_(public_key), status_(status) {
     if (timestamp == 0)
       timestamp_ = base::get_epoch_time();

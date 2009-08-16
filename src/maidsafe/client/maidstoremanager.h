@@ -30,6 +30,7 @@
 #include <maidsafe/maidsafe-dht_config.h>
 
 #include <queue>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -71,6 +72,16 @@ class CallbackObj {
 
 // Tuple of non_hex_chunk_name, dir_type, msid in that order.
 typedef boost::tuple<std::string, DirType, std::string> StoreTuple;
+
+struct StoreIouResultHolder {
+  StoreIouResultHolder()
+      : store_iou_response_(),
+        store_iou_response_returned_(false),
+        rpc_id_(0) {}
+  StoreIOUResponse store_iou_response_;
+  bool store_iou_response_returned_;
+  boost::uint32_t rpc_id_;
+};
 
 class ChunkStore;
 class SessionSingleton;
@@ -149,7 +160,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   int GetStoreRequests(const StoreTuple &store_tuple,
                        const std::string &recipient_id,
                        StorePrepRequest *store_prep_request,
-                       StoreRequest *store_request);
+                       StoreRequest *store_request,
+                       IOUDoneRequest *iou_done_request);
   // Get the public key, signed public key, and signed request for a chunk
   void GetSignedPubKeyAndRequest(const std::string &non_hex_name,
                                  const DirType dir_type,
@@ -169,18 +181,36 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Send the "preparation to store" message and wait until called back
   int SendPrep(const kad::Contact &peer,
                bool local,
-               StorePrepRequest *store_prep_request);
+               StorePrepRequest *store_prep_request,
+               StorePrepResponse *store_prep_response);
   void SendPrepCallback(bool *send_prep_returned, boost::mutex *mutex);
   int SendContent(const kad::Contact &peer,
                   bool local,
                   StoreRequest *store_request);
   void SendContentCallback(bool *send_content_returned, boost::mutex *mutex);
+  int StoreIOUs(const std::string &non_hex_chunk_name,
+                const boost::uint64_t &chunk_size,
+                const StorePrepResponse &store_prep_response);
+  int FindKNodes(const std::string &kad_key,
+                 std::vector<kad::Contact> *contacts);
+  int SendIouToRefHolder(const kad::Contact &ref_holder,
+                         StoreIOURequest store_iou_request,
+                         boost::mutex *store_iou_mutex,
+                         StoreIouResultHolder *store_iou_result_holder);
+  void SendIouToRefHolderCallback(bool *store_iou_response_returned,
+                                  boost::mutex *store_iou_mutex);
+  int HandleStoreIOUResponse(
+      const StoreIouResultHolder &store_iou_result_holder,
+      std::set<std::string> *ref_holder_ids);
+  int SendIOUDone(const kad::Contact &peer,
+                  bool local,
+                  IOUDoneRequest *iou_done_request);
+  void IOUDoneCallback(bool *iou_done_returned, boost::mutex *mutex);
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
   ClientRpcs client_rpcs_;
   PDClient *pdclient_;
   SessionSingleton *ss_;
-  crypto::Crypto co_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   boost::threadpool::thread_pool<
       boost::threadpool::prio_task_func,
@@ -188,6 +218,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       boost::threadpool::static_size,
       boost::threadpool::resize_controller,
       boost::threadpool::immediately> store_thread_pool_;
+  const boost::uint16_t kKadStoreThreshold_;
 };
 
 }  // namespace maidsafe

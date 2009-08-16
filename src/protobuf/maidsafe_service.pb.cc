@@ -51,27 +51,29 @@ void protobuf_AddDesc_maidsafe_5fservice_2eproto() {
   ::maidsafe::protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\026maidsafe_service.proto\022\010maidsafe\032\037maid"
-    "safe_service_messages.proto2\223\006\n\017Maidsafe"
+    "safe_service_messages.proto2\323\006\n\017Maidsafe"
     "Service\022I\n\016StoreChunkPrep\022\032.maidsafe.Sto"
     "rePrepRequest\032\033.maidsafe.StorePrepRespon"
     "se\022A\n\010StoreIOU\022\031.maidsafe.StoreIOUReques"
-    "t\032\032.maidsafe.StoreIOUResponse\022=\n\nStoreCh"
-    "unk\022\026.maidsafe.StoreRequest\032\027.maidsafe.S"
-    "toreResponse\022X\n\023StoreChunkReference\022\037.ma"
-    "idsafe.StoreReferenceRequest\032 .maidsafe."
-    "StoreReferenceResponse\022G\n\nCheckChunk\022\033.m"
-    "aidsafe.CheckChunkRequest\032\034.maidsafe.Che"
-    "ckChunkResponse\0222\n\003Get\022\024.maidsafe.GetReq"
-    "uest\032\025.maidsafe.GetResponse\022;\n\006Update\022\027."
-    "maidsafe.UpdateRequest\032\030.maidsafe.Update"
-    "Response\022J\n\013GetMessages\022\034.maidsafe.GetMe"
-    "ssagesRequest\032\035.maidsafe.GetMessagesResp"
-    "onse\022;\n\006Delete\022\027.maidsafe.DeleteRequest\032"
-    "\030.maidsafe.DeleteResponse\022P\n\rValidityChe"
-    "ck\022\036.maidsafe.ValidityCheckRequest\032\037.mai"
-    "dsafe.ValidityCheckResponse\022D\n\tSwapChunk"
-    "\022\032.maidsafe.SwapChunkRequest\032\033.maidsafe."
-    "SwapChunkResponse", 857);
+    "t\032\032.maidsafe.StoreIOUResponse\022>\n\007IOUDone"
+    "\022\030.maidsafe.IOUDoneRequest\032\031.maidsafe.IO"
+    "UDoneResponse\022=\n\nStoreChunk\022\026.maidsafe.S"
+    "toreRequest\032\027.maidsafe.StoreResponse\022X\n\023"
+    "StoreChunkReference\022\037.maidsafe.StoreRefe"
+    "renceRequest\032 .maidsafe.StoreReferenceRe"
+    "sponse\022G\n\nCheckChunk\022\033.maidsafe.CheckChu"
+    "nkRequest\032\034.maidsafe.CheckChunkResponse\022"
+    "2\n\003Get\022\024.maidsafe.GetRequest\032\025.maidsafe."
+    "GetResponse\022;\n\006Update\022\027.maidsafe.UpdateR"
+    "equest\032\030.maidsafe.UpdateResponse\022J\n\013GetM"
+    "essages\022\034.maidsafe.GetMessagesRequest\032\035."
+    "maidsafe.GetMessagesResponse\022;\n\006Delete\022\027"
+    ".maidsafe.DeleteRequest\032\030.maidsafe.Delet"
+    "eResponse\022P\n\rValidityCheck\022\036.maidsafe.Va"
+    "lidityCheckRequest\032\037.maidsafe.ValidityCh"
+    "eckResponse\022D\n\tSwapChunk\022\032.maidsafe.Swap"
+    "ChunkRequest\032\033.maidsafe.SwapChunkRespons"
+    "e", 921);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_maidsafe_5fservice_2eproto);
@@ -112,6 +114,14 @@ void MaidsafeService::StoreIOU(::google::protobuf::RpcController* controller,
                          ::maidsafe::StoreIOUResponse*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method StoreIOU() not implemented.");
+  done->Run();
+}
+
+void MaidsafeService::IOUDone(::google::protobuf::RpcController* controller,
+                         const ::maidsafe::IOUDoneRequest*,
+                         ::maidsafe::IOUDoneResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method IOUDone() not implemented.");
   done->Run();
 }
 
@@ -207,54 +217,60 @@ void MaidsafeService::CallMethod(const ::google::protobuf::MethodDescriptor* met
              done);
       break;
     case 2:
+      IOUDone(controller,
+             ::google::protobuf::down_cast<const ::maidsafe::IOUDoneRequest*>(request),
+             ::google::protobuf::down_cast< ::maidsafe::IOUDoneResponse*>(response),
+             done);
+      break;
+    case 3:
       StoreChunk(controller,
              ::google::protobuf::down_cast<const ::maidsafe::StoreRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::StoreResponse*>(response),
              done);
       break;
-    case 3:
+    case 4:
       StoreChunkReference(controller,
              ::google::protobuf::down_cast<const ::maidsafe::StoreReferenceRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::StoreReferenceResponse*>(response),
              done);
       break;
-    case 4:
+    case 5:
       CheckChunk(controller,
              ::google::protobuf::down_cast<const ::maidsafe::CheckChunkRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::CheckChunkResponse*>(response),
              done);
       break;
-    case 5:
+    case 6:
       Get(controller,
              ::google::protobuf::down_cast<const ::maidsafe::GetRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::GetResponse*>(response),
              done);
       break;
-    case 6:
+    case 7:
       Update(controller,
              ::google::protobuf::down_cast<const ::maidsafe::UpdateRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::UpdateResponse*>(response),
              done);
       break;
-    case 7:
+    case 8:
       GetMessages(controller,
              ::google::protobuf::down_cast<const ::maidsafe::GetMessagesRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::GetMessagesResponse*>(response),
              done);
       break;
-    case 8:
+    case 9:
       Delete(controller,
              ::google::protobuf::down_cast<const ::maidsafe::DeleteRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::DeleteResponse*>(response),
              done);
       break;
-    case 9:
+    case 10:
       ValidityCheck(controller,
              ::google::protobuf::down_cast<const ::maidsafe::ValidityCheckRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::ValidityCheckResponse*>(response),
              done);
       break;
-    case 10:
+    case 11:
       SwapChunk(controller,
              ::google::protobuf::down_cast<const ::maidsafe::SwapChunkRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::SwapChunkResponse*>(response),
@@ -275,22 +291,24 @@ const ::google::protobuf::Message& MaidsafeService::GetRequestPrototype(
     case 1:
       return ::maidsafe::StoreIOURequest::default_instance();
     case 2:
-      return ::maidsafe::StoreRequest::default_instance();
+      return ::maidsafe::IOUDoneRequest::default_instance();
     case 3:
-      return ::maidsafe::StoreReferenceRequest::default_instance();
+      return ::maidsafe::StoreRequest::default_instance();
     case 4:
-      return ::maidsafe::CheckChunkRequest::default_instance();
+      return ::maidsafe::StoreReferenceRequest::default_instance();
     case 5:
-      return ::maidsafe::GetRequest::default_instance();
+      return ::maidsafe::CheckChunkRequest::default_instance();
     case 6:
-      return ::maidsafe::UpdateRequest::default_instance();
+      return ::maidsafe::GetRequest::default_instance();
     case 7:
-      return ::maidsafe::GetMessagesRequest::default_instance();
+      return ::maidsafe::UpdateRequest::default_instance();
     case 8:
-      return ::maidsafe::DeleteRequest::default_instance();
+      return ::maidsafe::GetMessagesRequest::default_instance();
     case 9:
-      return ::maidsafe::ValidityCheckRequest::default_instance();
+      return ::maidsafe::DeleteRequest::default_instance();
     case 10:
+      return ::maidsafe::ValidityCheckRequest::default_instance();
+    case 11:
       return ::maidsafe::SwapChunkRequest::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
@@ -307,22 +325,24 @@ const ::google::protobuf::Message& MaidsafeService::GetResponsePrototype(
     case 1:
       return ::maidsafe::StoreIOUResponse::default_instance();
     case 2:
-      return ::maidsafe::StoreResponse::default_instance();
+      return ::maidsafe::IOUDoneResponse::default_instance();
     case 3:
-      return ::maidsafe::StoreReferenceResponse::default_instance();
+      return ::maidsafe::StoreResponse::default_instance();
     case 4:
-      return ::maidsafe::CheckChunkResponse::default_instance();
+      return ::maidsafe::StoreReferenceResponse::default_instance();
     case 5:
-      return ::maidsafe::GetResponse::default_instance();
+      return ::maidsafe::CheckChunkResponse::default_instance();
     case 6:
-      return ::maidsafe::UpdateResponse::default_instance();
+      return ::maidsafe::GetResponse::default_instance();
     case 7:
-      return ::maidsafe::GetMessagesResponse::default_instance();
+      return ::maidsafe::UpdateResponse::default_instance();
     case 8:
-      return ::maidsafe::DeleteResponse::default_instance();
+      return ::maidsafe::GetMessagesResponse::default_instance();
     case 9:
-      return ::maidsafe::ValidityCheckResponse::default_instance();
+      return ::maidsafe::DeleteResponse::default_instance();
     case 10:
+      return ::maidsafe::ValidityCheckResponse::default_instance();
+    case 11:
       return ::maidsafe::SwapChunkResponse::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
@@ -355,67 +375,74 @@ void MaidsafeService_Stub::StoreIOU(::google::protobuf::RpcController* controlle
   channel_->CallMethod(descriptor()->method(1),
                        controller, request, response, done);
 }
+void MaidsafeService_Stub::IOUDone(::google::protobuf::RpcController* controller,
+                              const ::maidsafe::IOUDoneRequest* request,
+                              ::maidsafe::IOUDoneResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(2),
+                       controller, request, response, done);
+}
 void MaidsafeService_Stub::StoreChunk(::google::protobuf::RpcController* controller,
                               const ::maidsafe::StoreRequest* request,
                               ::maidsafe::StoreResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(2),
+  channel_->CallMethod(descriptor()->method(3),
                        controller, request, response, done);
 }
 void MaidsafeService_Stub::StoreChunkReference(::google::protobuf::RpcController* controller,
                               const ::maidsafe::StoreReferenceRequest* request,
                               ::maidsafe::StoreReferenceResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(3),
+  channel_->CallMethod(descriptor()->method(4),
                        controller, request, response, done);
 }
 void MaidsafeService_Stub::CheckChunk(::google::protobuf::RpcController* controller,
                               const ::maidsafe::CheckChunkRequest* request,
                               ::maidsafe::CheckChunkResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(4),
+  channel_->CallMethod(descriptor()->method(5),
                        controller, request, response, done);
 }
 void MaidsafeService_Stub::Get(::google::protobuf::RpcController* controller,
                               const ::maidsafe::GetRequest* request,
                               ::maidsafe::GetResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(5),
+  channel_->CallMethod(descriptor()->method(6),
                        controller, request, response, done);
 }
 void MaidsafeService_Stub::Update(::google::protobuf::RpcController* controller,
                               const ::maidsafe::UpdateRequest* request,
                               ::maidsafe::UpdateResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(6),
+  channel_->CallMethod(descriptor()->method(7),
                        controller, request, response, done);
 }
 void MaidsafeService_Stub::GetMessages(::google::protobuf::RpcController* controller,
                               const ::maidsafe::GetMessagesRequest* request,
                               ::maidsafe::GetMessagesResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(7),
+  channel_->CallMethod(descriptor()->method(8),
                        controller, request, response, done);
 }
 void MaidsafeService_Stub::Delete(::google::protobuf::RpcController* controller,
                               const ::maidsafe::DeleteRequest* request,
                               ::maidsafe::DeleteResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(8),
+  channel_->CallMethod(descriptor()->method(9),
                        controller, request, response, done);
 }
 void MaidsafeService_Stub::ValidityCheck(::google::protobuf::RpcController* controller,
                               const ::maidsafe::ValidityCheckRequest* request,
                               ::maidsafe::ValidityCheckResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(9),
+  channel_->CallMethod(descriptor()->method(10),
                        controller, request, response, done);
 }
 void MaidsafeService_Stub::SwapChunk(::google::protobuf::RpcController* controller,
                               const ::maidsafe::SwapChunkRequest* request,
                               ::maidsafe::SwapChunkResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(10),
+  channel_->CallMethod(descriptor()->method(11),
                        controller, request, response, done);
 }
 

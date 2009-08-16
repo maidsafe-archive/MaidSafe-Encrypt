@@ -47,12 +47,9 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       client_rpcs_(channel_manager_),
       pdclient_(),
       ss_(SessionSingleton::getInstance()),
-      co_(),
       client_chunkstore_(cstore),
-      store_thread_pool_(kMaxStoreThreads) {
-  co_.set_symm_algorithm(crypto::AES_256);
-  co_.set_hash_algorithm(crypto::SHA_512);
-}
+      store_thread_pool_(kMaxStoreThreads),
+      kKadStoreThreshold_(kad::K * kad::kMinSuccessfulPecentageStore) {}
 
 void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
   // If kad config file exists in dir we're in, use that, otherwise get default
@@ -379,31 +376,36 @@ void MaidsafeStoreManager::AddNormalStoreTask(const StoreTuple &store_tuple) {
 
 void MaidsafeStoreManager::SendChunk(StoreTuple store_tuple) {
 #ifdef DEBUG
-  printf("In MaidsafeStoreManager::SendChunk\n");
+//  printf("In MaidsafeStoreManager::SendChunk\n");
 #endif
-//  boost::this_thread::at_thread_exit(boost::bind(&ThreadPool::DeleteThread,
-//      &store_thread_pool_, boost::this_thread::get_id()));
   int duplicate_count = 0;
   float largest_rtt = -1;  // set to -1 so that first store is to furthest peer
   std::vector<kad::Contact> exclude;
-// TODO(Fraser#5#): 2009-08-10 - account for online status in while loop also
+  base::PDRoutingTableHandler rt_handler;
+// TODO(Fraser#5#): 2009-08-10 - Account for online status in while loop also
   while (duplicate_count < kMinChunkCopies) {
-    printf("dup count: %i\tmin copies: %i\n", duplicate_count, kMinChunkCopies);
     StorePrepRequest store_prep_request;
+    StorePrepResponse store_prep_response;
     StoreRequest store_request;
+    IOUDoneRequest iou_done_request;
     kad::Contact peer;
     bool local;
-    printf("largest: %f\t", largest_rtt);
     float ideal_rtt = largest_rtt * (1 - (duplicate_count/kMinChunkCopies));
-    printf("ideal: %f\n", ideal_rtt);
     if (GetStorePeer(ideal_rtt, exclude, &peer, &local) != 0)
       break;  // try another peer
     else
       exclude.push_back(peer);  // whether we succeed in storing or not, we'll
                                 // not be trying this peer again
+#ifdef DEBUG
+//    std::string hex_name, hex_id;
+//    base::encode_to_hex(store_tuple.get<0>(), &hex_name);
+//    base::encode_to_hex(peer.node_id(), &hex_id);
+//    printf("Chunkname: %s... Peer PMID: %s... Dup count: %i  Exclude "
+//           "peer size: %i\n\n\n", hex_name.substr(0,10).c_str(),
+//           hex_id.substr(0,10).c_str(), duplicate_count, exclude.size());
+#endif
     if (duplicate_count == 0) {  // set largest_rtt from first peer
-// TODO(Fraser#5#): 2009-08-10 - Uncomment following lines
-//      base::PDRoutingTableHandler rt_handler;
+// TODO(Fraser#5#): 2009-08-14 - Uncomment lines below
 //      base::PDRoutingTableTuple peer_details;
 //      if (rt_handler.GetTupleInfo(peer.node_id(), &peer_details) != 0)
 //        break;
@@ -411,33 +413,47 @@ void MaidsafeStoreManager::SendChunk(StoreTuple store_tuple) {
       largest_rtt = 1.0f;
     }
     if (GetStoreRequests(store_tuple, peer.node_id(), &store_prep_request,
-        &store_request) != 0)
+        &store_request, &iou_done_request) != 0)
       return;
-    if (SendPrep(peer, local, &store_prep_request) != 0)
+    if (SendPrep(peer, local, &store_prep_request, &store_prep_response) != 0)
       break;  // try another peer
     int failed_attempt_count = 0;
     while (failed_attempt_count < kMaxChunkStoreTries) {
       if (SendContent(peer, local, &store_request) == 0) {
-        printf("In MSM::SendChunk - success storing.\n");
         break;  // succeeded in storing to this peer
       } else {
         ++failed_attempt_count;
-        printf("In MSM::SendChunk - failed storing.\n");
       }
     }
-    printf("Fails: %i\tMax Tries: %i\n", failed_attempt_count,
-           kMaxChunkStoreTries);
-    if (failed_attempt_count < kMaxChunkStoreTries)
+    if (failed_attempt_count >= kMaxChunkStoreTries) {
+      if (!duplicate_count)  // if this is failed 1st copy, reset largest rtt
+        largest_rtt = -1;
+      continue;
+    }
+// TODO(Fraser#5#): 2009-08-13 - Do we want to get the ref holders again if the
+//                               previous store was relatively fast?
+    if (StoreIOUs(store_prep_request.chunkname(),
+        store_prep_request.data_size(), store_prep_response) != 0) {
+      if (!duplicate_count)  // if this is failed 1st copy, reset largest rtt
+        largest_rtt = -1;
+      continue;
+    }
+    if (SendIOUDone(peer, local, &iou_done_request) == 0) {
       ++duplicate_count;
-    if (!duplicate_count)  // if this is failed 1st duplicate, reset largest rtt
-      largest_rtt = -1;
+    } else {
+      if (!duplicate_count)  // if this is failed 1st copy, reset largest rtt
+        largest_rtt = -1;
+    }
   }
+// TODO(Fraser#5#): 2009-08-14 - Check later that there are enough vaults
+// listed in ref packet to ensure upload ultimately successful.
 }
 
 int MaidsafeStoreManager::GetStoreRequests(const StoreTuple &store_tuple,
                                            const std::string &recipient_id,
                                            StorePrepRequest *store_prep_request,
-                                           StoreRequest *store_request) {
+                                           StoreRequest *store_request,
+                                           IOUDoneRequest *iou_done_request) {
   std::string chunk_name = store_tuple.get<0>();
   DirType dir_type = store_tuple.get<1>();
   ValueType data_type = DATA;
@@ -474,19 +490,25 @@ int MaidsafeStoreManager::GetStoreRequests(const StoreTuple &store_tuple,
   if (public_key == "" || signed_public_key == "" || signed_request == "")
     return -3;
   std::string pmid = ss_->Id(PMID);
+  std::string non_hex_pmid;
+  base::decode_from_hex(pmid, &non_hex_pmid);
   store_prep_request->set_chunkname(chunk_name);
   store_prep_request->set_data_size(chunk_size);
-  store_prep_request->set_pmid(pmid);
+  store_prep_request->set_pmid(non_hex_pmid);
   store_prep_request->set_public_key(public_key);
   store_prep_request->set_signed_public_key(signed_public_key);
   store_prep_request->set_signed_request(signed_request);
   store_request->set_chunkname(chunk_name);
   store_request->set_data(chunk_content);
-  store_request->set_pmid(pmid);
+  store_request->set_pmid(non_hex_pmid);
   store_request->set_public_key(public_key);
   store_request->set_signed_public_key(signed_public_key);
   store_request->set_signed_request(signed_request);
   store_request->set_data_type(data_type);
+  iou_done_request->set_chunkname(chunk_name);
+  iou_done_request->set_public_key(public_key);
+  iou_done_request->set_signed_public_key(signed_public_key);
+  iou_done_request->set_signed_request(signed_request);
   return 0;
 }
 
@@ -498,6 +520,9 @@ void MaidsafeStoreManager::GetSignedPubKeyAndRequest(
     std::string *pubkey,
     std::string *signed_pubkey,
     std::string *signed_request) {
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
   switch (dir_type) {
     case PRIVATE_SHARE: {
 #ifdef DEBUG
@@ -510,8 +535,8 @@ void MaidsafeStoreManager::GetSignedPubKeyAndRequest(
         *signed_request = "";
         return;
       }
-      *signed_pubkey = co_.AsymSign(*pubkey, "", prikey, crypto::STRING_STRING);
-      *signed_request = co_.AsymSign(co_.Hash(
+      *signed_pubkey = co.AsymSign(*pubkey, "", prikey, crypto::STRING_STRING);
+      *signed_request = co.AsymSign(co.Hash(
           *signed_pubkey + non_hex_name + recipient_id, "",
           crypto::STRING_STRING, false), "", prikey, crypto::STRING_STRING);
       }
@@ -521,9 +546,8 @@ void MaidsafeStoreManager::GetSignedPubKeyAndRequest(
 //      printf("Getting signed request for PUBLIC_SHARE.\n\n");
 #endif
       *pubkey = ss_->PublicKey(MPID);
-      *signed_pubkey = co_.AsymSign(*pubkey, "", ss_->PrivateKey(MPID),
-          crypto::STRING_STRING);
-      *signed_request = co_.AsymSign(co_.Hash(
+      *signed_pubkey = ss_->SignedPublicKey(MPID);
+      *signed_request = co.AsymSign(co.Hash(
           *signed_pubkey + non_hex_name + recipient_id, "",
           crypto::STRING_STRING, false), "", ss_->PrivateKey(MPID),
           crypto::STRING_STRING);
@@ -541,9 +565,8 @@ void MaidsafeStoreManager::GetSignedPubKeyAndRequest(
 //      printf("Getting signed request for default.\n\n");
 #endif
       *pubkey = ss_->PublicKey(PMID);
-      *signed_pubkey = co_.AsymSign(*pubkey, "", ss_->PrivateKey(PMID),
-          crypto::STRING_STRING);
-      *signed_request = co_.AsymSign(co_.Hash(
+      *signed_pubkey = ss_->SignedPublicKey(PMID);
+      *signed_request = co.AsymSign(co.Hash(
           *signed_pubkey + non_hex_name + recipient_id, "",
           crypto::STRING_STRING, false), "", ss_->PrivateKey(PMID),
           crypto::STRING_STRING);
@@ -555,7 +578,7 @@ int MaidsafeStoreManager::GetStorePeer(const float &,
                                        const std::vector<kad::Contact> &exclude,
                                        kad::Contact *new_peer,
                                        bool *local) {
-// TODO(Fraser#5#): 2009-08-08 - complete this so that rtt & rank is considered.
+// TODO(Fraser#5#): 2009-08-08 - Complete this so that rtt & rank is considered.
   std::vector<kad::Contact> result;
   knode_->GetRandomContacts(1, exclude, &result);
   if (result.size() == static_cast<unsigned int>(0))
@@ -569,9 +592,8 @@ int MaidsafeStoreManager::GetStorePeer(const float &,
 
 int MaidsafeStoreManager::SendPrep(const kad::Contact &peer,
                                    bool local,
-                                   StorePrepRequest *store_prep_request) {
-  const boost::shared_ptr<StorePrepResponse>
-      store_prep_response(new StorePrepResponse());
+                                   StorePrepRequest *store_prep_request,
+                                   StorePrepResponse *store_prep_response) {
   bool store_prep_response_returned(false);
   boost::mutex mutex;
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
@@ -579,8 +601,8 @@ int MaidsafeStoreManager::SendPrep(const kad::Contact &peer,
       &mutex);
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   client_rpcs_.StorePrep(peer, local, store_prep_request,
-      store_prep_response.get(), controller, callback);
-// TODO(Fraser#5#): 2009-08-12 - make timeout a maidsafe constant
+      store_prep_response, controller, callback);
+// TODO(Fraser#5#): 2009-08-12 - Make timeout a maidsafe constant
   int count(0), timeout(10000);
   while (count < timeout) {
     {
@@ -598,7 +620,7 @@ int MaidsafeStoreManager::SendPrep(const kad::Contact &peer,
 void MaidsafeStoreManager::SendPrepCallback(bool *send_prep_returned,
                                             boost::mutex *mutex) {
 #ifdef DEBUG
-  printf("In MaidsafeStoreManager::SendPrepCallback.\n");
+//  printf("In MaidsafeStoreManager::SendPrepCallback.\n");
 #endif
   boost::mutex::scoped_lock lock(*mutex);
   *send_prep_returned = true;
@@ -637,7 +659,7 @@ int MaidsafeStoreManager::SendContent(const kad::Contact &peer,
     return -1;
   }
 #ifdef DEBUG
-  printf("In MSM::SendContent, succeeded.\n");
+//  printf("In MSM::SendContent, succeeded.\n");
 #endif
   // Move chunk from Outgoing to Normal.  If this operation fails, still return
   // 0 as this is non-critical.
@@ -656,9 +678,206 @@ int MaidsafeStoreManager::SendContent(const kad::Contact &peer,
 void MaidsafeStoreManager::SendContentCallback(bool *send_content_returned,
                                                boost::mutex *mutex) {
 #ifdef DEBUG
-  printf("In MaidsafeStoreManager::SendContentCallback.\n");
+//  printf("In MaidsafeStoreManager::SendContentCallback.\n");
 #endif
   boost::mutex::scoped_lock lock(*mutex);
   *send_content_returned = true;
 }
+
+int MaidsafeStoreManager::StoreIOUs(
+    const std::string &non_hex_chunk_name,
+    const boost::uint64_t &chunk_size,
+    const StorePrepResponse &store_prep_response) {
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  // Make up the IOU
+  IOU iou;
+  iou.set_serialised_iou_authority(store_prep_response.iou_authority());
+  iou.set_signed_iou_authority(store_prep_response.signed_iou_authority());
+  iou.set_signature(co.AsymSign(iou.signed_iou_authority(), "",
+                                ss_->PrivateKey(PMID), crypto::STRING_STRING));
+  std::string serialised_iou;
+  if (!iou.SerializeToString(&serialised_iou))
+    return -1;
+  // Find the chunk reference holders
+  std::vector<kad::Contact> ref_holders;
+  if (FindKNodes(non_hex_chunk_name, &ref_holders) != 0) {
+    return -1;
+  }
+  std::string own_pmid = ss_->Id(PMID);
+  std::string own_non_hex_pmid;
+  base::decode_from_hex(own_pmid, &own_non_hex_pmid);
+  StoreIOURequest store_iou_request;
+  store_iou_request.set_chunkname(non_hex_chunk_name);
+  store_iou_request.set_data_size(chunk_size);
+  store_iou_request.set_collector_pmid(store_prep_response.pmid_id());
+  store_iou_request.set_iou(serialised_iou);
+  store_iou_request.set_own_pmid(own_non_hex_pmid);
+  int successful_count(0);
+  std::vector<StoreIouResultHolder> results;
+  for (boost::uint16_t i = 0; i < ref_holders.size(); ++i) {
+    StoreIouResultHolder store_iou_result_holder;
+    results.push_back(store_iou_result_holder);
+  }
+  boost::mutex store_iou_mutex;
+  // Send out the store IOU RPCs
+  std::set<std::string> ref_holder_ids;
+  for (boost::uint16_t i = 0; i < ref_holders.size(); ++i) {
+    SendIouToRefHolder(ref_holders.at(i), store_iou_request, &store_iou_mutex,
+                       &results.at(i));
+    ref_holder_ids.insert(ref_holders.at(i).node_id());
+  }
+  // Once we've got enough successful replies, cancel the remaining store IOU
+  // RPCs (they should still succeed, we just won't handle the reply)
+  while (successful_count < kKadStoreThreshold_) {
+    for (boost::uint16_t i = 0; i < results.size(); ++i) {
+      boost::mutex::scoped_lock loch(store_iou_mutex);
+      if (results.at(i).store_iou_response_returned_) {
+        int n = HandleStoreIOUResponse(results.at(i), &ref_holder_ids);
+        if (n == 0)
+          ++successful_count;
+        results.at(i).store_iou_response_returned_ = false;
+        break;
+      }
+    }
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  }
+  if (successful_count < kKadStoreThreshold_)
+    return -1;  // We've not received enough successful responses
+  for (boost::uint16_t j = 0; j < results.size(); ++j)
+    channel_manager_->DeletePendingRequest(results.at(j).rpc_id_);
+  return 0;
+}
+
+int MaidsafeStoreManager::FindKNodes(const std::string &kad_key,
+                                     std::vector<kad::Contact> *contacts) {
+  CallbackObj kad_cb_obj;
+  knode_->FindCloseNodes(kad_key, boost::bind(&CallbackObj::CallbackFunc,
+      &kad_cb_obj, _1));
+// TODO(Fraser#5#): 2009-08-12 - Make timeout a maidsafe constant
+  kad_cb_obj.WaitForCallback(30000);
+  if (kad_cb_obj.result() == "") {
+#ifdef DEBUG
+    printf("In MaidsafeStoreManager::FindKNodes, fail - timeout.\n");
+#endif
+    return -1;
+  }
+  kad::FindResponse find_response;
+  if (!find_response.ParseFromString(kad_cb_obj.result())) {
+#ifdef DEBUG
+    printf("In MaidsafeStoreManager::FindKNodes, can't parse result.\n");
+#endif
+    return -2;
+  }
+  if (find_response.result() != kad::kRpcResultSuccess) {
+#ifdef DEBUG
+    printf("In MaidsafeStoreManager::FindKNodes, Kademlia operation failed.\n");
+#endif
+    return -3;
+  }
+  for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
+    kad::Contact contact;
+    contact.ParseFromString(find_response.closest_nodes(i));
+    contacts->push_back(contact);
+  }
+#ifdef DEBUG
+//  printf("In MaidsafeStoreManager::FindKNodes, succeeded.\n");
+#endif
+  return 0;
+}
+
+int MaidsafeStoreManager::SendIouToRefHolder(
+    const kad::Contact &ref_holder,
+    StoreIOURequest store_iou_request,
+    boost::mutex *store_iou_mutex,
+    StoreIouResultHolder *store_iou_result_holder) {
+  std::string public_key(""), signed_public_key(""), signed_request("");
+  GetSignedPubKeyAndRequest(store_iou_request.chunkname(), PRIVATE, "",
+      ref_holder.node_id(), &public_key, &signed_public_key,
+      &signed_request);
+  store_iou_request.set_public_key(public_key);
+  store_iou_request.set_signed_public_key(signed_public_key);
+  store_iou_request.set_signed_request(signed_request);
+  bool local = (knode_->CheckContactLocalAddress(ref_holder.node_id(),
+      ref_holder.local_ip(), ref_holder.local_port(), ref_holder.host_ip())
+      == kad::LOCAL);
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &MaidsafeStoreManager::SendIouToRefHolderCallback,
+      &store_iou_result_holder->store_iou_response_returned_, store_iou_mutex);
+  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  client_rpcs_.StoreIOU(ref_holder, local, &store_iou_request,
+      &store_iou_result_holder->store_iou_response_, controller, callback);
+  store_iou_result_holder->rpc_id_ = controller->req_id();
+  return 0;
+}
+
+void MaidsafeStoreManager::SendIouToRefHolderCallback(
+    bool *store_iou_response_returned,
+    boost::mutex *store_iou_mutex) {
+#ifdef DEBUG
+//  printf("In MaidsafeStoreManager::SendIouToRefHolderCallback.\n");
+#endif
+  boost::mutex::scoped_lock loch(*store_iou_mutex);
+  *store_iou_response_returned = true;
+}
+
+int MaidsafeStoreManager::HandleStoreIOUResponse(
+    const StoreIouResultHolder &store_iou_result_holder,
+    std::set<std::string> *ref_holder_ids) {
+  maidsafe::StoreIOUResponse sir =
+      store_iou_result_holder.store_iou_response_;
+  if (sir.result() == kNack) {
+#ifdef DEBUG
+    printf("In MSM, response from rpc id %d came back failed (%d).\n",
+           store_iou_result_holder.rpc_id_, knode_->host_port());
+#endif
+    return -1;
+  }
+  if (ref_holder_ids->find(sir.pmid_id()) == ref_holder_ids->end()) {
+#ifdef DEBUG
+    printf("In MSM, response on rpc id %d has fake identity (%d).\n",
+           store_iou_result_holder.rpc_id_, knode_->host_port());
+#endif
+    return -1;
+  }
+  return 0;
+}
+
+int MaidsafeStoreManager::SendIOUDone(const kad::Contact &peer,
+                                      bool local,
+                                      IOUDoneRequest *iou_done_request) {
+  IOUDoneResponse iou_done_response;
+  bool iou_done_returned(false);
+  boost::mutex mutex;
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &MaidsafeStoreManager::IOUDoneCallback, &iou_done_returned,
+      &mutex);
+  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  client_rpcs_.IOUDone(peer, local, iou_done_request, &iou_done_response,
+      controller, callback);
+// TODO(Fraser#5#): 2009-08-12 - Make timeout a maidsafe constant
+  int count(0), timeout(120000);
+  while (count < timeout) {
+    {
+      boost::mutex::scoped_lock lock(mutex);
+      if (iou_done_returned)
+        break;
+    }
+    count += 10;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  }
+  return (iou_done_response.pmid_id() == peer.node_id() &&
+          iou_done_response.result() == kAck) ? 0 : -1;
+}
+
+void MaidsafeStoreManager::IOUDoneCallback(bool *iou_done_returned,
+                                           boost::mutex *mutex) {
+#ifdef DEBUG
+//  printf("In MaidsafeStoreManager::IOUDoneCallback.\n");
+#endif
+  boost::mutex::scoped_lock lock(*mutex);
+  *iou_done_returned = true;
+}
+
 }  // namespace maidsafe

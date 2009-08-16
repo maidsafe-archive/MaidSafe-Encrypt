@@ -78,11 +78,9 @@ struct StoreRefResultHolder {
   StoreRefResultHolder()
       : store_ref_response_(),
         store_ref_response_returned_(false),
-        mutex_(new boost::mutex()),
         rpc_id_(0) {}
   maidsafe::StoreReferenceResponse store_ref_response_;
   bool store_ref_response_returned_;
-  boost::shared_ptr<boost::mutex> mutex_;
   boost::uint32_t rpc_id_;
 };
 
@@ -213,7 +211,7 @@ class PDVault {
   void CleanUp();
   VaultStatus vault_status();
   void SetVaultStatus(const VaultStatus &vault_status);
-  std::string node_id() const;
+  std::string hex_node_id() const;
   std::string host_ip() const { return knode_.host_ip(); }
   boost::uint16_t host_port() const { return knode_.host_port(); }
   std::string local_host_ip() const { return knode_.local_host_ip(); }
@@ -271,9 +269,10 @@ class PDVault {
   int SendToRefPacket(
       const kad::Contact &ref_holder,
       const IouReadyTuple &iou_ready_details,
+      boost::mutex *store_ref_mutex,
       StoreRefResultHolder *store_ref_result_holder);
   void SendToRefPacketCallback(bool *store_ref_response_returned,
-                               boost::mutex *mutex);
+                               boost::mutex *store_ref_mutex);
   int HandleStoreRefResponse(const IouReadyTuple &iou_ready_details,
       const StoreRefResultHolder &store_ref_result_holder,
       bool *got_valid_iou);

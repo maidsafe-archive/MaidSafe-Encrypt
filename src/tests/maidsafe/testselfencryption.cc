@@ -368,9 +368,9 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
   chunk_size_total = 0;
   ASSERT_TRUE(se.CalculateChunkSizes(path5, &dm));
   ASSERT_EQ(dm.chunk_size_size(), 3);
-  ASSERT_EQ(static_cast<unsigned int>(1), dm.chunk_size(0));
-  ASSERT_EQ(static_cast<unsigned int>(1), dm.chunk_size(1));
-  ASSERT_EQ(static_cast<unsigned int>(2), dm.chunk_size(2));
+  ASSERT_EQ(size_t(1), dm.chunk_size(0));
+  ASSERT_EQ(size_t(1), dm.chunk_size(1));
+  ASSERT_EQ(size_t(2), dm.chunk_size(2));
   dm.Clear();
 
   //  set file hash so that each chunk size is reduced

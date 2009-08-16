@@ -186,7 +186,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetKeyRing) {
 
   std::list<maidsafe::KeyAtlasRow> keyring;
   key_ring_.GetKeyRing(&keyring);
-  ASSERT_EQ(static_cast<unsigned int>(7), keyring.size())
+  ASSERT_EQ(size_t(7), keyring.size())
             << "Keyring list size is not equal to the number of IDs.";
   ASSERT_EQ(key_ring_.KeyRingSize(), keyring.size())
             << "Keyring list size is not equal to the number of IDs.";
