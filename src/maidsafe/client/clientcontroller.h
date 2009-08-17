@@ -33,6 +33,7 @@
 #include <string>
 #include <vector>
 
+#include "boost/threadpool.hpp"  // NB - This is NOT an accepted boost lib.
 #include "fs/filesystem.h"
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/client/clientbufferpackethandler.h"
@@ -92,10 +93,6 @@ class ClientController {
   // Messages
   bool GetMessages();
   int HandleMessages(std::list<std::string> *msgs);
-  inline bool BufferPacketMessages() { return bp_messages_; }
-  inline void SetBufferPacketMessages(bool bp_messages) {
-    bp_messages_ = bp_messages;
-  }
   int HandleReceivedShare(const packethandler::PrivateShareNotification &psn,
                           const std::string &name);
   int HandleDeleteContactNotification(const std::string &sender);
@@ -107,7 +104,8 @@ class ClientController {
     const std::string &sender);
   int GetInstantMessages(std::list<packethandler::InstantMessage> *messages);
   int SendInstantMessage(const std::string &message,
-                         const std::vector<std::string> &contact_names);
+                         const std::vector<std::string> &contact_names,
+                         bool test = false);
   int SendInstantFile(std::string *filename, const std::string &msg,
                       const std::vector<std::string> &contact_names);
   int AddInstantFile(const packethandler::InstantFileNotification &ifm,
@@ -193,6 +191,7 @@ class ClientController {
   int RemoveDb(const std::string &path_);
   DirType GetDirType(const std::string &path_);
   int PathDistinction(const std::string &path, std::string *msid);
+  bool ClearStaleMessages();
 
   // Variables
   Authentication *auth_;
@@ -207,8 +206,15 @@ class ClientController {
   static ClientController *single;
   boost::recursive_mutex mutex_;
   std::list<packethandler::InstantMessage> messages_;
-  bool bp_messages_;
   file_system::FileSystem fsys_;
+  std::map<std::string, boost::uint32_t> received_messages_;
+  boost::mutex rec_msg_mutex_;
+  boost::threadpool::thread_pool<
+      boost::threadpool::task_func,
+      boost::threadpool::fifo_scheduler,
+      boost::threadpool::static_size,
+      boost::threadpool::resize_controller,
+      boost::threadpool::immediately> thread_pool_;
 };
 
 }  // namespace maidsafe

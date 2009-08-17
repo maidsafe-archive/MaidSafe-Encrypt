@@ -28,6 +28,10 @@
  */
 #include "fs/l_fuse/fslinux.h"
 
+#include <boost/filesystem/convenience.hpp>
+#include <boost/bind.hpp>
+#include <boost/filesystem/path.hpp>
+
 #include <unistd.h>
 #include <errno.h>
 #include <dirent.h>
@@ -39,10 +43,6 @@
 #include <pwd.h>
 #include <string>
 #include <cstdlib>
-
-#include "boost/filesystem/convenience.hpp"
-#include "boost/bind.hpp"
-#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/client/clientcontroller.h"
 #include "protobuf/datamaps.pb.h"

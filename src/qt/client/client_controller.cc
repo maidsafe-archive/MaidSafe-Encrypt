@@ -284,7 +284,7 @@ bool ClientController::sendInstantMessage(const QString& txt,
     contacts.push_back(c.toStdString());
   }
   const int n = maidsafe::ClientController::getInstance()->
-                SendInstantMessage(txt.toStdString(), contacts);
+                SendInstantMessage(txt.toStdString(), contacts, true);
 
   qDebug() << "ClientController::sendInstantMessage res: " << n;
   return (n == 0);

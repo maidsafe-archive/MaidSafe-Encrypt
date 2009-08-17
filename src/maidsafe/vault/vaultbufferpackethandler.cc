@@ -23,13 +23,9 @@ VaultBufferPacketHandler::VaultBufferPacketHandler() : crypto_obj_() {
   crypto_obj_.set_symm_algorithm(crypto::AES_256);
 }
 
-//  bool VaultBufferPacketHandler::OnlineStatus() {
-//    return false;
-//  }
-
-bool VaultBufferPacketHandler::CheckMsgStructure(
-    const std::string &ser_message,
-    std::string &sender_id, MessageType &type) {
+bool VaultBufferPacketHandler::CheckMsgStructure(const std::string &ser_message,
+                                                 std::string &sender_id,
+                                                 MessageType &type) {
   GenericPacket message;
 
   if (!message.ParseFromString(ser_message))
@@ -45,7 +41,7 @@ bool VaultBufferPacketHandler::CheckMsgStructure(
 }
 
 bool VaultBufferPacketHandler::IsOwner(std::string owner_id,
-  GenericPacket gp_info) {
+                                       GenericPacket gp_info) {
   BufferPacketInfo bpi;
   if (!bpi.ParseFromString(gp_info.data()))
     return false;
@@ -55,7 +51,7 @@ bool VaultBufferPacketHandler::IsOwner(std::string owner_id,
 }
 
 bool VaultBufferPacketHandler::ValidateOwnerSignature(std::string public_key,
-  std::string ser_bufferpacket) {
+    std::string ser_bufferpacket) {
   BufferPacket bp;
   if (!bp.ParseFromString(ser_bufferpacket))
     return false;
@@ -64,28 +60,21 @@ bool VaultBufferPacketHandler::ValidateOwnerSignature(std::string public_key,
 }
 
 bool VaultBufferPacketHandler::GetMessages(const std::string &ser_bp,
-  std::vector<std::string> *msgs) {
+                                           std::vector<std::string> *msgs) {
   BufferPacket bp;
   if (!bp.ParseFromString(ser_bp))
     return false;
   GenericPacket gp;
   BufferPacketMessage bpm;
-  ValidatedBufferPacketMessage msg;
   for (int i = 0; i < bp.messages_size(); i++) {
     gp = bp.messages(i);
     if (bpm.ParseFromString(gp.data())) {
-      msg.clear_index();
-      msg.clear_message();
-      msg.clear_sender();
-      msg.clear_type();
-
+      ValidatedBufferPacketMessage msg;
       msg.set_index(bpm.rsaenc_key());
       msg.set_message(bpm.aesenc_message());
       msg.set_sender(bpm.sender_id());
-
-      // printf("Message: %s\n", msg.message);
-      // printf("Sender: %s\n", msg.sender);
       msg.set_type(bpm.type());
+      msg.set_timestamp(bpm.timestamp());
       std::string ser_msg;
       msg.SerializeToString(&ser_msg);
       msgs->push_back(ser_msg);
@@ -97,7 +86,9 @@ bool VaultBufferPacketHandler::GetMessages(const std::string &ser_bp,
 bool VaultBufferPacketHandler::ClearMessages(std::string *ser_bufferpacket) {
   BufferPacket bp;
   if (!bp.ParseFromString(*ser_bufferpacket)) {
-    printf("No parsea como bufferpacket");
+#ifdef DEBUG
+    printf("Doesn't parse as a bufferpacket.\n");
+#endif
     return false;
   }
   bp.clear_messages();
@@ -106,7 +97,8 @@ bool VaultBufferPacketHandler::ClearMessages(std::string *ser_bufferpacket) {
 }
 
 bool VaultBufferPacketHandler::ChangeOwnerInfo(std::string ser_gp,
-  std::string *ser_packet, std::string public_key) {
+                                               std::string *ser_packet,
+                                               std::string public_key) {
   if (!ValidateOwnerSignature(public_key, *ser_packet))
     return false;
   BufferPacket bp;
@@ -125,12 +117,13 @@ bool VaultBufferPacketHandler::ChangeOwnerInfo(std::string ser_gp,
 }
 
 bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
-    const std::string &ser_message, const std::string &signed_public_key,
-    int *status) {
+                                           const std::string &ser_message,
+                                           const std::string &signed_public_key,
+                                           int *status) {
   GenericPacket message;
   if (!message.ParseFromString(ser_message)) {
 #ifdef DEBUG
-    printf("invalid msg\n");
+    printf("Invalid msg.\n");
 #endif
     return false;
   }
@@ -138,7 +131,7 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
   BufferPacket bufferpacket;
   if (!bufferpacket.ParseFromString(current_bp)) {
 #ifdef DEBUG
-    printf("invalid bufferpacket\n");
+    printf("Invalid bufferpacket.\n");
 #endif
     return false;
   }
@@ -147,14 +140,14 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
   BufferPacketMessage bpm;
   if (!bpm.ParseFromString(message.data())) {
 #ifdef DEBUG
-    printf("invalid bpmessage\n");
+    printf("Invalid bpmessage.\n");
 #endif
     return false;
   }
 
   if (bpm.type() != STATUS_CHECK) {
 #ifdef DEBUG
-    printf("invalid message type\n");
+    printf("Invalid message type.\n");
 #endif
     return false;
   }
@@ -163,7 +156,7 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
   if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key,
       public_key, crypto::STRING_STRING)) {
 #ifdef DEBUG
-    printf("invalid public key signature\n");
+    printf("Invalid public key signature.\n");
 #endif
     return false;
   }
@@ -171,7 +164,7 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
   if (!crypto_obj_.AsymCheckSig(message.data(), message.signature(),
       public_key, crypto::STRING_STRING)) {
 #ifdef DEBUG
-    printf("invalid message signature\n");
+    printf("Invalid message signature.\n");
 #endif
     return false;
   }
@@ -180,7 +173,7 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
   bpi.ParseFromString(bufferpacket.owner_info(0).data());
   if (!bpi.has_online()) {
 #ifdef DEBUG
-    printf("NO STATUS\n");
+    printf("NO STATUS.\n");
 #endif
   }
 
@@ -194,7 +187,7 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
     }
   if (!flag) {
 #ifdef DEBUG
-    printf("unauthorised user\n");
+    printf("Unauthorised user.\n");
 #endif
     return false;
   }
@@ -204,24 +197,31 @@ bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
 }
 
 bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
-    const std::string &ser_message, const std::string &signed_public_key,
-    std::string *updated_bp) {
+                                          const std::string &ser_message,
+                                          const std::string &signed_public_key,
+                                          std::string *updated_bp) {
   GenericPacket message;
   if (!message.ParseFromString(ser_message)) {
-    printf("invalid msg\n");
+#ifdef DEBUG
+    printf("Invalid msg.\n");
+#endif
     return false;
   }
 
   BufferPacket bufferpacket;
   if (!bufferpacket.ParseFromString(current_bp)) {
-    printf("invalid bufferpacket\n");
+#ifdef DEBUG
+    printf("Invalid bufferpacket.\n");
+#endif
     return false;
   }
 
   // getting message from signed data sent
   BufferPacketMessage bpm;
   if (!bpm.ParseFromString(message.data())) {
-    printf("invalid bpmessage\n");
+#ifdef DEBUG
+    printf("Invalid bpmessage.\n");
+#endif
     return false;
   }
 
@@ -234,7 +234,9 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
     std::string id = crypto_obj_.Hash(public_key+signed_public_key, "",
       crypto::STRING_STRING, true);
     if (id != bpm.sender_id()) {
-      printf("invalid sender_id\n");
+#ifdef DEBUG
+      printf("Invalid sender_id.\n");
+#endif
       return false;
     }
   } else {
@@ -243,7 +245,9 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
 
   if (!crypto_obj_.AsymCheckSig(message.data(), message.signature(),
     public_key, crypto::STRING_STRING)) {
+#ifdef DEBUG
     printf("invalid message signature\n");
+#endif
     return false;
   }
 
@@ -259,10 +263,14 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
         flag = true;
         break;
       }
+#ifdef DEBUG
       printf("VaultBufferPacketHandler::AddMessage %d\n", i);
+#endif
     }
     if (!flag) {
+#ifdef DEBUG
       printf("unauthorised user %s\n", bpm.sender_id().c_str());
+#endif
       return false;
     }
   }

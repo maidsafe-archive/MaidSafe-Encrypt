@@ -93,12 +93,13 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(BufferPacketInfo));
   BufferPacketMessage_descriptor_ = file->message_type(2);
-  static const int BufferPacketMessage_offsets_[5] = {
+  static const int BufferPacketMessage_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketMessage, sender_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketMessage, sender_public_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketMessage, rsaenc_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketMessage, aesenc_message_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketMessage, type_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketMessage, timestamp_),
   };
   BufferPacketMessage_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -128,11 +129,12 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(BufferPacket));
   ValidatedBufferPacketMessage_descriptor_ = file->message_type(4);
-  static const int ValidatedBufferPacketMessage_offsets_[4] = {
+  static const int ValidatedBufferPacketMessage_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ValidatedBufferPacketMessage, sender_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ValidatedBufferPacketMessage, message_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ValidatedBufferPacketMessage, index_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ValidatedBufferPacketMessage, type_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ValidatedBufferPacketMessage, timestamp_),
   };
   ValidatedBufferPacketMessage_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -354,41 +356,42 @@ void protobuf_AddDesc_packet_2eproto() {
     "Packet\022\014\n\004data\030\001 \002(\014\022\021\n\tsignature\030\002 \002(\014\""
     "X\n\020BufferPacketInfo\022\r\n\005owner\030\001 \002(\014\022\026\n\016ow"
     "nerPublicKey\030\002 \002(\014\022\r\n\005users\030\003 \003(\014\022\016\n\006onl"
-    "ine\030\004 \001(\005\"\231\001\n\023BufferPacketMessage\022\021\n\tsen"
+    "ine\030\004 \001(\005\"\254\001\n\023BufferPacketMessage\022\021\n\tsen"
     "der_id\030\001 \002(\014\022\031\n\021sender_public_key\030\002 \001(\014\022"
     "\022\n\nRSAenc_key\030\003 \002(\014\022\026\n\016AESenc_message\030\004 "
     "\002(\014\022(\n\004type\030\005 \002(\0162\032.packethandler.Messag"
-    "eType\"p\n\014BufferPacket\0220\n\nowner_info\030\001 \003("
-    "\0132\034.packethandler.GenericPacket\022.\n\010messa"
-    "ges\030\002 \003(\0132\034.packethandler.GenericPacket\""
-    "x\n\034ValidatedBufferPacketMessage\022\016\n\006sende"
-    "r\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\r\n\005index\030\003 \002(\014\022"
-    "(\n\004type\030\004 \002(\0162\032.packethandler.MessageTyp"
-    "e\"\205\001\n\013ContactInfo\022\014\n\004name\030\001 \001(\014\022\020\n\010birth"
-    "day\030\002 \001(\014\022\025\n\roffice_number\030\003 \001(\014\022\016\n\006gend"
-    "er\030\004 \001(\014\022\017\n\007country\030\005 \001(\005\022\014\n\004city\030\006 \001(\014\022"
-    "\020\n\010language\030\007 \001(\005\"R\n\023ContactNotification"
-    "\022\016\n\006action\030\001 \002(\005\022+\n\007contact\030\002 \001(\0132\032.pack"
-    "ethandler.ContactInfo\"L\n\027InstantFileNoti"
-    "fication\022\017\n\007ser_mdm\030\001 \002(\014\022\016\n\006ser_dm\030\002 \002("
-    "\014\022\020\n\010filename\030\003 \002(\014\"\226\001\n\030PrivateShareNoti"
-    "fication\022\014\n\004name\030\001 \002(\014\022\014\n\004msid\030\002 \002(\014\022\022\n\n"
-    "public_key\030\003 \002(\014\022\023\n\013private_key\030\004 \001(\014\022\016\n"
-    "\006admins\030\005 \003(\014\022\021\n\treadonlys\030\006 \003(\014\022\022\n\ndir_"
-    "db_key\030\007 \002(\014\"\227\002\n\016InstantMessage\022\016\n\006sende"
-    "r\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\014\n\004date\030\003 \002(\005\022@"
-    "\n\024contact_notification\030\004 \001(\0132\".packethan"
-    "dler.ContactNotification\022H\n\030instantfile_"
-    "notification\030\005 \001(\0132&.packethandler.Insta"
-    "ntFileNotification\022J\n\031privateshare_notif"
-    "ication\030\006 \001(\0132\'.packethandler.PrivateSha"
-    "reNotification\"J\n\023StoreMessagesResult\022\016\n"
-    "\006result\030\001 \002(\r\022\023\n\013stored_msgs\030\002 \002(\005\022\016\n\006fa"
-    "iled\030\003 \003(\014\"Y\n\020CreateMSIDResult\022\016\n\006result"
-    "\030\001 \002(\r\022\014\n\004name\030\002 \001(\014\022\023\n\013private_key\030\003 \001("
-    "\014\022\022\n\npublic_key\030\004 \001(\014*F\n\013MessageType\022\024\n\020"
-    "ADD_CONTACT_RQST\020\001\022\017\n\013INSTANT_MSG\020\002\022\020\n\014S"
-    "TATUS_CHECK\020\003", 1533);
+    "eType\022\021\n\ttimestamp\030\006 \001(\r\"p\n\014BufferPacket"
+    "\0220\n\nowner_info\030\001 \003(\0132\034.packethandler.Gen"
+    "ericPacket\022.\n\010messages\030\002 \003(\0132\034.packethan"
+    "dler.GenericPacket\"\213\001\n\034ValidatedBufferPa"
+    "cketMessage\022\016\n\006sender\030\001 \002(\014\022\017\n\007message\030\002"
+    " \002(\014\022\r\n\005index\030\003 \002(\014\022(\n\004type\030\004 \002(\0162\032.pack"
+    "ethandler.MessageType\022\021\n\ttimestamp\030\005 \001(\r"
+    "\"\205\001\n\013ContactInfo\022\014\n\004name\030\001 \001(\014\022\020\n\010birthd"
+    "ay\030\002 \001(\014\022\025\n\roffice_number\030\003 \001(\014\022\016\n\006gende"
+    "r\030\004 \001(\014\022\017\n\007country\030\005 \001(\005\022\014\n\004city\030\006 \001(\014\022\020"
+    "\n\010language\030\007 \001(\005\"R\n\023ContactNotification\022"
+    "\016\n\006action\030\001 \002(\005\022+\n\007contact\030\002 \001(\0132\032.packe"
+    "thandler.ContactInfo\"L\n\027InstantFileNotif"
+    "ication\022\017\n\007ser_mdm\030\001 \002(\014\022\016\n\006ser_dm\030\002 \002(\014"
+    "\022\020\n\010filename\030\003 \002(\014\"\226\001\n\030PrivateShareNotif"
+    "ication\022\014\n\004name\030\001 \002(\014\022\014\n\004msid\030\002 \002(\014\022\022\n\np"
+    "ublic_key\030\003 \002(\014\022\023\n\013private_key\030\004 \001(\014\022\016\n\006"
+    "admins\030\005 \003(\014\022\021\n\treadonlys\030\006 \003(\014\022\022\n\ndir_d"
+    "b_key\030\007 \002(\014\"\227\002\n\016InstantMessage\022\016\n\006sender"
+    "\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\014\n\004date\030\003 \002(\005\022@\n"
+    "\024contact_notification\030\004 \001(\0132\".packethand"
+    "ler.ContactNotification\022H\n\030instantfile_n"
+    "otification\030\005 \001(\0132&.packethandler.Instan"
+    "tFileNotification\022J\n\031privateshare_notifi"
+    "cation\030\006 \001(\0132\'.packethandler.PrivateShar"
+    "eNotification\"J\n\023StoreMessagesResult\022\016\n\006"
+    "result\030\001 \002(\r\022\023\n\013stored_msgs\030\002 \002(\005\022\016\n\006fai"
+    "led\030\003 \003(\014\"Y\n\020CreateMSIDResult\022\016\n\006result\030"
+    "\001 \002(\r\022\014\n\004name\030\002 \001(\014\022\023\n\013private_key\030\003 \001(\014"
+    "\022\022\n\npublic_key\030\004 \001(\014*F\n\013MessageType\022\024\n\020A"
+    "DD_CONTACT_RQST\020\001\022\017\n\013INSTANT_MSG\020\002\022\020\n\014ST"
+    "ATUS_CHECK\020\003", 1572);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "packet.proto", &protobuf_RegisterTypes);
   GenericPacket::default_instance_ = new GenericPacket();
@@ -1050,6 +1053,7 @@ const int BufferPacketMessage::kSenderPublicKeyFieldNumber;
 const int BufferPacketMessage::kRSAencKeyFieldNumber;
 const int BufferPacketMessage::kAESencMessageFieldNumber;
 const int BufferPacketMessage::kTypeFieldNumber;
+const int BufferPacketMessage::kTimestampFieldNumber;
 #endif  // !_MSC_VER
 
 BufferPacketMessage::BufferPacketMessage()
@@ -1060,7 +1064,8 @@ BufferPacketMessage::BufferPacketMessage()
     sender_public_key_(const_cast< ::std::string*>(&_default_sender_public_key_)),
     rsaenc_key_(const_cast< ::std::string*>(&_default_rsaenc_key_)),
     aesenc_message_(const_cast< ::std::string*>(&_default_aesenc_message_)),
-    type_(1) {
+    type_(1),
+    timestamp_(0u) {
   SharedCtor();
 }
 
@@ -1074,7 +1079,8 @@ BufferPacketMessage::BufferPacketMessage(const BufferPacketMessage& from)
     sender_public_key_(const_cast< ::std::string*>(&_default_sender_public_key_)),
     rsaenc_key_(const_cast< ::std::string*>(&_default_rsaenc_key_)),
     aesenc_message_(const_cast< ::std::string*>(&_default_aesenc_message_)),
-    type_(1) {
+    type_(1),
+    timestamp_(0u) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -1086,6 +1092,7 @@ void BufferPacketMessage::SharedCtor() {
   rsaenc_key_ = const_cast< ::std::string*>(&_default_rsaenc_key_);
   aesenc_message_ = const_cast< ::std::string*>(&_default_aesenc_message_);
   type_ = 1;
+  timestamp_ = 0u;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -1148,6 +1155,7 @@ void BufferPacketMessage::Clear() {
       }
     }
     type_ = 1;
+    timestamp_ = 0u;
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
@@ -1220,6 +1228,20 @@ bool BufferPacketMessage::MergePartialFromCodedStream(
         } else {
           mutable_unknown_fields()->AddVarint(5, value);
         }
+        if (input->ExpectTag(48)) goto parse_timestamp;
+        break;
+      }
+      
+      // optional uint32 timestamp = 6;
+      case 6: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_timestamp:
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &timestamp_));
+        _set_bit(5);
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -1273,6 +1295,11 @@ void BufferPacketMessage::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteEnum(5, this->type(), output);
   }
   
+  // optional uint32 timestamp = 6;
+  if (_has_bit(5)) {
+    ::google::protobuf::internal::WireFormat::WriteUInt32(6, this->timestamp(), output);
+  }
+  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -1304,6 +1331,11 @@ void BufferPacketMessage::SerializeWithCachedSizes(
   // required .packethandler.MessageType type = 5;
   if (_has_bit(4)) {
     target = ::google::protobuf::internal::WireFormat::WriteEnumToArray(5, this->type(), target);
+  }
+  
+  // optional uint32 timestamp = 6;
+  if (_has_bit(5)) {
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(6, this->timestamp(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -1347,6 +1379,13 @@ int BufferPacketMessage::ByteSize() const {
         ::google::protobuf::internal::WireFormat::EnumSize(this->type());
     }
     
+    // optional uint32 timestamp = 6;
+    if (has_timestamp()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->timestamp());
+    }
+    
   }
   if (!unknown_fields().empty()) {
     total_size +=
@@ -1387,6 +1426,9 @@ void BufferPacketMessage::MergeFrom(const BufferPacketMessage& from) {
     if (from._has_bit(4)) {
       set_type(from.type());
     }
+    if (from._has_bit(5)) {
+      set_timestamp(from.timestamp());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -1410,6 +1452,7 @@ void BufferPacketMessage::Swap(BufferPacketMessage* other) {
     std::swap(rsaenc_key_, other->rsaenc_key_);
     std::swap(aesenc_message_, other->aesenc_message_);
     std::swap(type_, other->type_);
+    std::swap(timestamp_, other->timestamp_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -1687,6 +1730,7 @@ const int ValidatedBufferPacketMessage::kSenderFieldNumber;
 const int ValidatedBufferPacketMessage::kMessageFieldNumber;
 const int ValidatedBufferPacketMessage::kIndexFieldNumber;
 const int ValidatedBufferPacketMessage::kTypeFieldNumber;
+const int ValidatedBufferPacketMessage::kTimestampFieldNumber;
 #endif  // !_MSC_VER
 
 ValidatedBufferPacketMessage::ValidatedBufferPacketMessage()
@@ -1696,7 +1740,8 @@ ValidatedBufferPacketMessage::ValidatedBufferPacketMessage()
     sender_(const_cast< ::std::string*>(&_default_sender_)),
     message_(const_cast< ::std::string*>(&_default_message_)),
     index_(const_cast< ::std::string*>(&_default_index_)),
-    type_(1) {
+    type_(1),
+    timestamp_(0u) {
   SharedCtor();
 }
 
@@ -1709,7 +1754,8 @@ ValidatedBufferPacketMessage::ValidatedBufferPacketMessage(const ValidatedBuffer
     sender_(const_cast< ::std::string*>(&_default_sender_)),
     message_(const_cast< ::std::string*>(&_default_message_)),
     index_(const_cast< ::std::string*>(&_default_index_)),
-    type_(1) {
+    type_(1),
+    timestamp_(0u) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -1720,6 +1766,7 @@ void ValidatedBufferPacketMessage::SharedCtor() {
   message_ = const_cast< ::std::string*>(&_default_message_);
   index_ = const_cast< ::std::string*>(&_default_index_);
   type_ = 1;
+  timestamp_ = 0u;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -1774,6 +1821,7 @@ void ValidatedBufferPacketMessage::Clear() {
       }
     }
     type_ = 1;
+    timestamp_ = 0u;
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
@@ -1834,6 +1882,20 @@ bool ValidatedBufferPacketMessage::MergePartialFromCodedStream(
         } else {
           mutable_unknown_fields()->AddVarint(4, value);
         }
+        if (input->ExpectTag(40)) goto parse_timestamp;
+        break;
+      }
+      
+      // optional uint32 timestamp = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_timestamp:
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &timestamp_));
+        _set_bit(4);
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -1882,6 +1944,11 @@ void ValidatedBufferPacketMessage::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteEnum(4, this->type(), output);
   }
   
+  // optional uint32 timestamp = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::WriteUInt32(5, this->timestamp(), output);
+  }
+  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -1908,6 +1975,11 @@ void ValidatedBufferPacketMessage::SerializeWithCachedSizes(
   // required .packethandler.MessageType type = 4;
   if (_has_bit(3)) {
     target = ::google::protobuf::internal::WireFormat::WriteEnumToArray(4, this->type(), target);
+  }
+  
+  // optional uint32 timestamp = 5;
+  if (_has_bit(4)) {
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(5, this->timestamp(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -1943,6 +2015,13 @@ int ValidatedBufferPacketMessage::ByteSize() const {
     if (has_type()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::EnumSize(this->type());
+    }
+    
+    // optional uint32 timestamp = 5;
+    if (has_timestamp()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->timestamp());
     }
     
   }
@@ -1982,6 +2061,9 @@ void ValidatedBufferPacketMessage::MergeFrom(const ValidatedBufferPacketMessage&
     if (from._has_bit(3)) {
       set_type(from.type());
     }
+    if (from._has_bit(4)) {
+      set_timestamp(from.timestamp());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -2004,6 +2086,7 @@ void ValidatedBufferPacketMessage::Swap(ValidatedBufferPacketMessage* other) {
     std::swap(message_, other->message_);
     std::swap(index_, other->index_);
     std::swap(type_, other->type_);
+    std::swap(timestamp_, other->timestamp_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

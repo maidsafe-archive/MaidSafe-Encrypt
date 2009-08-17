@@ -49,7 +49,8 @@ void MessageHandler::SendMessage(const std::string &msg,
                                  const std::vector<Receivers> &receivers,
                                  const BufferPacketType &p_type,
                                  const packethandler::MessageType &m_type,
-                                 base::callback_func_type cb) {
+                                 base::callback_func_type cb,
+                                 const boost::uint32_t &timestamp) {
   base::pd_scoped_lock gaurd(*mutex_);
   boost::shared_ptr<SendMessagesData> data(new SendMessagesData());
   data->index = -1;
@@ -64,6 +65,7 @@ void MessageHandler::SendMessage(const std::string &msg,
   data->p_type = p_type;
   data->m_type = m_type;
   data->msg = msg;
+  data->timestamp = timestamp;
   IterativeStoreMsgs(data);
 }
 
@@ -71,7 +73,8 @@ std::string MessageHandler::CreateMessage(
     const std::string &msg,
     const std::string &rec_public_key,
     const packethandler::MessageType &m_type,
-    const BufferPacketType &p_type) {
+    const BufferPacketType &p_type,
+    const boost::uint32_t &timestamp) {
   maidsafe::PacketType pt = PacketHandler_PacketType(p_type);
   packethandler::BufferPacketMessage bpm;
   packethandler::GenericPacket gp;
@@ -91,6 +94,7 @@ std::string MessageHandler::CreateMessage(
                                          "",
                                          crypto::STRING_STRING,
                                          aes_key));
+  bpm.set_timestamp(timestamp);
   std::string ser_bpm;
   bpm.SerializeToString(&ser_bpm);
   gp.set_data(ser_bpm);
@@ -156,30 +160,7 @@ void MessageHandler::IterativeStoreMsgs(
       std::string ser_packet="";
       std::string sys_packet_name;
       switch (data->p_type) {
-//        case packethandler::SHARE:
-//            sys_packet_name = co_.Hash(data->receivers[data->index].id,
-//                                       "",
-//                                       crypto::STRING_STRING,
-//                                       true);
-//            break;
         case packethandler::ADD_CONTACT_RQST:
-//            sys_packet_name = co_.Hash(data->receivers[data->index].id,
-//                                       "",
-//                                       crypto::STRING_STRING,
-//                                       true);
-//            break;
-//        case packethandler::ADD_CONTACT_RESPONSE:
-//            sys_packet_name = co_.Hash(data->receivers[data->index].id,
-//                                       "",
-//                                       crypto::STRING_STRING,
-//                                       true);
-//            break;
-//        case packethandler::GENERAL:
-//            sys_packet_name = co_.Hash(data->receivers[data->index].id,
-//                                       "",
-//                                       crypto::STRING_STRING,
-//                                       true);
-//            break;
         case packethandler::INSTANT_MSG:
             sys_packet_name = co_.Hash(data->receivers[data->index].id,
                                        "",
@@ -203,7 +184,8 @@ void MessageHandler::StoreMessage(
   std::string ser_msg = CreateMessage(data->msg,
                                       data->receivers[index].public_key,
                                       data->m_type,
-                                      data->p_type);
+                                      data->p_type,
+                                      data->timestamp);
   std::string bufferpacketname = co_.Hash(data->receivers[index].id+"BUFFER",
                                           "",
                                           crypto::STRING_STRING,

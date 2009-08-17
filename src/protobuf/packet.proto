@@ -26,6 +26,7 @@ message BufferPacketMessage {
   required bytes RSAenc_key = 3;
   required bytes AESenc_message = 4;
   required MessageType type = 5;
+  optional uint32 timestamp = 6;
 }
 
 message BufferPacket {
@@ -38,6 +39,7 @@ message ValidatedBufferPacketMessage {
   required bytes message = 2;
   required bytes index = 3;
   required MessageType type = 4;
+  optional uint32 timestamp = 5;
 }
 
 // Instant Messages

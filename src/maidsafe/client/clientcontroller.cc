@@ -86,8 +86,10 @@ ClientController::ClientController() : auth_(),
                                        seh_(),
                                        mutex_(),
                                        messages_(),
-                                       bp_messages_(false),
-                                       fsys_() {
+                                       fsys_(),
+                                       received_messages_(),
+                                       rec_msg_mutex_(),
+                                       thread_pool_(1) {
   fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
   client_path /= "client";
   try {
@@ -332,6 +334,7 @@ bool ClientController::CreateUser(const std::string &username,
 //  #endif
 
   if (result == OK) {
+    // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
     ss_->SetSessionName(false);
     std::string root_db_key;
     seh_ = new SEHandler(sm_, client_chunkstore_, &mutex_);
@@ -558,6 +561,9 @@ bool ClientController::ValidateUser(const std::string &password) {
           &cb,
           _1));
       WaitForResult(cb);
+      thread_pool_.schedule(boost::threadpool::looped_task_func(
+                            boost::bind(&ClientController::ClearStaleMessages,
+                            this), 10000));
     } else {
 #ifdef DEBUG
       printf("No public username, no need to look for BP.\n");
@@ -908,8 +914,7 @@ bool ClientController::GetMessages() {
                      boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   GetMessagesResponse result;
-  if ((!result.ParseFromString(cb.result)) ||
-      (result.result() == kNack))
+  if ((!result.ParseFromString(cb.result)) || (result.result() == kNack))
     return false;
   if (result.messages_size() == 0)
     // TODO(Richard): return code for no messages
@@ -938,21 +943,73 @@ bool ClientController::GetMessages() {
 
 int ClientController::HandleMessages(std::list<std::string> *msgs) {
   int result = 0;
+#ifdef DEBUG
+      printf("=========================================\n");
+#endif
   while (!msgs->empty()) {
     packethandler::ValidatedBufferPacketMessage msg;
     std::string ser_msg = msgs->front();
     msgs->pop_front();
-    if (msg.ParseFromString(ser_msg)) {
-      switch (msg.type()) {
-        case packethandler::ADD_CONTACT_RQST:
-        case packethandler::INSTANT_MSG:
-            result += HandleInstantMessage(msg);
-            break;
-        default: break;  // TODO(Richard): define other type of messages
-      }
+    if (!msg.ParseFromString(ser_msg)) {
+#ifdef DEBUG
+      printf("ClientController::HandleMessages message doesn't parse.\n");
+#endif
+      continue;
+    }
+#ifdef DEBUG
+    printf("ClientController::HandleMessages message: %s\n",
+           msg.message().c_str());
+#endif
+    std::map<std::string, boost::uint32_t>::iterator it;
+    rec_msg_mutex_.lock();
+#ifdef DEBUG
+    printf("ClientController::HandleMessages received_messages_ size: %d\n",
+           received_messages_.size());
+#endif
+    it = received_messages_.find(msg.message());
+    if (it != received_messages_.end()) {
+#ifdef DEBUG
+      printf("Previously received message.");
+#endif
+      rec_msg_mutex_.unlock();
+      continue;
+    }
+
+    received_messages_.insert(std::pair<std::string, boost::uint32_t>(
+                              msg.message(), base::get_epoch_time()));
+    rec_msg_mutex_.unlock();
+#ifdef DEBUG
+    printf("ClientController::HandleMessages timestamp: %d\n", msg.timestamp());
+    printf("=========================================\n");
+#endif
+    switch (msg.type()) {
+      case packethandler::ADD_CONTACT_RQST:
+      case packethandler::INSTANT_MSG:
+          result += HandleInstantMessage(msg);
+          break;
+      default: break;  // TODO(Team): define other types of message
     }
   }
   return result;
+}
+
+bool ClientController::ClearStaleMessages() {
+#ifdef DEBUG
+  printf("ClientController::ClearStaleMessages timestamp: %d\n",
+         base::get_epoch_time());
+#endif
+  if (ss_->PublicUsername() == "")
+    return false;
+  boost::mutex::scoped_lock loch(rec_msg_mutex_);
+  boost::uint32_t now = base::get_epoch_time() - 10;
+  std::map<std::string, boost::uint32_t>::iterator it;
+  for (it = received_messages_.begin();
+       it != received_messages_.end(); ++it) {
+    if (it->second > now)
+      break;
+  }
+  received_messages_.erase(received_messages_.begin(), it);
+  return true;
 }
 
 int ClientController::HandleDeleteContactNotification(
@@ -1299,7 +1356,8 @@ int ClientController::HandleAddContactRequest(
                      MPID_BP,
                      packethandler::INSTANT_MSG,
                      boost::bind(&CC_CallbackResult::CallbackFunc,
-                     &cb, _1));
+                     &cb, _1),
+                     base::get_epoch_time());
   WaitForResult(cb);
   packethandler::StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
@@ -1369,7 +1427,7 @@ int ClientController::HandleAddContactResponse(
 }
 
 int ClientController::SendInstantMessage(const std::string &message,
-    const std::vector<std::string> &contact_names) {
+    const std::vector<std::string> &contact_names, bool test) {
   std::vector<Receivers> recs;
   for (unsigned int a = 0; a < contact_names.size(); ++a) {
     maidsafe::mi_contact mic;
@@ -1394,11 +1452,15 @@ int ClientController::SendInstantMessage(const std::string &message,
   im.SerializeToString(&ser_im);
 
   CC_CallbackResult cb;
+  boost::uint32_t timestamp = 0;
+  if (!test)
+    timestamp = base::get_epoch_time();
   msgh_->SendMessage(ser_im,
                      recs,
                      MPID_BP,
                      packethandler::INSTANT_MSG,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
+                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
+                     timestamp);
   WaitForResult(cb);
   packethandler::StoreMessagesResult store_res;
   if ((!store_res.ParseFromString(cb.result)) ||
@@ -1500,7 +1562,8 @@ int ClientController::SendInstantFile(std::string *filename,
                      recs,
                      MPID_BP,
                      packethandler::INSTANT_MSG,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
+                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
+                     base::get_epoch_time());
   WaitForResult(cb);
   packethandler::StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
@@ -1599,7 +1662,8 @@ int ClientController::AddContact(const std::string &public_name) {
                        recs,
                        MPID_BP,
                        packethandler::ADD_CONTACT_RQST,
-                       boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
+                       boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
+                     base::get_epoch_time());
     WaitForResult(cb);
     packethandler::StoreMessagesResult res;
     if ((!res.ParseFromString(cb.result)) ||
@@ -1684,7 +1748,8 @@ int ClientController::DeleteContact(const std::string &public_name) {
                      recs,
                      MPID_BP,
                      packethandler::INSTANT_MSG,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
+                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
+                     base::get_epoch_time());
   WaitForResult(cb);
   packethandler::StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
@@ -1845,7 +1910,8 @@ int ClientController::CreateNewShare(const std::string &name,
                        recs,
                        MPID_BP,
                        packethandler::INSTANT_MSG,
-                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
+                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1),
+                       base::get_epoch_time());
     WaitForResult(cbr);
     if ((!res.ParseFromString(cbr.result)) ||
         (res.result() == kNack)) {
@@ -1883,7 +1949,8 @@ int ClientController::CreateNewShare(const std::string &name,
                        recs,
                        MPID_BP,
                        packethandler::INSTANT_MSG,
-                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
+                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1),
+                       base::get_epoch_time());
     WaitForResult(cbr);
     if ((!res.ParseFromString(cbr.result)) ||
         (res.result() == kNack)) {

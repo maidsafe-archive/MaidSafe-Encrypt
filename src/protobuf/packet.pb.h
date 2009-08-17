@@ -395,6 +395,13 @@ class BufferPacketMessage : public ::google::protobuf::Message {
   inline packethandler::MessageType type() const;
   inline void set_type(packethandler::MessageType value);
   
+  // optional uint32 timestamp = 6;
+  inline bool has_timestamp() const;
+  inline void clear_timestamp();
+  static const int kTimestampFieldNumber = 6;
+  inline ::google::protobuf::uint32 timestamp() const;
+  inline void set_timestamp(::google::protobuf::uint32 value);
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -408,10 +415,11 @@ class BufferPacketMessage : public ::google::protobuf::Message {
   ::std::string* aesenc_message_;
   static const ::std::string _default_aesenc_message_;
   int type_;
+  ::google::protobuf::uint32 timestamp_;
   friend void  protobuf_AddDesc_packet_2eproto();
   friend void protobuf_AssignDesc_packet_2eproto();
   friend void protobuf_ShutdownFile_packet_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -621,6 +629,13 @@ class ValidatedBufferPacketMessage : public ::google::protobuf::Message {
   inline packethandler::MessageType type() const;
   inline void set_type(packethandler::MessageType value);
   
+  // optional uint32 timestamp = 5;
+  inline bool has_timestamp() const;
+  inline void clear_timestamp();
+  static const int kTimestampFieldNumber = 5;
+  inline ::google::protobuf::uint32 timestamp() const;
+  inline void set_timestamp(::google::protobuf::uint32 value);
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -632,10 +647,11 @@ class ValidatedBufferPacketMessage : public ::google::protobuf::Message {
   ::std::string* index_;
   static const ::std::string _default_index_;
   int type_;
+  ::google::protobuf::uint32 timestamp_;
   friend void  protobuf_AddDesc_packet_2eproto();
   friend void protobuf_AssignDesc_packet_2eproto();
   friend void protobuf_ShutdownFile_packet_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -1990,6 +2006,22 @@ inline void BufferPacketMessage::set_type(packethandler::MessageType value) {
   type_ = value;
 }
 
+// optional uint32 timestamp = 6;
+inline bool BufferPacketMessage::has_timestamp() const {
+  return _has_bit(5);
+}
+inline void BufferPacketMessage::clear_timestamp() {
+  timestamp_ = 0u;
+  _clear_bit(5);
+}
+inline ::google::protobuf::uint32 BufferPacketMessage::timestamp() const {
+  return timestamp_;
+}
+inline void BufferPacketMessage::set_timestamp(::google::protobuf::uint32 value) {
+  _set_bit(5);
+  timestamp_ = value;
+}
+
 // -------------------------------------------------------------------
 
 // BufferPacket
@@ -2189,6 +2221,22 @@ inline void ValidatedBufferPacketMessage::set_type(packethandler::MessageType va
   GOOGLE_DCHECK(packethandler::MessageType_IsValid(value));
   _set_bit(3);
   type_ = value;
+}
+
+// optional uint32 timestamp = 5;
+inline bool ValidatedBufferPacketMessage::has_timestamp() const {
+  return _has_bit(4);
+}
+inline void ValidatedBufferPacketMessage::clear_timestamp() {
+  timestamp_ = 0u;
+  _clear_bit(4);
+}
+inline ::google::protobuf::uint32 ValidatedBufferPacketMessage::timestamp() const {
+  return timestamp_;
+}
+inline void ValidatedBufferPacketMessage::set_timestamp(::google::protobuf::uint32 value) {
+  _set_bit(4);
+  timestamp_ = value;
 }
 
 // -------------------------------------------------------------------

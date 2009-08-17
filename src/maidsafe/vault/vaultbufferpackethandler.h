@@ -8,7 +8,7 @@
 * Created:      2009-01-29-00.59.23
 * Revision:     none
 * Compiler:     gcc
-* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
+* Author:       Team maidsafe
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
@@ -41,9 +41,9 @@ class VaultBufferPacketHandler {
   bool ValidateOwnerSignature(std::string public_key,
                               std::string ser_bufferpacket);
   bool CheckStatus(const std::string &current_bp,
-                    const std::string &ser_message,
-                    const std::string &signed_public_key,
-                    int *status);
+                   const std::string &ser_message,
+                   const std::string &signed_public_key,
+                   int *status);
   bool GetMessages(const std::string &ser_bp, std::vector<std::string> *msgs);
   bool ClearMessages(std::string *ser_bufferpacket);
   bool IsOwner(std::string owner_id, GenericPacket gp_info);
@@ -51,9 +51,9 @@ class VaultBufferPacketHandler {
                        std::string *ser_packet,
                        std::string public_key);
   bool AddMessage(const std::string &current_bp,
-                    const std::string &ser_message,
-                    const std::string &signed_public_key,
-                    std::string *updated_bp);
+                  const std::string &ser_message,
+                  const std::string &signed_public_key,
+                  std::string *updated_bp);
 
 
   bool CheckMsgStructure(const std::string &ser_message,

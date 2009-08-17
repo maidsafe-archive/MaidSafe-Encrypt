@@ -59,7 +59,8 @@ struct SendMessagesData {
         p_type(),
         m_type(),
         cb(),
-        is_calledback(false) {}
+        is_calledback(false),
+        timestamp(0) {}
   std::vector<Receivers> receivers;
   std::vector<std::string> no_auth_rec;
   std::string msg;
@@ -71,6 +72,7 @@ struct SendMessagesData {
   packethandler::MessageType m_type;
   base::callback_func_type cb;
   bool is_calledback;
+  boost::uint32_t timestamp;
 };
 
 class MessageHandler {
@@ -80,7 +82,8 @@ class MessageHandler {
                    const std::vector<Receivers> &receivers,
                    const BufferPacketType &p_type,
                    const packethandler::MessageType &m_type,
-                   base::callback_func_type cb);
+                   base::callback_func_type cb,
+                   const boost::uint32_t &timestamp);
 
  private:
   MessageHandler &operator=(const MessageHandler &) { return *this; }
@@ -88,7 +91,8 @@ class MessageHandler {
   std::string CreateMessage(const std::string &msg,
                             const std::string &rec_public_key,
                             const packethandler::MessageType &type,
-                            const BufferPacketType &p_type);
+                            const BufferPacketType &p_type,
+                            const boost::uint32_t &timestamp);
   void CreateSignature(const std::string &buffer_name,
                        const BufferPacketType &type,
                        std::string *signed_request,

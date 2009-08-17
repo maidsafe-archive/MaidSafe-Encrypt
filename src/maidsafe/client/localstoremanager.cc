@@ -151,7 +151,23 @@ void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,
   base::decode_from_hex(hex_chunk_name, &non_hex);
   ChunkType type = client_chunkstore_->chunk_type(non_hex);
   fs::path current = client_chunkstore_->GetChunkPath(non_hex, type, false);
-  fs::copy_file(current, file_path);
+  try {
+    if (!fs::exists(file_path)) {
+      fs::copy_file(current, file_path);
+    }
+  }
+  catch(const std::exception &e) {
+    printf("%s\n", e.what());
+  }
+  // Move chunk from Outgoing to Normal.
+  ChunkType chunk_type =
+      client_chunkstore_->chunk_type(non_hex);
+  ChunkType new_type = chunk_type ^ (kOutgoing | kNormal);
+  if (client_chunkstore_->ChangeChunkType(non_hex, new_type) != 0) {
+#ifdef DEBUG
+    printf("In LocalStoreManager::SendContent, failed to change chunk type.\n");
+#endif
+  }
 }
 
 void LocalStoreManager::IsKeyUnique(const std::string &hex_key,
