@@ -88,9 +88,10 @@ message RankAuthority {
 message StoreReferenceRequest {
   required bytes chunkname = 1;
   required bytes pmid = 2;  // vault's PMID
-  required bytes public_key = 3;
-  required bytes signed_public_key = 4;
-  required bytes signed_request = 5;
+  required bytes signed_pmid = 3;
+  required bytes public_key = 4;
+  required bytes signed_public_key = 5;
+  required bytes signed_request = 6;
 };
 
 message StoreReferenceResponse {

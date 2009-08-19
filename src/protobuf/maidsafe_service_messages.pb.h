@@ -1498,30 +1498,40 @@ class StoreReferenceRequest : public ::google::protobuf::Message {
   inline void set_pmid(const void* value, size_t size);
   inline ::std::string* mutable_pmid();
   
-  // required bytes public_key = 3;
+  // required bytes signed_pmid = 3;
+  inline bool has_signed_pmid() const;
+  inline void clear_signed_pmid();
+  static const int kSignedPmidFieldNumber = 3;
+  inline const ::std::string& signed_pmid() const;
+  inline void set_signed_pmid(const ::std::string& value);
+  inline void set_signed_pmid(const char* value);
+  inline void set_signed_pmid(const void* value, size_t size);
+  inline ::std::string* mutable_signed_pmid();
+  
+  // required bytes public_key = 4;
   inline bool has_public_key() const;
   inline void clear_public_key();
-  static const int kPublicKeyFieldNumber = 3;
+  static const int kPublicKeyFieldNumber = 4;
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
   inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // required bytes signed_public_key = 4;
+  // required bytes signed_public_key = 5;
   inline bool has_signed_public_key() const;
   inline void clear_signed_public_key();
-  static const int kSignedPublicKeyFieldNumber = 4;
+  static const int kSignedPublicKeyFieldNumber = 5;
   inline const ::std::string& signed_public_key() const;
   inline void set_signed_public_key(const ::std::string& value);
   inline void set_signed_public_key(const char* value);
   inline void set_signed_public_key(const void* value, size_t size);
   inline ::std::string* mutable_signed_public_key();
   
-  // required bytes signed_request = 5;
+  // required bytes signed_request = 6;
   inline bool has_signed_request() const;
   inline void clear_signed_request();
-  static const int kSignedRequestFieldNumber = 5;
+  static const int kSignedRequestFieldNumber = 6;
   inline const ::std::string& signed_request() const;
   inline void set_signed_request(const ::std::string& value);
   inline void set_signed_request(const char* value);
@@ -1536,6 +1546,8 @@ class StoreReferenceRequest : public ::google::protobuf::Message {
   static const ::std::string _default_chunkname_;
   ::std::string* pmid_;
   static const ::std::string _default_pmid_;
+  ::std::string* signed_pmid_;
+  static const ::std::string _default_signed_pmid_;
   ::std::string* public_key_;
   static const ::std::string _default_public_key_;
   ::std::string* signed_public_key_;
@@ -1545,7 +1557,7 @@ class StoreReferenceRequest : public ::google::protobuf::Message {
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -5081,126 +5093,168 @@ inline ::std::string* StoreReferenceRequest::mutable_pmid() {
   return pmid_;
 }
 
-// required bytes public_key = 3;
-inline bool StoreReferenceRequest::has_public_key() const {
+// required bytes signed_pmid = 3;
+inline bool StoreReferenceRequest::has_signed_pmid() const {
   return _has_bit(2);
+}
+inline void StoreReferenceRequest::clear_signed_pmid() {
+  if (signed_pmid_ != &_default_signed_pmid_) {
+    signed_pmid_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& StoreReferenceRequest::signed_pmid() const {
+  return *signed_pmid_;
+}
+inline void StoreReferenceRequest::set_signed_pmid(const ::std::string& value) {
+  _set_bit(2);
+  if (signed_pmid_ == &_default_signed_pmid_) {
+    signed_pmid_ = new ::std::string;
+  }
+  signed_pmid_->assign(value);
+}
+inline void StoreReferenceRequest::set_signed_pmid(const char* value) {
+  _set_bit(2);
+  if (signed_pmid_ == &_default_signed_pmid_) {
+    signed_pmid_ = new ::std::string;
+  }
+  signed_pmid_->assign(value);
+}
+inline void StoreReferenceRequest::set_signed_pmid(const void* value, size_t size) {
+  _set_bit(2);
+  if (signed_pmid_ == &_default_signed_pmid_) {
+    signed_pmid_ = new ::std::string;
+  }
+  signed_pmid_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* StoreReferenceRequest::mutable_signed_pmid() {
+  _set_bit(2);
+  if (signed_pmid_ == &_default_signed_pmid_) {
+    signed_pmid_ = new ::std::string;
+  }
+  return signed_pmid_;
+}
+
+// required bytes public_key = 4;
+inline bool StoreReferenceRequest::has_public_key() const {
+  return _has_bit(3);
 }
 inline void StoreReferenceRequest::clear_public_key() {
   if (public_key_ != &_default_public_key_) {
     public_key_->clear();
   }
-  _clear_bit(2);
+  _clear_bit(3);
 }
 inline const ::std::string& StoreReferenceRequest::public_key() const {
   return *public_key_;
 }
 inline void StoreReferenceRequest::set_public_key(const ::std::string& value) {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void StoreReferenceRequest::set_public_key(const char* value) {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void StoreReferenceRequest::set_public_key(const void* value, size_t size) {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* StoreReferenceRequest::mutable_public_key() {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   return public_key_;
 }
 
-// required bytes signed_public_key = 4;
+// required bytes signed_public_key = 5;
 inline bool StoreReferenceRequest::has_signed_public_key() const {
-  return _has_bit(3);
+  return _has_bit(4);
 }
 inline void StoreReferenceRequest::clear_signed_public_key() {
   if (signed_public_key_ != &_default_signed_public_key_) {
     signed_public_key_->clear();
   }
-  _clear_bit(3);
+  _clear_bit(4);
 }
 inline const ::std::string& StoreReferenceRequest::signed_public_key() const {
   return *signed_public_key_;
 }
 inline void StoreReferenceRequest::set_signed_public_key(const ::std::string& value) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(value);
 }
 inline void StoreReferenceRequest::set_signed_public_key(const char* value) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(value);
 }
 inline void StoreReferenceRequest::set_signed_public_key(const void* value, size_t size) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* StoreReferenceRequest::mutable_signed_public_key() {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   return signed_public_key_;
 }
 
-// required bytes signed_request = 5;
+// required bytes signed_request = 6;
 inline bool StoreReferenceRequest::has_signed_request() const {
-  return _has_bit(4);
+  return _has_bit(5);
 }
 inline void StoreReferenceRequest::clear_signed_request() {
   if (signed_request_ != &_default_signed_request_) {
     signed_request_->clear();
   }
-  _clear_bit(4);
+  _clear_bit(5);
 }
 inline const ::std::string& StoreReferenceRequest::signed_request() const {
   return *signed_request_;
 }
 inline void StoreReferenceRequest::set_signed_request(const ::std::string& value) {
-  _set_bit(4);
+  _set_bit(5);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
 }
 inline void StoreReferenceRequest::set_signed_request(const char* value) {
-  _set_bit(4);
+  _set_bit(5);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
 }
 inline void StoreReferenceRequest::set_signed_request(const void* value, size_t size) {
-  _set_bit(4);
+  _set_bit(5);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* StoreReferenceRequest::mutable_signed_request() {
-  _set_bit(4);
+  _set_bit(5);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }

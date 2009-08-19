@@ -274,12 +274,10 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
   cb.Reset();
   is_unique_res.Clear();
-
-  storemanager->LoadChunk(chunk_name,
-                          boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_lsm(cb, mutex_);
+  std::string result_str;
+  ASSERT_EQ(0, storemanager->LoadChunk(chunk_name, &result_str));
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result_));
+  ASSERT_TRUE(load_res.ParseFromString(result_str));
   ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ASSERT_EQ(chunk_content, load_res.content());
 }

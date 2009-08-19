@@ -20,19 +20,19 @@
 
 namespace maidsafe_vault {
 
-bool VaultChunkStore::UpdateChunk(const std::string &key,
-                                  const std::string &value) {
+int VaultChunkStore::UpdateChunk(const std::string &key,
+                                 const std::string &value) {
   if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::UpdateChunk.\n");
 #endif
-    return false;
+    return -1;
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
     printf("In ChunkStore::UpdateChunk, incorrect key size.\n");
 #endif
-    return false;
+    return -1;
   }
   // check we have the chunk already
   maidsafe::ChunkType type = 0;
@@ -47,7 +47,7 @@ bool VaultChunkStore::UpdateChunk(const std::string &key,
 #ifdef DEBUG
     printf("In ChunkStore::UpdateChunk, don't currently have chunk.\n");
 #endif
-    return false;
+    return -1;
   }
   fs::path chunk_path(GetChunkPath(key, type, false));
   if (!DeleteChunkFunction(key, chunk_path))
@@ -109,7 +109,7 @@ bool VaultChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
     result = ((*itr).type_ == type);
   }
   if (result)
-    return LoadChunk(*key, value);
+    return (Load(*key, value) == 0);
   else
     return false;
 }

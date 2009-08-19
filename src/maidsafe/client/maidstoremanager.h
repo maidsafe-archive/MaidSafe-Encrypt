@@ -25,6 +25,8 @@
 #ifndef MAIDSAFE_CLIENT_MAIDSTOREMANAGER_H_
 #define MAIDSAFE_CLIENT_MAIDSTOREMANAGER_H_
 
+#include <boost/thread/condition_variable.hpp>
+#include <boost/thread/locks.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht_config.h>
@@ -42,29 +44,28 @@ namespace maidsafe {
 
 class CallbackObj {
  public:
-  CallbackObj() : mutex_(), called_(false), result_("") {}
+  CallbackObj() : cond_(),  mutex_(), called_(false), result_("") {}
   void CallbackFunc(const std::string &result) {
-    boost::mutex::scoped_lock lock(mutex_);
-    result_ = result;
-    called_ = true;
-  }
-  bool called() {
-    boost::mutex::scoped_lock lock(mutex_);
-    return called_;
+    {
+      boost::lock_guard<boost::mutex> lock(mutex_);
+      result_ = result;
+    }
+    cond_.notify_one();
   }
   std::string result() {
     boost::mutex::scoped_lock lock(mutex_);
-    return result_;
+    return called_ ? result_ : "";
   }
   //  Block until callback happens or timeout (milliseconds) passes.
   void WaitForCallback(const int &timeout) {
-    int count = 0;
-    while (!called() && count < timeout) {
-      count +=10;
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-    }
+    boost::system_time now(boost::get_system_time());
+    boost::system_time timeout_expires = now +
+        boost::posix_time::milliseconds(timeout);
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    called_ = cond_.timed_wait(lock, timeout_expires);
   }
  private:
+  boost::condition_variable cond_;
   boost::mutex mutex_;
   bool called_;
   std::string result_;
@@ -83,6 +84,26 @@ struct StoreIouResultHolder {
   boost::uint32_t rpc_id_;
 };
 
+struct HasChunkResultHolder {
+  explicit HasChunkResultHolder(const kad::Contact &chunk_holder)
+      : chunk_holder_(chunk_holder),
+        local_(false),
+        check_chunk_response_(),
+        check_chunk_response_returned_(false),
+        tried_to_get_chunk_(false),
+        rpc_id_(0),
+        find_mutex_(),
+        has_conditional_() {}
+  kad::Contact chunk_holder_;
+  bool local_;
+  CheckChunkResponse check_chunk_response_;
+  bool check_chunk_response_returned_;
+  bool tried_to_get_chunk_;
+  boost::uint32_t rpc_id_;
+  boost::mutex *find_mutex_;
+  boost::condition_variable *has_conditional_;
+};
+
 class ChunkStore;
 class SessionSingleton;
 
@@ -93,8 +114,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void Init(int port, base::callback_func_type cb);
   void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
-  void LoadChunk(const std::string &hex_chunk_name,
-                 base::callback_func_type cb);
+  int LoadChunk(const std::string &hex_chunk_name, std::string *data);
 // TODO(Fraser#5#): 2009-08-04 - Delete this version of StoreChunk
   void StoreChunk(const std::string &,  // hex_chunk_name,
                   const std::string &,  // content,
@@ -150,19 +170,17 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                            base::callback_func_type cb);
   void DeleteChunk_Callback(const std::string &result,
                             base::callback_func_type cb);
-
-
   void AddPriorityStoreTask(const StoreTuple &store_tuple);
   void AddNormalStoreTask(const StoreTuple &store_tuple);
-  // Store an individual chunk onto the network
+  // Store an individual chunk onto the network.
   void SendChunk(StoreTuple store_tuple);
-  // Set up the requests needed to perform the store RPCs
+  // Set up the requests needed to perform the store RPCs.
   int GetStoreRequests(const StoreTuple &store_tuple,
                        const std::string &recipient_id,
                        StorePrepRequest *store_prep_request,
                        StoreRequest *store_request,
                        IOUDoneRequest *iou_done_request);
-  // Get the public key, signed public key, and signed request for a chunk
+  // Get the public key, signed public key, and signed request for a chunk.
   void GetSignedPubKeyAndRequest(const std::string &non_hex_name,
                                  const DirType dir_type,
                                  const std::string &msid,
@@ -178,21 +196,48 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    const std::vector<kad::Contact> &exclude,
                    kad::Contact *new_peer,
                    bool *local);
-  // Send the "preparation to store" message and wait until called back
+  // Send the "preparation to store" message and wait until called back.
   int SendPrep(const kad::Contact &peer,
                bool local,
                StorePrepRequest *store_prep_request,
                StorePrepResponse *store_prep_response);
   void SendPrepCallback(bool *send_prep_returned, boost::mutex *mutex);
+  // Send the actual data content to the peer.
   int SendContent(const kad::Contact &peer,
                   bool local,
                   StoreRequest *store_request);
   void SendContentCallback(bool *send_content_returned, boost::mutex *mutex);
+  // Pass the IOU for the peer vault to the k chunk reference holders.
   int StoreIOUs(const std::string &non_hex_chunk_name,
                 const boost::uint64_t &chunk_size,
                 const StorePrepResponse &store_prep_response);
+  // Blocking call to Kademlia Find Nodes.
   int FindKNodes(const std::string &kad_key,
                  std::vector<kad::Contact> *contacts);
+  // Blocking call to Kademlia Find Value.
+  int FindValue(const std::string &kad_key,
+                std::string *value,
+                std::vector<std::string> *chunk_holders_ids);
+  // Given a vector of vault ids, this gets the contact info for each and
+  // attempts to load the data once the first set of contacts is received.
+  int FindAndLoadChunk(const std::string &chunk_name,
+                       const std::vector<std::string> &chunk_holders_ids,
+                       std::string *data);
+  // Populates the contact details of a peer vault (with ID chunk_holder_id) and
+  // pushes them into the list of contacts provided.  Having done this, it calls
+  // notify on the conditional variable.
+  void GetChunkHolderContactCallback(
+      const std::string &chunk_holder_id,
+      const std::string &result,
+      std::vector<HasChunkResultHolder> *has_chunk_result_holders,
+      boost::mutex *find_mutex,
+      boost::condition_variable *find_conditional);
+  void HasChunkCallback(HasChunkResultHolder *has_chunk_result_holder);
+  // Get a chunk's content from a specific peer.
+  void GetChunk(HasChunkResultHolder *has_chunk_result_holder,
+                std::string *data);
+  void GetChunkCallback(boost::condition_variable *cond);
+  // Passes the IOU to an individual reference holder.
   int SendIouToRefHolder(const kad::Contact &ref_holder,
                          StoreIOURequest store_iou_request,
                          boost::mutex *store_iou_mutex,
@@ -202,6 +247,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   int HandleStoreIOUResponse(
       const StoreIouResultHolder &store_iou_result_holder,
       std::set<std::string> *ref_holder_ids);
+  // Notifies a peer that this vault has passed the IOUs to the appropriate
+  // reference holders.
   int SendIOUDone(const kad::Contact &peer,
                   bool local,
                   IOUDoneRequest *iou_done_request);

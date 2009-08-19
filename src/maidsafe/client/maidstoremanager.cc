@@ -132,12 +132,31 @@ void MaidsafeStoreManager::CleanUpTransport() {
   channel_manager_->CleanUpTransport();
 }
 
-void MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
-                                     base::callback_func_type cb) {
+int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
+                                    std::string *data) {
+#ifdef DEBUG
+  std::string hex(hex_chunk_name.substr(0, 10) + "...");
+  printf("In MaidsafeStoreManager::LoadChunk (%i), chunk_name = %s\n",
+         knode_->host_port(), hex.c_str());
+#endif
+  *data = "";
   std::string chunk_name("");
   base::decode_from_hex(hex_chunk_name, &chunk_name);
-  pdclient_->GetChunk(chunk_name,
-      boost::bind(&MaidsafeStoreManager::LoadChunk_Callback, this, _1, cb));
+  if (client_chunkstore_->Load(chunk_name, data) == 0)
+    return 0;
+  std::vector<std::string> chunk_holders_ids;
+  // If the maidsafe value is cached, this blocking Kad call to FindValue may
+  // yield the actual chunk.  Otherwise it should yield the reference holders.
+  if (FindValue(chunk_name, data, &chunk_holders_ids) != 0) {
+#ifdef DEBUG
+  printf("In MaidsafeStoreManager::LoadChunk (%i), failed in FindValue.\n",
+         knode_->host_port());
+#endif
+    return -1;
+  }
+  if (*data != "")
+    return 0;  // We got a cached copy.
+  return FindAndLoadChunk(chunk_name, chunk_holders_ids, data);
 }
 
 void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
@@ -745,8 +764,11 @@ int MaidsafeStoreManager::StoreIOUs(
   }
   if (successful_count < kKadStoreThreshold_)
     return -1;  // We've not received enough successful responses
-  for (boost::uint16_t j = 0; j < results.size(); ++j)
-    channel_manager_->DeletePendingRequest(results.at(j).rpc_id_);
+  // Cancel outstanding RPCs
+  for (boost::uint16_t j = 0; j < results.size(); ++j) {
+    if (!results.at(j).store_iou_response_returned_)
+      channel_manager_->DeletePendingRequest(results.at(j).rpc_id_);
+  }
   return 0;
 }
 
@@ -785,6 +807,242 @@ int MaidsafeStoreManager::FindKNodes(const std::string &kad_key,
 //  printf("In MaidsafeStoreManager::FindKNodes, succeeded.\n");
 #endif
   return 0;
+}
+
+int MaidsafeStoreManager::FindValue(
+    const std::string &kad_key,
+    std::string *value,
+    std::vector<std::string> *chunk_holders_ids) {
+  CallbackObj kad_cb_obj;
+  knode_->FindValue(kad_key, boost::bind(&CallbackObj::CallbackFunc,
+      &kad_cb_obj, _1));
+// TODO(Fraser#5#): 2009-08-12 - Make timeout a maidsafe constant
+  kad_cb_obj.WaitForCallback(30000);
+  if (kad_cb_obj.result() == "") {
+#ifdef DEBUG
+    printf("In MaidsafeStoreManager::FindValue, fail - timeout.\n");
+#endif
+    return -1;
+  }
+  kad::FindResponse find_response;
+  if (!find_response.ParseFromString(kad_cb_obj.result())) {
+#ifdef DEBUG
+    printf("In MaidsafeStoreManager::FindValue, can't parse result.\n");
+#endif
+    return -2;
+  }
+  if (find_response.result() != kad::kRpcResultSuccess) {
+#ifdef DEBUG
+    printf("In MaidsafeStoreManager::FindValue, Kademlia operation failed.\n");
+#endif
+    return -3;
+  }
+  if (find_response.has_alternative_value()) {
+    *value = find_response.alternative_value();
+    return 0;
+  }
+  for (int i = 0; i < find_response.values_size(); ++i) {
+    chunk_holders_ids->push_back(find_response.values(i));
+  }
+  return (chunk_holders_ids->size()) ? 0 : -4;
+}
+
+int MaidsafeStoreManager::FindAndLoadChunk(
+    const std::string &chunk_name,
+    const std::vector<std::string> &chunk_holders_ids,
+    std::string *data) {
+  std::vector<HasChunkResultHolder> has_chunk_result_holders;
+  boost::mutex find_mutex;
+  boost::condition_variable find_conditional;
+  boost::condition_variable has_conditional;
+  boost::unique_lock<boost::mutex> lock(find_mutex);
+  int attempted_chunk_holder_count(0);
+  // Find chunk holders' contact details
+  for (size_t i = 0; i < chunk_holders_ids.size(); ++i) {
+    knode_->FindCloseNodes(chunk_holders_ids[i],
+        boost::bind(&MaidsafeStoreManager::GetChunkHolderContactCallback,
+        this, chunk_holders_ids[i], _1, &has_chunk_result_holders, &find_mutex,
+        &find_conditional));
+  }
+  for (size_t i = 0; i < chunk_holders_ids.size(); ++i) {
+    find_conditional.wait(lock);
+    if (has_chunk_result_holders.at(i).chunk_holder_.host_ip() == "") {
+      has_chunk_result_holders.at(i).tried_to_get_chunk_ = true;
+      ++attempted_chunk_holder_count;
+      continue;
+    }
+    kad::Contact new_peer = has_chunk_result_holders.at(i).chunk_holder_;
+    has_chunk_result_holders.at(i).local_ = (knode_->CheckContactLocalAddress(
+        has_chunk_result_holders.at(i).chunk_holder_.node_id(),
+        has_chunk_result_holders.at(i).chunk_holder_.local_ip(),
+        has_chunk_result_holders.at(i).chunk_holder_.local_port(),
+        has_chunk_result_holders.at(i).chunk_holder_.host_ip()) == kad::LOCAL);
+    CheckChunkRequest check_chunk_request;
+    check_chunk_request.set_chunkname(chunk_name);
+    has_chunk_result_holders.at(i).find_mutex_ = &find_mutex;
+    has_chunk_result_holders.at(i).has_conditional_ = &has_conditional;
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &MaidsafeStoreManager::HasChunkCallback,
+        &has_chunk_result_holders.at(i));
+    rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+    client_rpcs_.CheckChunk(has_chunk_result_holders.at(i).chunk_holder_,
+        has_chunk_result_holders.at(i).local_, &check_chunk_request,
+        &has_chunk_result_holders.at(i).check_chunk_response_, controller,
+        callback);
+    has_chunk_result_holders.at(i).rpc_id_ = controller->req_id();
+  }
+  while (data->empty() &&
+         attempted_chunk_holder_count < static_cast<int>(
+         has_chunk_result_holders.size())) {
+    has_conditional.wait(lock);
+    for (size_t j = 0; j < has_chunk_result_holders.size(); ++j) {
+      if (!has_chunk_result_holders.at(j).tried_to_get_chunk_)
+        GetChunk(&has_chunk_result_holders.at(j), data);
+    }
+    ++attempted_chunk_holder_count;
+  }
+  // Cancel outstanding RPCs
+  for (size_t m = 0; m < has_chunk_result_holders.size(); ++m) {
+    if (!has_chunk_result_holders.at(m).check_chunk_response_returned_)
+      channel_manager_->DeletePendingRequest(
+          has_chunk_result_holders.at(m).rpc_id_);
+  }
+  return data->empty() ? -1 : 0;
+}
+
+void MaidsafeStoreManager::GetChunkHolderContactCallback(
+    const std::string &chunk_holder_id,
+    const std::string &result,
+    std::vector<HasChunkResultHolder> *has_chunk_result_holders,
+    boost::mutex *find_mutex,
+    boost::condition_variable *find_conditional) {
+  if (result == "") {
+#ifdef DEBUG
+    printf("In MSM::GetChunkHolderContactCallback, fail - timeout.\n");
+#endif
+    {
+      boost::lock_guard<boost::mutex> lock(*find_mutex);
+      has_chunk_result_holders->push_back(HasChunkResultHolder(
+          kad::Contact(chunk_holder_id, "", 0)));
+    }
+    find_conditional->notify_one();
+    return;
+  }
+  kad::FindResponse find_response;
+  if (!find_response.ParseFromString(result)) {
+#ifdef DEBUG
+    printf("In MSM::GetChunkHolderContactCallback, can't parse result.\n");
+#endif
+    {
+      boost::lock_guard<boost::mutex> lock(*find_mutex);
+      has_chunk_result_holders->push_back(HasChunkResultHolder(
+          kad::Contact(chunk_holder_id, "", 0)));
+    }
+    find_conditional->notify_one();
+    return;
+  }
+  if (find_response.result() != kad::kRpcResultSuccess) {
+#ifdef DEBUG
+    printf("In MSM::GetChunkHolderContactCallback, Kad operation failed.\n");
+#endif
+    {
+      boost::lock_guard<boost::mutex> lock(*find_mutex);
+      has_chunk_result_holders->push_back(HasChunkResultHolder(
+          kad::Contact(chunk_holder_id, "", 0)));
+    }
+    find_conditional->notify_one();
+    return;
+  }
+  // If we have the desired node's details, return them, otherwise push back a
+  // contact with no IP/port.
+  for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
+    kad::Contact contact;
+    contact.ParseFromString(find_response.closest_nodes(i));
+    if (contact.node_id() == chunk_holder_id) {
+      {
+        boost::lock_guard<boost::mutex> lock(*find_mutex);
+        has_chunk_result_holders->push_back(HasChunkResultHolder(contact));
+      }
+      find_conditional->notify_one();
+      return;
+    }
+  }
+#ifdef DEBUG
+  printf("In MSM::GetChunkHolderContactCallback, didn't get node's details.\n");
+#endif
+  {
+    boost::lock_guard<boost::mutex> lock(*find_mutex);
+    has_chunk_result_holders->push_back(HasChunkResultHolder(
+        kad::Contact(chunk_holder_id, "", 0)));
+  }
+  find_conditional->notify_one();
+}
+
+void MaidsafeStoreManager::HasChunkCallback(
+    HasChunkResultHolder *has_chunk_result_holder) {
+  boost::lock_guard<boost::mutex> lock(*(has_chunk_result_holder->find_mutex_));
+  has_chunk_result_holder->check_chunk_response_returned_ = true;
+  if (has_chunk_result_holder->check_chunk_response_.result() == kNack) {
+#ifdef DEBUG
+    printf("In MSM, response from HasChunk came back failed (%d).\n",
+           knode_->host_port());
+#endif
+    has_chunk_result_holder->tried_to_get_chunk_ = true;
+    has_chunk_result_holder->has_conditional_->notify_one();
+    return;
+  }
+  if (has_chunk_result_holder->chunk_holder_.node_id() !=
+      has_chunk_result_holder->check_chunk_response_.pmid_id()) {
+#ifdef DEBUG
+    printf("In MSM, response from HasChunk came back from wrong node (%d).\n",
+           knode_->host_port());
+#endif
+    has_chunk_result_holder->tried_to_get_chunk_ = true;
+    has_chunk_result_holder->has_conditional_->notify_one();
+    return;
+  }
+  has_chunk_result_holder->has_conditional_->notify_one();
+}
+
+void MaidsafeStoreManager::GetChunk(
+    HasChunkResultHolder *has_chunk_result_holder,
+    std::string *data) {
+  has_chunk_result_holder->tried_to_get_chunk_ = true;
+  GetRequest get_request;
+  GetResponse get_response;
+  boost::mutex mutex;
+  boost::condition_variable cond;
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &MaidsafeStoreManager::GetChunkCallback, &cond);
+  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  client_rpcs_.Get(has_chunk_result_holder->chunk_holder_,
+      has_chunk_result_holder->local_, &get_request, &get_response, controller,
+      callback);
+  boost::unique_lock<boost::mutex> lock(mutex);
+  cond.wait(lock);
+  if (get_response.result() == kNack) {
+#ifdef DEBUG
+    printf("In MSM, response from GetChunk came back failed (%d).\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+  if (has_chunk_result_holder->chunk_holder_.node_id() !=
+      get_response.pmid_id()) {
+#ifdef DEBUG
+    printf("In MSM, response from GetChunk came back from wrong node (%d).\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+  *data = get_response.content();
+}
+
+void MaidsafeStoreManager::GetChunkCallback(boost::condition_variable *cond) {
+#ifdef DEBUG
+//  printf("In MaidsafeStoreManager::GetChunkCallback.\n");
+#endif
+  cond->notify_one();
 }
 
 int MaidsafeStoreManager::SendIouToRefHolder(

@@ -349,7 +349,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
     base::decode_from_hex(hex_chunk_name, &non_hex_name);
     int chunk_count = 0;
     for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
-      if (pdvaults_[vault_no]->vault_chunkstore_->HasChunk(non_hex_name)) {
+      if (pdvaults_[vault_no]->vault_chunkstore_->Has(non_hex_name)) {
         std::string trace = "Vault[" + base::itos(vault_no) + "] has the chunk";
         SCOPED_TRACE(trace);
         ++chunk_count;
@@ -377,13 +377,14 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     printf("Getting chunk.\n");
     std::string hex_chunk_name = (*it_).first;
-    testpdvault::PrepareCallbackResults();
-    sm_->LoadChunk(hex_chunk_name,
-                   boost::bind(&testpdvault::GetChunkCallback, _1));
-    testpdvault::WaitFunction(60, &mutex_);
-    ASSERT_TRUE(callback_succeeded_);
-    ASSERT_EQ(callback_content_, (*it_).second);
-    ASSERT_FALSE(callback_timed_out_);
+//    testpdvault::PrepareCallbackResults();
+    std::string data;
+    sm_->LoadChunk(hex_chunk_name, &data);
+//                   boost::bind(&testpdvault::GetChunkCallback, _1));
+//    testpdvault::WaitFunction(60, &mutex_);
+//    ASSERT_TRUE(callback_succeeded_);
+    ASSERT_EQ(data, (*it_).second);
+//    ASSERT_FALSE(callback_timed_out_);
     std::string hash = crypto_.Hash(callback_content_, "",
         crypto::STRING_STRING, true);
     ASSERT_EQ(hex_chunk_name, hash);

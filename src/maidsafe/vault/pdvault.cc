@@ -64,6 +64,7 @@ PDVault::PDVault(const std::string &pmid_public,
       signed_pmid_public_(signed_pmid_public),
       pmid_(""),
       non_hex_pmid_(""),
+      signed_non_hex_pmid_(""),
       co_(),
       svc_channel_(),
       kad_config_file_(kad_config_file),
@@ -75,6 +76,8 @@ PDVault::PDVault(const std::string &pmid_public,
   pmid_ = co_.Hash(pmid_public_ + signed_pmid_public_, "",
                    crypto::STRING_STRING, true);
   base::decode_from_hex(pmid_, &non_hex_pmid_);
+  signed_non_hex_pmid_ = co_.AsymSign(non_hex_pmid_, "", pmid_private_,
+                                      crypto::STRING_STRING);
 }
 
 PDVault::~PDVault() {
@@ -459,6 +462,7 @@ int PDVault::SendToRefPacket(
                                                  ref_holder.node_id());
   store_ref_request.set_chunkname(chunk_name);
   store_ref_request.set_pmid(non_hex_pmid_);
+  store_ref_request.set_signed_pmid(signed_non_hex_pmid_);
   store_ref_request.set_public_key(pmid_public_);
   store_ref_request.set_signed_public_key(signed_pmid_public_);
   store_ref_request.set_signed_request(signed_request);
@@ -717,8 +721,8 @@ void PDVault::ValidityCheckCallback(
   }
   std::string remote_hash_content_(validity_check_response->hash_content());
   std::string local_content_("");
-  vault_chunkstore_->LoadChunk(validity_check_args->chunk_name_,
-                               &local_content_);
+  vault_chunkstore_->Load(validity_check_args->chunk_name_,
+                          &local_content_);
   std::string local_hash_content_(co_.Hash(local_content_ +
       validity_check_args->random_data_, "", crypto::STRING_STRING,
       true));
@@ -1172,8 +1176,8 @@ void PDVault::SwapChunk(const std::string &chunk_name,
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &PDVault::SwapChunkSendChunk, swap_chunk_response, swap_chunk_args);
   std::string chunkcontent1;
-  if (!vault_chunkstore_->LoadChunk(swap_chunk_args->chunkname_,
-                                    &chunkcontent1)) {
+  if (vault_chunkstore_->Load(swap_chunk_args->chunkname_,
+                              &chunkcontent1) != 0) {
     maidsafe::SwapChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_request_type(1);
@@ -1201,8 +1205,8 @@ void PDVault::SwapChunkSendChunk(
     return;
   }
   std::string chunkcontent1;
-  if (!vault_chunkstore_->LoadChunk(swap_chunk_args->chunkname_,
-                                    &chunkcontent1)) {
+  if (vault_chunkstore_->Load(swap_chunk_args->chunkname_,
+                              &chunkcontent1) != 0) {
     maidsafe::SwapChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_request_type(1);
@@ -1238,8 +1242,7 @@ void PDVault::SwapChunkAcceptChunk(
   }
   // Accept the swapped chunk
   std::string chunk_name_ = swap_chunk_response->chunkname2();
-  vault_chunkstore_->StoreChunk(chunk_name_,
-                                swap_chunk_response->chunkcontent2());
+  vault_chunkstore_->Store(chunk_name_, swap_chunk_response->chunkcontent2());
   // Store chunk reference
   std::string non_hex_chunk_name("");
   base::decode_from_hex(chunk_name_, &non_hex_chunk_name);

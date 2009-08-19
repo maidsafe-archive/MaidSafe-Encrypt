@@ -208,7 +208,7 @@ bool ChunkStore::PopulateChunkSet(ChunkType type, const fs::path &dir_path) {
   return ((current_size - original_size) == filecount);
 }
 
-bool ChunkStore::HasChunk(const std::string &key) {
+bool ChunkStore::Has(const std::string &key) {
   if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::HasChunk.\n");
@@ -347,48 +347,48 @@ fs::path ChunkStore::GetChunkPath(const std::string &key,
   return chunk_path;
 }
 
-bool ChunkStore::StoreChunk(const std::string &key, const std::string &value) {
+int ChunkStore::Store(const std::string &key, const std::string &value) {
   if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::StoreChunk.\n");
 #endif
-    return false;
+    return -1;
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
     printf("In ChunkStore::StoreChunk, incorrect key size.\n");
 #endif
-    return false;
+    return -1;
   }
-  if (HasChunk(key)) {
+  if (Has(key)) {
 #ifdef DEBUG
     printf("Chunk already exists in ChunkStore::StoreChunk.\n");
 #endif
-    return false;
+    return -1;
   }
   ChunkType type = GetChunkType(key, value, false);
   fs::path chunk_path(GetChunkPath(key, type, true));
   return StoreChunkFunction(key, value, chunk_path, type);
 }
 
-bool ChunkStore::StoreChunk(const std::string &key, const fs::path &file) {
+int ChunkStore::Store(const std::string &key, const fs::path &file) {
   if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::StoreChunk.\n");
 #endif
-    return false;
+    return -1;
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
     printf("In ChunkStore::StoreChunk, incorrect key size.\n");
 #endif
-    return false;
+    return -1;
   }
-  if (HasChunk(key)) {
+  if (Has(key)) {
 #ifdef DEBUG
     printf("Chunk already exists in ChunkStore::StoreChunk.\n");
 #endif
-    return false;
+    return -1;
   }
   ChunkType type = GetChunkType(key, file, false);
   fs::path chunk_path(GetChunkPath(key, type, true));
@@ -409,7 +409,7 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
 #endif
     return -2;
   }
-  if (HasChunk(key)) {
+  if (Has(key)) {
 #ifdef DEBUG
     printf("Chunk already exists in ChunkStore::AddChunkToOutgoing.\n");
 #endif
@@ -417,7 +417,7 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
   }
   ChunkType type = GetChunkType(key, value, true);
   fs::path chunk_path(GetChunkPath(key, type, true));
-  return StoreChunkFunction(key, value, chunk_path, type) ? 0 : -3;
+  return (StoreChunkFunction(key, value, chunk_path, type) == 0) ? 0 : -3;
 }
 
 int ChunkStore::AddChunkToOutgoing(const std::string &key,
@@ -434,7 +434,7 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
 #endif
     return -2;
   }
-  if (HasChunk(key)) {
+  if (Has(key)) {
 #ifdef DEBUG
     printf("Chunk already exists in ChunkStore::AddChunkToOutgoing.\n");
 #endif
@@ -442,13 +442,13 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
   }
   ChunkType type = GetChunkType(key, file, true);
   fs::path chunk_path(GetChunkPath(key, type, true));
-  return StoreChunkFunction(key, file, chunk_path, type) ? 0 : -3;
+  return (StoreChunkFunction(key, file, chunk_path, type) == 0) ? 0 : -3;
 }
 
-bool ChunkStore::StoreChunkFunction(const std::string &key,
-                                    const std::string &value,
-                                    const fs::path &chunk_path,
-                                    ChunkType type) {
+int ChunkStore::StoreChunkFunction(const std::string &key,
+                                   const std::string &value,
+                                   const fs::path &chunk_path,
+                                   ChunkType type) {
   try {
     boost::uint64_t chunk_size(value.size());
     fs::ofstream fstr;
@@ -467,20 +467,20 @@ bool ChunkStore::StoreChunkFunction(const std::string &key,
       chunkstore_set_.insert(chunk);
       IncrementUsedSpace(value.size());
     }
-    return true;
+    return 0;
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
     printf("ChunkStore::StoreChunk exception writing chunk: %s\n", ex.what());
 #endif
-    return false;
+    return -1;
   }
 }
 
-bool ChunkStore::StoreChunkFunction(const std::string &key,
-                                    const fs::path &input_file,
-                                    const fs::path &chunk_path,
-                                    ChunkType type) {
+int ChunkStore::StoreChunkFunction(const std::string &key,
+                                   const fs::path &input_file,
+                                   const fs::path &chunk_path,
+                                   ChunkType type) {
   try {
     fs::copy_file(input_file, chunk_path);
     // If the chunk is hashable then set last checked time to now, otherwise
@@ -495,13 +495,13 @@ bool ChunkStore::StoreChunkFunction(const std::string &key,
       chunkstore_set_.insert(chunk);
       IncrementUsedSpace(fs::file_size(chunk_path));
     }
-    return true;
+    return 0;
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
     printf("ChunkStore::StoreChunk exception writing chunk: %s\n", ex.what());
 #endif
-    return false;
+    return -1;
   }
 }
 
@@ -556,23 +556,23 @@ bool ChunkStore::DeleteChunkFunction(const std::string &key,
   return (result);
 }
 
-bool ChunkStore::LoadChunk(const std::string &key, std::string *value) {
+int ChunkStore::Load(const std::string &key, std::string *value) {
   value->clear();
   if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::LoadChunk.\n");
 #endif
-    return false;
+    return -1;
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
     printf("In ChunkStore::LoadChunk, incorrect key size.\n");
 #endif
-    return false;
+    return -1;
   }
   ChunkType type = chunk_type(key);
   if (type < 0)
-    return false;
+    return -1;
   fs::path chunk_path(GetChunkPath(key, type, false));
   boost::uint64_t chunk_size(0);
   try {
@@ -584,13 +584,13 @@ bool ChunkStore::LoadChunk(const std::string &key, std::string *value) {
     fstr.close();
     std::string result(static_cast<const char*>(temp.get()), chunk_size);
     *value = result;
-    return true;
+    return 0;
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
     printf("%s\n", ex.what());
 #endif
-    return false;
+    return -1;
   }
 }
 

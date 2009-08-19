@@ -25,6 +25,7 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/thread/mutex.hpp>
 #include <gtest/gtest_prod.h>
+#include <maidsafe/alternativestore.h>
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
 #include <list>
@@ -109,18 +110,18 @@ struct change_type {
   ChunkType new_type_;
 };
 
-class ChunkStore {
+class ChunkStore : public base::AlternativeStore {
  public:
   ChunkStore(const std::string &chunkstore_dir,
              const boost::uint64_t &available_space,
              const boost::uint64_t &used_space);
   virtual ~ChunkStore() {}
-  bool HasChunk(const std::string &key);
-  bool StoreChunk(const std::string &key, const std::string &value);
-  bool StoreChunk(const std::string &key, const fs::path &file);
+  bool Has(const std::string &key);
+  int Store(const std::string &key, const std::string &value);
+  int Store(const std::string &key, const fs::path &file);
   int AddChunkToOutgoing(const std::string &key, const std::string &value);
   int AddChunkToOutgoing(const std::string &key, const fs::path &file);
-  bool LoadChunk(const std::string &key, std::string *value);
+  int Load(const std::string &key, std::string *value);
   bool DeleteChunk(const std::string &key);
   fs::path GetChunkPath(const std::string &key,
                         ChunkType type,
@@ -163,18 +164,14 @@ class ChunkStore {
   ChunkType GetChunkType(const std::string &key,
                          const fs::path &file,
                          bool outgoing);
-  // If the root path exists for that key, the bool create_path has no effect.
-  // If the root path doesn't exist and create_path is true, the path will be
-  // created and returned.  If the root path doesn't exist and create_path is
-  // false, no action is taken other than to return an empty path.
-  bool StoreChunkFunction(const std::string &key,
-                          const std::string &value,
-                          const fs::path &chunk_path,
-                          ChunkType type);
-  bool StoreChunkFunction(const std::string &key,
-                          const fs::path &input_file,
-                          const fs::path &chunk_path,
-                          ChunkType type);
+  int StoreChunkFunction(const std::string &key,
+                         const std::string &value,
+                         const fs::path &chunk_path,
+                         ChunkType type);
+  int StoreChunkFunction(const std::string &key,
+                         const fs::path &input_file,
+                         const fs::path &chunk_path,
+                         ChunkType type);
   // Check that hash of value == key for appropriate chunks
   int HashCheckChunk(const std::string &key, const fs::path &chunk_path);
   inline void IncrementUsedSpace(boost::uint64_t file_size) {

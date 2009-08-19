@@ -109,13 +109,12 @@ void LocalStoreManager::Close(base::callback_func_type cb, bool) {
   }
 }
 
-void LocalStoreManager::LoadChunk(const std::string &hex_chunk_name,
-                                  base::callback_func_type cb) {
+int LocalStoreManager::LoadChunk(const std::string &hex_chunk_name,
+                                 std::string *data) {
   fs::path file_path("StoreChunks");
   file_path = file_path / hex_chunk_name;
   if (!fs::exists(file_path)) {
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-    return;
+    return -1;
   }
   boost::uintmax_t size = fs::file_size(file_path);
   boost::scoped_ptr<char> temp(new char[size]);
@@ -123,8 +122,8 @@ void LocalStoreManager::LoadChunk(const std::string &hex_chunk_name,
   fstr.open(file_path, std::ios_base::binary);
   fstr.read(temp.get(), size);
   fstr.close();
-  std::string result((const char*)temp.get(), size);
-  boost::thread thr(boost::bind(&ExeCallbackLoad, cb, result, mutex_));
+  *data = std::string((const char*)temp.get(), size);
+  return 0;
 }
 
 void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,

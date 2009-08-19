@@ -302,9 +302,10 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(RankAuthority));
   StoreReferenceRequest_descriptor_ = file->message_type(11);
-  static const int StoreReferenceRequest_offsets_[5] = {
+  static const int StoreReferenceRequest_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreReferenceRequest, chunkname_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreReferenceRequest, pmid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreReferenceRequest, signed_pmid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreReferenceRequest, public_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreReferenceRequest, signed_public_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreReferenceRequest, signed_request_),
@@ -746,44 +747,45 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
     "\016signed_request\030\004 \002(\014\"2\n\017IOUDoneResponse"
     "\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\"C\n\rRan"
     "kAuthority\022\021\n\tchunkname\030\001 \002(\014\022\021\n\tdata_si"
-    "ze\030\002 \002(\004\022\014\n\004pmid\030\003 \002(\014\"\177\n\025StoreReference"
-    "Request\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004pmid\030\002 \002(\014"
-    "\022\022\n\npublic_key\030\003 \002(\014\022\031\n\021signed_public_ke"
-    "y\030\004 \002(\014\022\026\n\016signed_request\030\005 \002(\014\"\254\001\n\026Stor"
-    "eReferenceResponse\022\016\n\006result\030\001 \002(\r\022\026\n\016ra"
-    "nk_authority\030\002 \001(\014\022\035\n\025signed_rank_author"
-    "ity\030\003 \001(\014\022\013\n\003iou\030\004 \001(\014\022\017\n\007pmid_id\030\005 \001(\014\022"
-    "\022\n\npublic_key\030\006 \001(\014\022\031\n\021signed_public_key"
-    "\030\007 \001(\014\"|\n\rDeleteRequest\022\021\n\tchunkname\030\001 \002"
-    "(\014\022\022\n\npublic_key\030\002 \002(\014\022\031\n\021signed_public_"
-    "key\030\003 \002(\014\022\026\n\016signed_request\030\004 \002(\014\022\021\n\tdat"
-    "a_type\030\005 \002(\005\"1\n\016DeleteResponse\022\016\n\006result"
-    "\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\"\037\n\nGetRequest\022\021\n"
-    "\tchunkname\030\001 \002(\014\"?\n\013GetResponse\022\016\n\006resul"
-    "t\030\001 \002(\r\022\017\n\007content\030\002 \001(\014\022\017\n\007pmid_id\030\003 \001("
-    "\014\"&\n\021CheckChunkRequest\022\021\n\tchunkname\030\001 \002("
-    "\014\"5\n\022CheckChunkResponse\022\016\n\006result\030\001 \002(\r\022"
-    "\017\n\007pmid_id\030\002 \002(\014\">\n\024ValidityCheckRequest"
-    "\022\021\n\tchunkname\030\001 \002(\014\022\023\n\013random_data\030\002 \002(\014"
-    "\"N\n\025ValidityCheckResponse\022\016\n\006result\030\001 \002("
-    "\r\022\024\n\014hash_content\030\002 \001(\014\022\017\n\007pmid_id\030\003 \002(\014"
-    "\"\212\001\n\rUpdateRequest\022\021\n\tchunkname\030\001 \002(\014\022\014\n"
-    "\004data\030\002 \002(\014\022\022\n\npublic_key\030\003 \002(\014\022\031\n\021signe"
-    "d_public_key\030\004 \002(\014\022\026\n\016signed_request\030\005 \002"
-    "(\014\022\021\n\tdata_type\030\006 \002(\005\"1\n\016UpdateResponse\022"
-    "\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\"_\n\022GetM"
-    "essagesRequest\022\032\n\022buffer_packet_name\030\001 \002"
-    "(\014\022\022\n\npublic_key\030\002 \002(\014\022\031\n\021signed_public_"
-    "key\030\003 \002(\014\"H\n\023GetMessagesResponse\022\016\n\006resu"
-    "lt\030\001 \002(\r\022\020\n\010messages\030\002 \003(\014\022\017\n\007pmid_id\030\003 "
-    "\001(\014\"v\n\020SwapChunkRequest\022\024\n\014request_type\030"
-    "\001 \002(\005\022\022\n\nchunkname1\030\002 \002(\014\022\025\n\rchunkconten"
-    "t1\030\003 \001(\014\022\r\n\005size1\030\004 \001(\005\022\022\n\nchunkname2\030\005 "
-    "\001(\014\"\276\001\n\021SwapChunkResponse\022\024\n\014request_typ"
-    "e\030\001 \002(\005\022\016\n\006result\030\002 \002(\r\022\022\n\nchunkname1\030\003 "
-    "\001(\014\022\025\n\rchunkcontent1\030\004 \001(\014\022\r\n\005size1\030\005 \001("
-    "\005\022\022\n\nchunkname2\030\006 \001(\014\022\025\n\rchunkcontent2\030\007"
-    " \001(\014\022\r\n\005size2\030\010 \001(\005\022\017\n\007pmid_id\030\t \002(\014", 2636);
+    "ze\030\002 \002(\004\022\014\n\004pmid\030\003 \002(\014\"\224\001\n\025StoreReferenc"
+    "eRequest\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004pmid\030\002 \002("
+    "\014\022\023\n\013signed_pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002"
+    "(\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026\n\016signed_"
+    "request\030\006 \002(\014\"\254\001\n\026StoreReferenceResponse"
+    "\022\016\n\006result\030\001 \002(\r\022\026\n\016rank_authority\030\002 \001(\014"
+    "\022\035\n\025signed_rank_authority\030\003 \001(\014\022\013\n\003iou\030\004"
+    " \001(\014\022\017\n\007pmid_id\030\005 \001(\014\022\022\n\npublic_key\030\006 \001("
+    "\014\022\031\n\021signed_public_key\030\007 \001(\014\"|\n\rDeleteRe"
+    "quest\022\021\n\tchunkname\030\001 \002(\014\022\022\n\npublic_key\030\002"
+    " \002(\014\022\031\n\021signed_public_key\030\003 \002(\014\022\026\n\016signe"
+    "d_request\030\004 \002(\014\022\021\n\tdata_type\030\005 \002(\005\"1\n\016De"
+    "leteResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030"
+    "\002 \001(\014\"\037\n\nGetRequest\022\021\n\tchunkname\030\001 \002(\014\"?"
+    "\n\013GetResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007content"
+    "\030\002 \001(\014\022\017\n\007pmid_id\030\003 \001(\014\"&\n\021CheckChunkReq"
+    "uest\022\021\n\tchunkname\030\001 \002(\014\"5\n\022CheckChunkRes"
+    "ponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \002(\014\">"
+    "\n\024ValidityCheckRequest\022\021\n\tchunkname\030\001 \002("
+    "\014\022\023\n\013random_data\030\002 \002(\014\"N\n\025ValidityCheckR"
+    "esponse\022\016\n\006result\030\001 \002(\r\022\024\n\014hash_content\030"
+    "\002 \001(\014\022\017\n\007pmid_id\030\003 \002(\014\"\212\001\n\rUpdateRequest"
+    "\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\022\n\npub"
+    "lic_key\030\003 \002(\014\022\031\n\021signed_public_key\030\004 \002(\014"
+    "\022\026\n\016signed_request\030\005 \002(\014\022\021\n\tdata_type\030\006 "
+    "\002(\005\"1\n\016UpdateResponse\022\016\n\006result\030\001 \002(\r\022\017\n"
+    "\007pmid_id\030\002 \001(\014\"_\n\022GetMessagesRequest\022\032\n\022"
+    "buffer_packet_name\030\001 \002(\014\022\022\n\npublic_key\030\002"
+    " \002(\014\022\031\n\021signed_public_key\030\003 \002(\014\"H\n\023GetMe"
+    "ssagesResponse\022\016\n\006result\030\001 \002(\r\022\020\n\010messag"
+    "es\030\002 \003(\014\022\017\n\007pmid_id\030\003 \001(\014\"v\n\020SwapChunkRe"
+    "quest\022\024\n\014request_type\030\001 \002(\005\022\022\n\nchunkname"
+    "1\030\002 \002(\014\022\025\n\rchunkcontent1\030\003 \001(\014\022\r\n\005size1\030"
+    "\004 \001(\005\022\022\n\nchunkname2\030\005 \001(\014\"\276\001\n\021SwapChunkR"
+    "esponse\022\024\n\014request_type\030\001 \002(\005\022\016\n\006result\030"
+    "\002 \002(\r\022\022\n\nchunkname1\030\003 \001(\014\022\025\n\rchunkconten"
+    "t1\030\004 \001(\014\022\r\n\005size1\030\005 \001(\005\022\022\n\nchunkname2\030\006 "
+    "\001(\014\022\025\n\rchunkcontent2\030\007 \001(\014\022\r\n\005size2\030\010 \001("
+    "\005\022\017\n\007pmid_id\030\t \002(\014", 2658);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service_messages.proto", &protobuf_RegisterTypes);
   IOUAuthority::default_instance_ = new IOUAuthority();
@@ -4701,12 +4703,14 @@ const ::google::protobuf::Reflection* RankAuthority::GetReflection() const {
 
 const ::std::string StoreReferenceRequest::_default_chunkname_;
 const ::std::string StoreReferenceRequest::_default_pmid_;
+const ::std::string StoreReferenceRequest::_default_signed_pmid_;
 const ::std::string StoreReferenceRequest::_default_public_key_;
 const ::std::string StoreReferenceRequest::_default_signed_public_key_;
 const ::std::string StoreReferenceRequest::_default_signed_request_;
 #ifndef _MSC_VER
 const int StoreReferenceRequest::kChunknameFieldNumber;
 const int StoreReferenceRequest::kPmidFieldNumber;
+const int StoreReferenceRequest::kSignedPmidFieldNumber;
 const int StoreReferenceRequest::kPublicKeyFieldNumber;
 const int StoreReferenceRequest::kSignedPublicKeyFieldNumber;
 const int StoreReferenceRequest::kSignedRequestFieldNumber;
@@ -4718,6 +4722,7 @@ StoreReferenceRequest::StoreReferenceRequest()
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)),
     pmid_(const_cast< ::std::string*>(&_default_pmid_)),
+    signed_pmid_(const_cast< ::std::string*>(&_default_signed_pmid_)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
     signed_public_key_(const_cast< ::std::string*>(&_default_signed_public_key_)),
     signed_request_(const_cast< ::std::string*>(&_default_signed_request_)) {
@@ -4732,6 +4737,7 @@ StoreReferenceRequest::StoreReferenceRequest(const StoreReferenceRequest& from)
     _cached_size_(0),
     chunkname_(const_cast< ::std::string*>(&_default_chunkname_)),
     pmid_(const_cast< ::std::string*>(&_default_pmid_)),
+    signed_pmid_(const_cast< ::std::string*>(&_default_signed_pmid_)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
     signed_public_key_(const_cast< ::std::string*>(&_default_signed_public_key_)),
     signed_request_(const_cast< ::std::string*>(&_default_signed_request_)) {
@@ -4743,6 +4749,7 @@ void StoreReferenceRequest::SharedCtor() {
   _cached_size_ = 0;
   chunkname_ = const_cast< ::std::string*>(&_default_chunkname_);
   pmid_ = const_cast< ::std::string*>(&_default_pmid_);
+  signed_pmid_ = const_cast< ::std::string*>(&_default_signed_pmid_);
   public_key_ = const_cast< ::std::string*>(&_default_public_key_);
   signed_public_key_ = const_cast< ::std::string*>(&_default_signed_public_key_);
   signed_request_ = const_cast< ::std::string*>(&_default_signed_request_);
@@ -4759,6 +4766,9 @@ void StoreReferenceRequest::SharedDtor() {
   }
   if (pmid_ != &_default_pmid_) {
     delete pmid_;
+  }
+  if (signed_pmid_ != &_default_signed_pmid_) {
+    delete signed_pmid_;
   }
   if (public_key_ != &_default_public_key_) {
     delete public_key_;
@@ -4801,16 +4811,21 @@ void StoreReferenceRequest::Clear() {
       }
     }
     if (_has_bit(2)) {
+      if (signed_pmid_ != &_default_signed_pmid_) {
+        signed_pmid_->clear();
+      }
+    }
+    if (_has_bit(3)) {
       if (public_key_ != &_default_public_key_) {
         public_key_->clear();
       }
     }
-    if (_has_bit(3)) {
+    if (_has_bit(4)) {
       if (signed_public_key_ != &_default_signed_public_key_) {
         signed_public_key_->clear();
       }
     }
-    if (_has_bit(4)) {
+    if (_has_bit(5)) {
       if (signed_request_ != &_default_signed_request_) {
         signed_request_->clear();
       }
@@ -4845,36 +4860,48 @@ bool StoreReferenceRequest::MergePartialFromCodedStream(
         }
        parse_pmid:
         DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pmid()));
-        if (input->ExpectTag(26)) goto parse_public_key;
+        if (input->ExpectTag(26)) goto parse_signed_pmid;
         break;
       }
       
-      // required bytes public_key = 3;
+      // required bytes signed_pmid = 3;
       case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_signed_pmid:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_signed_pmid()));
+        if (input->ExpectTag(34)) goto parse_public_key;
+        break;
+      }
+      
+      // required bytes public_key = 4;
+      case 4: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
        parse_public_key:
         DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key()));
-        if (input->ExpectTag(34)) goto parse_signed_public_key;
+        if (input->ExpectTag(42)) goto parse_signed_public_key;
         break;
       }
       
-      // required bytes signed_public_key = 4;
-      case 4: {
+      // required bytes signed_public_key = 5;
+      case 5: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
        parse_signed_public_key:
         DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_signed_public_key()));
-        if (input->ExpectTag(42)) goto parse_signed_request;
+        if (input->ExpectTag(50)) goto parse_signed_request;
         break;
       }
       
-      // required bytes signed_request = 5;
-      case 5: {
+      // required bytes signed_request = 6;
+      case 6: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
@@ -4919,19 +4946,24 @@ void StoreReferenceRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBytes(2, this->pmid(), output);
   }
   
-  // required bytes public_key = 3;
+  // required bytes signed_pmid = 3;
   if (_has_bit(2)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->public_key(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->signed_pmid(), output);
   }
   
-  // required bytes signed_public_key = 4;
+  // required bytes public_key = 4;
   if (_has_bit(3)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->signed_public_key(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->public_key(), output);
   }
   
-  // required bytes signed_request = 5;
+  // required bytes signed_public_key = 5;
   if (_has_bit(4)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->signed_request(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->signed_public_key(), output);
+  }
+  
+  // required bytes signed_request = 6;
+  if (_has_bit(5)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(6, this->signed_request(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -4952,19 +4984,24 @@ void StoreReferenceRequest::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->pmid(), target);
   }
   
-  // required bytes public_key = 3;
+  // required bytes signed_pmid = 3;
   if (_has_bit(2)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->public_key(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->signed_pmid(), target);
   }
   
-  // required bytes signed_public_key = 4;
+  // required bytes public_key = 4;
   if (_has_bit(3)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->signed_public_key(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->public_key(), target);
   }
   
-  // required bytes signed_request = 5;
+  // required bytes signed_public_key = 5;
   if (_has_bit(4)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->signed_request(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->signed_public_key(), target);
+  }
+  
+  // required bytes signed_request = 6;
+  if (_has_bit(5)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(6, this->signed_request(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -4990,19 +5027,25 @@ int StoreReferenceRequest::ByteSize() const {
         ::google::protobuf::internal::WireFormat::BytesSize(this->pmid());
     }
     
-    // required bytes public_key = 3;
+    // required bytes signed_pmid = 3;
+    if (has_signed_pmid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->signed_pmid());
+    }
+    
+    // required bytes public_key = 4;
     if (has_public_key()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->public_key());
     }
     
-    // required bytes signed_public_key = 4;
+    // required bytes signed_public_key = 5;
     if (has_signed_public_key()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->signed_public_key());
     }
     
-    // required bytes signed_request = 5;
+    // required bytes signed_request = 6;
     if (has_signed_request()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->signed_request());
@@ -5040,12 +5083,15 @@ void StoreReferenceRequest::MergeFrom(const StoreReferenceRequest& from) {
       set_pmid(from.pmid());
     }
     if (from._has_bit(2)) {
-      set_public_key(from.public_key());
+      set_signed_pmid(from.signed_pmid());
     }
     if (from._has_bit(3)) {
-      set_signed_public_key(from.signed_public_key());
+      set_public_key(from.public_key());
     }
     if (from._has_bit(4)) {
+      set_signed_public_key(from.signed_public_key());
+    }
+    if (from._has_bit(5)) {
       set_signed_request(from.signed_request());
     }
   }
@@ -5068,6 +5114,7 @@ void StoreReferenceRequest::Swap(StoreReferenceRequest* other) {
   if (other != this) {
     std::swap(chunkname_, other->chunkname_);
     std::swap(pmid_, other->pmid_);
+    std::swap(signed_pmid_, other->signed_pmid_);
     std::swap(public_key_, other->public_key_);
     std::swap(signed_public_key_, other->signed_public_key_);
     std::swap(signed_request_, other->signed_request_);
@@ -5078,7 +5125,7 @@ void StoreReferenceRequest::Swap(StoreReferenceRequest* other) {
 }
 
 bool StoreReferenceRequest::IsInitialized() const {
-  if ((_has_bits_[0] & 0x0000001f) != 0x0000001f) return false;
+  if ((_has_bits_[0] & 0x0000003f) != 0x0000003f) return false;
   
   return true;
 }

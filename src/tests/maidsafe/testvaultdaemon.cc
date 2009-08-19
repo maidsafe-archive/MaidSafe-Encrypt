@@ -213,7 +213,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
   ASSERT_EQ(kad::kRpcResultFailure, result_up.result());
   nodes[8]->RpcUpdateChunk(ser_args, sender_info, &ser_result);
   std::string ret_chunk;
-  ASSERT_TRUE(nodes[6]->chunk_store_.LoadChunk(chunk_name, ret_chunk));
+  ASSERT_EQ(0, nodes[6]->chunk_store_.LoadChunk(chunk_name, ret_chunk));
   ASSERT_EQ(chunk_content, ret_chunk);
   // create a vault daemon to synchronize the stale chunks
   kad::VaultDaemon daemon(nodes[6]);
@@ -221,7 +221,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
   daemon.SyncVault(boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb, mutex[6]);
   ASSERT_EQ(kad::kRpcResultFailure, cb.result());
-  ASSERT_TRUE(nodes[6]->chunk_store_.LoadChunk(chunk_name, ret_chunk));
+  ASSERT_EQ(0, nodes[6]->chunk_store_.LoadChunk(chunk_name, ret_chunk));
   ASSERT_EQ(new_chunk_content, ret_chunk);
 }
 
@@ -305,7 +305,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
   std::map<std::string, std::string>::iterator it;
   for (it = chunks.begin(); it != chunks.end(); it++) {
     std::string ret_chunk;
-    ASSERT_TRUE(nodes[19]->chunk_store_.LoadChunk(it->first, ret_chunk));
+    ASSERT_EQ(0, nodes[19]->chunk_store_.LoadChunk(it->first, ret_chunk));
     ASSERT_EQ(it->second, ret_chunk);
   }
 }
@@ -398,7 +398,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
   int num_updated_chunk = 0;
   for (it = chunks.begin(); it != chunks.end(); it++) {
     std::string ret_chunk;
-    ASSERT_TRUE(nodes[19]->chunk_store_.LoadChunk(it->first, ret_chunk));
+    ASSERT_EQ(0, nodes[19]->chunk_store_.LoadChunk(it->first, ret_chunk));
     if (it->second == ret_chunk)
       num_updated_chunk++;
   }

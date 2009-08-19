@@ -56,14 +56,14 @@ void PDClient::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
     get_args->retry_remote = true;
   }
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-  client_rpcs_->CheckChunk(get_args->data_->chunk_name,
-                           ip,
-                           port,
-                           get_args->chunk_holder_.rendezvous_ip(),
-                           get_args->chunk_holder_.rendezvous_port(),
-                           check_chunk_response.get(),
-                           controller,
-                           callback);
+//  client_rpcs_->CheckChunk(get_args->data_->chunk_name,
+//                           ip,
+//                           port,
+//                           get_args->chunk_holder_.rendezvous_ip(),
+//                           get_args->chunk_holder_.rendezvous_port(),
+//                           check_chunk_response.get(),
+//                           controller,
+//                           callback);
 }
 
 void PDClient::CheckChunkCallback(
@@ -100,14 +100,14 @@ void PDClient::CheckChunkCallback(
                                         check_chunk_response,
                                         get_args);
       rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-      client_rpcs_->CheckChunk(get_args->data_->chunk_name,
-                               get_args->chunk_holder_.host_ip(),
-                               get_args->chunk_holder_.host_port(),
-                               get_args->chunk_holder_.rendezvous_ip(),
-                               get_args->chunk_holder_.rendezvous_port(),
-                               check_chunk_response.get(),
-                               controller,
-                               callback);
+//      client_rpcs_->CheckChunk(get_args->data_->chunk_name,
+//                               get_args->chunk_holder_.host_ip(),
+//                               get_args->chunk_holder_.host_port(),
+//                               get_args->chunk_holder_.rendezvous_ip(),
+//                               get_args->chunk_holder_.rendezvous_port(),
+//                               check_chunk_response.get(),
+//                               controller,
+//                               callback);
       return;
     }
   }
@@ -181,14 +181,14 @@ void PDClient::CheckChunkCallback(
                                           get_response,
                                           get_args);
         rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-        client_rpcs_->Get(get_args->data_->chunk_name,
-                          ip,
-                          port,
-                          get_args->chunk_holder_.rendezvous_ip(),
-                          get_args->chunk_holder_.rendezvous_port(),
-                          get_response.get(),
-                          controller,
-                          callback);
+//        client_rpcs_->Get(get_args->data_->chunk_name,
+//                          ip,
+//                          port,
+//                          get_args->chunk_holder_.rendezvous_ip(),
+//                          get_args->chunk_holder_.rendezvous_port(),
+//                          get_response.get(),
+//                          controller,
+//                          callback);
       }
     }
   }
@@ -295,14 +295,14 @@ void PDClient::GetChunkCallback(
                                         get_response,
                                         get_args);
       rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-      client_rpcs_->Get(get_args->data_->chunk_name,
-                        get_args->chunk_holder_.host_ip(),
-                        get_args->chunk_holder_.host_port(),
-                        get_args->chunk_holder_.rendezvous_ip(),
-                        get_args->chunk_holder_.rendezvous_port(),
-                        get_response.get(),
-                        controller,
-                        callback);
+//      client_rpcs_->Get(get_args->data_->chunk_name,
+//                        get_args->chunk_holder_.host_ip(),
+//                        get_args->chunk_holder_.host_port(),
+//                        get_args->chunk_holder_.rendezvous_ip(),
+//                        get_args->chunk_holder_.rendezvous_port(),
+//                        get_response.get(),
+//                        controller,
+//                        callback);
       return;
     }
   }

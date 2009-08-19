@@ -403,6 +403,21 @@ void VaultService::StoreChunkReference(google::protobuf::RpcController*,
     done->Run();
     return;
   }
+  kad::SignedValue signed_value;
+  signed_value.set_value(request->pmid());
+  signed_value.set_value_signature(request->signed_pmid());
+  std::string ser_signed_value;
+  bool ser_ok = signed_value.SerializeToString(&ser_signed_value);
+  if (!ser_ok ||
+      !knode_->StoreValueLocal(request->chunkname(), ser_signed_value, 86400)) {
+#ifdef DEBUG
+    printf("In VaultService::StoreChunkReference (%i), failed to store pmid to"
+           "local ref packet.\n", knode_->host_port());
+#endif
+    response->set_result(kNack);
+    done->Run();
+    return;
+  }
 
   std::string ra;
   std::string signed_ra;
@@ -830,22 +845,22 @@ bool VaultService::ModifyBufferPacketInfo(const std::string &new_info,
 }
 
 bool VaultService::HasChunkLocal(const std::string &chunkname) {
-  return vault_chunkstore_->HasChunk(chunkname);
+  return vault_chunkstore_->Has(chunkname);
 }
 
 bool VaultService::StoreChunkLocal(const std::string &chunkname,
                                    const std::string &content) {
-  return vault_chunkstore_->StoreChunk(chunkname, content);
+  return (vault_chunkstore_->Store(chunkname, content) == 0);
 }
 
 bool VaultService::UpdateChunkLocal(const std::string &chunkname,
                                     const std::string &content) {
-  return vault_chunkstore_->UpdateChunk(chunkname, content);
+  return (vault_chunkstore_->UpdateChunk(chunkname, content) == 0);
 }
 
 bool VaultService::LoadChunkLocal(const std::string &chunkname,
                                   std::string *content) {
-  return vault_chunkstore_->LoadChunk(chunkname, content);
+  return (vault_chunkstore_->Load(chunkname, content) == 0);
 }
 
 bool VaultService::DeleteChunkLocal(const std::string &chunkname) {

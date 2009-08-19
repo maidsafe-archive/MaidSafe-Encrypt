@@ -925,13 +925,13 @@ void SEHandler::LoadChunk(const std::string &chunk_name,
     SelfEncryption se_(client_chunkstore_);
     fs::path chunk_path = se_.GetChunkPath(chunk_name);
     if (!fs::exists(chunk_path)) {
-      storem_->LoadChunk(chunk_name,
-                         boost::bind(&SEHandler::LoadChunkCallback,
-                                     this,
-                                     _1,
-                                     chunk_name,
-                                     retry,
-                                     data));
+//      storem_->LoadChunk(chunk_name,
+//                         boost::bind(&SEHandler::LoadChunkCallback,
+//                                     this,
+//                                     _1,
+//                                     chunk_name,
+//                                     retry,
+//                                     data));
       return;
     } else {
       --data->active_chunks;

@@ -45,7 +45,7 @@ class VaultChunkStore : public maidsafe::ChunkStore {
                   const boost::uint64_t &used_space)
       : ChunkStore(chunkstore_dir, available_space, used_space) {}
   // This replaces the existing value - it doesn't append to the existing value
-  bool UpdateChunk(const std::string &key, const std::string &value);
+  int UpdateChunk(const std::string &key, const std::string &value);
   // Loads a chunk chosen at random from hashable normal (ie not cached) chunks
   bool LoadRandomChunk(std::string *key, std::string *value);
   void GetAllChunks(std::list<std::string> *chunk_names);
@@ -58,7 +58,7 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   inline boost::uint64_t FreeSpace() { return available_space_ - used_space_; }
  private:
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreInit);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreStoreChunk);
+  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreStore);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreAddChunkToOutgoing);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk);
