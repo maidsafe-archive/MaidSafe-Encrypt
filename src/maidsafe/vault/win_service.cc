@@ -115,7 +115,13 @@ void ServiceMain() {
   SetServiceStatus(hStatus, &ServiceStatus);
 
   // Start the vault by instantiating a VaultDaemon
-  maidsafe_vault::VaultDaemon vault_daemon_(0);
+  maidsafe_vault::VaultDaemon vault_daemon(0);
+  if (!vault_daemon.StartVault()) {
+    ServiceStatus.dwCurrentState = SERVICE_STOPPED;
+    ServiceStatus.dwWin32ExitCode = -1;
+    SetServiceStatus(hStatus, &ServiceStatus);
+    return;
+  }
 
   // The worker loop of a service
   while (ServiceStatus.dwCurrentState == SERVICE_RUNNING) {

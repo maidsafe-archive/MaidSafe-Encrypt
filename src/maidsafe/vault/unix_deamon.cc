@@ -104,12 +104,14 @@ int main(int argc, char* argv[]) {
     std::string prt(argv[1]);
     port = base::stoi(prt);
   }
-  maidsafe_vault::VaultDaemon vault_daemon_(port);
+  maidsafe_vault::VaultDaemon vault_daemon(port);
+  if (!vault_daemon.StartVault())
+    exit(EXIT_FAILURE);
   /* The Big Loop */
   while (1) {
     /* Do some task here ... */
     /* we should check vaultdeamon still running */
-    vault_daemon_.Status();
+    vault_daemon.Status();
     sleep(10);  /* wait 10 seconds */
   }
   exit(EXIT_SUCCESS);

@@ -182,6 +182,73 @@ class MaidsafeService_Stub : public MaidsafeService {
 };
 
 
+// -------------------------------------------------------------------
+
+class VaultRegistration_Stub;
+
+class VaultRegistration : public ::google::protobuf::Service {
+ protected:
+  // This class should be treated as an abstract interface.
+  inline VaultRegistration() {};
+ public:
+  virtual ~VaultRegistration();
+  
+  typedef VaultRegistration_Stub Stub;
+  
+  static const ::google::protobuf::ServiceDescriptor* descriptor();
+  
+  virtual void OwnVault(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::OwnVaultRequest* request,
+                       ::maidsafe::OwnVaultResponse* response,
+                       ::google::protobuf::Closure* done);
+  virtual void IsVaultOwned(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::IsOwnedRequest* request,
+                       ::maidsafe::IsOwnedResponse* response,
+                       ::google::protobuf::Closure* done);
+  
+  // implements Service ----------------------------------------------
+  
+  const ::google::protobuf::ServiceDescriptor* GetDescriptor();
+  void CallMethod(const ::google::protobuf::MethodDescriptor* method,
+                  ::google::protobuf::RpcController* controller,
+                  const ::google::protobuf::Message* request,
+                  ::google::protobuf::Message* response,
+                  ::google::protobuf::Closure* done);
+  const ::google::protobuf::Message& GetRequestPrototype(
+    const ::google::protobuf::MethodDescriptor* method) const;
+  const ::google::protobuf::Message& GetResponsePrototype(
+    const ::google::protobuf::MethodDescriptor* method) const;
+
+ private:
+  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(VaultRegistration);
+};
+
+class VaultRegistration_Stub : public VaultRegistration {
+ public:
+  VaultRegistration_Stub(::google::protobuf::RpcChannel* channel);
+  VaultRegistration_Stub(::google::protobuf::RpcChannel* channel,
+                   ::google::protobuf::Service::ChannelOwnership ownership);
+  ~VaultRegistration_Stub();
+  
+  inline ::google::protobuf::RpcChannel* channel() { return channel_; }
+  
+  // implements VaultRegistration ------------------------------------------
+  
+  void OwnVault(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::OwnVaultRequest* request,
+                       ::maidsafe::OwnVaultResponse* response,
+                       ::google::protobuf::Closure* done);
+  void IsVaultOwned(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::IsOwnedRequest* request,
+                       ::maidsafe::IsOwnedResponse* response,
+                       ::google::protobuf::Closure* done);
+ private:
+  ::google::protobuf::RpcChannel* channel_;
+  bool owns_channel_;
+  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(VaultRegistration_Stub);
+};
+
+
 // ===================================================================
 
 

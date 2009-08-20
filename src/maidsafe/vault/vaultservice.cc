@@ -26,11 +26,13 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/filesystem.hpp>
 #include <maidsafe/kademlia_service_messages.pb.h>
 
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultbufferpackethandler.h"
+#include "maidsafe/crypto.h"
 
 namespace maidsafe_vault {
 
@@ -926,4 +928,99 @@ void VaultService::RankAuthorityGenerator(const std::string &chunkname,
                            crypto::STRING_STRING);
 }
 
+RegistrationService::RegistrationService(boost::function< void(
+      const maidsafe::VaultConfig&) > notifier) : notifier_(notifier),
+        status_(maidsafe::NOT_OWNED), pending_response_() {}
+
+void RegistrationService::OwnVault(google::protobuf::RpcController* ,
+      const maidsafe::OwnVaultRequest* request,
+      maidsafe::OwnVaultResponse* response, google::protobuf::Closure* done) {
+  if (!request->IsInitialized()) {
+    response->set_result(maidsafe::INVALID_OWNREQUEST);
+    done->Run();
+    return;
+  }
+
+  if (status_ == maidsafe::OWNED) {
+    response->set_result(maidsafe::VAULT_ALREADY_OWNED);
+    done->Run();
+    return;
+  }
+
+  if (request->space() == 0) {
+    response->set_result(maidsafe::NO_SPACE_ALLOCATED);
+    done->Run();
+    return;
+  }
+
+  // checking available space in disk
+  boost::filesystem::path chunkdir(request->chunkstore_dir());
+  boost::filesystem::space_info info;
+  if ("/" != chunkdir.root_directory())
+    info = boost::filesystem::space(boost::filesystem::path("/"));
+  else
+    info = boost::filesystem::space(boost::filesystem::path(chunkdir.root_name()
+        + chunkdir.root_directory()));
+  if (request->space() > info.available) {
+    response->set_result(maidsafe::NOT_ENOUGH_SPACE);
+    done->Run();
+    return;
+  }
+  // Checking if keys sent are a correct RSA key pair
+  crypto::Crypto cobj;
+  cobj.set_hash_algorithm(crypto::SHA_512);
+  if (cobj.AsymCheckSig(request->public_key(), request->signed_public_key(),
+      request->public_key(), crypto::STRING_STRING)) {
+    std::string signed_key = cobj.AsymSign(request->public_key(), "",
+        request->private_key(), crypto::STRING_STRING);
+    if (signed_key == request->signed_public_key()) {
+      // checking if port is available
+      transport::Transport test_tranport;
+      if (request->port() == 0 || test_tranport.IsPortAvailable(
+          request->port())) {
+        response->set_result(maidsafe::OWNED_SUCCESS);
+        std::string pmid_name = cobj.Hash(request->public_key()+signed_key, "",
+            crypto::STRING_STRING, false);
+        response->set_pmid_name(pmid_name);
+        pending_response_.callback = done;
+        pending_response_.args = response;
+        maidsafe::VaultConfig vconfig;
+        vconfig.set_pmid_public(request->public_key());
+        vconfig.set_pmid_private(request->private_key());
+        vconfig.set_signed_pmid_public(signed_key);
+        vconfig.set_chunkstore_dir(request->chunkstore_dir());
+        vconfig.set_port(request->port());
+        vconfig.set_available_space(request->space());
+        notifier_(vconfig);
+        return;
+      } else {
+        response->set_result(maidsafe::INVALID_PORT);
+      }
+    } else {
+      response->set_result(maidsafe::INVALID_RSA_KEYS);
+    }
+  } else {
+    response->set_result(maidsafe::INVALID_RSA_KEYS);
+  }
+  done->Run();
+}
+
+void RegistrationService::IsVaultOwned(google::protobuf::RpcController*,
+      const maidsafe::IsOwnedRequest*, maidsafe::IsOwnedResponse* response,
+      google::protobuf::Closure* done) {
+  response->set_status(status_);
+  done->Run();
+}
+
+void RegistrationService::ReplyOwnVaultRequest(const bool &fail_to_start) {
+  if (pending_response_.callback == NULL || pending_response_.args == NULL)
+    return;
+  if (fail_to_start) {
+    pending_response_.args->Clear();
+    pending_response_.args->set_result(maidsafe::FAILED_TO_START_VAULT);
+  }
+  pending_response_.callback->Run();
+  pending_response_.callback = NULL;
+  pending_response_.args = NULL;
+}
 }  // namespace maidsafe_vault

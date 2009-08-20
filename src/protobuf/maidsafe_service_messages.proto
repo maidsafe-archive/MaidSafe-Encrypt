@@ -193,3 +193,40 @@ message SwapChunkResponse {
   optional int32 size2 = 8;
   required bytes pmid_id = 9;
 };
+
+enum OwnVaultResult {
+  OWNED_SUCCESS = 0;
+  VAULT_ALREADY_OWNED = 1;
+  VAULT_IS_DOWN = 2;
+  INVALID_RSA_KEYS = 3;
+  NOT_ENOUGH_SPACE = 4;
+  NO_SPACE_ALLOCATED = 5;
+  INVALID_PORT = 6;
+  FAILED_TO_START_VAULT = 7;
+  INVALID_OWNREQUEST = 8;
+}
+
+message OwnVaultRequest {
+  required bytes public_key = 1;
+  required bytes private_key = 2;
+  required bytes signed_public_key = 3;
+  required bytes chunkstore_dir = 4;
+  required uint32 port = 5;
+  required uint64 space = 6;
+}
+
+message OwnVaultResponse {
+  required OwnVaultResult result = 1;
+  optional bytes pmid_name = 2;
+}
+
+enum VaultStatus {
+  NOT_OWNED = 0;
+  OWNED = 1;
+}
+
+message IsOwnedRequest {}
+
+message IsOwnedResponse {
+  required VaultStatus status = 2; 
+}

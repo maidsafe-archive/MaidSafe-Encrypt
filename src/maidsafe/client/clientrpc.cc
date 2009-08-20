@@ -211,4 +211,27 @@ void ClientRpcs::GetMessages(const std::string &buffer_packet_name,
   service.GetMessages(controller, &args, response, done);
 }
 
+void ClientRpcs::IsVaultOwned(IsOwnedResponse *response,
+      rpcprotocol::Controller *controller, rpcprotocol::Channel *channel,
+      google::protobuf::Closure *done) {
+  IsOwnedRequest request;
+  maidsafe::VaultRegistration::Stub service(channel);
+  service.IsVaultOwned(controller, &request, response, done);
+}
+
+void ClientRpcs::OwnVault(const std::string &priv_key, const std::string
+      &pub_key, const std::string &signed_pub_key, const boost::uint32_t &port,
+      const std::string &chunkstore_dir, const boost::uint64_t &space,
+      OwnVaultResponse *response, rpcprotocol::Controller *controller,
+      rpcprotocol::Channel *channel, google::protobuf::Closure *done) {
+  OwnVaultRequest request;
+  request.set_private_key(priv_key);
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(signed_pub_key);
+  request.set_chunkstore_dir(chunkstore_dir);
+  request.set_port(port);
+  request.set_space(space);
+  maidsafe::VaultRegistration::Stub service(channel);
+  service.OwnVault(controller, &request, response, done);
+}
 }  // namespace maidsafe

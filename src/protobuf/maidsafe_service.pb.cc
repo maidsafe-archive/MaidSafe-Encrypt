@@ -12,6 +12,7 @@ namespace maidsafe {
 namespace {
 
 const ::google::protobuf::ServiceDescriptor* MaidsafeService_descriptor_ = NULL;
+const ::google::protobuf::ServiceDescriptor* VaultRegistration_descriptor_ = NULL;
 
 }  // namespace
 
@@ -23,6 +24,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_2eproto() {
       "maidsafe_service.proto");
   GOOGLE_CHECK(file != NULL);
   MaidsafeService_descriptor_ = file->service(0);
+  VaultRegistration_descriptor_ = file->service(1);
 }
 
 namespace {
@@ -73,7 +75,10 @@ void protobuf_AddDesc_maidsafe_5fservice_2eproto() {
     "lidityCheckRequest\032\037.maidsafe.ValidityCh"
     "eckResponse\022D\n\tSwapChunk\022\032.maidsafe.Swap"
     "ChunkRequest\032\033.maidsafe.SwapChunkRespons"
-    "e", 921);
+    "e2\233\001\n\021VaultRegistration\022A\n\010OwnVault\022\031.ma"
+    "idsafe.OwnVaultRequest\032\032.maidsafe.OwnVau"
+    "ltResponse\022C\n\014IsVaultOwned\022\030.maidsafe.Is"
+    "OwnedRequest\032\031.maidsafe.IsOwnedResponse", 1079);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_maidsafe_5fservice_2eproto);
@@ -443,6 +448,114 @@ void MaidsafeService_Stub::SwapChunk(::google::protobuf::RpcController* controll
                               ::maidsafe::SwapChunkResponse* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(11),
+                       controller, request, response, done);
+}
+// ===================================================================
+
+VaultRegistration::~VaultRegistration() {}
+
+const ::google::protobuf::ServiceDescriptor* VaultRegistration::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return VaultRegistration_descriptor_;
+}
+
+const ::google::protobuf::ServiceDescriptor* VaultRegistration::GetDescriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return VaultRegistration_descriptor_;
+}
+
+void VaultRegistration::OwnVault(::google::protobuf::RpcController* controller,
+                         const ::maidsafe::OwnVaultRequest*,
+                         ::maidsafe::OwnVaultResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method OwnVault() not implemented.");
+  done->Run();
+}
+
+void VaultRegistration::IsVaultOwned(::google::protobuf::RpcController* controller,
+                         const ::maidsafe::IsOwnedRequest*,
+                         ::maidsafe::IsOwnedResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method IsVaultOwned() not implemented.");
+  done->Run();
+}
+
+void VaultRegistration::CallMethod(const ::google::protobuf::MethodDescriptor* method,
+                             ::google::protobuf::RpcController* controller,
+                             const ::google::protobuf::Message* request,
+                             ::google::protobuf::Message* response,
+                             ::google::protobuf::Closure* done) {
+  GOOGLE_DCHECK_EQ(method->service(), VaultRegistration_descriptor_);
+  switch(method->index()) {
+    case 0:
+      OwnVault(controller,
+             ::google::protobuf::down_cast<const ::maidsafe::OwnVaultRequest*>(request),
+             ::google::protobuf::down_cast< ::maidsafe::OwnVaultResponse*>(response),
+             done);
+      break;
+    case 1:
+      IsVaultOwned(controller,
+             ::google::protobuf::down_cast<const ::maidsafe::IsOwnedRequest*>(request),
+             ::google::protobuf::down_cast< ::maidsafe::IsOwnedResponse*>(response),
+             done);
+      break;
+    default:
+      GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
+      break;
+  }
+}
+
+const ::google::protobuf::Message& VaultRegistration::GetRequestPrototype(
+    const ::google::protobuf::MethodDescriptor* method) const {
+  GOOGLE_DCHECK_EQ(method->service(), descriptor());
+  switch(method->index()) {
+    case 0:
+      return ::maidsafe::OwnVaultRequest::default_instance();
+    case 1:
+      return ::maidsafe::IsOwnedRequest::default_instance();
+    default:
+      GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
+      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+  }
+}
+
+const ::google::protobuf::Message& VaultRegistration::GetResponsePrototype(
+    const ::google::protobuf::MethodDescriptor* method) const {
+  GOOGLE_DCHECK_EQ(method->service(), descriptor());
+  switch(method->index()) {
+    case 0:
+      return ::maidsafe::OwnVaultResponse::default_instance();
+    case 1:
+      return ::maidsafe::IsOwnedResponse::default_instance();
+    default:
+      GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
+      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+  }
+}
+
+VaultRegistration_Stub::VaultRegistration_Stub(::google::protobuf::RpcChannel* channel)
+  : channel_(channel), owns_channel_(false) {}
+VaultRegistration_Stub::VaultRegistration_Stub(
+    ::google::protobuf::RpcChannel* channel,
+    ::google::protobuf::Service::ChannelOwnership ownership)
+  : channel_(channel),
+    owns_channel_(ownership == ::google::protobuf::Service::STUB_OWNS_CHANNEL) {}
+VaultRegistration_Stub::~VaultRegistration_Stub() {
+  if (owns_channel_) delete channel_;
+}
+
+void VaultRegistration_Stub::OwnVault(::google::protobuf::RpcController* controller,
+                              const ::maidsafe::OwnVaultRequest* request,
+                              ::maidsafe::OwnVaultResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(0),
+                       controller, request, response, done);
+}
+void VaultRegistration_Stub::IsVaultOwned(::google::protobuf::RpcController* controller,
+                              const ::maidsafe::IsOwnedRequest* request,
+                              ::maidsafe::IsOwnedResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(1),
                        controller, request, response, done);
 }
 

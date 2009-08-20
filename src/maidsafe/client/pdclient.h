@@ -172,6 +172,30 @@ struct DeleteArgs {
   bool retry_remote;
 };
 
+struct RegisterVaultCallbackArgs {
+  RegisterVaultCallbackArgs() : cb(), response(NULL), ctrl(NULL) {}
+  boost::function<void(const OwnVaultResult&, const std::string&)> cb;
+  maidsafe::OwnVaultResponse* response;
+  rpcprotocol::Controller *ctrl;
+};
+
+struct IsVaultOwnedCallbackArgs {
+  IsVaultOwnedCallbackArgs() : cb(), response(NULL), ctrl(NULL), priv_key(""),
+      pub_key(""), signed_pub_key(""), chunkstore_dir(""), port(0), space(0) {}
+  IsVaultOwnedCallbackArgs(const std::string &privkey, const std::string
+      &pubkey, const std::string &sigpubkey, const std::string &dir, const
+      boost::uint32_t &startport, const boost::uint64_t &av_space)
+      : cb(), response(NULL), ctrl(NULL), priv_key(privkey), pub_key(pubkey),
+        signed_pub_key(sigpubkey), chunkstore_dir(dir), port(startport),
+        space(av_space) {}
+  boost::function<void(const OwnVaultResult&, const std::string&)> cb;
+  maidsafe::IsOwnedResponse* response;
+  rpcprotocol::Controller *ctrl;
+  std::string priv_key, pub_key, signed_pub_key, chunkstore_dir;
+  boost::uint32_t port;
+  boost::uint64_t space;
+};
+
 class PDClient {
  public:
   PDClient(boost::shared_ptr<rpcprotocol::ChannelManager> ch_mangr,
@@ -209,6 +233,10 @@ class PDClient {
                    const maidsafe::ValueType &data_type,
                    base::callback_func_type cb);
   void FindValue(const std::string &key, base::callback_func_type cb);
+  void RegisterLocalVault(const std::string &priv_key, const std::string
+      &pub_key, const std::string &signed_pub_key, const boost::uint32_t &port,
+      const std::string &chunkstore_dir, const boost::uint64_t &space,
+      boost::function<void(const OwnVaultResult&, const std::string&)> cb);
 
  private:
   // TODO(Jose) include ranking and client daemon
@@ -279,6 +307,9 @@ class PDClient {
   void DeleteChunk_DeleteChunkCallback(
       const boost::shared_ptr<DeleteResponse> delete_response,
       boost::shared_ptr<DeleteArgs> delete_args);
+  void RegisterVaultCallback(RegisterVaultCallbackArgs  callback_args);
+  void IsVaultOwnedCallback(IsVaultOwnedCallbackArgs  callback_args,
+      rpcprotocol::Channel *channel);
   PDClient(const PDClient&);
   PDClient& operator=(const PDClient&);
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;

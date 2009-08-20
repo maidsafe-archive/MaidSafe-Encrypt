@@ -18,3 +18,8 @@ service MaidsafeService {
   rpc ValidityCheck( ValidityCheckRequest ) returns ( ValidityCheckResponse );
   rpc SwapChunk( SwapChunkRequest ) returns ( SwapChunkResponse );
 }
+
+service VaultRegistration {
+  rpc OwnVault(OwnVaultRequest) returns (OwnVaultResponse);
+  rpc IsVaultOwned(IsOwnedRequest) returns (IsOwnedResponse);
+}

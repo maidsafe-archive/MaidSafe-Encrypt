@@ -56,7 +56,54 @@ class GetMessagesRequest;
 class GetMessagesResponse;
 class SwapChunkRequest;
 class SwapChunkResponse;
+class OwnVaultRequest;
+class OwnVaultResponse;
+class IsOwnedRequest;
+class IsOwnedResponse;
 
+enum OwnVaultResult {
+  OWNED_SUCCESS = 0,
+  VAULT_ALREADY_OWNED = 1,
+  VAULT_IS_DOWN = 2,
+  INVALID_RSA_KEYS = 3,
+  NOT_ENOUGH_SPACE = 4,
+  NO_SPACE_ALLOCATED = 5,
+  INVALID_PORT = 6,
+  FAILED_TO_START_VAULT = 7,
+  INVALID_OWNREQUEST = 8
+};
+const ::google::protobuf::EnumDescriptor* OwnVaultResult_descriptor();
+bool OwnVaultResult_IsValid(int value);
+const OwnVaultResult OwnVaultResult_MIN = OWNED_SUCCESS;
+const OwnVaultResult OwnVaultResult_MAX = INVALID_OWNREQUEST;
+
+inline const ::std::string& OwnVaultResult_Name(OwnVaultResult value) {
+  return ::google::protobuf::internal::NameOfEnum(
+    OwnVaultResult_descriptor(), value);
+}
+inline bool OwnVaultResult_Parse(
+    const ::std::string& name, OwnVaultResult* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<OwnVaultResult>(
+    OwnVaultResult_descriptor(), name, value);
+}
+enum VaultStatus {
+  NOT_OWNED = 0,
+  OWNED = 1
+};
+const ::google::protobuf::EnumDescriptor* VaultStatus_descriptor();
+bool VaultStatus_IsValid(int value);
+const VaultStatus VaultStatus_MIN = NOT_OWNED;
+const VaultStatus VaultStatus_MAX = OWNED;
+
+inline const ::std::string& VaultStatus_Name(VaultStatus value) {
+  return ::google::protobuf::internal::NameOfEnum(
+    VaultStatus_descriptor(), value);
+}
+inline bool VaultStatus_Parse(
+    const ::std::string& name, VaultStatus* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<VaultStatus>(
+    VaultStatus_descriptor(), name, value);
+}
 // ===================================================================
 
 class IOUAuthority : public ::google::protobuf::Message {
@@ -3350,6 +3397,414 @@ class SwapChunkResponse : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static SwapChunkResponse* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class OwnVaultRequest : public ::google::protobuf::Message {
+ public:
+  OwnVaultRequest();
+  virtual ~OwnVaultRequest();
+  
+  OwnVaultRequest(const OwnVaultRequest& from);
+  
+  inline OwnVaultRequest& operator=(const OwnVaultRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const OwnVaultRequest& default_instance();
+  void Swap(OwnVaultRequest* other);
+  
+  // implements Message ----------------------------------------------
+  
+  OwnVaultRequest* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const OwnVaultRequest& from);
+  void MergeFrom(const OwnVaultRequest& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes public_key = 1;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 1;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // required bytes private_key = 2;
+  inline bool has_private_key() const;
+  inline void clear_private_key();
+  static const int kPrivateKeyFieldNumber = 2;
+  inline const ::std::string& private_key() const;
+  inline void set_private_key(const ::std::string& value);
+  inline void set_private_key(const char* value);
+  inline void set_private_key(const void* value, size_t size);
+  inline ::std::string* mutable_private_key();
+  
+  // required bytes signed_public_key = 3;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 3;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
+  // required bytes chunkstore_dir = 4;
+  inline bool has_chunkstore_dir() const;
+  inline void clear_chunkstore_dir();
+  static const int kChunkstoreDirFieldNumber = 4;
+  inline const ::std::string& chunkstore_dir() const;
+  inline void set_chunkstore_dir(const ::std::string& value);
+  inline void set_chunkstore_dir(const char* value);
+  inline void set_chunkstore_dir(const void* value, size_t size);
+  inline ::std::string* mutable_chunkstore_dir();
+  
+  // required uint32 port = 5;
+  inline bool has_port() const;
+  inline void clear_port();
+  static const int kPortFieldNumber = 5;
+  inline ::google::protobuf::uint32 port() const;
+  inline void set_port(::google::protobuf::uint32 value);
+  
+  // required uint64 space = 6;
+  inline bool has_space() const;
+  inline void clear_space();
+  static const int kSpaceFieldNumber = 6;
+  inline ::google::protobuf::uint64 space() const;
+  inline void set_space(::google::protobuf::uint64 value);
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* private_key_;
+  static const ::std::string _default_private_key_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
+  ::std::string* chunkstore_dir_;
+  static const ::std::string _default_chunkstore_dir_;
+  ::google::protobuf::uint32 port_;
+  ::google::protobuf::uint64 space_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static OwnVaultRequest* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class OwnVaultResponse : public ::google::protobuf::Message {
+ public:
+  OwnVaultResponse();
+  virtual ~OwnVaultResponse();
+  
+  OwnVaultResponse(const OwnVaultResponse& from);
+  
+  inline OwnVaultResponse& operator=(const OwnVaultResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const OwnVaultResponse& default_instance();
+  void Swap(OwnVaultResponse* other);
+  
+  // implements Message ----------------------------------------------
+  
+  OwnVaultResponse* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const OwnVaultResponse& from);
+  void MergeFrom(const OwnVaultResponse& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required .maidsafe.OwnVaultResult result = 1;
+  inline bool has_result() const;
+  inline void clear_result();
+  static const int kResultFieldNumber = 1;
+  inline maidsafe::OwnVaultResult result() const;
+  inline void set_result(maidsafe::OwnVaultResult value);
+  
+  // optional bytes pmid_name = 2;
+  inline bool has_pmid_name() const;
+  inline void clear_pmid_name();
+  static const int kPmidNameFieldNumber = 2;
+  inline const ::std::string& pmid_name() const;
+  inline void set_pmid_name(const ::std::string& value);
+  inline void set_pmid_name(const char* value);
+  inline void set_pmid_name(const void* value, size_t size);
+  inline ::std::string* mutable_pmid_name();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  int result_;
+  ::std::string* pmid_name_;
+  static const ::std::string _default_pmid_name_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static OwnVaultResponse* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class IsOwnedRequest : public ::google::protobuf::Message {
+ public:
+  IsOwnedRequest();
+  virtual ~IsOwnedRequest();
+  
+  IsOwnedRequest(const IsOwnedRequest& from);
+  
+  inline IsOwnedRequest& operator=(const IsOwnedRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const IsOwnedRequest& default_instance();
+  void Swap(IsOwnedRequest* other);
+  
+  // implements Message ----------------------------------------------
+  
+  IsOwnedRequest* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const IsOwnedRequest& from);
+  void MergeFrom(const IsOwnedRequest& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[1];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static IsOwnedRequest* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class IsOwnedResponse : public ::google::protobuf::Message {
+ public:
+  IsOwnedResponse();
+  virtual ~IsOwnedResponse();
+  
+  IsOwnedResponse(const IsOwnedResponse& from);
+  
+  inline IsOwnedResponse& operator=(const IsOwnedResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const IsOwnedResponse& default_instance();
+  void Swap(IsOwnedResponse* other);
+  
+  // implements Message ----------------------------------------------
+  
+  IsOwnedResponse* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const IsOwnedResponse& from);
+  void MergeFrom(const IsOwnedResponse& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required .maidsafe.VaultStatus status = 2;
+  inline bool has_status() const;
+  inline void clear_status();
+  static const int kStatusFieldNumber = 2;
+  inline maidsafe::VaultStatus status() const;
+  inline void set_status(maidsafe::VaultStatus value);
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  int status_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(1 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static IsOwnedResponse* default_instance_;
 };
 // ===================================================================
 
@@ -7199,6 +7654,298 @@ inline ::std::string* SwapChunkResponse::mutable_pmid_id() {
     pmid_id_ = new ::std::string;
   }
   return pmid_id_;
+}
+
+// -------------------------------------------------------------------
+
+// OwnVaultRequest
+
+// required bytes public_key = 1;
+inline bool OwnVaultRequest::has_public_key() const {
+  return _has_bit(0);
+}
+inline void OwnVaultRequest::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& OwnVaultRequest::public_key() const {
+  return *public_key_;
+}
+inline void OwnVaultRequest::set_public_key(const ::std::string& value) {
+  _set_bit(0);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void OwnVaultRequest::set_public_key(const char* value) {
+  _set_bit(0);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void OwnVaultRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(0);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* OwnVaultRequest::mutable_public_key() {
+  _set_bit(0);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// required bytes private_key = 2;
+inline bool OwnVaultRequest::has_private_key() const {
+  return _has_bit(1);
+}
+inline void OwnVaultRequest::clear_private_key() {
+  if (private_key_ != &_default_private_key_) {
+    private_key_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& OwnVaultRequest::private_key() const {
+  return *private_key_;
+}
+inline void OwnVaultRequest::set_private_key(const ::std::string& value) {
+  _set_bit(1);
+  if (private_key_ == &_default_private_key_) {
+    private_key_ = new ::std::string;
+  }
+  private_key_->assign(value);
+}
+inline void OwnVaultRequest::set_private_key(const char* value) {
+  _set_bit(1);
+  if (private_key_ == &_default_private_key_) {
+    private_key_ = new ::std::string;
+  }
+  private_key_->assign(value);
+}
+inline void OwnVaultRequest::set_private_key(const void* value, size_t size) {
+  _set_bit(1);
+  if (private_key_ == &_default_private_key_) {
+    private_key_ = new ::std::string;
+  }
+  private_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* OwnVaultRequest::mutable_private_key() {
+  _set_bit(1);
+  if (private_key_ == &_default_private_key_) {
+    private_key_ = new ::std::string;
+  }
+  return private_key_;
+}
+
+// required bytes signed_public_key = 3;
+inline bool OwnVaultRequest::has_signed_public_key() const {
+  return _has_bit(2);
+}
+inline void OwnVaultRequest::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& OwnVaultRequest::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void OwnVaultRequest::set_signed_public_key(const ::std::string& value) {
+  _set_bit(2);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void OwnVaultRequest::set_signed_public_key(const char* value) {
+  _set_bit(2);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void OwnVaultRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* OwnVaultRequest::mutable_signed_public_key() {
+  _set_bit(2);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
+}
+
+// required bytes chunkstore_dir = 4;
+inline bool OwnVaultRequest::has_chunkstore_dir() const {
+  return _has_bit(3);
+}
+inline void OwnVaultRequest::clear_chunkstore_dir() {
+  if (chunkstore_dir_ != &_default_chunkstore_dir_) {
+    chunkstore_dir_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& OwnVaultRequest::chunkstore_dir() const {
+  return *chunkstore_dir_;
+}
+inline void OwnVaultRequest::set_chunkstore_dir(const ::std::string& value) {
+  _set_bit(3);
+  if (chunkstore_dir_ == &_default_chunkstore_dir_) {
+    chunkstore_dir_ = new ::std::string;
+  }
+  chunkstore_dir_->assign(value);
+}
+inline void OwnVaultRequest::set_chunkstore_dir(const char* value) {
+  _set_bit(3);
+  if (chunkstore_dir_ == &_default_chunkstore_dir_) {
+    chunkstore_dir_ = new ::std::string;
+  }
+  chunkstore_dir_->assign(value);
+}
+inline void OwnVaultRequest::set_chunkstore_dir(const void* value, size_t size) {
+  _set_bit(3);
+  if (chunkstore_dir_ == &_default_chunkstore_dir_) {
+    chunkstore_dir_ = new ::std::string;
+  }
+  chunkstore_dir_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* OwnVaultRequest::mutable_chunkstore_dir() {
+  _set_bit(3);
+  if (chunkstore_dir_ == &_default_chunkstore_dir_) {
+    chunkstore_dir_ = new ::std::string;
+  }
+  return chunkstore_dir_;
+}
+
+// required uint32 port = 5;
+inline bool OwnVaultRequest::has_port() const {
+  return _has_bit(4);
+}
+inline void OwnVaultRequest::clear_port() {
+  port_ = 0u;
+  _clear_bit(4);
+}
+inline ::google::protobuf::uint32 OwnVaultRequest::port() const {
+  return port_;
+}
+inline void OwnVaultRequest::set_port(::google::protobuf::uint32 value) {
+  _set_bit(4);
+  port_ = value;
+}
+
+// required uint64 space = 6;
+inline bool OwnVaultRequest::has_space() const {
+  return _has_bit(5);
+}
+inline void OwnVaultRequest::clear_space() {
+  space_ = GOOGLE_ULONGLONG(0);
+  _clear_bit(5);
+}
+inline ::google::protobuf::uint64 OwnVaultRequest::space() const {
+  return space_;
+}
+inline void OwnVaultRequest::set_space(::google::protobuf::uint64 value) {
+  _set_bit(5);
+  space_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// OwnVaultResponse
+
+// required .maidsafe.OwnVaultResult result = 1;
+inline bool OwnVaultResponse::has_result() const {
+  return _has_bit(0);
+}
+inline void OwnVaultResponse::clear_result() {
+  result_ = 0;
+  _clear_bit(0);
+}
+inline maidsafe::OwnVaultResult OwnVaultResponse::result() const {
+  return static_cast< maidsafe::OwnVaultResult >(result_);
+}
+inline void OwnVaultResponse::set_result(maidsafe::OwnVaultResult value) {
+  GOOGLE_DCHECK(maidsafe::OwnVaultResult_IsValid(value));
+  _set_bit(0);
+  result_ = value;
+}
+
+// optional bytes pmid_name = 2;
+inline bool OwnVaultResponse::has_pmid_name() const {
+  return _has_bit(1);
+}
+inline void OwnVaultResponse::clear_pmid_name() {
+  if (pmid_name_ != &_default_pmid_name_) {
+    pmid_name_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& OwnVaultResponse::pmid_name() const {
+  return *pmid_name_;
+}
+inline void OwnVaultResponse::set_pmid_name(const ::std::string& value) {
+  _set_bit(1);
+  if (pmid_name_ == &_default_pmid_name_) {
+    pmid_name_ = new ::std::string;
+  }
+  pmid_name_->assign(value);
+}
+inline void OwnVaultResponse::set_pmid_name(const char* value) {
+  _set_bit(1);
+  if (pmid_name_ == &_default_pmid_name_) {
+    pmid_name_ = new ::std::string;
+  }
+  pmid_name_->assign(value);
+}
+inline void OwnVaultResponse::set_pmid_name(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_name_ == &_default_pmid_name_) {
+    pmid_name_ = new ::std::string;
+  }
+  pmid_name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* OwnVaultResponse::mutable_pmid_name() {
+  _set_bit(1);
+  if (pmid_name_ == &_default_pmid_name_) {
+    pmid_name_ = new ::std::string;
+  }
+  return pmid_name_;
+}
+
+// -------------------------------------------------------------------
+
+// IsOwnedRequest
+
+// -------------------------------------------------------------------
+
+// IsOwnedResponse
+
+// required .maidsafe.VaultStatus status = 2;
+inline bool IsOwnedResponse::has_status() const {
+  return _has_bit(0);
+}
+inline void IsOwnedResponse::clear_status() {
+  status_ = 0;
+  _clear_bit(0);
+}
+inline maidsafe::VaultStatus IsOwnedResponse::status() const {
+  return static_cast< maidsafe::VaultStatus >(status_);
+}
+inline void IsOwnedResponse::set_status(maidsafe::VaultStatus value) {
+  GOOGLE_DCHECK(maidsafe::VaultStatus_IsValid(value));
+  _set_bit(0);
+  status_ = value;
 }
 
 

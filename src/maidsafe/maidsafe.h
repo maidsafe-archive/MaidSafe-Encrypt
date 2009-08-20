@@ -306,6 +306,8 @@ const int kMinSuccessfulPecentageOfUpdating(0.9);
 const size_t kMaxStoreThreads(5);
 // max no of priority store threads allowed over and above normal store threads
 const size_t kMaxPriorityStoreThreads(2);
+// port where the service to register a local vault is listening
+const boost::uint16_t kLocalPort = 5484;
 
 namespace maidsafe {
 

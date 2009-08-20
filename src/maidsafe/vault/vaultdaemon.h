@@ -24,6 +24,7 @@
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/pdvault.h"
 #include "maidsafe/vault/validitycheck.h"
+#include "maidsafe/vault/vaultservice.h"
 
 namespace fs = boost::filesystem;
 
@@ -31,26 +32,24 @@ int WriteToLog(std::string str);
 
 namespace maidsafe_vault {
 
+const int kRsaKeySize = 4096;
+
 class VaultDaemon {
   // A daemon class to assist PD vault functions
  public:
-  explicit VaultDaemon(int port) : pdvault_(),
-                                   val_check_(),
-                                   is_owned_(false),
-                                   config_file_(""),
-                                   local_config_file_(""),
-                                   kad_config_file_(""),
-                                   pmid_public_(""),
-                                   pmid_private_(""),
-                                   signed_pmid_public_(""),
-                                   chunkstore_dir_(""),
-                                   port_(port),
-                                   vault_available_space_(0),
-                                   used_space_(0) {
-    TakeOwnership();
-  }
+  explicit VaultDaemon(int port) : pdvault_(NULL), val_check_(),
+      is_owned_(false), config_file_(), local_config_file_(),
+      kad_config_file_(), vault_path_(), pmid_public_(""), pmid_private_(""),
+      signed_pmid_public_(""), chunkstore_dir_(""), port_(port),
+      vault_available_space_(0), used_space_(0), local_ch_manager_(NULL),
+      registration_channel_(NULL), registration_service_(NULL),
+      config_mutex_() {}
   ~VaultDaemon();
   void Status();
+  // Returns false if it fails to start the already owned vault or the not owned
+  // vault.
+  bool StartVault();
+  fs::path vault_path() const { return vault_path_; }
  private:
   // Start vaultdaemon without an owner.  Once config file is located and read
   // owner of PMID in config file now owns the vault.
@@ -64,15 +63,25 @@ class VaultDaemon {
   // Do validity check on all chunks held in vault
   void ValidityCheck();
   FRIEND_TEST(VaultDaemonTest, BEH_KAD_EmptyChunkStorage);
+  void StartRegistrationService();
+  void RegistrationNotification(const maidsafe::VaultConfig &vconfig);
+  bool StartNotOwnedVault();
+  bool StartOwnedVault();
+  void StopNotOwnedVault();
+  bool ReadConfigInfo();
 
-  boost::shared_ptr<PDVault> pdvault_;
+  PDVault* pdvault_;
   boost::shared_ptr<ValCheck> val_check_;
   bool is_owned_;
-  fs::path config_file_, local_config_file_, kad_config_file_;
+  fs::path config_file_, local_config_file_, kad_config_file_, vault_path_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_;
   std::string chunkstore_dir_;
   boost::uint16_t port_;
   boost::uint64_t vault_available_space_, used_space_;
+  rpcprotocol::ChannelManager *local_ch_manager_;
+  rpcprotocol::Channel *registration_channel_;
+  RegistrationService *registration_service_;
+  boost::mutex config_mutex_;
   VaultDaemon(const VaultDaemon&);
   VaultDaemon& operator=(const VaultDaemon&);
 };

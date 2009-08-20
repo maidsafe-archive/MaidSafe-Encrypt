@@ -1032,4 +1032,80 @@ void PDClient::FindValue(const std::string &key,
 #endif
 }
 
+void PDClient::RegisterLocalVault(const std::string &priv_key,
+      const std::string &pub_key, const std::string &signed_pub_key,
+      const boost::uint32_t &port, const std::string &chunkstore_dir,
+      const boost::uint64_t &space,
+      boost::function<void(const OwnVaultResult&, const std::string&)> cb) {
+  IsVaultOwnedCallbackArgs cb_args(priv_key, pub_key, signed_pub_key,
+      chunkstore_dir, port, space);
+  cb_args.cb = cb;
+  cb_args.ctrl = new rpcprotocol::Controller;
+  cb_args.response = new IsOwnedResponse;
+  rpcprotocol::Channel *channel = new rpcprotocol::Channel(
+      channel_manager_.get(), "127.0.0.1", kLocalPort, "", 0);
+  google::protobuf::Closure* done = google::protobuf::NewCallback< PDClient,
+      IsVaultOwnedCallbackArgs, rpcprotocol::Channel* >(this,
+      &PDClient::IsVaultOwnedCallback, cb_args, channel);
+  client_rpcs_->IsVaultOwned(cb_args.response, cb_args.ctrl, channel, done);
+}
+
+void PDClient::RegisterVaultCallback(RegisterVaultCallbackArgs callback_args) {
+  if (callback_args.ctrl->Failed() ||
+      !callback_args.response->IsInitialized()) {
+    delete callback_args.response;
+    if (callback_args.ctrl->ErrorText() == rpcprotocol::kTimeOut)
+      callback_args.cb(VAULT_IS_DOWN, "");
+    else
+      callback_args.cb(INVALID_OWNREQUEST, "");
+    delete callback_args.ctrl;
+    return;
+  }
+  std::string pmid_name;
+  if (callback_args.response->has_pmid_name())
+    pmid_name = callback_args.response->pmid_name();
+  OwnVaultResult result = callback_args.response->result();
+  delete callback_args.response;
+  delete callback_args.ctrl;
+  callback_args.cb(result, pmid_name);
+}
+
+void PDClient::IsVaultOwnedCallback(IsVaultOwnedCallbackArgs callback_args,
+    rpcprotocol::Channel *channel) {
+  if (callback_args.ctrl->Failed() ||
+      !callback_args.response->IsInitialized()) {
+    delete channel;
+    delete callback_args.response;
+    if (callback_args.ctrl->ErrorText() == rpcprotocol::kTimeOut)
+      callback_args.cb(VAULT_IS_DOWN, "");
+    else
+      callback_args.cb(INVALID_OWNREQUEST, "");
+    delete callback_args.ctrl;
+    return;
+  }
+  if (callback_args.response->status() != NOT_OWNED) {
+    delete channel;
+    delete callback_args.response;
+    delete callback_args.ctrl;
+    callback_args.cb(VAULT_ALREADY_OWNED, "");
+    return;
+  }
+  delete callback_args.response;
+  RegisterVaultCallbackArgs cb_args;
+  cb_args.cb = callback_args.cb;
+  cb_args.ctrl = callback_args.ctrl;
+  cb_args.ctrl->Reset();
+  // 20 seconds, since the rpc is replied after the vault has
+  // started successfully
+  cb_args.ctrl->set_timeout(20);
+  cb_args.response = new OwnVaultResponse;
+  google::protobuf::Closure* done = google::protobuf::NewCallback<PDClient,
+      RegisterVaultCallbackArgs>(this, &PDClient::RegisterVaultCallback,
+      cb_args);
+  client_rpcs_->OwnVault(callback_args.priv_key, callback_args.pub_key,
+      callback_args.signed_pub_key, callback_args.port,
+      callback_args.chunkstore_dir, callback_args.space, cb_args.response,
+      cb_args.ctrl, channel, done);
+  delete channel;
+}
 }  // namespace maidsafe
