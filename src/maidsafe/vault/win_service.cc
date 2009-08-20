@@ -135,7 +135,7 @@ void ServiceMain() {
 //      SetServiceStatus(hStatus, &ServiceStatus);
 //      return;
 //    }
-    vault_daemon_.Status();
+    vault_daemon.Status();
     Sleep(kSleepTime);
   }
   return;
