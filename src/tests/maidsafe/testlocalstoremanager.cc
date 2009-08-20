@@ -138,7 +138,7 @@ class StoreManagerTest : public testing::Test {
 
 TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   packethandler::GenericPacket gp;
-  rsa_obj.GenerateKeys(1024);
+  rsa_obj.GenerateKeys(4096);
   gp.set_data("Generic System Packet Data");
   gp.set_signature(crypto_obj.AsymSign(gp.data(), "",
                   rsa_obj.private_key(), crypto::STRING_STRING));
@@ -190,7 +190,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
 
 TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
   packethandler::GenericPacket gp;
-  rsa_obj.GenerateKeys(1024);
+  rsa_obj.GenerateKeys(4096);
   gp.set_data("Generic System Packet Data");
   gp.set_signature(crypto_obj.AsymSign(gp.data(), "", rsa_obj.private_key(),
                    crypto::STRING_STRING));
@@ -276,15 +276,15 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   is_unique_res.Clear();
   std::string result_str;
   ASSERT_EQ(0, storemanager->LoadChunk(chunk_name, &result_str));
-  maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(result_str));
-  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
-  ASSERT_EQ(chunk_content, load_res.content());
+//  maidsafe::GetResponse load_res;
+//  ASSERT_TRUE(load_res.ParseFromString(result_str));
+//  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
+  ASSERT_EQ(chunk_content, result_str);
 }
 
 TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   std::string owner_id("Juan U. Smer");
-  rsa_obj.GenerateKeys(1024);
+  rsa_obj.GenerateKeys(4096);
   std::string public_key = rsa_obj.public_key();
   std::string private_key = rsa_obj.private_key();
 
@@ -353,7 +353,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
 
 TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   packethandler::GenericPacket gp;
-  rsa_obj.GenerateKeys(1024);
+  rsa_obj.GenerateKeys(4096);
   std::string public_key = rsa_obj.public_key();
   std::string private_key = rsa_obj.private_key();
   gp.set_data("Generic System Packet Data");
@@ -392,7 +392,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   is_unique_res.Clear();
 
   // Creating new public/private keys
-  rsa_obj.GenerateKeys(1024);
+  rsa_obj.GenerateKeys(4096);
 
   signed_public_key = crypto_obj.AsymSign(public_key, "", rsa_obj.private_key(),
                       crypto::STRING_STRING);
@@ -444,7 +444,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
 
 TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   std::string owner_id("Juan U. Smer");
-  rsa_obj.GenerateKeys(1024);
+  rsa_obj.GenerateKeys(4096);
   std::string public_key = rsa_obj.public_key();
   std::string private_key = rsa_obj.private_key();
 
@@ -503,7 +503,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   is_unique_res.Clear();
 
   rsa_obj.ClearKeys();
-  rsa_obj.GenerateKeys(1024);
+  rsa_obj.GenerateKeys(4096);
   std::string signed_public_key1 = crypto_obj.AsymSign(rsa_obj.public_key(), "",
                                    rsa_obj.private_key(),
                                    crypto::STRING_STRING);
@@ -527,8 +527,8 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
 TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   std::string owner_id("Juan U. Smer");
   crypto::RsaKeyPair rsa_kp1;
-  rsa_kp1.GenerateKeys(1024);
-  rsa_obj.GenerateKeys(1024);
+  rsa_kp1.GenerateKeys(4096);
+  rsa_obj.GenerateKeys(4096);
   std::string sig_private_key = rsa_kp1.private_key();
   std::string sig_public_key = rsa_kp1.public_key();
 
@@ -536,7 +536,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                                   sig_private_key, crypto::STRING_STRING);
 
   crypto::RsaKeyPair rsa_kp;
-  rsa_kp.GenerateKeys(1024);
+  rsa_kp.GenerateKeys(4096);
   std::string mpidsender_privkey = rsa_kp.private_key();
   std::string mpidsender_pubkey = rsa_kp.public_key();
 
@@ -567,7 +567,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   cb.Reset();
   store_res.Clear();
 
-  // rsa_obj.GenerateKeys(1024);
+  // rsa_obj.GenerateKeys(4096);
   std::string public_key = rsa_obj.public_key();
   std::string private_key = rsa_obj.private_key();
   ASSERT_NE(public_key, mpid.data());

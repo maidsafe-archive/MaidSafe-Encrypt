@@ -263,7 +263,11 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       if (pmid.empty() || chunkname.empty() || chunk_size == 0 ||
           !iou.empty() || !rank_authority.empty()) {
 #ifdef DEBUG
+#ifdef MAIDSAFE_WIN32
+        printf("Wrong parameters (%s) -- (%s) -- (%I64u)-- (%s) -- (%s)\n",
+#else
         printf("Wrong parameters (%s) -- (%s) -- (%llu)-- (%s) -- (%s)\n",
+#endif
                pmid.c_str(), chunkname.c_str(), chunk_size,
                iou.c_str(), rank_authority.c_str());
 #endif
@@ -288,7 +292,11 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       if (pmid.empty() || chunkname.empty() || chunk_size == 0 ||
          iou.empty() || !rank_authority.empty()) {
 #ifdef DEBUG
+#ifdef MAIDSAFE_WIN32
+        printf("Wrong parameters (%s) -- (%s) -- (%I64u)-- (%s) -- (%s)\n",
+#else
         printf("Wrong parameters (%s) -- (%s) -- (%llu)-- (%s) -- (%s)\n",
+#endif
                pmid.c_str(), chunkname.c_str(), chunk_size,
                iou.c_str(), rank_authority.c_str());
 #endif

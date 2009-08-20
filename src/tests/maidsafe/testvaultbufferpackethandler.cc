@@ -61,7 +61,7 @@ class VaultBufferPacketHandlerTest : public testing::Test {
 TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ValidateOwnerSig) {
   ASSERT_TRUE(vbph.ValidateOwnerSignature(public_key, ser_bp));
   crypto::RsaKeyPair rsakp;
-  rsakp.GenerateKeys(1024);
+  rsakp.GenerateKeys(4096);
   ASSERT_FALSE(vbph.ValidateOwnerSignature(rsakp.public_key(), ser_bp));
 }
 
@@ -99,7 +99,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   packethandler::MessageType type;
   ASSERT_FALSE(vbph.CheckMsgStructure(ser_msg, sender, type));
   crypto::RsaKeyPair rsakp;
-  rsakp.GenerateKeys(1024);
+  rsakp.GenerateKeys(4096);
   packethandler::GenericPacket gp_msg;
   packethandler::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("non authuser");
@@ -182,7 +182,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
   std::string sender;
   packethandler::MessageType type;
   crypto::RsaKeyPair rsakp;
-  rsakp.GenerateKeys(1024);
+  rsakp.GenerateKeys(4096);
   packethandler::GenericPacket gp_msg;
   packethandler::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("non authuser");

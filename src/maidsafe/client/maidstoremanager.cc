@@ -920,7 +920,7 @@ void MaidsafeStoreManager::GetChunkHolderContactCallback(
 #ifdef DEBUG
     printf("In MSM::GetChunkHolderContactCallback, fail - timeout.\n");
 #endif
-    {
+    {  // NOLINT (Fraser)
       boost::lock_guard<boost::mutex> lock(*find_mutex);
       has_chunk_result_holders->push_back(HasChunkResultHolder(
           kad::Contact(chunk_holder_id, "", 0)));
@@ -933,7 +933,7 @@ void MaidsafeStoreManager::GetChunkHolderContactCallback(
 #ifdef DEBUG
     printf("In MSM::GetChunkHolderContactCallback, can't parse result.\n");
 #endif
-    {
+    {  // NOLINT (Fraser)
       boost::lock_guard<boost::mutex> lock(*find_mutex);
       has_chunk_result_holders->push_back(HasChunkResultHolder(
           kad::Contact(chunk_holder_id, "", 0)));
@@ -945,7 +945,7 @@ void MaidsafeStoreManager::GetChunkHolderContactCallback(
 #ifdef DEBUG
     printf("In MSM::GetChunkHolderContactCallback, Kad operation failed.\n");
 #endif
-    {
+    {  // NOLINT (Fraser)
       boost::lock_guard<boost::mutex> lock(*find_mutex);
       has_chunk_result_holders->push_back(HasChunkResultHolder(
           kad::Contact(chunk_holder_id, "", 0)));
@@ -970,7 +970,7 @@ void MaidsafeStoreManager::GetChunkHolderContactCallback(
 #ifdef DEBUG
   printf("In MSM::GetChunkHolderContactCallback, didn't get node's details.\n");
 #endif
-  {
+  {  // NOLINT (Fraser)
     boost::lock_guard<boost::mutex> lock(*find_mutex);
     has_chunk_result_holders->push_back(HasChunkResultHolder(
         kad::Contact(chunk_holder_id, "", 0)));

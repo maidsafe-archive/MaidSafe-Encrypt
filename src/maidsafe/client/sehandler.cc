@@ -922,17 +922,18 @@ void SEHandler::LoadChunk(const std::string &chunk_name,
     return;
   }
   if (retry < kMaxLoadRetries) {
+    ++data->chunks_done;
+    --data->active_chunks;
     SelfEncryption se_(client_chunkstore_);
     fs::path chunk_path = se_.GetChunkPath(chunk_name);
     if (!fs::exists(chunk_path)) {
-//      storem_->LoadChunk(chunk_name,
-//                         boost::bind(&SEHandler::LoadChunkCallback,
-//                                     this,
-//                                     _1,
-//                                     chunk_name,
-//                                     retry,
-//                                     data));
-      return;
+      std::string content;
+      storem_->LoadChunk(chunk_name, &content);
+      fs::ofstream ofs;
+      ofs.open(chunk_path, std::ios_base::binary);
+      ofs.write(content.c_str(), content.size());
+      ofs.close();
+      IterativeLoadChunks(data);
     } else {
       --data->active_chunks;
       ++data->chunks_done;
@@ -1189,7 +1190,7 @@ void SEHandler::GetSignedPubKeyAndRequest(const DirType dir_type,
   co.set_hash_algorithm(crypto::SHA_512);
   switch (dir_type) {
     case PRIVATE_SHARE: {
-      printf("Getting signed request for PRIVATE_SHARE.\n\n");
+//      printf("Getting signed request for PRIVATE_SHARE.\n\n");
       std::string private_key_("");
       if (0 != ss_->GetShareKeys(msid, pubkey, &private_key_)) {
         *pubkey = "";
@@ -1211,7 +1212,7 @@ void SEHandler::GetSignedPubKeyAndRequest(const DirType dir_type,
       }
       break;
     case PUBLIC_SHARE:
-      printf("Getting signed request for PUBLIC_SHARE.\n\n");
+//      printf("Getting signed request for PUBLIC_SHARE.\n\n");
       *pubkey = ss_->PublicKey(MPID);
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
@@ -1226,13 +1227,13 @@ void SEHandler::GetSignedPubKeyAndRequest(const DirType dir_type,
                                     crypto::STRING_STRING);
       break;
     case ANONYMOUS:
-      printf("Getting signed request for ANONYMOUS.\n\n");
+//      printf("Getting signed request for ANONYMOUS.\n\n");
       *pubkey = " ";
       *signed_pubkey = " ";
       *signed_request = kAnonymousSignedRequest;
       break;
     default:
-      printf("Getting signed request for default.\n\n");
+//      printf("Getting signed request for default.\n\n");
       *pubkey = ss_->PublicKey(PMID);
       *signed_pubkey = co.AsymSign(*pubkey,
                                    "",
