@@ -154,6 +154,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void StopStoring();
   // Return the true if the main store thread is running.
   bool StoreThreadRunning();
+  void OwnLocalVault(const std::string &priv_key, const std::string &pub_key,
+      const std::string &signed_pub_key, const boost::uint32_t &port,
+      const std::string &chunkstore_dir, const boost::uint64_t &space,
+      boost::function<void(const OwnVaultResult&, const std::string&)> cb);
 
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);

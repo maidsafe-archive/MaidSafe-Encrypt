@@ -1970,6 +1970,41 @@ int ClientController::CreateNewShare(const std::string &name,
   return 0;
 }
 
+///////////////////////////////
+// Register Vault operations //
+///////////////////////////////
+void ClientController::OwnLocalVault(const boost::uint32_t &port,
+      const boost::uint64_t &space, const std::string &chunkstore_dir) {
+  sm_->OwnLocalVault(ss_->PrivateKey(PMID), ss_->PublicKey(PMID),
+      ss_->SignedPublicKey(PMID), port, chunkstore_dir, space,
+      boost::bind(&ClientController::OwnLocalVault_Callback,
+      this, _1, _2));
+}
+
+void ClientController::OwnLocalVault_Callback(const OwnVaultResult &result,
+      const std::string &pmid_name) {
+  if (result == OWNED_SUCCESS) {
+    std::string pmid_name_exp;
+    base::decode_from_hex(ss_->Id(PMID), &pmid_name_exp);
+    if (pmid_name == pmid_name_exp) {
+      // SUCCESSFUL OWNED THE LOCAL VAULT
+    } else {
+      // FAILURE -- incorrect pmid name returned by the vault
+    }
+  } else {
+    // CASES of failure returned by teh vault
+    switch (result) {
+      case  VAULT_ALREADY_OWNED: break;
+      case INVALID_RSA_KEYS: break;
+      case NOT_ENOUGH_SPACE: break;
+      case NO_SPACE_ALLOCATED: break;
+      case INVALID_PORT: break;
+      case FAILED_TO_START_VAULT: break;
+      default: break;
+    }
+  }
+}
+
 ///////////////////
 // SE Operations //
 ///////////////////

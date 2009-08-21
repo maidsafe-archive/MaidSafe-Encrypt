@@ -172,8 +172,8 @@ struct DeleteArgs {
   bool retry_remote;
 };
 
-struct RegisterVaultCallbackArgs {
-  RegisterVaultCallbackArgs() : cb(), response(NULL), ctrl(NULL) {}
+struct OwnVaultCallbackArgs {
+  OwnVaultCallbackArgs() : cb(), response(NULL), ctrl(NULL) {}
   boost::function<void(const OwnVaultResult&, const std::string&)> cb;
   maidsafe::OwnVaultResponse* response;
   rpcprotocol::Controller *ctrl;
@@ -233,7 +233,7 @@ class PDClient {
                    const maidsafe::ValueType &data_type,
                    base::callback_func_type cb);
   void FindValue(const std::string &key, base::callback_func_type cb);
-  void RegisterLocalVault(const std::string &priv_key, const std::string
+  void OwnLocalVault(const std::string &priv_key, const std::string
       &pub_key, const std::string &signed_pub_key, const boost::uint32_t &port,
       const std::string &chunkstore_dir, const boost::uint64_t &space,
       boost::function<void(const OwnVaultResult&, const std::string&)> cb);
@@ -307,7 +307,7 @@ class PDClient {
   void DeleteChunk_DeleteChunkCallback(
       const boost::shared_ptr<DeleteResponse> delete_response,
       boost::shared_ptr<DeleteArgs> delete_args);
-  void RegisterVaultCallback(RegisterVaultCallbackArgs  callback_args);
+  void OwnVaultCallback(OwnVaultCallbackArgs  callback_args);
   void IsVaultOwnedCallback(IsVaultOwnedCallbackArgs  callback_args,
       rpcprotocol::Channel *channel);
   PDClient(const PDClient&);

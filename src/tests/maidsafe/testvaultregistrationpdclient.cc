@@ -128,7 +128,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_OwnLocalVault) {
       keypair.private_key(), crypto::STRING_STRING);
   std::string pmid_name = cobj.Hash(keypair.public_key() + signed_public_key,
     "", crypto::STRING_STRING, false);
-  pdclient.RegisterLocalVault(keypair.private_key(), keypair.public_key(),
+  pdclient.OwnLocalVault(keypair.private_key(), keypair.public_key(),
       signed_public_key, 0, "ChunkStore", 1024, cb);
   while (!service.own_notification_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -150,7 +150,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
   std::string pub_key = keypair.public_key();
   keypair.ClearKeys();
   keypair.GenerateKeys(packethandler::kRsaKeySize);
-  pdclient.RegisterLocalVault(keypair.private_key(), keypair.public_key(),
+  pdclient.OwnLocalVault(keypair.private_key(), keypair.public_key(),
       signed_public_key, 0, "ChunkStore", 1024, cb);
   while (!resulthandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -159,7 +159,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
 
   resulthandler.Reset();
   service.Reset();
-  pdclient.RegisterLocalVault(priv_key, keypair.public_key(),
+  pdclient.OwnLocalVault(priv_key, keypair.public_key(),
       signed_public_key, 0, "ChunkStore", 1024, cb);
   while (!resulthandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -168,7 +168,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
 
   resulthandler.Reset();
   service.Reset();
-  pdclient.RegisterLocalVault(keypair.private_key(), pub_key,
+  pdclient.OwnLocalVault(keypair.private_key(), pub_key,
       signed_public_key, 0, "ChunkStore", 1024, cb);
   while (!resulthandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -177,7 +177,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
 
   resulthandler.Reset();
   service.Reset();
-  pdclient.RegisterLocalVault(priv_key, pub_key,
+  pdclient.OwnLocalVault(priv_key, pub_key,
       signed_public_key, client->external_port(), "ChunkStore", 1024, cb);
   while (!resulthandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -186,7 +186,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
 
   resulthandler.Reset();
   service.Reset();
-  pdclient.RegisterLocalVault(priv_key, pub_key,
+  pdclient.OwnLocalVault(priv_key, pub_key,
       signed_public_key, 0, "ChunkStore", 0, cb);
   while (!resulthandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -197,7 +197,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
       boost::filesystem::path("/"));
   resulthandler.Reset();
   service.Reset();
-  pdclient.RegisterLocalVault(priv_key, pub_key,
+  pdclient.OwnLocalVault(priv_key, pub_key,
       signed_public_key, 0, "ChunkStore", info.available+10, cb);
   while (!resulthandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -206,7 +206,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
 
   resulthandler.Reset();
   service.Reset();
-  pdclient.RegisterLocalVault(priv_key, pub_key, signed_public_key, 0,
+  pdclient.OwnLocalVault(priv_key, pub_key, signed_public_key, 0,
       "ChunkStore", 1024, cb);
   while (!service.own_notification_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -219,7 +219,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
   resulthandler.Reset();
   service.Reset();
   service.SetServiceVaultStatus(maidsafe::OWNED);
-  pdclient.RegisterLocalVault(priv_key, pub_key, signed_public_key, 0,
+  pdclient.OwnLocalVault(priv_key, pub_key, signed_public_key, 0,
       "ChunkStore", 1024, cb);
   while (!resulthandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -229,7 +229,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
   resulthandler.Reset();
   service.Reset();
   server.StopTransport();
-  pdclient.RegisterLocalVault(priv_key, pub_key, signed_public_key, 0,
+  pdclient.OwnLocalVault(priv_key, pub_key, signed_public_key, 0,
       "ChunkStore", 1024, cb);
   while (!resulthandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));

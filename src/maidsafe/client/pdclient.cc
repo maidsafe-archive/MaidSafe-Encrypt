@@ -1032,7 +1032,7 @@ void PDClient::FindValue(const std::string &key,
 #endif
 }
 
-void PDClient::RegisterLocalVault(const std::string &priv_key,
+void PDClient::OwnLocalVault(const std::string &priv_key,
       const std::string &pub_key, const std::string &signed_pub_key,
       const boost::uint32_t &port, const std::string &chunkstore_dir,
       const boost::uint64_t &space,
@@ -1050,7 +1050,7 @@ void PDClient::RegisterLocalVault(const std::string &priv_key,
   client_rpcs_->IsVaultOwned(cb_args.response, cb_args.ctrl, channel, done);
 }
 
-void PDClient::RegisterVaultCallback(RegisterVaultCallbackArgs callback_args) {
+void PDClient::OwnVaultCallback(OwnVaultCallbackArgs callback_args) {
   if (callback_args.ctrl->Failed() ||
       !callback_args.response->IsInitialized()) {
     delete callback_args.response;
@@ -1091,7 +1091,7 @@ void PDClient::IsVaultOwnedCallback(IsVaultOwnedCallbackArgs callback_args,
     return;
   }
   delete callback_args.response;
-  RegisterVaultCallbackArgs cb_args;
+  OwnVaultCallbackArgs cb_args;
   cb_args.cb = callback_args.cb;
   cb_args.ctrl = callback_args.ctrl;
   cb_args.ctrl->Reset();
@@ -1100,7 +1100,7 @@ void PDClient::IsVaultOwnedCallback(IsVaultOwnedCallbackArgs callback_args,
   cb_args.ctrl->set_timeout(20);
   cb_args.response = new OwnVaultResponse;
   google::protobuf::Closure* done = google::protobuf::NewCallback<PDClient,
-      RegisterVaultCallbackArgs>(this, &PDClient::RegisterVaultCallback,
+      OwnVaultCallbackArgs>(this, &PDClient::OwnVaultCallback,
       cb_args);
   client_rpcs_->OwnVault(callback_args.priv_key, callback_args.pub_key,
       callback_args.signed_pub_key, callback_args.port,

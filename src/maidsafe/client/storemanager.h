@@ -31,6 +31,7 @@
 #include <string>
 
 #include "maidsafe/maidsafe.h"
+#include "protobuf/maidsafe_service_messages.pb.h"
 
 namespace maidsafe {
 
@@ -75,6 +76,10 @@ class StoreManagerInterface {
                            const std::string &public_key,
                            const std::string &signed_public_key,
                            base::callback_func_type cb)=0;
+  virtual void OwnLocalVault(const std::string &priv_key, const std::string
+      &pub_key, const std::string &signed_pub_key, const boost::uint32_t &port,
+      const std::string &chunkstore_dir, const boost::uint64_t &space,
+      boost::function<void(const OwnVaultResult&, const std::string&)> cb)=0;
 };
 
 }  // namespace maidsafe

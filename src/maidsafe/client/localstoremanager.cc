@@ -522,4 +522,12 @@ std::string LocalStoreManager::GetValue_FromDB(const std::string &hex_key) {
   return result;
 }
 
+void LocalStoreManager::OwnLocalVault(const std::string &,
+      const std::string &pub_key, const std::string &signed_pub_key,
+      const boost::uint32_t &, const std::string &, const boost::uint64_t &,
+      boost::function<void(const OwnVaultResult&, const std::string&)> cb) {
+  std::string pmid_name = crypto_obj_.Hash(pub_key + signed_pub_key, "",
+      crypto::STRING_STRING, false);
+  boost::thread thr(cb, maidsafe::OWNED_SUCCESS, pmid_name);
+}
 }  // namespace maidsafe

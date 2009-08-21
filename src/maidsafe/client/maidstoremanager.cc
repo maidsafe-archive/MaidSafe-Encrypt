@@ -45,7 +45,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
     : channel_manager_(new rpcprotocol::ChannelManager()),
       knode_(new kad::KNode(channel_manager_, kad::CLIENT)),
       client_rpcs_(channel_manager_),
-      pdclient_(),
+      pdclient_(NULL),
       ss_(SessionSingleton::getInstance()),
       client_chunkstore_(cstore),
       store_thread_pool_(kMaxStoreThreads),
@@ -1138,4 +1138,14 @@ void MaidsafeStoreManager::IOUDoneCallback(bool *iou_done_returned,
   *iou_done_returned = true;
 }
 
+void MaidsafeStoreManager::OwnLocalVault(const std::string &priv_key,
+      const std::string &pub_key, const std::string &signed_pub_key,
+      const boost::uint32_t &port, const std::string &chunkstore_dir,
+      const boost::uint64_t &space, boost::function<void(const
+      OwnVaultResult&, const std::string&)> cb) {
+  if(pdclient_ == NULL)
+    return;
+  pdclient_->OwnLocalVault(priv_key, pub_key, signed_pub_key, port,
+      chunkstore_dir, space, cb);
+}
 }  // namespace maidsafe

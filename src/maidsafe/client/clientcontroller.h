@@ -124,6 +124,10 @@ class ClientController {
                      const std::set<std::string> &admins,
                      const std::set<std::string> &readonlys);
 
+  // Register Vault operations
+  void OwnLocalVault(const boost::uint32_t &port, const boost::uint64_t &space,
+      const std::string &chunkstore_dir);
+
   // FUSE based stuff here
   bool ReadOnly(const std::string &path, bool gui);
   char DriveLetter();
@@ -192,6 +196,8 @@ class ClientController {
   DirType GetDirType(const std::string &path_);
   int PathDistinction(const std::string &path, std::string *msid);
   bool ClearStaleMessages();
+  void OwnLocalVault_Callback(const OwnVaultResult &result, const
+      std::string &pmid_name);
 
   // Variables
   Authentication *auth_;
