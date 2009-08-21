@@ -418,7 +418,7 @@ void LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,
     bufSQL.format("insert into network values ('%s', %Q);", local_key.c_str(),
       enc_value.c_str());
     db_.execDML(bufSQL);
-    boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, mutex_));
+    ExecuteSuccessCallback(cb, mutex_);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     std::cerr << e.errorCode() << "error:" << e.errorMessage() << std::endl;

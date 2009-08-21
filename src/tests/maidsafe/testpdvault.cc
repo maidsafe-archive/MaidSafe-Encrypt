@@ -377,29 +377,43 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     printf("Getting chunk.\n");
     std::string hex_chunk_name = (*it_).first;
-//    testpdvault::PrepareCallbackResults();
     std::string data;
-    sm_->LoadChunk(hex_chunk_name, &data);
-//                   boost::bind(&testpdvault::GetChunkCallback, _1));
-//    testpdvault::WaitFunction(60, &mutex_);
-//    ASSERT_TRUE(callback_succeeded_);
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
     ASSERT_EQ(data, (*it_).second);
-//    ASSERT_FALSE(callback_timed_out_);
-    std::string hash = crypto_.Hash(callback_content_, "",
-        crypto::STRING_STRING, true);
-    ASSERT_EQ(hex_chunk_name, hash);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
   }
   boost::this_thread::sleep(boost::posix_time::seconds(30));
 }
 /*
 TEST_F(TestPDVault, FUNC_MAID_StoreChunkInvalidRequest) {
-  std::map<std::string, std::string> chunks;
+  std::map<std::string, std::string> chunks_;
   const boost::uint32_t kNumOfTestChunks(1);
-  testpdvault::MakeChunks(client_chunkstore_dir_, kNumOfTestChunks, &chunks);
-  std::map<std::string, std::string>::iterator it;
-  std::string non_hex_chunk_name;
-  for (it = chunks.begin(); it != chunks.end(); ++it)
-    non_hex_chunk_name = (*it).first;
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  int i = 0;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+    ++i;
+  }
+//  while (not got chunk)
+  boost::this_thread::sleep(boost::posix_time::seconds(120));
+
+  std::string hex_chunk_name = (*it_).first;
+  std::string non_hex_name("");
+  base::decode_from_hex(hex_chunk_name, &non_hex_name);
+  int chunk_count = 0;
+  for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+    if (pdvaults_[vault_no]->vault_chunkstore_->Has(non_hex_name)) {
+      std::string trace = "Vault[" + base::itos(vault_no) + "] has the chunk";
+      SCOPED_TRACE(trace);
+      ++chunk_count;
+      ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_->
+          HashCheckChunk(non_hex_name));
+    }
+  }
+  ASSERT_EQ(kMinChunkCopies, chunk_count);
 
   std::string hex_chunk_name("");
   base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
