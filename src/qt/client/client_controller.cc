@@ -319,6 +319,20 @@ bool ClientController::sendInstantFile(const QString& filePath,
   return (n == 0);
 }
 
+bool ClientController::PollVaultInfo(QString* chunkstore,
+                                     boost::uint64_t* offered_space,
+                                     boost::uint64_t* free_space) {
+  std::string s_chunkstore;
+  bool b = maidsafe::ClientController::getInstance()->PollVaultInfo(
+           &s_chunkstore, offered_space, free_space);
+  if (b) {
+    *chunkstore = QString::fromStdString(s_chunkstore);
+    return true;
+  }
+
+  return false;
+}
+
 void ClientController::messageReceived(const std::string& from,
                                        const std::string& msg) { }
 
@@ -347,10 +361,28 @@ void ClientController::checkForMessages() {
   if (publicUsername().isEmpty())
     return;
 
-  maidsafe::ClientController::getInstance()->GetMessages();
+  if (!maidsafe::ClientController::getInstance()->GetMessages()) {
+    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() != 1) {
+      int one(1);
+      // modify CC online status
+      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(one);
+      // signal for change of icon
+      emit connectionStatusChanged(one);
+      return;
+    }
+  } else {
+    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() == 1) {
+      int zero(0);
+      // modify CC online status
+      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(zero);
+      // signal for change of icon
+      emit connectionStatusChanged(zero);
+      return;
+    }
+  }
   std::list<packethandler::InstantMessage> msgs;
   const int n = maidsafe::ClientController::getInstance()
-                  ->GetInstantMessages(&msgs);
+                ->GetInstantMessages(&msgs);
 
   if (n != 0)
     return;

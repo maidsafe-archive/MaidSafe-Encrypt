@@ -28,6 +28,7 @@
 class Messages;
 class Shares;
 class Contacts;
+class VaultInfo;
 class PublicUsername;
 
 //! Main User Panel for Perpetual Data
@@ -90,6 +91,7 @@ private:
     Messages* messages_;
     Shares* shares_;
     Contacts* contacts_;
+    VaultInfo* vaultinfo_;
 
     PublicUsername* public_username_;
 

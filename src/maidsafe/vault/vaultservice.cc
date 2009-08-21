@@ -52,7 +52,7 @@ void vsvc_dummy_callback(const std::string &result) {
 VaultService::VaultService(const std::string &pmid_public,
                            const std::string &pmid_private,
                            const std::string &signed_pmid_public,
-                           boost::shared_ptr<VaultChunkStore>vault_chunkstore,
+                           VaultChunkStore *vault_chunkstore,
                            kad::KNode *knode,
                            PendingOperationsHandler *poh)
     : pmid_public_(pmid_public),
@@ -779,6 +779,97 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
       done->Run();
       return;
   }
+  response->set_result(kAck);
+  done->Run();
+}
+
+void VaultService::VaultStatus(google::protobuf::RpcController*,
+                               const maidsafe::VaultStatusRequest* request,
+                               maidsafe::VaultStatusResponse* response,
+                               google::protobuf::Closure* done) {
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::VaultStatus (%i), request isn't initialized.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+  crypto::Crypto co;
+  std::string decrypted_request = co.AsymDecrypt(request->encrypted_request(),
+                                  "", pmid_private_, crypto::STRING_STRING);
+  maidsafe::VaultCommunication vc;
+  if (!vc.ParseFromString(decrypted_request)) {
+    response->set_result(kNack);
+#ifdef DEBUG
+    printf("In VaultService::VaultStatus (%i), request didn't parse as a "
+           "VaultCommunication.\n", knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  if (!vault_chunkstore_->is_initialised()) {
+    response->set_result(kNack);
+#ifdef DEBUG
+    printf("In VaultService::VaultStatus (%i), chunkstore isn't initialised.\n",
+           knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  if (!vc.has_chunkstore() && !vc.has_offered_space() && !vc.has_free_space()) {
+    response->set_result(kNack);
+#ifdef DEBUG
+    printf("In VaultService::VaultStatus (%i), requesting nothing.\n",
+           knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  if (vc.has_chunkstore() && vc.chunkstore() != "YES") {
+    response->set_result(kNack);
+#ifdef DEBUG
+    printf("In VaultService::VaultStatus (%i), chunksotre request invalid (%s)."
+           "\n", knode_->host_port(), vc.chunkstore().c_str());
+#endif
+    done->Run();
+    return;
+  } else {
+    vc.set_chunkstore(vault_chunkstore_->ChunkStoreDir());
+  }
+
+  if (vc.has_offered_space() && vc.offered_space() != 0) {
+    response->set_result(kNack);
+#ifdef DEBUG
+    printf("In VaultService::VaultStatus (%i), offered_space request invalid "
+           "(%llu).\n", knode_->host_port(), vc.offered_space());
+#endif
+    done->Run();
+    return;
+  } else {
+    vc.set_offered_space(vault_chunkstore_->available_space());
+  }
+
+  if (vc.has_free_space() && vc.free_space() != 0) {
+    response->set_result(kNack);
+#ifdef DEBUG
+    printf("In VaultService::VaultStatus (%i), free_space request invalid "
+           "(%llu).\n", knode_->host_port(), vc.free_space());
+#endif
+    done->Run();
+    return;
+  } else {
+    vc.set_free_space(vault_chunkstore_->FreeSpace());
+  }
+
+  std::string serialised_vc;
+  vc.SerializeToString(&serialised_vc);
+  response->set_encrypted_response(co.AsymEncrypt(serialised_vc, "",
+            pmid_public_, crypto::STRING_STRING));
   response->set_result(kAck);
   done->Run();
 }

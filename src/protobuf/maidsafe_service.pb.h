@@ -98,6 +98,10 @@ class MaidsafeService : public ::google::protobuf::Service {
                        const ::maidsafe::SwapChunkRequest* request,
                        ::maidsafe::SwapChunkResponse* response,
                        ::google::protobuf::Closure* done);
+  virtual void VaultStatus(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::VaultStatusRequest* request,
+                       ::maidsafe::VaultStatusResponse* response,
+                       ::google::protobuf::Closure* done);
   
   // implements Service ----------------------------------------------
   
@@ -174,6 +178,10 @@ class MaidsafeService_Stub : public MaidsafeService {
   void SwapChunk(::google::protobuf::RpcController* controller,
                        const ::maidsafe::SwapChunkRequest* request,
                        ::maidsafe::SwapChunkResponse* response,
+                       ::google::protobuf::Closure* done);
+  void VaultStatus(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::VaultStatusRequest* request,
+                       ::maidsafe::VaultStatusResponse* response,
                        ::google::protobuf::Closure* done);
  private:
   ::google::protobuf::RpcChannel* channel_;

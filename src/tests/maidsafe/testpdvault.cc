@@ -349,11 +349,11 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
     base::decode_from_hex(hex_chunk_name, &non_hex_name);
     int chunk_count = 0;
     for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
-      if (pdvaults_[vault_no]->vault_chunkstore_->Has(non_hex_name)) {
+      if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
         std::string trace = "Vault[" + base::itos(vault_no) + "] has the chunk";
         SCOPED_TRACE(trace);
         ++chunk_count;
-        ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_->
+        ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_.
             HashCheckChunk(non_hex_name));
       }
     }

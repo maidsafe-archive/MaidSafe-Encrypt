@@ -136,8 +136,12 @@ class ClientController : public QObject,
       FILE,               // Someone has sent a file
       CONTACT_REQUEST,    // Someone has requested to add us
       CONTACT_RESPONSE,   // Someone has responed to our request
-      CONTACT_DELETE
+      CONTACT_DELETE      // Someone has deleted us from their list
   };
+
+  // Vault info
+  bool PollVaultInfo(QString* chunkstore, boost::uint64_t* offered_space,
+                     boost::uint64_t* free_space);
 
  signals:
   // A message has been received.
@@ -191,6 +195,11 @@ class ClientController : public QObject,
   */
   void fileReceived(const QString& from,
                     const QString& file_name);
+
+  /*!
+      Status changed on the network - change the icon on the tray
+  */
+  void connectionStatusChanged(int status);
 
   // System messages - to be decided
   void systemMessage(const QString& message);

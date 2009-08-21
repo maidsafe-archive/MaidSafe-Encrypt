@@ -219,10 +219,10 @@ class PDVault {
   std::string rv_ip() const { return knode_.rv_ip(); }
   boost::uint16_t rv_port() const { return knode_.rv_port(); }
   inline boost::uint64_t available_space() {
-    return vault_chunkstore_->available_space();
+    return vault_chunkstore_.available_space();
   }
-  inline boost::uint64_t UsedSpace() { return vault_chunkstore_->used_space(); }
-  inline boost::uint64_t FreeSpace() { return vault_chunkstore_->FreeSpace(); }
+  inline boost::uint64_t UsedSpace() { return vault_chunkstore_.used_space(); }
+  inline boost::uint64_t FreeSpace() { return vault_chunkstore_.FreeSpace(); }
 
 
 
@@ -328,7 +328,7 @@ class PDVault {
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
   kad::KNode knode_;
   VaultRpcs vault_rpcs_;
-  boost::shared_ptr<VaultChunkStore> vault_chunkstore_;
+  VaultChunkStore vault_chunkstore_;
   boost::shared_ptr<VaultService> vault_service_;
   bool kad_joined_;
   VaultStatus vault_status_;

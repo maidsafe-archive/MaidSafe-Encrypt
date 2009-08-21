@@ -53,7 +53,7 @@ void protobuf_AddDesc_maidsafe_5fservice_2eproto() {
   ::maidsafe::protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\026maidsafe_service.proto\022\010maidsafe\032\037maid"
-    "safe_service_messages.proto2\323\006\n\017Maidsafe"
+    "safe_service_messages.proto2\237\007\n\017Maidsafe"
     "Service\022I\n\016StoreChunkPrep\022\032.maidsafe.Sto"
     "rePrepRequest\032\033.maidsafe.StorePrepRespon"
     "se\022A\n\010StoreIOU\022\031.maidsafe.StoreIOUReques"
@@ -75,10 +75,12 @@ void protobuf_AddDesc_maidsafe_5fservice_2eproto() {
     "lidityCheckRequest\032\037.maidsafe.ValidityCh"
     "eckResponse\022D\n\tSwapChunk\022\032.maidsafe.Swap"
     "ChunkRequest\032\033.maidsafe.SwapChunkRespons"
-    "e2\233\001\n\021VaultRegistration\022A\n\010OwnVault\022\031.ma"
-    "idsafe.OwnVaultRequest\032\032.maidsafe.OwnVau"
-    "ltResponse\022C\n\014IsVaultOwned\022\030.maidsafe.Is"
-    "OwnedRequest\032\031.maidsafe.IsOwnedResponse", 1079);
+    "e\022J\n\013VaultStatus\022\034.maidsafe.VaultStatusR"
+    "equest\032\035.maidsafe.VaultStatusResponse2\233\001"
+    "\n\021VaultRegistration\022A\n\010OwnVault\022\031.maidsa"
+    "fe.OwnVaultRequest\032\032.maidsafe.OwnVaultRe"
+    "sponse\022C\n\014IsVaultOwned\022\030.maidsafe.IsOwne"
+    "dRequest\032\031.maidsafe.IsOwnedResponse", 1155);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_maidsafe_5fservice_2eproto);
@@ -202,6 +204,14 @@ void MaidsafeService::SwapChunk(::google::protobuf::RpcController* controller,
   done->Run();
 }
 
+void MaidsafeService::VaultStatus(::google::protobuf::RpcController* controller,
+                         const ::maidsafe::VaultStatusRequest*,
+                         ::maidsafe::VaultStatusResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method VaultStatus() not implemented.");
+  done->Run();
+}
+
 void MaidsafeService::CallMethod(const ::google::protobuf::MethodDescriptor* method,
                              ::google::protobuf::RpcController* controller,
                              const ::google::protobuf::Message* request,
@@ -281,6 +291,12 @@ void MaidsafeService::CallMethod(const ::google::protobuf::MethodDescriptor* met
              ::google::protobuf::down_cast< ::maidsafe::SwapChunkResponse*>(response),
              done);
       break;
+    case 12:
+      VaultStatus(controller,
+             ::google::protobuf::down_cast<const ::maidsafe::VaultStatusRequest*>(request),
+             ::google::protobuf::down_cast< ::maidsafe::VaultStatusResponse*>(response),
+             done);
+      break;
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       break;
@@ -315,6 +331,8 @@ const ::google::protobuf::Message& MaidsafeService::GetRequestPrototype(
       return ::maidsafe::ValidityCheckRequest::default_instance();
     case 11:
       return ::maidsafe::SwapChunkRequest::default_instance();
+    case 12:
+      return ::maidsafe::VaultStatusRequest::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
@@ -349,6 +367,8 @@ const ::google::protobuf::Message& MaidsafeService::GetResponsePrototype(
       return ::maidsafe::ValidityCheckResponse::default_instance();
     case 11:
       return ::maidsafe::SwapChunkResponse::default_instance();
+    case 12:
+      return ::maidsafe::VaultStatusResponse::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
@@ -448,6 +468,13 @@ void MaidsafeService_Stub::SwapChunk(::google::protobuf::RpcController* controll
                               ::maidsafe::SwapChunkResponse* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(11),
+                       controller, request, response, done);
+}
+void MaidsafeService_Stub::VaultStatus(::google::protobuf::RpcController* controller,
+                              const ::maidsafe::VaultStatusRequest* request,
+                              ::maidsafe::VaultStatusResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(12),
                        controller, request, response, done);
 }
 // ===================================================================

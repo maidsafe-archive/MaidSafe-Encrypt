@@ -59,6 +59,9 @@ bool SessionSingleton::ResetSession() {
   SetMaidAuthorisedUsers(empty_set);
   SetMounted(0);
   SetWinDrive('\0');
+  SetConnectionStatus(1);
+  SetVaultIP("");
+  SetVaultPort(0);
   ka_.ClearKeyRing();
   ch_.ClearContacts();
   psh_.MI_ClearPrivateShares();

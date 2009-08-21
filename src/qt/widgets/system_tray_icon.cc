@@ -109,3 +109,11 @@ SystemTrayIcon::~SystemTrayIcon()
     }
 }
 
+void SystemTrayIcon::ChangeStatus(int status) {
+  switch(status) {
+    case 0: setIcon( QPixmap(":/icons/16/globe") ); break;
+    case 1: setIcon( QPixmap(":/icons/16/offline") ); break;
+    default: break;
+  }
+}
+

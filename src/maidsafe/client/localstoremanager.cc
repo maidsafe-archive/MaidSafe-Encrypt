@@ -68,6 +68,22 @@ void ExeCallbackGetMsgs(const base::callback_func_type &cb,
   cb(ser_result);
 }
 
+void ExecCallbackVaultInfo(const base::callback_func_type &cb,
+                           boost::recursive_mutex *mutex) {
+  base::pd_scoped_lock loch(*mutex);
+  VaultCommunication vc;
+  vc.set_chunkstore("/home/Smer/ChunkStore");
+  vc.set_offered_space(base::random_32bit_uinteger());
+  boost::uint32_t fspace = base::random_32bit_uinteger();
+  while (fspace >= vc.offered_space())
+    fspace = base::random_32bit_uinteger();
+  vc.set_free_space(fspace);
+  vc.set_timestamp(base::get_epoch_time());
+  std::string ser_vc;
+  vc.SerializeToString(&ser_vc);
+  cb(ser_vc);
+}
+
 LocalStoreManager::LocalStoreManager(
     boost::recursive_mutex *mutex,
     boost::shared_ptr<ChunkStore> client_chunkstore)
@@ -522,6 +538,14 @@ std::string LocalStoreManager::GetValue_FromDB(const std::string &hex_key) {
   return result;
 }
 
+void LocalStoreManager::PollVaultInfo(base::callback_func_type cb) {
+  boost::thread thr(boost::bind(&ExecCallbackVaultInfo, cb, mutex_));
+}
+
+void LocalStoreManager::VaultContactInfo(base::callback_func_type cb) {
+  boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, mutex_));
+}
+
 void LocalStoreManager::OwnLocalVault(const std::string &,
       const std::string &pub_key, const std::string &signed_pub_key,
       const boost::uint32_t &, const std::string &, const boost::uint64_t &,
@@ -530,4 +554,5 @@ void LocalStoreManager::OwnLocalVault(const std::string &,
       crypto::STRING_STRING, false);
   boost::thread thr(cb, maidsafe::OWNED_SUCCESS, pmid_name);
 }
+
 }  // namespace maidsafe

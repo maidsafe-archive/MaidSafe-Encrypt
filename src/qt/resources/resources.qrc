@@ -9,7 +9,7 @@
     <file alias="help"       >64/Help-64.png</file>
     <file alias="globe"      >64/Globe-64.png</file>
   </qresource>
-  
+
   <qresource prefix="icons/32" >
     <file alias="messages"   >32/Message-32.png</file>
     <file alias="contacts"   >32/Contacts-32.png</file>
@@ -20,10 +20,11 @@
     <file alias="help"       >32/Help-32.png</file>
     <file alias="globe"      >32/Globe-32.png</file>
   </qresource>
-  
+
   <qresource prefix="icons/16" >
-    <file alias="globe"      >16/Globe-16.png</file>
-    <file alias="tick"       >16/tick.png</file>
-    <file alias="question"   >16/question.png</file>
+    <file alias="globe"   >16/Globe-16.png</file>
+    <file alias="offline" >16/Globe-16-Offline.png</file>
+    <file alias="tick"    >16/tick.png</file>
+    <file alias="question">16/question.png</file>
   </qresource>
 </RCC>

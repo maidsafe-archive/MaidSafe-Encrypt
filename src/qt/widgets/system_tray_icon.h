@@ -28,6 +28,7 @@ class SystemTrayIcon : public QSystemTrayIcon
 public:
     static SystemTrayIcon* instance();
     virtual ~SystemTrayIcon();
+    void ChangeStatus(int status);
 
 signals:
     void open();

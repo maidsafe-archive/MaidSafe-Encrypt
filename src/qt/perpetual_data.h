@@ -87,6 +87,7 @@ private slots:
     void onQuit();
     void onMyFiles();
     void onPrivateShares();
+    void onGoOffline(bool);
 
     void onMessageReceived( ClientController::MessageType,
                             const QDateTime& time,
@@ -95,6 +96,7 @@ private slots:
 
     void onShareReceived( const QString&, const QString& );
     void onFileReceived( const QString&, const QString& );
+    void onConnectionStatusChanged(int status);
 
     void onUnreadMessagesChanged( int count );
 private:
@@ -108,7 +110,8 @@ private:
         QUIT,
         ABOUT,
         MY_FILES,
-        PRIVATE_SHARES
+        PRIVATE_SHARES,
+        GO_OFFLINE
     };
     typedef QMap<Action, QAction*> ActionMap;
     ActionMap actions_;

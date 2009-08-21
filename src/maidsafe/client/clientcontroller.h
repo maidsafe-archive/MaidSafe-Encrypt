@@ -124,7 +124,10 @@ class ClientController {
                      const std::set<std::string> &admins,
                      const std::set<std::string> &readonlys);
 
-  // Register Vault operations
+  // Vault operations
+  bool PollVaultInfo(std::string *chunkstore, boost::uint64_t* offered_space,
+                     boost::uint64_t* free_space);
+  bool VaultContactInfo();
   void OwnLocalVault(const boost::uint32_t &port, const boost::uint64_t &space,
       const std::string &chunkstore_dir);
 

@@ -177,7 +177,7 @@ void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
 #endif
     return;
   }
-  if (chunk_type & kOutgoing)
+  if (chunk_type & kOutgoing && ss_->ConnectionStatus() != 1)
     AddNormalStoreTask(StoreTuple(chunk_name, dir_type, msid));
 }
 
@@ -1138,6 +1138,70 @@ void MaidsafeStoreManager::IOUDoneCallback(bool *iou_done_returned,
   *iou_done_returned = true;
 }
 
+void MaidsafeStoreManager::PollVaultInfo(base::callback_func_type cb) {
+  VaultCommunication vc;
+  vc.set_chunkstore("YES");
+  vc.set_offered_space(0);
+  vc.set_free_space(0);
+  vc.set_timestamp(base::get_epoch_time());
+  std::string ser_vc;
+  vc.SerializeToString(&ser_vc);
+  crypto::Crypto co;
+  std::string enc_ser_vc = co.AsymEncrypt(ser_vc, "", ss_->PublicKey(PMID),
+                           crypto::STRING_STRING);
+  VaultStatusResponse vault_status_response;
+  google::protobuf::Closure *done =
+      google::protobuf::NewCallback<MaidsafeStoreManager,
+      const VaultStatusResponse*, base::callback_func_type>
+      (this, &MaidsafeStoreManager::PollVaultInfoCallback,
+      &vault_status_response, cb);
+  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  rpcprotocol::Channel *channel = new rpcprotocol::Channel(
+      channel_manager_.get(), "127.0.0.1", kLocalPort, "", 0);
+  client_rpcs_.PollVaultInfo(enc_ser_vc,
+                             &vault_status_response,
+                             controller,
+                             channel,
+                             done);
+}
+
+void MaidsafeStoreManager::PollVaultInfoCallback(
+    const VaultStatusResponse *response, base::callback_func_type cb) {
+  std::string result;
+  if (!response->IsInitialized()) {
+    cb("FAIL");
+    return;
+  }
+  if (response->result() != kAck) {
+    cb("FAIL");
+    return;
+  }
+
+  crypto::Crypto co;
+  std::string unenc = co.AsymDecrypt(response->encrypted_response(), "",
+                      ss_->PrivateKey(PMID), crypto::STRING_STRING);
+
+  VaultCommunication vc;
+  if (!vc.ParseFromString(unenc)) {
+    cb("FAIL");
+    return;
+  }
+
+  if (vc.chunkstore() == "" && vc.offered_space() == 0 &&
+      vc.free_space() == 0) {
+    cb("FAIL");
+    return;
+  }
+
+  std::string ser_vc;
+  vc.SerializeToString(&ser_vc);
+  cb(ser_vc);
+}
+
+void MaidsafeStoreManager::VaultContactInfo(base::callback_func_type cb) {
+  knode_->FindNode(ss_->Id(PMID), cb, false);
+}
+
 void MaidsafeStoreManager::OwnLocalVault(const std::string &priv_key,
       const std::string &pub_key, const std::string &signed_pub_key,
       const boost::uint32_t &port, const std::string &chunkstore_dir,
@@ -1148,4 +1212,5 @@ void MaidsafeStoreManager::OwnLocalVault(const std::string &priv_key,
   pdclient_->OwnLocalVault(priv_key, pub_key, signed_pub_key, port,
       chunkstore_dir, space, cb);
 }
+
 }  // namespace maidsafe

@@ -78,6 +78,8 @@ class LocalStoreManager : public StoreManagerInterface {
                            const std::string &public_key,
                            const std::string &signed_public_key,
                            base::callback_func_type cb);
+  virtual void PollVaultInfo(base::callback_func_type cb);
+  virtual void VaultContactInfo(base::callback_func_type cb);
   virtual void OwnLocalVault(const std::string &priv_key, const std::string
       &pub_key, const std::string &signed_pub_key, const boost::uint32_t &port,
       const std::string &chunkstore_dir, const boost::uint64_t &space,

@@ -25,6 +25,7 @@
 #include "qt/widgets/messages.h"
 #include "qt/widgets/shares.h"
 #include "qt/widgets/contacts.h"
+#include "qt/widgets/vault_info.h"
 #include "qt/widgets/public_username.h"
 #include "qt/client/client_controller.h"
 #include "qt/client/user_space_filesystem.h"
@@ -41,12 +42,13 @@ UserPanels::UserPanels(QWidget* parent)
   ui_.setupUi(this);
 
   connect(ui_.listWidget, SIGNAL(currentRowChanged(int)),
-           this,           SLOT(onCurrentRowChanged(int)));
+          this,           SLOT(onCurrentRowChanged(int)));
 
   ui_.stackedWidget->addWidget(contacts_ = new Contacts);
   ui_.stackedWidget->addWidget(shares_   = new Shares);
   ui_.stackedWidget->addWidget(messages_ = new Messages);
-  ui_.stackedWidget->addWidget(new QLabel("settings"));
+  ui_.stackedWidget->addWidget(vaultinfo_ = new VaultInfo);
+//  ui_.stackedWidget->addWidget(new QLabel("settings"));
   ui_.stackedWidget->addWidget(new QLabel("activities"));
   ui_.stackedWidget->addWidget(new QLabel("help"));
   ui_.stackedWidget->addWidget(public_username_ = new PublicUsername);
@@ -55,15 +57,16 @@ UserPanels::UserPanels(QWidget* parent)
   Q_ASSERT(messages_);
   Q_ASSERT(shares_);
   Q_ASSERT(contacts_);
+  Q_ASSERT(vaultinfo_);
 
   connect(messages_, SIGNAL(messageReceived()),
-           this,      SLOT(onMessageReceived()));
+          this,      SLOT(onMessageReceived()));
 
   connect(public_username_, SIGNAL(complete()),
-           this,      SLOT(onPublicUsernameChosen()));
+          this,             SLOT(onPublicUsernameChosen()));
 
   connect(ui_.my_files_button, SIGNAL(clicked(bool)),
-           this,      SLOT(onMyFilesClicked()));
+          this,                SLOT(onMyFilesClicked()));
 }
 
 UserPanels::~UserPanels() { }

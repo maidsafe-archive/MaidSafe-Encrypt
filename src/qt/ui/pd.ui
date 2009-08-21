@@ -46,6 +46,7 @@
     <addaction name="actionFullScreen"/>
     <addaction name="actionMy_Files"/>
     <addaction name="actionPrivate_Shares"/>
+    <addaction name="actionOffline"/>
    </widget>
    <widget class="QMenu" name="menuApplications">
     <property name="title">
@@ -125,6 +126,14 @@
   <action name="actionPrivate_Shares">
    <property name="text">
     <string>Private Shares</string>
+   </property>
+  </action>
+  <action name="actionOffline">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Go Offline</string>
    </property>
   </action>
  </widget>

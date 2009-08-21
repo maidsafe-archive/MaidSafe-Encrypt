@@ -154,6 +154,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void StopStoring();
   // Return the true if the main store thread is running.
   bool StoreThreadRunning();
+  void PollVaultInfo(base::callback_func_type cb);
+  void VaultContactInfo(base::callback_func_type cb);
   void OwnLocalVault(const std::string &priv_key, const std::string &pub_key,
       const std::string &signed_pub_key, const boost::uint32_t &port,
       const std::string &chunkstore_dir, const boost::uint64_t &space,
@@ -257,6 +259,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                   bool local,
                   IOUDoneRequest *iou_done_request);
   void IOUDoneCallback(bool *iou_done_returned, boost::mutex *mutex);
+  void PollVaultInfoCallback(const VaultStatusResponse *response,
+                             base::callback_func_type cb);
+//  void VaultContactInfoCallback(const std::string &ser_result,
+//                                base::callback_func_type cb);
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
   ClientRpcs client_rpcs_;

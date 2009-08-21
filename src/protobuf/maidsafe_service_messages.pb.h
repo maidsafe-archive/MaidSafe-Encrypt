@@ -56,6 +56,9 @@ class GetMessagesRequest;
 class GetMessagesResponse;
 class SwapChunkRequest;
 class SwapChunkResponse;
+class VaultCommunication;
+class VaultStatusRequest;
+class VaultStatusResponse;
 class OwnVaultRequest;
 class OwnVaultResponse;
 class IsOwnedRequest;
@@ -3400,6 +3403,311 @@ class SwapChunkResponse : public ::google::protobuf::Message {
 };
 // -------------------------------------------------------------------
 
+class VaultCommunication : public ::google::protobuf::Message {
+ public:
+  VaultCommunication();
+  virtual ~VaultCommunication();
+  
+  VaultCommunication(const VaultCommunication& from);
+  
+  inline VaultCommunication& operator=(const VaultCommunication& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const VaultCommunication& default_instance();
+  void Swap(VaultCommunication* other);
+  
+  // implements Message ----------------------------------------------
+  
+  VaultCommunication* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const VaultCommunication& from);
+  void MergeFrom(const VaultCommunication& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // optional bytes chunkstore = 1;
+  inline bool has_chunkstore() const;
+  inline void clear_chunkstore();
+  static const int kChunkstoreFieldNumber = 1;
+  inline const ::std::string& chunkstore() const;
+  inline void set_chunkstore(const ::std::string& value);
+  inline void set_chunkstore(const char* value);
+  inline void set_chunkstore(const void* value, size_t size);
+  inline ::std::string* mutable_chunkstore();
+  
+  // optional uint64 offered_space = 2;
+  inline bool has_offered_space() const;
+  inline void clear_offered_space();
+  static const int kOfferedSpaceFieldNumber = 2;
+  inline ::google::protobuf::uint64 offered_space() const;
+  inline void set_offered_space(::google::protobuf::uint64 value);
+  
+  // optional uint64 free_space = 3;
+  inline bool has_free_space() const;
+  inline void clear_free_space();
+  static const int kFreeSpaceFieldNumber = 3;
+  inline ::google::protobuf::uint64 free_space() const;
+  inline void set_free_space(::google::protobuf::uint64 value);
+  
+  // required uint32 timestamp = 4;
+  inline bool has_timestamp() const;
+  inline void clear_timestamp();
+  static const int kTimestampFieldNumber = 4;
+  inline ::google::protobuf::uint32 timestamp() const;
+  inline void set_timestamp(::google::protobuf::uint32 value);
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* chunkstore_;
+  static const ::std::string _default_chunkstore_;
+  ::google::protobuf::uint64 offered_space_;
+  ::google::protobuf::uint64 free_space_;
+  ::google::protobuf::uint32 timestamp_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static VaultCommunication* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class VaultStatusRequest : public ::google::protobuf::Message {
+ public:
+  VaultStatusRequest();
+  virtual ~VaultStatusRequest();
+  
+  VaultStatusRequest(const VaultStatusRequest& from);
+  
+  inline VaultStatusRequest& operator=(const VaultStatusRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const VaultStatusRequest& default_instance();
+  void Swap(VaultStatusRequest* other);
+  
+  // implements Message ----------------------------------------------
+  
+  VaultStatusRequest* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const VaultStatusRequest& from);
+  void MergeFrom(const VaultStatusRequest& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes encrypted_request = 1;
+  inline bool has_encrypted_request() const;
+  inline void clear_encrypted_request();
+  static const int kEncryptedRequestFieldNumber = 1;
+  inline const ::std::string& encrypted_request() const;
+  inline void set_encrypted_request(const ::std::string& value);
+  inline void set_encrypted_request(const char* value);
+  inline void set_encrypted_request(const void* value, size_t size);
+  inline ::std::string* mutable_encrypted_request();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* encrypted_request_;
+  static const ::std::string _default_encrypted_request_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(1 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static VaultStatusRequest* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class VaultStatusResponse : public ::google::protobuf::Message {
+ public:
+  VaultStatusResponse();
+  virtual ~VaultStatusResponse();
+  
+  VaultStatusResponse(const VaultStatusResponse& from);
+  
+  inline VaultStatusResponse& operator=(const VaultStatusResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const VaultStatusResponse& default_instance();
+  void Swap(VaultStatusResponse* other);
+  
+  // implements Message ----------------------------------------------
+  
+  VaultStatusResponse* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const VaultStatusResponse& from);
+  void MergeFrom(const VaultStatusResponse& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required uint32 result = 1;
+  inline bool has_result() const;
+  inline void clear_result();
+  static const int kResultFieldNumber = 1;
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
+  
+  // optional bytes encrypted_response = 2;
+  inline bool has_encrypted_response() const;
+  inline void clear_encrypted_response();
+  static const int kEncryptedResponseFieldNumber = 2;
+  inline const ::std::string& encrypted_response() const;
+  inline void set_encrypted_response(const ::std::string& value);
+  inline void set_encrypted_response(const char* value);
+  inline void set_encrypted_response(const void* value, size_t size);
+  inline ::std::string* mutable_encrypted_response();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::uint32 result_;
+  ::std::string* encrypted_response_;
+  static const ::std::string _default_encrypted_response_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static VaultStatusResponse* default_instance_;
+};
+// -------------------------------------------------------------------
+
 class OwnVaultRequest : public ::google::protobuf::Message {
  public:
   OwnVaultRequest();
@@ -3775,10 +4083,10 @@ class IsOwnedResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required .maidsafe.VaultStatus status = 2;
+  // required .maidsafe.VaultStatus status = 1;
   inline bool has_status() const;
   inline void clear_status();
-  static const int kStatusFieldNumber = 2;
+  static const int kStatusFieldNumber = 1;
   inline maidsafe::VaultStatus status() const;
   inline void set_status(maidsafe::VaultStatus value);
   
@@ -7658,6 +7966,208 @@ inline ::std::string* SwapChunkResponse::mutable_pmid_id() {
 
 // -------------------------------------------------------------------
 
+// VaultCommunication
+
+// optional bytes chunkstore = 1;
+inline bool VaultCommunication::has_chunkstore() const {
+  return _has_bit(0);
+}
+inline void VaultCommunication::clear_chunkstore() {
+  if (chunkstore_ != &_default_chunkstore_) {
+    chunkstore_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& VaultCommunication::chunkstore() const {
+  return *chunkstore_;
+}
+inline void VaultCommunication::set_chunkstore(const ::std::string& value) {
+  _set_bit(0);
+  if (chunkstore_ == &_default_chunkstore_) {
+    chunkstore_ = new ::std::string;
+  }
+  chunkstore_->assign(value);
+}
+inline void VaultCommunication::set_chunkstore(const char* value) {
+  _set_bit(0);
+  if (chunkstore_ == &_default_chunkstore_) {
+    chunkstore_ = new ::std::string;
+  }
+  chunkstore_->assign(value);
+}
+inline void VaultCommunication::set_chunkstore(const void* value, size_t size) {
+  _set_bit(0);
+  if (chunkstore_ == &_default_chunkstore_) {
+    chunkstore_ = new ::std::string;
+  }
+  chunkstore_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* VaultCommunication::mutable_chunkstore() {
+  _set_bit(0);
+  if (chunkstore_ == &_default_chunkstore_) {
+    chunkstore_ = new ::std::string;
+  }
+  return chunkstore_;
+}
+
+// optional uint64 offered_space = 2;
+inline bool VaultCommunication::has_offered_space() const {
+  return _has_bit(1);
+}
+inline void VaultCommunication::clear_offered_space() {
+  offered_space_ = GOOGLE_ULONGLONG(0);
+  _clear_bit(1);
+}
+inline ::google::protobuf::uint64 VaultCommunication::offered_space() const {
+  return offered_space_;
+}
+inline void VaultCommunication::set_offered_space(::google::protobuf::uint64 value) {
+  _set_bit(1);
+  offered_space_ = value;
+}
+
+// optional uint64 free_space = 3;
+inline bool VaultCommunication::has_free_space() const {
+  return _has_bit(2);
+}
+inline void VaultCommunication::clear_free_space() {
+  free_space_ = GOOGLE_ULONGLONG(0);
+  _clear_bit(2);
+}
+inline ::google::protobuf::uint64 VaultCommunication::free_space() const {
+  return free_space_;
+}
+inline void VaultCommunication::set_free_space(::google::protobuf::uint64 value) {
+  _set_bit(2);
+  free_space_ = value;
+}
+
+// required uint32 timestamp = 4;
+inline bool VaultCommunication::has_timestamp() const {
+  return _has_bit(3);
+}
+inline void VaultCommunication::clear_timestamp() {
+  timestamp_ = 0u;
+  _clear_bit(3);
+}
+inline ::google::protobuf::uint32 VaultCommunication::timestamp() const {
+  return timestamp_;
+}
+inline void VaultCommunication::set_timestamp(::google::protobuf::uint32 value) {
+  _set_bit(3);
+  timestamp_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// VaultStatusRequest
+
+// required bytes encrypted_request = 1;
+inline bool VaultStatusRequest::has_encrypted_request() const {
+  return _has_bit(0);
+}
+inline void VaultStatusRequest::clear_encrypted_request() {
+  if (encrypted_request_ != &_default_encrypted_request_) {
+    encrypted_request_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& VaultStatusRequest::encrypted_request() const {
+  return *encrypted_request_;
+}
+inline void VaultStatusRequest::set_encrypted_request(const ::std::string& value) {
+  _set_bit(0);
+  if (encrypted_request_ == &_default_encrypted_request_) {
+    encrypted_request_ = new ::std::string;
+  }
+  encrypted_request_->assign(value);
+}
+inline void VaultStatusRequest::set_encrypted_request(const char* value) {
+  _set_bit(0);
+  if (encrypted_request_ == &_default_encrypted_request_) {
+    encrypted_request_ = new ::std::string;
+  }
+  encrypted_request_->assign(value);
+}
+inline void VaultStatusRequest::set_encrypted_request(const void* value, size_t size) {
+  _set_bit(0);
+  if (encrypted_request_ == &_default_encrypted_request_) {
+    encrypted_request_ = new ::std::string;
+  }
+  encrypted_request_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* VaultStatusRequest::mutable_encrypted_request() {
+  _set_bit(0);
+  if (encrypted_request_ == &_default_encrypted_request_) {
+    encrypted_request_ = new ::std::string;
+  }
+  return encrypted_request_;
+}
+
+// -------------------------------------------------------------------
+
+// VaultStatusResponse
+
+// required uint32 result = 1;
+inline bool VaultStatusResponse::has_result() const {
+  return _has_bit(0);
+}
+inline void VaultStatusResponse::clear_result() {
+  result_ = 0u;
+  _clear_bit(0);
+}
+inline ::google::protobuf::uint32 VaultStatusResponse::result() const {
+  return result_;
+}
+inline void VaultStatusResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
+}
+
+// optional bytes encrypted_response = 2;
+inline bool VaultStatusResponse::has_encrypted_response() const {
+  return _has_bit(1);
+}
+inline void VaultStatusResponse::clear_encrypted_response() {
+  if (encrypted_response_ != &_default_encrypted_response_) {
+    encrypted_response_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& VaultStatusResponse::encrypted_response() const {
+  return *encrypted_response_;
+}
+inline void VaultStatusResponse::set_encrypted_response(const ::std::string& value) {
+  _set_bit(1);
+  if (encrypted_response_ == &_default_encrypted_response_) {
+    encrypted_response_ = new ::std::string;
+  }
+  encrypted_response_->assign(value);
+}
+inline void VaultStatusResponse::set_encrypted_response(const char* value) {
+  _set_bit(1);
+  if (encrypted_response_ == &_default_encrypted_response_) {
+    encrypted_response_ = new ::std::string;
+  }
+  encrypted_response_->assign(value);
+}
+inline void VaultStatusResponse::set_encrypted_response(const void* value, size_t size) {
+  _set_bit(1);
+  if (encrypted_response_ == &_default_encrypted_response_) {
+    encrypted_response_ = new ::std::string;
+  }
+  encrypted_response_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* VaultStatusResponse::mutable_encrypted_response() {
+  _set_bit(1);
+  if (encrypted_response_ == &_default_encrypted_response_) {
+    encrypted_response_ = new ::std::string;
+  }
+  return encrypted_response_;
+}
+
+// -------------------------------------------------------------------
+
 // OwnVaultRequest
 
 // required bytes public_key = 1;
@@ -7931,7 +8441,7 @@ inline ::std::string* OwnVaultResponse::mutable_pmid_name() {
 
 // IsOwnedResponse
 
-// required .maidsafe.VaultStatus status = 2;
+// required .maidsafe.VaultStatus status = 1;
 inline bool IsOwnedResponse::has_status() const {
   return _has_bit(0);
 }

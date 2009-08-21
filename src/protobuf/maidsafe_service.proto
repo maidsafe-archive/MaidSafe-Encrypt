@@ -17,6 +17,7 @@ service MaidsafeService {
   rpc Delete( DeleteRequest ) returns ( DeleteResponse );
   rpc ValidityCheck( ValidityCheckRequest ) returns ( ValidityCheckResponse );
   rpc SwapChunk( SwapChunkRequest ) returns ( SwapChunkResponse );
+  rpc VaultStatus( VaultStatusRequest ) returns ( VaultStatusResponse );
 }
 
 service VaultRegistration {

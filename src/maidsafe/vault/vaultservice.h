@@ -54,7 +54,7 @@ class VaultService : public maidsafe::MaidsafeService {
   VaultService(const std::string &pmid_public,
                const std::string &pmid_private,
                const std::string &signed_pmid_public,
-               boost::shared_ptr<VaultChunkStore> vault_chunkstore,
+               VaultChunkStore *vault_chunkstore,
                kad::KNode *knode,
                PendingOperationsHandler *poh);
   ~VaultService() { }
@@ -107,6 +107,10 @@ class VaultService : public maidsafe::MaidsafeService {
                          const maidsafe::SwapChunkRequest* request,
                          maidsafe::SwapChunkResponse* response,
                          google::protobuf::Closure* done);
+  virtual void VaultStatus(google::protobuf::RpcController* controller,
+                           const maidsafe::VaultStatusRequest* request,
+                           maidsafe::VaultStatusResponse* response,
+                           google::protobuf::Closure* done);
  private:
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
@@ -139,7 +143,7 @@ class VaultService : public maidsafe::MaidsafeService {
                               std::string *signed_rank_authority);
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
   std::string non_hex_pmid_;
-  boost::shared_ptr<VaultChunkStore> vault_chunkstore_;
+  VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;
   PendingOperationsHandler *poh_;
 };

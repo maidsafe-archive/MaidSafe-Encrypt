@@ -63,6 +63,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(size_t(0), ss_->MaidAuthorisedUsers().size());
   ASSERT_EQ(0, ss_->Mounted());
   ASSERT_EQ('\0', ss_->WinDrive());
+  ASSERT_EQ("", ss_->VaultIP());
+  ASSERT_EQ(0, ss_->VaultPort());
   std::list<KeyAtlasRow> keys;
   ss_->GetKeys(&keys);
   ASSERT_EQ(size_t(0), keys.size());
@@ -90,6 +92,10 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_TRUE(ss_->SetMaidAuthorisedUsers(non_empty_set));
   ASSERT_TRUE(ss_->SetMounted(1));
   ASSERT_TRUE(ss_->SetWinDrive('N'));
+  ASSERT_TRUE(ss_->SetVaultIP("132.248.59.1"));
+  ASSERT_FALSE(ss_->SetVaultPort(1023));
+  ASSERT_FALSE(ss_->SetVaultPort(65536));
+  ASSERT_TRUE(ss_->SetVaultPort(7777));
   ss_->AddKey(ANMID, "id", "pri_key", "pub_key");
   ASSERT_EQ(0, ss_->AddContact("pub_name", "pub_key", "full_name",
             "office_phone", "birthday", 'M', 18, 6, "city", 'C', 0, 0));
@@ -122,6 +128,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_FALSE(ss_->MaidAuthorisedUsers().end() == it);
   ASSERT_EQ(1, ss_->Mounted());
   ASSERT_EQ('N', ss_->WinDrive());
+  ASSERT_EQ("132.248.59.1", ss_->VaultIP());
+  ASSERT_EQ(7777, ss_->VaultPort());
   ss_->GetKeys(&keys);
   ASSERT_EQ(size_t(1), keys.size());
   ASSERT_EQ(ANMID, keys.front().type_);
@@ -171,6 +179,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(size_t(0), ss_->MaidAuthorisedUsers().size());
   ASSERT_EQ(0, ss_->Mounted());
   ASSERT_EQ('\0', ss_->WinDrive());
+  ASSERT_EQ("", ss_->VaultIP());
+  ASSERT_EQ(0, ss_->VaultPort());
   ss_->GetKeys(&keys);
   ASSERT_EQ(size_t(0), keys.size());
   ASSERT_EQ(0, ss_->GetContactList(&list));

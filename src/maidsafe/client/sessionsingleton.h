@@ -59,14 +59,16 @@ struct UserDetails {
                   maid_authorised_users(),
                   mounted(0),
                   win_drive('\0'),
-                  connection_status(0) {}
+                  connection_status(0),
+                  vault_ip(),
+                  vault_port(0) {}
   DefConLevels defconlevel;
   bool da_modified;
   std::string username;
   std::string pin;
   std::string password;
-  uint32_t mid_rid;
-  uint32_t smid_rid;
+  boost::uint32_t mid_rid;
+  boost::uint32_t smid_rid;
   std::string session_name;
   std::string root_db_key;
   bool self_encrypting;
@@ -75,6 +77,8 @@ struct UserDetails {
   int mounted;
   char win_drive;
   int connection_status;
+  std::string vault_ip;
+  boost::uint32_t vault_port;
 };
 
 class SessionSingleton {
@@ -94,8 +98,8 @@ class SessionSingleton {
   inline std::string Pin() { return ud_.pin; }
   inline std::string Password() { return ud_.password; }
   inline std::string PublicUsername() { return Id(MPID); }
-  inline uint32_t MidRid() { return ud_.mid_rid; }
-  inline uint32_t SmidRid() { return ud_.smid_rid; }
+  inline boost::uint32_t MidRid() { return ud_.mid_rid; }
+  inline boost::uint32_t SmidRid() { return ud_.smid_rid; }
   inline std::string SessionName() { return ud_.session_name; }
   inline std::string RootDbKey() { return ud_.root_db_key; }
   inline bool SelfEncrypting() { return ud_.self_encrypting; }
@@ -107,7 +111,9 @@ class SessionSingleton {
   }
   inline int Mounted() { return ud_.mounted; }
   inline char WinDrive() { return ud_.win_drive; }
-//  inline int ConnectionStatus() { return ud_.connection_status; }
+  inline int ConnectionStatus() { return ud_.connection_status; }
+  inline std::string VaultIP() { return ud_.vault_ip; }
+  inline boost::uint32_t VaultPort() { return ud_.vault_port; }
 
   // Mutators
   inline bool SetDefConLevel(DefConLevels defconlevel) {
@@ -130,11 +136,11 @@ class SessionSingleton {
     ud_.password = password;
     return true;
   }
-  inline bool SetMidRid(const int64_t &midrid) {
+  inline bool SetMidRid(const boost::uint32_t &midrid) {
     ud_.mid_rid = midrid;
     return true;
   }
-  inline bool SetSmidRid(const int64_t &smidrid) {
+  inline bool SetSmidRid(const boost::uint32_t &smidrid) {
     ud_.smid_rid = smidrid;
     return true;
   }
@@ -179,10 +185,22 @@ class SessionSingleton {
     ud_.win_drive = win_drive;
     return true;
   }
-//  inline bool SetConnectionStatus(int status) {
-//    ud_.connection_status = status;
-//    return true;
-//  }
+  inline bool SetConnectionStatus(int status) {
+    ud_.connection_status = status;
+    return true;
+  }
+  inline bool SetVaultIP(const std::string &vault_ip) {
+    ud_.vault_ip = vault_ip;
+    return true;
+  }
+  inline bool SetVaultPort(const boost::uint32_t &vault_port) {
+    if ((vault_port > 1023 && vault_port < 65536) || vault_port == 0) {
+      ud_.vault_port = vault_port;
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   ///////////////////////////
   //// Key Ring Handling ////

@@ -31,6 +31,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <maidsafe/kademlia_service_messages.pb.h>
 #include <cstdio>
 
 #include "maidsafe/chunkstore.h"
@@ -336,6 +337,7 @@ bool ClientController::CreateUser(const std::string &username,
   if (result == OK) {
     // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
     ss_->SetSessionName(false);
+    ss_->SetConnectionStatus(0);
     std::string root_db_key;
     seh_ = new SEHandler(sm_, client_chunkstore_, &mutex_);
     printf("In ClientController::CreateUser 01\n");
@@ -520,6 +522,7 @@ bool ClientController::ValidateUser(const std::string &password) {
   Exitcode result = auth_->GetUserData(password, ser_da_);
 
   if (result == OK) {
+    ss_->SetConnectionStatus(0);
     ss_->SetSessionName(false);
     fsys_.Mount();
     boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
@@ -937,6 +940,7 @@ bool ClientController::GetMessages() {
 #ifdef DEBUG
     printf("Error clearing messages from buffer packet.");
 #endif
+    return false;
   }
   return true;
 }
@@ -1428,6 +1432,12 @@ int ClientController::HandleAddContactResponse(
 
 int ClientController::SendInstantMessage(const std::string &message,
     const std::vector<std::string> &contact_names, bool test) {
+  if (ss_->ConnectionStatus() == 1) {
+#ifdef DEBUG
+    printf("Can't send a message while off-line.\n");
+#endif
+    return -9999;
+  }
   std::vector<Receivers> recs;
   for (unsigned int a = 0; a < contact_names.size(); ++a) {
     maidsafe::mi_contact mic;
@@ -1489,6 +1499,13 @@ int ClientController::GetInstantMessages(
 
 int ClientController::SendInstantFile(std::string *filename,
     const std::string &msg, const std::vector<std::string> &contact_names) {
+  if (ss_->ConnectionStatus() == 1) {
+#ifdef DEBUG
+    printf("Can't send a message while off-line.\n");
+#endif
+    return -6666666;
+  }
+
   std::string path = *filename;
   DirType dir_type;
   std::string msid("");
@@ -1794,6 +1811,12 @@ int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
 int ClientController::CreateNewShare(const std::string &name,
                       const std::set<std::string> &admins,
                       const std::set<std::string> &readonlys) {
+  if (ss_->ConnectionStatus() == 1) {
+#ifdef DEBUG
+    printf("Can't send a message while off-line.\n");
+#endif
+    return -30008;
+  }
   CC_CallbackResult cbr;
   auth_->CreateMSIDPacket(boost::bind(&CC_CallbackResult::CallbackFunc,
                           &cbr, _1));
@@ -1970,9 +1993,72 @@ int ClientController::CreateNewShare(const std::string &name,
   return 0;
 }
 
-///////////////////////////////
-// Register Vault operations //
-///////////////////////////////
+//////////////////////
+// Vault Operations //
+//////////////////////
+
+bool ClientController::PollVaultInfo(std::string *chunkstore,
+                                     boost::uint64_t *offered_space,
+                                     boost::uint64_t *free_space) {
+  CC_CallbackResult cb;
+  sm_->PollVaultInfo(boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
+  WaitForResult(cb);
+
+  if (cb.result == "FAIL") {
+#ifdef DEBUG
+    printf("ClientController::PollVaultInfo result FAIL.\n");
+#endif
+    return false;
+  }
+
+  VaultCommunication vc;
+  if (!vc.ParseFromString(cb.result)) {
+#ifdef DEBUG
+    printf("ClientController::PollVaultInfo didn't parse.\n");
+#endif
+    return false;
+  }
+
+  *chunkstore = vc.chunkstore();
+  *offered_space = vc.offered_space();
+  *free_space = vc.free_space();
+
+  return true;
+}
+
+bool ClientController::VaultContactInfo() {
+  CC_CallbackResult cbr;
+  sm_->VaultContactInfo(boost::bind(&CC_CallbackResult::CallbackFunc,
+                        &cbr, _1));
+  WaitForResult(cbr);
+
+  kad::FindNodeResult fnr;
+  if (!fnr.ParseFromString(cbr.result) ||
+      fnr.result() != kad::kRpcResultSuccess) {
+#ifdef DEBUG
+    printf("ClientController::VaultContactInfo: failed result.\n");
+#endif
+    return false;
+  }
+
+  kad::ContactInfo ci;
+  if (!ci.ParseFromString(fnr.contact())) {
+#ifdef DEBUG
+    printf("ClientController::VaultContactInfo: failed parsing as contact.\n");
+#endif
+    return false;
+  }
+
+  if (!ss_->SetVaultIP(ci.ip()) || !ss_->SetVaultPort(ci.port())) {
+#ifdef DEBUG
+    printf("ClientController::VaultContactInfo: putting values into session "
+           "failed.\n");
+#endif
+    return false;
+  }
+  return true;
+}
+
 void ClientController::OwnLocalVault(const boost::uint32_t &port,
       const boost::uint64_t &space, const std::string &chunkstore_dir) {
   sm_->OwnLocalVault(ss_->PrivateKey(PMID), ss_->PublicKey(PMID),

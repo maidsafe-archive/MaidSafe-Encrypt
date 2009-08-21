@@ -134,6 +134,7 @@ class ChunkStore : public base::AlternativeStore {
   // Returns the type for an existing key in the multi-index, or -1 if the key
   // doesn't exists.
   ChunkType chunk_type(const std::string &key);
+  inline std::string ChunkStoreDir() { return kChunkstorePath_.string(); }
  protected:
   ChunkStore(const ChunkStore&);
   ChunkStore& operator=(const ChunkStore&);
