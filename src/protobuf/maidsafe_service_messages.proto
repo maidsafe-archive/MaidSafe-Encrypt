@@ -220,6 +220,7 @@ enum OwnVaultResult {
   INVALID_PORT = 6;
   FAILED_TO_START_VAULT = 7;
   INVALID_OWNREQUEST = 8;
+  INVALID_PMID_NAME = 9;
 }
 
 message OwnVaultRequest {
@@ -239,6 +240,8 @@ message OwnVaultResponse {
 enum VaultStatus {
   NOT_OWNED = 0;
   OWNED = 1;
+  DOWN = 2;
+  ISOWNRPC_CANCELLED = 3;
 }
 
 message IsOwnedRequest {}

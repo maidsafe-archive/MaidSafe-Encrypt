@@ -128,8 +128,9 @@ class ClientController {
   bool PollVaultInfo(std::string *chunkstore, boost::uint64_t* offered_space,
                      boost::uint64_t* free_space);
   bool VaultContactInfo();
-  void OwnLocalVault(const boost::uint32_t &port, const boost::uint64_t &space,
-      const std::string &chunkstore_dir);
+  OwnVaultResult OwnLocalVault(const boost::uint32_t &port, const
+      boost::uint64_t &space, const std::string &chunkstore_dir) const;
+  VaultStatus LocalVaultStatus() const;
 
   // FUSE based stuff here
   bool ReadOnly(const std::string &path, bool gui);
@@ -200,7 +201,9 @@ class ClientController {
   int PathDistinction(const std::string &path, std::string *msid);
   bool ClearStaleMessages();
   void OwnLocalVault_Callback(const OwnVaultResult &result, const
-      std::string &pmid_name);
+      std::string &pmid_name, bool *callback_arrived, OwnVaultResult *res);
+  void LocalVaultStatus_Callback(const VaultStatus &result,
+      bool *callback_arrived, VaultStatus *res);
 
   // Variables
   Authentication *auth_;

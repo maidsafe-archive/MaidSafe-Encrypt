@@ -73,12 +73,13 @@ enum OwnVaultResult {
   NO_SPACE_ALLOCATED = 5,
   INVALID_PORT = 6,
   FAILED_TO_START_VAULT = 7,
-  INVALID_OWNREQUEST = 8
+  INVALID_OWNREQUEST = 8,
+  INVALID_PMID_NAME = 9
 };
 const ::google::protobuf::EnumDescriptor* OwnVaultResult_descriptor();
 bool OwnVaultResult_IsValid(int value);
 const OwnVaultResult OwnVaultResult_MIN = OWNED_SUCCESS;
-const OwnVaultResult OwnVaultResult_MAX = INVALID_OWNREQUEST;
+const OwnVaultResult OwnVaultResult_MAX = INVALID_PMID_NAME;
 
 inline const ::std::string& OwnVaultResult_Name(OwnVaultResult value) {
   return ::google::protobuf::internal::NameOfEnum(
@@ -91,12 +92,14 @@ inline bool OwnVaultResult_Parse(
 }
 enum VaultStatus {
   NOT_OWNED = 0,
-  OWNED = 1
+  OWNED = 1,
+  DOWN = 2,
+  ISOWNRPC_CANCELLED = 3
 };
 const ::google::protobuf::EnumDescriptor* VaultStatus_descriptor();
 bool VaultStatus_IsValid(int value);
 const VaultStatus VaultStatus_MIN = NOT_OWNED;
-const VaultStatus VaultStatus_MAX = OWNED;
+const VaultStatus VaultStatus_MAX = ISOWNRPC_CANCELLED;
 
 inline const ::std::string& VaultStatus_Name(VaultStatus value) {
   return ::google::protobuf::internal::NameOfEnum(

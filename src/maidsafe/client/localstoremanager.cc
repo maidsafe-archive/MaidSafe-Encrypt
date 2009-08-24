@@ -555,4 +555,9 @@ void LocalStoreManager::OwnLocalVault(const std::string &,
   boost::thread thr(cb, maidsafe::OWNED_SUCCESS, pmid_name);
 }
 
+void LocalStoreManager::LocalVaultStatus(boost::function< void(
+      const VaultStatus&) > cb) {
+  boost::thread thr(cb, maidsafe::NOT_OWNED);
+}
+
 }  // namespace maidsafe

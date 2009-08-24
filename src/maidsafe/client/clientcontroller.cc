@@ -2059,36 +2059,52 @@ bool ClientController::VaultContactInfo() {
   return true;
 }
 
-void ClientController::OwnLocalVault(const boost::uint32_t &port,
-      const boost::uint64_t &space, const std::string &chunkstore_dir) {
+OwnVaultResult ClientController::OwnLocalVault(const boost::uint32_t &port,
+      const boost::uint64_t &space, const std::string &chunkstore_dir) const {
+  bool callback_arrived = false;
+  OwnVaultResult result;
   sm_->OwnLocalVault(ss_->PrivateKey(PMID), ss_->PublicKey(PMID),
       ss_->SignedPublicKey(PMID), port, chunkstore_dir, space,
       boost::bind(&ClientController::OwnLocalVault_Callback,
-      this, _1, _2));
+      const_cast<ClientController*>(this), _1, _2, &callback_arrived, &result));
+  while (!callback_arrived)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  return result;
 }
 
 void ClientController::OwnLocalVault_Callback(const OwnVaultResult &result,
-      const std::string &pmid_name) {
+      const std::string &pmid_name, bool *callback_arrived,
+      OwnVaultResult *res) {
   if (result == OWNED_SUCCESS) {
     std::string pmid_name_exp;
     base::decode_from_hex(ss_->Id(PMID), &pmid_name_exp);
     if (pmid_name == pmid_name_exp) {
-      // SUCCESSFUL OWNED THE LOCAL VAULT
+      *res = result;
     } else {
       // FAILURE -- incorrect pmid name returned by the vault
+      *res = INVALID_PMID_NAME;
     }
   } else {
-    // CASES of failure returned by teh vault
-    switch (result) {
-      case  VAULT_ALREADY_OWNED: break;
-      case INVALID_RSA_KEYS: break;
-      case NOT_ENOUGH_SPACE: break;
-      case NO_SPACE_ALLOCATED: break;
-      case INVALID_PORT: break;
-      case FAILED_TO_START_VAULT: break;
-      default: break;
-    }
+    *res = result;
   }
+  *callback_arrived = true;
+}
+
+VaultStatus ClientController::LocalVaultStatus() const {
+  VaultStatus result;
+  bool callback_arrived = false;
+  sm_->LocalVaultStatus(boost::bind(
+      &ClientController::LocalVaultStatus_Callback, const_cast<
+      ClientController*>(this), _1, &callback_arrived, &result));
+  while (!callback_arrived)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  return result;
+}
+
+void ClientController::LocalVaultStatus_Callback(const VaultStatus &result,
+      bool *callback_arrived, VaultStatus *res) {
+  *res = result;
+  *callback_arrived = true;
 }
 
 ///////////////////

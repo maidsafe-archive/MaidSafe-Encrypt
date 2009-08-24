@@ -1213,4 +1213,11 @@ void MaidsafeStoreManager::OwnLocalVault(const std::string &priv_key,
       chunkstore_dir, space, cb);
 }
 
+void MaidsafeStoreManager::LocalVaultStatus(boost::function<void(
+      const VaultStatus&)> cb) {
+  if (pdclient_ == NULL)
+    return;
+  pdclient_->IsLocalVaultOwned(cb);
+}
+
 }  // namespace maidsafe

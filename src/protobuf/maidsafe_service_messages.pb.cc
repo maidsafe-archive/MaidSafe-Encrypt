@@ -965,13 +965,15 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
     "(\n\006result\030\001 \002(\0162\030.maidsafe.OwnVaultResul"
     "t\022\021\n\tpmid_name\030\002 \001(\014\"\020\n\016IsOwnedRequest\"8"
     "\n\017IsOwnedResponse\022%\n\006status\030\001 \002(\0162\025.maid"
-    "safe.VaultStatus*\330\001\n\016OwnVaultResult\022\021\n\rO"
+    "safe.VaultStatus*\357\001\n\016OwnVaultResult\022\021\n\rO"
     "WNED_SUCCESS\020\000\022\027\n\023VAULT_ALREADY_OWNED\020\001\022"
     "\021\n\rVAULT_IS_DOWN\020\002\022\024\n\020INVALID_RSA_KEYS\020\003"
     "\022\024\n\020NOT_ENOUGH_SPACE\020\004\022\026\n\022NO_SPACE_ALLOC"
     "ATED\020\005\022\020\n\014INVALID_PORT\020\006\022\031\n\025FAILED_TO_ST"
-    "ART_VAULT\020\007\022\026\n\022INVALID_OWNREQUEST\020\010*\'\n\013V"
-    "aultStatus\022\r\n\tNOT_OWNED\020\000\022\t\n\005OWNED\020\001", 3436);
+    "ART_VAULT\020\007\022\026\n\022INVALID_OWNREQUEST\020\010\022\025\n\021I"
+    "NVALID_PMID_NAME\020\t*I\n\013VaultStatus\022\r\n\tNOT"
+    "_OWNED\020\000\022\t\n\005OWNED\020\001\022\010\n\004DOWN\020\002\022\026\n\022ISOWNRP"
+    "C_CANCELLED\020\003", 3493);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service_messages.proto", &protobuf_RegisterTypes);
   IOUAuthority::default_instance_ = new IOUAuthority();
@@ -1067,6 +1069,7 @@ bool OwnVaultResult_IsValid(int value) {
     case 6:
     case 7:
     case 8:
+    case 9:
       return true;
     default:
       return false;
@@ -1081,6 +1084,8 @@ bool VaultStatus_IsValid(int value) {
   switch(value) {
     case 0:
     case 1:
+    case 2:
+    case 3:
       return true;
     default:
       return false;

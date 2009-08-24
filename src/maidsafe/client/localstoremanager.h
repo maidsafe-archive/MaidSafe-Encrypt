@@ -84,7 +84,7 @@ class LocalStoreManager : public StoreManagerInterface {
       &pub_key, const std::string &signed_pub_key, const boost::uint32_t &port,
       const std::string &chunkstore_dir, const boost::uint64_t &space,
       boost::function<void(const OwnVaultResult&, const std::string&)> cb);
-
+  virtual void LocalVaultStatus(boost::function<void(const VaultStatus&)> cb);
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);

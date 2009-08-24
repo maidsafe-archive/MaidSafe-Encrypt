@@ -57,25 +57,35 @@ class RegistrationServiceHolder {
 
 class ResultHandler {
  public:
-  ResultHandler() : result_(), pmid_name_(""), callback_arrived_(false) {}
+  ResultHandler() : result_(), pmid_name_(""), callback_arrived_(false),
+      local_vault_status_(maidsafe::ISOWNRPC_CANCELLED) {}
   bool callback_arrived() const { return callback_arrived_; }
   std::string pmid_name() const { return pmid_name_; }
   maidsafe::OwnVaultResult result() const { return result_; }
+  maidsafe::VaultStatus local_vault_status() const {
+    return local_vault_status_;
+  }
   void Reset() {
     result_ = maidsafe::INVALID_OWNREQUEST;
     pmid_name_ = "";
     callback_arrived_ = false;
+    local_vault_status_ = maidsafe::ISOWNRPC_CANCELLED;
   }
-  void Callback(const maidsafe::OwnVaultResult &result, const std::string
+  void OwnVault_Callback(const maidsafe::OwnVaultResult &result, const std::string
       &pmid_name) {
     pmid_name_ = pmid_name;
     result_ = result;
+    callback_arrived_ = true;
+  }
+  void IsOwn_Callback(const maidsafe::VaultStatus &result) {
+    local_vault_status_ = result;
     callback_arrived_ = true;
   }
  private:
   maidsafe::OwnVaultResult result_;
   std::string pmid_name_;
   bool callback_arrived_;
+  maidsafe::VaultStatus local_vault_status_;
 };
 
 class TestPDClientOwnVault : public testing::Test {
@@ -84,7 +94,9 @@ class TestPDClientOwnVault : public testing::Test {
       rpcprotocol::ChannelManager), server(), service_channel(new
       rpcprotocol::Channel(&server)), knode(), rpcs(
       new maidsafe::ClientRpcs(client)), pdclient(client, knode, rpcs),
-      cb(boost::bind(&ResultHandler::Callback, &resulthandler, _1, _2)) {}
+      cb(boost::bind(&ResultHandler::OwnVault_Callback, &resulthandler, _1,
+      _2)), cb1(boost::bind(&ResultHandler::IsOwn_Callback, &resulthandler, _1))
+      {}
   ~TestPDClientOwnVault() {
     server.CleanUpTransport();
     delete rpcs;
@@ -114,6 +126,7 @@ class TestPDClientOwnVault : public testing::Test {
   maidsafe::ClientRpcs *rpcs;
   maidsafe::PDClient pdclient;
   boost::function<void(const maidsafe::OwnVaultResult&, const std::string&)> cb;
+  boost::function<void(const maidsafe::VaultStatus&)> cb1;
  private:
   TestPDClientOwnVault(const TestPDClientOwnVault&);
   TestPDClientOwnVault &operator=(const TestPDClientOwnVault&);
@@ -128,6 +141,13 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_OwnLocalVault) {
       keypair.private_key(), crypto::STRING_STRING);
   std::string pmid_name = cobj.Hash(keypair.public_key() + signed_public_key,
     "", crypto::STRING_STRING, false);
+
+  pdclient.IsLocalVaultOwned(cb1);
+  while (!resulthandler.callback_arrived())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ(maidsafe::NOT_OWNED, resulthandler.local_vault_status());
+  resulthandler.Reset();
+
   pdclient.OwnLocalVault(keypair.private_key(), keypair.public_key(),
       signed_public_key, 0, "ChunkStore", 1024, cb);
   while (!service.own_notification_arrived())
@@ -137,6 +157,13 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_OwnLocalVault) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::OWNED_SUCCESS, resulthandler.result());
   ASSERT_EQ(pmid_name, resulthandler.pmid_name());
+  service.SetServiceVaultStatus(maidsafe::OWNED);
+
+  resulthandler.Reset();
+  pdclient.IsLocalVaultOwned(cb1);
+  while (!resulthandler.callback_arrived())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ(maidsafe::OWNED, resulthandler.local_vault_status());
 }
 
 TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
@@ -229,6 +256,12 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
   resulthandler.Reset();
   service.Reset();
   server.StopTransport();
+  pdclient.IsLocalVaultOwned(cb1);
+  while (!resulthandler.callback_arrived())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ(maidsafe::DOWN, resulthandler.local_vault_status());
+
+  resulthandler.Reset();
   pdclient.OwnLocalVault(priv_key, pub_key, signed_public_key, 0,
       "ChunkStore", 1024, cb);
   while (!resulthandler.callback_arrived())
