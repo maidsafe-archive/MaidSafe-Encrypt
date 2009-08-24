@@ -12,37 +12,32 @@
  *      Author: Team
  */
 
-#include "create_page_license.h"
+#include "qt/widgets/create_page_license.h"
 
 // qt
 #include <QDebug>
 
 
-CreateLicensePage::CreateLicensePage( QWidget* parent )
-    : QWizardPage( parent )
-{
-    ui_.setupUi( this );
+CreateLicensePage::CreateLicensePage(QWidget* parent)
+    : QWizardPage(parent) {
+  ui_.setupUi(this);
 
-    setTitle( tr( "License agreement" ) );
+  setTitle(tr("License agreement"));
 
-    connect( ui_.accept, SIGNAL( toggled( bool ) ),
-             this,       SLOT( onAcceptToggled( bool ) ) );
+  connect(ui_.accept, SIGNAL(toggled(bool)),
+          this,       SLOT(onAcceptToggled(bool)));
 }
 
-CreateLicensePage::~CreateLicensePage()
-{}
+CreateLicensePage::~CreateLicensePage() { }
 
-void CreateLicensePage::onAcceptToggled( bool )
-{
-    emit completeChanged();
+void CreateLicensePage::onAcceptToggled(bool) {
+  emit completeChanged();
 }
 
-bool CreateLicensePage::isComplete() const
-{
-    return ui_.accept->isChecked();
+bool CreateLicensePage::isComplete() const {
+  return ui_.accept->isChecked();
 }
 
-void CreateLicensePage::cleanupPage()
-{
-    ui_.decline->setChecked( true );
+void CreateLicensePage::cleanupPage() {
+  ui_.decline->setChecked(true);
 }

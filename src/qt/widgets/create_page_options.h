@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CREATE_OPTIONS_H_
-#define QT_CREATE_OPTIONS_H_
+#ifndef QT_WIDGETS_CREATE_PAGE_OPTIONS_H_
+#define QT_WIDGETS_CREATE_PAGE_OPTIONS_H_
 
 // qt
 #include <QWizardPage>
@@ -23,19 +23,18 @@
 
 class QWizardPage;
 
-class CreateOptionsPage : public QWizardPage
-{
-    Q_OBJECT
+class CreateOptionsPage : public QWizardPage {
+  Q_OBJECT
 
-public:
-    CreateOptionsPage( QWidget* parent = 0 );
-    virtual ~CreateOptionsPage();
+ public:
+  explicit CreateOptionsPage(QWidget* parent = 0);
+  virtual ~CreateOptionsPage();
+  virtual void cleanupPage();
+  int VaultType();
 
-    virtual void cleanupPage();
-
-private:
-    Ui::options ui_;
+ private:
+  Ui::options ui_;
 };
 
-#endif // QT_CREATE_OPTIONS_H_
+#endif  // QT_WIDGETS_CREATE_PAGE_OPTIONS_H_
 

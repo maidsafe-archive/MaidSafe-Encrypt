@@ -49,8 +49,7 @@ void MessageHandler::SendMessage(const std::string &msg,
                                  const std::vector<Receivers> &receivers,
                                  const BufferPacketType &p_type,
                                  const packethandler::MessageType &m_type,
-                                 base::callback_func_type cb,
-                                 const boost::uint32_t &timestamp) {
+                                 base::callback_func_type cb) {
   base::pd_scoped_lock gaurd(*mutex_);
   boost::shared_ptr<SendMessagesData> data(new SendMessagesData());
   data->index = -1;
@@ -65,7 +64,7 @@ void MessageHandler::SendMessage(const std::string &msg,
   data->p_type = p_type;
   data->m_type = m_type;
   data->msg = msg;
-  data->timestamp = timestamp;
+  data->timestamp = base::get_epoch_time();
   IterativeStoreMsgs(data);
 }
 

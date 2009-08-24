@@ -13,7 +13,7 @@
  *      Author: Team
  */
 
-#include "create_user_thread.h"
+#include "qt/client/create_user_thread.h"
 
 // qt
 #include <QDebug>
@@ -23,44 +23,31 @@
 
 // local
 
+CreateUserThread::CreateUserThread(const QString& username,
+                                   const QString& pin,
+                                   const QString& password,
+                                   const int& vault_type,
+                                   QObject* parent)
+    : WorkerThread(parent), username_(username), pin_(pin),
+      password_(password), vault_type_(vault_type) { }
 
+CreateUserThread::~CreateUserThread() { }
 
-CreateUserThread::CreateUserThread( const QString& username,
-                                    const QString& pin,
-                                    const QString& password,
-                                    QObject* parent )
-    : WorkerThread( parent )
-    , username_ ( username )
-    , pin_ ( pin )
-    , password_ ( password )
-{
+void CreateUserThread::run() {
+  qDebug() << "CreateUserThread::run";
 
-}
+  const std::string username = username_.toStdString();
+  const std::string pin = pin_.toStdString();
+  const std::string password = password_.toStdString();
 
-CreateUserThread::~CreateUserThread()
-{
+  if (!maidsafe::ClientController::getInstance()->
+      CreateUser(username, pin, password, vault_type_)) {
+    emit completed(false);
+  } else {
+    emit completed(true);
+  }
 
-}
-
-void CreateUserThread::run()
-{
-    qDebug() << "CreateUserThread::run";
-
-    const std::string username = username_.toStdString();
-    const std::string pin =      pin_.toStdString();
-    const std::string password = password_.toStdString();
-
-    if ( !maidsafe::ClientController::getInstance()->
-                                        CreateUser(username, pin, password) )
-    {
-        emit completed( false );
-    }
-    else
-    {
-        emit completed( true );
-    }
-
-    deleteLater();
+  deleteLater();
 }
 
 

@@ -89,7 +89,7 @@ void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
   }
   if (!ValidateSignedRequest(request->public_key(),
        request->signed_public_key(), request->signed_request(),
-       request->chunkname())) {
+       request->chunkname(), request->pmid())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -135,6 +135,88 @@ void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
   done->Run();
 }
 
+void VaultService::StorePacket(google::protobuf::RpcController*,
+                              const maidsafe::StoreRequest* request,
+                              maidsafe::StoreResponse* response,
+                              google::protobuf::Closure* done) {
+#ifdef DEBUG
+  printf("In VaultService::StorePacket (%i), Data Type: %i\n",
+         knode_->host_port(), request->data_type());
+#endif
+  response->set_pmid_id(non_hex_pmid_);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StorePacket (%i), request is not initialized.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+       request->signed_public_key(), request->signed_request(),
+       request->chunkname(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StorePacket (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
+#endif
+    return;
+  }
+
+  packethandler::VaultBufferPacketHandler vbph;
+  if (request->data_type() != maidsafe::SYSTEM_PACKET ||
+      request->data_type() != maidsafe::BUFFER_PACKET) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::StorePacket (%i), ", knode_->host_port());
+    printf("wrong type of data sent.\n");
+#endif
+    return;
+  }
+
+  bool valid_data(false);
+  switch (request->data_type()) {
+    case maidsafe::SYSTEM_PACKET: {
+                                    if (ValidateSystemPacket(request->data(),
+                                      request->public_key()))
+                                    valid_data = true;
+                                  } break;
+    case maidsafe::BUFFER_PACKET: {
+                                    packethandler::VaultBufferPacketHandler vph;
+                                    if (vph.ValidateOwnerSignature(
+                                      request->public_key(), request->data()))
+                                    valid_data = true;
+                                  } break;
+    default: break;  // No specific check for data
+  }
+
+  if (!valid_data) {
+#ifdef DEBUG
+    printf("In VaultService::StorePacket (%i), failed to validate data.\n",
+           knode_->host_port());
+#endif
+    response->set_result(kNack);
+    done->Run();
+    return;
+  }
+
+  if (!StoreChunkLocal(request->chunkname(), request->data())) {
+#ifdef DEBUG
+    printf("In VaultService::StorePacket (%i), ", knode_->host_port());
+    printf("failed to store packet as chunk locally.\n");
+#endif
+    response->set_result(kNack);
+    done->Run();
+    return;
+  }
+  response->set_result(kAck);
+  done->Run();
+}
+
 void VaultService::StoreChunk(google::protobuf::RpcController*,
                               const maidsafe::StoreRequest* request,
                               maidsafe::StoreResponse* response,
@@ -161,7 +243,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
   }
   if (!ValidateSignedRequest(request->public_key(),
        request->signed_public_key(), request->signed_request(),
-       request->chunkname())) {
+       request->chunkname(), request->pmid())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -258,7 +340,7 @@ void VaultService::IOUDone(google::protobuf::RpcController*,
   }
   if (!ValidateSignedRequest(request->public_key(),
       request->signed_public_key(), request->signed_request(),
-      request->chunkname())) {
+      request->chunkname(), "")) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -303,7 +385,7 @@ void VaultService::StoreIOU(google::protobuf::RpcController*,
   }
   if (!ValidateSignedRequest(request->public_key(),
       request->signed_public_key(), request->signed_request(),
-      request->chunkname())) {
+      request->chunkname(), request->own_pmid())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -370,7 +452,7 @@ void VaultService::StoreChunkReference(google::protobuf::RpcController*,
   }
   if (!ValidateSignedRequest(request->public_key(),
        request->signed_public_key(), request->signed_request(),
-       request->chunkname())) {
+       request->chunkname(), request->pmid())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -498,7 +580,7 @@ void VaultService::Update(google::protobuf::RpcController*,
   }
   if (!ValidateSignedRequest(request->public_key(),
        request->signed_public_key(), request->signed_request(),
-       request->chunkname())) {
+       request->chunkname(), "")) {
 #ifdef DEBUG
     printf("In VaultService::Update (%i), request didn't validate.\n",
            knode_->host_port());
@@ -642,7 +724,7 @@ void VaultService::Delete(google::protobuf::RpcController*,
   }
   if (!ValidateSignedRequest(request->public_key(),
       request->signed_public_key(), request->signed_request(),
-      request->chunkname())) {
+      request->chunkname(), "")) {
     response->set_result(kNack);
     done->Run();
     return;
@@ -877,12 +959,20 @@ void VaultService::VaultStatus(google::protobuf::RpcController*,
 bool VaultService::ValidateSignedRequest(const std::string &public_key,
                                          const std::string &signed_public_key,
                                          const std::string &signed_request,
-                                         const std::string &key) {
+                                         const std::string &key,
+                                         const std::string &pmid) {
   if (signed_request == kAnonymousSignedRequest)
     return true;
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
+  if (pmid != "" && pmid != co.Hash(public_key + signed_public_key +
+      key, "", crypto::STRING_STRING, false)) {
+#ifdef DEBUG
+    printf("VaultService::ValidateSignedRequest: Failed to validate PMID.\n");
+#endif
+    return false;
+  }
   if (co.AsymCheckSig(public_key, signed_public_key, public_key,
                            crypto::STRING_STRING)) {
     if (co.AsymCheckSig(co.Hash(signed_public_key + key +

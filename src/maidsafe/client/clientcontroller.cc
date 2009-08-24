@@ -320,7 +320,8 @@ Exitcode ClientController::CheckUserExists(const std::string &username,
 
 bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
-                                  const std::string &password) {
+                                  const std::string &password,
+                                  const int &vt) {
   Exitcode result = auth_->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
@@ -336,6 +337,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   if (result == OK) {
     // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
+    //                             Parameter vt receives the vault type.
     ss_->SetSessionName(false);
     ss_->SetConnectionStatus(0);
     std::string root_db_key;
@@ -1360,8 +1362,7 @@ int ClientController::HandleAddContactRequest(
                      MPID_BP,
                      packethandler::INSTANT_MSG,
                      boost::bind(&CC_CallbackResult::CallbackFunc,
-                     &cb, _1),
-                     base::get_epoch_time());
+                     &cb, _1));
   WaitForResult(cb);
   packethandler::StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
@@ -1431,7 +1432,7 @@ int ClientController::HandleAddContactResponse(
 }
 
 int ClientController::SendInstantMessage(const std::string &message,
-    const std::vector<std::string> &contact_names, bool test) {
+    const std::vector<std::string> &contact_names) {
   if (ss_->ConnectionStatus() == 1) {
 #ifdef DEBUG
     printf("Can't send a message while off-line.\n");
@@ -1462,15 +1463,11 @@ int ClientController::SendInstantMessage(const std::string &message,
   im.SerializeToString(&ser_im);
 
   CC_CallbackResult cb;
-  boost::uint32_t timestamp = 0;
-  if (!test)
-    timestamp = base::get_epoch_time();
   msgh_->SendMessage(ser_im,
                      recs,
                      MPID_BP,
                      packethandler::INSTANT_MSG,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
-                     timestamp);
+                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   packethandler::StoreMessagesResult store_res;
   if ((!store_res.ParseFromString(cb.result)) ||
@@ -1579,8 +1576,7 @@ int ClientController::SendInstantFile(std::string *filename,
                      recs,
                      MPID_BP,
                      packethandler::INSTANT_MSG,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
-                     base::get_epoch_time());
+                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   packethandler::StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
@@ -1679,8 +1675,7 @@ int ClientController::AddContact(const std::string &public_name) {
                        recs,
                        MPID_BP,
                        packethandler::ADD_CONTACT_RQST,
-                       boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
-                     base::get_epoch_time());
+                       boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
     WaitForResult(cb);
     packethandler::StoreMessagesResult res;
     if ((!res.ParseFromString(cb.result)) ||
@@ -1765,8 +1760,7 @@ int ClientController::DeleteContact(const std::string &public_name) {
                      recs,
                      MPID_BP,
                      packethandler::INSTANT_MSG,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
-                     base::get_epoch_time());
+                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   packethandler::StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
@@ -1933,8 +1927,7 @@ int ClientController::CreateNewShare(const std::string &name,
                        recs,
                        MPID_BP,
                        packethandler::INSTANT_MSG,
-                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1),
-                       base::get_epoch_time());
+                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
     WaitForResult(cbr);
     if ((!res.ParseFromString(cbr.result)) ||
         (res.result() == kNack)) {
@@ -1972,8 +1965,7 @@ int ClientController::CreateNewShare(const std::string &name,
                        recs,
                        MPID_BP,
                        packethandler::INSTANT_MSG,
-                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1),
-                       base::get_epoch_time());
+                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
     WaitForResult(cbr);
     if ((!res.ParseFromString(cbr.result)) ||
         (res.result() == kNack)) {

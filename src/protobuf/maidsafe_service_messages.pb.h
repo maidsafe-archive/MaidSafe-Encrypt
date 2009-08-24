@@ -670,7 +670,7 @@ class StoreRequest : public ::google::protobuf::Message {
   inline void set_data(const void* value, size_t size);
   inline ::std::string* mutable_data();
   
-  // required bytes pmid = 3;
+  // optional bytes pmid = 3;
   inline bool has_pmid() const;
   inline void clear_pmid();
   static const int kPmidFieldNumber = 3;
@@ -4779,7 +4779,7 @@ inline ::std::string* StoreRequest::mutable_data() {
   return data_;
 }
 
-// required bytes pmid = 3;
+// optional bytes pmid = 3;
 inline bool StoreRequest::has_pmid() const {
   return _has_bit(2);
 }

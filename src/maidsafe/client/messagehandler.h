@@ -82,8 +82,7 @@ class MessageHandler {
                    const std::vector<Receivers> &receivers,
                    const BufferPacketType &p_type,
                    const packethandler::MessageType &m_type,
-                   base::callback_func_type cb,
-                   const boost::uint32_t &timestamp);
+                   base::callback_func_type cb);
 
  private:
   MessageHandler &operator=(const MessageHandler &) { return *this; }

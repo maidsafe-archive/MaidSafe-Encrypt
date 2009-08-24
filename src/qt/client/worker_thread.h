@@ -12,32 +12,28 @@
  *      Author: Team
  */
 
-#ifndef QT_WORKER_THREAD_H_
-#define QT_WORKER_THREAD_H_
+#ifndef QT_CLIENT_WORKER_THREAD_H_
+#define QT_CLIENT_WORKER_THREAD_H_
 
 #include <QThread>
 
 
-//! Worker thread for mounting
+// Worker thread for mounting
 /*!
     Base class for worker threads that perform operations that
     can take a significant amount of time.
 
     On complettion the thread notifies results and deletes itself.
 */
-class WorkerThread : public QThread
-{
-    Q_OBJECT
-public:
+class WorkerThread : public QThread {
+  Q_OBJECT
+ public:
+  explicit WorkerThread(QObject* parent = 0);
+  virtual ~WorkerThread();
 
-    WorkerThread( QObject* parent = 0 );
-    virtual ~WorkerThread();
-
-
-signals:
-    void completed( bool success );
-
+  signals:
+    void completed(bool success);
 };
 
-#endif // QT_WORKER_THREAD_H_
+#endif  // QT_CLIENT_WORKER_THREAD_H_
 

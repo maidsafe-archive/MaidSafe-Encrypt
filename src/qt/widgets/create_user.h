@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CREATE_USER_H_
-#define QT_CREATE_USER_H_
+#ifndef QT_WIDGETS_CREATE_USER_H_
+#define QT_WIDGETS_CREATE_USER_H_
 
 // std
 
@@ -26,61 +26,57 @@
 class QWizardPage;
 
 
-//! Main User creation screen for Perpetual Data
+// Main User creation screen for Perpetual Data
 /*!
     Takes the user through a series of pages:
      - welcome
      - license agreement
      - vault options
-      - local
-      - buy space
-      - friend's space
+        - local
+        - buy space
+        - friend's space
      - set up public name
      - congratulation
 
      Creation process is split into pages which are responsible for
      each stage.
 */
-class CreateUser : public QWidget
-{
-    Q_OBJECT
+class CreateUser : public QWidget {
+  Q_OBJECT
 
-public:
-    CreateUser( QWidget* parent = 0 );
-    virtual ~CreateUser();
+ public:
+  explicit CreateUser(QWidget* parent = 0);
+  virtual ~CreateUser();
 
-    //! Reset the wizard in preparation for use
-    void reset();
+  // Reset the wizard in preparation for use
+  void reset();
+  int VaultType();
 
-signals:
-    //! Process is complete
-    /*!
-
-    */
+  signals:
+    // Process is complete
     void complete();
 
-    //! Process has been cancelled
+    // ! Process has been cancelled
     void cancelled();
 
-private slots:
+  private slots:
     void onBack();
     void onNext();
     void onCompleteChanged();
 
-private:
-    Ui::CreateScreen ui_;
+ private:
+  Ui::CreateScreen ui_;
+  QList<QWizardPage*> pages_;
+  int vault_type_;
 
-    //!
-    QList<QWizardPage*> pages_;
+  // ! Switches to the page at given index
+  /*!
+      Updates buttons, titles and cleanrs pages if going backwards.
 
-    //! Switches to the page at given index
-    /*!
-        Updates buttons, titles and cleanrs pages if going backwards.
-
-        \param dir direction of page navigation
-    */
-    void setCurrentPage( int index, int dir );
+      \param dir direction of page navigation
+  */
+  void setCurrentPage(int index, int dir);
 };
 
-#endif // QT_CREATE_USER_H_
+#endif  // QT_WIDGETS_CREATE_USER_H_
 

@@ -12,25 +12,32 @@
  *      Author: Team
  */
 
-#include "create_page_options.h"
+#include "qt/widgets/create_page_options.h"
 
 // qt
 #include <QDebug>
 
 
-CreateOptionsPage::CreateOptionsPage( QWidget* parent )
-    : QWizardPage( parent )
-{
-    ui_.setupUi( this );
+CreateOptionsPage::CreateOptionsPage(QWidget* parent)
+    : QWizardPage(parent) {
+  ui_.setupUi(this);
 
-    setTitle( tr( "Storage options" ) );
+  setTitle(tr("Storage options"));
 }
 
-CreateOptionsPage::~CreateOptionsPage()
-{}
+CreateOptionsPage::~CreateOptionsPage() { }
 
 
-void CreateOptionsPage::cleanupPage()
-{
-    ui_.local->setChecked( true );
+void CreateOptionsPage::cleanupPage() {
+  // TODO(Dan#5#): 2009-08-24 - Check if local vault is available
+  ui_.local->setChecked(true);
 }
+
+int CreateOptionsPage::VaultType() {
+  if (ui_.buy->isChecked())
+    return 1;
+  else if (ui_.borrow->isChecked())
+    return 2;
+  return 0;
+}
+

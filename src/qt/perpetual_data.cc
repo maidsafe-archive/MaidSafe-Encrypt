@@ -268,28 +268,29 @@ void PerpetualData::onSetupNewUserCancelled() {
 
 void PerpetualData::asyncMount() {
   MountThread* mt = new MountThread(MountThread::MOUNT, this);
-  connect(mt, SIGNAL(completed(bool)),
-           this, SLOT(onMountCompleted(bool)));
+  connect(mt,   SIGNAL(completed(bool)),
+          this, SLOT(onMountCompleted(bool)));
 
   mt->start();
 }
 
 void PerpetualData::asyncUnmount() {
   MountThread* mt = new MountThread(MountThread::UNMOUNT, this);
-  connect(mt, SIGNAL(completed(bool)),
-           this, SLOT(onUnmountCompleted(bool)));
+  connect(mt,   SIGNAL(completed(bool)),
+          this, SLOT(onUnmountCompleted(bool)));
 
   mt->start();
 }
 
 void PerpetualData::asyncCreateUser() {
   CreateUserThread* cut = new CreateUserThread(login_->username(),
-                                                login_->pin(),
-                                                login_->password(),
-                                                this);
+                                               login_->pin(),
+                                               login_->password(),
+                                               create_->VaultType(),
+                                               this);
 
   connect(cut,  SIGNAL(completed(bool)),
-           this, SLOT(onUserCreationCompleted(bool)));
+          this, SLOT(onUserCreationCompleted(bool)));
 
   cut->start();
 }

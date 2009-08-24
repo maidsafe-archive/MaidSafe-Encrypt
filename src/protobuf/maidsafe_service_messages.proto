@@ -37,7 +37,7 @@ message StorePrepResponse {
 message StoreRequest {
   required bytes chunkname = 1;
   required bytes data = 2;
-  required bytes pmid = 3;  // client's PMID
+  optional bytes pmid = 3;  // client's PMID
   required bytes public_key = 4;
   required bytes signed_public_key = 5;
   required bytes signed_request = 6;
@@ -247,5 +247,5 @@ enum VaultStatus {
 message IsOwnedRequest {}
 
 message IsOwnedResponse {
-  required VaultStatus status = 1; 
+  required VaultStatus status = 1;
 }

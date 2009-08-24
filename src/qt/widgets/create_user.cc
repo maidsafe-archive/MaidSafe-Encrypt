@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "create_user.h"
+#include "qt/widgets/create_user.h"
 
 // qt
 #include <QDebug>
@@ -20,118 +20,111 @@
 #include <QMessageBox>
 
 // core
-#include "maidsafe/client/clientcontroller.h"
 #include <maidsafe/maidsafe-dht.h>
+#include "maidsafe/client/clientcontroller.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 // local
 
 
 // generated
-#include "create_page_welcome.h"
-#include "create_page_license.h"
-#include "create_page_options.h"
-#include "create_page_complete.h"
+#include "qt/widgets/create_page_welcome.h"
+#include "qt/widgets/create_page_license.h"
+#include "qt/widgets/create_page_options.h"
+#include "qt/widgets/create_page_complete.h"
 
 
-CreateUser::CreateUser( QWidget* parent )
-    : QWidget( parent )
-{
-    ui_.setupUi( this );
+CreateUser::CreateUser(QWidget* parent)
+    : QWidget(parent), vault_type_(0) {
+  ui_.setupUi(this);
 
-    ui_.next->setAutoDefault(true);
+  ui_.next->setAutoDefault(true);
 
-    connect( ui_.back, SIGNAL( clicked( bool ) ), this, SLOT( onBack() ) );
-    connect( ui_.next, SIGNAL( clicked( bool ) ), this, SLOT( onNext() ) );
-    connect( ui_.cancel, SIGNAL( clicked( bool ) ), this, SIGNAL( cancelled() ) );
+  connect(ui_.back, SIGNAL(clicked(bool)), this, SLOT(onBack()));
+  connect(ui_.next, SIGNAL(clicked(bool)), this, SLOT(onNext()));
+  connect(ui_.cancel, SIGNAL(clicked(bool)), this, SIGNAL(cancelled()));
 
-    pages_ << new CreateWelcomePage;
-    pages_ << new CreateLicensePage;
-    pages_ << new CreateOptionsPage;
-    pages_ << new CreateCompletePage;
+  pages_ << new CreateWelcomePage;
+  pages_ << new CreateLicensePage;
+  pages_ << new CreateOptionsPage;
+  pages_ << new CreateCompletePage;
 
-    while ( ui_.stack->count() > 0 )
-    {
-        ui_.stack->removeWidget( ui_.stack->widget(0) );
-    }
+  while (ui_.stack->count() > 0) {
+    ui_.stack->removeWidget(ui_.stack->widget(0));
+  }
 
-    foreach( QWizardPage* p, pages_ )
-    {
-        ui_.stack->addWidget( p );
-    }
+  foreach(QWizardPage* p, pages_) {
+    ui_.stack->addWidget(p);
+  }
 
-    reset();
+  reset();
 }
 
-CreateUser::~CreateUser()
-{}
+CreateUser::~CreateUser() { }
 
 
-void CreateUser::reset()
-{
-    setCurrentPage( 0, 0 );
-    foreach( QWizardPage* p, pages_ )
-    {
-        p->cleanupPage();
-    }
+void CreateUser::reset() {
+  setCurrentPage(0, 0);
+  foreach(QWizardPage* p, pages_) {
+    p->cleanupPage();
+  }
 }
 
-void CreateUser::onBack()
-{
-    int index = ui_.stack->currentIndex();
-    if ( index == 0 )
-    {
-        return;
-    }
+void CreateUser::onBack() {
+  int index = ui_.stack->currentIndex();
+  if (index == 0) {
+    return;
+  }
 
-    setCurrentPage( --index, -1 );
+  setCurrentPage(--index, -1);
 }
 
-void CreateUser::onNext()
-{
-    int index = ui_.stack->currentIndex();
-    if ( index == pages_.size()-1 )
-    {
-        // go off and create the user...
-        emit complete();
-        return;
-    }
+void CreateUser::onNext() {
+  int index = ui_.stack->currentIndex();
+  if (index == pages_.size() - 1) {
+    // go off and create the user...
+    emit complete();
+    return;
+  }
+  if (index == pages_.size() - 2) {
+    CreateOptionsPage* cop =
+        static_cast<CreateOptionsPage*>(pages_.at(ui_.stack->currentIndex()));
+    vault_type_ = cop->VaultType();
+  }
+  ++index;
 
-    ++index;
-
-    setCurrentPage( index, 1 );
+  setCurrentPage(index, 1);
 }
 
-void CreateUser::setCurrentPage( int index, int dir )
-{
-    disconnect( ui_.stack->currentWidget(), NULL,
-                this, NULL );
+void CreateUser::setCurrentPage(int index, int dir) {
+  disconnect(ui_.stack->currentWidget(), NULL, this, NULL);
 
-    QWizardPage* page = pages_.at( ui_.stack->currentIndex() );
-    if ( dir < 0 )
-    {
-        page->cleanupPage();
-    }
+  QWizardPage* page = pages_.at(ui_.stack->currentIndex());
+  if (dir < 0) {
+    page->cleanupPage();
+  }
 
-    ui_.stack->setCurrentIndex( index );
+  ui_.stack->setCurrentIndex(index);
 
-    connect( ui_.stack->currentWidget(), SIGNAL( completeChanged() ),
-             this,                       SLOT( onCompleteChanged() ) );
+  connect(ui_.stack->currentWidget(), SIGNAL(completeChanged()),
+          this,                       SLOT(onCompleteChanged()));
 
-    page = pages_.at( ui_.stack->currentIndex() );
+  page = pages_.at(ui_.stack->currentIndex());
 
-    ui_.label->setText( page->title() );
-    ui_.back->setEnabled( index > 0 );
-    ui_.next->setEnabled( page->isComplete() );
-    ui_.next->setText( index == pages_.size()-1 ?
-                       tr( "Finish" ) :
-                       tr( "Next >" ) );
+  ui_.label->setText(page->title());
+  ui_.back->setEnabled(index > 0);
+  ui_.next->setEnabled(page->isComplete());
+  ui_.next->setText(index == pages_.size() - 1 ? tr("Finish") : tr("Next >"));
+  if(index == pages_.size() - 1)
+    qDebug() << "CreateUser::setCurrentPage: " << VaultType();
 }
 
-void CreateUser::onCompleteChanged()
-{
-    QWizardPage* page = pages_.at( ui_.stack->currentIndex() );
-    ui_.next->setEnabled( page->isComplete() );
+void CreateUser::onCompleteChanged() {
+  QWizardPage* page = pages_.at(ui_.stack->currentIndex());
+  ui_.next->setEnabled(page->isComplete());
 }
 
+int CreateUser::VaultType() {
+  return vault_type_;
+}
 

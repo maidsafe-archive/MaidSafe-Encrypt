@@ -229,8 +229,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
 
   //  Sending the message
   msghandler.SendMessage(ser_ci, recs, MPID_BP, packethandler::ADD_CONTACT_RQST,
-                         boost::bind(&FakeCallback::CallbackFunc, &cb, _1),
-                         base::get_epoch_time());
+                         boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   packethandler::StoreMessagesResult store_msg_result;
   ASSERT_TRUE(store_msg_result.ParseFromString(cb.result));
@@ -359,8 +358,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
 
   //  Sending the message
   msghandler.SendMessage(ser_ci, recs, MPID_BP, packethandler::INSTANT_MSG,
-      boost::bind(&FakeCallback::CallbackFunc, &cb, _1),
-      base::get_epoch_time());
+                         boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(store_msg_result.ParseFromString(cb.result));
   ASSERT_EQ(kAck, static_cast<int>(store_msg_result.result()));

@@ -74,7 +74,8 @@ class ClientController {
                            DefConLevels level);
   bool CreateUser(const std::string &username,
                   const std::string &pin,
-                  const std::string &password);
+                  const std::string &password,
+                  const int &vt);
   int SetVaultConfig(const std::string &pmid_public,
                      const std::string &pmid_private);
   bool ValidateUser(const std::string &password);
@@ -104,8 +105,7 @@ class ClientController {
     const std::string &sender);
   int GetInstantMessages(std::list<packethandler::InstantMessage> *messages);
   int SendInstantMessage(const std::string &message,
-                         const std::vector<std::string> &contact_names,
-                         bool test = false);
+                         const std::vector<std::string> &contact_names);
   int SendInstantFile(std::string *filename, const std::string &msg,
                       const std::vector<std::string> &contact_names);
   int AddInstantFile(const packethandler::InstantFileNotification &ifm,

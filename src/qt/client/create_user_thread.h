@@ -13,33 +13,34 @@
  *      Author: Team
  */
 
-#ifndef QT_CREATE_USER_THREAD_H_
-#define QT_CREATE_USER_THREAD_H_
+#ifndef QT_CLIENT_CREATE_USER_THREAD_H_
+#define QT_CLIENT_CREATE_USER_THREAD_H_
 
-#include "worker_thread.h"
+#include "qt/client/worker_thread.h"
 
-//! Worker thread for creating users
+// Worker thread for creating users
 /*!
     Creating a user is blocking and can take a while so we use a worker thread
     to ensure that it doesn't block the main gui.
 
     Currently intended for single use.
 */
-class CreateUserThread : public WorkerThread
-{
-    Q_OBJECT
-public:
-    CreateUserThread( const QString& username,
-                      const QString& pin,
-                      const QString& password,
-                      QObject* parent = 0 );
-    virtual ~CreateUserThread();
+class CreateUserThread : public WorkerThread {
+  Q_OBJECT
+ public:
+  CreateUserThread(const QString& username,
+                   const QString& pin,
+                   const QString& password,
+                   const int& vault_type,
+                   QObject* parent = 0);
+  virtual ~CreateUserThread();
 
-    virtual void run();
+  virtual void run();
 
-private:
-    QString username_, pin_, password_;
+ private:
+  QString username_, pin_, password_;
+  int vault_type_;
 };
 
-#endif // QT_CREATE_USER_THREAD_H_
+#endif  // QT_CLIENT_CREATE_USER_THREAD_H_
 

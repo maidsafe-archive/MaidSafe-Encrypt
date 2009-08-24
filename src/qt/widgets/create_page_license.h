@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CREATE_LICENSE_H_
-#define QT_CREATE_LICENSE_H_
+#ifndef QT_WIDGETS_CREATE_PAGE_LICENSE_H_
+#define QT_WIDGETS_CREATE_PAGE_LICENSE_H_
 
 // qt
 #include <QWizardPage>
@@ -23,22 +23,22 @@
 
 class QWizardPage;
 
-class CreateLicensePage : public QWizardPage
-{
-    Q_OBJECT
+class CreateLicensePage : public QWizardPage {
+  Q_OBJECT
 
-public:
-    CreateLicensePage( QWidget* parent = 0 );
-    virtual ~CreateLicensePage();
+ public:
+  explicit CreateLicensePage(QWidget* parent = 0);
+  virtual ~CreateLicensePage();
 
-    virtual bool isComplete() const;
-    virtual void cleanupPage();
+  virtual bool isComplete() const;
+  virtual void cleanupPage();
 
-private slots:
-    void onAcceptToggled( bool );
-private:
-    Ui::license ui_;
+ private:
+  Ui::license ui_;
+
+  private slots:
+    void onAcceptToggled(bool);
 };
 
-#endif // QT_CREATE_LICENSE_H_
+#endif  // QT_WIDGETS_CREATE_PAGE_LICENSE_H_
 

@@ -898,7 +898,7 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
     "\002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\025\n\riou_authority\030\003 "
     "\001(\014\022\034\n\024signed_iou_authority\030\004 \001(\014\"\276\001\n\014St"
     "oreRequest\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004data\030\002 "
-    "\002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\031\n"
+    "\002(\014\022\014\n\004pmid\030\003 \001(\014\022\022\n\npublic_key\030\004 \002(\014\022\031\n"
     "\021signed_public_key\030\005 \002(\014\022\026\n\016signed_reque"
     "st\030\006 \002(\014\022\021\n\tdata_type\030\007 \002(\r\022\016\n\006offset\030\010 "
     "\001(\r\022\025\n\rchunklet_size\030\t \001(\r\"0\n\rStoreRespo"
@@ -2615,7 +2615,7 @@ bool StoreRequest::MergePartialFromCodedStream(
         break;
       }
       
-      // required bytes pmid = 3;
+      // optional bytes pmid = 3;
       case 3: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
@@ -2739,7 +2739,7 @@ void StoreRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBytes(2, this->data(), output);
   }
   
-  // required bytes pmid = 3;
+  // optional bytes pmid = 3;
   if (_has_bit(2)) {
     ::google::protobuf::internal::WireFormat::WriteBytes(3, this->pmid(), output);
   }
@@ -2792,7 +2792,7 @@ void StoreRequest::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->data(), target);
   }
   
-  // required bytes pmid = 3;
+  // optional bytes pmid = 3;
   if (_has_bit(2)) {
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->pmid(), target);
   }
@@ -2850,7 +2850,7 @@ int StoreRequest::ByteSize() const {
         ::google::protobuf::internal::WireFormat::BytesSize(this->data());
     }
     
-    // required bytes pmid = 3;
+    // optional bytes pmid = 3;
     if (has_pmid()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->pmid());
@@ -2985,7 +2985,7 @@ void StoreRequest::Swap(StoreRequest* other) {
 }
 
 bool StoreRequest::IsInitialized() const {
-  if ((_has_bits_[0] & 0x0000007f) != 0x0000007f) return false;
+  if ((_has_bits_[0] & 0x0000007b) != 0x0000007b) return false;
   
   return true;
 }

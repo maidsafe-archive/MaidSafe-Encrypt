@@ -67,6 +67,10 @@ class VaultService : public maidsafe::MaidsafeService {
                           const maidsafe::StoreRequest* request,
                           maidsafe::StoreResponse* response,
                           google::protobuf::Closure* done);
+  virtual void StorePacket(google::protobuf::RpcController* controller,
+                           const maidsafe::StoreRequest* request,
+                           maidsafe::StoreResponse* response,
+                           google::protobuf::Closure* done);
   virtual void IOUDone(google::protobuf::RpcController*,
                        const maidsafe::IOUDoneRequest* request,
                        maidsafe::IOUDoneResponse* response,
@@ -117,7 +121,8 @@ class VaultService : public maidsafe::MaidsafeService {
   bool ValidateSignedRequest(const std::string &public_key,
                              const std::string &signed_public_key,
                              const std::string &signed_request,
-                             const std::string &key);
+                             const std::string &key,
+                             const std::string &pmid);
   bool ValidateSystemPacket(const std::string &ser_content,
                             const std::string &public_key);
   bool ValidateDataChunk(const std::string &chunkname,

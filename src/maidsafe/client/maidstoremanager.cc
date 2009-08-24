@@ -1203,18 +1203,18 @@ void MaidsafeStoreManager::VaultContactInfo(base::callback_func_type cb) {
 }
 
 void MaidsafeStoreManager::OwnLocalVault(const std::string &priv_key,
-      const std::string &pub_key, const std::string &signed_pub_key,
-      const boost::uint32_t &port, const std::string &chunkstore_dir,
-      const boost::uint64_t &space, boost::function<void(const
-      OwnVaultResult&, const std::string&)> cb) {
-  if(pdclient_ == NULL)
+    const std::string &pub_key, const std::string &signed_pub_key,
+    const boost::uint32_t &port, const std::string &chunkstore_dir,
+    const boost::uint64_t &space,
+    boost::function<void(const OwnVaultResult&, const std::string&)> cb) {
+  if (pdclient_ == NULL)
     return;
   pdclient_->OwnLocalVault(priv_key, pub_key, signed_pub_key, port,
       chunkstore_dir, space, cb);
 }
 
-void MaidsafeStoreManager::LocalVaultStatus(boost::function<void(
-      const VaultStatus&)> cb) {
+void MaidsafeStoreManager::LocalVaultStatus(
+    boost::function<void(const VaultStatus&)> cb) {
   if (pdclient_ == NULL)
     return;
   pdclient_->IsLocalVaultOwned(cb);
