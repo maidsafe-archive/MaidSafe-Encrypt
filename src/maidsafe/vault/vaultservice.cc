@@ -113,8 +113,8 @@ void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
                                     request->public_key(), STORE_ACCEPTED);
   if (n != 0) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunkPrep (%i), no size in pending store "
-           "queue.\n", knode_->host_port());
+    printf("In VaultService::StoreChunkPrep (%i), failed to add pending "
+           "operation.\n", knode_->host_port());
 #endif
     response->set_result(kNack);
     done->Run();
@@ -280,6 +280,19 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
   // TODO(jose) check IOU's and signatures before storing the chunk
   // TODO(jose) check available space in the vault's quota
   if (valid_data) {
+    int n = poh_->FindOperation(request->pmid(), request->chunkname(),
+                                request->data().size(), "", "",
+                                STORE_ACCEPTED);
+    if (n != 0) {
+#ifdef DEBUG
+      printf("In VaultService::StoreChunk (%i), not a pending operation.\n",
+      knode_->host_port());
+#endif
+      response->set_result(kNack);
+      done->Run();
+      return;
+    }
+
     std::string key = request->chunkname();
     if (!StoreChunkLocal(key, request->data())) {
       response->set_result(kNack);
@@ -294,7 +307,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
 //      printf("In VaultService::StoreChunk (%i), stored chunk locally.\n",
 //             knode_->host_port());
 #endif
-    int n = poh_->AdvanceStatus(request->pmid(), request->chunkname(),
+    n = poh_->AdvanceStatus(request->pmid(), request->chunkname(),
                                 request->data().size(), "", "", "",
                                 STORE_DONE);
     if (n != 0) {
