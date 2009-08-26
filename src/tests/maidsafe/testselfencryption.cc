@@ -44,24 +44,26 @@ std::string CreateRandomFile(const std::string &filename,
   file_path = file_path/filename;
   fs::ofstream ofs;
   ofs.open(file_path);
-  int stringsize = filesize;
-  if (filesize > 100000)
-    stringsize = 100000;
-  int remainingsize = filesize;
-  std::string rand_str = base::RandomString(2 * stringsize);
-  std::string file_content;
-  int start_pos = 0;
-  while (remainingsize) {
-    srand(17);
-    start_pos = rand() % (stringsize -1);  // NOLINT (Fraser)
-    if (remainingsize < stringsize) {
-      stringsize = remainingsize;
-      file_content = rand_str.substr(0, stringsize);
-    } else {
-      file_content = rand_str.substr(start_pos, stringsize);
+  if (filesize != 0) {
+    int stringsize = filesize;
+    if (filesize > 100000)
+      stringsize = 100000;
+    int remainingsize = filesize;
+    std::string rand_str = base::RandomString(2 * stringsize);
+    std::string file_content;
+    int start_pos = 0;
+    while (remainingsize) {
+      srand(17);
+      start_pos = rand() % stringsize;  // NOLINT (Fraser)
+      if (remainingsize < stringsize) {
+        stringsize = remainingsize;
+        file_content = rand_str.substr(0, stringsize);
+      } else {
+        file_content = rand_str.substr(start_pos, stringsize);
+      }
+      ofs << file_content;
+      remainingsize -= stringsize;
     }
-    ofs << file_content;
-    remainingsize -= stringsize;
   }
   ofs.close();
   return file_path.string();
