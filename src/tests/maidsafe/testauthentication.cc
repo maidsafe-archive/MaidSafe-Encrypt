@@ -479,20 +479,9 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   params["username"] = username;
   params["PIN"] = pin;
   std::string mid_name = midPacket->PacketName(params);
-  sm->StorePacket(mid_name,
-                  "rubish data with same mid name",
-                  "",
-                  "",
-                  "",
-                  DATA,
-                  false,
-                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_ta(cb, mutex);
-  StoreResponse res;
-  ASSERT_TRUE(res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(res.result()));
+  ASSERT_EQ(0, sm->StorePacket(mid_name, "rubish data with same mid name",
+      packethandler::MID, maidsafe::PRIVATE, ""));
 
-  cb.Reset();
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
   Exitcode result = authentication->GetUserInfo(username, pin, boost::bind(

@@ -30,8 +30,9 @@
 
 #include <string>
 
-#include "maidsafe/maidsafe.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
+#include "maidsafe/maidsafe.h"
+#include "maidsafe/client/packetfactory.h"
 
 namespace maidsafe {
 
@@ -51,6 +52,11 @@ class StoreManagerInterface {
   virtual void StoreChunk(const std::string &hex_chunk_name,
                           const DirType dir_type,
                           const std::string &msid)=0;
+  virtual int StorePacket(const std::string &hex_packet_name,
+                          const std::string &value,
+                          packethandler::SystemPackets system_packet_type,
+                          DirType dir_type,
+                          const std::string &msid)=0;
   virtual void IsKeyUnique(const std::string &hex_key,
                            base::callback_func_type cb)=0;
   virtual void DeletePacket(const std::string &hex_key,
@@ -59,14 +65,6 @@ class StoreManagerInterface {
                             const std::string &signed_public_key,
                             const ValueType &type,
                             base::callback_func_type cb)=0;
-  virtual void StorePacket(const std::string &hex_key,
-                           const std::string &value,
-                           const std::string &signature,
-                           const std::string &public_key,
-                           const std::string &signed_public_key,
-                           const ValueType &type,
-                           bool update,
-                           base::callback_func_type cb)=0;
   virtual void LoadPacket(const std::string &hex_key,
                           base::callback_func_type cb)=0;
 

@@ -97,8 +97,6 @@ class MessageHandler {
                        std::string *signed_request,
                        std::string *signed_public_key);
   void IterativeStoreMsgs(boost::shared_ptr<SendMessagesData> data);
-  void StoreMessage_Callback(const std::string &result, int index,
-                             boost::shared_ptr<SendMessagesData> data);
   void StoreMessage(int index,
                     boost::shared_ptr<SendMessagesData> data);
   maidsafe::PacketType PacketHandler_PacketType(const BufferPacketType &type);

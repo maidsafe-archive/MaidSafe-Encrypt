@@ -93,19 +93,6 @@ static void GeneralCallback(const std::string &result) {
   }
 }
 
-static void GetChunkCallback(const std::string &result) {
-  maidsafe::GetResponse result_msg;
-  if ((!result_msg.ParseFromString(result))||
-      (result_msg.result() != kAck)) {
-    callback_succeeded_ = false;
-    callback_timed_out_ = false;
-  } else {
-    callback_succeeded_ = true;
-    callback_timed_out_ = false;
-    callback_content_ = result_msg.content();
-  }
-}
-
 void WaitFunction(int seconds, boost::mutex* mutex) {
   if (!callback_prepared_) {
     printf("Callback result variables were not set.\n");
@@ -262,12 +249,24 @@ class TestPDVault : public testing::Test {
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     client_keys_.GenerateKeys(packethandler::kRsaKeySize);
-    maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::PMID,
-        crypto_.Hash("PMID", "", crypto::STRING_STRING, true),
-        client_keys_.private_key(), client_keys_.public_key());
+    std::string maid_pri = client_keys_.private_key();
+    std::string maid_pub = client_keys_.public_key();
+    std::string maid_pub_key_signature = crypto_.AsymSign(maid_pub, "",
+        maid_pri, crypto::STRING_STRING);
+    std::string maid_name = crypto_.Hash(maid_pub + maid_pub_key_signature, "",
+        crypto::STRING_STRING, true);
+    maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::MAID, maid_name,
+        maid_pri, maid_pub, maid_pub_key_signature);
     client_keys_.GenerateKeys(packethandler::kRsaKeySize);
-    maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::MAID, "MAID",
-        client_keys_.private_key(), client_keys_.public_key());
+    std::string pmid_pri = client_keys_.private_key();
+    std::string pmid_pub = client_keys_.public_key();
+    std::string pmid_pub_key_signature = crypto_.AsymSign(pmid_pub, "",
+        maid_pri, crypto::STRING_STRING);
+    std::string pmid_name = crypto_.Hash(pmid_pub + pmid_pub_key_signature, "",
+        crypto::STRING_STRING, true);
+    maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::PMID, pmid_name,
+        pmid_pri, pmid_pub, pmid_pub_key_signature);
+    maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(0);
   }
 
   virtual ~TestPDVault() {
@@ -357,7 +356,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
             HashCheckChunk(non_hex_name));
       }
     }
-    ASSERT_EQ(kMinChunkCopies, chunk_count);
+    EXPECT_EQ(kMinChunkCopies, chunk_count);
   }
 }
 

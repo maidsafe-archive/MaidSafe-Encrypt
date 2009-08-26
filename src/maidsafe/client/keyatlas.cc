@@ -45,13 +45,20 @@ namespace maidsafe {
 KeyAtlas::KeyAtlas() : key_ring_(), co_() {}
 KeyAtlas::~KeyAtlas() {}
 
-int KeyAtlas::AddKey(const int &packet_type, const std::string &packet_id,
-    const std::string &private_key, const std::string &public_key) {
-  key_ring_.erase(packet_type);
-  std::string signed_public_key = co_.AsymSign(public_key, "", private_key,
-                                               crypto::STRING_STRING);
+int KeyAtlas::AddKey(const int &packet_type,
+                     const std::string &packet_id,
+                     const std::string &private_key,
+                     const std::string &public_key,
+                     const std::string &signed_public_key) {
+  key_atlas_set::iterator  it = key_ring_.find(packet_type);
+  if (it != key_ring_.end())
+    key_ring_.erase(packet_type);
+  std::string signed_pub_key = signed_public_key;
+  if (signed_pub_key == "")
+    signed_pub_key = co_.AsymSign(public_key, "", private_key,
+                                  crypto::STRING_STRING);
   KeyAtlasRow kar(packet_type, packet_id, private_key, public_key,
-                  signed_public_key);
+                  signed_pub_key);
   key_ring_.insert(kar);
   return 0;
 }
@@ -114,7 +121,7 @@ void KeyAtlas::GetKeyRing(std::list<KeyAtlasRow> *keyring) {
   key_atlas_set::iterator it;
   for (it = key_ring_.begin(); it != key_ring_.end(); it++) {
     KeyAtlasRow kar((*it).type_, (*it).id_, (*it).private_key_,
-                    (*it).public_key_, "");
+                    (*it).public_key_, (*it).signed_public_key_);
     keyring->push_back(kar);
   }
 }

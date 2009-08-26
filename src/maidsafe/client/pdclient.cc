@@ -650,19 +650,19 @@ void PDClient::IterativeUpdateChunk(boost::shared_ptr<UpdateChunkData> data) {
       update_args->retry_remote = true;
     }
     rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-    client_rpcs_->Update(update_args->data_->chunk_name,
-                         update_args->data_->content,
-                         update_args->data_->pub_key,
-                         update_args->data_->sig_pub_key,
-                         update_args->data_->sig_req,
-                         update_args->data_->data_type,
-                         ip,
-                         port,
-                         update_args->chunk_holder_.rendezvous_ip(),
-                         update_args->chunk_holder_.rendezvous_port(),
-                         update_response.get(),
-                         controller,
-                         callback);
+//    client_rpcs_->Update(update_args->data_->chunk_name,
+//                         update_args->data_->content,
+//                         update_args->data_->pub_key,
+//                         update_args->data_->sig_pub_key,
+//                         update_args->data_->sig_req,
+//                         update_args->data_->data_type,
+//                         ip,
+//                         port,
+//                         update_args->chunk_holder_.rendezvous_ip(),
+//                         update_args->chunk_holder_.rendezvous_port(),
+//                         update_response.get(),
+//                         controller,
+//                         callback);
   }
 }
 
@@ -691,19 +691,19 @@ void PDClient::IterativeUpdateChunkCallback(
                                         update_response,
                                         update_args);
       rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-      client_rpcs_->Update(update_args->data_->chunk_name,
-                           update_args->data_->content,
-                           update_args->data_->pub_key,
-                           update_args->data_->sig_pub_key,
-                           update_args->data_->sig_req,
-                           update_args->data_->data_type,
-                           update_args->chunk_holder_.host_ip(),
-                           update_args->chunk_holder_.host_port(),
-                           update_args->chunk_holder_.rendezvous_ip(),
-                           update_args->chunk_holder_.rendezvous_port(),
-                           update_response.get(),
-                           controller,
-                           callback);
+//      client_rpcs_->Update(update_args->data_->chunk_name,
+//                           update_args->data_->content,
+//                           update_args->data_->pub_key,
+//                           update_args->data_->sig_pub_key,
+//                           update_args->data_->sig_req,
+//                           update_args->data_->data_type,
+//                           update_args->chunk_holder_.host_ip(),
+//                           update_args->chunk_holder_.host_port(),
+//                           update_args->chunk_holder_.rendezvous_ip(),
+//                           update_args->chunk_holder_.rendezvous_port(),
+//                           update_response.get(),
+//                           controller,
+//                           callback);
       return;
     }
   }
@@ -748,19 +748,19 @@ void PDClient::IterativeUpdateChunkCallback(
         update_args->retry_remote = true;
       }
       rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-      client_rpcs_->Update(update_args->data_->chunk_name,
-                           update_args->data_->content,
-                           update_args->data_->pub_key,
-                           update_args->data_->sig_pub_key,
-                           update_args->data_->sig_req,
-                           update_args->data_->data_type,
-                           ip,
-                           port,
-                           update_args->chunk_holder_.rendezvous_ip(),
-                           update_args->chunk_holder_.rendezvous_port(),
-                           update_response.get(),
-                           controller,
-                           callback);
+//      client_rpcs_->Update(update_args->data_->chunk_name,
+//                           update_args->data_->content,
+//                           update_args->data_->pub_key,
+//                           update_args->data_->sig_pub_key,
+//                           update_args->data_->sig_req,
+//                           update_args->data_->data_type,
+//                           ip,
+//                           port,
+//                           update_args->chunk_holder_.rendezvous_ip(),
+//                           update_args->chunk_holder_.rendezvous_port(),
+//                           update_response.get(),
+//                           controller,
+//                           callback);
     }
   } else {
 #ifdef DEBUG

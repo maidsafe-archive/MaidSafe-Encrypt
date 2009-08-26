@@ -97,7 +97,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   std::string ser_msg("Invalid msg format");
   std::string sender;
   packethandler::MessageType type;
-  ASSERT_FALSE(vbph.CheckMsgStructure(ser_msg, sender, type));
+  ASSERT_FALSE(vbph.CheckMsgStructure(ser_msg, &sender, &type));
   crypto::RsaKeyPair rsakp;
   rsakp.GenerateKeys(4096);
   packethandler::GenericPacket gp_msg;
@@ -119,7 +119,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   gp_msg.set_signature(cry_obj.AsymSign(ser_bp_msg, "", rsakp.private_key(),
                        crypto::STRING_STRING));
   gp_msg.SerializeToString(&ser_msg);
-  ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, sender, type));
+  ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, &sender, &type));
   ASSERT_EQ("non authuser", sender);
   ASSERT_EQ(packethandler::INSTANT_MSG, type);
 
@@ -132,7 +132,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   gp_msg.set_signature(cry_obj.AsymSign(ser_bp_msg, "", rsakp.private_key(),
     crypto::STRING_STRING));
   gp_msg.SerializeToString(&ser_msg);
-  ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, sender, type));
+  ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, &sender, &type));
   ASSERT_EQ(sender_id, sender);
   ASSERT_EQ(packethandler::INSTANT_MSG, type);
   std::string ser_bp_updated;
@@ -202,7 +202,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
   gp_msg.set_signature(cry_obj.AsymSign(ser_bp_msg, "", rsakp.private_key(),
     crypto::STRING_STRING));
   gp_msg.SerializeToString(&ser_msg);
-  ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, sender, type));
+  ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, &sender, &type));
   ASSERT_EQ("non authuser", sender);
   std::string signed_public_key = cry_obj.AsymSign(rsakp.public_key(),
                                   "", rsakp.private_key(),

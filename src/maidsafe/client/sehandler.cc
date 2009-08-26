@@ -396,37 +396,14 @@ int SEHandler::GenerateUniqueKey(const DirType dir_type,
     GenerateUniqueKey(dir_type, msid, count, hex_key);
   }
   if (count < 5) {
-    // cbr.Reset();
-    CallbackResult cbr1;
     ValueType pd_dir_type_;
     if (dir_type == ANONYMOUS)
       pd_dir_type_ = PDDIR_NOTSIGNED;
     else
       pd_dir_type_ = PDDIR_SIGNED;
     std::string ser_gp = CreateDataMapPacket("temp data", dir_type, msid);
-    std::string pubkey(""), sig_pubkey(""), sig_request(""), non_hex_key("");
-    base::decode_from_hex(*hex_key, &non_hex_key);
-    GetSignedPubKeyAndRequest(dir_type,
-                              msid,
-                              non_hex_key,
-                              &pubkey,
-                              &sig_pubkey,
-                              &sig_request);
-    storem_->StorePacket(
-        *hex_key,
-        ser_gp,
-        sig_request,
-        pubkey,
-        sig_pubkey,
-        pd_dir_type_,
-        false,
-        boost::bind(&CallbackResult::CallbackFunc, &cbr1, _1));
-    WaitForResult(cbr1);
-    StoreResponse store_result;
-    if ((!store_result.ParseFromString(cbr1.result)) ||
-        (store_result.result() == kNack))
-      return -1;
-    return 0;
+    return storem_->StorePacket(*hex_key, ser_gp, packethandler::PD_DIR,
+                                dir_type, msid);
   }
   return -1;
 }
@@ -444,7 +421,7 @@ int SEHandler::GetDirKeys(const std::string &dir_path,
   // Get dir key of parent folder.  If msid != "", set it to hash(msid pub_key)
   if (msid == "") {
 #ifdef DEBUG
-    printf("No keys needed because Shares/Private is not private itself.\n");
+//    printf("No keys needed because Shares/Private is not private itself.\n");
 #endif
     if (0 != dah_->GetDirKey(dir_.parent_path().string(), parent_key))
       return -1;
@@ -467,9 +444,9 @@ int SEHandler::EncryptDb(const std::string &dir_path,
                          const bool &encrypt_dm,
                          std::string *ser_dm) {
 #ifdef DEBUG
-  printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
-         dir_path.c_str(), dir_type, encrypt_dm, dir_key.c_str());
-  printf(" msid(%s)\n", msid.c_str());
+//  printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
+//         dir_path.c_str(), dir_type, encrypt_dm, dir_key.c_str());
+//  printf(" msid(%s)\n", msid.c_str());
 #endif
   DataMap dm_;
   std::string ser_dm_="", file_hash_="", enc_dm_;
@@ -521,10 +498,10 @@ int SEHandler::EncryptDb(const std::string &dir_path,
     }
   }
 #ifdef DEBUG
-  std::string hex_dm("");
-  base::encode_to_hex(enc_dm_, &hex_dm);
-  printf("Inserting dir_path(%s) and enc_dm_(%s) into uptodate_datamaps_.\n",
-    dir_path.c_str(), hex_dm.c_str());
+//  std::string hex_dm("");
+//  base::encode_to_hex(enc_dm_, &hex_dm);
+//  printf("Inserting dir_path(%s) and enc_dm_(%s) into uptodate_datamaps_.\n",
+//    dir_path.c_str(), hex_dm.c_str());
 #endif
   uptodate_datamaps_.insert(
     std::pair<std::string, std::string>(dir_path, enc_dm_));
@@ -540,7 +517,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
 
   if (dir_key == "") {
 #ifdef DEBUG
-    printf("dm is not stored in kademlia.\n");
+//    printf("dm is not stored in kademlia.\n");
 #endif
     if (dir_type == ANONYMOUS) {
       *ser_dm = enc_dm_;
@@ -548,65 +525,26 @@ int SEHandler::EncryptDb(const std::string &dir_path,
       std::string ser_gp = CreateDataMapPacket(enc_dm_, dir_type, msid);
       *ser_dm = ser_gp;
 #ifdef DEBUG
-      printf("Passing back ser_dm as a generic packet.\n");
+//      printf("Passing back ser_dm as a generic packet.\n");
 #endif
     }
     return 0;
   }
-  CallbackResult cbr2;
-  storem_->IsKeyUnique(dir_key,
-    boost::bind(&CallbackResult::CallbackFunc, &cbr2, _1));
-  WaitForResult(cbr2);
-  GenericResponse is_unique_result;
-  // If the chunk is not there, set the update bool to false.
-  bool update_;
-  if ((!is_unique_result.ParseFromString(cbr2.result)) ||
-      (is_unique_result.result() == kAck))
-    update_ = false;
-  else
-    update_ = true;
   ValueType pd_dir_type_;
   if (dir_type == ANONYMOUS)
     pd_dir_type_ = PDDIR_NOTSIGNED;
   else
     pd_dir_type_ = PDDIR_SIGNED;
   std::string ser_gp = CreateDataMapPacket(enc_dm_, dir_type, msid);
-  std::string pubkey(""), sig_pubkey(""), sig_request("");
-  std::string non_hex_key("");
-  base::decode_from_hex(dir_key, &non_hex_key);
-  GetSignedPubKeyAndRequest(dir_type,
-                            msid,
-                            non_hex_key,
-                            &pubkey,
-                            &sig_pubkey,
-                            &sig_request);
-  CallbackResult cbr3;
-  storem_->StorePacket(dir_key,
-                       ser_gp,
-                       sig_request,
-                       pubkey,
-                       sig_pubkey,
-                       pd_dir_type_,
-                       update_,
-                       boost::bind(&CallbackResult::CallbackFunc, &cbr3, _1));
-  WaitForResult(cbr3);
-  if (update_) {
-    UpdateResponse update_result;
-    if ((!update_result.ParseFromString(cbr3.result)) ||
-        (update_result.result() == kNack)) {
-      return -1;
-    }
-  } else {
-    StoreResponse store_result;
-    if ((!store_result.ParseFromString(cbr3.result)) ||
-        (store_result.result() == kNack)) {
-      return -1;
-    }
-  }
+  if (storem_->StorePacket(dir_key, ser_gp, packethandler::PD_DIR, dir_type,
+      msid) == 0) {
 #ifdef DEBUG
-  printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());
+//   printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());
 #endif
-  return 0;
+    return 0;
+  } else {
+    return -1;
+  }
 }
 
 int SEHandler::DecryptDb(const std::string &dir_path,
@@ -617,9 +555,9 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                          bool dm_encrypted,
                          bool overwrite) {
 #ifdef DEBUG
-  printf("SEHandler::DecryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
-         dir_path.c_str(), dir_type, dm_encrypted, dir_key.c_str());
-  printf(" msid(%s)\n", msid.c_str());
+//  printf("SEHandler::DecryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
+//         dir_path.c_str(), dir_type, dm_encrypted, dir_key.c_str());
+//  printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm_, enc_dm_;
   // get dm from DHT
@@ -651,38 +589,38 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       return -1;
     }
 #ifdef DEBUG
-    std::string hex_dm("");
-    base::encode_to_hex(enc_dm_, &hex_dm);
-    printf("Searching dir_path(%s) and enc_dm_(%s) in uptodate_datamaps_\n",
-      dir_path.c_str(), hex_dm.c_str());
+//    std::string hex_dm("");
+//    base::encode_to_hex(enc_dm_, &hex_dm);
+//    printf("Searching dir_path(%s) and enc_dm_(%s) in uptodate_datamaps_\n",
+//      dir_path.c_str(), hex_dm.c_str());
 #endif
     std::map<std::string, std::string>::iterator it;
     it = uptodate_datamaps_.find(dir_path);
 
     if (it != uptodate_datamaps_.end()) {
 #ifdef DEBUG
-      printf("SEHandler::DecryptDb: Found dir_path in set.\n");
+//      printf("SEHandler::DecryptDb: Found dir_path in set.\n");
 #endif
       if (dm_encrypted) {
         if (it->second == enc_dm_) {
 #ifdef DEBUG
-          printf("SEHandler::DecryptDb: Found enc DM in set. ");
-          printf("No need to go get it from the network.\n");
+//          printf("SEHandler::DecryptDb: Found enc DM in set. ");
+//          printf("No need to go get it from the network.\n");
 #endif
           return 0;
         }
       } else {
         if (it->second == ser_dm) {
 #ifdef DEBUG
-          printf("SEHandler::DecryptDb: Found ser DM in set. ");
-          printf("No need to go get it from the network.\n");
+//          printf("SEHandler::DecryptDb: Found ser DM in set. ");
+//          printf("No need to go get it from the network.\n");
 #endif
           return 0;
         }
       }
     } else {
 #ifdef DEBUG
-      printf("SEHandler::DecryptDb: DIDN'T find dir_path in set.\n");
+//      printf("SEHandler::DecryptDb: DIDN'T find dir_path in set.\n");
 #endif
     }
 
@@ -703,7 +641,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 //      }
     if (dm_encrypted) {
 #ifdef DEBUG
-      printf("Decrypting dm.\n");
+//      printf("Decrypting dm.\n");
 #endif
       int n = DecryptDm(dir_path, enc_dm_, msid, &ser_dm_);
       if (n != 0 || ser_dm_ == "") {
@@ -727,13 +665,15 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       }
       enc_dm_ = gp.data();
       if (enc_dm_ == "")
+#ifdef DEBUG
         printf("Enc dm is empty.\n");
+#endif
     } else {
       enc_dm_ = ser_dm;
     }
     if (dm_encrypted) {
 #ifdef DEBUG
-      printf("Decrypting dm.\n");
+//      printf("Decrypting dm.\n");
 #endif
       int n = DecryptDm(dir_path, enc_dm_, msid, &ser_dm_);
       if (n != 0 || ser_dm_ == "") {
@@ -799,12 +739,12 @@ int SEHandler::EncryptDm(const std::string &dir_path,
   enc_hash_ = SHA512(parent_key_ + key_, false);
   xor_hash_ = SHA512(key_ + parent_key_, false);
 #ifdef DEBUG
-//  if (msid != "") {
-    printf("In EncryptDm dir_path: %s\n"
-           "key_: %s\nparent_key_: %s\nenc_hash_: %s\nxor_hash_: %s\n",
-            dir_path.c_str(), key_.c_str(),
-            parent_key_.c_str(), enc_hash_.c_str(), xor_hash_.c_str());
-//  }
+//  //  if (msid != "") {
+//      printf("In EncryptDm dir_path: %s\n"
+//             "key_: %s\nparent_key_: %s\nenc_hash_: %s\nxor_hash_: %s\n",
+//              dir_path.c_str(), key_.c_str(),
+//              parent_key_.c_str(), enc_hash_.c_str(), xor_hash_.c_str());
+//  //  }
 #endif
   while (xor_hash_extended_.size() < ser_dm.size())
     xor_hash_extended_.append(xor_hash_);
@@ -829,8 +769,8 @@ int SEHandler::DecryptDm(const std::string &dir_path,
   // if msid != "" otherwise it sets it to the dir key of the parent folder
   int n = GetDirKeys(dir_path, msid, &key_, &parent_key_);
 #ifdef DEBUG
-  printf("In DecryptDm dir_path: %s\tkey_: %s\tparent_key_: %s\n",
-          dir_path.c_str(), key_.c_str(), parent_key_.c_str());
+//  printf("In DecryptDm dir_path: %s\tkey_: %s\tparent_key_: %s\n",
+//          dir_path.c_str(), key_.c_str(), parent_key_.c_str());
 #endif
   if (n != 0) {
 #ifdef DEBUG
@@ -842,12 +782,12 @@ int SEHandler::DecryptDm(const std::string &dir_path,
   enc_hash_ = SHA512(parent_key_ + key_, false);
   xor_hash_ = SHA512(key_ + parent_key_, false);
 #ifdef DEBUG
-//  if (msid != "") {
-    printf("In DecryptDm dir_path: %s\n"
-           "key_: %s\nparent_key_: %s\nenc_hash_: %s\nxor_hash_: %s\n",
-            dir_path.c_str(), key_.c_str(),
-            parent_key_.c_str(), enc_hash_.c_str(), xor_hash_.c_str());
-//  }
+//  //  if (msid != "") {
+//      printf("In DecryptDm dir_path: %s\n"
+//             "key_: %s\nparent_key_: %s\nenc_hash_: %s\nxor_hash_: %s\n",
+//              dir_path.c_str(), key_.c_str(),
+//              parent_key_.c_str(), enc_hash_.c_str(), xor_hash_.c_str());
+//  //  }
 #endif
   crypto::Crypto decryptor_;
   decryptor_.set_symm_algorithm(crypto::AES_256);

@@ -190,7 +190,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectOwnVault) {
   ASSERT_EQ(singed_pub_key, handler.signed_public_key());
   ASSERT_EQ(std::string("/ChunkStore"), handler.chunkstore_dir());
   ASSERT_EQ(server.external_port()+1, handler.port());
-  ASSERT_EQ(1000, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(1000), handler.available_space());
 
   ASSERT_EQ(maidsafe::OWNED, service->status());
 
@@ -221,7 +221,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectOwnVault) {
   ASSERT_EQ(singed_pub_key, handler.signed_public_key());
   ASSERT_EQ(std::string("/ChunkStore"), handler.chunkstore_dir());
   ASSERT_EQ(0, handler.port());
-  ASSERT_EQ(1000, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(1000), handler.available_space());
 }
 
 TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
@@ -258,7 +258,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.public_key());
   ASSERT_EQ(std::string(""), handler.chunkstore_dir());
   ASSERT_EQ(-1, handler.port());
-  ASSERT_EQ(0, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   ctrl.Reset();
   request.Clear();
   response.Clear();
@@ -285,7 +285,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.public_key());
   ASSERT_EQ(std::string(""), handler.chunkstore_dir());
   ASSERT_EQ(-1, handler.port());
-  ASSERT_EQ(0, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   ctrl.Reset();
   request.Clear();
   response.Clear();
@@ -312,7 +312,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.public_key());
   ASSERT_EQ(std::string(""), handler.chunkstore_dir());
   ASSERT_EQ(-1, handler.port());
-  ASSERT_EQ(0, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   ctrl.Reset();
   request.Clear();
   response.Clear();
@@ -344,7 +344,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.public_key());
   ASSERT_EQ(std::string(""), handler.chunkstore_dir());
   ASSERT_EQ(-1, handler.port());
-  ASSERT_EQ(0, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   ctrl.Reset();
   request.Clear();
   response.Clear();
@@ -371,7 +371,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.public_key());
   ASSERT_EQ(std::string(""), handler.chunkstore_dir());
   ASSERT_EQ(-1, handler.port());
-  ASSERT_EQ(0, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   ctrl.Reset();
   request.Clear();
   response.Clear();
@@ -398,7 +398,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.public_key());
   ASSERT_EQ(std::string(""), handler.chunkstore_dir());
   ASSERT_EQ(-1, handler.port());
-  ASSERT_EQ(0, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(0), handler.available_space());
 
   // invalid port
   ctrl.Reset();
@@ -427,7 +427,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.public_key());
   ASSERT_EQ(std::string(""), handler.chunkstore_dir());
   ASSERT_EQ(-1, handler.port());
-  ASSERT_EQ(0, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(0), handler.available_space());
 
   // space == 0
   ctrl.Reset();
@@ -456,7 +456,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.public_key());
   ASSERT_EQ(std::string(""), handler.chunkstore_dir());
   ASSERT_EQ(-1, handler.port());
-  ASSERT_EQ(0, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   // more space requested than available
   boost::filesystem::space_info info = boost::filesystem::space(
       boost::filesystem::path("/"));
@@ -487,7 +487,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.public_key());
   ASSERT_EQ(std::string(""), handler.chunkstore_dir());
   ASSERT_EQ(-1, handler.port());
-  ASSERT_EQ(0, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(0), handler.available_space());
 
   ctrl.Reset();
   request.Clear();
@@ -516,7 +516,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.public_key());
   ASSERT_EQ(std::string(""), handler.chunkstore_dir());
   ASSERT_EQ(-1, handler.port());
-  ASSERT_EQ(0, handler.available_space());
+  ASSERT_EQ(boost::uint64_t(0), handler.available_space());
 
   ctrl.Reset();
   request.Clear();

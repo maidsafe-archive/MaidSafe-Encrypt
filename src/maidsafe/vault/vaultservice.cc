@@ -255,10 +255,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
   bool valid_data = false;
   packethandler::VaultBufferPacketHandler vbph;
   switch (request->data_type()) {
-    case maidsafe::SYSTEM_PACKET: if (ValidateSystemPacket(request->data(),
-                                      request->public_key()))
-                                    valid_data = true;
-                                  break;
+    case maidsafe::SYSTEM_PACKET:
     case maidsafe::PDDIR_SIGNED: if (ValidateSystemPacket(request->data(),
                                      request->public_key()))
                                    valid_data = true;
@@ -940,8 +937,13 @@ void VaultService::VaultStatus(google::protobuf::RpcController*,
   if (vc.has_offered_space() && vc.offered_space() != 0) {
     response->set_result(kNack);
 #ifdef DEBUG
+#ifdef MAIDSAFE_WIN32
+    printf("In VaultService::VaultStatus (%i), offered_space request invalid "
+           "(%I64u).\n", knode_->host_port(), vc.offered_space());
+#else
     printf("In VaultService::VaultStatus (%i), offered_space request invalid "
            "(%llu).\n", knode_->host_port(), vc.offered_space());
+#endif
 #endif
     done->Run();
     return;
@@ -952,8 +954,13 @@ void VaultService::VaultStatus(google::protobuf::RpcController*,
   if (vc.has_free_space() && vc.free_space() != 0) {
     response->set_result(kNack);
 #ifdef DEBUG
+#ifdef MAIDSAFE_WIN32
+    printf("In VaultService::VaultStatus (%i), free_space request invalid "
+           "(%I64u).\n", knode_->host_port(), vc.free_space());
+#else
     printf("In VaultService::VaultStatus (%i), free_space request invalid "
            "(%llu).\n", knode_->host_port(), vc.free_space());
+#endif
 #endif
     done->Run();
     return;
@@ -979,19 +986,23 @@ bool VaultService::ValidateSignedRequest(const std::string &public_key,
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  if (pmid != "" && pmid != co.Hash(public_key + signed_public_key +
-      key, "", crypto::STRING_STRING, false)) {
+  std::string hex;
+  base::encode_to_hex(pmid, &hex);
+  if (pmid != "" && pmid != co.Hash(public_key + signed_public_key, "",
+      crypto::STRING_STRING, false)) {
 #ifdef DEBUG
     printf("VaultService::ValidateSignedRequest: Failed to validate PMID.\n");
 #endif
     return false;
   }
   if (co.AsymCheckSig(public_key, signed_public_key, public_key,
-                           crypto::STRING_STRING)) {
+      crypto::STRING_STRING)) {
     if (co.AsymCheckSig(co.Hash(signed_public_key + key +
         non_hex_pmid_, "", crypto::STRING_STRING, false), signed_request,
         public_key, crypto::STRING_STRING))
       return true;
+// TODO(Fraser#5#): 2009-08-25 - Remove this second check once all requests are
+//                               signed the first way (above).
     return co.AsymCheckSig(co.Hash(public_key + signed_public_key +
       key, "", crypto::STRING_STRING, false), signed_request, public_key,
       crypto::STRING_STRING);

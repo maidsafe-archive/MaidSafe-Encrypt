@@ -121,7 +121,7 @@ bool ChunkStore::PopulatePathMap() {
     path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
         (kNonHashable | kTempCache,
         fs::path(non_hashable_parent / kTempCacheLeaf_)));
-    if (static_cast<boost::uint32_t>(8) != path_map_.size())
+    if (size_t(8) != path_map_.size())
       return false;
     else
       return true;
@@ -388,7 +388,10 @@ int ChunkStore::Store(const std::string &key, const fs::path &file) {
 #ifdef DEBUG
     printf("Chunk already exists in ChunkStore::StoreChunk.\n");
 #endif
-    return -1;
+// If chunk is cached and is hashable, change type to kNormal.
+    ChunkType type = chunk_type(key);
+    return (type == (kHashable | kCache) || type == (kHashable | kTempCache)) ?
+        ChangeChunkType(key, kHashable | kNormal) : -1;
   }
   ChunkType type = GetChunkType(key, file, false);
   fs::path chunk_path(GetChunkPath(key, type, true));

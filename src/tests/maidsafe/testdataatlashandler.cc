@@ -140,10 +140,13 @@ class DataAtlasHandlerTest : public testing::Test {
     crypto::RsaKeyPair rsakp;
     rsakp.GenerateKeys(packethandler::kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(PMID, "PMID", rsakp.private_key(),
-                                            rsakp.public_key());
+                                            rsakp.public_key(), "");
     rsakp.GenerateKeys(packethandler::kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(MAID, "MAID", rsakp.private_key(),
-        rsakp.public_key());
+        rsakp.public_key(), "");
+    rsakp.GenerateKeys(packethandler::kRsaKeySize);
+    SessionSingleton::getInstance()->AddKey(MPID, "Me", rsakp.private_key(),
+        rsakp.public_key(), "");
     file_system::FileSystem fsys;
     fsys.Mount();
     boost::scoped_ptr<DataAtlasHandler>dah_(new DataAtlasHandler());

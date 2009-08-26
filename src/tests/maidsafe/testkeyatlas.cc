@@ -49,7 +49,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_AddKeys) {
     std::string private_key = "Private Key " + base::itos(i);
     std::string public_key = "Public Key " + base::itos(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
-              public_key)) << "Failed to add key " << i << ".";
+              public_key, "")) << "Failed to add key " << i << ".";
   }
 }
 
@@ -64,7 +64,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetPackageID) {
     std::string private_key = "Private Key " + base::itos(i);
     std::string public_key = "Public Key " + base::itos(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
-              public_key)) << "Failed to add key " << i << ".";
+              public_key, "")) << "Failed to add key " << i << ".";
   }
 
   // get package Id
@@ -86,7 +86,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetPrivateKey) {
     std::string private_key = "Private Key " + base::itos(i);
     std::string public_key = "Public Key " + base::itos(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
-              public_key)) << "MI - Failed to add key " << i << ".";
+              public_key, "")) << "MI - Failed to add key " << i << ".";
   }
 
   // get private key
@@ -108,7 +108,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetPublicKey) {
     std::string private_key = "Private Key " + base::itos(i);
     std::string public_key = "Public Key " + base::itos(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
-              public_key)) << "Failed to add key " << i << ".";
+              public_key, "")) << "Failed to add key " << i << ".";
   }
 
   // get public key
@@ -134,7 +134,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetSignedPublicKey) {
     pri_keys[i] = rskp.private_key();
     pub_keys[i] = rskp.public_key();
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, pri_keys[i],
-              pub_keys[i])) << "Failed to add key " << i << ".";
+              pub_keys[i], "")) << "Failed to add key " << i << ".";
   }
 
   // get signed public key
@@ -145,6 +145,17 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetSignedPublicKey) {
     ASSERT_TRUE(co.AsymCheckSig(public_key, key_ring_.SignedPublicKey(i),
                 public_key, crypto::STRING_STRING));
   }
+
+  // add a package which already has a public key signature
+  std::string pub_key, pri_key, pub_key_sig = "Signature";
+  crypto::RsaKeyPair rskp;
+  rskp.GenerateKeys(4096);
+  std::string package_id = "Package ID 11";
+  pri_key = rskp.private_key();
+  pub_key = rskp.public_key();
+  ASSERT_EQ(0, key_ring_.AddKey(11, package_id, pri_key, pub_key, pub_key_sig))
+      << "Failed to add key 11.";
+  ASSERT_EQ(pub_key_sig, key_ring_.SignedPublicKey(11));
 }
 
 TEST_F(KeyAtlasTest, BEH_MAID_RemoveKeys) {
@@ -154,7 +165,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_RemoveKeys) {
     std::string private_key = "Private Key " + base::itos(i);
     std::string public_key = "Public Key " + base::itos(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
-              public_key)) << "Failed to add key " << i << ".";
+              public_key, "")) << "Failed to add key " << i << ".";
   }
 
   // remove keys
@@ -181,7 +192,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetKeyRing) {
     std::string private_key = "Private Key " + base::itos(i);
     std::string public_key = "Public Key " + base::itos(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
-              public_key)) << "Failed to add key " << i << ".";
+              public_key, "")) << "Failed to add key " << i << ".";
   }
 
   std::list<maidsafe::KeyAtlasRow> keyring;
@@ -220,7 +231,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_AmendKeys) {
     std::string private_key = "Private Key " + base::itos(i);
     std::string public_key = "Public Key " + base::itos(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
-              public_key)) << "MI - Failed to add key " << i << ".";
+              public_key, "")) << "MI - Failed to add key " << i << ".";
   }
 
   // amend keys & check keys were correctly updated
@@ -229,7 +240,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_AmendKeys) {
     std::string updated_private_key = "Updated Private Key " + base::itos(i);
     std::string updated_public_key = "Updated Public Key " + base::itos(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, updated_package_id,
-              updated_private_key, updated_public_key)) <<
+              updated_private_key, updated_public_key, "")) <<
               "Failed to update key " << i << ".";
     ASSERT_EQ(updated_package_id, key_ring_.PackageID(i))
               << "Failed to get package ID for key " << i << ".";

@@ -64,11 +64,13 @@ class KeyAtlas {
  public:
   KeyAtlas();
   ~KeyAtlas();
-
+  // If signed_public_key == "", it is set as signature of given public_key
+  // using given private_key.
   int AddKey(const int &packet_type,
              const std::string &packet_id,
              const std::string &private_key,
-             const std::string &public_key);
+             const std::string &public_key,
+             const std::string &signed_public_key);
   std::string PackageID(const int &packet_type);
   std::string PrivateKey(const int &packet_type);
   std::string PublicKey(const int &packet_type);

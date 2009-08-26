@@ -215,7 +215,7 @@ int DataAtlasHandler::RemoveElement(const std::string &element_path) {
     try {
       std::string db_to_delete("");
       GetDbPath(element_path, CREATE, &db_to_delete);
-      printf("Deleting DB: %s", db_to_delete.c_str());
+//      printf("Deleting DB: %s", db_to_delete.c_str());
       fs::remove(db_to_delete);
     }
     catch(const std::exception &e) {
@@ -231,7 +231,6 @@ int DataAtlasHandler::ListFolder(const std::string &element_path,
                                  std::map<std::string, itemtype> *children) {
   int result;
   if (element_path == "\\" || element_path == "/") {
-    printf("It is indeed in here\n");
     children->insert(std::pair<std::string, itemtype>(
         base::TidyPath(kRootSubdir[0][0]), DIRECTORY));
     children->insert(std::pair<std::string, itemtype>(
@@ -425,7 +424,7 @@ int DataAtlasHandler::GetDirKey(const std::string &element_path,
                                 std::string *dir_key) {
   int result;
 #ifdef DEBUG
-  printf("In DAH::GetDirKey, element_path_ = %s\n", element_path.c_str());
+//  printf("In DAH::GetDirKey, element_path_ = %s\n", element_path.c_str());
 #endif
   if (element_path == "" || element_path == "/" || element_path == "\\") {
     *dir_key = maidsafe::SessionSingleton::getInstance()->RootDbKey();

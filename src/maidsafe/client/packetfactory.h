@@ -49,8 +49,11 @@ enum SystemPackets {
   ANSMID,
   ANTMID,
   ANMPID,
-  ANPMID,
-  MSID
+  MSID,
+  PD_DIR,
+  BUFFER,
+  BUFFER_INFO,
+  BUFFER_MESSAGE
 };
 
 class Packet {

@@ -253,6 +253,7 @@ PacketParams PmidPacket::Create(PacketParams params) {
   result["publicKey"] = keys.public_key();
   result["name"] = crypto_obj_.Hash(pmid_packet.data()
       + pmid_packet.signature(), "", crypto::STRING_STRING, true);
+
   pmid_packet.SerializeToString(&ser_packet);
   result["ser_packet"] = ser_packet;
   return result;
@@ -261,7 +262,7 @@ PacketParams PmidPacket::Create(PacketParams params) {
 PacketParams MpidPacket::Create(PacketParams params) {
   PacketParams result;
   if ((boost::any_cast<std::string>(params["publicname"]) == "")
-  || (boost::any_cast<std::string>(params["privateKey"]) == ""))
+      || (boost::any_cast<std::string>(params["privateKey"]) == ""))
     return result;
   GenericPacket mpid_packet;
   std::string ser_packet;

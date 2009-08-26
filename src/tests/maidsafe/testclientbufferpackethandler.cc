@@ -62,18 +62,19 @@ void wait_for_result_tbph(const FakeCallback &cb,
   }
 };
 
-class BufferPacketHandlerTest : public testing::Test {
+class ClientBufferPacketHandlerTest : public testing::Test {
  public:
-  BufferPacketHandlerTest() : crypto_obj(),
-                              rsa_obj(),
-                              private_key(rsa_obj.private_key()),
-                              public_key(rsa_obj.public_key()),
-                              public_username("el tonto smer"),
-                              client_chunkstore_(),
-                              sm(),
-                              ss(),
-                              mutex(),
-                              cb() {
+  ClientBufferPacketHandlerTest() : crypto_obj(),
+                                    rsa_obj(),
+                                    private_key(),
+                                    public_key(),
+                                    public_username("el tonto smer"),
+                                    public_key_signature(),
+                                    client_chunkstore_(),
+                                    sm(),
+                                    ss(),
+                                    mutex(),
+                                    cb() {
     try {
       boost::filesystem::remove_all("./TestBuffer");
     }
@@ -81,7 +82,7 @@ class BufferPacketHandlerTest : public testing::Test {
       printf("%s\n", e.what());
     }
   }
-  ~BufferPacketHandlerTest() {
+  ~ClientBufferPacketHandlerTest() {
     try {
       boost::filesystem::remove_all("./TestBuffer");
     }
@@ -122,11 +123,11 @@ class BufferPacketHandlerTest : public testing::Test {
     crypto_obj.set_hash_algorithm(crypto::SHA_512);
     crypto_obj.set_symm_algorithm(crypto::AES_256);
     rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
-    private_key =rsa_obj.private_key();
-    public_key =rsa_obj.public_key();
-    public_username = "el tonto smer";
+    private_key = rsa_obj.private_key();
+    public_key = rsa_obj.public_key();
     ss = maidsafe::SessionSingleton::getInstance();
-    ss->AddKey(maidsafe::MPID, public_username, private_key, public_key);
+    ss->AddKey(maidsafe::MPID, public_username, private_key, public_key, "");
+    public_key_signature = ss->SignedPublicKey(maidsafe::MPID);
     cb.Reset();
   }
   virtual void TearDown() {
@@ -149,18 +150,20 @@ class BufferPacketHandlerTest : public testing::Test {
   std::string private_key;
   std::string public_key;
   std::string public_username;
+  std::string public_key_signature;
   boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore_;
   boost::shared_ptr<maidsafe::LocalStoreManager> sm;
   maidsafe::SessionSingleton *ss;
   boost::recursive_mutex *mutex;
   FakeCallback cb;
  private:
-  BufferPacketHandlerTest(const BufferPacketHandlerTest&);
-  BufferPacketHandlerTest &operator=(const BufferPacketHandlerTest&);
+  ClientBufferPacketHandlerTest(const ClientBufferPacketHandlerTest&);
+  ClientBufferPacketHandlerTest &operator=
+      (const ClientBufferPacketHandlerTest&);
 };
 
 /*
-TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
     sm(new maidsafe::LocalStoreManager(mutex));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -171,16 +174,9 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   packethandler::BufferPacket buffer_packet;
 
   // Create the buffer packet
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
   ss->SetConnectionStatus(1);
-  cb.Reset();
-  store_res.Clear();
 
   std::set<std::string> users;
   std::string usuarios[3] = {"Mambert", "Chupitos", "soy.tu.padre"};
@@ -189,14 +185,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   users.insert(usuarios[2]);
 
   // Add authorised users for BP querying
-  clientbufferpackethandler.AddUsers(users,
-    boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::UpdateResponse add_users_res;
-  ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
-  cb.Reset();
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
   add_users_res.Clear();
 
   // Get BP
@@ -240,7 +229,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   ASSERT_EQ(1, status);
 }
 */
-TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -249,17 +238,9 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   packethandler::GenericPacket ser_owner_info;
   packethandler::BufferPacketInfo buffer_packet_info;
   packethandler::BufferPacket buffer_packet;
-  cb.Reset();
 
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
   sm->IsKeyUnique(crypto_obj.Hash(public_username+"BUFFER",
                                   "",
                                   crypto::STRING_STRING,
@@ -297,7 +278,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
       << "Incorrect connection status";
 }
 
-TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddUsers) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -306,15 +287,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
   packethandler::BufferPacketInfo buffer_packet_info;
   packethandler::BufferPacket buffer_packet;
 
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
 
   std::set<std::string> users;
   std::string usuarios[3] = {"Mambert", "Chupitos", "soy.tu.padre"};
@@ -322,14 +296,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
   users.insert(usuarios[1]);
   users.insert(usuarios[2]);
 
-  clientbufferpackethandler.AddUsers(users,
-    boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::UpdateResponse add_users_res;
-  ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
-  cb.Reset();
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
   sm->LoadPacket(crypto_obj.Hash(public_username+"BUFFER",
                                  "",
@@ -356,7 +323,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddUsers) {
                 bpi.users(i) == usuarios[2]) << "User missing";
 }
 
-TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddMessage) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -366,15 +333,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   packethandler::BufferPacketInfo buffer_packet_info;
   packethandler::BufferPacket buffer_packet;
 
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
 
   std::set<std::string> users;
   std::string usuarios[3] = {"Mambert", "Chupitos", "soy.tu.padre"};
@@ -382,15 +342,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
   users.insert(usuarios[1]);
   users.insert(usuarios[2]);
 
-  clientbufferpackethandler.AddUsers(users,
-    boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::UpdateResponse add_users_res;
-  ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
-  cb.Reset();
-  add_users_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
@@ -460,7 +412,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessage) {
       << "Incorrect number of messages";
 }
 
-TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -470,15 +422,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   packethandler::BufferPacketInfo buffer_packet_info;
   packethandler::BufferPacket buffer_packet;
 
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
 
   std::set<std::string> users;
   std::string usuarios[3] = {"Mambert", "Chupitos", "soy.tu.padre"};
@@ -486,15 +431,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   users.insert(usuarios[1]);
   users.insert(usuarios[2]);
 
-  clientbufferpackethandler.AddUsers(users,
-    boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::UpdateResponse add_users_res;
-  ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
-  cb.Reset();
-  add_users_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
   sm->LoadPacket(crypto_obj.Hash(public_username+"BUFFER",
                                   "",
@@ -536,7 +473,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
       sig_sender_pubkey, &ser_up_bp)) << "Unauthorised user added a msg";
 }
 
-TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckOwner) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckOwner) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -546,15 +483,9 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckOwner) {
   packethandler::BufferPacketInfo buffer_packet_info;
   packethandler::BufferPacket buffer_packet;
 
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
+
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
                                  crypto::STRING_STRING,
@@ -578,7 +509,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckOwner) {
       <<"unrecognised a wrong owner";
 }
 
-TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -587,15 +518,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   packethandler::BufferPacketInfo buffer_packet_info;
   packethandler::BufferPacket buffer_packet;
 
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
 
   std::set<std::string> users;
   std::string usuarios[3] = {"Mambert", "Chupitos", "soy.tu.padre"};
@@ -604,30 +528,14 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   users.insert(usuarios[2]);
 
 
-  clientbufferpackethandler.AddUsers(users,
-    boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::UpdateResponse add_users_res;
-  ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
-  cb.Reset();
-  add_users_res.Clear();
-  boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
   ASSERT_TRUE(users == ss->AuthorisedUsers());
+  ASSERT_EQ(size_t(3), ss->AuthorisedUsers().size());
 
   std::set<std::string> del_users;
   del_users.insert(usuarios[1]);
 
-  clientbufferpackethandler.DeleteUsers(del_users,
-    boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::DeleteResponse del_res;
-  ASSERT_TRUE(del_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(del_res.result()));
-  cb.Reset();
-  del_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.DeleteUsers(del_users, MPID_BP));
 
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
@@ -650,7 +558,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   ASSERT_EQ(2, buffer_packet_info.users_size());
 }
 
-TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckSignature) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckSignature) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -660,15 +568,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckSignature) {
   packethandler::BufferPacketInfo buffer_packet_info;
   packethandler::BufferPacket buffer_packet;
 
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
 
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
@@ -687,7 +588,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_CheckSignature) {
     ser_bp)) << "Incorrectly signed";
 }
 
-TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetMessages) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -697,15 +598,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   packethandler::BufferPacketInfo buffer_packet_info;
   packethandler::BufferPacket buffer_packet;
 
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
 
   std::set<std::string> users;
   std::string usuarios[3] = {"Mambert", "Chupitos", "soy.tu.padre"};
@@ -713,15 +607,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   users.insert(usuarios[1]);
   users.insert(usuarios[2]);
 
-  clientbufferpackethandler.AddUsers(users,
-    boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::UpdateResponse add_users_res;
-  ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
-  cb.Reset();
-  add_users_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
@@ -783,23 +669,14 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
                                crypto::STRING_STRING, false), "",
                                crypto::STRING_STRING, false), "",
                                private_key, crypto::STRING_STRING);
-  sm->StorePacket(crypto_obj.Hash(public_username + "BUFFER",
-                                  "",
-                                  crypto::STRING_STRING,
-                                  true),
-                  ser_bp,
-                  signed_request,
-                  public_key,
-                  signed_public_key,
-                  maidsafe::BUFFER_PACKET,
-                  true,
-                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, sm->StorePacket(crypto_obj.Hash(public_username + "BUFFER",
+                                               "",
+                                               crypto::STRING_STRING,
+                                               true),
+                               ser_bp,
+                               packethandler::BUFFER,
+                               maidsafe::PRIVATE,
+                               ""));
   ASSERT_TRUE(buffer_packet.ParseFromString(ser_bp)) << "Wrong serialization";
   ASSERT_EQ(3, buffer_packet.messages_size()) << "Incorrect number of messages";
 
@@ -835,7 +712,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetMessages) {
   }
 }
 
-TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -845,15 +722,8 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   packethandler::BufferPacketInfo buffer_packet_info;
   packethandler::BufferPacket buffer_packet;
 
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
 
   std::set<std::string> users;
   std::string usuarios[3] = {"Mambert", "Chupitos", "soy.tu.padre"};
@@ -862,15 +732,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   users.insert(usuarios[2]);
 
 
-  clientbufferpackethandler.AddUsers(users,
-    boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::UpdateResponse add_users_res;
-  ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
-  cb.Reset();
-  add_users_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
@@ -931,7 +793,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   ASSERT_EQ(0, buffer_packet.messages_size()) << "Messages not deleted";
 }
 
-TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -941,15 +803,9 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   packethandler::BufferPacketInfo buffer_packet_info;
   packethandler::BufferPacket buffer_packet;
 
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
+
   sm->IsKeyUnique(crypto_obj.Hash(public_username + "BUFFER",
                                   "",
                                   crypto::STRING_STRING,
@@ -1011,21 +867,15 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   ASSERT_EQ(2, bpi_updated.online());
 }
 
-TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
+
   clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(\
     &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
@@ -1044,15 +894,7 @@ TEST_F(BufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   users.insert(usuarios[1]);
   users.insert(usuarios[2]);
 
-  clientbufferpackethandler.AddUsers(users,
-    boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::UpdateResponse add_users_res;
-  ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
-  cb.Reset();
-  add_users_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
   clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(\
     &FakeCallback::CallbackFunc, &cb, _1));

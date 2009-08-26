@@ -57,8 +57,8 @@ class VaultBufferPacketHandler {
 
 
   bool CheckMsgStructure(const std::string &ser_message,
-                         std::string &sender_id,
-                         MessageType &type);
+                         std::string *sender_id,
+                         MessageType *type);
 
  private:
   crypto::Crypto crypto_obj_;

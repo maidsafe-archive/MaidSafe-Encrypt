@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
+#include "maidsafe/client/packetfactory.h"
 #include "maidsafe/client/systempackets.h"
-
 
 namespace packethandler {
 

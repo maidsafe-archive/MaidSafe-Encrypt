@@ -110,11 +110,12 @@ void protobuf_AssignDesc_datamaps_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(Share));
   Key_descriptor_ = file->message_type(3);
-  static const int Key_offsets_[4] = {
+  static const int Key_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Key, id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Key, type_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Key, private_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Key, public_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Key, public_key_signature_),
   };
   Key_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -280,34 +281,34 @@ void protobuf_AddDesc_datamaps_2eproto() {
     "ey\030\002 \001(\014\022\014\n\004role\030\003 \002(\014\"\201\001\n\005Share\022\014\n\004name"
     "\030\001 \002(\014\022\014\n\004msid\030\002 \002(\014\022\024\n\014msid_pub_key\030\003 \002"
     "(\014\022\024\n\014msid_pri_key\030\004 \001(\014\0220\n\014participants"
-    "\030\005 \003(\0132\032.maidsafe.ShareParticipant\"^\n\003Ke"
+    "\030\005 \003(\0132\032.maidsafe.ShareParticipant\"|\n\003Ke"
     "y\022\n\n\002id\030\001 \002(\014\022\"\n\004type\030\002 \002(\0162\024.maidsafe.P"
     "acketType\022\023\n\013private_key\030\003 \002(\014\022\022\n\npublic"
-    "_key\030\004 \002(\014\"\225\001\n\007DataMap\022\021\n\tfile_hash\030\001 \002("
-    "\014\022\022\n\nse_version\030\002 \001(\014\022\022\n\nchunk_name\030\003 \003("
-    "\014\022\034\n\024encrypted_chunk_name\030\004 \003(\014\022\022\n\nchunk"
-    "_size\030\005 \003(\004\022\035\n\016compression_on\030\006 \001(\010:\005fal"
-    "se\"\362\001\n\013MetaDataMap\022\n\n\002id\030\001 \002(\005\022\024\n\014displa"
-    "y_name\030\002 \002(\014\022 \n\004type\030\003 \002(\0162\022.maidsafe.it"
-    "emtype\022\021\n\tfile_hash\030\004 \003(\014\022\r\n\005stats\030\005 \001(\014"
-    "\022\013\n\003tag\030\006 \001(\014\022\026\n\016file_size_high\030\007 \001(\005\022\025\n"
-    "\rfile_size_low\030\010 \001(\005\022\025\n\rcreation_time\030\t "
-    "\001(\005\022\025\n\rlast_modified\030\n \001(\005\022\023\n\013last_acces"
-    "s\030\013 \001(\005\"Z\n\005Chunk\022\030\n\020compression_type\030\001 \001"
-    "(\014\022\020\n\010chunklet\030\002 \003(\014\022%\n\035pre_compression_"
-    "chunklet_size\030\003 \003(\005\"\316\001\n\tDataAtlas\022\023\n\013roo"
-    "t_db_key\030\001 \001(\014\022\033\n\004keys\030\002 \003(\0132\r.maidsafe."
-    "Key\022#\n\004mdms\030\003 \003(\0132\025.maidsafe.MetaDataMap"
-    "\022\036\n\003dms\030\004 \003(\0132\021.maidsafe.DataMap\022)\n\010cont"
-    "acts\030\005 \003(\0132\027.maidsafe.PublicContact\022\037\n\006s"
-    "hares\030\006 \003(\0132\017.maidsafe.Share*\240\001\n\010itemtyp"
-    "e\022\020\n\014REGULAR_FILE\020\000\022\016\n\nSMALL_FILE\020\001\022\016\n\nE"
-    "MPTY_FILE\020\002\022\017\n\013LOCKED_FILE\020\003\022\r\n\tDIRECTOR"
-    "Y\020\004\022\023\n\017EMPTY_DIRECTORY\020\005\022\010\n\004LINK\020\006\022\026\n\022NO"
-    "T_FOR_PROCESSING\020\007\022\013\n\007UNKNOWN\020\010*Y\n\nPacke"
-    "tType\022\t\n\005ANMID\020\000\022\n\n\006ANTMID\020\001\022\n\n\006ANSMID\020\002"
-    "\022\010\n\004MAID\020\003\022\010\n\004PMID\020\004\022\n\n\006ANMPID\020\005\022\010\n\004MPID"
-    "\020\006", 1522);
+    "_key\030\004 \002(\014\022\034\n\024public_key_signature\030\005 \002(\014"
+    "\"\225\001\n\007DataMap\022\021\n\tfile_hash\030\001 \002(\014\022\022\n\nse_ve"
+    "rsion\030\002 \001(\014\022\022\n\nchunk_name\030\003 \003(\014\022\034\n\024encry"
+    "pted_chunk_name\030\004 \003(\014\022\022\n\nchunk_size\030\005 \003("
+    "\004\022\035\n\016compression_on\030\006 \001(\010:\005false\"\362\001\n\013Met"
+    "aDataMap\022\n\n\002id\030\001 \002(\005\022\024\n\014display_name\030\002 \002"
+    "(\014\022 \n\004type\030\003 \002(\0162\022.maidsafe.itemtype\022\021\n\t"
+    "file_hash\030\004 \003(\014\022\r\n\005stats\030\005 \001(\014\022\013\n\003tag\030\006 "
+    "\001(\014\022\026\n\016file_size_high\030\007 \001(\005\022\025\n\rfile_size"
+    "_low\030\010 \001(\005\022\025\n\rcreation_time\030\t \001(\005\022\025\n\rlas"
+    "t_modified\030\n \001(\005\022\023\n\013last_access\030\013 \001(\005\"Z\n"
+    "\005Chunk\022\030\n\020compression_type\030\001 \001(\014\022\020\n\010chun"
+    "klet\030\002 \003(\014\022%\n\035pre_compression_chunklet_s"
+    "ize\030\003 \003(\005\"\316\001\n\tDataAtlas\022\023\n\013root_db_key\030\001"
+    " \001(\014\022\033\n\004keys\030\002 \003(\0132\r.maidsafe.Key\022#\n\004mdm"
+    "s\030\003 \003(\0132\025.maidsafe.MetaDataMap\022\036\n\003dms\030\004 "
+    "\003(\0132\021.maidsafe.DataMap\022)\n\010contacts\030\005 \003(\013"
+    "2\027.maidsafe.PublicContact\022\037\n\006shares\030\006 \003("
+    "\0132\017.maidsafe.Share*\240\001\n\010itemtype\022\020\n\014REGUL"
+    "AR_FILE\020\000\022\016\n\nSMALL_FILE\020\001\022\016\n\nEMPTY_FILE\020"
+    "\002\022\017\n\013LOCKED_FILE\020\003\022\r\n\tDIRECTORY\020\004\022\023\n\017EMP"
+    "TY_DIRECTORY\020\005\022\010\n\004LINK\020\006\022\026\n\022NOT_FOR_PROC"
+    "ESSING\020\007\022\013\n\007UNKNOWN\020\010*Y\n\nPacketType\022\t\n\005A"
+    "NMID\020\000\022\n\n\006ANTMID\020\001\022\n\n\006ANSMID\020\002\022\010\n\004MAID\020\003"
+    "\022\010\n\004PMID\020\004\022\n\n\006ANMPID\020\005\022\010\n\004MPID\020\006", 1552);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "datamaps.proto", &protobuf_RegisterTypes);
   PublicContact::default_instance_ = new PublicContact();
@@ -1774,11 +1775,13 @@ const ::google::protobuf::Reflection* Share::GetReflection() const {
 const ::std::string Key::_default_id_;
 const ::std::string Key::_default_private_key_;
 const ::std::string Key::_default_public_key_;
+const ::std::string Key::_default_public_key_signature_;
 #ifndef _MSC_VER
 const int Key::kIdFieldNumber;
 const int Key::kTypeFieldNumber;
 const int Key::kPrivateKeyFieldNumber;
 const int Key::kPublicKeyFieldNumber;
+const int Key::kPublicKeySignatureFieldNumber;
 #endif  // !_MSC_VER
 
 Key::Key()
@@ -1788,7 +1791,8 @@ Key::Key()
     id_(const_cast< ::std::string*>(&_default_id_)),
     type_(0),
     private_key_(const_cast< ::std::string*>(&_default_private_key_)),
-    public_key_(const_cast< ::std::string*>(&_default_public_key_)) {
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)) {
   SharedCtor();
 }
 
@@ -1801,7 +1805,8 @@ Key::Key(const Key& from)
     id_(const_cast< ::std::string*>(&_default_id_)),
     type_(0),
     private_key_(const_cast< ::std::string*>(&_default_private_key_)),
-    public_key_(const_cast< ::std::string*>(&_default_public_key_)) {
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -1812,6 +1817,7 @@ void Key::SharedCtor() {
   type_ = 0;
   private_key_ = const_cast< ::std::string*>(&_default_private_key_);
   public_key_ = const_cast< ::std::string*>(&_default_public_key_);
+  public_key_signature_ = const_cast< ::std::string*>(&_default_public_key_signature_);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -1828,6 +1834,9 @@ void Key::SharedDtor() {
   }
   if (public_key_ != &_default_public_key_) {
     delete public_key_;
+  }
+  if (public_key_signature_ != &_default_public_key_signature_) {
+    delete public_key_signature_;
   }
   if (this != default_instance_) {
   }
@@ -1864,6 +1873,11 @@ void Key::Clear() {
     if (_has_bit(3)) {
       if (public_key_ != &_default_public_key_) {
         public_key_->clear();
+      }
+    }
+    if (_has_bit(4)) {
+      if (public_key_signature_ != &_default_public_key_signature_) {
+        public_key_signature_->clear();
       }
     }
   }
@@ -1926,6 +1940,18 @@ bool Key::MergePartialFromCodedStream(
         }
        parse_public_key:
         DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key()));
+        if (input->ExpectTag(42)) goto parse_public_key_signature;
+        break;
+      }
+      
+      // required bytes public_key_signature = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_public_key_signature:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key_signature()));
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -1974,6 +2000,11 @@ void Key::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBytes(4, this->public_key(), output);
   }
   
+  // required bytes public_key_signature = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->public_key_signature(), output);
+  }
+  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -2000,6 +2031,11 @@ void Key::SerializeWithCachedSizes(
   // required bytes public_key = 4;
   if (_has_bit(3)) {
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->public_key(), target);
+  }
+  
+  // required bytes public_key_signature = 5;
+  if (_has_bit(4)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->public_key_signature(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -2035,6 +2071,12 @@ int Key::ByteSize() const {
     if (has_public_key()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->public_key());
+    }
+    
+    // required bytes public_key_signature = 5;
+    if (has_public_key_signature()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_key_signature());
     }
     
   }
@@ -2074,6 +2116,9 @@ void Key::MergeFrom(const Key& from) {
     if (from._has_bit(3)) {
       set_public_key(from.public_key());
     }
+    if (from._has_bit(4)) {
+      set_public_key_signature(from.public_key_signature());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -2096,6 +2141,7 @@ void Key::Swap(Key* other) {
     std::swap(type_, other->type_);
     std::swap(private_key_, other->private_key_);
     std::swap(public_key_, other->public_key_);
+    std::swap(public_key_signature_, other->public_key_signature_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -2103,7 +2149,7 @@ void Key::Swap(Key* other) {
 }
 
 bool Key::IsInitialized() const {
-  if ((_has_bits_[0] & 0x0000000f) != 0x0000000f) return false;
+  if ((_has_bits_[0] & 0x0000001f) != 0x0000001f) return false;
   
   return true;
 }

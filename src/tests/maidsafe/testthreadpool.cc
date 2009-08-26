@@ -74,7 +74,7 @@ class TestThreadPool : public testing::Test {
   TestThreadPool &operator=(const TestThreadPool&);
 };
 
-TEST_F(TestThreadPool, BEH_MAID_ThreadPool) {
+TEST_F(TestThreadPool, BEH_MAID_ThreadPoolBasic) {
   test_threadpool::TestTask task;
   std::vector<int> result_order;
   boost::mutex result_order_mutex;

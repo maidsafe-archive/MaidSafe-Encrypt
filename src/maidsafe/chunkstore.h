@@ -38,12 +38,15 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-// ChunkType defines which directory chunk is held in.  Chunks must be exactly
-// one of hashable or non-hashable and also exactly one of normal, cache,
-// outgoing or tempcache.
+// ChunkType defines which directory chunk is held in.  Chunks must have type
+// comprised of one primary and one secondary type.  NB signed data doesn't get
+// cached, so they can only have secondary type of normal or outgoing.
 typedef char ChunkType;
+// Primary type
 const ChunkType kHashable = 0x10;
 const ChunkType kNonHashable = 0x20;
+const ChunkType kSigned = 0x40;
+// Secondary type
 const ChunkType kNormal = 0x01;
 const ChunkType kCache = 0x02;
 const ChunkType kOutgoing = 0x04;

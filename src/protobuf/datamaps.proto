@@ -56,6 +56,7 @@ message Key {
   required PacketType type = 2;
   required bytes private_key = 3;
   required bytes public_key = 4;
+  required bytes public_key_signature = 5;
 }
 
 message DataMap {

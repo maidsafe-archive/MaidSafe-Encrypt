@@ -17,6 +17,7 @@
 
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/localstoremanager.h"
+#include "maidsafe/client/sessionsingleton.h"
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
@@ -320,104 +321,59 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
   }
 }
 
-void LocalStoreManager::StorePacket(const std::string &hex_key,
-                                    const std::string &value,
-                                    const std::string &signature,
-                                    const std::string &public_key,
-                                    const std::string &signed_public_key,
-                                    const ValueType &type,
-                                    bool,
-                                    base::callback_func_type cb) {
-  std::string key("");
-  base::decode_from_hex(hex_key, &key);
-  if (type != DATA && type != PDDIR_NOTSIGNED) {
-    if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key, public_key,
-        crypto::STRING_STRING)) {
-#ifdef DEBUG
-      printf("\n\n\nFail check signed pubkey.\n\n\n");
-#endif
-      boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-      return;
-    }
-
-    if (!crypto_obj_.AsymCheckSig(crypto_obj_.Hash(
-        public_key + signed_public_key + key, "", crypto::STRING_STRING, false),
-        signature, public_key, crypto::STRING_STRING)) {
-#ifdef DEBUG
-      printf("Fail check signed request.\n");
-#endif
-      boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-      return;
-    }
-  }
-
+int LocalStoreManager::StorePacket(const std::string &hex_packet_name,
+                                   const std::string &value,
+                                   packethandler::SystemPackets type,
+                                   DirType,
+                                   const std::string&) {
   std::string local_value = value;
-  std::string local_key = hex_key;
-  std::string local_public_key = public_key;
+  std::string local_key = hex_packet_name;
+  std::string mpid_pub_key =
+      SessionSingleton::getInstance()->PublicKey(MPID);
   std::string sender_id;
   packethandler::MessageType bp_msg_type;
-
+  std::string ser_bp;
   switch (type) {
-    case BUFFER_PACKET_MESSAGE:
-        if (vbph_.CheckMsgStructure(value, sender_id, bp_msg_type)) {
-          std::string ser_bp = GetValue_FromDB(hex_key);
-            if (ser_bp == "") {
+    case packethandler::BUFFER_MESSAGE:
+        if (vbph_.CheckMsgStructure(value, &sender_id, &bp_msg_type)) {
+          ser_bp = GetValue_FromDB(hex_packet_name);
+          if (ser_bp == "") {
 #ifdef DEBUG
-              printf("bp not there.\n");
+            printf("bp not there.\n");
 #endif
-              boost::thread thr(boost::bind(\
-                  &ExecuteFailureCallback, cb, mutex_));
-              return;
-            }
-            if (!vbph_.AddMessage(ser_bp, value, signed_public_key,
-                &local_value)) {
-              boost::thread thr(boost::bind(\
-                  &ExecuteFailureCallback, cb, mutex_));
-              return;
-              }
+            return -1;
+          }
+          if (!vbph_.AddMessage(ser_bp, value, mpid_pub_key, &local_value))
+            return -2;
         } else {
 #ifdef DEBUG
           printf("Invalid msg struct.\n");
 #endif
-          boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-          return;
+          return -3;
         }
         break;
-    case SYSTEM_PACKET:
-        if (signature != kAnonymousSignedRequest) {
-          if (!ValidateGenericPacket(local_value, local_public_key)) {
-            boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-            return;
-          }
-        }
-        break;
-    case BUFFER_PACKET_INFO:
+    case packethandler::BUFFER_INFO:
         if (!ModifyBufferPacketInfo(local_key, &local_value,
-          local_public_key)) {
-          boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-          return;
+            mpid_pub_key)) {
+          printf("Failed to modify buffer packet info.\n");
+          return -4;
         }
         break;
-    case BUFFER_PACKET:
-        if (!vbph_.ValidateOwnerSignature(local_public_key, local_value)) {
-          boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-          return;
-        }
-    default: break;
+    default:
+        break;
   }
-  StorePacket_InsertToDb(hex_key, local_value, cb);
+  StorePacket_InsertToDb(hex_packet_name, local_value);
+  return 0;
 }
 
-void LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,
-                                               const std::string &value,
-                                               base::callback_func_type cb) {
+int LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,
+                                              const std::string &value) {
   std::string local_value = value;
   std::string local_key = hex_key;
 
   try {
     if (local_key == "") {
-      boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-      return;
+      return -1;
     }
     std::string s = "select value from network where key='" + local_key + "';";
     std::string enc_value;
@@ -434,12 +390,11 @@ void LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,
     bufSQL.format("insert into network values ('%s', %Q);", local_key.c_str(),
       enc_value.c_str());
     db_.execDML(bufSQL);
-    ExecuteSuccessCallback(cb, mutex_);
+    return 0;
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     std::cerr << e.errorCode() << "error:" << e.errorMessage() << std::endl;
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-    return;
+    return -2;
   }
 }
 
@@ -495,10 +450,6 @@ bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
 bool LocalStoreManager::ModifyBufferPacketInfo(const std::string &hex_key,
                                                std::string *value,
                                                const std::string &public_key) {
-  if (!ValidateGenericPacket(*value, public_key)) {
-    return false;
-  }
-
   // Validating that owner is sending request
   CppSQLite3Binary blob;
   std::string ser_bp("");

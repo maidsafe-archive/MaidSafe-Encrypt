@@ -24,8 +24,8 @@ VaultBufferPacketHandler::VaultBufferPacketHandler() : crypto_obj_() {
 }
 
 bool VaultBufferPacketHandler::CheckMsgStructure(const std::string &ser_message,
-                                                 std::string &sender_id,
-                                                 MessageType &type) {
+                                                 std::string *sender_id,
+                                                 MessageType *type) {
   GenericPacket message;
 
   if (!message.ParseFromString(ser_message))
@@ -35,8 +35,8 @@ bool VaultBufferPacketHandler::CheckMsgStructure(const std::string &ser_message,
   if (!bpm.ParseFromString(message.data()))
     return false;
 
-  sender_id = bpm.sender_id();
-  type = bpm.type();
+  *sender_id = bpm.sender_id();
+  *type = bpm.type();
   return true;
 }
 
@@ -264,7 +264,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
         break;
       }
 #ifdef DEBUG
-      printf("VaultBufferPacketHandler::AddMessage %d\n", i);
+//      printf("VaultBufferPacketHandler::AddMessage %d\n", i);
 #endif
     }
     if (!flag) {

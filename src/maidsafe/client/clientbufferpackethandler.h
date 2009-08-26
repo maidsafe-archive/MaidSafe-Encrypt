@@ -44,15 +44,13 @@ class ClientBufferPacketHandler {
  public:
   ClientBufferPacketHandler(maidsafe::StoreManagerInterface *sm,
       boost::recursive_mutex *mutex);
-  void CreateBufferPacket(const std::string &owner_id,
-      const std::string &public_key, const std::string &private_key,
-      base::callback_func_type cb);
-  void AddUsers(const std::set<std::string> &users, base::callback_func_type cb,
-                const BufferPacketType &type);
-  void DeleteUsers(const std::set<std::string> &users,
-      base::callback_func_type cb, const BufferPacketType &type);
-  void ChangeStatus(int status, base::callback_func_type cb,
-                    const BufferPacketType &type);
+  int CreateBufferPacket(const std::string &owner_id,
+      const std::string &public_key, const std::string &private_key);
+  int AddUsers(const std::set<std::string> &users,
+               const BufferPacketType &type);
+  int DeleteUsers(const std::set<std::string> &users,
+      const BufferPacketType &type);
+  int ChangeStatus(int status, const BufferPacketType &type);
   // bool ListUsers(GenericPacket gp_info, std::set<std::string> *users);
   void GetMessages(const BufferPacketType &type, base::callback_func_type cb);
   void GetBufferPacket(const BufferPacketType &type,
@@ -70,19 +68,11 @@ class ClientBufferPacketHandler {
 
   bool UserList(std::set<std::string> *list, BufferPacketType type);
   bool SetUserList(std::set<std::string> list, BufferPacketType type);
-  void AddUsers_Callback(const std::string &result,
-      const std::set<std::string> &users, const BufferPacketType &type,
-      base::callback_func_type cb);
-  void DeleleteUsers_Callback(const std::string &result,
-      const std::set<std::string> &users,  const BufferPacketType type,
-      base::callback_func_type cb);
   void GetMessages_Callback(const std::string &result,
       const BufferPacketType &type, base::callback_func_type cb);
   void GetBufferPacket_Callback(const std::string &result,
       const BufferPacketType &type, base::callback_func_type cb);
   void GetBufferPacketInfo_Callback(const std::string &result,
-      base::callback_func_type cb);
-  void ChangeStatus_Callback(const std::string &result,
       base::callback_func_type cb);
   maidsafe::PacketType PacketHandler_PacketType(const BufferPacketType &type);
   ClientBufferPacketHandler &operator=(const ClientBufferPacketHandler);

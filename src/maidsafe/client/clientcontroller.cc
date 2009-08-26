@@ -256,6 +256,7 @@ int ClientController::SerialiseDa() {
     k->set_id(kar.id_);
     k->set_private_key(kar.private_key_);
     k->set_public_key(kar.public_key_);
+    k->set_public_key_signature(kar.signed_public_key_);
     keyring.pop_front();
   }
   printf("ClientController::SerialiseDa() - Finished with Keys.\n");
@@ -823,26 +824,9 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
     return false;
   }
 
-  ss_->AddKey(ANMPID, boost::any_cast<std::string>(keys_result["anmpid_name"]),
-              boost::any_cast<std::string>(keys_result["anmpid_private_key"]),
-              boost::any_cast<std::string>(keys_result["anmpid_public_key"]));
-  ss_->AddKey(MPID, public_username,
-              boost::any_cast<std::string>(keys_result["mpid_private_key"]),
-              boost::any_cast<std::string>(keys_result["mpid_public_key"]));
-
-  CC_CallbackResult cb;
-  cbph_->CreateBufferPacket(public_username,
-                            boost::any_cast<std::string>(
-                              keys_result["mpid_public_key"]),
-                            boost::any_cast<std::string>(
-                              keys_result["mpid_private_key"]),
-                            boost::bind(&CC_CallbackResult::CallbackFunc,
-                                        &cb,
-                                        _1));
-  WaitForResult(cb);
-  StoreResponse bufpacket_res;
-  if ((!bufpacket_res.ParseFromString(cb.result)) ||
-      (bufpacket_res.result() == kNack)) {
+  if (cbph_->CreateBufferPacket(public_username,
+      boost::any_cast<std::string>(keys_result["mpid_public_key"]),
+      boost::any_cast<std::string>(keys_result["mpid_private_key"])) != 0) {
 #ifdef DEBUG
     printf("Error creating the buffer packet.\n");
 #endif
@@ -855,35 +839,13 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
 bool ClientController::AuthoriseUsers(std::set<std::string> users) {
   if (ss_->PublicUsername() == "" || users.empty())
     return false;
-
-  CC_CallbackResult cb;
-  cbph_->AddUsers(users, boost::bind(&CC_CallbackResult::CallbackFunc,
-                                     &cb,
-                                     _1),
-                                     MPID_BP);
-  WaitForResult(cb);
-  UpdateResponse add_users_res;
-  if ((!add_users_res.ParseFromString(cb.result)) ||
-      (add_users_res.result() == kNack))
-    return false;
-
-  return true;
+  return cbph_->AddUsers(users, MPID_BP) == 0;
 }
 
 bool ClientController::DeauthoriseUsers(std::set<std::string> users) {
   if (ss_->PublicUsername() == "" || users.empty())
     return false;
-  CC_CallbackResult cb;
-  cbph_->DeleteUsers(users,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
-                     MPID_BP);
-  WaitForResult(cb);
-  UpdateResponse del_users_res;
-  if ((!del_users_res.ParseFromString(cb.result)) ||
-      (del_users_res.result() == kNack))
-    return false;
-
-  return true;
+  return cbph_->DeleteUsers(users, MPID_BP) == 0;
 }
 
 /*

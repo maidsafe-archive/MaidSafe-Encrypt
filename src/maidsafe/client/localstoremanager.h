@@ -56,6 +56,11 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual void StoreChunk(const std::string &hex_chunk_name,
                           const DirType,
                           const std::string&);
+  virtual int StorePacket(const std::string &hex_packet_name,
+                          const std::string &value,
+                          packethandler::SystemPackets system_packet_type,
+                          DirType dir_type,
+                          const std::string &msid);
   virtual void IsKeyUnique(const std::string &hex_key,
                            base::callback_func_type cb);
   virtual void DeletePacket(const std::string &hex_key,
@@ -64,14 +69,6 @@ class LocalStoreManager : public StoreManagerInterface {
                             const std::string &signed_public_key,
                             const ValueType &type,
                             base::callback_func_type cb);
-  virtual void StorePacket(const std::string &hex_key,
-                           const std::string &value,
-                           const std::string &signature,
-                           const std::string &public_key,
-                           const std::string &signed_public_key,
-                           const ValueType &type,
-                           bool update,
-                           base::callback_func_type cb);
   virtual void LoadPacket(const std::string &hex_key,
                           base::callback_func_type cb);
   virtual void GetMessages(const std::string &hex_key,
@@ -100,9 +97,8 @@ class LocalStoreManager : public StoreManagerInterface {
   bool ModifyBufferPacketInfo(const std::string &hex_key,
                               std::string *value,
                               const std::string &public_key);
-  void StorePacket_InsertToDb(const std::string &hex_key,
-                              const std::string &value,
-                              base::callback_func_type cb);
+  int StorePacket_InsertToDb(const std::string &hex_key,
+                              const std::string &value);
   std::string GetValue_FromDB(const std::string &hex_key);
 };
 

@@ -151,10 +151,13 @@ class TestSEHandler : public testing::Test {
     crypto::RsaKeyPair rsa_kp;
     rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(PMID, "PMID", rsa_kp.private_key(),
-                                            rsa_kp.public_key());
+                                            rsa_kp.public_key(), "");
     rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(MAID, "MAID", rsa_kp.private_key(),
-                                            rsa_kp.public_key());
+                                            rsa_kp.public_key(), "");
+    rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
+    SessionSingleton::getInstance()->AddKey(MPID, "Me", rsa_kp.private_key(),
+        rsa_kp.public_key(), "");
     file_system::FileSystem fsys_;
     fsys_.Mount();
     boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());

@@ -113,7 +113,7 @@ class MsgHandlerTest : public testing::Test {
     public_key = rsa_obj.public_key();
     public_username = "el tonto smer";
     ss = maidsafe::SessionSingleton::getInstance();
-    ss->AddKey(maidsafe::MPID, public_username, private_key, public_key);
+    ss->AddKey(maidsafe::MPID, public_username, private_key, public_key, "");
     cb.Reset();
   }
   virtual void TearDown() {
@@ -154,14 +154,8 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   maidsafe::MessageHandler msghandler(sm.get(), mutex);
-  clientbufferpackethandler.CreateBufferPacket(public_username, public_key,
-    private_key, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tmsgh(cb, mutex);
-  maidsafe::StoreResponse store_result;
-  ASSERT_TRUE(store_result.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_result.result()));
-  cb.Reset();
-  store_result.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
+      public_key, private_key));
 
   // Creating keys of the sender
   std::string sender("sender");
@@ -170,14 +164,8 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   std::string sender_privkey = rsa_obj.private_key();
 
   // Creating bufferpacket of the sender
-  clientbufferpackethandler.CreateBufferPacket(sender, sender_pubkey,
-    sender_privkey, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tmsgh(cb, mutex);
-  ASSERT_TRUE(store_result.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_result.result()));
-  cb.Reset();
-  store_result.Clear();
-
+  ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(sender,
+      sender_pubkey, sender_privkey));
 
   // Creating MPID of the sender
   rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
@@ -190,23 +178,12 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   std::string signed_pubkey = crypto_obj.AsymSign(rsa_obj.public_key(), "",
                               rsa_obj.private_key(),
                               crypto::STRING_STRING);
-  sm->StorePacket(crypto_obj.Hash(sender, "", crypto::STRING_STRING,
-                  true), ser_gp, crypto_obj.AsymSign(crypto_obj.Hash(
-                  rsa_obj.public_key() + signed_pubkey + crypto_obj.Hash(
-                  sender, "", crypto::STRING_STRING, false), "",
-                  crypto::STRING_STRING, false), "",
-                  rsa_obj.private_key(), crypto::STRING_STRING),
-                  rsa_obj.public_key(), signed_pubkey, maidsafe::SYSTEM_PACKET,
-                  false, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tmsgh(cb, mutex);
-  ASSERT_TRUE(store_result.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(store_result.result()));
-  cb.Reset();
-  store_result.Clear();
-
+  ASSERT_EQ(0, sm->StorePacket(crypto_obj.Hash(sender, "",
+      crypto::STRING_STRING, true), ser_gp, packethandler::MPID,
+      maidsafe::PRIVATE, ""));
 
   ss->ResetSession();
-  ss->AddKey(maidsafe::MPID, sender, private_key, public_key);
+  ss->AddKey(maidsafe::MPID, sender, private_key, public_key, "");
 
   // Creating the sender's contact info
   packethandler::ContactInfo ci;
@@ -241,18 +218,11 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
 
   std::set<std::string> users;
   users.insert(public_username);
-  clientbufferpackethandler.AddUsers(users,
-      boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
-  wait_for_result_tmsgh(cb, mutex);
-  maidsafe::UpdateResponse add_users_res;
-  ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
-  cb.Reset();
-  add_users_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
   // Changing the session data to "el tonto smer"
   ss->ResetSession();
-  ss->AddKey(maidsafe::MPID, public_username, private_key, public_key);
+  ss->AddKey(maidsafe::MPID, public_username, private_key, public_key, "");
 
   // Getting buffer packet
   clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(
@@ -307,13 +277,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   // Adding user to buffer packet's authorised users
   users.clear();
   users.insert(sender);
-  clientbufferpackethandler.AddUsers(users,
-      boost::bind(&FakeCallback::CallbackFunc, &cb, _1), MPID_BP);
-  wait_for_result_tmsgh(cb, mutex);
-  ASSERT_TRUE(add_users_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(add_users_res.result()));
-  cb.Reset();
-  add_users_res.Clear();
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
   // Clearing the messages
   clientbufferpackethandler.ClearMessages(MPID_BP, boost::bind(
@@ -369,7 +333,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
 
   // Change session to "sender"
   ss->ResetSession();
-  ss->AddKey(maidsafe::MPID, sender, private_key, public_key);
+  ss->AddKey(maidsafe::MPID, sender, private_key, public_key, "");
 
   // Getting buffer packet
   clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(

@@ -209,8 +209,11 @@ class SessionSingleton {
   int LoadKeys(std::list<Key> *keys);
   void GetKeys(std::list<KeyAtlasRow> *keys);
   void SerialisedKeyRing(std::string *ser_kr);
+  // If signed_public_key == "", it is set as signature of given public_key
+  // using given private_key.
   void AddKey(const PacketType &bpt, const std::string &id,
-              const std::string &private_key, const std::string &public_key);
+              const std::string &private_key, const std::string &public_key,
+              const std::string &signed_public_key);
   std::string Id(const PacketType &bpt);
   std::string PublicKey(const PacketType &bpt);
   std::string PrivateKey(const PacketType &bpt);

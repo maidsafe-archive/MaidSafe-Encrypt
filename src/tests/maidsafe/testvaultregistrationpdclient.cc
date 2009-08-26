@@ -71,8 +71,8 @@ class ResultHandler {
     callback_arrived_ = false;
     local_vault_status_ = maidsafe::ISOWNRPC_CANCELLED;
   }
-  void OwnVault_Callback(const maidsafe::OwnVaultResult &result, const std::string
-      &pmid_name) {
+  void OwnVault_Callback(const maidsafe::OwnVaultResult &result,
+      const std::string &pmid_name) {
     pmid_name_ = pmid_name;
     result_ = result;
     callback_arrived_ = true;

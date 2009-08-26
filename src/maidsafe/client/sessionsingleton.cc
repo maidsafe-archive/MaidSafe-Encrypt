@@ -80,7 +80,8 @@ int SessionSingleton::LoadKeys(std::list<Key> *keys) {
   while (!keys->empty()) {
     Key k = keys->front();
     keys->pop_front();
-    AddKey(k.type(), k.id(), k.private_key(), k.public_key());
+    AddKey(k.type(), k.id(), k.private_key(), k.public_key(),
+        k.public_key_signature());
     ++n;
   }
 
@@ -103,16 +104,18 @@ void SessionSingleton::SerialisedKeyRing(std::string *ser_kr) {
     k->set_id(kar.id_);
     k->set_private_key(kar.private_key_);
     k->set_public_key(kar.public_key_);
+    k->set_public_key_signature(kar.signed_public_key_);
     keys.pop_front();
   }
   da.SerializeToString(ser_kr);
 }
 
-void SessionSingleton::AddKey(const PacketType &pt,
+void SessionSingleton::AddKey(const PacketType &bpt,
                               const std::string &id,
                               const std::string &private_key,
-                              const std::string &public_key) {
-  ka_.AddKey(pt, id, private_key, public_key);
+                              const std::string &public_key,
+                              const std::string &signed_public_key) {
+  ka_.AddKey(bpt, id, private_key, public_key, signed_public_key);
 }
 
 std::string SessionSingleton::Id(const PacketType &bpt) {

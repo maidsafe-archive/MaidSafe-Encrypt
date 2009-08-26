@@ -639,6 +639,16 @@ class Key : public ::google::protobuf::Message {
   inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
+  // required bytes public_key_signature = 5;
+  inline bool has_public_key_signature() const;
+  inline void clear_public_key_signature();
+  static const int kPublicKeySignatureFieldNumber = 5;
+  inline const ::std::string& public_key_signature() const;
+  inline void set_public_key_signature(const ::std::string& value);
+  inline void set_public_key_signature(const char* value);
+  inline void set_public_key_signature(const void* value, size_t size);
+  inline ::std::string* mutable_public_key_signature();
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -650,10 +660,12 @@ class Key : public ::google::protobuf::Message {
   static const ::std::string _default_private_key_;
   ::std::string* public_key_;
   static const ::std::string _default_public_key_;
+  ::std::string* public_key_signature_;
+  static const ::std::string _default_public_key_signature_;
   friend void  protobuf_AddDesc_datamaps_2eproto();
   friend void protobuf_AssignDesc_datamaps_2eproto();
   friend void protobuf_ShutdownFile_datamaps_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -2160,6 +2172,48 @@ inline ::std::string* Key::mutable_public_key() {
     public_key_ = new ::std::string;
   }
   return public_key_;
+}
+
+// required bytes public_key_signature = 5;
+inline bool Key::has_public_key_signature() const {
+  return _has_bit(4);
+}
+inline void Key::clear_public_key_signature() {
+  if (public_key_signature_ != &_default_public_key_signature_) {
+    public_key_signature_->clear();
+  }
+  _clear_bit(4);
+}
+inline const ::std::string& Key::public_key_signature() const {
+  return *public_key_signature_;
+}
+inline void Key::set_public_key_signature(const ::std::string& value) {
+  _set_bit(4);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(value);
+}
+inline void Key::set_public_key_signature(const char* value) {
+  _set_bit(4);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(value);
+}
+inline void Key::set_public_key_signature(const void* value, size_t size) {
+  _set_bit(4);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* Key::mutable_public_key_signature() {
+  _set_bit(4);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  return public_key_signature_;
 }
 
 // -------------------------------------------------------------------

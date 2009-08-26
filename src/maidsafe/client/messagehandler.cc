@@ -197,30 +197,8 @@ void MessageHandler::StoreMessage(
                   data->p_type,
                   &signed_request,
                   &signed_public_key);
-  sm_->StorePacket(bufferpacketname,
-                   ser_msg,
-                   signed_request,
-                   ss_->PublicKey(PacketHandler_PacketType(data->p_type)),
-                   signed_public_key,
-                   BUFFER_PACKET_MESSAGE,
-                   true,
-                   boost::bind(&MessageHandler::StoreMessage_Callback,
-                               this,
-                               _1,
-                               index,
-                               data));
-}
-
-void MessageHandler::StoreMessage_Callback(
-    const std::string &result,
-    int index,
-    boost::shared_ptr<SendMessagesData> data) {
-  if (data->is_calledback) {
-    return;
-  }
-  UpdateResponse result_msg;
-  if ((result_msg.ParseFromString(result)) &&
-      (result_msg.result() == kAck)) {
+  if (sm_->StorePacket(bufferpacketname, ser_msg, packethandler::BUFFER_MESSAGE,
+                       PRIVATE, "") == 0) {
     ++data->successful_stores;
   } else {
     data->no_auth_rec.push_back(data->receivers[index].id);

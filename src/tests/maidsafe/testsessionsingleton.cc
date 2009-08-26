@@ -64,7 +64,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(0, ss_->Mounted());
   ASSERT_EQ('\0', ss_->WinDrive());
   ASSERT_EQ("", ss_->VaultIP());
-  ASSERT_EQ(0, ss_->VaultPort());
+  ASSERT_EQ(boost::uint32_t(0), ss_->VaultPort());
   std::list<KeyAtlasRow> keys;
   ss_->GetKeys(&keys);
   ASSERT_EQ(size_t(0), keys.size());
@@ -96,7 +96,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_FALSE(ss_->SetVaultPort(1023));
   ASSERT_FALSE(ss_->SetVaultPort(65536));
   ASSERT_TRUE(ss_->SetVaultPort(7777));
-  ss_->AddKey(ANMID, "id", "pri_key", "pub_key");
+  ss_->AddKey(ANMID, "id", "pri_key", "pub_key", "");
   ASSERT_EQ(0, ss_->AddContact("pub_name", "pub_key", "full_name",
             "office_phone", "birthday", 'M', 18, 6, "city", 'C', 0, 0));
   std::vector<std::string> attributes;
@@ -129,7 +129,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(1, ss_->Mounted());
   ASSERT_EQ('N', ss_->WinDrive());
   ASSERT_EQ("132.248.59.1", ss_->VaultIP());
-  ASSERT_EQ(7777, ss_->VaultPort());
+  ASSERT_EQ(boost::uint32_t(7777), ss_->VaultPort());
   ss_->GetKeys(&keys);
   ASSERT_EQ(size_t(1), keys.size());
   ASSERT_EQ(ANMID, keys.front().type_);
@@ -180,7 +180,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(0, ss_->Mounted());
   ASSERT_EQ('\0', ss_->WinDrive());
   ASSERT_EQ("", ss_->VaultIP());
-  ASSERT_EQ(0, ss_->VaultPort());
+  ASSERT_EQ(boost::uint32_t(0), ss_->VaultPort());
   ss_->GetKeys(&keys);
   ASSERT_EQ(size_t(0), keys.size());
   ASSERT_EQ(0, ss_->GetContactList(&list));
@@ -192,7 +192,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
 TEST_F(SessionSingletonTest, BEH_MAID_PublicUsername) {
   ASSERT_EQ("", ss_->PublicUsername());
   ASSERT_EQ("", ss_->Id(MPID));
-  ss_->AddKey(MPID, "Dan Schmidt", "pri_key", "pub_key");
+  ss_->AddKey(MPID, "Dan Schmidt", "pri_key", "pub_key", "");
   ASSERT_EQ("Dan Schmidt", ss_->PublicUsername());
   ASSERT_EQ("Dan Schmidt", ss_->Id(MPID));
 }
@@ -242,7 +242,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionKeyRingIO) {
     k->set_private_key(pri_keys[n]);
     k->set_public_key(pub_keys[n]);
     ss_->AddKey(PacketType(n), "id" + base::itos(n),
-                pri_keys[n], pub_keys[n]);
+                pri_keys[n], pub_keys[n], "");
+    k->set_public_key_signature(ss_->SignedPublicKey(PacketType(n)));
   }
   // get signed public key
   for (int i = 0; i < 7; i++) {
