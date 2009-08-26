@@ -81,7 +81,7 @@ class SelfEncryption {
   FRIEND_TEST(TestSelfEncryption, FUNC_MAID_CheckEntry);
   FRIEND_TEST(TestSelfEncryption, BEH_MAID_CreateProcessDirectory);
   FRIEND_TEST(TestSelfEncryption, BEH_MAID_CheckCompressibility);
-  FRIEND_TEST(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes);
+  FRIEND_TEST(TestSelfEncryption, BEH_MAID_CalculateChunkSizes);
   FRIEND_TEST(TestSelfEncryption, BEH_MAID_ChunkAddition);
   FRIEND_TEST(TestSelfEncryption, FUNC_MAID_GeneratePreEncHashes);
   FRIEND_TEST(TestSelfEncryption, FUNC_MAID_HashUnique);

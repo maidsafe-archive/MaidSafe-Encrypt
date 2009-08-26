@@ -39,13 +39,30 @@ namespace fs = boost::filesystem;
 
 std::string CreateRandomFile(const std::string &filename,
                              const int &filesize) {
-  std::string file_content = base::RandomString(filesize);
   file_system::FileSystem fsys;
   fs::path file_path(fsys.MaidsafeHomeDir());
   file_path = file_path/filename;
   fs::ofstream ofs;
   ofs.open(file_path);
-  ofs << file_content;
+  int stringsize = filesize;
+  if (filesize > 100000)
+    stringsize = 100000;
+  int remainingsize = filesize;
+  std::string rand_str = base::RandomString(2 * stringsize);
+  std::string file_content;
+  int start_pos = 0;
+  while (remainingsize) {
+    srand(17);
+    start_pos = rand() % (stringsize -1);  // NOLINT (Fraser)
+    if (remainingsize < stringsize) {
+      stringsize = remainingsize;
+      file_content = rand_str.substr(0, stringsize);
+    } else {
+      file_content = rand_str.substr(start_pos, stringsize);
+    }
+    ofs << file_content;
+    remainingsize -= stringsize;
+  }
   ofs.close();
   return file_path.string();
 };
@@ -217,7 +234,7 @@ TEST_F(TestSelfEncryption, BEH_MAID_ChunkAddition) {
   ASSERT_EQ(0, se.ChunkAddition(' '));
 }
 
-TEST_F(TestSelfEncryption, FUNC_MAID_CalculateChunkSizes) {
+TEST_F(TestSelfEncryption, BEH_MAID_CalculateChunkSizes) {
   SelfEncryption se(client_chunkstore_);
   uint16_t min_chunks = se.min_chunks_;
   uint16_t max_chunks = se.max_chunks_;

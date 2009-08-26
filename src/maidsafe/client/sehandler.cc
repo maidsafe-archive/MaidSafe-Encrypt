@@ -664,10 +664,12 @@ int SEHandler::DecryptDb(const std::string &dir_path,
         return -1;
       }
       enc_dm_ = gp.data();
-      if (enc_dm_ == "")
+      if (enc_dm_ == "") {
 #ifdef DEBUG
         printf("Enc dm is empty.\n");
 #endif
+        return -1;
+      }
     } else {
       enc_dm_ = ser_dm;
     }
