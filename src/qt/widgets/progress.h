@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_PROGRESS_H_
-#define QT_PROGRESS_H_
+#ifndef QT_WIDGETS_PROGRESS_H_
+#define QT_WIDGETS_PROGRESS_H_
 
 // qt
 #include <QWidget>
@@ -22,43 +22,42 @@
 #include "ui_progress.h"
 
 
-//! General purpose page for showing feedback during long lived operations
-class Progress : public QWidget
-{
+// General purpose page for showing feedback during long lived operations
+class Progress : public QWidget {
     Q_OBJECT
 
-public:
-    Progress( QWidget* parent = 0 );
-    virtual ~Progress();
+ public:
+  explicit Progress(QWidget* parent = 0);
+  virtual ~Progress();
 
-    //! Set the title for the page
-    void setTitle( const QString& msg );
+  // Set the title for the page
+  void setTitle(const QString& msg);
 
-    //! Set a message for the main mody of the page
-    void setMessage( const QString& msg );
+  // Set a message for the main mody of the page
+  void setMessage(const QString& msg);
 
-    //! Set a message to be displayed above the progress bar
-    void setProgressMessage( const QString& msg );
+  // Set a message to be displayed above the progress bar
+  void setProgressMessage(const QString& msg);
 
-    //! Indicate that an error has occured
-    /*!
-        If \param error is true the 'OK' button will be shown rather than
-        'Cancel'
-    */
-    void setError( bool error );
+  // Indicate that an error has occured
+  /*!
+      If \param error is true the 'OK' button will be shown rather than
+      'Cancel'
+  */
+  void setError(bool error);
 
-    //! Specify whether the current operation is cancellable
-    void setCanCancel( bool );
+  // Specify whether the current operation is cancellable
+  void setCanCancel(bool);
 
-signals:
-    //! User has acknowledged the error
+  signals:
+    // User has acknowledged the error
     void ok();
-    //! User wishes to cancel the current operation
+    // User wishes to cancel the current operation
     void cancel();
 
-private:
-    Ui::Progress ui_;
+ private:
+  Ui::Progress ui_;
 };
 
-#endif // QT_PROGRESS_H_
+#endif  // QT_WIDGETS_PROGRESS_H_
 

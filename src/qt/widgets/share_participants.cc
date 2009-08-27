@@ -11,7 +11,7 @@
  *  Created on: Mar 26, 2009
  *      Author: Team
  */
-#include "share_participants.h"
+#include "qt/widgets/share_participants.h"
 
 // qt
 #include <QListWidget>
@@ -21,49 +21,42 @@
 #include "qt/client/client_controller.h"
 
 
-ShareParticipantsChoice::ShareParticipantsChoice( QWidget* parent,
-    const QString &title, QStringList *usernames )
-    : usernames_( usernames )
-{
-    ui_.setupUi(this);
+ShareParticipantsChoice::ShareParticipantsChoice(QWidget* parent,
+    const QString &title, QStringList *usernames) : usernames_(usernames) {
+  ui_.setupUi(this);
 
-    QStringList db_contacts = ClientController::instance()->contactsNames();
+  QStringList db_contacts = ClientController::instance()->contactsNames();
 
-    foreach ( const QString& s, *usernames )
-    {
-        db_contacts.removeAll( s );
-    }
+  foreach(const QString& s, *usernames) {
+    db_contacts.removeAll(s);
+  }
 
-    ui_.listWidget->setSelectionMode(QAbstractItemView::MultiSelection);
+  ui_.listWidget->setSelectionMode(QAbstractItemView::MultiSelection);
 
-    int row = 1;
-    foreach ( const QString& s, db_contacts )
-    {
-        QListWidgetItem* item = new QListWidgetItem( ui_.listWidget,
-                                                     QListWidgetItem::UserType );
+  int row = 1;
+  foreach(const QString& s, db_contacts) {
+    QListWidgetItem* item = new QListWidgetItem(ui_.listWidget,
+                                                QListWidgetItem::UserType);
 
-        item->setText( s );
-        item->setCheckState( Qt::Unchecked );
-        ui_.listWidget->insertItem( row, item );
-        row++;
-    }
+    item->setText(s);
+    item->setCheckState(Qt::Unchecked);
+    ui_.listWidget->insertItem(row, item);
+    row++;
+  }
 
-    ui_.label->setText( title );
+  ui_.label->setText(title);
 }
 
 ShareParticipantsChoice::~ShareParticipantsChoice() { }
 
-void ShareParticipantsChoice::accept()
-{
-    usernames_->clear();
-    for ( int i=0; i<ui_.listWidget->count(); ++i )
-    {
-        QListWidgetItem* item = ui_.listWidget->item( i );
-        if ( item->checkState() == Qt::Checked )
-        {
-            usernames_->push_back( item->text() );
-        }
+void ShareParticipantsChoice::accept() {
+  usernames_->clear();
+  for (int i = 0; i < ui_.listWidget->count(); ++i) {
+    QListWidgetItem* item = ui_.listWidget->item(i);
+    if (item->checkState() == Qt::Checked) {
+      usernames_->push_back(item->text());
     }
-    done(0);
+  }
+  done(0);
 }
 

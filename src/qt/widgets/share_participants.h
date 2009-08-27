@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_SHARE_PARTICIPANTS_H_
-#define QT_SHARE_PARTICIPANTS_H_
+#ifndef QT_WIDGETS_SHARE_PARTICIPANTS_H_
+#define QT_WIDGETS_SHARE_PARTICIPANTS_H_
 
 // qt
 #include <QDialog>
@@ -21,19 +21,18 @@
 // generated
 #include "ui_share_participants.h"
 
-//! Custom widget that displays contacts to be chosen as participants in a share
-class ShareParticipantsChoice : public QDialog
-{
-    Q_OBJECT
-public:
-    ShareParticipantsChoice( QWidget* parent = 0, const QString& title = "",
-      QStringList *usernames = 0);
-    virtual ~ShareParticipantsChoice();
-private slots:
+// Custom widget that displays contacts to be chosen as participants in a share
+class ShareParticipantsChoice : public QDialog {
+  Q_OBJECT
+ public:
+  ShareParticipantsChoice(QWidget* parent = 0, const QString& title = "",
+                          QStringList *usernames = 0);
+  virtual ~ShareParticipantsChoice();
+  private slots:
     void accept();
-private:
-    Ui::Dialog ui_;
-    QStringList* usernames_;
+ private:
+  Ui::Dialog ui_;
+  QStringList* usernames_;
 };
 
-#endif // QT_SHARE_PARTICIPANTS_H_
+#endif  // QT_WIDGETS_SHARE_PARTICIPANTS_H_

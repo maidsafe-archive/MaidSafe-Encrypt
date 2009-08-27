@@ -27,9 +27,13 @@ CreateUserThread::CreateUserThread(const QString& username,
                                    const QString& pin,
                                    const QString& password,
                                    const int& vault_type,
+                                   const QString& space,
+                                   const QString& port,
+                                   const QString& directory,
                                    QObject* parent)
     : WorkerThread(parent), username_(username), pin_(pin),
-      password_(password), vault_type_(vault_type) { }
+      password_(password), vault_type_(vault_type), space_(space),
+      port_(port), directory_(directory) { }
 
 CreateUserThread::~CreateUserThread() { }
 
@@ -39,9 +43,16 @@ void CreateUserThread::run() {
   const std::string username = username_.toStdString();
   const std::string pin = pin_.toStdString();
   const std::string password = password_.toStdString();
+  const std::string port = port_.toStdString();
+
+  maidsafe::VaultConfigParameters vcp;
+  vcp.vault_type = vault_type_;
+  vcp.space = base::stoi_ul(space_.toStdString());
+  vcp.port = base::stoi_ul(port_.toStdString());
+  vcp.directory = directory_.toStdString();
 
   if (!maidsafe::ClientController::getInstance()->
-      CreateUser(username, pin, password, vault_type_)) {
+      CreateUser(username, pin, password, vcp)) {
     emit completed(false);
   } else {
     emit completed(true);

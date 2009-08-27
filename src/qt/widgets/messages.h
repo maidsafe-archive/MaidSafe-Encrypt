@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_MESSAGES_H_
-#define QT_MESSAGES_H_
+#ifndef QT_WIDGETS_MESSAGES_H_
+#define QT_WIDGETS_MESSAGES_H_
 
 // qt
 #include <QDateTime>
@@ -23,13 +23,13 @@
 #include "protobuf/packet.pb.h"
 
 // local
-#include "panel.h"
 #include "qt/client/client_controller.h"
+#include "qt/widgets/panel.h"
 
 // generated
 #include "ui_user_messages_panel.h"
 
-//! Custom widget that displays messages
+// Custom widget that displays messages
 /*!
     Displays a list of received messages.
 
@@ -38,62 +38,62 @@
     TODO skype like messaging
     TODO currently use polling to check for messages.  need something better..
 */
-class Messages : public Panel
-{
-    Q_OBJECT
-public:
-    Messages( QWidget* parent = 0 );
-    virtual ~Messages();
+class Messages : public Panel {
+  Q_OBJECT
 
-    //! Total number of unread messages.
-    /*!
-        A message is deemed to be unread if it is received whilst this Panel
-        is not active.
-    */
-    int unreadMessages() const;
+ public:
+  explicit Messages(QWidget* parent = 0);
+  virtual ~Messages();
 
-    //! Total of all recevied messages (since logging in)
-    int totalMessages() const;
+  // Total number of unread messages.
+  /*!
+      A message is deemed to be unread if it is received whilst this Panel
+      is not active.
+  */
+  int unreadMessages() const;
 
-    //! Panel interface
-    virtual void setActive( bool );
-    //! Clears received messages
-    virtual void reset();
+  // Total of all recevied messages (since logging in)
+  int totalMessages() const;
 
-signals:
-    //! Notify when a message(s) is received.
+  // Panel interface
+  virtual void setActive(bool);
+  // Clears received messages
+  virtual void reset();
+
+  signals:
+    // Notify when a message(s) is received.
     void messageReceived();
 
-private slots:
-    void onMessageReceived( ClientController::MessageType,
-                            const QDateTime& time,
-                            const QString& sender,
-                            const QString& message );
+  private slots:
+    void onMessageReceived(ClientController::MessageType,
+                           const QDateTime& time,
+                           const QString& sender,
+                           const QString& message);
 
-private:
-    void addMessage( const QDateTime& time,
-                     const QString& sender,
-                     const QString& message );
+ private:
+  void addMessage(const QDateTime& time,
+                  const QString& sender,
+                  const QString& message);
 
-    void updateHtml();
+  void updateHtml();
 
-    Ui::MessagesPage ui_;
-    bool active_;
-    bool init_;
+  Ui::MessagesPage ui_;
+  bool active_;
+  bool init_;
 
-    //! Hold basic message info
-    struct Message{
-        QDateTime time;
-        QString from;
-        QString text;
-    };
+  // Hold basic message info
+  struct Message {
+    QDateTime time;
+    QString from;
+    QString text;
+  };
 
-    typedef QList<Message> MessageList;
-    //! All received messages
-    MessageList messages_;
+  typedef QList<Message> MessageList;
+  // All received messages
+  MessageList messages_;
 
-    //! Count of unread messages
-    int unread_;
+  // Count of unread messages
+  int unread_;
 };
 
-#endif // QT_MESSAGES_H_
+#endif  // QT_WIDGETS_MESSAGES_H_

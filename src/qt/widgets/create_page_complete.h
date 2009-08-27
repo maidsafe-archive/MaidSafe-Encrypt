@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CREATE_COMPLETE_H_
-#define QT_CREATE_COMPLETE_H_
+#ifndef QT_WIDGETS_CREATE_PAGE_COMPLETE_H_
+#define QT_WIDGETS_CREATE_PAGE_COMPLETE_H_
 
 // qt
 #include <QWizardPage>
@@ -23,28 +23,27 @@
 
 class QWizardPage;
 
-class CreateCompletePage : public QWizardPage
-{
-    Q_OBJECT
+class CreateCompletePage : public QWizardPage {
+  Q_OBJECT
 
-public:
-    CreateCompletePage( QWidget* parent = 0 );
-    virtual ~CreateCompletePage();
+ public:
+  explicit CreateCompletePage(QWidget* parent = 0);
+  virtual ~CreateCompletePage();
 
-    void showCreationProgress( bool );
+  void showCreationProgress(bool show);
 
-    //! Set a message for the main mody of the page
-    void setMessage( const QString& msg );
+  // Set a message for the main mody of the page
+  void setMessage(const QString& msg);
 
-    //! Set a message to be displayed above the progress bar
-    void setProgressMessage( const QString& msg );
+  // Set a message to be displayed above the progress bar
+  void setProgressMessage(const QString& msg);
 
-    //! Implementaion of QWizardPage interface
-    virtual void cleanupPage();
+  // Implementaion of QWizardPage interface
+  virtual void cleanupPage();
 
-private:
-    Ui::complete ui_;
+ private:
+  Ui::complete ui_;
 };
 
-#endif // QT_CREATE_COMPLETE_H_
+#endif  // QT_WIDGETS_CREATE_PAGE_COMPLETE_H_
 

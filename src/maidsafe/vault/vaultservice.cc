@@ -1178,21 +1178,22 @@ void RegistrationService::OwnVault(google::protobuf::RpcController* ,
       request->public_key(), crypto::STRING_STRING)) {
     std::string signed_key = cobj.AsymSign(request->public_key(), "",
         request->private_key(), crypto::STRING_STRING);
-    if (signed_key == request->signed_public_key()) {
+    if (cobj.AsymCheckSig(request->public_key(), signed_key,
+        request->public_key(), crypto::STRING_STRING)) {
       // checking if port is available
       transport::Transport test_tranport;
       if (request->port() == 0 || test_tranport.IsPortAvailable(
           request->port())) {
         response->set_result(maidsafe::OWNED_SUCCESS);
-        std::string pmid_name = cobj.Hash(request->public_key()+signed_key, "",
-            crypto::STRING_STRING, false);
+        std::string pmid_name = cobj.Hash(request->public_key()+
+            request->signed_public_key(), "", crypto::STRING_STRING, false);
         response->set_pmid_name(pmid_name);
         pending_response_.callback = done;
         pending_response_.args = response;
         maidsafe::VaultConfig vconfig;
         vconfig.set_pmid_public(request->public_key());
         vconfig.set_pmid_private(request->private_key());
-        vconfig.set_signed_pmid_public(signed_key);
+        vconfig.set_signed_pmid_public(request->signed_public_key());
         vconfig.set_chunkstore_dir(request->chunkstore_dir());
         vconfig.set_port(request->port());
         vconfig.set_available_space(request->space());

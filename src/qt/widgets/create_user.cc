@@ -30,12 +30,13 @@
 // generated
 #include "qt/widgets/create_page_welcome.h"
 #include "qt/widgets/create_page_license.h"
+#include "qt/widgets/create_page_localvault_setup.h"
 #include "qt/widgets/create_page_options.h"
 #include "qt/widgets/create_page_complete.h"
 
 
 CreateUser::CreateUser(QWidget* parent)
-    : QWidget(parent), vault_type_(0) {
+    : QWidget(parent), vault_type_(0), space_(), port_(), directory_() {
   ui_.setupUi(this);
 
   ui_.next->setAutoDefault(true);
@@ -47,6 +48,7 @@ CreateUser::CreateUser(QWidget* parent)
   pages_ << new CreateWelcomePage;
   pages_ << new CreateLicensePage;
   pages_ << new CreateOptionsPage;
+  pages_ << new CreateLocalVaultPage;
   pages_ << new CreateCompletePage;
 
   while (ui_.stack->count() > 0) {
@@ -68,6 +70,10 @@ void CreateUser::reset() {
   foreach(QWizardPage* p, pages_) {
     p->cleanupPage();
   }
+  vault_type_ = 0;
+  space_ = tr("");
+  port_ = tr("");
+  directory_ = tr("");
 }
 
 void CreateUser::onBack() {
@@ -75,7 +81,8 @@ void CreateUser::onBack() {
   if (index == 0) {
     return;
   }
-
+  if (vault_type_ != 0)
+    --index;
   setCurrentPage(--index, -1);
 }
 
@@ -86,10 +93,20 @@ void CreateUser::onNext() {
     emit complete();
     return;
   }
-  if (index == pages_.size() - 2) {
+
+  // Vault choice page
+  if (index == pages_.size() - 3) {
     CreateOptionsPage* cop =
         static_cast<CreateOptionsPage*>(pages_.at(ui_.stack->currentIndex()));
     vault_type_ = cop->VaultType();
+    if (vault_type_ != 0)
+      ++index;
+  } else if (index == pages_.size() - 2) {  // Local vault setup page
+    CreateLocalVaultPage* clvp =
+       static_cast<CreateLocalVaultPage*>(pages_.at(ui_.stack->currentIndex()));
+    space_ = clvp->SpaceOffered();
+    port_ = clvp->PortChosen();
+    directory_ = clvp->DirectoryChosen();
   }
   ++index;
 
@@ -115,8 +132,13 @@ void CreateUser::setCurrentPage(int index, int dir) {
   ui_.back->setEnabled(index > 0);
   ui_.next->setEnabled(page->isComplete());
   ui_.next->setText(index == pages_.size() - 1 ? tr("Finish") : tr("Next >"));
-  if(index == pages_.size() - 1)
-    qDebug() << "CreateUser::setCurrentPage: " << VaultType();
+  if (index == pages_.size() - 1) {
+    qDebug() << "CreateUser::setCurrentPage VaultType: " << VaultType();
+    qDebug() << "CreateUser::setCurrentPage SpaceOffered: " << SpaceOffered();
+    qDebug() << "CreateUser::setCurrentPage PortChosen: " << PortChosen();
+    qDebug() << "CreateUser::setCurrentPage DirectoryChosen: "
+             << DirectoryChosen();
+  }
 }
 
 void CreateUser::onCompleteChanged() {
@@ -128,3 +150,14 @@ int CreateUser::VaultType() {
   return vault_type_;
 }
 
+QString CreateUser::SpaceOffered() const {
+  return space_;
+}
+
+QString CreateUser::PortChosen() const {
+  return port_;
+}
+
+QString CreateUser::DirectoryChosen() const {
+  return directory_;
+}

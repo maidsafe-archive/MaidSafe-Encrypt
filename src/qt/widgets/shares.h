@@ -12,16 +12,16 @@
  *      Author: Team
  */
 
-#ifndef QT_SHARES_H_
-#define QT_SHARES_H_
+#ifndef QT_WIDGETS_SHARES_H_
+#define QT_WIDGETS_SHARES_H_
 
 // local
-#include "panel.h"
+#include "qt/widgets/panel.h"
 
 // generated
 #include "ui_user_shares_panel.h"
 
-//! Custom widget that displays shares
+// Custom widget that displays shares
 /*!
     Displays a list of current shares and lets you create new ones.
 
@@ -29,31 +29,30 @@
     TODO - distinguish types of shares, who's in the share
     TODO - modify existing shares.
 */
-class Shares : public Panel
-{
-    Q_OBJECT
-public:
-    Shares( QWidget* parent = 0 );
-    virtual ~Shares();
+class Shares : public Panel {
+  Q_OBJECT
+ public:
+  explicit Shares(QWidget* parent = 0);
+  virtual ~Shares();
 
-    //! Panel interfaces
-    virtual void setActive( bool );
-    virtual void reset();
+  // Panel interfaces
+  virtual void setActive(bool b);
+  virtual void reset();
 
-private slots:
+  private slots:
     void onCreateShareClicked();
-    void onItemDoubleClicked( QListWidgetItem* );
-    void onAddedPrivateShare( const QString &name );
+    void onItemDoubleClicked(QListWidgetItem* item);
+    void onAddedPrivateShare(const QString &name);
 
-private:
-    //! Initialize the display of a user's shares
-    void init();
+ private:
+  // Initialize the display of a user's shares
+  void init();
 
-    //! Put a new entry in the list of shares
-    void addShare( const QString& shareName );
+  // Put a new entry in the list of shares
+  void addShare(const QString& shareName);
 
-    Ui::SharesPage ui_;
-    bool init_;
+  Ui::SharesPage ui_;
+  bool init_;
 };
 
-#endif // QT_SHARES_H_
+#endif  // QT_WIDGETS_SHARES_H_

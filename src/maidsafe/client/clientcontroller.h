@@ -54,6 +54,14 @@ class CC_CallbackResult {
   std::string result;
 };
 
+struct VaultConfigParameters {
+  VaultConfigParameters() : vault_type(0), space(0), port(0), directory() {}
+  int vault_type;
+  boost::uint32_t space;
+  boost::uint32_t port;
+  std::string directory;
+};
+
 class ClientController {
  public:
   static ClientController *getInstance();
@@ -75,7 +83,7 @@ class ClientController {
   bool CreateUser(const std::string &username,
                   const std::string &pin,
                   const std::string &password,
-                  const int &vt);
+                  const VaultConfigParameters &vcp);
   int SetVaultConfig(const std::string &pmid_public,
                      const std::string &pmid_private);
   bool ValidateUser(const std::string &password);
@@ -125,12 +133,14 @@ class ClientController {
                      const std::set<std::string> &readonlys);
 
   // Vault operations
-  bool PollVaultInfo(std::string *chunkstore, boost::uint64_t* offered_space,
-                     boost::uint64_t* free_space);
+  bool PollVaultInfo(std::string *chunkstore, boost::uint64_t *offered_space,
+                     boost::uint64_t *free_space, std::string *ip,
+                     boost::uint32_t *port);
   bool VaultContactInfo();
   OwnVaultResult OwnLocalVault(const boost::uint32_t &port, const
       boost::uint64_t &space, const std::string &chunkstore_dir) const;
-  VaultStatus LocalVaultStatus() const;
+  bool IsLocalVaultOwned();
+
 
   // FUSE based stuff here
   bool ReadOnly(const std::string &path, bool gui);
@@ -202,6 +212,7 @@ class ClientController {
   bool ClearStaleMessages();
   void OwnLocalVault_Callback(const OwnVaultResult &result, const
       std::string &pmid_name, bool *callback_arrived, OwnVaultResult *res);
+  VaultStatus LocalVaultStatus() const;
   void LocalVaultStatus_Callback(const VaultStatus &result,
       bool *callback_arrived, VaultStatus *res);
 

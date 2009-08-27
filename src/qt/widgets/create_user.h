@@ -51,6 +51,9 @@ class CreateUser : public QWidget {
   // Reset the wizard in preparation for use
   void reset();
   int VaultType();
+  QString SpaceOffered() const;
+  QString PortChosen() const;
+  QString DirectoryChosen() const;
 
   signals:
     // Process is complete
@@ -68,8 +71,11 @@ class CreateUser : public QWidget {
   Ui::CreateScreen ui_;
   QList<QWizardPage*> pages_;
   int vault_type_;
+  QString space_;
+  QString port_;
+  QString directory_;
 
-  // ! Switches to the page at given index
+  // Switches to the page at given index
   /*!
       Updates buttons, titles and cleanrs pages if going backwards.
 

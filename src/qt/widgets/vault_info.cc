@@ -39,16 +39,21 @@ void VaultInfo::setActive(bool b) {
     QString chunkstore;
     boost::uint64_t offered_space;
     boost::uint64_t free_space;
+    QString ip;
+    boost::uint32_t port;
     bool res = ClientController::instance()->PollVaultInfo(&chunkstore,
-               &offered_space, &free_space);
+               &offered_space, &free_space, &ip, &port);
     if (res) {
       std::string offered(base::itos_ull(offered_space));
       std::string free(base::itos_ull(free_space));
       std::string used(base::itos_ull(offered_space - free_space));
+      std::string s_port(base::itos_ul(port));
       ui_.lcdOffered->display(QString::fromStdString(offered));
       ui_.lcdFree->display(QString::fromStdString(free));
       ui_.lcdUsed->display(QString::fromStdString(used));
       ui_.labelStoringDirectory->setText(chunkstore);
+      ui_.labelIP->setText(ip);
+      ui_.labelPort->setText(QString::fromStdString(s_port));
       if ((offered_space * 0.1) < free_space) {
         ui_.labelVaultStatusMessage->setText(tr("<font color=green>Vault is "
                                              "feeling goooood =)</font>"));
@@ -84,16 +89,21 @@ void VaultInfo::onUpdateVaultInfo() {
   QString chunkstore;
   boost::uint64_t offered_space;
   boost::uint64_t free_space;
+  QString ip;
+  boost::uint32_t port;
   bool b = ClientController::instance()->PollVaultInfo(&chunkstore,
-         &offered_space, &free_space);
+         &offered_space, &free_space, &ip, &port);
   if (b) {
     std::string offered(base::itos_ull(offered_space));
     std::string free(base::itos_ull(free_space));
     std::string used(base::itos_ull(offered_space - free_space));
+    std::string s_port(base::itos_ul(port));
     ui_.lcdOffered->display(QString::fromStdString(offered));
     ui_.lcdFree->display(QString::fromStdString(free));
     ui_.lcdUsed->display(QString::fromStdString(used));
     ui_.labelStoringDirectory->setText(chunkstore);
+    ui_.labelIP->setText(ip);
+    ui_.labelPort->setText(QString::fromStdString(s_port));
     if ((offered_space * 0.1) < free_space) {
       ui_.labelVaultStatusMessage->setText(tr("<font color=green>Vault is "
                                            "feeling goooood =)</font>"));

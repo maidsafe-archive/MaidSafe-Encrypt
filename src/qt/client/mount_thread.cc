@@ -13,44 +13,33 @@
  *      Author: Team
  */
 
-#include "mount_thread.h"
+#include "qt/client/mount_thread.h"
 
 // qt
 #include <QDebug>
 
 // local
-#include "user_space_filesystem.h"
+#include "qt/client/user_space_filesystem.h"
 
 
-MountThread::MountThread( MountAction action, QObject* parent )
-    : WorkerThread( parent )
-    , action_ ( action )
-{
+MountThread::MountThread(MountAction action, QObject* parent)
+    : WorkerThread(parent), action_(action) { }
 
-}
+MountThread::~MountThread() { }
 
-MountThread::~MountThread()
-{
+void MountThread::run() {
+  qDebug() << "MountThread::run";
 
-}
+  bool success = false;
+  if (action_ == MOUNT) {
+    success = UserSpaceFileSystem::instance()->mount();
+  } else {
+    success = UserSpaceFileSystem::instance()->unmount();
+  }
 
-void MountThread::run()
-{
-    qDebug() << "MountThread::run";
+  emit completed(success);
 
-    bool success = false;
-    if ( action_ == MOUNT )
-    {
-        success = UserSpaceFileSystem::instance()->mount();
-    }
-    else
-    {
-        success = UserSpaceFileSystem::instance()->unmount();
-    }
-
-    emit completed( success );
-    
-    deleteLater();
+  deleteLater();
 }
 
 

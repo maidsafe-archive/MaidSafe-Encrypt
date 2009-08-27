@@ -12,20 +12,17 @@
  *      Author: Team
  */
 
-#include "create_page_welcome.h"
+#include "qt/widgets/create_page_welcome.h"
 
 // qt
 #include <QDebug>
 
 
-CreateWelcomePage::CreateWelcomePage( QWidget* parent )
-    : QWizardPage( parent )
-{
-    ui_.setupUi( this );
-
-    setTitle( tr( "Create user" ) );
+CreateWelcomePage::CreateWelcomePage(QWidget* parent)
+    : QWizardPage(parent) {
+  ui_.setupUi(this);
+  setTitle(tr("Create user"));
 }
 
-CreateWelcomePage::~CreateWelcomePage()
-{}
+CreateWelcomePage::~CreateWelcomePage() {}
 

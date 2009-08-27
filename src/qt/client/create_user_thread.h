@@ -32,6 +32,9 @@ class CreateUserThread : public WorkerThread {
                    const QString& pin,
                    const QString& password,
                    const int& vault_type,
+                   const QString& space,
+                   const QString& port,
+                   const QString& directory,
                    QObject* parent = 0);
   virtual ~CreateUserThread();
 
@@ -40,6 +43,9 @@ class CreateUserThread : public WorkerThread {
  private:
   QString username_, pin_, password_;
   int vault_type_;
+  QString space_;
+  QString port_;
+  QString directory_;
 };
 
 #endif  // QT_CLIENT_CREATE_USER_THREAD_H_

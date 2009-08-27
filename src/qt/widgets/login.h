@@ -12,19 +12,19 @@
  *      Author: Team
  */
 
-#ifndef QT_LOGIN_H_
-#define QT_LOGIN_H_
-
-// std
-#include <string>
+#ifndef QT_WIDGETS_LOGIN_H_
+#define QT_WIDGETS_LOGIN_H_
 
 // qt
 #include <QWidget>
 
+// std
+#include <string>
+
 // generated
 #include "ui_login.h"
 
-//! Main Login screen for Perpetual Data
+// Main Login screen for Perpetual Data
 /*!
     Has fields for:
 
@@ -38,45 +38,44 @@
     As usernames and pins are entered we will check to see if they
     are new or existing users.
 */
-class Login : public QWidget
-{
-    Q_OBJECT
+class Login : public QWidget {
+  Q_OBJECT
 
-public:
-    Login( QWidget* parent = 0 );
-    virtual ~Login();
+ public:
+  explicit Login(QWidget* parent = 0);
+  virtual ~Login();
 
-    QString username() const;
-    QString pin() const;
-    QString password() const;
+  QString username() const;
+  QString pin() const;
+  QString password() const;
 
-    void clearFields() { reset(); }
+  void clearFields() { reset(); }
 
-protected:
-    //! handle custom events (for thread safe ui updates)
-    virtual bool event( QEvent* event );
-    //! custom tab focus behaviour lets us advance to disabled widgets
-    /*!
-        can tab forward from username and pin
-        can tab bcakwards from pin and password.
-    */
-    virtual bool focusNextPrevChild( bool next );
+ protected:
+  // handle custom events (for thread safe ui updates)
+  virtual bool event(QEvent* event);
+  // custom tab focus behaviour lets us advance to disabled widgets
+  /*!
+      can tab forward from username and pin
+      can tab bcakwards from pin and password.
+  */
+  virtual bool focusNextPrevChild(bool next);
 
-signals:
-    //! Details of an existing user have been entered and 'Login' clicked
+  signals:
+    // Details of an existing user have been entered and 'Login' clicked
     /*!
         emitted when a valid username, pin and verified password have been
         correctly entered
     */
     void existingUser();
 
-    //! Details of a new user have been entered and 'Create' clicked.
+    // Details of a new user have been entered and 'Create' clicked.
     void newUser();
 
-private slots:
-    void onUsernameEdited( const QString& text );
-    void onPinEdited( const QString& text );
-    void onPasswordEdited( const QString& text );
+  private slots:
+    void onUsernameEdited(const QString& text);
+    void onPinEdited(const QString& text);
+    void onPasswordEdited(const QString& text);
 
     void onUsernameDone();
     void onPinDone();
@@ -86,34 +85,34 @@ private slots:
     void onCreateClicked();
     void onLoginClicked();
 
-private:
+  private:
     Ui::LoginScreen ui_;
 
-    //! Clear all fields, puts focus back to username
+    // Clear all fields, puts focus back to username
     void reset();
 
-    //! Update field enabled ness as usernames and pins are changed
+    // Update field enabled ness as usernames and pins are changed
     void updateUI();
 
-    //! valid/known combination of username and pin
+    // valid/known combination of username and pin
     bool got_enc_data_;
-    //! waiting on the username/pin check
+    // waiting on the username/pin check
     bool waiting_on_callback_;
-    //! user exists
+    // user exists
     bool user_exists_;
 
     void checkPin();
-    void UserExists_Callback( const std::string& result );
+    void UserExists_Callback(const std::string& result);
 
     typedef enum State {
-        EDIT_USER,
-        EDIT_PIN,
-        WAITING_ON_USER_CHECK,
-        EDIT_PASSWORD
+      EDIT_USER,
+      EDIT_PIN,
+      WAITING_ON_USER_CHECK,
+      EDIT_PASSWORD
     };
 
     State state_;
 };
 
-#endif // QT_LOGIN_H_
+#endif  // QT_WIDGETS_LOGIN_H_
 

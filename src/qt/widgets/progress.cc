@@ -12,52 +12,44 @@
  *      Author: Team
  */
 
-#include "progress.h"
+#include "qt/widgets/progress.h"
 
 // qt
 #include <QDebug>
 
 
-Progress::Progress( QWidget* parent )
-    : QWidget( parent )
-{
-    ui_.setupUi( this );
+Progress::Progress(QWidget* parent) : QWidget(parent) {
+  ui_.setupUi(this);
 
-    connect( ui_.ok, SIGNAL( clicked( bool ) ),
-             this,   SIGNAL( ok() ) );
+  connect(ui_.ok, SIGNAL(clicked(bool)),
+          this,   SIGNAL(ok()));
 
-    connect( ui_.cancel, SIGNAL( clicked( bool ) ),
-             this,       SIGNAL( cancel() ) );
+  connect(ui_.cancel, SIGNAL(clicked(bool)),
+          this,       SIGNAL(cancel()));
 }
 
-Progress::~Progress()
-{}
+Progress::~Progress() {}
 
-void Progress::setTitle( const QString& msg )
-{
-    ui_.title->setText( msg );
+void Progress::setTitle(const QString& msg) {
+  ui_.title->setText(msg);
 }
 
-void Progress::setMessage( const QString& msg )
-{
-    ui_.progress_label->setText( msg );
+void Progress::setMessage(const QString& msg) {
+  ui_.progress_label->setText(msg);
 }
 
-void Progress::setProgressMessage( const QString& msg )
-{
-    ui_.progress_label->setText( msg );
+void Progress::setProgressMessage(const QString& msg) {
+  ui_.progress_label->setText(msg);
 }
 
-void Progress::setError( bool error )
-{
-    ui_.ok->setVisible( error );
-    ui_.cancel->setVisible( !error );
-    ui_.progress_bar->setVisible( !error );
+void Progress::setError(bool error) {
+  ui_.ok->setVisible(error);
+  ui_.cancel->setVisible(!error);
+  ui_.progress_bar->setVisible(!error);
 }
 
-void Progress::setCanCancel( bool cancancel )
-{
-    ui_.cancel->setEnabled( cancancel );
+void Progress::setCanCancel(bool cancancel) {
+  ui_.cancel->setEnabled(cancancel);
 }
 
 

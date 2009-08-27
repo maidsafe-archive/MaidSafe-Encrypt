@@ -3484,10 +3484,27 @@ class VaultCommunication : public ::google::protobuf::Message {
   inline ::google::protobuf::uint64 free_space() const;
   inline void set_free_space(::google::protobuf::uint64 value);
   
-  // required uint32 timestamp = 4;
+  // optional bytes ip = 4;
+  inline bool has_ip() const;
+  inline void clear_ip();
+  static const int kIpFieldNumber = 4;
+  inline const ::std::string& ip() const;
+  inline void set_ip(const ::std::string& value);
+  inline void set_ip(const char* value);
+  inline void set_ip(const void* value, size_t size);
+  inline ::std::string* mutable_ip();
+  
+  // optional uint32 port = 5;
+  inline bool has_port() const;
+  inline void clear_port();
+  static const int kPortFieldNumber = 5;
+  inline ::google::protobuf::uint32 port() const;
+  inline void set_port(::google::protobuf::uint32 value);
+  
+  // required uint32 timestamp = 6;
   inline bool has_timestamp() const;
   inline void clear_timestamp();
-  static const int kTimestampFieldNumber = 4;
+  static const int kTimestampFieldNumber = 6;
   inline ::google::protobuf::uint32 timestamp() const;
   inline void set_timestamp(::google::protobuf::uint32 value);
   
@@ -3499,11 +3516,14 @@ class VaultCommunication : public ::google::protobuf::Message {
   static const ::std::string _default_chunkstore_;
   ::google::protobuf::uint64 offered_space_;
   ::google::protobuf::uint64 free_space_;
+  ::std::string* ip_;
+  static const ::std::string _default_ip_;
+  ::google::protobuf::uint32 port_;
   ::google::protobuf::uint32 timestamp_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -8045,19 +8065,77 @@ inline void VaultCommunication::set_free_space(::google::protobuf::uint64 value)
   free_space_ = value;
 }
 
-// required uint32 timestamp = 4;
-inline bool VaultCommunication::has_timestamp() const {
+// optional bytes ip = 4;
+inline bool VaultCommunication::has_ip() const {
   return _has_bit(3);
+}
+inline void VaultCommunication::clear_ip() {
+  if (ip_ != &_default_ip_) {
+    ip_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& VaultCommunication::ip() const {
+  return *ip_;
+}
+inline void VaultCommunication::set_ip(const ::std::string& value) {
+  _set_bit(3);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(value);
+}
+inline void VaultCommunication::set_ip(const char* value) {
+  _set_bit(3);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(value);
+}
+inline void VaultCommunication::set_ip(const void* value, size_t size) {
+  _set_bit(3);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* VaultCommunication::mutable_ip() {
+  _set_bit(3);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  return ip_;
+}
+
+// optional uint32 port = 5;
+inline bool VaultCommunication::has_port() const {
+  return _has_bit(4);
+}
+inline void VaultCommunication::clear_port() {
+  port_ = 0u;
+  _clear_bit(4);
+}
+inline ::google::protobuf::uint32 VaultCommunication::port() const {
+  return port_;
+}
+inline void VaultCommunication::set_port(::google::protobuf::uint32 value) {
+  _set_bit(4);
+  port_ = value;
+}
+
+// required uint32 timestamp = 6;
+inline bool VaultCommunication::has_timestamp() const {
+  return _has_bit(5);
 }
 inline void VaultCommunication::clear_timestamp() {
   timestamp_ = 0u;
-  _clear_bit(3);
+  _clear_bit(5);
 }
 inline ::google::protobuf::uint32 VaultCommunication::timestamp() const {
   return timestamp_;
 }
 inline void VaultCommunication::set_timestamp(::google::protobuf::uint32 value) {
-  _set_bit(3);
+  _set_bit(5);
   timestamp_ = value;
 }
 

@@ -231,7 +231,7 @@ ContactList ClientController::contacts() const {
   for (unsigned int i = 0; i < contact_list.size(); ++i) {
     // accessors on maidsafe::Contact are non-const so can't pass in const&
     /*const*/ maidsafe::Contact mcontact = contact_list[i];
-    Contact* contact = Contact::fromContact(mcontact);
+    Contact* contact = Contact::fromContact(&mcontact);
     if (mcontact.Confirmed() == 'U')
       contact->setPresence(Presence::INVALID);
     else
@@ -319,19 +319,32 @@ bool ClientController::sendInstantFile(const QString& filePath,
   return (n == 0);
 }
 
-bool ClientController::PollVaultInfo(QString* chunkstore,
-                                     boost::uint64_t* offered_space,
-                                     boost::uint64_t* free_space) {
+bool ClientController::PollVaultInfo(QString *chunkstore,
+                                     boost::uint64_t *offered_space,
+                                     boost::uint64_t *free_space,
+                                     QString *ip,
+                                     boost::uint32_t *port) {
   std::string s_chunkstore;
+  std::string s_ip;
   bool b = maidsafe::ClientController::getInstance()->PollVaultInfo(
-           &s_chunkstore, offered_space, free_space);
+           &s_chunkstore, offered_space, free_space, &s_ip, port);
   if (b) {
     *chunkstore = QString::fromStdString(s_chunkstore);
+    *ip = QString::fromStdString(s_ip);
     return true;
   }
 
   return false;
 }
+
+bool ClientController::IsLocalVaultOwned() {
+  // For local version returns always false. Use the return true to check for
+  // other behaviour.
+
+  //  return true;
+  return maidsafe::ClientController::getInstance()->IsLocalVaultOwned();
+}
+
 
 void ClientController::messageReceived(const std::string& from,
                                        const std::string& msg) { }

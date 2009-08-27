@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CREATE_WELCOME_H_
-#define QT_CREATE_WELCOME_H_
+#ifndef QT_WIDGETS_CREATE_PAGE_WELCOME_H_
+#define QT_WIDGETS_CREATE_PAGE_WELCOME_H_
 
 // qt
 #include <QWizardPage>
@@ -23,17 +23,16 @@
 
 class QWizardPage;
 
-class CreateWelcomePage : public QWizardPage
-{
-    Q_OBJECT
+class CreateWelcomePage : public QWizardPage {
+  Q_OBJECT
 
-public:
-    CreateWelcomePage( QWidget* parent = 0 );
-    virtual ~CreateWelcomePage();
+ public:
+  explicit CreateWelcomePage(QWidget* parent = 0);
+  virtual ~CreateWelcomePage();
 
-private:
-    Ui::welcome ui_;
+ private:
+  Ui::welcome ui_;
 };
 
-#endif // QT_CREATE_WELCOME_H_
+#endif  // QT_WIDGETS_CREATE_PAGE_WELCOME_H_
 

@@ -16,64 +16,57 @@
 #include <QApplication>
 
 // local
-#include "perpetual_data.h"
+#include "qt/perpetual_data.h"
 #include "widgets/system_tray_icon.h"
 #include "client/client_controller.h"
 
-void pdMessageOutput( QtMsgType type, const char* msg )
- {
-     switch (type)
-     {
-     case QtDebugMsg:
-         printf("Debug: %s\n", msg );
-         break;
-     case QtWarningMsg:
-         printf( "Warning: %s\n", msg );
-         break;
-     case QtCriticalMsg:
-         printf( "Critical: %s\n", msg );
-         break;
-     case QtFatalMsg:
-         printf( "Fatal: %s\n", msg );
-         abort();
-     }
- }
+void pdMessageOutput(QtMsgType type, const char* msg) {
+  switch (type) {
+    case QtDebugMsg:    printf("Debug: %s\n", msg);
+                        break;
+    case QtWarningMsg:  printf("Warning: %s\n", msg);
+                        break;
+    case QtCriticalMsg: printf("Critical: %s\n", msg);
+                        break;
+    case QtFatalMsg:    printf("Fatal: %s\n", msg);
+                        abort();
+  }
+}
 
-int main( int argc, char *argv[] )
-{
-    qInstallMsgHandler( pdMessageOutput );
+int main(int argc, char *argv[]) {
+  qInstallMsgHandler(pdMessageOutput);
 
-    QApplication app(argc, argv);
-    app.setOrganizationDomain( "maidsafe.net" );
-    app.setOrganizationName( "MaidSafe" );
-    app.setApplicationName( "Perpetual Data" );
-    app.setApplicationVersion( "0.1" );
+  QApplication app(argc, argv);
+  app.setOrganizationDomain("maidsafe.net");
+  app.setOrganizationName("MaidSafe");
+  app.setApplicationName("Perpetual Data");
+  app.setApplicationVersion("0.1");
 
-    SystemTrayIcon::instance()->show();
+  SystemTrayIcon::instance()->show();
 
-    // initialise client controller
-    ClientController::instance();
+  // initialise client controller
+  ClientController::instance();
 
-    // the main application window
-    PerpetualData pd;
-    pd.show();
+  // the main application window
+  PerpetualData pd;
+  pd.show();
 
-    // keep the application running in the tray when the window is closed
-    app.setQuitOnLastWindowClosed( false );
+  // keep the application running in the tray when the window is closed
+  app.setQuitOnLastWindowClosed(false);
 
-    QObject::connect( SystemTrayIcon::instance(), SIGNAL( quit() ),
-                      &pd,                        SLOT(   quit() ) );
-    QObject::connect( SystemTrayIcon::instance(), SIGNAL( open() ),
-                      &pd,                        SLOT(   show() ) );
-    QObject::connect( SystemTrayIcon::instance(), SIGNAL( close() ),
-                      &pd,                        SLOT(   hide() ) );
+  QObject::connect(SystemTrayIcon::instance(), SIGNAL(quit()),
+                   &pd,                        SLOT(quit()));
+  QObject::connect(SystemTrayIcon::instance(), SIGNAL(open()),
+                   &pd,                        SLOT(show()));
+  QObject::connect(SystemTrayIcon::instance(), SIGNAL(close()),
+                   &pd,                        SLOT(hide()));
 
-    int rv = app.exec();
+  int rv = app.exec();
 
-    // finalize client controller
-    ClientController::instance()->shutdown();
+  // finalize client controller
+  ClientController::instance()->shutdown();
 
-    SystemTrayIcon::instance()->hide();
+  SystemTrayIcon::instance()->hide();
 
-    return rv;
+  return rv;
 }

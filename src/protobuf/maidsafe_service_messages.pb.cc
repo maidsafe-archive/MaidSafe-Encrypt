@@ -609,10 +609,12 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SwapChunkResponse));
   VaultCommunication_descriptor_ = file->message_type(27);
-  static const int VaultCommunication_offsets_[4] = {
+  static const int VaultCommunication_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultCommunication, chunkstore_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultCommunication, offered_space_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultCommunication, free_space_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultCommunication, ip_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultCommunication, port_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultCommunication, timestamp_),
   };
   VaultCommunication_reflection_ =
@@ -952,28 +954,28 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
     "\002 \002(\r\022\022\n\nchunkname1\030\003 \001(\014\022\025\n\rchunkconten"
     "t1\030\004 \001(\014\022\r\n\005size1\030\005 \001(\005\022\022\n\nchunkname2\030\006 "
     "\001(\014\022\025\n\rchunkcontent2\030\007 \001(\014\022\r\n\005size2\030\010 \001("
-    "\005\022\017\n\007pmid_id\030\t \002(\014\"f\n\022VaultCommunication"
-    "\022\022\n\nchunkstore\030\001 \001(\014\022\025\n\roffered_space\030\002 "
-    "\001(\004\022\022\n\nfree_space\030\003 \001(\004\022\021\n\ttimestamp\030\004 \002"
-    "(\r\"/\n\022VaultStatusRequest\022\031\n\021encrypted_re"
-    "quest\030\001 \002(\014\"A\n\023VaultStatusResponse\022\016\n\006re"
-    "sult\030\001 \002(\r\022\032\n\022encrypted_response\030\002 \001(\014\"\212"
-    "\001\n\017OwnVaultRequest\022\022\n\npublic_key\030\001 \002(\014\022\023"
-    "\n\013private_key\030\002 \002(\014\022\031\n\021signed_public_key"
-    "\030\003 \002(\014\022\026\n\016chunkstore_dir\030\004 \002(\014\022\014\n\004port\030\005"
-    " \002(\r\022\r\n\005space\030\006 \002(\004\"O\n\020OwnVaultResponse\022"
-    "(\n\006result\030\001 \002(\0162\030.maidsafe.OwnVaultResul"
-    "t\022\021\n\tpmid_name\030\002 \001(\014\"\020\n\016IsOwnedRequest\"8"
-    "\n\017IsOwnedResponse\022%\n\006status\030\001 \002(\0162\025.maid"
-    "safe.VaultStatus*\357\001\n\016OwnVaultResult\022\021\n\rO"
-    "WNED_SUCCESS\020\000\022\027\n\023VAULT_ALREADY_OWNED\020\001\022"
-    "\021\n\rVAULT_IS_DOWN\020\002\022\024\n\020INVALID_RSA_KEYS\020\003"
-    "\022\024\n\020NOT_ENOUGH_SPACE\020\004\022\026\n\022NO_SPACE_ALLOC"
-    "ATED\020\005\022\020\n\014INVALID_PORT\020\006\022\031\n\025FAILED_TO_ST"
-    "ART_VAULT\020\007\022\026\n\022INVALID_OWNREQUEST\020\010\022\025\n\021I"
-    "NVALID_PMID_NAME\020\t*I\n\013VaultStatus\022\r\n\tNOT"
-    "_OWNED\020\000\022\t\n\005OWNED\020\001\022\010\n\004DOWN\020\002\022\026\n\022ISOWNRP"
-    "C_CANCELLED\020\003", 3493);
+    "\005\022\017\n\007pmid_id\030\t \002(\014\"\200\001\n\022VaultCommunicatio"
+    "n\022\022\n\nchunkstore\030\001 \001(\014\022\025\n\roffered_space\030\002"
+    " \001(\004\022\022\n\nfree_space\030\003 \001(\004\022\n\n\002ip\030\004 \001(\014\022\014\n\004"
+    "port\030\005 \001(\r\022\021\n\ttimestamp\030\006 \002(\r\"/\n\022VaultSt"
+    "atusRequest\022\031\n\021encrypted_request\030\001 \002(\014\"A"
+    "\n\023VaultStatusResponse\022\016\n\006result\030\001 \002(\r\022\032\n"
+    "\022encrypted_response\030\002 \001(\014\"\212\001\n\017OwnVaultRe"
+    "quest\022\022\n\npublic_key\030\001 \002(\014\022\023\n\013private_key"
+    "\030\002 \002(\014\022\031\n\021signed_public_key\030\003 \002(\014\022\026\n\016chu"
+    "nkstore_dir\030\004 \002(\014\022\014\n\004port\030\005 \002(\r\022\r\n\005space"
+    "\030\006 \002(\004\"O\n\020OwnVaultResponse\022(\n\006result\030\001 \002"
+    "(\0162\030.maidsafe.OwnVaultResult\022\021\n\tpmid_nam"
+    "e\030\002 \001(\014\"\020\n\016IsOwnedRequest\"8\n\017IsOwnedResp"
+    "onse\022%\n\006status\030\001 \002(\0162\025.maidsafe.VaultSta"
+    "tus*\357\001\n\016OwnVaultResult\022\021\n\rOWNED_SUCCESS\020"
+    "\000\022\027\n\023VAULT_ALREADY_OWNED\020\001\022\021\n\rVAULT_IS_D"
+    "OWN\020\002\022\024\n\020INVALID_RSA_KEYS\020\003\022\024\n\020NOT_ENOUG"
+    "H_SPACE\020\004\022\026\n\022NO_SPACE_ALLOCATED\020\005\022\020\n\014INV"
+    "ALID_PORT\020\006\022\031\n\025FAILED_TO_START_VAULT\020\007\022\026"
+    "\n\022INVALID_OWNREQUEST\020\010\022\025\n\021INVALID_PMID_N"
+    "AME\020\t*I\n\013VaultStatus\022\r\n\tNOT_OWNED\020\000\022\t\n\005O"
+    "WNED\020\001\022\010\n\004DOWN\020\002\022\026\n\022ISOWNRPC_CANCELLED\020\003", 3520);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service_messages.proto", &protobuf_RegisterTypes);
   IOUAuthority::default_instance_ = new IOUAuthority();
@@ -10285,10 +10287,13 @@ const ::google::protobuf::Reflection* SwapChunkResponse::GetReflection() const {
 // ===================================================================
 
 const ::std::string VaultCommunication::_default_chunkstore_;
+const ::std::string VaultCommunication::_default_ip_;
 #ifndef _MSC_VER
 const int VaultCommunication::kChunkstoreFieldNumber;
 const int VaultCommunication::kOfferedSpaceFieldNumber;
 const int VaultCommunication::kFreeSpaceFieldNumber;
+const int VaultCommunication::kIpFieldNumber;
+const int VaultCommunication::kPortFieldNumber;
 const int VaultCommunication::kTimestampFieldNumber;
 #endif  // !_MSC_VER
 
@@ -10299,6 +10304,8 @@ VaultCommunication::VaultCommunication()
     chunkstore_(const_cast< ::std::string*>(&_default_chunkstore_)),
     offered_space_(GOOGLE_ULONGLONG(0)),
     free_space_(GOOGLE_ULONGLONG(0)),
+    ip_(const_cast< ::std::string*>(&_default_ip_)),
+    port_(0u),
     timestamp_(0u) {
   SharedCtor();
 }
@@ -10312,6 +10319,8 @@ VaultCommunication::VaultCommunication(const VaultCommunication& from)
     chunkstore_(const_cast< ::std::string*>(&_default_chunkstore_)),
     offered_space_(GOOGLE_ULONGLONG(0)),
     free_space_(GOOGLE_ULONGLONG(0)),
+    ip_(const_cast< ::std::string*>(&_default_ip_)),
+    port_(0u),
     timestamp_(0u) {
   SharedCtor();
   MergeFrom(from);
@@ -10322,6 +10331,8 @@ void VaultCommunication::SharedCtor() {
   chunkstore_ = const_cast< ::std::string*>(&_default_chunkstore_);
   offered_space_ = GOOGLE_ULONGLONG(0);
   free_space_ = GOOGLE_ULONGLONG(0);
+  ip_ = const_cast< ::std::string*>(&_default_ip_);
+  port_ = 0u;
   timestamp_ = 0u;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -10333,6 +10344,9 @@ VaultCommunication::~VaultCommunication() {
 void VaultCommunication::SharedDtor() {
   if (chunkstore_ != &_default_chunkstore_) {
     delete chunkstore_;
+  }
+  if (ip_ != &_default_ip_) {
+    delete ip_;
   }
   if (this != default_instance_) {
   }
@@ -10362,6 +10376,12 @@ void VaultCommunication::Clear() {
     }
     offered_space_ = GOOGLE_ULONGLONG(0);
     free_space_ = GOOGLE_ULONGLONG(0);
+    if (_has_bit(3)) {
+      if (ip_ != &_default_ip_) {
+        ip_->clear();
+      }
+    }
+    port_ = 0u;
     timestamp_ = 0u;
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -10409,12 +10429,38 @@ bool VaultCommunication::MergePartialFromCodedStream(
         DO_(::google::protobuf::internal::WireFormat::ReadUInt64(
               input, &free_space_));
         _set_bit(2);
-        if (input->ExpectTag(32)) goto parse_timestamp;
+        if (input->ExpectTag(34)) goto parse_ip;
         break;
       }
       
-      // required uint32 timestamp = 4;
+      // optional bytes ip = 4;
       case 4: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_ip:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_ip()));
+        if (input->ExpectTag(40)) goto parse_port;
+        break;
+      }
+      
+      // optional uint32 port = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_port:
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &port_));
+        _set_bit(4);
+        if (input->ExpectTag(48)) goto parse_timestamp;
+        break;
+      }
+      
+      // required uint32 timestamp = 6;
+      case 6: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
@@ -10422,7 +10468,7 @@ bool VaultCommunication::MergePartialFromCodedStream(
        parse_timestamp:
         DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
               input, &timestamp_));
-        _set_bit(3);
+        _set_bit(5);
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -10466,9 +10512,19 @@ void VaultCommunication::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteUInt64(3, this->free_space(), output);
   }
   
-  // required uint32 timestamp = 4;
+  // optional bytes ip = 4;
   if (_has_bit(3)) {
-    ::google::protobuf::internal::WireFormat::WriteUInt32(4, this->timestamp(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->ip(), output);
+  }
+  
+  // optional uint32 port = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::WriteUInt32(5, this->port(), output);
+  }
+  
+  // required uint32 timestamp = 6;
+  if (_has_bit(5)) {
+    ::google::protobuf::internal::WireFormat::WriteUInt32(6, this->timestamp(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -10494,9 +10550,19 @@ void VaultCommunication::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteUInt64ToArray(3, this->free_space(), target);
   }
   
-  // required uint32 timestamp = 4;
+  // optional bytes ip = 4;
   if (_has_bit(3)) {
-    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(4, this->timestamp(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->ip(), target);
+  }
+  
+  // optional uint32 port = 5;
+  if (_has_bit(4)) {
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(5, this->port(), target);
+  }
+  
+  // required uint32 timestamp = 6;
+  if (_has_bit(5)) {
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(6, this->timestamp(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -10530,7 +10596,20 @@ int VaultCommunication::ByteSize() const {
           this->free_space());
     }
     
-    // required uint32 timestamp = 4;
+    // optional bytes ip = 4;
+    if (has_ip()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->ip());
+    }
+    
+    // optional uint32 port = 5;
+    if (has_port()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->port());
+    }
+    
+    // required uint32 timestamp = 6;
     if (has_timestamp()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::UInt32Size(
@@ -10572,6 +10651,12 @@ void VaultCommunication::MergeFrom(const VaultCommunication& from) {
       set_free_space(from.free_space());
     }
     if (from._has_bit(3)) {
+      set_ip(from.ip());
+    }
+    if (from._has_bit(4)) {
+      set_port(from.port());
+    }
+    if (from._has_bit(5)) {
       set_timestamp(from.timestamp());
     }
   }
@@ -10595,6 +10680,8 @@ void VaultCommunication::Swap(VaultCommunication* other) {
     std::swap(chunkstore_, other->chunkstore_);
     std::swap(offered_space_, other->offered_space_);
     std::swap(free_space_, other->free_space_);
+    std::swap(ip_, other->ip_);
+    std::swap(port_, other->port_);
     std::swap(timestamp_, other->timestamp_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
@@ -10603,7 +10690,7 @@ void VaultCommunication::Swap(VaultCommunication* other) {
 }
 
 bool VaultCommunication::IsInitialized() const {
-  if ((_has_bits_[0] & 0x00000008) != 0x00000008) return false;
+  if ((_has_bits_[0] & 0x00000020) != 0x00000020) return false;
   
   return true;
 }

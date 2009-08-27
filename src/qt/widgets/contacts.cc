@@ -229,7 +229,7 @@ void Contacts::onDeleteUserClicked() {
     return;
   }
 
-  Contact* contact_ = (Contact*)contacts.front();
+  Contact* contact_ = reinterpret_cast<Contact*>(contacts.front());
 
   if (ClientController::instance()->removeContact(contact_->publicName())) {
     QList<QListWidgetItem*> items = ui_.listWidget->findItems(

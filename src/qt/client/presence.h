@@ -15,53 +15,50 @@
 #ifndef QT_CLIENT_PRESENCE_H_
 #define QT_CLIENT_PRESENCE_H_
 
-// core
-#include "maidsafe/client/contacts.h"
-
 // qt
 #include <QString>
 
-//! Represents a Contact's online presence
+// core
+#include "maidsafe/client/contacts.h"
+
+// Represents a Contact's online presence
 /*!
     Presence is a combination of enumerated state and an
     optional message set by the contact.
 */
-class Presence
-{
-public:
-    enum State
-    {
-        INVALID,
-        AVAILABLE,
-        IDLE,
-        BUSY,
-        UNAVAILABLE
-    };
+class Presence {
+ public:
+  enum State {
+    INVALID,
+    AVAILABLE,
+    IDLE,
+    BUSY,
+    UNAVAILABLE
+  };
 
-    Presence();
-    Presence( State, QString message = QString() );
-    ~Presence();
+  Presence();
+  Presence(State, QString message = QString());
+  ~Presence();
 
-    State state() const;
+  State state() const;
 
-    //! Returns string representation of state or custom message (if set)
-    QString message() const;
+  // Returns string representation of state or custom message (if set)
+  QString message() const;
 
-    //! Returns the custom message.
-    QString customMessage() const;
+  // Returns the custom message.
+  QString customMessage() const;
 
-    bool isNull() const;
+  bool isNull() const;
 
-    bool operator==( const Presence& other ) const;
-    bool operator!=( const Presence& other ) const;
+  bool operator==(const Presence& other) const;
+  bool operator!=(const Presence& other) const;
 
+  static Presence fromContact(maidsafe::Contact *mc);
 
-    // \TODO make accessors on maidsafe::Contacts const
-    static Presence fromContact( /*const */ maidsafe::Contact& mc );
-private:
-    State state_;
-    QString message_;
+ private:
+  State state_;
+  QString message_;
 };
 
 
-#endif // QT_CLIENT_PRESENCE_H_
+#endif  // QT_CLIENT_PRESENCE_H_

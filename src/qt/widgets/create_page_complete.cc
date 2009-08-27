@@ -12,49 +12,43 @@
  *      Author: Team
  */
 
-#include "create_page_complete.h"
+#include "qt/widgets/create_page_complete.h"
 
 // qt
 #include <QDebug>
 
 
-CreateCompletePage::CreateCompletePage( QWidget* parent )
-    : QWizardPage( parent )
-{
-    ui_.setupUi( this );
+CreateCompletePage::CreateCompletePage(QWidget* parent)
+    : QWizardPage(parent) {
+  ui_.setupUi(this);
 
-    setTitle( tr( "Ready to create user" ) );
+  setTitle(tr("Ready to create user"));
 
-    cleanupPage();
+  cleanupPage();
 }
 
-CreateCompletePage::~CreateCompletePage()
-{}
+CreateCompletePage::~CreateCompletePage() {}
 
-void CreateCompletePage::showCreationProgress( bool show )
-{
-    ui_.progress_label->setVisible( show );
-    ui_.progress_bar->setVisible( show );
+void CreateCompletePage::showCreationProgress(bool show) {
+  ui_.progress_label->setVisible(show);
+  ui_.progress_bar->setVisible(show);
 }
 
-void CreateCompletePage::setMessage( const QString& msg )
-{
-    ui_.label->setText( msg );
+void CreateCompletePage::setMessage(const QString& msg) {
+  ui_.label->setText(msg);
 }
 
-void CreateCompletePage::setProgressMessage( const QString& msg )
-{
-    ui_.progress_label->setText( msg );
+void CreateCompletePage::setProgressMessage(const QString& msg) {
+  ui_.progress_label->setText(msg);
 }
 
-void CreateCompletePage::cleanupPage()
-{
-    setMessage(
-        tr( "<qt>We now have all the details required to create a new user.  "
-            "Press 'Finish' to complete the user creation process. <br/><br/>"
-            "Please note that user creation can take several minutes</qt>" ) );
+void CreateCompletePage::cleanupPage() {
+  setMessage(
+      tr("<qt>We now have all the details required to create a new user.  "
+          "Press 'Finish' to complete the user creation process. <br/><br/>"
+          "Please note that user creation can take several minutes</qt>"));
 
-    showCreationProgress( false );
+  showCreationProgress(false);
 }
 
 

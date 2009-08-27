@@ -12,26 +12,19 @@
  *      Author: Team
  */
 
-#include "profile.h"
+#include "qt/client/profile.h"
 
 // qt
 #include <QApplication>
 #include <QDebug>
 
 Profile::Profile()
-    : gender( UNSPECIFIED )
-    , language( QLocale::English )
-    , country( QLocale::AnyCountry )
-{
-}
+    : gender(UNSPECIFIED), language(QLocale::English),
+      country(QLocale::AnyCountry) { }
 
-Profile::~Profile()
-{
-}
-
+Profile::~Profile() { }
 
 // static
-Profile Profile::fromContact( /*const */ maidsafe::Contact& mc )
-{
-    return Profile();
+Profile Profile::fromContact(maidsafe::Contact *mc) {
+  return Profile();
 }

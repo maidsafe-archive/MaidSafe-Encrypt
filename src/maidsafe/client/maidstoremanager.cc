@@ -1509,6 +1509,8 @@ void MaidsafeStoreManager::PollVaultInfo(base::callback_func_type cb) {
   vc.set_chunkstore("YES");
   vc.set_offered_space(0);
   vc.set_free_space(0);
+  vc.set_ip("YES");
+  vc.set_port(0);
   vc.set_timestamp(base::get_epoch_time());
   std::string ser_vc;
   vc.SerializeToString(&ser_vc);
@@ -1523,7 +1525,7 @@ void MaidsafeStoreManager::PollVaultInfo(base::callback_func_type cb) {
       &vault_status_response, cb);
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   rpcprotocol::Channel *channel = new rpcprotocol::Channel(
-      channel_manager_.get(), "127.0.0.1", kLocalPort, "", 0);
+      channel_manager_.get(), ss_->VaultIP(), ss_->VaultPort(), "", 0);
   client_rpcs_.PollVaultInfo(enc_ser_vc,
                              &vault_status_response,
                              controller,
@@ -1554,7 +1556,7 @@ void MaidsafeStoreManager::PollVaultInfoCallback(
   }
 
   if (vc.chunkstore() == "" && vc.offered_space() == 0 &&
-      vc.free_space() == 0) {
+      vc.free_space() == 0 && vc.ip() == "" && vc.port() == 0) {
     cb("FAIL");
     return;
   }

@@ -16,7 +16,7 @@
 #define QT_WIDGETS_CONTACTS_H_
 
 // local
-#include "panel.h"
+#include "qt/widgets/panel.h"
 #include "qt/client/contact.h"
 
 // generated

@@ -20,40 +20,39 @@
 #include <QList>
 
 // local
-#include "presence.h"
-#include "profile.h"
+#include "qt/client/presence.h"
+#include "qt/client/profile.h"
 
 
-class Contact : public QObject
-{
-    Q_OBJECT
-public:
-    Contact( const QString& publicName, QObject* parent = NULL );
-    virtual ~Contact();
+class Contact : public QObject {
+  Q_OBJECT
+ public:
+  Contact(const QString& publicName, QObject* parent = NULL);
+  virtual ~Contact();
 
-    QString publicName() const;
+  QString publicName() const;
 
-    const Presence& presence() const;
-    void setPresence( const Presence& );
+  const Presence& presence() const;
+  void setPresence(const Presence&);
 
-    const Profile& profile() const;
-    void setProfile( const Profile& );
+  const Profile& profile() const;
+  void setProfile(const Profile&);
 
-    // \TODO make accessors on maidsafe::Contacts const
-    static Contact* fromContact( /*const */maidsafe::Contact& mc );
+  // \TODO make accessors on maidsafe::Contacts const
+  static Contact* fromContact(maidsafe::Contact *mc);
 
-signals:
-    //! This user's presence has changed.
+  signals:
+    // This user's presence has changed.
     void presenceChanged();
-    //! The user's information has changed
+    // The user's information has changed
     void profileChanged();
 
-private:
-    QString publicName_;
-    Presence presence_;
-    Profile profile_;
+ private:
+  QString publicName_;
+  Presence presence_;
+  Profile profile_;
 };
 
 typedef QList<Contact*> ContactList;
 
-#endif // QT_CLIENT_CONTACT_H_
+#endif  // QT_CLIENT_CONTACT_H_

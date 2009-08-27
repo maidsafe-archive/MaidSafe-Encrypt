@@ -79,6 +79,8 @@ void ExecCallbackVaultInfo(const base::callback_func_type &cb,
   while (fspace >= vc.offered_space())
     fspace = base::random_32bit_uinteger();
   vc.set_free_space(fspace);
+  vc.set_ip("127.0.0.1");
+  vc.set_port((base::random_32bit_uinteger() % 64512) + 1000);
   vc.set_timestamp(base::get_epoch_time());
   std::string ser_vc;
   vc.SerializeToString(&ser_vc);

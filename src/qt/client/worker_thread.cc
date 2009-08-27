@@ -12,32 +12,25 @@
  *      Author: Team
  */
 
-#include "worker_thread.h"
+#include "qt/client/worker_thread.h"
 
 // qt
 #include <QDebug>
 
+WorkerThread::WorkerThread(QObject* parent)
+    : QThread(parent) { }
 
+WorkerThread::~WorkerThread() {
+  qDebug() << "WorkerThread >> DTOR";
 
-WorkerThread::WorkerThread( QObject* parent )
-    : QThread( parent )
-{
+  quit();  // the event loop
+  wait();  // until run has exited
 
-}
+  qDebug() << "WorkerThread << DTOR";
 
-WorkerThread::~WorkerThread()
-{
-    qDebug() << "WorkerThread >> DTOR";
-
-    quit();  // the event loop
-    wait();  // until run has exited
-
-    qDebug() << "WorkerThread << DTOR";
-
-    if ( isRunning() || !isFinished() )
-    {
-        qDebug() << "\nWorkerThread - not shutdown";
-    }
+  if (isRunning() || !isFinished()) {
+    qDebug() << "\nWorkerThread - not shutdown";
+  }
 }
 
 

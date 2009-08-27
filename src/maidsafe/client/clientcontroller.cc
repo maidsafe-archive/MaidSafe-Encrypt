@@ -322,159 +322,140 @@ Exitcode ClientController::CheckUserExists(const std::string &username,
 bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password,
-                                  const int &vt) {
+                                  const VaultConfigParameters &vcp) {
   Exitcode result = auth_->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
-//  #ifdef DEBUG
-  printf("\n\n\n");
-  printf("88888888888888888888888888888888888888\n");
-  printf("88888888888888888888888888888888888888\n");
-  printf("8 Finished with CreateUserSysPackets 8\n");
-  printf("88888888888888888888888888888888888888\n");
-  printf("88888888888888888888888888888888888888");
-  printf("\n\n\n\n");
-//  #endif
+#ifdef DEBUG
+  printf("ClientController::CreateUser --- "
+         "Finished with CreateUserSysPackets: %d ---\n", result);
+#endif
 
-  if (result == OK) {
-    // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
-    //                             Parameter vt receives the vault type.
-    ss_->SetSessionName(false);
-    ss_->SetConnectionStatus(0);
-    std::string root_db_key;
-    seh_ = new SEHandler(sm_, client_chunkstore_, &mutex_);
-    printf("In ClientController::CreateUser 01\n");
-    int result = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
-    printf("In ClientController::CreateUser 02\n");
-    ss_->SetRootDbKey(root_db_key);
-    fsys_.Mount();
-    fsys_.FuseMountPoint();
-    boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
-    msgh_ = new MessageHandler(sm_, &mutex_);
-    DataAtlas da;
+  if (result != OK) {
+    printf("In ClientController::CreateUser 19\n");
+    ss_->ResetSession();
+    return false;
+  }
 
-    result += dah->Init(true);
-    printf("In ClientController::CreateUser 03\n");
+  // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
+  //                             Parameters come in VaultConfigParameters.
+  OwnVaultResult ovr = OwnLocalVault(vcp.port, vcp.space * 1024 * 1024,
+                                     vcp.directory);
+#ifdef DEBUG
+  printf("ClientController::CreateUser +++ OwnVaultResult: %d +++\n", ovr);
+#endif
 
-    // set up root subdirs
-    for (int i = 0; i < kRootSubdirSize; ++i) {
-      MetaDataMap mdm;
-      std::string ser_mdm, ser_dm, key;
-      mdm.set_id(-2);
-      mdm.set_display_name(base::TidyPath(kRootSubdir[i][0]));
-      mdm.set_type(EMPTY_DIRECTORY);
-      mdm.set_stats("");
-      mdm.set_tag("");
-      mdm.set_file_size_high(0);
-      mdm.set_file_size_low(0);
-      boost::uint32_t current_time = base::get_epoch_time();
-      mdm.set_creation_time(current_time);
-      mdm.SerializeToString(&ser_mdm);
-      if (kRootSubdir[i][1] == "") {
-        printf("In ClientController::CreateUser 04 - %i\n", i);
-        seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
-        printf("In ClientController::CreateUser 05 - %i\n", i);
-      } else {
-        key = kRootSubdir[i][1];
-      }
-      result += dah->AddElement(base::TidyPath(kRootSubdir[i][0]),
-                                ser_mdm,
-                                "",
-                                key,
-                                true);
-      printf("In ClientController::CreateUser 06 - %i\n", i);
-      seh_->EncryptDb(base::TidyPath(kRootSubdir[i][0]),
-                      PRIVATE,
-                      key,
-                      "",
-                      true,
-                      &ser_dm);
-      printf("In ClientController::CreateUser 07 - %i\n", i);
+  ss_->SetSessionName(false);
+  ss_->SetConnectionStatus(0);
+  std::string root_db_key;
+  seh_ = new SEHandler(sm_, client_chunkstore_, &mutex_);
+  printf("In ClientController::CreateUser 01\n");
+  int res = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
+  printf("In ClientController::CreateUser 02\n");
+  ss_->SetRootDbKey(root_db_key);
+  fsys_.Mount();
+  fsys_.FuseMountPoint();
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
+  msgh_ = new MessageHandler(sm_, &mutex_);
+  DataAtlas da;
+
+  res += dah->Init(true);
+  printf("In ClientController::CreateUser 03\n");
+
+  // set up root subdirs
+  for (int i = 0; i < kRootSubdirSize; ++i) {
+    MetaDataMap mdm;
+    std::string ser_mdm, ser_dm, key;
+    mdm.set_id(-2);
+    mdm.set_display_name(base::TidyPath(kRootSubdir[i][0]));
+    mdm.set_type(EMPTY_DIRECTORY);
+    mdm.set_stats("");
+    mdm.set_tag("");
+    mdm.set_file_size_high(0);
+    mdm.set_file_size_low(0);
+    boost::uint32_t current_time = base::get_epoch_time();
+    mdm.set_creation_time(current_time);
+    mdm.SerializeToString(&ser_mdm);
+    if (kRootSubdir[i][1] == "") {
+      printf("In ClientController::CreateUser 04 - %i\n", i);
+      seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
+      printf("In ClientController::CreateUser 05 - %i\n", i);
+    } else {
+      key = kRootSubdir[i][1];
     }
+    res += dah->AddElement(base::TidyPath(kRootSubdir[i][0]),
+                           ser_mdm, "", key, true);
+    printf("In ClientController::CreateUser 06 - %i\n", i);
+    seh_->EncryptDb(base::TidyPath(kRootSubdir[i][0]),
+                    PRIVATE, key, "", true, &ser_dm);
+    printf("In ClientController::CreateUser 07 - %i\n", i);
+  }
 
-    // set up share subdirs
-    for (int i = 0; i < kSharesSubdirSize; ++i) {
-      fs::path subdir(kSharesSubdir[i][0], fs::native);
-      std::string subdir_name = subdir.filename();
-      MetaDataMap mdm;
-      std::string ser_mdm, ser_dm, key;
-      mdm.set_id(-2);
-      mdm.set_display_name(subdir_name);
-      mdm.set_type(EMPTY_DIRECTORY);
-      mdm.set_stats("");
-      mdm.set_tag("");
-      mdm.set_file_size_high(0);
-      mdm.set_file_size_low(0);
-      boost::uint32_t current_time = base::get_epoch_time();
-      mdm.set_creation_time(current_time);
-      mdm.SerializeToString(&ser_mdm);
-      if (kSharesSubdir[i][1] == "") {  // ie no preassigned key so not public
-        printf("In ClientController::CreateUser 08 - %i\n", i);
-        seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
-        printf("In ClientController::CreateUser 09 - %i\n", i);
-        result += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
-                                  ser_mdm,
-                                  "",
-                                  key,
-                                  true);
-        printf("In ClientController::CreateUser 10 - %i\n", i);
+  // set up share subdirs
+  for (int i = 0; i < kSharesSubdirSize; ++i) {
+    fs::path subdir(kSharesSubdir[i][0], fs::native);
+    std::string subdir_name = subdir.filename();
+    MetaDataMap mdm;
+    std::string ser_mdm, ser_dm, key;
+    mdm.set_id(-2);
+    mdm.set_display_name(subdir_name);
+    mdm.set_type(EMPTY_DIRECTORY);
+    mdm.set_stats("");
+    mdm.set_tag("");
+    mdm.set_file_size_high(0);
+    mdm.set_file_size_low(0);
+    boost::uint32_t current_time = base::get_epoch_time();
+    mdm.set_creation_time(current_time);
+    mdm.SerializeToString(&ser_mdm);
+    if (kSharesSubdir[i][1] == "") {  // ie no preassigned key so not public
+      printf("In ClientController::CreateUser 08 - %i\n", i);
+      seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
+      printf("In ClientController::CreateUser 09 - %i\n", i);
+      res += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
+                             ser_mdm, "", key, true);
+      printf("In ClientController::CreateUser 10 - %i\n", i);
+      seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
+                      PRIVATE, key, "", true, &ser_dm);
+      printf("In ClientController::CreateUser 11 - %i\n", i);
+    } else {
+      key = kSharesSubdir[i][1];
+      res += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
+                             ser_mdm, "", key, true);
+      printf("In ClientController::CreateUser 12 - %i\n", i);
+      if (seh_->DecryptDb(base::TidyPath(kSharesSubdir[i][0]),
+                          ANONYMOUS, "", key, "", true, true)) {
+        printf("In ClientController::CreateUser 13 - %i\n", i);
+        // ie Public and Anon have never been saved before on the network
+        std::string ser_dm;
         seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
-                        PRIVATE,
-                        key,
+                        ANONYMOUS,
+                        kSharesSubdir[i][1],
                         "",
                         true,
                         &ser_dm);
-        printf("In ClientController::CreateUser 11 - %i\n", i);
-      } else {
-        key = kSharesSubdir[i][1];
-        result += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
-                                  ser_mdm,
-                                  "",
-                                  key,
-                                  true);
-        printf("In ClientController::CreateUser 12 - %i\n", i);
-        if (seh_->DecryptDb(base::TidyPath(kSharesSubdir[i][0]),
-                            ANONYMOUS,
-                            "",
-                            key,
-                            "",
-                            true,
-                            true)) {
-          printf("In ClientController::CreateUser 13 - %i\n", i);
-          // ie Public and Anon have never been saved before on the network
-          std::string ser_dm;
-          seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
-                          ANONYMOUS,
-                          kSharesSubdir[i][1],
-                          "",
-                          true,
-                          &ser_dm);
-          printf("In ClientController::CreateUser 14 - %i\n", i);
-        }
+        printf("In ClientController::CreateUser 14 - %i\n", i);
       }
     }
-
-    printf("In ClientController::CreateUser 15\n");
-    if (0 != result) {
-      printf("In ClientController::CreateUser 16\n");
-      delete seh_;
-      delete msgh_;
-      return false;
-    }
-    result = SetVaultConfig(ss_->PublicKey(PMID), ss_->PrivateKey(PMID));
-    printf("In ClientController::CreateUser 17\n");
-    if (0 != result) {
-      printf("In ClientController::CreateUser 18\n");
-      delete seh_;
-      delete msgh_;
-      return false;
-    }
-    return true;
   }
-  printf("In ClientController::CreateUser 19\n");
-  ss_->ResetSession();
-  printf("In ClientController::CreateUser 20\n");
-  return false;
+
+  printf("In ClientController::CreateUser 15\n");
+  if (0 != res) {
+    printf("In ClientController::CreateUser 16\n");
+    delete seh_;
+    delete msgh_;
+    return false;
+  }
+
+  res = SetVaultConfig(ss_->PublicKey(PMID), ss_->PrivateKey(PMID));
+  printf("In ClientController::CreateUser 17\n");
+  if (0 != res) {
+    printf("In ClientController::CreateUser 18\n");
+    delete seh_;
+    delete msgh_;
+    return false;
+  }
+
+  return true;
 }
 
 int ClientController::SetVaultConfig(const std::string &pmid_public,
@@ -1953,7 +1934,15 @@ int ClientController::CreateNewShare(const std::string &name,
 
 bool ClientController::PollVaultInfo(std::string *chunkstore,
                                      boost::uint64_t *offered_space,
-                                     boost::uint64_t *free_space) {
+                                     boost::uint64_t *free_space,
+                                     std::string *ip,
+                                     boost::uint32_t *port) {
+  if (ss_->VaultIP() == "" || ss_->VaultPort() == 0) {
+    if (!VaultContactInfo()) {
+      return false;
+    }
+  }
+
   CC_CallbackResult cb;
   sm_->PollVaultInfo(boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
@@ -1976,11 +1965,26 @@ bool ClientController::PollVaultInfo(std::string *chunkstore,
   *chunkstore = vc.chunkstore();
   *offered_space = vc.offered_space();
   *free_space = vc.free_space();
+  *ip = vc.ip();
+  *port = vc.port();
 
+  if (!ss_->SetVaultIP(*ip) || !ss_->SetVaultPort(*port)) {
+#ifdef DEBUG
+    printf("ClientController::PollVaultInfo: putting values into session "
+           "failed.\n");
+#endif
+    return false;
+  }
   return true;
 }
 
 bool ClientController::VaultContactInfo() {
+#ifdef LOCAL_PDVAULT
+  ss_->SetVaultIP("192.168.1.7");
+  ss_->SetVaultPort(55555);
+  return true;
+#endif
+
   CC_CallbackResult cbr;
   sm_->VaultContactInfo(boost::bind(&CC_CallbackResult::CallbackFunc,
                         &cbr, _1));
@@ -2032,6 +2036,9 @@ void ClientController::OwnLocalVault_Callback(const OwnVaultResult &result,
   if (result == OWNED_SUCCESS) {
     std::string pmid_name_exp;
     base::decode_from_hex(ss_->Id(PMID), &pmid_name_exp);
+    std::string mierda("");
+    base::encode_to_hex(pmid_name, &mierda);
+    printf("ClientController::OwnLocalVault_Callback %s -- %s\n", ss_->Id(PMID).c_str(), mierda.c_str());
     if (pmid_name == pmid_name_exp) {
       *res = result;
     } else {
@@ -2042,6 +2049,12 @@ void ClientController::OwnLocalVault_Callback(const OwnVaultResult &result,
     *res = result;
   }
   *callback_arrived = true;
+}
+
+bool ClientController::IsLocalVaultOwned() {
+  if (LocalVaultStatus() == NOT_OWNED)
+    return false;
+  return true;
 }
 
 VaultStatus ClientController::LocalVaultStatus() const {

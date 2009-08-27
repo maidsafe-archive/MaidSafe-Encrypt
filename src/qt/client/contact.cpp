@@ -12,59 +12,45 @@
  *      Author: Team
  */
 
-#include "contact.h"
+#include "qt/client/contact.h"
 
-Contact::Contact( const QString& publicName, QObject* parent )
-    : QObject( parent )
-    , publicName_( publicName )
-    , presence_()
-    , profile_()
-{
+Contact::Contact(const QString& publicName, QObject* parent)
+    : QObject(parent), publicName_(publicName), presence_(), profile_() { }
+
+Contact::~Contact() { }
+
+QString Contact::publicName() const {
+  return publicName_;
 }
 
-Contact::~Contact()
-{
+const Presence& Contact::presence() const {
+  return presence_;
 }
 
-QString Contact::publicName() const
-{
-    return publicName_;
+void Contact::setPresence(const Presence& p) {
+  if (p != presence_) {
+    presence_ = p;
+    emit presenceChanged();
+  }
 }
 
-const Presence& Contact::presence() const
-{
-    return presence_;
+const Profile& Contact::profile() const {
+  return profile_;
 }
 
-void Contact::setPresence( const Presence& p )
-{
-    if ( p != presence_ )
-    {
-        presence_ = p;
-        emit presenceChanged();
-    }
-}
-
-const Profile& Contact::profile() const
-{
-    return profile_;
-}
-
-void Contact::setProfile( const Profile& p )
-{
-    //if ( p != profile_ )
-    {
-        profile_ = p;
-        emit profileChanged();
-    }
+void Contact::setProfile(const Profile& p) {
+//  if (p != profile_)
+//  {
+      profile_ = p;
+      emit profileChanged();
+//  }
 }
 
 // static
-Contact* Contact::fromContact( /*const */maidsafe::Contact& mc )
-{
-    Contact* contact = new Contact( QString::fromStdString( mc.PublicName() ) );
-    contact->setPresence( Presence::fromContact( mc ) );
-    contact->setProfile( Profile::fromContact( mc ) );
+Contact* Contact::fromContact(maidsafe::Contact *mc) {
+  Contact* contact = new Contact(QString::fromStdString(mc->PublicName()));
+  contact->setPresence(Presence::fromContact(mc));
+  contact->setProfile(Profile::fromContact(mc));
 
-    return contact;
+  return contact;
 }

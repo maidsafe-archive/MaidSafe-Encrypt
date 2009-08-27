@@ -16,7 +16,7 @@
 #define QT_WIDGETS_PUBLIC_USERNAME_H_
 
 // local
-#include "panel.h"
+#include "qt/widgets/panel.h"
 
 // generated
 #include "ui_user_public_username_panel.h"

@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_SYSTEM_TRAY_H_
-#define QT_SYSTEM_TRAY_H_
+#ifndef QT_WIDGETS_SYSTEM_TRAY_ICON_H_
+#define QT_WIDGETS_SYSTEM_TRAY_ICON_H_
 
 #include <QObject>
 #include <QSystemTrayIcon>
@@ -21,16 +21,15 @@
 class QMenu;
 class QAction;
 
-//! Wrapper round the system tray icon functionality
-class SystemTrayIcon : public QSystemTrayIcon
-{
-    Q_OBJECT
-public:
-    static SystemTrayIcon* instance();
-    virtual ~SystemTrayIcon();
-    void ChangeStatus(int status);
+// Wrapper round the system tray icon functionality
+class SystemTrayIcon : public QSystemTrayIcon {
+  Q_OBJECT
+ public:
+  static SystemTrayIcon* instance();
+  virtual ~SystemTrayIcon();
+  void ChangeStatus(int status);
 
-signals:
+  signals:
     void open();
     void close();
     void quit();
@@ -38,20 +37,20 @@ signals:
     void dataShare();
     void sendFile();
 
-protected:
-    explicit SystemTrayIcon();
+ protected:
+  explicit SystemTrayIcon();
 
-private slots:
-    void onActivated( QSystemTrayIcon::ActivationReason reason );
+  private slots:
+    void onActivated(QSystemTrayIcon::ActivationReason reason);
 
-private:
-    QMenu* menu_;
-    QAction* action_open_;
-    QAction* action_close_;
-    QAction* action_quit_;
+ private:
+  QMenu* menu_;
+  QAction* action_open_;
+  QAction* action_close_;
+  QAction* action_quit_;
 
-    QAction* action_data_share_;
-    QAction* action_send_file_;
+  QAction* action_data_share_;
+  QAction* action_send_file_;
 };
 
-#endif // QT_SYSTEM_TRAY_H_
+#endif  // QT_WIDGETS_SYSTEM_TRAY_ICON_H_

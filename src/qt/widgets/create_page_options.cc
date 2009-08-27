@@ -17,20 +17,25 @@
 // qt
 #include <QDebug>
 
+#include "qt/client/client_controller.h"
 
 CreateOptionsPage::CreateOptionsPage(QWidget* parent)
     : QWizardPage(parent) {
   ui_.setupUi(this);
 
   setTitle(tr("Storage options"));
+  ui_.buy->setEnabled(false);
+  ui_.borrow->setEnabled(false);
 }
 
 CreateOptionsPage::~CreateOptionsPage() { }
 
-
 void CreateOptionsPage::cleanupPage() {
-  // TODO(Dan#5#): 2009-08-24 - Check if local vault is available
-  ui_.local->setChecked(true);
+  if (ClientController::instance()->IsLocalVaultOwned()) {
+    ui_.local->setEnabled(false);
+  } else {
+    ui_.local->setChecked(true);
+  }
 }
 
 int CreateOptionsPage::VaultType() {

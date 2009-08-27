@@ -13,13 +13,13 @@
  *      Author: Team
  */
 
-#ifndef QT_MOUNT_THREAD_H_
-#define QT_MOUNT_THREAD_H_
+#ifndef QT_CLIENT_MOUNT_THREAD_H_
+#define QT_CLIENT_MOUNT_THREAD_H_
 
-#include "worker_thread.h"
+#include "qt/client/worker_thread.h"
 
 
-//! Worker thread for mounting
+// Worker thread for mounting
 /*!
     Mounting is blocking and can take a while so we use a worker thread
     to ensure that it doesn't block the main gui.
@@ -32,24 +32,22 @@
 
     \sa UserSpaceFileSystem::mount()
 */
-class MountThread : public WorkerThread
-{
-    Q_OBJECT
-public:
-    typedef enum MountAction
-    {
-        MOUNT,
-        UNMOUNT
-    };
+class MountThread : public WorkerThread {
+  Q_OBJECT
+ public:
+  typedef enum MountAction {
+    MOUNT,
+    UNMOUNT
+  };
 
-    MountThread( MountAction action, QObject* parent = 0 );
-    virtual ~MountThread();
+  MountThread(MountAction action, QObject* parent = 0);
+  virtual ~MountThread();
 
-    virtual void run();
+  virtual void run();
 
-private:
-    MountAction action_;
+ private:
+  MountAction action_;
 };
 
-#endif // QT_MOUNT_THREAD_H_
+#endif  // QT_CLIENT_MOUNT_THREAD_H_
 

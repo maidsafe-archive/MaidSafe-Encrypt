@@ -12,14 +12,14 @@
  *      Author: Team
  */
 
-#ifndef QT_USER_PANELS_H_
-#define QT_USER_PANELS_H_
-
-// std
-#include <string>
+#ifndef QT_WIDGETS_USER_PANELS_H_
+#define QT_WIDGETS_USER_PANELS_H_
 
 // qt
 #include <QWidget>
+
+// std
+#include <string>
 
 // generated
 #include "ui_user_panels.h"
@@ -31,7 +31,7 @@ class Contacts;
 class VaultInfo;
 class PublicUsername;
 
-//! Main User Panel for Perpetual Data
+// Main User Panel for Perpetual Data
 /*!
     Has (or will have) panels for:
 
@@ -51,53 +51,52 @@ class PublicUsername;
 
     \sa Panel::setActive
 */
-class UserPanels : public QWidget
-{
+class UserPanels : public QWidget {
     Q_OBJECT
 
-public:
-    UserPanels( QWidget* parent = 0 );
-    virtual ~UserPanels();
+ public:
+  explicit UserPanels(QWidget* parent = 0);
+  virtual ~UserPanels();
 
-    //! Enable disable user panels
-    /*!
-        If becoming active it initialises the user panels for the current user.
-        If becoming incative it slears all state ready for a new user logging in.
-    */
-    void setActive( bool active );
+  // Enable disable user panels
+  /*!
+      If becoming active it initialises the user panels for the current user.
+      If becoming incative it slears all state ready for a new user logging in.
+  */
+  void setActive(bool active);
 
-signals:
-    //! Notify a change in the number of unread messages
-    void unreadMessages( int );
+  signals:
+    // Notify a change in the number of unread messages
+    void unreadMessages(int);
 
-private slots:
-    //! User has chosen a different panel
-    void onCurrentRowChanged( int i );
+  private slots:
+    // User has chosen a different panel
+    void onCurrentRowChanged(int i);
 
-    //! Notification from the Messages panel that a message was received
+    // Notification from the Messages panel that a message was received
     void onMessageReceived();
 
-    //! Notification from the Public Username panel that a username was set
+    // Notification from the Public Username panel that a username was set
     void onPublicUsernameChosen();
 
-    //! 'My Files' button has been clicked
+    // 'My Files' button has been clicked
     void onMyFilesClicked();
 
-private:
-    void activatePanel( int i, bool );
+ private:
+  void activatePanel(int i, bool);
 
-    Ui::UserPanels ui_;
+  Ui::UserPanels ui_;
 
-    Messages* messages_;
-    Shares* shares_;
-    Contacts* contacts_;
-    VaultInfo* vaultinfo_;
+  Messages* messages_;
+  Shares* shares_;
+  Contacts* contacts_;
+  VaultInfo* vaultinfo_;
 
-    PublicUsername* public_username_;
+  PublicUsername* public_username_;
 
-    //! track the active panel
-    int panel_;
+  // track the active panel
+  int panel_;
 };
 
-#endif // QT_USER_PANELS_H_
+#endif  // QT_WIDGETS_USER_PANELS_H_
 

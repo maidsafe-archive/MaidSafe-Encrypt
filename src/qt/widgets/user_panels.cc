@@ -78,7 +78,6 @@ void UserPanels::onMessageReceived() {
 void UserPanels::onPublicUsernameChosen() {
   ui_.listWidget->setEnabled(true);
   onCurrentRowChanged(ui_.stackedWidget->indexOf(contacts_));
-
   ui_.user_public_username->setText(
       ClientController::instance()->publicUsername());
   ClientController::instance()->StartCheckingMessages();
@@ -117,6 +116,16 @@ void UserPanels::setActive(bool active) {
 
     if (username.isEmpty()) {
       ui_.listWidget->setEnabled(false);
+//      ui_.listWidget->item(0)->setFlags(Qt::NoItemFlags);
+//      ui_.listWidget->item(1)->setFlags(Qt::NoItemFlags);
+//      ui_.listWidget->item(2)->setFlags(Qt::NoItemFlags);
+//      ui_.listWidget->item(3)->setFlags(Qt::ItemIsSelectable|
+//                                        Qt::ItemIsUserCheckable|
+//                                        Qt::ItemIsEnabled);
+//      ui_.listWidget->item(4)->setFlags(Qt::NoItemFlags);
+//      ui_.listWidget->item(5)->setFlags(Qt::NoItemFlags);
+//      ui_.listWidget->setCurrentRow(0);
+//      static_cast<Panel*>(ui_.stackedWidget->widget(3))->reset();
       onCurrentRowChanged(ui_.stackedWidget->indexOf(public_username_));
       ui_.user_public_username->clear();
       ui_.my_files_button->setEnabled(true);
@@ -124,6 +133,13 @@ void UserPanels::setActive(bool active) {
       onPublicUsernameChosen();
     }
   } else {
+//    for (int n = 0; n < ui_.listWidget->count(); n++) {
+//      ui_.listWidget->item(n)->setFlags(Qt::ItemIsSelectable|
+//                                        Qt::ItemIsUserCheckable|
+//                                        Qt::ItemIsEnabled);
+//    }
+//    ui_.listWidget->item(4)->setFlags(Qt::NoItemFlags);
+//    ui_.listWidget->item(5)->setFlags(Qt::NoItemFlags);
     QList<Panel*> panels = findChildren<Panel*>();
     foreach(Panel* panel, panels) {
       panel->reset();

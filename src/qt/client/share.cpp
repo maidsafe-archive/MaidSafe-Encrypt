@@ -12,48 +12,37 @@
  *      Author: Team
  */
 
-#include "share.h"
+#include "qt/client/share.h"
 
-Share::Share( const QString& name )
-    : name_( name )
-{
+Share::Share(const QString& name)
+    : name_(name) { }
+
+Share::~Share() { }
+
+QString Share::name() const {
+  return name_;
 }
 
-Share::~Share()
-{
-}
-
-QString Share::name() const
-{
-    return name_;
-}
-
-QStringList Share::participants( Permissions permission_flags ) const
-{
-    QStringList rv;
-    UserPermissionMap::const_iterator I = participants_.constBegin();
-    while ( I != participants_.constEnd() )
-    {
-        if ( I.value() == permission_flags )
-        {
-            rv.push_back( I.key() );
-        }
-        ++I;
+QStringList Share::participants(Permissions permission_flags) const {
+  QStringList rv;
+  UserPermissionMap::const_iterator I = participants_.constBegin();
+  while (I != participants_.constEnd()) {
+    if (I.value() == permission_flags) {
+      rv.push_back(I.key());
     }
-
-    return rv;
+    ++I;
+  }
+  return rv;
 }
 
-Share::Permissions Share::permissions( const QString& user ) const
-{
-    if ( !participants_.contains( user ) )
-        return NONE;
+Share::Permissions Share::permissions(const QString& user) const {
+  if (!participants_.contains(user))
+    return NONE;
 
-    return participants_[ user ];
+  return participants_[user];
 }
 
-void Share::addParticipant( const QString& user, Permissions permissions )
-{
-    participants_[ user ] = permissions;
+void Share::addParticipant(const QString& user, Permissions permissions) {
+  participants_[user] = permissions;
 }
 

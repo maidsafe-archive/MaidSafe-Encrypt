@@ -15,49 +15,46 @@
 #ifndef QT_CLIENT_PROFILE_H_
 #define QT_CLIENT_PROFILE_H_
 
-// core
-#include "maidsafe/client/contacts.h"
-
 // qt
 #include <QString>
 #include <QDateTime>
 #include <QLocale>
 
-//! A Contact's profile
+// core
+#include "maidsafe/client/contacts.h"
+
+// A Contact's profile
 /*!
 
 */
-class Profile
-{
-public:
-    enum Gender
-    {
-        UNSPECIFIED,
-        MALE,
-        FEMALE
-    };
+class Profile {
+ public:
+  enum Gender {
+    UNSPECIFIED,
+    MALE,
+    FEMALE
+  };
 
-    Profile();
-    ~Profile();
+  Profile();
+  ~Profile();
 
-    QString pub_key;
-    QString full_name;
-    QString office_phone;
-    QDate birthday;
-    Gender gender;
-    QLocale::Language language;
-    QLocale::Country country;
-    QString city;
-    //! waht is
-    char confirmed;
-    //! ?
-    int rank;
-    //! Last time contact was seen online (?)
-    QDateTime last_contact;
+  QString pub_key;
+  QString full_name;
+  QString office_phone;
+  QDate birthday;
+  Gender gender;
+  QLocale::Language language;
+  QLocale::Country country;
+  QString city;
+  // what is
+  char confirmed;
+  // ?
+  int rank;
+  // Last time contact was seen online (?)
+  QDateTime last_contact;
 
-    // \TODO make accessors on maidsafe::Contacts const
-    static Profile fromContact( /*const */ maidsafe::Contact& mc );
+  static Profile fromContact(maidsafe::Contact *mc);
 };
 
 
-#endif // QT_CLIENT_PROFILE_H_
+#endif  // QT_CLIENT_PROFILE_H_

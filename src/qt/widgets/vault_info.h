@@ -41,8 +41,8 @@ class VaultInfo : public Panel {
   bool init_;
   QTimer infoPollTimer_;
 
-private slots:
-  void onUpdateVaultInfo();
+  private slots:
+    void onUpdateVaultInfo();
 };
 
 #endif  // QT_WIDGETS_VAULT_INFO_H_

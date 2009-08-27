@@ -23,19 +23,18 @@
 #include "maidsafe/client/sessionsingleton.h"
 
 // local
-#include "widgets/login.h"
-#include "widgets/create_user.h"
-#include "widgets/progress.h"
-#include "widgets/user_panels.h"
-#include "widgets/system_tray_icon.h"
+#include "qt/widgets/login.h"
+#include "qt/widgets/create_user.h"
+#include "qt/widgets/progress.h"
+#include "qt/widgets/user_panels.h"
+#include "qt/widgets/system_tray_icon.h"
 
-#include "client/mount_thread.h"
-#include "client/create_user_thread.h"
-#include "client/user_space_filesystem.h"
+#include "qt/client/mount_thread.h"
+#include "qt/client/create_user_thread.h"
+#include "qt/client/user_space_filesystem.h"
 
 // generated
 #include "ui_about.h"
-
 
 PerpetualData::PerpetualData(QWidget* parent)
     : QMainWindow(parent)
@@ -203,7 +202,7 @@ void PerpetualData::setState(State state) {
     {
         ui_.stackedWidget->setCurrentWidget(userPanels_);
         connect(userPanels_, SIGNAL(unreadMessages(int)),
-                 this,        SLOT(onUnreadMessagesChanged(int)));
+                this,        SLOT(onUnreadMessagesChanged(int)));
         userPanels_->setActive(true);
         break;
     }
@@ -287,6 +286,9 @@ void PerpetualData::asyncCreateUser() {
                                                login_->pin(),
                                                login_->password(),
                                                create_->VaultType(),
+                                               create_->SpaceOffered(),
+                                               create_->PortChosen(),
+                                               create_->DirectoryChosen(),
                                                this);
 
   connect(cut,  SIGNAL(completed(bool)),

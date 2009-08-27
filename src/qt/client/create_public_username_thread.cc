@@ -13,7 +13,7 @@
  *      Author: Team
  */
 
-#include "create_public_username_thread.h"
+#include "qt/client/create_public_username_thread.h"
 
 // qt
 #include <QDebug>
@@ -22,27 +22,19 @@
 #include "maidsafe/client/clientcontroller.h"
 
 
-CreatePublicUsernameThread::CreatePublicUsernameThread( const QString& username,
-                                    QObject* parent )
-    : WorkerThread( parent )
-    , username_ ( username )
-{
+CreatePublicUsernameThread::CreatePublicUsernameThread(const QString& username,
+                                                       QObject* parent)
+    : WorkerThread(parent), username_(username) { }
 
-}
+CreatePublicUsernameThread::~CreatePublicUsernameThread() { }
 
-CreatePublicUsernameThread::~CreatePublicUsernameThread()
-{
+void CreatePublicUsernameThread::run() {
+  qDebug() << "CreatePublicUsernameThread::run";
 
-}
+  const bool success = maidsafe::ClientController::getInstance()->
+                       CreatePublicUsername(username_.toStdString());
 
-void CreatePublicUsernameThread::run()
-{
-    qDebug() << "CreatePublicUsernameThread::run";
-
-    const bool success = maidsafe::ClientController::getInstance()->
-                                CreatePublicUsername( username_.toStdString() );
-
-    emit completed( success );
+  emit completed(success);
 }
 
 
