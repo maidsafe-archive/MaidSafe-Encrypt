@@ -48,6 +48,7 @@ void PublicUsername::setActive(bool b) {
 
 void PublicUsername::reset() {
   init_ = false;
+  ui_.progressBar->reset();
   ui_.progressLabel->setVisible(false);
   ui_.progressBar->setVisible(false);
 }
@@ -62,11 +63,13 @@ void PublicUsername::onCreateUsernameClicked() {
     return;
   }
 
-  CreatePublicUsernameThread* cput =
-                              new CreatePublicUsernameThread(text, this);
+  CreatePublicUsernameThread* cput = new CreatePublicUsernameThread(text, this);
 
   connect(cput, SIGNAL(completed(bool)),
           this, SLOT(onCreateUsernameCompleted(bool)));
+
+  ui_.progressLabel->setVisible(true);
+  ui_.progressBar->setVisible(true);
 
   cput->start();
 }
@@ -78,4 +81,6 @@ void PublicUsername::onCreateUsernameCompleted(bool success) {
   } else {
     QMessageBox::warning(this, tr("Problem!"), tr("Error setting Username."));
   }
+  ui_.progressLabel->setVisible(false);
+  ui_.progressBar->setVisible(false);
 }

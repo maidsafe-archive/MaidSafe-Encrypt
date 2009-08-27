@@ -43,10 +43,10 @@ void CreateCompletePage::setProgressMessage(const QString& msg) {
 }
 
 void CreateCompletePage::cleanupPage() {
-  setMessage(
-      tr("<qt>We now have all the details required to create a new user.  "
-          "Press 'Finish' to complete the user creation process. <br/><br/>"
-          "Please note that user creation can take several minutes</qt>"));
+  setMessage(tr("<qt>We now have all the details required to create a new user."
+                " Press 'Finish' to complete the user creation process.<br/>"
+                "<br/>Please note that user creation can take several minutes."
+                "</qt>"));
 
   showCreationProgress(false);
 }
