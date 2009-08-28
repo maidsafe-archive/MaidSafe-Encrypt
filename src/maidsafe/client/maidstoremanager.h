@@ -86,10 +86,10 @@ struct StoreIouResultHolder {
   StoreIouResultHolder()
       : store_iou_response_(),
         store_iou_response_returned_(false),
-        rpc_id_(0) {}
+        controller_(new rpcprotocol::Controller) {}
   StoreIOUResponse store_iou_response_;
   bool store_iou_response_returned_;
-  boost::uint32_t rpc_id_;
+  boost::shared_ptr<rpcprotocol::Controller> controller_;
 };
 
 struct StoreTask;
@@ -244,13 +244,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                bool local,
                StorePrepRequest *store_prep_request,
                StorePrepResponse *store_prep_response);
-  void SendPrepCallback(bool *send_prep_returned, boost::mutex *mutex);
+  void SendPrepCallback(boost::condition_variable *cond);
   // Send the actual data content to the peer.
   int SendContent(const kad::Contact &peer,
                   bool local,
                   bool is_in_chunkstore,
                   StoreRequest *store_request);
-  void SendContentCallback(boost::condition_variable *cv);
+  void SendContentCallback(boost::condition_variable *cond);
   // Pass the IOU for the peer vault to the k chunk reference holders.
   int StoreIOUs(const StoreTask &store_task,
                 const boost::uint64_t &chunk_size,
@@ -285,8 +285,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // This populates the chunk holder's check_chunk_response_ variable (i.e.
   // confirms whether the peer has the chunk or not).  If the RPC fails, the
   // chunk holder's status_ is set to kFailedHolder.  Having done this,
-  // notify is called on the chunk holder's conditional variable.
-  void HasChunkCallback(ChunkHolder *chunk_holder);
+  // notify is called on the chunk holder's conditional variable.  The shared
+  // pointer to the RPC controller is passed in purely to avoid a premature
+  // destruct being called on the controller.
+  void HasChunkCallback(ChunkHolder *chunk_holder,
+                        boost::shared_ptr<rpcprotocol::Controller>);
   // Given a vector of vault ids, this gets the contact info for each and if
   // load_data is true, attempts to load the data once the first contact info
   // is received.
@@ -312,21 +315,24 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   int SendIOUDone(const kad::Contact &peer,
                   bool local,
                   IOUDoneRequest *iou_done_request);
-  void IOUDoneCallback(bool *iou_done_returned, boost::mutex *mutex);
+  void IOUDoneCallback(boost::condition_variable *cond);
   // Store copies of an individual packet to the network.
   int SendPacket(const StoreTask &store_task, int copies);
   int GetStorePacketRequest(const StoreTask &store_task,
                             const std::string &recipient_id,
                             StoreRequest *store_request);
   void SendPacketCallback(boost::condition_variable *cond);
-  // Updates all available copies of a chunk on the network.
+  // Updates all available copies of a chunk on the network.  The shared pointer
+  // to the RPC controller is passed to UpdateChunkCallback purely to avoid a
+  // premature destruct being called on the controller.
   int UpdateChunkCopies(const StoreTask &store_task,
                         const std::vector<std::string> &chunk_holders_ids);
   void UpdateChunk(const ChunkHolder &chunk_holder,
                    const StoreTask &store_task,
                    UpdateResponse *update_resonse,
                    boost::condition_variable *update_conditional);
-  void UpdateChunkCallback(boost::condition_variable *cond);
+  void UpdateChunkCallback(boost::condition_variable *cond,
+                           boost::shared_ptr<rpcprotocol::Controller>);
   // If return_value pointer is not NULL, sets it to value and calls
   // notify_all() on store_packet_conditional_ variable.
   void SetStoreReturnValue(int value, int *return_value);

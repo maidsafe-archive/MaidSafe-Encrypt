@@ -280,7 +280,7 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   for (boost::uint16_t j = 0; j < results.size(); ++j) {
-    channel_manager_->DeletePendingRequest(results.at(j).rpc_id_);
+    channel_manager_->DeletePendingRequest(results.at(j).controller_->req_id());
   }
 #ifdef DEBUG
   printf("In PDVault::AddToRefPacket: count = %i (success if count > 11)\n",
@@ -302,18 +302,18 @@ int PDVault::HandleStoreRefResponse(
   if (srr.result() == kNack) {
 #ifdef DEBUG
     printf("Response from rpc id %d came back failed (%d).\n",
-           store_ref_result_holder.rpc_id_, knode_.host_port());
-    return -1;
+           store_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
+    return -1;
   }
 
   if (srr.pmid_id() != co_.Hash(srr.public_key() + srr.signed_public_key(),
       "", crypto::STRING_STRING, false)) {
 #ifdef DEBUG
     printf("Someone on rpc id %d is trying to fake identity (%d).\n",
-           store_ref_result_holder.rpc_id_, knode_.host_port());
-    return -1;
+           store_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
+    return -1;
   }
 
   if (!*got_valid_iou) {
@@ -321,86 +321,87 @@ int PDVault::HandleStoreRefResponse(
         srr.public_key(), crypto::STRING_STRING)) {
 #ifdef DEBUG
       printf("Rank authrty from rpc id %d didn't pass signature check (%d).\n",
-             store_ref_result_holder.rpc_id_, knode_.host_port());
-      return -1;
+             store_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
+      return -1;
     }
 
     maidsafe::RankAuthority ra;
     if (!ra.ParseFromString(srr.rank_authority())) {
 #ifdef DEBUG
       printf("Rank authority from rpc id %d didn't parse (%d).\n",
-             store_ref_result_holder.rpc_id_, knode_.host_port());
-      return -1;
+             store_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
+      return -1;
     }
 
     if (ra.data_size() != iou_ready_details.get<2>()) {
 #ifdef DEBUG
       printf("Rank authority from rpc id %d has invalid size (%d).\n",
-             store_ref_result_holder.rpc_id_, knode_.host_port());
-      return -1;
+             store_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
+      return -1;
     }
 
     if (ra.pmid() != non_hex_pmid_) {
 #ifdef DEBUG
       printf("Rank authority from rpc id %d is not for this vault (%d).\n",
-             store_ref_result_holder.rpc_id_, knode_.host_port());
-      return -1;
+             store_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
+      return -1;
     }
 
     maidsafe::IOU iou;
     if (!iou.ParseFromString(srr.iou())) {
 #ifdef DEBUG
       printf("IOU from rpc id %d didn't parse (%d).\n",
-             store_ref_result_holder.rpc_id_, knode_.host_port());
-      return -1;
+             store_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
+      return -1;
     }
 
     if (!co_.AsymCheckSig(iou.signed_iou_authority(), iou.signature(),
         iou_ready_details.get<3>(), crypto::STRING_STRING)) {
 #ifdef DEBUG
       printf("IOU from rpc id %d didn't pass client signature check (%d).\n",
-             store_ref_result_holder.rpc_id_, knode_.host_port());
-      return -1;
+             store_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
+      return -1;
     }
 
     if (!co_.AsymCheckSig(iou.serialised_iou_authority(),
         iou.signed_iou_authority(), pmid_public_, crypto::STRING_STRING)) {
 #ifdef DEBUG
       printf("IOUAuthority from rpc id %d didn't pass vault signature check "
-             "(%d).\n", store_ref_result_holder.rpc_id_, knode_.host_port());
-      return -1;
+             "(%d).\n", store_ref_result_holder.controller_->req_id(),
+             knode_.host_port());
 #endif
+      return -1;
     }
 
     maidsafe::IOUAuthority iou_authority;
     if (!iou_authority.ParseFromString(iou.serialised_iou_authority())) {
 #ifdef DEBUG
       printf("IOUAuthority from rpc id %d didn't parse (%d).\n",
-             store_ref_result_holder.rpc_id_, knode_.host_port());
-      return -1;
+             store_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
+      return -1;
     }
 
     if (iou_authority.data_size() != iou_ready_details.get<2>()) {
 #ifdef DEBUG
       printf("IOUAuthority from rpc id %d has invalid size (%d).\n",
-             store_ref_result_holder.rpc_id_, knode_.host_port());
-      return -1;
+             store_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
+      return -1;
     }
 
     if (iou_authority.pmid() != non_hex_pmid_) {
 #ifdef DEBUG
       printf("IOUAuthority from rpc id %d is not from this vault (%d).\n",
-             store_ref_result_holder.rpc_id_, knode_.host_port());
-      return -1;
+             store_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
+      return -1;
     }
     *got_valid_iou = true;
   }
@@ -470,21 +471,21 @@ int PDVault::SendToRefPacket(
       == kad::LOCAL);
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &PDVault::SendToRefPacketCallback,
-      &store_ref_result_holder->store_ref_response_returned_, store_ref_mutex);
-  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+      store_ref_result_holder, store_ref_mutex);
   vault_rpcs_.StoreChunkReference(ref_holder, local, &store_ref_request,
-      &store_ref_result_holder->store_ref_response_, controller, callback);
-  store_ref_result_holder->rpc_id_ = controller->req_id();
+      &store_ref_result_holder->store_ref_response_,
+      store_ref_result_holder->controller_.get(), callback);
   return 0;
 }
 
-void PDVault::SendToRefPacketCallback(bool *store_ref_response_returned,
-                                      boost::mutex *store_ref_mutex) {
+void PDVault::SendToRefPacketCallback(
+    StoreRefResultHolder *store_ref_result_holder,
+    boost::mutex *store_ref_mutex) {
 #ifdef DEBUG
 //  printf("In PDVault::SendToRefPacketCallback.\n");
 #endif
   boost::mutex::scoped_lock loch(*store_ref_mutex);
-  *store_ref_response_returned = true;
+  store_ref_result_holder->store_ref_response_returned_ = true;
 }
 
 
@@ -941,13 +942,12 @@ void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
   if (conn_type == kad::LOCAL) {
     ip = get_args->chunk_holder_.local_ip();
     port = get_args->chunk_holder_.local_port();
-    get_args->retry_remote = true;
+    get_args->retry_remote_ = true;
   }
-  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   vault_rpcs_.CheckChunk(get_args->data_->chunk_name, ip, port,
       get_args->chunk_holder_.rendezvous_ip(),
       get_args->chunk_holder_.rendezvous_port(), check_chunk_response.get(),
-      controller, callback);
+      get_args->controller_.get(), callback);
 }
 
 void PDVault::CheckChunkCallback(
@@ -961,20 +961,19 @@ void PDVault::CheckChunkCallback(
   if (check_chunk_response->IsInitialized() &&
       check_chunk_response->has_pmid_id() &&
       check_chunk_response->pmid_id() != get_args->chunk_holder_.node_id()) {
-    if (get_args->retry_remote) {
-      get_args->retry_remote = false;
+    if (get_args->retry_remote_) {
+      get_args->retry_remote_ = false;
       knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::CheckChunkResponse>
           check_chunk_response(new maidsafe::CheckChunkResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
           &PDVault::CheckChunkCallback, check_chunk_response, get_args);
-      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
       vault_rpcs_.CheckChunk(get_args->data_->chunk_name,
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
           get_args->chunk_holder_.rendezvous_port(),
-          check_chunk_response.get(), controller, callback);
+          check_chunk_response.get(), get_args->controller_.get(), callback);
       return;
     }
   }
@@ -1014,22 +1013,20 @@ void PDVault::CheckChunkCallback(
         google::protobuf::Closure* callback =
             google::protobuf::NewCallback(this, &PDVault::GetMessagesCallback,
             get_messages_response, get_args);
-        rpcprotocol::Controller *controller = new rpcprotocol::Controller;
         vault_rpcs_.GetMessages(get_args->data_->chunk_name,
             get_args->data_->pub_key, get_args->data_->sig_pub_key, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
             get_args->chunk_holder_.rendezvous_port(),
-            get_messages_response.get(), controller, callback);
+            get_messages_response.get(), get_args->controller_.get(), callback);
       } else {
        boost::shared_ptr<maidsafe::GetResponse>
           get_response(new maidsafe::GetResponse());
        google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
            &PDVault::GetChunkCallback, get_response, get_args);
-        rpcprotocol::Controller *controller = new rpcprotocol::Controller;
         vault_rpcs_.Get(get_args->data_->chunk_name, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
             get_args->chunk_holder_.rendezvous_port(), get_response.get(),
-            controller, callback);
+            get_args->controller_.get(), callback);
       }
     }
   }
@@ -1054,21 +1051,20 @@ void PDVault::GetMessagesCallback(
   if (get_messages_response->IsInitialized() &&
       get_messages_response->has_pmid_id() &&
       get_messages_response->pmid_id() != get_args->chunk_holder_.node_id()) {
-    if (get_args->retry_remote) {
-      get_args->retry_remote = false;
+    if (get_args->retry_remote_) {
+      get_args->retry_remote_ = false;
       knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::GetMessagesResponse>
           get_messages_response(new maidsafe::GetMessagesResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
           &PDVault::GetMessagesCallback, get_messages_response, get_args);
-      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
       vault_rpcs_.GetMessages(get_args->data_->chunk_name,
           get_args->data_->pub_key, get_args->data_->sig_pub_key,
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
           get_args->chunk_holder_.rendezvous_port(),
-          get_messages_response.get(), controller, callback);
+          get_messages_response.get(), get_args->controller_.get(), callback);
       return;
     }
   }
@@ -1093,20 +1089,19 @@ void PDVault::GetChunkCallback(
   if (get_response->IsInitialized() &&
       get_response->has_pmid_id() &&
       get_response->pmid_id() != get_args->chunk_holder_.node_id()) {
-    if (get_args->retry_remote) {
-      get_args->retry_remote = false;
+    if (get_args->retry_remote_) {
+      get_args->retry_remote_ = false;
       knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::GetResponse>
           get_response(new maidsafe::GetResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
           &PDVault::GetChunkCallback, get_response, get_args);
-      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
       vault_rpcs_.Get(get_args->data_->chunk_name,
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
           get_args->chunk_holder_.rendezvous_port(), get_response.get(),
-          controller, callback);
+          get_args->controller_.get(), callback);
       return;
     }
   }

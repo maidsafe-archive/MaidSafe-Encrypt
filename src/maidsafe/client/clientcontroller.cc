@@ -2038,7 +2038,10 @@ void ClientController::OwnLocalVault_Callback(const OwnVaultResult &result,
     base::decode_from_hex(ss_->Id(PMID), &pmid_name_exp);
     std::string mierda("");
     base::encode_to_hex(pmid_name, &mierda);
-    printf("ClientController::OwnLocalVault_Callback %s -- %s\n", ss_->Id(PMID).c_str(), mierda.c_str());
+#ifdef DEBUG
+    printf("ClientController::OwnLocalVault_Callback %s -- %s\n",
+           ss_->Id(PMID).c_str(), mierda.c_str());
+#endif
     if (pmid_name == pmid_name_exp) {
       *res = result;
     } else {

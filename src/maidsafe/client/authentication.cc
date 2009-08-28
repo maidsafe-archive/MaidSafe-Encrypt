@@ -1130,7 +1130,6 @@ void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
   ph::SignaturePacket *sigPacket = static_cast<ph::SignaturePacket*>(
       ph::PacketFactory::Factory(ph::MSID));
   params = sigPacket->Create(params);
-  printf("In AU::C, name = %s\n", boost::any_cast<std::string>(params["name"]).c_str());
   storemanager_->IsKeyUnique(boost::any_cast<std::string>(params["name"]),
       boost::bind(&Authentication::CheckMSIDUnique_Callback, this, _1, 1,
                   params, cb));

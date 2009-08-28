@@ -78,10 +78,10 @@ struct StoreRefResultHolder {
   StoreRefResultHolder()
       : store_ref_response_(),
         store_ref_response_returned_(false),
-        rpc_id_(0) {}
+        controller_(new rpcprotocol::Controller) {}
   maidsafe::StoreReferenceResponse store_ref_response_;
   bool store_ref_response_returned_;
-  boost::uint32_t rpc_id_;
+  boost::shared_ptr<rpcprotocol::Controller> controller_;
 };
 
 struct SyncVaultData {
@@ -168,10 +168,14 @@ struct ValidityCheckArgs {
 struct GetArgs {
   GetArgs(const kad::Contact &chunk_holder,
           boost::shared_ptr<struct LoadChunkData> data)
-      : chunk_holder_(chunk_holder), data_(data), retry_remote(false) {}
+      : chunk_holder_(chunk_holder),
+        data_(data),
+        retry_remote_(false),
+        controller_(new rpcprotocol::Controller) {}
   const kad::Contact chunk_holder_;
   boost::shared_ptr<struct LoadChunkData> data_;
-  bool retry_remote;
+  bool retry_remote_;
+  boost::shared_ptr<rpcprotocol::Controller> controller_;
 };
 
 struct SwapChunkArgs {
@@ -271,7 +275,7 @@ class PDVault {
       const IouReadyTuple &iou_ready_details,
       boost::mutex *store_ref_mutex,
       StoreRefResultHolder *store_ref_result_holder);
-  void SendToRefPacketCallback(bool *store_ref_response_returned,
+  void SendToRefPacketCallback(StoreRefResultHolder *store_ref_result_holder,
                                boost::mutex *store_ref_mutex);
   int HandleStoreRefResponse(const IouReadyTuple &iou_ready_details,
       const StoreRefResultHolder &store_ref_result_holder,
