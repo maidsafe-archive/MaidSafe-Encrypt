@@ -2,6 +2,7 @@
 <diagram>
 <source><![CDATA[#![maidsafe store chunk]
 WatchList:vault
+IOU_Orig_Creator:vault
 Client:Object
 StoreManager:Object
 Vault:vault
@@ -24,6 +25,7 @@ Client:>StoreManager.Store Chunk, if not exist or lower rank
 [c: If chunk does not exist on network or at lower rank, loop till saved]
 
 StoreManager:StoreManager.Wait till on line is ok
+StoreManager:StoreManager.Select existing IOU or create one
 *1 StoreManager
 List all nodes by rank, then RTT, 
 select nodes ranked sames or less and 
@@ -35,7 +37,8 @@ Vault:Vault.check clients pmid rank ok
 [/c:]
 StoreManager:Vault.Send chunk data
 [c: Loop for K nodes]
-StoreManager:RefHolder.STORE_IOU    {IOU Auth|[signed with client PMID]}
+StoreManager:IOU_Orig_Creator.IOU Passing node [PMID](signed by Vault)
+StoreManager:RefHolder.STORE_IOU    {IOU Auth|} or PMID of Orig_IOU Node [signed with client PMID]
 
 RefHolder: Check value has 5 or less nodes
 RefHolder: If iou is higher rank node, accept in addition to existing nodes
@@ -46,7 +49,8 @@ StoreManager:Vault. IOU Ready [CHUNKNAME]
 
 #Add reference 
 [c: Loop for K nodes]
-Vault:IOU Transfer=RefHolder.Add Ref (chunkname & PMID))
+Vault:IOU Transfer=RefHolder.Add Ref (chunkname & PMID)) or Add from
+RefHolder:IOU_Orig_Creator.OR Get IOU signed for Vault
 RefHolder:  retrieve iou from queue
 RefHolder:  add reference
 [/c]

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram>
+<source><![CDATA[#![maidsafe IOU Management]
+
+IOU_Orig_Creator:vault
+Vault To:vault
+RefHolder To:vault
+IOU Store (kad):vault
+
+############
+#CREATE IOU#
+############
+[c: Creating an IOU]
+IOU_Orig_Creator:IOU Store (kad).create KAD packet 
+*1 IOU Store (kad)
+Kad key is
+[PMID(owner-pmid):SPACE:SERIAL#:TTL (600 days):
+Kad value is 
+[PMID(owner-pmid):PMID(current-holder):PMID (last)SPACE:SERIAL#:TTL:Valid]
+(signed by last holder)(signed by current holder)
+[PMID(owner-pmid):PMID(current-holder)SPACE:SERIAL#:TTL:Used:Sign of last holder]
+(signed by current holder)
+for inital value last and current are same PMID
+*1
+*2 IOU_Orig_Creator
+Keep list of SPACE:SERIAL:TTL
+to find kad keys
+Kept in Data Atlas  / delete used 
+IOU's as they happen
+*2
+IOU_Orig_Creator:Vault To.
+[/c:]
+
+#####################
+#INITIAL PASS OF IOU#
+#####################
+[c: Passing an IOU between vaults]
+
+IOU_Orig_Creator:Vault To.Agree to do action (STORE_CHUNK) 
+*3 RefHolder To
+If refholder fails to deliver the signed IOU xfer
+the vault can ask the original node for it
+again. Should not be an issue though as it will exist in 
+K refholders
+*3
+
+IOU_Orig_Creator:>RefHolder To.Pass IOU used signed message IOU used 
+RefHolder To:Vault To.Got valid IOU used message
+Vault To:OK=IOU_Orig_Creator.Xfer data
+Vault To:Here is signed IOU used message=RefHolder To.Add me to reference
+Vault To:Updated IOU Store=IOU Store (kad).Here is IOU used and Valid messages
+[/c:]
+
+########################
+#PASS IOU BETWEEN NODES#
+########################]]></source>
+<configuration>
+<property name="actorWidth" value="25"/>
+<property name="arrowSize" value="6"/>
+<property name="colorizeThreads" value="true"/>
+<property name="destructorWidth" value="30"/>
+<property family="Dialog" name="font" size="12" style="0"/>
+<property name="fragmentMargin" value="8"/>
+<property name="fragmentPadding" value="10"/>
+<property name="fragmentTextPadding" value="3"/>
+<property name="glue" value="10"/>
+<property name="headHeight" value="35"/>
+<property name="headLabelPadding" value="5"/>
+<property name="headWidth" value="100"/>
+<property name="initialSpace" value="10"/>
+<property name="leftMargin" value="5"/>
+<property name="lineWrap" value="false"/>
+<property name="lowerMargin" value="5"/>
+<property name="mainLifelineWidth" value="8"/>
+<property name="messageLabelSpace" value="3"/>
+<property name="messagePadding" value="6"/>
+<property name="noteMargin" value="6"/>
+<property name="notePadding" value="6"/>
+<property name="opaqueMessageText" value="false"/>
+<property name="returnArrowVisible" value="true"/>
+<property name="rightMargin" value="5"/>
+<property name="selfMessageHorizontalSpace" value="15"/>
+<property name="separatorBottomMargin" value="8"/>
+<property name="separatorTopMargin" value="15"/>
+<property name="spaceBeforeActivation" value="2"/>
+<property name="spaceBeforeAnswerToSelf" value="10"/>
+<property name="spaceBeforeConstruction" value="6"/>
+<property name="spaceBeforeSelfMessage" value="7"/>
+<property name="subLifelineWidth" value="6"/>
+<property name="threadNumbersVisible" value="false"/>
+<property name="threaded" value="true"/>
+<property name="upperMargin" value="5"/>
+<property name="verticallySplit" value="true"/>
+</configuration>
+</diagram>
