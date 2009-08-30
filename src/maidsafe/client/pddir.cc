@@ -47,6 +47,15 @@
 
 namespace fs = boost::filesystem;
 
+void SanitiseSingleQuotes(std::string *str) {
+  for (unsigned int i = 0; i < str->length(); i++) {
+    if (str->at(i) == '\'') {
+      str->insert(i, "'");
+      i++;
+    }
+  }
+}
+
 namespace maidsafe {
 
 PdDir::PdDir(const std::string &db_name, DbInitFlag flag_, int *result_)
@@ -196,7 +205,7 @@ int PdDir::Disconnect() {
 
 int PdDir::GetIdFromName(const std::string &file_name) {
   std::string name = base::StrToLwr(file_name);
-  base::SanitiseSingleQuotes(&name);
+  SanitiseSingleQuotes(&name);
   std::string s = "select id from mdm where name='"+name+"';";
   try {
     CppSQLite3Query q_mdm = db_->execQuery(s.c_str());
