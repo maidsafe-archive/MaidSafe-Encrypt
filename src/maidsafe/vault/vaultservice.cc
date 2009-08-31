@@ -167,7 +167,7 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
   }
 
   packethandler::VaultBufferPacketHandler vbph;
-  if (request->data_type() != maidsafe::SYSTEM_PACKET ||
+  if (request->data_type() != maidsafe::SYSTEM_PACKET &&
       request->data_type() != maidsafe::BUFFER_PACKET) {
     response->set_result(kNack);
     done->Run();
