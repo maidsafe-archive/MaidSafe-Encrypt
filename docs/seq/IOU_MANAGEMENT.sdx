@@ -36,7 +36,8 @@ IOU_Orig_Creator:Vault To.
 #####################
 [c: Passing an IOU between vaults]
 
-IOU_Orig_Creator:Vault To.Agree to do action (STORE_CHUNK) 
+IOU_Orig_Creator:Give me data (I will cache it)=Vault To.Agree to do action (STORE_CHUNK) 
+IOU_Orig_Creator:RefHolder To.Pass IOU used signed message IOU used
 *3 RefHolder To
 If refholder fails to deliver the signed IOU xfer
 the vault can ask the original node for it
@@ -44,10 +45,11 @@ again. Should not be an issue though as it will exist in
 K refholders
 *3
 
-IOU_Orig_Creator:>RefHolder To.Pass IOU used signed message IOU used 
+ 
 RefHolder To:Vault To.Got valid IOU used message
-Vault To:OK=IOU_Orig_Creator.Xfer data
+
 Vault To:Here is signed IOU used message=RefHolder To.Add me to reference
+Vault To:Vault To.Move chunk from cache to store
 Vault To:Updated IOU Store=IOU Store (kad).Here is IOU used and Valid messages
 [/c:]
 
