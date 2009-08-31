@@ -58,6 +58,7 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   inline boost::uint64_t FreeSpace() { return available_space_ - used_space_; }
  private:
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreInit);
+  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreInvalidKeySize);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreStore);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreAddChunkToOutgoing);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk);
@@ -65,6 +66,8 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreReuseDirectory);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreChangeChunkType);
+  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreChunkType);
+  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreSpace);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreCheckAllChunks);
   FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreThreadedChangeType);
   // Returns ChunkInfo for the chunk which was checked the longest time ago.  If

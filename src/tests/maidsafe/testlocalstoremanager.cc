@@ -227,9 +227,18 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
 
 TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   std::string chunk_content = base::RandomString(256 * 1024);
-  std::string chunk_name = crypto_obj.Hash(chunk_content, "",
-                           crypto::STRING_STRING, true);
-  storemanager->IsKeyUnique(chunk_name,
+  std::string non_hex_chunk_name = crypto_obj.Hash(chunk_content, "",
+                                   crypto::STRING_STRING, false);
+  std::string hex_chunk_name;
+  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
+  fs::path chunk_path("./TestStoreManager");
+  chunk_path /= hex_chunk_name;
+  std::ofstream ofs;
+  ofs.open(chunk_path.string().c_str());
+  ofs << chunk_content;
+  ofs.close();
+  client_chunkstore_->AddChunkToOutgoing(non_hex_chunk_name, chunk_path);
+  storemanager->IsKeyUnique(hex_chunk_name,
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   maidsafe::GenericResponse is_unique_res;
@@ -238,17 +247,9 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   cb.Reset();
   is_unique_res.Clear();
 
-//  storemanager->StoreChunk(chunk_name, chunk_content, "", "", "");
-  storemanager->StoreChunk(chunk_name, chunk_content, "", "", "",
-                           boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_lsm(cb, mutex_);
-  maidsafe::StoreResponse store_res;
-  ASSERT_TRUE(store_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, static_cast<int>(store_res.result()));
-  cb.Reset();
-  store_res.Clear();
+  storemanager->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
 
-  storemanager->IsKeyUnique(chunk_name,
+  storemanager->IsKeyUnique(hex_chunk_name,
                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(is_unique_res.ParseFromString(cb.result_));
@@ -256,7 +257,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   cb.Reset();
   is_unique_res.Clear();
   std::string result_str;
-  ASSERT_EQ(0, storemanager->LoadChunk(chunk_name, &result_str));
+  ASSERT_EQ(0, storemanager->LoadChunk(hex_chunk_name, &result_str));
 //  maidsafe::GetResponse load_res;
 //  ASSERT_TRUE(load_res.ParseFromString(result_str));
 //  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));

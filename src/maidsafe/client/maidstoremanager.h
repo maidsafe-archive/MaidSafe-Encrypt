@@ -58,7 +58,7 @@ class CallbackObj {
   CallbackObj() : cond_(),  mutex_(), called_(false), result_("") {}
   void CallbackFunc(const std::string &result) {
     {
-      boost::lock_guard<boost::mutex> lock(mutex_);
+      boost::mutex::scoped_lock lock(mutex_);
       result_ = result;
     }
     cond_.notify_one();
@@ -72,8 +72,14 @@ class CallbackObj {
     boost::system_time now(boost::get_system_time());
     boost::system_time timeout_expires = now +
         boost::posix_time::milliseconds(timeout);
-    boost::unique_lock<boost::mutex> lock(mutex_);
+    boost::mutex::scoped_lock lock(mutex_);
     called_ = cond_.timed_wait(lock, timeout_expires);
+  }
+  //  Block until callback happens.
+  void WaitForCallback() {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_.wait(lock);
+    called_ = true;
   }
  private:
   boost::condition_variable cond_;
@@ -123,13 +129,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
   int LoadChunk(const std::string &hex_chunk_name, std::string *data);
-// TODO(Fraser#5#): 2009-08-04 - Delete this version of StoreChunk
-  void StoreChunk(const std::string &,  // hex_chunk_name,
-                  const std::string &,  // content,
-                  const std::string &,  // public_key,
-                  const std::string &,  // signed_public_key,
-                  const std::string &,  // signature,
-                  base::callback_func_type) {}
   // Adds the chunk to the store queue.  It must already be in the chunkstore.
   // If the chunk already exists (stored locally or on the net) the function
   // succeeds.  The function returns as soon as the task is enqueued.
@@ -197,9 +196,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void IsKeyUnique_Callback(const std::string &result,
                             base::callback_func_type cb);
   void GetMsgs_Callback(const std::string &result, base::callback_func_type cb);
-  void StoreChunk_Callback(const std::string &result,
-                           const bool &update,
-                           base::callback_func_type cb);
   void DeleteChunk_Callback(const std::string &result,
                             base::callback_func_type cb);
   void AddPriorityStoreTask(const StoreTask &store_task,
@@ -258,10 +254,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Blocking call to Kademlia Find Nodes.
   int FindKNodes(const std::string &kad_key,
                  std::vector<kad::Contact> *contacts);
-  // Blocking call to Kademlia Find Value.
+  // Blocking call to Kademlia Find Value.  If the maidsafe value is cached,
+  // this may yield serialised contact details for a cache copy holder.
+  // Otherwise it should yield the reference holders.  It also yields the
+  // details of the last kad node to not return the value during the lookup.
   int FindValue(const std::string &kad_key,
-                std::string *value,
-                std::vector<std::string> *chunk_holders_ids);
+                std::string *cache_holder_id,
+                std::vector<std::string> *chunk_holders_ids,
+                std::string *needs_cache_copy_id);
   // Populates a vector of chunk holders.  Those that are contactable have
   // non-empty contact details and those that have the chunk have their variable
   // check_chunk_response_.result() == kAck.  As each CheckChunk RPC calls back

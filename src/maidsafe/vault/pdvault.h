@@ -252,7 +252,7 @@ class PDVault {
   FRIEND_TEST(TestPDVault, FUNC_MAID_StoreChunks);
   void KadJoinedCallback(const std::string &result,
                          boost::mutex *mutex,
-                         bool *kad_join_called_back);
+                         boost::condition_variable *kad_join_cond);
   void RegisterMaidService();
   void UnRegisterMaidService();
   // This runs in a continuous loop until vault_status_ becomes kVaultStopping.

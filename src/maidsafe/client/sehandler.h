@@ -160,19 +160,6 @@ class SEHandler {
   void StoreChunks(const DataMap &dm,
                    const DirType dir_type,
                    const std::string &msid);
-  void IterativeStoreChunks(boost::shared_ptr<ChunksData> data);
-  void StoreChunk(const std::string &chunk_name,
-                  int retry,
-                  boost::shared_ptr<ChunksData> data);
-  void CheckChunk(const std::string &chunk_name,
-                  boost::shared_ptr<ChunksData> data);
-  void StoreChunkCallback(const std::string &result,
-                          const std::string &chunk_name,
-                          int retry,
-                          boost::shared_ptr<ChunksData> data);
-  void CheckChunkCallback(const std::string &result,
-                          const std::string &chunk_name,
-                          boost::shared_ptr<ChunksData> data);
   void LoadChunks(const DataMap &dm,
                   base::callback_func_type cb);
   void IterativeLoadChunks(boost::shared_ptr<ChunksData> data);

@@ -265,9 +265,9 @@ ChunkType ChunkStore::GetChunkType(const std::string &key,
   crypto::Crypto crypto;
   crypto.set_hash_algorithm(crypto::SHA_512);
   if (key == crypto.Hash(value, "", crypto::STRING_STRING, false)) {
-    type = type | kHashable;
+    type |= kHashable;
   } else {
-    type = type | kNonHashable;
+    type |= kNonHashable;
   }
   return type;
 }
@@ -289,9 +289,9 @@ ChunkType ChunkStore::GetChunkType(const std::string &key,
   try {
     if (fs::exists(file)) {
       if (key == crypto.Hash(file.string(), "", crypto::FILE_STRING, false)) {
-        type = type | kHashable;
+        type |= kHashable;
       } else {
-        type = type | kNonHashable;
+        type |= kNonHashable;
       }
     } else {
       type = -2;
@@ -364,7 +364,10 @@ int ChunkStore::Store(const std::string &key, const std::string &value) {
 #ifdef DEBUG
     printf("Chunk already exists in ChunkStore::StoreChunk.\n");
 #endif
-    return -1;
+// If chunk is cached and is hashable, change type to kNormal.
+    ChunkType type = chunk_type(key);
+    return (type == (kHashable | kCache) || type == (kHashable | kTempCache)) ?
+        ChangeChunkType(key, kHashable | kNormal) : -1;
   }
   ChunkType type = GetChunkType(key, value, false);
   fs::path chunk_path(GetChunkPath(key, type, true));
@@ -658,27 +661,26 @@ int ChunkStore::ChangeChunkType(const std::string &key, ChunkType type) {
 #endif
     return -1;
   }
-  // Try to rename file.  If this fails try to copy.  If this fails, return
-  // negative int.
-  bool renamed(false);
+  // Try to rename file.
+  bool copied(false);
   try {
-    fs::rename(current_chunk_path, new_chunk_path);
-    renamed = true;
+    fs::copy_file(current_chunk_path, new_chunk_path);
+    copied = fs::exists(new_chunk_path);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("%s\n", e.what());
 #endif
+    return -1;
   }
-  if (!renamed) {
+  if (copied) {
     try {
-      fs::copy_file(current_chunk_path, new_chunk_path);
+      fs::remove(current_chunk_path);
     }
     catch(const std::exception &e) {
   #ifdef DEBUG
       printf("%s\n", e.what());
   #endif
-      return -1;
     }
   }
   {

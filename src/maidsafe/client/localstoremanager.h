@@ -48,12 +48,6 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual void CleanUpTransport() {}
   virtual int LoadChunk(const std::string &hex_chunk_name, std::string *data);
   virtual void StoreChunk(const std::string &hex_chunk_name,
-                          const std::string &content,
-                          const std::string &public_key,
-                          const std::string &signed_public_key,
-                          const std::string &signature,
-                          base::callback_func_type cb);
-  virtual void StoreChunk(const std::string &hex_chunk_name,
                           const DirType,
                           const std::string&);
   virtual int StorePacket(const std::string &hex_packet_name,

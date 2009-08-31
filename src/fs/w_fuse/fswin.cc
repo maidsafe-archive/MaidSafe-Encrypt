@@ -1290,6 +1290,7 @@ static void CallMount(char drive) {
   if (g_UseStdErr)
     Dokan_Options->Options |= DOKAN_OPTION_STDERR;
   Dokan_Options->Options |= DOKAN_OPTION_KEEP_ALIVE;
+  Dokan_Options->Options |= DOKAN_OPTION_NETWORK;
 
   ZeroMemory(Dokan_Operations, sizeof(fs_w_fuse::DOKAN_OPERATIONS));
   Dokan_Operations->CreateFile = WinCreateFile;

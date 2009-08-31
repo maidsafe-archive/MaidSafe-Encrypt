@@ -89,32 +89,25 @@ void PDVault::Start(bool port_forwarded) {
   channel_manager_->StartTransport(port_,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer, &knode_, _1));
   RegisterMaidService();
-  bool kad_join_called_back(false);
   boost::mutex kad_join_mutex;
+  boost::condition_variable kad_join_cond;
+  boost::mutex::scoped_lock lock(kad_join_mutex);
   knode_.Join(pmid_, kad_config_file_,
       boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex,
-      &kad_join_called_back), port_forwarded);
+      &kad_join_cond), port_forwarded);
   // Hash check all current chunks in chunkstore
   std::list<std::string> failed_keys;
   if (0 != vault_chunkstore_.HashCheckAllChunks(true, &failed_keys)) {
     return;
   }
   // Block until we've joined the Kademlia network.
-  bool finished_bootstrap = false;
-  while (!finished_bootstrap) {
-    {
-      boost::mutex::scoped_lock guard(kad_join_mutex);
-      if (kad_join_called_back) {
-        finished_bootstrap = true;
-      }
-    }
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-  }
+  kad_join_cond.wait(lock);
   // Set port, so that if vault is restarted before it is destroyed, it re-uses
   // port (unless this port has become unavailable).
   port_ = knode_.host_port();
   if (kad_joined_)
     SetVaultStatus(kVaultStarted);
+// TODO(Fraser#5#): 2009-08-28 - Uncomment prune pending ops thread below.
 //  // Start repeating pruning worker thread
 //  thread_pool_.schedule(boost::threadpool::looped_task_func(boost::bind(
 //      &PDVault::PrunePendingOperations, this), 1000));
@@ -125,22 +118,20 @@ void PDVault::Start(bool port_forwarded) {
 
 void PDVault::KadJoinedCallback(const std::string &result,
                                 boost::mutex *mutex,
-                                bool *kad_join_called_back) {
+                                boost::condition_variable *kad_join_cond) {
   base::GeneralResponse result_;
   if (!result_.ParseFromString(result)) {
     boost::mutex::scoped_lock lock(*mutex);
     kad_joined_ = false;
-    *kad_join_called_back = true;
   } else if (result_.result() != kad::kRpcResultSuccess) {
     UnRegisterMaidService();
     boost::mutex::scoped_lock lock(*mutex);
     kad_joined_ = false;
-    *kad_join_called_back = true;
   } else {
     boost::mutex::scoped_lock lock(*mutex);
     kad_joined_ = true;
-    *kad_join_called_back = true;
   }
+  kad_join_cond->notify_one();
 }
 
 int PDVault::Stop(bool cancel_pending_ops) {
