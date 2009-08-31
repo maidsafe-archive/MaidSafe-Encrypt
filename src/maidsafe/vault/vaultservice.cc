@@ -824,6 +824,7 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
+    response->set_request_type(0);
     done->Run();
     return;
   }
@@ -912,61 +913,9 @@ void VaultService::VaultStatus(google::protobuf::RpcController*,
     return;
   }
 
-  if (!vc.has_chunkstore() && !vc.has_offered_space() && !vc.has_free_space()) {
-    response->set_result(kNack);
-#ifdef DEBUG
-    printf("In VaultService::VaultStatus (%i), requesting nothing.\n",
-           knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-
-  if (vc.has_chunkstore() && vc.chunkstore() != "YES") {
-    response->set_result(kNack);
-#ifdef DEBUG
-    printf("In VaultService::VaultStatus (%i), chunksotre request invalid (%s)."
-           "\n", knode_->host_port(), vc.chunkstore().c_str());
-#endif
-    done->Run();
-    return;
-  } else {
-    vc.set_chunkstore(vault_chunkstore_->ChunkStoreDir());
-  }
-
-  if (vc.has_offered_space() && vc.offered_space() != 0) {
-    response->set_result(kNack);
-#ifdef DEBUG
-#ifdef MAIDSAFE_WIN32
-    printf("In VaultService::VaultStatus (%i), offered_space request invalid "
-           "(%I64u).\n", knode_->host_port(), vc.offered_space());
-#else
-    printf("In VaultService::VaultStatus (%i), offered_space request invalid "
-           "(%llu).\n", knode_->host_port(), vc.offered_space());
-#endif
-#endif
-    done->Run();
-    return;
-  } else {
-    vc.set_offered_space(vault_chunkstore_->available_space());
-  }
-
-  if (vc.has_free_space() && vc.free_space() != 0) {
-    response->set_result(kNack);
-#ifdef DEBUG
-#ifdef MAIDSAFE_WIN32
-    printf("In VaultService::VaultStatus (%i), free_space request invalid "
-           "(%I64u).\n", knode_->host_port(), vc.free_space());
-#else
-    printf("In VaultService::VaultStatus (%i), free_space request invalid "
-           "(%llu).\n", knode_->host_port(), vc.free_space());
-#endif
-#endif
-    done->Run();
-    return;
-  } else {
-    vc.set_free_space(vault_chunkstore_->FreeSpace());
-  }
+  vc.set_chunkstore(vault_chunkstore_->ChunkStoreDir());
+  vc.set_offered_space(vault_chunkstore_->available_space());
+  vc.set_free_space(vault_chunkstore_->FreeSpace());
 
   std::string serialised_vc;
   vc.SerializeToString(&serialised_vc);
