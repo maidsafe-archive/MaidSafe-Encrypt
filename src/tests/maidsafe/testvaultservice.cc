@@ -27,6 +27,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/vault/vaultchunkstore.h"
+#include "maidsafe/vault/vaultbufferpackethandler.h"
 
 namespace fs = boost::filesystem;
 
@@ -60,8 +61,6 @@ class Callback {
  public:
   void CallbackFunction() {}
 };
-
-// TODO(Steve) clean up unused vars
 
 class VaultServicesTest : public testing::Test {
   protected:
@@ -923,10 +922,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
   request.set_data("abcdef");
 
   // TODO(anyone) add more data types
-  int data_type[] = { maidsafe::SYSTEM_PACKET,
-                      // maidsafe::BUFFER_PACKET_MESSAGE,
-                      maidsafe::PDDIR_SIGNED,
-                      maidsafe::BUFFER_PACKET_INFO };
+  int data_type[] = { maidsafe::SYSTEM_PACKET, maidsafe::BUFFER_PACKET_MESSAGE,
+                      maidsafe::PDDIR_SIGNED, maidsafe::BUFFER_PACKET_INFO };
 
   // invalid data for all data types
   for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
@@ -956,29 +953,37 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
         break;
       }
       case maidsafe::BUFFER_PACKET_MESSAGE: {
-        // TODO(Steve) Update BUFFER_PACKET_MESSAGE (fix)
-//        packethandler::GenericPacket gp_msg;
-//        packethandler::BufferPacketMessage bp_msg;
-//        bp_msg.set_sender_id("non authuser");
-//        std::string enc_key = co.AsymEncrypt("key", "", pub_key,
-//                                             crypto::STRING_STRING);
-//        bp_msg.set_rsaenc_key(enc_key);
-//        std::string enc_msg = co.SymmEncrypt("this be a message", "",
-//                                             crypto::STRING_STRING, "key");
-//        bp_msg.set_aesenc_message(enc_msg);
-//        bp_msg.set_type(packethandler::ADD_CONTACT_RQST);
-//
-//        std::string ser_bp_msg;
-//        bp_msg.set_sender_public_key(pub_key);
-//        bp_msg.SerializeToString(&ser_bp_msg);
-//        gp_msg.set_data(ser_bp_msg);
-//        gp_msg.set_signature(co.AsymSign(ser_bp_msg, "", priv_key,
-//                             crypto::STRING_STRING));
-//        prev_content = ser_bp_msg;
-//        content = gp_msg.SerializeAsString();
-//
-//        packethandler::BufferPacket bp;
-//        ASSERT_TRUE(bp.ParseFromString(ser_bp_msg));
+        packethandler::GenericPacket gp_msg;
+        packethandler::BufferPacketMessage bp_msg;
+        bp_msg.set_sender_id("non authuser");
+        std::string enc_key = co.AsymEncrypt("key", "", pub_key,
+                                             crypto::STRING_STRING);
+        bp_msg.set_rsaenc_key(enc_key);
+        std::string enc_msg = co.SymmEncrypt("this be a message", "",
+                                             crypto::STRING_STRING, "key");
+        bp_msg.set_aesenc_message(enc_msg);
+        bp_msg.set_type(packethandler::ADD_CONTACT_RQST);
+
+        std::string ser_bp_msg;
+        bp_msg.set_sender_public_key(pub_key);
+        bp_msg.SerializeToString(&ser_bp_msg);
+        gp_msg.set_data(ser_bp_msg);
+        gp_msg.set_signature(co.AsymSign(ser_bp_msg, "", priv_key,
+                             crypto::STRING_STRING));
+        content = gp_msg.SerializeAsString();
+
+        packethandler::BufferPacketInfo bpi;
+        bpi.set_owner("test bufferpacket xyz");
+        bpi.set_ownerpublickey(pub_key);
+        bpi.add_users("testuser");
+        packethandler::BufferPacket bp;
+        packethandler::GenericPacket *info = bp.add_owner_info();
+        std::string ser_bpi;
+        bpi.SerializeToString(&ser_bpi);
+        info->set_data(ser_bpi);
+        info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
+                            crypto::STRING_STRING));
+        prev_content = bp.SerializeAsString();
         break;
       }
       case maidsafe::BUFFER_PACKET_INFO: {
@@ -1133,10 +1138,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
   ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, "abcde"));
 
   // TODO(anyone) add more data types
-  int data_type[] = { maidsafe::SYSTEM_PACKET,
-                      maidsafe::BUFFER_PACKET,
-                      // maidsafe::BUFFER_PACKET_MESSAGE,
-                      maidsafe::PDDIR_SIGNED };
+  int data_type[] = { maidsafe::SYSTEM_PACKET, maidsafe::BUFFER_PACKET,
+                      maidsafe::BUFFER_PACKET_MESSAGE, maidsafe::PDDIR_SIGNED };
 
   // invalid data for all data types
   for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
@@ -1163,7 +1166,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
         content = gp.SerializeAsString();
         break;
       }
-      case maidsafe::BUFFER_PACKET: {
+      case maidsafe::BUFFER_PACKET:
+      case maidsafe::BUFFER_PACKET_MESSAGE: {
         packethandler::BufferPacketInfo bpi;
         bpi.set_owner("test bufferpacket " + base::itos(i));
         bpi.set_ownerpublickey(pub_key);
@@ -1173,13 +1177,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
         info->set_data(bpi.SerializeAsString());
         info->set_signature(co.AsymSign(info->data(), "", priv_key,
                                         crypto::STRING_STRING));
+        packethandler::GenericPacket *msg = bp.add_messages();
+        msg->set_data("message");
+        msg->set_signature(co.AsymSign(msg->data(), "", priv_key,
+                                       crypto::STRING_STRING));
         content = bp.SerializeAsString();
         break;
       }
-      case maidsafe::BUFFER_PACKET_MESSAGE:
-        // TODO(Steve) Delete BUFFER_PACKET_MESSAGE
-        // need to do different check below, too
-        break;
     }
 
     chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
@@ -1197,7 +1201,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
     vault_service_->Delete(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, response.result());
-    ASSERT_FALSE(vault_service_->HasChunkLocal(chunkname));
+    if (data_type[i] != maidsafe::BUFFER_PACKET_MESSAGE) {
+      ASSERT_FALSE(vault_service_->HasChunkLocal(chunkname));
+    } else {
+      packethandler::BufferPacket bp;
+      ASSERT_TRUE(vault_service_->LoadChunkLocal(chunkname, &content));
+      ASSERT_TRUE(bp.ParseFromString(content));
+      EXPECT_EQ(0, bp.messages_size());
+    }
     response.Clear();
   }
 }
