@@ -116,6 +116,17 @@ class VaultService : public maidsafe::MaidsafeService {
                            maidsafe::VaultStatusResponse* response,
                            google::protobuf::Closure* done);
  private:
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSystemPacket);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateDataChunk);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesStorable);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesLocalStorage);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesRankAuthorityGenerator);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetCheck);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesUpdate);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetMessages);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesDelete);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidityCheck);
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
   bool ValidateSignedRequest(const std::string &public_key,

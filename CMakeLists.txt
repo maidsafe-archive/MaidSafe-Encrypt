@@ -179,6 +179,7 @@ add_executable(perpetualdata ${M_QT_C} )
 add_executable(pdlocal ${M_QT_C} )
 
 SET(SYS_LIB
+        maidsafe-dht
 	/usr/lib/libboost_thread-gcc43-mt.a
 	sqlite3
 	/usr/lib/libprotobuf.a
@@ -188,7 +189,6 @@ SET(SYS_LIB
 	/usr/lib/libboost_date_time-gcc43-mt.a
 	-lrt
 	-lc
-  maidsafe-dht
 )
 
 ELSEIF (WIN32)

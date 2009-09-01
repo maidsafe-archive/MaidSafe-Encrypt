@@ -23,6 +23,7 @@
 #include <gtest/gtest.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/utils.h>
+#include <boost/filesystem/fstream.hpp>
 
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/localstoremanager.h"
@@ -233,7 +234,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
   fs::path chunk_path("./TestStoreManager");
   chunk_path /= hex_chunk_name;
-  std::ofstream ofs;
+  boost::filesystem::ofstream ofs;
   ofs.open(chunk_path.string().c_str());
   ofs << chunk_content;
   ofs.close();
