@@ -189,8 +189,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
-  void LoadChunk_Callback(const std::string &result,
-                          base::callback_func_type cb);
   void SimpleResult_Callback(const std::string &result,
                              base::callback_func_type cb);
   void IsKeyUnique_Callback(const std::string &result,
@@ -259,7 +257,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Otherwise it should yield the reference holders.  It also yields the
   // details of the last kad node to not return the value during the lookup.
   int FindValue(const std::string &kad_key,
-                std::string *cache_holder_id,
+                kad::ContactInfo *cache_holder,
                 std::vector<std::string> *chunk_holders_ids,
                 std::string *needs_cache_copy_id);
   // Populates a vector of chunk holders.  Those that are contactable have

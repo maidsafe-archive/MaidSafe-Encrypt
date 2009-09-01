@@ -46,12 +46,15 @@ PDVault::PDVault(const std::string &pmid_public,
                  const std::string &signed_pmid_public,
                  const std::string &chunkstore_dir,
                  const boost::uint16_t &port,
+                 bool port_forwarded,
+                 bool use_upnp,
                  const std::string &kad_config_file,
                  const boost::uint64_t &available_space,
                  const boost::uint64_t &used_space)
     : port_(port),
       channel_manager_(new rpcprotocol::ChannelManager()),
-      knode_(channel_manager_, kad::VAULT, pmid_private, pmid_public),
+      knode_(channel_manager_, kad::VAULT, pmid_private, pmid_public,
+          port_forwarded, use_upnp),
       vault_rpcs_(channel_manager_),
       vault_chunkstore_(chunkstore_dir, available_space, used_space),
       vault_service_(),
@@ -77,13 +80,14 @@ PDVault::PDVault(const std::string &pmid_public,
   base::decode_from_hex(pmid_, &non_hex_pmid_);
   signed_non_hex_pmid_ = co_.AsymSign(non_hex_pmid_, "", pmid_private_,
                                       crypto::STRING_STRING);
+  knode_.SetAlternativeStore(&vault_chunkstore_);
 }
 
 PDVault::~PDVault() {
   Stop(true);
 }
 
-void PDVault::Start(bool port_forwarded) {
+void PDVault::Start() {
   if (vault_status() == kVaultStarted)
     return;
   channel_manager_->StartTransport(port_,
@@ -94,7 +98,7 @@ void PDVault::Start(bool port_forwarded) {
   boost::mutex::scoped_lock lock(kad_join_mutex);
   knode_.Join(pmid_, kad_config_file_,
       boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex,
-      &kad_join_cond), port_forwarded);
+      &kad_join_cond));
   // Hash check all current chunks in chunkstore
   std::list<std::string> failed_keys;
   if (0 != vault_chunkstore_.HashCheckAllChunks(true, &failed_keys)) {

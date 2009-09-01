@@ -212,6 +212,8 @@ class RunPDVaults {
                                      signed_key_,
                                      chunkstore_local_,
                                      this_port,
+                                     false,
+                                     false,
                                      kad_config_location_,
                                      1024*1024*1024,
                                      0));
@@ -249,7 +251,7 @@ class RunPDVaults {
     bool success_ = false;
     for (int i = 0; i < no_of_vaults_; ++i) {
       success_ = false;
-      (*(pdvaults_))[i]->Start(false);
+      (*(pdvaults_))[i]->Start();
       for (int n = 0; n < 6000; ++n) {
         if ((*(pdvaults_))[i]->vault_status() ==
             maidsafe_vault::kVaultStarted) {

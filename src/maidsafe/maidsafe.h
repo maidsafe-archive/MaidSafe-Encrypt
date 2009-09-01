@@ -27,9 +27,13 @@
 
 #include <boost/cstdint.hpp>
 #include <maidsafe/maidsafe-dht.h>
-#if MAIDSAFE_DHT_VERSION < 7
-#error this API is not compatible with the installed library
-#error Please update the maidsafe-dht library
+#define THIS_MAIDSAFE_DHT_VERSION 9
+#if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
+#error This API is not compatible with the installed library.
+#error Please update the maidsafe-dht library.
+#elif MAIDSAFE_DHT_VERSION > THIS_MAIDSAFE_DHT_VERSION
+#error This API uses a newer version of the maidsafe-dht library.
+#error Please update this project.
 #endif
 #include <stdint.h>
 

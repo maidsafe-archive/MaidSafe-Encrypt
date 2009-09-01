@@ -43,7 +43,8 @@ namespace maidsafe {
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
     : channel_manager_(new rpcprotocol::ChannelManager()),
-      knode_(new kad::KNode(channel_manager_, kad::CLIENT)),
+      knode_(new kad::KNode(channel_manager_, kad::CLIENT, "", "", false,
+          false)),
       client_rpcs_(channel_manager_),
       pdclient_(NULL),
       ss_(SessionSingleton::getInstance()),
@@ -51,7 +52,9 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       store_thread_pool_(kMaxStoreThreads),
       kKadStoreThreshold_(kad::K * kad::kMinSuccessfulPecentageStore),
       store_packet_mutex_(),
-      store_packet_conditional_() {}
+      store_packet_conditional_() {
+  knode_->SetAlternativeStore(client_chunkstore_.get());
+}
 
 void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
   // If kad config file exists in dir we're in, use that, otherwise get default
@@ -81,8 +84,8 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
   printf("\tIn MaidsafeStoreManager::Init, before Join.\n");
 #endif
   CallbackObj kad_cb_obj;
-  knode_->Join("", kadconfig_str, boost::bind(&CallbackObj::CallbackFunc,
-      &kad_cb_obj, _1), false);
+  knode_->Join(kadconfig_str, boost::bind(&CallbackObj::CallbackFunc,
+      &kad_cb_obj, _1));
   kad_cb_obj.WaitForCallback();
   base::GeneralResponse kad_response;
   GenericResponse maid_response;
@@ -146,13 +149,13 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
   base::decode_from_hex(hex_chunk_name, &chunk_name);
   if (client_chunkstore_->Load(chunk_name, data) == 0)
     return 0;
-  std::string cache_holder_id;
+  kad::ContactInfo cache_holder;
   std::vector<std::string> chunk_holders_ids;
   std::string needs_cache_copy_id;
   // If the maidsafe value is cached, this blocking Kad call to FindValue may
   // yield serialised contact details for a cache copy holder.  Otherwise it
   // should yield the reference holders.
-  if (FindValue(chunk_name, &cache_holder_id, &chunk_holders_ids,
+  if (FindValue(chunk_name, &cache_holder, &chunk_holders_ids,
       &needs_cache_copy_id) != 0) {
 #ifdef DEBUG
   printf("In MaidsafeStoreManager::LoadChunk (%i), failed in FindValue.\n",
@@ -160,16 +163,13 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
 #endif
     return -1;
   }
-  if (cache_holder_id != "") {  // We got a cached copy holder's contact details
-    kad::Contact chunk_holder_contact;
-    if (!chunk_holder_contact.ParseFromString(cache_holder_id))
+  if (cache_holder.has_node_id()) {  // We got a cached copy holder's details
 // TODO(Fraser#5#): 2009-08-21 - We should maybe try again - we may get a
 //                               different chunkholder next time?
-      return -1;
-    ChunkHolder chunk_holder(chunk_holder_contact);
+    ChunkHolder chunk_holder(cache_holder);
     chunk_holder.local_ = (knode_->CheckContactLocalAddress(
-        chunk_holder_contact.node_id(), chunk_holder_contact.local_ip(),
-        chunk_holder_contact.local_port(), chunk_holder_contact.host_ip())
+        cache_holder.node_id(), cache_holder.local_ip(),
+        cache_holder.local_port(), cache_holder.ip())
         == kad::LOCAL);
     GetChunk(&chunk_holder, data);
 // TODO(Fraser#5#): 2009-08-31 - Store cache copy to needs_cache_copy_id
@@ -254,10 +254,16 @@ void MaidsafeStoreManager::DeletePacket(const std::string &hex_key,
 
 void MaidsafeStoreManager::LoadPacket(const std::string &hex_key,
                                       base::callback_func_type cb) {
-  std::string key("");
-  base::decode_from_hex(hex_key, &key);
-  pdclient_->GetChunk(key,
-      boost::bind(&MaidsafeStoreManager::LoadChunk_Callback, this, _1, cb));
+  std::string data, ser_result;
+  GetResponse result_msg;
+  if (LoadChunk(hex_key, &data) != 0) {
+    result_msg.set_result(kNack);
+  } else {
+    result_msg.set_result(kAck);
+    result_msg.set_content(data);
+  }
+  result_msg.SerializeToString(&ser_result);
+  cb(ser_result);
 }
 
 void MaidsafeStoreManager::GetMessages(const std::string &hex_key,
@@ -267,31 +273,6 @@ void MaidsafeStoreManager::GetMessages(const std::string &hex_key,
   std::string key("");
   base::decode_from_hex(hex_key, &key);
   pdclient_->GetMessages(key, public_key, signed_public_key, cb);
-}
-
-void MaidsafeStoreManager::LoadChunk_Callback(const std::string &result,
-                                              base::callback_func_type cb) {
-  GetResponse result_msg;
-  if (!result_msg.ParseFromString(result)) {
-#ifdef DEBUG
-    printf("Load chunk callback doesn't parse.\n");
-#endif
-    result_msg.set_result(kNack);
-  } else {
-    if (result_msg.has_content()) {
-      result_msg.clear_result();
-      result_msg.set_result(kAck);
-    } else {
-#ifdef DEBUG
-      printf("Load chunk callback came back with no content.\n");
-#endif
-      result_msg.clear_result();
-      result_msg.set_result(kNack);
-    }
-  }
-  std::string ser_result;
-  result_msg.SerializeToString(&ser_result);
-  cb(ser_result);
 }
 
 void MaidsafeStoreManager::SimpleResult_Callback(const std::string &result,
@@ -513,14 +494,14 @@ void MaidsafeStoreManager::PreSendAnalysis(const StoreTask &store_task,
 #endif
   // Find out if the chunk already exists on the network.
   std::string chunk_name = store_task.non_hex_key_;
-  std::string cache_holder_id;
+  kad::ContactInfo cache_holder;
   std::vector<std::string> chunk_holders_ids;
   std::string needs_cache_copy_id;
   // If the maidsafe value is cached, this blocking Kad call to FindValue may
   // yield serialised contact details for a cache copy holder.  Otherwise it
   // should yield the reference holders.  If it yields the reference holders,
   // check that at least one currently has the chunk.
-  int find_result = FindValue(chunk_name, &cache_holder_id, &chunk_holders_ids,
+  int find_result = FindValue(chunk_name, &cache_holder, &chunk_holders_ids,
       &needs_cache_copy_id);
   bool exists = (find_result == 0);
   // If FindValue failed to complete the kad function then return.
@@ -532,7 +513,7 @@ void MaidsafeStoreManager::PreSendAnalysis(const StoreTask &store_task,
     SetStoreReturnValue(-1, return_value);
     return;
   }
-  bool data_cached = (!cache_holder_id.empty());
+  bool data_cached = (cache_holder.has_node_id());
   std::string data;
   if (exists && !data_cached) {
     exists =
@@ -958,10 +939,10 @@ int MaidsafeStoreManager::FindKNodes(const std::string &kad_key,
 
 int MaidsafeStoreManager::FindValue(
     const std::string &kad_key,
-    std::string *cache_holder_id,
+    kad::ContactInfo *cache_holder,
     std::vector<std::string> *chunk_holders_ids,
     std::string *needs_cache_copy_id) {
-  cache_holder_id->clear();
+  cache_holder->Clear();
   chunk_holders_ids->clear();
   needs_cache_copy_id->clear();
   CallbackObj kad_cb_obj;
@@ -988,12 +969,12 @@ int MaidsafeStoreManager::FindValue(
 #endif
     return -3;
   }
-//  if (find_response.has_needs_cache_copy())
-//    *needs_cache_copy_id = find_response.needs_cache_copy();
+  if (find_response.has_needs_cache_copy())
+    *needs_cache_copy_id = find_response.needs_cache_copy();
   // If the response has an alternative_value, then the value is the ID of a
   // peer which has a cached copy of the chunk.
-  if (find_response.has_alternative_value()) {
-    *cache_holder_id = find_response.alternative_value();
+  if (find_response.has_alternative_value_holder()) {
+    *cache_holder = find_response.alternative_value_holder();
     return 0;
   }
   for (int i = find_response.values_size(); i >= 1; --i) {

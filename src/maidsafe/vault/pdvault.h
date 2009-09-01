@@ -206,11 +206,13 @@ class PDVault {
           const std::string &signed_pmid_public,
           const std::string &chunkstore_dir,
           const boost::uint16_t &port,
+          bool port_forwarded,
+          bool use_upnp,
           const std::string &kad_config_file,
           const boost::uint64_t &available_space,
           const boost::uint64_t &vault_used_space);
   ~PDVault();
-  void Start(bool port_forwarded);
+  void Start();
   int Stop(bool cancel_pending_ops);
   void CleanUp();
   VaultStatus vault_status();

@@ -125,12 +125,13 @@ class Env: public testing::Environment {
       kad_config_file_ = chunkstore_local + "/.kadconfig";
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
-          signed_key, chunkstore_local, 0, kad_config_file_, 1073741824, 0));
+          signed_key, chunkstore_local, 0, false, false, kad_config_file_,
+          1073741824, 0));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
     }
     // Start second vault and add as bootstrapping node for first vault
-    (*pdvaults_)[1]->Start(false);
+    (*pdvaults_)[1]->Start();
     boost::posix_time::ptime stop =
         boost::posix_time::second_clock::local_time() + single_function_timeout;
     while (((*pdvaults_)[1]->vault_status() != maidsafe_vault::kVaultStarted) &&
@@ -152,7 +153,7 @@ class Env: public testing::Environment {
     output1.close();
     // Start first vault, add him as bootstrapping node for all others and stop
     // second vault
-    (*pdvaults_)[0]->Start(false);
+    (*pdvaults_)[0]->Start();
     stop = boost::posix_time::second_clock::local_time() +
         single_function_timeout;
     while (((*pdvaults_)[0]->vault_status() != maidsafe_vault::kVaultStarted) &&
@@ -179,7 +180,7 @@ class Env: public testing::Environment {
                           std::ios::out | std::ios::trunc | std::ios::binary);
       ASSERT_TRUE(kad_config.SerializeToOstream(&output));
       output.close();
-      (*pdvaults_)[k]->Start(false);
+      (*pdvaults_)[k]->Start();
       stop = boost::posix_time::second_clock::local_time() +
           single_function_timeout;
       while (((*pdvaults_)[k]->vault_status() != maidsafe_vault::kVaultStarted)

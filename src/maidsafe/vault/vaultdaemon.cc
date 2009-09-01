@@ -260,8 +260,9 @@ bool VaultDaemon::StartNotOwnedVault() {
   chunkstore_dir /= "Chunkstore";
   boost::uint64_t space = 1024*1024*1024;  // 1GB
   pdvault_ = new PDVault(keys.public_key(), keys.private_key(), signed_pubkey,
-      chunkstore_dir.string(), 0, kad_config_file_.string(), space, 0);
-  pdvault_->Start(false);
+      chunkstore_dir.string(), 0, false, false, kad_config_file_.string(),
+      space, 0);
+  pdvault_->Start();
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed to start a not owned vault");
     return false;
@@ -282,9 +283,9 @@ bool VaultDaemon::StartOwnedVault() {
   if (pdvault_ != NULL)
     return false;
   pdvault_ = new PDVault(pmid_public_, pmid_private_, signed_pmid_public_,
-      chunkstore_dir_, port_, kad_config_file_.string(), vault_available_space_,
-      used_space_);
-  pdvault_->Start(false);
+      chunkstore_dir_, port_, false, false, kad_config_file_.string(),
+      vault_available_space_, used_space_);
+  pdvault_->Start();
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed To Start Owned Vault with info in config file");
     return false;
