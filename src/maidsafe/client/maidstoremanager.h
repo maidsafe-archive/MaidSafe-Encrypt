@@ -89,33 +89,41 @@ class CallbackObj {
 };
 
 struct StoreIouResultHolder {
+ public:
   StoreIouResultHolder()
-      : store_iou_response_(),
-        store_iou_response_returned_(false),
-        controller_(new rpcprotocol::Controller) {}
-  StoreIOUResponse store_iou_response_;
-  bool store_iou_response_returned_;
-  boost::shared_ptr<rpcprotocol::Controller> controller_;
+      : store_iou_response(),
+        store_iou_response_returned(false),
+        controller(new rpcprotocol::Controller) {}
+  StoreIOUResponse store_iou_response;
+  bool store_iou_response_returned;
+  boost::shared_ptr<rpcprotocol::Controller> controller;
+ private:
+  StoreIouResultHolder &operator=(const StoreIouResultHolder&);
+  StoreIouResultHolder(const StoreIouResultHolder&);
 };
 
 struct StoreTask;
 
 struct ChunkHolder {
+ public:
   explicit ChunkHolder(const kad::Contact &chunk_holder_contact)
-      : chunk_holder_contact_(chunk_holder_contact),
-        local_(false),
-        check_chunk_response_(),
-        status_(kUnknown),
-        rpc_id_(0),
-        find_mutex_(),
-        has_conditional_() {}
-  kad::Contact chunk_holder_contact_;
-  bool local_;
-  CheckChunkResponse check_chunk_response_;
-  ChunkHolderStatus status_;
-  boost::uint32_t rpc_id_;
-  boost::mutex *find_mutex_;
-  boost::condition_variable *has_conditional_;
+      : chunk_holder_contact(chunk_holder_contact),
+        local(false),
+        check_chunk_response(),
+        status(kUnknown),
+        rpc_id(0),
+        find_mutex(),
+        has_conditional() {}
+  kad::Contact chunk_holder_contact;
+  bool local;
+  CheckChunkResponse check_chunk_response;
+  ChunkHolderStatus status;
+  boost::uint32_t rpc_id;
+  boost::mutex *find_mutex;
+  boost::condition_variable *has_conditional;
+ private:
+  ChunkHolder &operator=(const ChunkHolder&);
+  ChunkHolder(const ChunkHolder&);
 };
 
 class ChunkStore;
@@ -269,7 +277,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const std::vector<std::string> &chunk_holders_ids,
       boost::mutex *find_mutex,
       boost::condition_variable *has_conditional,
-      std::vector<ChunkHolder> *chunk_holders);
+      std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders);
   // Populates the contact details of a peer vault (with ID chunk_holder_id) and
   // pushes them into the list of contacts provided.  If the RPC fails, the
   // chunk holder's status_ is set to kFailedHolder.  Having done this,
@@ -277,7 +285,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void GetChunkHolderContactCallback(
       const std::string &chunk_holder_id,
       const std::string &result,
-      std::vector<ChunkHolder> *chunk_holders,
+      std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
       boost::mutex *find_mutex,
       boost::condition_variable *find_conditional);
   // This populates the chunk holder's check_chunk_response_ variable (i.e.
@@ -286,7 +294,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // notify is called on the chunk holder's conditional variable.  The shared
   // pointer to the RPC controller is passed in purely to avoid a premature
   // destruct being called on the controller.
-  void HasChunkCallback(ChunkHolder *chunk_holder,
+  void HasChunkCallback(boost::shared_ptr<ChunkHolder> chunk_holder,
                         boost::shared_ptr<rpcprotocol::Controller>);
   // Given a vector of vault ids, this gets the contact info for each and if
   // load_data is true, attempts to load the data once the first contact info
@@ -296,17 +304,18 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                        bool load_data,
                        std::string *data);
   // Get a chunk's content from a specific peer.
-  void GetChunk(ChunkHolder *chunk_holder, std::string *data);
+  void GetChunk(boost::shared_ptr<ChunkHolder> chunk_holder, std::string *data);
   void GetChunkCallback(boost::condition_variable *cond);
   // Passes the IOU to an individual reference holder.
-  int SendIouToRefHolder(const kad::Contact &ref_holder,
-                         StoreIOURequest store_iou_request,
-                         boost::mutex *store_iou_mutex,
-                         StoreIouResultHolder *store_iou_result_holder);
+  int SendIouToRefHolder(
+      const kad::Contact &ref_holder,
+      StoreIOURequest store_iou_request,
+      boost::mutex *store_iou_mutex,
+      boost::shared_ptr<StoreIouResultHolder> store_iou_result_holder);
   void SendIouToRefHolderCallback(bool *store_iou_response_returned,
                                   boost::mutex *store_iou_mutex);
   int HandleStoreIOUResponse(
-      const StoreIouResultHolder &store_iou_result_holder,
+      const boost::shared_ptr<StoreIouResultHolder> store_iou_result_holder,
       std::set<std::string> *ref_holder_ids);
   // Notifies a peer that this vault has passed the IOUs to the appropriate
   // reference holders.
@@ -325,7 +334,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // premature destruct being called on the controller.
   int UpdateChunkCopies(const StoreTask &store_task,
                         const std::vector<std::string> &chunk_holders_ids);
-  void UpdateChunk(const ChunkHolder &chunk_holder,
+  void UpdateChunk(const boost::shared_ptr<ChunkHolder> chunk_holder,
                    const StoreTask &store_task,
                    UpdateResponse *update_resonse,
                    boost::condition_variable *update_conditional);

@@ -102,7 +102,7 @@ class VaultServicesTest : public testing::Test {
 
       channel_manager_.reset(new rpcprotocol::ChannelManager());
       knode_ = new kad::KNode(channel_manager_, kad::VAULT, pmid_private_,
-                              pmid_public_);
+                              pmid_public_, false, false);
       vault_chunkstore_ = new VaultChunkStore(chunkstore_dir_.string(),
                                               kAvailableSpace, 0);
 
@@ -797,7 +797,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkReference) {
     std::string ser_signed_value = signed_value.SerializeAsString();
 
     std::vector<std::string> values;
-    ASSERT_TRUE(knode_->FindValueLocal(chunkname, values));
+    ASSERT_TRUE(knode_->FindValueLocal(chunkname, &values));
     ASSERT_EQ(1, values.size());
     ASSERT_EQ(ser_signed_value, values[0]);
   }
