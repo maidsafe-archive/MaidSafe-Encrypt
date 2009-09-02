@@ -238,6 +238,7 @@ class ClientController {
       boost::threadpool::static_size,
       boost::threadpool::resize_controller,
       boost::threadpool::immediately> thread_pool_;
+  std::string client_store_;
 };
 
 }  // namespace maidsafe

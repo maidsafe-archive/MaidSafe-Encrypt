@@ -130,9 +130,16 @@ void LocalStoreManager::Close(base::callback_func_type cb, bool) {
 
 int LocalStoreManager::LoadChunk(const std::string &hex_chunk_name,
                                  std::string *data) {
+#ifdef DEBUG
+  printf("LocalStoreManager::LoadChunk - %s\n",
+          hex_chunk_name.substr(0, 10).c_str());
+#endif
   fs::path file_path("StoreChunks");
   file_path = file_path / hex_chunk_name;
   if (!fs::exists(file_path)) {
+#ifdef DEBUG
+    printf("LocalStoreManager::LoadChunk - didn't find the chunk.\n");
+#endif
     return -1;
   }
   boost::uintmax_t size = fs::file_size(file_path);
@@ -148,10 +155,16 @@ int LocalStoreManager::LoadChunk(const std::string &hex_chunk_name,
 void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,
                                    const DirType,
                                    const std::string&) {
+#ifdef DEBUG
+  printf("LocalStoreManager::StoreChunk - %s\n",
+          hex_chunk_name.substr(0, 10).c_str());
+#endif
   fs::path file_path("StoreChunks");
   file_path = file_path / hex_chunk_name;
   std::string non_hex("");
   base::decode_from_hex(hex_chunk_name, &non_hex);
+  client_chunkstore_->Store(non_hex, file_path);
+
   ChunkType type = client_chunkstore_->chunk_type(non_hex);
   fs::path current = client_chunkstore_->GetChunkPath(non_hex, type, false);
   try {

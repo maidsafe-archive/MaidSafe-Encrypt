@@ -90,9 +90,14 @@ ClientController::ClientController() : auth_(),
                                        fsys_(),
                                        received_messages_(),
                                        rec_msg_mutex_(),
-                                       thread_pool_(1) {
+                                       thread_pool_(1),
+                                       client_store_() {
   fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
-  client_path /= "client";
+  client_path /= "client" + base::RandomString(8);
+  while (fs::exists(client_path))
+    client_path = fs::path(client_path.string().substr(0,
+        client_path.string().size()-8) + base::RandomString(8));
+  client_store_ = client_path.string();
   try {
     if (!fs::exists(client_path)) {
       fs::create_directories(client_path);
@@ -208,14 +213,15 @@ int ClientController::ParseDa() {
 #endif
   int i = seh_->DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
 #ifdef DEBUG
-  printf("result of decrypt root: %i\n", i);
+  printf("result of decrypt root: %i -- (%s)\n", i, ser_dm_root.c_str());
 #endif
   if (i != 0)
     return -1;
   i = seh_->DecryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, ser_dm_shares,
                       "", "", false, false);
 #ifdef DEBUG
-  printf("result of decrypt %s: %i\n", kRootSubdir[1][0].c_str(), i);
+  printf("result of decrypt %s: %i -- (%s)\n", kRootSubdir[1][0].c_str(), i,
+          ser_dm_shares.c_str());
 #endif
   return (i == 0) ? 0 : -1;
 }
@@ -223,22 +229,23 @@ int ClientController::ParseDa() {
 int ClientController::SerialiseDa() {
   DataAtlas data_atlas_;
   data_atlas_.set_root_db_key(ss_->RootDbKey());
-  std::string ser_dm_root_ = "Return the serialised datamap please old boy.";
-  std::string ser_dm_shares_ = "I'd like one as well old chum.";
-  seh_->EncryptDb(kRoot, PRIVATE, "", "", false, &ser_dm_root_);
-  seh_->EncryptDb(base::TidyPath(kRootSubdir[1][0]),
-                  PRIVATE,
-                  "",
-                  "",
-                  false,
-                  &ser_dm_shares_);
+  std::string ser_dm_root = "Return the serialised datamap please old boy.";
+  std::string ser_dm_shares = "I'd like one as well old chum.";
+  seh_->EncryptDb(kRoot, PRIVATE, "", "", false, &ser_dm_root);
+  seh_->EncryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
+                  &ser_dm_shares);
+#ifdef DEBUG
+  printf("ClientController::SerialiseDa -- root (%s)\n", ser_dm_root.c_str());
+  printf("ClientController::SerialiseDa -- shares (%s)\n",
+          ser_dm_shares.c_str());
+#endif
   DataMap *dm1_;
   DataMap dm2_;
   dm1_ = data_atlas_.add_dms();
-  dm2_.ParseFromString(ser_dm_root_);
+  dm2_.ParseFromString(ser_dm_root);
   *dm1_ = dm2_;
   dm1_ = data_atlas_.add_dms();
-  dm2_.ParseFromString(ser_dm_shares_);
+  dm2_.ParseFromString(ser_dm_shares);
   *dm1_ = dm2_;
 #ifdef DEBUG
   // printf("data_atlas_.dms(0).file_hash(): %s\n",
@@ -615,6 +622,9 @@ bool ClientController::Logout() {
 
   SerialiseDa();
   Exitcode result = auth_->SaveSession(ser_da_, priv_keys, pub_keys);
+  thread_pool_.clear();
+  thread_pool_.wait();
+
 //  int connection_status(0);
 //  int n = ChangeConnectionStatus(connection_status);
 //  if (n != 0) {
@@ -628,11 +638,9 @@ bool ClientController::Logout() {
     delete seh_;
     delete msgh_;
     messages_.clear();
-    fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
-    client_path /= "client";
-    if (fs::exists(client_path)) {
+    if (fs::exists(client_store_)) {
       try {
-        fs::remove_all(client_path);
+        fs::remove_all(client_store_);
       }
       catch(const std::exception &e) {
         printf("Couldn't delete client path\n");
@@ -2239,7 +2247,6 @@ int ClientController::GetDb(const std::string &orig_path_,
     *dir_type = GetDirType(path_);
     overwrite = true;
   }
-
   if (seh_->DecryptDb(parent_path_, *dir_type, "", dir_key_,
       *msid, true, overwrite)) {
 #ifdef DEBUG
