@@ -16,6 +16,7 @@
 
 #include <boost/regex.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/lexical_cast.hpp>
 #include <cstdio>
 
 #include "maidsafe/maidsafe.h"
