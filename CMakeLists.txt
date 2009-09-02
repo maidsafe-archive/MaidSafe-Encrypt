@@ -9,6 +9,27 @@ IF(NOT MAIDSAFE_TEST_TYPE)
    SET(MAIDSAFE_TEST_TYPE "BEH" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
 ENDIF(NOT MAIDSAFE_TEST_TYPE)
 
+option(BOOST_INCLUDES "Set location of BOOST headers ie /usr/include/boost-1_40/" "/usr/include/boost-1_40/")
+option(BOOST_VERSION "Set boost version i.e. 1_40 (use an underscore)" "1_40")
+
+
+IF(NOT BOOST_INCLUDES)
+	IF(WIN32)
+   SET(BOOST_INCLUDES "c:/usr/include/boost/boost-1_40" CACHE STRING "Set location of BOOST headers ie /usr/include/boost-1_40/" FORCE)
+	ELSE()
+   SET(BOOST_INCLUDES "/usr/include/boost/boost-1_40" CACHE STRING "Set location of BOOST headers ie /usr/include/boost_1.40/" FORCE)
+	ENDIF()
+ENDIF(NOT BOOST_INCLUDES)
+
+IF(NOT BOOST_VERSION)
+   SET(BOOST_VERSION "1_40" CACHE STRING "Set boost version i.e. 1_40 (use an underscore)" FORCE)
+ENDIF(NOT BOOST_VERSION)
+message ("############################################################################################")
+message ("Boost version is set at " ${BOOST_VERSION} " to alter this please run cmake ../../ -DBOOST_VERSION=XXX where XXX is 1_39 etc.") 
+message ("############################################################################################")
+message ("Boost Includes are set at " ${BOOST_INCLUDES} " to alter this please run cmake ../../ -DBOOST_INCLUDES=XXX where XXX is /usr/include etc.") 
+message ("############################################################################################")
+
 if(UNIX)
 	EXEC_PROGRAM(date ARGS +%a%d%m%y OUTPUT_VARIABLE pddate)
 ELSE(UNIX)
@@ -164,11 +185,11 @@ add_executable(pdlocal  MACOSX_BUNDLE  ${M_QT_C} )
 SET(SYS_LIB
 protobuf
 sqlite3
-boost_system-xgcc40-mt-1_37
-boost_filesystem-xgcc40-mt-1_37
-boost_regex-xgcc40-mt-1_37
-boost_thread-xgcc40-mt-1_37
-boost_date_time-xgcc40-mt-1_37
+boost_system-xgcc40-mt-${BOOST_VERSION}.a
+boost_filesystem-xgcc40-mt-${BOOST_VERSION}.a
+boost_regex-xgcc40-mt-${BOOST_VERSION}.a
+boost_thread-xgcc40-mt-${BOOST_VERSION}.a
+boost_date_time-xgcc40-mt-${BOOST_VERSION}.a
 maidsafe-dht)
 
 ELSEIF (UNIX AND NOT APPLE)
@@ -180,13 +201,13 @@ add_executable(pdlocal ${M_QT_C} )
 
 SET(SYS_LIB
         maidsafe-dht
-	/usr/lib/libboost_thread-gcc43-mt.a
+	/usr/lib/libboost_thread-gcc43-mt-${BOOST_VERSION}.a
 	sqlite3
 	/usr/lib/libprotobuf.a
-	/usr/lib/libboost_system-gcc43-mt.a
-	/usr/lib/libboost_filesystem-gcc43-mt.a
-	/usr/lib/libboost_regex-gcc43-mt.a
-	/usr/lib/libboost_date_time-gcc43-mt.a
+	/usr/lib/libboost_system-gcc43-mt-${BOOST_VERSION}.a
+	/usr/lib/libboost_filesystem-gcc43-mt-${BOOST_VERSION}.a
+	/usr/lib/libboost_regex-gcc43-mt-${BOOST_VERSION}.a
+	/usr/lib/libboost_date_time-gcc43-mt-${BOOST_VERSION}.a
 	-lrt
 	-lc
 )
@@ -205,11 +226,11 @@ SET(SYS_LIB
  -mi386pe
 -lstdc++
 -lws2_32
-c:/usr/lib/libboost_system-mgw43-mt-1_37.lib
-c:/usr/lib/libboost_filesystem-mgw43-mt-1_37.lib
-c:/usr/lib/libboost_regex-mgw43-mt-1_37.lib
-c:/usr/lib/libboost_thread-mgw43-mt-1_37.lib
-c:/usr/lib/libboost_date_time-mgw43-mt-1_37.lib
+c:/usr/lib/libboost_system-mgw43-mt-${BOOST_VERSION}.lib
+c:/usr/lib/libboost_filesystem-mgw43-mt-${BOOST_VERSION}.lib
+c:/usr/lib/libboost_regex-mgw43-mt-${BOOST_VERSION}.lib
+c:/usr/lib/libboost_thread-mgw43-mt-${BOOST_VERSION}.lib
+c:/usr/lib/libboost_date_time-mgw43-mt-${BOOST_VERSION}.lib
 c:/usr/lib/dokan.lib
 c:/usr/lib/libprotobuf.a c:/usr/lib/libsqlite3.a -liphlpapi
 )
