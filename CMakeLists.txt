@@ -9,8 +9,8 @@ IF(NOT MAIDSAFE_TEST_TYPE)
    SET(MAIDSAFE_TEST_TYPE "BEH" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
 ENDIF(NOT MAIDSAFE_TEST_TYPE)
 
-option(BOOST_INCLUDES "Set location of BOOST headers ie /usr/include/boost-1_40/" "/usr/include/boost-1_40/")
-option(BOOST_VERSION "Set boost version i.e. 1_40 (use an underscore)" "1_40")
+#option(BOOST_INCLUDES "Set location of BOOST headers ie /usr/include/boost-1_40/" "/usr/include/boost-1_40/")
+#option(BOOST_VERSION "Set boost version i.e. 1_40 (use an underscore)" "1_40")
 
 
 IF(NOT BOOST_INCLUDES)
