@@ -251,7 +251,7 @@ class RunPDVaults {
     bool success_ = false;
     for (int i = 0; i < no_of_vaults_; ++i) {
       success_ = false;
-      (*(pdvaults_))[i]->Start();
+      (*(pdvaults_))[i]->Start(false);
       for (int n = 0; n < 6000; ++n) {
         if ((*(pdvaults_))[i]->vault_status() ==
             maidsafe_vault::kVaultStarted) {
