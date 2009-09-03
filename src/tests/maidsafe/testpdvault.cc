@@ -231,8 +231,8 @@ void CreateMessage(const std::string &message,
 namespace maidsafe_vault {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
-static const int kNetworkSize_ = 20;
-static const int kTestK_ = 16;
+    static const int kNetworkSize_ = 20;
+    static const int kTestK_ = 16;
 
 class TestPDVault : public testing::Test {
  protected:
@@ -324,7 +324,7 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
     pdvaults_[kTestVaultNo]->Stop(true);
     ASSERT_NE(kVaultStarted, pdvaults_[kTestVaultNo]->vault_status());
     printf("Vault stopped - iteration %i.\n", loop+1);
-    pdvaults_[kTestVaultNo]->Start();
+    pdvaults_[kTestVaultNo]->Start(false);
     ASSERT_EQ(kVaultStarted, pdvaults_[kTestVaultNo]->vault_status());
     printf("Vault started - iteration %i.\n", loop+1);
   }
@@ -342,13 +342,23 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
     ++i;
   }
-//  while (not got chunk)
-  boost::this_thread::sleep(boost::posix_time::seconds(120));
+  // Wait until last chunk is available via network
+  --it_;
+  int count = 0;
+  while (count < 30) {
+    bool result = sm_->KeyUnique((*it_).first, false);
+    printf("In iter %i, result of KeyUnique is %i\n", count + 1, result);
+    if (!result)
+      break;
+    boost::this_thread::sleep(boost::posix_time::seconds(10));
+    ++count;
+  }
+                            boost::this_thread::sleep(boost::posix_time::seconds(120));
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times and each chunk copy is valid (i.e. name == Hash(contents))
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
-    std::string non_hex_name("");
+    std::string non_hex_name;
     base::decode_from_hex(hex_chunk_name, &non_hex_name);
     int chunk_count = 0;
     for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {

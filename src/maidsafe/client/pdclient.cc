@@ -370,8 +370,7 @@ void PDClient::FindChunkRef(boost::shared_ptr<LoadChunkData> data) {
 #ifdef DEBUG
   printf("\tIn PDClient::FindChunkRef, before FindValue.\n");
 #endif
-  knode_->FindValue(
-      data->chunk_name,
+  knode_->FindValue(data->chunk_name, false,
       boost::bind(&PDClient::FindChunkRefCallback, this, _1, data));
 #ifdef DEBUG
   printf("\tIn PDClient::FindChunkRef, after FindValue.\n");
@@ -477,7 +476,7 @@ void PDClient::UpdateChunk(const std::string &chunk_name,
          knode_->host_port(), hex.c_str());
 #endif
   // Look up the chunk references
-  knode_->FindValue(chunk_name,
+  knode_->FindValue(chunk_name, false,
                     boost::bind(&PDClient::IterativeCheckAlive,
                                 this,
                                 _1,
@@ -784,7 +783,7 @@ void PDClient::DeleteChunk(const std::string &chunk_name,
 #ifdef DEBUG
   printf("\tIn PDClient::DeleteChunk, before FindValue.\n");
 #endif
-  knode_->FindValue(chunk_name,
+  knode_->FindValue(chunk_name, false,
                     boost::bind(&PDClient::DeleteChunk_IterativeCheckAlive,
                                 this,
                                 _1,
@@ -1026,7 +1025,7 @@ void PDClient::FindValue(const std::string &key,
 #ifdef DEBUG
   printf("\tIn PDClient::FindValue, before FindValue.\n");
 #endif
-  knode_->FindValue(key, cb);
+  knode_->FindValue(key, false, cb);
 #ifdef DEBUG
   printf("\tIn PDClient::FindValue, after FindValue.\n");
 #endif

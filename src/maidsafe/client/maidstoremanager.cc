@@ -115,7 +115,7 @@ void MaidsafeStoreManager::Close(base::callback_func_type cb,
 #endif
   if (cancel_pending_ops)
     store_thread_pool_.clear();
-  store_thread_pool_.wait();
+//  store_thread_pool_.wait();
   knode_->Leave();
 #ifdef DEBUG
   printf("\tIn MaidsafeStoreManager::Close, after Leave. Stopping transport\n");
@@ -155,7 +155,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
   // If the maidsafe value is cached, this blocking Kad call to FindValue may
   // yield serialised contact details for a cache copy holder.  Otherwise it
   // should yield the reference holders.
-  if (FindValue(chunk_name, &cache_holder, &chunk_holders_ids,
+  if (FindValue(chunk_name, false, &cache_holder, &chunk_holders_ids,
       &needs_cache_copy_id) != 0) {
 #ifdef DEBUG
   printf("In MaidsafeStoreManager::LoadChunk (%i), failed in FindValue.\n",
@@ -230,6 +230,22 @@ int MaidsafeStoreManager::StorePacket(
     store_packet_conditional_.wait(lock);
   }
   return return_value;
+}
+
+bool MaidsafeStoreManager::KeyUnique(const std::string &hex_key,
+                                     bool check_local) {
+#ifdef DEBUG
+  std::string hex(hex_key.substr(0, 10) + "...");
+  printf("In MaidsafeStoreManager::KeyUnique (%i), packet_name = %s\n",
+         knode_->host_port(), hex.c_str());
+#endif
+  std::string non_hex_key;
+  base::decode_from_hex(hex_key, &non_hex_key);
+  kad::ContactInfo cache_holder;
+  std::vector<std::string> chunk_holders_ids;
+  std::string needs_cache_copy_id;
+  return (FindValue(non_hex_key, check_local, &cache_holder, &chunk_holders_ids,
+          &needs_cache_copy_id) != 0);
 }
 
 void MaidsafeStoreManager::IsKeyUnique(const std::string &hex_key,
@@ -501,8 +517,8 @@ void MaidsafeStoreManager::PreSendAnalysis(const StoreTask &store_task,
   // yield serialised contact details for a cache copy holder.  Otherwise it
   // should yield the reference holders.  If it yields the reference holders,
   // check that at least one currently has the chunk.
-  int find_result = FindValue(chunk_name, &cache_holder, &chunk_holders_ids,
-      &needs_cache_copy_id);
+  int find_result = FindValue(chunk_name, false, &cache_holder,
+      &chunk_holders_ids, &needs_cache_copy_id);
   bool exists = (find_result == 0);
   // If FindValue failed to complete the kad function then return.
   if (!exists && find_result != -3) {
@@ -940,6 +956,7 @@ int MaidsafeStoreManager::FindKNodes(const std::string &kad_key,
 
 int MaidsafeStoreManager::FindValue(
     const std::string &kad_key,
+    bool check_local,
     kad::ContactInfo *cache_holder,
     std::vector<std::string> *chunk_holders_ids,
     std::string *needs_cache_copy_id) {
@@ -947,9 +964,15 @@ int MaidsafeStoreManager::FindValue(
   chunk_holders_ids->clear();
   needs_cache_copy_id->clear();
   CallbackObj kad_cb_obj;
-  knode_->FindValue(kad_key, boost::bind(&CallbackObj::CallbackFunc,
-      &kad_cb_obj, _1));
+#ifdef DEBUG
+  printf("In MaidsafeStoreManager::FindValue, before.\n");
+#endif
+  knode_->FindValue(kad_key, check_local,
+      boost::bind(&CallbackObj::CallbackFunc, &kad_cb_obj, _1));
   kad_cb_obj.WaitForCallback();
+#ifdef DEBUG
+  printf("In MaidsafeStoreManager::FindValue, after.\n");
+#endif
   if (kad_cb_obj.result() == "") {
 #ifdef DEBUG
     printf("In MaidsafeStoreManager::FindValue, fail - timeout.\n");
@@ -976,11 +999,19 @@ int MaidsafeStoreManager::FindValue(
   // peer which has a cached copy of the chunk.
   if (find_response.has_alternative_value_holder()) {
     *cache_holder = find_response.alternative_value_holder();
+#ifdef DEBUG
+    printf("In MaidsafeStoreManager::FindValue, node %s has cached the "
+           "value.\n", cache_holder->node_id().substr(0, 20).c_str());
+#endif
     return 0;
   }
   for (int i = find_response.values_size(); i >= 1; --i) {
     chunk_holders_ids->push_back(find_response.values(i - 1));
   }
+#ifdef DEBUG
+    printf("In MaidsafeStoreManager::FindValue, %lu values have returned.\n",
+           chunk_holders_ids->size());
+#endif
   return (chunk_holders_ids->size()) ? 0 : -4;
 }
 

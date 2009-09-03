@@ -342,6 +342,21 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStore) {
   fstr1.close();
   std::string stored_value1(static_cast<const char*>(temp1.get()), chunk_size);
   ASSERT_EQ(h_value.at(test_chunk), stored_value1);
+  // move to Outgoing and check we can store again
+  ASSERT_EQ(0, chunkstore->ChangeChunkType(h_name.at(test_chunk),
+      maidsafe::kHashable | maidsafe::kOutgoing));
+  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
+                                        &found));
+  ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
+                                             chunkstore->kOutgoingLeaf_));
+  ASSERT_EQ(0, chunkstore->Store(h_name.at(test_chunk),
+                                 h_value.at(test_chunk)));
+  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
+                                        &found));
+  ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
+                                             chunkstore->kOutgoingLeaf_));
   // check a hashable chunk which is already cached can be stored
   ASSERT_EQ(0, chunkstore->ChangeChunkType(h_name.at(test_chunk),
       maidsafe::kHashable | maidsafe::kCache));

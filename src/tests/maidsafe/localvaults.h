@@ -131,7 +131,7 @@ class Env: public testing::Environment {
       ++current_nodes_created_;
     }
     // Start second vault and add as bootstrapping node for first vault
-    (*pdvaults_)[1]->Start();
+    (*pdvaults_)[1]->Start(true);
     boost::posix_time::ptime stop =
         boost::posix_time::second_clock::local_time() + single_function_timeout;
     while (((*pdvaults_)[1]->vault_status() != maidsafe_vault::kVaultStarted) &&
@@ -153,7 +153,7 @@ class Env: public testing::Environment {
     output1.close();
     // Start first vault, add him as bootstrapping node for all others and stop
     // second vault
-    (*pdvaults_)[0]->Start();
+    (*pdvaults_)[0]->Start(false);
     stop = boost::posix_time::second_clock::local_time() +
         single_function_timeout;
     while (((*pdvaults_)[0]->vault_status() != maidsafe_vault::kVaultStarted) &&
@@ -180,7 +180,7 @@ class Env: public testing::Environment {
                           std::ios::out | std::ios::trunc | std::ios::binary);
       ASSERT_TRUE(kad_config.SerializeToOstream(&output));
       output.close();
-      (*pdvaults_)[k]->Start();
+      (*pdvaults_)[k]->Start(false);
       stop = boost::posix_time::second_clock::local_time() +
           single_function_timeout;
       while (((*pdvaults_)[k]->vault_status() != maidsafe_vault::kVaultStarted)

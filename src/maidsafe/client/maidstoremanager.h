@@ -60,7 +60,9 @@ class CallbackObj {
     {
       boost::mutex::scoped_lock lock(mutex_);
       result_ = result;
+      called_ = true;
     }
+    printf("Notify ***********************************\n");
     cond_.notify_one();
   }
   std::string result() {
@@ -69,17 +71,21 @@ class CallbackObj {
   }
   //  Block until callback happens or timeout (milliseconds) passes.
   void WaitForCallback(const int &timeout) {
-    boost::system_time now(boost::get_system_time());
-    boost::system_time timeout_expires = now +
-        boost::posix_time::milliseconds(timeout);
     boost::mutex::scoped_lock lock(mutex_);
-    called_ = cond_.timed_wait(lock, timeout_expires);
+    if (!called_) {
+      boost::system_time now(boost::get_system_time());
+      boost::system_time timeout_expires = now +
+          boost::posix_time::milliseconds(timeout);
+      cond_.timed_wait(lock, timeout_expires);
+    }
   }
   //  Block until callback happens.
   void WaitForCallback() {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_.wait(lock);
-    called_ = true;
+    if (!called_) {
+      printf("Wait ***********************************\n");
+      cond_.wait(lock);
+    }
   }
  private:
   boost::condition_variable cond_;
@@ -108,6 +114,14 @@ struct ChunkHolder {
  public:
   explicit ChunkHolder(const kad::Contact &chunk_holder_contact)
       : chunk_holder_contact(chunk_holder_contact),
+        local(false),
+        check_chunk_response(),
+        status(kUnknown),
+        rpc_id(0),
+        find_mutex(),
+        has_conditional() {}
+  explicit ChunkHolder(const kad::ContactInfo &chunk_holder_contact_info)
+      : chunk_holder_contact(chunk_holder_contact_info),
         local(false),
         check_chunk_response(),
         status(kUnknown),
@@ -151,6 +165,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                   packethandler::SystemPackets system_packet_type,
                   DirType dir_type,
                   const std::string &msid);
+  // Returns true if the key doesn't already exist on the Kad network or
+  // maidsafe network (or locally if bool is true), otherwise false.
+  bool KeyUnique(const std::string &hex_key, bool check_local);
+
+
+
+
   void IsKeyUnique(const std::string &hex_key,
                    base::callback_func_type cb);
   void DeletePacket(const std::string &hex_key,
@@ -264,7 +285,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // this may yield serialised contact details for a cache copy holder.
   // Otherwise it should yield the reference holders.  It also yields the
   // details of the last kad node to not return the value during the lookup.
+  // If check_local is true, it also checks local chunkstore first.
   int FindValue(const std::string &kad_key,
+                bool check_local,
                 kad::ContactInfo *cache_holder,
                 std::vector<std::string> *chunk_holders_ids,
                 std::string *needs_cache_copy_id);

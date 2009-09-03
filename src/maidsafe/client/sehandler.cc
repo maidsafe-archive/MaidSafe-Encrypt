@@ -444,9 +444,9 @@ int SEHandler::EncryptDb(const std::string &dir_path,
                          const bool &encrypt_dm,
                          std::string *ser_dm) {
 #ifdef DEBUG
-//  printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
-//         dir_path.c_str(), dir_type, encrypt_dm, dir_key.c_str());
-//  printf(" msid(%s)\n", msid.c_str());
+  printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
+         dir_path.c_str(), dir_type, encrypt_dm, dir_key.c_str());
+  printf(" msid(%s)\n", msid.c_str());
 #endif
   DataMap dm_;
   std::string ser_dm_="", file_hash_="", enc_dm_;
@@ -539,10 +539,13 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   if (storem_->StorePacket(dir_key, ser_gp, packethandler::PD_DIR, dir_type,
       msid) == 0) {
 #ifdef DEBUG
-//   printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());
+    printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());
 #endif
     return 0;
   } else {
+#ifdef DEBUG
+    printf("SEHandler::EncryptDb dir_path(%s) failed.\n", dir_path.c_str());
+#endif
     return -1;
   }
 }
@@ -555,9 +558,9 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                          bool dm_encrypted,
                          bool overwrite) {
 #ifdef DEBUG
-//  printf("SEHandler::DecryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
-//         dir_path.c_str(), dir_type, dm_encrypted, dir_key.c_str());
-//  printf(" msid(%s)\n", msid.c_str());
+  printf("SEHandler::DecryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
+         dir_path.c_str(), dir_type, dm_encrypted, dir_key.c_str());
+  printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm_, enc_dm_;
   // get dm from DHT

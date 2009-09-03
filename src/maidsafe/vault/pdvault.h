@@ -212,7 +212,7 @@ class PDVault {
           const boost::uint64_t &available_space,
           const boost::uint64_t &vault_used_space);
   ~PDVault();
-  void Start();
+  void Start(bool first_node);
   int Stop(bool cancel_pending_ops);
   void CleanUp();
   VaultStatus vault_status();
@@ -253,7 +253,6 @@ class PDVault {
   PDVault& operator=(const PDVault&);
   FRIEND_TEST(TestPDVault, FUNC_MAID_StoreChunks);
   void KadJoinedCallback(const std::string &result,
-                         boost::mutex *mutex,
                          boost::condition_variable *kad_join_cond);
   void RegisterMaidService();
   void UnRegisterMaidService();

@@ -798,7 +798,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkReference) {
 
     std::vector<std::string> values;
     ASSERT_TRUE(knode_->FindValueLocal(chunkname, &values));
-    ASSERT_EQ(1, values.size());
+    ASSERT_EQ(size_t(1), values.size());
     ASSERT_EQ(ser_signed_value, values[0]);
   }
 }

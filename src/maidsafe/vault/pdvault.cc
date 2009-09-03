@@ -87,7 +87,7 @@ PDVault::~PDVault() {
   Stop(true);
 }
 
-void PDVault::Start() {
+void PDVault::Start(bool first_node) {
   if (vault_status() == kVaultStarted)
     return;
   channel_manager_->StartTransport(port_,
@@ -96,16 +96,24 @@ void PDVault::Start() {
   boost::mutex kad_join_mutex;
   boost::condition_variable kad_join_cond;
   boost::mutex::scoped_lock lock(kad_join_mutex);
-  knode_.Join(pmid_, kad_config_file_,
-      boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex,
-      &kad_join_cond));
+  if (first_node) {
+    boost::asio::ip::address local_ip;
+    base::get_local_address(&local_ip);
+    knode_.Join(pmid_, kad_config_file_, local_ip.to_string(),
+        channel_manager_->ptransport()->listening_port(),
+        boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_cond));
+  } else {
+    knode_.Join(pmid_, kad_config_file_,
+        boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_cond));
+  }
   // Hash check all current chunks in chunkstore
   std::list<std::string> failed_keys;
   if (0 != vault_chunkstore_.HashCheckAllChunks(true, &failed_keys)) {
     return;
   }
   // Block until we've joined the Kademlia network.
-  kad_join_cond.wait(lock);
+  if (!kad_joined_)
+    kad_join_cond.wait(lock);
   // Set port, so that if vault is restarted before it is destroyed, it re-uses
   // port (unless this port has become unavailable).
   port_ = knode_.host_port();
@@ -121,18 +129,14 @@ void PDVault::Start() {
 }
 
 void PDVault::KadJoinedCallback(const std::string &result,
-                                boost::mutex *mutex,
                                 boost::condition_variable *kad_join_cond) {
   base::GeneralResponse result_;
   if (!result_.ParseFromString(result)) {
-    boost::mutex::scoped_lock lock(*mutex);
     kad_joined_ = false;
   } else if (result_.result() != kad::kRpcResultSuccess) {
     UnRegisterMaidService();
-    boost::mutex::scoped_lock lock(*mutex);
     kad_joined_ = false;
   } else {
-    boost::mutex::scoped_lock lock(*mutex);
     kad_joined_ = true;
   }
   kad_join_cond->notify_one();
@@ -539,6 +543,7 @@ void PDVault::IterativeSyncVault(boost::shared_ptr<SyncVaultData> data) {
     ++data->active_updating;
     // Look up the chunk references
     knode_.FindValue(chunk_name,
+                     false,
                      boost::bind(&PDVault::SyncVault_FindAlivePartner,
                                  this,
                                  _1,
@@ -867,7 +872,7 @@ void PDVault::GetChunk(const std::string &chunk_name,
 }
 
 void PDVault::FindChunkRef(boost::shared_ptr<struct LoadChunkData> data) {
-  knode_.FindValue(data->chunk_name,
+  knode_.FindValue(data->chunk_name, false,
                    boost::bind(&PDVault::FindChunkRefCallback, this, _1, data));
 }
 

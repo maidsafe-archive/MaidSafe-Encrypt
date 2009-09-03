@@ -364,8 +364,11 @@ int ChunkStore::Store(const std::string &key, const std::string &value) {
 #ifdef DEBUG
     printf("Chunk already exists in ChunkStore::StoreChunk.\n");
 #endif
-// If chunk is cached and is hashable, change type to kNormal.
+// If chunk is cached and is hashable, change type to kNormal.  If chunk is
+// in Outgoing dir, leave it there.
     ChunkType type = chunk_type(key);
+    if ((type & kOutgoing) == kOutgoing)
+      return 0;
     return (type == (kHashable | kCache) || type == (kHashable | kTempCache)) ?
         ChangeChunkType(key, kHashable | kNormal) : -1;
   }
@@ -388,11 +391,14 @@ int ChunkStore::Store(const std::string &key, const fs::path &file) {
     return -1;
   }
   if (Has(key)) {
+// If chunk is cached and is hashable, change type to kNormal.  If chunk is
+// in Outgoing dir, leave it there.
+    ChunkType type = chunk_type(key);
+    if ((type & kOutgoing) == kOutgoing)
+      return 0;
 #ifdef DEBUG
     printf("Chunk already exists in ChunkStore::StoreChunk.\n");
 #endif
-// If chunk is cached and is hashable, change type to kNormal.
-    ChunkType type = chunk_type(key);
     return (type == (kHashable | kCache) || type == (kHashable | kTempCache)) ?
         ChangeChunkType(key, kHashable | kNormal) : -1;
   }

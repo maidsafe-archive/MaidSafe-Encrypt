@@ -126,17 +126,12 @@ static int WinCreateFile(LPCWSTR FileName,
   HANDLE handle;
   std::string relPathStr, filePathStr, rootStr;
 #ifdef DEBUG
-  printf("WinCreateFile\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinCreateFile\nFileName: %s\n", FileName);
 #endif
   GetFilePath(filePath, FileName);
-  //  std::wcout << "\tfilePath: " << filePath << std::endl;
   GetFilePath(&filePathStr, filePath);
-  //  std::cout << "\tfilePathStr: " << filePathStr << std::endl;
   GetFilePath(&relPathStr, FileName);
-  //  std::cout << "\trelPathStr: " << relPathStr << std::endl;
   GetFilePath(&rootStr, RootDirectory);
-  //  std::cout << "\trootStr: " << rootStr << std::endl;
   // WCHAR DokanPath[MAX_PATH];
   // GetDokanFilePath(DokanPath, FileName);
   // build the required maidsafe branch dirs
@@ -283,8 +278,8 @@ static int WinCreateFile(LPCWSTR FileName,
       fs::remove(full_branch_path_);
     }
 #ifdef DEBUG
-    printf("In WinCreateFile: handle == INVALID_HANDLE_VALUE\t error = ");
-    std::wcout << error << std::endl;
+    printf("In WinCreateFile: handle == INVALID_HANDLE_VALUE\t error = %lu\n",
+           error);
     if (CreationDisposition == OPEN_EXISTING)
       printf("OPEN_EXISTING\n");
     if (CreationDisposition == CREATE_NEW)
@@ -323,8 +318,7 @@ static int WinCreateDirectory(LPCWSTR FileName,
                               PDOKAN_FILE_INFO) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinCreateDirectory\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinCreateDirectory\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   GetFilePath(filePath, FileName);
@@ -371,8 +365,7 @@ static int WinCreateDirectory(LPCWSTR FileName,
 static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinOpenDirectory\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinOpenDirectory\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
@@ -415,8 +408,7 @@ static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
 static int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinCloseFile\n");
-  std::wcout << "\tFileName: " << FileName << std::endl;
+  wprintf(L"WinCloseFile\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   std::string filePathStr;
@@ -433,8 +425,7 @@ static int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
 static int WinCleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinCleanup\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinCleanup\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   std::string filePathStr, relPathStr;
@@ -524,8 +515,7 @@ static int WinReadFile(LPCWSTR FileName,
                        PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinReadFile\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinReadFile\nFileName: %s\n", FileName);
 #endif
   WCHAR   filePath[MAX_PATH];
   HANDLE   handle = (HANDLE)DokanFileInfo->Context;
@@ -581,8 +571,7 @@ static int WinWriteFile(LPCWSTR FileName,
                         PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinWriteFile\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinWriteFile\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   HANDLE handle = (HANDLE)DokanFileInfo->Context;
@@ -645,8 +634,7 @@ static int WinFlushFileBuffers(LPCWSTR FileName,
                                PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinFlushFileBuffers\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinFlushFileBuffers\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   HANDLE handle = (HANDLE)DokanFileInfo->Context;
@@ -667,8 +655,7 @@ static int WinGetFileInformation(
     PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinGetFileInformation\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinGetFileInformation\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   HANDLE handle = (HANDLE)DokanFileInfo->Context;
@@ -779,8 +766,7 @@ static int WinFindFiles(LPCWSTR FileName,
                         PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinFindFiles\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinFindFiles\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   WIN32_FIND_DATAW findData;
@@ -825,8 +811,7 @@ static int WinFindFiles(LPCWSTR FileName,
                           findData.cFileName,
                           MAX_PATH);
 #ifdef DEBUG
-      std::wcout << "\tchild: " << findData.cFileName << "\ttype: ";
-      std::wcout << ityp << std::endl;
+      wprintf(L"\tchild: %s\ttype: %i\n", findData.cFileName, ityp);
 #endif
       findData.cAlternateFileName[ 14 ] = NULL;
       // create children directories if they don't exist
@@ -862,8 +847,7 @@ static int WinFindFiles(LPCWSTR FileName,
                           findData.cFileName,
                           MAX_PATH);
 #ifdef DEBUG
-      std::wcout << "\tchild: " << findData.cFileName << "\ttype: ";
-      std::wcout << ityp << std::endl;
+      wprintf(L"\tchild: %s\ttype: %i\n", findData.cFileName, ityp);
 #endif
       findData.cAlternateFileName[ 14 ] = NULL;
     }
@@ -878,8 +862,7 @@ static int WinFindFiles(LPCWSTR FileName,
 static int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinDeleteFile\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinDeleteFile\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   // HANDLE handle = (HANDLE)DokanFileInfo->Context;
@@ -919,8 +902,7 @@ static int WinDeleteDirectory(LPCWSTR FileName,
                               PDOKAN_FILE_INFO) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinDeleteDirectory\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinDeleteDirectory\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   // HANDLE handle = (HANDLE)DokanFileInfo->Context;
@@ -972,8 +954,7 @@ static int WinMoveFile(LPCWSTR FileName,
                        PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinMovefile\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinMovefile\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   WCHAR newFilePath[MAX_PATH];
@@ -1034,8 +1015,7 @@ static int WinLockFile(LPCWSTR FileName,
                        PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinLockFile\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinLockFile\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
@@ -1072,8 +1052,7 @@ static int WinSetEndOfFile(LPCWSTR FileName,
                            PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinSetEndofFile\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinSetEndofFile\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
@@ -1112,8 +1091,7 @@ static int WinSetAllocationSize(LPCWSTR FileName,
                                 PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinSetAllocationSize\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinSetAllocationSize\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
@@ -1160,8 +1138,7 @@ static int WinSetFileAttributes(LPCWSTR FileName,
                                 PDOKAN_FILE_INFO) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinSetFileAttributes\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinSetFileAttributes\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   GetFilePath(filePath, FileName);
@@ -1184,8 +1161,7 @@ static int WinSetFileTime(LPCWSTR FileName,
                           PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinSetFileTime\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinSetFileTime\nFileName: %s\n", FileName);
 #endif
   WCHAR   filePath[MAX_PATH];
   HANDLE   handle;
@@ -1215,8 +1191,7 @@ static int WinUnlockFile(LPCWSTR FileName,
                          PDOKAN_FILE_INFO DokanFileInfo) {
   base::pd_scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
-  printf("WinUnLockFile\n");
-  std::wcout << "FileName: " << FileName << std::endl;
+  wprintf(L"WinUnLockFile\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
