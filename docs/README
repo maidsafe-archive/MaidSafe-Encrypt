@@ -1,8 +1,13 @@
 maidsafe Perpetual Data 
+included in maidsafe-dht
+cryptopp (cryptographic libraries)
+UDT - cross platform data transport (tcp emulation over udp)
 
 
 
 External Libraries 
-cryptopp - cryptographic library 
 boost libraries 
     boost filesystem - cross platform filesystem functions 
+    boost signals2 - signals and slots library
+    boost date_time - date and time library (for timers etc.)
+    boot threads - cross platform threading
