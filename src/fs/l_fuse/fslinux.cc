@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 #include <fuse/fuse.h>
 #include <pwd.h>
+#include <iostream> //NOLINT
 #include <string>
 #include <cstdlib>
 
