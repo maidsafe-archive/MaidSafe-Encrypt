@@ -72,6 +72,7 @@ IF(CMAKE_COMPILER_IS_GNUCC)
   ENDIF(${CMAKE_GENERATOR} MATCHES "MinGW Makefiles")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 SET(GCC_VERSION "-${GCC_VERSION}")
+SET(BOOST_VERSION "-${BOOST_VERSION}")
 
  set(CPACK_PACKAGE_VERSION_PATCH ${pddate})
 
@@ -210,11 +211,11 @@ add_executable(pdlocal  MACOSX_BUNDLE  ${M_QT_C} )
 SET(SYS_LIB
 protobuf
 sqlite3
-boost_system-xgcc40-mt-${BOOST_VERSION}.a
-boost_filesystem-xgcc40-mt-${BOOST_VERSION}.a
-boost_regex-xgcc40-mt-${BOOST_VERSION}.a
-boost_thread-xgcc40-mt-${BOOST_VERSION}.a
-boost_date_time-xgcc40-mt-${BOOST_VERSION}.a
+boost_system-xgcc40-mt${BOOST_VERSION}.a
+boost_filesystem-xgcc40-mt${BOOST_VERSION}.a
+boost_regex-xgcc40-mt${BOOST_VERSION}.a
+boost_thread-xgcc40-mt${BOOST_VERSION}.a
+boost_date_time-xgcc40-mt${BOOST_VERSION}.a
 maidsafe-dht)
 
 ELSEIF (UNIX AND NOT APPLE)
@@ -226,13 +227,13 @@ add_executable(pdlocal ${M_QT_C} )
 
 SET(SYS_LIB
         maidsafe-dht
-	/usr/lib/libboost_thread${GCC_VERSION}-mt-${BOOST_VERSION}.a
+	/usr/lib/libboost_thread${GCC_VERSION}-mt${BOOST_VERSION}.a
 	sqlite3
 	/usr/lib/libprotobuf.a
-	/usr/lib/libboost_system${GCC_VERSION}-mt-${BOOST_VERSION}.a
-	/usr/lib/libboost_filesystem${GCC_VERSION}-mt-${BOOST_VERSION}.a
-	/usr/lib/libboost_regex${GCC_VERSION}-mt-${BOOST_VERSION}.a
-	/usr/lib/libboost_date_time${GCC_VERSION}-mt-${BOOST_VERSION}.a
+	/usr/lib/libboost_system${GCC_VERSION}-mt${BOOST_VERSION}.a
+	/usr/lib/libboost_filesystem${GCC_VERSION}-mt${BOOST_VERSION}.a
+	/usr/lib/libboost_regex${GCC_VERSION}-mt${BOOST_VERSION}.a
+	/usr/lib/libboost_date_time${GCC_VERSION}-mt${BOOST_VERSION}.a
 	-lrt
 	-lc
 )
@@ -251,11 +252,11 @@ SET(SYS_LIB
  -mi386pe
 -lstdc++
 -lws2_32
-c:/usr/lib/libboost_system${GCC_VERSION}-mt-${BOOST_VERSION}.lib
-c:/usr/lib/libboost_filesystem${GCC_VERSION}-mt-${BOOST_VERSION}.lib
-c:/usr/lib/libboost_regex${GCC_VERSION}-mt-${BOOST_VERSION}.lib
-c:/usr/lib/libboost_thread${GCC_VERSION}-mt-${BOOST_VERSION}.lib
-c:/usr/lib/libboost_date_time${GCC_VERSION}-mt-${BOOST_VERSION}.lib
+c:/usr/lib/libboost_system${GCC_VERSION}-mt${BOOST_VERSION}.lib
+c:/usr/lib/libboost_filesystem${GCC_VERSION}-mt${BOOST_VERSION}.lib
+c:/usr/lib/libboost_regex${GCC_VERSION}-mt${BOOST_VERSION}.lib
+c:/usr/lib/libboost_thread${GCC_VERSION}-mt${BOOST_VERSION}.lib
+c:/usr/lib/libboost_date_time${GCC_VERSION}-mt${BOOST_VERSION}.lib
 c:/usr/lib/dokan.lib
 c:/usr/lib/libprotobuf.a c:/usr/lib/libsqlite3.a -liphlpapi
 )
