@@ -24,16 +24,18 @@
 // local
 #include "qt/widgets/share_participants.h"
 #include "qt/client/client_controller.h"
+#include "qt/client/create_share_thread.h"
 #include "qt/client/user_space_filesystem.h"
 
 
 Shares::Shares(QWidget* parent)
-    : Panel(parent)
-    , init_(false) {
+    : Panel(parent), init_(false), shareInProcess_() {
   ui_.setupUi(this);
 
   connect(ui_.create, SIGNAL(clicked(bool)),
           this,       SLOT(onCreateShareClicked()));
+  connect(ui_.shareNameLineEdit, SIGNAL(returnPressed()),
+          this,                  SLOT(onCreateShareClicked()));
 
   connect(ui_.listWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
           this,           SLOT(onItemDoubleClicked(QListWidgetItem*)));
@@ -41,6 +43,8 @@ Shares::Shares(QWidget* parent)
   connect(ClientController::instance(),
           SIGNAL(addedPrivateShare(const QString&)),
           this, SLOT(onAddedPrivateShare(const QString&)));
+  ui_.labelCreate->setVisible(false);
+  ui_.progressBarCreate->setVisible(false);
 }
 
 Shares::~Shares() { }
@@ -54,8 +58,10 @@ void Shares::setActive(bool b) {
 void Shares::reset() {
   // clear the list of share
   ui_.listWidget->clear();
+  ui_.labelCreate->setVisible(false);
+  ui_.progressBarCreate->setVisible(false);
 
-  ui_.shareNameLineEdit->setText(tr("Enter share name"));
+  ui_.shareNameLineEdit->setText(tr(""));
 
   init_ = false;
 }
@@ -65,6 +71,13 @@ void Shares::onCreateShareClicked() {
   // 2 - choose admin contacts
   // 3 - choose ro contacts
   // 4 - submit
+
+  // Check if a share is being created
+  if (!shareInProcess_.isEmpty()) {
+    QMessageBox::warning(this, tr("Patience!"),
+                 tr("A share is being created."));
+    return;
+  }
 
   // Check if share name isn't already in list
   const QString share_name = ui_.shareNameLineEdit->text().trimmed();
@@ -83,8 +96,7 @@ void Shares::onCreateShareClicked() {
     return;
   }
 
-  if (ui_.shareNameLineEdit->text().isEmpty() ||
-      ui_.shareNameLineEdit->text() == tr("Enter share name")) {
+  if (ui_.shareNameLineEdit->text().isEmpty()) {
     QMessageBox::warning(this, tr("Problem!"),
                          tr("Please type a valid name for the share."));
     return;
@@ -108,20 +120,36 @@ void Shares::onCreateShareClicked() {
     ro_set.clear();
   }
 
-  if (ro_set.size() > 0 || admin_set.size() > 0) {
-    if (ClientController::instance()->createShare(share_name,
-                                                  admin_set,
-                                                  ro_set)) {
-      addShare(share_name);
-      ui_.shareNameLineEdit->clear();
-    } else {
-      QMessageBox::warning(this, tr("Problem!"),
-                           tr("There was an issue creating this share."));
-      }
+  if (ro_set.size() == 0 && admin_set.size() == 0) {
+    return;
+  }
+
+  CreateShareThread* cst = new CreateShareThread(share_name, admin_set,
+                                                 ro_set, this);
+
+  connect(cst,  SIGNAL(completed(bool)),
+          this, SLOT(onCreateShareCompleted(bool)));
+
+  ui_.labelCreate->setText(tr("Creating share: ") + share_name);
+  ui_.labelCreate->setVisible(true);
+  ui_.progressBarCreate->reset();
+  ui_.progressBarCreate->setVisible(true);
+
+  cst->start();
+  shareInProcess_ = share_name;
+}
+
+void Shares::onCreateShareCompleted(bool b) {
+  ui_.labelCreate->setVisible(false);
+  ui_.progressBarCreate->setVisible(false);
+  if (b) {
+    addShare(shareInProcess_);
+    ui_.shareNameLineEdit->clear();
   } else {
     QMessageBox::warning(this, tr("Problem!"),
-                         tr("Please select some contacts for the share."));
+                         tr("There was an issue creating this share."));
   }
+  shareInProcess_ = tr("");
 }
 
 void Shares::onItemDoubleClicked(QListWidgetItem* item) {

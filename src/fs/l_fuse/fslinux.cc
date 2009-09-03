@@ -120,7 +120,7 @@ bool FSLinux::Mount(const std::string &path, const std::string &debug_mode) {
   opts[4] = const_cast<char*>(fground.c_str());
   // std::string nonempty_ = "-o nonempty";
   // opts[5] = (char*)nonempty_.c_str();
-  std::cout << "opts[1] en el Mount: " << opts[1] << std::endl;
+  printf("opts[1] en el Mount: %s", opts[1]);
   int multithreaded;
   fuse_operations *op = fuse_dispatcher_->get_fuseOps();
   // fuse_setup operation will be deprecated from API 3.0
@@ -167,71 +167,71 @@ void FSLinux::UnMount() {
 }
 
 int FSLinux::ms_readlink(const char *path, char *, size_t) {
-  std::cout << "ms_readlink" << path << std::endl;
+  printf("ms_readlink %s\n", path);
   return 0;
 }
 int FSLinux::ms_chmod(const char *path, mode_t) {
-  std::cout << "ms_chmod" << path <<std::endl;
+  printf("ms_chmod %s\n", path);
   return 0;
 }
 int FSLinux::ms_chown(const char *path, uid_t, gid_t) {
-  std::cout << "ms_chown" << path << std::endl;
+  printf("ms_chown %s\n", path);
   return 0;
 }
 int FSLinux::ms_truncate(const char *path, off_t) {
-  std::cout << "ms_truncate" << path<< std::endl;
+  printf("ms_truncate %s\n", path);
   return 0;
 }
 int FSLinux::ms_utime(const char *path, struct utimbuf *) {
-  std::cout << "ms_utime" << path << std::endl;
+  printf("ms_utime %s\n", path);
   return 0;
 }
 int FSLinux::ms_flush(const char *path, struct fuse_file_info *) {
-  std::cout << "ms_flush" << path << std::endl;
+  printf("ms_flush %s\n", path);
   return 0;
 }
 int FSLinux::ms_fsync(const char *path, int, struct fuse_file_info *) {
-  std::cout << "ms_fsync" << path << std::endl;
+  printf("ms_fsync %s\n", path);
   return 0;
 }
-int FSLinux::ms_setxattr(const char *path, const char *, const char *, \
-  size_t, int) {
-  std::cout << "ms_setxattr" << path <<  std::endl;
+int FSLinux::ms_setxattr(const char *path, const char *, const char *,
+                         size_t, int) {
+  printf("ms_setxattr %s\n", path);
   return 0;
 }
 int FSLinux::ms_getxattr(const char *path, const char *, char *, size_t) {
-  std::cout << "ms_getxattr" << path << std::endl;
+  printf("ms_getxattr %s\n", path);
   return 0;
 }
 int FSLinux::ms_listxattr(const char *path, char *, size_t) {
-  std::cout << "ms_listxattr" << path << std::endl;
+  printf("ms_listxattr %s\n", path);
   return 0;
 }
 int FSLinux::ms_removexattr(const char *path, const char *) {
-  std::cout << "ms_removexattr" << path << std::endl;
+  printf("ms_removexattr %s\n", path);
   return 0;
 }
 int FSLinux::ms_fsyncdir(const char *path, int, struct fuse_file_info *) {
-  std::cout << "ms_fsyncdir" << path << std::endl;
+  printf("ms_fsyncdir %s\n", path);
   return 0;
 }
 int FSLinux::ms_ftruncate(const char *path, off_t, struct fuse_file_info *) {
-  std::cout << "ms_ftruncate" << path << std::endl;
+  printf("ms_ftruncate %s\n", path);
   return 0;
 }
 int FSLinux::ms_releasedir(const char *path, struct fuse_file_info *) {
-  std::cout << "ms_releasedir: " << path << std::endl;
+  printf("ms_releasedir: %s\n", path);
   return 0;
 }
 int FSLinux::ms_opendir(const char *path, struct fuse_file_info *) {
-  std::cout << "ms_opendir: " << path << std::endl;
+  printf("ms_opendir: %s\n", path);
   return 0;
 }
 
 int FSLinux::ms_access(const char *path, int mask) {
   std::string path_(path);
-  std::cout << "ms_access path: " << path_ << std::endl;
-  std::cout << "ms_access mask: " << mask << std::endl;
+  printf("ms_access path: %s\n", path);
+  printf("ms_access mask: %d\n", mask);
   return 0;
 }
 
@@ -239,7 +239,7 @@ int FSLinux::ms_link(const char *o_path, const char *n_path) {
   std::string o_path_, n_path_;
   o_path_ = std::string(o_path);
   n_path_ = std::string(n_path);
-  std::cout << "ms_link PATHS: " << o_path_ << "\t\t" << n_path_ << std::endl;
+  printf("ms_link PATHS: %s\t\t%s", o_path, n_path);
   // if path is not in an authorised dirs, return error "Permission denied"
   // TODO(Fraser): set bool gui_private_share_ to true if gui has
   //               requested a private share be set up.
@@ -278,18 +278,16 @@ int FSLinux::ms_open(const char *path, struct fuse_file_info *fi) {
     return -errno;
 
   fi->fh = fd;
-  std::cout <<"\t file handle: " << fi->fh << std::endl;
+  printf("\t file handle: %llu\n", fi->fh);
   return 0;
 }
 
 int FSLinux::ms_read(const char *path, char *data, size_t size, off_t offset, \
   struct fuse_file_info *fi) {
   std::string path_(path);
-  std::cout << "ms_read: " << path_ << "\t file handle: " << fi->fh <<\
-    std::endl;
+  printf("ms_read: %s\tfile handle: %llu", path, fi->fh);
   file_system::FileSystem fsys_;
   path_ = fsys_.MaidsafeHomeDir() + path_;
-
 
   int res;
 
@@ -302,8 +300,8 @@ int FSLinux::ms_read(const char *path, char *data, size_t size, off_t offset, \
 }
 
 int FSLinux::ms_release(const char *path, struct fuse_file_info *fi) {
-  std::cout << "ms_release: " << path  << fi->flags << std::endl;
-  std::cout << "\t file handle: " << fi->fh << std::endl;
+  printf("ms_release: %s -- %d -- ", path, fi->flags);
+  printf("file handle %llu\n", fi->fh);
   std::string path_(path);
   file_system::FileSystem fsys_;
   path_ = fsys_.MaidsafeHomeDir() + path_;
@@ -328,16 +326,16 @@ int FSLinux::ms_release(const char *path, struct fuse_file_info *fi) {
   return 0;
 }
 
-int FSLinux::ms_write(const char *path, const char *data, size_t size, \
-  off_t offset, struct fuse_file_info *fi) {
+int FSLinux::ms_write(const char *path, const char *data, size_t size,
+                      off_t offset, struct fuse_file_info *fi) {
   std::string path_(path);
   file_system::FileSystem fsys_;
   path_ = fsys_.MaidsafeHomeDir() + path_;
-  std::cout << "-------------------------------------" << std::endl;
-  std::cout << "-------------------------------------" << std::endl;
-  std::cout << "-------------------------------------" << std::endl;
-  std::cout << "ms_write PATH: " << path_ << std::endl;
-  std::cout << "\t file handle: " << fi->fh << std::endl;
+  printf("-------------------------------------\n");
+  printf("-------------------------------------\n");
+  printf("-------------------------------------\n");
+  printf("ms_write PATH: %s\n", path);
+  printf("\t file handle: %llu", fi->fh);
 
   fs::path full_path_(path_);
   fs::path branch_path_ = full_path_.parent_path();
@@ -357,7 +355,7 @@ int FSLinux::ms_write(const char *path, const char *data, size_t size, \
 int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
   std::string path_;
   path_ = std::string(path);
-  std::cout << "ms_getattr: " << path_ << std::endl;
+  printf("ms_getattr: %s\n", path);
 
 //  // if path is not in an authorised dirs, return error "Permission denied"
 //  // TODO(Fraser): set bool gui_private_share_ to true if gui has
@@ -389,7 +387,7 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
   maidsafe::MetaDataMap mdm;
   if (ser_mdm != "" && !mdm.ParseFromString(ser_mdm))
     return -ENOENT;
-  // std::cout << "ms_getattr: died: " << lala << std::endl;
+  //   printf("ms_getattr: died: " << lala << std::endl;
 
 //  bool ro = maidsafe::ClientController::getInstance()->ReadOnly(
 //    base::TidyPath(path_), false);
@@ -420,7 +418,7 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
         stbuf->st_atime = mdm.last_access();
     }
   } else {
-     // std::cout << "ms_getattr: died again --" << ser_mdm <<"--"<<std::endl;
+     //   printf("ms_getattr: died again --" << ser_mdm <<"--"<<std::endl;
      res = -errno;
   }
   path_ = "";
@@ -428,10 +426,10 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
 }
 
 int FSLinux::ms_fgetattr(const char *path, struct stat *stbuf,
-  struct fuse_file_info *fi) {
+                         struct fuse_file_info *fi) {
   std::string path_;
   path_ = std::string(path);
-  std::cout << "ms_fgetattr PATH: " << path_ << fi << std::endl;
+  printf("ms_fgetattr PATH: %s -- %d\n", path, fi->flags);
 
   std::string ser_mdm;
   int n = maidsafe::ClientController::getInstance()->getattr(base::TidyPath(
@@ -460,7 +458,7 @@ int FSLinux::ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
   off_t offset, struct fuse_file_info *fi) {
   std::string path_;
   path_ = std::string(path);
-  std::cout << "ms_readdir PATH: " << path_ << std::endl;
+    printf("ms_readdir PATH:  %s\n", path);
 
   std::map<std::string, maidsafe::itemtype> children;
   if (maidsafe::ClientController::getInstance()->readdir(base::TidyPath(
@@ -501,7 +499,7 @@ int FSLinux::ms_mkdir(const char *path, mode_t mode) {
   fs::path full_path_(path_);
   if (!fs::exists(full_path_))
     fs::create_directories(full_path_);
-  std::cout << "ms_mkdir PATH: " << path1_ << mode << std::endl;
+  printf("ms_mkdir PATH: %s -- %d\n", path1_.c_str(), mode);
   if (maidsafe::ClientController::getInstance()->mkdir(base::TidyPath(
       path1_)) != 0)
     return -errno;
@@ -525,7 +523,7 @@ int FSLinux::ms_rename(const char *o_path, const char *n_path) {
       base::TidyPath(n_path_), gui_private_share_))
     return -13;
 
-  std::cout << "ms_rename PATHS:" << o_path_ << "\t\t" << n_path_ << std::endl;
+  printf("ms_rename PATHS: %s -- %s\n", o_path, n_path);
   if (maidsafe::ClientController::getInstance()->rename(base::TidyPath(
     o_path_), base::TidyPath(n_path_)) != 0)
     return -errno;
@@ -542,11 +540,11 @@ int FSLinux::ms_rename(const char *o_path, const char *n_path) {
 }
 
 int FSLinux::ms_statfs(const char *path, struct statvfs *stbuf) {
-  std::cout << "++++++++++++++++++++++++++++++++++++" << std::endl;
-  std::cout << "++++++++++++++++++++++++++++++++++++" << std::endl;
-  std::cout << "+++++++++++ ms_statfs PATH: " << path << std::endl;
-  std::cout << "++++++++++++++++++++++++++++++++++++" << std::endl;
-  std::cout << "++++++++++++++++++++++++++++++++++++" << std::endl;
+    printf("++++++++++++++++++++++++++++++++++++\n");
+    printf("++++++++++++++++++++++++++++++++++++\n");
+    printf("+++++++++++ ms_statfs PATH:  %s\n", path);
+    printf("++++++++++++++++++++++++++++++++++++\n");
+    printf("++++++++++++++++++++++++++++++++++++\n");
 
   stbuf->f_bsize = 99999999;
   stbuf->f_bavail = 99999999;
@@ -570,8 +568,7 @@ int FSLinux::ms_mknod(const char *path, mode_t mode, dev_t rdev) {
     return -13;
 
   int res = open(path, O_CREAT | O_EXCL | O_WRONLY, mode);
-  std::cout << "ms_mknod PATH: " << path_ << "\t\t res: " << rdev << res;
-  std::cout << std::endl;
+  printf("ms_mknod PATH: %s -- %d\n\n", path, res);
   if (res >= 0)
     res = close(res);
   if (maidsafe::ClientController::getInstance()->mknod(base::TidyPath(
@@ -600,7 +597,7 @@ int FSLinux::ms_create(const char *path,
   fs::path branch_path_ = full_path_.parent_path();
   if (!fs::exists(branch_path_))
     fs::create_directories(branch_path_);
-//   std::cout << "ms_create abs PATH: " << path_ << std::endl;
+//     printf("ms_create abs PATH:  %s\n", path);
 //   int res = open(path_.c_str(), O_CREAT | O_EXCL | O_WRONLY, mode);
 //   if (res >= 0)
 //     res = close(res);
@@ -613,8 +610,7 @@ int FSLinux::ms_create(const char *path,
 
   fi->fh = fd;
 
-  std::cout << "ms_create rel PATH: " << path1_ << "\t\t res: " <<
-    fd << std::endl;
+  printf("ms_create rel PATH: %s -- %d\n", path1_.c_str(), fd);
   if (maidsafe::ClientController::getInstance()->mknod(base::TidyPath(
       path1_)) != 0)
     return -errno;
@@ -625,7 +621,7 @@ int FSLinux::ms_create(const char *path,
 int FSLinux::ms_rmdir(const char *path) {
   std::string path_;
   path_ = std::string(path);
-  std::cout << "ms_rmdir PATH: " << path_ << std::endl;
+  printf("ms_rmdir PATH:  %s\n", path);
   // if path is not in an authorised dirs, return error "Permission denied"
   // TODO(Fraser): set bool gui_private_share_ to true if gui has
   //               requested a private share be set up.
@@ -651,7 +647,7 @@ int FSLinux::ms_rmdir(const char *path) {
 int FSLinux::ms_unlink(const char *path) {
   std::string path_;
   path_ = std::string(path);
-  std::cout << "ms_unlink PATH: " << path_ << std::endl;
+  printf("ms_unlink PATH:  %s\n", path);
   // if path is not in an authorised dirs, return error "Permission denied"
   // TODO(Fraser): set bool gui_private_share_ to true if gui has
   //               requested a private share be set up.

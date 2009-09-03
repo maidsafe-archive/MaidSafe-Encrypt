@@ -368,7 +368,7 @@ void ClientController::systemMessage(const std::string& message) { }
 
 
 void ClientController::checkForMessages() {
-  qDebug() << "ClientController::checkForMessages()";
+//  qDebug() << "ClientController::checkForMessages()";
 
   // Check for messages only when public username is set
   if (publicUsername().isEmpty())
@@ -400,7 +400,7 @@ void ClientController::checkForMessages() {
   if (n != 0)
     return;
 
-  qDebug() << "found" << msgs.size() << "instant messages";
+//  qDebug() << "found" << msgs.size() << "instant messages";
 
   std::list<packethandler::InstantMessage> temp = msgs;
   while (!temp.empty()) {

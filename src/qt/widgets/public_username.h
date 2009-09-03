@@ -42,7 +42,7 @@ class PublicUsername : public Panel {
   private slots:
     void onCreateUsernameClicked();
 
-  void onCreateUsernameCompleted(bool);
+    void onCreateUsernameCompleted(bool);
 
  private:
   Ui::PublicUsernamePage ui_;

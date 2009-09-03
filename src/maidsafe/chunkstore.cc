@@ -494,6 +494,8 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
                                    const fs::path &chunk_path,
                                    ChunkType type) {
   try {
+    if (fs::exists(chunk_path))
+      fs::remove_all(chunk_path);
     fs::copy_file(input_file, chunk_path);
     // If the chunk is hashable then set last checked time to now, otherwise
     // set it to max allowable time.

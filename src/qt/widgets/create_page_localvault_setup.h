@@ -38,6 +38,7 @@ class CreateLocalVaultPage : public QWizardPage {
  private:
   Ui::localVaultSetup ui_;
   bool spaceReady_, dirReady_;
+  std::string availableSpace_;
 
   private slots:
     void onBrowseClicked();

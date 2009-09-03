@@ -91,7 +91,8 @@ ClientController::ClientController() : auth_(),
                                        received_messages_(),
                                        rec_msg_mutex_(),
                                        thread_pool_(1),
-                                       client_store_() {
+                                       client_store_(),
+                                       logging_out_(false) {
   fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
   client_path /= "client" + base::RandomString(8);
   while (fs::exists(client_path))
@@ -213,7 +214,7 @@ int ClientController::ParseDa() {
 #endif
   int i = seh_->DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
 #ifdef DEBUG
-  printf("result of decrypt root: %i -- (%s)\n", i, ser_dm_root.c_str());
+  printf("result of decrypt root: %i -- (%s)\n", i, ""/*ser_dm_root.c_str()*/);
 #endif
   if (i != 0)
     return -1;
@@ -221,7 +222,7 @@ int ClientController::ParseDa() {
                       "", "", false, false);
 #ifdef DEBUG
   printf("result of decrypt %s: %i -- (%s)\n", kRootSubdir[1][0].c_str(), i,
-          ser_dm_shares.c_str());
+          ""/*ser_dm_shares.c_str()*/);
 #endif
   return (i == 0) ? 0 : -1;
 }
@@ -235,9 +236,9 @@ int ClientController::SerialiseDa() {
   seh_->EncryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
                   &ser_dm_shares);
 #ifdef DEBUG
-  printf("ClientController::SerialiseDa -- root (%s)\n", ser_dm_root.c_str());
-  printf("ClientController::SerialiseDa -- shares (%s)\n",
-          ser_dm_shares.c_str());
+//  printf("ClientController::SerialiseDa -- root (%s)\n", ser_dm_root.c_str());
+//  printf("ClientController::SerialiseDa -- shares (%s)\n",
+//          ser_dm_shares.c_str());
 #endif
   DataMap *dm1_;
   DataMap dm2_;
@@ -314,6 +315,7 @@ int ClientController::SerialiseDa() {
 
   data_atlas_.SerializeToString(&ser_da_);
 
+  printf("ClientController::SerialiseDa() - Serialised.\n");
   return 0;
 }
 
@@ -596,6 +598,7 @@ void ClientController::CloseConnection(bool clean_up_transport) {
 }
 
 bool ClientController::Logout() {
+  logging_out_ = true;
   packethandler::PacketParams priv_keys, pub_keys;
   std::list<KeyAtlasRow> keys;
   ss_->GetKeys(&keys);
@@ -621,9 +624,13 @@ bool ClientController::Logout() {
   }
 
   SerialiseDa();
+  printf("AAAAAAAAAAAAA\n");
   Exitcode result = auth_->SaveSession(ser_da_, priv_keys, pub_keys);
+  printf("BBBBBBBBBBBBB\n");
   thread_pool_.clear();
+  printf("CCCCCCCCCCCCC\n");
   thread_pool_.wait();
+  printf("DDDDDDDDDDDDD\n");
 
 //  int connection_status(0);
 //  int n = ChangeConnectionStatus(connection_status);
@@ -646,11 +653,13 @@ bool ClientController::Logout() {
         printf("Couldn't delete client path\n");
       }
     }
+    logging_out_ = false;
     return true;
   }
 
   delete seh_;
   delete msgh_;
+  logging_out_ = false;
   return false;
 }
 
@@ -951,6 +960,8 @@ int ClientController::HandleMessages(std::list<std::string> *msgs) {
 }
 
 bool ClientController::ClearStaleMessages() {
+  if (logging_out_)
+    return false;
 #ifdef DEBUG
   printf("ClientController::ClearStaleMessages timestamp: %d\n",
          base::get_epoch_time());
@@ -1850,8 +1861,8 @@ int ClientController::CreateNewShare(const std::string &name,
   im.set_sender(ss_->PublicUsername());
   im.set_date(base::get_epoch_time());
   std::string message("\"");
-  message += im.sender() + "\" has added you as a Read Only participant to" +
-      " share " + name;
+  message += im.sender() + "\" has added you as a Read Only participant to"
+             " share " + name;
   im.set_message(message);
   std::string share_message;
   im.SerializeToString(&share_message);
@@ -1897,9 +1908,8 @@ int ClientController::CreateNewShare(const std::string &name,
     *me = ss_->PublicUsername();
     psn->set_private_key(cmsidr.private_key());
     message = std::string("\"");
-    message += im.sender() +
-        "\" has added you as an Administrator participant to" +
-        " share " + name;
+    message += im.sender() + "\" has added you as an Administrator participant "
+               "to share " + name;
     im.set_message(message);
     im.SerializeToString(&share_message);
     recs.clear();
@@ -1933,6 +1943,7 @@ int ClientController::CreateNewShare(const std::string &name,
       return -30006;
     }
   }
+
   return 0;
 }
 

@@ -311,7 +311,7 @@ int SEHandler::DecryptFile(const std::string &rel_entry) {
 #ifdef DEBUG
   // printf("Decrypting: %s\n", entry);
 #endif
-  DataMap dm_;
+  DataMap dm;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler);
   std::string ser_dm_="";
   // std::string rel_entry = fsys_->MakeRelativeMSPath(full_entry_);
@@ -319,20 +319,19 @@ int SEHandler::DecryptFile(const std::string &rel_entry) {
   // if we don't get DM, this is a directory and cannot be decrypted
   if (!dah_->GetDataMap(rel_entry, &ser_dm_)) {  // ie found dm
     std::string decrypted_path_ = fsys_.MakeMSPath(full_entry_);
-    dm_.ParseFromString(ser_dm_);
-    CallbackResult cbr;
-    LoadChunks(dm_, boost::bind(&CallbackResult::CallbackFunc, &cbr, _1));
-    WaitForResult(cbr);
-    GetResponse result;
-    if ((!result.ParseFromString(cbr.result)) ||
-        (result.result() == kNack)) {
+    dm.ParseFromString(ser_dm_);
+//    CallbackResult cbr;
+    int n = LoadChunks(dm);
+//    WaitForResult(cbr);
+//    GetResponse result;
+    if (n != 0) {
 #ifdef DEBUG
       printf("Failed to get all chunks.\n");
 #endif
       return -1;
     }
-    SelfEncryption se_(client_chunkstore_);
-    if (se_.Decrypt(dm_, decrypted_path_, 0, false))
+    SelfEncryption se(client_chunkstore_);
+    if (se.Decrypt(dm, decrypted_path_, 0, false))
       return -1;
     else
       return 0;
@@ -444,9 +443,9 @@ int SEHandler::EncryptDb(const std::string &dir_path,
                          const bool &encrypt_dm,
                          std::string *ser_dm) {
 #ifdef DEBUG
-  printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
+  printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)\n",
          dir_path.c_str(), dir_type, encrypt_dm, dir_key.c_str());
-  printf(" msid(%s)\n", msid.c_str());
+//  printf(" msid(%s)\n", msid.c_str());
 #endif
   DataMap dm_;
   std::string ser_dm_="", file_hash_="", enc_dm_;
@@ -570,21 +569,28 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                         boost::bind(&CallbackResult::CallbackFunc, &cbr, _1));
     WaitForResult(cbr);
     GetResponse load_result;
-    if ((!load_result.ParseFromString(cbr.result)) ||
-        (load_result.result() != kAck) ||
-        (!load_result.has_content())) {
+    if (!load_result.ParseFromString(cbr.result)) {
 #ifdef DEBUG
-      printf("Failed to load packet.\n");
+      printf("Failed to load packet NO PARSE.\n");
+#endif
+      return -1;
+    }
+    if (load_result.result() != kAck) {
+#ifdef DEBUG
+      printf("Failed to load packet kNACK.\n");
+#endif
+      return -1;
+    }
+    if (!load_result.has_content()) {
+#ifdef DEBUG
+      printf("Failed to load packet NO CONTENT.\n");
 #endif
       return -1;
     }
 
     packethandler::GenericPacket gp;
-//    std::string s;
-//    if (dm_encrypted) {
     gp.ParseFromString(load_result.content());
     enc_dm_ = gp.data();
-//    }
     if (enc_dm_ == "") {
 #ifdef DEBUG
       printf("Enc dm is empty.\n");
@@ -597,35 +603,35 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 //    printf("Searching dir_path(%s) and enc_dm_(%s) in uptodate_datamaps_\n",
 //      dir_path.c_str(), hex_dm.c_str());
 #endif
-    std::map<std::string, std::string>::iterator it;
-    it = uptodate_datamaps_.find(dir_path);
-
-    if (it != uptodate_datamaps_.end()) {
-#ifdef DEBUG
+//    std::map<std::string, std::string>::iterator it;
+//    it = uptodate_datamaps_.find(dir_path);
+//
+//    if (it != uptodate_datamaps_.end()) {
+//#ifdef DEBUG
 //      printf("SEHandler::DecryptDb: Found dir_path in set.\n");
-#endif
-      if (dm_encrypted) {
-        if (it->second == enc_dm_) {
-#ifdef DEBUG
+//#endif
+//      if (dm_encrypted) {
+//        if (it->second == enc_dm_) {
+//#ifdef DEBUG
 //          printf("SEHandler::DecryptDb: Found enc DM in set. ");
 //          printf("No need to go get it from the network.\n");
-#endif
-          return 0;
-        }
-      } else {
-        if (it->second == ser_dm) {
-#ifdef DEBUG
+//#endif
+//          return 0;
+//        }
+//      } else {
+//        if (it->second == ser_dm) {
+//#ifdef DEBUG
 //          printf("SEHandler::DecryptDb: Found ser DM in set. ");
 //          printf("No need to go get it from the network.\n");
-#endif
-          return 0;
-        }
-      }
-    } else {
-#ifdef DEBUG
+//#endif
+//          return 0;
+//        }
+//      }
+//    } else {
+//#ifdef DEBUG
 //      printf("SEHandler::DecryptDb: DIDN'T find dir_path in set.\n");
-#endif
-    }
+//#endif
+//    }
 
 //      if (dir_type != ANONYMOUS) {
 //        packethandler::GenericPacket gp;
@@ -644,9 +650,12 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 //      }
     if (dm_encrypted) {
 #ifdef DEBUG
-//      printf("Decrypting dm.\n");
+      printf("Decrypting dm.\n");
 #endif
       int n = DecryptDm(dir_path, enc_dm_, msid, &ser_dm_);
+#ifdef DEBUG
+      printf("DecryptED dm.\n");
+#endif
       if (n != 0 || ser_dm_ == "") {
 #ifdef DEBUG
         printf("Died decrypting dm.\n");
@@ -678,7 +687,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
     }
     if (dm_encrypted) {
 #ifdef DEBUG
-//      printf("Decrypting dm.\n");
+      printf("Decrypting dm.\n");
 #endif
       int n = DecryptDm(dir_path, enc_dm_, msid, &ser_dm_);
       if (n != 0 || ser_dm_ == "") {
@@ -692,8 +701,8 @@ int SEHandler::DecryptDb(const std::string &dir_path,
     }
   }
 
-  DataMap dm_;
-  if (!dm_.ParseFromString(ser_dm_)) {
+  DataMap dm;
+  if (!dm.ParseFromString(ser_dm_)) {
 #ifdef DEBUG
     printf("Doesn't parse as a dm.\n");
 #endif
@@ -702,20 +711,25 @@ int SEHandler::DecryptDb(const std::string &dir_path,
   std::string db_path_;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler);
   dah_->GetDbPath(dir_path, CREATE, &db_path_);
-  CallbackResult cbr;
-  LoadChunks(dm_, boost::bind(&CallbackResult::CallbackFunc, &cbr, _1));
-  WaitForResult(cbr);
-  GetResponse load_result;
-  load_result.Clear();
-  if ((!load_result.ParseFromString(cbr.result)) ||
-      (load_result.result() == kNack)) {
+//  CallbackResult cbr;
 #ifdef DEBUG
-    printf("Failed to get chunks.\n");
+  printf("Let's look for the chunks.\n");
+#endif
+  int n = LoadChunks(dm);
+//  WaitForResult(cbr);
+#ifdef DEBUG
+  printf("Found the chunks: %d.\n", n);
+#endif
+//  GetResponse load_result;
+//  load_result.Clear();
+  if (n != 0) {
+#ifdef DEBUG
+    printf("Failed to get all chunks.\n");
 #endif
     return -1;
   }
-  SelfEncryption se_(client_chunkstore_);
-  if (se_.Decrypt(dm_, db_path_, 0, overwrite)) {
+  SelfEncryption se(client_chunkstore_);
+  if (se.Decrypt(dm, db_path_, 0, overwrite)) {
 #ifdef DEBUG
     printf("Failed to self decrypt.\n");
 #endif
@@ -816,13 +830,30 @@ int SEHandler::DecryptDm(const std::string &dir_path,
   return 0;
 }
 
-void SEHandler::LoadChunks(const DataMap &dm,
-                           base::callback_func_type cb) {
-  base::pd_scoped_lock gaurd(*mutex_);
-  DirType dir_type = PRIVATE;
-  std::string msid("");
-  boost::shared_ptr<ChunksData> data(new ChunksData(dm, dir_type, msid, cb));
-  IterativeLoadChunks(data);
+int SEHandler::LoadChunks(const DataMap &dm) {
+  int chunks_found(0);
+  for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
+    std::string data;
+    int n = storem_->LoadChunk(dm.encrypted_chunk_name(i), &data);
+#ifdef DEBUG
+    printf("SEHandler::LoadChunks chunk(%s): result(%d)\n",
+           dm.encrypted_chunk_name(i).substr(0,8).c_str(), n);
+#endif
+    chunks_found += n;
+    SelfEncryption se(client_chunkstore_);
+    fs::path chunk_path = se.GetChunkPath(dm.encrypted_chunk_name(i));
+    fs::ofstream ofs;
+    ofs.open(chunk_path, std::ios_base::binary);
+    ofs << data;
+    ofs.close();
+  }
+
+  return chunks_found;
+//  base::pd_scoped_lock gaurd(*mutex_);
+//  DirType dir_type = PRIVATE;
+//  std::string msid("");
+//  boost::shared_ptr<ChunksData> data(new ChunksData(dm, dir_type, msid, cb));
+//  IterativeLoadChunks(data);
 }
 
 void SEHandler::IterativeLoadChunks(

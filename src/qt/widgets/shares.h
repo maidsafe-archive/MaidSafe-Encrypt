@@ -43,6 +43,7 @@ class Shares : public Panel {
     void onCreateShareClicked();
     void onItemDoubleClicked(QListWidgetItem* item);
     void onAddedPrivateShare(const QString &name);
+    void onCreateShareCompleted(bool b);
 
  private:
   // Initialize the display of a user's shares
@@ -53,6 +54,10 @@ class Shares : public Panel {
 
   Ui::SharesPage ui_;
   bool init_;
+  QString shareInProcess_;
+
+ signals:
+  void complete();
 };
 
 #endif  // QT_WIDGETS_SHARES_H_

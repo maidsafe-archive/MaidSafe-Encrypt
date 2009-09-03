@@ -76,8 +76,6 @@ void VaultInfo::setActive(bool b) {
 }
 
 void VaultInfo::reset() {
-  qDebug() << "VaultInfo::reset";
-
   infoPollTimer_.stop();
   disconnect(&infoPollTimer_, NULL, this, NULL);
   init_ = false;

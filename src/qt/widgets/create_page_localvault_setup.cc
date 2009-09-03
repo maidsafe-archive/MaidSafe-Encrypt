@@ -20,6 +20,8 @@
 #include <QMessageBox>
 #include <QValidator>
 
+#include <boost/filesystem.hpp>
+
 #include "qt/client/client_controller.h"
 
 // Must be at least a 2 digit number
@@ -59,8 +61,19 @@ CreateLocalVaultPage::CreateLocalVaultPage(QWidget* parent)
 CreateLocalVaultPage::~CreateLocalVaultPage() { }
 
 void CreateLocalVaultPage::cleanupPage() {
+  boost::filesystem::path chunkdir(QDir::homePath().toStdString());
+  boost::filesystem::space_info info;
+  if ("/" != chunkdir.root_directory())
+    info = boost::filesystem::space(boost::filesystem::path("/"));
+  else
+    info = boost::filesystem::space(boost::filesystem::path(chunkdir.root_name()
+           + chunkdir.root_directory()));
+  availableSpace_ = base::itos_ull(info.available / (1024 * 1024));
   spaceReady_ = true;
   dirReady_ = false;
+  QString qs(tr("Space to offer in MB (available %1 MB):")
+          .arg(QString(availableSpace_.c_str())));
+  ui_.labelSpace->setText(qs);
   ui_.lineDirectory->setReadOnly(true);
   ui_.lineSpace->setText(tr("1024"));
   ui_.linePort->setText(tr("0"));
@@ -68,7 +81,13 @@ void CreateLocalVaultPage::cleanupPage() {
 }
 
 bool CreateLocalVaultPage::isComplete() const {
-  return spaceReady_ && dirReady_;
+//  bool b = false;
+//  boost::uint64_t spaceChosen = base::stoi_ull(
+//                                ui_.lineSpace->text().toStdString());
+//  boost::uint64_t spaceAvailable = base::stoi_ull(availableSpace_);
+//  if (spaceChosen < spaceAvailable)
+//    b = true;
+  return spaceReady_ && dirReady_/* && b*/;
 }
 
 void CreateLocalVaultPage::onBrowseClicked() {
@@ -80,8 +99,17 @@ void CreateLocalVaultPage::onBrowseClicked() {
 
 void CreateLocalVaultPage::onSpaceEdited(const QString& text) {
   if (!text.isEmpty() && text.size() > 1) {
-    spaceReady_ = true;
-    qDebug() << spaceReady_ << " -- " << dirReady_;
+    boost::uint64_t spaceChosen = base::stoi_ull(
+                                  ui_.lineSpace->text().toStdString());
+    boost::uint64_t spaceAvailable = base::stoi_ull(availableSpace_);
+    if (spaceChosen < spaceAvailable) {
+      spaceReady_ = true;
+    } else {
+      QMessageBox::warning(this, tr("Error!"), tr("You don't have that much "
+                           "space!"));
+      ui_.lineSpace->setText(tr("1024"));
+      return;
+    }
     if (dirReady_) {
       emit completeChanged();
     }
@@ -104,7 +132,6 @@ void CreateLocalVaultPage::onPortModified() {
 void CreateLocalVaultPage::onDirectoryEdited(const QString& text) {
   if (!text.isEmpty()) {
     dirReady_ = true;
-    qDebug() << spaceReady_ << " -- " << dirReady_;
     if (spaceReady_) {
       emit completeChanged();
     }

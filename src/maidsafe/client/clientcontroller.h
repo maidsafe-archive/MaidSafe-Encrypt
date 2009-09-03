@@ -239,6 +239,7 @@ class ClientController {
       boost::threadpool::resize_controller,
       boost::threadpool::immediately> thread_pool_;
   std::string client_store_;
+  bool logging_out_;
 };
 
 }  // namespace maidsafe
