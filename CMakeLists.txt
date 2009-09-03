@@ -1,34 +1,24 @@
 cmake_minimum_required(VERSION 2.6)
 #this needs to be at the top of the file
-message ("#############################################")
+message ("##############################################")
+IF(NOT CMAKE_GEN)
+  MESSAGE("")
+  IF(UNIX)
+    MESSAGE("No generator specified.  Use e.g. -G\"CodeBlocks - Unix Makefiles\"")
+  ELSE(UNIX)
+    MESSAGE("No generator specified.  Use e.g. -G\"CodeBlocks - MinGW Makefiles\"")
+  ENDIF(UNIX)
+  MESSAGE("")
+ENDIF(NOT CMAKE_GEN)
+SET(CMAKE_GEN ${CMAKE_GENERATOR} CACHE INTERNAL "" FORCE)
+
 IF(NOT CMAKE_BUILD_TYPE)
-   SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+   SET(CMAKE_BUILD_TYPE "Release" CACHE INTERNAL "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 project (PD)
 IF(NOT MAIDSAFE_TEST_TYPE)
-   SET(MAIDSAFE_TEST_TYPE "BEH" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
+   SET(MAIDSAFE_TEST_TYPE "BEH" CACHE INTERNAL "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
 ENDIF(NOT MAIDSAFE_TEST_TYPE)
-
-#option(BOOST_INCLUDES "Set location of BOOST headers ie /usr/include/boost-1_40/" "/usr/include/boost-1_40/")
-#option(BOOST_VERSION "Set boost version i.e. 1_40 (use an underscore)" "1_40")
-
-
-IF(NOT BOOST_INCLUDES)
-	IF(WIN32)
-   SET(BOOST_INCLUDES "c:/usr/include/boost/boost-1_40" CACHE STRING "Set location of BOOST headers ie /usr/include/boost-1_40/" FORCE)
-	ELSE()
-   SET(BOOST_INCLUDES "/usr/include/boost/boost-1_40" CACHE STRING "Set location of BOOST headers ie /usr/include/boost_1.40/" FORCE)
-	ENDIF()
-ENDIF(NOT BOOST_INCLUDES)
-
-IF(NOT BOOST_VERSION)
-   SET(BOOST_VERSION "1_40" CACHE STRING "Set boost version i.e. 1_40 (use an underscore)" FORCE)
-ENDIF(NOT BOOST_VERSION)
-message ("############################################################################################")
-message ("Boost version is set at " ${BOOST_VERSION} " to alter this please run cmake ../../ -DBOOST_VERSION=XXX where XXX is 1_39 etc.") 
-message ("############################################################################################")
-message ("Boost Includes are set at " ${BOOST_INCLUDES} " to alter this please run cmake ../../ -DBOOST_INCLUDES=XXX where XXX is /usr/include etc.") 
-message ("############################################################################################")
 
 if(UNIX)
 	EXEC_PROGRAM(date ARGS +%a%d%m%y OUTPUT_VARIABLE pddate)
@@ -37,16 +27,51 @@ ELSE(UNIX)
 ENDIF(UNIX)
 
 IF(CMAKE_BUILD_TYPE MATCHES "Release")
-message("Building a package which is OK to release.")
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/bin/)
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/lib)
+  message("Building a package which is OK to release.")
+  SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/bin/)
+  SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/lib)
 ELSE()
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/bin/)
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/lib)
-message("Building a package which is NOT OK to release.")
+  SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/bin/)
+  SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/lib)
+  message("Building a package which is NOT OK to release.")
 	SET(pddate "DEVELOPER_${pddate}")
 ENDIF()
 
+IF(NOT BOOST_INCLUDES)
+	IF(WIN32)
+   SET(BOOST_INCLUDES "c:\\usr\\include\\boost-1_40" CACHE INTERNAL "Set location of BOOST headers eg c:\\usr\\include\\boost-1_40" FORCE)
+	ELSE()
+   SET(BOOST_INCLUDES "/usr/include/boost/" CACHE INTERNAL "Set location of BOOST headers eg /usr/include/boost/" FORCE)
+	ENDIF()
+ENDIF(NOT BOOST_INCLUDES)
+
+IF(NOT BOOST_VERSION)
+   SET(BOOST_VERSION "1_40" CACHE INTERNAL "Set boost version i.e. 1_40 (use an underscore)" FORCE)
+ENDIF(NOT BOOST_VERSION)
+
+message ("#######################################################################################################")
+message ("Boost version is set at \"${BOOST_VERSION}\"")
+message ("To alter this (e.g. for Boost 1.40.x) please run \"cmake ../../ -DBOOST_VERSION=1_40\" (without quotes).")
+message ("#######################################################################################################")
+message ("Boost includes are set at \"${BOOST_INCLUDES}\"")
+IF(UNIX)
+  message ("To alter this please run e.g. \"cmake ../../ -DBOOST_INCLUDES=/usr/include/boost-1_40/\" (without quotes).")
+ELSE(UNIX)
+  message ("To alter this please run e.g. \"cmake ../../ -DBOOST_INCLUDES=c:\\usr\\include\\boost-1_40\" (without quotes).")
+ENDIF(UNIX)
+message ("#######################################################################################################")
+IF(CMAKE_COMPILER_IS_GNUCC)
+  IF(NOT GCC_VERSION)
+    SET(GCC_VERSION "gcc43" CACHE INTERNAL "Set GCC version e.g. gcc44 (for GCC version 4.4.x)" FORCE)
+  ENDIF(NOT GCC_VERSION)
+  message ("GCC version is set at \"${GCC_VERSION}\"")
+  message ("To alter this (e.g. for GCC 4.4.x) please run \"cmake ../../ -DGCC_VERSION=gcc44\" (without quotes).") 
+  message ("#######################################################################################################")
+  IF(${CMAKE_GENERATOR} MATCHES "MinGW Makefiles")
+    STRING(REPLACE "gcc" "mgw" GCC_VERSION "${GCC_VERSION}")
+  ENDIF(${CMAKE_GENERATOR} MATCHES "MinGW Makefiles")
+ENDIF(CMAKE_COMPILER_IS_GNUCC)
+SET(GCC_VERSION "-${GCC_VERSION}")
 
  set(CPACK_PACKAGE_VERSION_PATCH ${pddate})
 
@@ -80,7 +105,7 @@ IF (WIN32)
 ELSE(WIN32)
 	set(INCLUDE_DIR  /opt/local/var/macports/software/macfuse/1.7_0/opt/local/include/ )
 ENDIF(WIN32)
-INCLUDE_DIRECTORIES(${SOURCE_DIR} ${INCLUDE_DIR} )
+INCLUDE_DIRECTORIES(${SOURCE_DIR} ${INCLUDE_DIR} ${BOOST_INCLUDES})
 link_directories (${PD_BINARY_DIR})
 
 ##################################################################################
@@ -201,13 +226,13 @@ add_executable(pdlocal ${M_QT_C} )
 
 SET(SYS_LIB
         maidsafe-dht
-	/usr/lib/libboost_thread-gcc43-mt-${BOOST_VERSION}.a
+	/usr/lib/libboost_thread${GCC_VERSION}-mt-${BOOST_VERSION}.a
 	sqlite3
 	/usr/lib/libprotobuf.a
-	/usr/lib/libboost_system-gcc43-mt-${BOOST_VERSION}.a
-	/usr/lib/libboost_filesystem-gcc43-mt-${BOOST_VERSION}.a
-	/usr/lib/libboost_regex-gcc43-mt-${BOOST_VERSION}.a
-	/usr/lib/libboost_date_time-gcc43-mt-${BOOST_VERSION}.a
+	/usr/lib/libboost_system${GCC_VERSION}-mt-${BOOST_VERSION}.a
+	/usr/lib/libboost_filesystem${GCC_VERSION}-mt-${BOOST_VERSION}.a
+	/usr/lib/libboost_regex${GCC_VERSION}-mt-${BOOST_VERSION}.a
+	/usr/lib/libboost_date_time${GCC_VERSION}-mt-${BOOST_VERSION}.a
 	-lrt
 	-lc
 )
@@ -226,11 +251,11 @@ SET(SYS_LIB
  -mi386pe
 -lstdc++
 -lws2_32
-c:/usr/lib/libboost_system-mgw43-mt-${BOOST_VERSION}.lib
-c:/usr/lib/libboost_filesystem-mgw43-mt-${BOOST_VERSION}.lib
-c:/usr/lib/libboost_regex-mgw43-mt-${BOOST_VERSION}.lib
-c:/usr/lib/libboost_thread-mgw43-mt-${BOOST_VERSION}.lib
-c:/usr/lib/libboost_date_time-mgw43-mt-${BOOST_VERSION}.lib
+c:/usr/lib/libboost_system${GCC_VERSION}-mt-${BOOST_VERSION}.lib
+c:/usr/lib/libboost_filesystem${GCC_VERSION}-mt-${BOOST_VERSION}.lib
+c:/usr/lib/libboost_regex${GCC_VERSION}-mt-${BOOST_VERSION}.lib
+c:/usr/lib/libboost_thread${GCC_VERSION}-mt-${BOOST_VERSION}.lib
+c:/usr/lib/libboost_date_time${GCC_VERSION}-mt-${BOOST_VERSION}.lib
 c:/usr/lib/dokan.lib
 c:/usr/lib/libprotobuf.a c:/usr/lib/libsqlite3.a -liphlpapi
 )
