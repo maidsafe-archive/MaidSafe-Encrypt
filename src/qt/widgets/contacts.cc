@@ -292,7 +292,6 @@ void Contacts::onFileSendClicked() {
   QList<QString> conts;
   if (contacts.size() > 1) {
     foreach(QListWidgetItem *item, contacts) {
-      qDebug() << "Contacts::onSendMessageClicked()";
       conts.push_back(item->text());
     }
   } else {
@@ -303,29 +302,40 @@ void Contacts::onFileSendClicked() {
   // starting directoty should be the maidafe one.
   // TODO(Team#5#): 2009-07-28 - restrict file dialog to maidsafe directories
   QString root;
+#ifdef DEBUG
+  printf("Contacts::onFileSendClicked: opening the \"conversation\".\n");
+  boost::progress_timer t;
+#endif
+
 #ifdef __WIN32__
   root = QString("%1:\\My Files").
          arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
-//   dialog.setDirectory(root);
-#else
-  file_system::FileSystem fs;
-  root = QString::fromStdString(fs.MaidsafeFuseDir());
-#endif
-#ifdef DEBUG
-  printf("Contacts::onFileSendClicked: opening the \"conversation\".\n");
-#endif
-  maidsafe::ClientController::getInstance()->open("\\My Files");
-  boost::progress_timer t;
   QFileDialog *qfd = new QFileDialog(this,
                      tr("File to share..."),
                      root, tr("Any file (*)"));
-  qfd->exec();
+  int result = qfd->exec();
+  if (result == QDialog::Rejected) {
+    return;
+  }
   QStringList fileNames = qfd->selectedFiles();
+#else
+  file_system::FileSystem fs;
+  root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+  QStringList fileNames = QFileDialog::getOpenFileNames(
+                                this,
+                                "Select one to send",
+                                root,
+                                tr("Any file (*)"));
+#endif
+
 #ifdef DEBUG
-  printf("\n\nDialog time: %f\n\n", t.elapsed());
+  printf("Contacts::onFileSendClicked: time - %f.\n", t.elapsed());
 #endif
   if (fileNames.isEmpty()) {
-      return;
+#ifdef DEBUG
+    printf("Contacts::onFileSendClicked: no file selected.\n");
+#endif
+    return;
   }
 
   const QString filename = fileNames.at(0);
@@ -345,7 +355,7 @@ void Contacts::onFileSendClicked() {
 
   if (ClientController::instance()->sendInstantFile(filename, text, conts)) {
     QMessageBox::information(this, tr("File Sent"),
-                              tr("Success sending file: %1").arg(filename));
+                             tr("Success sending file: %1").arg(filename));
   } else {
     const QString msg = tr("There was an error sending the file: %1")
                        .arg(filename);
