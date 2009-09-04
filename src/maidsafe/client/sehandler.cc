@@ -603,35 +603,35 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 //    printf("Searching dir_path(%s) and enc_dm_(%s) in uptodate_datamaps_\n",
 //      dir_path.c_str(), hex_dm.c_str());
 #endif
-//    std::map<std::string, std::string>::iterator it;
-//    it = uptodate_datamaps_.find(dir_path);
-//
-//    if (it != uptodate_datamaps_.end()) {
-//#ifdef DEBUG
-//      printf("SEHandler::DecryptDb: Found dir_path in set.\n");
-//#endif
-//      if (dm_encrypted) {
-//        if (it->second == enc_dm_) {
-//#ifdef DEBUG
-//          printf("SEHandler::DecryptDb: Found enc DM in set. ");
-//          printf("No need to go get it from the network.\n");
-//#endif
-//          return 0;
-//        }
-//      } else {
-//        if (it->second == ser_dm) {
-//#ifdef DEBUG
-//          printf("SEHandler::DecryptDb: Found ser DM in set. ");
-//          printf("No need to go get it from the network.\n");
-//#endif
-//          return 0;
-//        }
-//      }
-//    } else {
-//#ifdef DEBUG
-//      printf("SEHandler::DecryptDb: DIDN'T find dir_path in set.\n");
-//#endif
-//    }
+    std::map<std::string, std::string>::iterator it;
+    it = uptodate_datamaps_.find(dir_path);
+
+    if (it != uptodate_datamaps_.end()) {
+#ifdef DEBUG
+      printf("SEHandler::DecryptDb: Found dir_path in set.\n");
+#endif
+      if (dm_encrypted) {
+        if (it->second == enc_dm_) {
+#ifdef DEBUG
+          printf("SEHandler::DecryptDb: Found enc DM in set. ");
+          printf("No need to go get it from the network.\n");
+#endif
+          return 0;
+        }
+      } else {
+        if (it->second == ser_dm) {
+#ifdef DEBUG
+          printf("SEHandler::DecryptDb: Found ser DM in set. ");
+          printf("No need to go get it from the network.\n");
+#endif
+          return 0;
+        }
+      }
+    } else {
+#ifdef DEBUG
+      printf("SEHandler::DecryptDb: DIDN'T find dir_path in set.\n");
+#endif
+    }
 
 //      if (dir_type != ANONYMOUS) {
 //        packethandler::GenericPacket gp;

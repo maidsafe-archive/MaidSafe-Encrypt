@@ -135,20 +135,40 @@ int LocalStoreManager::LoadChunk(const std::string &hex_chunk_name,
           hex_chunk_name.substr(0, 10).c_str());
 #endif
   fs::path file_path("StoreChunks");
-  file_path = file_path / hex_chunk_name;
-  if (!fs::exists(file_path)) {
 #ifdef DEBUG
-    printf("LocalStoreManager::LoadChunk - didn't find the chunk.\n");
+  printf("LocalStoreManager::LoadChunk - NALGAAAAAAAAAAA\n");
+#endif
+  file_path = file_path / hex_chunk_name;
+#ifdef DEBUG
+  printf("LocalStoreManager::LoadChunk - SENOOOOOOOOOOOOOO\n");
+#endif
+  try {
+      if (!fs::exists(file_path)) {
+#ifdef DEBUG
+        printf("LocalStoreManager::LoadChunk - didn't find the chunk.\n");
+#endif
+        return -1;
+      }
+#ifdef DEBUG
+      printf("LocalStoreManager::LoadChunk - PUCHAAAAAAAAAAAAAAAA\n");
+#endif
+      boost::uintmax_t size = fs::file_size(file_path);
+      boost::scoped_ptr<char> temp(new char[size]);
+      fs::ifstream fstr;
+      fstr.open(file_path, std::ios_base::binary);
+      fstr.read(temp.get(), size);
+      fstr.close();
+      *data = std::string((const char*)temp.get(), size);
+#ifdef DEBUG
+      printf("LocalStoreManager::LoadChunk - NALGAAAAAAAAAAA\n");
+#endif
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("LocalStoreManager::LoadChunk - %s\n", e.what());
 #endif
     return -1;
   }
-  boost::uintmax_t size = fs::file_size(file_path);
-  boost::scoped_ptr<char> temp(new char[size]);
-  fs::ifstream fstr;
-  fstr.open(file_path, std::ios_base::binary);
-  fstr.read(temp.get(), size);
-  fstr.close();
-  *data = std::string((const char*)temp.get(), size);
   return 0;
 }
 
