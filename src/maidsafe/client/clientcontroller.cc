@@ -624,13 +624,9 @@ bool ClientController::Logout() {
   }
 
   SerialiseDa();
-  printf("AAAAAAAAAAAAA\n");
   Exitcode result = auth_->SaveSession(ser_da_, priv_keys, pub_keys);
-  printf("BBBBBBBBBBBBB\n");
   thread_pool_.clear();
-  printf("CCCCCCCCCCCCC\n");
   thread_pool_.wait();
-  printf("DDDDDDDDDDDDD\n");
 
 //  int connection_status(0);
 //  int n = ChangeConnectionStatus(connection_status);
@@ -654,6 +650,7 @@ bool ClientController::Logout() {
       }
     }
     logging_out_ = false;
+    ser_da_ = "";
     return true;
   }
 

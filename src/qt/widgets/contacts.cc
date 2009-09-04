@@ -306,20 +306,24 @@ void Contacts::onFileSendClicked() {
 #ifdef __WIN32__
   root = QString("%1:\\My Files").
          arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
-  // dialog.setDirectory(root);
+//   dialog.setDirectory(root);
 #else
   file_system::FileSystem fs;
   root = QString::fromStdString(fs.MaidsafeFuseDir());
 #endif
-  printf("\n\nContacts::onFileSendClicked: opening the "
-         "\"\"\"conversation\"\"\".\n\n");
+#ifdef DEBUG
+  printf("Contacts::onFileSendClicked: opening the \"conversation\".\n");
+#endif
+  maidsafe::ClientController::getInstance()->open("\\My Files");
   boost::progress_timer t;
-  QStringList fileNames = QFileDialog::getOpenFileNames(
-                          this,
-                          "Select one to send",
-                          root,
-                          tr("Any file (*)"));
+  QFileDialog *qfd = new QFileDialog(this,
+                     tr("File to share..."),
+                     root, tr("Any file (*)"));
+  qfd->exec();
+  QStringList fileNames = qfd->selectedFiles();
+#ifdef DEBUG
   printf("\n\nDialog time: %f\n\n", t.elapsed());
+#endif
   if (fileNames.isEmpty()) {
       return;
   }
