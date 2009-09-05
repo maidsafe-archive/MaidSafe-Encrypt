@@ -837,7 +837,7 @@ int SEHandler::LoadChunks(const DataMap &dm) {
     int n = storem_->LoadChunk(dm.encrypted_chunk_name(i), &data);
 #ifdef DEBUG
     printf("SEHandler::LoadChunks chunk(%s): result(%d)\n",
-           dm.encrypted_chunk_name(i).substr(0,8).c_str(), n);
+           dm.encrypted_chunk_name(i).substr(0, 8).c_str(), n);
 #endif
     chunks_found += n;
     SelfEncryption se(client_chunkstore_);

@@ -55,40 +55,34 @@ enum ChunkHolderStatus {
 
 class CallbackObj {
  public:
-  CallbackObj() : cond_(),  mutex_(), called_(false), result_("") {}
+  CallbackObj() : mutex_(), called_(false), result_("") {}
   void CallbackFunc(const std::string &result) {
-    {
-      boost::mutex::scoped_lock lock(mutex_);
-      result_ = result;
-      called_ = true;
-    }
-    printf("Notify ***********************************\n");
-    cond_.notify_one();
+    boost::mutex::scoped_lock lock(mutex_);
+    result_ = result;
+    called_ = true;
   }
   std::string result() {
     boost::mutex::scoped_lock lock(mutex_);
     return called_ ? result_ : "";
   }
+  bool called() {
+    boost::mutex::scoped_lock lock(mutex_);
+    return called_;
+  }
   //  Block until callback happens or timeout (milliseconds) passes.
   void WaitForCallback(const int &timeout) {
-    boost::mutex::scoped_lock lock(mutex_);
-    if (!called_) {
-      boost::system_time now(boost::get_system_time());
-      boost::system_time timeout_expires = now +
-          boost::posix_time::milliseconds(timeout);
-      cond_.timed_wait(lock, timeout_expires);
+    int count = 0;
+    while (!called() && count < timeout) {
+      count += 10;
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     }
   }
   //  Block until callback happens.
   void WaitForCallback() {
-    boost::mutex::scoped_lock lock(mutex_);
-    if (!called_) {
-      printf("Wait ***********************************\n");
-      cond_.wait(lock);
-    }
+    while (!called())
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
  private:
-  boost::condition_variable cond_;
   boost::mutex mutex_;
   bool called_;
   std::string result_;
@@ -267,7 +261,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                bool local,
                StorePrepRequest *store_prep_request,
                StorePrepResponse *store_prep_response);
-  void SendPrepCallback(boost::condition_variable *cond);
+  void SendPrepCallback(boost::mutex *mutex, bool *send_prep_done);
   // Send the actual data content to the peer.
   int SendContent(const kad::Contact &peer,
                   bool local,
@@ -345,7 +339,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   int SendIOUDone(const kad::Contact &peer,
                   bool local,
                   IOUDoneRequest *iou_done_request);
-  void IOUDoneCallback(boost::condition_variable *cond);
+  void IOUDoneCallback(boost::mutex *mutex, bool *iou_done);
   // Store copies of an individual packet to the network.
   int SendPacket(const StoreTask &store_task, int copies);
   int GetStorePacketRequest(const StoreTask &store_task,
@@ -385,6 +379,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   const boost::uint16_t kKadStoreThreshold_;
   boost::mutex store_packet_mutex_;
   boost::condition_variable store_packet_conditional_;
+  boost::condition_variable send_iou_done_conditional_;
+  boost::condition_variable send_prep_done_conditional_;
 };
 
 struct StoreTask {

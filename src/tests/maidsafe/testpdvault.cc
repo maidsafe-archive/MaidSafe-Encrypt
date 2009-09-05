@@ -342,36 +342,34 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
     ++i;
   }
-  // Wait until last chunk is available via network
-  --it_;
-  int count = 0;
-  while (count < 30) {
-    bool result = sm_->KeyUnique((*it_).first, false);
-    printf("In iter %i, result of KeyUnique is %i\n", count + 1, result);
-    if (!result)
-      break;
-    boost::this_thread::sleep(boost::posix_time::seconds(10));
-    ++count;
-  }
-                            boost::this_thread::sleep(boost::posix_time::seconds(120));
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times and each chunk copy is valid (i.e. name == Hash(contents))
+  boost::this_thread::sleep(boost::posix_time::seconds(15));
+  int timeout(300);  // seconds.
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     std::string non_hex_name;
     base::decode_from_hex(hex_chunk_name, &non_hex_name);
     int chunk_count = 0;
-    for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
-      if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
-        std::string trace = "Vault[" + base::itos(vault_no) + "] has the chunk";
-        SCOPED_TRACE(trace);
-        ++chunk_count;
-        ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_.
-            HashCheckChunk(non_hex_name));
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+          ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_.
+              HashCheckChunk(non_hex_name));
+        }
       }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
     }
-    EXPECT_EQ(kMinChunkCopies, chunk_count);
+    EXPECT_GE(chunk_count, kMinChunkCopies);
   }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
 }
 
 TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
@@ -385,7 +383,29 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
     ++i;
   }
-  boost::this_thread::sleep(boost::posix_time::seconds(120));
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times.
+  boost::this_thread::sleep(boost::posix_time::seconds(15));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name;
+    base::decode_from_hex(hex_chunk_name, &non_hex_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
   // Check each chunk can be retrieved correctly
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     printf("Getting chunk.\n");
@@ -396,7 +416,9 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
     ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
         true));
   }
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
 }
 /*
 TEST_F(TestPDVault, FUNC_MAID_StoreChunkInvalidRequest) {

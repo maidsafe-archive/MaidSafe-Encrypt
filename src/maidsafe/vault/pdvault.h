@@ -252,8 +252,9 @@ class PDVault {
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
   FRIEND_TEST(TestPDVault, FUNC_MAID_StoreChunks);
+  FRIEND_TEST(TestPDVault, FUNC_MAID_GetChunk);
   void KadJoinedCallback(const std::string &result,
-                         boost::condition_variable *kad_join_cond);
+                         boost::mutex *kad_joined_mutex);
   void RegisterMaidService();
   void UnRegisterMaidService();
   // This runs in a continuous loop until vault_status_ becomes kVaultStopping.
@@ -338,6 +339,7 @@ class PDVault {
   bool kad_joined_;
   VaultStatus vault_status_;
   boost::mutex vault_status_mutex_;
+  boost::condition_variable kad_join_cond_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
   std::string non_hex_pmid_, signed_non_hex_pmid_;
   crypto::Crypto co_;

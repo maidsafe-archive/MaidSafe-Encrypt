@@ -52,7 +52,9 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       store_thread_pool_(kMaxStoreThreads),
       kKadStoreThreshold_(kad::K * kad::kMinSuccessfulPecentageStore),
       store_packet_mutex_(),
-      store_packet_conditional_() {
+      store_packet_conditional_(),
+      send_iou_done_conditional_(),
+      send_prep_done_conditional_() {
   knode_->SetAlternativeStore(client_chunkstore_.get());
 }
 
@@ -764,23 +766,32 @@ int MaidsafeStoreManager::SendPrep(const kad::Contact &peer,
                                    StorePrepRequest *store_prep_request,
                                    StorePrepResponse *store_prep_response) {
   boost::mutex mutex;
-  boost::condition_variable cond;
-  boost::mutex::scoped_lock lock(mutex);
+  bool send_prep_done(false);
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-      &MaidsafeStoreManager::SendPrepCallback, &cond);
+      &MaidsafeStoreManager::SendPrepCallback, &mutex, &send_prep_done);
   rpcprotocol::Controller controller;
   client_rpcs_.StorePrep(peer, local, store_prep_request,
       store_prep_response, &controller, callback);
-  cond.wait(lock);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (!send_prep_done) {
+      send_prep_done_conditional_.wait(lock);
+    }
+  }
   return (store_prep_response->pmid_id() == peer.node_id() &&
           store_prep_response->result() == kAck) ? 0 : -1;
 }
 
-void MaidsafeStoreManager::SendPrepCallback(boost::condition_variable *cond) {
+void MaidsafeStoreManager::SendPrepCallback(boost::mutex *mutex,
+                                            bool *send_prep_done) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::SendPrepCallback.\n");
 #endif
-  cond->notify_one();
+  {  // NOLINT(Fraser)
+    boost::mutex::scoped_lock lock(*mutex);
+    *send_prep_done = true;
+  }
+  send_prep_done_conditional_.notify_all();
 }
 
 int MaidsafeStoreManager::SendContent(const kad::Contact &peer,
@@ -965,13 +976,13 @@ int MaidsafeStoreManager::FindValue(
   needs_cache_copy_id->clear();
   CallbackObj kad_cb_obj;
 #ifdef DEBUG
-  printf("In MaidsafeStoreManager::FindValue, before.\n");
+//  printf("In MaidsafeStoreManager::FindValue, before.\n");
 #endif
   knode_->FindValue(kad_key, check_local,
       boost::bind(&CallbackObj::CallbackFunc, &kad_cb_obj, _1));
   kad_cb_obj.WaitForCallback();
 #ifdef DEBUG
-  printf("In MaidsafeStoreManager::FindValue, after.\n");
+//  printf("In MaidsafeStoreManager::FindValue, after.\n");
 #endif
   if (kad_cb_obj.result() == "") {
 #ifdef DEBUG
@@ -1297,23 +1308,32 @@ int MaidsafeStoreManager::SendIOUDone(const kad::Contact &peer,
                                       IOUDoneRequest *iou_done_request) {
   IOUDoneResponse iou_done_response;
   boost::mutex mutex;
-  boost::condition_variable cond;
-  boost::mutex::scoped_lock lock(mutex);
+  bool iou_done(false);
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-      &MaidsafeStoreManager::IOUDoneCallback, &cond);
+      &MaidsafeStoreManager::IOUDoneCallback, &mutex, &iou_done);
   rpcprotocol::Controller controller;
   client_rpcs_.IOUDone(peer, local, iou_done_request, &iou_done_response,
       &controller, callback);
-  cond.wait(lock);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (!iou_done) {
+      send_iou_done_conditional_.wait(lock);
+    }
+  }
   return (iou_done_response.pmid_id() == peer.node_id() &&
           iou_done_response.result() == kAck) ? 0 : -1;
 }
 
-void MaidsafeStoreManager::IOUDoneCallback(boost::condition_variable *cond) {
+void MaidsafeStoreManager::IOUDoneCallback(boost::mutex *mutex,
+                                           bool *iou_done) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::IOUDoneCallback.\n");
 #endif
-  cond->notify_one();
+  {  // NOLINT (Fraser)
+    boost::mutex::scoped_lock lock(*mutex);
+    *iou_done = true;
+  }
+  send_iou_done_conditional_.notify_all();
 }
 
 int MaidsafeStoreManager::SendPacket(const StoreTask &store_task, int copies) {

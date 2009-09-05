@@ -61,6 +61,7 @@ PDVault::PDVault(const std::string &pmid_public,
       kad_joined_(false),
       vault_status_(kVaultStopped),
       vault_status_mutex_(),
+      kad_join_cond_(),
       pmid_public_(pmid_public),
       pmid_private_(pmid_private),
       signed_pmid_public_(signed_pmid_public),
@@ -94,17 +95,15 @@ void PDVault::Start(bool first_node) {
       boost::bind(&kad::KNode::HandleDeadRendezvousServer, &knode_, _1));
   RegisterMaidService();
   boost::mutex kad_join_mutex;
-  boost::condition_variable kad_join_cond;
-  boost::mutex::scoped_lock lock(kad_join_mutex);
   if (first_node) {
     boost::asio::ip::address local_ip;
     base::get_local_address(&local_ip);
     knode_.Join(pmid_, kad_config_file_, local_ip.to_string(),
         channel_manager_->ptransport()->listening_port(),
-        boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_cond));
+        boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
   } else {
     knode_.Join(pmid_, kad_config_file_,
-        boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_cond));
+        boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
   }
   // Hash check all current chunks in chunkstore
   std::list<std::string> failed_keys;
@@ -112,8 +111,10 @@ void PDVault::Start(bool first_node) {
     return;
   }
   // Block until we've joined the Kademlia network.
-  if (!kad_joined_)
-    kad_join_cond.wait(lock);
+  boost::mutex::scoped_lock lock(kad_join_mutex);
+  while (!kad_joined_) {
+    kad_join_cond_.wait(lock);
+  }
   // Set port, so that if vault is restarted before it is destroyed, it re-uses
   // port (unless this port has become unavailable).
   port_ = knode_.host_port();
@@ -129,17 +130,20 @@ void PDVault::Start(bool first_node) {
 }
 
 void PDVault::KadJoinedCallback(const std::string &result,
-                                boost::condition_variable *kad_join_cond) {
-  base::GeneralResponse result_;
-  if (!result_.ParseFromString(result)) {
-    kad_joined_ = false;
-  } else if (result_.result() != kad::kRpcResultSuccess) {
-    UnRegisterMaidService();
-    kad_joined_ = false;
-  } else {
-    kad_joined_ = true;
+                                boost::mutex *kad_joined_mutex) {
+  {
+    boost::mutex::scoped_lock lock(*kad_joined_mutex);
+    base::GeneralResponse result_;
+    if (!result_.ParseFromString(result)) {
+      kad_joined_ = false;
+    } else if (result_.result() != kad::kRpcResultSuccess) {
+      UnRegisterMaidService();
+      kad_joined_ = false;
+    } else {
+      kad_joined_ = true;
+    }
   }
-  kad_join_cond->notify_one();
+  kad_join_cond_.notify_one();
 }
 
 int PDVault::Stop(bool cancel_pending_ops) {
