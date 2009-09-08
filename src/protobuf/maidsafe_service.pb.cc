@@ -53,36 +53,36 @@ void protobuf_AddDesc_maidsafe_5fservice_2eproto() {
   ::maidsafe::protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\026maidsafe_service.proto\022\010maidsafe\032\037maid"
-    "safe_service_messages.proto2\344\007\n\017Maidsafe"
+    "safe_service_messages.proto2\337\007\n\017Maidsafe"
     "Service\022I\n\016StoreChunkPrep\022\032.maidsafe.Sto"
     "rePrepRequest\032\033.maidsafe.StorePrepRespon"
     "se\022A\n\010StoreIOU\022\031.maidsafe.StoreIOUReques"
     "t\032\032.maidsafe.StoreIOUResponse\022>\n\007IOUDone"
     "\022\030.maidsafe.IOUDoneRequest\032\031.maidsafe.IO"
     "UDoneResponse\022=\n\nStoreChunk\022\026.maidsafe.S"
-    "toreRequest\032\027.maidsafe.StoreResponse\022C\n\020"
-    "StorePacketChunk\022\026.maidsafe.StoreRequest"
-    "\032\027.maidsafe.StoreResponse\022X\n\023StoreChunkR"
-    "eference\022\037.maidsafe.StoreReferenceReques"
-    "t\032 .maidsafe.StoreReferenceResponse\022G\n\nC"
-    "heckChunk\022\033.maidsafe.CheckChunkRequest\032\034"
-    ".maidsafe.CheckChunkResponse\0222\n\003Get\022\024.ma"
-    "idsafe.GetRequest\032\025.maidsafe.GetResponse"
-    "\022;\n\006Update\022\027.maidsafe.UpdateRequest\032\030.ma"
-    "idsafe.UpdateResponse\022J\n\013GetMessages\022\034.m"
-    "aidsafe.GetMessagesRequest\032\035.maidsafe.Ge"
-    "tMessagesResponse\022;\n\006Delete\022\027.maidsafe.D"
-    "eleteRequest\032\030.maidsafe.DeleteResponse\022P"
-    "\n\rValidityCheck\022\036.maidsafe.ValidityCheck"
-    "Request\032\037.maidsafe.ValidityCheckResponse"
-    "\022D\n\tSwapChunk\022\032.maidsafe.SwapChunkReques"
-    "t\032\033.maidsafe.SwapChunkResponse\022J\n\013VaultS"
-    "tatus\022\034.maidsafe.VaultStatusRequest\032\035.ma"
-    "idsafe.VaultStatusResponse2\233\001\n\021VaultRegi"
-    "stration\022A\n\010OwnVault\022\031.maidsafe.OwnVault"
-    "Request\032\032.maidsafe.OwnVaultResponse\022C\n\014I"
-    "sVaultOwned\022\030.maidsafe.IsOwnedRequest\032\031."
-    "maidsafe.IsOwnedResponse", 1224);
+    "toreRequest\032\027.maidsafe.StoreResponse\022>\n\013"
+    "StorePacket\022\026.maidsafe.StoreRequest\032\027.ma"
+    "idsafe.StoreResponse\022X\n\023StoreChunkRefere"
+    "nce\022\037.maidsafe.StoreReferenceRequest\032 .m"
+    "aidsafe.StoreReferenceResponse\022G\n\nCheckC"
+    "hunk\022\033.maidsafe.CheckChunkRequest\032\034.maid"
+    "safe.CheckChunkResponse\0222\n\003Get\022\024.maidsaf"
+    "e.GetRequest\032\025.maidsafe.GetResponse\022;\n\006U"
+    "pdate\022\027.maidsafe.UpdateRequest\032\030.maidsaf"
+    "e.UpdateResponse\022J\n\013GetMessages\022\034.maidsa"
+    "fe.GetMessagesRequest\032\035.maidsafe.GetMess"
+    "agesResponse\022;\n\006Delete\022\027.maidsafe.Delete"
+    "Request\032\030.maidsafe.DeleteResponse\022P\n\rVal"
+    "idityCheck\022\036.maidsafe.ValidityCheckReque"
+    "st\032\037.maidsafe.ValidityCheckResponse\022D\n\tS"
+    "wapChunk\022\032.maidsafe.SwapChunkRequest\032\033.m"
+    "aidsafe.SwapChunkResponse\022J\n\013VaultStatus"
+    "\022\034.maidsafe.VaultStatusRequest\032\035.maidsaf"
+    "e.VaultStatusResponse2\233\001\n\021VaultRegistrat"
+    "ion\022A\n\010OwnVault\022\031.maidsafe.OwnVaultReque"
+    "st\032\032.maidsafe.OwnVaultResponse\022C\n\014IsVaul"
+    "tOwned\022\030.maidsafe.IsOwnedRequest\032\031.maids"
+    "afe.IsOwnedResponse", 1219);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_maidsafe_5fservice_2eproto);
@@ -142,11 +142,11 @@ void MaidsafeService::StoreChunk(::google::protobuf::RpcController* controller,
   done->Run();
 }
 
-void MaidsafeService::StorePacketChunk(::google::protobuf::RpcController* controller,
+void MaidsafeService::StorePacket(::google::protobuf::RpcController* controller,
                          const ::maidsafe::StoreRequest*,
                          ::maidsafe::StoreResponse*,
                          ::google::protobuf::Closure* done) {
-  controller->SetFailed("Method StorePacketChunk() not implemented.");
+  controller->SetFailed("Method StorePacket() not implemented.");
   done->Run();
 }
 
@@ -254,7 +254,7 @@ void MaidsafeService::CallMethod(const ::google::protobuf::MethodDescriptor* met
              done);
       break;
     case 4:
-      StorePacketChunk(controller,
+      StorePacket(controller,
              ::google::protobuf::down_cast<const ::maidsafe::StoreRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::StoreResponse*>(response),
              done);
@@ -434,7 +434,7 @@ void MaidsafeService_Stub::StoreChunk(::google::protobuf::RpcController* control
   channel_->CallMethod(descriptor()->method(3),
                        controller, request, response, done);
 }
-void MaidsafeService_Stub::StorePacketChunk(::google::protobuf::RpcController* controller,
+void MaidsafeService_Stub::StorePacket(::google::protobuf::RpcController* controller,
                               const ::maidsafe::StoreRequest* request,
                               ::maidsafe::StoreResponse* response,
                               ::google::protobuf::Closure* done) {

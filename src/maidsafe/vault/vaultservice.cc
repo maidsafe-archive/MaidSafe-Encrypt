@@ -136,9 +136,9 @@ void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
 }
 
 void VaultService::StorePacket(google::protobuf::RpcController*,
-                              const maidsafe::StoreRequest* request,
-                              maidsafe::StoreResponse* response,
-                              google::protobuf::Closure* done) {
+                               const maidsafe::StoreRequest* request,
+                               maidsafe::StoreResponse* response,
+                               google::protobuf::Closure* done) {
 #ifdef DEBUG
   printf("In VaultService::StorePacket (%i), Data Type: %i\n",
          knode_->host_port(), request->data_type());
@@ -944,8 +944,6 @@ bool VaultService::ValidateSignedRequest(const std::string &public_key,
 #endif
     return false;
   }
-  if (co.AsymCheckSig(public_key, signed_public_key, public_key,
-      crypto::STRING_STRING)) {
     if (co.AsymCheckSig(co.Hash(signed_public_key + key +
         non_hex_pmid_, "", crypto::STRING_STRING, false), signed_request,
         public_key, crypto::STRING_STRING))
@@ -955,12 +953,6 @@ bool VaultService::ValidateSignedRequest(const std::string &public_key,
     return co.AsymCheckSig(co.Hash(public_key + signed_public_key +
       key, "", crypto::STRING_STRING, false), signed_request, public_key,
       crypto::STRING_STRING);
-  } else {
-#ifdef DEBUG
-    printf("Failed to check signature.\n");
-#endif
-    return false;
-  }
 }
 
 bool VaultService::ValidateSystemPacket(const std::string &ser_content,

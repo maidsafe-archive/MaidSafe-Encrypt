@@ -7,7 +7,7 @@ service MaidsafeService {
   rpc StoreIOU( StoreIOURequest ) returns ( StoreIOUResponse );
   rpc IOUDone( IOUDoneRequest ) returns ( IOUDoneResponse );
   rpc StoreChunk( StoreRequest ) returns ( StoreResponse );
-  rpc StorePacketChunk( StoreRequest ) returns ( StoreResponse );
+  rpc StorePacket( StoreRequest ) returns ( StoreResponse );
   rpc StoreChunkReference( StoreReferenceRequest )
       returns ( StoreReferenceResponse );
   // check if a chunk exists

@@ -887,16 +887,16 @@ std::string Authentication::createSignaturePackets(
     else
       params = sigPacket->Create(params);
   }
+  ss_->AddKey(type_da, boost::any_cast<std::string>(params["name"]),
+              boost::any_cast<std::string>(params["privateKey"]),
+              boost::any_cast<std::string>(params["publicKey"]), "");
+
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(params["name"]),
       boost::any_cast<std::string>(params["ser_packet"]), type, PRIVATE, "")
       != 0) {
     return "";
   }
-
-  ss_->AddKey(type_da, boost::any_cast<std::string>(params["name"]),
-              boost::any_cast<std::string>(params["privateKey"]),
-              boost::any_cast<std::string>(params["publicKey"]), "");
 
   public_key = boost::any_cast<std::string>(params["publicKey"]);
   delete sigPacket;

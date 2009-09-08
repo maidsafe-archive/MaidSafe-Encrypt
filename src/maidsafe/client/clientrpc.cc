@@ -83,7 +83,7 @@ void ClientRpcs::StorePacket(const kad::Contact &peer,
   rpcprotocol::Channel channel(channel_manager_.get(), ip, port,
       peer.rendezvous_ip(), peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.StorePacketChunk(controller, store_request, store_response, done);
+  service.StorePacket(controller, store_request, store_response, done);
 }
 
 void ClientRpcs::StoreIOU(const kad::Contact &peer,

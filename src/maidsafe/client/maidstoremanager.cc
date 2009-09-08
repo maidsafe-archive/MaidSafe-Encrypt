@@ -1020,7 +1020,7 @@ int MaidsafeStoreManager::FindValue(
     chunk_holders_ids->push_back(find_response.values(i - 1));
   }
 #ifdef DEBUG
-    printf("In MaidsafeStoreManager::FindValue, %lu values have returned.\n",
+    printf("In MaidsafeStoreManager::FindValue, %i values have returned.\n",
            chunk_holders_ids->size());
 #endif
   return (chunk_holders_ids->size()) ? 0 : -4;
@@ -1379,6 +1379,7 @@ int MaidsafeStoreManager::SendPacket(const StoreTask &store_task, int copies) {
     int failed_attempt_count = 0;
     while (failed_attempt_count < kMaxChunkStoreTries) {
       if (SendContent(peer, local, false, &store_request) == 0) {
+        ++duplicate_count;
         break;  // succeeded in storing to this peer
       } else {
         ++failed_attempt_count;

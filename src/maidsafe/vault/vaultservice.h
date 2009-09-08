@@ -68,9 +68,9 @@ class VaultService : public maidsafe::MaidsafeService {
                           maidsafe::StoreResponse* response,
                           google::protobuf::Closure* done);
   virtual void StorePacket(google::protobuf::RpcController* controller,
-                           const maidsafe::StoreRequest* request,
-                           maidsafe::StoreResponse* response,
-                           google::protobuf::Closure* done);
+                          const maidsafe::StoreRequest* request,
+                          maidsafe::StoreResponse* response,
+                          google::protobuf::Closure* done);
   virtual void IOUDone(google::protobuf::RpcController*,
                        const maidsafe::IOUDoneRequest* request,
                        maidsafe::IOUDoneResponse* response,

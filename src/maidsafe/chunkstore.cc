@@ -217,7 +217,8 @@ bool ChunkStore::Has(const std::string &key) {
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
-    printf("In ChunkStore::HasChunk, incorrect key size.\n");
+    printf("In ChunkStore::HasChunk, key size passed is %ul, not %ul.\n",
+           key.size(), kKeySize);
 #endif
     return false;
   }
@@ -240,7 +241,8 @@ ChunkType ChunkStore::chunk_type(const std::string &key) {
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
-    printf("In ChunkStore::chunk_type, incorrect key size.\n");
+    printf("In ChunkStore::chunk_type, key size passed is %ul, not %ul.\n",
+           key.size(), kKeySize);
 #endif
     return false;
   }
@@ -356,7 +358,8 @@ int ChunkStore::Store(const std::string &key, const std::string &value) {
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
-    printf("In ChunkStore::StoreChunk, incorrect key size.\n");
+    printf("In ChunkStore::StoreChunk, key size passed is %ul, not %ul.\n",
+           key.size(), kKeySize);
 #endif
     return -1;
   }
@@ -386,7 +389,8 @@ int ChunkStore::Store(const std::string &key, const fs::path &file) {
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
-    printf("In ChunkStore::StoreChunk, incorrect key size.\n");
+    printf("In ChunkStore::StoreChunk, key size passed is %ul, not %ul.\n",
+           key.size(), kKeySize);
 #endif
     return -1;
   }
@@ -417,7 +421,8 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
-    printf("In ChunkStore::AddChunkToOutgoing, incorrect key size.\n");
+    printf("In ChunkStore::AddChunkToOutgoing, key size passed is %ul, "
+           "not %ul.\n", key.size(), kKeySize);
 #endif
     return -2;
   }
@@ -442,7 +447,8 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
-    printf("In ChunkStore::AddChunkToOutgoing, incorrect key size.\n");
+    printf("In ChunkStore::AddChunkToOutgoing, key size passed is %ul, "
+           "not %ul.\n", key.size(), kKeySize);
 #endif
     return -2;
   }
@@ -528,7 +534,8 @@ bool ChunkStore::DeleteChunk(const std::string &key) {
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
-    printf("In ChunkStore::DeleteChunk, incorrect key size.\n");
+    printf("In ChunkStore::DeleteChunk, key size passed is %ul, not %ul.\n",
+           key.size(), kKeySize);
 #endif
     return false;
   }
@@ -580,7 +587,8 @@ int ChunkStore::Load(const std::string &key, std::string *value) {
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
-    printf("In ChunkStore::LoadChunk, incorrect key size.\n");
+    printf("In ChunkStore::LoadChunk, key size passed is %ul, not %ul.\n",
+           key.size(), kKeySize);
 #endif
     return -1;
   }
@@ -617,7 +625,8 @@ int ChunkStore::HashCheckChunk(const std::string &key) {
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
-    printf("In ChunkStore::HashCheckChunk, incorrect key size.\n");
+    printf("In ChunkStore::HashCheckChunk, key size passed is %ul, not %ul.\n",
+           key.size(), kKeySize);
 #endif
     return -1;
   }

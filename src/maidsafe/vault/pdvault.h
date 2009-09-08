@@ -247,12 +247,14 @@ class PDVault {
                  const std::string &rendezvous_ip,
                  const boost::uint16_t &rendezvous_port,
                  base::callback_func_type cb);
+  void StopRvPing() { knode_.StopRvPing(); }
   friend class localvaults::Env;
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
   FRIEND_TEST(TestPDVault, FUNC_MAID_StoreChunks);
   FRIEND_TEST(TestPDVault, FUNC_MAID_GetChunk);
+  FRIEND_TEST(TestPDVault, FUNC_MAID_StoreSystemPacket);
   void KadJoinedCallback(const std::string &result,
                          boost::mutex *kad_joined_mutex);
   void RegisterMaidService();
@@ -329,7 +331,6 @@ class PDVault {
   void SwapChunkAcceptChunk(
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
-  void StopRvPing() { knode_.StopRvPing(); }
   boost::uint16_t port_;
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
   kad::KNode knode_;

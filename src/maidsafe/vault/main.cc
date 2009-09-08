@@ -42,7 +42,7 @@
 
 namespace maidsafe_vault {
 
-const int kTestK = 4;
+const int kTestK = 16;
 static bool callback_timed_out_ = true;
 static bool callback_succeeded_ = false;
 static bool callback_prepared_ = false;
@@ -124,7 +124,8 @@ class RunPDVaults {
         mutex_(),
         bootstrap_file_prepared_(false),
         bootstrap_local_ip_(local_ip),
-        bootstrap_local_port_(local_port) {
+        bootstrap_local_port_(local_port),
+        single_function_timeout_(60) {
     fs::create_directories(chunkstore_dir_);
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
@@ -169,7 +170,7 @@ class RunPDVaults {
       kad_contact_->set_port(bootstrap_port_);
       kad_contact_->set_local_ip(bootstrap_local_ip_);
       kad_contact_->set_local_port(bootstrap_local_port_);
-      for (int j = 0; j < no_of_vaults_; j++) {
+      for (int j = 0; j < no_of_vaults_; ++j) {
         // Save kad_config to file
         std::string dir = chunkstore_dir_+"/Chunkstore"+ base::itos(64001+j);
         if (!boost::filesystem::exists(boost::filesystem::path(dir)))
@@ -191,101 +192,140 @@ class RunPDVaults {
       boost::uint16_t this_port = 0;
       if (initial_vault_port_ != 0)
         this_port = initial_vault_port_ + i;
-      std::string chunkstore_local_ = chunkstore_dir_+"/Chunkstore"+
-          base::itos(64001+i);
-      fs::path chunkstore_local_path_(chunkstore_local_, fs::native);
-      chunkstore_dirs_.push_back(chunkstore_local_path_);
-      std::string kad_config_location_ = chunkstore_local_ + "/" +
+      std::string chunkstore_local = chunkstore_dir_+"/Chunkstore"+
+          base::itos(i);
+      fs::path chunkstore_local_path(chunkstore_local, fs::native);
+      fs::create_directories(chunkstore_local_path);
+      chunkstore_dirs_.push_back(chunkstore_local_path);
+      std::string kad_config_location = chunkstore_local + "/" +
           kad_config_file_;
-      std::string public_key_(""), private_key_(""), signed_key_("");
-      std::string node_id_("");
-      GeneratePmidStuff(&public_key_,
-                        &private_key_,
-                        &signed_key_,
-                        &node_id_);
-      boost::shared_ptr<boost::mutex> mutex_local_(new boost::mutex);
-      mutices_.push_back(mutex_local_);
-
-      boost::shared_ptr<PDVault>
-          pdvault_local_(new PDVault(public_key_,
-                                     private_key_,
-                                     signed_key_,
-                                     chunkstore_local_,
-                                     this_port,
-                                     false,
-                                     false,
-                                     kad_config_location_,
-                                     1024*1024*1024,
-                                     0));
-      pdvaults_->push_back(pdvault_local_);
+      std::string public_key(""), private_key(""), signed_key(""), node_id("");
+      GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
+      boost::shared_ptr<maidsafe_vault::PDVault>
+          pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
+          signed_key, chunkstore_local, 0, false, false, kad_config_location,
+          1073741824, 0));
+      pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
       printf(".");
-      if (!bootstrap_file_prepared_) {
-        if (i == 0) {
-          // Make the first vault as bootstrapping node
-          kad_config_.Clear();
-          base::KadConfig::Contact *kad_contact_ = kad_config_.add_contact();
-  //        std::string bin_id_("");
-  //        std::string bin_ip_("");
-  //        base::decode_from_hex(pdvault_local_->hex_node_id(), &bin_id_);
-  //        base::decode_from_hex(pdvault_local_->host_ip(), &bin_ip_);
-          kad_contact_->set_node_id(pdvault_local_->hex_node_id());
-          kad_contact_->set_ip(pdvault_local_->host_ip());
-          kad_contact_->set_port(pdvault_local_->host_port());
-          kad_contact_->set_local_ip(pdvault_local_->local_host_ip());
-          kad_contact_->set_local_port(pdvault_local_->local_host_port());
-//          printf("In kadcontact host ip: %s, host port: %d, kad config: %s\n",
-//            kad_contact_->ip().c_str(),
-//            kad_contact_->port(),
-//            kad_config_location_.c_str());
-        }
-        // Save kad_config to file
-        std::fstream output_(kad_config_location_.c_str(),
-          std::ios::out | std::ios::trunc | std::ios::binary);
-        kad_config_.SerializeToOstream(&output_);
-        output_.close();
-      }
     }
-    printf("\n");
-    // start vaults
-    bool success_ = false;
-    for (int i = 0; i < no_of_vaults_; ++i) {
-      success_ = false;
-      (*(pdvaults_))[i]->Start(false);
-      for (int n = 0; n < 6000; ++n) {
-        if ((*(pdvaults_))[i]->vault_status() ==
-            maidsafe_vault::kVaultStarted) {
-          success_ = true;
-          break;
-        }
-      }
-      if (!success_)
+    // Start second vault and add as bootstrapping node for first vault
+    (*pdvaults_)[1]->Start(true);
+    boost::posix_time::ptime stop =
+        boost::posix_time::second_clock::local_time()+single_function_timeout_;
+    while (((*pdvaults_)[1]->vault_status() != maidsafe_vault::kVaultStarted) &&
+           boost::posix_time::second_clock::local_time() < stop) {
+      boost::this_thread::sleep(boost::posix_time::seconds(1));
+    }
+    if (maidsafe_vault::kVaultStarted != (*pdvaults_)[1]->vault_status()) {
+      printf("Vault 1 didn't start properly!\n");
+      return;
+    }
+    base::KadConfig kad_config;
+    base::KadConfig::Contact *kad_contact = kad_config.add_contact();
+    kad_contact->set_node_id((*pdvaults_)[1]->hex_node_id());
+    kad_contact->set_ip((*pdvaults_)[1]->host_ip());
+    kad_contact->set_port((*pdvaults_)[1]->host_port());
+    kad_contact->set_local_ip((*pdvaults_)[1]->local_host_ip());
+    kad_contact->set_local_port((*pdvaults_)[1]->local_host_port());
+    kad_config_file_ = chunkstore_dir_+"/Chunkstore0/.kadconfig";
+    std::fstream output1(kad_config_file_.c_str(),
+                         std::ios::out | std::ios::trunc | std::ios::binary);
+    if (!kad_config.SerializeToOstream(&output1)) {
+      printf("Didn't serialise kadconfig properly.\n");
+      return;
+    }
+    output1.close();
+    // Start first vault, add him as bootstrapping node for all others and stop
+    // second vault
+    (*pdvaults_)[0]->Start(false);
+    stop = boost::posix_time::second_clock::local_time() +
+        single_function_timeout_;
+    while (((*pdvaults_)[0]->vault_status() != maidsafe_vault::kVaultStarted) &&
+           boost::posix_time::second_clock::local_time() < stop) {
+      boost::this_thread::sleep(boost::posix_time::seconds(1));
+    }
+    if (maidsafe_vault::kVaultStarted != (*pdvaults_)[0]->vault_status()) {
+      printf("Vault 0 didn't start properly!\n");
+      return;
+    }
+
+    printf("Vault 0 started.\n");
+    kad_contact->Clear();
+    kad_config.Clear();
+    kad_contact = kad_config.add_contact();
+    kad_contact->set_node_id((*pdvaults_)[0]->hex_node_id());
+    kad_contact->set_ip((*pdvaults_)[0]->host_ip());
+    kad_contact->set_port((*pdvaults_)[0]->host_port());
+    kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
+    kad_contact->set_local_port((*pdvaults_)[0]->local_host_port());
+    if (0 != (*pdvaults_)[1]->Stop(true)) {
+      printf("Vault 1 didn't stop properly!\n");
+      return;
+    }
+    if (maidsafe_vault::kVaultStarted == (*pdvaults_)[1]->vault_status()) {
+      printf("Vault 1 is still running!\n");
+      return;
+    }
+    // Save kad config to files and start all remaining vaults
+    for (int k = 1; k < no_of_vaults_; ++k) {
+      kad_config_file_ = chunkstore_dir_+"/Chunkstore"+ base::itos(k) +
+          "/.kadconfig";
+      std::fstream output(kad_config_file_.c_str(),
+                          std::ios::out | std::ios::trunc | std::ios::binary);
+      if (!kad_config.SerializeToOstream(&output)) {
+        printf("Didn't serialise kadconfig properly.\n");
         return;
-      printf("\tVault %i started.\n", i+1);
+      }
+      output.close();
+      (*pdvaults_)[k]->Start(false);
+      stop = boost::posix_time::second_clock::local_time() +
+          single_function_timeout_;
+      while (((*pdvaults_)[k]->vault_status() != maidsafe_vault::kVaultStarted)
+             && boost::posix_time::second_clock::local_time() < stop) {
+        boost::this_thread::sleep(boost::posix_time::seconds(1));
+      }
+      if (maidsafe_vault::kVaultStarted != (*pdvaults_)[k]->vault_status()) {
+        printf("Vault %i didn't start properly!\n", k);
+        return;
+      }
+
+      printf("Vault %i started.\n", k);
     }
+    // print id and port of last vault to use it as bootstrap for other nodes
+    printf("Last node: IP(%s), port(%d), PMID(%s)\n",
+          (*(pdvaults_))[no_of_vaults_ - 1]->host_ip().c_str(),
+          (*(pdvaults_))[no_of_vaults_ - 1]->host_port(),
+          (*(pdvaults_))[no_of_vaults_ - 1]->hex_node_id().c_str());
   }
 
   void TearDown() {
-    bool success_(false);
-    for (int i = no_of_vaults_-1; i >= 0; --i) {
-      success_ = false;
-      (*(pdvaults_))[i]->Stop(true);
-      for (int j = 0; j < 6000; ++j) {
-        if ((*(pdvaults_))[i]->vault_status() ==
-            maidsafe_vault::kVaultStarted) {
-          success_ = true;
-          break;
-        }
-        boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-      }
-      if (success_)
-        printf("\tVault %i stopped.\n", i+1);
+    printf("In vault tear down.\n");
+    bool success(false);
+    for (int i = 0; i < current_nodes_created_; ++i)
+      (*pdvaults_)[i]->StopRvPing();
+    for (int i = 0; i < current_nodes_created_; ++i) {
+      printf("Trying to stop vault %i.\n", i);
+      success = false;
+      (*pdvaults_)[i]->Stop(true);
+      if ((*pdvaults_)[i]->vault_status() != maidsafe_vault::kVaultStarted)
+        printf("Vault %i stopped.\n", i);
       else
-        printf("\tVault %i failed to stop correctly.\n", i+1);
-      if (i == 0)
-        (*(pdvaults_))[i]->CleanUp();
-      (*(pdvaults_))[i].reset();
+        printf("Vault %i failed to stop correctly.\n", i);
+      if (i == current_nodes_created_ - 1)
+        (*pdvaults_)[current_nodes_created_ - 1]->CleanUp();
+//      (*pdvaults_)[i].reset();
     }
+    try {
+      if (fs::exists(test_dir_))
+        fs::remove_all(test_dir_);
+      if (fs::exists(kad_config_file_))
+        fs::remove(kad_config_file_);
+    }
+    catch(const std::exception &e_) {
+      printf("%s\n", e_.what());
+    }
+    printf("Finished vault tear down.\n");
   }
 
  private:
@@ -309,6 +349,7 @@ class RunPDVaults {
   bool bootstrap_file_prepared_;
   std::string bootstrap_local_ip_;
   boost::uint16_t bootstrap_local_port_;
+  boost::posix_time::seconds single_function_timeout_;
 };
 
 }  // namespace maidsafe_vault
