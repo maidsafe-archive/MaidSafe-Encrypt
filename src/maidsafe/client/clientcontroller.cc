@@ -525,14 +525,12 @@ bool ClientController::ValidateUser(const std::string &password) {
     if (result != 0) {
       delete seh_;
       delete msgh_;
-      return false;
       ss_->ResetSession();
       return false;
     }
     if (dah_->Init(false)) {
       delete seh_;
       delete msgh_;
-      return false;
       ss_->ResetSession();
       return false;
     }

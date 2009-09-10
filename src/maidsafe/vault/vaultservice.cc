@@ -228,8 +228,9 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
 //    request->public_key().c_str());
 //  printf("Signed Pub Key: %s\n", request->signed_public_key().c_str());
 //  printf("Signed Request: %s\n", request->signed_request().c_str());
-  printf("In VaultService::StoreChunk (%i), Data Type: %i\n",
-         knode_->host_port(), request->data_type());
+
+//  printf("In VaultService::StoreChunk (%i), Data Type: %i\n",
+//         knode_->host_port(), request->data_type());
 #endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
@@ -325,8 +326,10 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     response->set_result(kNack);
   }
 #ifdef DEBUG
-  printf("In VaultService::StoreChunk (%i), returning result (%i)\n",
-         knode_->host_port(), response->result());
+  std::string hex;
+  base::encode_to_hex(request->chunkname(), &hex);
+  printf("Vault %i stored chunk %s...\n", knode_->host_port(),
+         hex.substr(0, 10).c_str());
 #endif
   done->Run();
 }

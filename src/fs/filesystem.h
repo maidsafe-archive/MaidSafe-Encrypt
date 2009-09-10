@@ -75,7 +75,6 @@ class FileSystem {
     std::string MaidsafeDir();
     std::string MaidsafeHomeDir();  // save read ms files here
     std::string MaidsafeFuseDir();
-    std::vector<fs::path> CacheDirs(std::vector<fs::path> cachedir_);
     // store chunks here (defcon 2 leave them)
     std::string ProcessDir();  // temp dir
     // std::string NetDir(); // temp dir to emulate network

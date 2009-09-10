@@ -209,31 +209,26 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
       printf("Can't encrypt: file Locked.\n");
 #endif
       return -6;
-      break;
     case LINK:
 #ifdef DEBUG
       printf("Can't encrypt: entry is a link.\n");
 #endif
       return -7;
-      break;
     case NOT_FOR_PROCESSING:
 #ifdef DEBUG
       printf("Can't encrypt: file not for processing.\n");
 #endif
       return -8;
-      break;
     case UNKNOWN:
 #ifdef DEBUG
       printf("Can't encrypt: unknown file type.\n");
 #endif
       return -9;
-      break;
     default:
 #ifdef DEBUG
       printf("Can't encrypt.\n");
 #endif
       return -10;
-      break;
   }
 
   // boost::mutex::scoped_lock lock(mutex_);
@@ -926,31 +921,6 @@ void SEHandler::LoadChunk(const std::string &chunk_name,
   }
 }
 
-void SEHandler::LoadChunkCallback(const std::string &result,
-                                  const std::string &chunk_name,
-                                  int retry,
-                                  boost::shared_ptr<ChunksData> data) {
-  if (data->is_calledback) {
-    return;
-  }
-  GetResponse result_msg;
-  if ((result_msg.ParseFromString(result)) &&
-      (result_msg.result() == kAck) &&
-      (result_msg.has_content())) {
-    ++data->chunks_done;
-    --data->active_chunks;
-    SelfEncryption se(client_chunkstore_);
-    fs::path chunk_path = se.GetChunkPath(chunk_name);
-    fs::ofstream ofs;
-    ofs.open(chunk_path, std::ios_base::binary);
-    ofs << result_msg.content();
-    ofs.close();
-    IterativeLoadChunks(data);
-  } else {
-    LoadChunk(chunk_name, ++retry, data);
-  }
-}
-
 void SEHandler::StoreChunks(const DataMap &dm,
                             const DirType dir_type,
                             const std::string &msid) {
@@ -1002,77 +972,6 @@ std::string SEHandler::CreateDataMapPacket(const std::string &ser_dm,
   std::string ser_gp;
   gp.SerializeToString(&ser_gp);
   return ser_gp;
-}
-
-void SEHandler::GetSignedPubKeyAndRequest(const DirType dir_type,
-                                          const std::string &msid,
-                                          const std::string &non_hex_name,
-                                          std::string *pubkey,
-                                          std::string *signed_pubkey,
-                                          std::string *signed_request) {
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  switch (dir_type) {
-    case PRIVATE_SHARE: {
-//      printf("Getting signed request for PRIVATE_SHARE.\n\n");
-      std::string private_key_("");
-      if (0 != ss_->GetShareKeys(msid, pubkey, &private_key_)) {
-        *pubkey = "";
-        *signed_pubkey = "";
-        *signed_request = "";
-        return;
-      }
-      *signed_pubkey = co.AsymSign(*pubkey,
-                                   "",
-                                   private_key_,
-                                   crypto::STRING_STRING);
-      *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
-                                            "",
-                                            crypto::STRING_STRING,
-                                            false),
-                                    "",
-                                    private_key_,
-                                    crypto::STRING_STRING);
-      }
-      break;
-    case PUBLIC_SHARE:
-//      printf("Getting signed request for PUBLIC_SHARE.\n\n");
-      *pubkey = ss_->PublicKey(MPID);
-      *signed_pubkey = co.AsymSign(*pubkey,
-                                   "",
-                                   ss_->PrivateKey(MPID),
-                                   crypto::STRING_STRING);
-      *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
-                                            "",
-                                            crypto::STRING_STRING,
-                                            false),
-                                    "",
-                                    ss_->PrivateKey(MPID),
-                                    crypto::STRING_STRING);
-      break;
-    case ANONYMOUS:
-//      printf("Getting signed request for ANONYMOUS.\n\n");
-      *pubkey = " ";
-      *signed_pubkey = " ";
-      *signed_request = kAnonymousSignedRequest;
-      break;
-    default:
-//      printf("Getting signed request for default.\n\n");
-      *pubkey = ss_->PublicKey(PMID);
-      *signed_pubkey = co.AsymSign(*pubkey,
-                                   "",
-                                   ss_->PrivateKey(PMID),
-                                   crypto::STRING_STRING);
-      *signed_request = co.AsymSign(co.Hash(*pubkey+*signed_pubkey+non_hex_name,
-                                            "",
-                                            crypto::STRING_STRING,
-                                            false),
-                                    "",
-                                    ss_->PrivateKey(PMID),
-                                    crypto::STRING_STRING);
-      break;
-  }
 }
 
 int SEHandler::RemoveKeyFromUptodateDms(const std::string &key) {

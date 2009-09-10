@@ -214,7 +214,7 @@ bool VaultDaemon::ReadConfigInfo() {
     }
     WriteToLog(out);
   }
-  catch(const std::exception e) {
+  catch(const std::exception &e) {
     std::string err = "Can't access locations for config file at ";
     err += config_file_.string() + " or " + local_config_file_.string();
     WriteToLog(err);

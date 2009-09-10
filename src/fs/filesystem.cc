@@ -130,20 +130,6 @@ std::string FileSystem::MaidsafeDir() {
   return maidsafe_dir.string();
 }
 
-std::vector<fs::path> FileSystem::CacheDirs(std::vector<fs::path> cachedir_) {
-  int no_of_dirs_ = cachedir_.size();
-  for (int dir_no_ = 0; dir_no_ != no_of_dirs_; dir_no_++) {
-    for (int i = 0; i != 16; i++) {
-      std::ostringstream hexadec_;
-      hexadec_ << std::hex << i;
-      fs::path newpath_ = cachedir_[dir_no_] / hexadec_.str();
-      cachedir_.push_back(newpath_);
-    }
-  }
-  cachedir_.erase(cachedir_.begin(), cachedir_.begin()+no_of_dirs_);
-  return cachedir_;
-}
-
 std::string FileSystem::MaidsafeHomeDir() {
   fs::path ms_dir(MaidsafeDir(), fs::native);
   fs::path home_dir = ms_dir / "msroot";
@@ -253,7 +239,6 @@ bool FileSystem::CreateDirs() {
     fs::path ms_path_(MaidsafeDir(), fs::native);
     std::vector<fs::path> dir_;
     dir_.push_back(ms_path_);
-    // dir_ = CacheDirs(CacheDirs(CacheDirs(dir_)));
     // dir_.push_back(fs::path(NetDir(), fs::native));
     dir_.push_back(fs::path(ProcessDir(), fs::native));
     dir_.push_back(fs::path(DbDir(), fs::native));

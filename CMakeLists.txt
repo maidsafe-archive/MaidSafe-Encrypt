@@ -386,6 +386,7 @@ ENDIF(UNIX)
 
 #Adding the install targets
 ################################################################
+MESSAGE ("")
 MESSAGE ("Package version is set to \"${pddate}\"")
 MESSAGE ("================================================================================")
 MESSAGE ("")

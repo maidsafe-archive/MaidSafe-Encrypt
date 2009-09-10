@@ -165,20 +165,10 @@ class SEHandler {
   void LoadChunk(const std::string &chunk_name,
                  int retry,
                  boost::shared_ptr<ChunksData> data);
-  void LoadChunkCallback(const std::string &result,
-                         const std::string &chunk_name,
-                         int retry,
-                         boost::shared_ptr<ChunksData> data);
   // returns the serialised packet to store the DB's data map
   std::string CreateDataMapPacket(const std::string &ser_dm,
                                   const DirType dir_type,
                                   const std::string &msid);
-  void GetSignedPubKeyAndRequest(const DirType dir_type,
-                                 const std::string &msid,
-                                 const std::string &non_hex_name,
-                                 std::string *pubkey,
-                                 std::string *signed_pubkey,
-                                 std::string *signed_request);
   StoreManagerInterface *storem_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;

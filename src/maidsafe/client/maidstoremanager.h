@@ -111,24 +111,29 @@ struct ChunkHolder {
         local(false),
         check_chunk_response(),
         status(kUnknown),
-        rpc_id(0),
-        find_mutex(),
-        has_conditional() {}
+        index(-1),
+        controller(),
+        mutex() {}
   explicit ChunkHolder(const kad::ContactInfo &chunk_holder_contact_info)
       : chunk_holder_contact(chunk_holder_contact_info),
         local(false),
         check_chunk_response(),
         status(kUnknown),
-        rpc_id(0),
-        find_mutex(),
-        has_conditional() {}
+        index(-1),
+        controller(),
+        mutex() {}
   kad::Contact chunk_holder_contact;
   bool local;
   CheckChunkResponse check_chunk_response;
   ChunkHolderStatus status;
-  boost::uint32_t rpc_id;
-  boost::mutex *find_mutex;
-  boost::condition_variable *has_conditional;
+  // This can be set to the index of this ChunkHolder in a container of
+  // ChunkHolders.
+  int index;
+  // This is the controller of the CheckChunk RPC.  It will remain NULL if the
+  // ChunkHolder's contact details cannot be found via Kademlia.  It is kept
+  // here to enable the associated RPC to be cancelled.
+  boost::shared_ptr<rpcprotocol::Controller> controller;
+  boost::mutex *mutex;
  private:
   ChunkHolder &operator=(const ChunkHolder&);
   ChunkHolder(const ChunkHolder&);
@@ -267,7 +272,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                   bool local,
                   bool is_in_chunkstore,
                   StoreRequest *store_request);
-  void SendContentCallback(boost::condition_variable *cond);
+  void SendContentCallback(boost::mutex *mutex, bool *send_called_back);
   // Pass the IOU for the peer vault to the k chunk reference holders.
   int StoreIOUs(const StoreTask &store_task,
                 const boost::uint64_t &chunk_size,
@@ -287,14 +292,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                 std::string *needs_cache_copy_id);
   // Populates a vector of chunk holders.  Those that are contactable have
   // non-empty contact details and those that have the chunk have their variable
-  // check_chunk_response_.result() == kAck.  As each CheckChunk RPC calls back
-  // it calls notify on the conditional variable.
+  // check_chunk_response_.result() == kAck.
   void FindAvailableChunkHolders(
       const std::string &chunk_name,
       const std::vector<std::string> &chunk_holders_ids,
       boost::mutex *find_mutex,
-      boost::condition_variable *has_conditional,
-      std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders);
+      std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
+      int *available_chunk_holder_index);
   // Populates the contact details of a peer vault (with ID chunk_holder_id) and
   // pushes them into the list of contacts provided.  If the RPC fails, the
   // chunk holder's status_ is set to kFailedHolder.  Having done this,
@@ -303,16 +307,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const std::string &chunk_holder_id,
       const std::string &result,
       std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
-      boost::mutex *find_mutex,
-      boost::condition_variable *find_conditional);
+      boost::mutex *find_mutex);
   // This populates the chunk holder's check_chunk_response_ variable (i.e.
   // confirms whether the peer has the chunk or not).  If the RPC fails, the
-  // chunk holder's status_ is set to kFailedHolder.  Having done this,
-  // notify is called on the chunk holder's conditional variable.  The shared
-  // pointer to the RPC controller is passed in purely to avoid a premature
-  // destruct being called on the controller.
+  // chunk holder's status_ is set to kFailedHolder.  If not, the chunk holder's
+  // index is pushed onto confirmed_chunk_holder_index.  Having done this,
+  // notify is called on find_conditional_.
   void HasChunkCallback(boost::shared_ptr<ChunkHolder> chunk_holder,
-                        boost::shared_ptr<rpcprotocol::Controller>);
+                        int *available_chunk_holder_index);
   // Given a vector of vault ids, this gets the contact info for each and if
   // load_data is true, attempts to load the data once the first contact info
   // is received.
@@ -321,8 +323,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                        bool load_data,
                        std::string *data);
   // Get a chunk's content from a specific peer.
-  void GetChunk(boost::shared_ptr<ChunkHolder> chunk_holder, std::string *data);
-  void GetChunkCallback(boost::condition_variable *cond);
+  void GetChunk(const std::string &chunk_name,
+                boost::shared_ptr<ChunkHolder> chunk_holder,
+                std::string *data,
+                boost::mutex *get_mutex);
+  void GetChunkCallback(boost::mutex *mutex, bool *get_chunk_done);
   // Passes the IOU to an individual reference holder.
   int SendIouToRefHolder(
       const kad::Contact &ref_holder,
@@ -381,6 +386,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   boost::condition_variable store_packet_conditional_;
   boost::condition_variable send_iou_done_conditional_;
   boost::condition_variable send_prep_done_conditional_;
+  boost::condition_variable send_content_conditional_;
+  boost::condition_variable get_chunk_conditional_;
+  boost::condition_variable find_conditional_;
 };
 
 struct StoreTask {
