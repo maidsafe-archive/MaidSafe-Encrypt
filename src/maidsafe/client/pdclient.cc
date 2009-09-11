@@ -28,34 +28,34 @@ namespace maidsafe {
 
 inline void dummy_callback(const std::string&) {}
 
-void PDClient::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
-  const boost::shared_ptr<CheckChunkResponse>
-      check_chunk_response(new CheckChunkResponse());
-  google::protobuf::Closure* callback =
-      google::protobuf::NewCallback(this,
-                                    &PDClient::CheckChunkCallback,
-                                    check_chunk_response,
-                                    get_args);
+void PDClient::CheckChunk(boost::shared_ptr<GetArgs> /*get_args*/) {
+//  const boost::shared_ptr<CheckChunkResponse>
+//      check_chunk_response(new CheckChunkResponse());
+//  google::protobuf::Closure* callback =
+//      google::protobuf::NewCallback(this,
+//                                    &PDClient::CheckChunkCallback,
+//                                    check_chunk_response,
+//                                    get_args);
 #ifdef DEBUG
   printf("\tIn PDClient::CheckChunk, before CheckContactLocalAddress.\n");
 #endif
-  kad::connect_to_node conn_type =
-      knode_->CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
-                                       get_args->chunk_holder_.local_ip(),
-                                       get_args->chunk_holder_.local_port(),
-                                       get_args->chunk_holder_.host_ip());
+//  kad::connect_to_node conn_type =
+//      knode_->CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
+//                                       get_args->chunk_holder_.local_ip(),
+//                                       get_args->chunk_holder_.local_port(),
+//                                       get_args->chunk_holder_.host_ip());
 #ifdef DEBUG
   printf("\tIn PDClient::CheckChunk, after CheckContactLocalAddress.\n");
 #endif
-  std::string ip = get_args->chunk_holder_.host_ip();
-  uint16_t port = static_cast<uint16_t>(
-                     get_args->chunk_holder_.host_port());
-  if (conn_type == kad::LOCAL) {
-    ip = get_args->chunk_holder_.local_ip();
-    port = get_args->chunk_holder_.local_port();
-    get_args->retry_remote = true;
-  }
-  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+//  std::string ip = get_args->chunk_holder_.host_ip();
+//  uint16_t port = static_cast<uint16_t>(
+//                     get_args->chunk_holder_.host_port());
+//  if (conn_type == kad::LOCAL) {
+//    ip = get_args->chunk_holder_.local_ip();
+//    port = get_args->chunk_holder_.local_port();
+//    get_args->retry_remote = true;
+//  }
+//  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
 //  client_rpcs_->CheckChunk(get_args->data_->chunk_name,
 //                           ip,
 //                           port,
@@ -92,14 +92,14 @@ void PDClient::CheckChunkCallback(
 #ifdef DEBUG
       printf("\tIn PDClient::CheckChunkCallback, after UpdatePDRTContact...\n");
 #endif
-      boost::shared_ptr<CheckChunkResponse>
-          check_chunk_response(new CheckChunkResponse());
-      google::protobuf::Closure* callback =
-          google::protobuf::NewCallback(this,
-                                        &PDClient::CheckChunkCallback,
-                                        check_chunk_response,
-                                        get_args);
-      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+//      boost::shared_ptr<CheckChunkResponse>
+//          check_chunk_response(new CheckChunkResponse());
+//      google::protobuf::Closure* callback =
+//          google::protobuf::NewCallback(this,
+//                                        &PDClient::CheckChunkCallback,
+//                                        check_chunk_response,
+//                                        get_args);
+//      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
 //      client_rpcs_->CheckChunk(get_args->data_->chunk_name,
 //                               get_args->chunk_holder_.host_ip(),
 //                               get_args->chunk_holder_.host_port(),
@@ -174,13 +174,13 @@ void PDClient::CheckChunkCallback(
                                   controller,
                                   callback);
       } else {
-       const boost::shared_ptr<GetResponse> get_response(new GetResponse());
-       google::protobuf::Closure* callback =
-            google::protobuf::NewCallback(this,
-                                          &PDClient::GetChunkCallback,
-                                          get_response,
-                                          get_args);
-        rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+//       const boost::shared_ptr<GetResponse> get_response(new GetResponse());
+//       google::protobuf::Closure* callback =
+//            google::protobuf::NewCallback(this,
+//                                          &PDClient::GetChunkCallback,
+//                                          get_response,
+//                                          get_args);
+//        rpcprotocol::Controller *controller = new rpcprotocol::Controller;
 //        client_rpcs_->Get(get_args->data_->chunk_name,
 //                          ip,
 //                          port,
@@ -203,21 +203,6 @@ void PDClient::GetMessages(const std::string &chunk_name,
   data->get_msgs = true;
   data->pub_key = public_key;
   data->sig_pub_key = signed_public_key;
-  FindChunkRef(data);
-}
-
-void PDClient::GetChunk(const std::string &chunk_name,
-                        base::callback_func_type cb) {
-  // preparing the shared pointer with data for the LoadChunk operation
-  // boost::recursive_mutex::scoped_lock guard(*recursive_mutex_);
-#ifdef DEBUG
-  std::string hex;
-  base::encode_to_hex(chunk_name, &hex);
-  hex = hex.substr(0, 10) + "...";
-  printf("In PDClient::GetChunk (%i), chunk_name = %s\n",
-         knode_->host_port(), hex.c_str());
-#endif
-  boost::shared_ptr<LoadChunkData> data(new LoadChunkData(chunk_name, cb));
   FindChunkRef(data);
 }
 
@@ -267,62 +252,6 @@ void PDClient::GetMessagesCallback(
     get_args->data_->is_callbacked = true;
     std::string result;
     get_messages_response->SerializeToString(&result);
-    get_args->data_->cb(result);
-  }
-}
-
-void PDClient::GetChunkCallback(
-    const boost::shared_ptr<GetResponse> get_response,
-    boost::shared_ptr<GetArgs> get_args) {
-  if (get_args->data_->is_callbacked)
-    return;
-  if (get_response->IsInitialized() &&
-      get_response->has_pmid_id() &&
-      get_response->pmid_id() != get_args->chunk_holder_.node_id()) {
-    if (get_args->retry_remote) {
-      get_args->retry_remote = false;
-#ifdef DEBUG
-      printf("\tIn PDClient::GetChunkCallback, before UpdatePDRTContactT...\n");
-#endif
-      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
-#ifdef DEBUG
-      printf("\tIn PDClient::GetChunkCallback, after UpdatePDRTContactTo...\n");
-#endif
-      boost::shared_ptr<GetResponse> get_response(new GetResponse());
-      google::protobuf::Closure* callback =
-          google::protobuf::NewCallback(this,
-                                        &PDClient::GetChunkCallback,
-                                        get_response,
-                                        get_args);
-      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-//      client_rpcs_->Get(get_args->data_->chunk_name,
-//                        get_args->chunk_holder_.host_ip(),
-//                        get_args->chunk_holder_.host_port(),
-//                        get_args->chunk_holder_.rendezvous_ip(),
-//                        get_args->chunk_holder_.rendezvous_port(),
-//                        get_response.get(),
-//                        controller,
-//                        callback);
-      return;
-    }
-  }
-  if (!get_response->IsInitialized() ||
-      get_response->result() == kNack ||
-      !get_response->has_content()) {
-#ifdef DEBUG
-    if (!get_response->IsInitialized())
-      printf("Response in GetChunkCallback isn't initialised.\n");
-    else if (get_response->result() == kNack)
-      printf("GetChunkCallback response came back failed.\n");
-    else
-      printf("Response has no chunk content.\n");
-#endif
-    get_args->data_->failed_chunk_holders.push_back(get_args->chunk_holder_);
-    RetryGetChunk(get_args->data_);
-  } else {
-    get_args->data_->is_callbacked = true;
-    std::string result;
-    get_response->SerializeToString(&result);
     get_args->data_->cb(result);
   }
 }
@@ -617,38 +546,38 @@ void PDClient::IterativeUpdateChunk(boost::shared_ptr<UpdateChunkData> data) {
   // let's go for the next chunk updating
   if (data->active_updating < kad::kAlpha
       && data->index < static_cast<int>(data->alive_holders.size())) {
-    kad::Contact remote = data->alive_holders[data->index];
-    ++data->index;
-    ++data->active_updating;
-    boost::shared_ptr<UpdateArgs>
-        update_args(new UpdateArgs(remote, 0, data));
-    const boost::shared_ptr<UpdateResponse>
-        update_response(new UpdateResponse());
-    google::protobuf::Closure* callback =
-        google::protobuf::NewCallback(this,
-                                      &PDClient::IterativeUpdateChunkCallback,
-                                      update_response,
-                                      update_args);
+//    kad::Contact remote = data->alive_holders[data->index];
+//    ++data->index;
+//    ++data->active_updating;
+//    boost::shared_ptr<UpdateArgs>
+//        update_args(new UpdateArgs(remote, 0, data));
+//    const boost::shared_ptr<UpdateResponse>
+//        update_response(new UpdateResponse());
+//    google::protobuf::Closure* callback =
+//        google::protobuf::NewCallback(this,
+//                                      &PDClient::IterativeUpdateChunkCallback,
+//                                      update_response,
+//                                      update_args);
 #ifdef DEBUG
     printf("\tIn PDClient::IterativeUpdateChunk, before CheckContactLoca...\n");
 #endif
-    kad::connect_to_node conn_type =
-      knode_->CheckContactLocalAddress(update_args->chunk_holder_.node_id(),
-                                       update_args->chunk_holder_.local_ip(),
-                                       update_args->chunk_holder_.local_port(),
-                                       update_args->chunk_holder_.host_ip());
+//    kad::connect_to_node conn_type =
+//      knode_->CheckContactLocalAddress(update_args->chunk_holder_.node_id(),
+//                                       update_args->chunk_holder_.local_ip(),
+//                                      update_args->chunk_holder_.local_port(),
+//                                       update_args->chunk_holder_.host_ip());
 #ifdef DEBUG
     printf("\tIn PDClient::IterativeUpdateChunk, after CheckContactLocal...\n");
 #endif
-    std::string ip = update_args->chunk_holder_.host_ip();
-    uint16_t port = static_cast<uint16_t>(
-                        update_args->chunk_holder_.host_port());
-    if (conn_type == kad::LOCAL) {
-      ip = update_args->chunk_holder_.local_ip();
-      port = update_args->chunk_holder_.local_port();
-      update_args->retry_remote = true;
-    }
-    rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+//    std::string ip = update_args->chunk_holder_.host_ip();
+//    uint16_t port = static_cast<uint16_t>(
+//                        update_args->chunk_holder_.host_port());
+//    if (conn_type == kad::LOCAL) {
+//      ip = update_args->chunk_holder_.local_ip();
+//      port = update_args->chunk_holder_.local_port();
+//      update_args->retry_remote = true;
+//    }
+//    rpcprotocol::Controller *controller = new rpcprotocol::Controller;
 //    client_rpcs_->Update(update_args->data_->chunk_name,
 //                         update_args->data_->content,
 //                         update_args->data_->pub_key,
@@ -683,13 +612,13 @@ void PDClient::IterativeUpdateChunkCallback(
 #ifdef DEBUG
       printf("\tIn PDClient::IterativeUpdateChunkCallback, after UpdateP...\n");
 #endif
-      boost::shared_ptr<UpdateResponse> update_response(new UpdateResponse());
-      google::protobuf::Closure* callback =
-          google::protobuf::NewCallback(this,
-                                        &PDClient::IterativeUpdateChunkCallback,
-                                        update_response,
-                                        update_args);
-      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+//      boost::shared_ptr<UpdateResponse> update_response(new UpdateResponse());
+//      google::protobuf::Closure* callback =
+//          google::protobuf::NewCallback(this,
+//                                      &PDClient::IterativeUpdateChunkCallback,
+//                                        update_response,
+//                                        update_args);
+//      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
 //      client_rpcs_->Update(update_args->data_->chunk_name,
 //                           update_args->data_->content,
 //                           update_args->data_->pub_key,
@@ -720,33 +649,33 @@ void PDClient::IterativeUpdateChunkCallback(
       printf("Re-trying to update chunk.\n");
 #endif
       ++update_args->retry_;
-      const boost::shared_ptr<UpdateResponse>
-          update_response(new UpdateResponse());
-      google::protobuf::Closure* callback =
-          google::protobuf::NewCallback(this,
-                                        &PDClient::IterativeUpdateChunkCallback,
-                                        update_response,
-                                        update_args);
+//      const boost::shared_ptr<UpdateResponse>
+//          update_response(new UpdateResponse());
+//      google::protobuf::Closure* callback =
+//          google::protobuf::NewCallback(this,
+//                                      &PDClient::IterativeUpdateChunkCallback,
+//                                        update_response,
+//                                        update_args);
 #ifdef DEBUG
       printf("\tIn PDClient::IterativeUpdateChunkCallback, before CheckC...\n");
 #endif
-      kad::connect_to_node conn_type =
-      knode_->CheckContactLocalAddress(update_args->chunk_holder_.node_id(),
-                                       update_args->chunk_holder_.local_ip(),
-                                       update_args->chunk_holder_.local_port(),
-                                       update_args->chunk_holder_.host_ip());
+//      kad::connect_to_node conn_type =
+//      knode_->CheckContactLocalAddress(update_args->chunk_holder_.node_id(),
+//                                       update_args->chunk_holder_.local_ip(),
+//                                      update_args->chunk_holder_.local_port(),
+//                                       update_args->chunk_holder_.host_ip());
 #ifdef DEBUG
       printf("\tIn PDClient::IterativeUpdateChunkCallback, after CheckCo...\n");
 #endif
-      std::string ip = update_args->chunk_holder_.host_ip();
-      uint16_t port = static_cast<uint16_t>(
-                          update_args->chunk_holder_.host_port());
-      if (conn_type == kad::LOCAL) {
-        ip = update_args->chunk_holder_.local_ip();
-        port = update_args->chunk_holder_.local_port();
-        update_args->retry_remote = true;
-      }
-      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+//      std::string ip = update_args->chunk_holder_.host_ip();
+//      uint16_t port = static_cast<uint16_t>(
+//                          update_args->chunk_holder_.host_port());
+//      if (conn_type == kad::LOCAL) {
+//        ip = update_args->chunk_holder_.local_ip();
+//        port = update_args->chunk_holder_.local_port();
+//        update_args->retry_remote = true;
+//      }
+//      rpcprotocol::Controller *controller = new rpcprotocol::Controller;
 //      client_rpcs_->Update(update_args->data_->chunk_name,
 //                           update_args->data_->content,
 //                           update_args->data_->pub_key,

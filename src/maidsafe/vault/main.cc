@@ -209,6 +209,7 @@ class RunPDVaults {
       ++current_nodes_created_;
       printf(".");
     }
+    printf("\n\tStarting vaults");
     // Start second vault and add as bootstrapping node for first vault
     (*pdvaults_)[1]->Start(true);
     boost::posix_time::ptime stop =
@@ -218,7 +219,7 @@ class RunPDVaults {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
     if (maidsafe_vault::kVaultStarted != (*pdvaults_)[1]->vault_status()) {
-      printf("Vault 1 didn't start properly!\n");
+      printf("\nVault 1 didn't start properly!\n");
       return;
     }
     base::KadConfig kad_config;
@@ -232,7 +233,7 @@ class RunPDVaults {
     std::fstream output1(kad_config_file_.c_str(),
                          std::ios::out | std::ios::trunc | std::ios::binary);
     if (!kad_config.SerializeToOstream(&output1)) {
-      printf("Didn't serialise kadconfig properly.\n");
+      printf("\nDidn't serialise kadconfig properly.\n");
       return;
     }
     output1.close();
@@ -246,11 +247,11 @@ class RunPDVaults {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
     if (maidsafe_vault::kVaultStarted != (*pdvaults_)[0]->vault_status()) {
-      printf("Vault 0 didn't start properly!\n");
+      printf("\nVault 0 didn't start properly!\n");
       return;
     }
 
-    printf("Vault 0 started.\n");
+    printf(".");
     kad_contact->Clear();
     kad_config.Clear();
     kad_contact = kad_config.add_contact();
@@ -260,11 +261,11 @@ class RunPDVaults {
     kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
     kad_contact->set_local_port((*pdvaults_)[0]->local_host_port());
     if (0 != (*pdvaults_)[1]->Stop(true)) {
-      printf("Vault 1 didn't stop properly!\n");
+      printf("\nVault 1 didn't stop properly!\n");
       return;
     }
     if (maidsafe_vault::kVaultStarted == (*pdvaults_)[1]->vault_status()) {
-      printf("Vault 1 is still running!\n");
+      printf("\nVault 1 is still running!\n");
       return;
     }
     // Save kad config to files and start all remaining vaults
@@ -274,7 +275,7 @@ class RunPDVaults {
       std::fstream output(kad_config_file_.c_str(),
                           std::ios::out | std::ios::trunc | std::ios::binary);
       if (!kad_config.SerializeToOstream(&output)) {
-        printf("Didn't serialise kadconfig properly.\n");
+        printf("\nDidn't serialise kadconfig properly.\n");
         return;
       }
       output.close();
@@ -286,20 +287,41 @@ class RunPDVaults {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
       }
       if (maidsafe_vault::kVaultStarted != (*pdvaults_)[k]->vault_status()) {
-        printf("Vault %i didn't start properly!\n", k);
+        printf("\nVault %i didn't start properly!\n", k);
         return;
       }
-
-      printf("Vault %i started.\n", k);
+      printf(".");
     }
-    // print id and port of last vault to use it as bootstrap for other nodes
-    printf("Last node: IP(%s), port(%d), PMID(%s)\n",
-          (*(pdvaults_))[no_of_vaults_ - 1]->host_ip().c_str(),
-          (*(pdvaults_))[no_of_vaults_ - 1]->host_port(),
-          (*(pdvaults_))[no_of_vaults_ - 1]->hex_node_id().c_str());
+    printf("\n");
+#ifdef WIN32
+    HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hconsole, 10 | 0 << 4);
+#endif
+    printf("\n*-----------------------------------------------*\n");
+    printf("*            %i local vaults running            *\n",
+           no_of_vaults_);
+    printf("*                                               *\n");
+    printf("* No. Port   ID                                 *\n");
+    for (int l = 0; l < no_of_vaults_; ++l)
+      printf("* %2i  %5i  %s *\n", l, (*pdvaults_)[l]->host_port(),
+             ((*pdvaults_)[l]->hex_node_id().substr(0, 31) + "...").c_str());
+    printf("*                                               *\n");
+    printf("*-----------------------------------------------*\n\n");
+#ifdef WIN32
+    SetConsoleTextAttribute(hconsole, 11 | 0 << 4);
+#endif
+//    // print id and port of last vault to use it as bootstrap for other nodes
+//    printf("Last node: IP(%s), port(%d), PMID(%s)\n",
+//          (*(pdvaults_))[no_of_vaults_ - 1]->host_ip().c_str(),
+//          (*(pdvaults_))[no_of_vaults_ - 1]->host_port(),
+//          (*(pdvaults_))[no_of_vaults_ - 1]->hex_node_id().c_str());
   }
 
   void TearDown() {
+#ifdef WIN32
+    HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hconsole, 7 | 0 << 4);
+#endif
     printf("In vault tear down.\n");
     bool success(false);
     for (int i = 0; i < current_nodes_created_; ++i)

@@ -254,6 +254,8 @@ class PDVault {
   PDVault& operator=(const PDVault&);
   FRIEND_TEST(TestPDVault, FUNC_MAID_StoreChunks);
   FRIEND_TEST(TestPDVault, FUNC_MAID_GetChunk);
+  FRIEND_TEST(TestPDVault, FUNC_MAID_GetNonDuplicatedChunk);
+  FRIEND_TEST(TestPDVault, FUNC_MAID_GetMissingChunk);
   FRIEND_TEST(TestPDVault, FUNC_MAID_StoreSystemPacket);
   void KadJoinedCallback(const std::string &result,
                          boost::mutex *kad_joined_mutex);

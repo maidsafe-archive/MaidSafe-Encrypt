@@ -199,7 +199,6 @@ class PDClient {
                    const std::string &public_key,
                    const std::string &signed_public_key,
                    base::callback_func_type cb);
-  void GetChunk(const std::string &chunk_name, base::callback_func_type cb);
   void StoreChunk(const std::string &chunk_name,
                   const std::string &content,
                   const std::string &public_key,
@@ -230,8 +229,6 @@ class PDClient {
   void IsLocalVaultOwned(boost::function<void(const VaultStatus&)> cb);
 
  private:
-  // TODO(Jose) include ranking and client daemon
-
   // Checks to see if contact holds a copy of chunk
   void CheckChunk(boost::shared_ptr<GetArgs> get_args);
   void CheckChunkCallback(
@@ -240,8 +237,6 @@ class PDClient {
   void GetMessagesCallback(
       const boost::shared_ptr<GetMessagesResponse> get_messages_response,
       boost::shared_ptr<GetArgs> get_args);
-  void GetChunkCallback(const boost::shared_ptr<GetResponse> get_response,
-                        boost::shared_ptr<GetArgs> get_args);
   void RetryGetChunk(boost::shared_ptr<LoadChunkData> data);
   void FindChunkRef(boost::shared_ptr<LoadChunkData> data);
   void FindChunkRefCallback(const std::string &result,

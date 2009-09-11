@@ -285,7 +285,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -302,7 +302,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -315,7 +315,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -328,7 +328,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -340,7 +340,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, response.result());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
     EXPECT_EQ(non_hex_pmid_, response.pmid_id());
   }
 
@@ -393,7 +393,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -411,7 +411,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -431,9 +431,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
     vault_service_->StoreChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     if (i == 1) {
-      EXPECT_EQ(kAck, response.result());
+      EXPECT_EQ(kAck, static_cast<int>(response.result()));
     } else {
-      EXPECT_NE(kAck, response.result());
+      EXPECT_NE(kAck, static_cast<int>(response.result()));
     }
     response.Clear();
   }
@@ -486,7 +486,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, response.result());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 }
@@ -533,7 +533,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePacket) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StorePacket(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -549,7 +549,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePacket) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StorePacket(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -602,9 +602,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePacket) {
       vault_service_->StorePacket(&controller, &request, &response, done);
       EXPECT_TRUE(response.IsInitialized());
       if (j == 0) {
-        EXPECT_EQ(kAck, response.result());
+        EXPECT_EQ(kAck, static_cast<int>(response.result()));
       } else {
-        EXPECT_NE(kAck, response.result());
+        EXPECT_NE(kAck, static_cast<int>(response.result()));
       }
       response.Clear();
     }
@@ -649,7 +649,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesIOUDone) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->IOUDone(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -662,7 +662,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesIOUDone) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->IOUDone(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, response.result());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 }
@@ -717,7 +717,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreIOU) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreIOU(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -729,7 +729,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreIOU) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreIOU(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, response.result());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 }
@@ -774,7 +774,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkReference) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreChunkReference(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -788,7 +788,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkReference) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreChunkReference(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, response.result());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
 
     kad::SignedValue signed_value;
@@ -832,7 +832,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheck) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->Get(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -850,7 +850,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheck) {
     vault_service_->CheckChunk(&controller, &check_request, &check_response,
                                done);
     EXPECT_TRUE(check_response.IsInitialized());
-    EXPECT_NE(kAck, check_response.result());
+    EXPECT_NE(kAck, static_cast<int>(check_response.result()));
     response.Clear();
   }
 
@@ -863,14 +863,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheck) {
     vault_service_->CheckChunk(&controller, &check_request, &check_response,
                                done1);
     EXPECT_TRUE(check_response.IsInitialized());
-    EXPECT_EQ(kAck, check_response.result());
+    EXPECT_EQ(kAck, static_cast<int>(check_response.result()));
     response.Clear();
 
     google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->Get(&controller, &request, &response, done2);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, response.result());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
     EXPECT_EQ(content, response.content());
     response.Clear();
   }
@@ -914,7 +914,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->Update(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -932,7 +932,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->Update(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -1021,7 +1021,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->Update(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, response.result());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 }
@@ -1077,7 +1077,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetMessages) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->GetMessages(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -1089,7 +1089,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetMessages) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->GetMessages(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, response.result());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 }
@@ -1131,7 +1131,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->Delete(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -1148,7 +1148,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->Delete(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -1200,7 +1200,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->Delete(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, response.result());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
     if (data_type[i] != maidsafe::BUFFER_PACKET_MESSAGE) {
       ASSERT_FALSE(vault_service_->HasChunkLocal(chunkname));
     } else {
@@ -1247,7 +1247,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->ValidityCheck(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -1259,7 +1259,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->ValidityCheck(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, response.result());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
     EXPECT_EQ(vc_hash, response.hash_content());
   }
 }
@@ -1303,7 +1303,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->SwapChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -1340,7 +1340,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->VaultStatus(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, response.result());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -1357,7 +1357,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->VaultStatus(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, response.result());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
 
     std::string dec_rsp = co.AsymDecrypt(response.encrypted_response(), "",
                                          pmid_private_,

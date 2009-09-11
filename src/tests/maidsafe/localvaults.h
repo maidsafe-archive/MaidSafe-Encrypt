@@ -111,7 +111,7 @@ class Env: public testing::Environment {
 
   virtual void SetUp() {
     // Construct and start vaults
-    printf("Starting vaults.\n");
+    printf("Starting vaults");
     for (int i = 0; i < kNetworkSize_; ++i) {
       std::string chunkstore_local = chunkstore_dir_+"/Chunkstore"+
           base::itos(i);
@@ -129,7 +129,9 @@ class Env: public testing::Environment {
           1073741824, 0));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
+      printf(".");
     }
+    printf("\n");
     // Start second vault and add as bootstrapping node for first vault
     (*pdvaults_)[1]->Start(true);
     boost::posix_time::ptime stop =
