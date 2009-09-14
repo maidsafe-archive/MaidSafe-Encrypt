@@ -160,7 +160,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectOwnVault) {
   OwnershipSenderHandler senderhandler;
   rpcprotocol::Controller ctrl;
   rpcprotocol::Channel out_channel(&client, "127.0.0.1",
-      server.external_port(), "", 0);
+      server.external_port(), "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice(&out_channel);
   maidsafe::OwnVaultRequest request;
   request.set_private_key(keypair.private_key());
@@ -234,7 +234,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   OwnershipSenderHandler senderhandler;
   rpcprotocol::Controller ctrl;
   rpcprotocol::Channel out_channel(&client, "127.0.0.1",
-      server.external_port(), "", 0);
+      server.external_port(), "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice(&out_channel);
   maidsafe::OwnVaultRequest request;
   request.set_private_key(keypair.private_key());
@@ -548,7 +548,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
 TEST_F(VaultRegistrationTest, FUNC_MAID_IsOwnedRpc) {
   rpcprotocol::Controller ctrl;
   rpcprotocol::Channel out_channel(&client, "127.0.0.1",
-      server.external_port(), "", 0);
+      server.external_port(), "", 0, "", 0);
   maidsafe::IsOwnedRequest request;
   maidsafe::IsOwnedResponse response;
   OwnershipSenderHandler senderhandler;
@@ -578,7 +578,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_IsOwnedRpc) {
   ctrl.Reset();
   senderhandler.Reset();
   rpcprotocol::Channel out_channel2(&client, "127.0.0.1",
-      server.external_port()+1, "", 0);
+      server.external_port()+1, "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice2(&out_channel2);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::IsOwnedResponse*,
@@ -635,7 +635,7 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
   OwnershipSenderHandler senderhandler;
   rpcprotocol::Controller ctrl;
   rpcprotocol::Channel out_channel(&client, "127.0.0.1",
-      kLocalPort, "", 0);
+      kLocalPort, "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice(&out_channel);
   maidsafe::OwnVaultRequest request;
   request.set_private_key(keypair.private_key());

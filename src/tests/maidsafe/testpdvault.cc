@@ -343,7 +343,7 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
   // add some valid chunks to client chunkstore and store to network
   std::map<std::string, std::string> chunks_;
-  const boost::uint32_t kNumOfTestChunks(10);
+  const boost::uint32_t kNumOfTestChunks(3);
   testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
   std::map<std::string, std::string>::iterator it_;
   int i = 0;
@@ -384,7 +384,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
 
 TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
   std::map<std::string, std::string> chunks_;
-  const boost::uint32_t kNumOfTestChunks(10);
+  const boost::uint32_t kNumOfTestChunks(20);
   testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
   std::map<std::string, std::string>::iterator it_;
   int i = 0;

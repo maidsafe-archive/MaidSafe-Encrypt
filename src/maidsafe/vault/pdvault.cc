@@ -967,7 +967,7 @@ void PDVault::CheckChunkCallback(
       check_chunk_response->pmid_id() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
-      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+//      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::CheckChunkResponse>
           check_chunk_response(new maidsafe::CheckChunkResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
@@ -1057,7 +1057,7 @@ void PDVault::GetMessagesCallback(
       get_messages_response->pmid_id() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
-      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+//      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::GetMessagesResponse>
           get_messages_response(new maidsafe::GetMessagesResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
@@ -1095,7 +1095,7 @@ void PDVault::GetChunkCallback(
       get_response->pmid_id() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
-      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+//      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::GetResponse>
           get_response(new maidsafe::GetResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,

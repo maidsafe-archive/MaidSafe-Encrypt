@@ -1630,7 +1630,7 @@ void MaidsafeStoreManager::PollVaultInfo(base::callback_func_type cb) {
       &vault_status_response, cb);
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   rpcprotocol::Channel *channel = new rpcprotocol::Channel(
-      channel_manager_.get(), ss_->VaultIP(), ss_->VaultPort(), "", 0);
+      channel_manager_.get(), ss_->VaultIP(), ss_->VaultPort(), "", 0, "", 0);
   client_rpcs_.PollVaultInfo(enc_ser_vc,
                              &vault_status_response,
                              controller,
