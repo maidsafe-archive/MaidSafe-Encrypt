@@ -99,14 +99,10 @@ class ClientRpcs {
               DeleteResponse *response,
               rpcprotocol::Controller *controller,
               google::protobuf::Closure *done);
-  void GetMessages(const std::string &buffer_packet_name,
-                   const std::string &public_key,
-                   const std::string &signed_public_key,
-                   const std::string &remote_ip,
-                   const boost::uint16_t &remote_port,
-                   const std::string &rendezvous_ip,
-                   const boost::uint16_t &rendezvous_port,
-                   GetMessagesResponse *response,
+  void GetMessages(const kad::Contact &peer,
+                   bool local,
+                   GetMessagesRequest *get_messages_request,
+                   GetMessagesResponse *get_messages_response,
                    rpcprotocol::Controller *controller,
                    google::protobuf::Closure *done);
   void IsVaultOwned(IsOwnedResponse *response,

@@ -446,10 +446,11 @@ void VaultService::StoreIOU(google::protobuf::RpcController*,
   return;
 }
 
-void VaultService::StoreChunkReference(google::protobuf::RpcController*,
-                                const maidsafe::StoreReferenceRequest* request,
-                                maidsafe::StoreReferenceResponse* response,
-                                google::protobuf::Closure* done) {
+void VaultService::StoreChunkReference(
+    google::protobuf::RpcController*,
+    const maidsafe::StoreReferenceRequest* request,
+    maidsafe::StoreReferenceResponse* response,
+    google::protobuf::Closure* done) {
 #ifdef DEBUG
 //  printf("In VaultService::StoreChunkReference (%i)\n", knode_->host_port());
 #endif

@@ -101,12 +101,13 @@ class ClientController {
 
   // Messages
   bool GetMessages();
-  int HandleMessages(std::list<std::string> *msgs);
+  int HandleMessages(
+      std::list<packethandler::ValidatedBufferPacketMessage>*valid_messages);
   int HandleReceivedShare(const packethandler::PrivateShareNotification &psn,
                           const std::string &name);
   int HandleDeleteContactNotification(const std::string &sender);
   int HandleInstantMessage(
-    packethandler::ValidatedBufferPacketMessage &vbpm);
+      const packethandler::ValidatedBufferPacketMessage &vbpm);
   int HandleAddContactRequest(const packethandler::ContactInfo &ci,
     const std::string &sender);
   int HandleAddContactResponse(const packethandler::ContactInfo &ci,

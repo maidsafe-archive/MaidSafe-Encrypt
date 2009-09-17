@@ -378,16 +378,11 @@ int SEHandler::GenerateUniqueKey(const DirType dir_type,
   // get key, check for uniqueness on DHT, and baggsy this key
   *hex_key = base::RandomString(200);
   *hex_key = SHA512(*hex_key, false);
-  CallbackResult cbr;
-  storem_->IsKeyUnique(*hex_key,
-                       boost::bind(&CallbackResult::CallbackFunc, &cbr, _1));
-  WaitForResult(cbr);
-  GenericResponse result;
   int count = attempt;
-  while ((!result.ParseFromString(cbr.result) ||
-         (result.result() == kNack)) && count < 5) {
+  while (!storem_->KeyUnique(*hex_key, false) && count < 5) {
     ++count;
-    GenerateUniqueKey(dir_type, msid, count, hex_key);
+    *hex_key = base::RandomString(200);
+    *hex_key = SHA512(*hex_key, false);
   }
   if (count < 5) {
     ValueType pd_dir_type_;

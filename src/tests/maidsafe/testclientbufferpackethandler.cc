@@ -241,18 +241,8 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
-  sm->IsKeyUnique(crypto_obj.Hash(public_username+"BUFFER",
-                                  "",
-                                  crypto::STRING_STRING,
-                                  true),
-                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::GenericResponse is_unique_res;
-  ASSERT_TRUE(is_unique_res.ParseFromString(cb.result));
-  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
-  is_unique_res.Clear();
-  cb.Reset();
+  ASSERT_FALSE(sm->KeyUnique(crypto_obj.Hash(public_username+"BUFFER", "",
+      crypto::STRING_STRING, true), false));
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
                                  crypto::STRING_STRING,
@@ -691,24 +681,17 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetMessages) {
     EXPECT_EQ(enc_msgs[j], msg.message());
   }
 
-  std::vector<std::string> dec_msgs;
-  clientbufferpackethandler.GetMessages(MPID_BP,
-    boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  maidsafe::GetMessagesResponse get_msg_res;
-  ASSERT_TRUE(get_msg_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(get_msg_res.result()));
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
-  ASSERT_EQ(3, get_msg_res.messages_size());
+  std::list<packethandler::ValidatedBufferPacketMessage> valid_messages;
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(MPID_BP, &valid_messages));
+  int messages_size(valid_messages.size());
+  ASSERT_EQ(3, messages_size);
 
-  for (int j = 0; j < get_msg_res.messages_size(); ++j) {
-    packethandler::ValidatedBufferPacketMessage msg;
-    std::string ser_msg = get_msg_res.messages(j);
-    msg.ParseFromString(ser_msg);
-    EXPECT_EQ(usuarios[j], msg.sender());
-    EXPECT_EQ("mensaje tonto "+ base::itos(j+1), msg.message());
-    ++j;
+  for (int k = 0; k < messages_size; ++k) {
+    EXPECT_EQ(usuarios[k], valid_messages.front().sender());
+    EXPECT_EQ("mensaje tonto " + base::itos(k + 1),
+        valid_messages.front().message());
+    valid_messages.pop_front();
+//    ++k;
   }
 }
 
@@ -805,20 +788,8 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
-
-  sm->IsKeyUnique(crypto_obj.Hash(public_username + "BUFFER",
-                                  "",
-                                  crypto::STRING_STRING,
-                                  true),
-                  boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  maidsafe::GenericResponse is_unique_res;
-  wait_for_result_tbph(cb, mutex);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_TRUE(is_unique_res.ParseFromString(cb.result));
-  ASSERT_EQ(kNack, static_cast<int>(is_unique_res.result()));
-  is_unique_res.Clear();
-  cb.Reset();
-
+  ASSERT_FALSE(sm->KeyUnique(crypto_obj.Hash(public_username + "BUFFER", "",
+      crypto::STRING_STRING, true), false));
   cb.Reset();
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",

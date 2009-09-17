@@ -869,25 +869,14 @@ bool ClientController::GetMessages() {
   if (ss_->PublicUsername() == "")
     return false;
 
-  CC_CallbackResult cb;
-  cbph_->GetMessages(MPID_BP,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
-  GetMessagesResponse result;
-  if ((!result.ParseFromString(cb.result)) || (result.result() == kNack))
+  std::list<packethandler::ValidatedBufferPacketMessage> valid_messages;
+  if (cbph_->GetMessages(MPID_BP, &valid_messages) != 0)
     return false;
-  if (result.messages_size() == 0)
+  if (valid_messages.size() == 0)
     // TODO(Richard): return code for no messages
     return true;
-  std::list<std::string> msgs;
-  for (int i = 0; i < result.messages_size(); i++) {
-#ifdef DEBUG
-    printf("In ClientController::GetMessages, getting message %i\n", i);
-#endif
-    msgs.push_back(result.messages(i));
-  }
-  HandleMessages(&msgs);
-  cb.Reset();
+  HandleMessages(&valid_messages);
+  CC_CallbackResult cb;
   cbph_->ClearMessages(MPID_BP,
                        boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
@@ -902,24 +891,16 @@ bool ClientController::GetMessages() {
   return true;
 }
 
-int ClientController::HandleMessages(std::list<std::string> *msgs) {
+int ClientController::HandleMessages(
+    std::list<packethandler::ValidatedBufferPacketMessage> *valid_messages) {
   int result = 0;
 #ifdef DEBUG
       printf("=========================================\n");
 #endif
-  while (!msgs->empty()) {
-    packethandler::ValidatedBufferPacketMessage msg;
-    std::string ser_msg = msgs->front();
-    msgs->pop_front();
-    if (!msg.ParseFromString(ser_msg)) {
-#ifdef DEBUG
-      printf("ClientController::HandleMessages message doesn't parse.\n");
-#endif
-      continue;
-    }
+  while (!valid_messages->empty()) {
 #ifdef DEBUG
     printf("ClientController::HandleMessages message: %s\n",
-           msg.message().c_str());
+           valid_messages->front().message().c_str());
 #endif
     std::map<std::string, boost::uint32_t>::iterator it;
     rec_msg_mutex_.lock();
@@ -927,7 +908,7 @@ int ClientController::HandleMessages(std::list<std::string> *msgs) {
     printf("ClientController::HandleMessages received_messages_ size: %d\n",
            received_messages_.size());
 #endif
-    it = received_messages_.find(msg.message());
+    it = received_messages_.find(valid_messages->front().message());
     if (it != received_messages_.end()) {
 #ifdef DEBUG
       printf("Previously received message.");
@@ -937,19 +918,22 @@ int ClientController::HandleMessages(std::list<std::string> *msgs) {
     }
 
     received_messages_.insert(std::pair<std::string, boost::uint32_t>(
-                              msg.message(), base::get_epoch_time()));
+                              valid_messages->front().message(),
+                              base::get_epoch_time()));
     rec_msg_mutex_.unlock();
 #ifdef DEBUG
-    printf("ClientController::HandleMessages timestamp: %d\n", msg.timestamp());
+    printf("ClientController::HandleMessages timestamp: %d\n",
+           valid_messages->front().timestamp());
     printf("=========================================\n");
 #endif
-    switch (msg.type()) {
+    switch (valid_messages->front().type()) {
       case packethandler::ADD_CONTACT_RQST:
       case packethandler::INSTANT_MSG:
-          result += HandleInstantMessage(msg);
+          result += HandleInstantMessage(valid_messages->front());
           break;
       default: break;  // TODO(Team): define other types of message
     }
+    valid_messages->pop_front();
   }
   return result;
 }
@@ -1118,12 +1102,11 @@ int ClientController::HandleReceivedShare(
 #endif
     return -20007;
   }
-
   return 0;
 }
 
 int ClientController::HandleInstantMessage(
-    packethandler::ValidatedBufferPacketMessage &vbpm) {
+    const packethandler::ValidatedBufferPacketMessage &vbpm) {
 #ifdef DEBUG
   printf("INSTANT MESSAGE received\n");
   printf("Sender: %s\n", vbpm.sender().c_str());

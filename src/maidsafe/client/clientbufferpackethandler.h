@@ -52,7 +52,9 @@ class ClientBufferPacketHandler {
       const BufferPacketType &type);
   int ChangeStatus(int status, const BufferPacketType &type);
   // bool ListUsers(GenericPacket gp_info, std::set<std::string> *users);
-  void GetMessages(const BufferPacketType &type, base::callback_func_type cb);
+  int GetMessages(
+      const BufferPacketType &type,
+      std::list<ValidatedBufferPacketMessage> *valid_messages);
   void GetBufferPacket(const BufferPacketType &type,
       base::callback_func_type cb);
   void ClearMessages(const BufferPacketType &type,
@@ -68,8 +70,6 @@ class ClientBufferPacketHandler {
 
   bool UserList(std::set<std::string> *list, BufferPacketType type);
   bool SetUserList(std::set<std::string> list, BufferPacketType type);
-  void GetMessages_Callback(const std::string &result,
-      const BufferPacketType &type, base::callback_func_type cb);
   void GetBufferPacket_Callback(const std::string &result,
       const BufferPacketType &type, base::callback_func_type cb);
   void GetBufferPacketInfo_Callback(const std::string &result,

@@ -253,26 +253,20 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   cb.Reset();
 
   // Use the method to get messages only to verify same message
-  clientbufferpackethandler.GetMessages(MPID_BP, boost::bind(
-      &FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tmsgh(cb, mutex);
-  ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(get_msgs_res.result()));
-  ASSERT_EQ(1, get_msgs_res.messages_size());
-  std::string ser_msg1 = get_msgs_res.messages(0);
-  packethandler::ValidatedBufferPacketMessage vbpm1;
-  vbpm1.ParseFromString(ser_msg1);
-  ASSERT_EQ(sender, vbpm1.sender());
-  ASSERT_EQ(packethandler::ADD_CONTACT_RQST, vbpm1.type());
+  std::list<packethandler::ValidatedBufferPacketMessage> valid_messages;
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(MPID_BP, &valid_messages));
+  int messages_size(valid_messages.size());
+  ASSERT_EQ(1, messages_size);
+  ASSERT_EQ(sender, valid_messages.front().sender());
+  ASSERT_EQ(packethandler::ADD_CONTACT_RQST, valid_messages.front().type());
   packethandler::ContactInfo ci_ret1;
-  ASSERT_TRUE(ci_ret1.ParseFromString(vbpm1.message()));
+  ASSERT_TRUE(ci_ret1.ParseFromString(valid_messages.front().message()));
   ASSERT_EQ(ci_ret1.name(), "la puerca");
   ASSERT_EQ(ci_ret1.birthday(), "12/12/1980");
   ASSERT_EQ(ci_ret1.office_number(), "+44 4256214");
   ASSERT_EQ(ci_ret1.gender(), "F");
   ASSERT_EQ(ci_ret1.country(), 6);
   ASSERT_EQ(ci_ret1.language(), 1);
-  cb.Reset();
 
   // Adding user to buffer packet's authorised users
   users.clear();
@@ -348,18 +342,13 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   get_msgs_res.Clear();
 
   // Use the method to get messages only to verify same message
-  clientbufferpackethandler.GetMessages(MPID_BP, boost::bind(
-      &FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tmsgh(cb, mutex);
-  ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
-  ASSERT_EQ(kAck, static_cast<int>(get_msgs_res.result()));
-  printf("Messages: %i\n", get_msgs_res.messages_size());
-  ASSERT_EQ(1, get_msgs_res.messages_size());
-  ser_msg1 = get_msgs_res.messages(0);
-  vbpm1.ParseFromString(ser_msg1);
-  ASSERT_EQ(public_username, vbpm1.sender());
-  ASSERT_EQ(packethandler::INSTANT_MSG, vbpm1.type());
-  ASSERT_TRUE(ci_ret1.ParseFromString(vbpm1.message()));
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(MPID_BP, &valid_messages));
+  messages_size = static_cast<int>(valid_messages.size());
+  printf("Messages: %i\n", messages_size);
+  ASSERT_EQ(1, messages_size);
+  ASSERT_EQ(public_username, valid_messages.front().sender());
+  ASSERT_EQ(packethandler::INSTANT_MSG, valid_messages.front().type());
+  ASSERT_TRUE(ci_ret1.ParseFromString(valid_messages.front().message()));
   ASSERT_EQ(ci_ret1.name(), "Danbert");
   ASSERT_EQ(ci_ret1.birthday(), "19/01/1960");
   ASSERT_EQ(ci_ret1.office_number(), "+44 8888 8888");

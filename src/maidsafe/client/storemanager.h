@@ -28,6 +28,7 @@
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/utils.h>
 
+#include <list>
 #include <string>
 
 #include "protobuf/maidsafe_service_messages.pb.h"
@@ -43,6 +44,15 @@ class StoreManagerInterface {
   virtual void Close(base::callback_func_type cb, bool cancel_pending_ops)=0;
   virtual void CleanUpTransport()=0;
   virtual int LoadChunk(const std::string &hex_chunk_name, std::string *data)=0;
+  virtual void LoadPacket(const std::string &hex_key,
+                          base::callback_func_type cb)=0;
+  // The public_key is the one of the MPID and is signed by the MPID's
+  // private key
+  virtual int LoadMessages(const std::string &hex_key,
+                           const std::string &public_key,
+                           const std::string &signed_public_key,
+                           std::list<std::string> *messages)=0;
+  virtual bool KeyUnique(const std::string &hex_key, bool check_local)=0;
   virtual void StoreChunk(const std::string &hex_chunk_name,
                           const DirType dir_type,
                           const std::string &msid)=0;
@@ -51,23 +61,13 @@ class StoreManagerInterface {
                           packethandler::SystemPackets system_packet_type,
                           DirType dir_type,
                           const std::string &msid)=0;
-  virtual void IsKeyUnique(const std::string &hex_key,
-                           base::callback_func_type cb)=0;
   virtual void DeletePacket(const std::string &hex_key,
                             const std::string &signature,
                             const std::string &public_key,
                             const std::string &signed_public_key,
                             const ValueType &type,
                             base::callback_func_type cb)=0;
-  virtual void LoadPacket(const std::string &hex_key,
-                          base::callback_func_type cb)=0;
 
-  // The public_key is the one of the MPID and is signed by the MPID's
-  // private key
-  virtual void GetMessages(const std::string &hex_key,
-                           const std::string &public_key,
-                           const std::string &signed_public_key,
-                           base::callback_func_type cb)=0;
   virtual void PollVaultInfo(base::callback_func_type cb)=0;
   virtual void VaultContactInfo(base::callback_func_type cb)=0;
   virtual void OwnLocalVault(const std::string &priv_key, const std::string

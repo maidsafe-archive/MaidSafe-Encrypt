@@ -28,6 +28,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <list>
 #include <string>
 
 #include "maidsafe/cppsqlite3.h"
@@ -47,6 +48,13 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual void Close(base::callback_func_type cb, bool);
   virtual void CleanUpTransport() {}
   virtual int LoadChunk(const std::string &hex_chunk_name, std::string *data);
+  virtual void LoadPacket(const std::string &hex_key,
+                          base::callback_func_type cb);
+  virtual int LoadMessages(const std::string &hex_key,
+                           const std::string &public_key,
+                           const std::string &signed_public_key,
+                           std::list<std::string> *messages);
+  virtual bool KeyUnique(const std::string &hex_key, bool check_local);
   virtual void StoreChunk(const std::string &hex_chunk_name,
                           const DirType,
                           const std::string&);
@@ -55,20 +63,12 @@ class LocalStoreManager : public StoreManagerInterface {
                           packethandler::SystemPackets system_packet_type,
                           DirType dir_type,
                           const std::string &msid);
-  virtual void IsKeyUnique(const std::string &hex_key,
-                           base::callback_func_type cb);
   virtual void DeletePacket(const std::string &hex_key,
                             const std::string &signature,
                             const std::string &public_key,
                             const std::string &signed_public_key,
                             const ValueType &type,
                             base::callback_func_type cb);
-  virtual void LoadPacket(const std::string &hex_key,
-                          base::callback_func_type cb);
-  virtual void GetMessages(const std::string &hex_key,
-                           const std::string &public_key,
-                           const std::string &signed_public_key,
-                           base::callback_func_type cb);
   virtual void PollVaultInfo(base::callback_func_type cb);
   virtual void VaultContactInfo(base::callback_func_type cb);
   virtual void OwnLocalVault(const std::string &priv_key, const std::string

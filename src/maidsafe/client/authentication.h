@@ -112,9 +112,6 @@ class Authentication {
   void GetUserTmidCallback(const std::string &result,
                            bool smid,
                            base::callback_func_type cb);
-  void CheckMSIDUnique_Callback(const std::string &result, int retry,
-                                ph::PacketParams params,
-                                base::callback_func_type cb);
   UserDetails ud_;
   boost::recursive_mutex *mutex_;
   crypto::Crypto crypto_;

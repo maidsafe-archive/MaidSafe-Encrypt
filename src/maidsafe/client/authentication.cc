@@ -442,30 +442,20 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
     static_cast<ph::MpidPacket*>(ph::PacketFactory::Factory(ph::MPID));
   std::string mpidname = mpidPacket->PacketName(params);
 
-  AuthCallbackResult cb;
-  storemanager_->IsKeyUnique(mpidname,
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
-  GenericResponse is_unique_res;
-  is_unique_res.ParseFromString(cb.result);
-  if (is_unique_res.result() == kNack)
+  if (!storemanager_->KeyUnique(mpidname, false))
     return PUBLIC_USERNAME_EXISTS;
-  is_unique_res.Clear();
 
   ph::SignaturePacket *sigPacket =
     static_cast<ph::SignaturePacket*>(ph::PacketFactory::Factory(ph::ANMPID));
   params = sigPacket->Create(params);
   bool sigpacket_result = false;
   while (!sigpacket_result) {
-    cb.Reset();
-    storemanager_->IsKeyUnique(boost::any_cast<std::string>(params["name"]),
-      boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-    WaitForResult(cb);
-    is_unique_res.ParseFromString(cb.result);
-    if (is_unique_res.result() == kAck)
+    if (storemanager_->KeyUnique(boost::any_cast<std::string>(params["name"]),
+        false)) {
       sigpacket_result = true;
-    else
+    } else {
       params = sigPacket->Create(params);
+    }
   }
 
   if (storemanager_->StorePacket(boost::any_cast<std::string>(params["name"]),
@@ -876,16 +866,12 @@ std::string Authentication::createSignaturePackets(
   AuthCallbackResult cb;
   bool result = false;
   while (!result) {
-    cb.Reset();
-    storemanager_->IsKeyUnique(boost::any_cast<std::string>(params["name"]),
-      boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-    WaitForResult(cb);
-    GenericResponse is_unique_res;
-    is_unique_res.ParseFromString(cb.result);
-    if (is_unique_res.result() == kAck)
+    if (storemanager_->KeyUnique(boost::any_cast<std::string>(params["name"]),
+        false)) {
       result = true;
-    else
+    } else {
       params = sigPacket->Create(params);
+    }
   }
   ss_->AddKey(type_da, boost::any_cast<std::string>(params["name"]),
               boost::any_cast<std::string>(params["privateKey"]),
@@ -1131,17 +1117,13 @@ void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
   ph::SignaturePacket *sigPacket = static_cast<ph::SignaturePacket*>(
       ph::PacketFactory::Factory(ph::MSID));
   params = sigPacket->Create(params);
-  storemanager_->IsKeyUnique(boost::any_cast<std::string>(params["name"]),
-      boost::bind(&Authentication::CheckMSIDUnique_Callback, this, _1, 1,
-                  params, cb));
-}
 
-void Authentication::CheckMSIDUnique_Callback(const std::string &result,
-                                              int retry,
-                                              ph::PacketParams params,
-                                              base::callback_func_type cb) {
-  // up to 10 retries to try to create a unique msid name
-  if (retry > 10) {
+  int count = 0;
+  while (!storemanager_->KeyUnique(boost::any_cast<std::string>(params["name"]),
+      false) && count < 10)
+    ++count;
+
+  if (count == 10) {
     ph::CreateMSIDResult local_result;
     local_result.set_result(kNack);
     std::string ser_local_result;
@@ -1150,38 +1132,25 @@ void Authentication::CheckMSIDUnique_Callback(const std::string &result,
     return;
   }
 
-  GenericResponse is_unique_res;
-  if ((!is_unique_res.ParseFromString(result)) ||
-      (is_unique_res.result() != kAck)) {
-    // msid name already exists in kademlia.  creating a new msid
-    ph::SignaturePacket *sigPacket = static_cast<ph::SignaturePacket*>\
-      (ph::PacketFactory::Factory(ph::MSID));
-    ph::PacketParams new_params;
-    new_params = sigPacket->Create(new_params);
-    storemanager_->IsKeyUnique(boost::any_cast<std::string>(new_params["name"]),
-      boost::bind(&Authentication::CheckMSIDUnique_Callback, this, _1 ,
-      retry+1, new_params, cb));
+  int n = storemanager_->StorePacket(
+      boost::any_cast<std::string>(params["name"]),
+      boost::any_cast<std::string>(params["ser_packet"]), ph::MSID, PRIVATE,
+      "");
+  StoreResponse result_msg;
+  ph::CreateMSIDResult local_result;
+  std::string str_local_result;
+  if (n != 0) {
+    local_result.set_result(kNack);
   } else {
-    // key is unique
-    int n = storemanager_->StorePacket(
-        boost::any_cast<std::string>(params["name"]),
-        boost::any_cast<std::string>(params["ser_packet"]), ph::MSID, PRIVATE,
-        "");
-    StoreResponse result_msg;
-    ph::CreateMSIDResult local_result;
-    std::string str_local_result;
-    if (n != 0) {
-      local_result.set_result(kNack);
-    } else {
-      local_result.set_result(kAck);
-      local_result.set_private_key(boost::any_cast<std::string>(
-          params["privateKey"]));
-      local_result.set_public_key(boost::any_cast<std::string>(
-          params["publicKey"]));
-      local_result.set_name(boost::any_cast<std::string>(params["name"]));
-    }
-    local_result.SerializeToString(&str_local_result);
-    cb(str_local_result);
+    local_result.set_result(kAck);
+    local_result.set_private_key(boost::any_cast<std::string>(
+        params["privateKey"]));
+    local_result.set_public_key(boost::any_cast<std::string>(
+        params["publicKey"]));
+    local_result.set_name(boost::any_cast<std::string>(params["name"]));
   }
+  local_result.SerializeToString(&str_local_result);
+  cb(str_local_result);
 }
+
 }  // namespace maidsafe

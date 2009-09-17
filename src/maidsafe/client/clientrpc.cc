@@ -209,24 +209,24 @@ void ClientRpcs::Delete(const std::string &chunkname,
   service.Delete(controller, &args, response, done);
 }
 
-void ClientRpcs::GetMessages(const std::string &buffer_packet_name,
-                             const std::string &public_key,
-                             const std::string &signed_public_key,
-                             const std::string &remote_ip,
-                             const boost::uint16_t &remote_port,
-                             const std::string &rendezvous_ip,
-                             const boost::uint16_t &rendezvous_port,
-                             GetMessagesResponse *response,
+void ClientRpcs::GetMessages(const kad::Contact &peer,
+                             bool local,
+                             GetMessagesRequest *get_messages_request,
+                             GetMessagesResponse *get_messages_response,
                              rpcprotocol::Controller *controller,
                              google::protobuf::Closure *done) {
-  GetMessagesRequest args;
-  args.set_buffer_packet_name(buffer_packet_name);
-  args.set_public_key(public_key);
-  args.set_signed_public_key(signed_public_key);
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      "", 0, rendezvous_ip, rendezvous_port);
+  std::string local_ip("");
+  boost::uint16_t local_port(0);
+  if (local) {
+    local_ip = peer.local_ip();
+    local_port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.GetMessages(controller, &args, response, done);
+  service.GetMessages(controller, get_messages_request, get_messages_response,
+      done);
 }
 
 void ClientRpcs::IsVaultOwned(IsOwnedResponse *response,

@@ -206,53 +206,41 @@ int ClientBufferPacketHandler::DeleteUsers(
   return n;
 }
 
-void ClientBufferPacketHandler::GetMessages(const BufferPacketType &type,
-    base::callback_func_type cb) {
+int ClientBufferPacketHandler::GetMessages(
+    const BufferPacketType &type,
+    std::list<ValidatedBufferPacketMessage> *valid_messages) {
+  valid_messages->clear();
   maidsafe::PacketType pt = PacketHandler_PacketType(type);
-  base::pd_scoped_lock gaurd(*mutex_);
+// TODO(Fraser#5#): 2009-09-15 - Confirm that mutex is not required here
+//  base::pd_scoped_lock gaurd(*mutex_);
   std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(pt) + "BUFFER", "",
       crypto::STRING_STRING, true);
   std::string signed_public_key = crypto_obj_.AsymSign(
       ss_->PublicKey(pt), "", ss_->PrivateKey(pt), crypto::STRING_STRING);
-
-  sm_->GetMessages(bufferpacketname, ss_->PublicKey(pt),
-      signed_public_key, boost::bind(
-      &ClientBufferPacketHandler::GetMessages_Callback, this, _1, type, cb));
-}
-
-void ClientBufferPacketHandler::GetMessages_Callback(const std::string &result,
-    const BufferPacketType &type, base::callback_func_type cb) {
-  maidsafe::PacketType pt = PacketHandler_PacketType(type);
-  maidsafe::GetMessagesResponse local_result;
-  std::string str_local_result;
-  if (!local_result.ParseFromString(result)) {
-    local_result.set_result(kNack);
-    local_result.SerializeToString(&str_local_result);
-    cb(str_local_result);
-    return;
-  }
-  if (local_result.result() == kAck) {
-    maidsafe::GetMessagesResponse result_dec_msgs;
-    result_dec_msgs.set_result(kAck);
-    for (int i = 0; i < local_result.messages_size() ; i++) {
-      ValidatedBufferPacketMessage msg;
-      std::string ser_msg = local_result.messages(i);
-      if (msg.ParseFromString(ser_msg)) {
-        std::string aes_key = crypto_obj_.AsymDecrypt(msg.index(), "",
+  std::list<std::string> messages;
+  if (sm_->LoadMessages(bufferpacketname, ss_->PublicKey(pt),
+      signed_public_key, &messages) != 0)
+    return -1;
+  while (!messages.empty()) {
+    ValidatedBufferPacketMessage valid_message;
+    if (valid_message.ParseFromString(messages.front())) {
+      std::string aes_key = crypto_obj_.AsymDecrypt(valid_message.index(), "",
           ss_->PrivateKey(pt), crypto::STRING_STRING);
-        std::string enc_msg = msg.message();
-        msg.set_message(crypto_obj_.SymmDecrypt(enc_msg, "",
-          crypto::STRING_STRING, aes_key));
-        std::string ser_decmsg;
-        msg.SerializeToString(&ser_decmsg);
-        result_dec_msgs.add_messages(ser_decmsg);
-      }
+      valid_message.set_message(crypto_obj_.SymmDecrypt(valid_message.message(),
+          "", crypto::STRING_STRING, aes_key));
+      valid_messages->push_back(valid_message);
+      messages.pop_front();
+// TODO(Fraser#5#): 2009-09-15 - Add message saying corrupted messge not parsed?
+//    } else {
+//      valid_message.set_sender("");
+//      valid_message.set_message("You got a corrupted message.");
+//      valid_message.set_index("");
+//      valid_message.set_type(0);
+//      valid_messages->push_back(valid_message);
+//      messages.pop_front();
     }
-    result_dec_msgs.SerializeToString(&str_local_result);
-  } else {
-    local_result.SerializeToString(&str_local_result);
   }
-  cb(str_local_result);
+  return 0;
 }
 
 void ClientBufferPacketHandler::GetBufferPacket(const BufferPacketType &type,

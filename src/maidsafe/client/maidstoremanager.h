@@ -31,6 +31,7 @@
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht_config.h>
 
+#include <list>
 #include <queue>
 #include <set>
 #include <string>
@@ -56,6 +57,7 @@ enum ChunkHolderStatus {
 class CallbackObj {
  public:
   CallbackObj() : mutex_(), called_(false), result_("") {}
+  ~CallbackObj() {}
   void CallbackFunc(const std::string &result) {
     boost::mutex::scoped_lock lock(mutex_);
     result_ = result;
@@ -104,6 +106,18 @@ struct StoreIouResultHolder {
 
 struct StoreTask;
 
+struct GenericConditionData {
+ public:
+  GenericConditionData() : cond_flag(false), cond_mutex(), cond_variable() {}
+  ~GenericConditionData() {}
+  bool cond_flag;
+  boost::mutex cond_mutex;
+  boost::condition_variable cond_variable;
+ private:
+  GenericConditionData &operator=(const GenericConditionData&);
+  GenericConditionData(const GenericConditionData&);
+};
+
 struct ChunkHolder {
  public:
   explicit ChunkHolder(const kad::Contact &chunk_holder_contact)
@@ -149,7 +163,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void Init(int port, base::callback_func_type cb);
   void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
-  int LoadChunk(const std::string &hex_chunk_name, std::string *data);
   // Adds the chunk to the store queue.  It must already be in the chunkstore.
   // If the chunk already exists (stored locally or on the net) the function
   // succeeds.  The function returns as soon as the task is enqueued.
@@ -164,6 +177,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                   packethandler::SystemPackets system_packet_type,
                   DirType dir_type,
                   const std::string &msid);
+  int LoadChunk(const std::string &hex_chunk_name, std::string *data);
+  void LoadPacket(const std::string &hex_packet_name,
+                  base::callback_func_type cb);
+  int LoadMessages(const std::string &buffer_packet_name,
+                   const std::string &public_key,
+                   const std::string &signed_public_key,
+                   std::list<std::string> *messages);
   // Returns true if the key doesn't already exist on the Kad network or
   // maidsafe network (or locally if bool is true), otherwise false.
   bool KeyUnique(const std::string &hex_key, bool check_local);
@@ -171,28 +191,16 @@ class MaidsafeStoreManager : public StoreManagerInterface {
 
 
 
-  void IsKeyUnique(const std::string &hex_key,
-                   base::callback_func_type cb);
   void DeletePacket(const std::string &hex_key,
                     const std::string &signature,
                     const std::string &public_key,
                     const std::string &signed_public_key,
                     const ValueType &type,
                     base::callback_func_type cb);
-  void LoadPacket(const std::string &hex_key, base::callback_func_type cb);
-  void GetMessages(const std::string &hex_key,
-                   const std::string &public_key,
-                   const std::string &signed_public_key,
-                   base::callback_func_type cb);
-  // Start the main store thread running.
-  void StartStoring();
-  // Try to stop the main store thread.  If it doesn't stop within 5 seconds, it
-  // is detached.
-  void StopStoring();
-  // Return the true if the main store thread is running.
-  bool StoreThreadRunning();
-  // Used by constructors of chunk task structs to retrieve the appropriate
-  // signing public key and public key signature.
+
+
+
+
   static void GetChunkSignatureKeys(DirType dir_type,
                                     const std::string &msid,
                                     std::string *public_key,
@@ -219,14 +227,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   MaidsafeStoreManager(const MaidsafeStoreManager&);
   void SimpleResult_Callback(const std::string &result,
                              base::callback_func_type cb);
-  void IsKeyUnique_Callback(const std::string &result,
-                            base::callback_func_type cb);
-  void GetMsgs_Callback(const std::string &result, base::callback_func_type cb);
   void DeleteChunk_Callback(const std::string &result,
                             base::callback_func_type cb);
   void AddPriorityStoreTask(const StoreTask &store_task,
                             IfExists if_exists,
                             int *return_value);
+  void AddStorePacketTask(const StoreTask &store_task,
+                          int *return_value,
+                          GenericConditionData *generic_cond_data);
   void AddNormalStoreTask(const StoreTask &store_task,
                           IfExists if_exists);
   // Assess and select a store method for an individual chunk.
@@ -284,7 +292,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // this may yield serialised contact details for a cache copy holder.
   // Otherwise it should yield the reference holders.  It also yields the
   // details of the last kad node to not return the value during the lookup.
-  // If check_local is true, it also checks local chunkstore first.
+  // If check_local is true, it also checks local chunkstore first.  The values
+  // (ie chunk_holders_ids) are loaded in reverse order.
   int FindValue(const std::string &kad_key,
                 bool check_local,
                 kad::ContactInfo *cache_holder,
@@ -317,16 +326,27 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                         int *available_chunk_holder_index);
   // Given a vector of vault ids, this gets the contact info for each and if
   // load_data is true, attempts to load the data once the first contact info
-  // is received.
+  // is received.  If public_key and signed_public_key are not empty, then it
+  // is assumed we are loading a buffer packet (the bool load_data has no effect
+  // in this case) and the GetMessages RPC is used.
   int FindAndLoadChunk(const std::string &chunk_name,
                        const std::vector<std::string> &chunk_holders_ids,
                        bool load_data,
+                       const std::string &public_key,
+                       const std::string &signed_public_key,
                        std::string *data);
   // Get a chunk's content from a specific peer.
   void GetChunk(const std::string &chunk_name,
                 boost::shared_ptr<ChunkHolder> chunk_holder,
                 std::string *data,
                 boost::mutex *get_mutex);
+  // Get a bufferpacket's content from a specific peer.
+  void GetMessages(const std::string &buffer_packet_name,
+                   boost::shared_ptr<ChunkHolder> chunk_holder,
+                   const std::string &public_key,
+                   const std::string &signed_public_key,
+                   std::string *serialised_get_messages_response,
+                   boost::mutex *get_mutex);
   void GetChunkCallback(boost::mutex *mutex, bool *get_chunk_done);
   // Passes the IOU to an individual reference holder.
   int SendIouToRefHolder(
@@ -345,12 +365,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                   bool local,
                   IOUDoneRequest *iou_done_request);
   void IOUDoneCallback(boost::mutex *mutex, bool *iou_done);
-  // Store copies of an individual packet to the network.
-  int SendPacket(const StoreTask &store_task, int copies);
+  // Store an individual packet to the network as a kademlia value.
+  void SendPacket(const StoreTask &store_task,
+                  int *return_value,
+                  GenericConditionData *generic_cond_data);
   int GetStorePacketRequest(const StoreTask &store_task,
                             const std::string &recipient_id,
                             StoreRequest *store_request);
-  void SendPacketCallback(boost::condition_variable *cond);
   // Updates all available copies of a chunk on the network.  The shared pointer
   // to the RPC controller is passed to UpdateChunkCallback purely to avoid a
   // premature destruct being called on the controller.

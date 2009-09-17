@@ -320,16 +320,8 @@ TEST_F(TestSEHandler, FUNC_MAID_EncryptFile) {
   DataMap dm_;
   ASSERT_TRUE(dm_.ParseFromString(ser_dm_));
 
-  for (int i = 0; i < dm_.encrypted_chunk_name_size(); ++i) {
-    sm_->IsKeyUnique(dm_.encrypted_chunk_name(i), boost::bind(
-      &FakeCallback::CallbackFunc, &cb, _1));
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-    wait_for_result_seh(cb, rec_mutex);
-    GenericResponse result;
-    ASSERT_TRUE(result.ParseFromString(cb.result));
-    ASSERT_EQ(kNack, static_cast<int>(result.result()));
-    cb.Reset();
-  }
+  for (int i = 0; i < dm_.encrypted_chunk_name_size(); ++i)
+    ASSERT_FALSE(sm_->KeyUnique(dm_.encrypted_chunk_name(i), false));
   sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1), true);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }

@@ -131,8 +131,8 @@ void LocalStoreManager::Close(base::callback_func_type cb, bool) {
 int LocalStoreManager::LoadChunk(const std::string &hex_chunk_name,
                                  std::string *data) {
 #ifdef DEBUG
-  printf("LocalStoreManager::LoadChunk - %s\n",
-          hex_chunk_name.substr(0, 10).c_str());
+//  printf("LocalStoreManager::LoadChunk - %s\n",
+//          hex_chunk_name.substr(0, 10).c_str());
 #endif
   fs::path file_path("StoreChunks");
   file_path = file_path / hex_chunk_name;
@@ -160,12 +160,49 @@ int LocalStoreManager::LoadChunk(const std::string &hex_chunk_name,
   return 0;
 }
 
+void LocalStoreManager::LoadPacket(const std::string &hex_key,
+                                   base::callback_func_type cb) {
+  std::string result;
+  result = GetValue_FromDB(hex_key);
+  if (result == "") {
+    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
+    return;
+  }
+  boost::thread thr(boost::bind(&ExeCallbackLoad, cb, result, mutex_));
+}
+
+int LocalStoreManager::LoadMessages(const std::string &hex_key,
+                                    const std::string &public_key,
+                                    const std::string &signed_public_key,
+                                    std::list<std::string> *messages) {
+  messages->clear();
+  if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key, public_key,
+      crypto::STRING_STRING)) {
+    return -1;
+  }
+  std::string ser_bp = GetValue_FromDB(hex_key);
+  if (ser_bp == "") {
+    return -2;
+  }
+  // Valitading singature with packet to see if owner is trying to get messages
+  if (!vbph_.ValidateOwnerSignature(public_key, ser_bp)) {
+    return -3;
+  }
+  std::vector<std::string> result;
+  if (!vbph_.GetMessages(ser_bp, &result)) {
+    return -4;
+  }
+  for (boost::uint32_t i = 0; i < result.size(); ++i)
+    messages->push_back(result.at(i));
+  return 0;
+}
+
 void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,
                                    const DirType,
                                    const std::string&) {
 #ifdef DEBUG
-  printf("LocalStoreManager::StoreChunk - %s\n",
-          hex_chunk_name.substr(0, 10).c_str());
+//  printf("LocalStoreManager::StoreChunk - %s\n",
+//          hex_chunk_name.substr(0, 10).c_str());
 #endif
   fs::path file_path("StoreChunks");
   file_path = file_path / hex_chunk_name;
@@ -194,8 +231,7 @@ void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,
   }
 }
 
-void LocalStoreManager::IsKeyUnique(const std::string &hex_key,
-                                    base::callback_func_type cb) {
+bool LocalStoreManager::KeyUnique(const std::string &hex_key, bool) {
   bool result = false;
   try {
     std::string s = "select * from network where key='" + hex_key;
@@ -215,11 +251,7 @@ void LocalStoreManager::IsKeyUnique(const std::string &hex_key,
     file_path = file_path / hex_key;
     result = (!fs::exists(file_path));
   }
-  if (result) {
-    ExecuteSuccessCallback(cb, mutex_);
-  } else {
-    ExecuteFailureCallback(cb, mutex_);
-  }
+  return result;
 }
 
 void LocalStoreManager::DeletePacket(const std::string &hex_key,
@@ -404,44 +436,6 @@ int LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,
     std::cerr << e.errorCode() << "error:" << e.errorMessage() << std::endl;
     return -2;
   }
-}
-
-void LocalStoreManager::LoadPacket(const std::string &hex_key,
-                                   base::callback_func_type cb) {
-  std::string result;
-  result = GetValue_FromDB(hex_key);
-  if (result == "") {
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-    return;
-  }
-  boost::thread thr(boost::bind(&ExeCallbackLoad, cb, result, mutex_));
-}
-
-void LocalStoreManager::GetMessages(const std::string &hex_key,
-                                    const std::string &public_key,
-                                    const std::string &signed_public_key,
-                                    base::callback_func_type cb) {
-  std::vector<std::string> result;
-  if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key, public_key,
-      crypto::STRING_STRING)) {
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-    return;
-  }
-
-  std::string ser_bp = GetValue_FromDB(hex_key);
-  if (ser_bp == "") {
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-    return;
-  }
-
-  // Valitading singature with packet to see if owner is trying to get messages
-  if (!vbph_.ValidateOwnerSignature(public_key, ser_bp)) {
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-    return;
-  }
-
-  vbph_.GetMessages(ser_bp, &result);
-  boost::thread thr(boost::bind(&ExeCallbackGetMsgs, cb, result, mutex_));
 }
 
 bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
