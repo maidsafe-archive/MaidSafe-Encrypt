@@ -141,9 +141,10 @@ bool UserSpaceFileSystem::unmount() {
 #endif
 
   // logout from client controller
-  const int n = maidsafe::ClientController::getInstance()->Logout();
-  if (n != 0) {
-      // TODO(Dan#5#): 2009-06-25 - verify n!=0 means failure
+  const bool n = maidsafe::ClientController::getInstance()->Logout();
+  if (!n) {
+    // TODO(Team#5#): 2009-06-25 - do stuff
+    success = false;
   }
 
   return success;

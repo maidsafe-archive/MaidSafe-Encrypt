@@ -54,7 +54,6 @@ class LocalStoreManager : public StoreManagerInterface {
                            const std::string &public_key,
                            const std::string &signed_public_key,
                            std::list<std::string> *messages);
-  virtual bool KeyUnique(const std::string &hex_key, bool check_local);
   virtual void StoreChunk(const std::string &hex_chunk_name,
                           const DirType,
                           const std::string&);
@@ -63,6 +62,9 @@ class LocalStoreManager : public StoreManagerInterface {
                           packethandler::SystemPackets system_packet_type,
                           DirType dir_type,
                           const std::string &msid);
+  virtual bool KeyUnique(const std::string &hex_key, bool check_local);
+  virtual void ClearStoreQueue() {}
+
   virtual void DeletePacket(const std::string &hex_key,
                             const std::string &signature,
                             const std::string &public_key,
@@ -76,6 +78,8 @@ class LocalStoreManager : public StoreManagerInterface {
       const std::string &chunkstore_dir, const boost::uint64_t &space,
       boost::function<void(const OwnVaultResult&, const std::string&)> cb);
   virtual void LocalVaultStatus(boost::function<void(const VaultStatus&)> cb);
+  virtual bool NotDoneWithUploading();
+
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);

@@ -513,4 +513,6 @@ void LocalStoreManager::LocalVaultStatus(boost::function< void(
   boost::thread thr(cb, maidsafe::NOT_OWNED);
 }
 
+bool LocalStoreManager::NotDoneWithUploading() { return false; }
+
 }  // namespace maidsafe

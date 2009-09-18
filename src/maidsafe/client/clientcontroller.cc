@@ -348,11 +348,11 @@ bool ClientController::CreateUser(const std::string &username,
 
   // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
   //                             Parameters come in VaultConfigParameters.
-  OwnVaultResult ovr = OwnLocalVault(vcp.port, vcp.space * 1024 * 1024,
-                                     vcp.directory);
-#ifdef DEBUG
-  printf("ClientController::CreateUser +++ OwnVaultResult: %d +++\n", ovr);
-#endif
+//  OwnVaultResult ovr = OwnLocalVault(vcp.port, vcp.space * 1024 * 1024,
+//                                     vcp.directory);
+//#ifdef DEBUG
+//  printf("ClientController::CreateUser +++ OwnVaultResult: %d +++\n", ovr);
+//#endif
 
   ss_->SetSessionName(false);
   ss_->SetConnectionStatus(0);
@@ -633,7 +633,15 @@ bool ClientController::Logout() {
 //  }
 //  ss_->SetConnectionStatus(connection_status);
 
+//  sm_->ClearStoreQueue();
   if (result == OK && !RunDbEncQueue()) {
+    printf("ClientController::Logout - OK and ran DB queue.\n");
+//    while (sm_->NotDoneWithUploading()) {
+      boost::this_thread::sleep(boost::posix_time::seconds(60));
+//      printf(".");
+//    }
+
+    printf("ClientController::Logout - After threads done.\n");
     fsys_.UnMount();
     ss_->ResetSession();
     delete seh_;
@@ -652,8 +660,8 @@ bool ClientController::Logout() {
     return true;
   }
 
-  delete seh_;
-  delete msgh_;
+//  delete seh_;
+//  delete msgh_;
   logging_out_ = false;
   return false;
 }
@@ -2285,59 +2293,55 @@ int ClientController::SaveDb(const std::string &db_path,
     return 0;
 }
 
-int ClientController::RemoveDb(const std::string &path_) {
+int ClientController::RemoveDb(const std::string &path) {
 #ifdef DEBUG
-  printf("\t\tCC::RemoveDb %s\n", path_.c_str());
+  printf("\t\tCC::RemoveDb %s\n", path.c_str());
 #endif
-  std::string parent_path_, dir_key_;
-  fs::path temp_(path_);
-  parent_path_ = temp_.parent_path().string();
-  if (parent_path_ == "\\"||
-      parent_path_ == "/"||
-      parent_path_ == base::TidyPath(kRootSubdir[1][0]))
+  std::string parent_path, dir_key;
+  fs::path temp(path);
+  parent_path = temp.parent_path().string();
+  if (parent_path == "\\"||
+      parent_path == "/"||
+      parent_path == base::TidyPath(kRootSubdir[1][0]))
     return 0;
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  std::string dbpath_;
-  dah_->GetDbPath(path_, CREATE, &dbpath_);
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
+  std::string dbpath;
+  dah->GetDbPath(path, CREATE, &dbpath);
   try {
-    fs::remove_all(dbpath_);
+    fs::remove_all(dbpath);
   }
-  catch(const std::exception &exception_) {
+  catch(const std::exception &exception) {
 #ifdef DEBUG
-    printf("%s\n", exception_.what());
+    printf("%s\n", exception.what());
 #endif
   }
-  db_enc_queue_.erase(path_);
+  db_enc_queue_.erase(path);
   return 0;
 }
 
 int ClientController::RunDbEncQueue() {
-  std::map<std::string, std::pair<std::string, std::string> >::iterator it_;
-  int result_ = 0;
-  for (it_ = db_enc_queue_.begin(); it_ != db_enc_queue_.end(); ++it_) {
-    std::string ser_dm_="";
-    DirType db_type_ = GetDirType((*it_).first);
+  std::map<std::string, std::pair<std::string, std::string> >::iterator it;
+  int result = 0;
+  printf("CC::RunDbEncQueue - before running the whole list %d\n", db_enc_queue_.size());
+  for (it = db_enc_queue_.begin(); it != db_enc_queue_.end(); ++it) {
+    std::string ser_dm;
+    DirType db_type = GetDirType((*it).first);
 #ifdef DEBUG
     printf("\t\tCC::RunDbEncQueue: first: %s\ttype: %i\tsec.first: %s\t",
-           (*it_).first.c_str(),
-           db_type_,
-           (*it_).second.first.c_str());
-    printf("sec.second: %s\n", (*it_).second.second.c_str());
+          (*it).first.c_str(), db_type, (*it).second.first.c_str());
+    printf("sec.second: %s\n", (*it).second.second.c_str());
 #endif
-    int int_res_ = seh_->EncryptDb((*it_).first,
-                                   db_type_,
-                                   (*it_).second.first,
-                                   (*it_).second.second,
-                                   true,
-                                   &ser_dm_);
+    int int_res = seh_->EncryptDb((*it).first, db_type, (*it).second.first,
+                                  (*it).second.second, true, &ser_dm);
 #ifdef DEBUG
-    printf(" with result %i\n", int_res_);
+    printf(" with result %i\n", int_res);
 #endif
-    if (int_res_ != -2)
-      result_ += int_res_;
+    if (int_res != -2)
+      result += int_res;
   }
+  printf("CC::RunDbEncQueue - after running the whole list %d\n", result);
   db_enc_queue_.clear();
-  if (result_)
+  if (result)
     return -1;
   else
     return 0;

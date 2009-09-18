@@ -391,7 +391,7 @@ int SEHandler::GenerateUniqueKey(const DirType dir_type,
     else
       pd_dir_type_ = PDDIR_SIGNED;
     std::string ser_gp = CreateDataMapPacket("temp data", dir_type, msid);
-    return storem_->StorePacket(*hex_key, ser_gp, packethandler::PD_DIR,
+    return storem_->StorePacket(*hex_key, "temp data", packethandler::PD_DIR,
                                 dir_type, msid);
   }
   return -1;
@@ -469,7 +469,13 @@ int SEHandler::EncryptDb(const std::string &dir_path,
 //      (storechunks_result.result() == kNack)) {
 //    return -1;
 //  }
+#ifdef DEBUG
+  printf("SEHandler::EncryptDb - Fuck you Chavez!\n");
+#endif
   StoreChunks(dm_, dir_type, msid);
+#ifdef DEBUG
+  printf("SEHandler::EncryptDb - After store chunks\n");
+#endif
   dm_.SerializeToString(&ser_dm_);
   // if (ser_dm != "")
   //   ser_dm = ser_dm_;
@@ -943,26 +949,26 @@ std::string SEHandler::CreateDataMapPacket(const std::string &ser_dm,
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   gp.set_data(ser_dm);
-  std::string private_key_("");
+  std::string private_key("");
   switch (dir_type) {
     case PRIVATE_SHARE: {
-        std::string public_key_("");
-        if (0 != ss_->GetShareKeys(msid, &public_key_, &private_key_)) {
-          private_key_ = "";
+        std::string public_key("");
+        if (0 != ss_->GetShareKeys(msid, &public_key, &private_key)) {
+          private_key = "";
           return "";
         }
       }
       break;
     case PUBLIC_SHARE:
-      private_key_ = ss_->PrivateKey(MPID);
+      private_key = ss_->PrivateKey(MPID);
       break;
     default:
-      private_key_ = ss_->PrivateKey(MAID);
+      private_key = ss_->PrivateKey(PMID);
       break;
   }
   gp.set_signature(co.AsymSign(gp.data(),
                                "",
-                               private_key_,
+                               private_key,
                                crypto::STRING_STRING));
   std::string ser_gp;
   gp.SerializeToString(&ser_gp);

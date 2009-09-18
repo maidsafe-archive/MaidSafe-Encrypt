@@ -188,7 +188,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // maidsafe network (or locally if bool is true), otherwise false.
   bool KeyUnique(const std::string &hex_key, bool check_local);
 
-
+  void ClearStoreQueue();
 
 
   void DeletePacket(const std::string &hex_key,
@@ -214,6 +214,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                                      std::string *public_key,
                                      std::string *public_key_sig,
                                      std::string *private_key);
+
+  // FRASER!!!! DON'T DO AWAY WITH THIS!!!!
   void PollVaultInfo(base::callback_func_type cb);
   void VaultContactInfo(base::callback_func_type cb);
   void OwnLocalVault(const std::string &priv_key, const std::string &pub_key,
@@ -221,6 +223,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const std::string &chunkstore_dir, const boost::uint64_t &space,
       boost::function<void(const OwnVaultResult&, const std::string&)> cb);
   void LocalVaultStatus(boost::function<void(const VaultStatus&)> cb);
+  bool NotDoneWithUploading();
 
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
@@ -274,13 +277,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                bool local,
                StorePrepRequest *store_prep_request,
                StorePrepResponse *store_prep_response);
-  void SendPrepCallback(boost::mutex *mutex, bool *send_prep_done);
+  void SendPrepCallback(GenericConditionData *send_prep_cond_data);
   // Send the actual data content to the peer.
   int SendContent(const kad::Contact &peer,
                   bool local,
                   bool is_in_chunkstore,
                   StoreRequest *store_request);
-  void SendContentCallback(boost::mutex *mutex, bool *send_called_back);
+  void SendContentCallback(GenericConditionData *send_cond_data);
   // Pass the IOU for the peer vault to the k chunk reference holders.
   int StoreIOUs(const StoreTask &store_task,
                 const boost::uint64_t &chunk_size,
@@ -364,7 +367,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   int SendIOUDone(const kad::Contact &peer,
                   bool local,
                   IOUDoneRequest *iou_done_request);
-  void IOUDoneCallback(boost::mutex *mutex, bool *iou_done);
+  void IOUDoneCallback(GenericConditionData *iou_done_cond_data);
   // Store an individual packet to the network as a kademlia value.
   void SendPacket(const StoreTask &store_task,
                   int *return_value,
@@ -401,13 +404,17 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       boost::threadpool::prio_scheduler,
       boost::threadpool::static_size,
       boost::threadpool::resize_controller,
-      boost::threadpool::immediately> store_thread_pool_;
+      boost::threadpool::wait_for_all_tasks> store_thread_pool_;
+  boost::threadpool::thread_pool<
+      boost::threadpool::prio_task_func,
+      boost::threadpool::prio_scheduler,
+      boost::threadpool::static_size,
+      boost::threadpool::resize_controller,
+      boost::threadpool::wait_for_all_tasks> packet_thread_pool_;
   const boost::uint16_t kKadStoreThreshold_;
   boost::mutex store_packet_mutex_;
   boost::condition_variable store_packet_conditional_;
   boost::condition_variable send_iou_done_conditional_;
-  boost::condition_variable send_prep_done_conditional_;
-  boost::condition_variable send_content_conditional_;
   boost::condition_variable get_chunk_conditional_;
   boost::condition_variable find_conditional_;
 };

@@ -660,14 +660,17 @@ TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
   rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
   std::string non_hex_packet_name;
   base::decode_from_hex(hex_packet_name, &non_hex_packet_name);
+//  ASSERT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
+//      packethandler::PD_DIR, maidsafe::PRIVATE, ""));
 //  ASSERT_NE(0, sm_->StorePacket(hex_packet_name, packet_content,
 //      packethandler::PMID, maidsafe::PRIVATE, ""));
   // Try to store system packet with other incorrect content
   packet_content = "not a system packet";
-  ASSERT_NE(0, sm_->StorePacket(hex_packet_name, packet_content,
-      packethandler::PMID, maidsafe::PRIVATE, ""));
-  ASSERT_NE(0, sm_->StorePacket(hex_packet_name, packet_content,
-      packethandler::BUFFER, maidsafe::PRIVATE, ""));
+  EXPECT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
+      packethandler::PD_DIR, maidsafe::PRIVATE, ""));
+  packet_content = "some other bollocks";
+  EXPECT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
+      packethandler::PD_DIR, maidsafe::PRIVATE, ""));
   // We need to allow enough time to let the vaults finish publishing themselves
   // as chunk holders and retrieving their IOUs.
   boost::this_thread::sleep(boost::posix_time::seconds(10));

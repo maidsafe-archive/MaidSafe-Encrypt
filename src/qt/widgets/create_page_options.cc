@@ -31,11 +31,11 @@ CreateOptionsPage::CreateOptionsPage(QWidget* parent)
 CreateOptionsPage::~CreateOptionsPage() { }
 
 void CreateOptionsPage::cleanupPage() {
-  if (ClientController::instance()->IsLocalVaultOwned()) {
-    ui_.local->setEnabled(false);
-  } else {
+//  if (ClientController::instance()->IsLocalVaultOwned()) {
+//    ui_.local->setEnabled(false);
+//  } else {
     ui_.local->setChecked(true);
-  }
+//  }
 }
 
 int CreateOptionsPage::VaultType() {

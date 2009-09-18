@@ -52,7 +52,6 @@ class StoreManagerInterface {
                            const std::string &public_key,
                            const std::string &signed_public_key,
                            std::list<std::string> *messages)=0;
-  virtual bool KeyUnique(const std::string &hex_key, bool check_local)=0;
   virtual void StoreChunk(const std::string &hex_chunk_name,
                           const DirType dir_type,
                           const std::string &msid)=0;
@@ -61,6 +60,9 @@ class StoreManagerInterface {
                           packethandler::SystemPackets system_packet_type,
                           DirType dir_type,
                           const std::string &msid)=0;
+  virtual bool KeyUnique(const std::string &hex_key, bool check_local)=0;
+  virtual void ClearStoreQueue()=0;
+
   virtual void DeletePacket(const std::string &hex_key,
                             const std::string &signature,
                             const std::string &public_key,
@@ -75,6 +77,7 @@ class StoreManagerInterface {
       const std::string &chunkstore_dir, const boost::uint64_t &space,
       boost::function<void(const OwnVaultResult&, const std::string&)> cb)=0;
   virtual void LocalVaultStatus(boost::function<void(const VaultStatus&)> cb)=0;
+  virtual bool NotDoneWithUploading()=0;
 };
 
 }  // namespace maidsafe
