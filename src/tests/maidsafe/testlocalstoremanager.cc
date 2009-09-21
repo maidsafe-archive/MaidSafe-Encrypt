@@ -157,11 +157,9 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
       packethandler::BUFFER, maidsafe::PRIVATE, ""));
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
   std::string result;
-  storemanager->LoadPacket(gp_name,
-                           boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_lsm(cb, mutex_);
+  storemanager->LoadPacket(gp_name, &result);
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result_));
+  ASSERT_TRUE(load_res.ParseFromString(result));
   ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ASSERT_EQ(gp_content, load_res.content());
 }
@@ -257,11 +255,10 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
       packethandler::BUFFER, maidsafe::PRIVATE, ""));
 
   ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
-  storemanager->LoadPacket(bufferpacketname,
-                           boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_lsm(cb, mutex_);
+  std::string packet_content;
+  storemanager->LoadPacket(bufferpacketname, &packet_content);
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result_));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ASSERT_EQ(ser_bp, load_res.content());
 }
@@ -438,11 +435,10 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   ASSERT_EQ(0, storemanager->StorePacket(bufferpacketname, ser_bp,
       packethandler::BUFFER, maidsafe::PRIVATE, ""));
   ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
-  storemanager->LoadPacket(bufferpacketname,
-                           boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_lsm(cb, mutex_);
+  std::string packet_content;
+  storemanager->LoadPacket(bufferpacketname, &packet_content);
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result_));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ASSERT_EQ(ser_bp, load_res.content());
 
@@ -475,11 +471,9 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
       packethandler::BUFFER_MESSAGE, maidsafe::PRIVATE, ""));
 
   // Checking the bp has not been modified
-  cb.Reset();
-  storemanager->LoadPacket(bufferpacketname,
-                           boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_lsm(cb, mutex_);
-  ASSERT_TRUE(load_res.ParseFromString(cb.result_));
+  packet_content = "";
+  storemanager->LoadPacket(bufferpacketname, &packet_content);
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ASSERT_EQ(ser_bp, load_res.content());
   cb.Reset();
@@ -498,10 +492,9 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
       packethandler::BUFFER_MESSAGE, maidsafe::PRIVATE, ""));
 
   // Checking if new buffer packet has the msg
-  storemanager->LoadPacket(bufferpacketname,
-                           boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_lsm(cb, mutex_);
-  ASSERT_TRUE(load_res.ParseFromString(cb.result_));
+  packet_content = "";
+  storemanager->LoadPacket(bufferpacketname, &packet_content);
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ser_bp = load_res.content();
   packethandler::BufferPacket bp;

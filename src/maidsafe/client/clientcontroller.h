@@ -78,7 +78,6 @@ class ClientController {
   int SerialiseDa();
   Exitcode CheckUserExists(const std::string &username,
                            const std::string &pin,
-                           base::callback_func_type cb,
                            DefConLevels level);
   bool CreateUser(const std::string &username,
                   const std::string &pin,

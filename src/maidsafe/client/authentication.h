@@ -63,8 +63,7 @@ class Authentication {
   Authentication(StoreManagerInterface *storemanager,
                  boost::recursive_mutex *mutex);
   Exitcode GetUserInfo(const std::string &username,
-                      const std::string &pin,
-                      base::callback_func_type cb);
+                      const std::string &pin);
   Exitcode GetUserData(const std::string &password, std::string &ser_da);
   Exitcode CreateUserSysPackets(const std::string &username,
                                 const std::string &pin,
@@ -108,16 +107,14 @@ class Authentication {
                const std::string &pin,
                int *rid);
   void WaitForResult(const AuthCallbackResult &cb);
-  void GetUserTmid(base::callback_func_type cb, bool smid);
-  void GetUserTmidCallback(const std::string &result,
-                           bool smid,
-                           base::callback_func_type cb);
+  void GetUserTmid(bool smid);
+
   UserDetails ud_;
   boost::recursive_mutex *mutex_;
   crypto::Crypto crypto_;
   StoreManagerInterface *storemanager_;
   SessionSingleton *ss_;
-  std::string tmid_content;
+  std::string tmid_content_;
   Authentication &operator=(const Authentication &) { return *this; }
   Authentication(const Authentication &);
 };

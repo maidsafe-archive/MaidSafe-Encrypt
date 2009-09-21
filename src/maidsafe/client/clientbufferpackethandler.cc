@@ -248,17 +248,11 @@ void ClientBufferPacketHandler::GetBufferPacket(const BufferPacketType &type,
   std::string bufferpacketname = crypto_obj_.Hash(
       ss_->Id(PacketHandler_PacketType(type)) + "BUFFER", "",
       crypto::STRING_STRING, true);
-  sm_->LoadPacket(bufferpacketname,
-      boost::bind(&ClientBufferPacketHandler::GetBufferPacket_Callback, this,
-      _1, type, cb));
-}
-
-void ClientBufferPacketHandler::GetBufferPacket_Callback(
-    const std::string &result, const BufferPacketType &type,
-    base::callback_func_type cb) {
+  std::string packet_content;
+  sm_->LoadPacket(bufferpacketname, &packet_content);
   maidsafe::GetResponse local_result;
   std::string str_local_result;
-  if ((!local_result.ParseFromString(result))||
+  if ((!local_result.ParseFromString(packet_content))||
       (!local_result.has_content())) {
     local_result.set_result(kNack);
     local_result.SerializeToString(&str_local_result);
@@ -312,16 +306,11 @@ void ClientBufferPacketHandler::GetBufferPacketInfo(
   std::string bufferpacketname = crypto_obj_.Hash(
       ss_->Id(PacketHandler_PacketType(type)) + "BUFFER", "",
       crypto::STRING_STRING, true);
-  sm_->LoadPacket(bufferpacketname,
-      boost::bind(&ClientBufferPacketHandler::GetBufferPacket_Callback, this,
-      _1, type, cb));
-}
-
-void ClientBufferPacketHandler::GetBufferPacketInfo_Callback(
-    const std::string &result, base::callback_func_type cb) {
+  std::string packet_content;
+  sm_->LoadPacket(bufferpacketname, &packet_content);
   maidsafe::GetResponse local_result;
   std::string str_local_result;
-  if ((!local_result.ParseFromString(result))||
+  if ((!local_result.ParseFromString(packet_content))||
       (!local_result.has_content())) {
     local_result.set_result(kNack);
     local_result.SerializeToString(&str_local_result);

@@ -557,7 +557,7 @@ int FSLinux::ms_statfs(const char *path, struct statvfs *stbuf) {
   return 0;
 }
 
-int FSLinux::ms_mknod(const char *path, mode_t mode, dev_t rdev) {
+int FSLinux::ms_mknod(const char *path, mode_t mode, dev_t) {
   std::string path_(path);
   // if path is not in an authorised dirs, return error "Permission denied"
   // TODO(Fraser): set bool gui_private_share_ to true if gui has

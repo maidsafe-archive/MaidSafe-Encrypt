@@ -321,17 +321,16 @@ int ClientController::SerialiseDa() {
 
 Exitcode ClientController::CheckUserExists(const std::string &username,
                                            const std::string &pin,
-                                           base::callback_func_type cb,
                                            DefConLevels level) {
   ss_->ResetSession();
   ss_->SetDefConLevel(level);
-  return auth_->GetUserInfo(username, pin, cb);
+  return auth_->GetUserInfo(username, pin);
 }
 
 bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password,
-                                  const VaultConfigParameters &vcp) {
+                                  const VaultConfigParameters &) {
   Exitcode result = auth_->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
@@ -350,9 +349,9 @@ bool ClientController::CreateUser(const std::string &username,
   //                             Parameters come in VaultConfigParameters.
 //  OwnVaultResult ovr = OwnLocalVault(vcp.port, vcp.space * 1024 * 1024,
 //                                     vcp.directory);
-//#ifdef DEBUG
-//  printf("ClientController::CreateUser +++ OwnVaultResult: %d +++\n", ovr);
-//#endif
+//  #ifdef DEBUG
+//    printf("ClientController::CreateUser +++ OwnVaultResult: %d +++\n", ovr);
+//  #endif
 
   ss_->SetSessionName(false);
   ss_->SetConnectionStatus(0);
@@ -2322,7 +2321,10 @@ int ClientController::RemoveDb(const std::string &path) {
 int ClientController::RunDbEncQueue() {
   std::map<std::string, std::pair<std::string, std::string> >::iterator it;
   int result = 0;
-  printf("CC::RunDbEncQueue - before running the whole list %d\n", db_enc_queue_.size());
+#ifdef DEBUG
+  printf("CC::RunDbEncQueue - before running the whole list %d\n",
+          db_enc_queue_.size());
+#endif
   for (it = db_enc_queue_.begin(); it != db_enc_queue_.end(); ++it) {
     std::string ser_dm;
     DirType db_type = GetDirType((*it).first);

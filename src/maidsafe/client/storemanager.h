@@ -45,7 +45,7 @@ class StoreManagerInterface {
   virtual void CleanUpTransport()=0;
   virtual int LoadChunk(const std::string &hex_chunk_name, std::string *data)=0;
   virtual void LoadPacket(const std::string &hex_key,
-                          base::callback_func_type cb)=0;
+                          std::string *result)=0;
   // The public_key is the one of the MPID and is signed by the MPID's
   // private key
   virtual int LoadMessages(const std::string &hex_key,

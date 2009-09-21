@@ -560,12 +560,10 @@ int SEHandler::DecryptDb(const std::string &dir_path,
   std::string ser_dm_, enc_dm_;
   // get dm from DHT
   if (ser_dm == "") {
-    CallbackResult cbr;
-    storem_->LoadPacket(dir_key,
-                        boost::bind(&CallbackResult::CallbackFunc, &cbr, _1));
-    WaitForResult(cbr);
+    std::string packet_content;
+    storem_->LoadPacket(dir_key, &packet_content);
     GetResponse load_result;
-    if (!load_result.ParseFromString(cbr.result)) {
+    if (!load_result.ParseFromString(packet_content)) {
 #ifdef DEBUG
       printf("Failed to load packet NO PARSE.\n");
 #endif

@@ -26,6 +26,7 @@
 // core
 #include "maidsafe/client/clientcontroller.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
+#include "qt/client/check_user_thread.h"
 
 // local
 namespace {
@@ -54,7 +55,7 @@ bool isExistingUser(const QString& username, const QString& pin,
 
   const maidsafe::Exitcode result =
           maidsafe::ClientController::getInstance()->CheckUserExists(
-          u, p, cb, maidsafe::DEFCON3);
+          u, p, maidsafe::DEFCON3);
 
   return (result == maidsafe::USER_EXISTS);
 }
@@ -259,13 +260,10 @@ void Login::onPinDone() {
 
 void Login::checkPin() {
   state_ = WAITING_ON_USER_CHECK;
-  // have username and pin.  see if the user exists
-  user_exists_ = isExistingUser(username(), pin(),
-                 boost::bind(&Login::UserExists_Callback, this, _1));
-
-  if (!user_exists_) {
-    state_ = EDIT_PASSWORD;
-  }
+  CheckUserThread *cut = new CheckUserThread(username(), pin());
+  connect(cut,  SIGNAL(completed(bool)),
+          this, SLOT(UserExists_Callback(bool)));
+  cut->start();
 }
 
 void Login::onPasswordDone() {
@@ -338,18 +336,21 @@ QString Login::pin() const {
   return ui_.pin->text();
 }
 
-void Login::UserExists_Callback(const std::string& result) {
-  maidsafe::GetResponse res;
-  got_enc_data_ = (res.ParseFromString(result) &&
-                 (res.result() == kAck));
+void Login::UserExists_Callback(bool b) {
+  if (b)
+    qDebug() << "AAAAAAAAAAAA";
+  else
+    qDebug() << "BBBBBBBBBBBB";
+  got_enc_data_ = b;
+  user_exists_ = b;
 
   state_ = EDIT_PASSWORD;
 
   // can't poke UI here as it's not thread safe...
-  // updateUI();
+  updateUI();
 
-  QApplication::postEvent(this, new ThreadSafeUpdateEvent,
-                          Qt::HighEventPriority);
+  // QApplication::postEvent(this, new ThreadSafeUpdateEvent,
+                          // Qt::HighEventPriority);
 }
 
 bool Login::event(QEvent* event) {
@@ -372,7 +373,7 @@ bool Login::focusNextPrevChild(bool next) {
           state_ = EDIT_PIN;
       } else if ((c == ui_.pin) && validate(ui_.pin)) {
           f = ui_.password;
-          checkPin();
+//          checkPin();
       }
     } else {
       if (c == ui_.password) {

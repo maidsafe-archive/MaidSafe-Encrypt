@@ -179,7 +179,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                   const std::string &msid);
   int LoadChunk(const std::string &hex_chunk_name, std::string *data);
   void LoadPacket(const std::string &hex_packet_name,
-                  base::callback_func_type cb);
+                  std::string *result);
   int LoadMessages(const std::string &buffer_packet_name,
                    const std::string &public_key,
                    const std::string &signed_public_key,

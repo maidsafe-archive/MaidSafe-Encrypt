@@ -106,16 +106,6 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
     maid_response.SerializeToString(&maid_result);
     cb(maid_result);
   }
-//  crypto::Crypto co;
-//  co.set_hash_algorithm(crypto::SHA_512);
-//  kad::ContactInfo kci;
-//  std::vector<std::string> s;
-//  std::string result;
-//  FindValue(co.Hash("abc", "", crypto::STRING_STRING, false), false, &kci, &s, &result);
-//  printf("MaidsafeStoreManager::Init - s.size(): %d -- result %s\n", s.size(), result.c_str());
-//  std::vector<kad::Contact> vc;
-//  FindKNodes(co.Hash("abc", "", crypto::STRING_STRING, false), &vc);
-//  printf("MaidsafeStoreManager::Init - vc.size(): %d\n", vc.size());
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
 #endif
@@ -217,7 +207,10 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
   std::string chunk_name("");
   base::decode_from_hex(hex_chunk_name, &chunk_name);
   if (client_chunkstore_->Load(chunk_name, data) == 0) {
-                                                      printf("(%i) Found chunk %s in local cockstore.\n", knode_->host_port(), hex.c_str());
+#ifdef DEBUG
+    printf("(%i) Found chunk %s in local cockstore.\n",
+           knode_->host_port(), hex.c_str());
+#endif
     return 0;
   }
   kad::ContactInfo cache_holder;
@@ -279,7 +272,8 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
 }
 
 void MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
-                                      base::callback_func_type cb) {
+                                      std::string *result) {
+  *result = "";
 #ifdef DEBUG
   std::string hex(hex_packet_name.substr(0, 10) + "...");
 //  printf("In MaidsafeStoreManager::LoadPacket (%i), packet_name = %s\n",
@@ -293,7 +287,8 @@ void MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
     result_msg.set_result(kAck);
     result_msg.set_content(data);
     result_msg.SerializeToString(&ser_result);
-    cb(ser_result);
+    *result = ser_result;
+    return;
   }
   kad::ContactInfo cache_holder;
   std::vector<std::string> values;
@@ -309,7 +304,7 @@ void MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
 #endif
         result_msg.set_result(kNack);
         result_msg.SerializeToString(&ser_result);
-        cb(ser_result);
+        *result = ser_result;
         return;
       } else {
         continue;
@@ -322,7 +317,8 @@ void MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
   result_msg.set_result(kAck);
   result_msg.set_content(values.front());
   result_msg.SerializeToString(&ser_result);
-  cb(ser_result);
+  *result = ser_result;
+  return;
 }
 
 int MaidsafeStoreManager::LoadMessages(
@@ -566,9 +562,9 @@ void MaidsafeStoreManager::AddStorePacketTask(
     const StoreTask &store_task,
     int *return_value,
     GenericConditionData *generic_cond_data) {
-  packet_thread_pool_.schedule(boost::threadpool::prio_task_func(10, boost::bind(
-      &MaidsafeStoreManager::SendPacket, this, store_task, return_value,
-      generic_cond_data)));
+  packet_thread_pool_.schedule(boost::threadpool::prio_task_func(10,
+      boost::bind(&MaidsafeStoreManager::SendPacket, this, store_task,
+      return_value, generic_cond_data)));
 //  size_t pool_size = store_thread_pool_.size();
 //  if (pool_size < kMaxPriorityStoreThreads + kMaxStoreThreads)
 //    packet_thread_pool_.size_controller().resize(pool_size + 1);
@@ -668,7 +664,6 @@ int MaidsafeStoreManager::SendChunk(const StoreTask &store_task, int copies) {
   std::vector<kad::Contact> exclude;
   base::PDRoutingTableHandler rt_handler;
 // TODO(Fraser#5#): 2009-08-10 - Account for online status in while loop also
-  int rnd = rand() % 999;
   while (duplicate_count < copies) {
     StorePrepRequest store_prep_request;
     StorePrepResponse store_prep_response;
@@ -1093,7 +1088,8 @@ int MaidsafeStoreManager::FindValue(
            "failed to find the value.\n", hex.substr(0, 10).c_str());
 //    printf("Found %i nodes\n", find_response.closest_nodes_size());
 //    printf("Found %i values\n", find_response.values_size());
-//    printf("Found alt val holder: %i\n", find_response.has_alternative_value_holder());
+//    printf("Found alt val holder: %i\n",
+//           find_response.has_alternative_value_holder());
 #endif
     return -3;
   }
@@ -1305,18 +1301,26 @@ int MaidsafeStoreManager::FindAndLoadChunk(
         holder_count = static_cast<int>(chunk_holders_ids.size());
         // Wait until we get a positive response to one of the CheckChunk RPCs
         // or until they have all failed.
-                                                      printf("available_chunk_holder_index: %i\n", available_chunk_holder_index);
-                                                      printf("holder_count: %i\n", holder_count);
+#ifdef DEBUG
+        printf("available_chunk_holder_index: %i\n",
+               available_chunk_holder_index);
+        printf("holder_count: %i\n", holder_count);
+#endif
         while ((available_chunk_holder_index < 0) &&
             (available_chunk_holder_index != (-1 - holder_count))) {
           get_chunk_conditional_.wait(lock);
-                                                      printf("available_chunk_holder_index: %i\n", available_chunk_holder_index);
+#ifdef DEBUG
+          printf("available_chunk_holder_index: %i\n",
+                 available_chunk_holder_index);
+#endif
         }
         index = available_chunk_holder_index;
       }
       // If none of the chunk holders have the chunk, fail.
       if (index == -1 - holder_count) {
-                                                        printf("None of the holders actually are.\n");
+#ifdef DEBUG
+        printf("None of the holders actually are.\n");
+#endif
         break;
       }
       // Set the first_repondent_index if this is the first iteration

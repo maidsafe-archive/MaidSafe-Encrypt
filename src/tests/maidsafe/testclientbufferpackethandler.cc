@@ -243,15 +243,15 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
       public_key, private_key));
   ASSERT_FALSE(sm->KeyUnique(crypto_obj.Hash(public_username+"BUFFER", "",
       crypto::STRING_STRING, true), false));
+  std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
                                  crypto::STRING_STRING,
                                  true),
-                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
+                 &packet_content);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   std::string ser_bp = load_res.content();
   ASSERT_TRUE(buffer_packet.ParseFromString(ser_bp)) << "Wrong serialization";
   ASSERT_EQ(1, buffer_packet.owner_info_size()) << "User Info empty";
@@ -288,15 +288,15 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddUsers) {
 
   ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
+  std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username+"BUFFER",
                                  "",
                                  crypto::STRING_STRING,
                                  true),
-                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
+                 &packet_content);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   std::string ser_bp = load_res.content();
   cb.Reset();
   load_res.Clear();
@@ -334,15 +334,15 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddMessage) {
 
   ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
+  std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
                                  crypto::STRING_STRING,
                                  true),
-                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
+                 &packet_content);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   std::string ser_bp = load_res.content();
   load_res.Clear();
   cb.Reset();
@@ -423,15 +423,14 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
 
   ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
+  std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username+"BUFFER",
                                   "",
                                   crypto::STRING_STRING, true),
-                                  boost::bind(&FakeCallback::CallbackFunc,
-                                  &cb, _1));
-  wait_for_result_tbph(cb, mutex);
+                 &packet_content);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   std::string ser_bp = load_res.content();
   load_res.Clear();
   cb.Reset();
@@ -476,15 +475,16 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckOwner) {
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
 
+  std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
                                  crypto::STRING_STRING,
                                  true),
-                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+                 &packet_content);
   wait_for_result_tbph(cb, mutex);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   std::string ser_bp = load_res.content();
   load_res.Clear();
   cb.Reset();
@@ -527,15 +527,15 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
 
   ASSERT_EQ(0, clientbufferpackethandler.DeleteUsers(del_users, MPID_BP));
 
+  std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
                                  crypto::STRING_STRING,
                                  true),
-                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
+                 &packet_content);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   std::string ser_bp = load_res.content();
   load_res.Clear();
   cb.Reset();
@@ -561,15 +561,15 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckSignature) {
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
 
+  std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
                                  crypto::STRING_STRING,
                                  true),
-                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
+                 &packet_content);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   std::string ser_bp = load_res.content();
   load_res.Clear();
   cb.Reset();
@@ -599,15 +599,15 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetMessages) {
 
   ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
+  std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
                                  crypto::STRING_STRING,
                                  true),
-                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
+                 &packet_content);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   std::string ser_bp = load_res.content();
   load_res.Clear();
@@ -717,15 +717,15 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ClearMessages) {
 
   ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
 
+  std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
                                  crypto::STRING_STRING,
                                  true),
-                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
+                 &packet_content);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   std::string ser_bp = load_res.content();
   load_res.Clear();
@@ -791,15 +791,15 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   ASSERT_FALSE(sm->KeyUnique(crypto_obj.Hash(public_username + "BUFFER", "",
       crypto::STRING_STRING, true), false));
   cb.Reset();
+  std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
                                  "",
                                  crypto::STRING_STRING,
                                  true),
-                 boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_tbph(cb, mutex);
+                 &packet_content);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(cb.result));
+  ASSERT_TRUE(load_res.ParseFromString(packet_content));
   std::string ser_bp = load_res.content();
   load_res.Clear();
   cb.Reset();

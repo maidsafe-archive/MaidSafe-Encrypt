@@ -161,14 +161,18 @@ int LocalStoreManager::LoadChunk(const std::string &hex_chunk_name,
 }
 
 void LocalStoreManager::LoadPacket(const std::string &hex_key,
-                                   base::callback_func_type cb) {
-  std::string result;
-  result = GetValue_FromDB(hex_key);
-  if (result == "") {
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-    return;
+                                   std::string *result) {
+  std::string value = GetValue_FromDB(hex_key);
+  GetResponse gr;
+  std::string ser_result;
+  if (value != "") {
+    gr.set_result(kAck);
+    gr.set_content(value);
+  } else {
+    gr.set_result(kNack);
   }
-  boost::thread thr(boost::bind(&ExeCallbackLoad, cb, result, mutex_));
+  gr.SerializeToString(result);
+  return;
 }
 
 int LocalStoreManager::LoadMessages(const std::string &hex_key,

@@ -623,18 +623,24 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
     std::string non_hex_packet_name;
     base::decode_from_hex(hex_packet_name, &non_hex_packet_name);
     ASSERT_TRUE(client_chunkstore_->DeleteChunk(non_hex_packet_name));
-    sm_->LoadPacket(hex_packet_name,
-        boost::bind(&testpdvault::GetPacketCallback, _1));
-  }
-  // Wait for all packets to load
-  size_t callback_packets_size(0);
-  while (callback_packets_size < kNumOfTestPackets) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-    {
-      boost::mutex::scoped_lock lock(callback_mutex_);
-      callback_packets_size = callback_packets_.size();
+    std::string packet_content;
+    sm_->LoadPacket(hex_packet_name, &packet_content);
+    maidsafe::GetResponse resp;
+    if (!resp.ParseFromString(packet_content) || resp.result() != kAck) {
+      callback_packets_.push_back("Failed");
+    } else {
+      callback_packets_.push_back(resp.content());
     }
   }
+  // Wait for all packets to load
+//  size_t callback_packets_size(0);
+//  while (callback_packets_size < kNumOfTestPackets) {
+//    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+//    {
+//      boost::mutex::scoped_lock lock(callback_mutex_);
+//      callback_packets_size = callback_packets_.size();
+//    }
+//  }
   while (!callback_packets_.empty()) {
     std::string packet_content = callback_packets_.front();
     std::string hex_packet_name = crypto_.Hash(packet_content, "",

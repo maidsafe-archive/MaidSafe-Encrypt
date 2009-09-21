@@ -84,6 +84,7 @@ class Login : public QWidget {
     void onClearClicked();
     void onCreateClicked();
     void onLoginClicked();
+    void UserExists_Callback(bool b);
 
   private:
     Ui::LoginScreen ui_;
@@ -102,7 +103,6 @@ class Login : public QWidget {
     bool user_exists_;
 
     void checkPin();
-    void UserExists_Callback(const std::string& result);
 
     typedef enum State {
       EDIT_USER,

@@ -68,17 +68,16 @@ Authentication::Authentication(StoreManagerInterface *storemanager,
                                      crypto_(),
                                      storemanager_(storemanager),
                                      ss_(SessionSingleton::getInstance()),
-                                     tmid_content() {
+                                     tmid_content_() {
   ss_->ResetSession();
   crypto_.set_hash_algorithm(crypto::SHA_512);
   crypto_.set_symm_algorithm(crypto::AES_256);
 }
 
 Exitcode Authentication::GetUserInfo(const std::string &username,
-                                     const std::string &pin,
-                                     base::callback_func_type cb) {
+                                     const std::string &pin) {
   ss_->SetSmidRid(0);
-  tmid_content = "";
+  tmid_content_ = "";
   int rid = 0;
   bool smid = false;
   if (!GetMid(username, pin, &rid)) {
@@ -97,7 +96,14 @@ Exitcode Authentication::GetUserInfo(const std::string &username,
   ss_->SetUsername(username);
   ss_->SetPin(pin);
   // Getting tmid
-  GetUserTmid(cb, smid);
+  GetUserTmid(smid);
+
+  if (tmid_content_ == "") {
+#ifdef DEBUG
+    printf("Authentication::GetUserInfo - no TMID after GetUserTmid\n");
+#endif
+    return FAIL;
+  }
 
   return USER_EXISTS;
 }
@@ -105,11 +111,9 @@ Exitcode Authentication::GetUserInfo(const std::string &username,
 Exitcode Authentication::GetUserData(const std::string &password,
                                      std::string &ser_da) {
   //  still have not recovered the tmid
-  if (tmid_content == "")
-    return PASSWORD_FAIL;
   ph::TmidPacket *tmidPacket =
     static_cast<ph::TmidPacket*>(ph::PacketFactory::Factory(ph::TMID));
-  ph::PacketParams rec_data = tmidPacket->GetData(tmid_content, password,
+  ph::PacketParams rec_data = tmidPacket->GetData(tmid_content_, password,
       ss_->MidRid());
   ser_da = boost::any_cast<std::string>(rec_data["data"]);
 
@@ -576,12 +580,11 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   old_user_params["PIN"] = ss_->Pin();
   old_user_params["rid"] = ss_->MidRid();
 
-  cb.Reset();
+  std::string packet_content;
   storemanager_->LoadPacket(tmidPacket->PacketName(old_user_params),
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
+                            &packet_content);
   GetResponse load_res;
-  if ((!load_res.ParseFromString(cb.result)) ||
+  if ((!load_res.ParseFromString(packet_content)) ||
       (load_res.result() == kNack) ||
       (!load_res.has_content()))
     return FAIL;
@@ -745,12 +748,11 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   old_user_params["PIN"] = ss_->Pin();
   old_user_params["rid"] = ss_->MidRid();
 
-  cb.Reset();
+  std::string packet_content;
   storemanager_->LoadPacket(tmidPacket->PacketName(old_user_params),
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
+                            &packet_content);
   GetResponse load_res;
-  if ((!load_res.ParseFromString(cb.result)) ||
+  if ((!load_res.ParseFromString(packet_content)) ||
       (load_res.result() != kAck) ||
       (!load_res.has_content()))
     return FAIL;
@@ -950,13 +952,12 @@ bool Authentication::GetMid(const std::string &username,
   ph::MidPacket *midPacket = static_cast<ph::MidPacket*>
     (ph::PacketFactory::Factory(ph::MID));
   std::string mid_name = midPacket->PacketName(params);
-  AuthCallbackResult cb;
-  std::string ser_packet = "";
-  storemanager_->LoadPacket(mid_name,
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
+
+  std::string ser_packet;
+  std::string packet_content;
+  storemanager_->LoadPacket(mid_name, &packet_content);
   GetResponse load_res;
-  if ((!load_res.ParseFromString(cb.result)) ||
+  if ((!load_res.ParseFromString(packet_content)) ||
       (load_res.result() != kAck) ||
       (!load_res.has_content())) {
     delete midPacket;
@@ -987,13 +988,11 @@ bool Authentication::GetSmid(const std::string &username,
   ph::SmidPacket *smidPacket = static_cast<ph::SmidPacket*>
     (ph::PacketFactory::Factory(ph::SMID));
   std::string smid_name = smidPacket->PacketName(params);
-  AuthCallbackResult cb;
-  std::string ser_packet = "";
-  storemanager_->LoadPacket(smid_name,
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
+  std::string ser_packet;
+  std::string packet_content;
+  storemanager_->LoadPacket(smid_name, &packet_content);
   GetResponse load_res;
-  if ((!load_res.ParseFromString(cb.result)) ||
+  if ((!load_res.ParseFromString(packet_content)) ||
       (load_res.result() != kAck) ||
       (!load_res.has_content())) {
     delete smidPacket;
@@ -1015,7 +1014,7 @@ bool Authentication::GetSmid(const std::string &username,
   return true;
 }
 
-void Authentication::GetUserTmid(base::callback_func_type cb, bool smid) {
+void Authentication::GetUserTmid(bool smid) {
   ph::TmidPacket *tmidPacket = static_cast<ph::TmidPacket*>(
                                ph::PacketFactory::Factory(ph::TMID));
   ph::PacketParams params;
@@ -1023,64 +1022,49 @@ void Authentication::GetUserTmid(base::callback_func_type cb, bool smid) {
   params["PIN"] = ss_->Pin();
   params["rid"] = ss_->MidRid();
   std::string tmid_name = tmidPacket->PacketName(params);
-  storemanager_->LoadPacket(tmid_name,
-      boost::bind(&Authentication::GetUserTmidCallback, this, _1, smid, cb));
-}
-
-void Authentication::GetUserTmidCallback(const std::string& result,
-                                         bool smid,
-                                         base::callback_func_type cb) {
+  std::string packet_content;
+  storemanager_->LoadPacket(tmid_name, &packet_content);
   GetResponse load_res;
-  if ((!load_res.ParseFromString(result)) ||
+  if ((!load_res.ParseFromString(packet_content)) ||
       (load_res.result() != kAck) ||
       (!load_res.has_content())) {
 #ifdef DEBUG
-    if (!load_res.ParseFromString(result))
-      printf("Doesn't parse as GetUserTmidCallback.\n");
+    if (!load_res.ParseFromString(packet_content))
+      printf("Authentication::GetUserTmid - Doesn't parse as GetUserTmid.\n");
     if (load_res.result() != kAck)
-      printf("GetUserTmidCallback came back with failure.\n");
+      printf("Authentication::GetUserTmid - came back with failure.\n");
     if (!load_res.has_content())
-      printf("GetUserTmidCallback came back with no content.\n");
+      printf("Authentication::GetUserTmid - came back with no content.\n");
 #endif
     if (smid) {
-      load_res.Clear();
-      load_res.set_result(kNack);
-      std::string ser_res;
-      load_res.SerializeToString(&ser_res);
-      cb(ser_res);
+#ifdef DEBUG
+      printf("Authentication::GetUserTmid - Failure 1\n");
+#endif
       return;
     }
     if (ss_->SmidRid() == 0) {
       int rid;
       if (!GetSmid(ss_->Username(), ss_->Pin(), &rid)) {
-        load_res.Clear();
-        load_res.set_result(kNack);
-        std::string ser_res;
-        load_res.SerializeToString(&ser_res);
-        cb(ser_res);
+#ifdef DEBUG
+        printf("Authentication::GetUserTmid - No SMID either.\n");
+#endif
         return;
       }
       ss_->SetSmidRid(rid);
       ss_->SetMidRid(rid);
-      GetUserTmid(cb, true);
+      GetUserTmid(true);
       return;
     } else {
-      load_res.Clear();
-      load_res.set_result(kNack);
-      std::string ser_res;
-      load_res.SerializeToString(&ser_res);
 #ifdef DEBUG
-      printf("Authentication::GetUserTmidCallback Failure\n");
+      printf("Authentication::GetUserTmid - Failure 2\n");
 #endif
-      cb(ser_res);
       return;
     }
   }
-  tmid_content = load_res.content();
+  tmid_content_ = load_res.content();
 #ifdef DEBUG
   printf("Authentication::GetUserTmidCallback returning content result\n");
 #endif
-  cb(result);
 }
 
 Exitcode Authentication::PublicUsernamePublicKey(
@@ -1091,12 +1075,10 @@ Exitcode Authentication::PublicUsernamePublicKey(
   ph::MpidPacket *mpidPacket =
     static_cast<ph::MpidPacket*>(ph::PacketFactory::Factory(ph::MPID));
 
-  AuthCallbackResult cb;
-  storemanager_->LoadPacket(mpidPacket->PacketName(params),
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
+  std::string packet_content;
+  storemanager_->LoadPacket(mpidPacket->PacketName(params), &packet_content);
   GetResponse load_res;
-  if ((!load_res.ParseFromString(cb.result)) ||
+  if ((!load_res.ParseFromString(packet_content)) ||
       (load_res.result() != kAck) ||
       (!load_res.has_content())) {
     return NON_EXISTING_USER;
