@@ -252,6 +252,21 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
                         iou_ready_details.get<1>());
     return;
   }
+#ifdef DEBUG
+//  std::string hex_key;
+//  base::encode_to_hex(iou_ready_details.get<1>(), &hex_key);
+//  printf("Vault (%i) list of ref holders (key - %s...) : ",
+//         host_port(), hex_key.substr(0, 6).c_str());
+  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
+    if (ref_holders.at(h).node_id() == knode_.node_id()) {
+      std::string hex_id, hex_key;
+      base::encode_to_hex(ref_holders.at(h).node_id(), &hex_id);
+      base::encode_to_hex(iou_ready_details.get<1>(), &hex_key);
+      printf("Vault %s... listed as a ref holder to itself for chunk %s...\n",
+             hex_id.substr(0, 10).c_str(), hex_key.substr(0, 10).c_str());
+    }
+  }
+#endif
   bool got_valid_iou(false);
   int successful_count(0);
   int called_back_count(0);
@@ -286,8 +301,8 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
     channel_manager_->DeletePendingRequest(results.at(j).controller_->req_id());
   }
 #ifdef DEBUG
-  printf("In PDVault::AddToRefPacket: count = %i (success if count > 11)\n",
-         successful_count);
+  printf("In PDVault::AddToRefPacket (%i): count = %i (success if count>11).\n",
+         host_port(), successful_count);
 #endif
   if (successful_count < kKadStoreThreshold_ || !got_valid_iou)
     return;  // We've not received enough successful responses or got valid IOU
@@ -416,12 +431,9 @@ int PDVault::FindKNodes(const std::string &kad_key,
   KadCallback kad_callback;
   knode_.FindCloseNodes(kad_key, boost::bind(&KadCallback::SetResponse,
       &kad_callback, _1));
-// TODO(Fraser#5#): 2009-08-12 - Make timeout a maidsafe constant
-  int count(0), timeout(3000000);
-  while (count < timeout) {
+  while (true) {
     if (kad_callback.response() != "")
       break;
-    count += 10;
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   if (kad_callback.response() == "") {
@@ -448,6 +460,10 @@ int PDVault::FindKNodes(const std::string &kad_key,
     contact.ParseFromString(find_response.closest_nodes(i));
     contacts->push_back(contact);
   }
+  // Insert our own contact details if we are within the k closest.
+  kad::Contact our_details(knode_.contact_info());
+  kad::InsertKadContact(kad_key, our_details, contacts);
+  contacts->pop_back();
 #ifdef DEBUG
 //  printf("In PDVault::FindKNodes, succeeded.\n");
 #endif

@@ -73,9 +73,7 @@ enum MaidsafeRpcResult {
   kNack, kAck, kNoSpace, kBusy
 };
 
-const std::string kAnonymousSignedRequest("ffffffffffffffffffffffffffffffffffff"
-    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-    "ffffffffffffffffff");
+const std::string kAnonymousSignedRequest(128, 'f');
 
 enum DbInitFlag {CONNECT, CREATE, DISCONNECT};
 
@@ -303,7 +301,7 @@ const int kMaxPingRetries(2);  // max number of ping tries
 const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
 const int kMaxChunkStoreTries(1);  // max number of tries to store or update a
                                    // chunk
-const boost::uint32_t kSaveUpdatesTrigger(100);  // max no of dbs in save queue
+const boost::uint32_t kSaveUpdatesTrigger(10);  // max no of dbs in save queue
                                                  // before running save queue
 const int kMinSuccessfulPecentageOfUpdating(0.9);
 // max no of normal store worker threads running concurrently

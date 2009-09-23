@@ -31,6 +31,7 @@
 #include <map>
 #include <vector>
 
+//  #include "boost/mp_math/mp_int.hpp"//NB - This is NOT an accepted boost lib.
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -181,6 +182,7 @@ void CreateSystemPackets(const std::string &priv_key,
 //    chunkstore->AddChunkToOutgoing(*packet_name, *ser_packet);
     packets->insert(std::pair<std::string, std::string>
         (hex_packet_name, ser_packet));
+    printf("Created packet %i.\n", packets->size());
   }
 }
 
@@ -243,6 +245,23 @@ void CreateMessage(const std::string &message,
   val_msg.set_type(bpmsg.type());
   val_msg.SerializeToString(ser_expected_msg);
 }
+
+//  typedef boost::mp_math::mp_int<> BigInt;
+
+//  BigInt KademliaDistance(const std::string &key1, const std::string &key2) {
+//    std::string hex_key1, hex_key2;
+//    base::encode_to_hex(key1, &hex_key1);
+//    base::encode_to_hex(key2, &hex_key2);
+//  //  printf("Dist between %s... & %s... is ", hex_key1.substr(0, 10).c_str(),
+//  //         hex_key2.substr(0, 10).c_str());
+//    hex_key1 = "0x" + hex_key1;
+//    hex_key2 = "0x" + hex_key2;
+//    BigInt value1(hex_key1);
+//    BigInt value2(hex_key2);
+//    BigInt kad_distance(value1 ^ value2);
+//  //  std::cout << kad_distance << std::endl;
+//    return kad_distance;
+//  }
 
 }  // namespace testpdvault
 
@@ -358,21 +377,120 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
   }
 }
 
+//  TEST_F(TestPDVault, FUNC_MAID_Kademlia_FindNodes) {
+//    for (char c = '0'; c < '9'; ++c) {
+//      std::string kad_key(64, c);
+//      std::vector<kad::Contact> contacts;
+//      ASSERT_EQ(0, sm_->FindKNodes(kad_key, &contacts));
+//      // Check we get correct number of contacts returned.
+//      if (kNetworkSize_ > kad::K)
+//        ASSERT_EQ(kad::K, contacts.size());
+//      else
+//        ASSERT_EQ(static_cast<size_t>(kNetworkSize_), contacts.size());
+//      testpdvault::BigInt kad_distance(0);
+//      // Create vector of test vault IDs
+//      std::vector<std::string> vaults;
+//      for (boost::uint16_t h = 0; h < pdvaults_.size(); ++h) {
+//        std::string node_id;
+//        base::decode_from_hex(pdvaults_.at(h)->hex_node_id(), &node_id);
+//        vaults.push_back(node_id);
+//      }
+//      // Check vaults are returned in order closest to furthest from key.
+//      for (boost::uint16_t i = 0; i < contacts.size(); ++i) {
+//        testpdvault::BigInt current_kad_distance(
+//            testpdvault::KademliaDistance(kad_key, contacts.at(i).node_id()));
+//        // Check current xor dist is greater than previous vault's
+//        ASSERT_GT(current_kad_distance, kad_distance);
+//        kad_distance = current_kad_distance;
+//        // Remove this vault's ID from vector of test vault IDs.
+//        for (std::vector<std::string>::iterator it = vaults.begin();
+//             it != vaults.end(); ++it) {
+//          if ((*it) == contacts.at(i).node_id()) {
+//            vaults.erase(it);
+//            break;
+//          }
+//        }
+//      }
+//      // Check remainder of test vaults are further away than those returned.
+//      for (boost::uint16_t k = 0; k < vaults.size(); ++k) {
+//        ASSERT_GT(testpdvault::KademliaDistance(kad_key, vaults.at(k)),
+//                  kad_distance);
+//      }
+//    }
+//    for (char d = 'a'; d < 'f'; ++d) {
+//      std::string kad_key(64, d);
+//      std::vector<kad::Contact> contacts;
+//      ASSERT_EQ(0, sm_->FindKNodes(kad_key, &contacts));
+//      // Check we get correct number of contacts returned.
+//      if (kNetworkSize_ > kad::K)
+//        ASSERT_EQ(kad::K, contacts.size());
+//      else
+//        ASSERT_EQ(static_cast<size_t>(kNetworkSize_), contacts.size());
+//      testpdvault::BigInt kad_distance(0);
+//      // Create vector of test vault IDs
+//      std::vector<std::string> vaults;
+//      for (boost::uint16_t h = 0; h < pdvaults_.size(); ++h) {
+//        std::string node_id;
+//        base::decode_from_hex(pdvaults_.at(h)->hex_node_id(), &node_id);
+//        vaults.push_back(node_id);
+//      }
+//      // Check vaults are returned in order closest to furthest from key.
+//      for (boost::uint16_t i = 0; i < contacts.size(); ++i) {
+//        testpdvault::BigInt current_kad_distance(
+//            testpdvault::KademliaDistance(kad_key, contacts.at(i).node_id()));
+//        // Check current xor dist is greater than previous vault's
+//        ASSERT_GT(current_kad_distance, kad_distance);
+//        kad_distance = current_kad_distance;
+//        // Remove this vault's ID from vector of test vault IDs.
+//        for (std::vector<std::string>::iterator it = vaults.begin();
+//             it != vaults.end(); ++it) {
+//          if ((*it) == contacts.at(i).node_id()) {
+//            vaults.erase(it);
+//            break;
+//          }
+//        }
+//      }
+//      // Check remainder of test vaults are further away than those returned.
+//      for (boost::uint16_t k = 0; k < vaults.size(); ++k) {
+//        ASSERT_GT(testpdvault::KademliaDistance(kad_key, vaults.at(k)),
+//                  kad_distance);
+//      }
+//    }
+//  }
+//
+//  TEST_F(TestPDVault, FUNC_MAID_Kademlia_FindValues) {
+//    for (char c = '0'; c < '9'; ++c) {
+//      std::string kad_key(64, c);
+//      kad::ContactInfo cache_holder;
+//      std::vector<std::string> chunk_holders_ids;
+//      std::string needs_cache_copy_id;
+//      ASSERT_NE(0, sm_->FindValue(kad_key, false, &cache_holder,
+//          &chunk_holders_ids, &needs_cache_copy_id));
+//    }
+//    for (char d = 'a'; d < 'f'; ++d) {
+//      std::string kad_key(64, d);
+//      kad::ContactInfo cache_holder;
+//      std::vector<std::string> chunk_holders_ids;
+//      std::string needs_cache_copy_id;
+//      ASSERT_NE(0, sm_->FindValue(kad_key, false, &cache_holder,
+//          &chunk_holders_ids, &needs_cache_copy_id));
+//    }
+//  }
+//
 TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
   // add some valid chunks to client chunkstore and store to network
   std::map<std::string, std::string> chunks_;
-  const boost::uint32_t kNumOfTestChunks(3);
+  const boost::uint32_t kNumOfTestChunks(19);
   testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
   std::map<std::string, std::string>::iterator it_;
-  int i = 0;
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
-    ++i;
   }
+  printf("%i chunks enqueued for storing.\n\n", kNumOfTestChunks);
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times and each chunk copy is valid (i.e. name == Hash(contents))
-  boost::this_thread::sleep(boost::posix_time::seconds(15));
+  boost::this_thread::sleep(boost::posix_time::seconds(120));
   int timeout(300);  // seconds.
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
@@ -604,21 +722,27 @@ TEST_F(TestPDVault, FUNC_MAID_GetMissingChunk) {
 
 TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
   std::map<std::string, std::string> packets;
-  const boost::uint32_t kNumOfTestPackets(23);
+  const boost::uint32_t kNumOfTestPackets(29);
   testpdvault::CreateSystemPackets(client_maid_keys_.private_key(),
       kNumOfTestPackets, &packets);
   std::map<std::string, std::string>::iterator it;
+//  int i(0);
   for (it = packets.begin(); it != packets.end(); ++it) {
     std::string hex_packet_name = (*it).first;
     std::string packet_content = (*it).second;
+//    printf("Trying to store packet %i.\n", i);
     ASSERT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
         packethandler::PMID, maidsafe::PRIVATE, ""));
+//    printf("Packet %i stored.\n", i);
+//    ++i;
   }
   boost::this_thread::sleep(boost::posix_time::seconds(1));
+//  printf("About to prepare callback results\n");
   // Check the packets can be retrieved correctly from the network
   testpdvault::PrepareCallbackResults();
+//  printf("Prepared callback results\n");
   for (it = packets.begin(); it != packets.end(); ++it) {
-    printf("Getting test packet remotely.\n");
+//    printf("Getting test packet remotely.\n");
     std::string hex_packet_name = (*it).first;
     std::string non_hex_packet_name;
     base::decode_from_hex(hex_packet_name, &non_hex_packet_name);
@@ -649,33 +773,19 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
       FAIL() << "Didn't find packet " << hex_packet_name.substr(0, 10);
     callback_packets_.pop_front();
   }
-  // We need to allow enough time to let the vaults finish publishing themselves
-  // as chunk holders and retrieving their IOUs.
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
 }
 
 TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
   std::map<std::string, std::string> packets;
-  // Making a PMID packet signed with PMID private key (should be signed with
-  // MAID private key)
   testpdvault::CreateSystemPackets(client_maid_keys_.private_key(), 1,
       &packets);
-  std::string hex_packet_name = (*packets.begin()).first;
-  std::string packet_content = (*packets.begin()).second;
-  crypto::RsaKeyPair rsa_kp;
-  rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
-  std::string non_hex_packet_name;
-  base::decode_from_hex(hex_packet_name, &non_hex_packet_name);
-//  ASSERT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
-//      packethandler::PD_DIR, maidsafe::PRIVATE, ""));
-//  ASSERT_NE(0, sm_->StorePacket(hex_packet_name, packet_content,
-//      packethandler::PMID, maidsafe::PRIVATE, ""));
+  std::string hex_packet_name((*packets.begin()).first);
   // Try to store system packet with other incorrect content
-  packet_content = "not a system packet";
-  EXPECT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
+  std::string packet_content("not a system packet");
+  ASSERT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
       packethandler::PD_DIR, maidsafe::PRIVATE, ""));
   packet_content = "some other bollocks";
-  EXPECT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
+  ASSERT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
       packethandler::PD_DIR, maidsafe::PRIVATE, ""));
   // We need to allow enough time to let the vaults finish publishing themselves
   // as chunk holders and retrieving their IOUs.

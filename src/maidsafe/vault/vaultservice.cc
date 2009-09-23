@@ -482,8 +482,13 @@ void VaultService::StoreChunkReference(
                               &iou);
   if (n != 0) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunkReference (%i), failed to get IOU.\n",
-           knode_->host_port());
+    std::string hex_chunkname, hex_vault_pmid;
+    base::encode_to_hex(request->chunkname(), &hex_chunkname);
+    base::encode_to_hex(request->pmid(), &hex_vault_pmid);
+    printf("In VaultService::StoreChunkReference (%i), failed to get IOU"
+           " for chunk %s... saved by vault %s...\n", knode_->host_port(),
+           hex_chunkname.substr(0, 10).c_str(),
+           hex_vault_pmid.substr(0, 10).c_str());
 #endif
     response->set_result(kNack);
     done->Run();

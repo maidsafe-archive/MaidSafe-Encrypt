@@ -111,7 +111,7 @@ class Env: public testing::Environment {
 
   virtual void SetUp() {
     // Construct and start vaults
-    printf("Starting vaults");
+    printf("Creating vaults");
     for (int i = 0; i < kNetworkSize_; ++i) {
       std::string chunkstore_local = chunkstore_dir_+"/Chunkstore"+
           base::itos(i);

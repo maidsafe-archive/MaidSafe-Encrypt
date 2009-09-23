@@ -28,6 +28,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <gtest/gtest.h>
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht_config.h>
 
@@ -108,11 +109,14 @@ struct StoreTask;
 
 struct GenericConditionData {
  public:
-  GenericConditionData() : cond_flag(false), cond_mutex(), cond_variable() {}
+  explicit GenericConditionData(boost::shared_ptr<boost::condition_variable> cv)
+      : cond_flag(false),
+        cond_mutex(),
+        cond_variable(cv) {}
   ~GenericConditionData() {}
   bool cond_flag;
   boost::mutex cond_mutex;
-  boost::condition_variable cond_variable;
+  boost::shared_ptr<boost::condition_variable> cond_variable;
  private:
   GenericConditionData &operator=(const GenericConditionData&);
   GenericConditionData(const GenericConditionData&);
@@ -215,7 +219,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                                      std::string *public_key_sig,
                                      std::string *private_key);
 
-  // FRASER!!!! DON'T DO AWAY WITH THIS!!!!
   void PollVaultInfo(base::callback_func_type cb);
   void VaultContactInfo(base::callback_func_type cb);
   void OwnLocalVault(const std::string &priv_key, const std::string &pub_key,
@@ -228,6 +231,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
+  FRIEND_TEST(TestPDVault, FUNC_MAID_Kademlia_FindNodes);
   void SimpleResult_Callback(const std::string &result,
                              base::callback_func_type cb);
   void DeleteChunk_Callback(const std::string &result,
@@ -245,7 +249,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                        IfExists if_exists,
                        int *return_value);
   // Store copies of an individual chunk onto the network.
-  int SendChunk(const StoreTask &store_task, int copies);
+  int SendChunk(const StoreTask &store_task,
+                boost::shared_ptr<boost::condition_variable> cond_variable,
+                int copies);
   // Set up the requests needed to perform the store RPCs.
   int GetStoreRequests(const StoreTask &store_task,
                        const std::string &recipient_id,
@@ -275,12 +281,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Send the "preparation to store" message and wait until called back.
   int SendPrep(const kad::Contact &peer,
                bool local,
+               boost::shared_ptr<boost::condition_variable> cond_variable,
                StorePrepRequest *store_prep_request,
                StorePrepResponse *store_prep_response);
   void SendPrepCallback(GenericConditionData *send_prep_cond_data);
   // Send the actual data content to the peer.
   int SendContent(const kad::Contact &peer,
                   bool local,
+                  boost::shared_ptr<boost::condition_variable> cond_variable,
                   bool is_in_chunkstore,
                   StoreRequest *store_request);
   void SendContentCallback(GenericConditionData *send_cond_data);
@@ -366,6 +374,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // reference holders.
   int SendIOUDone(const kad::Contact &peer,
                   bool local,
+                  boost::shared_ptr<boost::condition_variable> cond_variable,
                   IOUDoneRequest *iou_done_request);
   void IOUDoneCallback(GenericConditionData *iou_done_cond_data);
   // Store an individual packet to the network as a kademlia value.
@@ -414,7 +423,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   const boost::uint16_t kKadStoreThreshold_;
   boost::mutex store_packet_mutex_;
   boost::condition_variable store_packet_conditional_;
-  boost::condition_variable send_iou_done_conditional_;
   boost::condition_variable get_chunk_conditional_;
   boost::condition_variable find_conditional_;
 };

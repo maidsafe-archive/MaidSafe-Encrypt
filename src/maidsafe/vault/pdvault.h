@@ -272,7 +272,9 @@ class PDVault {
   // Runs in a worker thread to add this vault's ID to a chunk reference packet
   // and increment this vault's rank.
   void AddToRefPacket(const IouReadyTuple &iou_ready_details);
-  // Finds k closest nodes to the kad_key
+  // Finds k closest nodes to the kad_key.  If this vault's ID is closer than
+  // any of the k returned by Kademlia, this ID is inserted and the furthest
+  // contact dropped.  The vector is ordered from closest to furthest.
   int FindKNodes(const std::string &kad_key,
                  std::vector<kad::Contact> *contacts);
   // Add this vault's ID to a chunk reference packet on a

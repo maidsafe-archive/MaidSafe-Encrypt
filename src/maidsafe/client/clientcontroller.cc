@@ -395,7 +395,7 @@ bool ClientController::CreateUser(const std::string &username,
                            ser_mdm, "", key, true);
     printf("In ClientController::CreateUser 06 - %i\n", i);
     seh_->EncryptDb(base::TidyPath(kRootSubdir[i][0]),
-                    PRIVATE, key, "", true, &ser_dm);
+                    PRIVATE, key, "", false, &ser_dm);
     printf("In ClientController::CreateUser 07 - %i\n", i);
   }
 
@@ -423,7 +423,7 @@ bool ClientController::CreateUser(const std::string &username,
                              ser_mdm, "", key, true);
       printf("In ClientController::CreateUser 10 - %i\n", i);
       seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
-                      PRIVATE, key, "", true, &ser_dm);
+                      PRIVATE, key, "", false, &ser_dm);
       printf("In ClientController::CreateUser 11 - %i\n", i);
     } else {
       key = kSharesSubdir[i][1];
@@ -439,7 +439,7 @@ bool ClientController::CreateUser(const std::string &username,
                         ANONYMOUS,
                         kSharesSubdir[i][1],
                         "",
-                        true,
+                        false,
                         &ser_dm);
         printf("In ClientController::CreateUser 14 - %i\n", i);
       }
@@ -635,10 +635,10 @@ bool ClientController::Logout() {
 //  sm_->ClearStoreQueue();
   if (result == OK && !RunDbEncQueue()) {
     printf("ClientController::Logout - OK and ran DB queue.\n");
-//    while (sm_->NotDoneWithUploading()) {
-      boost::this_thread::sleep(boost::posix_time::seconds(60));
-//      printf(".");
-//    }
+    while (sm_->NotDoneWithUploading()) {
+      boost::this_thread::sleep(boost::posix_time::seconds(1));
+      printf(".");
+    }
 
     printf("ClientController::Logout - After threads done.\n");
     fsys_.UnMount();
