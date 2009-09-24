@@ -70,7 +70,7 @@ enum BufferPacketType {
 };
 
 enum MaidsafeRpcResult {
-  kNack, kAck, kNoSpace, kBusy
+  kNack, kAck, kNotRemote, kNoSpace, kBusy
 };
 
 const std::string kAnonymousSignedRequest(128, 'f');

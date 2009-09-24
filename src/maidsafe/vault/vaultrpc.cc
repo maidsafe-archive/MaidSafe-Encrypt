@@ -29,7 +29,7 @@
 namespace maidsafe_vault {
 
 VaultRpcs::VaultRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
-    channel_manager) : channel_manager_(channel_manager) {}
+    channel_manager) : channel_manager_(channel_manager), own_non_hex_id_("") {}
 
 void VaultRpcs::StoreChunkReference(
     const kad::Contact &peer,
@@ -38,6 +38,11 @@ void VaultRpcs::StoreChunkReference(
     maidsafe::StoreReferenceResponse *response,
     rpcprotocol::Controller *controller,
     google::protobuf::Closure *done) {
+  if (peer.node_id() == own_non_hex_id_) {
+    response->set_result(kNotRemote);
+    done->Run();
+    return;
+  }
   std::string local_ip("");
   boost::uint16_t local_port(0);
   if (local) {

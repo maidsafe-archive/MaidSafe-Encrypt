@@ -130,10 +130,12 @@ class VaultRpcs {
                  maidsafe::SwapChunkResponse *response,
                  rpcprotocol::Controller *controller,
                  google::protobuf::Closure *done);
+  void SetOwnId(const std::string &non_hex_id) { own_non_hex_id_ = non_hex_id; }
  private:
   VaultRpcs(const VaultRpcs&);
   VaultRpcs& operator=(const VaultRpcs&);
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
+  std::string own_non_hex_id_;
 };
 }  // namespace maidsafe_vault
 

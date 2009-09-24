@@ -1689,17 +1689,11 @@ void MaidsafeStoreManager::SendPacket(const StoreTask &store_task,
     return;
   }
   {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
     boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
     *return_value = 0;
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
     generic_cond_data->cond_flag = true;
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
-  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   generic_cond_data->cond_variable->notify_all();
-  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
 }
 
 int MaidsafeStoreManager::GetStorePacketRequest(const StoreTask &store_task,

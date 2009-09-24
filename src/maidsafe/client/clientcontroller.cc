@@ -395,7 +395,7 @@ bool ClientController::CreateUser(const std::string &username,
                            ser_mdm, "", key, true);
     printf("In ClientController::CreateUser 06 - %i\n", i);
     seh_->EncryptDb(base::TidyPath(kRootSubdir[i][0]),
-                    PRIVATE, key, "", false, &ser_dm);
+                    PRIVATE, key, "", true, &ser_dm);
     printf("In ClientController::CreateUser 07 - %i\n", i);
   }
 
@@ -423,7 +423,7 @@ bool ClientController::CreateUser(const std::string &username,
                              ser_mdm, "", key, true);
       printf("In ClientController::CreateUser 10 - %i\n", i);
       seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
-                      PRIVATE, key, "", false, &ser_dm);
+                      PRIVATE, key, "", true, &ser_dm);
       printf("In ClientController::CreateUser 11 - %i\n", i);
     } else {
       key = kSharesSubdir[i][1];
@@ -435,12 +435,8 @@ bool ClientController::CreateUser(const std::string &username,
         printf("In ClientController::CreateUser 13 - %i\n", i);
         // ie Public and Anon have never been saved before on the network
         std::string ser_dm;
-        seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
-                        ANONYMOUS,
-                        kSharesSubdir[i][1],
-                        "",
-                        false,
-                        &ser_dm);
+        seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]), ANONYMOUS,
+                        kSharesSubdir[i][1], "", true, &ser_dm);
         printf("In ClientController::CreateUser 14 - %i\n", i);
       }
     }

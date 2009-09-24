@@ -82,6 +82,7 @@ PDVault::PDVault(const std::string &pmid_public,
   signed_non_hex_pmid_ = co_.AsymSign(non_hex_pmid_, "", pmid_private_,
                                       crypto::STRING_STRING);
   knode_.SetAlternativeStore(&vault_chunkstore_);
+  vault_rpcs_.SetOwnId(non_hex_pmid_);
 }
 
 PDVault::~PDVault() {
@@ -462,7 +463,7 @@ int PDVault::FindKNodes(const std::string &kad_key,
   }
   // Insert our own contact details if we are within the k closest.
   kad::Contact our_details(knode_.contact_info());
-  kad::InsertKadContact(kad_key, our_details, contacts);
+  base::InsertKadContact(kad_key, our_details, contacts);
   contacts->pop_back();
 #ifdef DEBUG
 //  printf("In PDVault::FindKNodes, succeeded.\n");
