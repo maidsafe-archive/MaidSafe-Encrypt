@@ -416,7 +416,8 @@ int SelfEncryption::CheckEntry(const fs::path &entry_path) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("SelfEncryption::CheckEntry - path: %s - %s\n",
+           entry_path.string().c_str(), e.what());
 #endif
   }
   return filesize < 2 ? -1 : 0;
@@ -506,7 +507,8 @@ bool SelfEncryption::CheckCompressibility(const fs::path &entry_path) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("SelfEncryption::CheckCompressibility - path: %s - %s\n",
+           entry_path.string().c_str(), e.what());
 #endif
     return -1;
   }
@@ -558,7 +560,8 @@ bool SelfEncryption::CalculateChunkSizes(const fs::path &entry_path,
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("SelfEncryption::CalculateChunkSizes - path: %s - %s\n",
+           entry_path.string().c_str(), e.what());
 #endif
     return false;
   }

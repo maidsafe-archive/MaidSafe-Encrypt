@@ -258,16 +258,21 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
 //  base::encode_to_hex(iou_ready_details.get<1>(), &hex_key);
 //  printf("Vault (%i) list of ref holders (key - %s...) : ",
 //         host_port(), hex_key.substr(0, 6).c_str());
-  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
-    if (ref_holders.at(h).node_id() == knode_.node_id()) {
+#endif
+  for (std::vector<kad::Contact>::iterator it = ref_holders.begin();
+       it != ref_holders.end(); ++it) {
+    if ((*it).node_id() == knode_.node_id()) {
+#ifdef DEBUG
       std::string hex_id, hex_key;
-      base::encode_to_hex(ref_holders.at(h).node_id(), &hex_id);
+      base::encode_to_hex((*it).node_id(), &hex_id);
       base::encode_to_hex(iou_ready_details.get<1>(), &hex_key);
       printf("Vault %s... listed as a ref holder to itself for chunk %s...\n",
              hex_id.substr(0, 10).c_str(), hex_key.substr(0, 10).c_str());
+#endif
+      ref_holders.erase(it);
+      break;
     }
   }
-#endif
   bool got_valid_iou(false);
   int successful_count(0);
   int called_back_count(0);

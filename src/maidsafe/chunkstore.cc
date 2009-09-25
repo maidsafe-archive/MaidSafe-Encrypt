@@ -175,7 +175,7 @@ void ChunkStore::FindFiles(const fs::path &root_dir_path,
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
-    printf("%s\n", ex.what());
+    printf("ChunkStore::FindFiles - %s\n", ex.what());
 #endif
   }
 }
@@ -519,7 +519,8 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
-    printf("ChunkStore::StoreChunk exception writing chunk: %s\n", ex.what());
+    printf("ChunkStore::StoreChunk exception writing chunk %s: %s\n",
+           chunk_path.string().c_str(), ex.what());
 #endif
     return -1;
   }
@@ -563,8 +564,8 @@ bool ChunkStore::DeleteChunkFunction(const std::string &key,
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("Couldn't remove file in ChunkStore::DeleteChunk.\n");
-    printf("%s\n", e.what());
+    printf("Couldn't remove file %s in ChunkStore::DeleteChunk - %s\n",
+           chunk_path.string().c_str(), e.what());
 #endif
   }
   bool result(false);
@@ -610,7 +611,8 @@ int ChunkStore::Load(const std::string &key, std::string *value) {
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
-    printf("%s\n", ex.what());
+    printf("ChunkStore::Load - %s - path: %s\n", ex.what(),
+           chunk_path.string().c_str());
 #endif
     return -1;
   }
