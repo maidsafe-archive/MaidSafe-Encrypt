@@ -55,7 +55,8 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       store_packet_mutex_(),
       store_packet_conditional_(),
       get_chunk_conditional_(),
-      find_conditional_() {
+      find_conditional_(),
+      cv_(new boost::condition_variable) {
   knode_->SetAlternativeStore(client_chunkstore_.get());
 }
 
@@ -182,18 +183,26 @@ int MaidsafeStoreManager::StorePacket(
   std::string packet_name;
   base::decode_from_hex(hex_packet_name, &packet_name);
   int return_value(1);
-  boost::shared_ptr<boost::condition_variable>
-      cond_variable(new boost::condition_variable);
-  GenericConditionData generic_cond_data(cond_variable);
+//  boost::shared_ptr<boost::condition_variable>
+//      cond_variable(new boost::condition_variable);
+  GenericConditionData generic_cond_data(cv_);
+//                                                    printf("In StorePacket task added.\n");
   AddStorePacketTask(StoreTask(packet_name, value, system_packet_type,
       dir_type, msid), &return_value, &generic_cond_data);
-  boost::mutex::scoped_lock lock(generic_cond_data.cond_mutex);
-  while (!generic_cond_data.cond_flag) {
-    generic_cond_data.cond_variable->wait(lock);
-#ifdef DEBUG
-    printf("In MaidsafeStoreManager::StorePacket (%i), return_value %d\n",
-           knode_->host_port(), return_value);
-#endif
+//                                                    printf("In StorePacket before lock.\n");
+  {
+    boost::mutex::scoped_lock lock(generic_cond_data.cond_mutex);
+//                                                    printf("In StorePacket lock acquired.\n");
+    while (!generic_cond_data.cond_flag) {
+//                                                    printf("In StorePacket - waiting - lock released.\n");
+      generic_cond_data.cond_variable->wait(lock);
+//                                                    printf("In StorePacket - done waiting - lock acquired.\n");
+  #ifdef DEBUG
+      printf("In MaidsafeStoreManager::StorePacket (%i), return_value %d\n",
+             knode_->host_port(), return_value);
+  #endif
+    }
+//                                                    printf("In StorePacket lock released.\n");
   }
   return return_value;
 }
@@ -318,6 +327,7 @@ void MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
   // Take the first value (values are loaded in reverse order) and call back.
   result_msg.set_result(kAck);
   result_msg.set_content(values.front());
+                                                                        printf("No. of values %i\n\n\n", values.size());
   result_msg.SerializeToString(&ser_result);
   *result = ser_result;
   return;
@@ -570,9 +580,12 @@ void MaidsafeStoreManager::AddStorePacketTask(
   packet_thread_pool_.schedule(boost::threadpool::prio_task_func(10,
       boost::bind(&MaidsafeStoreManager::SendPacket, this, store_task,
       return_value, generic_cond_data)));
-  size_t active_size = packet_thread_pool_.active();
-  size_t pool_size = packet_thread_pool_.size();
-  printf("Packet thread pool: size %i\tactive %i\n", pool_size, active_size);
+  while (packet_thread_pool_.active()) {
+    size_t active_size = packet_thread_pool_.active();
+    size_t pool_size = packet_thread_pool_.size();
+//    printf("Packet thread pool - size %i\tactive %i\n",
+//           pool_size, active_size);
+  }
 //  if (active_size > kMaxStoreThreads) {
 //    if (pool_size < kMaxPriorityStoreThreads + kMaxStoreThreads) {
 //      printf("Resizing store thread pool to %i\n", pool_size + 1);
@@ -1650,7 +1663,9 @@ void MaidsafeStoreManager::SendPacket(const StoreTask &store_task,
   knode_->StoreValue(store_task.non_hex_key_, signed_value,
       store_task.public_key_, store_task.public_key_signature_, signed_request,
       3600*24*365, boost::bind(&CallbackObj::CallbackFunc, &kad_cb_obj, _1));
+//                                                                printf("Before wait.\n");
   kad_cb_obj.WaitForCallback();
+//                                                                printf("After wait.\n");
   if (kad_cb_obj.result() == "") {
 #ifdef DEBUG
     printf("In MaidsafeStoreManager::SendPacket, fail - timeout.\n");
@@ -1689,10 +1704,14 @@ void MaidsafeStoreManager::SendPacket(const StoreTask &store_task,
     return;
   }
   {
+//                                                    printf("In SendPacket before lock.\n");
     boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
+//                                                    printf("In SendPacket lock acquired.\n");
     *return_value = 0;
     generic_cond_data->cond_flag = true;
+//                                                    printf("In SendPacket lock released.\n");
   }
+//                                                    printf("In SendPacket notify all.\n");
   generic_cond_data->cond_variable->notify_all();
 }
 

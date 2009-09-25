@@ -425,6 +425,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   boost::condition_variable store_packet_conditional_;
   boost::condition_variable get_chunk_conditional_;
   boost::condition_variable find_conditional_;
+  boost::shared_ptr<boost::condition_variable> cv_;
 };
 
 struct StoreTask {

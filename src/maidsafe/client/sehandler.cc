@@ -375,7 +375,6 @@ int SEHandler::GenerateUniqueKey(const DirType dir_type,
                                  const std::string &msid,
                                  const int &attempt,
                                  std::string *hex_key) {
-  // get key, check for uniqueness on DHT, and baggsy this key
   *hex_key = base::RandomString(200);
   *hex_key = SHA512(*hex_key, false);
   int count = attempt;
@@ -385,14 +384,15 @@ int SEHandler::GenerateUniqueKey(const DirType dir_type,
     *hex_key = SHA512(*hex_key, false);
   }
   if (count < 5) {
-    ValueType pd_dir_type_;
-    if (dir_type == ANONYMOUS)
-      pd_dir_type_ = PDDIR_NOTSIGNED;
-    else
-      pd_dir_type_ = PDDIR_SIGNED;
-    std::string ser_gp = CreateDataMapPacket("temp data", dir_type, msid);
-    return storem_->StorePacket(*hex_key, "temp data", packethandler::PD_DIR,
-                                dir_type, msid);
+//    ValueType pd_dir_type_;
+//    if (dir_type == ANONYMOUS)
+//      pd_dir_type_ = PDDIR_NOTSIGNED;
+//    else
+//      pd_dir_type_ = PDDIR_SIGNED;
+//  //    std::string ser_gp = CreateDataMapPacket("temp data", dir_type, msid);
+//   return storem_->StorePacket(*hex_key, "a", packethandler::PD_DIR, dir_type,
+//                                msid);
+    return 0;
   }
   return -1;
 }
@@ -431,64 +431,50 @@ int SEHandler::EncryptDb(const std::string &dir_path,
                          const std::string &dir_key,
                          const std::string &msid,
                          const bool &encrypt_dm,
-                         std::string *ser_dm) {
+                         DataMap *dm) {
 #ifdef DEBUG
   printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)\n",
          dir_path.c_str(), dir_type, encrypt_dm, dir_key.c_str());
 //  printf(" msid(%s)\n", msid.c_str());
 #endif
-  DataMap dm_;
-  std::string ser_dm_="", file_hash_="", enc_dm_;
-  SelfEncryption se_(client_chunkstore_);
-  std::string db_path_;
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler);
-  dah_->GetDbPath(dir_path, CREATE, &db_path_);
-  if (!fs::exists(db_path_))
+  std::string ser_dm, enc_dm, db_path;
+  SelfEncryption se(client_chunkstore_);
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
+  dah->GetDbPath(dir_path, CREATE, &db_path);
+  if (!fs::exists(db_path))
     return -2;
-  file_hash_ = SHA512(db_path_, true);
+  std::string file_hash = SHA512(db_path, true);
 
   // when encrypting root db and keys db (during logout), GetDbPath fails above,
   // so insert alternative value for file hashes.
-  if (file_hash_ == "")
-    file_hash_ = SHA512(db_path_, false);
+  if (file_hash == "")
+    file_hash = SHA512(db_path, false);
 #ifdef DEBUG
-  // printf("File hash = %s\n", file_hash_);
+  // printf("File hash = %s\n", file_hash);
 #endif
-  dm_.set_file_hash(file_hash_);
-  if (se_.Encrypt(db_path_, &dm_)) {
+  dm->set_file_hash(file_hash);
+  if (se.Encrypt(db_path, dm) != 0) {
     return -1;
   }
-//  CallbackResult cbr1;
-//  StoreChunks(dm_,
-//              dir_type,
-//              msid,
-//              boost::bind(&CallbackResult::CallbackFunc, &cbr1, _1));
-//  WaitForResult(cbr1);
-//  StoreResponse storechunks_result;
-//  if ((!storechunks_result.ParseFromString(cbr1.result)) ||
-//      (storechunks_result.result() == kNack)) {
-//    return -1;
-//  }
 #ifdef DEBUG
-  printf("SEHandler::EncryptDb - Fuck you Chavez!\n");
+  printf("SEHandler::EncryptDb - Hello there, Chavez! It's nice to be nice.\n");
 #endif
-  StoreChunks(dm_, dir_type, msid);
+  StoreChunks(*dm, dir_type, msid);
 #ifdef DEBUG
   printf("SEHandler::EncryptDb - After store chunks\n");
 #endif
-  dm_.SerializeToString(&ser_dm_);
+  dm->SerializeToString(&ser_dm);
   // if (ser_dm != "")
   //   ser_dm = ser_dm_;
-  if (encrypt_dm) {
-    EncryptDm(dir_path, ser_dm_, msid, &enc_dm_);
-  } else {
-    enc_dm_ = ser_dm_;
-  }
+  if (encrypt_dm)
+    EncryptDm(dir_path, ser_dm, msid, &enc_dm);
+  else
+    enc_dm = ser_dm;
 
   std::map<std::string, std::string>::iterator it;
   it = uptodate_datamaps_.find(dir_path);
   if (it != uptodate_datamaps_.end()) {
-    if (it->second != enc_dm_) {
+    if (it->second != enc_dm) {
       uptodate_datamaps_.erase(it);
     }
   }
@@ -499,39 +485,27 @@ int SEHandler::EncryptDb(const std::string &dir_path,
 //    dir_path.c_str(), hex_dm.c_str());
 #endif
   uptodate_datamaps_.insert(
-    std::pair<std::string, std::string>(dir_path, enc_dm_));
+      std::pair<std::string, std::string>(dir_path, enc_dm));
 
-
-  // store encrypted dm to DHT
-  // file_system::FileSystem fsys_;
-  // fs::path temp_name_(fsys_.MaidsafeDir()+"/"+key);
-  // std::ofstream out_;
-  // out_.open(temp_name_.string().c_str(), std::ofstream::binary);
-  // out_.write(enc_dm_.c_str(), enc_dm_.size());
-  // out_.close();
-
-  if (dir_key == "") {
+  if (dir_key == "") {  // Means we're not storing to DHT - used by client
+                        // controller to get root dbs for adding to DataAtlas.
 #ifdef DEBUG
 //    printf("dm is not stored in kademlia.\n");
 #endif
-    if (dir_type == ANONYMOUS) {
-      *ser_dm = enc_dm_;
-    } else {
-      std::string ser_gp = CreateDataMapPacket(enc_dm_, dir_type, msid);
-      *ser_dm = ser_gp;
-#ifdef DEBUG
-//      printf("Passing back ser_dm as a generic packet.\n");
-#endif
-    }
+//    if (dir_type == ANONYMOUS) {
+//      *ser_dm = enc_dm_;
+//    } else {
+//      std::string ser_gp = CreateDataMapPacket(enc_dm_, dir_type, msid);
+//      *ser_dm = ser_gp;
+//    }
     return 0;
   }
-  ValueType pd_dir_type_;
+  ValueType pd_dir_type;
   if (dir_type == ANONYMOUS)
-    pd_dir_type_ = PDDIR_NOTSIGNED;
+    pd_dir_type = PDDIR_NOTSIGNED;
   else
-    pd_dir_type_ = PDDIR_SIGNED;
-  std::string ser_gp = CreateDataMapPacket(enc_dm_, dir_type, msid);
-  if (storem_->StorePacket(dir_key, ser_gp, packethandler::PD_DIR, dir_type,
+    pd_dir_type = PDDIR_SIGNED;
+  if (storem_->StorePacket(dir_key, enc_dm, packethandler::PD_DIR, dir_type,
       msid) == 0) {
 #ifdef DEBUG
     printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());
@@ -582,9 +556,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       return -1;
     }
 
-    packethandler::GenericPacket gp;
-    gp.ParseFromString(load_result.content());
-    enc_dm_ = gp.data();
+    enc_dm_ = load_result.content();
     if (enc_dm_ == "") {
 #ifdef DEBUG
       printf("Enc dm is empty.\n");
@@ -648,7 +620,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 #endif
       int n = DecryptDm(dir_path, enc_dm_, msid, &ser_dm_);
 #ifdef DEBUG
-      printf("DecryptED dm.\n");
+      printf("Decrypted dm.\n");
 #endif
       if (n != 0 || ser_dm_ == "") {
 #ifdef DEBUG
@@ -661,24 +633,25 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       ser_dm_ = enc_dm_;
     }
   } else {
-    if (dir_type != ANONYMOUS) {
-      packethandler::GenericPacket gp;
-      if (!gp.ParseFromString(ser_dm)) {
-#ifdef DEBUG
-        printf("Failed to parse generic packet.\n");
-#endif
-        return -1;
-      }
-      enc_dm_ = gp.data();
-      if (enc_dm_ == "") {
-#ifdef DEBUG
-        printf("Enc dm is empty.\n");
-#endif
-        return -1;
-      }
-    } else {
-      enc_dm_ = ser_dm;
-    }
+//      if (dir_type != ANONYMOUS) {
+//        packethandler::GenericPacket gp;
+//        if (!gp.ParseFromString(ser_dm)) {
+//  #ifdef DEBUG
+//          printf("Failed to parse generic packet.\n");
+//  #endif
+//          return -1;
+//        }
+//        enc_dm_ = gp.data();
+//        if (enc_dm_ == "") {
+//  #ifdef DEBUG
+//          printf("Enc dm is empty.\n");
+//  #endif
+//          return -1;
+//        }
+//      } else {
+//        enc_dm_ = ser_dm;
+//      }
+    enc_dm_ = ser_dm;
     if (dm_encrypted) {
 #ifdef DEBUG
       printf("Decrypting dm.\n");
@@ -936,41 +909,6 @@ void SEHandler::WaitForResult(const CallbackResult &cb) {
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
-}
-
-std::string SEHandler::CreateDataMapPacket(const std::string &ser_dm,
-                                           const DirType dir_type,
-                                           const std::string &msid) {
-  if (dir_type == ANONYMOUS)
-    return ser_dm;
-  packethandler::GenericPacket gp;
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  gp.set_data(ser_dm);
-  std::string private_key("");
-  switch (dir_type) {
-    case PRIVATE_SHARE: {
-        std::string public_key("");
-        if (0 != ss_->GetShareKeys(msid, &public_key, &private_key)) {
-          private_key = "";
-          return "";
-        }
-      }
-      break;
-    case PUBLIC_SHARE:
-      private_key = ss_->PrivateKey(MPID);
-      break;
-    default:
-      private_key = ss_->PrivateKey(PMID);
-      break;
-  }
-  gp.set_signature(co.AsymSign(gp.data(),
-                               "",
-                               private_key,
-                               crypto::STRING_STRING));
-  std::string ser_gp;
-  gp.SerializeToString(&ser_gp);
-  return ser_gp;
 }
 
 int SEHandler::RemoveKeyFromUptodateDms(const std::string &key) {

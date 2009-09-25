@@ -123,7 +123,7 @@ class SEHandler {
                 const std::string &dir_key,
                 const std::string &msid,
                 const bool &encrypt_dm,
-                std::string *ser_dm);
+                DataMap *dm);
   //  Decrypts dir's db by extracting datamap from ser_dm_
   int DecryptDb(const std::string &dir_path,
                 const DirType dir_type,
@@ -165,10 +165,6 @@ class SEHandler {
   void LoadChunk(const std::string &chunk_name,
                  int retry,
                  boost::shared_ptr<ChunksData> data);
-  // returns the serialised packet to store the DB's data map
-  std::string CreateDataMapPacket(const std::string &ser_dm,
-                                  const DirType dir_type,
-                                  const std::string &msid);
   StoreManagerInterface *storem_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;

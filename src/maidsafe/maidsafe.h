@@ -322,4 +322,10 @@ enum ValueType {
 
 }  // namespace maidsafe
 
+inline std::string HexEncodeSubstring(const std::string &non_hex) {
+  std::string hex;
+  base::encode_to_hex(non_hex, &hex);
+  return hex.substr(0, 10) + "...";
+}
+
 #endif  // MAIDSAFE_MAIDSAFE_H_

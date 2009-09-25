@@ -127,9 +127,21 @@ Exitcode Authentication::GetUserData(const std::string &password,
 Exitcode Authentication::CreateUserSysPackets(const std::string &username,
                                               const std::string &pin,
                                               const std::string &password) {
-  int fakerid = 0;
-  if (GetMid(username, pin, &fakerid))
+//  int fakerid = 0;
+//  if (GetMid(username, pin, &fakerid))
+//    return USER_EXISTS;
+
+  ph::PacketParams check_unique_params;
+  check_unique_params["username"] = username;
+  check_unique_params["PIN"] = pin;
+  ph::MidPacket *check_unique_mid_packet =
+      static_cast<ph::MidPacket*>(ph::PacketFactory::Factory(ph::MID));
+  std::string check_unique_mid_name =
+      check_unique_mid_packet->PacketName(check_unique_params);
+
+  if (!storemanager_->KeyUnique(check_unique_mid_name, false))
     return USER_EXISTS;
+
   ph::MidPacket *midPacket =
       static_cast<ph::MidPacket*>(ph::PacketFactory::Factory(ph::MID));
   ph::PacketParams user_params;
@@ -217,6 +229,7 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
   ss_->SetMidRid(boost::any_cast<uint32_t>(mid_result["rid"]));
   ss_->SetSmidRid(boost::any_cast<uint32_t>(mid_result["rid"]));
 
+  delete check_unique_mid_packet;
   delete midPacket;
   delete smidPacket;
   delete tmidPacket;

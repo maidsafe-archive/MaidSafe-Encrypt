@@ -206,6 +206,7 @@ int ClientController::ParseDa() {
   DataMap dm_root, dm_shares;
   dm_root = data_atlas.dms(0);
   dm_shares = data_atlas.dms(1);
+
   std::string ser_dm_root, ser_dm_shares;
   dm_root.SerializeToString(&ser_dm_root);
   dm_shares.SerializeToString(&ser_dm_shares);
@@ -230,29 +231,19 @@ int ClientController::ParseDa() {
 int ClientController::SerialiseDa() {
   DataAtlas data_atlas_;
   data_atlas_.set_root_db_key(ss_->RootDbKey());
-  std::string ser_dm_root = "Return the serialised datamap please old boy.";
-  std::string ser_dm_shares = "I'd like one as well old chum.";
-  seh_->EncryptDb(kRoot, PRIVATE, "", "", false, &ser_dm_root);
+  DataMap root_dm, shares_dm;
+  seh_->EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
   seh_->EncryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
-                  &ser_dm_shares);
-#ifdef DEBUG
-//  printf("ClientController::SerialiseDa -- root (%s)\n", ser_dm_root.c_str());
-//  printf("ClientController::SerialiseDa -- shares (%s)\n",
-//          ser_dm_shares.c_str());
-#endif
-  DataMap *dm1_;
-  DataMap dm2_;
-  dm1_ = data_atlas_.add_dms();
-  dm2_.ParseFromString(ser_dm_root);
-  *dm1_ = dm2_;
-  dm1_ = data_atlas_.add_dms();
-  dm2_.ParseFromString(ser_dm_shares);
-  *dm1_ = dm2_;
+                  &shares_dm);
+  DataMap *dm = data_atlas_.add_dms();
+  *dm = root_dm;
+  dm = data_atlas_.add_dms();
+  *dm = shares_dm;
 #ifdef DEBUG
   // printf("data_atlas_.dms(0).file_hash(): %s\n",
-  //   data_atlas_.dms(0).file_hash());
+  //   data_atlas_.dms(0).file_hash().substr(0, 10).c_str());
   // printf("data_atlas_.dms(1).file_hash(): %s\n",
-  //   data_atlas_.dms(1).file_hash());
+  //   data_atlas_.dms(1).file_hash().substr(0, 10).c_str());
 #endif
 
   std::list<KeyAtlasRow> keyring;
@@ -373,7 +364,8 @@ bool ClientController::CreateUser(const std::string &username,
   // set up root subdirs
   for (int i = 0; i < kRootSubdirSize; ++i) {
     MetaDataMap mdm;
-    std::string ser_mdm, ser_dm, key;
+    DataMap dm;
+    std::string ser_mdm, key;
     mdm.set_id(-2);
     mdm.set_display_name(base::TidyPath(kRootSubdir[i][0]));
     mdm.set_type(EMPTY_DIRECTORY);
@@ -395,7 +387,7 @@ bool ClientController::CreateUser(const std::string &username,
                            ser_mdm, "", key, true);
     printf("In ClientController::CreateUser 06 - %i\n", i);
     seh_->EncryptDb(base::TidyPath(kRootSubdir[i][0]),
-                    PRIVATE, key, "", true, &ser_dm);
+                    PRIVATE, key, "", true, &dm);
     printf("In ClientController::CreateUser 07 - %i\n", i);
   }
 
@@ -404,7 +396,8 @@ bool ClientController::CreateUser(const std::string &username,
     fs::path subdir(kSharesSubdir[i][0], fs::native);
     std::string subdir_name = subdir.filename();
     MetaDataMap mdm;
-    std::string ser_mdm, ser_dm, key;
+    DataMap dm;
+    std::string ser_mdm, key;
     mdm.set_id(-2);
     mdm.set_display_name(subdir_name);
     mdm.set_type(EMPTY_DIRECTORY);
@@ -423,7 +416,7 @@ bool ClientController::CreateUser(const std::string &username,
                              ser_mdm, "", key, true);
       printf("In ClientController::CreateUser 10 - %i\n", i);
       seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
-                      PRIVATE, key, "", true, &ser_dm);
+                      PRIVATE, key, "", true, &dm);
       printf("In ClientController::CreateUser 11 - %i\n", i);
     } else {
       key = kSharesSubdir[i][1];
@@ -436,7 +429,7 @@ bool ClientController::CreateUser(const std::string &username,
         // ie Public and Anon have never been saved before on the network
         std::string ser_dm;
         seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]), ANONYMOUS,
-                        kSharesSubdir[i][1], "", true, &ser_dm);
+                        kSharesSubdir[i][1], "", true, &dm);
         printf("In ClientController::CreateUser 14 - %i\n", i);
       }
     }
@@ -2257,7 +2250,7 @@ int ClientController::SaveDb(const std::string &db_path,
 #ifdef DEBUG
   printf("\t\tCC::SaveDb %s with MSID = %s\n", db_path.c_str(), msid.c_str());
 #endif
-  std::string parent_path_(""), dir_key_(""), ser_dm_("");
+  std::string parent_path_(""), dir_key_("");
   fs::path temp_(db_path);
   parent_path_ = temp_.parent_path().string();
   if (parent_path_ == "\\" ||
@@ -2277,12 +2270,8 @@ int ClientController::SaveDb(const std::string &db_path,
       RunDbEncQueue();
     return 0;
   } else {
-    if (seh_->EncryptDb(parent_path_,
-                        dir_type,
-                        dir_key_,
-                        msid,
-                        true,
-                        &ser_dm_) != 0)
+    DataMap dm;
+    if (seh_->EncryptDb(parent_path_, dir_type, dir_key_, msid, true, &dm) != 0)
       return -errno;
   }
     return 0;
@@ -2322,7 +2311,7 @@ int ClientController::RunDbEncQueue() {
           db_enc_queue_.size());
 #endif
   for (it = db_enc_queue_.begin(); it != db_enc_queue_.end(); ++it) {
-    std::string ser_dm;
+    DataMap dm;
     DirType db_type = GetDirType((*it).first);
 #ifdef DEBUG
     printf("\t\tCC::RunDbEncQueue: first: %s\ttype: %i\tsec.first: %s\t",
@@ -2330,7 +2319,7 @@ int ClientController::RunDbEncQueue() {
     printf("sec.second: %s\n", (*it).second.second.c_str());
 #endif
     int int_res = seh_->EncryptDb((*it).first, db_type, (*it).second.first,
-                                  (*it).second.second, true, &ser_dm);
+                                  (*it).second.second, true, &dm);
 #ifdef DEBUG
     printf(" with result %i\n", int_res);
 #endif

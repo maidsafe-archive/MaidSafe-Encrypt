@@ -492,12 +492,14 @@ TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptPrivateDb) {
 //  dah->GetDirKey(kRootSubdir[0][0], &key_);
   ASSERT_TRUE(fs::exists(db_path_));
   std::string hash_before_ = seh->SHA512(db_str1_, true);
+  DataMap dm;
   std::string ser_dm_;
+  dm.SerializeToString(&ser_dm_);
 
   // Create the entry
   ASSERT_EQ(0, seh->EncryptDb(base::TidyPath(kRootSubdir[0][0]),
-    PRIVATE, key_, "", true, &ser_dm_));
-  ASSERT_EQ("", ser_dm_);
+    PRIVATE, key_, "", true, &dm));
+//  ASSERT_EQ("", ser_dm_);
 
   // Test decryption with the directory DB ser_dm in the map
   ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kRootSubdir[0][0]),
