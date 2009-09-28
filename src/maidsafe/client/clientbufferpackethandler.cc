@@ -16,7 +16,7 @@
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
-namespace packethandler {
+namespace maidsafe {
 
 void ExecuteFailureCallback(base::callback_func_type cb,
     boost::recursive_mutex *mutex) {
@@ -66,16 +66,16 @@ int ClientBufferPacketHandler::CreateBufferPacket(
 }
 
 int ClientBufferPacketHandler::ChangeStatus(int status,
-                                            const BufferPacketType &type) {
-  maidsafe::PacketType pt = PacketHandler_PacketType(type);
+    const PacketType &type) {
+//  maidsafe::PacketType pt = PacketHandler_PacketType(type);
   BufferPacketInfo packet_info;
   GenericPacket user_info;
 
   std::set<std::string> current_users;
-  UserList(&current_users, MPID_BP);
+  UserList(&current_users, MPID);
 
   packet_info.set_owner(ss_->PublicUsername());
-  packet_info.set_ownerpublickey(ss_->PublicKey(pt));
+  packet_info.set_ownerpublickey(ss_->PublicKey(type));
   packet_info.set_online(status);
 
   for (std::set<std::string>::iterator p = current_users.begin();
@@ -86,10 +86,10 @@ int ClientBufferPacketHandler::ChangeStatus(int status,
   std::string ser_info;
   packet_info.SerializeToString(&ser_info);
   user_info.set_data(ser_info);
-  std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(pt) + "BUFFER", "",
+  std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(type) + "BUFFER", "",
       crypto::STRING_STRING, true);
   user_info.set_signature(crypto_obj_.AsymSign(ser_info, "",
-      ss_->PrivateKey(pt), crypto::STRING_STRING));
+      ss_->PrivateKey(type), crypto::STRING_STRING));
   std::string ser_gp;
   user_info.SerializeToString(&ser_gp);
 
@@ -98,28 +98,30 @@ int ClientBufferPacketHandler::ChangeStatus(int status,
 }
 
 bool ClientBufferPacketHandler::UserList(
-    std::set<std::string> *list, BufferPacketType type) {
+    std::set<std::string> *list, PacketType type) {
   switch (type) {
-    case MPID_BP: *list = ss_->AuthorisedUsers(); break;
-    case MAID_BP: *list = ss_->MaidAuthorisedUsers(); break;
+    case MPID: *list = ss_->AuthorisedUsers(); break;
+    case MAID: *list = ss_->MaidAuthorisedUsers(); break;
     default: break;
   }
   return true;
 }
 
-bool ClientBufferPacketHandler::SetUserList(std::set<std::string> list,
-    BufferPacketType type) {
+bool ClientBufferPacketHandler::SetUserList(
+    std::set<std::string> list,
+    PacketType type) {
   switch (type) {
-    case MPID_BP: ss_->SetAuthorisedUsers(list); break;
-    case MAID_BP: ss_->SetMaidAuthorisedUsers(list); break;
+    case MPID: ss_->SetAuthorisedUsers(list); break;
+    case MAID: ss_->SetMaidAuthorisedUsers(list); break;
     default: break;
   }
   return true;
 }
 
-int ClientBufferPacketHandler::AddUsers(const std::set<std::string> &users,
-                                        const BufferPacketType &type) {
-  maidsafe::PacketType pt = PacketHandler_PacketType(type);
+int ClientBufferPacketHandler::AddUsers(
+    const std::set<std::string> &users,
+    const PacketType &type) {
+//  maidsafe::PacketType pt = PacketHandler_PacketType(type);
   if (users.empty())
     return -1;
 
@@ -136,7 +138,7 @@ int ClientBufferPacketHandler::AddUsers(const std::set<std::string> &users,
   }
 
   packet_info.set_owner(ss_->PublicUsername());
-  packet_info.set_ownerpublickey(ss_->PublicKey(pt));
+  packet_info.set_ownerpublickey(ss_->PublicKey(type));
   packet_info.set_online(0);
 
   for (std::set<std::string>::iterator p = current_users.begin();
@@ -147,10 +149,10 @@ int ClientBufferPacketHandler::AddUsers(const std::set<std::string> &users,
   std::string ser_info;
   packet_info.SerializeToString(&ser_info);
   user_info.set_data(ser_info);
-  std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(pt) + "BUFFER", "",
+  std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(type) + "BUFFER", "",
       crypto::STRING_STRING, true);
   user_info.set_signature(crypto_obj_.AsymSign(ser_info, "",
-      ss_->PrivateKey(pt), crypto::STRING_STRING));
+      ss_->PrivateKey(type), crypto::STRING_STRING));
 
   std::string ser_gp;
   user_info.SerializeToString(&ser_gp);
@@ -164,10 +166,10 @@ int ClientBufferPacketHandler::AddUsers(const std::set<std::string> &users,
 
 int ClientBufferPacketHandler::DeleteUsers(
     const std::set<std::string> &users,
-    const BufferPacketType &type) {
-  maidsafe::PacketType pt = PacketHandler_PacketType(type);
+    const PacketType &type) {
+//  maidsafe::PacketType pt = PacketHandler_PacketType(type);
   std::set<std::string> current_users;
-  if (type == MPID_BP)
+  if (type == MPID)
     current_users = ss_->AuthorisedUsers();
   else
     current_users = ss_->MaidAuthorisedUsers();
@@ -183,22 +185,22 @@ int ClientBufferPacketHandler::DeleteUsers(
     p != current_users.end(); ++p)
     packet_info.add_users(*p);
   packet_info.set_owner(ss_->PublicUsername());
-  packet_info.set_ownerpublickey(ss_->PublicKey(pt));
+  packet_info.set_ownerpublickey(ss_->PublicKey(type));
   packet_info.set_online(0);
 
   std::string ser_info;
   packet_info.SerializeToString(&ser_info);
   gp.set_data(ser_info);
-  gp.set_signature(crypto_obj_.AsymSign(ser_info, "", ss_->PrivateKey(pt),
+  gp.set_signature(crypto_obj_.AsymSign(ser_info, "", ss_->PrivateKey(type),
       crypto::STRING_STRING));
   std::string ser_gp;
   gp.SerializeToString(&ser_gp);
-  std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(pt) + "BUFFER",
+  std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(type) + "BUFFER",
       "", crypto::STRING_STRING, true);
   int n = sm_->StorePacket(bufferpacketname, ser_gp, BUFFER_INFO,
                            maidsafe::PRIVATE, "");
   if (n == 0) {
-    if (type == MPID_BP)
+    if (type == MPID)
       ss_->SetAuthorisedUsers(current_users);
     else
       ss_->SetMaidAuthorisedUsers(current_users);
@@ -207,25 +209,25 @@ int ClientBufferPacketHandler::DeleteUsers(
 }
 
 int ClientBufferPacketHandler::GetMessages(
-    const BufferPacketType &type,
+    const PacketType &type,
     std::list<ValidatedBufferPacketMessage> *valid_messages) {
   valid_messages->clear();
-  maidsafe::PacketType pt = PacketHandler_PacketType(type);
+//  maidsafe::PacketType pt = PacketHandler_PacketType(type);
 // TODO(Fraser#5#): 2009-09-15 - Confirm that mutex is not required here
 //  base::pd_scoped_lock gaurd(*mutex_);
-  std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(pt) + "BUFFER", "",
+  std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(type) + "BUFFER", "",
       crypto::STRING_STRING, true);
   std::string signed_public_key = crypto_obj_.AsymSign(
-      ss_->PublicKey(pt), "", ss_->PrivateKey(pt), crypto::STRING_STRING);
+      ss_->PublicKey(type), "", ss_->PrivateKey(type), crypto::STRING_STRING);
   std::list<std::string> messages;
-  if (sm_->LoadMessages(bufferpacketname, ss_->PublicKey(pt),
+  if (sm_->LoadMessages(bufferpacketname, ss_->PublicKey(type),
       signed_public_key, &messages) != 0)
     return -1;
   while (!messages.empty()) {
     ValidatedBufferPacketMessage valid_message;
     if (valid_message.ParseFromString(messages.front())) {
       std::string aes_key = crypto_obj_.AsymDecrypt(valid_message.index(), "",
-          ss_->PrivateKey(pt), crypto::STRING_STRING);
+          ss_->PrivateKey(type), crypto::STRING_STRING);
       valid_message.set_message(crypto_obj_.SymmDecrypt(valid_message.message(),
           "", crypto::STRING_STRING, aes_key));
       valid_messages->push_back(valid_message);
@@ -243,10 +245,11 @@ int ClientBufferPacketHandler::GetMessages(
   return 0;
 }
 
-void ClientBufferPacketHandler::GetBufferPacket(const BufferPacketType &type,
+void ClientBufferPacketHandler::GetBufferPacket(
+    const PacketType &type,
     base::callback_func_type cb) {
   std::string bufferpacketname = crypto_obj_.Hash(
-      ss_->Id(PacketHandler_PacketType(type)) + "BUFFER", "",
+      ss_->Id(type) + "BUFFER", "",
       crypto::STRING_STRING, true);
   std::string packet_content;
   sm_->LoadPacket(bufferpacketname, &packet_content);
@@ -267,7 +270,7 @@ void ClientBufferPacketHandler::GetBufferPacket(const BufferPacketType &type,
   bpi.ParseFromString(bp.owner_info(0).data());
   std::set<std::string> users;
   for (int i = 0; i < bpi.users_size(); ++i) {
-    printf("ClientBufferPacketHandler::GetBufferPacket_Callback - AU: %s\n",
+    printf("ClientBufferGetBufferPacket_Callback - AU: %s\n",
             bpi.users(i).c_str());
     users.insert(bpi.users(i));
   }
@@ -286,7 +289,7 @@ void ClientBufferPacketHandler::GetBufferPacket(const BufferPacketType &type,
         ValidatedBufferPacketMessage msg;
         msg.set_index(bpm.rsaenc_key());
         aes_key = crypto_obj_.AsymDecrypt(msg.index(), "",
-            ss_->PrivateKey(PacketHandler_PacketType(type)),
+            ss_->PrivateKey(type),
             crypto::STRING_STRING);
         msg.set_message(crypto_obj_.SymmDecrypt(bpm.aesenc_message(), "",
             crypto::STRING_STRING, aes_key));
@@ -302,9 +305,9 @@ void ClientBufferPacketHandler::GetBufferPacket(const BufferPacketType &type,
 }
 
 void ClientBufferPacketHandler::GetBufferPacketInfo(
-    const BufferPacketType &type, base::callback_func_type cb) {
+    const PacketType &type, base::callback_func_type cb) {
   std::string bufferpacketname = crypto_obj_.Hash(
-      ss_->Id(PacketHandler_PacketType(type)) + "BUFFER", "",
+      ss_->Id(type) + "BUFFER", "",
       crypto::STRING_STRING, true);
   std::string packet_content;
   sm_->LoadPacket(bufferpacketname, &packet_content);
@@ -332,33 +335,35 @@ void ClientBufferPacketHandler::GetBufferPacketInfo(
   cb(str_local_result);
 }
 
-void ClientBufferPacketHandler::ClearMessages(const BufferPacketType &type,
+void ClientBufferPacketHandler::ClearMessages(
+    const PacketType &type,
     base::callback_func_type cb) {
-  maidsafe::PacketType pt = PacketHandler_PacketType(type);
-  std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(pt) + "BUFFER", "",
+//  maidsafe::PacketType pt = PacketHandler_PacketType(type);
+  std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(type) + "BUFFER", "",
       crypto::STRING_STRING, true);
   std::string signed_public_key = crypto_obj_.AsymSign(
-      ss_->PublicKey(pt), "", ss_->PrivateKey(pt), crypto::STRING_STRING);
+      ss_->PublicKey(type), "", ss_->PrivateKey(type), crypto::STRING_STRING);
   std::string non_hex_bufferpacketname("");
   base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
   std::string signed_request = crypto_obj_.AsymSign(
-    crypto_obj_.Hash(ss_->PublicKey(pt) + signed_public_key +
+    crypto_obj_.Hash(ss_->PublicKey(type) + signed_public_key +
     non_hex_bufferpacketname, "", crypto::STRING_STRING, false), "",
-    ss_->PrivateKey(pt), crypto::STRING_STRING);
+    ss_->PrivateKey(type), crypto::STRING_STRING);
 
   sm_->DeletePacket(bufferpacketname, signed_request,
-      ss_->PublicKey(pt), signed_public_key,
+      ss_->PublicKey(type), signed_public_key,
       maidsafe::BUFFER_PACKET_MESSAGE, cb);
 }
 
-maidsafe::PacketType ClientBufferPacketHandler::PacketHandler_PacketType(
-    const BufferPacketType &type) {
-  //  MPID_BP, MAID_BP, PMID_BP
-  switch (type) {
-    case MAID_BP: return maidsafe::MAID;
-    case PMID_BP: return maidsafe::PMID;
-    default: return maidsafe::MPID;
-  }
-}
+//  maidsafe::PacketType
+//      ClientBufferPacketHandler::PacketHandler_PacketType(
+//      const PacketType &type) {
+//    //  MPID, MAID, PMID
+//    switch (type) {
+//      case MAID: return maidsafe::MAID;
+//      case PMID: return maidsafe::PMID;
+//      default: return maidsafe::MPID;
+//    }
+//  }
 
-}  // namespace packethandler
+}  // namespace maidsafe

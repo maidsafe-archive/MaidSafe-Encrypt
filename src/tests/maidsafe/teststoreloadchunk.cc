@@ -765,7 +765,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateMorethanMinCopiesWithHoldersOff) {
 }
 
 TEST_F(PDClientTest, FUNC_KAD_StoreChunkSystemPacket) {
-  packethandler::GenericPacket gp;
+  GenericPacket gp;
   gp.set_data(base::RandomString(4096));
   gp.set_signature(cry_obj.AsymSign(gp.data(), "", keys.private_key(),
     crypto::STRING_STRING));
@@ -807,7 +807,7 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkSystemPacket) {
   wait_result(&cb3, client_mutex);
   ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
-  packethandler::GenericPacket gp_rec;
+  GenericPacket gp_rec;
   ASSERT_TRUE(gp_rec.ParseFromString(cb3.content()));
   ASSERT_EQ(gp.data(), gp_rec.data());
   ASSERT_EQ(gp.signature(), gp_rec.signature());
@@ -826,7 +826,7 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkSystemPacket) {
 }
 
 TEST_F(PDClientTest, FUNC_KAD_StoreChunkSystemPacket_InvalidPacket) {
-  packethandler::GenericPacket gp;
+  GenericPacket gp;
   gp.set_data(base::RandomString(4096));
   gp.set_signature(cry_obj.AsymSign(gp.data(), "", keys.private_key(),
     crypto::STRING_STRING));
@@ -883,7 +883,7 @@ TEST_F(PDClientTest, FUNC_KAD_StoreChunkSystemPacket_InvalidPacket) {
 }
 
 TEST_F(PDClientTest, FUNC_KAD_StoreSignedPDDir) {
-  packethandler::GenericPacket gp;
+  GenericPacket gp;
   gp.set_data(base::RandomString(4096));
   gp.set_signature(cry_obj.AsymSign(gp.data(), "", keys.private_key(),
     crypto::STRING_STRING));
@@ -908,7 +908,7 @@ TEST_F(PDClientTest, FUNC_KAD_StoreSignedPDDir) {
   wait_result(&cb3, client_mutex);
   ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
-  packethandler::GenericPacket gp_rec;
+  GenericPacket gp_rec;
   ASSERT_TRUE(gp_rec.ParseFromString(cb3.content()));
   ASSERT_EQ(gp.data(), gp_rec.data());
   ASSERT_EQ(gp.signature(), gp_rec.signature());
@@ -939,8 +939,8 @@ TEST_F(PDClientTest, FUNC_KAD_StoreUnSignedPDDir) {
 }
 
 TEST_F(PDClientTest, FUNC_KAD_StoreBUFFER_PACKET) {
-  packethandler::BufferPacket bp;
-  packethandler::GenericPacket *gp = bp.add_owner_info();
+  BufferPacket bp;
+  GenericPacket *gp = bp.add_owner_info();
   gp->set_data(base::RandomString(4096));
   gp->set_signature(cry_obj.AsymSign(gp->data(), "", keys.private_key(),
     crypto::STRING_STRING));
@@ -966,12 +966,12 @@ TEST_F(PDClientTest, FUNC_KAD_StoreBUFFER_PACKET) {
   wait_result(&cb3, client_mutex);
   ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
-  packethandler::BufferPacket gp_rec;
+  BufferPacket gp_rec;
   ASSERT_TRUE(gp_rec.ParseFromString(cb3.content()));
 }
 
 TEST_F(PDClientTest, FUNC_KAD_UpdateSignedPDDir) {
-  packethandler::GenericPacket gp;
+  GenericPacket gp;
   std::string orig_content = base::RandomString(4096);
   gp.set_data(orig_content);
   gp.set_signature(cry_obj.AsymSign(gp.data(), "", keys.private_key(),
@@ -998,7 +998,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateSignedPDDir) {
   wait_result(&cb3, client_mutex);
   ASSERT_EQ(kad::kRpcResultFailure, cb3.result());
   ASSERT_EQ(chunk_content, cb3.content());
-  packethandler::GenericPacket gp_rec;
+  GenericPacket gp_rec;
   ASSERT_TRUE(gp_rec.ParseFromString(cb3.content()));
   ASSERT_EQ(gp.data(), gp_rec.data());
   ASSERT_EQ(gp.signature(), gp_rec.signature());
@@ -1038,9 +1038,9 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
   std::string owner_id("Juan U. Smer");
   std::string bufferpacketname = cry_obj.Hash\
     (owner_id+"BUFFER","", crypto::STRING_STRING, true);
-  packethandler::BufferPacket buffer_packet;
-  packethandler::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
-  packethandler::BufferPacketInfo buffer_packet_info;
+  BufferPacket buffer_packet;
+  GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
+  BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(owner_id);
   buffer_packet_info.set_ownerpublickey(keys.public_key());
   buffer_packet_info.set_online(false);
@@ -1075,25 +1075,25 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
   cb2.Reset();
 
   std::string key("AESkey");
-  packethandler::BufferPacketMessage bpmsg;
+  BufferPacketMessage bpmsg;
   bpmsg.set_sender_id("sender");
   bpmsg.set_rsaenc_key(cry_obj.AsymEncrypt(key, "", keys.public_key(),
     crypto::STRING_STRING));
   cry_obj.set_symm_algorithm(crypto::AES_256);
   bpmsg.set_aesenc_message(cry_obj.SymmEncrypt("test msg", "",
     crypto::STRING_STRING, key));
-  bpmsg.set_type(packethandler::ADD_CONTACT_RQST);
+  bpmsg.set_type(ADD_CONTACT_RQST);
   bpmsg.set_sender_public_key(keys.public_key());
   std::string ser_bpmsg;
   bpmsg.SerializeToString(&ser_bpmsg);
-  packethandler::GenericPacket bpmsg_gp;
+  GenericPacket bpmsg_gp;
   bpmsg_gp.set_data(ser_bpmsg);
   bpmsg_gp.set_signature(cry_obj.AsymSign(ser_bpmsg, "", keys.private_key(),
     crypto::STRING_STRING));
   std::string ser_bpmsg_gp;
   bpmsg_gp.SerializeToString(&ser_bpmsg_gp);
   //Expected result for GetMsgs
-  packethandler::ValidatedBufferPacketMessage val_msg;
+  ValidatedBufferPacketMessage val_msg;
   val_msg.set_index(bpmsg.rsaenc_key());
   val_msg.set_message(bpmsg.aesenc_message());
   val_msg.set_sender(bpmsg.sender_id());
@@ -1133,7 +1133,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
     boost::bind(&LoadChunkCallback::CallbackFunc, &cb2, _1));
   wait_result(&cb2, client_mutex);
   ASSERT_EQ(kad::kRpcResultFailure, cb2.result());
-  packethandler::BufferPacket rec_bp;
+  BufferPacket rec_bp;
   ASSERT_TRUE(rec_bp.ParseFromString(cb2.content()));
   ASSERT_EQ(1, rec_bp.messages_size());
   GetMsgsCallback cb4;

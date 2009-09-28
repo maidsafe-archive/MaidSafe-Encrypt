@@ -371,8 +371,8 @@ bool SEHandler::MakeElement(const std::string &rel_entry,
   }
 }
 
-int SEHandler::GenerateUniqueKey(const DirType dir_type,
-                                 const std::string &msid,
+int SEHandler::GenerateUniqueKey(const DirType,
+                                 const std::string &,
                                  const int &attempt,
                                  std::string *hex_key) {
   *hex_key = base::RandomString(200);
@@ -390,7 +390,7 @@ int SEHandler::GenerateUniqueKey(const DirType dir_type,
 //    else
 //      pd_dir_type_ = PDDIR_SIGNED;
 //  //    std::string ser_gp = CreateDataMapPacket("temp data", dir_type, msid);
-//   return storem_->StorePacket(*hex_key, "a", packethandler::PD_DIR, dir_type,
+//   return storem_->StorePacket(*hex_key, "a", PD_DIR, dir_type,
 //                                msid);
     return 0;
   }
@@ -505,7 +505,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
     pd_dir_type = PDDIR_NOTSIGNED;
   else
     pd_dir_type = PDDIR_SIGNED;
-  if (storem_->StorePacket(dir_key, enc_dm, packethandler::PD_DIR, dir_type,
+  if (storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type,
       msid) == 0) {
 #ifdef DEBUG
     printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());
@@ -600,7 +600,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
     }
 
 //      if (dir_type != ANONYMOUS) {
-//        packethandler::GenericPacket gp;
+//        GenericPacket gp;
 //        if (!gp.ParseFromString(enc_dm_)) {
 //  #ifdef DEBUG
 //          printf("Failed to parse generic packet.\n");
@@ -634,7 +634,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
     }
   } else {
 //      if (dir_type != ANONYMOUS) {
-//        packethandler::GenericPacket gp;
+//        GenericPacket gp;
 //        if (!gp.ParseFromString(ser_dm)) {
 //  #ifdef DEBUG
 //          printf("Failed to parse generic packet.\n");

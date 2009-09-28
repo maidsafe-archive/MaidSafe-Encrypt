@@ -50,6 +50,9 @@ class Login : public QWidget {
   QString password() const;
 
   void clearFields() { reset(); }
+  void StartProgressBar();
+  // Clear all fields, puts focus back to username
+  void reset();
 
  protected:
   // handle custom events (for thread safe ui updates)
@@ -89,8 +92,6 @@ class Login : public QWidget {
   private:
     Ui::LoginScreen ui_;
 
-    // Clear all fields, puts focus back to username
-    void reset();
 
     // Update field enabled ness as usernames and pins are changed
     void updateUI();

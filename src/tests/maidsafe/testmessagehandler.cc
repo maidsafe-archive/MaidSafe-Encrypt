@@ -108,7 +108,7 @@ class MsgHandlerTest : public testing::Test {
     }
     crypto_obj.set_hash_algorithm(crypto::SHA_512);
     crypto_obj.set_symm_algorithm(crypto::AES_256);
-    rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
+    rsa_obj.GenerateKeys(maidsafe::kRsaKeySize);
     private_key = rsa_obj.private_key();
     public_key = rsa_obj.public_key();
     public_username = "el tonto smer";
@@ -151,15 +151,15 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
-                                                                     mutex);
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+                                                                mutex);
   maidsafe::MessageHandler msghandler(sm.get(), mutex);
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
 
   // Creating keys of the sender
   std::string sender("sender");
-  rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
+  rsa_obj.GenerateKeys(maidsafe::kRsaKeySize);
   std::string sender_pubkey = rsa_obj.public_key();
   std::string sender_privkey = rsa_obj.private_key();
 
@@ -168,8 +168,8 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
       sender_pubkey, sender_privkey));
 
   // Creating MPID of the sender
-  rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
-  packethandler::GenericPacket gp;
+  rsa_obj.GenerateKeys(maidsafe::kRsaKeySize);
+  maidsafe::GenericPacket gp;
   gp.set_data(sender_pubkey);
   gp.set_signature(crypto_obj.AsymSign(gp.data(), "", rsa_obj.private_key(),
                    crypto::STRING_STRING));
@@ -179,14 +179,14 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
                               rsa_obj.private_key(),
                               crypto::STRING_STRING);
   ASSERT_EQ(0, sm->StorePacket(crypto_obj.Hash(sender, "",
-      crypto::STRING_STRING, true), ser_gp, packethandler::MPID,
+      crypto::STRING_STRING, true), ser_gp, maidsafe::MPID,
       maidsafe::PRIVATE, ""));
 
   ss->ResetSession();
   ss->AddKey(maidsafe::MPID, sender, private_key, public_key, "");
 
   // Creating the sender's contact info
-  packethandler::ContactInfo ci;
+  maidsafe::ContactInfo ci;
   std::string ser_ci;
   ci.set_name("la puerca");
   ci.set_birthday("12/12/1980");
@@ -205,10 +205,11 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   recs.push_back(rec);
 
   //  Sending the message
-  msghandler.SendMessage(ser_ci, recs, MPID_BP, packethandler::ADD_CONTACT_RQST,
+  msghandler.SendMessage(ser_ci, recs, maidsafe::MPID,
+                         maidsafe::ADD_CONTACT_RQST,
                          boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
-  packethandler::StoreMessagesResult store_msg_result;
+  maidsafe::StoreMessagesResult store_msg_result;
   ASSERT_TRUE(store_msg_result.ParseFromString(cb.result));
   ASSERT_EQ(kAck, static_cast<int>(store_msg_result.result()));
   ASSERT_EQ(1, store_msg_result.stored_msgs());
@@ -218,14 +219,14 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
 
   std::set<std::string> users;
   users.insert(public_username);
-  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
 
   // Changing the session data to "el tonto smer"
   ss->ResetSession();
   ss->AddKey(maidsafe::MPID, public_username, private_key, public_key, "");
 
   // Getting buffer packet
-  clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(
+  clientbufferpackethandler.GetBufferPacket(maidsafe::MPID, boost::bind(
       &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   maidsafe::GetMessagesResponse get_msgs_res;
@@ -238,11 +239,11 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   // Get message and validate its ADD_CONTACT_RQST and contents
   std::string ser_msg = get_msgs_res.messages(0);
   get_msgs_res.Clear();
-  packethandler::ValidatedBufferPacketMessage vbpm;
+  maidsafe::ValidatedBufferPacketMessage vbpm;
   vbpm.ParseFromString(ser_msg);
   ASSERT_EQ(sender, vbpm.sender());
-  ASSERT_EQ(packethandler::ADD_CONTACT_RQST, vbpm.type());
-  packethandler::ContactInfo ci_ret;
+  ASSERT_EQ(maidsafe::ADD_CONTACT_RQST, vbpm.type());
+  maidsafe::ContactInfo ci_ret;
   ASSERT_TRUE(ci_ret.ParseFromString(vbpm.message()));
   ASSERT_EQ(ci_ret.name(), "la puerca");
   ASSERT_EQ(ci_ret.birthday(), "12/12/1980");
@@ -253,13 +254,14 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   cb.Reset();
 
   // Use the method to get messages only to verify same message
-  std::list<packethandler::ValidatedBufferPacketMessage> valid_messages;
-  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(MPID_BP, &valid_messages));
+  std::list<maidsafe::ValidatedBufferPacketMessage> valid_messages;
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
+                                                     &valid_messages));
   int messages_size(valid_messages.size());
   ASSERT_EQ(1, messages_size);
   ASSERT_EQ(sender, valid_messages.front().sender());
-  ASSERT_EQ(packethandler::ADD_CONTACT_RQST, valid_messages.front().type());
-  packethandler::ContactInfo ci_ret1;
+  ASSERT_EQ(maidsafe::ADD_CONTACT_RQST, valid_messages.front().type());
+  maidsafe::ContactInfo ci_ret1;
   ASSERT_TRUE(ci_ret1.ParseFromString(valid_messages.front().message()));
   ASSERT_EQ(ci_ret1.name(), "la puerca");
   ASSERT_EQ(ci_ret1.birthday(), "12/12/1980");
@@ -271,10 +273,10 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   // Adding user to buffer packet's authorised users
   users.clear();
   users.insert(sender);
-  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
 
   // Clearing the messages
-  clientbufferpackethandler.ClearMessages(MPID_BP, boost::bind(
+  clientbufferpackethandler.ClearMessages(maidsafe::MPID, boost::bind(
       &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   maidsafe::DeleteResponse del_res;
@@ -284,7 +286,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   del_res.Clear();
 
   // No more messages & one authorised user
-  clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(
+  clientbufferpackethandler.GetBufferPacket(maidsafe::MPID, boost::bind(
       &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
@@ -315,7 +317,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   recs.push_back(rec);
 
   //  Sending the message
-  msghandler.SendMessage(ser_ci, recs, MPID_BP, packethandler::INSTANT_MSG,
+  msghandler.SendMessage(ser_ci, recs, maidsafe::MPID, maidsafe::INSTANT_MSG,
                          boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(store_msg_result.ParseFromString(cb.result));
@@ -330,7 +332,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   ss->AddKey(maidsafe::MPID, sender, private_key, public_key, "");
 
   // Getting buffer packet
-  clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(
+  clientbufferpackethandler.GetBufferPacket(maidsafe::MPID, boost::bind(
       &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tmsgh(cb, mutex);
   ASSERT_TRUE(get_msgs_res.ParseFromString(cb.result));
@@ -342,12 +344,13 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContact_Req) {
   get_msgs_res.Clear();
 
   // Use the method to get messages only to verify same message
-  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(MPID_BP, &valid_messages));
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
+                                                     &valid_messages));
   messages_size = static_cast<int>(valid_messages.size());
   printf("Messages: %i\n", messages_size);
   ASSERT_EQ(1, messages_size);
   ASSERT_EQ(public_username, valid_messages.front().sender());
-  ASSERT_EQ(packethandler::INSTANT_MSG, valid_messages.front().type());
+  ASSERT_EQ(maidsafe::INSTANT_MSG, valid_messages.front().type());
   ASSERT_TRUE(ci_ret1.ParseFromString(valid_messages.front().message()));
   ASSERT_EQ(ci_ret1.name(), "Danbert");
   ASSERT_EQ(ci_ret1.birthday(), "19/01/1960");

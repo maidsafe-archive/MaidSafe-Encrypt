@@ -29,7 +29,7 @@
 #include <ctime>
 #include <cstdio>
 
-namespace packethandler {
+namespace maidsafe {
 
 PacketParams SignaturePacket::Create(PacketParams params) {
   GenericPacket sig_packet;
@@ -290,4 +290,4 @@ std::string MpidPacket::PacketName(PacketParams params) {
                           crypto::STRING_STRING, true);
 }
 
-}  // namespace packethandler
+}  // namespace maidsafe

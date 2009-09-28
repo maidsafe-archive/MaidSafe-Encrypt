@@ -38,7 +38,7 @@
 #include "protobuf/packet.pb.h"
 #include "protobuf/datamaps.pb.h"
 
-namespace packethandler {
+namespace maidsafe {
 
 class ClientBufferPacketHandler {
  public:
@@ -47,19 +47,19 @@ class ClientBufferPacketHandler {
   int CreateBufferPacket(const std::string &owner_id,
       const std::string &public_key, const std::string &private_key);
   int AddUsers(const std::set<std::string> &users,
-               const BufferPacketType &type);
+               const PacketType &type);
   int DeleteUsers(const std::set<std::string> &users,
-      const BufferPacketType &type);
-  int ChangeStatus(int status, const BufferPacketType &type);
+      const PacketType &type);
+  int ChangeStatus(int status, const PacketType &type);
   // bool ListUsers(GenericPacket gp_info, std::set<std::string> *users);
   int GetMessages(
-      const BufferPacketType &type,
+      const PacketType &type,
       std::list<ValidatedBufferPacketMessage> *valid_messages);
-  void GetBufferPacket(const BufferPacketType &type,
+  void GetBufferPacket(const PacketType &type,
       base::callback_func_type cb);
-  void ClearMessages(const BufferPacketType &type,
+  void ClearMessages(const PacketType &type,
       base::callback_func_type cb);
-  void GetBufferPacketInfo(const BufferPacketType &type,
+  void GetBufferPacketInfo(const PacketType &type,
       base::callback_func_type cb);
 
  private:
@@ -68,17 +68,17 @@ class ClientBufferPacketHandler {
   maidsafe::StoreManagerInterface *sm_;
   boost::recursive_mutex *mutex_;
 
-  bool UserList(std::set<std::string> *list, BufferPacketType type);
-  bool SetUserList(std::set<std::string> list, BufferPacketType type);
+  bool UserList(std::set<std::string> *list, PacketType type);
+  bool SetUserList(std::set<std::string> list, PacketType type);
   void GetBufferPacket_Callback(const std::string &result,
-      const BufferPacketType &type, base::callback_func_type cb);
+      const PacketType &type, base::callback_func_type cb);
   void GetBufferPacketInfo_Callback(const std::string &result,
       base::callback_func_type cb);
-  maidsafe::PacketType PacketHandler_PacketType(const BufferPacketType &type);
+//  maidsafe::PacketType PacketHandler_PacketType(const PacketType &type);
   ClientBufferPacketHandler &operator=(const ClientBufferPacketHandler);
   ClientBufferPacketHandler(const ClientBufferPacketHandler&);
 };
 
-}  // namespace packethandler
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_CLIENT_CLIENTBUFFERPACKETHANDLER_H_

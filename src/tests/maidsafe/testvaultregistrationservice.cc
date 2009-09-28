@@ -151,7 +151,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectOwnVault) {
   ASSERT_EQ(maidsafe::NOT_OWNED, service->status());
   crypto::Crypto cobj;
   crypto::RsaKeyPair keypair;
-  keypair.GenerateKeys(packethandler::kRsaKeySize);
+  keypair.GenerateKeys(maidsafe::kRsaKeySize);
   cobj.set_hash_algorithm(crypto::SHA_512);
   std::string singed_pub_key = cobj.AsymSign(keypair.public_key(), "",
       keypair.private_key(), crypto::STRING_STRING);
@@ -227,7 +227,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectOwnVault) {
 TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   crypto::Crypto cobj;
   crypto::RsaKeyPair keypair;
-  keypair.GenerateKeys(packethandler::kRsaKeySize);
+  keypair.GenerateKeys(maidsafe::kRsaKeySize);
   cobj.set_hash_algorithm(crypto::SHA_512);
   std::string signed_public_key = cobj.AsymSign(keypair.public_key(), "",
       keypair.private_key(), crypto::STRING_STRING);
@@ -323,7 +323,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   std::string priv_key = keypair.private_key();
   std::string pub_key = keypair.public_key();
   keypair.ClearKeys();
-  keypair.GenerateKeys(packethandler::kRsaKeySize);
+  keypair.GenerateKeys(maidsafe::kRsaKeySize);
   request.set_private_key(keypair.private_key());
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key(signed_public_key);
@@ -626,7 +626,7 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
       _3)));
   crypto::Crypto cobj;
   crypto::RsaKeyPair keypair;
-  keypair.GenerateKeys(packethandler::kRsaKeySize);
+  keypair.GenerateKeys(maidsafe::kRsaKeySize);
   cobj.set_hash_algorithm(crypto::SHA_512);
   std::string singed_pub_key = cobj.AsymSign(keypair.public_key(), "",
       keypair.private_key(), crypto::STRING_STRING);

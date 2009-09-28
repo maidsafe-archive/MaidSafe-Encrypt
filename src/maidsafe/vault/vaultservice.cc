@@ -166,7 +166,7 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
     return;
   }
 
-  packethandler::VaultBufferPacketHandler vbph;
+  maidsafe::VaultBufferPacketHandler vbph;
   if (request->data_type() != maidsafe::SYSTEM_PACKET &&
       request->data_type() != maidsafe::BUFFER_PACKET) {
     response->set_result(kNack);
@@ -186,7 +186,7 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
                                     valid_data = true;
                                   } break;
     case maidsafe::BUFFER_PACKET: {
-                                    packethandler::VaultBufferPacketHandler vph;
+                                    maidsafe::VaultBufferPacketHandler vph;
                                     if (vph.ValidateOwnerSignature(
                                       request->public_key(), request->data()))
                                     valid_data = true;
@@ -254,17 +254,17 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     return;
   }
   bool valid_data = false;
-  packethandler::VaultBufferPacketHandler vbph;
+  maidsafe::VaultBufferPacketHandler vbph;
   switch (request->data_type()) {
-    case maidsafe::SYSTEM_PACKET:
+//    case maidsafe::SYSTEM_PACKET:
     case maidsafe::PDDIR_SIGNED: if (ValidateSystemPacket(request->data(),
                                      request->public_key()))
                                    valid_data = true;
                                  break;
-    case maidsafe::BUFFER_PACKET: if (vbph.ValidateOwnerSignature(
-                                      request->public_key(), request->data()))
-                                    valid_data = true;
-                                  break;
+//    case maidsafe::BUFFER_PACKET: if (vbph.ValidateOwnerSignature(
+//                                      request->public_key(), request->data()))
+//                                    valid_data = true;
+//                                  break;
     // TODO(David/Fraser#5#): check the validity of a pddir not signed DB
     case maidsafe::PDDIR_NOTSIGNED: valid_data = true;
                                     break;
@@ -275,8 +275,8 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     default: break;  // No specific check for data
   }
 
-  // TODO(jose) check IOU's and signatures before storing the chunk
-  // TODO(jose) check available space in the vault's quota
+  // TODO(Team#5#): check IOU's and signatures before storing the chunk
+  // TODO(Team#5#): check available space in the vault's quota
   if (valid_data) {
     int n = poh_->FindOperation(request->pmid(), request->chunkname(),
                                 request->data().size(), "", "",
@@ -620,9 +620,9 @@ void VaultService::Update(google::protobuf::RpcController*,
     return;
   }
 
-  packethandler::GenericPacket gp;
+  maidsafe::GenericPacket gp;
   std::string updated_value;
-  packethandler::VaultBufferPacketHandler vbph;
+  maidsafe::VaultBufferPacketHandler vbph;
   switch (request->data_type()) {
     case maidsafe::SYSTEM_PACKET: if ((ValidateSystemPacket(request->data(),
                                          request->public_key())) &&
@@ -711,7 +711,7 @@ void VaultService::GetMessages(google::protobuf::RpcController*,
   }
   std::string content;
   if (LoadChunkLocal(request->buffer_packet_name(), &content)) {
-    packethandler::VaultBufferPacketHandler vbph;
+    maidsafe::VaultBufferPacketHandler vbph;
     if (!vbph.ValidateOwnerSignature(request->public_key(), content)) {
       response->set_result(kNack);
       done->Run();
@@ -758,7 +758,7 @@ void VaultService::Delete(google::protobuf::RpcController*,
 
   // TODO(david/jose): define how to delete chunk references of signed
   // chunks and then just check the signature and delete it
-  packethandler::VaultBufferPacketHandler vbph;
+  maidsafe::VaultBufferPacketHandler vbph;
   switch (request->data_type()) {
     case maidsafe::SYSTEM_PACKET: if (ValidateSystemPacket(content,
                                          request->public_key()))
@@ -966,7 +966,7 @@ bool VaultService::ValidateSignedRequest(const std::string &public_key,
 
 bool VaultService::ValidateSystemPacket(const std::string &ser_content,
                                         const std::string &public_key) {
-  packethandler::GenericPacket gp;
+  maidsafe::GenericPacket gp;
   if (!gp.ParseFromString(ser_content))
     return false;
   crypto::Crypto co;
@@ -997,7 +997,7 @@ bool VaultService::ModifyBufferPacketInfo(const std::string &new_info,
   if (!ValidateSystemPacket(new_info, pub_key)) {
     return false;
   }
-  packethandler::VaultBufferPacketHandler vbph;
+  maidsafe::VaultBufferPacketHandler vbph;
   return vbph.ChangeOwnerInfo(new_info, updated_bp, pub_key);
 }
 

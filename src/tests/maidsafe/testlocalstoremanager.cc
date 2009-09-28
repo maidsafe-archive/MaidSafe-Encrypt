@@ -107,7 +107,7 @@ class StoreManagerTest : public testing::Test {
     crypto_obj.set_symm_algorithm(crypto::AES_256);
     crypto_obj.set_hash_algorithm(crypto::SHA_512);
     crypto::RsaKeyPair rsa_obj;
-    rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
+    rsa_obj.GenerateKeys(maidsafe::kRsaKeySize);
     maidsafe::SessionSingleton::getInstance()->AddKey(
         maidsafe::MPID, "Me", rsa_obj.private_key(), rsa_obj.public_key(), "");
     cb.Reset();
@@ -143,7 +143,7 @@ class StoreManagerTest : public testing::Test {
 };
 
 TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
-  packethandler::GenericPacket gp;
+  maidsafe::GenericPacket gp;
   rsa_obj.GenerateKeys(4096);
   gp.set_data("Generic System Packet Data");
   gp.set_signature(crypto_obj.AsymSign(gp.data(), "",
@@ -154,7 +154,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   std::string gp_content;
   gp.SerializeToString(&gp_content);
   ASSERT_EQ(0, storemanager->StorePacket(gp_name, gp_content,
-      packethandler::BUFFER, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER, maidsafe::PRIVATE, ""));
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
   std::string result;
   storemanager->LoadPacket(gp_name, &result);
@@ -165,7 +165,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
 }
 
 TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
-  packethandler::GenericPacket gp;
+  maidsafe::GenericPacket gp;
   rsa_obj.GenerateKeys(4096);
   gp.set_data("Generic System Packet Data");
   gp.set_signature(crypto_obj.AsymSign(gp.data(), "", rsa_obj.private_key(),
@@ -184,7 +184,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
       crypto::STRING_STRING, false),
       "", rsa_obj.private_key(), crypto::STRING_STRING);
   ASSERT_EQ(0, storemanager->StorePacket(gp_name, gp_content,
-      packethandler::BUFFER, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER, maidsafe::PRIVATE, ""));
 
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
   storemanager->DeletePacket(gp_name, signed_request, rsa_obj.public_key(),
@@ -232,9 +232,9 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   std::string bufferpacketname = crypto_obj.Hash(owner_id + "BUFFER", "",
                                  crypto::STRING_STRING, true);
   ASSERT_TRUE(storemanager->KeyUnique(bufferpacketname, false));
-  packethandler::BufferPacket buffer_packet;
-  packethandler::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
-  packethandler::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
+  maidsafe::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
+  maidsafe::BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(owner_id);
   buffer_packet_info.set_ownerpublickey(public_key);
   buffer_packet_info.set_online(false);
@@ -252,7 +252,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
   std::string signed_public_key = crypto_obj.AsymSign(public_key, "",
                                   private_key, crypto::STRING_STRING);
   ASSERT_EQ(0, storemanager->StorePacket(bufferpacketname, ser_bp,
-      packethandler::BUFFER, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER, maidsafe::PRIVATE, ""));
 
   ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
   std::string packet_content;
@@ -264,7 +264,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
 }
 
 TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
-  packethandler::GenericPacket gp;
+  maidsafe::GenericPacket gp;
   rsa_obj.GenerateKeys(4096);
   std::string public_key = rsa_obj.public_key();
   std::string private_key = rsa_obj.private_key();
@@ -279,7 +279,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
                                   private_key, crypto::STRING_STRING);
 
   ASSERT_EQ(0, storemanager->StorePacket(gp_name, gp_content,
-      packethandler::BUFFER, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER, maidsafe::PRIVATE, ""));
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
 
   // Creating new public/private keys
@@ -328,9 +328,9 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   std::string bufferpacketname = crypto_obj.Hash(owner_id + "BUFFER", "",
                                  crypto::STRING_STRING, true);
   ASSERT_TRUE(storemanager->KeyUnique(bufferpacketname, false));
-  packethandler::BufferPacket buffer_packet;
-  packethandler::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
-  packethandler::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
+  maidsafe::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
+  maidsafe::BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(owner_id);
   buffer_packet_info.set_ownerpublickey(public_key);
   buffer_packet_info.set_online(false);
@@ -349,7 +349,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
                                   private_key, crypto::STRING_STRING);
 
   ASSERT_EQ(0, storemanager->StorePacket(bufferpacketname, ser_bp,
-      packethandler::BUFFER, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER, maidsafe::PRIVATE, ""));
   ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
   rsa_obj.ClearKeys();
   rsa_obj.GenerateKeys(4096);
@@ -391,7 +391,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
 
 
   // storing MPID package for the sender
-  packethandler::GenericPacket sender_mpid;
+  maidsafe::GenericPacket sender_mpid;
   sender_mpid.set_data(sender_mpid_pubkey);
   sender_mpid.set_signature(crypto_obj.AsymSign(sender_mpid_pubkey, "",
                             sig_private_key, crypto::STRING_STRING));
@@ -402,7 +402,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                                                  crypto::STRING_STRING, true);
 
   ASSERT_EQ(0, storemanager->StorePacket(sender_mpid_name, sender_ser_mpid,
-      packethandler::MPID, maidsafe::PRIVATE, ""));
+      maidsafe::MPID, maidsafe::PRIVATE, ""));
 
   // rsa_obj.GenerateKeys(4096);
   std::string public_key = rsa_obj.public_key();
@@ -413,9 +413,9 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   std::string bufferpacketname = crypto_obj.Hash(owner_id + "BUFFER", "",
                                  crypto::STRING_STRING, true);
   ASSERT_TRUE(storemanager->KeyUnique(bufferpacketname, false));
-  packethandler::BufferPacket buffer_packet;
-  packethandler::GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
-  packethandler::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
+  maidsafe::GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
+  maidsafe::BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(owner_id);
   buffer_packet_info.set_ownerpublickey(public_key);
   buffer_packet_info.set_online(false);
@@ -433,7 +433,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                                           crypto::STRING_STRING);
 
   ASSERT_EQ(0, storemanager->StorePacket(bufferpacketname, ser_bp,
-      packethandler::BUFFER, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER, maidsafe::PRIVATE, ""));
   ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
   std::string packet_content;
   storemanager->LoadPacket(bufferpacketname, &packet_content);
@@ -444,17 +444,17 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
 
   // Creating msgs to insert
   std::string key("AESkey");
-  packethandler::BufferPacketMessage bpmsg;
+  maidsafe::BufferPacketMessage bpmsg;
   bpmsg.set_sender_id(sender);
   bpmsg.set_rsaenc_key(crypto_obj.AsymEncrypt(key, "", public_key,
                        crypto::STRING_STRING));
   bpmsg.set_aesenc_message(crypto_obj.SymmEncrypt("test msg", "",
                            crypto::STRING_STRING, key));
-  bpmsg.set_type(packethandler::INSTANT_MSG);
+  bpmsg.set_type(maidsafe::INSTANT_MSG);
   bpmsg.set_sender_public_key(sender_mpid_pubkey);
   std::string ser_bpmsg;
   bpmsg.SerializeToString(&ser_bpmsg);
-  packethandler::GenericPacket bpmsg_gp;
+  maidsafe::GenericPacket bpmsg_gp;
   bpmsg_gp.set_data(ser_bpmsg);
   bpmsg_gp.set_signature(crypto_obj.AsymSign(ser_bpmsg, "", sender_mpid_privkey,
                          crypto::STRING_STRING));
@@ -465,10 +465,10 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                       sender_mpid_privkey, crypto::STRING_STRING);
 
   ASSERT_NE(0, storemanager->StorePacket("incorrect name", ser_bpmsg_gp,
-      packethandler::BUFFER_MESSAGE, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER_MESSAGE, maidsafe::PRIVATE, ""));
 
   ASSERT_NE(0, storemanager->StorePacket(bufferpacketname, ser_bpmsg_gp,
-      packethandler::BUFFER_MESSAGE, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER_MESSAGE, maidsafe::PRIVATE, ""));
 
   // Checking the bp has not been modified
   packet_content = "";
@@ -479,7 +479,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   cb.Reset();
 
   // Changing the msg type
-  bpmsg.set_type(packethandler::ADD_CONTACT_RQST);
+  bpmsg.set_type(maidsafe::ADD_CONTACT_RQST);
   bpmsg.set_sender_public_key(sender_mpid_pubkey);
   bpmsg.SerializeToString(&ser_bpmsg);
   bpmsg_gp.clear_data();
@@ -489,7 +489,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
                          crypto::STRING_STRING));
   bpmsg_gp.SerializeToString(&ser_bpmsg_gp);
   ASSERT_EQ(0, storemanager->StorePacket(bufferpacketname, ser_bpmsg_gp,
-      packethandler::BUFFER_MESSAGE, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER_MESSAGE, maidsafe::PRIVATE, ""));
 
   // Checking if new buffer packet has the msg
   packet_content = "";
@@ -497,7 +497,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   ASSERT_TRUE(load_res.ParseFromString(packet_content));
   ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
   ser_bp = load_res.content();
-  packethandler::BufferPacket bp;
+  maidsafe::BufferPacket bp;
   bp.ParseFromString(ser_bp);
   ASSERT_EQ(1, bp.messages_size());
   load_res.Clear();

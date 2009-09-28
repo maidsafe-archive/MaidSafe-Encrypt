@@ -275,7 +275,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
       new Authentication(sm.get(), mutex));
   DataAtlas data_atlas;
   std::string ser_da;
-  packethandler::PacketParams lasquis, pubkeys;
+  PacketParams lasquis, pubkeys;
 
   Exitcode result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
@@ -329,7 +329,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
-  packethandler::PacketParams lasquis, pubkeys;
+  PacketParams lasquis, pubkeys;
   DataAtlas data_atlas;
   std::string ser_da;
   Exitcode result = authentication->GetUserInfo(username, pin);
@@ -379,7 +379,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
-  packethandler::PacketParams lasquis, pubkeys;
+  PacketParams lasquis, pubkeys;
   DataAtlas data_atlas;
   std::string ser_da;
   Exitcode result = authentication->GetUserInfo(username, pin);
@@ -393,8 +393,6 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   ss->SerialisedKeyRing(&ser_da);
   ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
               "Data Atlas hasn't the correct format";
-
-  printf("AAAAAAAAAAAAAAAAAAAA\n");
 
   for (int i = 0; i < data_atlas.keys_size(); ++i) {
     Key key = data_atlas.keys(i);
@@ -416,7 +414,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   }
   ASSERT_EQ(OK, authentication->ChangePassword(ser_da, lasquis, pubkeys,
             "elpasguord")) << "Unable to change password";
-  printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
+
   ASSERT_EQ("elpasguord", ss->Password()) << "Password is still the old one";
   std::string ser_da_login;
   cb.Reset();
@@ -439,7 +437,7 @@ TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
-  packethandler::PacketParams result;
+  PacketParams result;
   crypto::Crypto crypto_obj;
   crypto_obj.set_symm_algorithm(crypto::AES_256);
   crypto_obj.set_hash_algorithm(crypto::SHA_512);
@@ -454,14 +452,14 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   boost::scoped_ptr<LocalStoreManager>
       sm(new LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::MidPacket *midPacket = static_cast<packethandler::MidPacket*>
-      (packethandler::PacketFactory::Factory(packethandler::MID));
-  packethandler::PacketParams params;
+  MidPacket *midPacket = static_cast<MidPacket*>
+      (PacketFactory::Factory(MID));
+  PacketParams params;
   params["username"] = username;
   params["PIN"] = pin;
   std::string mid_name = midPacket->PacketName(params);
   ASSERT_EQ(0, sm->StorePacket(mid_name, "rubish data with same mid name",
-      packethandler::MID, maidsafe::PRIVATE, ""));
+      MID, maidsafe::PRIVATE, ""));
 
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get(), mutex));
@@ -484,7 +482,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
                                    &cb, _1));
   wait_for_result_ta(cb, mutex);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  packethandler::CreateMSIDResult msid_result;
+  CreateMSIDResult msid_result;
   ASSERT_TRUE(msid_result.ParseFromString(cb.result));
   ASSERT_EQ(kAck, static_cast<int>(msid_result.result()));
   msid_name = msid_result.name();
@@ -503,7 +501,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   GetResponse load_res;
   ASSERT_TRUE(load_res.ParseFromString(packet_content));
   ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
-  packethandler::GenericPacket gp;
+  GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(load_res.content()));
 
   // Check packet is correct and signed

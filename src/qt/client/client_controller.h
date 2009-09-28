@@ -44,92 +44,9 @@
     qt/client, act as a layer between the Qt gui world and the maidsafe
     world.
 */
-class ClientController : public QObject,
-                         public maidsafe::ClientInterface {
+class ClientController : public QObject {
   Q_OBJECT
  public:
-  static ClientController* instance();
-
-  //
-  void shutdown();
-
-  // Public username of current user.
-  /*!
-      Public username is actually on the SessionSingleton interface.  If
-      we need to access more of the SessionSingleton inteface then we may
-      be as well to split into a sepetate Qt wrapper
-  */
-  QString publicUsername() const;
-
-
-  // Contacts
-  // Current contacts.
-  ContactList contacts() const;
-
-  // Public names of all current contacts
-  QStringList contactsNames() const;
-
-  // Add a contact.
-  /*!
-      \param name public name of the contact you want to add.
-
-      This sends a request to \a name asking if they want to be added.
-
-      The result of this request will be notified contactStatusChanged
-  */
-  int addContact(const QString& name);
-
-  // Remove a contact
-  bool removeContact(const QString& name);
-
-
-  // Shares
-  // Create a share
-  bool createShare(const QString& shareName,
-                   const QStringList& admin,
-                   const QStringList& readOnly);
-
-  // Current shares
-  ShareList shares() const;
-
-  // Root directory of a named share
-  /*!
-      Note: doesn't check validity of share name
-      TODO: move onto Share interface
-  */
-  QDir shareDirRoot(const QString& name) const;
-  QDir myFilesDirRoot(const QString& name) const;
-
-
-  // Messaging
-  // To start and stop looking for messages
-  void StartCheckingMessages();
-  void StopCheckingMessages();
-
-  // Send an instant message to someone
-  /*!
-      \param txt the message
-      \param to public user name of the intended recipient
-
-  // To start looking for messages
-  void ClientController::StartCheckingMessages()
-
-      TODO - any length or format restrictions?
-  */
-  bool sendInstantMessage(const QString& txt, const QList<QString>& to);
-
-  // Send a file to someone
-  /*!
-      \param path full file path of file
-      \param txt accompanying message
-      \param to public user name of the intended recipient
-
-      The file must be within the maidsage file system
-  */
-  bool sendInstantFile(const QString& filePath,
-                       const QString& txt,
-                       const QList<QString>& to);
-
   enum MessageType {
       TEXT,               // Instant message received from someone
       SHARE,              // Someone has shared something
@@ -139,6 +56,36 @@ class ClientController : public QObject,
       CONTACT_DELETE      // Someone has deleted us from their list
   };
 
+  static ClientController* instance();
+  void shutdown();
+  bool Init();
+
+  QString publicUsername() const;
+
+  // Contacts
+  ContactList contacts() const;
+  QStringList contactsNames() const;
+  int addContact(const QString& name);
+  bool removeContact(const QString& name);
+
+
+  // Shares
+  bool createShare(const QString& shareName,
+                   const QStringList& admin,
+                   const QStringList& readOnly);
+  ShareList shares() const;
+  QDir shareDirRoot(const QString& name) const;
+  QDir myFilesDirRoot(const QString& name) const;
+
+
+  // Messaging
+  void StartCheckingMessages();
+  void StopCheckingMessages();
+  bool sendInstantMessage(const QString& txt, const QList<QString>& to);
+  bool sendInstantFile(const QString& filePath,
+                       const QString& txt,
+                       const QList<QString>& to);
+
   // Vault info
   bool PollVaultInfo(QString *chunkstore, boost::uint64_t *offered_space,
                      boost::uint64_t *free_space, QString *ip,
@@ -146,109 +93,26 @@ class ClientController : public QObject,
   bool IsLocalVaultOwned();
 
  signals:
-  // A message has been received.
   void messageReceived(ClientController::MessageType type,
                        const QDateTime& time,
                        const QString& from,
                        const QString& msg);
-
-  // We've added a contact
-  /*!
-      Note that at this point the contact may not yet have responded
-      to our request.
-  */
   void addedContact(const QString& name);
   void confirmedContact(const QString& name);
   void deletedContact(const QString& name);
-
-  // We've added a private share
   void addedPrivateShare(const QString& name);
-
-  // A contact's status has changed
-  /*!
-      TODO: emnumerate possible status
-  */
   void contactStatusChanged(const QString& from,
                             int status);
-
-  // User requested add of contact
-  /*!
-      \param from contact who wants to add you
-      \param msg introduction message
-
-      In response, the request should be accepted or declined via client
-      controller.
-  */
   void contactAdditionRequested(const QString& from,
                                 const QString& msg);
-
-  // A user has shared something with you
   void shareReceived(const QString& from,
                      const QString& share_name);
-
-  // A share has been changed in some way e.g. permissions or removed
   void shareChanged(const QString& from,
                     const QString& share_name);
-
-  // A user has sent you a file
-  /*!
-      Currently saved directly into private file's section.
-      Would be nice to prompt for new filename, whether to accept etc
-  */
   void fileReceived(const QString& from,
                     const QString& file_name);
-
-  /*!
-      Status changed on the network - change the icon on the tray
-  */
   void connectionStatusChanged(int status);
-
-  // System messages - to be decided
   void systemMessage(const QString& message);
-
- public:
-  // Implementation of the ClientInterface
-
-  // A user has sent you a message
-  virtual void messageReceived(const std::string& from,
-                               const std::string& msg);
-
-  // A contact's status has changed
-  /*!
-      TODO: emnumerate possible status
-  */
-  virtual void contactStatusChanged(const std::string& from,
-                                    int status);
-
-  // User requested add of contact
-  /*!
-      \param from contact who wants to add you
-      \param msg introduction message
-
-      In response, the request should be accepted or declined via client
-      controller.
-  */
-  virtual void contactAdditionRequested(const std::string& from,
-                                        const std::string& msg);
-
-  // A user has shared something with you
-  virtual void shareReceived(const std::string& from,
-                             const std::string& share_name);
-
-  // A share has been changed in some way e.g. permissions or removed
-  virtual void shareChanged(const std::string& from,
-                            const std::string& share_name);
-
-  // A user has sent you a file
-  /*!
-      Currently saved directly into private file's section.
-      Would be nice to prompt for new filename, whether to accept etc
-  */
-  virtual void fileReceived(const std::string& from,
-                            const std::string& file_name);
-
-  // System messages - to be decided
-  virtual void systemMessage(const std::string& message);
 
   private slots:
     // temporary while we emulate message notifications
@@ -258,18 +122,7 @@ class ClientController : public QObject,
   explicit ClientController(QObject* parent = 0);
   virtual ~ClientController();
 
-  // Analyse an instanst message and emit the appropriate signals
-  /*!
-      handles:
-       contacts added
-       private shares added
-
-      emits:
-          contactAdded
-          privateShareAdded
-          messageReceived
-  */
-  int analyseMessage(const packethandler::InstantMessage& im);
+  int analyseMessage(const maidsafe::InstantMessage& im);
   class ClientControllerImpl;
   ClientControllerImpl* impl_;
 };

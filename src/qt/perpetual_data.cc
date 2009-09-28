@@ -29,8 +29,9 @@
 #include "qt/widgets/user_panels.h"
 #include "qt/widgets/system_tray_icon.h"
 
-#include "qt/client/mount_thread.h"
 #include "qt/client/create_user_thread.h"
+#include "qt/client/join_kademlia_thread.h"
+#include "qt/client/mount_thread.h"
 #include "qt/client/user_space_filesystem.h"
 
 // generated
@@ -67,7 +68,23 @@ PerpetualData::PerpetualData(QWidget* parent)
   ui_.stackedWidget->addWidget(userPanels_);
 
   setCentralWidget(ui_.stackedWidget);
+  ui_.stackedWidget->setCurrentWidget(login_);
 
+  JoinKademliaThread *jkt = new JoinKademliaThread(this);
+  connect(jkt,  SIGNAL(completed(bool)),
+          this, SLOT(onJoinKademliaCompleted(bool)));
+  jkt->start();
+
+  login_->StartProgressBar();
+}
+
+void PerpetualData::onJoinKademliaCompleted(bool b) {
+  if (!b) {
+    qDebug() << "U didn't join kademlia, so fuck U!";
+    return;
+  }
+  login_->reset();
+  qDebug() << "PerpetualData::onJoinKademliaCompleted";
   setState(LOGIN);
 
   connect(ClientController::instance(),

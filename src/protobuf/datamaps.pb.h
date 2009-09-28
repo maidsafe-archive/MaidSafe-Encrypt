@@ -64,18 +64,26 @@ inline bool itemtype_Parse(
     itemtype_descriptor(), name, value);
 }
 enum PacketType {
-  ANMID = 0,
-  ANTMID = 1,
-  ANSMID = 2,
-  MAID = 3,
+  MID = 0,
+  SMID = 1,
+  TMID = 2,
+  MPID = 3,
   PMID = 4,
-  ANMPID = 5,
-  MPID = 6
+  MAID = 5,
+  ANMID = 6,
+  ANSMID = 7,
+  ANTMID = 8,
+  ANMPID = 9,
+  MSID = 10,
+  PD_DIR = 11,
+  BUFFER = 12,
+  BUFFER_INFO = 13,
+  BUFFER_MESSAGE = 14
 };
 const ::google::protobuf::EnumDescriptor* PacketType_descriptor();
 bool PacketType_IsValid(int value);
-const PacketType PacketType_MIN = ANMID;
-const PacketType PacketType_MAX = MPID;
+const PacketType PacketType_MIN = MID;
+const PacketType PacketType_MAX = BUFFER_MESSAGE;
 
 inline const ::std::string& PacketType_Name(PacketType value) {
   return ::google::protobuf::internal::NameOfEnum(

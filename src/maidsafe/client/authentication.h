@@ -32,8 +32,6 @@
 #include "maidsafe/client/storemanager.h"
 #include "maidsafe/client/systempackets.h"
 
-namespace ph = packethandler;
-
 namespace maidsafe {
 
 enum Exitcode {
@@ -69,30 +67,29 @@ class Authentication {
                                 const std::string &pin,
                                 const std::string &password);
   Exitcode SaveSession(std::string ser_da,
-                       ph::PacketParams priv_keys,
-                       ph::PacketParams pub_keys);
+                       PacketParams priv_keys,
+                       PacketParams pub_keys);
   Exitcode RemoveMe(std::list<KeyAtlasRow> sig_keys);
   Exitcode CreatePublicName(std::string public_username,
-                            ph::PacketParams *result);
+                            PacketParams *result);
   Exitcode ChangeUsername(std::string ser_da,
-                          ph::PacketParams priv_keys,
-                          ph::PacketParams pub_keys,
+                          PacketParams priv_keys,
+                          PacketParams pub_keys,
                           std::string new_username);
   Exitcode ChangePin(std::string ser_da,
-                     ph::PacketParams priv_keys,
-                     ph::PacketParams pub_keys,
+                     PacketParams priv_keys,
+                     PacketParams pub_keys,
                      std::string new_pin);
   Exitcode ChangePassword(std::string ser_da,
-                          ph::PacketParams priv_keys,
-                          ph::PacketParams pub_keys,
+                          PacketParams priv_keys,
+                          PacketParams pub_keys,
                           std::string new_password);
   bool CheckUserExists(std::string username, std::string pin);
   Exitcode PublicUsernamePublicKey(const std::string &public_username,
                                    std::string &public_key);
   void CreateMSIDPacket(base::callback_func_type cb);
  private:
-  std::string createSignaturePackets(const packethandler::SystemPackets &type,
-                                     const PacketType &type_da,
+  std::string createSignaturePackets(const PacketType &type_da,
                                      std::string &public_key);
   bool CheckUsername(const std::string &username);
   bool CheckPin(const std::string &pin);

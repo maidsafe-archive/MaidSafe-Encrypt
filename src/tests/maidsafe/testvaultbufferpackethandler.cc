@@ -36,12 +36,12 @@ class VaultBufferPacketHandlerTest : public testing::Test {
     rsakp.GenerateKeys(4096);
     public_key = rsakp.public_key();
     private_key = rsakp.private_key();
-    packethandler::BufferPacketInfo bpi;
+    maidsafe::BufferPacketInfo bpi;
     bpi.set_owner("test bufferpacket");
     bpi.set_ownerpublickey(public_key);
     bpi.add_users(testuser);
-    packethandler::BufferPacket bp;
-    packethandler::GenericPacket *info = bp.add_owner_info();
+    maidsafe::BufferPacket bp;
+    maidsafe::GenericPacket *info = bp.add_owner_info();
     std::string ser_bpi;
     bpi.SerializeToString(&ser_bpi);
     info->set_data(ser_bpi);
@@ -50,7 +50,7 @@ class VaultBufferPacketHandlerTest : public testing::Test {
     bp.SerializeToString(&ser_bp);
   }
 
-  packethandler::VaultBufferPacketHandler vbph;
+  maidsafe::VaultBufferPacketHandler vbph;
   std::string public_key;
   std::string private_key;
   std::string testuser;
@@ -66,14 +66,14 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ValidateOwnerSig) {
 }
 
 TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ChangeOwnerInfo) {
-  packethandler::BufferPacketInfo bpi;
+  maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("test bufferpacket");
   bpi.set_ownerpublickey(public_key);
   bpi.set_online(1);
   bpi.add_users(testuser);
   bpi.add_users("newuser");
-  packethandler::BufferPacket bp;
-  packethandler::GenericPacket *info = bp.add_owner_info();
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
   std::string ser_bpi;
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
@@ -82,11 +82,11 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ChangeOwnerInfo) {
   std::string ser_gp;
   info->SerializeToString(&ser_gp);
   ASSERT_TRUE(vbph.ChangeOwnerInfo(ser_gp, &ser_bp, public_key));
-  packethandler::BufferPacket bp_up;
+  maidsafe::BufferPacket bp_up;
   ASSERT_TRUE(bp_up.ParseFromString(ser_bp));
-  packethandler::GenericPacket new_gp;
+  maidsafe::GenericPacket new_gp;
   new_gp = bp.owner_info(0);
-  packethandler::BufferPacketInfo bpi_up;
+  maidsafe::BufferPacketInfo bpi_up;
   bpi_up.ParseFromString(new_gp.data());
   ASSERT_EQ("test bufferpacket", bpi_up.owner());
   ASSERT_EQ(1, bpi.online());
@@ -96,12 +96,12 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ChangeOwnerInfo) {
 TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   std::string ser_msg("Invalid msg format");
   std::string sender;
-  packethandler::MessageType type;
+  maidsafe::MessageType type;
   ASSERT_FALSE(vbph.CheckMsgStructure(ser_msg, &sender, &type));
   crypto::RsaKeyPair rsakp;
   rsakp.GenerateKeys(4096);
-  packethandler::GenericPacket gp_msg;
-  packethandler::BufferPacketMessage bp_msg;
+  maidsafe::GenericPacket gp_msg;
+  maidsafe::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("non authuser");
   std::string signed_public_key = cry_obj.AsymSign(rsakp.public_key(),
                                   "", rsakp.private_key(),
@@ -112,7 +112,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   std::string enc_msg = cry_obj.SymmEncrypt("msj tonto", "",
                         crypto::STRING_STRING, "key");
   bp_msg.set_aesenc_message(enc_msg);
-  bp_msg.set_type(packethandler::INSTANT_MSG);
+  bp_msg.set_type(maidsafe::INSTANT_MSG);
   std::string ser_bp_msg;
   bp_msg.SerializeToString(&ser_bp_msg);
   gp_msg.set_data(ser_bp_msg);
@@ -121,7 +121,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   gp_msg.SerializeToString(&ser_msg);
   ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, &sender, &type));
   ASSERT_EQ("non authuser", sender);
-  ASSERT_EQ(packethandler::INSTANT_MSG, type);
+  ASSERT_EQ(maidsafe::INSTANT_MSG, type);
 
   std::string sender_id = cry_obj.Hash(rsakp.public_key() + signed_public_key,
                           "", crypto::STRING_STRING, true);
@@ -134,20 +134,20 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   gp_msg.SerializeToString(&ser_msg);
   ASSERT_TRUE(vbph.CheckMsgStructure(ser_msg, &sender, &type));
   ASSERT_EQ(sender_id, sender);
-  ASSERT_EQ(packethandler::INSTANT_MSG, type);
+  ASSERT_EQ(maidsafe::INSTANT_MSG, type);
   std::string ser_bp_updated;
   ASSERT_FALSE(vbph.AddMessage(ser_bp, ser_msg, signed_public_key,
                &ser_bp_updated));
 
   // Adding the user
-  packethandler::BufferPacket bp;
+  maidsafe::BufferPacket bp;
   bp.ParseFromString(ser_bp);
-  packethandler::GenericPacket bp_info = bp.owner_info(0);
-  packethandler::BufferPacketInfo bpi;
+  maidsafe::GenericPacket bp_info = bp.owner_info(0);
+  maidsafe::BufferPacketInfo bpi;
   bpi.ParseFromString(bp_info.data());
   bpi.add_users(sender_id);
   bp.clear_owner_info();
-  packethandler::GenericPacket *bp_info_up = bp.add_owner_info();
+  maidsafe::GenericPacket *bp_info_up = bp.add_owner_info();
   std::string new_ser_bpi;
   bpi.SerializeToString(&new_ser_bpi);
   bp_info_up->set_data(new_ser_bpi);
@@ -165,7 +165,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   ASSERT_TRUE(vbph.AddMessage(ser_bp, ser_msg, signed_public_key,
               &ser_bp_updated));
 
-  packethandler::BufferPacket bp_updated;
+  maidsafe::BufferPacket bp_updated;
   ASSERT_TRUE(bp_updated.ParseFromString(ser_bp_updated));
   ASSERT_EQ(static_cast<boost::int32_t>(1), bp_updated.messages_size());
   std::vector<std::string> msgs, msgs1;
@@ -180,11 +180,11 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
 TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
   std::string ser_msg;
   std::string sender;
-  packethandler::MessageType type;
+  maidsafe::MessageType type;
   crypto::RsaKeyPair rsakp;
   rsakp.GenerateKeys(4096);
-  packethandler::GenericPacket gp_msg;
-  packethandler::BufferPacketMessage bp_msg;
+  maidsafe::GenericPacket gp_msg;
+  maidsafe::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("non authuser");
   std::string enc_key = cry_obj.AsymEncrypt("key", "", public_key,
     crypto::STRING_STRING);
@@ -192,7 +192,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
   std::string enc_msg = cry_obj.SymmEncrypt("msj tonto auth req", "",
                         crypto::STRING_STRING, "key");
   bp_msg.set_aesenc_message(enc_msg);
-  bp_msg.set_type(packethandler::ADD_CONTACT_RQST);
+  bp_msg.set_type(maidsafe::ADD_CONTACT_RQST);
 
   std::string str_bp_updated;
   bp_msg.set_sender_public_key("invalid_pubkey");
@@ -207,7 +207,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
   std::string signed_public_key = cry_obj.AsymSign(rsakp.public_key(),
                                   "", rsakp.private_key(),
                                   crypto::STRING_STRING);
-  ASSERT_EQ(packethandler::ADD_CONTACT_RQST, type);
+  ASSERT_EQ(maidsafe::ADD_CONTACT_RQST, type);
   ASSERT_FALSE(vbph.AddMessage(ser_bp, ser_msg, signed_public_key,
                                &str_bp_updated));
   bp_msg.set_sender_public_key(rsakp.public_key());
@@ -218,12 +218,12 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
                        crypto::STRING_STRING));
   gp_msg.SerializeToString(&ser_msg);
 
-  packethandler::GenericPacket sig_packet;
+  maidsafe::GenericPacket sig_packet;
   sig_packet.set_data(rsakp.public_key());
   sig_packet.set_signature(signed_public_key);
   std::string ser_sig_packet;
   sig_packet.SerializeToString(&ser_sig_packet);
-  packethandler::BufferPacket bp_updated;
+  maidsafe::BufferPacket bp_updated;
   ASSERT_TRUE(vbph.AddMessage(ser_bp, ser_msg, signed_public_key,
               &str_bp_updated));
   ASSERT_TRUE(bp_updated.ParseFromString(str_bp_updated));
@@ -236,13 +236,13 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
 
 TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
   // Create a BP
-  packethandler::BufferPacketInfo bpi;
+  maidsafe::BufferPacketInfo bpi;
   bpi.set_owner(testuser);
   bpi.set_ownerpublickey(public_key);
   bpi.set_online(1);
   bpi.add_users("newuser");
-  packethandler::BufferPacket bp;
-  packethandler::GenericPacket *info = bp.add_owner_info();
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
   std::string ser_bpi;
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
@@ -256,8 +256,8 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
   // Create the message
   crypto::RsaKeyPair rsakp;
   rsakp.GenerateKeys(4096);
-  packethandler::GenericPacket gp_msg;
-  packethandler::BufferPacketMessage bp_msg;
+  maidsafe::GenericPacket gp_msg;
+  maidsafe::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("newuser");
   std::string enc_key = cry_obj.AsymEncrypt("key", "", public_key,
     crypto::STRING_STRING);
@@ -265,7 +265,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
   std::string enc_msg = cry_obj.SymmEncrypt("STATUS_CHECK", "",
                         crypto::STRING_STRING, "key");
   bp_msg.set_aesenc_message(enc_msg);
-  bp_msg.set_type(packethandler::STATUS_CHECK);
+  bp_msg.set_type(maidsafe::STATUS_CHECK);
   bp_msg.set_sender_public_key(rsakp.public_key());
   std::string ser_bp_msg;
   bp_msg.SerializeToString(&ser_bp_msg);

@@ -111,9 +111,9 @@ Exitcode Authentication::GetUserInfo(const std::string &username,
 Exitcode Authentication::GetUserData(const std::string &password,
                                      std::string &ser_da) {
   //  still have not recovered the tmid
-  ph::TmidPacket *tmidPacket =
-    static_cast<ph::TmidPacket*>(ph::PacketFactory::Factory(ph::TMID));
-  ph::PacketParams rec_data = tmidPacket->GetData(tmid_content_, password,
+  TmidPacket *tmidPacket =
+    static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
+  PacketParams rec_data = tmidPacket->GetData(tmid_content_, password,
       ss_->MidRid());
   ser_da = boost::any_cast<std::string>(rec_data["data"]);
 
@@ -131,66 +131,66 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
 //  if (GetMid(username, pin, &fakerid))
 //    return USER_EXISTS;
 
-  ph::PacketParams check_unique_params;
+  PacketParams check_unique_params;
   check_unique_params["username"] = username;
   check_unique_params["PIN"] = pin;
-  ph::MidPacket *check_unique_mid_packet =
-      static_cast<ph::MidPacket*>(ph::PacketFactory::Factory(ph::MID));
+  MidPacket *check_unique_mid_packet =
+      static_cast<MidPacket*>(PacketFactory::Factory(MID));
   std::string check_unique_mid_name =
       check_unique_mid_packet->PacketName(check_unique_params);
 
   if (!storemanager_->KeyUnique(check_unique_mid_name, false))
     return USER_EXISTS;
 
-  ph::MidPacket *midPacket =
-      static_cast<ph::MidPacket*>(ph::PacketFactory::Factory(ph::MID));
-  ph::PacketParams user_params;
+  MidPacket *midPacket =
+      static_cast<MidPacket*>(PacketFactory::Factory(MID));
+  PacketParams user_params;
   user_params["username"] = username;
   user_params["PIN"] = pin;
   DataAtlas data_atlas;
   std::string public_key;
 
   user_params["privateKey"] =
-      createSignaturePackets(ph::ANMID, ANMID, public_key);
-  ph::PacketParams mid_result = midPacket->Create(user_params);
+      createSignaturePackets(ANMID, public_key);
+  PacketParams mid_result = midPacket->Create(user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
-      boost::any_cast<std::string>(mid_result["ser_packet"]), ph::MID, PRIVATE,
+      boost::any_cast<std::string>(mid_result["ser_packet"]), MID, PRIVATE,
       "") != 0) {
     return FAIL;
   }
 
   user_params["privateKey"] =
-      createSignaturePackets(ph::ANSMID, ANSMID, public_key);
-  ph::SmidPacket *smidPacket =
-      static_cast<ph::SmidPacket*>(ph::PacketFactory::Factory(ph::SMID));
+      createSignaturePackets(ANSMID, public_key);
+  SmidPacket *smidPacket =
+      static_cast<SmidPacket*>(PacketFactory::Factory(SMID));
   user_params["rid"] = boost::any_cast<uint32_t>(mid_result["rid"]);
-  ph::PacketParams smid_result = smidPacket->Create(user_params);
+  PacketParams smid_result = smidPacket->Create(user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(smid_result["name"]),
-      boost::any_cast<std::string>(smid_result["ser_packet"]), ph::SMID,
+      boost::any_cast<std::string>(smid_result["ser_packet"]), SMID,
       PRIVATE, "") != 0) {
     return FAIL;
   }
 
-  std::string privkey = createSignaturePackets(ph::MAID, MAID, public_key);
+  std::string privkey = createSignaturePackets(MAID, public_key);
 
   // user_params["privateKey"] =
-  //  createSignaturePackets(ph::PMID, PMID, data_atlas, public_key);
+  //  createSignaturePackets(PMID, PMID, data_atlas, public_key);
   user_params["privateKey"] = privkey;
-  ph::PmidPacket *pmidPacket =
-      static_cast<ph::PmidPacket*>(ph::PacketFactory::Factory(ph::PMID));
+  PmidPacket *pmidPacket =
+      static_cast<PmidPacket*>(PacketFactory::Factory(PMID));
   // user_params["rid"] = boost::any_cast<uint32_t>(mid_result["rid"]);
-  ph::PacketParams pmid_result = pmidPacket->Create(user_params);
+  PacketParams pmid_result = pmidPacket->Create(user_params);
 
   std::string ser_packet =
       boost::any_cast<std::string>(pmid_result["ser_packet"]);
-  packethandler::GenericPacket generic_packet;
+  GenericPacket generic_packet;
   generic_packet.ParseFromString(ser_packet);
   std::string signed_public_key = generic_packet.signature();
 
   if (storemanager_->StorePacket(
-      boost::any_cast<std::string>(pmid_result["name"]), ser_packet, ph::PMID,
+      boost::any_cast<std::string>(pmid_result["name"]), ser_packet, PMID,
       PRIVATE, "") != 0) {
     return FAIL;
   }
@@ -201,23 +201,23 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
               signed_public_key);
 
   user_params["privateKey"] =
-    createSignaturePackets(ph::ANTMID, ANTMID, public_key);
+    createSignaturePackets(ANTMID, public_key);
   user_params["password"] = password;
 
-  ph::TmidPacket *tmidPacket =
-      static_cast<ph::TmidPacket*>(ph::PacketFactory::Factory(ph::TMID));
+  TmidPacket *tmidPacket =
+      static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
 
   // STORING SERLIALISED DATA ATLAS
   std::string ser_da;
   ss_->SerialisedKeyRing(&ser_da);
   user_params["data"] = ser_da;
-  ph::PacketParams tmid_result = tmidPacket->Create(user_params);
+  PacketParams tmid_result = tmidPacket->Create(user_params);
 #ifdef DEBUG
   // printf("TMID %s\n", tmid_result);
 #endif
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
-      boost::any_cast<std::string>(tmid_result["ser_packet"]), ph::TMID,
+      boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
       PRIVATE, "") != 0) {
     return FAIL;
   }
@@ -238,10 +238,10 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
 }
 
 Exitcode Authentication::SaveSession(std::string ser_da,
-                                     ph::PacketParams priv_keys,
-                                     ph::PacketParams pub_keys) {
-  ph::PacketParams params;
-  ph::PacketParams result;
+                                     PacketParams priv_keys,
+                                     PacketParams pub_keys) {
+  PacketParams params;
+  PacketParams result;
   params["username"] = ss_->Username();
   params["PIN"] = ss_->Pin();
   std::string signed_public_key(""), signed_request("");
@@ -255,19 +255,19 @@ Exitcode Authentication::SaveSession(std::string ser_da,
     }
   }
 
-  ph::MidPacket *midPacket =
-    static_cast<ph::MidPacket*>(ph::PacketFactory::Factory(ph::MID));
-  ph::TmidPacket *tmidPacket =
-    static_cast<ph::TmidPacket*>(ph::PacketFactory::Factory(ph::TMID));
-  ph::SmidPacket *smidPacket =
-    static_cast<ph::SmidPacket*>(ph::PacketFactory::Factory(ph::SMID));
+  MidPacket *midPacket =
+    static_cast<MidPacket*>(PacketFactory::Factory(MID));
+  TmidPacket *tmidPacket =
+    static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
+  SmidPacket *smidPacket =
+    static_cast<SmidPacket*>(PacketFactory::Factory(SMID));
   if (ss_->MidRid() != ss_->SmidRid()) {
     params["rid"] = ss_->MidRid();
     params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANSMID"]);
     result = smidPacket->Create(params);
     if (storemanager_->StorePacket(
         boost::any_cast<std::string>(result["name"]),
-        boost::any_cast<std::string>(result["ser_packet"]), ph::SMID, PRIVATE,
+        boost::any_cast<std::string>(result["ser_packet"]), SMID, PRIVATE,
         "") != 0) {
       return FAIL;
     }
@@ -293,7 +293,7 @@ Exitcode Authentication::SaveSession(std::string ser_da,
   }
 
   params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANMID"]);
-  ph::PacketParams mid_result = midPacket->Create(params);
+  PacketParams mid_result = midPacket->Create(params);
   while (ss_->MidRid() == boost::any_cast<uint32_t>(mid_result["rid"]))
     mid_result = midPacket->Create(params);
 
@@ -301,17 +301,17 @@ Exitcode Authentication::SaveSession(std::string ser_da,
   params["rid"] = boost::any_cast<uint32_t>(mid_result["rid"]);
   params["password"] = ss_->Password();
   params["data"] = ser_da;
-  ph::PacketParams tmidresult = tmidPacket->Create(params);
+  PacketParams tmidresult = tmidPacket->Create(params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmidresult["name"]),
-      boost::any_cast<std::string>(tmidresult["ser_packet"]), ph::TMID,
+      boost::any_cast<std::string>(tmidresult["ser_packet"]), TMID,
       PRIVATE, "") != 0) {
     return FAIL;
   }
 
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
-      boost::any_cast<std::string>(mid_result["ser_packet"]), ph::MID, PRIVATE,
+      boost::any_cast<std::string>(mid_result["ser_packet"]), MID, PRIVATE,
       "") != 0) {
     return FAIL;
   }
@@ -325,16 +325,16 @@ Exitcode Authentication::SaveSession(std::string ser_da,
 }
 
 Exitcode Authentication::RemoveMe(std::list<KeyAtlasRow> sig_keys) {
-  ph::MidPacket *midPacket =
-    static_cast<ph::MidPacket*>(ph::PacketFactory::Factory(ph::MID));
-  ph::SmidPacket *smidPacket =
-    static_cast<ph::SmidPacket*>(ph::PacketFactory::Factory(ph::SMID));
-  ph::TmidPacket *tmidPacket =
-    static_cast<ph::TmidPacket*>(ph::PacketFactory::Factory(ph::TMID));
+  MidPacket *midPacket =
+    static_cast<MidPacket*>(PacketFactory::Factory(MID));
+  SmidPacket *smidPacket =
+    static_cast<SmidPacket*>(PacketFactory::Factory(SMID));
+  TmidPacket *tmidPacket =
+    static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
 
   std::string signed_public_key(""), signed_request("");
 
-  ph::PacketParams params;
+  PacketParams params;
   params["username"] = ss_->Username();
   params["PIN"] = ss_->Pin();
 
@@ -451,19 +451,21 @@ Exitcode Authentication::RemoveMe(std::list<KeyAtlasRow> sig_keys) {
 }
 
 Exitcode Authentication::CreatePublicName(std::string public_username,
-                                          ph::PacketParams *result) {
-  ph::PacketParams params;
-  ph::PacketParams local_result;
+                                          PacketParams *result) {
+  PacketParams params;
+  PacketParams local_result;
   params["publicname"] = public_username;
-  ph::MpidPacket *mpidPacket =
-    static_cast<ph::MpidPacket*>(ph::PacketFactory::Factory(ph::MPID));
+  MpidPacket *mpidPacket =
+    static_cast<MpidPacket*>(PacketFactory::Factory(MPID));
   std::string mpidname = mpidPacket->PacketName(params);
 
-  if (!storemanager_->KeyUnique(mpidname, false))
+  if (!storemanager_->KeyUnique(mpidname, false)) {
+    printf("Authentication::CreatePublicName - Exists\n");
     return PUBLIC_USERNAME_EXISTS;
+  }
 
-  ph::SignaturePacket *sigPacket =
-    static_cast<ph::SignaturePacket*>(ph::PacketFactory::Factory(ph::ANMPID));
+  SignaturePacket *sigPacket =
+    static_cast<SignaturePacket*>(PacketFactory::Factory(ANMPID));
   params = sigPacket->Create(params);
   bool sigpacket_result = false;
   while (!sigpacket_result) {
@@ -475,9 +477,14 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
     }
   }
 
+  ss_->AddKey(ANMPID, boost::any_cast<std::string>(params["name"]),
+              boost::any_cast<std::string>(params["privateKey"]),
+              boost::any_cast<std::string>(params["publicKey"]),
+              "");
   if (storemanager_->StorePacket(boost::any_cast<std::string>(params["name"]),
-      boost::any_cast<std::string>(params["ser_packet"]), ph::ANMPID, PRIVATE,
+      boost::any_cast<std::string>(params["ser_packet"]), ANMPID, PRIVATE,
       "") != 0) {
+    printf("Authentication::CreatePublicName - Buggered in ANMPID\n");
     return FAIL;
   }
   local_result["anmpid_name"] = boost::any_cast<std::string>(params["name"]);
@@ -486,23 +493,20 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
   local_result["anmpid_private_key"] = boost::any_cast<std::string>(
       params["privateKey"]);
 
-  ph::PacketParams mpid_result = mpidPacket->Create(params);
+  PacketParams mpid_result = mpidPacket->Create(params);
   std::string ser_packet =
       boost::any_cast<std::string>(mpid_result["ser_packet"]);
-  packethandler::GenericPacket generic_packet;
+  GenericPacket generic_packet;
   generic_packet.ParseFromString(ser_packet);
   std::string signed_public_key = generic_packet.signature();
 
   if (storemanager_->StorePacket(
-      boost::any_cast<std::string>(mpid_result["name"]), ser_packet, ph::MPID,
+      boost::any_cast<std::string>(mpid_result["name"]), ser_packet, MPID,
       PRIVATE, "") != 0) {
+    printf("Authentication::CreatePublicName - Buggered in MPID\n");
     return FAIL;
   }
 
-  ss_->AddKey(ANMPID, boost::any_cast<std::string>(local_result["anmpid_name"]),
-              boost::any_cast<std::string>(local_result["anmpid_private_key"]),
-              boost::any_cast<std::string>(local_result["anmpid_public_key"]),
-              "");
   ss_->AddKey(MPID, public_username,
               boost::any_cast<std::string>(mpid_result["privateKey"]),
               boost::any_cast<std::string>(mpid_result["publicKey"]),
@@ -520,8 +524,8 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
 }
 
 Exitcode Authentication::ChangeUsername(std::string ser_da,
-                                        ph::PacketParams priv_keys,
-                                        ph::PacketParams pub_keys,
+                                        PacketParams priv_keys,
+                                        PacketParams pub_keys,
                                         std::string new_username) {
   //   if (!CheckUsername(new_username) || new_username == ss_->Username())
   //     return INVALID_USERNAME;
@@ -529,9 +533,9 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   if (GetMid(new_username, ss_->Pin(), &fakerid))
     return USER_EXISTS;
 
-  ph::MidPacket *midPacket =
-    static_cast<ph::MidPacket*>(ph::PacketFactory::Factory(ph::MID));
-  ph::PacketParams user_params;
+  MidPacket *midPacket =
+    static_cast<MidPacket*>(PacketFactory::Factory(MID));
+  PacketParams user_params;
   user_params["username"] = new_username;
   user_params["PIN"] = ss_->Pin();
   std::string mid_name = midPacket->PacketName(user_params);
@@ -539,8 +543,8 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   std::string signed_public_key(""), signed_request("");
 
   //  Getting SMID Rid for current username
-  ph::SmidPacket *smidPacket =
-    static_cast<ph::SmidPacket*>(ph::PacketFactory::Factory(ph::SMID));
+  SmidPacket *smidPacket =
+    static_cast<SmidPacket*>(PacketFactory::Factory(SMID));
   if (ss_->SmidRid() == 0) {
     int smidrid;
     if (!GetSmid(ss_->Username(), ss_->Pin(), &smidrid)) {
@@ -552,13 +556,13 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
 
   //  Creating and storing new MID packet with new username
   user_params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANMID"]);
-  ph::PacketParams mid_result = midPacket->Create(user_params);
+  PacketParams mid_result = midPacket->Create(user_params);
   while (ss_->MidRid() == boost::any_cast<uint32_t>(mid_result["rid"]))
     mid_result = midPacket->Create(user_params);
 
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
-      boost::any_cast<std::string>(mid_result["ser_packet"]), ph::MID, PRIVATE,
+      boost::any_cast<std::string>(mid_result["ser_packet"]), MID, PRIVATE,
       "") != 0) {
     return FAIL;
   }
@@ -566,10 +570,10 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   user_params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANSMID"]);
   user_params["rid"] = ss_->MidRid();
 
-  ph::PacketParams smid_result = smidPacket->Create(user_params);
+  PacketParams smid_result = smidPacket->Create(user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(smid_result["name"]),
-      boost::any_cast<std::string>(smid_result["ser_packet"]), ph::SMID,
+      boost::any_cast<std::string>(smid_result["ser_packet"]), SMID,
       PRIVATE, "") != 0) {
     return FAIL;
   }
@@ -577,18 +581,18 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   user_params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANTMID"]);
   user_params["password"] = ss_->Password();
   user_params["rid"] = boost::any_cast<uint32_t>(mid_result["rid"]);
-  ph::TmidPacket *tmidPacket =
-    static_cast<ph::TmidPacket*>(ph::PacketFactory::Factory(ph::TMID));
+  TmidPacket *tmidPacket =
+    static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
   user_params["data"] = ser_da;
-  ph::PacketParams tmid_result = tmidPacket->Create(user_params);
+  PacketParams tmid_result = tmidPacket->Create(user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
-      boost::any_cast<std::string>(tmid_result["ser_packet"]), ph::TMID,
+      boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
       PRIVATE, "") != 0) {
     return FAIL;
   }
   //  Creating new TMID-->SMID with old MID Rid and pointing to old DA
-  ph::PacketParams old_user_params;
+  PacketParams old_user_params;
   old_user_params["username"] = ss_->Username();
   old_user_params["PIN"] = ss_->Pin();
   old_user_params["rid"] = ss_->MidRid();
@@ -602,7 +606,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
       (!load_res.has_content()))
     return FAIL;
   std::string ser_tmid = load_res.content();
-  ph::PacketParams rec_tmid = tmidPacket->GetData(ser_tmid, ss_->Password(),
+  PacketParams rec_tmid = tmidPacket->GetData(ser_tmid, ss_->Password(),
     ss_->MidRid());
   std::string tmid_data = boost::any_cast<std::string>(rec_tmid["data"]);
   if (tmid_data == "")
@@ -615,7 +619,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   tmid_result = tmidPacket->Create(old_user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
-      boost::any_cast<std::string>(tmid_result["ser_packet"]), ph::TMID,
+      boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
       PRIVATE, "") != 0) {
     return FAIL;
   }
@@ -684,8 +688,8 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
 }
 
 Exitcode Authentication::ChangePin(std::string ser_da,
-                                   ph::PacketParams priv_keys,
-                                   ph::PacketParams pub_keys,
+                                   PacketParams priv_keys,
+                                   PacketParams pub_keys,
                                    std::string new_pin) {
   //   if (!CheckPin(new_pin) || new_pin == ss_->Pin())
   //     return INVALID_PIN;
@@ -693,9 +697,9 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   if (GetMid(ss_->Username(), new_pin, &fakerid))
     return USER_EXISTS;
 
-  ph::MidPacket *midPacket =
-    static_cast<ph::MidPacket*>(ph::PacketFactory::Factory(ph::MID));
-  ph::PacketParams user_params;
+  MidPacket *midPacket =
+    static_cast<MidPacket*>(PacketFactory::Factory(MID));
+  PacketParams user_params;
   user_params["username"] = ss_->Username();
   user_params["PIN"] = new_pin;
   std::string mid_name = midPacket->PacketName(user_params);
@@ -704,8 +708,8 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   std::string signed_public_key(""), signed_request("");
 
   //  Getting SMID Rid for current username
-  ph::SmidPacket *smidPacket =
-    static_cast<ph::SmidPacket*>(ph::PacketFactory::Factory(ph::SMID));
+  SmidPacket *smidPacket =
+    static_cast<SmidPacket*>(PacketFactory::Factory(SMID));
   if (ss_->SmidRid() == 0) {
     int smidrid;
     if (!GetSmid(ss_->Username(), ss_->Pin(), &smidrid)) {
@@ -717,13 +721,13 @@ Exitcode Authentication::ChangePin(std::string ser_da,
 
   //  Creating and storing new MID packet with new username
   user_params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANMID"]);
-  ph::PacketParams mid_result = midPacket->Create(user_params);
+  PacketParams mid_result = midPacket->Create(user_params);
   while (ss_->MidRid() == boost::any_cast<uint32_t>(mid_result["rid"]))
     mid_result = midPacket->Create(user_params);
 
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
-      boost::any_cast<std::string>(mid_result["ser_packet"]), ph::MID, PRIVATE,
+      boost::any_cast<std::string>(mid_result["ser_packet"]), MID, PRIVATE,
       "") != 0) {
     return FAIL;
   }
@@ -732,10 +736,10 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   user_params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANSMID"]);
   user_params["rid"] = ss_->MidRid();
 
-  ph::PacketParams smid_result = smidPacket->Create(user_params);
+  PacketParams smid_result = smidPacket->Create(user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(smid_result["name"]),
-      boost::any_cast<std::string>(smid_result["ser_packet"]), ph::SMID,
+      boost::any_cast<std::string>(smid_result["ser_packet"]), SMID,
       PRIVATE, "") != 0) {
     return FAIL;
   }
@@ -744,19 +748,19 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   user_params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANTMID"]);
   user_params["password"] = ss_->Password();
   user_params["rid"] = boost::any_cast<uint32_t>(mid_result["rid"]);
-  ph::TmidPacket *tmidPacket =
-    static_cast<ph::TmidPacket*>(ph::PacketFactory::Factory(ph::TMID));
+  TmidPacket *tmidPacket =
+    static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
   user_params["data"] = ser_da;
-  ph::PacketParams tmid_result = tmidPacket->Create(user_params);
+  PacketParams tmid_result = tmidPacket->Create(user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
-      boost::any_cast<std::string>(tmid_result["ser_packet"]), ph::TMID,
+      boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
       PRIVATE, "") != 0) {
     return FAIL;
   }
 
   //  Creating new TMID-->SMID with old MID Rid and pointing to old DA
-  ph::PacketParams old_user_params;
+  PacketParams old_user_params;
   old_user_params["username"] = ss_->Username();
   old_user_params["PIN"] = ss_->Pin();
   old_user_params["rid"] = ss_->MidRid();
@@ -770,7 +774,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
       (!load_res.has_content()))
     return FAIL;
   std::string ser_tmid = load_res.content();
-  ph::PacketParams rec_data = tmidPacket->GetData(ser_tmid,
+  PacketParams rec_data = tmidPacket->GetData(ser_tmid,
     ss_->Password(), ss_->MidRid());
   std::string tmid_data = boost::any_cast<std::string>(rec_data["data"]);
   if (tmid_data == "")
@@ -783,7 +787,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   tmid_result = tmidPacket->Create(old_user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
-      boost::any_cast<std::string>(tmid_result["ser_packet"]), ph::TMID,
+      boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
       PRIVATE, "") != 0) {
     return FAIL;
   }
@@ -855,8 +859,8 @@ Exitcode Authentication::ChangePin(std::string ser_da,
 }
 
 Exitcode Authentication::ChangePassword(std::string ser_da,
-                                        ph::PacketParams priv_keys,
-                                        ph::PacketParams pub_keys,
+                                        PacketParams priv_keys,
+                                        PacketParams pub_keys,
                                         std::string new_password) {
   //   if (!CheckPassword(new_password) || new_password == ss_->Password())
   //     return INVALID_PASSWORD;
@@ -870,12 +874,11 @@ Exitcode Authentication::ChangePassword(std::string ser_da,
   }
 }
 
-std::string Authentication::createSignaturePackets(
-    const ph::SystemPackets &type, const PacketType &type_da,
-    std::string &public_key) {
-  ph::PacketParams params;
-  ph::SignaturePacket *sigPacket =
-      static_cast<ph::SignaturePacket*>(ph::PacketFactory::Factory(type));
+std::string Authentication::createSignaturePackets(const PacketType &type_da,
+                                                   std::string &public_key) {
+  PacketParams params;
+  SignaturePacket *sigPacket =
+      static_cast<SignaturePacket*>(PacketFactory::Factory(type_da));
   params = sigPacket->Create(params);
 
   AuthCallbackResult cb;
@@ -894,7 +897,7 @@ std::string Authentication::createSignaturePackets(
 
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(params["name"]),
-      boost::any_cast<std::string>(params["ser_packet"]), type, PRIVATE, "")
+      boost::any_cast<std::string>(params["ser_packet"]), type_da, PRIVATE, "")
       != 0) {
     return "";
   }
@@ -959,11 +962,11 @@ void Authentication::WaitForResult(const AuthCallbackResult &cb) {
 bool Authentication::GetMid(const std::string &username,
                             const std::string &pin,
                             int *rid) {
-  ph::PacketParams params;
+  PacketParams params;
   params["username"] = username;
   params["PIN"] = pin;
-  ph::MidPacket *midPacket = static_cast<ph::MidPacket*>
-    (ph::PacketFactory::Factory(ph::MID));
+  MidPacket *midPacket = static_cast<MidPacket*>
+    (PacketFactory::Factory(MID));
   std::string mid_name = midPacket->PacketName(params);
 
   std::string ser_packet;
@@ -977,7 +980,7 @@ bool Authentication::GetMid(const std::string &username,
     return false;
   }
   ser_packet = load_res.content();
-  ph::PacketParams info = midPacket->GetData(ser_packet, username, pin);
+  PacketParams info = midPacket->GetData(ser_packet, username, pin);
   // The key of mid_name clashed with another value that is not a mid
   // hence, it could not recover a valid mid but we can not return false
   // because that would mean it doesn't exist
@@ -995,11 +998,11 @@ bool Authentication::GetMid(const std::string &username,
 bool Authentication::GetSmid(const std::string &username,
                              const std::string &pin,
                              int *rid) {
-  ph::PacketParams params;
+  PacketParams params;
   params["username"] = username;
   params["PIN"] = pin;
-  ph::SmidPacket *smidPacket = static_cast<ph::SmidPacket*>
-    (ph::PacketFactory::Factory(ph::SMID));
+  SmidPacket *smidPacket = static_cast<SmidPacket*>
+    (PacketFactory::Factory(SMID));
   std::string smid_name = smidPacket->PacketName(params);
   std::string ser_packet;
   std::string packet_content;
@@ -1012,7 +1015,7 @@ bool Authentication::GetSmid(const std::string &username,
     return false;
   }
   ser_packet = load_res.content();
-  ph::PacketParams info = smidPacket->GetData(ser_packet, username, pin);
+  PacketParams info = smidPacket->GetData(ser_packet, username, pin);
   uint32_t rec_data = boost::any_cast<uint32_t>(info["data"]);
   if (rec_data != 0) {
     // The key of mid_name clashed with another value that is not a smid
@@ -1028,9 +1031,9 @@ bool Authentication::GetSmid(const std::string &username,
 }
 
 void Authentication::GetUserTmid(bool smid) {
-  ph::TmidPacket *tmidPacket = static_cast<ph::TmidPacket*>(
-                               ph::PacketFactory::Factory(ph::TMID));
-  ph::PacketParams params;
+  TmidPacket *tmidPacket = static_cast<TmidPacket*>(
+                               PacketFactory::Factory(TMID));
+  PacketParams params;
   params["username"] = ss_->Username();
   params["PIN"] = ss_->Pin();
   params["rid"] = ss_->MidRid();
@@ -1083,10 +1086,10 @@ void Authentication::GetUserTmid(bool smid) {
 Exitcode Authentication::PublicUsernamePublicKey(
     const std::string &public_username,
     std::string &public_key) {
-  ph::PacketParams params;
+  PacketParams params;
   params["publicname"] = public_username;
-  ph::MpidPacket *mpidPacket =
-    static_cast<ph::MpidPacket*>(ph::PacketFactory::Factory(ph::MPID));
+  MpidPacket *mpidPacket =
+    static_cast<MpidPacket*>(PacketFactory::Factory(MPID));
 
   std::string packet_content;
   storemanager_->LoadPacket(mpidPacket->PacketName(params), &packet_content);
@@ -1097,7 +1100,7 @@ Exitcode Authentication::PublicUsernamePublicKey(
     return NON_EXISTING_USER;
   }
   std::string ser_generic_packet = load_res.content();
-  packethandler::GenericPacket gp;
+  GenericPacket gp;
   if (!gp.ParseFromString(ser_generic_packet)) {
     return FAIL;  //  Packet corrupt
   }
@@ -1108,9 +1111,9 @@ Exitcode Authentication::PublicUsernamePublicKey(
 }
 
 void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
-  ph::PacketParams params;
-  ph::SignaturePacket *sigPacket = static_cast<ph::SignaturePacket*>(
-      ph::PacketFactory::Factory(ph::MSID));
+  PacketParams params;
+  SignaturePacket *sigPacket = static_cast<SignaturePacket*>(
+      PacketFactory::Factory(MSID));
   params = sigPacket->Create(params);
 
   int count = 0;
@@ -1119,7 +1122,7 @@ void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
     ++count;
 
   if (count == 10) {
-    ph::CreateMSIDResult local_result;
+    CreateMSIDResult local_result;
     local_result.set_result(kNack);
     std::string ser_local_result;
     local_result.SerializeToString(&ser_local_result);
@@ -1129,10 +1132,10 @@ void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
 
   int n = storemanager_->StorePacket(
       boost::any_cast<std::string>(params["name"]),
-      boost::any_cast<std::string>(params["ser_packet"]), ph::MSID, PRIVATE,
+      boost::any_cast<std::string>(params["ser_packet"]), MSID, PRIVATE,
       "");
   StoreResponse result_msg;
-  ph::CreateMSIDResult local_result;
+  CreateMSIDResult local_result;
   std::string str_local_result;
   if (n != 0) {
     local_result.set_result(kNack);

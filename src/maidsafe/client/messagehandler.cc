@@ -47,8 +47,8 @@ MessageHandler::MessageHandler(StoreManagerInterface *sm,
 
 void MessageHandler::SendMessage(const std::string &msg,
                                  const std::vector<Receivers> &receivers,
-                                 const BufferPacketType &p_type,
-                                 const packethandler::MessageType &m_type,
+                                 const PacketType &p_type,
+                                 const MessageType &m_type,
                                  base::callback_func_type cb) {
   base::pd_scoped_lock gaurd(*mutex_);
   boost::shared_ptr<SendMessagesData> data(new SendMessagesData());
@@ -71,12 +71,12 @@ void MessageHandler::SendMessage(const std::string &msg,
 std::string MessageHandler::CreateMessage(
     const std::string &msg,
     const std::string &rec_public_key,
-    const packethandler::MessageType &m_type,
-    const BufferPacketType &p_type,
+    const MessageType &m_type,
+    const PacketType &p_type,
     const boost::uint32_t &timestamp) {
   maidsafe::PacketType pt = PacketHandler_PacketType(p_type);
-  packethandler::BufferPacketMessage bpm;
-  packethandler::GenericPacket gp;
+  BufferPacketMessage bpm;
+  GenericPacket gp;
 
   bpm.set_sender_id(ss_->Id(pt));
   bpm.set_sender_public_key(ss_->PublicKey(pt));
@@ -107,7 +107,7 @@ std::string MessageHandler::CreateMessage(
 }
 
 void MessageHandler::CreateSignature(const std::string &buffer_name,
-                                     const BufferPacketType &type,
+                                     const PacketType &type,
                                      std::string *signed_request,
                                      std::string *signed_public_key) {
   maidsafe::PacketType pt = PacketHandler_PacketType(type);
@@ -131,7 +131,7 @@ void MessageHandler::IterativeStoreMsgs(
     return;
   }
   if (data->stores_done == static_cast<int>(data->receivers.size())) {
-    packethandler::StoreMessagesResult result;
+    StoreMessagesResult result;
     if (data->successful_stores == 0)
       result.set_result(kNack);
     else
@@ -159,8 +159,8 @@ void MessageHandler::IterativeStoreMsgs(
       std::string ser_packet="";
       std::string sys_packet_name;
       switch (data->p_type) {
-        case packethandler::ADD_CONTACT_RQST:
-        case packethandler::INSTANT_MSG:
+        case ADD_CONTACT_RQST:
+        case INSTANT_MSG:
             sys_packet_name = co_.Hash(data->receivers[data->index].id,
                                        "",
                                        crypto::STRING_STRING,
@@ -197,7 +197,7 @@ void MessageHandler::StoreMessage(
                   data->p_type,
                   &signed_request,
                   &signed_public_key);
-  if (sm_->StorePacket(bufferpacketname, ser_msg, packethandler::BUFFER_MESSAGE,
+  if (sm_->StorePacket(bufferpacketname, ser_msg, BUFFER_MESSAGE,
                        PRIVATE, "") == 0) {
     ++data->successful_stores;
   } else {
@@ -209,11 +209,11 @@ void MessageHandler::StoreMessage(
 }
 
 maidsafe::PacketType MessageHandler::PacketHandler_PacketType(
-    const BufferPacketType &type) {
-  //  MPID_BP, MAID_BP, PMID_BP
+    const PacketType &type) {
+  //  MPID, MAID, PMID
   switch (type) {
-    case MAID_BP: return maidsafe::MAID;
-    case PMID_BP: return maidsafe::PMID;
+    case MAID: return maidsafe::MAID;
+    case PMID: return maidsafe::PMID;
     default: return maidsafe::MPID;
   }
 }

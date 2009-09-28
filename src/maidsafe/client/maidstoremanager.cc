@@ -172,7 +172,7 @@ void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
 int MaidsafeStoreManager::StorePacket(
     const std::string &hex_packet_name,
     const std::string &value,
-    packethandler::SystemPackets system_packet_type,
+    PacketType system_packet_type,
     DirType dir_type,
     const std::string &msid) {
 #ifdef DEBUG
@@ -489,7 +489,7 @@ void MaidsafeStoreManager::GetChunkSignatureKeys(DirType dir_type,
 }
 
 void MaidsafeStoreManager::GetPacketSignatureKeys(
-    packethandler::SystemPackets packet_type,
+    PacketType packet_type,
     DirType dir_type,
     const std::string &msid,
     std::string *public_key,
@@ -503,44 +503,44 @@ void MaidsafeStoreManager::GetPacketSignatureKeys(
   co.set_hash_algorithm(crypto::SHA_512);
   SessionSingleton *ss = SessionSingleton::getInstance();
   switch (packet_type) {
-    case packethandler::MID:
-    case packethandler::ANMID:
+    case MID:
+    case ANMID:
       *public_key = ss->PublicKey(ANMID);
       *public_key_sig = ss->SignedPublicKey(ANMID);
       *private_key = ss->PrivateKey(ANMID);
       break;
-    case packethandler::SMID:
-    case packethandler::ANSMID:
+    case SMID:
+    case ANSMID:
       *public_key = ss->PublicKey(ANSMID);
       *public_key_sig = ss->SignedPublicKey(ANSMID);
       *private_key = ss->PrivateKey(ANSMID);
       break;
-    case packethandler::TMID:
-    case packethandler::ANTMID:
+    case TMID:
+    case ANTMID:
       *public_key = ss->PublicKey(ANTMID);
       *public_key_sig = ss->SignedPublicKey(ANTMID);
       *private_key = ss->PrivateKey(ANTMID);
       break;
-    case packethandler::MPID:
-    case packethandler::ANMPID:
+    case MPID:
+    case ANMPID:
       *public_key = ss->PublicKey(ANMPID);
       *public_key_sig = ss->SignedPublicKey(ANMPID);
       *private_key = ss->PrivateKey(ANMPID);
       break;
-    case packethandler::PMID:
-    case packethandler::MAID:
+    case PMID:
+    case MAID:
       *public_key = ss->PublicKey(MAID);
       *public_key_sig = ss->SignedPublicKey(MAID);
       *private_key = ss->PrivateKey(MAID);
       break;
-    case packethandler::MSID:
-    case packethandler::PD_DIR:
+    case MSID:
+    case PD_DIR:
       GetChunkSignatureKeys(dir_type, msid, public_key, public_key_sig,
                             private_key);
       break;
-    case packethandler::BUFFER:
-    case packethandler::BUFFER_INFO:
-    case packethandler::BUFFER_MESSAGE:
+    case BUFFER:
+    case BUFFER_INFO:
+    case BUFFER_MESSAGE:
       *public_key = ss->PublicKey(MPID);
       *public_key_sig = ss->SignedPublicKey(MPID);
       *private_key = ss->PrivateKey(MPID);
@@ -572,8 +572,8 @@ void MaidsafeStoreManager::AddStorePacketTask(
       boost::bind(&MaidsafeStoreManager::SendPacket, this, store_task,
       return_value, generic_cond_data)));
   while (packet_thread_pool_.active()) {
-    size_t active_size = packet_thread_pool_.active();
-    size_t pool_size = packet_thread_pool_.size();
+//    size_t active_size = packet_thread_pool_.active();
+//    size_t pool_size = packet_thread_pool_.size();
 //    printf("Packet thread pool - size %i\tactive %i\n",
 //           pool_size, active_size);
   }

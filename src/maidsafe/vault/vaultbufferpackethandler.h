@@ -33,7 +33,7 @@
 
 #include "maidsafe/maidsafe.h"
 
-namespace packethandler {
+namespace maidsafe {
 
 class VaultBufferPacketHandler {
  public:
@@ -66,6 +66,6 @@ class VaultBufferPacketHandler {
   VaultBufferPacketHandler(const VaultBufferPacketHandler&);
 };
 
-}  // namespace packethandler
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_VAULTBUFFERPACKETHANDLER_H_

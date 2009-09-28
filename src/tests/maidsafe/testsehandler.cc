@@ -149,13 +149,13 @@ class TestSEHandler : public testing::Test {
     SessionSingleton::getInstance()->SetSessionName(false);
     SessionSingleton::getInstance()->SetRootDbKey("whatever");
     crypto::RsaKeyPair rsa_kp;
-    rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
+    rsa_kp.GenerateKeys(kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(PMID, "PMID", rsa_kp.private_key(),
                                             rsa_kp.public_key(), "");
-    rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
+    rsa_kp.GenerateKeys(kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(MAID, "MAID", rsa_kp.private_key(),
                                             rsa_kp.public_key(), "");
-    rsa_kp.GenerateKeys(packethandler::kRsaKeySize);
+    rsa_kp.GenerateKeys(kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(MPID, "Me", rsa_kp.private_key(),
         rsa_kp.public_key(), "");
     file_system::FileSystem fsys_;

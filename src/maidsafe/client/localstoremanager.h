@@ -34,6 +34,7 @@
 #include "maidsafe/cppsqlite3.h"
 #include "maidsafe/client/storemanager.h"
 #include "maidsafe/vault/vaultbufferpackethandler.h"
+#include "protobuf/datamaps.pb.h"
 
 namespace maidsafe {
 
@@ -59,7 +60,7 @@ class LocalStoreManager : public StoreManagerInterface {
                           const std::string&);
   virtual int StorePacket(const std::string &hex_packet_name,
                           const std::string &value,
-                          packethandler::SystemPackets system_packet_type,
+                          PacketType system_packet_type,
                           DirType dir_type,
                           const std::string &msid);
   virtual bool KeyUnique(const std::string &hex_key, bool check_local);
@@ -84,7 +85,7 @@ class LocalStoreManager : public StoreManagerInterface {
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
   CppSQLite3DB db_;
-  packethandler::VaultBufferPacketHandler vbph_;
+  VaultBufferPacketHandler vbph_;
   crypto::Crypto crypto_obj_;
   boost::recursive_mutex *mutex_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;

@@ -50,7 +50,7 @@ void GeneratePmidStuff(std::string *public_key,
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(packethandler::kRsaKeySize);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   *signed_key = co.AsymSign(keys.public_key(), "", keys.private_key(),
                             crypto::STRING_STRING);
   *public_key = keys.public_key();

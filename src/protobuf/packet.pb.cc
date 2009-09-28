@@ -7,7 +7,7 @@
 #include <google/protobuf/reflection_ops.h>
 #include <google/protobuf/wire_format_inl.h>
 
-namespace packethandler {
+namespace maidsafe {
 
 namespace {
 
@@ -352,46 +352,45 @@ void protobuf_AddDesc_packet_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\014packet.proto\022\rpackethandler\"0\n\rGeneric"
-    "Packet\022\014\n\004data\030\001 \002(\014\022\021\n\tsignature\030\002 \002(\014\""
-    "X\n\020BufferPacketInfo\022\r\n\005owner\030\001 \002(\014\022\026\n\016ow"
-    "nerPublicKey\030\002 \002(\014\022\r\n\005users\030\003 \003(\014\022\016\n\006onl"
-    "ine\030\004 \001(\005\"\254\001\n\023BufferPacketMessage\022\021\n\tsen"
-    "der_id\030\001 \002(\014\022\031\n\021sender_public_key\030\002 \001(\014\022"
-    "\022\n\nRSAenc_key\030\003 \002(\014\022\026\n\016AESenc_message\030\004 "
-    "\002(\014\022(\n\004type\030\005 \002(\0162\032.packethandler.Messag"
-    "eType\022\021\n\ttimestamp\030\006 \001(\r\"p\n\014BufferPacket"
-    "\0220\n\nowner_info\030\001 \003(\0132\034.packethandler.Gen"
-    "ericPacket\022.\n\010messages\030\002 \003(\0132\034.packethan"
-    "dler.GenericPacket\"\213\001\n\034ValidatedBufferPa"
-    "cketMessage\022\016\n\006sender\030\001 \002(\014\022\017\n\007message\030\002"
-    " \002(\014\022\r\n\005index\030\003 \002(\014\022(\n\004type\030\004 \002(\0162\032.pack"
-    "ethandler.MessageType\022\021\n\ttimestamp\030\005 \001(\r"
-    "\"\205\001\n\013ContactInfo\022\014\n\004name\030\001 \001(\014\022\020\n\010birthd"
-    "ay\030\002 \001(\014\022\025\n\roffice_number\030\003 \001(\014\022\016\n\006gende"
-    "r\030\004 \001(\014\022\017\n\007country\030\005 \001(\005\022\014\n\004city\030\006 \001(\014\022\020"
-    "\n\010language\030\007 \001(\005\"R\n\023ContactNotification\022"
-    "\016\n\006action\030\001 \002(\005\022+\n\007contact\030\002 \001(\0132\032.packe"
-    "thandler.ContactInfo\"L\n\027InstantFileNotif"
-    "ication\022\017\n\007ser_mdm\030\001 \002(\014\022\016\n\006ser_dm\030\002 \002(\014"
-    "\022\020\n\010filename\030\003 \002(\014\"\226\001\n\030PrivateShareNotif"
-    "ication\022\014\n\004name\030\001 \002(\014\022\014\n\004msid\030\002 \002(\014\022\022\n\np"
-    "ublic_key\030\003 \002(\014\022\023\n\013private_key\030\004 \001(\014\022\016\n\006"
-    "admins\030\005 \003(\014\022\021\n\treadonlys\030\006 \003(\014\022\022\n\ndir_d"
-    "b_key\030\007 \002(\014\"\227\002\n\016InstantMessage\022\016\n\006sender"
-    "\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\014\n\004date\030\003 \002(\005\022@\n"
-    "\024contact_notification\030\004 \001(\0132\".packethand"
-    "ler.ContactNotification\022H\n\030instantfile_n"
-    "otification\030\005 \001(\0132&.packethandler.Instan"
-    "tFileNotification\022J\n\031privateshare_notifi"
-    "cation\030\006 \001(\0132\'.packethandler.PrivateShar"
-    "eNotification\"J\n\023StoreMessagesResult\022\016\n\006"
-    "result\030\001 \002(\r\022\023\n\013stored_msgs\030\002 \002(\005\022\016\n\006fai"
-    "led\030\003 \003(\014\"Y\n\020CreateMSIDResult\022\016\n\006result\030"
-    "\001 \002(\r\022\014\n\004name\030\002 \001(\014\022\023\n\013private_key\030\003 \001(\014"
-    "\022\022\n\npublic_key\030\004 \001(\014*F\n\013MessageType\022\024\n\020A"
-    "DD_CONTACT_RQST\020\001\022\017\n\013INSTANT_MSG\020\002\022\020\n\014ST"
-    "ATUS_CHECK\020\003", 1572);
+    "\n\014packet.proto\022\010maidsafe\"0\n\rGenericPacke"
+    "t\022\014\n\004data\030\001 \002(\014\022\021\n\tsignature\030\002 \002(\014\"X\n\020Bu"
+    "fferPacketInfo\022\r\n\005owner\030\001 \002(\014\022\026\n\016ownerPu"
+    "blicKey\030\002 \002(\014\022\r\n\005users\030\003 \003(\014\022\016\n\006online\030\004"
+    " \001(\005\"\247\001\n\023BufferPacketMessage\022\021\n\tsender_i"
+    "d\030\001 \002(\014\022\031\n\021sender_public_key\030\002 \001(\014\022\022\n\nRS"
+    "Aenc_key\030\003 \002(\014\022\026\n\016AESenc_message\030\004 \002(\014\022#"
+    "\n\004type\030\005 \002(\0162\025.maidsafe.MessageType\022\021\n\tt"
+    "imestamp\030\006 \001(\r\"f\n\014BufferPacket\022+\n\nowner_"
+    "info\030\001 \003(\0132\027.maidsafe.GenericPacket\022)\n\010m"
+    "essages\030\002 \003(\0132\027.maidsafe.GenericPacket\"\206"
+    "\001\n\034ValidatedBufferPacketMessage\022\016\n\006sende"
+    "r\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\r\n\005index\030\003 \002(\014\022"
+    "#\n\004type\030\004 \002(\0162\025.maidsafe.MessageType\022\021\n\t"
+    "timestamp\030\005 \001(\r\"\205\001\n\013ContactInfo\022\014\n\004name\030"
+    "\001 \001(\014\022\020\n\010birthday\030\002 \001(\014\022\025\n\roffice_number"
+    "\030\003 \001(\014\022\016\n\006gender\030\004 \001(\014\022\017\n\007country\030\005 \001(\005\022"
+    "\014\n\004city\030\006 \001(\014\022\020\n\010language\030\007 \001(\005\"M\n\023Conta"
+    "ctNotification\022\016\n\006action\030\001 \002(\005\022&\n\007contac"
+    "t\030\002 \001(\0132\025.maidsafe.ContactInfo\"L\n\027Instan"
+    "tFileNotification\022\017\n\007ser_mdm\030\001 \002(\014\022\016\n\006se"
+    "r_dm\030\002 \002(\014\022\020\n\010filename\030\003 \002(\014\"\226\001\n\030Private"
+    "ShareNotification\022\014\n\004name\030\001 \002(\014\022\014\n\004msid\030"
+    "\002 \002(\014\022\022\n\npublic_key\030\003 \002(\014\022\023\n\013private_key"
+    "\030\004 \001(\014\022\016\n\006admins\030\005 \003(\014\022\021\n\treadonlys\030\006 \003("
+    "\014\022\022\n\ndir_db_key\030\007 \002(\014\"\210\002\n\016InstantMessage"
+    "\022\016\n\006sender\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\014\n\004dat"
+    "e\030\003 \002(\005\022;\n\024contact_notification\030\004 \001(\0132\035."
+    "maidsafe.ContactNotification\022C\n\030instantf"
+    "ile_notification\030\005 \001(\0132!.maidsafe.Instan"
+    "tFileNotification\022E\n\031privateshare_notifi"
+    "cation\030\006 \001(\0132\".maidsafe.PrivateShareNoti"
+    "fication\"J\n\023StoreMessagesResult\022\016\n\006resul"
+    "t\030\001 \002(\r\022\023\n\013stored_msgs\030\002 \002(\005\022\016\n\006failed\030\003"
+    " \003(\014\"Y\n\020CreateMSIDResult\022\016\n\006result\030\001 \002(\r"
+    "\022\014\n\004name\030\002 \001(\014\022\023\n\013private_key\030\003 \001(\014\022\022\n\np"
+    "ublic_key\030\004 \001(\014*F\n\013MessageType\022\024\n\020ADD_CO"
+    "NTACT_RQST\020\001\022\017\n\013INSTANT_MSG\020\002\022\020\n\014STATUS_"
+    "CHECK\020\003", 1527);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "packet.proto", &protobuf_RegisterTypes);
   GenericPacket::default_instance_ = new GenericPacket();
@@ -1214,7 +1213,7 @@ bool BufferPacketMessage::MergePartialFromCodedStream(
         break;
       }
       
-      // required .packethandler.MessageType type = 5;
+      // required .maidsafe.MessageType type = 5;
       case 5: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
@@ -1223,8 +1222,8 @@ bool BufferPacketMessage::MergePartialFromCodedStream(
        parse_type:
         int value;
         DO_(::google::protobuf::internal::WireFormat::ReadEnum(input, &value));
-        if (packethandler::MessageType_IsValid(value)) {
-          set_type(static_cast< packethandler::MessageType >(value));
+        if (maidsafe::MessageType_IsValid(value)) {
+          set_type(static_cast< maidsafe::MessageType >(value));
         } else {
           mutable_unknown_fields()->AddVarint(5, value);
         }
@@ -1290,7 +1289,7 @@ void BufferPacketMessage::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBytes(4, this->aesenc_message(), output);
   }
   
-  // required .packethandler.MessageType type = 5;
+  // required .maidsafe.MessageType type = 5;
   if (_has_bit(4)) {
     ::google::protobuf::internal::WireFormat::WriteEnum(5, this->type(), output);
   }
@@ -1328,7 +1327,7 @@ void BufferPacketMessage::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->aesenc_message(), target);
   }
   
-  // required .packethandler.MessageType type = 5;
+  // required .maidsafe.MessageType type = 5;
   if (_has_bit(4)) {
     target = ::google::protobuf::internal::WireFormat::WriteEnumToArray(5, this->type(), target);
   }
@@ -1373,7 +1372,7 @@ int BufferPacketMessage::ByteSize() const {
         ::google::protobuf::internal::WireFormat::BytesSize(this->aesenc_message());
     }
     
-    // required .packethandler.MessageType type = 5;
+    // required .maidsafe.MessageType type = 5;
     if (has_type()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::EnumSize(this->type());
@@ -1544,7 +1543,7 @@ bool BufferPacket::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // repeated .packethandler.GenericPacket owner_info = 1;
+      // repeated .maidsafe.GenericPacket owner_info = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
@@ -1558,7 +1557,7 @@ bool BufferPacket::MergePartialFromCodedStream(
         break;
       }
       
-      // repeated .packethandler.GenericPacket messages = 2;
+      // repeated .maidsafe.GenericPacket messages = 2;
       case 2: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
@@ -1596,12 +1595,12 @@ void BufferPacket::SerializeWithCachedSizes(
     return;
   }
   
-  // repeated .packethandler.GenericPacket owner_info = 1;
+  // repeated .maidsafe.GenericPacket owner_info = 1;
   for (int i = 0; i < this->owner_info_size(); i++) {
     ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(1, this->owner_info(i), output);
   }
   
-  // repeated .packethandler.GenericPacket messages = 2;
+  // repeated .maidsafe.GenericPacket messages = 2;
   for (int i = 0; i < this->messages_size(); i++) {
     ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(2, this->messages(i), output);
   }
@@ -1614,12 +1613,12 @@ void BufferPacket::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* BufferPacket::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // repeated .packethandler.GenericPacket owner_info = 1;
+  // repeated .maidsafe.GenericPacket owner_info = 1;
   for (int i = 0; i < this->owner_info_size(); i++) {
     target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(1, this->owner_info(i), target);
   }
   
-  // repeated .packethandler.GenericPacket messages = 2;
+  // repeated .maidsafe.GenericPacket messages = 2;
   for (int i = 0; i < this->messages_size(); i++) {
     target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(2, this->messages(i), target);
   }
@@ -1634,7 +1633,7 @@ void BufferPacket::SerializeWithCachedSizes(
 int BufferPacket::ByteSize() const {
   int total_size = 0;
   
-  // repeated .packethandler.GenericPacket owner_info = 1;
+  // repeated .maidsafe.GenericPacket owner_info = 1;
   total_size += 1 * this->owner_info_size();
   for (int i = 0; i < this->owner_info_size(); i++) {
     total_size +=
@@ -1642,7 +1641,7 @@ int BufferPacket::ByteSize() const {
         this->owner_info(i));
   }
   
-  // repeated .packethandler.GenericPacket messages = 2;
+  // repeated .maidsafe.GenericPacket messages = 2;
   total_size += 1 * this->messages_size();
   for (int i = 0; i < this->messages_size(); i++) {
     total_size +=
@@ -1868,7 +1867,7 @@ bool ValidatedBufferPacketMessage::MergePartialFromCodedStream(
         break;
       }
       
-      // required .packethandler.MessageType type = 4;
+      // required .maidsafe.MessageType type = 4;
       case 4: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
@@ -1877,8 +1876,8 @@ bool ValidatedBufferPacketMessage::MergePartialFromCodedStream(
        parse_type:
         int value;
         DO_(::google::protobuf::internal::WireFormat::ReadEnum(input, &value));
-        if (packethandler::MessageType_IsValid(value)) {
-          set_type(static_cast< packethandler::MessageType >(value));
+        if (maidsafe::MessageType_IsValid(value)) {
+          set_type(static_cast< maidsafe::MessageType >(value));
         } else {
           mutable_unknown_fields()->AddVarint(4, value);
         }
@@ -1939,7 +1938,7 @@ void ValidatedBufferPacketMessage::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBytes(3, this->index(), output);
   }
   
-  // required .packethandler.MessageType type = 4;
+  // required .maidsafe.MessageType type = 4;
   if (_has_bit(3)) {
     ::google::protobuf::internal::WireFormat::WriteEnum(4, this->type(), output);
   }
@@ -1972,7 +1971,7 @@ void ValidatedBufferPacketMessage::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->index(), target);
   }
   
-  // required .packethandler.MessageType type = 4;
+  // required .maidsafe.MessageType type = 4;
   if (_has_bit(3)) {
     target = ::google::protobuf::internal::WireFormat::WriteEnumToArray(4, this->type(), target);
   }
@@ -2011,7 +2010,7 @@ int ValidatedBufferPacketMessage::ByteSize() const {
         ::google::protobuf::internal::WireFormat::BytesSize(this->index());
     }
     
-    // required .packethandler.MessageType type = 4;
+    // required .maidsafe.MessageType type = 4;
     if (has_type()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::EnumSize(this->type());
@@ -2598,7 +2597,7 @@ ContactNotification::ContactNotification()
   SharedCtor();
 }
 
-void ContactNotification::InitAsDefaultInstance() {  contact_ = const_cast< ::packethandler::ContactInfo*>(&::packethandler::ContactInfo::default_instance());
+void ContactNotification::InitAsDefaultInstance() {  contact_ = const_cast< ::maidsafe::ContactInfo*>(&::maidsafe::ContactInfo::default_instance());
 }
 
 ContactNotification::ContactNotification(const ContactNotification& from)
@@ -2647,7 +2646,7 @@ void ContactNotification::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     action_ = 0;
     if (_has_bit(1)) {
-      if (contact_ != NULL) contact_->::packethandler::ContactInfo::Clear();
+      if (contact_ != NULL) contact_->::maidsafe::ContactInfo::Clear();
     }
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -2673,7 +2672,7 @@ bool ContactNotification::MergePartialFromCodedStream(
         break;
       }
       
-      // optional .packethandler.ContactInfo contact = 2;
+      // optional .maidsafe.ContactInfo contact = 2;
       case 2: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
@@ -2715,7 +2714,7 @@ void ContactNotification::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteInt32(1, this->action(), output);
   }
   
-  // optional .packethandler.ContactInfo contact = 2;
+  // optional .maidsafe.ContactInfo contact = 2;
   if (_has_bit(1)) {
     ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(2, this->contact(), output);
   }
@@ -2733,7 +2732,7 @@ void ContactNotification::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(1, this->action(), target);
   }
   
-  // optional .packethandler.ContactInfo contact = 2;
+  // optional .maidsafe.ContactInfo contact = 2;
   if (_has_bit(1)) {
     target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(2, this->contact(), target);
   }
@@ -2756,7 +2755,7 @@ int ContactNotification::ByteSize() const {
           this->action());
     }
     
-    // optional .packethandler.ContactInfo contact = 2;
+    // optional .maidsafe.ContactInfo contact = 2;
     if (has_contact()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
@@ -2792,7 +2791,7 @@ void ContactNotification::MergeFrom(const ContactNotification& from) {
       set_action(from.action());
     }
     if (from._has_bit(1)) {
-      mutable_contact()->::packethandler::ContactInfo::MergeFrom(from.contact());
+      mutable_contact()->::maidsafe::ContactInfo::MergeFrom(from.contact());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -3635,9 +3634,9 @@ InstantMessage::InstantMessage()
   SharedCtor();
 }
 
-void InstantMessage::InitAsDefaultInstance() {  contact_notification_ = const_cast< ::packethandler::ContactNotification*>(&::packethandler::ContactNotification::default_instance());
-  instantfile_notification_ = const_cast< ::packethandler::InstantFileNotification*>(&::packethandler::InstantFileNotification::default_instance());
-  privateshare_notification_ = const_cast< ::packethandler::PrivateShareNotification*>(&::packethandler::PrivateShareNotification::default_instance());
+void InstantMessage::InitAsDefaultInstance() {  contact_notification_ = const_cast< ::maidsafe::ContactNotification*>(&::maidsafe::ContactNotification::default_instance());
+  instantfile_notification_ = const_cast< ::maidsafe::InstantFileNotification*>(&::maidsafe::InstantFileNotification::default_instance());
+  privateshare_notification_ = const_cast< ::maidsafe::PrivateShareNotification*>(&::maidsafe::PrivateShareNotification::default_instance());
 }
 
 InstantMessage::InstantMessage(const InstantMessage& from)
@@ -3712,13 +3711,13 @@ void InstantMessage::Clear() {
     }
     date_ = 0;
     if (_has_bit(3)) {
-      if (contact_notification_ != NULL) contact_notification_->::packethandler::ContactNotification::Clear();
+      if (contact_notification_ != NULL) contact_notification_->::maidsafe::ContactNotification::Clear();
     }
     if (_has_bit(4)) {
-      if (instantfile_notification_ != NULL) instantfile_notification_->::packethandler::InstantFileNotification::Clear();
+      if (instantfile_notification_ != NULL) instantfile_notification_->::maidsafe::InstantFileNotification::Clear();
     }
     if (_has_bit(5)) {
-      if (privateshare_notification_ != NULL) privateshare_notification_->::packethandler::PrivateShareNotification::Clear();
+      if (privateshare_notification_ != NULL) privateshare_notification_->::maidsafe::PrivateShareNotification::Clear();
     }
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -3768,7 +3767,7 @@ bool InstantMessage::MergePartialFromCodedStream(
         break;
       }
       
-      // optional .packethandler.ContactNotification contact_notification = 4;
+      // optional .maidsafe.ContactNotification contact_notification = 4;
       case 4: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
@@ -3781,7 +3780,7 @@ bool InstantMessage::MergePartialFromCodedStream(
         break;
       }
       
-      // optional .packethandler.InstantFileNotification instantfile_notification = 5;
+      // optional .maidsafe.InstantFileNotification instantfile_notification = 5;
       case 5: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
@@ -3794,7 +3793,7 @@ bool InstantMessage::MergePartialFromCodedStream(
         break;
       }
       
-      // optional .packethandler.PrivateShareNotification privateshare_notification = 6;
+      // optional .maidsafe.PrivateShareNotification privateshare_notification = 6;
       case 6: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
@@ -3846,17 +3845,17 @@ void InstantMessage::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteInt32(3, this->date(), output);
   }
   
-  // optional .packethandler.ContactNotification contact_notification = 4;
+  // optional .maidsafe.ContactNotification contact_notification = 4;
   if (_has_bit(3)) {
     ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(4, this->contact_notification(), output);
   }
   
-  // optional .packethandler.InstantFileNotification instantfile_notification = 5;
+  // optional .maidsafe.InstantFileNotification instantfile_notification = 5;
   if (_has_bit(4)) {
     ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(5, this->instantfile_notification(), output);
   }
   
-  // optional .packethandler.PrivateShareNotification privateshare_notification = 6;
+  // optional .maidsafe.PrivateShareNotification privateshare_notification = 6;
   if (_has_bit(5)) {
     ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(6, this->privateshare_notification(), output);
   }
@@ -3884,17 +3883,17 @@ void InstantMessage::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(3, this->date(), target);
   }
   
-  // optional .packethandler.ContactNotification contact_notification = 4;
+  // optional .maidsafe.ContactNotification contact_notification = 4;
   if (_has_bit(3)) {
     target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(4, this->contact_notification(), target);
   }
   
-  // optional .packethandler.InstantFileNotification instantfile_notification = 5;
+  // optional .maidsafe.InstantFileNotification instantfile_notification = 5;
   if (_has_bit(4)) {
     target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(5, this->instantfile_notification(), target);
   }
   
-  // optional .packethandler.PrivateShareNotification privateshare_notification = 6;
+  // optional .maidsafe.PrivateShareNotification privateshare_notification = 6;
   if (_has_bit(5)) {
     target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(6, this->privateshare_notification(), target);
   }
@@ -3929,21 +3928,21 @@ int InstantMessage::ByteSize() const {
           this->date());
     }
     
-    // optional .packethandler.ContactNotification contact_notification = 4;
+    // optional .maidsafe.ContactNotification contact_notification = 4;
     if (has_contact_notification()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
           this->contact_notification());
     }
     
-    // optional .packethandler.InstantFileNotification instantfile_notification = 5;
+    // optional .maidsafe.InstantFileNotification instantfile_notification = 5;
     if (has_instantfile_notification()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
           this->instantfile_notification());
     }
     
-    // optional .packethandler.PrivateShareNotification privateshare_notification = 6;
+    // optional .maidsafe.PrivateShareNotification privateshare_notification = 6;
     if (has_privateshare_notification()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
@@ -3985,13 +3984,13 @@ void InstantMessage::MergeFrom(const InstantMessage& from) {
       set_date(from.date());
     }
     if (from._has_bit(3)) {
-      mutable_contact_notification()->::packethandler::ContactNotification::MergeFrom(from.contact_notification());
+      mutable_contact_notification()->::maidsafe::ContactNotification::MergeFrom(from.contact_notification());
     }
     if (from._has_bit(4)) {
-      mutable_instantfile_notification()->::packethandler::InstantFileNotification::MergeFrom(from.instantfile_notification());
+      mutable_instantfile_notification()->::maidsafe::InstantFileNotification::MergeFrom(from.instantfile_notification());
     }
     if (from._has_bit(5)) {
-      mutable_privateshare_notification()->::packethandler::PrivateShareNotification::MergeFrom(from.privateshare_notification());
+      mutable_privateshare_notification()->::maidsafe::PrivateShareNotification::MergeFrom(from.privateshare_notification());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -4679,4 +4678,4 @@ const ::google::protobuf::Reflection* CreateMSIDResult::GetReflection() const {
   return CreateMSIDResult_reflection_;
 }
 
-}  // namespace packethandler
+}  // namespace maidsafe

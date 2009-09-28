@@ -68,8 +68,8 @@ struct SendMessagesData {
   int successful_stores;
   int stores_done;
   int active_sends;
-  BufferPacketType p_type;
-  packethandler::MessageType m_type;
+  PacketType p_type;
+  MessageType m_type;
   base::callback_func_type cb;
   bool is_calledback;
   boost::uint32_t timestamp;
@@ -80,8 +80,8 @@ class MessageHandler {
   MessageHandler(StoreManagerInterface *sm, boost::recursive_mutex *mutex);
   void SendMessage(const std::string &msg,
                    const std::vector<Receivers> &receivers,
-                   const BufferPacketType &p_type,
-                   const packethandler::MessageType &m_type,
+                   const PacketType &p_type,
+                   const MessageType &m_type,
                    base::callback_func_type cb);
 
  private:
@@ -89,17 +89,17 @@ class MessageHandler {
   MessageHandler(const MessageHandler &);
   std::string CreateMessage(const std::string &msg,
                             const std::string &rec_public_key,
-                            const packethandler::MessageType &type,
-                            const BufferPacketType &p_type,
+                            const MessageType &type,
+                            const PacketType &p_type,
                             const boost::uint32_t &timestamp);
   void CreateSignature(const std::string &buffer_name,
-                       const BufferPacketType &type,
+                       const PacketType &type,
                        std::string *signed_request,
                        std::string *signed_public_key);
   void IterativeStoreMsgs(boost::shared_ptr<SendMessagesData> data);
   void StoreMessage(int index,
                     boost::shared_ptr<SendMessagesData> data);
-  maidsafe::PacketType PacketHandler_PacketType(const BufferPacketType &type);
+  maidsafe::PacketType PacketHandler_PacketType(const PacketType &type);
   SessionSingleton *ss_;
   StoreManagerInterface *sm_;
   crypto::Crypto co_;

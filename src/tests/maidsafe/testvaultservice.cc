@@ -180,7 +180,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSystemPacket) {
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
 
-  packethandler::GenericPacket gp;
+  maidsafe::GenericPacket gp;
   gp.set_data("Generic System Packet Data");
   gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
                    crypto::STRING_STRING));
@@ -401,8 +401,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   request.set_data("abcdef");
 
   // TODO(anyone) add more data types
-  int data_type[] = { maidsafe::SYSTEM_PACKET, maidsafe::PDDIR_SIGNED,
-                      maidsafe::BUFFER_PACKET, maidsafe::DATA };
+  int data_type[] = { maidsafe::PDDIR_SIGNED, maidsafe::DATA };
 
   // invalid data for all data types
   for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
@@ -446,28 +445,28 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
     request.set_data_type(data_type[i]);
 
     switch (data_type[i]) {
-      case maidsafe::SYSTEM_PACKET:
+//      case maidsafe::SYSTEM_PACKET:
       case maidsafe::PDDIR_SIGNED: {
-        packethandler::GenericPacket gp;
+        maidsafe::GenericPacket gp;
         gp.set_data("Generic System Packet Data " + base::itos(i));
         gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
                                      crypto::STRING_STRING));
         content = gp.SerializeAsString();
         break;
       }
-      case maidsafe::BUFFER_PACKET: {
-        packethandler::BufferPacketInfo bpi;
-        bpi.set_owner("test bufferpacket " + base::itos(i));
-        bpi.set_ownerpublickey(pub_key);
-        bpi.add_users("testuser");
-        packethandler::BufferPacket bp;
-        packethandler::GenericPacket *info = bp.add_owner_info();
-        info->set_data(bpi.SerializeAsString());
-        info->set_signature(co.AsymSign(info->data(), "", priv_key,
-                                        crypto::STRING_STRING));
-        content = bp.SerializeAsString();
-        break;
-      }
+//      case maidsafe::BUFFER_PACKET: {
+//        maidsafe::BufferPacketInfo bpi;
+//        bpi.set_owner("test bufferpacket " + base::itos(i));
+//        bpi.set_ownerpublickey(pub_key);
+//        bpi.add_users("testuser");
+//        maidsafe::BufferPacket bp;
+//        maidsafe::GenericPacket *info = bp.add_owner_info();
+//        info->set_data(bpi.SerializeAsString());
+//        info->set_signature(co.AsymSign(info->data(), "", priv_key,
+//                                        crypto::STRING_STRING));
+//        content = bp.SerializeAsString();
+//        break;
+//      }
     }
 
     chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
@@ -563,7 +562,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePacket) {
 
       switch (data_type[i]) {
         case maidsafe::SYSTEM_PACKET: {
-          packethandler::GenericPacket gp;
+          maidsafe::GenericPacket gp;
           gp.set_data("Generic System Packet Data " + base::itos(i));
           gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
                                        crypto::STRING_STRING));
@@ -571,12 +570,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePacket) {
           break;
         }
         case maidsafe::BUFFER_PACKET: {
-          packethandler::BufferPacketInfo bpi;
+          maidsafe::BufferPacketInfo bpi;
           bpi.set_owner("test bufferpacket " + base::itos(i));
           bpi.set_ownerpublickey(pub_key);
           bpi.add_users("testuser");
-          packethandler::BufferPacket bp;
-          packethandler::GenericPacket *info = bp.add_owner_info();
+          maidsafe::BufferPacket bp;
+          maidsafe::GenericPacket *info = bp.add_owner_info();
           info->set_data(bpi.SerializeAsString());
           info->set_signature(co.AsymSign(info->data(), "", priv_key,
                                           crypto::STRING_STRING));
@@ -945,7 +944,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
     switch (data_type[i]) {
       case maidsafe::SYSTEM_PACKET:
       case maidsafe::PDDIR_SIGNED: {
-        packethandler::GenericPacket gp;
+        maidsafe::GenericPacket gp;
         gp.set_data("Generic System Packet Data " + base::itos(i));
         gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
                                      crypto::STRING_STRING));
@@ -953,8 +952,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
         break;
       }
       case maidsafe::BUFFER_PACKET_MESSAGE: {
-        packethandler::GenericPacket gp_msg;
-        packethandler::BufferPacketMessage bp_msg;
+        maidsafe::GenericPacket gp_msg;
+        maidsafe::BufferPacketMessage bp_msg;
         bp_msg.set_sender_id("non authuser");
         std::string enc_key = co.AsymEncrypt("key", "", pub_key,
                                              crypto::STRING_STRING);
@@ -962,7 +961,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
         std::string enc_msg = co.SymmEncrypt("this be a message", "",
                                              crypto::STRING_STRING, "key");
         bp_msg.set_aesenc_message(enc_msg);
-        bp_msg.set_type(packethandler::ADD_CONTACT_RQST);
+        bp_msg.set_type(maidsafe::ADD_CONTACT_RQST);
 
         std::string ser_bp_msg;
         bp_msg.set_sender_public_key(pub_key);
@@ -972,12 +971,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
                              crypto::STRING_STRING));
         content = gp_msg.SerializeAsString();
 
-        packethandler::BufferPacketInfo bpi;
+        maidsafe::BufferPacketInfo bpi;
         bpi.set_owner("test bufferpacket xyz");
         bpi.set_ownerpublickey(pub_key);
         bpi.add_users("testuser");
-        packethandler::BufferPacket bp;
-        packethandler::GenericPacket *info = bp.add_owner_info();
+        maidsafe::BufferPacket bp;
+        maidsafe::GenericPacket *info = bp.add_owner_info();
         std::string ser_bpi;
         bpi.SerializeToString(&ser_bpi);
         info->set_data(ser_bpi);
@@ -987,12 +986,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
         break;
       }
       case maidsafe::BUFFER_PACKET_INFO: {
-        packethandler::BufferPacketInfo bpi;
+        maidsafe::BufferPacketInfo bpi;
         bpi.set_owner("test bufferpacket");
         bpi.set_ownerpublickey(pub_key);
         bpi.add_users("testuser");
-        packethandler::BufferPacket bp;
-        packethandler::GenericPacket *info = bp.add_owner_info();
+        maidsafe::BufferPacket bp;
+        maidsafe::GenericPacket *info = bp.add_owner_info();
         std::string ser_bpi;
         bpi.SerializeToString(&ser_bpi);
         info->set_data(ser_bpi);
@@ -1037,12 +1036,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetMessages) {
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
 
-  packethandler::BufferPacketInfo bpi;
+  maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("test bufferpacket");
   bpi.set_ownerpublickey(pub_key);
   bpi.add_users("testuser");
-  packethandler::BufferPacket bp;
-  packethandler::GenericPacket *info = bp.add_owner_info();
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
   std::string ser_bpi;
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
@@ -1070,7 +1069,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetMessages) {
       case 3:  // make [vbph]::ValidateOwnerSignature() fail
         ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, "fail"));
         break;
-      // TODO(Steve) make VaultBufferPacketHandler::GetMessages() fail (?)
+      // TODO(Steve) make VaultBufferGetMessages() fail (?)
     }
 
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
@@ -1159,7 +1158,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
     switch (data_type[i]) {
       case maidsafe::SYSTEM_PACKET:
       case maidsafe::PDDIR_SIGNED: {
-        packethandler::GenericPacket gp;
+        maidsafe::GenericPacket gp;
         gp.set_data("Generic System Packet Data " + base::itos(i));
         gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
                                      crypto::STRING_STRING));
@@ -1168,16 +1167,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
       }
       case maidsafe::BUFFER_PACKET:
       case maidsafe::BUFFER_PACKET_MESSAGE: {
-        packethandler::BufferPacketInfo bpi;
+        maidsafe::BufferPacketInfo bpi;
         bpi.set_owner("test bufferpacket " + base::itos(i));
         bpi.set_ownerpublickey(pub_key);
         bpi.add_users("testuser");
-        packethandler::BufferPacket bp;
-        packethandler::GenericPacket *info = bp.add_owner_info();
+        maidsafe::BufferPacket bp;
+        maidsafe::GenericPacket *info = bp.add_owner_info();
         info->set_data(bpi.SerializeAsString());
         info->set_signature(co.AsymSign(info->data(), "", priv_key,
                                         crypto::STRING_STRING));
-        packethandler::GenericPacket *msg = bp.add_messages();
+        maidsafe::GenericPacket *msg = bp.add_messages();
         msg->set_data("message");
         msg->set_signature(co.AsymSign(msg->data(), "", priv_key,
                                        crypto::STRING_STRING));
@@ -1204,7 +1203,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
     if (data_type[i] != maidsafe::BUFFER_PACKET_MESSAGE) {
       ASSERT_FALSE(vault_service_->HasChunkLocal(chunkname));
     } else {
-      packethandler::BufferPacket bp;
+      maidsafe::BufferPacket bp;
       ASSERT_TRUE(vault_service_->LoadChunkLocal(chunkname, &content));
       ASSERT_TRUE(bp.ParseFromString(content));
       EXPECT_EQ(0, bp.messages_size());

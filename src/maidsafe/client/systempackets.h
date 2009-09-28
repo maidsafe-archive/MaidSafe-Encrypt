@@ -30,7 +30,7 @@
 #include "protobuf/packet.pb.h"
 #include "maidsafe/client/packetfactory.h"
 
-namespace packethandler {
+namespace maidsafe {
 
 class SignaturePacket : public Packet {
  public:
@@ -69,7 +69,7 @@ class MpidPacket : public Packet {
   std::string PacketName(PacketParams params);
 };
 
-}  // namespace packethandler
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_CLIENT_SYSTEMPACKETS_H_
 

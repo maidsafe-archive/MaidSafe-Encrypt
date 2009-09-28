@@ -48,14 +48,16 @@ ClientController* ClientController::instance() {
 
 ClientController::ClientController(QObject* parent)
     : QObject(parent)
-    , impl_(new ClientControllerImpl) {
-  maidsafe::ClientController::getInstance()->JoinKademlia();
-  maidsafe::ClientController::getInstance()->Init();
-}
+    , impl_(new ClientControllerImpl) { }
 
 ClientController::~ClientController() {
   delete impl_;
   impl_ = NULL;
+}
+
+bool ClientController::Init() {
+  return (maidsafe::ClientController::getInstance()->JoinKademlia() &&
+          maidsafe::ClientController::getInstance()->Init());
 }
 
 void ClientController::StartCheckingMessages() {
@@ -345,31 +347,7 @@ bool ClientController::IsLocalVaultOwned() {
   return maidsafe::ClientController::getInstance()->IsLocalVaultOwned();
 }
 
-
-void ClientController::messageReceived(const std::string& from,
-                                       const std::string& msg) { }
-
-void ClientController::contactStatusChanged(const std::string& from,
-                                            int status) { }
-
-void ClientController::contactAdditionRequested(const std::string& from,
-                                                const std::string& msg) { }
-
-void ClientController::shareReceived(const std::string& from,
-                                     const std::string& share_name) { }
-
-void ClientController::shareChanged(const std::string& from,
-                                    const std::string& share_name) { }
-
-void ClientController::fileReceived(const std::string& from,
-                                    const std::string& file_name) { }
-
-void ClientController::systemMessage(const std::string& message) { }
-
-
 void ClientController::checkForMessages() {
-//  qDebug() << "ClientController::checkForMessages()";
-
   // Check for messages only when public username is set
   if (publicUsername().isEmpty())
     return;
@@ -393,29 +371,27 @@ void ClientController::checkForMessages() {
       return;
     }
   }
-  std::list<packethandler::InstantMessage> msgs;
+  std::list<maidsafe::InstantMessage> msgs;
   const int n = maidsafe::ClientController::getInstance()
                 ->GetInstantMessages(&msgs);
 
   if (n != 0)
     return;
 
-//  qDebug() << "found" << msgs.size() << "instant messages";
-
-  std::list<packethandler::InstantMessage> temp = msgs;
+  std::list<maidsafe::InstantMessage> temp = msgs;
   while (!temp.empty()) {
       analyseMessage(temp.front());
       temp.pop_front();
   }
 }
 
-int ClientController::analyseMessage(const packethandler::InstantMessage& im) {
+int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
   MessageType type = TEXT;
   int n = 0;
   if (im.has_contact_notification()) {
     qDebug() << "HANDLING Contact Notification";
-    packethandler::ContactNotification cn = im.contact_notification();
-    packethandler::ContactInfo ci;
+    maidsafe::ContactNotification cn = im.contact_notification();
+    maidsafe::ContactInfo ci;
     if (cn.has_contact())
       ci = cn.contact();
 
@@ -465,8 +441,7 @@ int ClientController::analyseMessage(const packethandler::InstantMessage& im) {
                         AddInstantFile(im.instantfile_notification(), "");
 
     if (n == 0) {
-      packethandler::InstantFileNotification ifn =
-                                          im.instantfile_notification();
+      maidsafe::InstantFileNotification ifn = im.instantfile_notification();
 
       emit fileReceived(QString::fromStdString(im.sender()),
                       QString::fromStdString(ifn.filename()));
@@ -479,8 +454,7 @@ int ClientController::analyseMessage(const packethandler::InstantMessage& im) {
     n = maidsafe::ClientController::getInstance()->
                     HandleReceivedShare(im.privateshare_notification(), "");
     if (n == 0) {
-      packethandler::PrivateShareNotification psn =
-                                          im.privateshare_notification();
+      maidsafe::PrivateShareNotification psn = im.privateshare_notification();
       emit addedPrivateShare(QString::fromStdString(psn.name()));
       type = SHARE;
     }

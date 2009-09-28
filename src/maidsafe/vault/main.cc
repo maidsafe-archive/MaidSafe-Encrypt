@@ -88,7 +88,7 @@ void GeneratePmidStuff(std::string *public_key,
   crypto::Crypto co_;
   co_.set_hash_algorithm(crypto::SHA_512);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(packethandler::kRsaKeySize);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   *signed_key = co_.AsymSign(keys.public_key(), "", keys.private_key(),
     crypto::STRING_STRING);
   *public_key = keys.public_key();
@@ -450,7 +450,7 @@ int main(int argc, char* argv[]) {
 //      maidsafe::VaultConfig vault_config;
 //      int port = base::stoi(port_string);
 //      crypto::RsaKeyPair keys;
-//      keys.GenerateKeys(packethandler::kRsaKeySize);
+//      keys.GenerateKeys(kRsaKeySize);
 //      vault_config.set_pmid_public(keys.public_key());
 //      vault_config.set_pmid_private(keys.private_key());
 //      vault_config.set_signed_pmid_public(

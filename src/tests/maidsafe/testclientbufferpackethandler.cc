@@ -122,7 +122,7 @@ class ClientBufferPacketHandlerTest : public testing::Test {
     }
     crypto_obj.set_hash_algorithm(crypto::SHA_512);
     crypto_obj.set_symm_algorithm(crypto::AES_256);
-    rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
+    rsa_obj.GenerateKeys(maidsafe::kRsaKeySize);
     private_key = rsa_obj.private_key();
     public_key = rsa_obj.public_key();
     ss = maidsafe::SessionSingleton::getInstance();
@@ -167,11 +167,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
     sm(new maidsafe::LocalStoreManager(mutex));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
-  packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
-  packethandler::BufferPacketInfo buffer_packet_info;
-  packethandler::BufferPacket buffer_packet;
+  maidsafe::VaultBufferPacketHandler vaultbufferpackethandler;
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
 
   // Create the buffer packet
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
@@ -185,7 +185,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   users.insert(usuarios[2]);
 
   // Add authorised users for BP querying
-  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
   add_users_res.Clear();
 
   // Get BP
@@ -202,16 +202,16 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   load_res.Clear();
   cb.Reset();
 
-  packethandler::BufferPacketMessage bpm;
-  rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
+  maidsafe::BufferPacketMessage bpm;
+  rsa_obj.GenerateKeys(maidsafe::kRsaKeySize);
   bpm.set_sender_id(usuarios[0]);
   bpm.set_sender_public_key(rsa_obj.public_key());
   bpm.set_aesenc_message("STATUS CHECK");
   bpm.set_rsaenc_key("AES_KEY");
-  bpm.set_type(packethandler::STATUS_CHECK);
+  bpm.set_type(STATUS_CHECK);
   std::string ser_msg;
   bpm.SerializeToString(&ser_msg);
-  packethandler::GenericPacket gp_msg;
+  maidsafe::GenericPacket gp_msg;
   gp_msg.set_data(ser_msg);
   gp_msg.set_signature(crypto_obj.AsymSign(ser_msg, "", rsa_obj.private_key(),
     crypto::STRING_STRING));
@@ -233,11 +233,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
-                                                                     mutex);
-  packethandler::GenericPacket ser_owner_info;
-  packethandler::BufferPacketInfo buffer_packet_info;
-  packethandler::BufferPacket buffer_packet;
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+                                                                mutex);
+  maidsafe::GenericPacket ser_owner_info;
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
@@ -272,10 +272,10 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddUsers) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
-  packethandler::BufferPacketInfo buffer_packet_info;
-  packethandler::BufferPacket buffer_packet;
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
@@ -286,7 +286,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddUsers) {
   users.insert(usuarios[1]);
   users.insert(usuarios[2]);
 
-  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
 
   std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username+"BUFFER",
@@ -301,7 +301,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddUsers) {
   cb.Reset();
   load_res.Clear();
 
-  packethandler::BufferPacketInfo bpi;
+  maidsafe::BufferPacketInfo bpi;
   ASSERT_TRUE(buffer_packet.ParseFromString(ser_bp)) << "Wrong serialization";
 
   bpi.ParseFromString(buffer_packet.owner_info(0).data());
@@ -317,11 +317,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddMessage) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
-  packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
-  packethandler::BufferPacketInfo buffer_packet_info;
-  packethandler::BufferPacket buffer_packet;
+  maidsafe::VaultBufferPacketHandler vaultbufferpackethandler;
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
@@ -332,7 +332,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddMessage) {
   users.insert(usuarios[1]);
   users.insert(usuarios[2]);
 
-  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
 
   std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
@@ -346,17 +346,17 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddMessage) {
   std::string ser_bp = load_res.content();
   load_res.Clear();
   cb.Reset();
-  packethandler::BufferPacketMessage bpm;
-  rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
+  maidsafe::BufferPacketMessage bpm;
+  rsa_obj.GenerateKeys(maidsafe::kRsaKeySize);
   bpm.set_sender_id(usuarios[0]);
   bpm.set_sender_public_key(rsa_obj.public_key());
   bpm.set_aesenc_message("mensaje tonto");
   bpm.set_rsaenc_key("AES_key");
-  bpm.set_type(packethandler::INSTANT_MSG);
+  bpm.set_type(maidsafe::INSTANT_MSG);
   std::string ser_msg;
   bpm.SerializeToString(&ser_msg);
 
-  packethandler::GenericPacket gp_msg;
+  maidsafe::GenericPacket gp_msg;
   gp_msg.set_data(ser_msg);
   gp_msg.set_signature(crypto_obj.AsymSign(ser_msg, "", rsa_obj.private_key(),
                        crypto::STRING_STRING));
@@ -381,10 +381,10 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddMessage) {
   bpm.set_sender_id(usuarios[1]);
   bpm.clear_aesenc_message();
   bpm.set_aesenc_message("mensaje tonto ver2");
-  bpm.set_type(packethandler::INSTANT_MSG);
+  bpm.set_type(maidsafe::INSTANT_MSG);
   bpm.SerializeToString(&ser_msg);
 
-  packethandler::GenericPacket gp_msg1;
+  maidsafe::GenericPacket gp_msg1;
   gp_msg1.set_data(ser_msg);
   gp_msg1.set_signature(crypto_obj.AsymSign(ser_msg,
                                             "",
@@ -406,11 +406,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
-  packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
-  packethandler::BufferPacketInfo buffer_packet_info;
-  packethandler::BufferPacket buffer_packet;
+  maidsafe::VaultBufferPacketHandler vaultbufferpackethandler;
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
@@ -421,7 +421,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   users.insert(usuarios[1]);
   users.insert(usuarios[2]);
 
-  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
 
   std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username+"BUFFER",
@@ -435,17 +435,17 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddMessageNonauthoUser) {
   load_res.Clear();
   cb.Reset();
 
-  packethandler::BufferPacketMessage bpm;
-  rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
+  maidsafe::BufferPacketMessage bpm;
+  rsa_obj.GenerateKeys(maidsafe::kRsaKeySize);
   bpm.set_sender_id("SMER");
   bpm.set_sender_public_key(rsa_obj.public_key());
   bpm.set_aesenc_message("mensaje tonto");
   bpm.set_rsaenc_key("AES_key");
-  bpm.set_type(packethandler::INSTANT_MSG);
+  bpm.set_type(maidsafe::INSTANT_MSG);
   std::string ser_msg;
   bpm.SerializeToString(&ser_msg);
 
-  packethandler::GenericPacket gp_msg;
+  maidsafe::GenericPacket gp_msg;
   gp_msg.set_data(ser_msg);
   gp_msg.set_signature(crypto_obj.AsymSign(ser_msg,
                                           "",
@@ -466,11 +466,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckOwner) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
-  packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
-  packethandler::BufferPacketInfo buffer_packet_info;
-  packethandler::BufferPacket buffer_packet;
+  maidsafe::VaultBufferPacketHandler vaultbufferpackethandler;
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
@@ -503,10 +503,10 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
-  packethandler::BufferPacketInfo buffer_packet_info;
-  packethandler::BufferPacket buffer_packet;
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
@@ -518,14 +518,15 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_DeleteUsers) {
   users.insert(usuarios[2]);
 
 
-  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
   ASSERT_TRUE(users == ss->AuthorisedUsers());
   ASSERT_EQ(size_t(3), ss->AuthorisedUsers().size());
 
   std::set<std::string> del_users;
   del_users.insert(usuarios[1]);
 
-  ASSERT_EQ(0, clientbufferpackethandler.DeleteUsers(del_users, MPID_BP));
+  ASSERT_EQ(0, clientbufferpackethandler.DeleteUsers(del_users,
+                                                     maidsafe::MPID));
 
   std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
@@ -552,11 +553,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckSignature) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
-  packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
-  packethandler::BufferPacketInfo buffer_packet_info;
-  packethandler::BufferPacket buffer_packet;
+  maidsafe::VaultBufferPacketHandler vaultbufferpackethandler;
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
@@ -582,11 +583,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetMessages) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
-  packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
-  packethandler::BufferPacketInfo buffer_packet_info;
-  packethandler::BufferPacket buffer_packet;
+  maidsafe::VaultBufferPacketHandler vaultbufferpackethandler;
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
@@ -597,7 +598,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetMessages) {
   users.insert(usuarios[1]);
   users.insert(usuarios[2]);
 
-  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
 
   std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
@@ -614,10 +615,10 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetMessages) {
   cb.Reset();
 
   std::string enc_msgs[3];
-  packethandler::BufferPacketMessage bpm;
+  maidsafe::BufferPacketMessage bpm;
 
   for (int i = 0; i < 3; ++i) {
-    rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
+    rsa_obj.GenerateKeys(maidsafe::kRsaKeySize);
     bpm.set_sender_id(usuarios[i]);
     bpm.set_sender_public_key(rsa_obj.public_key());
     bpm.set_rsaenc_key(crypto_obj.AsymEncrypt("AES_key",
@@ -629,11 +630,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetMessages) {
                                          crypto::STRING_STRING,
                                          "AES_key");
     bpm.set_aesenc_message(enc_msgs[i]);
-    bpm.set_type(packethandler::INSTANT_MSG);
+    bpm.set_type(maidsafe::INSTANT_MSG);
     std::string ser_msg;
     bpm.SerializeToString(&ser_msg);
 
-    packethandler::GenericPacket gp_msg;
+    maidsafe::GenericPacket gp_msg;
     gp_msg.set_data(ser_msg);
     gp_msg.set_signature(crypto_obj.AsymSign(ser_msg,
                                              "",
@@ -664,7 +665,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetMessages) {
                                                crypto::STRING_STRING,
                                                true),
                                ser_bp,
-                               packethandler::BUFFER,
+                               maidsafe::BUFFER,
                                maidsafe::PRIVATE,
                                ""));
   ASSERT_TRUE(buffer_packet.ParseFromString(ser_bp)) << "Wrong serialization";
@@ -674,15 +675,16 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetMessages) {
   ASSERT_TRUE(vaultbufferpackethandler.GetMessages(ser_bp, &msgs));
   ASSERT_EQ(size_t(3), msgs.size());
   for (unsigned int j = 0; j < 3; ++j) {
-    packethandler::ValidatedBufferPacketMessage msg;
+    maidsafe::ValidatedBufferPacketMessage msg;
     std::string ser_msg = msgs[j];
     msg.ParseFromString(ser_msg);
     EXPECT_EQ(usuarios[j], msg.sender());
     EXPECT_EQ(enc_msgs[j], msg.message());
   }
 
-  std::list<packethandler::ValidatedBufferPacketMessage> valid_messages;
-  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(MPID_BP, &valid_messages));
+  std::list<maidsafe::ValidatedBufferPacketMessage> valid_messages;
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
+                                                     &valid_messages));
   int messages_size(valid_messages.size());
   ASSERT_EQ(3, messages_size);
 
@@ -699,11 +701,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
-  packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
-  packethandler::BufferPacketInfo buffer_packet_info;
-  packethandler::BufferPacket buffer_packet;
+  maidsafe::VaultBufferPacketHandler vaultbufferpackethandler;
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
@@ -715,7 +717,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   users.insert(usuarios[2]);
 
 
-  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
 
   std::string packet_content;
   sm->LoadPacket(crypto_obj.Hash(public_username + "BUFFER",
@@ -732,10 +734,10 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ClearMessages) {
   cb.Reset();
 
   std::string enc_msgs[3];
-  packethandler::BufferPacketMessage bpm;
+  maidsafe::BufferPacketMessage bpm;
 
   for (int i = 0; i < 3; ++i) {
-    rsa_obj.GenerateKeys(packethandler::kRsaKeySize);
+    rsa_obj.GenerateKeys(maidsafe::kRsaKeySize);
     bpm.set_sender_id(usuarios[i]);
     bpm.set_sender_public_key(rsa_obj.public_key());
     bpm.set_rsaenc_key(crypto_obj.AsymEncrypt("AES_key",
@@ -747,11 +749,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ClearMessages) {
                                          crypto::STRING_STRING,
                                          "AES_key");
     bpm.set_aesenc_message(enc_msgs[i]);
-    bpm.set_type(packethandler::INSTANT_MSG);
+    bpm.set_type(maidsafe::INSTANT_MSG);
     std::string ser_msg;
     bpm.SerializeToString(&ser_msg);
 
-    packethandler::GenericPacket gp_msg;
+    maidsafe::GenericPacket gp_msg;
     gp_msg.set_data(ser_msg);
     gp_msg.set_signature(crypto_obj.AsymSign(ser_msg,
                                              "",
@@ -780,11 +782,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
-  packethandler::VaultBufferPacketHandler vaultbufferpackethandler;
-  packethandler::BufferPacketInfo buffer_packet_info;
-  packethandler::BufferPacket buffer_packet;
+  maidsafe::VaultBufferPacketHandler vaultbufferpackethandler;
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
 
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
@@ -818,7 +820,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
   std::string ser_owner_info;
   buffer_packet_info.SerializeToString(&ser_owner_info);
 
-  packethandler::GenericPacket gp;
+  maidsafe::GenericPacket gp;
   gp.set_data(ser_owner_info);
   gp.set_signature(crypto_obj.AsymSign(gp.data(),
                                       "",
@@ -830,9 +832,9 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_ModifyUserInfo) {
                                                       &ser_bp,
                                                       public_key));
 
-  packethandler::BufferPacket bp;
+  maidsafe::BufferPacket bp;
   bp.ParseFromString(ser_bp);
-  packethandler::BufferPacketInfo bpi_updated;
+  maidsafe::BufferPacketInfo bpi_updated;
   ASSERT_TRUE(bpi_updated.ParseFromString(bp.owner_info(0).data()));
   ASSERT_EQ(3, bpi_updated.users_size());
   ASSERT_EQ(2, bpi_updated.online());
@@ -842,12 +844,12 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(mutex, client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  packethandler::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
+  maidsafe::ClientBufferPacketHandler clientbufferpackethandler(sm.get(),
                                                                      mutex);
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
 
-  clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(\
+  clientbufferpackethandler.GetBufferPacket(maidsafe::MPID, boost::bind(\
     &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -865,9 +867,9 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
   users.insert(usuarios[1]);
   users.insert(usuarios[2]);
 
-  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, MPID_BP));
+  ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
 
-  clientbufferpackethandler.GetBufferPacket(MPID_BP, boost::bind(\
+  clientbufferpackethandler.GetBufferPacket(maidsafe::MPID, boost::bind(\
     &FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_tbph(cb, mutex);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));

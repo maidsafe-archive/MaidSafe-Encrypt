@@ -135,7 +135,7 @@ class TestPDClientOwnVault : public testing::Test {
 TEST_F(TestPDClientOwnVault, FUNC_MAID_OwnLocalVault) {
   crypto::Crypto cobj;
   crypto::RsaKeyPair keypair;
-  keypair.GenerateKeys(packethandler::kRsaKeySize);
+  keypair.GenerateKeys(maidsafe::kRsaKeySize);
   cobj.set_hash_algorithm(crypto::SHA_512);
   std::string signed_public_key = cobj.AsymSign(keypair.public_key(), "",
       keypair.private_key(), crypto::STRING_STRING);
@@ -169,14 +169,14 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_OwnLocalVault) {
 TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
   crypto::Crypto cobj;
   crypto::RsaKeyPair keypair;
-  keypair.GenerateKeys(packethandler::kRsaKeySize);
+  keypair.GenerateKeys(maidsafe::kRsaKeySize);
   cobj.set_hash_algorithm(crypto::SHA_512);
   std::string signed_public_key = cobj.AsymSign(keypair.public_key(), "",
       keypair.private_key(), crypto::STRING_STRING);
   std::string priv_key = keypair.private_key();
   std::string pub_key = keypair.public_key();
   keypair.ClearKeys();
-  keypair.GenerateKeys(packethandler::kRsaKeySize);
+  keypair.GenerateKeys(maidsafe::kRsaKeySize);
   pdclient.OwnLocalVault(keypair.private_key(), keypair.public_key(),
       signed_public_key, 0, "ChunkStore", 1024, cb);
   while (!resulthandler.callback_arrived())

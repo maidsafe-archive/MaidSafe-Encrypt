@@ -31,30 +31,13 @@
 #include <map>
 #include <string>
 
+#include "protobuf/datamaps.pb.h"
 
-namespace packethandler {
+namespace maidsafe {
 
 const int kRsaKeySize = 4096;  // size to generate RSA keys in bits.
 
 typedef std::map<std::string, boost::any> PacketParams;
-
-enum SystemPackets {
-  MID,
-  SMID,
-  TMID,
-  MPID,
-  PMID,
-  MAID,
-  ANMID,
-  ANSMID,
-  ANTMID,
-  ANMPID,
-  MSID,
-  PD_DIR,
-  BUFFER,
-  BUFFER_INFO,
-  BUFFER_MESSAGE
-};
 
 class Packet {
  public:
@@ -70,9 +53,9 @@ class Packet {
 
 class PacketFactory {
  public:
-  static Packet *Factory(SystemPackets type);
+  static Packet *Factory(PacketType type);
 };
 
-}  // namespace packethandler
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_CLIENT_PACKETFACTORY_H_

@@ -1,4 +1,4 @@
-package packethandler;
+package maidsafe;
 
 // define types of messages
 enum MessageType {

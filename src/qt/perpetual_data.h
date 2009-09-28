@@ -60,6 +60,7 @@ class PerpetualData : public QMainWindow {
     void quit();
 
   private slots:
+    void onJoinKademliaCompleted(bool b);
     // Existing user logging in.
     void onLoginExistingUser();
 

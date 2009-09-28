@@ -30,11 +30,11 @@
 
 crypto::RsaKeyPair create_keys() {
   crypto::RsaKeyPair rsakp;
-  rsakp.GenerateKeys(packethandler::kRsaKeySize);
+  rsakp.GenerateKeys(maidsafe::kRsaKeySize);
   return rsakp;
 }
 
-namespace packethandler {
+namespace maidsafe {
 
 class PacketHandlerTest : public testing::Test {
  public:
@@ -292,4 +292,4 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetRidSMID) {
       boost::any_cast<uint32_t>(recovered_rid["data"]));
 }
 
-}  // namespace packethandler
+}  // namespace maidsafe

@@ -138,13 +138,13 @@ class DataAtlasHandlerTest : public testing::Test {
     SessionSingleton::getInstance()->SetSessionName(false);
     SessionSingleton::getInstance()->SetRootDbKey("whatever");
     crypto::RsaKeyPair rsakp;
-    rsakp.GenerateKeys(packethandler::kRsaKeySize);
+    rsakp.GenerateKeys(kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(PMID, "PMID", rsakp.private_key(),
                                             rsakp.public_key(), "");
-    rsakp.GenerateKeys(packethandler::kRsaKeySize);
+    rsakp.GenerateKeys(kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(MAID, "MAID", rsakp.private_key(),
         rsakp.public_key(), "");
-    rsakp.GenerateKeys(packethandler::kRsaKeySize);
+    rsakp.GenerateKeys(kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(MPID, "Me", rsakp.private_key(),
         rsakp.public_key(), "");
     file_system::FileSystem fsys;

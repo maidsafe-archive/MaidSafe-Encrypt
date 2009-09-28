@@ -57,7 +57,7 @@ class StoreManagerInterface {
                           const std::string &msid)=0;
   virtual int StorePacket(const std::string &hex_packet_name,
                           const std::string &value,
-                          packethandler::SystemPackets system_packet_type,
+                          PacketType system_packet_type,
                           DirType dir_type,
                           const std::string &msid)=0;
   virtual bool KeyUnique(const std::string &hex_key, bool check_local)=0;

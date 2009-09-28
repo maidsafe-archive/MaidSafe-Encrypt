@@ -163,13 +163,13 @@ void MakeChunks(boost::shared_ptr<maidsafe::ChunkStore> chunkstore,
   }
 }
 
-void CreateSystemPackets(const std::string &priv_key,
+void CreatePacketType(const std::string &priv_key,
                          int no_of_packets,
                          std::map<std::string, std::string> *packets) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   for (int i = 0; i < no_of_packets; ++i) {
-    packethandler::GenericPacket gp;
+    maidsafe::GenericPacket gp;
     gp.set_data(base::RandomString(4096));
     gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
       crypto::STRING_STRING));
@@ -195,9 +195,9 @@ void CreateBufferPacket(const std::string &owner,
   co.set_hash_algorithm(crypto::SHA_512);
   *packet_name = co.Hash(owner + "BUFFER", "", crypto::STRING_STRING,
                          false);
-  packethandler::BufferPacket buffer_packet;
-  packethandler::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
-  packethandler::BufferPacketInfo buffer_packet_info;
+  maidsafe::BufferPacket buffer_packet;
+  maidsafe::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
+  maidsafe::BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(owner);
   buffer_packet_info.set_ownerpublickey(public_key);
   buffer_packet_info.set_online(false);
@@ -213,14 +213,14 @@ void CreateMessage(const std::string &message,
                    const std::string &public_key,
                    const std::string &private_key,
                    const std::string &sender_id,
-                   const packethandler::MessageType &m_type,
+                   const maidsafe::MessageType &m_type,
                    std::string *ser_message,
                    std::string *ser_expected_msg) {
   std::string key("AESkey");
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   co.set_symm_algorithm(crypto::AES_256);
-  packethandler::BufferPacketMessage bpmsg;
+  maidsafe::BufferPacketMessage bpmsg;
   bpmsg.set_sender_id(sender_id);
   bpmsg.set_rsaenc_key(co.AsymEncrypt(key, "", public_key,
     crypto::STRING_STRING));
@@ -230,7 +230,7 @@ void CreateMessage(const std::string &message,
   bpmsg.set_sender_public_key(public_key);
   std::string ser_bpmsg;
   bpmsg.SerializeToString(&ser_bpmsg);
-  packethandler::GenericPacket bpmsg_gp;
+  maidsafe::GenericPacket bpmsg_gp;
   bpmsg_gp.set_data(ser_bpmsg);
   bpmsg_gp.set_signature(co.AsymSign(ser_bpmsg, "", private_key,
     crypto::STRING_STRING));
@@ -238,7 +238,7 @@ void CreateMessage(const std::string &message,
   bpmsg_gp.SerializeToString(ser_message);
 
   // Expected result for GetMsgs
-  packethandler::ValidatedBufferPacketMessage val_msg;
+  maidsafe::ValidatedBufferPacketMessage val_msg;
   val_msg.set_index(bpmsg.rsaenc_key());
   val_msg.set_message(bpmsg.aesenc_message());
   val_msg.set_sender(bpmsg.sender_id());
@@ -298,7 +298,7 @@ class TestPDVault : public testing::Test {
     fs::create_directories("./TestVault");
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
-    client_maid_keys_.GenerateKeys(packethandler::kRsaKeySize);
+    client_maid_keys_.GenerateKeys(maidsafe::kRsaKeySize);
     std::string maid_pri = client_maid_keys_.private_key();
     std::string maid_pub = client_maid_keys_.public_key();
     std::string maid_pub_key_signature = crypto_.AsymSign(maid_pub, "",
@@ -307,7 +307,7 @@ class TestPDVault : public testing::Test {
         crypto::STRING_STRING, true);
     maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::MAID, maid_name,
         maid_pri, maid_pub, maid_pub_key_signature);
-    client_pmid_keys_.GenerateKeys(packethandler::kRsaKeySize);
+    client_pmid_keys_.GenerateKeys(maidsafe::kRsaKeySize);
     std::string pmid_pri = client_pmid_keys_.private_key();
     std::string pmid_pub = client_pmid_keys_.public_key();
     client_pmid_public_signature_ = crypto_.AsymSign(pmid_pub, "",
@@ -516,7 +516,9 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
   }
   // We need to allow enough time to let the vaults finish publishing themselves
   // as chunk holders and retrieving their IOUs.
+  printf("FUNC_MAID_StoreChunks - Before 60 sec sleep\n");
   boost::this_thread::sleep(boost::posix_time::seconds(60));
+  printf("FUNC_MAID_StoreChunks - After 60 sec sleep\n");
 }
 
 TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
@@ -723,7 +725,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetMissingChunk) {
 TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
   std::map<std::string, std::string> packets;
   const boost::uint32_t kNumOfTestPackets(29);
-  testpdvault::CreateSystemPackets(client_maid_keys_.private_key(),
+  testpdvault::CreatePacketType(client_maid_keys_.private_key(),
       kNumOfTestPackets, &packets);
   std::map<std::string, std::string>::iterator it;
 //  int i(0);
@@ -732,7 +734,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
     std::string packet_content = (*it).second;
 //    printf("Trying to store packet %i.\n", i);
     ASSERT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
-        packethandler::PMID, maidsafe::PRIVATE, ""));
+        maidsafe::PMID, maidsafe::PRIVATE, ""));
 //    printf("Packet %i stored.\n", i);
 //    ++i;
   }
@@ -777,16 +779,16 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
 
 TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
   std::map<std::string, std::string> packets;
-  testpdvault::CreateSystemPackets(client_maid_keys_.private_key(), 1,
+  testpdvault::CreatePacketType(client_maid_keys_.private_key(), 1,
       &packets);
   std::string hex_packet_name((*packets.begin()).first);
   // Try to store system packet with other incorrect content
   std::string packet_content("not a system packet");
   ASSERT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
-      packethandler::PD_DIR, maidsafe::PRIVATE, ""));
+      maidsafe::PD_DIR, maidsafe::PRIVATE, ""));
   packet_content = "some other bollocks";
   ASSERT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
-      packethandler::PD_DIR, maidsafe::PRIVATE, ""));
+      maidsafe::PD_DIR, maidsafe::PRIVATE, ""));
   // We need to allow enough time to let the vaults finish publishing themselves
   // as chunk holders and retrieving their IOUs.
   boost::this_thread::sleep(boost::posix_time::seconds(10));
@@ -864,7 +866,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
 
 TEST_F(TestPDVault, FUNC_MAID_UpdateSystemPacket) {
   std::string non_hex_chunk_name, chunk_content;
-  testpdvault::CreateSystemPackets(client_private_key_, &non_hex_chunk_name,
+  testpdvault::CreatePacketType(client_private_key_, &non_hex_chunk_name,
     &chunk_content);
   std::string hex_chunk_name("");
   base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
@@ -894,7 +896,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateSystemPacket) {
 
   std::string new_chunk_content;
   std::string new_non_hex_chunk_name;
-  testpdvault::CreateSystemPackets(client_private_key_, &new_non_hex_chunk_name,
+  testpdvault::CreatePacketType(client_private_key_, &new_non_hex_chunk_name,
     &new_chunk_content);
   ASSERT_NE(chunk_content, new_chunk_content);
 
@@ -923,7 +925,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateSystemPacket) {
 
 TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
   std::string non_hex_chunk_name, chunk_content;
-  testpdvault::CreateSystemPackets(client_private_key_, &non_hex_chunk_name,
+  testpdvault::CreatePacketType(client_private_key_, &non_hex_chunk_name,
     &chunk_content);
   std::string hex_chunk_name("");
   base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
@@ -980,10 +982,10 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
 
   // System packet signed with different keys
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(packethandler::kRsaKeySize);
+  keys.GenerateKeys(kRsaKeySize);
   std::string new_chunk_content;
   std::string new_non_hex_chunk_name;
-  testpdvault::CreateSystemPackets(keys.private_key(), &new_non_hex_chunk_name,
+  testpdvault::CreatePacketType(keys.private_key(), &new_non_hex_chunk_name,
     &new_chunk_content);
   std::string sig_pubkey = crypto_.AsymSign(keys.public_key(), "",
      keys.private_key(), crypto::STRING_STRING);
@@ -1044,11 +1046,11 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
 
   // Updating bufferpacket info not being the owner
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(packethandler::kRsaKeySize);
+  keys.GenerateKeys(kRsaKeySize);
   std::string new_content;
   std::string expected_res;
   testpdvault::CreateMessage("test message", keys.public_key(),
-    keys.private_key(), "public user2", packethandler::ADD_CONTACT_RQST,
+    keys.private_key(), "public user2", ADD_CONTACT_RQST,
     &new_content, &expected_res);
   std::string sig_pubkey = crypto_.AsymSign(keys.public_key(), "",
     keys.private_key(), crypto::STRING_STRING);
@@ -1096,7 +1098,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
   ASSERT_TRUE(callback_succeeded_);
   ASSERT_FALSE(callback_timed_out_);
   // verifying the buffer packet
-  packethandler::BufferPacket rec_bp;
+  maidsafe::BufferPacket rec_bp;
   ASSERT_TRUE(rec_bp.ParseFromString(callback_content_));
   ASSERT_EQ(1, rec_bp.messages_size());
 

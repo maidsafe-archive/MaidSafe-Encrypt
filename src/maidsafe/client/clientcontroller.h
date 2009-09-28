@@ -101,22 +101,22 @@ class ClientController {
   // Messages
   bool GetMessages();
   int HandleMessages(
-      std::list<packethandler::ValidatedBufferPacketMessage>*valid_messages);
-  int HandleReceivedShare(const packethandler::PrivateShareNotification &psn,
+      std::list<ValidatedBufferPacketMessage>*valid_messages);
+  int HandleReceivedShare(const PrivateShareNotification &psn,
                           const std::string &name);
   int HandleDeleteContactNotification(const std::string &sender);
   int HandleInstantMessage(
-      const packethandler::ValidatedBufferPacketMessage &vbpm);
-  int HandleAddContactRequest(const packethandler::ContactInfo &ci,
+      const ValidatedBufferPacketMessage &vbpm);
+  int HandleAddContactRequest(const ContactInfo &ci,
     const std::string &sender);
-  int HandleAddContactResponse(const packethandler::ContactInfo &ci,
+  int HandleAddContactResponse(const ContactInfo &ci,
     const std::string &sender);
-  int GetInstantMessages(std::list<packethandler::InstantMessage> *messages);
+  int GetInstantMessages(std::list<InstantMessage> *messages);
   int SendInstantMessage(const std::string &message,
                          const std::vector<std::string> &contact_names);
   int SendInstantFile(std::string *filename, const std::string &msg,
                       const std::vector<std::string> &contact_names);
-  int AddInstantFile(const packethandler::InstantFileNotification &ifm,
+  int AddInstantFile(const InstantFileNotification &ifm,
                      const std::string &location);
 
   // Contact operations
@@ -222,13 +222,13 @@ class ClientController {
   StoreManagerInterface *sm_;
   SessionSingleton *ss_;
   MessageHandler *msgh_;
-  packethandler::ClientBufferPacketHandler *cbph_;
+  ClientBufferPacketHandler *cbph_;
   std::string ser_da_;
   std::map<std::string, std::pair<std::string, std::string> >db_enc_queue_;
   SEHandler *seh_;
   static ClientController *single;
   boost::recursive_mutex mutex_;
-  std::list<packethandler::InstantMessage> messages_;
+  std::list<InstantMessage> messages_;
   file_system::FileSystem fsys_;
   std::map<std::string, boost::uint32_t> received_messages_;
   boost::mutex rec_msg_mutex_;

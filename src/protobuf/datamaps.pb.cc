@@ -306,9 +306,12 @@ void protobuf_AddDesc_datamaps_2eproto() {
     "AR_FILE\020\000\022\016\n\nSMALL_FILE\020\001\022\016\n\nEMPTY_FILE\020"
     "\002\022\017\n\013LOCKED_FILE\020\003\022\r\n\tDIRECTORY\020\004\022\023\n\017EMP"
     "TY_DIRECTORY\020\005\022\010\n\004LINK\020\006\022\026\n\022NOT_FOR_PROC"
-    "ESSING\020\007\022\013\n\007UNKNOWN\020\010*Y\n\nPacketType\022\t\n\005A"
-    "NMID\020\000\022\n\n\006ANTMID\020\001\022\n\n\006ANSMID\020\002\022\010\n\004MAID\020\003"
-    "\022\010\n\004PMID\020\004\022\n\n\006ANMPID\020\005\022\010\n\004MPID\020\006", 1552);
+    "ESSING\020\007\022\013\n\007UNKNOWN\020\010*\275\001\n\nPacketType\022\007\n\003"
+    "MID\020\000\022\010\n\004SMID\020\001\022\010\n\004TMID\020\002\022\010\n\004MPID\020\003\022\010\n\004P"
+    "MID\020\004\022\010\n\004MAID\020\005\022\t\n\005ANMID\020\006\022\n\n\006ANSMID\020\007\022\n"
+    "\n\006ANTMID\020\010\022\n\n\006ANMPID\020\t\022\010\n\004MSID\020\n\022\n\n\006PD_D"
+    "IR\020\013\022\n\n\006BUFFER\020\014\022\017\n\013BUFFER_INFO\020\r\022\022\n\016BUF"
+    "FER_MESSAGE\020\016", 1653);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "datamaps.proto", &protobuf_RegisterTypes);
   PublicContact::default_instance_ = new PublicContact();
@@ -371,6 +374,14 @@ bool PacketType_IsValid(int value) {
     case 4:
     case 5:
     case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
       return true;
     default:
       return false;

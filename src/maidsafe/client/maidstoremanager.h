@@ -178,7 +178,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // blocks until the entire store operation has completed.
   int StorePacket(const std::string &hex_packet_name,
                   const std::string &value,
-                  packethandler::SystemPackets system_packet_type,
+                  PacketType system_packet_type,
                   DirType dir_type,
                   const std::string &msid);
   int LoadChunk(const std::string &hex_chunk_name, std::string *data);
@@ -212,7 +212,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                                     std::string *private_key);
   // Used by constructors of packet task structs to retrieve the appropriate
   // signing public key and public key signature.
-  static void GetPacketSignatureKeys(packethandler::SystemPackets packet_type,
+  static void GetPacketSignatureKeys(PacketType packet_type,
                                      DirType dir_type,
                                      const std::string &msid,
                                      std::string *public_key,
@@ -436,7 +436,7 @@ struct StoreTask {
                 public_key_(""),
                 public_key_signature_(""),
                 private_key_(""),
-                system_packet_type_(packethandler::MID),
+                system_packet_type_(MID),
                 dir_type_(PRIVATE) {}
   // Store chunk constructor
   StoreTask(const std::string &non_hex_chunk_name,
@@ -447,7 +447,7 @@ struct StoreTask {
                                        public_key_(""),
                                        public_key_signature_(""),
                                        private_key_(""),
-                                       system_packet_type_(packethandler::MID),
+                                       system_packet_type_(MID),
                                        dir_type_(dir_type) {
     MaidsafeStoreManager::GetChunkSignatureKeys(dir_type_, msid_, &public_key_,
         &public_key_signature_, &private_key_);
@@ -455,7 +455,7 @@ struct StoreTask {
   // Store packet constructor
   StoreTask(const std::string &non_hex_packet_name,
             const std::string &value,
-            packethandler::SystemPackets system_packet_type,
+            PacketType system_packet_type,
             DirType dir_type,
             const std::string &msid)
                 : non_hex_key_(non_hex_packet_name),
@@ -471,7 +471,7 @@ struct StoreTask {
   }
   std::string non_hex_key_, value_, msid_, public_key_, public_key_signature_;
   std::string private_key_;
-  packethandler::SystemPackets system_packet_type_;
+  PacketType system_packet_type_;
   DirType dir_type_;
 };
 

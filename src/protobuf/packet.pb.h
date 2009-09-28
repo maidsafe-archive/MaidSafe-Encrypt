@@ -22,7 +22,7 @@
 #include <google/protobuf/repeated_field.h>
 #include <google/protobuf/extension_set.h>
 
-namespace packethandler {
+namespace maidsafe {
 
 // Internal implementation detail -- do not call these.
 void  protobuf_AddDesc_packet_2eproto();
@@ -388,12 +388,12 @@ class BufferPacketMessage : public ::google::protobuf::Message {
   inline void set_aesenc_message(const void* value, size_t size);
   inline ::std::string* mutable_aesenc_message();
   
-  // required .packethandler.MessageType type = 5;
+  // required .maidsafe.MessageType type = 5;
   inline bool has_type() const;
   inline void clear_type();
   static const int kTypeFieldNumber = 5;
-  inline packethandler::MessageType type() const;
-  inline void set_type(packethandler::MessageType value);
+  inline maidsafe::MessageType type() const;
+  inline void set_type(maidsafe::MessageType value);
   
   // optional uint32 timestamp = 6;
   inline bool has_timestamp() const;
@@ -491,32 +491,32 @@ class BufferPacket : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // repeated .packethandler.GenericPacket owner_info = 1;
+  // repeated .maidsafe.GenericPacket owner_info = 1;
   inline int owner_info_size() const;
   inline void clear_owner_info();
   static const int kOwnerInfoFieldNumber = 1;
-  inline const ::google::protobuf::RepeatedPtrField< ::packethandler::GenericPacket >& owner_info() const;
-  inline ::google::protobuf::RepeatedPtrField< ::packethandler::GenericPacket >* mutable_owner_info();
-  inline const ::packethandler::GenericPacket& owner_info(int index) const;
-  inline ::packethandler::GenericPacket* mutable_owner_info(int index);
-  inline ::packethandler::GenericPacket* add_owner_info();
+  inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >& owner_info() const;
+  inline ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >* mutable_owner_info();
+  inline const ::maidsafe::GenericPacket& owner_info(int index) const;
+  inline ::maidsafe::GenericPacket* mutable_owner_info(int index);
+  inline ::maidsafe::GenericPacket* add_owner_info();
   
-  // repeated .packethandler.GenericPacket messages = 2;
+  // repeated .maidsafe.GenericPacket messages = 2;
   inline int messages_size() const;
   inline void clear_messages();
   static const int kMessagesFieldNumber = 2;
-  inline const ::google::protobuf::RepeatedPtrField< ::packethandler::GenericPacket >& messages() const;
-  inline ::google::protobuf::RepeatedPtrField< ::packethandler::GenericPacket >* mutable_messages();
-  inline const ::packethandler::GenericPacket& messages(int index) const;
-  inline ::packethandler::GenericPacket* mutable_messages(int index);
-  inline ::packethandler::GenericPacket* add_messages();
+  inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >& messages() const;
+  inline ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >* mutable_messages();
+  inline const ::maidsafe::GenericPacket& messages(int index) const;
+  inline ::maidsafe::GenericPacket* mutable_messages(int index);
+  inline ::maidsafe::GenericPacket* add_messages();
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::google::protobuf::RepeatedPtrField< ::packethandler::GenericPacket > owner_info_;
-  ::google::protobuf::RepeatedPtrField< ::packethandler::GenericPacket > messages_;
+  ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket > owner_info_;
+  ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket > messages_;
   friend void  protobuf_AddDesc_packet_2eproto();
   friend void protobuf_AssignDesc_packet_2eproto();
   friend void protobuf_ShutdownFile_packet_2eproto();
@@ -622,12 +622,12 @@ class ValidatedBufferPacketMessage : public ::google::protobuf::Message {
   inline void set_index(const void* value, size_t size);
   inline ::std::string* mutable_index();
   
-  // required .packethandler.MessageType type = 4;
+  // required .maidsafe.MessageType type = 4;
   inline bool has_type() const;
   inline void clear_type();
   static const int kTypeFieldNumber = 4;
-  inline packethandler::MessageType type() const;
-  inline void set_type(packethandler::MessageType value);
+  inline maidsafe::MessageType type() const;
+  inline void set_type(maidsafe::MessageType value);
   
   // optional uint32 timestamp = 5;
   inline bool has_timestamp() const;
@@ -885,19 +885,19 @@ class ContactNotification : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 action() const;
   inline void set_action(::google::protobuf::int32 value);
   
-  // optional .packethandler.ContactInfo contact = 2;
+  // optional .maidsafe.ContactInfo contact = 2;
   inline bool has_contact() const;
   inline void clear_contact();
   static const int kContactFieldNumber = 2;
-  inline const ::packethandler::ContactInfo& contact() const;
-  inline ::packethandler::ContactInfo* mutable_contact();
+  inline const ::maidsafe::ContactInfo& contact() const;
+  inline ::maidsafe::ContactInfo* mutable_contact();
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   ::google::protobuf::int32 action_;
-  ::packethandler::ContactInfo* contact_;
+  ::maidsafe::ContactInfo* contact_;
   friend void  protobuf_AddDesc_packet_2eproto();
   friend void protobuf_AssignDesc_packet_2eproto();
   friend void protobuf_ShutdownFile_packet_2eproto();
@@ -1288,26 +1288,26 @@ class InstantMessage : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 date() const;
   inline void set_date(::google::protobuf::int32 value);
   
-  // optional .packethandler.ContactNotification contact_notification = 4;
+  // optional .maidsafe.ContactNotification contact_notification = 4;
   inline bool has_contact_notification() const;
   inline void clear_contact_notification();
   static const int kContactNotificationFieldNumber = 4;
-  inline const ::packethandler::ContactNotification& contact_notification() const;
-  inline ::packethandler::ContactNotification* mutable_contact_notification();
+  inline const ::maidsafe::ContactNotification& contact_notification() const;
+  inline ::maidsafe::ContactNotification* mutable_contact_notification();
   
-  // optional .packethandler.InstantFileNotification instantfile_notification = 5;
+  // optional .maidsafe.InstantFileNotification instantfile_notification = 5;
   inline bool has_instantfile_notification() const;
   inline void clear_instantfile_notification();
   static const int kInstantfileNotificationFieldNumber = 5;
-  inline const ::packethandler::InstantFileNotification& instantfile_notification() const;
-  inline ::packethandler::InstantFileNotification* mutable_instantfile_notification();
+  inline const ::maidsafe::InstantFileNotification& instantfile_notification() const;
+  inline ::maidsafe::InstantFileNotification* mutable_instantfile_notification();
   
-  // optional .packethandler.PrivateShareNotification privateshare_notification = 6;
+  // optional .maidsafe.PrivateShareNotification privateshare_notification = 6;
   inline bool has_privateshare_notification() const;
   inline void clear_privateshare_notification();
   static const int kPrivateshareNotificationFieldNumber = 6;
-  inline const ::packethandler::PrivateShareNotification& privateshare_notification() const;
-  inline ::packethandler::PrivateShareNotification* mutable_privateshare_notification();
+  inline const ::maidsafe::PrivateShareNotification& privateshare_notification() const;
+  inline ::maidsafe::PrivateShareNotification* mutable_privateshare_notification();
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -1318,9 +1318,9 @@ class InstantMessage : public ::google::protobuf::Message {
   ::std::string* message_;
   static const ::std::string _default_message_;
   ::google::protobuf::int32 date_;
-  ::packethandler::ContactNotification* contact_notification_;
-  ::packethandler::InstantFileNotification* instantfile_notification_;
-  ::packethandler::PrivateShareNotification* privateshare_notification_;
+  ::maidsafe::ContactNotification* contact_notification_;
+  ::maidsafe::InstantFileNotification* instantfile_notification_;
+  ::maidsafe::PrivateShareNotification* privateshare_notification_;
   friend void  protobuf_AddDesc_packet_2eproto();
   friend void protobuf_AssignDesc_packet_2eproto();
   friend void protobuf_ShutdownFile_packet_2eproto();
@@ -1989,7 +1989,7 @@ inline ::std::string* BufferPacketMessage::mutable_aesenc_message() {
   return aesenc_message_;
 }
 
-// required .packethandler.MessageType type = 5;
+// required .maidsafe.MessageType type = 5;
 inline bool BufferPacketMessage::has_type() const {
   return _has_bit(4);
 }
@@ -1997,11 +1997,11 @@ inline void BufferPacketMessage::clear_type() {
   type_ = 1;
   _clear_bit(4);
 }
-inline packethandler::MessageType BufferPacketMessage::type() const {
-  return static_cast< packethandler::MessageType >(type_);
+inline maidsafe::MessageType BufferPacketMessage::type() const {
+  return static_cast< maidsafe::MessageType >(type_);
 }
-inline void BufferPacketMessage::set_type(packethandler::MessageType value) {
-  GOOGLE_DCHECK(packethandler::MessageType_IsValid(value));
+inline void BufferPacketMessage::set_type(maidsafe::MessageType value) {
+  GOOGLE_DCHECK(maidsafe::MessageType_IsValid(value));
   _set_bit(4);
   type_ = value;
 }
@@ -2026,53 +2026,53 @@ inline void BufferPacketMessage::set_timestamp(::google::protobuf::uint32 value)
 
 // BufferPacket
 
-// repeated .packethandler.GenericPacket owner_info = 1;
+// repeated .maidsafe.GenericPacket owner_info = 1;
 inline int BufferPacket::owner_info_size() const {
   return owner_info_.size();
 }
 inline void BufferPacket::clear_owner_info() {
   owner_info_.Clear();
 }
-inline const ::google::protobuf::RepeatedPtrField< ::packethandler::GenericPacket >&
+inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >&
 BufferPacket::owner_info() const {
   return owner_info_;
 }
-inline ::google::protobuf::RepeatedPtrField< ::packethandler::GenericPacket >*
+inline ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >*
 BufferPacket::mutable_owner_info() {
   return &owner_info_;
 }
-inline const ::packethandler::GenericPacket& BufferPacket::owner_info(int index) const {
+inline const ::maidsafe::GenericPacket& BufferPacket::owner_info(int index) const {
   return owner_info_.Get(index);
 }
-inline ::packethandler::GenericPacket* BufferPacket::mutable_owner_info(int index) {
+inline ::maidsafe::GenericPacket* BufferPacket::mutable_owner_info(int index) {
   return owner_info_.Mutable(index);
 }
-inline ::packethandler::GenericPacket* BufferPacket::add_owner_info() {
+inline ::maidsafe::GenericPacket* BufferPacket::add_owner_info() {
   return owner_info_.Add();
 }
 
-// repeated .packethandler.GenericPacket messages = 2;
+// repeated .maidsafe.GenericPacket messages = 2;
 inline int BufferPacket::messages_size() const {
   return messages_.size();
 }
 inline void BufferPacket::clear_messages() {
   messages_.Clear();
 }
-inline const ::google::protobuf::RepeatedPtrField< ::packethandler::GenericPacket >&
+inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >&
 BufferPacket::messages() const {
   return messages_;
 }
-inline ::google::protobuf::RepeatedPtrField< ::packethandler::GenericPacket >*
+inline ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >*
 BufferPacket::mutable_messages() {
   return &messages_;
 }
-inline const ::packethandler::GenericPacket& BufferPacket::messages(int index) const {
+inline const ::maidsafe::GenericPacket& BufferPacket::messages(int index) const {
   return messages_.Get(index);
 }
-inline ::packethandler::GenericPacket* BufferPacket::mutable_messages(int index) {
+inline ::maidsafe::GenericPacket* BufferPacket::mutable_messages(int index) {
   return messages_.Mutable(index);
 }
-inline ::packethandler::GenericPacket* BufferPacket::add_messages() {
+inline ::maidsafe::GenericPacket* BufferPacket::add_messages() {
   return messages_.Add();
 }
 
@@ -2206,7 +2206,7 @@ inline ::std::string* ValidatedBufferPacketMessage::mutable_index() {
   return index_;
 }
 
-// required .packethandler.MessageType type = 4;
+// required .maidsafe.MessageType type = 4;
 inline bool ValidatedBufferPacketMessage::has_type() const {
   return _has_bit(3);
 }
@@ -2214,11 +2214,11 @@ inline void ValidatedBufferPacketMessage::clear_type() {
   type_ = 1;
   _clear_bit(3);
 }
-inline packethandler::MessageType ValidatedBufferPacketMessage::type() const {
-  return static_cast< packethandler::MessageType >(type_);
+inline maidsafe::MessageType ValidatedBufferPacketMessage::type() const {
+  return static_cast< maidsafe::MessageType >(type_);
 }
-inline void ValidatedBufferPacketMessage::set_type(packethandler::MessageType value) {
-  GOOGLE_DCHECK(packethandler::MessageType_IsValid(value));
+inline void ValidatedBufferPacketMessage::set_type(maidsafe::MessageType value) {
+  GOOGLE_DCHECK(maidsafe::MessageType_IsValid(value));
   _set_bit(3);
   type_ = value;
 }
@@ -2505,20 +2505,20 @@ inline void ContactNotification::set_action(::google::protobuf::int32 value) {
   action_ = value;
 }
 
-// optional .packethandler.ContactInfo contact = 2;
+// optional .maidsafe.ContactInfo contact = 2;
 inline bool ContactNotification::has_contact() const {
   return _has_bit(1);
 }
 inline void ContactNotification::clear_contact() {
-  if (contact_ != NULL) contact_->::packethandler::ContactInfo::Clear();
+  if (contact_ != NULL) contact_->::maidsafe::ContactInfo::Clear();
   _clear_bit(1);
 }
-inline const ::packethandler::ContactInfo& ContactNotification::contact() const {
+inline const ::maidsafe::ContactInfo& ContactNotification::contact() const {
   return contact_ != NULL ? *contact_ : *default_instance_->contact_;
 }
-inline ::packethandler::ContactInfo* ContactNotification::mutable_contact() {
+inline ::maidsafe::ContactInfo* ContactNotification::mutable_contact() {
   _set_bit(1);
-  if (contact_ == NULL) contact_ = new ::packethandler::ContactInfo;
+  if (contact_ == NULL) contact_ = new ::maidsafe::ContactInfo;
   return contact_;
 }
 
@@ -3058,54 +3058,54 @@ inline void InstantMessage::set_date(::google::protobuf::int32 value) {
   date_ = value;
 }
 
-// optional .packethandler.ContactNotification contact_notification = 4;
+// optional .maidsafe.ContactNotification contact_notification = 4;
 inline bool InstantMessage::has_contact_notification() const {
   return _has_bit(3);
 }
 inline void InstantMessage::clear_contact_notification() {
-  if (contact_notification_ != NULL) contact_notification_->::packethandler::ContactNotification::Clear();
+  if (contact_notification_ != NULL) contact_notification_->::maidsafe::ContactNotification::Clear();
   _clear_bit(3);
 }
-inline const ::packethandler::ContactNotification& InstantMessage::contact_notification() const {
+inline const ::maidsafe::ContactNotification& InstantMessage::contact_notification() const {
   return contact_notification_ != NULL ? *contact_notification_ : *default_instance_->contact_notification_;
 }
-inline ::packethandler::ContactNotification* InstantMessage::mutable_contact_notification() {
+inline ::maidsafe::ContactNotification* InstantMessage::mutable_contact_notification() {
   _set_bit(3);
-  if (contact_notification_ == NULL) contact_notification_ = new ::packethandler::ContactNotification;
+  if (contact_notification_ == NULL) contact_notification_ = new ::maidsafe::ContactNotification;
   return contact_notification_;
 }
 
-// optional .packethandler.InstantFileNotification instantfile_notification = 5;
+// optional .maidsafe.InstantFileNotification instantfile_notification = 5;
 inline bool InstantMessage::has_instantfile_notification() const {
   return _has_bit(4);
 }
 inline void InstantMessage::clear_instantfile_notification() {
-  if (instantfile_notification_ != NULL) instantfile_notification_->::packethandler::InstantFileNotification::Clear();
+  if (instantfile_notification_ != NULL) instantfile_notification_->::maidsafe::InstantFileNotification::Clear();
   _clear_bit(4);
 }
-inline const ::packethandler::InstantFileNotification& InstantMessage::instantfile_notification() const {
+inline const ::maidsafe::InstantFileNotification& InstantMessage::instantfile_notification() const {
   return instantfile_notification_ != NULL ? *instantfile_notification_ : *default_instance_->instantfile_notification_;
 }
-inline ::packethandler::InstantFileNotification* InstantMessage::mutable_instantfile_notification() {
+inline ::maidsafe::InstantFileNotification* InstantMessage::mutable_instantfile_notification() {
   _set_bit(4);
-  if (instantfile_notification_ == NULL) instantfile_notification_ = new ::packethandler::InstantFileNotification;
+  if (instantfile_notification_ == NULL) instantfile_notification_ = new ::maidsafe::InstantFileNotification;
   return instantfile_notification_;
 }
 
-// optional .packethandler.PrivateShareNotification privateshare_notification = 6;
+// optional .maidsafe.PrivateShareNotification privateshare_notification = 6;
 inline bool InstantMessage::has_privateshare_notification() const {
   return _has_bit(5);
 }
 inline void InstantMessage::clear_privateshare_notification() {
-  if (privateshare_notification_ != NULL) privateshare_notification_->::packethandler::PrivateShareNotification::Clear();
+  if (privateshare_notification_ != NULL) privateshare_notification_->::maidsafe::PrivateShareNotification::Clear();
   _clear_bit(5);
 }
-inline const ::packethandler::PrivateShareNotification& InstantMessage::privateshare_notification() const {
+inline const ::maidsafe::PrivateShareNotification& InstantMessage::privateshare_notification() const {
   return privateshare_notification_ != NULL ? *privateshare_notification_ : *default_instance_->privateshare_notification_;
 }
-inline ::packethandler::PrivateShareNotification* InstantMessage::mutable_privateshare_notification() {
+inline ::maidsafe::PrivateShareNotification* InstantMessage::mutable_privateshare_notification() {
   _set_bit(5);
-  if (privateshare_notification_ == NULL) privateshare_notification_ = new ::packethandler::PrivateShareNotification;
+  if (privateshare_notification_ == NULL) privateshare_notification_ = new ::maidsafe::PrivateShareNotification;
   return privateshare_notification_;
 }
 
@@ -3336,5 +3336,5 @@ inline ::std::string* CreateMSIDResult::mutable_public_key() {
 }
 
 
-}  // namespace packethandler
+}  // namespace maidsafe
 #endif  // PROTOBUF_packet_2eproto__INCLUDED

@@ -32,9 +32,10 @@ CheckUserThread::~CheckUserThread() { }
 
 void CheckUserThread::run() {
   qDebug() << "CheckUserThread::run";
+#ifdef DEBUG
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   qDebug() << "CheckUserThread::run - After SLEEP";
-
+#endif
   const std::string username = username_.toStdString();
   const std::string pin = pin_.toStdString();
 

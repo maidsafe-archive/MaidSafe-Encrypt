@@ -62,12 +62,12 @@ struct bufferpacket_messages {
   std::string index;
   std::string message;
   std::string sender;
-  packethandler::MessageType type;
+  maidsafe::MessageType type;
 };
 
-enum BufferPacketType {
-  MPID_BP, MAID_BP, PMID_BP
-};
+//  enum BufferPacketType {
+//    MPID, MAID, PMID
+//  };
 
 enum MaidsafeRpcResult {
   kNack, kAck, kNotRemote, kNoSpace, kBusy

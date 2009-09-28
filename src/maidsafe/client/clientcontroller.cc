@@ -39,6 +39,7 @@
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/privateshares.h"
 #include "maidsafe/client/selfencryption.h"
+
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
 #include "protobuf/maidsafe_messages.pb.h"
@@ -137,7 +138,8 @@ void ClientController::Destroy() {
 bool ClientController::Init() {
   auth_ = new Authentication(sm_, &mutex_);
   ss_ = SessionSingleton::getInstance();
-  cbph_ = new packethandler::ClientBufferPacketHandler(sm_, &mutex_);
+  cbph_ = new ClientBufferPacketHandler(sm_, &mutex_);
+//  cbph_->SetChunkStore(client_chunkstore_);
   return true;
 }
 
@@ -350,6 +352,10 @@ bool ClientController::CreateUser(const std::string &username,
   seh_ = new SEHandler(sm_, client_chunkstore_, &mutex_);
   printf("In ClientController::CreateUser 01\n");
   int res = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
+  if (res != 0) {
+    printf("In ClientController::CreateUser - Bombing out on no root_db_key\n");
+    return false;
+  }
   printf("In ClientController::CreateUser 02\n");
   ss_->SetRootDbKey(root_db_key);
   fsys_.Mount();
@@ -538,7 +544,7 @@ bool ClientController::ValidateUser(const std::string &password) {
 
       // Get BP info and put it to the session
       CC_CallbackResult cb;
-      cbph_->GetBufferPacketInfo(MPID_BP, boost::bind(
+      cbph_->GetBufferPacketInfo(MPID, boost::bind(
           &CC_CallbackResult::CallbackFunc,
           &cb,
           _1));
@@ -573,19 +579,19 @@ void ClientController::CloseConnection(bool clean_up_transport) {
     printf("Error leaving network.\n");
 #endif
     return;
-  } else {
-#ifdef DEBUG
-    printf("Successfully left kademlia.\n");
-#endif
-    if (clean_up_transport)
-      sm_->CleanUpTransport();
-    return;
   }
+
+#ifdef DEBUG
+  printf("Successfully left kademlia.\n");
+#endif
+  if (clean_up_transport)
+    sm_->CleanUpTransport();
+  return;
 }
 
 bool ClientController::Logout() {
   logging_out_ = true;
-  packethandler::PacketParams priv_keys, pub_keys;
+  PacketParams priv_keys, pub_keys;
   std::list<KeyAtlasRow> keys;
   ss_->GetKeys(&keys);
 
@@ -680,7 +686,7 @@ bool ClientController::LeaveMaidsafeNetwork() {
 }
 
 bool ClientController::ChangeUsername(std::string new_username) {
-  packethandler::PacketParams priv_keys, pub_keys;
+  PacketParams priv_keys, pub_keys;
   SerialiseDa();
   std::list<KeyAtlasRow> keys;
   ss_->GetKeys(&keys);
@@ -718,7 +724,7 @@ bool ClientController::ChangeUsername(std::string new_username) {
 }
 
 bool ClientController::ChangePin(std::string new_pin) {
-  packethandler::PacketParams priv_keys, pub_keys;
+  PacketParams priv_keys, pub_keys;
   SerialiseDa();
   std::list<KeyAtlasRow> keys;
   ss_->GetKeys(&keys);
@@ -756,7 +762,7 @@ bool ClientController::ChangePin(std::string new_pin) {
 }
 
 bool ClientController::ChangePassword(std::string new_password) {
-  packethandler::PacketParams priv_keys, pub_keys;
+  PacketParams priv_keys, pub_keys;
   SerialiseDa();
   std::list<KeyAtlasRow> keys;
   ss_->GetKeys(&keys);
@@ -804,7 +810,7 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
 #endif
     return false;
   }
-  packethandler::PacketParams keys_result;
+  PacketParams keys_result;
   Exitcode result = auth_->CreatePublicName(public_username, &keys_result);
   if (result != OK) {
 #ifdef DEBUG
@@ -828,13 +834,13 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
 bool ClientController::AuthoriseUsers(std::set<std::string> users) {
   if (ss_->PublicUsername() == "" || users.empty())
     return false;
-  return cbph_->AddUsers(users, MPID_BP) == 0;
+  return cbph_->AddUsers(users, MPID) == 0;
 }
 
 bool ClientController::DeauthoriseUsers(std::set<std::string> users) {
   if (ss_->PublicUsername() == "" || users.empty())
     return false;
-  return cbph_->DeleteUsers(users, MPID_BP) == 0;
+  return cbph_->DeleteUsers(users, MPID) == 0;
 }
 
 /*
@@ -844,7 +850,7 @@ int ClientController::ChangeConnectionStatus(int status) {
   CC_CallbackResult cb;
   cbph_->ChangeStatus(status,
                       boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
-                      MPID_BP);
+                      MPID);
   WaitForResult(cb);
   UpdateResponse change_connection_status;
   if (!change_connection_status.ParseFromString(cb.result))
@@ -865,15 +871,15 @@ bool ClientController::GetMessages() {
   if (ss_->PublicUsername() == "")
     return false;
 
-  std::list<packethandler::ValidatedBufferPacketMessage> valid_messages;
-  if (cbph_->GetMessages(MPID_BP, &valid_messages) != 0)
+  std::list<ValidatedBufferPacketMessage> valid_messages;
+  if (cbph_->GetMessages(MPID, &valid_messages) != 0)
     return false;
   if (valid_messages.size() == 0)
     // TODO(Richard): return code for no messages
     return true;
   HandleMessages(&valid_messages);
   CC_CallbackResult cb;
-  cbph_->ClearMessages(MPID_BP,
+  cbph_->ClearMessages(MPID,
                        boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
   DeleteResponse clear_result;
@@ -888,7 +894,7 @@ bool ClientController::GetMessages() {
 }
 
 int ClientController::HandleMessages(
-    std::list<packethandler::ValidatedBufferPacketMessage> *valid_messages) {
+    std::list<ValidatedBufferPacketMessage> *valid_messages) {
   int result = 0;
 #ifdef DEBUG
       printf("=========================================\n");
@@ -923,8 +929,8 @@ int ClientController::HandleMessages(
     printf("=========================================\n");
 #endif
     switch (valid_messages->front().type()) {
-      case packethandler::ADD_CONTACT_RQST:
-      case packethandler::INSTANT_MSG:
+      case ADD_CONTACT_RQST:
+      case INSTANT_MSG:
           result += HandleInstantMessage(valid_messages->front());
           break;
       default: break;  // TODO(Team): define other types of message
@@ -969,7 +975,7 @@ int ClientController::HandleDeleteContactNotification(
 }
 
 int ClientController::HandleReceivedShare(
-    const packethandler::PrivateShareNotification &psn,
+    const PrivateShareNotification &psn,
     const std::string &name) {
 #ifdef DEBUG
   printf("Dir key: %s", psn.dir_db_key().c_str());
@@ -1102,12 +1108,12 @@ int ClientController::HandleReceivedShare(
 }
 
 int ClientController::HandleInstantMessage(
-    const packethandler::ValidatedBufferPacketMessage &vbpm) {
+    const ValidatedBufferPacketMessage &vbpm) {
 #ifdef DEBUG
   printf("INSTANT MESSAGE received\n");
   printf("Sender: %s\n", vbpm.sender().c_str());
 #endif
-  packethandler::InstantMessage im;
+  InstantMessage im;
   if (im.ParseFromString(vbpm.message())) {
       messages_.push_back(im);
 #ifdef DEBUG
@@ -1120,7 +1126,7 @@ int ClientController::HandleInstantMessage(
 }
 
 int ClientController::AddInstantFile(
-    const packethandler::InstantFileNotification &ifm,
+    const InstantFileNotification &ifm,
     const std::string &location) {
   fs::path path(base::TidyPath(kRootSubdir[0][0]));
 
@@ -1186,7 +1192,7 @@ int ClientController::AddInstantFile(
 }
 
 int ClientController::HandleAddContactRequest(
-    const packethandler::ContactInfo &ci, const std::string &sender) {
+    const ContactInfo &ci, const std::string &sender) {
 #ifdef DEBUG
   printf("\n\n\nHandleAddContactRequest\nHandleAddContactRequest\n\n\n");
 #endif
@@ -1270,9 +1276,9 @@ int ClientController::HandleAddContactRequest(
   std::vector<Receivers> recs;
   recs.push_back(rec);
 
-  packethandler::InstantMessage im;
-  packethandler::ContactNotification *cn = im.mutable_contact_notification();
-  packethandler::ContactInfo *info = cn->mutable_contact();
+  InstantMessage im;
+  ContactNotification *cn = im.mutable_contact_notification();
+  ContactInfo *info = cn->mutable_contact();
 
   info->set_name("Mock");
   info->set_birthday("Today");
@@ -1295,12 +1301,12 @@ int ClientController::HandleAddContactRequest(
   CC_CallbackResult cb;
   msgh_->SendMessage(ser_im,
                      recs,
-                     MPID_BP,
-                     packethandler::INSTANT_MSG,
+                     MPID,
+                     INSTANT_MSG,
                      boost::bind(&CC_CallbackResult::CallbackFunc,
                      &cb, _1));
   WaitForResult(cb);
-  packethandler::StoreMessagesResult res;
+  StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
       (res.result() == kNack)) {
 #ifdef DEBUG
@@ -1317,7 +1323,7 @@ int ClientController::HandleAddContactRequest(
 }
 
 int ClientController::HandleAddContactResponse(
-    const packethandler::ContactInfo &ci, const std::string &sender) {
+    const ContactInfo &ci, const std::string &sender) {
 #ifdef DEBUG
   printf("\n\n\nHandleAddContactResponse\nHandleAddContactResponse\n\n\n");
 #endif
@@ -1392,7 +1398,7 @@ int ClientController::SendInstantMessage(const std::string &message,
   }
 
   std::string ser_im;
-  packethandler::InstantMessage im;
+  InstantMessage im;
   im.set_sender(ss_->PublicUsername());
   im.set_message(message);
   im.set_date(base::get_epoch_time());
@@ -1401,11 +1407,11 @@ int ClientController::SendInstantMessage(const std::string &message,
   CC_CallbackResult cb;
   msgh_->SendMessage(ser_im,
                      recs,
-                     MPID_BP,
-                     packethandler::INSTANT_MSG,
+                     MPID,
+                     INSTANT_MSG,
                      boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
-  packethandler::StoreMessagesResult store_res;
+  StoreMessagesResult store_res;
   if ((!store_res.ParseFromString(cb.result)) ||
       (store_res.result() == kNack)) {
 #ifdef DEBUG
@@ -1424,7 +1430,7 @@ int ClientController::SendInstantMessage(const std::string &message,
 }
 
 int ClientController::GetInstantMessages(
-  std::list<packethandler::InstantMessage> *messages) {
+  std::list<InstantMessage> *messages) {
   *messages = messages_;
   messages_.clear();
   return 0;
@@ -1470,8 +1476,8 @@ int ClientController::SendInstantFile(std::string *filename,
   }
 
   fs::path p_filename(*filename);
-  packethandler::InstantMessage im;
-  packethandler::InstantFileNotification *ifm =
+  InstantMessage im;
+  InstantFileNotification *ifm =
       im.mutable_instantfile_notification();
   ifm->set_ser_mdm(ser_mdm);
   ifm->set_ser_dm(ser_dm);
@@ -1510,11 +1516,11 @@ int ClientController::SendInstantFile(std::string *filename,
   CC_CallbackResult cb;
   msgh_->SendMessage(ser_instant_file,
                      recs,
-                     MPID_BP,
-                     packethandler::INSTANT_MSG,
+                     MPID,
+                     INSTANT_MSG,
                      boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
-  packethandler::StoreMessagesResult res;
+  StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
       (res.result() == kNack)) {
 #ifdef DEBUG
@@ -1583,9 +1589,9 @@ int ClientController::AddContact(const std::string &public_name) {
     std::vector<Receivers> recs;
     recs.push_back(rec);
 
-    packethandler::InstantMessage im;
-    packethandler::ContactNotification *cn = im.mutable_contact_notification();
-    packethandler::ContactInfo *info = cn->mutable_contact();
+    InstantMessage im;
+    ContactNotification *cn = im.mutable_contact_notification();
+    ContactInfo *info = cn->mutable_contact();
 
     info->set_name("Mock");
     info->set_birthday("Today");
@@ -1609,11 +1615,11 @@ int ClientController::AddContact(const std::string &public_name) {
     CC_CallbackResult cb;
     msgh_->SendMessage(ser_im,
                        recs,
-                       MPID_BP,
-                       packethandler::ADD_CONTACT_RQST,
+                       MPID,
+                       ADD_CONTACT_RQST,
                        boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
     WaitForResult(cb);
-    packethandler::StoreMessagesResult res;
+    StoreMessagesResult res;
     if ((!res.ParseFromString(cb.result)) ||
         (res.result() == kNack)) {
 #ifdef DEBUG
@@ -1669,8 +1675,8 @@ int ClientController::DeleteContact(const std::string &public_name) {
     return -502;
   }
 
-  packethandler::InstantMessage im;
-  packethandler::ContactNotification *cn = im.mutable_contact_notification();
+  InstantMessage im;
+  ContactNotification *cn = im.mutable_contact_notification();
   cn->set_action(2);
 
   std::string deletion_msg(base::itos(base::get_epoch_nanoseconds()));
@@ -1694,11 +1700,11 @@ int ClientController::DeleteContact(const std::string &public_name) {
   CC_CallbackResult cb;
   msgh_->SendMessage(ser_im,
                      recs,
-                     MPID_BP,
-                     packethandler::INSTANT_MSG,
+                     MPID,
+                     INSTANT_MSG,
                      boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
   WaitForResult(cb);
-  packethandler::StoreMessagesResult res;
+  StoreMessagesResult res;
   if ((!res.ParseFromString(cb.result)) ||
       (res.result() == kNack) ||
       (res.stored_msgs() != 1)) {
@@ -1751,7 +1757,7 @@ int ClientController::CreateNewShare(const std::string &name,
   auth_->CreateMSIDPacket(boost::bind(&CC_CallbackResult::CallbackFunc,
                           &cbr, _1));
   WaitForResult(cbr);
-  packethandler::CreateMSIDResult cmsidr;
+  CreateMSIDResult cmsidr;
   if (!cmsidr.ParseFromString(cbr.result)) {
     printf("Result doesn't parse.\n");
     return -30001;
@@ -1825,8 +1831,8 @@ int ClientController::CreateNewShare(const std::string &name,
   }
 
   // Send message to all participants
-  packethandler::InstantMessage im;
-  packethandler::PrivateShareNotification *psn =
+  InstantMessage im;
+  PrivateShareNotification *psn =
       im.mutable_privateshare_notification();
   psn->set_name(name);
   psn->set_msid(cmsidr.name());
@@ -1843,7 +1849,7 @@ int ClientController::CreateNewShare(const std::string &name,
 
   // Send to READONLYS
   std::vector<Receivers> recs;
-  packethandler::StoreMessagesResult res;
+  StoreMessagesResult res;
   if (readonlys.size() > 0) {
     for (unsigned int n = 0; n < parts.size(); n++) {
       if (parts[n].role == 'R') {
@@ -1861,8 +1867,8 @@ int ClientController::CreateNewShare(const std::string &name,
     cbr.Reset();
     msgh_->SendMessage(share_message,
                        recs,
-                       MPID_BP,
-                       packethandler::INSTANT_MSG,
+                       MPID,
+                       INSTANT_MSG,
                        boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
     WaitForResult(cbr);
     if ((!res.ParseFromString(cbr.result)) ||
@@ -1898,8 +1904,8 @@ int ClientController::CreateNewShare(const std::string &name,
     cbr.Reset();
     msgh_->SendMessage(share_message,
                        recs,
-                       MPID_BP,
-                       packethandler::INSTANT_MSG,
+                       MPID,
+                       INSTANT_MSG,
                        boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
     WaitForResult(cbr);
     if ((!res.ParseFromString(cbr.result)) ||

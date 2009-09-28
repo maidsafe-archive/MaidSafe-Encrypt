@@ -44,22 +44,6 @@ bool isCorrectPassword(const QString& password) {
          password.toStdString());
 }
 
-bool isExistingUser(const QString& username, const QString& pin,
-                    base::callback_func_type cb) {
-  Q_ASSERT(!username.isEmpty());
-  Q_ASSERT(!pin.isEmpty());
-  Q_ASSERT(maidsafe::ClientController::getInstance());
-
-  const std::string u = username.toStdString();
-  const std::string p = pin.toStdString();
-
-  const maidsafe::Exitcode result =
-          maidsafe::ClientController::getInstance()->CheckUserExists(
-          u, p, maidsafe::DEFCON3);
-
-  return (result == maidsafe::USER_EXISTS);
-}
-
 // switch focus and enable fields
 void advance(QLineEdit* from, QLineEdit* to,
              Qt::FocusReason reason = Qt::OtherFocusReason,
@@ -140,8 +124,8 @@ Login::Login(QWidget* parent)
   connect(ui_.username, SIGNAL(textEdited(const QString&)),
           this,         SLOT(onUsernameEdited(const QString&)));
 
-  connect(ui_.pin,      SIGNAL(textEdited(const QString&)),
-          this,         SLOT(onPinEdited(const QString&)));
+  connect(ui_.pin, SIGNAL(textEdited(const QString&)),
+          this,    SLOT(onPinEdited(const QString&)));
 
   connect(ui_.password, SIGNAL(textEdited(const QString&)),
           this,         SLOT(onPasswordEdited(const QString&)));
@@ -149,26 +133,40 @@ Login::Login(QWidget* parent)
   connect(ui_.username, SIGNAL(returnPressed()),
           this,         SLOT(onUsernameDone()));
 
-  connect(ui_.pin,      SIGNAL(returnPressed()),
-          this,         SLOT(onPinDone()));
+  connect(ui_.pin, SIGNAL(returnPressed()),
+          this,    SLOT(onPinDone()));
 
   connect(ui_.password, SIGNAL(returnPressed()),
           this,         SLOT(onPasswordDone()));
 
-  connect(ui_.clear,    SIGNAL(clicked(bool)),
-          this,         SLOT(onClearClicked()));
+  connect(ui_.clear, SIGNAL(clicked(bool)),
+          this,      SLOT(onClearClicked()));
 
-  connect(ui_.create,   SIGNAL(clicked(bool)),
-          this,         SLOT(onCreateClicked()));
+  connect(ui_.create, SIGNAL(clicked(bool)),
+          this,       SLOT(onCreateClicked()));
 
-  connect(ui_.login,   SIGNAL(clicked(bool)),
-          this,         SLOT(onLoginClicked()));
+  connect(ui_.login, SIGNAL(clicked(bool)),
+          this,      SLOT(onLoginClicked()));
 
   updateUI();
 }
 
 Login::~Login() {}
 
+void Login::StartProgressBar() {
+  ui_.label->setVisible(false);
+  ui_.label_2->setVisible(false);
+  ui_.label_3->setVisible(false);
+  ui_.username->setVisible(false);
+  ui_.pin->setVisible(false);
+  ui_.password->setVisible(false);
+  ui_.clear->setVisible(false);
+  ui_.create->setVisible(false);
+  ui_.login->setVisible(false);
+  ui_.progress_bar->setVisible(true);
+  ui_.progress_label->setVisible(true);
+  ui_.progress_label->setText(tr("Joining the network"));
+}
 
 void Login::onUsernameEdited(const QString& text) {
   updateUI();
@@ -247,12 +245,13 @@ void Login::onUsernameDone() {
 }
 
 void Login::onPinDone() {
+  qDebug() << "Login::onPinDone()";
   if (!validate(ui_.pin))
       return;
 
   advance(ui_.pin, ui_.password);
 
-  checkPin();
+  // checkPin();
 
   // (password is disabled until callback completes)
   updateUI();
@@ -303,6 +302,18 @@ void Login::onLoginClicked() {
 }
 
 void Login::reset() {
+  ui_.label->setVisible(true);
+  ui_.label_2->setVisible(true);
+  ui_.label_3->setVisible(true);
+  ui_.username->setVisible(true);
+  ui_.pin->setVisible(true);
+  ui_.password->setVisible(true);
+  ui_.clear->setVisible(true);
+  ui_.create->setVisible(true);
+  ui_.login->setVisible(true);
+  ui_.progress_bar->setVisible(false);
+  ui_.progress_label->setVisible(false);
+
   ui_.username->clear();
   ui_.username->setEnabled(true);
   ui_.username->setFocus(Qt::OtherFocusReason);
@@ -337,20 +348,16 @@ QString Login::pin() const {
 }
 
 void Login::UserExists_Callback(bool b) {
-  if (b)
-    qDebug() << "AAAAAAAAAAAA";
-  else
-    qDebug() << "BBBBBBBBBBBB";
   got_enc_data_ = b;
   user_exists_ = b;
 
   state_ = EDIT_PASSWORD;
 
   // can't poke UI here as it's not thread safe...
-  updateUI();
+  // updateUI();
 
-  // QApplication::postEvent(this, new ThreadSafeUpdateEvent,
-                          // Qt::HighEventPriority);
+  QApplication::postEvent(this, new ThreadSafeUpdateEvent,
+                          Qt::HighEventPriority);
 }
 
 bool Login::event(QEvent* event) {
@@ -373,7 +380,8 @@ bool Login::focusNextPrevChild(bool next) {
           state_ = EDIT_PIN;
       } else if ((c == ui_.pin) && validate(ui_.pin)) {
           f = ui_.password;
-//          checkPin();
+          if (state_ != WAITING_ON_USER_CHECK)
+            checkPin();
       }
     } else {
       if (c == ui_.password) {

@@ -300,7 +300,7 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
     return;
   }
 
-  packethandler::GenericPacket syspacket;
+  GenericPacket syspacket;
   switch (type) {
     case SYSTEM_PACKET:
         if (!syspacket.ParseFromString(result)) {
@@ -367,7 +367,7 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
 
 int LocalStoreManager::StorePacket(const std::string &hex_packet_name,
                                    const std::string &value,
-                                   packethandler::SystemPackets type,
+                                   PacketType type,
                                    DirType,
                                    const std::string&) {
   std::string local_value = value;
@@ -375,10 +375,10 @@ int LocalStoreManager::StorePacket(const std::string &hex_packet_name,
   std::string mpid_pub_key =
       SessionSingleton::getInstance()->PublicKey(MPID);
   std::string sender_id;
-  packethandler::MessageType bp_msg_type;
+  MessageType bp_msg_type;
   std::string ser_bp;
   switch (type) {
-    case packethandler::BUFFER_MESSAGE:
+    case BUFFER_MESSAGE:
         if (vbph_.CheckMsgStructure(value, &sender_id, &bp_msg_type)) {
           ser_bp = GetValue_FromDB(hex_packet_name);
           if (ser_bp == "") {
@@ -396,7 +396,7 @@ int LocalStoreManager::StorePacket(const std::string &hex_packet_name,
           return -3;
         }
         break;
-    case packethandler::BUFFER_INFO:
+    case BUFFER_INFO:
         if (!ModifyBufferPacketInfo(local_key, &local_value,
             mpid_pub_key)) {
           printf("Failed to modify buffer packet info.\n");
@@ -444,7 +444,7 @@ int LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,
 
 bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
                                               std::string public_key) {
-  packethandler::GenericPacket gp;
+  GenericPacket gp;
   if (!gp.ParseFromString(ser_gp))
     return false;
   if (!crypto_obj_.AsymCheckSig(gp.data(), gp.signature(), public_key,

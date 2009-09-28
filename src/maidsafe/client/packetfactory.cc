@@ -25,7 +25,7 @@
 #include "maidsafe/client/packetfactory.h"
 #include "maidsafe/client/systempackets.h"
 
-namespace packethandler {
+namespace maidsafe {
 
 Packet::Packet(): crypto_obj_() {
   crypto_obj_.set_hash_algorithm(crypto::SHA_512);
@@ -55,7 +55,7 @@ PacketParams Packet::GetData(std::string serialised_packet) {
 
 Packet::~Packet() {}
 
-Packet *PacketFactory::Factory(SystemPackets type) {
+Packet *PacketFactory::Factory(PacketType type) {
   switch (type) {
     case MID: return new MidPacket();break;
     case SMID: return new SmidPacket();break;
@@ -66,4 +66,4 @@ Packet *PacketFactory::Factory(SystemPackets type) {
   }
 }
 
-}  // namespace packethandler
+}  // namespace maidsafe

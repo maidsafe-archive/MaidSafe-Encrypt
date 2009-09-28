@@ -16,7 +16,7 @@
 #include <cstdio>
 #include "protobuf/packet.pb.h"
 
-namespace packethandler {
+namespace maidsafe {
 
 VaultBufferPacketHandler::VaultBufferPacketHandler() : crypto_obj_() {
   crypto_obj_.set_hash_algorithm(crypto::SHA_512);
@@ -283,4 +283,4 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
   return true;
 }
 
-}   // namespace packethandler
+}   // namespace maidsafe
