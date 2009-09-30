@@ -544,7 +544,16 @@ SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}\\\\build\\\\install_files
 
 
 SET(CPACK_CREATE_DESKTOP_LINKS "perpetualdata")
+SET(CPACK_NSIS_SECTION_SELECTED_VARS ${CPACK_NSIS_SECTION_SELECTED_VARS} "
+Function .onInstSuccess
+  ExecWait '\\\"sc.exe\\\" create PDVault start= auto binPath= \\\"$INSTDIR\\\\bin\\\\vault.exe\\\"'
+  MessageBox MB_YESNO \\\"Installation successful.  Start vault service?\\\" IDNO NoAction
+     ExecWait '\\\"sc.exe\\\" start PDVault'
+  NoAction:
+FunctionEnd
+")
 SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS ${CPACK_NSIS_EXTRA_INSTALL_COMMANDS} "
+      File ${PD_SOURCE_DIR}\\\\.kadconfig
       SetShellVarContext all
 
       IfFileExists \\\"$SYSDIR\\\\dokan.dll\\\"  upgrade 0
@@ -561,7 +570,11 @@ SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS ${CPACK_NSIS_EXTRA_INSTALL_COMMANDS} "
 			Delete \\\"$INSTDIR\\\\bin\\\\dokan.sys\\\"
 			ExecWait \\\"$SYSDIR\\\\dokanctl.exe /i a\\\"
       CreateDirectory  \\\"$APPDATA\\\\maidsafe\\\"
-			CopyFiles \\\"$INSTDIR\\\\bin\\\\.kadconfig\\\" \\\"$APPDATA\\\\maidsafe\\\"
+      CreateDirectory  \\\"$APPDATA\\\\maidsafe\\\\vault\\\"
+      CopyFiles \\\"$INSTDIR\\\\.kadconfig\\\" \\\"$APPDATA\\\\maidsafe\\\"
+      CopyFiles \\\"$INSTDIR\\\\.kadconfig\\\" \\\"$APPDATA\\\\maidsafe\\\\vault\\\"
+			CopyFiles \\\"$INSTDIR\\\\.kadconfig\\\" \\\"$INSTDIR\\\\bin\\\"
+			Delete \\\"$INSTDIR\\\\.kadconfig\\\"
 
 			Goto finish
 
@@ -583,45 +596,14 @@ SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS ${CPACK_NSIS_EXTRA_INSTALL_COMMANDS} "
 			Delete \\\"$INSTDIR\\\\bin\\\\mounter.exe\\\"
 			Delete \\\"$INSTDIR\\\\bin\\\\dokan.dll\\\"
 			Delete \\\"$INSTDIR\\\\bin\\\\dokan.sys\\\"
+			CreateDirectory  \\\"$APPDATA\\\\maidsafe\\\"
+			CreateDirectory  \\\"$APPDATA\\\\maidsafe\\\\vault\\\"
+      CopyFiles \\\"$INSTDIR\\\\.kadconfig\\\" \\\"$APPDATA\\\\maidsafe\\\"
+      CopyFiles \\\"$INSTDIR\\\\.kadconfig\\\" \\\"$APPDATA\\\\maidsafe\\\\vault\\\"
+			CopyFiles \\\"$INSTDIR\\\\.kadconfig\\\" \\\"$INSTDIR\\\\bin\\\"
+			Delete \\\"$INSTDIR\\\\.kadconfig\\\"
 		 WriteRegStr HKEY_LOCAL_MACHINE \\\"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\RunOnce\\\" \\\"maidsafe\\\" \\\"$SYSDIR\\\\dokanctl.exe /i a \\\"
 		 	finish:
-
-
-
-#			Call FindWindow
-#			IfFileExists \\\"$SYSDIR\\\\perpetualdata.exe\\\"  upgrade 0
-##
-##		ExecWait \\\"$SYSDIR\\\\dokanctl.exe\\\ /r a\\\"
-##			CopyFiles \\\"$INSTDIR\\\\bin\\\\dokanctl.exe\\\" \\\"$SYSDIR\\\"
-##			CopyFiles \\\"$INSTDIR\\\\bin\\\\mounter.exe\\\" \\\"$SYSDIR\\\"
-##			CopyFiles \\\"$INSTDIR\\\\bin\\\\dokan.dll\\\" \\\"$SYSDIR\\\"
-##			CopyFiles \\\"$INSTDIR\\\\bin\\\\dokan.sys\\\" \\\"$SYSDIR\\\\drivers\\\"
-##			Delete \\\"$INSTDIR\\\\bin\\\\dokanctl.exe\\\"
-##			Delete \\\"$INSTDIR\\\\bin\\\\mounter.exe\\\"
-##			Delete \\\"$INSTDIR\\\\bin\\\\dokan.dll\\\"
-##			Delete \\\"$INSTDIR\\\\bin\\\\dokan.sys\\\"
-##			ExecWait \\\"$SYSDIR\\\\dokanctl.exe\\\ /i a\\\"
-##			Goto finish
-##
-##			upgrade:
-##                        !insertmacro InstallLib DLL 1 REBOOT_NOTPROTECTED dokan.dll \\\"$SYSDIR\\\\dokan.dll\\\" \\\"$SYSDIR\\\"
-##                        !insertmacro InstallLib DLL 1 REBOOT_NOTPROTECTED dokan.sys  \\\"$SYSDIR\\\\drivers\\\\dokan.dll\\\" \\\"$SYSDIR\\\"
-##			Messagebox MB_OK \\\"IMPORTANT: Rebooting the system is advised in order to finalize maidsafe perpetualdata [tm] installation/upgrade (this is an informational message only, pressing OK will not reboot).\\\"
-##			SetRebootFlag true
-##			CopyFiles \\\"$INSTDIR\\\\bin\\\\dokanctl.exe\\\" \\\"$SYSDIR\\\"
-##			Delete \\\"$INSTDIR\\\\bin\\\\dokanctl.exe\\\"
-##			CopyFiles \\\"$INSTDIR\\\\bin\\\\mounter.exe\\\" \\\"$SYSDIR\\\"
-##			Delete \\\"$INSTDIR\\\\bin\\\\mounter.exe\\\"
-##		 WriteRegStr HKEY_LOCAL_MACHINE \\\"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\RunOnce\\\" \\\"maidsafe\\\" \\\"$SYSDIR\\\\dokanctl.exe /i a \\\"
-##		 	finish:
-#Function FindWindow
-#      FindWindow \\\"$R1\\\" \\\"${WNDCLASS}\\\" \\\"Perpetual Data\\\"
-#      \\\"${Unless}\\\" \\\"$R1\\\" = 0
-#         MessageBox MB_ICONSTOP|MB_OK
-#         "Perpetual Data  is running. Please close it and try again."
-#         Abort
-#      \\\"${EndUnless}\\\"
-#FunctionEnd
 			")
 		IF(MSVC)
 		SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS ${CPACK_NSIS_EXTRA_INSTALL_COMMANDS} "
@@ -635,21 +617,11 @@ SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS ${CPACK_NSIS_EXTRA_INSTALL_COMMANDS} "
 		ENDIF(MSVC)
 
 SET(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS ${CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS} "
-#This example detects if the application you are uninstalling is running at the start of the uninstallation process.
-#The easiest way to find the "WindowClassOfYourApplication" and "WindowTitleOfYourApplication" is to use Microsoft Spy++. Spy++ is a tool that comes with Visual Studio. You can also use the freeware tool SysTree++ to find the WindowClass.
-#[edit] The Example Script
-
-#/* Replace the values of the two defines below to your application's window class and window title, respectivelly. */
-#!define WNDCLASS "WindowClassOfYourApplication"
-#!define WNDTITLE "WindowTitleOfYourApplication"
-# We can use this to chekc if application is running during install as well !!! // TODO  
-#Function un.onInit
-#FindWindow $0 "${WNDCLASS}" "${WNDTITLE}"
-  #StrCmp $0 0 continueInstall
-  #MessageBox MB_ICONSTOP|MB_OK "The application you are trying to remove is running. Close it and try again."
-    #Abort
-    # continueInstall:
-  #FunctionEnd
+    ExecWait '\\\"sc.exe\\\" stop PDVault'
+    ExecWait '\\\"sc.exe\\\" delete PDVault'
+    Delete \\\"$INSTDIR\\\\bin\\\\.kadconfig\\\"
+    Delete \\\"$APPDATA\\\\maidsafe\\\\.kadconfig\\\"
+		RMDir /r \\\"$APPDATA\\\\maidsafe\\\"
 		IfFileExists \\\"$SYSDIR\\\\dokanctl.exe\\\" next1 0
 		next1:
 		ExecWait \\\"$SYSDIR\\\\dokanctl.exe\\\ /r a\\\"

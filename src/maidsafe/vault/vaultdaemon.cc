@@ -86,6 +86,7 @@ void VaultDaemon::TakeOwnership() {
       boost::this_thread::sleep(boost::posix_time::seconds(1.0));
     }
   }
+  WriteToLog("Vault has been owned.\n");
   WriteToLog("Vault ID:         "+pdvault_->hex_node_id());
   WriteToLog("Vault IP & port:  "+pdvault_->host_ip()+":"+
       base::itos(pdvault_->host_port()));
@@ -267,6 +268,10 @@ bool VaultDaemon::StartNotOwnedVault() {
     WriteToLog("Failed to start a not owned vault");
     return false;
   }
+  WriteToLog("Vault waiting to be owned started.\n");
+  WriteToLog("Vault ID:         "+pdvault_->hex_node_id());
+  WriteToLog("Vault IP & port:  "+pdvault_->host_ip()+":"+
+      base::itos(pdvault_->host_port()));
   return true;
 }
 
