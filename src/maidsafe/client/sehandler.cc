@@ -42,14 +42,11 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 SEHandler::SEHandler(StoreManagerInterface *storem,
-                     boost::shared_ptr<ChunkStore> client_chunkstore,
-                     boost::recursive_mutex *mutex)
+                     boost::shared_ptr<ChunkStore> client_chunkstore)
                          : storem_(storem),
                            client_chunkstore_(client_chunkstore),
                            ss_(SessionSingleton::getInstance()),
-                           mutex_(mutex),
-                           fsys_(),
-                           uptodate_datamaps_() {}
+                           fsys_(), uptodate_datamaps_() {}
 
 itemtype SEHandler::CheckEntry(const std::string &full_entry,
                                uint64_t *file_size) {
@@ -900,16 +897,16 @@ void SEHandler::StoreChunks(const DataMap &dm,
     storem_->StoreChunk(dm.encrypted_chunk_name(i), dir_type, msid);
 }
 
-void SEHandler::WaitForResult(const CallbackResult &cb) {
-  while (true) {
-    {
-      base::pd_scoped_lock gaurd(*mutex_);
-      if (cb.result != "")
-        return;
-    }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  }
-}
+//  void SEHandler::WaitForResult(const CallbackResult &cb) {
+//    while (true) {
+//      {
+//        base::pd_scoped_lock gaurd(mutex_);
+//        if (cb.result != "")
+//          return;
+//      }
+//      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//    }
+//  }
 
 int SEHandler::RemoveKeyFromUptodateDms(const std::string &key) {
   std::map<std::string, std::string>::iterator it;

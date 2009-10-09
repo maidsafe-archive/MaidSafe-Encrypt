@@ -44,7 +44,7 @@ class VaultBufferPacketHandler {
                    const std::string &ser_message,
                    const std::string &signed_public_key,
                    int *status);
-  bool GetMessages(const std::string &ser_bp, std::vector<std::string> *msgs);
+  bool GetMessages(std::string *ser_bp, std::vector<std::string> *msgs);
   bool ClearMessages(std::string *ser_bufferpacket);
   bool IsOwner(std::string owner_id, GenericPacket gp_info);
   bool ChangeOwnerInfo(std::string ser_gp,

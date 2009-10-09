@@ -227,7 +227,7 @@ class ClientController {
   std::map<std::string, std::pair<std::string, std::string> >db_enc_queue_;
   SEHandler *seh_;
   static ClientController *single;
-  boost::recursive_mutex mutex_;
+//  boost::mutex mutex_;
   std::list<InstantMessage> messages_;
   file_system::FileSystem fsys_;
   std::map<std::string, boost::uint32_t> received_messages_;

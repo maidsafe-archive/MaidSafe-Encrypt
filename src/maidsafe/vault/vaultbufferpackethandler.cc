@@ -59,13 +59,19 @@ bool VaultBufferPacketHandler::ValidateOwnerSignature(std::string public_key,
     bp.owner_info(0).signature(), public_key, crypto::STRING_STRING);
 }
 
-bool VaultBufferPacketHandler::GetMessages(const std::string &ser_bp,
+bool VaultBufferPacketHandler::GetMessages(std::string *ser_bp,
                                            std::vector<std::string> *msgs) {
   BufferPacket bp;
-  if (!bp.ParseFromString(ser_bp))
+  if (!bp.ParseFromString(*ser_bp))
     return false;
   GenericPacket gp;
   BufferPacketMessage bpm;
+  if (bp.messages_size() == 0) {
+#ifdef DEBUG
+    printf("VaultBufferPacketHandler::GetMessages - NO messages.\n");
+#endif
+    return true;
+  }
   for (int i = 0; i < bp.messages_size(); i++) {
     gp = bp.messages(i);
     if (bpm.ParseFromString(gp.data())) {
@@ -80,6 +86,9 @@ bool VaultBufferPacketHandler::GetMessages(const std::string &ser_bp,
       msgs->push_back(ser_msg);
     }
   }
+  bp.clear_messages();
+  if (!bp.SerializeToString(ser_bp))
+    return false;
   return true;
 }
 
@@ -200,6 +209,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
                                           const std::string &ser_message,
                                           const std::string &signed_public_key,
                                           std::string *updated_bp) {
+  *updated_bp = "";
   GenericPacket message;
   if (!message.ParseFromString(ser_message)) {
 #ifdef DEBUG
@@ -255,7 +265,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
     BufferPacketInfo bpi;
     bpi.ParseFromString(bufferpacket.owner_info(0).data());
     bool flag = false;
-    // TODO(dan): here ther should be no check for user in list
+    // TODO(Team#5#): here ther should be no check for user in list
     // if it is decided to accept from all
     for (int i = 0; i < bpi.users_size(); i++) {
       if (bpi.users(i) == bpm.sender_id()) {
@@ -263,9 +273,6 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
         flag = true;
         break;
       }
-#ifdef DEBUG
-//      printf("VaultBufferPacketHandler::AddMessage %d\n", i);
-#endif
     }
     if (!flag) {
 #ifdef DEBUG

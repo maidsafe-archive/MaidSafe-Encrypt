@@ -121,7 +121,7 @@ class DataAtlasHandlerTest : public testing::Test {
     }
     rec_mutex = new boost::recursive_mutex();
     boost::shared_ptr<LocalStoreManager>
-        sm(new LocalStoreManager(rec_mutex, client_chunkstore_));
+        sm(new LocalStoreManager(client_chunkstore_));
     // sm = sm_;
     sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_seh_(cb, rec_mutex);
@@ -150,8 +150,8 @@ class DataAtlasHandlerTest : public testing::Test {
     file_system::FileSystem fsys;
     fsys.Mount();
     boost::scoped_ptr<DataAtlasHandler>dah_(new DataAtlasHandler());
-    boost::shared_ptr<SEHandler>seh_(new SEHandler(sm.get(), client_chunkstore_,
-        rec_mutex));
+    boost::shared_ptr<SEHandler>seh_(
+        new SEHandler(sm.get(), client_chunkstore_));
     if (dah_->Init(true))
       FAIL();
 

@@ -167,12 +167,18 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void Init(int port, base::callback_func_type cb);
   void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
+  bool KeyUnique(const std::string &hex_key, bool check_local);
+  void ClearStoreQueue();
+  bool NotDoneWithUploading();
+
   // Adds the chunk to the store queue.  It must already be in the chunkstore.
   // If the chunk already exists (stored locally or on the net) the function
   // succeeds.  The function returns as soon as the task is enqueued.
   void StoreChunk(const std::string &hex_chunk_name,
                   DirType dir_type,
                   const std::string &msid);
+  int LoadChunk(const std::string &hex_chunk_name, std::string *data);
+
   // Adds the packet to the priority store queue.  If the packet already exists
   // on the net, it has the value appended to the existing one(s).  The function
   // blocks until the entire store operation has completed.
@@ -181,20 +187,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                   PacketType system_packet_type,
                   DirType dir_type,
                   const std::string &msid);
-  int LoadChunk(const std::string &hex_chunk_name, std::string *data);
   void LoadPacket(const std::string &hex_packet_name,
                   std::string *result);
-  int LoadMessages(const std::string &buffer_packet_name,
-                   const std::string &public_key,
-                   const std::string &signed_public_key,
-                   std::list<std::string> *messages);
-  // Returns true if the key doesn't already exist on the Kad network or
-  // maidsafe network (or locally if bool is true), otherwise false.
-  bool KeyUnique(const std::string &hex_key, bool check_local);
-
-  void ClearStoreQueue();
-
-
   void DeletePacket(const std::string &hex_key,
                     const std::string &signature,
                     const std::string &public_key,
@@ -202,8 +196,24 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                     const ValueType &type,
                     base::callback_func_type cb);
 
+  // Buffer packet
+  virtual int CreateBP(const std::string &bufferpacketname,
+                       const std::string &ser_packet);
+  virtual int LoadBPMessages(const std::string &bufferpacketname,
+                             std::list<std::string> *messages);
+  virtual int ModifyBPInfo(const std::string &bufferpacketname,
+                           const std::string &ser_gp);
+  virtual int AddBPMessage(const std::string &bufferpacketname,
+                           const std::string &ser_gp);
 
-
+  // Vault
+  void PollVaultInfo(base::callback_func_type cb);
+  void VaultContactInfo(base::callback_func_type cb);
+  void OwnLocalVault(const std::string &priv_key, const std::string &pub_key,
+      const std::string &signed_pub_key, const boost::uint32_t &port,
+      const std::string &chunkstore_dir, const boost::uint64_t &space,
+      boost::function<void(const OwnVaultResult&, const std::string&)> cb);
+  void LocalVaultStatus(boost::function<void(const VaultStatus&)> cb);
 
   static void GetChunkSignatureKeys(DirType dir_type,
                                     const std::string &msid,
@@ -218,15 +228,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                                      std::string *public_key,
                                      std::string *public_key_sig,
                                      std::string *private_key);
-
-  void PollVaultInfo(base::callback_func_type cb);
-  void VaultContactInfo(base::callback_func_type cb);
-  void OwnLocalVault(const std::string &priv_key, const std::string &pub_key,
-      const std::string &signed_pub_key, const boost::uint32_t &port,
-      const std::string &chunkstore_dir, const boost::uint64_t &space,
-      boost::function<void(const OwnVaultResult&, const std::string&)> cb);
-  void LocalVaultStatus(boost::function<void(const VaultStatus&)> cb);
-  bool NotDoneWithUploading();
 
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
@@ -400,6 +401,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void SetStoreReturnValue(int value, int *return_value);
   void PollVaultInfoCallback(const VaultStatusResponse *response,
                              base::callback_func_type cb);
+  void CreateBPCallback(GenericConditionData *send_prep_cond_data);
+
 //  void VaultContactInfoCallback(const std::string &ser_result,
 //                                base::callback_func_type cb);
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;

@@ -59,11 +59,13 @@ bool MakeChunks(const boost::uint32_t &num_chunks,
   for (boost::uint32_t i = 0; i < num_chunks; ++i) {
     boost::uint64_t factor = (upper - lower) / RAND_MAX;
     boost::uint64_t chunk_size(lower + (rand() * factor));  // NOLINT (Fraser)
+    printf("Chunkname %i AAAAAAAAAAAAAAA\n", i);
     // just in case!
     while (chunk_size > upper)
       chunk_size = chunk_size / 2;
     chunksize->push_back(chunk_size);
     value->push_back(base::RandomString(chunksize->at(i)));
+    printf("Chunkname %i BBBBBBBBBBBBBBB\n", i);
     if (hashable) {
       name->push_back(cry_obj->Hash(value->at(i), "", crypto::STRING_STRING,
                                     false));
@@ -71,6 +73,7 @@ bool MakeChunks(const boost::uint32_t &num_chunks,
       name->push_back(cry_obj->Hash(base::itos(i), "", crypto::STRING_STRING,
                                     false));
     }
+    printf("Chunkname %i: %s\n", i, HexEncodeSubstring(name->at(i)).c_str());
   }
   return (chunksize->size() == num_chunks && value->size() == num_chunks &&
           name->size() == num_chunks);
@@ -1351,7 +1354,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedRandLoad) {
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
-  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true, 3,
+  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true, 10000,
                                           32000, &h_size, &h_value, &h_name));
   test_chunkstore::ThreadedTest tester(chunkstore);
   // Store chunks
@@ -1390,8 +1393,21 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedRandLoad) {
   store_thread_group.join_all();
   // Check all stores returned 0
   bool result(true);
-  for (int i = 0; i < kNumberOfChunks; ++i)
+  for (int i = 0; i < kNumberOfChunks; ++i) {
+    if (*store_result.at(i) != 0) {
+      for (int n = 0; n < i; n++) {
+        if (h_name[i] == h_name[n]) {
+          if (h_value[i] == h_value[n]) {
+#ifdef DEBUG
+            printf("Found a repeated chunk.\n");
+#endif
+          }
+          break;
+        }
+      }
+    }
     result = result && (*store_result.at(i) == 0);
+  }
   ASSERT_TRUE(result);
   // Check all random loads returned true
   for (int i = 0; i < kRandomLoads; ++i)

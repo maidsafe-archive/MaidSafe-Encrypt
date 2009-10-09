@@ -52,8 +52,6 @@ class ValidityCheckRequest;
 class ValidityCheckResponse;
 class UpdateRequest;
 class UpdateResponse;
-class GetMessagesRequest;
-class GetMessagesResponse;
 class SwapChunkRequest;
 class SwapChunkResponse;
 class VaultCommunication;
@@ -63,6 +61,14 @@ class OwnVaultRequest;
 class OwnVaultResponse;
 class IsOwnedRequest;
 class IsOwnedResponse;
+class CreateBPRequest;
+class CreateBPResponse;
+class ModifyBPInfoRequest;
+class ModifyBPInfoResponse;
+class GetBPMessagesRequest;
+class GetBPMessagesResponse;
+class AddBPMessageRequest;
+class AddBPMessageResponse;
 
 enum OwnVaultResult {
   OWNED_SUCCESS = 0,
@@ -1591,6 +1597,13 @@ class StoreReferenceRequest : public ::google::protobuf::Message {
   inline void set_signed_request(const void* value, size_t size);
   inline ::std::string* mutable_signed_request();
   
+  // optional bool no_iou_rank = 7;
+  inline bool has_no_iou_rank() const;
+  inline void clear_no_iou_rank();
+  static const int kNoIouRankFieldNumber = 7;
+  inline bool no_iou_rank() const;
+  inline void set_no_iou_rank(bool value);
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -1607,10 +1620,11 @@ class StoreReferenceRequest : public ::google::protobuf::Message {
   static const ::std::string _default_signed_public_key_;
   ::std::string* signed_request_;
   static const ::std::string _default_signed_request_;
+  bool no_iou_rank_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -2873,237 +2887,6 @@ class UpdateResponse : public ::google::protobuf::Message {
 };
 // -------------------------------------------------------------------
 
-class GetMessagesRequest : public ::google::protobuf::Message {
- public:
-  GetMessagesRequest();
-  virtual ~GetMessagesRequest();
-  
-  GetMessagesRequest(const GetMessagesRequest& from);
-  
-  inline GetMessagesRequest& operator=(const GetMessagesRequest& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
-    return _unknown_fields_;
-  }
-  
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
-    return &_unknown_fields_;
-  }
-  
-  static const ::google::protobuf::Descriptor* descriptor();
-  static const GetMessagesRequest& default_instance();
-  void Swap(GetMessagesRequest* other);
-  
-  // implements Message ----------------------------------------------
-  
-  GetMessagesRequest* New() const;
-  void CopyFrom(const ::google::protobuf::Message& from);
-  void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const GetMessagesRequest& from);
-  void MergeFrom(const GetMessagesRequest& from);
-  void Clear();
-  bool IsInitialized() const;
-  
-  int ByteSize() const;
-  bool MergePartialFromCodedStream(
-      ::google::protobuf::io::CodedInputStream* input);
-  void SerializeWithCachedSizes(
-      ::google::protobuf::io::CodedOutputStream* output) const;
-  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
-  int GetCachedSize() const { return _cached_size_; }
-  private:
-  void SharedCtor();
-  void SharedDtor();
-  void SetCachedSize(int size) const { _cached_size_ = size; }
-  public:
-  
-  const ::google::protobuf::Descriptor* GetDescriptor() const;
-  const ::google::protobuf::Reflection* GetReflection() const;
-  
-  // nested types ----------------------------------------------------
-  
-  // accessors -------------------------------------------------------
-  
-  // required bytes buffer_packet_name = 1;
-  inline bool has_buffer_packet_name() const;
-  inline void clear_buffer_packet_name();
-  static const int kBufferPacketNameFieldNumber = 1;
-  inline const ::std::string& buffer_packet_name() const;
-  inline void set_buffer_packet_name(const ::std::string& value);
-  inline void set_buffer_packet_name(const char* value);
-  inline void set_buffer_packet_name(const void* value, size_t size);
-  inline ::std::string* mutable_buffer_packet_name();
-  
-  // required bytes public_key = 2;
-  inline bool has_public_key() const;
-  inline void clear_public_key();
-  static const int kPublicKeyFieldNumber = 2;
-  inline const ::std::string& public_key() const;
-  inline void set_public_key(const ::std::string& value);
-  inline void set_public_key(const char* value);
-  inline void set_public_key(const void* value, size_t size);
-  inline ::std::string* mutable_public_key();
-  
-  // required bytes signed_public_key = 3;
-  inline bool has_signed_public_key() const;
-  inline void clear_signed_public_key();
-  static const int kSignedPublicKeyFieldNumber = 3;
-  inline const ::std::string& signed_public_key() const;
-  inline void set_signed_public_key(const ::std::string& value);
-  inline void set_signed_public_key(const char* value);
-  inline void set_signed_public_key(const void* value, size_t size);
-  inline ::std::string* mutable_signed_public_key();
-  
- private:
-  ::google::protobuf::UnknownFieldSet _unknown_fields_;
-  mutable int _cached_size_;
-  
-  ::std::string* buffer_packet_name_;
-  static const ::std::string _default_buffer_packet_name_;
-  ::std::string* public_key_;
-  static const ::std::string _default_public_key_;
-  ::std::string* signed_public_key_;
-  static const ::std::string _default_signed_public_key_;
-  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
-  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
-  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
-  
-  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
-  inline bool _has_bit(int index) const {
-    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
-  }
-  inline void _set_bit(int index) {
-    _has_bits_[index / 32] |= (1u << (index % 32));
-  }
-  inline void _clear_bit(int index) {
-    _has_bits_[index / 32] &= ~(1u << (index % 32));
-  }
-  
-  void InitAsDefaultInstance();
-  static GetMessagesRequest* default_instance_;
-};
-// -------------------------------------------------------------------
-
-class GetMessagesResponse : public ::google::protobuf::Message {
- public:
-  GetMessagesResponse();
-  virtual ~GetMessagesResponse();
-  
-  GetMessagesResponse(const GetMessagesResponse& from);
-  
-  inline GetMessagesResponse& operator=(const GetMessagesResponse& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
-    return _unknown_fields_;
-  }
-  
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
-    return &_unknown_fields_;
-  }
-  
-  static const ::google::protobuf::Descriptor* descriptor();
-  static const GetMessagesResponse& default_instance();
-  void Swap(GetMessagesResponse* other);
-  
-  // implements Message ----------------------------------------------
-  
-  GetMessagesResponse* New() const;
-  void CopyFrom(const ::google::protobuf::Message& from);
-  void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const GetMessagesResponse& from);
-  void MergeFrom(const GetMessagesResponse& from);
-  void Clear();
-  bool IsInitialized() const;
-  
-  int ByteSize() const;
-  bool MergePartialFromCodedStream(
-      ::google::protobuf::io::CodedInputStream* input);
-  void SerializeWithCachedSizes(
-      ::google::protobuf::io::CodedOutputStream* output) const;
-  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
-  int GetCachedSize() const { return _cached_size_; }
-  private:
-  void SharedCtor();
-  void SharedDtor();
-  void SetCachedSize(int size) const { _cached_size_ = size; }
-  public:
-  
-  const ::google::protobuf::Descriptor* GetDescriptor() const;
-  const ::google::protobuf::Reflection* GetReflection() const;
-  
-  // nested types ----------------------------------------------------
-  
-  // accessors -------------------------------------------------------
-  
-  // required uint32 result = 1;
-  inline bool has_result() const;
-  inline void clear_result();
-  static const int kResultFieldNumber = 1;
-  inline ::google::protobuf::uint32 result() const;
-  inline void set_result(::google::protobuf::uint32 value);
-  
-  // repeated bytes messages = 2;
-  inline int messages_size() const;
-  inline void clear_messages();
-  static const int kMessagesFieldNumber = 2;
-  inline const ::google::protobuf::RepeatedPtrField< ::std::string>& messages() const;
-  inline ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_messages();
-  inline const ::std::string& messages(int index) const;
-  inline ::std::string* mutable_messages(int index);
-  inline void set_messages(int index, const ::std::string& value);
-  inline void set_messages(int index, const char* value);
-  inline void set_messages(int index, const void* value, size_t size);
-  inline ::std::string* add_messages();
-  inline void add_messages(const ::std::string& value);
-  inline void add_messages(const char* value);
-  inline void add_messages(const void* value, size_t size);
-  
-  // optional bytes pmid_id = 3;
-  inline bool has_pmid_id() const;
-  inline void clear_pmid_id();
-  static const int kPmidIdFieldNumber = 3;
-  inline const ::std::string& pmid_id() const;
-  inline void set_pmid_id(const ::std::string& value);
-  inline void set_pmid_id(const char* value);
-  inline void set_pmid_id(const void* value, size_t size);
-  inline ::std::string* mutable_pmid_id();
-  
- private:
-  ::google::protobuf::UnknownFieldSet _unknown_fields_;
-  mutable int _cached_size_;
-  
-  ::google::protobuf::uint32 result_;
-  ::google::protobuf::RepeatedPtrField< ::std::string> messages_;
-  ::std::string* pmid_id_;
-  static const ::std::string _default_pmid_id_;
-  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
-  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
-  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
-  
-  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
-  inline bool _has_bit(int index) const {
-    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
-  }
-  inline void _set_bit(int index) {
-    _has_bits_[index / 32] |= (1u << (index % 32));
-  }
-  inline void _clear_bit(int index) {
-    _has_bits_[index / 32] &= ~(1u << (index % 32));
-  }
-  
-  void InitAsDefaultInstance();
-  static GetMessagesResponse* default_instance_;
-};
-// -------------------------------------------------------------------
-
 class SwapChunkRequest : public ::google::protobuf::Message {
  public:
   SwapChunkRequest();
@@ -4136,6 +3919,1107 @@ class IsOwnedResponse : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static IsOwnedResponse* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class CreateBPRequest : public ::google::protobuf::Message {
+ public:
+  CreateBPRequest();
+  virtual ~CreateBPRequest();
+  
+  CreateBPRequest(const CreateBPRequest& from);
+  
+  inline CreateBPRequest& operator=(const CreateBPRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const CreateBPRequest& default_instance();
+  void Swap(CreateBPRequest* other);
+  
+  // implements Message ----------------------------------------------
+  
+  CreateBPRequest* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const CreateBPRequest& from);
+  void MergeFrom(const CreateBPRequest& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes bufferpacket_name = 1;
+  inline bool has_bufferpacket_name() const;
+  inline void clear_bufferpacket_name();
+  static const int kBufferpacketNameFieldNumber = 1;
+  inline const ::std::string& bufferpacket_name() const;
+  inline void set_bufferpacket_name(const ::std::string& value);
+  inline void set_bufferpacket_name(const char* value);
+  inline void set_bufferpacket_name(const void* value, size_t size);
+  inline ::std::string* mutable_bufferpacket_name();
+  
+  // required bytes data = 2;
+  inline bool has_data() const;
+  inline void clear_data();
+  static const int kDataFieldNumber = 2;
+  inline const ::std::string& data() const;
+  inline void set_data(const ::std::string& value);
+  inline void set_data(const char* value);
+  inline void set_data(const void* value, size_t size);
+  inline ::std::string* mutable_data();
+  
+  // required bytes pmid = 3;
+  inline bool has_pmid() const;
+  inline void clear_pmid();
+  static const int kPmidFieldNumber = 3;
+  inline const ::std::string& pmid() const;
+  inline void set_pmid(const ::std::string& value);
+  inline void set_pmid(const char* value);
+  inline void set_pmid(const void* value, size_t size);
+  inline ::std::string* mutable_pmid();
+  
+  // required bytes public_key = 4;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 4;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // required bytes signed_public_key = 5;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 5;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
+  // required bytes signed_request = 6;
+  inline bool has_signed_request() const;
+  inline void clear_signed_request();
+  static const int kSignedRequestFieldNumber = 6;
+  inline const ::std::string& signed_request() const;
+  inline void set_signed_request(const ::std::string& value);
+  inline void set_signed_request(const char* value);
+  inline void set_signed_request(const void* value, size_t size);
+  inline ::std::string* mutable_signed_request();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* bufferpacket_name_;
+  static const ::std::string _default_bufferpacket_name_;
+  ::std::string* data_;
+  static const ::std::string _default_data_;
+  ::std::string* pmid_;
+  static const ::std::string _default_pmid_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
+  ::std::string* signed_request_;
+  static const ::std::string _default_signed_request_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static CreateBPRequest* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class CreateBPResponse : public ::google::protobuf::Message {
+ public:
+  CreateBPResponse();
+  virtual ~CreateBPResponse();
+  
+  CreateBPResponse(const CreateBPResponse& from);
+  
+  inline CreateBPResponse& operator=(const CreateBPResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const CreateBPResponse& default_instance();
+  void Swap(CreateBPResponse* other);
+  
+  // implements Message ----------------------------------------------
+  
+  CreateBPResponse* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const CreateBPResponse& from);
+  void MergeFrom(const CreateBPResponse& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required uint32 result = 1;
+  inline bool has_result() const;
+  inline void clear_result();
+  static const int kResultFieldNumber = 1;
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
+  
+  // optional bytes pmid_id = 2;
+  inline bool has_pmid_id() const;
+  inline void clear_pmid_id();
+  static const int kPmidIdFieldNumber = 2;
+  inline const ::std::string& pmid_id() const;
+  inline void set_pmid_id(const ::std::string& value);
+  inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
+  inline ::std::string* mutable_pmid_id();
+  
+  // optional bytes public_key = 3;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 3;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // optional bytes signed_public_key = 4;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 4;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::uint32 result_;
+  ::std::string* pmid_id_;
+  static const ::std::string _default_pmid_id_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static CreateBPResponse* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class ModifyBPInfoRequest : public ::google::protobuf::Message {
+ public:
+  ModifyBPInfoRequest();
+  virtual ~ModifyBPInfoRequest();
+  
+  ModifyBPInfoRequest(const ModifyBPInfoRequest& from);
+  
+  inline ModifyBPInfoRequest& operator=(const ModifyBPInfoRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ModifyBPInfoRequest& default_instance();
+  void Swap(ModifyBPInfoRequest* other);
+  
+  // implements Message ----------------------------------------------
+  
+  ModifyBPInfoRequest* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const ModifyBPInfoRequest& from);
+  void MergeFrom(const ModifyBPInfoRequest& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes bufferpacket_name = 1;
+  inline bool has_bufferpacket_name() const;
+  inline void clear_bufferpacket_name();
+  static const int kBufferpacketNameFieldNumber = 1;
+  inline const ::std::string& bufferpacket_name() const;
+  inline void set_bufferpacket_name(const ::std::string& value);
+  inline void set_bufferpacket_name(const char* value);
+  inline void set_bufferpacket_name(const void* value, size_t size);
+  inline ::std::string* mutable_bufferpacket_name();
+  
+  // required bytes data = 2;
+  inline bool has_data() const;
+  inline void clear_data();
+  static const int kDataFieldNumber = 2;
+  inline const ::std::string& data() const;
+  inline void set_data(const ::std::string& value);
+  inline void set_data(const char* value);
+  inline void set_data(const void* value, size_t size);
+  inline ::std::string* mutable_data();
+  
+  // required bytes pmid = 3;
+  inline bool has_pmid() const;
+  inline void clear_pmid();
+  static const int kPmidFieldNumber = 3;
+  inline const ::std::string& pmid() const;
+  inline void set_pmid(const ::std::string& value);
+  inline void set_pmid(const char* value);
+  inline void set_pmid(const void* value, size_t size);
+  inline ::std::string* mutable_pmid();
+  
+  // required bytes public_key = 4;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 4;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // required bytes signed_public_key = 5;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 5;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
+  // required bytes signed_request = 6;
+  inline bool has_signed_request() const;
+  inline void clear_signed_request();
+  static const int kSignedRequestFieldNumber = 6;
+  inline const ::std::string& signed_request() const;
+  inline void set_signed_request(const ::std::string& value);
+  inline void set_signed_request(const char* value);
+  inline void set_signed_request(const void* value, size_t size);
+  inline ::std::string* mutable_signed_request();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* bufferpacket_name_;
+  static const ::std::string _default_bufferpacket_name_;
+  ::std::string* data_;
+  static const ::std::string _default_data_;
+  ::std::string* pmid_;
+  static const ::std::string _default_pmid_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
+  ::std::string* signed_request_;
+  static const ::std::string _default_signed_request_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static ModifyBPInfoRequest* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class ModifyBPInfoResponse : public ::google::protobuf::Message {
+ public:
+  ModifyBPInfoResponse();
+  virtual ~ModifyBPInfoResponse();
+  
+  ModifyBPInfoResponse(const ModifyBPInfoResponse& from);
+  
+  inline ModifyBPInfoResponse& operator=(const ModifyBPInfoResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ModifyBPInfoResponse& default_instance();
+  void Swap(ModifyBPInfoResponse* other);
+  
+  // implements Message ----------------------------------------------
+  
+  ModifyBPInfoResponse* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const ModifyBPInfoResponse& from);
+  void MergeFrom(const ModifyBPInfoResponse& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required uint32 result = 1;
+  inline bool has_result() const;
+  inline void clear_result();
+  static const int kResultFieldNumber = 1;
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
+  
+  // optional bytes pmid_id = 2;
+  inline bool has_pmid_id() const;
+  inline void clear_pmid_id();
+  static const int kPmidIdFieldNumber = 2;
+  inline const ::std::string& pmid_id() const;
+  inline void set_pmid_id(const ::std::string& value);
+  inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
+  inline ::std::string* mutable_pmid_id();
+  
+  // optional bytes public_key = 3;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 3;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // optional bytes signed_public_key = 4;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 4;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::uint32 result_;
+  ::std::string* pmid_id_;
+  static const ::std::string _default_pmid_id_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static ModifyBPInfoResponse* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class GetBPMessagesRequest : public ::google::protobuf::Message {
+ public:
+  GetBPMessagesRequest();
+  virtual ~GetBPMessagesRequest();
+  
+  GetBPMessagesRequest(const GetBPMessagesRequest& from);
+  
+  inline GetBPMessagesRequest& operator=(const GetBPMessagesRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const GetBPMessagesRequest& default_instance();
+  void Swap(GetBPMessagesRequest* other);
+  
+  // implements Message ----------------------------------------------
+  
+  GetBPMessagesRequest* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const GetBPMessagesRequest& from);
+  void MergeFrom(const GetBPMessagesRequest& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes bufferpacket_name = 1;
+  inline bool has_bufferpacket_name() const;
+  inline void clear_bufferpacket_name();
+  static const int kBufferpacketNameFieldNumber = 1;
+  inline const ::std::string& bufferpacket_name() const;
+  inline void set_bufferpacket_name(const ::std::string& value);
+  inline void set_bufferpacket_name(const char* value);
+  inline void set_bufferpacket_name(const void* value, size_t size);
+  inline ::std::string* mutable_bufferpacket_name();
+  
+  // required bytes public_key = 2;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 2;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // required bytes pmid = 3;
+  inline bool has_pmid() const;
+  inline void clear_pmid();
+  static const int kPmidFieldNumber = 3;
+  inline const ::std::string& pmid() const;
+  inline void set_pmid(const ::std::string& value);
+  inline void set_pmid(const char* value);
+  inline void set_pmid(const void* value, size_t size);
+  inline ::std::string* mutable_pmid();
+  
+  // required bytes signed_public_key = 4;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 4;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
+  // required bytes signed_request = 5;
+  inline bool has_signed_request() const;
+  inline void clear_signed_request();
+  static const int kSignedRequestFieldNumber = 5;
+  inline const ::std::string& signed_request() const;
+  inline void set_signed_request(const ::std::string& value);
+  inline void set_signed_request(const char* value);
+  inline void set_signed_request(const void* value, size_t size);
+  inline ::std::string* mutable_signed_request();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* bufferpacket_name_;
+  static const ::std::string _default_bufferpacket_name_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* pmid_;
+  static const ::std::string _default_pmid_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
+  ::std::string* signed_request_;
+  static const ::std::string _default_signed_request_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static GetBPMessagesRequest* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class GetBPMessagesResponse : public ::google::protobuf::Message {
+ public:
+  GetBPMessagesResponse();
+  virtual ~GetBPMessagesResponse();
+  
+  GetBPMessagesResponse(const GetBPMessagesResponse& from);
+  
+  inline GetBPMessagesResponse& operator=(const GetBPMessagesResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const GetBPMessagesResponse& default_instance();
+  void Swap(GetBPMessagesResponse* other);
+  
+  // implements Message ----------------------------------------------
+  
+  GetBPMessagesResponse* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const GetBPMessagesResponse& from);
+  void MergeFrom(const GetBPMessagesResponse& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required uint32 result = 1;
+  inline bool has_result() const;
+  inline void clear_result();
+  static const int kResultFieldNumber = 1;
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
+  
+  // repeated bytes messages = 2;
+  inline int messages_size() const;
+  inline void clear_messages();
+  static const int kMessagesFieldNumber = 2;
+  inline const ::google::protobuf::RepeatedPtrField< ::std::string>& messages() const;
+  inline ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_messages();
+  inline const ::std::string& messages(int index) const;
+  inline ::std::string* mutable_messages(int index);
+  inline void set_messages(int index, const ::std::string& value);
+  inline void set_messages(int index, const char* value);
+  inline void set_messages(int index, const void* value, size_t size);
+  inline ::std::string* add_messages();
+  inline void add_messages(const ::std::string& value);
+  inline void add_messages(const char* value);
+  inline void add_messages(const void* value, size_t size);
+  
+  // optional bytes pmid_id = 3;
+  inline bool has_pmid_id() const;
+  inline void clear_pmid_id();
+  static const int kPmidIdFieldNumber = 3;
+  inline const ::std::string& pmid_id() const;
+  inline void set_pmid_id(const ::std::string& value);
+  inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
+  inline ::std::string* mutable_pmid_id();
+  
+  // optional bytes public_key = 4;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 4;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // optional bytes signed_public_key = 5;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 5;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::uint32 result_;
+  ::google::protobuf::RepeatedPtrField< ::std::string> messages_;
+  ::std::string* pmid_id_;
+  static const ::std::string _default_pmid_id_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static GetBPMessagesResponse* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class AddBPMessageRequest : public ::google::protobuf::Message {
+ public:
+  AddBPMessageRequest();
+  virtual ~AddBPMessageRequest();
+  
+  AddBPMessageRequest(const AddBPMessageRequest& from);
+  
+  inline AddBPMessageRequest& operator=(const AddBPMessageRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const AddBPMessageRequest& default_instance();
+  void Swap(AddBPMessageRequest* other);
+  
+  // implements Message ----------------------------------------------
+  
+  AddBPMessageRequest* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const AddBPMessageRequest& from);
+  void MergeFrom(const AddBPMessageRequest& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes bufferpacket_name = 1;
+  inline bool has_bufferpacket_name() const;
+  inline void clear_bufferpacket_name();
+  static const int kBufferpacketNameFieldNumber = 1;
+  inline const ::std::string& bufferpacket_name() const;
+  inline void set_bufferpacket_name(const ::std::string& value);
+  inline void set_bufferpacket_name(const char* value);
+  inline void set_bufferpacket_name(const void* value, size_t size);
+  inline ::std::string* mutable_bufferpacket_name();
+  
+  // required bytes data = 2;
+  inline bool has_data() const;
+  inline void clear_data();
+  static const int kDataFieldNumber = 2;
+  inline const ::std::string& data() const;
+  inline void set_data(const ::std::string& value);
+  inline void set_data(const char* value);
+  inline void set_data(const void* value, size_t size);
+  inline ::std::string* mutable_data();
+  
+  // required bytes pmid = 3;
+  inline bool has_pmid() const;
+  inline void clear_pmid();
+  static const int kPmidFieldNumber = 3;
+  inline const ::std::string& pmid() const;
+  inline void set_pmid(const ::std::string& value);
+  inline void set_pmid(const char* value);
+  inline void set_pmid(const void* value, size_t size);
+  inline ::std::string* mutable_pmid();
+  
+  // required bytes public_key = 4;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 4;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // required bytes signed_public_key = 5;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 5;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
+  // required bytes signed_request = 6;
+  inline bool has_signed_request() const;
+  inline void clear_signed_request();
+  static const int kSignedRequestFieldNumber = 6;
+  inline const ::std::string& signed_request() const;
+  inline void set_signed_request(const ::std::string& value);
+  inline void set_signed_request(const char* value);
+  inline void set_signed_request(const void* value, size_t size);
+  inline ::std::string* mutable_signed_request();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* bufferpacket_name_;
+  static const ::std::string _default_bufferpacket_name_;
+  ::std::string* data_;
+  static const ::std::string _default_data_;
+  ::std::string* pmid_;
+  static const ::std::string _default_pmid_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
+  ::std::string* signed_request_;
+  static const ::std::string _default_signed_request_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static AddBPMessageRequest* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class AddBPMessageResponse : public ::google::protobuf::Message {
+ public:
+  AddBPMessageResponse();
+  virtual ~AddBPMessageResponse();
+  
+  AddBPMessageResponse(const AddBPMessageResponse& from);
+  
+  inline AddBPMessageResponse& operator=(const AddBPMessageResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const AddBPMessageResponse& default_instance();
+  void Swap(AddBPMessageResponse* other);
+  
+  // implements Message ----------------------------------------------
+  
+  AddBPMessageResponse* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const AddBPMessageResponse& from);
+  void MergeFrom(const AddBPMessageResponse& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required uint32 result = 1;
+  inline bool has_result() const;
+  inline void clear_result();
+  static const int kResultFieldNumber = 1;
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
+  
+  // optional bytes pmid_id = 2;
+  inline bool has_pmid_id() const;
+  inline void clear_pmid_id();
+  static const int kPmidIdFieldNumber = 2;
+  inline const ::std::string& pmid_id() const;
+  inline void set_pmid_id(const ::std::string& value);
+  inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
+  inline ::std::string* mutable_pmid_id();
+  
+  // optional bytes public_key = 3;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 3;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // optional bytes signed_public_key = 4;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 4;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::uint32 result_;
+  ::std::string* pmid_id_;
+  static const ::std::string _default_pmid_id_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static AddBPMessageResponse* default_instance_;
 };
 // ===================================================================
 
@@ -6047,6 +6931,22 @@ inline ::std::string* StoreReferenceRequest::mutable_signed_request() {
   return signed_request_;
 }
 
+// optional bool no_iou_rank = 7;
+inline bool StoreReferenceRequest::has_no_iou_rank() const {
+  return _has_bit(6);
+}
+inline void StoreReferenceRequest::clear_no_iou_rank() {
+  no_iou_rank_ = false;
+  _clear_bit(6);
+}
+inline bool StoreReferenceRequest::no_iou_rank() const {
+  return no_iou_rank_;
+}
+inline void StoreReferenceRequest::set_no_iou_rank(bool value) {
+  _set_bit(6);
+  no_iou_rank_ = value;
+}
+
 // -------------------------------------------------------------------
 
 // StoreReferenceResponse
@@ -7313,242 +8213,6 @@ inline ::std::string* UpdateResponse::mutable_pmid_id() {
 
 // -------------------------------------------------------------------
 
-// GetMessagesRequest
-
-// required bytes buffer_packet_name = 1;
-inline bool GetMessagesRequest::has_buffer_packet_name() const {
-  return _has_bit(0);
-}
-inline void GetMessagesRequest::clear_buffer_packet_name() {
-  if (buffer_packet_name_ != &_default_buffer_packet_name_) {
-    buffer_packet_name_->clear();
-  }
-  _clear_bit(0);
-}
-inline const ::std::string& GetMessagesRequest::buffer_packet_name() const {
-  return *buffer_packet_name_;
-}
-inline void GetMessagesRequest::set_buffer_packet_name(const ::std::string& value) {
-  _set_bit(0);
-  if (buffer_packet_name_ == &_default_buffer_packet_name_) {
-    buffer_packet_name_ = new ::std::string;
-  }
-  buffer_packet_name_->assign(value);
-}
-inline void GetMessagesRequest::set_buffer_packet_name(const char* value) {
-  _set_bit(0);
-  if (buffer_packet_name_ == &_default_buffer_packet_name_) {
-    buffer_packet_name_ = new ::std::string;
-  }
-  buffer_packet_name_->assign(value);
-}
-inline void GetMessagesRequest::set_buffer_packet_name(const void* value, size_t size) {
-  _set_bit(0);
-  if (buffer_packet_name_ == &_default_buffer_packet_name_) {
-    buffer_packet_name_ = new ::std::string;
-  }
-  buffer_packet_name_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* GetMessagesRequest::mutable_buffer_packet_name() {
-  _set_bit(0);
-  if (buffer_packet_name_ == &_default_buffer_packet_name_) {
-    buffer_packet_name_ = new ::std::string;
-  }
-  return buffer_packet_name_;
-}
-
-// required bytes public_key = 2;
-inline bool GetMessagesRequest::has_public_key() const {
-  return _has_bit(1);
-}
-inline void GetMessagesRequest::clear_public_key() {
-  if (public_key_ != &_default_public_key_) {
-    public_key_->clear();
-  }
-  _clear_bit(1);
-}
-inline const ::std::string& GetMessagesRequest::public_key() const {
-  return *public_key_;
-}
-inline void GetMessagesRequest::set_public_key(const ::std::string& value) {
-  _set_bit(1);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(value);
-}
-inline void GetMessagesRequest::set_public_key(const char* value) {
-  _set_bit(1);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(value);
-}
-inline void GetMessagesRequest::set_public_key(const void* value, size_t size) {
-  _set_bit(1);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* GetMessagesRequest::mutable_public_key() {
-  _set_bit(1);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  return public_key_;
-}
-
-// required bytes signed_public_key = 3;
-inline bool GetMessagesRequest::has_signed_public_key() const {
-  return _has_bit(2);
-}
-inline void GetMessagesRequest::clear_signed_public_key() {
-  if (signed_public_key_ != &_default_signed_public_key_) {
-    signed_public_key_->clear();
-  }
-  _clear_bit(2);
-}
-inline const ::std::string& GetMessagesRequest::signed_public_key() const {
-  return *signed_public_key_;
-}
-inline void GetMessagesRequest::set_signed_public_key(const ::std::string& value) {
-  _set_bit(2);
-  if (signed_public_key_ == &_default_signed_public_key_) {
-    signed_public_key_ = new ::std::string;
-  }
-  signed_public_key_->assign(value);
-}
-inline void GetMessagesRequest::set_signed_public_key(const char* value) {
-  _set_bit(2);
-  if (signed_public_key_ == &_default_signed_public_key_) {
-    signed_public_key_ = new ::std::string;
-  }
-  signed_public_key_->assign(value);
-}
-inline void GetMessagesRequest::set_signed_public_key(const void* value, size_t size) {
-  _set_bit(2);
-  if (signed_public_key_ == &_default_signed_public_key_) {
-    signed_public_key_ = new ::std::string;
-  }
-  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* GetMessagesRequest::mutable_signed_public_key() {
-  _set_bit(2);
-  if (signed_public_key_ == &_default_signed_public_key_) {
-    signed_public_key_ = new ::std::string;
-  }
-  return signed_public_key_;
-}
-
-// -------------------------------------------------------------------
-
-// GetMessagesResponse
-
-// required uint32 result = 1;
-inline bool GetMessagesResponse::has_result() const {
-  return _has_bit(0);
-}
-inline void GetMessagesResponse::clear_result() {
-  result_ = 0u;
-  _clear_bit(0);
-}
-inline ::google::protobuf::uint32 GetMessagesResponse::result() const {
-  return result_;
-}
-inline void GetMessagesResponse::set_result(::google::protobuf::uint32 value) {
-  _set_bit(0);
-  result_ = value;
-}
-
-// repeated bytes messages = 2;
-inline int GetMessagesResponse::messages_size() const {
-  return messages_.size();
-}
-inline void GetMessagesResponse::clear_messages() {
-  messages_.Clear();
-}
-inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
-GetMessagesResponse::messages() const {
-  return messages_;
-}
-inline ::google::protobuf::RepeatedPtrField< ::std::string>*
-GetMessagesResponse::mutable_messages() {
-  return &messages_;
-}
-inline const ::std::string& GetMessagesResponse::messages(int index) const {
-  return messages_.Get(index);
-}
-inline ::std::string* GetMessagesResponse::mutable_messages(int index) {
-  return messages_.Mutable(index);
-}
-inline void GetMessagesResponse::set_messages(int index, const ::std::string& value) {
-  messages_.Mutable(index)->assign(value);
-}
-inline void GetMessagesResponse::set_messages(int index, const char* value) {
-  messages_.Mutable(index)->assign(value);
-}
-inline void GetMessagesResponse::set_messages(int index, const void* value, size_t size) {
-  messages_.Mutable(index)->assign(
-    reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* GetMessagesResponse::add_messages() {
-  return messages_.Add();
-}
-inline void GetMessagesResponse::add_messages(const ::std::string& value) {
-  messages_.Add()->assign(value);
-}
-inline void GetMessagesResponse::add_messages(const char* value) {
-  messages_.Add()->assign(value);
-}
-inline void GetMessagesResponse::add_messages(const void* value, size_t size) {
-  messages_.Add()->assign(reinterpret_cast<const char*>(value), size);
-}
-
-// optional bytes pmid_id = 3;
-inline bool GetMessagesResponse::has_pmid_id() const {
-  return _has_bit(2);
-}
-inline void GetMessagesResponse::clear_pmid_id() {
-  if (pmid_id_ != &_default_pmid_id_) {
-    pmid_id_->clear();
-  }
-  _clear_bit(2);
-}
-inline const ::std::string& GetMessagesResponse::pmid_id() const {
-  return *pmid_id_;
-}
-inline void GetMessagesResponse::set_pmid_id(const ::std::string& value) {
-  _set_bit(2);
-  if (pmid_id_ == &_default_pmid_id_) {
-    pmid_id_ = new ::std::string;
-  }
-  pmid_id_->assign(value);
-}
-inline void GetMessagesResponse::set_pmid_id(const char* value) {
-  _set_bit(2);
-  if (pmid_id_ == &_default_pmid_id_) {
-    pmid_id_ = new ::std::string;
-  }
-  pmid_id_->assign(value);
-}
-inline void GetMessagesResponse::set_pmid_id(const void* value, size_t size) {
-  _set_bit(2);
-  if (pmid_id_ == &_default_pmid_id_) {
-    pmid_id_ = new ::std::string;
-  }
-  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* GetMessagesResponse::mutable_pmid_id() {
-  _set_bit(2);
-  if (pmid_id_ == &_default_pmid_id_) {
-    pmid_id_ = new ::std::string;
-  }
-  return pmid_id_;
-}
-
-// -------------------------------------------------------------------
-
 // SwapChunkRequest
 
 // required int32 request_type = 1;
@@ -8537,6 +9201,1616 @@ inline void IsOwnedResponse::set_status(maidsafe::VaultStatus value) {
   GOOGLE_DCHECK(maidsafe::VaultStatus_IsValid(value));
   _set_bit(0);
   status_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// CreateBPRequest
+
+// required bytes bufferpacket_name = 1;
+inline bool CreateBPRequest::has_bufferpacket_name() const {
+  return _has_bit(0);
+}
+inline void CreateBPRequest::clear_bufferpacket_name() {
+  if (bufferpacket_name_ != &_default_bufferpacket_name_) {
+    bufferpacket_name_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& CreateBPRequest::bufferpacket_name() const {
+  return *bufferpacket_name_;
+}
+inline void CreateBPRequest::set_bufferpacket_name(const ::std::string& value) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(value);
+}
+inline void CreateBPRequest::set_bufferpacket_name(const char* value) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(value);
+}
+inline void CreateBPRequest::set_bufferpacket_name(const void* value, size_t size) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateBPRequest::mutable_bufferpacket_name() {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  return bufferpacket_name_;
+}
+
+// required bytes data = 2;
+inline bool CreateBPRequest::has_data() const {
+  return _has_bit(1);
+}
+inline void CreateBPRequest::clear_data() {
+  if (data_ != &_default_data_) {
+    data_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& CreateBPRequest::data() const {
+  return *data_;
+}
+inline void CreateBPRequest::set_data(const ::std::string& value) {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  data_->assign(value);
+}
+inline void CreateBPRequest::set_data(const char* value) {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  data_->assign(value);
+}
+inline void CreateBPRequest::set_data(const void* value, size_t size) {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  data_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateBPRequest::mutable_data() {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  return data_;
+}
+
+// required bytes pmid = 3;
+inline bool CreateBPRequest::has_pmid() const {
+  return _has_bit(2);
+}
+inline void CreateBPRequest::clear_pmid() {
+  if (pmid_ != &_default_pmid_) {
+    pmid_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& CreateBPRequest::pmid() const {
+  return *pmid_;
+}
+inline void CreateBPRequest::set_pmid(const ::std::string& value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void CreateBPRequest::set_pmid(const char* value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void CreateBPRequest::set_pmid(const void* value, size_t size) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateBPRequest::mutable_pmid() {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  return pmid_;
+}
+
+// required bytes public_key = 4;
+inline bool CreateBPRequest::has_public_key() const {
+  return _has_bit(3);
+}
+inline void CreateBPRequest::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& CreateBPRequest::public_key() const {
+  return *public_key_;
+}
+inline void CreateBPRequest::set_public_key(const ::std::string& value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void CreateBPRequest::set_public_key(const char* value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void CreateBPRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateBPRequest::mutable_public_key() {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// required bytes signed_public_key = 5;
+inline bool CreateBPRequest::has_signed_public_key() const {
+  return _has_bit(4);
+}
+inline void CreateBPRequest::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(4);
+}
+inline const ::std::string& CreateBPRequest::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void CreateBPRequest::set_signed_public_key(const ::std::string& value) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void CreateBPRequest::set_signed_public_key(const char* value) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void CreateBPRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateBPRequest::mutable_signed_public_key() {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
+}
+
+// required bytes signed_request = 6;
+inline bool CreateBPRequest::has_signed_request() const {
+  return _has_bit(5);
+}
+inline void CreateBPRequest::clear_signed_request() {
+  if (signed_request_ != &_default_signed_request_) {
+    signed_request_->clear();
+  }
+  _clear_bit(5);
+}
+inline const ::std::string& CreateBPRequest::signed_request() const {
+  return *signed_request_;
+}
+inline void CreateBPRequest::set_signed_request(const ::std::string& value) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void CreateBPRequest::set_signed_request(const char* value) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void CreateBPRequest::set_signed_request(const void* value, size_t size) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateBPRequest::mutable_signed_request() {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  return signed_request_;
+}
+
+// -------------------------------------------------------------------
+
+// CreateBPResponse
+
+// required uint32 result = 1;
+inline bool CreateBPResponse::has_result() const {
+  return _has_bit(0);
+}
+inline void CreateBPResponse::clear_result() {
+  result_ = 0u;
+  _clear_bit(0);
+}
+inline ::google::protobuf::uint32 CreateBPResponse::result() const {
+  return result_;
+}
+inline void CreateBPResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
+}
+
+// optional bytes pmid_id = 2;
+inline bool CreateBPResponse::has_pmid_id() const {
+  return _has_bit(1);
+}
+inline void CreateBPResponse::clear_pmid_id() {
+  if (pmid_id_ != &_default_pmid_id_) {
+    pmid_id_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& CreateBPResponse::pmid_id() const {
+  return *pmid_id_;
+}
+inline void CreateBPResponse::set_pmid_id(const ::std::string& value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void CreateBPResponse::set_pmid_id(const char* value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void CreateBPResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateBPResponse::mutable_pmid_id() {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  return pmid_id_;
+}
+
+// optional bytes public_key = 3;
+inline bool CreateBPResponse::has_public_key() const {
+  return _has_bit(2);
+}
+inline void CreateBPResponse::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& CreateBPResponse::public_key() const {
+  return *public_key_;
+}
+inline void CreateBPResponse::set_public_key(const ::std::string& value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void CreateBPResponse::set_public_key(const char* value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void CreateBPResponse::set_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateBPResponse::mutable_public_key() {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// optional bytes signed_public_key = 4;
+inline bool CreateBPResponse::has_signed_public_key() const {
+  return _has_bit(3);
+}
+inline void CreateBPResponse::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& CreateBPResponse::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void CreateBPResponse::set_signed_public_key(const ::std::string& value) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void CreateBPResponse::set_signed_public_key(const char* value) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void CreateBPResponse::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* CreateBPResponse::mutable_signed_public_key() {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
+}
+
+// -------------------------------------------------------------------
+
+// ModifyBPInfoRequest
+
+// required bytes bufferpacket_name = 1;
+inline bool ModifyBPInfoRequest::has_bufferpacket_name() const {
+  return _has_bit(0);
+}
+inline void ModifyBPInfoRequest::clear_bufferpacket_name() {
+  if (bufferpacket_name_ != &_default_bufferpacket_name_) {
+    bufferpacket_name_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& ModifyBPInfoRequest::bufferpacket_name() const {
+  return *bufferpacket_name_;
+}
+inline void ModifyBPInfoRequest::set_bufferpacket_name(const ::std::string& value) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_bufferpacket_name(const char* value) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_bufferpacket_name(const void* value, size_t size) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ModifyBPInfoRequest::mutable_bufferpacket_name() {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  return bufferpacket_name_;
+}
+
+// required bytes data = 2;
+inline bool ModifyBPInfoRequest::has_data() const {
+  return _has_bit(1);
+}
+inline void ModifyBPInfoRequest::clear_data() {
+  if (data_ != &_default_data_) {
+    data_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& ModifyBPInfoRequest::data() const {
+  return *data_;
+}
+inline void ModifyBPInfoRequest::set_data(const ::std::string& value) {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  data_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_data(const char* value) {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  data_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_data(const void* value, size_t size) {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  data_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ModifyBPInfoRequest::mutable_data() {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  return data_;
+}
+
+// required bytes pmid = 3;
+inline bool ModifyBPInfoRequest::has_pmid() const {
+  return _has_bit(2);
+}
+inline void ModifyBPInfoRequest::clear_pmid() {
+  if (pmid_ != &_default_pmid_) {
+    pmid_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& ModifyBPInfoRequest::pmid() const {
+  return *pmid_;
+}
+inline void ModifyBPInfoRequest::set_pmid(const ::std::string& value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_pmid(const char* value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_pmid(const void* value, size_t size) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ModifyBPInfoRequest::mutable_pmid() {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  return pmid_;
+}
+
+// required bytes public_key = 4;
+inline bool ModifyBPInfoRequest::has_public_key() const {
+  return _has_bit(3);
+}
+inline void ModifyBPInfoRequest::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& ModifyBPInfoRequest::public_key() const {
+  return *public_key_;
+}
+inline void ModifyBPInfoRequest::set_public_key(const ::std::string& value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_public_key(const char* value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ModifyBPInfoRequest::mutable_public_key() {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// required bytes signed_public_key = 5;
+inline bool ModifyBPInfoRequest::has_signed_public_key() const {
+  return _has_bit(4);
+}
+inline void ModifyBPInfoRequest::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(4);
+}
+inline const ::std::string& ModifyBPInfoRequest::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void ModifyBPInfoRequest::set_signed_public_key(const ::std::string& value) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_signed_public_key(const char* value) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ModifyBPInfoRequest::mutable_signed_public_key() {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
+}
+
+// required bytes signed_request = 6;
+inline bool ModifyBPInfoRequest::has_signed_request() const {
+  return _has_bit(5);
+}
+inline void ModifyBPInfoRequest::clear_signed_request() {
+  if (signed_request_ != &_default_signed_request_) {
+    signed_request_->clear();
+  }
+  _clear_bit(5);
+}
+inline const ::std::string& ModifyBPInfoRequest::signed_request() const {
+  return *signed_request_;
+}
+inline void ModifyBPInfoRequest::set_signed_request(const ::std::string& value) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_signed_request(const char* value) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void ModifyBPInfoRequest::set_signed_request(const void* value, size_t size) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ModifyBPInfoRequest::mutable_signed_request() {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  return signed_request_;
+}
+
+// -------------------------------------------------------------------
+
+// ModifyBPInfoResponse
+
+// required uint32 result = 1;
+inline bool ModifyBPInfoResponse::has_result() const {
+  return _has_bit(0);
+}
+inline void ModifyBPInfoResponse::clear_result() {
+  result_ = 0u;
+  _clear_bit(0);
+}
+inline ::google::protobuf::uint32 ModifyBPInfoResponse::result() const {
+  return result_;
+}
+inline void ModifyBPInfoResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
+}
+
+// optional bytes pmid_id = 2;
+inline bool ModifyBPInfoResponse::has_pmid_id() const {
+  return _has_bit(1);
+}
+inline void ModifyBPInfoResponse::clear_pmid_id() {
+  if (pmid_id_ != &_default_pmid_id_) {
+    pmid_id_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& ModifyBPInfoResponse::pmid_id() const {
+  return *pmid_id_;
+}
+inline void ModifyBPInfoResponse::set_pmid_id(const ::std::string& value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void ModifyBPInfoResponse::set_pmid_id(const char* value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void ModifyBPInfoResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ModifyBPInfoResponse::mutable_pmid_id() {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  return pmid_id_;
+}
+
+// optional bytes public_key = 3;
+inline bool ModifyBPInfoResponse::has_public_key() const {
+  return _has_bit(2);
+}
+inline void ModifyBPInfoResponse::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& ModifyBPInfoResponse::public_key() const {
+  return *public_key_;
+}
+inline void ModifyBPInfoResponse::set_public_key(const ::std::string& value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void ModifyBPInfoResponse::set_public_key(const char* value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void ModifyBPInfoResponse::set_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ModifyBPInfoResponse::mutable_public_key() {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// optional bytes signed_public_key = 4;
+inline bool ModifyBPInfoResponse::has_signed_public_key() const {
+  return _has_bit(3);
+}
+inline void ModifyBPInfoResponse::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& ModifyBPInfoResponse::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void ModifyBPInfoResponse::set_signed_public_key(const ::std::string& value) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void ModifyBPInfoResponse::set_signed_public_key(const char* value) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void ModifyBPInfoResponse::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ModifyBPInfoResponse::mutable_signed_public_key() {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
+}
+
+// -------------------------------------------------------------------
+
+// GetBPMessagesRequest
+
+// required bytes bufferpacket_name = 1;
+inline bool GetBPMessagesRequest::has_bufferpacket_name() const {
+  return _has_bit(0);
+}
+inline void GetBPMessagesRequest::clear_bufferpacket_name() {
+  if (bufferpacket_name_ != &_default_bufferpacket_name_) {
+    bufferpacket_name_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& GetBPMessagesRequest::bufferpacket_name() const {
+  return *bufferpacket_name_;
+}
+inline void GetBPMessagesRequest::set_bufferpacket_name(const ::std::string& value) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(value);
+}
+inline void GetBPMessagesRequest::set_bufferpacket_name(const char* value) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(value);
+}
+inline void GetBPMessagesRequest::set_bufferpacket_name(const void* value, size_t size) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetBPMessagesRequest::mutable_bufferpacket_name() {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  return bufferpacket_name_;
+}
+
+// required bytes public_key = 2;
+inline bool GetBPMessagesRequest::has_public_key() const {
+  return _has_bit(1);
+}
+inline void GetBPMessagesRequest::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& GetBPMessagesRequest::public_key() const {
+  return *public_key_;
+}
+inline void GetBPMessagesRequest::set_public_key(const ::std::string& value) {
+  _set_bit(1);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void GetBPMessagesRequest::set_public_key(const char* value) {
+  _set_bit(1);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void GetBPMessagesRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(1);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetBPMessagesRequest::mutable_public_key() {
+  _set_bit(1);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// required bytes pmid = 3;
+inline bool GetBPMessagesRequest::has_pmid() const {
+  return _has_bit(2);
+}
+inline void GetBPMessagesRequest::clear_pmid() {
+  if (pmid_ != &_default_pmid_) {
+    pmid_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& GetBPMessagesRequest::pmid() const {
+  return *pmid_;
+}
+inline void GetBPMessagesRequest::set_pmid(const ::std::string& value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void GetBPMessagesRequest::set_pmid(const char* value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void GetBPMessagesRequest::set_pmid(const void* value, size_t size) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetBPMessagesRequest::mutable_pmid() {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  return pmid_;
+}
+
+// required bytes signed_public_key = 4;
+inline bool GetBPMessagesRequest::has_signed_public_key() const {
+  return _has_bit(3);
+}
+inline void GetBPMessagesRequest::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& GetBPMessagesRequest::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void GetBPMessagesRequest::set_signed_public_key(const ::std::string& value) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void GetBPMessagesRequest::set_signed_public_key(const char* value) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void GetBPMessagesRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetBPMessagesRequest::mutable_signed_public_key() {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
+}
+
+// required bytes signed_request = 5;
+inline bool GetBPMessagesRequest::has_signed_request() const {
+  return _has_bit(4);
+}
+inline void GetBPMessagesRequest::clear_signed_request() {
+  if (signed_request_ != &_default_signed_request_) {
+    signed_request_->clear();
+  }
+  _clear_bit(4);
+}
+inline const ::std::string& GetBPMessagesRequest::signed_request() const {
+  return *signed_request_;
+}
+inline void GetBPMessagesRequest::set_signed_request(const ::std::string& value) {
+  _set_bit(4);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void GetBPMessagesRequest::set_signed_request(const char* value) {
+  _set_bit(4);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void GetBPMessagesRequest::set_signed_request(const void* value, size_t size) {
+  _set_bit(4);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetBPMessagesRequest::mutable_signed_request() {
+  _set_bit(4);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  return signed_request_;
+}
+
+// -------------------------------------------------------------------
+
+// GetBPMessagesResponse
+
+// required uint32 result = 1;
+inline bool GetBPMessagesResponse::has_result() const {
+  return _has_bit(0);
+}
+inline void GetBPMessagesResponse::clear_result() {
+  result_ = 0u;
+  _clear_bit(0);
+}
+inline ::google::protobuf::uint32 GetBPMessagesResponse::result() const {
+  return result_;
+}
+inline void GetBPMessagesResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
+}
+
+// repeated bytes messages = 2;
+inline int GetBPMessagesResponse::messages_size() const {
+  return messages_.size();
+}
+inline void GetBPMessagesResponse::clear_messages() {
+  messages_.Clear();
+}
+inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
+GetBPMessagesResponse::messages() const {
+  return messages_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+GetBPMessagesResponse::mutable_messages() {
+  return &messages_;
+}
+inline const ::std::string& GetBPMessagesResponse::messages(int index) const {
+  return messages_.Get(index);
+}
+inline ::std::string* GetBPMessagesResponse::mutable_messages(int index) {
+  return messages_.Mutable(index);
+}
+inline void GetBPMessagesResponse::set_messages(int index, const ::std::string& value) {
+  messages_.Mutable(index)->assign(value);
+}
+inline void GetBPMessagesResponse::set_messages(int index, const char* value) {
+  messages_.Mutable(index)->assign(value);
+}
+inline void GetBPMessagesResponse::set_messages(int index, const void* value, size_t size) {
+  messages_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetBPMessagesResponse::add_messages() {
+  return messages_.Add();
+}
+inline void GetBPMessagesResponse::add_messages(const ::std::string& value) {
+  messages_.Add()->assign(value);
+}
+inline void GetBPMessagesResponse::add_messages(const char* value) {
+  messages_.Add()->assign(value);
+}
+inline void GetBPMessagesResponse::add_messages(const void* value, size_t size) {
+  messages_.Add()->assign(reinterpret_cast<const char*>(value), size);
+}
+
+// optional bytes pmid_id = 3;
+inline bool GetBPMessagesResponse::has_pmid_id() const {
+  return _has_bit(2);
+}
+inline void GetBPMessagesResponse::clear_pmid_id() {
+  if (pmid_id_ != &_default_pmid_id_) {
+    pmid_id_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& GetBPMessagesResponse::pmid_id() const {
+  return *pmid_id_;
+}
+inline void GetBPMessagesResponse::set_pmid_id(const ::std::string& value) {
+  _set_bit(2);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void GetBPMessagesResponse::set_pmid_id(const char* value) {
+  _set_bit(2);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void GetBPMessagesResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(2);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetBPMessagesResponse::mutable_pmid_id() {
+  _set_bit(2);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  return pmid_id_;
+}
+
+// optional bytes public_key = 4;
+inline bool GetBPMessagesResponse::has_public_key() const {
+  return _has_bit(3);
+}
+inline void GetBPMessagesResponse::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& GetBPMessagesResponse::public_key() const {
+  return *public_key_;
+}
+inline void GetBPMessagesResponse::set_public_key(const ::std::string& value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void GetBPMessagesResponse::set_public_key(const char* value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void GetBPMessagesResponse::set_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetBPMessagesResponse::mutable_public_key() {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// optional bytes signed_public_key = 5;
+inline bool GetBPMessagesResponse::has_signed_public_key() const {
+  return _has_bit(4);
+}
+inline void GetBPMessagesResponse::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(4);
+}
+inline const ::std::string& GetBPMessagesResponse::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void GetBPMessagesResponse::set_signed_public_key(const ::std::string& value) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void GetBPMessagesResponse::set_signed_public_key(const char* value) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void GetBPMessagesResponse::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetBPMessagesResponse::mutable_signed_public_key() {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
+}
+
+// -------------------------------------------------------------------
+
+// AddBPMessageRequest
+
+// required bytes bufferpacket_name = 1;
+inline bool AddBPMessageRequest::has_bufferpacket_name() const {
+  return _has_bit(0);
+}
+inline void AddBPMessageRequest::clear_bufferpacket_name() {
+  if (bufferpacket_name_ != &_default_bufferpacket_name_) {
+    bufferpacket_name_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& AddBPMessageRequest::bufferpacket_name() const {
+  return *bufferpacket_name_;
+}
+inline void AddBPMessageRequest::set_bufferpacket_name(const ::std::string& value) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(value);
+}
+inline void AddBPMessageRequest::set_bufferpacket_name(const char* value) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(value);
+}
+inline void AddBPMessageRequest::set_bufferpacket_name(const void* value, size_t size) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* AddBPMessageRequest::mutable_bufferpacket_name() {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  return bufferpacket_name_;
+}
+
+// required bytes data = 2;
+inline bool AddBPMessageRequest::has_data() const {
+  return _has_bit(1);
+}
+inline void AddBPMessageRequest::clear_data() {
+  if (data_ != &_default_data_) {
+    data_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& AddBPMessageRequest::data() const {
+  return *data_;
+}
+inline void AddBPMessageRequest::set_data(const ::std::string& value) {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  data_->assign(value);
+}
+inline void AddBPMessageRequest::set_data(const char* value) {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  data_->assign(value);
+}
+inline void AddBPMessageRequest::set_data(const void* value, size_t size) {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  data_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* AddBPMessageRequest::mutable_data() {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  return data_;
+}
+
+// required bytes pmid = 3;
+inline bool AddBPMessageRequest::has_pmid() const {
+  return _has_bit(2);
+}
+inline void AddBPMessageRequest::clear_pmid() {
+  if (pmid_ != &_default_pmid_) {
+    pmid_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& AddBPMessageRequest::pmid() const {
+  return *pmid_;
+}
+inline void AddBPMessageRequest::set_pmid(const ::std::string& value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void AddBPMessageRequest::set_pmid(const char* value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void AddBPMessageRequest::set_pmid(const void* value, size_t size) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* AddBPMessageRequest::mutable_pmid() {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  return pmid_;
+}
+
+// required bytes public_key = 4;
+inline bool AddBPMessageRequest::has_public_key() const {
+  return _has_bit(3);
+}
+inline void AddBPMessageRequest::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& AddBPMessageRequest::public_key() const {
+  return *public_key_;
+}
+inline void AddBPMessageRequest::set_public_key(const ::std::string& value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void AddBPMessageRequest::set_public_key(const char* value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void AddBPMessageRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* AddBPMessageRequest::mutable_public_key() {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// required bytes signed_public_key = 5;
+inline bool AddBPMessageRequest::has_signed_public_key() const {
+  return _has_bit(4);
+}
+inline void AddBPMessageRequest::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(4);
+}
+inline const ::std::string& AddBPMessageRequest::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void AddBPMessageRequest::set_signed_public_key(const ::std::string& value) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void AddBPMessageRequest::set_signed_public_key(const char* value) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void AddBPMessageRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* AddBPMessageRequest::mutable_signed_public_key() {
+  _set_bit(4);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
+}
+
+// required bytes signed_request = 6;
+inline bool AddBPMessageRequest::has_signed_request() const {
+  return _has_bit(5);
+}
+inline void AddBPMessageRequest::clear_signed_request() {
+  if (signed_request_ != &_default_signed_request_) {
+    signed_request_->clear();
+  }
+  _clear_bit(5);
+}
+inline const ::std::string& AddBPMessageRequest::signed_request() const {
+  return *signed_request_;
+}
+inline void AddBPMessageRequest::set_signed_request(const ::std::string& value) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void AddBPMessageRequest::set_signed_request(const char* value) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void AddBPMessageRequest::set_signed_request(const void* value, size_t size) {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* AddBPMessageRequest::mutable_signed_request() {
+  _set_bit(5);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  return signed_request_;
+}
+
+// -------------------------------------------------------------------
+
+// AddBPMessageResponse
+
+// required uint32 result = 1;
+inline bool AddBPMessageResponse::has_result() const {
+  return _has_bit(0);
+}
+inline void AddBPMessageResponse::clear_result() {
+  result_ = 0u;
+  _clear_bit(0);
+}
+inline ::google::protobuf::uint32 AddBPMessageResponse::result() const {
+  return result_;
+}
+inline void AddBPMessageResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
+}
+
+// optional bytes pmid_id = 2;
+inline bool AddBPMessageResponse::has_pmid_id() const {
+  return _has_bit(1);
+}
+inline void AddBPMessageResponse::clear_pmid_id() {
+  if (pmid_id_ != &_default_pmid_id_) {
+    pmid_id_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& AddBPMessageResponse::pmid_id() const {
+  return *pmid_id_;
+}
+inline void AddBPMessageResponse::set_pmid_id(const ::std::string& value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void AddBPMessageResponse::set_pmid_id(const char* value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void AddBPMessageResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* AddBPMessageResponse::mutable_pmid_id() {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  return pmid_id_;
+}
+
+// optional bytes public_key = 3;
+inline bool AddBPMessageResponse::has_public_key() const {
+  return _has_bit(2);
+}
+inline void AddBPMessageResponse::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& AddBPMessageResponse::public_key() const {
+  return *public_key_;
+}
+inline void AddBPMessageResponse::set_public_key(const ::std::string& value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void AddBPMessageResponse::set_public_key(const char* value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void AddBPMessageResponse::set_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* AddBPMessageResponse::mutable_public_key() {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// optional bytes signed_public_key = 4;
+inline bool AddBPMessageResponse::has_signed_public_key() const {
+  return _has_bit(3);
+}
+inline void AddBPMessageResponse::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& AddBPMessageResponse::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void AddBPMessageResponse::set_signed_public_key(const ::std::string& value) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void AddBPMessageResponse::set_signed_public_key(const char* value) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void AddBPMessageResponse::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* AddBPMessageResponse::mutable_signed_public_key() {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
 }
 
 

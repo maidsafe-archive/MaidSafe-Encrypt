@@ -53,7 +53,7 @@ void protobuf_AddDesc_maidsafe_5fservice_2eproto() {
   ::maidsafe::protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\026maidsafe_service.proto\022\010maidsafe\032\037maid"
-    "safe_service_messages.proto2\337\007\n\017Maidsafe"
+    "safe_service_messages.proto2\306\t\n\017Maidsafe"
     "Service\022I\n\016StoreChunkPrep\022\032.maidsafe.Sto"
     "rePrepRequest\032\033.maidsafe.StorePrepRespon"
     "se\022A\n\010StoreIOU\022\031.maidsafe.StoreIOUReques"
@@ -69,20 +69,26 @@ void protobuf_AddDesc_maidsafe_5fservice_2eproto() {
     "safe.CheckChunkResponse\0222\n\003Get\022\024.maidsaf"
     "e.GetRequest\032\025.maidsafe.GetResponse\022;\n\006U"
     "pdate\022\027.maidsafe.UpdateRequest\032\030.maidsaf"
-    "e.UpdateResponse\022J\n\013GetMessages\022\034.maidsa"
-    "fe.GetMessagesRequest\032\035.maidsafe.GetMess"
-    "agesResponse\022;\n\006Delete\022\027.maidsafe.Delete"
-    "Request\032\030.maidsafe.DeleteResponse\022P\n\rVal"
-    "idityCheck\022\036.maidsafe.ValidityCheckReque"
-    "st\032\037.maidsafe.ValidityCheckResponse\022D\n\tS"
-    "wapChunk\022\032.maidsafe.SwapChunkRequest\032\033.m"
-    "aidsafe.SwapChunkResponse\022J\n\013VaultStatus"
-    "\022\034.maidsafe.VaultStatusRequest\032\035.maidsaf"
-    "e.VaultStatusResponse2\233\001\n\021VaultRegistrat"
-    "ion\022A\n\010OwnVault\022\031.maidsafe.OwnVaultReque"
-    "st\032\032.maidsafe.OwnVaultResponse\022C\n\014IsVaul"
-    "tOwned\022\030.maidsafe.IsOwnedRequest\032\031.maids"
-    "afe.IsOwnedResponse", 1219);
+    "e.UpdateResponse\022;\n\006Delete\022\027.maidsafe.De"
+    "leteRequest\032\030.maidsafe.DeleteResponse\022P\n"
+    "\rValidityCheck\022\036.maidsafe.ValidityCheckR"
+    "equest\032\037.maidsafe.ValidityCheckResponse\022"
+    "D\n\tSwapChunk\022\032.maidsafe.SwapChunkRequest"
+    "\032\033.maidsafe.SwapChunkResponse\022J\n\013VaultSt"
+    "atus\022\034.maidsafe.VaultStatusRequest\032\035.mai"
+    "dsafe.VaultStatusResponse\022A\n\010CreateBP\022\031."
+    "maidsafe.CreateBPRequest\032\032.maidsafe.Crea"
+    "teBPResponse\022M\n\014ModifyBPInfo\022\035.maidsafe."
+    "ModifyBPInfoRequest\032\036.maidsafe.ModifyBPI"
+    "nfoResponse\022P\n\rGetBPMessages\022\036.maidsafe."
+    "GetBPMessagesRequest\032\037.maidsafe.GetBPMes"
+    "sagesResponse\022M\n\014AddBPMessage\022\035.maidsafe"
+    ".AddBPMessageRequest\032\036.maidsafe.AddBPMes"
+    "sageResponse2\233\001\n\021VaultRegistration\022A\n\010Ow"
+    "nVault\022\031.maidsafe.OwnVaultRequest\032\032.maid"
+    "safe.OwnVaultResponse\022C\n\014IsVaultOwned\022\030."
+    "maidsafe.IsOwnedRequest\032\031.maidsafe.IsOwn"
+    "edResponse", 1450);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_maidsafe_5fservice_2eproto);
@@ -182,14 +188,6 @@ void MaidsafeService::Update(::google::protobuf::RpcController* controller,
   done->Run();
 }
 
-void MaidsafeService::GetMessages(::google::protobuf::RpcController* controller,
-                         const ::maidsafe::GetMessagesRequest*,
-                         ::maidsafe::GetMessagesResponse*,
-                         ::google::protobuf::Closure* done) {
-  controller->SetFailed("Method GetMessages() not implemented.");
-  done->Run();
-}
-
 void MaidsafeService::Delete(::google::protobuf::RpcController* controller,
                          const ::maidsafe::DeleteRequest*,
                          ::maidsafe::DeleteResponse*,
@@ -219,6 +217,38 @@ void MaidsafeService::VaultStatus(::google::protobuf::RpcController* controller,
                          ::maidsafe::VaultStatusResponse*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method VaultStatus() not implemented.");
+  done->Run();
+}
+
+void MaidsafeService::CreateBP(::google::protobuf::RpcController* controller,
+                         const ::maidsafe::CreateBPRequest*,
+                         ::maidsafe::CreateBPResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method CreateBP() not implemented.");
+  done->Run();
+}
+
+void MaidsafeService::ModifyBPInfo(::google::protobuf::RpcController* controller,
+                         const ::maidsafe::ModifyBPInfoRequest*,
+                         ::maidsafe::ModifyBPInfoResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method ModifyBPInfo() not implemented.");
+  done->Run();
+}
+
+void MaidsafeService::GetBPMessages(::google::protobuf::RpcController* controller,
+                         const ::maidsafe::GetBPMessagesRequest*,
+                         ::maidsafe::GetBPMessagesResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method GetBPMessages() not implemented.");
+  done->Run();
+}
+
+void MaidsafeService::AddBPMessage(::google::protobuf::RpcController* controller,
+                         const ::maidsafe::AddBPMessageRequest*,
+                         ::maidsafe::AddBPMessageResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method AddBPMessage() not implemented.");
   done->Run();
 }
 
@@ -284,33 +314,51 @@ void MaidsafeService::CallMethod(const ::google::protobuf::MethodDescriptor* met
              done);
       break;
     case 9:
-      GetMessages(controller,
-             ::google::protobuf::down_cast<const ::maidsafe::GetMessagesRequest*>(request),
-             ::google::protobuf::down_cast< ::maidsafe::GetMessagesResponse*>(response),
-             done);
-      break;
-    case 10:
       Delete(controller,
              ::google::protobuf::down_cast<const ::maidsafe::DeleteRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::DeleteResponse*>(response),
              done);
       break;
-    case 11:
+    case 10:
       ValidityCheck(controller,
              ::google::protobuf::down_cast<const ::maidsafe::ValidityCheckRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::ValidityCheckResponse*>(response),
              done);
       break;
-    case 12:
+    case 11:
       SwapChunk(controller,
              ::google::protobuf::down_cast<const ::maidsafe::SwapChunkRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::SwapChunkResponse*>(response),
              done);
       break;
-    case 13:
+    case 12:
       VaultStatus(controller,
              ::google::protobuf::down_cast<const ::maidsafe::VaultStatusRequest*>(request),
              ::google::protobuf::down_cast< ::maidsafe::VaultStatusResponse*>(response),
+             done);
+      break;
+    case 13:
+      CreateBP(controller,
+             ::google::protobuf::down_cast<const ::maidsafe::CreateBPRequest*>(request),
+             ::google::protobuf::down_cast< ::maidsafe::CreateBPResponse*>(response),
+             done);
+      break;
+    case 14:
+      ModifyBPInfo(controller,
+             ::google::protobuf::down_cast<const ::maidsafe::ModifyBPInfoRequest*>(request),
+             ::google::protobuf::down_cast< ::maidsafe::ModifyBPInfoResponse*>(response),
+             done);
+      break;
+    case 15:
+      GetBPMessages(controller,
+             ::google::protobuf::down_cast<const ::maidsafe::GetBPMessagesRequest*>(request),
+             ::google::protobuf::down_cast< ::maidsafe::GetBPMessagesResponse*>(response),
+             done);
+      break;
+    case 16:
+      AddBPMessage(controller,
+             ::google::protobuf::down_cast<const ::maidsafe::AddBPMessageRequest*>(request),
+             ::google::protobuf::down_cast< ::maidsafe::AddBPMessageResponse*>(response),
              done);
       break;
     default:
@@ -342,15 +390,21 @@ const ::google::protobuf::Message& MaidsafeService::GetRequestPrototype(
     case 8:
       return ::maidsafe::UpdateRequest::default_instance();
     case 9:
-      return ::maidsafe::GetMessagesRequest::default_instance();
-    case 10:
       return ::maidsafe::DeleteRequest::default_instance();
-    case 11:
+    case 10:
       return ::maidsafe::ValidityCheckRequest::default_instance();
-    case 12:
+    case 11:
       return ::maidsafe::SwapChunkRequest::default_instance();
-    case 13:
+    case 12:
       return ::maidsafe::VaultStatusRequest::default_instance();
+    case 13:
+      return ::maidsafe::CreateBPRequest::default_instance();
+    case 14:
+      return ::maidsafe::ModifyBPInfoRequest::default_instance();
+    case 15:
+      return ::maidsafe::GetBPMessagesRequest::default_instance();
+    case 16:
+      return ::maidsafe::AddBPMessageRequest::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
@@ -380,15 +434,21 @@ const ::google::protobuf::Message& MaidsafeService::GetResponsePrototype(
     case 8:
       return ::maidsafe::UpdateResponse::default_instance();
     case 9:
-      return ::maidsafe::GetMessagesResponse::default_instance();
-    case 10:
       return ::maidsafe::DeleteResponse::default_instance();
-    case 11:
+    case 10:
       return ::maidsafe::ValidityCheckResponse::default_instance();
-    case 12:
+    case 11:
       return ::maidsafe::SwapChunkResponse::default_instance();
-    case 13:
+    case 12:
       return ::maidsafe::VaultStatusResponse::default_instance();
+    case 13:
+      return ::maidsafe::CreateBPResponse::default_instance();
+    case 14:
+      return ::maidsafe::ModifyBPInfoResponse::default_instance();
+    case 15:
+      return ::maidsafe::GetBPMessagesResponse::default_instance();
+    case 16:
+      return ::maidsafe::AddBPMessageResponse::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
@@ -469,39 +529,60 @@ void MaidsafeService_Stub::Update(::google::protobuf::RpcController* controller,
   channel_->CallMethod(descriptor()->method(8),
                        controller, request, response, done);
 }
-void MaidsafeService_Stub::GetMessages(::google::protobuf::RpcController* controller,
-                              const ::maidsafe::GetMessagesRequest* request,
-                              ::maidsafe::GetMessagesResponse* response,
-                              ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(9),
-                       controller, request, response, done);
-}
 void MaidsafeService_Stub::Delete(::google::protobuf::RpcController* controller,
                               const ::maidsafe::DeleteRequest* request,
                               ::maidsafe::DeleteResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(10),
+  channel_->CallMethod(descriptor()->method(9),
                        controller, request, response, done);
 }
 void MaidsafeService_Stub::ValidityCheck(::google::protobuf::RpcController* controller,
                               const ::maidsafe::ValidityCheckRequest* request,
                               ::maidsafe::ValidityCheckResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(11),
+  channel_->CallMethod(descriptor()->method(10),
                        controller, request, response, done);
 }
 void MaidsafeService_Stub::SwapChunk(::google::protobuf::RpcController* controller,
                               const ::maidsafe::SwapChunkRequest* request,
                               ::maidsafe::SwapChunkResponse* response,
                               ::google::protobuf::Closure* done) {
-  channel_->CallMethod(descriptor()->method(12),
+  channel_->CallMethod(descriptor()->method(11),
                        controller, request, response, done);
 }
 void MaidsafeService_Stub::VaultStatus(::google::protobuf::RpcController* controller,
                               const ::maidsafe::VaultStatusRequest* request,
                               ::maidsafe::VaultStatusResponse* response,
                               ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(12),
+                       controller, request, response, done);
+}
+void MaidsafeService_Stub::CreateBP(::google::protobuf::RpcController* controller,
+                              const ::maidsafe::CreateBPRequest* request,
+                              ::maidsafe::CreateBPResponse* response,
+                              ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(13),
+                       controller, request, response, done);
+}
+void MaidsafeService_Stub::ModifyBPInfo(::google::protobuf::RpcController* controller,
+                              const ::maidsafe::ModifyBPInfoRequest* request,
+                              ::maidsafe::ModifyBPInfoResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(14),
+                       controller, request, response, done);
+}
+void MaidsafeService_Stub::GetBPMessages(::google::protobuf::RpcController* controller,
+                              const ::maidsafe::GetBPMessagesRequest* request,
+                              ::maidsafe::GetBPMessagesResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(15),
+                       controller, request, response, done);
+}
+void MaidsafeService_Stub::AddBPMessage(::google::protobuf::RpcController* controller,
+                              const ::maidsafe::AddBPMessageRequest* request,
+                              ::maidsafe::AddBPMessageResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(16),
                        controller, request, response, done);
 }
 // ===================================================================

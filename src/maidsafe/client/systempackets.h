@@ -25,6 +25,8 @@
 #ifndef MAIDSAFE_CLIENT_SYSTEMPACKETS_H_
 #define MAIDSAFE_CLIENT_SYSTEMPACKETS_H_
 
+#include <boost/cstdint.hpp>
+
 #include <string>
 
 #include "protobuf/packet.pb.h"
@@ -34,39 +36,39 @@ namespace maidsafe {
 
 class SignaturePacket : public Packet {
  public:
-  PacketParams Create(PacketParams params);
+  PacketParams Create(PacketParams *params);
 };
 class MidPacket : public Packet {
  public:
-  PacketParams GetData(std::string serialised_packet,
-                     std::string username,
-                     std::string PIN);
-  PacketParams Create(PacketParams params);
-  std::string PacketName(PacketParams params);
+  PacketParams GetData(const std::string &serialised_packet,
+                       const std::string &username,
+                       const std::string &PIN);
+  PacketParams Create(PacketParams *params);
+  std::string PacketName(PacketParams *params);
 };
 
 class SmidPacket : public MidPacket {
  public:
-  PacketParams Create(PacketParams params);
-  std::string PacketName(PacketParams params);
+  PacketParams Create(PacketParams *params);
+  std::string PacketName(PacketParams *params);
 };
 
 class TmidPacket : public Packet {
  public:
-  PacketParams Create(PacketParams params);
-  PacketParams GetData(std::string serialised_packet,
-                     std::string password,
-                     uint32_t rid);
-  std::string PacketName(PacketParams params);
+  PacketParams Create(PacketParams *params);
+  PacketParams GetData(const std::string &serialised_packet,
+                       const std::string &password,
+                       const boost::uint32_t &rid);
+  std::string PacketName(PacketParams *params);
 };
 class PmidPacket : public Packet {
  public:
-  PacketParams Create(PacketParams params);
+  PacketParams Create(PacketParams *params);
 };
 class MpidPacket : public Packet {
  public:
-  PacketParams Create(PacketParams params);
-  std::string PacketName(PacketParams params);
+  PacketParams Create(PacketParams *params);
+  std::string PacketName(PacketParams *params);
 };
 
 }  // namespace maidsafe

@@ -77,7 +77,7 @@ struct SendMessagesData {
 
 class MessageHandler {
  public:
-  MessageHandler(StoreManagerInterface *sm, boost::recursive_mutex *mutex);
+  explicit MessageHandler(StoreManagerInterface *sm);
   void SendMessage(const std::string &msg,
                    const std::vector<Receivers> &receivers,
                    const PacketType &p_type,
@@ -99,11 +99,10 @@ class MessageHandler {
   void IterativeStoreMsgs(boost::shared_ptr<SendMessagesData> data);
   void StoreMessage(int index,
                     boost::shared_ptr<SendMessagesData> data);
-  maidsafe::PacketType PacketHandler_PacketType(const PacketType &type);
   SessionSingleton *ss_;
   StoreManagerInterface *sm_;
   crypto::Crypto co_;
-  boost::recursive_mutex *mutex_;
+  boost::mutex mutex_;
 };
 
 }  // namespace maidsafe

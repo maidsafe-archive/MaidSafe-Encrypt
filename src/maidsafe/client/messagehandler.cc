@@ -35,12 +35,8 @@
 
 namespace maidsafe {
 
-MessageHandler::MessageHandler(StoreManagerInterface *sm,
-                               boost::recursive_mutex *mutex)
-                                   : ss_(SessionSingleton::getInstance()),
-                                     sm_(sm),
-                                     co_(),
-                                     mutex_(mutex) {
+MessageHandler::MessageHandler(StoreManagerInterface *sm)
+    : ss_(SessionSingleton::getInstance()), sm_(sm), co_(), mutex_() {
   co_.set_hash_algorithm(crypto::SHA_512);
   co_.set_symm_algorithm(crypto::AES_256);
 }
@@ -50,7 +46,7 @@ void MessageHandler::SendMessage(const std::string &msg,
                                  const PacketType &p_type,
                                  const MessageType &m_type,
                                  base::callback_func_type cb) {
-  base::pd_scoped_lock gaurd(*mutex_);
+  boost::mutex::scoped_lock gaurd(mutex_);
   boost::shared_ptr<SendMessagesData> data(new SendMessagesData());
   data->index = -1;
   data->is_calledback = false;
@@ -74,24 +70,19 @@ std::string MessageHandler::CreateMessage(
     const MessageType &m_type,
     const PacketType &p_type,
     const boost::uint32_t &timestamp) {
-  maidsafe::PacketType pt = PacketHandler_PacketType(p_type);
   BufferPacketMessage bpm;
   GenericPacket gp;
 
-  bpm.set_sender_id(ss_->Id(pt));
-  bpm.set_sender_public_key(ss_->PublicKey(pt));
+  bpm.set_sender_id(ss_->Id(p_type));
+  bpm.set_sender_public_key(ss_->PublicKey(p_type));
   bpm.set_type(m_type);
   int iter = base::random_32bit_uinteger() % 1000 +1;
   std::string aes_key = co_.SecurePassword(
       co_.Hash(msg, "", crypto::STRING_STRING, true),
       iter);
-  bpm.set_rsaenc_key(co_.AsymEncrypt(aes_key,
-                                     "",
-                                     rec_public_key,
+  bpm.set_rsaenc_key(co_.AsymEncrypt(aes_key, "", rec_public_key,
                                      crypto::STRING_STRING));
-  bpm.set_aesenc_message(co_.SymmEncrypt(msg,
-                                         "",
-                                         crypto::STRING_STRING,
+  bpm.set_aesenc_message(co_.SymmEncrypt(msg, "", crypto::STRING_STRING,
                                          aes_key));
   bpm.set_timestamp(timestamp);
   std::string ser_bpm;
@@ -99,7 +90,7 @@ std::string MessageHandler::CreateMessage(
   gp.set_data(ser_bpm);
   gp.set_signature(co_.AsymSign(gp.data(),
                                 "",
-                                ss_->PrivateKey(pt),
+                                ss_->PrivateKey(p_type),
                                 crypto::STRING_STRING));
   std::string ser_gp;
   gp.SerializeToString(&ser_gp);
@@ -110,19 +101,16 @@ void MessageHandler::CreateSignature(const std::string &buffer_name,
                                      const PacketType &type,
                                      std::string *signed_request,
                                      std::string *signed_public_key) {
-  maidsafe::PacketType pt = PacketHandler_PacketType(type);
-  *signed_public_key = co_.AsymSign(ss_->PublicKey(pt),
+  *signed_public_key = co_.AsymSign(ss_->PublicKey(type),
                                     "",
-                                    ss_->PrivateKey(pt),
+                                    ss_->PrivateKey(type),
                                     crypto::STRING_STRING);
   std::string non_hex_buffer_name("");
   base::decode_from_hex(buffer_name, &non_hex_buffer_name);
-  *signed_request = co_.AsymSign(
-      co_.Hash(ss_->PublicKey(pt) + *signed_public_key +
-               non_hex_buffer_name, "", crypto::STRING_STRING, false),
-      "",
-      ss_->PrivateKey(pt),
-      crypto::STRING_STRING);
+  *signed_request = co_.AsymSign(co_.Hash(ss_->PublicKey(type) +
+                    *signed_public_key + non_hex_buffer_name, "",
+                    crypto::STRING_STRING, false), "", ss_->PrivateKey(type),
+                    crypto::STRING_STRING);
 }
 
 void MessageHandler::IterativeStoreMsgs(
@@ -174,8 +162,7 @@ void MessageHandler::IterativeStoreMsgs(
   }
 }
 
-void MessageHandler::StoreMessage(
-    int index,
+void MessageHandler::StoreMessage(int index,
     boost::shared_ptr<SendMessagesData> data) {
   if (data->is_calledback) {
     return;
@@ -185,10 +172,9 @@ void MessageHandler::StoreMessage(
                                       data->m_type,
                                       data->p_type,
                                       data->timestamp);
-  std::string bufferpacketname = co_.Hash(data->receivers[index].id+"BUFFER",
-                                          "",
-                                          crypto::STRING_STRING,
-                                          true);
+  std::string bufferpacketname = co_.Hash(data->receivers[index].id +
+                                 data->receivers[index].public_key, "",
+                                 crypto::STRING_STRING, true);
 #ifdef DEBUG
   // printf("\nBufferpacket name (Saving):\n%s\n\n", bufferpacketname.c_str());
 #endif
@@ -197,8 +183,7 @@ void MessageHandler::StoreMessage(
                   data->p_type,
                   &signed_request,
                   &signed_public_key);
-  if (sm_->StorePacket(bufferpacketname, ser_msg, BUFFER_MESSAGE,
-                       PRIVATE, "") == 0) {
+  if (sm_->AddBPMessage(bufferpacketname, ser_msg) == 0) {
     ++data->successful_stores;
   } else {
     data->no_auth_rec.push_back(data->receivers[index].id);
@@ -206,16 +191,6 @@ void MessageHandler::StoreMessage(
   --data->active_sends;
   ++data->stores_done;
   IterativeStoreMsgs(data);
-}
-
-maidsafe::PacketType MessageHandler::PacketHandler_PacketType(
-    const PacketType &type) {
-  //  MPID, MAID, PMID
-  switch (type) {
-    case MAID: return maidsafe::MAID;
-    case PMID: return maidsafe::PMID;
-    default: return maidsafe::MPID;
-  }
 }
 
 }  //  namespace maidsafe

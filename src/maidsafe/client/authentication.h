@@ -58,8 +58,7 @@ class AuthCallbackResult {
 
 class Authentication {
  public:
-  Authentication(StoreManagerInterface *storemanager,
-                 boost::recursive_mutex *mutex);
+  explicit Authentication(StoreManagerInterface *storemanager);
   Exitcode GetUserInfo(const std::string &username,
                       const std::string &pin);
   Exitcode GetUserData(const std::string &password, std::string &ser_da);
@@ -107,7 +106,7 @@ class Authentication {
   void GetUserTmid(bool smid);
 
   UserDetails ud_;
-  boost::recursive_mutex *mutex_;
+  boost::mutex mutex_;
   crypto::Crypto crypto_;
   StoreManagerInterface *storemanager_;
   SessionSingleton *ss_;

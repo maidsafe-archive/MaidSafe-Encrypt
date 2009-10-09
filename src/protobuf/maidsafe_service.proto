@@ -14,11 +14,15 @@ service MaidsafeService {
   rpc CheckChunk( CheckChunkRequest ) returns ( CheckChunkResponse );
   rpc Get( GetRequest ) returns ( GetResponse );
   rpc Update( UpdateRequest ) returns ( UpdateResponse );
-  rpc GetMessages( GetMessagesRequest ) returns ( GetMessagesResponse );
   rpc Delete( DeleteRequest ) returns ( DeleteResponse );
   rpc ValidityCheck( ValidityCheckRequest ) returns ( ValidityCheckResponse );
   rpc SwapChunk( SwapChunkRequest ) returns ( SwapChunkResponse );
   rpc VaultStatus( VaultStatusRequest ) returns ( VaultStatusResponse );
+  // BP services
+  rpc CreateBP( CreateBPRequest ) returns ( CreateBPResponse );
+  rpc ModifyBPInfo( ModifyBPInfoRequest ) returns ( ModifyBPInfoResponse );
+  rpc GetBPMessages( GetBPMessagesRequest ) returns ( GetBPMessagesResponse );
+  rpc AddBPMessage( AddBPMessageRequest ) returns ( AddBPMessageResponse );
 }
 
 service VaultRegistration {

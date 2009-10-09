@@ -42,8 +42,7 @@ namespace maidsafe {
 
 class ClientBufferPacketHandler {
  public:
-  ClientBufferPacketHandler(maidsafe::StoreManagerInterface *sm,
-      boost::recursive_mutex *mutex);
+  explicit ClientBufferPacketHandler(maidsafe::StoreManagerInterface *sm);
   int CreateBufferPacket(const std::string &owner_id,
       const std::string &public_key, const std::string &private_key);
   int AddUsers(const std::set<std::string> &users,
@@ -51,30 +50,20 @@ class ClientBufferPacketHandler {
   int DeleteUsers(const std::set<std::string> &users,
       const PacketType &type);
   int ChangeStatus(int status, const PacketType &type);
-  // bool ListUsers(GenericPacket gp_info, std::set<std::string> *users);
-  int GetMessages(
-      const PacketType &type,
-      std::list<ValidatedBufferPacketMessage> *valid_messages);
-  void GetBufferPacket(const PacketType &type,
-      base::callback_func_type cb);
-  void ClearMessages(const PacketType &type,
-      base::callback_func_type cb);
-  void GetBufferPacketInfo(const PacketType &type,
-      base::callback_func_type cb);
+  int GetMessages(const PacketType &type,
+                  std::list<ValidatedBufferPacketMessage> *valid_messages);
+  int GetBufferPacket(const PacketType &type,
+                      std::list<ValidatedBufferPacketMessage> *valid_messages);
+//  int ClearMessages(const PacketType &type);
+  int GetBufferPacketInfo(const PacketType &type);
 
  private:
   crypto::Crypto crypto_obj_;
   maidsafe::SessionSingleton *ss_;
   maidsafe::StoreManagerInterface *sm_;
-  boost::recursive_mutex *mutex_;
 
   bool UserList(std::set<std::string> *list, PacketType type);
   bool SetUserList(std::set<std::string> list, PacketType type);
-  void GetBufferPacket_Callback(const std::string &result,
-      const PacketType &type, base::callback_func_type cb);
-  void GetBufferPacketInfo_Callback(const std::string &result,
-      base::callback_func_type cb);
-//  maidsafe::PacketType PacketHandler_PacketType(const PacketType &type);
   ClientBufferPacketHandler &operator=(const ClientBufferPacketHandler);
   ClientBufferPacketHandler(const ClientBufferPacketHandler&);
 };

@@ -86,8 +86,7 @@ class CallbackResult {
 class SEHandler {
  public:
   SEHandler(StoreManagerInterface *storem,
-            boost::shared_ptr<ChunkStore> client_chunkstore,
-            boost::recursive_mutex *mutex);
+            boost::shared_ptr<ChunkStore> client_chunkstore);
   ~SEHandler() {}
   itemtype CheckEntry(const std::string &full_entry, uint64_t *file_size);
   //  Get the hash of the file contents if bool = true, else hash filename
@@ -156,7 +155,7 @@ class SEHandler {
                 const std::string &enc_dm,
                 const std::string &msid,
                 std::string *ser_dm);
-  void WaitForResult(const CallbackResult &cb);
+//  void WaitForResult(const CallbackResult &cb);
   void StoreChunks(const DataMap &dm,
                    const DirType dir_type,
                    const std::string &msid);
@@ -168,7 +167,7 @@ class SEHandler {
   StoreManagerInterface *storem_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;
-  boost::recursive_mutex *mutex_;
+//  boost::recursive_mutex *mutex_;
   file_system::FileSystem fsys_;
   std::map<std::string, std::string> uptodate_datamaps_;
 };

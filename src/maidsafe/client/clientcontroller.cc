@@ -66,7 +66,7 @@ void CC_CallbackResult::CallbackFunc(const std::string &res) {
 void ClientController::WaitForResult(const CC_CallbackResult &cb) {
   while (true) {
     {
-      boost::recursive_mutex::scoped_lock gaurd(mutex_);
+//      boost::mutex::scoped_lock gaurd(mutex_);
       if (cb.result != "")
         return;
     }
@@ -86,7 +86,7 @@ ClientController::ClientController() : auth_(),
                                        ser_da_(),
                                        db_enc_queue_(),
                                        seh_(),
-                                       mutex_(),
+//                                       mutex_(),
                                        messages_(),
                                        fsys_(),
                                        received_messages_(),
@@ -113,7 +113,7 @@ ClientController::ClientController() : auth_(),
   client_chunkstore_ = boost::shared_ptr<ChunkStore>
       (new ChunkStore(client_path.string(), 0, 0));
 #ifdef LOCAL_PDVAULT
-    sm_ = new LocalStoreManager(&mutex_, client_chunkstore_);
+    sm_ = new LocalStoreManager(client_chunkstore_);
 #else
     sm_ = new MaidsafeStoreManager(client_chunkstore_);
 #endif
@@ -136,9 +136,9 @@ void ClientController::Destroy() {
 }
 
 bool ClientController::Init() {
-  auth_ = new Authentication(sm_, &mutex_);
+  auth_ = new Authentication(sm_);
   ss_ = SessionSingleton::getInstance();
-  cbph_ = new ClientBufferPacketHandler(sm_, &mutex_);
+  cbph_ = new ClientBufferPacketHandler(sm_);
 //  cbph_->SetChunkStore(client_chunkstore_);
   return true;
 }
@@ -349,7 +349,7 @@ bool ClientController::CreateUser(const std::string &username,
   ss_->SetSessionName(false);
   ss_->SetConnectionStatus(0);
   std::string root_db_key;
-  seh_ = new SEHandler(sm_, client_chunkstore_, &mutex_);
+  seh_ = new SEHandler(sm_, client_chunkstore_);
   printf("In ClientController::CreateUser 01\n");
   int res = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
   if (res != 0) {
@@ -361,7 +361,7 @@ bool ClientController::CreateUser(const std::string &username,
   fsys_.Mount();
   fsys_.FuseMountPoint();
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
-  msgh_ = new MessageHandler(sm_, &mutex_);
+  msgh_ = new MessageHandler(sm_);
   DataAtlas da;
 
   res += dah->Init(true);
@@ -508,33 +508,42 @@ bool ClientController::ValidateUser(const std::string &password) {
   ser_da_ = "";
   Exitcode result = auth_->GetUserData(password, ser_da_);
 
-  if (result == OK) {
-    ss_->SetConnectionStatus(0);
-    ss_->SetSessionName(false);
-    fsys_.Mount();
-    boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-    seh_ = new SEHandler(sm_, client_chunkstore_, &mutex_);
-    msgh_ = new MessageHandler(sm_, &mutex_);
-    int result = ParseDa();
-    if (result != 0) {
-      delete seh_;
-      delete msgh_;
-      ss_->ResetSession();
-      return false;
-    }
-    if (dah_->Init(false)) {
-      delete seh_;
-      delete msgh_;
-      ss_->ResetSession();
-      return false;
-    }
+  if (result != OK) {
+    // Password validation failed
+    ss_->ResetSession();
+#ifdef DEBUG
+    printf("Invalid password.\n");
+#endif
+    return false;
+  }
 
-    // Create the mount point directory
-    fsys_.FuseMountPoint();
+  ss_->SetConnectionStatus(0);
+  ss_->SetSessionName(false);
+  fsys_.Mount();
+  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
+  seh_ = new SEHandler(sm_, client_chunkstore_);
+  msgh_ = new MessageHandler(sm_);
+  if (ParseDa() != 0) {
+    delete seh_;
+    delete msgh_;
+    ss_->ResetSession();
+    return false;
+  }
+  if (dah_->Init(false)) {
+    delete seh_;
+    delete msgh_;
+    ss_->ResetSession();
+    return false;
+  }
 
-    // Do BP operations if need be
-    if (ss_->PublicUsername() != "") {
-      // CHANGE CONNECTION STATUS
+  // Create the mount point directory
+  fsys_.FuseMountPoint();
+
+  // Do BP operations if need be
+  if (ss_->PublicUsername() == "") {
+    return true;
+  }
+    // CHANGE CONNECTION STATUS
 //      int connection_status(1);
 //      int n = ChangeConnectionStatus(connection_status);
 //      if (n != 0) {
@@ -542,30 +551,16 @@ bool ClientController::ValidateUser(const std::string &password) {
 //      }
 //      ss_->SetConnectionStatus(connection_status);
 
-      // Get BP info and put it to the session
-      CC_CallbackResult cb;
-      cbph_->GetBufferPacketInfo(MPID, boost::bind(
-          &CC_CallbackResult::CallbackFunc,
-          &cb,
-          _1));
-      WaitForResult(cb);
-      thread_pool_.schedule(boost::threadpool::looped_task_func(
-                            boost::bind(&ClientController::ClearStaleMessages,
-                            this), 10000));
-    } else {
+  // Get BP info and put it to the session
+  if (cbph_->GetBufferPacketInfo(MPID) != 0) {
 #ifdef DEBUG
-      printf("No public username, no need to look for BP.\n");
+      printf("Failed to load BP Info.\n");
 #endif
-    }
-    return true;
   }
-
-  // Password validation failed
-  ss_->ResetSession();
-#ifdef DEBUG
-  printf("Invalid password.\n");
-#endif
-  return false;
+  thread_pool_.schedule(boost::threadpool::looped_task_func(
+                        boost::bind(&ClientController::ClearStaleMessages,
+                        this), 10000));
+  return true;
 }
 
 void ClientController::CloseConnection(bool clean_up_transport) {
@@ -878,18 +873,19 @@ bool ClientController::GetMessages() {
     // TODO(Richard): return code for no messages
     return true;
   HandleMessages(&valid_messages);
-  CC_CallbackResult cb;
-  cbph_->ClearMessages(MPID,
-                       boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
-  DeleteResponse clear_result;
-  if ((!clear_result.ParseFromString(cb.result)) ||
-       (clear_result.result() == kNack)) {
-#ifdef DEBUG
-    printf("Error clearing messages from buffer packet.");
-#endif
-    return false;
-  }
+//    CC_CallbackResult cb;
+//    cbph_->ClearMessages(MPID,
+//                         boost::bind(&CC_CallbackResult::CallbackFunc,
+//                                     &cb, _1));
+//    WaitForResult(cb);
+//    DeleteResponse clear_result;
+//    if ((!clear_result.ParseFromString(cb.result)) ||
+//         (clear_result.result() == kNack)) {
+//  #ifdef DEBUG
+//      printf("Error clearing messages from buffer packet.");
+//  #endif
+//      return false;
+//    }
   return true;
 }
 

@@ -190,17 +190,17 @@ void VaultRpcs::GetMessages(const std::string &buffer_packet_name,
                             const boost::uint16_t &remote_port,
                             const std::string &rendezvous_ip,
                             const boost::uint16_t &rendezvous_port,
-                            maidsafe::GetMessagesResponse *response,
+                            maidsafe::GetBPMessagesResponse *response,
                             rpcprotocol::Controller *controller,
                             google::protobuf::Closure *done) {
-  maidsafe::GetMessagesRequest args;
-  args.set_buffer_packet_name(buffer_packet_name);
+  maidsafe::GetBPMessagesRequest args;
+  args.set_bufferpacket_name(buffer_packet_name);
   args.set_public_key(public_key);
   args.set_signed_public_key(signed_public_key);
   rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
       "", 0, rendezvous_ip, rendezvous_port);
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.GetMessages(controller, &args, response, done);
+  service.GetBPMessages(controller, &args, response, done);
 }
 
 void VaultRpcs::SwapChunk(const boost::uint32_t request_type,

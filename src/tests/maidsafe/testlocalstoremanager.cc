@@ -43,11 +43,10 @@ class FakeCallback {
   std::string result_;
 };
 
-void wait_for_result_lsm(const FakeCallback &cb,
-    boost::recursive_mutex *mutex) {
+void wait_for_result_lsm(const FakeCallback &cb, boost::mutex *mutex) {
   while (true) {
     {
-      base::pd_scoped_lock guard(*mutex);
+      boost::mutex::scoped_lock guard(*mutex);
       if (cb.result_ != "") {
         return;
       }
@@ -59,7 +58,8 @@ void wait_for_result_lsm(const FakeCallback &cb,
 class StoreManagerTest : public testing::Test {
  public:
   StoreManagerTest() : cb(), client_chunkstore_(), storemanager(),
-      crypto_obj(), rsa_obj(), mutex_() {
+      crypto_obj(), rsa_obj(), mutex_(),
+      ss_(maidsafe::SessionSingleton::getInstance()) {
     try {
       boost::filesystem::remove_all("./TestStoreManager");
     }
@@ -77,6 +77,7 @@ class StoreManagerTest : public testing::Test {
   }
  protected:
   void SetUp() {
+    ss_->ResetSession();
     try {
       if (boost::filesystem::exists("KademilaDb.db"))
         boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
@@ -86,7 +87,7 @@ class StoreManagerTest : public testing::Test {
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
-    mutex_ = new boost::recursive_mutex();
+    mutex_ = new boost::mutex();
     client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
          (new maidsafe::ChunkStore("./TestStoreManager", 0, 0));
     int count(0);
@@ -94,7 +95,7 @@ class StoreManagerTest : public testing::Test {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
       count += 10;
     }
-    storemanager = new maidsafe::LocalStoreManager(mutex_, client_chunkstore_);
+    storemanager = new maidsafe::LocalStoreManager(client_chunkstore_);
     // storemanager = new LocalStoreManager();
     storemanager->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     wait_for_result_lsm(cb, mutex_);
@@ -136,7 +137,8 @@ class StoreManagerTest : public testing::Test {
   maidsafe::LocalStoreManager *storemanager;
   crypto::Crypto crypto_obj;
   crypto::RsaKeyPair rsa_obj;
-  boost::recursive_mutex *mutex_;
+  boost::mutex *mutex_;
+  maidsafe::SessionSingleton *ss_;
  private:
   StoreManagerTest(const StoreManagerTest&);
   StoreManagerTest &operator=(const StoreManagerTest&);
@@ -198,71 +200,6 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
   ASSERT_TRUE(storemanager->KeyUnique(gp_name, false));
 }
 
-TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
-  std::string chunk_content = base::RandomString(256 * 1024);
-  std::string non_hex_chunk_name = crypto_obj.Hash(chunk_content, "",
-                                   crypto::STRING_STRING, false);
-  std::string hex_chunk_name;
-  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
-  fs::path chunk_path("./TestStoreManager");
-  chunk_path /= hex_chunk_name;
-  boost::filesystem::ofstream ofs;
-  ofs.open(chunk_path.string().c_str());
-  ofs << chunk_content;
-  ofs.close();
-  client_chunkstore_->AddChunkToOutgoing(non_hex_chunk_name, chunk_path);
-  ASSERT_TRUE(storemanager->KeyUnique(hex_chunk_name, false));
-  storemanager->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
-
-  ASSERT_FALSE(storemanager->KeyUnique(hex_chunk_name, false));
-  std::string result_str;
-  ASSERT_EQ(0, storemanager->LoadChunk(hex_chunk_name, &result_str));
-//  maidsafe::GetResponse load_res;
-//  ASSERT_TRUE(load_res.ParseFromString(result_str));
-//  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
-  ASSERT_EQ(chunk_content, result_str);
-}
-
-TEST_F(StoreManagerTest, BEH_MAID_StoreBufferPacket) {
-  std::string owner_id("Juan U. Smer");
-  rsa_obj.GenerateKeys(4096);
-  std::string public_key = rsa_obj.public_key();
-  std::string private_key = rsa_obj.private_key();
-
-  std::string bufferpacketname = crypto_obj.Hash(owner_id + "BUFFER", "",
-                                 crypto::STRING_STRING, true);
-  ASSERT_TRUE(storemanager->KeyUnique(bufferpacketname, false));
-  maidsafe::BufferPacket buffer_packet;
-  maidsafe::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
-  maidsafe::BufferPacketInfo buffer_packet_info;
-  buffer_packet_info.set_owner(owner_id);
-  buffer_packet_info.set_ownerpublickey(public_key);
-  buffer_packet_info.set_online(false);
-
-  std::string ser_info;
-  buffer_packet_info.SerializeToString(&ser_info);
-  ser_owner_info->set_data(ser_info);
-  ser_owner_info->set_signature(crypto_obj.AsymSign(ser_info, "", private_key,
-                                crypto::STRING_STRING));
-
-  std::string ser_packet;
-  buffer_packet.SerializeToString(&ser_packet);
-  std::string ser_bp = ser_packet;
-
-  std::string signed_public_key = crypto_obj.AsymSign(public_key, "",
-                                  private_key, crypto::STRING_STRING);
-  ASSERT_EQ(0, storemanager->StorePacket(bufferpacketname, ser_bp,
-      maidsafe::BUFFER, maidsafe::PRIVATE, ""));
-
-  ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
-  std::string packet_content;
-  storemanager->LoadPacket(bufferpacketname, &packet_content);
-  maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(packet_content));
-  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
-  ASSERT_EQ(ser_bp, load_res.content());
-}
-
 TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   maidsafe::GenericPacket gp;
   rsa_obj.GenerateKeys(4096);
@@ -319,41 +256,209 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
 }
 
-TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
-  std::string owner_id("Juan U. Smer");
-  rsa_obj.GenerateKeys(4096);
-  std::string public_key = rsa_obj.public_key();
-  std::string private_key = rsa_obj.private_key();
+TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
+  std::string chunk_content = base::RandomString(256 * 1024);
+  std::string non_hex_chunk_name = crypto_obj.Hash(chunk_content, "",
+                                   crypto::STRING_STRING, false);
+  std::string hex_chunk_name;
+  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
+  fs::path chunk_path("./TestStoreManager");
+  chunk_path /= hex_chunk_name;
+  boost::filesystem::ofstream ofs;
+  ofs.open(chunk_path.string().c_str());
+  ofs << chunk_content;
+  ofs.close();
+  client_chunkstore_->AddChunkToOutgoing(non_hex_chunk_name, chunk_path);
+  ASSERT_TRUE(storemanager->KeyUnique(hex_chunk_name, false));
+  storemanager->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
 
-  std::string bufferpacketname = crypto_obj.Hash(owner_id + "BUFFER", "",
+  ASSERT_FALSE(storemanager->KeyUnique(hex_chunk_name, false));
+  std::string result_str;
+  ASSERT_EQ(0, storemanager->LoadChunk(hex_chunk_name, &result_str));
+  ASSERT_EQ(chunk_content, result_str);
+}
+
+TEST_F(StoreManagerTest, BEH_MAID_StoreAndLoadBufferPacket) {
+  std::string bufferpacketname = crypto_obj.Hash(ss_->Id(maidsafe::MPID) +
+                                 ss_->PublicKey(maidsafe::MPID), "",
                                  crypto::STRING_STRING, true);
   ASSERT_TRUE(storemanager->KeyUnique(bufferpacketname, false));
   maidsafe::BufferPacket buffer_packet;
-  maidsafe::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
+  maidsafe::GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
   maidsafe::BufferPacketInfo buffer_packet_info;
-  buffer_packet_info.set_owner(owner_id);
-  buffer_packet_info.set_ownerpublickey(public_key);
+  buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
+  buffer_packet_info.set_ownerpublickey(ss_->PublicKey(maidsafe::MPID));
   buffer_packet_info.set_online(false);
 
   std::string ser_info;
   buffer_packet_info.SerializeToString(&ser_info);
   ser_owner_info->set_data(ser_info);
-  ser_owner_info->set_signature(crypto_obj.AsymSign(ser_info, "", private_key,
+  ser_owner_info->set_signature(crypto_obj.AsymSign(ser_info, "",
+                                ss_->PrivateKey(maidsafe::MPID),
                                 crypto::STRING_STRING));
 
-  std::string ser_packet;
-  buffer_packet.SerializeToString(&ser_packet);
-  std::string ser_bp = ser_packet;
+  std::string ser_bp;
+  buffer_packet.SerializeToString(&ser_bp);
 
+  ASSERT_EQ(0, storemanager->CreateBP(bufferpacketname, ser_bp));
+  ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
+  std::string packet_content;
+  storemanager->LoadChunk(bufferpacketname, &packet_content);
+  ASSERT_EQ(ser_bp.size(), packet_content.size());
+}
+
+TEST_F(StoreManagerTest, BEH_MAID_ModifyBufferPacketInfo) {
+  std::string bufferpacketname = crypto_obj.Hash(ss_->Id(maidsafe::MPID) +
+                                 ss_->PublicKey(maidsafe::MPID), "",
+                                 crypto::STRING_STRING, true);
+  ASSERT_TRUE(storemanager->KeyUnique(bufferpacketname, false));
+  maidsafe::BufferPacket buffer_packet;
+  maidsafe::GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
+  buffer_packet_info.set_ownerpublickey(ss_->PublicKey(maidsafe::MPID));
+  buffer_packet_info.set_online(false);
+
+  std::string ser_info;
+  buffer_packet_info.SerializeToString(&ser_info);
+  ser_owner_info->set_data(ser_info);
+  ser_owner_info->set_signature(crypto_obj.AsymSign(ser_info, "",
+                                ss_->PrivateKey(maidsafe::MPID),
+                                crypto::STRING_STRING));
+
+  std::string ser_bp;
+  buffer_packet.SerializeToString(&ser_bp);
+
+  ASSERT_EQ(0, storemanager->CreateBP(bufferpacketname, ser_bp));
+  ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
+  std::string packet_content;
+  ASSERT_EQ(0, storemanager->LoadChunk(bufferpacketname, &packet_content));
+  ASSERT_EQ(ser_bp.size(), packet_content.size());
+
+  // Modifying the BP info
+  buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
+  buffer_packet_info.set_ownerpublickey(ss_->PublicKey(maidsafe::MPID));
+  buffer_packet_info.set_online(true);
+  buffer_packet_info.add_users("Juanito");
+  buffer_packet_info.SerializeToString(&ser_info);
+  maidsafe::GenericPacket info_gp;
+  info_gp.set_data(ser_info);
+  info_gp.set_signature(crypto_obj.AsymSign(ser_info, "",
+                        ss_->PrivateKey(maidsafe::MPID),
+                        crypto::STRING_STRING));
+  std::string ser_info_gp;
+  info_gp.SerializeToString(&ser_info_gp);
+  ASSERT_EQ(0, storemanager->ModifyBPInfo(bufferpacketname, ser_info_gp));
+  packet_content = "";
+  ASSERT_EQ(0, storemanager->LoadChunk(bufferpacketname, &packet_content));
+  ASSERT_TRUE(buffer_packet.ParseFromString(packet_content));
+  maidsafe::GenericPacket gp = buffer_packet.owner_info(0);
+  std::string ser_gp;
+  gp.SerializeToString(&ser_gp);
+  ASSERT_EQ(ser_info_gp, ser_gp);
+}
+
+TEST_F(StoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
+  std::string bufferpacketname = crypto_obj.Hash(ss_->Id(maidsafe::MPID) +
+                                 ss_->PublicKey(maidsafe::MPID), "",
+                                 crypto::STRING_STRING, true);
+  ASSERT_TRUE(storemanager->KeyUnique(bufferpacketname, false));
+  maidsafe::BufferPacket buffer_packet;
+  maidsafe::GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
+  buffer_packet_info.set_ownerpublickey(ss_->PublicKey(maidsafe::MPID));
+  buffer_packet_info.set_online(false);
+  buffer_packet_info.add_users("Juanito");
+
+  std::string ser_info;
+  buffer_packet_info.SerializeToString(&ser_info);
+  ser_owner_info->set_data(ser_info);
+  ser_owner_info->set_signature(crypto_obj.AsymSign(ser_info, "",
+                                ss_->PrivateKey(maidsafe::MPID),
+                                crypto::STRING_STRING));
+
+  std::string ser_bp;
+  buffer_packet.SerializeToString(&ser_bp);
+
+  ASSERT_EQ(0, storemanager->CreateBP(bufferpacketname, ser_bp));
+  ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
+
+  // Create the user "Juanito", then the message and send it
+  crypto::RsaKeyPair rsa_kp;
+  rsa_kp.GenerateKeys(4096);
+  std::string private_key = rsa_kp.private_key();
+  std::string public_key = rsa_kp.public_key();
   std::string signed_public_key = crypto_obj.AsymSign(public_key, "",
                                   private_key, crypto::STRING_STRING);
 
-  ASSERT_EQ(0, storemanager->StorePacket(bufferpacketname, ser_bp,
-      maidsafe::BUFFER, maidsafe::PRIVATE, ""));
+  std::string key("AESkey");
+  maidsafe::BufferPacketMessage bpmsg;
+  bpmsg.set_sender_id("Juanito");
+  bpmsg.set_rsaenc_key(crypto_obj.AsymEncrypt(key, "", public_key,
+                       crypto::STRING_STRING));
+  bpmsg.set_aesenc_message(crypto_obj.SymmEncrypt("test msg", "",
+                           crypto::STRING_STRING, key));
+  bpmsg.set_type(maidsafe::INSTANT_MSG);
+  bpmsg.set_sender_public_key(public_key);
+  std::string ser_bpmsg;
+  ASSERT_TRUE(bpmsg.SerializeToString(&ser_bpmsg));
+  maidsafe::GenericPacket bpmsg_gp;
+  bpmsg_gp.set_data(ser_bpmsg);
+  bpmsg_gp.set_signature(crypto_obj.AsymSign(ser_bpmsg, "", private_key,
+                         crypto::STRING_STRING));
+  std::string ser_bpmsg_gp;
+  ASSERT_TRUE(bpmsg_gp.SerializeToString(&ser_bpmsg_gp));
+  ASSERT_EQ(0, storemanager->AddBPMessage(bufferpacketname, ser_bpmsg_gp));
+
+  // Retrive message and check that it is the correct one
+  std::list<std::string> messages;
+  ASSERT_EQ(0, storemanager->LoadBPMessages(bufferpacketname, &messages));
+  ASSERT_EQ(1, messages.size());
+  maidsafe::ValidatedBufferPacketMessage vbpm;
+  ASSERT_TRUE(vbpm.ParseFromString(messages.front()));
+  ASSERT_EQ("Juanito", vbpm.sender());
+  ASSERT_EQ(bpmsg.aesenc_message(), vbpm.message());
+  ASSERT_EQ(bpmsg.rsaenc_key(), vbpm.index());
+  ASSERT_EQ(maidsafe::INSTANT_MSG, vbpm.type());
+
+  // Check message is gone
+  ASSERT_EQ(0, storemanager->LoadBPMessages(bufferpacketname, &messages));
+  ASSERT_EQ(0, messages.size());
+}
+
+/*
+TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
+  std::string bufferpacketname = crypto_obj.Hash(ss_->Id(maidsafe::MPID) +
+                                 ss_->PublicKey(maidsafe::MPID), "",
+                                 crypto::STRING_STRING, true);
+  ASSERT_TRUE(storemanager->KeyUnique(bufferpacketname, false));
+  maidsafe::BufferPacket buffer_packet;
+  maidsafe::GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
+  buffer_packet_info.set_ownerpublickey(ss_->PublicKey(maidsafe::MPID));
+  buffer_packet_info.set_online(false);
+
+  std::string ser_info;
+  buffer_packet_info.SerializeToString(&ser_info);
+  ser_owner_info->set_data(ser_info);
+  ser_owner_info->set_signature(crypto_obj.AsymSign(ser_info, "",
+                                ss_->PrivateKey(maidsafe::MPID),
+                                crypto::STRING_STRING));
+
+  std::string ser_bp;
+  buffer_packet.SerializeToString(&ser_bp);
+
+  ASSERT_EQ(0, storemanager->CreateBP(bufferpacketname, ser_bp));
+  std::string s;
+  std::cin >> s;
+
   ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
-  rsa_obj.ClearKeys();
+
+  crypto::RsaKeyPair rsa_obj;
   rsa_obj.GenerateKeys(4096);
-  std::string signed_public_key1 = crypto_obj.AsymSign(rsa_obj.public_key(), "",
+  std::string signed_public_key = crypto_obj.AsymSign(rsa_obj.public_key(), "",
                                    rsa_obj.private_key(),
                                    crypto::STRING_STRING);
   std::string non_hex_bufferpacketname;
@@ -374,12 +479,39 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
 }
 
 TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
+  std::string bufferpacketname = crypto_obj.Hash(ss_->Id(maidsafe::MPID) +
+                                 ss_->PublicKey(maidsafe::MPID), "",
+                                 crypto::STRING_STRING, true);
+  ASSERT_TRUE(storemanager->KeyUnique(bufferpacketname, false));
+  maidsafe::BufferPacket buffer_packet;
+  maidsafe::GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
+  buffer_packet_info.set_ownerpublickey(ss_->PublicKey(maidsafe::MPID));
+  buffer_packet_info.set_online(false);
+
+  std::string ser_info;
+  buffer_packet_info.SerializeToString(&ser_info);
+  ser_owner_info->set_data(ser_info);
+  ser_owner_info->set_signature(crypto_obj.AsymSign(ser_info, "",
+                                ss_->PrivateKey(maidsafe::MPID),
+                                crypto::STRING_STRING));
+
+  std::string ser_bp;
+  buffer_packet.SerializeToString(&ser_bp);
+
+  ASSERT_EQ(0, storemanager->CreateBP(bufferpacketname, ser_bp));
+  ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
+
+
+
+
   std::string owner_id("Juan U. Smer");
-  crypto::RsaKeyPair rsa_kp1;
+  crypto::RsaKeyPair rsa_kp;
   rsa_kp1.GenerateKeys(4096);
   rsa_obj.GenerateKeys(4096);
-  std::string sig_private_key = rsa_kp1.private_key();
-  std::string sig_public_key = rsa_kp1.public_key();
+  std::string private_key = rsa_kp.private_key();
+  std::string public_key = rsa_kp.public_key();
 
   std::string signed_public_key = crypto_obj.AsymSign(sig_public_key, "",
                                   sig_private_key, crypto::STRING_STRING);
@@ -507,14 +639,13 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   std::string sig_mpid_pubkey = crypto_obj.AsymSign(sender_mpid.data(), "",
                                 sender_mpid_privkey, crypto::STRING_STRING);
   std::list<std::string> messages;
-  ASSERT_NE(0, storemanager->LoadMessages(bufferpacketname, sender_mpid.data(),
-      sig_mpid_pubkey, &messages));
+  ASSERT_NE(0, storemanager->LoadBPMessages(bufferpacketname, &messages));
 
   messages.push_back("Jibber");
   messages.push_back("Jabber");
   signed_public_key = crypto_obj.AsymSign(public_key, "", private_key,
                       crypto::STRING_STRING);
-  ASSERT_EQ(0, storemanager->LoadMessages(bufferpacketname, public_key,
-      signed_public_key, &messages));
+  ASSERT_EQ(0, storemanager->LoadBPMessages(bufferpacketname, &messages));
   ASSERT_EQ(size_t(1), messages.size());
 }
+*/

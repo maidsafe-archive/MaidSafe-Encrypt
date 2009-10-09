@@ -43,26 +43,24 @@ class StoreManagerInterface {
   virtual void Init(int port, base::callback_func_type cb)=0;
   virtual void Close(base::callback_func_type cb, bool cancel_pending_ops)=0;
   virtual void CleanUpTransport()=0;
+  virtual bool NotDoneWithUploading()=0;
+  virtual void ClearStoreQueue()=0;
+  virtual bool KeyUnique(const std::string &hex_key, bool check_local)=0;
+
+  // Chunks
   virtual int LoadChunk(const std::string &hex_chunk_name, std::string *data)=0;
-  virtual void LoadPacket(const std::string &hex_key,
-                          std::string *result)=0;
-  // The public_key is the one of the MPID and is signed by the MPID's
-  // private key
-  virtual int LoadMessages(const std::string &hex_key,
-                           const std::string &public_key,
-                           const std::string &signed_public_key,
-                           std::list<std::string> *messages)=0;
   virtual void StoreChunk(const std::string &hex_chunk_name,
                           const DirType dir_type,
                           const std::string &msid)=0;
+
+  // Packets
+  virtual void LoadPacket(const std::string &hex_key,
+                          std::string *result)=0;
   virtual int StorePacket(const std::string &hex_packet_name,
                           const std::string &value,
                           PacketType system_packet_type,
                           DirType dir_type,
                           const std::string &msid)=0;
-  virtual bool KeyUnique(const std::string &hex_key, bool check_local)=0;
-  virtual void ClearStoreQueue()=0;
-
   virtual void DeletePacket(const std::string &hex_key,
                             const std::string &signature,
                             const std::string &public_key,
@@ -70,14 +68,28 @@ class StoreManagerInterface {
                             const ValueType &type,
                             base::callback_func_type cb)=0;
 
+  // Buffer packet
+  virtual int CreateBP(const std::string &bufferpacketname,
+                       const std::string &ser_packet)=0;
+  virtual int LoadBPMessages(const std::string &bufferpacketname,
+                             std::list<std::string> *messages)=0;
+  virtual int ModifyBPInfo(const std::string &bufferpacketname,
+                           const std::string &ser_gp)=0;
+  virtual int AddBPMessage(const std::string &bufferpacketname,
+                           const std::string &ser_gp)=0;
+
+  // Vault
   virtual void PollVaultInfo(base::callback_func_type cb)=0;
   virtual void VaultContactInfo(base::callback_func_type cb)=0;
-  virtual void OwnLocalVault(const std::string &priv_key, const std::string
-      &pub_key, const std::string &signed_pub_key, const boost::uint32_t &port,
-      const std::string &chunkstore_dir, const boost::uint64_t &space,
-      boost::function<void(const OwnVaultResult&, const std::string&)> cb)=0;
+  virtual void OwnLocalVault(const std::string &priv_key,
+                             const std::string &pub_key,
+                             const std::string &signed_pub_key,
+                             const boost::uint32_t &port,
+                             const std::string &chunkstore_dir,
+                             const boost::uint64_t &space,
+                             boost::function<void(const OwnVaultResult&,
+                             const std::string&)> cb)=0;
   virtual void LocalVaultStatus(boost::function<void(const VaultStatus&)> cb)=0;
-  virtual bool NotDoneWithUploading()=0;
 };
 
 }  // namespace maidsafe

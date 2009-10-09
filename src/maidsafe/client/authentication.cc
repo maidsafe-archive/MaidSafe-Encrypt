@@ -61,14 +61,9 @@ char *utils_trim(char *szSource) {
   return utils_trim_left(utils_trim_right(utils_trim_left(szSource)));
 }
 
-Authentication::Authentication(StoreManagerInterface *storemanager,
-                               boost::recursive_mutex *mutex)
-                                   : ud_(),
-                                     mutex_(mutex),
-                                     crypto_(),
-                                     storemanager_(storemanager),
-                                     ss_(SessionSingleton::getInstance()),
-                                     tmid_content_() {
+Authentication::Authentication(StoreManagerInterface *storemanager)
+    : ud_(), mutex_(), crypto_(), storemanager_(storemanager),
+      ss_(SessionSingleton::getInstance()), tmid_content_() {
   ss_->ResetSession();
   crypto_.set_hash_algorithm(crypto::SHA_512);
   crypto_.set_symm_algorithm(crypto::AES_256);
@@ -137,7 +132,7 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
   MidPacket *check_unique_mid_packet =
       static_cast<MidPacket*>(PacketFactory::Factory(MID));
   std::string check_unique_mid_name =
-      check_unique_mid_packet->PacketName(check_unique_params);
+      check_unique_mid_packet->PacketName(&check_unique_params);
 
   if (!storemanager_->KeyUnique(check_unique_mid_name, false))
     return USER_EXISTS;
@@ -152,7 +147,7 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
 
   user_params["privateKey"] =
       createSignaturePackets(ANMID, public_key);
-  PacketParams mid_result = midPacket->Create(user_params);
+  PacketParams mid_result = midPacket->Create(&user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
       boost::any_cast<std::string>(mid_result["ser_packet"]), MID, PRIVATE,
@@ -165,7 +160,7 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
   SmidPacket *smidPacket =
       static_cast<SmidPacket*>(PacketFactory::Factory(SMID));
   user_params["rid"] = boost::any_cast<uint32_t>(mid_result["rid"]);
-  PacketParams smid_result = smidPacket->Create(user_params);
+  PacketParams smid_result = smidPacket->Create(&user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(smid_result["name"]),
       boost::any_cast<std::string>(smid_result["ser_packet"]), SMID,
@@ -181,7 +176,7 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
   PmidPacket *pmidPacket =
       static_cast<PmidPacket*>(PacketFactory::Factory(PMID));
   // user_params["rid"] = boost::any_cast<uint32_t>(mid_result["rid"]);
-  PacketParams pmid_result = pmidPacket->Create(user_params);
+  PacketParams pmid_result = pmidPacket->Create(&user_params);
 
   std::string ser_packet =
       boost::any_cast<std::string>(pmid_result["ser_packet"]);
@@ -211,7 +206,7 @@ Exitcode Authentication::CreateUserSysPackets(const std::string &username,
   std::string ser_da;
   ss_->SerialisedKeyRing(&ser_da);
   user_params["data"] = ser_da;
-  PacketParams tmid_result = tmidPacket->Create(user_params);
+  PacketParams tmid_result = tmidPacket->Create(&user_params);
 #ifdef DEBUG
   // printf("TMID %s\n", tmid_result);
 #endif
@@ -264,7 +259,7 @@ Exitcode Authentication::SaveSession(std::string ser_da,
   if (ss_->MidRid() != ss_->SmidRid()) {
     params["rid"] = ss_->MidRid();
     params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANSMID"]);
-    result = smidPacket->Create(params);
+    result = smidPacket->Create(&params);
     if (storemanager_->StorePacket(
         boost::any_cast<std::string>(result["name"]),
         boost::any_cast<std::string>(result["ser_packet"]), SMID, PRIVATE,
@@ -273,7 +268,7 @@ Exitcode Authentication::SaveSession(std::string ser_da,
     }
 
     params["rid"] = ss_->SmidRid();
-    std::string tmidname = tmidPacket->PacketName(params);
+    std::string tmidname = tmidPacket->PacketName(&params);
     CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
                         boost::any_cast<std::string>(pub_keys["ANTMID"]),
                         tmidname,
@@ -293,15 +288,15 @@ Exitcode Authentication::SaveSession(std::string ser_da,
   }
 
   params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANMID"]);
-  PacketParams mid_result = midPacket->Create(params);
+  PacketParams mid_result = midPacket->Create(&params);
   while (ss_->MidRid() == boost::any_cast<uint32_t>(mid_result["rid"]))
-    mid_result = midPacket->Create(params);
+    mid_result = midPacket->Create(&params);
 
   params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANTMID"]);
   params["rid"] = boost::any_cast<uint32_t>(mid_result["rid"]);
   params["password"] = ss_->Password();
   params["data"] = ser_da;
-  PacketParams tmidresult = tmidPacket->Create(params);
+  PacketParams tmidresult = tmidPacket->Create(&params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmidresult["name"]),
       boost::any_cast<std::string>(tmidresult["ser_packet"]), TMID,
@@ -361,11 +356,11 @@ Exitcode Authentication::RemoveMe(std::list<KeyAtlasRow> sig_keys) {
       case ANMID:
           CreateSignedRequest(kt.private_key_,
                               kt.public_key_,
-                              midPacket->PacketName(params),
+                              midPacket->PacketName(&params),
                               &signed_public_key,
                               &signed_request);
           cbdel.Reset();
-          storemanager_->DeletePacket(midPacket->PacketName(params),
+          storemanager_->DeletePacket(midPacket->PacketName(&params),
             signed_request, kt.public_key_, signed_public_key, SYSTEM_PACKET,
             boost::bind(&AuthCallbackResult::CallbackFunc, &cbdel, _1));
           WaitForResult(cbdel);
@@ -373,11 +368,11 @@ Exitcode Authentication::RemoveMe(std::list<KeyAtlasRow> sig_keys) {
       case ANSMID:signed_request =
           CreateSignedRequest(kt.private_key_,
                               kt.public_key_,
-                              smidPacket->PacketName(params),
+                              smidPacket->PacketName(&params),
                               &signed_public_key,
                               &signed_request);
           cbdel.Reset();
-          storemanager_->DeletePacket(smidPacket->PacketName(params),
+          storemanager_->DeletePacket(smidPacket->PacketName(&params),
             signed_request, kt.public_key_, signed_public_key, SYSTEM_PACKET,
             boost::bind(&AuthCallbackResult::CallbackFunc, &cbdel, _1));
           WaitForResult(cbdel);
@@ -385,11 +380,11 @@ Exitcode Authentication::RemoveMe(std::list<KeyAtlasRow> sig_keys) {
       case ANTMID:
           CreateSignedRequest(kt.private_key_,
                               kt.public_key_,
-                              tmidPacket->PacketName(params),
+                              tmidPacket->PacketName(&params),
                               &signed_public_key,
                               &signed_request);
           cbdel.Reset();
-          storemanager_->DeletePacket(tmidPacket->PacketName(params),
+          storemanager_->DeletePacket(tmidPacket->PacketName(&params),
             signed_request, kt.public_key_, signed_public_key, SYSTEM_PACKET,
             boost::bind(&AuthCallbackResult::CallbackFunc, &cbdel, _1));
           WaitForResult(cbdel);
@@ -397,11 +392,11 @@ Exitcode Authentication::RemoveMe(std::list<KeyAtlasRow> sig_keys) {
           if (ss_->SmidRid() != ss_->MidRid()) {
             CreateSignedRequest(kt.private_key_,
                                 kt.public_key_,
-                                tmidPacket->PacketName(params),
+                                tmidPacket->PacketName(&params),
                                 &signed_public_key,
                                 &signed_request);
             cbdel.Reset();
-            storemanager_->DeletePacket(tmidPacket->PacketName(params),
+            storemanager_->DeletePacket(tmidPacket->PacketName(&params),
               signed_request, kt.public_key_, signed_public_key, SYSTEM_PACKET,
               boost::bind(&AuthCallbackResult::CallbackFunc, &cbdel, _1));
             WaitForResult(cbdel);
@@ -457,7 +452,7 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
   params["publicname"] = public_username;
   MpidPacket *mpidPacket =
     static_cast<MpidPacket*>(PacketFactory::Factory(MPID));
-  std::string mpidname = mpidPacket->PacketName(params);
+  std::string mpidname = mpidPacket->PacketName(&params);
 
   if (!storemanager_->KeyUnique(mpidname, false)) {
     printf("Authentication::CreatePublicName - Exists\n");
@@ -466,14 +461,14 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
 
   SignaturePacket *sigPacket =
     static_cast<SignaturePacket*>(PacketFactory::Factory(ANMPID));
-  params = sigPacket->Create(params);
+  sigPacket->Create(&params);
   bool sigpacket_result = false;
   while (!sigpacket_result) {
     if (storemanager_->KeyUnique(boost::any_cast<std::string>(params["name"]),
         false)) {
       sigpacket_result = true;
     } else {
-      params = sigPacket->Create(params);
+      sigPacket->Create(&params);
     }
   }
 
@@ -485,6 +480,8 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
       boost::any_cast<std::string>(params["ser_packet"]), ANMPID, PRIVATE,
       "") != 0) {
     printf("Authentication::CreatePublicName - Buggered in ANMPID\n");
+    delete mpidPacket;
+    delete sigPacket;
     return FAIL;
   }
   local_result["anmpid_name"] = boost::any_cast<std::string>(params["name"]);
@@ -493,7 +490,7 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
   local_result["anmpid_private_key"] = boost::any_cast<std::string>(
       params["privateKey"]);
 
-  PacketParams mpid_result = mpidPacket->Create(params);
+  PacketParams mpid_result = mpidPacket->Create(&params);
   std::string ser_packet =
       boost::any_cast<std::string>(mpid_result["ser_packet"]);
   GenericPacket generic_packet;
@@ -504,6 +501,8 @@ Exitcode Authentication::CreatePublicName(std::string public_username,
       boost::any_cast<std::string>(mpid_result["name"]), ser_packet, MPID,
       PRIVATE, "") != 0) {
     printf("Authentication::CreatePublicName - Buggered in MPID\n");
+    delete mpidPacket;
+    delete sigPacket;
     return FAIL;
   }
 
@@ -538,7 +537,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   PacketParams user_params;
   user_params["username"] = new_username;
   user_params["PIN"] = ss_->Pin();
-  std::string mid_name = midPacket->PacketName(user_params);
+  std::string mid_name = midPacket->PacketName(&user_params);
   AuthCallbackResult cb;
   std::string signed_public_key(""), signed_request("");
 
@@ -556,9 +555,9 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
 
   //  Creating and storing new MID packet with new username
   user_params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANMID"]);
-  PacketParams mid_result = midPacket->Create(user_params);
+  PacketParams mid_result = midPacket->Create(&user_params);
   while (ss_->MidRid() == boost::any_cast<uint32_t>(mid_result["rid"]))
-    mid_result = midPacket->Create(user_params);
+    mid_result = midPacket->Create(&user_params);
 
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
@@ -570,7 +569,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   user_params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANSMID"]);
   user_params["rid"] = ss_->MidRid();
 
-  PacketParams smid_result = smidPacket->Create(user_params);
+  PacketParams smid_result = smidPacket->Create(&user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(smid_result["name"]),
       boost::any_cast<std::string>(smid_result["ser_packet"]), SMID,
@@ -584,7 +583,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   TmidPacket *tmidPacket =
     static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
   user_params["data"] = ser_da;
-  PacketParams tmid_result = tmidPacket->Create(user_params);
+  PacketParams tmid_result = tmidPacket->Create(&user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
@@ -598,7 +597,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
   old_user_params["rid"] = ss_->MidRid();
 
   std::string packet_content;
-  storemanager_->LoadPacket(tmidPacket->PacketName(old_user_params),
+  storemanager_->LoadPacket(tmidPacket->PacketName(&old_user_params),
                             &packet_content);
   GetResponse load_res;
   if ((!load_res.ParseFromString(packet_content)) ||
@@ -616,7 +615,7 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
       priv_keys["ANTMID"]);
   old_user_params["password"] = ss_->Password();
   old_user_params["username"] = new_username;
-  tmid_result = tmidPacket->Create(old_user_params);
+  tmid_result = tmidPacket->Create(&old_user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
@@ -627,10 +626,10 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
 
   CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANMID"]),
                       boost::any_cast<std::string>(pub_keys["ANMID"]),
-                      midPacket->PacketName(user_params),
+                      midPacket->PacketName(&user_params),
                       &signed_public_key,
                       &signed_request);
-  storemanager_->DeletePacket(midPacket->PacketName(user_params),
+  storemanager_->DeletePacket(midPacket->PacketName(&user_params),
     signed_request, boost::any_cast<std::string>(pub_keys["ANMID"]),
     signed_public_key, SYSTEM_PACKET,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
@@ -638,11 +637,11 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
 
   CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANSMID"]),
                       boost::any_cast<std::string>(pub_keys["ANSMID"]),
-                      smidPacket->PacketName(user_params),
+                      smidPacket->PacketName(&user_params),
                       &signed_public_key,
                       &signed_request);
   cb.Reset();
-  storemanager_->DeletePacket(smidPacket->PacketName(user_params),
+  storemanager_->DeletePacket(smidPacket->PacketName(&user_params),
     signed_request, boost::any_cast<std::string>(pub_keys["ANSMID"]),
     signed_public_key, SYSTEM_PACKET,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
@@ -652,11 +651,11 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
 
   CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
                       boost::any_cast<std::string>(pub_keys["ANTMID"]),
-                      tmidPacket->PacketName(user_params),
+                      tmidPacket->PacketName(&user_params),
                       &signed_public_key,
                       &signed_request);
   cb.Reset();
-  storemanager_->DeletePacket(tmidPacket->PacketName(user_params),
+  storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
     signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
     signed_public_key, SYSTEM_PACKET,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
@@ -666,11 +665,11 @@ Exitcode Authentication::ChangeUsername(std::string ser_da,
     user_params["rid"] = ss_->SmidRid();
     CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
                         boost::any_cast<std::string>(pub_keys["ANTMID"]),
-                        tmidPacket->PacketName(user_params),
+                        tmidPacket->PacketName(&user_params),
                         &signed_public_key,
                         &signed_request);
     cb.Reset();
-    storemanager_->DeletePacket(tmidPacket->PacketName(user_params),
+    storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
       signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
       signed_public_key, SYSTEM_PACKET,
       boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
@@ -702,7 +701,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   PacketParams user_params;
   user_params["username"] = ss_->Username();
   user_params["PIN"] = new_pin;
-  std::string mid_name = midPacket->PacketName(user_params);
+  std::string mid_name = midPacket->PacketName(&user_params);
 
   AuthCallbackResult cb;
   std::string signed_public_key(""), signed_request("");
@@ -721,9 +720,9 @@ Exitcode Authentication::ChangePin(std::string ser_da,
 
   //  Creating and storing new MID packet with new username
   user_params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANMID"]);
-  PacketParams mid_result = midPacket->Create(user_params);
+  PacketParams mid_result = midPacket->Create(&user_params);
   while (ss_->MidRid() == boost::any_cast<uint32_t>(mid_result["rid"]))
-    mid_result = midPacket->Create(user_params);
+    mid_result = midPacket->Create(&user_params);
 
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
@@ -736,7 +735,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   user_params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANSMID"]);
   user_params["rid"] = ss_->MidRid();
 
-  PacketParams smid_result = smidPacket->Create(user_params);
+  PacketParams smid_result = smidPacket->Create(&user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(smid_result["name"]),
       boost::any_cast<std::string>(smid_result["ser_packet"]), SMID,
@@ -751,7 +750,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   TmidPacket *tmidPacket =
     static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
   user_params["data"] = ser_da;
-  PacketParams tmid_result = tmidPacket->Create(user_params);
+  PacketParams tmid_result = tmidPacket->Create(&user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
@@ -766,7 +765,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   old_user_params["rid"] = ss_->MidRid();
 
   std::string packet_content;
-  storemanager_->LoadPacket(tmidPacket->PacketName(old_user_params),
+  storemanager_->LoadPacket(tmidPacket->PacketName(&old_user_params),
                             &packet_content);
   GetResponse load_res;
   if ((!load_res.ParseFromString(packet_content)) ||
@@ -784,7 +783,7 @@ Exitcode Authentication::ChangePin(std::string ser_da,
       priv_keys["ANTMID"]);
   old_user_params["password"] = ss_->Password();
   old_user_params["PIN"] = new_pin;
-  tmid_result = tmidPacket->Create(old_user_params);
+  tmid_result = tmidPacket->Create(&old_user_params);
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
@@ -796,11 +795,11 @@ Exitcode Authentication::ChangePin(std::string ser_da,
 
   CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANMID"]),
                       boost::any_cast<std::string>(pub_keys["ANMID"]),
-                      midPacket->PacketName(user_params),
+                      midPacket->PacketName(&user_params),
                       &signed_public_key,
                       &signed_request);
   cb.Reset();
-  storemanager_->DeletePacket(midPacket->PacketName(user_params),
+  storemanager_->DeletePacket(midPacket->PacketName(&user_params),
     signed_request, boost::any_cast<std::string>(pub_keys["ANMID"]),
     signed_public_key, SYSTEM_PACKET,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
@@ -808,11 +807,11 @@ Exitcode Authentication::ChangePin(std::string ser_da,
 
   CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANSMID"]),
                       boost::any_cast<std::string>(pub_keys["ANSMID"]),
-                      smidPacket->PacketName(user_params),
+                      smidPacket->PacketName(&user_params),
                       &signed_public_key,
                       &signed_request);
   cb.Reset();
-  storemanager_->DeletePacket(smidPacket->PacketName(user_params),
+  storemanager_->DeletePacket(smidPacket->PacketName(&user_params),
     signed_request, boost::any_cast<std::string>(pub_keys["ANSMID"]),
     signed_public_key, SYSTEM_PACKET,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
@@ -821,11 +820,11 @@ Exitcode Authentication::ChangePin(std::string ser_da,
   user_params["rid"] = ss_->MidRid();
   CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
                       boost::any_cast<std::string>(pub_keys["ANTMID"]),
-                      tmidPacket->PacketName(user_params),
+                      tmidPacket->PacketName(&user_params),
                       &signed_public_key,
                       &signed_request);
   cb.Reset();
-  storemanager_->DeletePacket(tmidPacket->PacketName(user_params),
+  storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
     signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
     signed_public_key, SYSTEM_PACKET,
     boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
@@ -837,11 +836,11 @@ Exitcode Authentication::ChangePin(std::string ser_da,
     AuthCallbackResult cb3;
     CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
                         boost::any_cast<std::string>(pub_keys["ANTMID"]),
-                        tmidPacket->PacketName(user_params),
+                        tmidPacket->PacketName(&user_params),
                         &signed_public_key,
                         &signed_request);
     cb.Reset();
-    storemanager_->DeletePacket(tmidPacket->PacketName(user_params),
+    storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
       signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
       signed_public_key, SYSTEM_PACKET,
       boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
@@ -879,7 +878,7 @@ std::string Authentication::createSignaturePackets(const PacketType &type_da,
   PacketParams params;
   SignaturePacket *sigPacket =
       static_cast<SignaturePacket*>(PacketFactory::Factory(type_da));
-  params = sigPacket->Create(params);
+  sigPacket->Create(&params);
 
   AuthCallbackResult cb;
   bool result = false;
@@ -888,7 +887,7 @@ std::string Authentication::createSignaturePackets(const PacketType &type_da,
         false)) {
       result = true;
     } else {
-      params = sigPacket->Create(params);
+      sigPacket->Create(&params);
     }
   }
   ss_->AddKey(type_da, boost::any_cast<std::string>(params["name"]),
@@ -951,7 +950,7 @@ int Authentication::CreateSignedRequest(const std::string &private_key,
 void Authentication::WaitForResult(const AuthCallbackResult &cb) {
   while (true) {
     {
-      base::pd_scoped_lock gaurd(*mutex_);
+      boost::mutex::scoped_lock gaurd(mutex_);
       if (cb.result != "")
         return;
     }
@@ -967,7 +966,7 @@ bool Authentication::GetMid(const std::string &username,
   params["PIN"] = pin;
   MidPacket *midPacket = static_cast<MidPacket*>
     (PacketFactory::Factory(MID));
-  std::string mid_name = midPacket->PacketName(params);
+  std::string mid_name = midPacket->PacketName(&params);
 
   std::string ser_packet;
   std::string packet_content;
@@ -1003,7 +1002,7 @@ bool Authentication::GetSmid(const std::string &username,
   params["PIN"] = pin;
   SmidPacket *smidPacket = static_cast<SmidPacket*>
     (PacketFactory::Factory(SMID));
-  std::string smid_name = smidPacket->PacketName(params);
+  std::string smid_name = smidPacket->PacketName(&params);
   std::string ser_packet;
   std::string packet_content;
   storemanager_->LoadPacket(smid_name, &packet_content);
@@ -1037,7 +1036,7 @@ void Authentication::GetUserTmid(bool smid) {
   params["username"] = ss_->Username();
   params["PIN"] = ss_->Pin();
   params["rid"] = ss_->MidRid();
-  std::string tmid_name = tmidPacket->PacketName(params);
+  std::string tmid_name = tmidPacket->PacketName(&params);
   std::string packet_content;
   storemanager_->LoadPacket(tmid_name, &packet_content);
   GetResponse load_res;
@@ -1092,7 +1091,7 @@ Exitcode Authentication::PublicUsernamePublicKey(
     static_cast<MpidPacket*>(PacketFactory::Factory(MPID));
 
   std::string packet_content;
-  storemanager_->LoadPacket(mpidPacket->PacketName(params), &packet_content);
+  storemanager_->LoadPacket(mpidPacket->PacketName(&params), &packet_content);
   GetResponse load_res;
   if ((!load_res.ParseFromString(packet_content)) ||
       (load_res.result() != kAck) ||
@@ -1113,8 +1112,8 @@ Exitcode Authentication::PublicUsernamePublicKey(
 void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
   PacketParams params;
   SignaturePacket *sigPacket = static_cast<SignaturePacket*>(
-      PacketFactory::Factory(MSID));
-  params = sigPacket->Create(params);
+                               PacketFactory::Factory(MSID));
+  sigPacket->Create(&params);
 
   int count = 0;
   while (!storemanager_->KeyUnique(boost::any_cast<std::string>(params["name"]),

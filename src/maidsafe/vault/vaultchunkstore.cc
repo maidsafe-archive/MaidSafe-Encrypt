@@ -90,9 +90,9 @@ bool VaultChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
   maidsafe::ChunkType type = (maidsafe::kHashable | maidsafe::kNormal);
   boost::uint64_t hashable_count(0);
   {
+    boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
     maidsafe::chunk_set_by_chunk_type &sorted_index =
         chunkstore_set_.get<maidsafe::chunk_type>();
-    boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
     hashable_count = sorted_index.count(type);
   }
   if (!hashable_count)  // i.e. there are no chunks available

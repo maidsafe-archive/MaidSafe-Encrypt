@@ -58,7 +58,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateMID) {
   input_param["username"] = std::string("user1");
   input_param["PIN"] = std::string("1234");
   input_param["privateKey"] = keys.private_key();
-  PacketParams result = midPacket->Create(input_param);
+  PacketParams result = midPacket->Create(&input_param);
   std::string mid_name;
   std::string ser_mid = boost::any_cast<std::string>(result["ser_packet"]);
   std::string hashusername = co_.Hash("user1", "", crypto::STRING_STRING,
@@ -85,7 +85,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetRidMID) {
   input_param["username"] = std::string("user1");
   input_param["PIN"] = std::string("1234");
   input_param["privateKey"] = keys.private_key();
-  PacketParams result = midPacket->Create(input_param);
+  PacketParams result = midPacket->Create(&input_param);
   std::string ser_mid = boost::any_cast<std::string>(result["ser_packet"]);
   uint32_t rid = boost::any_cast<uint32_t>(result["rid"]);
   PacketParams recovered_rid = midPacket->GetData(ser_mid, "user1", "1234");
@@ -98,13 +98,13 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateSigPacket) {
   crypto::RsaKeyPair keys;
   SignaturePacket *sigPacket =
       static_cast<SignaturePacket*>(PacketFactory::Factory(MAID));
-  PacketParams result = sigPacket->Create(input_param);
+  sigPacket->Create(&input_param);
   GenericPacket sigpacket;
   const std::string ser_packet= boost::any_cast<std::string>(
-      result["ser_packet"]);
-  keys.set_public_key(boost::any_cast<std::string>(result["publicKey"]));
-  keys.set_private_key(boost::any_cast<std::string>(result["privateKey"]));
-  name = boost::any_cast<std::string>(result["name"]);
+      input_param["ser_packet"]);
+  keys.set_public_key(boost::any_cast<std::string>(input_param["publicKey"]));
+  keys.set_private_key(boost::any_cast<std::string>(input_param["privateKey"]));
+  name = boost::any_cast<std::string>(input_param["name"]);
   ASSERT_TRUE(sigpacket.ParseFromString(ser_packet));
   // Check it is correctly signed
   ASSERT_TRUE(co_.AsymCheckSig(sigpacket.data(), sigpacket.signature(),
@@ -125,7 +125,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateMPID) {
   input_param["privateKey"] = keys.private_key();
   MpidPacket *mpidPacket =
       static_cast<MpidPacket*>(PacketFactory::Factory(MPID));
-  PacketParams result = mpidPacket->Create(input_param);
+  PacketParams result = mpidPacket->Create(&input_param);
   GenericPacket mpidpacket;
   const std::string ser_packet(boost::any_cast<std::string>
       (result["ser_packet"]));
@@ -146,17 +146,17 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetKeyFromPacket) {
 
   SignaturePacket *sigPacket =
       static_cast<SignaturePacket*>(PacketFactory::Factory(MAID));
-  result = sigPacket->Create(input_param);
-  ser_packet = boost::any_cast<std::string>(result["ser_packet"]);
+  sigPacket->Create(&input_param);
+  ser_packet = boost::any_cast<std::string>(input_param["ser_packet"]);
   PacketParams rec_data = sigPacket->GetData(ser_packet);
-  ASSERT_EQ(boost::any_cast<std::string>(result["publicKey"]),
+  ASSERT_EQ(boost::any_cast<std::string>(input_param["publicKey"]),
       boost::any_cast<std::string>(rec_data["data"]));
 
   keys.GenerateKeys(kRsaKeySize);
   input_param["privateKey"] = keys.private_key();
   PmidPacket *pmidPacket =
       static_cast<PmidPacket*>(PacketFactory::Factory(PMID));
-  result = pmidPacket->Create(input_param);
+  result = pmidPacket->Create(&input_param);
   ser_packet = boost::any_cast<std::string>(result["ser_packet"]);
 
   rec_data = pmidPacket->GetData(ser_packet);
@@ -168,7 +168,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetKeyFromPacket) {
   input_param["privateKey"] = keys.private_key();
   MpidPacket *mpidPacket =
       static_cast<MpidPacket*>(PacketFactory::Factory(MPID));
-  result = mpidPacket->Create(input_param);
+  result = mpidPacket->Create(&input_param);
   ser_packet = boost::any_cast<std::string>(result["ser_packet"]);
   ASSERT_EQ(boost::any_cast<std::string>(result["publicKey"]),
     boost::any_cast<std::string>(mpidPacket->GetData(ser_packet)["data"]));
@@ -181,7 +181,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreatePMID) {
   input_param["privateKey"] = keys.private_key();
   PmidPacket *pmidPacket =
       static_cast<PmidPacket*>(PacketFactory::Factory(PMID));
-  PacketParams result = pmidPacket->Create(input_param);
+  PacketParams result = pmidPacket->Create(&input_param);
   GenericPacket pmidpacket;
   const std::string ser_packet(boost::any_cast<std::string>
       (result["ser_packet"]));
@@ -207,7 +207,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateTMID) {
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize);  // simulating signing keys of ANTMID
   input_param["privateKey"] = keys.private_key();
-  PacketParams result = tmid_packet->Create(input_param);
+  PacketParams result = tmid_packet->Create(&input_param);
   std::string name = boost::any_cast<std::string>(result["name"]);
   std::string ser_tmid = boost::any_cast<std::string>(result["ser_packet"]);
 
@@ -240,7 +240,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetDataFromTMID) {
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize);  // simulating signing keys of ANTMID
   input_param["privateKey"] = keys.private_key();
-  PacketParams result = tmid_packet->Create(input_param);
+  PacketParams result = tmid_packet->Create(&input_param);
   std::string name = boost::any_cast<std::string>(result["name"]);
   std::string ser_tmid = boost::any_cast<std::string>(result["ser_packet"]);
   // std::string ser_tmid = packet_handler.CreateTMID(username, pin, rid, data,
@@ -261,7 +261,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateSMID) {
   input_param["PIN"] = std::string("1234");
   input_param["rid"] = uint32_t(444455555);
   input_param["privateKey"] = keys.private_key();
-  PacketParams result = smidPacket->Create(input_param);
+  PacketParams result = smidPacket->Create(&input_param);
   std::string smid_name;
   std::string ser_smid = boost::any_cast<std::string>(result["ser_packet"]);
   std::string hashusername = co_.Hash("user1", "", crypto::STRING_STRING,
@@ -285,7 +285,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetRidSMID) {
   input_param["PIN"] = std::string("1234");
   input_param["rid"] = uint32_t(444455555);
   input_param["privateKey"] = keys.private_key();
-  PacketParams result = smidPacket->Create(input_param);
+  PacketParams result = smidPacket->Create(&input_param);
   std::string ser_smid = boost::any_cast<std::string>(result["ser_packet"]);
   PacketParams recovered_rid = smidPacket->GetData(ser_smid, "user1", "1234");
   ASSERT_EQ(boost::any_cast<uint32_t>(input_param["rid"]),

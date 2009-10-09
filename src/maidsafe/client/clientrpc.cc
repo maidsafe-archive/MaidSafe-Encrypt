@@ -209,12 +209,12 @@ void ClientRpcs::Delete(const std::string &chunkname,
   service.Delete(controller, &args, response, done);
 }
 
-void ClientRpcs::GetMessages(const kad::Contact &peer,
-                             bool local,
-                             GetMessagesRequest *get_messages_request,
-                             GetMessagesResponse *get_messages_response,
-                             rpcprotocol::Controller *controller,
-                             google::protobuf::Closure *done) {
+
+void ClientRpcs::CreateBP(const kad::Contact &peer, bool local,
+                          CreateBPRequest *create_request,
+                          CreateBPResponse *create_response,
+                          rpcprotocol::Controller *controller,
+                          google::protobuf::Closure *done) {
   std::string local_ip("");
   boost::uint16_t local_port(0);
   if (local) {
@@ -225,8 +225,63 @@ void ClientRpcs::GetMessages(const kad::Contact &peer,
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.GetMessages(controller, get_messages_request, get_messages_response,
-      done);
+  service.CreateBP(controller, create_request, create_response, done);
+}
+
+void ClientRpcs::ModifyBPInfo(const kad::Contact &peer, bool local,
+                              ModifyBPInfoRequest *modify_request,
+                              ModifyBPInfoResponse *modify_response,
+                              rpcprotocol::Controller *controller,
+                              google::protobuf::Closure *done) {
+  std::string local_ip("");
+  boost::uint16_t local_port(0);
+  if (local) {
+    local_ip = peer.local_ip();
+    local_port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.ModifyBPInfo(controller, modify_request, modify_response, done);
+}
+
+void ClientRpcs::GetBPMessages(const kad::Contact &peer, bool local,
+                               GetBPMessagesRequest *get_messages_request,
+                               GetBPMessagesResponse *get_messages_response,
+                               rpcprotocol::Controller *controller,
+                               google::protobuf::Closure *done) {
+  std::string local_ip("");
+  boost::uint16_t local_port(0);
+  if (local) {
+    local_ip = peer.local_ip();
+    local_port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.GetBPMessages(controller, get_messages_request, get_messages_response,
+                        done);
+}
+
+void ClientRpcs::AddBPMessage(const kad::Contact &peer, bool local,
+                              AddBPMessageRequest *add_message_request,
+                              AddBPMessageResponse *add_message_response,
+                              rpcprotocol::Controller *controller,
+                              google::protobuf::Closure *done) {
+  std::string local_ip("");
+  boost::uint16_t local_port(0);
+  if (local) {
+    local_ip = peer.local_ip();
+    local_port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.AddBPMessage(controller, add_message_request, add_message_response,
+                       done);
 }
 
 void ClientRpcs::IsVaultOwned(IsOwnedResponse *response,

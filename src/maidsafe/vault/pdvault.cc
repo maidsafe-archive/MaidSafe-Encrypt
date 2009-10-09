@@ -1034,8 +1034,8 @@ void PDVault::CheckChunkCallback(
         port = get_args->chunk_holder_.local_port();
       }
       if (get_args->data_->get_msgs) {
-          boost::shared_ptr<maidsafe::GetMessagesResponse>
-              get_messages_response(new maidsafe::GetMessagesResponse());
+          boost::shared_ptr<maidsafe::GetBPMessagesResponse>
+              get_messages_response(new maidsafe::GetBPMessagesResponse());
         google::protobuf::Closure* callback =
             google::protobuf::NewCallback(this, &PDVault::GetMessagesCallback,
             get_messages_response, get_args);
@@ -1070,7 +1070,7 @@ void PDVault::GetMessages(const std::string &chunk_name,
 }
 
 void PDVault::GetMessagesCallback(
-    boost::shared_ptr<maidsafe::GetMessagesResponse> get_messages_response,
+    boost::shared_ptr<maidsafe::GetBPMessagesResponse> get_messages_response,
     boost::shared_ptr<GetArgs> get_args) {
   if (get_args->data_->is_callbacked)
     return;
@@ -1080,8 +1080,8 @@ void PDVault::GetMessagesCallback(
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
-      boost::shared_ptr<maidsafe::GetMessagesResponse>
-          get_messages_response(new maidsafe::GetMessagesResponse());
+      boost::shared_ptr<maidsafe::GetBPMessagesResponse>
+          get_messages_response(new maidsafe::GetBPMessagesResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
           &PDVault::GetMessagesCallback, get_messages_response, get_args);
       vault_rpcs_.GetMessages(get_args->data_->chunk_name,

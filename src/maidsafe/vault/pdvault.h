@@ -317,7 +317,7 @@ class PDVault {
   void CheckChunk(boost::shared_ptr<GetArgs> get_args);
   void CheckChunkCallback(boost::shared_ptr<maidsafe::CheckChunkResponse>
       check_chunk_response, boost::shared_ptr<GetArgs> get_args);
-  void GetMessagesCallback(boost::shared_ptr<maidsafe::GetMessagesResponse>
+  void GetMessagesCallback(boost::shared_ptr<maidsafe::GetBPMessagesResponse>
       get_messages_response, boost::shared_ptr<GetArgs> get_args);
   void GetChunkCallback(boost::shared_ptr<maidsafe::GetResponse> get_response,
                         boost::shared_ptr<GetArgs> get_args);

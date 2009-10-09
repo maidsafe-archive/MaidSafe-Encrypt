@@ -64,6 +64,13 @@ struct DeleteArgs {
 
 struct OwnVaultCallbackArgs {
   OwnVaultCallbackArgs() : cb(), response(NULL), ctrl(NULL) {}
+  OwnVaultCallbackArgs& operator=(const maidsafe::OwnVaultCallbackArgs&) {
+    return *this;
+  }
+  OwnVaultCallbackArgs(
+      const maidsafe::OwnVaultCallbackArgs& ovca)
+      : cb(ovca.cb), response(ovca.response), ctrl(ovca.ctrl) {
+  }
   boost::function<void(const OwnVaultResult&, const std::string&)> cb;
   OwnVaultResponse* response;
   rpcprotocol::Controller *ctrl;
@@ -71,6 +78,14 @@ struct OwnVaultCallbackArgs {
 
 struct IsVaultOwnedCallbackArgs {
   IsVaultOwnedCallbackArgs() : cb(), response(NULL), ctrl(NULL) {}
+  IsVaultOwnedCallbackArgs& operator=(
+      const maidsafe::IsVaultOwnedCallbackArgs&) {
+    return *this;
+  }
+  IsVaultOwnedCallbackArgs(
+      const maidsafe::IsVaultOwnedCallbackArgs& ivoca)
+      : cb(ivoca.cb), response(ivoca.response), ctrl(ivoca.ctrl) {
+  }
   boost::function<void(const VaultStatus&)> cb;
   IsOwnedResponse* response;
   rpcprotocol::Controller *ctrl;

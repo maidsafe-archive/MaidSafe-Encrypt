@@ -444,29 +444,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
     if (data_type[i] == maidsafe::DATA) continue;
     request.set_data_type(data_type[i]);
 
-    switch (data_type[i]) {
-//      case maidsafe::SYSTEM_PACKET:
-      case maidsafe::PDDIR_SIGNED: {
-        maidsafe::GenericPacket gp;
-        gp.set_data("Generic System Packet Data " + base::itos(i));
-        gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
-                                     crypto::STRING_STRING));
-        content = gp.SerializeAsString();
-        break;
-      }
-//      case maidsafe::BUFFER_PACKET: {
-//        maidsafe::BufferPacketInfo bpi;
-//        bpi.set_owner("test bufferpacket " + base::itos(i));
-//        bpi.set_ownerpublickey(pub_key);
-//        bpi.add_users("testuser");
-//        maidsafe::BufferPacket bp;
-//        maidsafe::GenericPacket *info = bp.add_owner_info();
-//        info->set_data(bpi.SerializeAsString());
-//        info->set_signature(co.AsymSign(info->data(), "", priv_key,
-//                                        crypto::STRING_STRING));
-//        content = bp.SerializeAsString();
-//        break;
-//      }
+    if (data_type[i] == maidsafe::PDDIR_SIGNED) {
+      maidsafe::GenericPacket gp;
+      gp.set_data("Generic System Packet Data " + base::itos(i));
+      gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
+                                   crypto::STRING_STRING));
+      content = gp.SerializeAsString();
     }
 
     chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
@@ -1025,74 +1008,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesGetMessages) {
-  rpcprotocol::Controller controller;
-  maidsafe::GetMessagesRequest request;
-  maidsafe::GetMessagesResponse response;
-
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
-  CreateRSAKeys(&pub_key, &priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-
-  maidsafe::BufferPacketInfo bpi;
-  bpi.set_owner("test bufferpacket");
-  bpi.set_ownerpublickey(pub_key);
-  bpi.add_users("testuser");
-  maidsafe::BufferPacket bp;
-  maidsafe::GenericPacket *info = bp.add_owner_info();
-  std::string ser_bpi;
-  bpi.SerializeToString(&ser_bpi);
-  info->set_data(ser_bpi);
-  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
-                      crypto::STRING_STRING));
-  std::string content = bp.SerializeAsString();
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                      &sig_req);
-
-  Callback cb_obj;
-
-  for (int i = 0; i <= 3; ++i) {
-    switch (i) {
-      case 0:  // uninitialized request
-        break;
-      case 1:  // invalid request
-        request.set_buffer_packet_name(chunkname);
-        request.set_public_key("fail");  // !
-        request.set_signed_public_key(sig_pub_key);
-        break;
-      case 2:  // make LoadChunkLocal() fail
-        request.set_public_key(pub_key);
-        break;
-      case 3:  // make [vbph]::ValidateOwnerSignature() fail
-        ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, "fail"));
-        break;
-      // TODO(Steve) make VaultBufferGetMessages() fail (?)
-    }
-
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->GetMessages(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  ASSERT_TRUE(vault_service_->UpdateChunkLocal(chunkname, content));
-
-  // test success
-  {
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->GetMessages(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-}
-
 TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
   rpcprotocol::Controller controller;
   maidsafe::DeleteRequest request;
@@ -1368,6 +1283,501 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
 
     response.Clear();
   }
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
+  rpcprotocol::Controller controller;
+  maidsafe::CreateBPRequest request;
+  maidsafe::CreateBPResponse response;
+
+  // Not initialised
+  Callback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+                                    (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->CreateBP(&controller, &request,
+                           &response, done);
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(pmid_public_, response.public_key());
+  ASSERT_EQ(signed_pmid_public_, response.signed_public_key());
+
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  maidsafe::BufferPacketInfo bpi;
+  bpi.set_owner("Dan");
+  bpi.set_ownerpublickey(pub_key);
+  bpi.set_online(1);
+  bpi.add_users("newuser");
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  info->set_data(ser_bpi);
+  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
+                      crypto::STRING_STRING));
+  std::string ser_gp;
+  info->SerializeToString(&ser_gp);
+  std::string ser_bp;
+  bp.SerializeToString(&ser_bp);
+
+  std::string bufferpacket_name(co.Hash("DanBUFFER", "",
+                                crypto::STRING_STRING, false));
+  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
+                      &sig_req);
+  request.set_bufferpacket_name(bufferpacket_name);
+  request.set_data(ser_bp);
+  request.set_pmid(pmid);
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(sig_pub_key);
+  request.set_signed_request(sig_req);
+
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->CreateBP(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
+  ASSERT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+            response.signed_public_key(), "", crypto::STRING_STRING, false));
+
+  // Load the stored BP
+  std::string test_content;
+  ASSERT_TRUE(vault_service_->HasChunkLocal(bufferpacket_name));
+  ASSERT_TRUE(vault_service_->LoadChunkLocal(bufferpacket_name, &test_content));
+  ASSERT_EQ(ser_bp, test_content);
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
+  rpcprotocol::Controller controller;
+  maidsafe::CreateBPRequest create_request;
+  maidsafe::CreateBPResponse create_response;
+
+  // Not initialised
+  Callback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+                                    (&cb_obj, &Callback::CallbackFunction);
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+
+  maidsafe::BufferPacketInfo bpi;
+  bpi.set_owner("Dan");
+  bpi.set_ownerpublickey(pub_key);
+  bpi.set_online(1);
+  bpi.add_users("newuser");
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  info->set_data(ser_bpi);
+  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
+                      crypto::STRING_STRING));
+  std::string ser_gp;
+  info->SerializeToString(&ser_gp);
+  std::string ser_bp;
+  bp.SerializeToString(&ser_bp);
+
+  std::string bufferpacket_name(co.Hash("DanBUFFER", "",
+                                crypto::STRING_STRING, false));
+  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
+                      &sig_req);
+  create_request.set_bufferpacket_name(bufferpacket_name);
+  create_request.set_data(ser_bp);
+  create_request.set_pmid(pmid);
+  create_request.set_public_key(pub_key);
+  create_request.set_signed_public_key(sig_pub_key);
+  create_request.set_signed_request(sig_req);
+
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->CreateBP(&controller, &create_request,
+                           &create_response, done);
+  ASSERT_TRUE(create_response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(create_response.result()));
+  ASSERT_EQ(create_response.pmid_id(), co.Hash(create_response.public_key() +
+            create_response.signed_public_key(), "",
+            crypto::STRING_STRING, false));
+
+  // Load the stored BP
+  std::string test_content;
+  ASSERT_TRUE(vault_service_->HasChunkLocal(bufferpacket_name));
+  ASSERT_TRUE(vault_service_->LoadChunkLocal(bufferpacket_name, &test_content));
+  ASSERT_EQ(ser_bp, test_content);
+
+  // Wrong data: not a Generic Packet
+  maidsafe::ModifyBPInfoRequest modify_request;
+  maidsafe::ModifyBPInfoResponse modify_response;
+  modify_request.set_bufferpacket_name(bufferpacket_name);
+  modify_request.set_data("some bollocks that doesn't serialise or parse");
+  modify_request.set_pmid(pmid);
+  modify_request.set_public_key(pub_key);
+  modify_request.set_signed_public_key(sig_pub_key);
+  modify_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->ModifyBPInfo(&controller, &modify_request,
+                               &modify_response, done);
+  ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
+  ASSERT_EQ(non_hex_pmid_, modify_response.pmid_id());
+  ASSERT_EQ(pmid_public_, modify_response.public_key());
+  ASSERT_EQ(signed_pmid_public_, modify_response.signed_public_key());
+
+  // Wrong data: not a BufferPacketInfo inside the GP
+  modify_request.Clear();
+  modify_response.Clear();
+  maidsafe::GenericPacket gp;
+  gp.set_data("some bollocks that doesn't serialise or parse");
+  gp.set_signature(co.AsymSign(gp.data(), "", priv_key, crypto::STRING_STRING));
+  gp.SerializeToString(&ser_gp);
+
+  modify_request.set_bufferpacket_name(bufferpacket_name);
+  modify_request.set_data(ser_gp);
+  modify_request.set_pmid(pmid);
+  modify_request.set_public_key(pub_key);
+  modify_request.set_signed_public_key(sig_pub_key);
+  modify_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->ModifyBPInfo(&controller, &modify_request,
+                               &modify_response, done);
+  ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
+  ASSERT_EQ(non_hex_pmid_, modify_response.pmid_id());
+  ASSERT_EQ(pmid_public_, modify_response.public_key());
+  ASSERT_EQ(signed_pmid_public_, modify_response.signed_public_key());
+
+  // Wrong bufferpacket name
+  modify_request.Clear();
+  modify_response.Clear();
+  bpi.Clear();
+  bpi.set_owner("Dan");
+  bpi.set_ownerpublickey(pub_key);
+  bpi.set_online(0);
+  bpi.add_users("newuser0");
+  bpi.add_users("newuser1");
+  bpi.add_users("newuser2");
+  bpi.SerializeToString(&ser_bpi);
+  gp.set_data(ser_bpi);
+  gp.set_signature(co.AsymSign(gp.data(), "", priv_key, crypto::STRING_STRING));
+  gp.SerializeToString(&ser_gp);
+  modify_request.set_bufferpacket_name("some bp that doesn't exist");
+  modify_request.set_data(ser_gp);
+  modify_request.set_pmid(pmid);
+  modify_request.set_public_key(pub_key);
+  modify_request.set_signed_public_key(sig_pub_key);
+  modify_request.set_signed_request(co.AsymSign(co.Hash(pub_key + sig_pub_key +
+                                    modify_request.bufferpacket_name(), "",
+                                    crypto::STRING_STRING, false), "",
+                                    priv_key, crypto::STRING_STRING));
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->ModifyBPInfo(&controller, &modify_request,
+                               &modify_response, done);
+  ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
+  ASSERT_EQ(non_hex_pmid_, modify_response.pmid_id());
+  ASSERT_EQ(pmid_public_, modify_response.public_key());
+  ASSERT_EQ(signed_pmid_public_, modify_response.signed_public_key());
+
+  // Correct change
+  modify_request.Clear();
+  modify_response.Clear();
+  modify_request.set_bufferpacket_name(bufferpacket_name);
+  modify_request.set_data(ser_gp);
+  modify_request.set_pmid(pmid);
+  modify_request.set_public_key(pub_key);
+  modify_request.set_signed_public_key(sig_pub_key);
+  modify_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->ModifyBPInfo(&controller, &modify_request,
+                               &modify_response, done);
+  ASSERT_EQ(kAck, static_cast<int>(modify_response.result()));
+  ASSERT_EQ(non_hex_pmid_, modify_response.pmid_id());
+  ASSERT_EQ(pmid_public_, modify_response.public_key());
+  ASSERT_EQ(signed_pmid_public_, modify_response.signed_public_key());
+
+  ASSERT_TRUE(vault_service_->HasChunkLocal(bufferpacket_name));
+  ASSERT_TRUE(vault_service_->LoadChunkLocal(bufferpacket_name, &test_content));
+  ASSERT_TRUE(bp.ParseFromString(test_content));
+  ASSERT_TRUE(bpi.ParseFromString(bp.owner_info(0).data()));
+  ASSERT_EQ("Dan", bpi.owner());
+  ASSERT_EQ(pub_key, bpi.ownerpublickey());
+  ASSERT_EQ(0, bpi.online());
+  ASSERT_EQ(3, bpi.users_size());
+  for (int n = 0; n < bpi.users_size(); ++n)
+    ASSERT_EQ("newuser" + base::itos(n), bpi.users(n));
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
+  rpcprotocol::Controller controller;
+  maidsafe::CreateBPRequest request;
+  maidsafe::CreateBPResponse response;
+
+  // Not initialised
+  Callback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+                                    (&cb_obj, &Callback::CallbackFunction);
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  maidsafe::BufferPacketInfo bpi;
+  bpi.set_owner("Dan");
+  bpi.set_ownerpublickey(pub_key);
+  bpi.set_online(1);
+  bpi.add_users("newuser");
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  info->set_data(ser_bpi);
+  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
+                      crypto::STRING_STRING));
+  std::string ser_gp;
+  info->SerializeToString(&ser_gp);
+  std::string ser_bp;
+  bp.SerializeToString(&ser_bp);
+
+  std::string bufferpacket_name(co.Hash("DanBUFFER", "",
+                                crypto::STRING_STRING, false));
+  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
+                      &sig_req);
+  request.set_bufferpacket_name(bufferpacket_name);
+  request.set_data(ser_bp);
+  request.set_pmid(pmid);
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(sig_pub_key);
+  request.set_signed_request(sig_req);
+
+  vault_service_->CreateBP(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
+  ASSERT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+            response.signed_public_key(), "", crypto::STRING_STRING, false));
+
+  // Load the stored BP to check it
+  std::string test_content;
+  ASSERT_TRUE(vault_service_->HasChunkLocal(bufferpacket_name));
+  ASSERT_TRUE(vault_service_->LoadChunkLocal(bufferpacket_name, &test_content));
+  ASSERT_EQ(ser_bp, test_content);
+
+  // Get the messages
+  maidsafe::GetBPMessagesRequest get_msg_request;
+  maidsafe::GetBPMessagesResponse get_msg_response;
+  get_msg_request.set_bufferpacket_name(bufferpacket_name);
+  get_msg_request.set_pmid(pmid);
+  get_msg_request.set_public_key(pub_key);
+  get_msg_request.set_signed_public_key(sig_pub_key);
+  get_msg_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->GetBPMessages(&controller, &get_msg_request,
+                                &get_msg_response, done);
+  ASSERT_TRUE(get_msg_response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  ASSERT_EQ(get_msg_response.pmid_id(),
+            co.Hash(get_msg_response.public_key() +
+            get_msg_response.signed_public_key(), "",
+            crypto::STRING_STRING, false));
+  ASSERT_EQ(0, get_msg_response.messages_size());
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
+  rpcprotocol::Controller controller;
+  maidsafe::CreateBPRequest request;
+  maidsafe::CreateBPResponse response;
+
+  // Not initialised
+  Callback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+                                    (&cb_obj, &Callback::CallbackFunction);
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  maidsafe::BufferPacketInfo bpi;
+  bpi.set_owner("Dan");
+  bpi.set_ownerpublickey(pub_key);
+  bpi.set_online(1);
+  bpi.add_users("newuser");
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  info->set_data(ser_bpi);
+  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
+                      crypto::STRING_STRING));
+  std::string ser_gp;
+  info->SerializeToString(&ser_gp);
+  std::string ser_bp;
+  bp.SerializeToString(&ser_bp);
+
+  std::string bufferpacket_name(co.Hash("DanBUFFER", "",
+                                crypto::STRING_STRING, false));
+  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
+                      &sig_req);
+  request.set_bufferpacket_name(bufferpacket_name);
+  request.set_data(ser_bp);
+  request.set_pmid(pmid);
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(sig_pub_key);
+  request.set_signed_request(sig_req);
+
+  vault_service_->CreateBP(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
+  ASSERT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+            response.signed_public_key(), "", crypto::STRING_STRING, false));
+
+  // Load the stored BP to check it
+  std::string test_content;
+  ASSERT_TRUE(vault_service_->HasChunkLocal(bufferpacket_name));
+  ASSERT_TRUE(vault_service_->LoadChunkLocal(bufferpacket_name, &test_content));
+  ASSERT_EQ(ser_bp, test_content);
+
+  // Get the messages
+  maidsafe::GetBPMessagesRequest get_msg_request;
+  maidsafe::GetBPMessagesResponse get_msg_response;
+  get_msg_request.set_bufferpacket_name(bufferpacket_name);
+  get_msg_request.set_pmid(pmid);
+  get_msg_request.set_public_key(pub_key);
+  get_msg_request.set_signed_public_key(sig_pub_key);
+  get_msg_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->GetBPMessages(&controller, &get_msg_request,
+                                &get_msg_response, done);
+  ASSERT_TRUE(get_msg_response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  ASSERT_EQ(get_msg_response.pmid_id(),
+            co.Hash(get_msg_response.public_key() +
+            get_msg_response.signed_public_key(), "",
+            crypto::STRING_STRING, false));
+  ASSERT_EQ(0, get_msg_response.messages_size());
+
+  // Creation of newuser's credentials
+  std::string newuser_pub_key, newuser_priv_key, newuser_pmid,
+              newuser_sig_pub_key, newuser_sig_req;
+  CreateRSAKeys(&newuser_pub_key, &newuser_priv_key);
+  CreateSignedRequest(newuser_pub_key, newuser_priv_key, bufferpacket_name,
+                      &newuser_pmid, &newuser_sig_pub_key, &newuser_sig_req);
+
+  // Sending wrong message
+  maidsafe::AddBPMessageRequest add_msg_request;
+  maidsafe::AddBPMessageResponse add_msg_response;
+  add_msg_request.set_bufferpacket_name(bufferpacket_name);
+  add_msg_request.set_data("Something that's not a correct message");
+  add_msg_request.set_pmid(newuser_pmid);
+  add_msg_request.set_public_key(newuser_pub_key);
+  add_msg_request.set_signed_public_key(newuser_sig_pub_key);
+  add_msg_request.set_signed_request(newuser_sig_req);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->AddBPMessage(&controller, &add_msg_request,
+                               &add_msg_response, done);
+  ASSERT_TRUE(add_msg_response.IsInitialized());
+  ASSERT_EQ(kNack, static_cast<int>(add_msg_response.result()));
+  ASSERT_EQ(add_msg_response.pmid_id(),
+            co.Hash(add_msg_response.public_key() +
+            add_msg_response.signed_public_key(), "",
+            crypto::STRING_STRING, false));
+
+  // Creating the message
+  maidsafe::BufferPacketMessage bpm;
+  maidsafe::GenericPacket gp;
+  std::string msg("Don't switch doors!!");
+  bpm.set_sender_id("newuser");
+  bpm.set_sender_public_key(newuser_pub_key);
+  bpm.set_type(maidsafe::INSTANT_MSG);
+  int iter = base::random_32bit_uinteger() % 1000 +1;
+  std::string aes_key = co.SecurePassword(co.Hash(msg, "",
+                        crypto::STRING_STRING, true), iter);
+  bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", pub_key,
+                     crypto::STRING_STRING));
+  bpm.set_aesenc_message(co.SymmEncrypt(msg, "", crypto::STRING_STRING,
+                         aes_key));
+  bpm.set_timestamp(base::get_epoch_time());
+  std::string ser_bpm;
+  bpm.SerializeToString(&ser_bpm);
+  gp.set_data(ser_bpm);
+  gp.set_signature(co.AsymSign(gp.data(), "", newuser_priv_key,
+                   crypto::STRING_STRING));
+  gp.SerializeToString(&ser_gp);
+
+  // Sending the message
+  add_msg_request.Clear();
+  add_msg_response.Clear();
+  add_msg_request.set_bufferpacket_name(bufferpacket_name);
+  add_msg_request.set_data(ser_gp);
+  add_msg_request.set_pmid(newuser_pmid);
+  add_msg_request.set_public_key(newuser_pub_key);
+  add_msg_request.set_signed_public_key(newuser_sig_pub_key);
+  add_msg_request.set_signed_request(newuser_sig_req);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->AddBPMessage(&controller, &add_msg_request,
+                               &add_msg_response, done);
+  ASSERT_TRUE(add_msg_response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(add_msg_response.result()));
+  ASSERT_EQ(add_msg_response.pmid_id(),
+            co.Hash(add_msg_response.public_key() +
+            add_msg_response.signed_public_key(), "",
+            crypto::STRING_STRING, false));
+
+  // Get the messages again
+  get_msg_request.Clear();
+  get_msg_response.Clear();
+  get_msg_request.set_bufferpacket_name(bufferpacket_name);
+  get_msg_request.set_pmid(pmid);
+  get_msg_request.set_public_key(pub_key);
+  get_msg_request.set_signed_public_key(sig_pub_key);
+  get_msg_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->GetBPMessages(&controller, &get_msg_request,
+                                &get_msg_response, done);
+  ASSERT_TRUE(get_msg_response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  ASSERT_EQ(get_msg_response.pmid_id(),
+            co.Hash(get_msg_response.public_key() +
+            get_msg_response.signed_public_key(), "",
+            crypto::STRING_STRING, false));
+  ASSERT_EQ(1, get_msg_response.messages_size());
+  maidsafe::ValidatedBufferPacketMessage vbpm;
+  ASSERT_TRUE(vbpm.ParseFromString(get_msg_response.messages(0)));
+  ASSERT_EQ(bpm.sender_id(), vbpm.sender());
+  ASSERT_EQ(bpm.aesenc_message(), vbpm.message());
+  ASSERT_EQ(bpm.rsaenc_key(), vbpm.index());
+  ASSERT_EQ(bpm.type(), vbpm.type());
+
+  // Get the messages again
+  get_msg_request.Clear();
+  get_msg_response.Clear();
+  get_msg_request.set_bufferpacket_name(bufferpacket_name);
+  get_msg_request.set_pmid(pmid);
+  get_msg_request.set_public_key(pub_key);
+  get_msg_request.set_signed_public_key(sig_pub_key);
+  get_msg_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->GetBPMessages(&controller, &get_msg_request,
+                                &get_msg_response, done);
+  ASSERT_TRUE(get_msg_response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  ASSERT_EQ(get_msg_response.pmid_id(),
+            co.Hash(get_msg_response.public_key() +
+            get_msg_response.signed_public_key(), "",
+            crypto::STRING_STRING, false));
+  ASSERT_EQ(0, get_msg_response.messages_size());
 }
 
 }  // namespace maidsafe_vault

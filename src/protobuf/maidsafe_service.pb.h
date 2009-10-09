@@ -86,10 +86,6 @@ class MaidsafeService : public ::google::protobuf::Service {
                        const ::maidsafe::UpdateRequest* request,
                        ::maidsafe::UpdateResponse* response,
                        ::google::protobuf::Closure* done);
-  virtual void GetMessages(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::GetMessagesRequest* request,
-                       ::maidsafe::GetMessagesResponse* response,
-                       ::google::protobuf::Closure* done);
   virtual void Delete(::google::protobuf::RpcController* controller,
                        const ::maidsafe::DeleteRequest* request,
                        ::maidsafe::DeleteResponse* response,
@@ -105,6 +101,22 @@ class MaidsafeService : public ::google::protobuf::Service {
   virtual void VaultStatus(::google::protobuf::RpcController* controller,
                        const ::maidsafe::VaultStatusRequest* request,
                        ::maidsafe::VaultStatusResponse* response,
+                       ::google::protobuf::Closure* done);
+  virtual void CreateBP(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::CreateBPRequest* request,
+                       ::maidsafe::CreateBPResponse* response,
+                       ::google::protobuf::Closure* done);
+  virtual void ModifyBPInfo(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::ModifyBPInfoRequest* request,
+                       ::maidsafe::ModifyBPInfoResponse* response,
+                       ::google::protobuf::Closure* done);
+  virtual void GetBPMessages(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::GetBPMessagesRequest* request,
+                       ::maidsafe::GetBPMessagesResponse* response,
+                       ::google::protobuf::Closure* done);
+  virtual void AddBPMessage(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::AddBPMessageRequest* request,
+                       ::maidsafe::AddBPMessageResponse* response,
                        ::google::protobuf::Closure* done);
   
   // implements Service ----------------------------------------------
@@ -171,10 +183,6 @@ class MaidsafeService_Stub : public MaidsafeService {
                        const ::maidsafe::UpdateRequest* request,
                        ::maidsafe::UpdateResponse* response,
                        ::google::protobuf::Closure* done);
-  void GetMessages(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::GetMessagesRequest* request,
-                       ::maidsafe::GetMessagesResponse* response,
-                       ::google::protobuf::Closure* done);
   void Delete(::google::protobuf::RpcController* controller,
                        const ::maidsafe::DeleteRequest* request,
                        ::maidsafe::DeleteResponse* response,
@@ -190,6 +198,22 @@ class MaidsafeService_Stub : public MaidsafeService {
   void VaultStatus(::google::protobuf::RpcController* controller,
                        const ::maidsafe::VaultStatusRequest* request,
                        ::maidsafe::VaultStatusResponse* response,
+                       ::google::protobuf::Closure* done);
+  void CreateBP(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::CreateBPRequest* request,
+                       ::maidsafe::CreateBPResponse* response,
+                       ::google::protobuf::Closure* done);
+  void ModifyBPInfo(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::ModifyBPInfoRequest* request,
+                       ::maidsafe::ModifyBPInfoResponse* response,
+                       ::google::protobuf::Closure* done);
+  void GetBPMessages(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::GetBPMessagesRequest* request,
+                       ::maidsafe::GetBPMessagesResponse* response,
+                       ::google::protobuf::Closure* done);
+  void AddBPMessage(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::AddBPMessageRequest* request,
+                       ::maidsafe::AddBPMessageResponse* response,
                        ::google::protobuf::Closure* done);
  private:
   ::google::protobuf::RpcChannel* channel_;

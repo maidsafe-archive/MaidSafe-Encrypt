@@ -42,7 +42,7 @@ typedef std::map<std::string, boost::any> PacketParams;
 class Packet {
  public:
   Packet();
-  virtual PacketParams Create(PacketParams params) = 0;
+  virtual PacketParams Create(PacketParams *params) = 0;
   bool ValidateSignature(const std::string &serialised_packet,
                          const std::string &public_key);
   PacketParams GetData(std::string serialised_packet);

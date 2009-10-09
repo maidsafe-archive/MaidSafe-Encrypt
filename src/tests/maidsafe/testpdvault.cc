@@ -73,7 +73,7 @@ inline void GetPacketCallback(const std::string &result) {
 }
 
 inline void GetMessagesCallback(const std::string &result) {
-  maidsafe::GetMessagesResponse resp;
+  maidsafe::GetBPMessagesResponse resp;
   if (!resp.ParseFromString(result) ||
       resp.result() != kAck) {
     callback_succeeded_ = false;

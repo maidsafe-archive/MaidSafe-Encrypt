@@ -116,7 +116,7 @@ class VaultRpcs {
                    const boost::uint16_t &remote_port,
                    const std::string &rendezvous_ip,
                    const boost::uint16_t &rendezvous_port,
-                   maidsafe::GetMessagesResponse *response,
+                   maidsafe::GetBPMessagesResponse *response,
                    rpcprotocol::Controller *controller,
                    google::protobuf::Closure *done);
   void SwapChunk(const boost::uint32_t request_type,

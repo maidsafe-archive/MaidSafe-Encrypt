@@ -27,11 +27,13 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/thread/mutex.hpp>
+#include <gtest/gtest_prod.h>
 
 #include <list>
 #include <string>
 
 #include "maidsafe/cppsqlite3.h"
+#include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
 #include "maidsafe/vault/vaultbufferpackethandler.h"
 #include "protobuf/datamaps.pb.h"
@@ -42,36 +44,47 @@ class ChunkStore;
 
 class LocalStoreManager : public StoreManagerInterface {
  public:
-  LocalStoreManager(boost::recursive_mutex *mutex,
-                    boost::shared_ptr<ChunkStore> client_chunkstore);
+  explicit LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore);
   virtual ~LocalStoreManager() {}
   virtual void Init(int, base::callback_func_type cb);
   virtual void Close(base::callback_func_type cb, bool);
   virtual void CleanUpTransport() {}
+  virtual void ClearStoreQueue() {}
+  virtual bool NotDoneWithUploading();
+  virtual bool KeyUnique(const std::string &hex_key, bool check_local);
+
+  // Chunks
   virtual int LoadChunk(const std::string &hex_chunk_name, std::string *data);
-  virtual void LoadPacket(const std::string &hex_key,
-                          std::string *result);
-  virtual int LoadMessages(const std::string &hex_key,
-                           const std::string &public_key,
-                           const std::string &signed_public_key,
-                           std::list<std::string> *messages);
   virtual void StoreChunk(const std::string &hex_chunk_name,
                           const DirType,
                           const std::string&);
+
+  // Packets
+  virtual void LoadPacket(const std::string &hex_key,
+                          std::string *result);
   virtual int StorePacket(const std::string &hex_packet_name,
                           const std::string &value,
                           PacketType system_packet_type,
                           DirType dir_type,
                           const std::string &msid);
-  virtual bool KeyUnique(const std::string &hex_key, bool check_local);
-  virtual void ClearStoreQueue() {}
-
   virtual void DeletePacket(const std::string &hex_key,
                             const std::string &signature,
                             const std::string &public_key,
                             const std::string &signed_public_key,
                             const ValueType &type,
                             base::callback_func_type cb);
+
+  // Buffer packet
+  virtual int CreateBP(const std::string &bufferpacketname,
+                       const std::string &ser_packet);
+  virtual int LoadBPMessages(const std::string &bufferpacketname,
+                             std::list<std::string> *messages);
+  virtual int ModifyBPInfo(const std::string &bufferpacketname,
+                           const std::string &ser_gp);
+  virtual int AddBPMessage(const std::string &bufferpacketname,
+                           const std::string &ser_gp);
+
+  // Vault
   virtual void PollVaultInfo(base::callback_func_type cb);
   virtual void VaultContactInfo(base::callback_func_type cb);
   virtual void OwnLocalVault(const std::string &priv_key, const std::string
@@ -79,26 +92,28 @@ class LocalStoreManager : public StoreManagerInterface {
       const std::string &chunkstore_dir, const boost::uint64_t &space,
       boost::function<void(const OwnVaultResult&, const std::string&)> cb);
   virtual void LocalVaultStatus(boost::function<void(const VaultStatus&)> cb);
-  virtual bool NotDoneWithUploading();
 
  private:
+  FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_AddBPMessage);
+  FRIEND_TEST(ClientBufferPacketHandlerTest,
+              BEH_MAID_AddBPMessageNonAuthorisedUser);
+  FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_DeleteBPUsers);
+  FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_MultipleBPMessages);
+  FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_ModifyBPUserInfo);
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
   CppSQLite3DB db_;
   VaultBufferPacketHandler vbph_;
-  crypto::Crypto crypto_obj_;
-  boost::recursive_mutex *mutex_;
+  boost::mutex mutex_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
+  SessionSingleton *ss_;
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
-  // bool AddMessageToBufferPacket(std::string &key,
-  //                               std::string &value,
-  //                               std::string &public_key);
-  bool ModifyBufferPacketInfo(const std::string &hex_key,
-                              std::string *value,
-                              const std::string &public_key);
   int StorePacket_InsertToDb(const std::string &hex_key,
                               const std::string &value);
   std::string GetValue_FromDB(const std::string &hex_key);
+  int FindAndLoadChunk(const std::string &chunkname, std::string *data);
+  int FlushDataIntoChunk(const std::string &chunkname, const std::string &data,
+                         const bool &overwrite);
 };
 
 }  // namespace maidsafe

@@ -80,9 +80,9 @@ class VaultService : public maidsafe::MaidsafeService {
                         maidsafe::StoreIOUResponse* response,
                         google::protobuf::Closure* done);
   virtual void StoreChunkReference(google::protobuf::RpcController*,
-     const maidsafe::StoreReferenceRequest* request,
-     maidsafe::StoreReferenceResponse* response,
-     google::protobuf::Closure* done);
+      const maidsafe::StoreReferenceRequest* request,
+      maidsafe::StoreReferenceResponse* response,
+      google::protobuf::Closure* done);
   virtual void Get(google::protobuf::RpcController* controller,
                    const maidsafe::GetRequest* request,
                    maidsafe::GetResponse* response,
@@ -95,10 +95,10 @@ class VaultService : public maidsafe::MaidsafeService {
                       const maidsafe::UpdateRequest* request,
                       maidsafe::UpdateResponse* response,
                       google::protobuf::Closure* done);
-  virtual void GetMessages(google::protobuf::RpcController* controller,
-                           const maidsafe::GetMessagesRequest* request,
-                           maidsafe::GetMessagesResponse* response,
-                           google::protobuf::Closure* done);
+//  virtual void GetMessages(google::protobuf::RpcController* controller,
+//                           const maidsafe::GetBPMessagesRequest* request,
+//                           maidsafe::GetBPMessagesResponse* response,
+//                           google::protobuf::Closure* done);
   virtual void Delete(google::protobuf::RpcController* controller,
                       const maidsafe::DeleteRequest* request,
                       maidsafe::DeleteResponse* response,
@@ -115,6 +115,25 @@ class VaultService : public maidsafe::MaidsafeService {
                            const maidsafe::VaultStatusRequest* request,
                            maidsafe::VaultStatusResponse* response,
                            google::protobuf::Closure* done);
+
+  // BP services
+  virtual void CreateBP(google::protobuf::RpcController* controller,
+                        const maidsafe::CreateBPRequest* request,
+                        maidsafe::CreateBPResponse* response,
+                        google::protobuf::Closure* done);
+  virtual void ModifyBPInfo(google::protobuf::RpcController* controller,
+                            const maidsafe::ModifyBPInfoRequest* request,
+                            maidsafe::ModifyBPInfoResponse* response,
+                            google::protobuf::Closure* done);
+  virtual void GetBPMessages(google::protobuf::RpcController* controller,
+                             const maidsafe::GetBPMessagesRequest* request,
+                             maidsafe::GetBPMessagesResponse* response,
+                             google::protobuf::Closure* done);
+  virtual void AddBPMessage(google::protobuf::RpcController* controller,
+                            const maidsafe::AddBPMessageRequest* request,
+                            maidsafe::AddBPMessageResponse* response,
+                            google::protobuf::Closure* done);
+
  private:
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSystemPacket);
@@ -127,6 +146,10 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesDelete);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidityCheck);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesCreateBP);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetBPMessages);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPMessages);
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
   bool ValidateSignedRequest(const std::string &public_key,

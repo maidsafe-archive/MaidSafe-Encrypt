@@ -170,10 +170,10 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   ASSERT_EQ(static_cast<boost::int32_t>(1), bp_updated.messages_size());
   std::vector<std::string> msgs, msgs1;
   ASSERT_TRUE(vbph.IsOwner("test bufferpacket", bp_updated.owner_info(0)));
-  ASSERT_TRUE(vbph.GetMessages(ser_bp_updated, &msgs));
+  ASSERT_TRUE(vbph.GetMessages(&ser_bp_updated, &msgs));
   ASSERT_EQ(size_t(1), msgs.size());
   ASSERT_TRUE(vbph.ClearMessages(&ser_bp_updated));
-  ASSERT_TRUE(vbph.GetMessages(ser_bp_updated, &msgs1));
+  ASSERT_TRUE(vbph.GetMessages(&ser_bp_updated, &msgs1));
   ASSERT_EQ(size_t(0), msgs1.size());
 }
 
@@ -230,7 +230,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
   ASSERT_EQ(1, bp_updated.messages_size());
   std::vector<std::string> msgs;
   ASSERT_TRUE(vbph.IsOwner("test bufferpacket", bp_updated.owner_info(0)));
-  ASSERT_TRUE(vbph.GetMessages(str_bp_updated, &msgs));
+  ASSERT_TRUE(vbph.GetMessages(&str_bp_updated, &msgs));
   ASSERT_EQ(size_t(1), msgs.size());
 }
 
