@@ -57,15 +57,13 @@ bool MakeChunks(const boost::uint32_t &num_chunks,
     upper = 32000;
   }
   for (boost::uint32_t i = 0; i < num_chunks; ++i) {
-    boost::uint64_t factor = (upper - lower) / RAND_MAX;
+    double factor = static_cast<double>(upper - lower) / RAND_MAX;
     boost::uint64_t chunk_size(lower + (rand() * factor));  // NOLINT (Fraser)
-    printf("Chunkname %i AAAAAAAAAAAAAAA\n", i);
     // just in case!
     while (chunk_size > upper)
       chunk_size = chunk_size / 2;
     chunksize->push_back(chunk_size);
     value->push_back(base::RandomString(chunksize->at(i)));
-    printf("Chunkname %i BBBBBBBBBBBBBBB\n", i);
     if (hashable) {
       name->push_back(cry_obj->Hash(value->at(i), "", crypto::STRING_STRING,
                                     false));
@@ -73,7 +71,6 @@ bool MakeChunks(const boost::uint32_t &num_chunks,
       name->push_back(cry_obj->Hash(base::itos(i), "", crypto::STRING_STRING,
                                     false));
     }
-    printf("Chunkname %i: %s\n", i, HexCstring(name->at(i)));
   }
   return (chunksize->size() == num_chunks && value->size() == num_chunks &&
           name->size() == num_chunks);
