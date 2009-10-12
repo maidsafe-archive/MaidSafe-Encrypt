@@ -73,7 +73,7 @@ bool MakeChunks(const boost::uint32_t &num_chunks,
       name->push_back(cry_obj->Hash(base::itos(i), "", crypto::STRING_STRING,
                                     false));
     }
-    printf("Chunkname %i: %s\n", i, HexEncodeSubstring(name->at(i)).c_str());
+    printf("Chunkname %i: %s\n", i, HexCstring(name->at(i)));
   }
   return (chunksize->size() == num_chunks && value->size() == num_chunks &&
           name->size() == num_chunks);

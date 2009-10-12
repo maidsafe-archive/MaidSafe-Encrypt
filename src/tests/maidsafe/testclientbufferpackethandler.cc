@@ -284,7 +284,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetBufferPacketAndInfo) {
 
   std::list<ValidatedBufferPacketMessage> valid_messages;
   std::string load_bp_content;
-  ASSERT_EQ(0, clientbufferpackethandler.GetBufferPacket(maidsafe::MPID,
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
             &valid_messages);
   std::string load_bp_info_content;
   ASSERT_TRUE(buffer_packet.ParseFromString(packet_content));
@@ -397,7 +397,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddBPMessage) {
   std::list<maidsafe::ValidatedBufferPacketMessage> valid_messages;
   ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
             &valid_messages));
-  ASSERT_EQ(1, valid_messages.size());
+  ASSERT_EQ(size_t(1), valid_messages.size());
   maidsafe::ValidatedBufferPacketMessage vbpm = valid_messages.front();
   ASSERT_EQ(bpm.sender_id(), vbpm.sender());
   ASSERT_EQ("test msg", vbpm.message());
@@ -406,7 +406,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddBPMessage) {
 
   ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
             &valid_messages));
-  ASSERT_EQ(0, valid_messages.size());
+  ASSERT_EQ(size_t(0), valid_messages.size());
 }
 
 TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddBPMessageNonAuthorisedUser) {
@@ -468,7 +468,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddBPMessageNonAuthorisedUser) {
   std::list<maidsafe::ValidatedBufferPacketMessage> valid_messages;
   ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
             &valid_messages));
-  ASSERT_EQ(0, valid_messages.size());
+  ASSERT_EQ(size_t(0), valid_messages.size());
 
   // Non-authorised user with add contact request
   bpm.set_type(maidsafe::ADD_CONTACT_RQST);
@@ -489,14 +489,14 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddBPMessageNonAuthorisedUser) {
             ser_up_bp, true));
   ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
             &valid_messages));
-  ASSERT_EQ(1, valid_messages.size());
+  ASSERT_EQ(size_t(1), valid_messages.size());
   maidsafe::ValidatedBufferPacketMessage vbpm = valid_messages.front();
   ASSERT_EQ(bpm.sender_id(), vbpm.sender());
   ASSERT_EQ(bpm.type(), vbpm.type());
 
   ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
             &valid_messages));
-  ASSERT_EQ(0, valid_messages.size());
+  ASSERT_EQ(size_t(0), valid_messages.size());
 }
 
 /*
@@ -672,7 +672,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_MultipleBPMessages) {
 
   std::list<maidsafe::ValidatedBufferPacketMessage> valid_messages;
   ASSERT_EQ(0, cbph.GetMessages(maidsafe::MPID, &valid_messages));
-  ASSERT_EQ(3, valid_messages.size());
+  ASSERT_EQ(size_t(3), valid_messages.size());
 
   for (unsigned int k = 0; k < valid_messages.size(); ++k) {
     EXPECT_EQ(usuarios[k], valid_messages.front().sender());
@@ -831,7 +831,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
       public_key, private_key));
 
   std::list<maidsafe::ValidatedBufferPacketMessage> valid_messages;
-  ASSERT_EQ(0, clientbufferpackethandler.GetBufferPacket(maidsafe::MPID,
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
             &valid_messages));
   ASSERT_EQ(0, valid_messages.size());
   ASSERT_EQ(size_t(0), ss->AuthorisedUsers().size());
@@ -844,7 +844,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_GetBufferPacket) {
 
   ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
 
-  ASSERT_EQ(0, clientbufferpackethandler.GetBufferPacket(maidsafe::MPID,
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
             &valid_messages));
   ASSERT_EQ(0, valid_messages.size());
   ASSERT_EQ(size_t(3), ss->AuthorisedUsers().size());

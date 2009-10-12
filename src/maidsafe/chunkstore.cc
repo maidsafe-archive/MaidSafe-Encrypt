@@ -366,7 +366,7 @@ int ChunkStore::Store(const std::string &key, const std::string &value) {
   if (Has(key)) {
 #ifdef DEBUG
     printf("Chunk %s already exists in ChunkStore::StoreChunk.\n",
-           HexEncodeSubstring(key).c_str());
+           HexCstring(key));
 #endif
 // If chunk is cached and is hashable, change type to kNormal.  If chunk is
 // in Outgoing dir, leave it there.

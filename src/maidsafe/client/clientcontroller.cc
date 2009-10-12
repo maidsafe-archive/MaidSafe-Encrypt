@@ -312,9 +312,9 @@ int ClientController::SerialiseDa() {
   return 0;
 }
 
-Exitcode ClientController::CheckUserExists(const std::string &username,
-                                           const std::string &pin,
-                                           DefConLevels level) {
+int ClientController::CheckUserExists(const std::string &username,
+                                      const std::string &pin,
+                                      DefConLevels level) {
   ss_->ResetSession();
   ss_->SetDefConLevel(level);
   return auth_->GetUserInfo(username, pin);
@@ -324,15 +324,13 @@ bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password,
                                   const VaultConfigParameters &) {
-  Exitcode result = auth_->CreateUserSysPackets(username,
-                                                pin,
-                                                password);
+  int result = auth_->CreateUserSysPackets(username, pin, password);
 #ifdef DEBUG
   printf("ClientController::CreateUser --- "
          "Finished with CreateUserSysPackets: %d ---\n", result);
 #endif
 
-  if (result != OK) {
+  if (result != kSuccess) {
     printf("In ClientController::CreateUser 19\n");
     ss_->ResetSession();
     return false;
@@ -506,9 +504,9 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
 
 bool ClientController::ValidateUser(const std::string &password) {
   ser_da_ = "";
-  Exitcode result = auth_->GetUserData(password, ser_da_);
+  int result = auth_->GetUserData(password, ser_da_);
 
-  if (result != OK) {
+  if (result != kSuccess) {
     // Password validation failed
     ss_->ResetSession();
 #ifdef DEBUG
@@ -611,7 +609,7 @@ bool ClientController::Logout() {
   }
 
   SerialiseDa();
-  Exitcode result = auth_->SaveSession(ser_da_, priv_keys, pub_keys);
+  int result = auth_->SaveSession(ser_da_, priv_keys, pub_keys);
   thread_pool_.clear();
   thread_pool_.wait();
 
@@ -623,7 +621,7 @@ bool ClientController::Logout() {
 //  ss_->SetConnectionStatus(connection_status);
 
 //  sm_->ClearStoreQueue();
-  if (result == OK && !RunDbEncQueue()) {
+  if (result == kSuccess && !RunDbEncQueue()) {
     printf("ClientController::Logout - OK and ran DB queue.\n");
     while (sm_->NotDoneWithUploading()) {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -657,13 +655,13 @@ bool ClientController::Logout() {
 
 bool ClientController::LeaveMaidsafeNetwork() {
   std::list<KeyAtlasRow> keys;
-  Exitcode result;
+  int result;
   std::string dir_ = fsys_.MaidsafeDir();
   {
     ss_->GetKeys(&keys);
     result = auth_->RemoveMe(keys);
   }
-  if (result == OK) {
+  if (result == kSuccess) {
     delete seh_;
     delete msgh_;
     try {
@@ -674,7 +672,6 @@ bool ClientController::LeaveMaidsafeNetwork() {
       printf("Error: %s\n", exception_.what());
 #endif
     }
-
     return true;
   }
   return false;
@@ -706,14 +703,12 @@ bool ClientController::ChangeUsername(std::string new_username) {
     }
   }
 
-  Exitcode result = auth_->ChangeUsername(ser_da_,
-                                          priv_keys,
-                                          pub_keys,
-                                          new_username);
+  int result = auth_->ChangeUsername(ser_da_, priv_keys, pub_keys,
+                                     new_username);
 #ifdef DEBUG
   // printf("%i\n", result);
 #endif
-  if (result == OK)
+  if (result == kSuccess)
     return true;
   return false;
 }
@@ -744,14 +739,11 @@ bool ClientController::ChangePin(std::string new_pin) {
     }
   }
 
-  Exitcode result = auth_->ChangePin(ser_da_,
-                                     priv_keys,
-                                     pub_keys,
-                                     new_pin);
+  int result = auth_->ChangePin(ser_da_, priv_keys, pub_keys, new_pin);
 #ifdef DEBUG
   // printf("%i\n", result);
 #endif
-  if (result == OK)
+  if (result == kSuccess)
     return true;
   return false;
 }
@@ -782,14 +774,12 @@ bool ClientController::ChangePassword(std::string new_password) {
     }
   }
 
-  Exitcode result = auth_->ChangePassword(ser_da_,
-                                          priv_keys,
-                                          pub_keys,
-                                          new_password);
+  int result = auth_->ChangePassword(ser_da_, priv_keys, pub_keys,
+                                     new_password);
 #ifdef DEBUG
   // printf("%i\n", result);
 #endif
-  if (result == OK)
+  if (result == kSuccess)
     return true;
   return false;
 }
@@ -806,8 +796,8 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
     return false;
   }
   PacketParams keys_result;
-  Exitcode result = auth_->CreatePublicName(public_username, &keys_result);
-  if (result != OK) {
+  int result = auth_->CreatePublicName(public_username, &keys_result);
+  if (result != kSuccess) {
 #ifdef DEBUG
     printf("Error in CreatePublicName.\n");
 #endif
@@ -1014,9 +1004,8 @@ int ClientController::HandleReceivedShare(
         sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
         std::string public_key("aaa");
-        Exitcode result =
-          auth_->PublicUsernamePublicKey(sp.id, public_key);
-        if (result != OK) {
+        int result = auth_->PublicUsernamePublicKey(sp.id, public_key);
+        if (result != kSuccess) {
 #ifdef DEBUG
           printf("Couldn't find %s's public key.\n", sp.id.c_str());
 #endif
@@ -1038,9 +1027,8 @@ int ClientController::HandleReceivedShare(
         sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
         std::string public_key("aaa");
-        Exitcode result =
-          auth_->PublicUsernamePublicKey(sp.id, public_key);
-        if (result != OK) {
+        int result = auth_->PublicUsernamePublicKey(sp.id, public_key);
+        if (result != kSuccess) {
 #ifdef DEBUG
           printf("Couldn't find %s's public key.\n", sp.id.c_str());
 #endif
@@ -1215,8 +1203,8 @@ int ClientController::HandleAddContactRequest(
     rec_public_key = mic.pub_key_;
   } else {  // Contact didn't exist. Add from scratch.
     // Get contact's public key
-    Exitcode result = auth_->PublicUsernamePublicKey(sender, rec_public_key);
-    if (result != OK) {
+    int result = auth_->PublicUsernamePublicKey(sender, rec_public_key);
+    if (result != kSuccess) {
 #ifdef DEBUG
       printf("Can't get sender's public key.\n");
 #endif
@@ -1574,8 +1562,8 @@ int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
 
 int ClientController::AddContact(const std::string &public_name) {
   std::string public_key("aaa");
-  Exitcode result = auth_->PublicUsernamePublicKey(public_name, public_key);
-  if (result == OK) {
+  int result = auth_->PublicUsernamePublicKey(public_name, public_key);
+  if (result == kSuccess) {
     // Sending the request to add the contact
     // TODO(Richard): the info is empty because there is no way
     // to get the users contact data

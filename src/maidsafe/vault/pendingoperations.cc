@@ -107,10 +107,8 @@ int PendingOperationsHandler::AdvanceStatus(const std::string &pmid,
   }
   if (p.first == p.second) {
 #ifdef DEBUG
-    std::string hex_chunkname;
-    base::encode_to_hex(chunkname, &hex_chunkname);
-    printf("In POH::AdvanceStatus, Pending operation not found (%s...)\n",
-           hex_chunkname.substr(0, 10).c_str());
+    printf("In POH::AdvanceStatus, Pending operation not found (%s)\n",
+           HexCstring(chunkname));
 #endif
     return -1493;
   }
@@ -145,17 +143,15 @@ int PendingOperationsHandler::FindOperation(const std::string &pmid,
                                pmid, chunk_size));
   if (p.first == p.second) {
 #ifdef DEBUG
-    std::string hex_chunkname;
-    base::encode_to_hex(chunkname, &hex_chunkname);
-    printf("In POH::FindOperation, Pending operation not found (%s...)\n",
-           hex_chunkname.substr(0, 10).c_str());
+    printf("In POH::FindOperation, Pending operation not found (%s)\n",
+           HexCstring(chunkname));
 #endif
     return -1494;
   }
   ++p.first;
   if (p.first != p.second) {
 #ifdef DEBUG
-    printf("More than one found (%s).\n", chunkname.c_str());
+    printf("More than one found (%s)\n", HexCstring(chunkname));
 #endif
     return -1494;
   }
@@ -171,10 +167,8 @@ int PendingOperationsHandler::EraseOperation(
   p = pending_ops_.equal_range(boost::make_tuple(status, chunkname, pmid));
   if (p.first == p.second) {
 #ifdef DEBUG
-    std::string hex_chunkname;
-    base::encode_to_hex(chunkname, &hex_chunkname);
-    printf("In POH::EraseOperation, Pending operation not found (%s...)\n",
-           hex_chunkname.substr(0, 10).c_str());
+    printf("In POH::EraseOperation, Pending operation not found (%s)\n",
+           HexCstring(chunkname));
 #endif
     return -1495;
   }
@@ -263,13 +257,9 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       if (pmid.empty() || chunkname.empty() || chunk_size == 0 ||
           !iou.empty() || !rank_authority.empty()) {
 #ifdef DEBUG
-#ifdef MAIDSAFE_WIN32
-        printf("Wrong parameters (%s) -- (%s) -- (%I64u)-- (%s) -- (%s)\n",
-#else
         printf("Wrong parameters (%s) -- (%s) -- (%llu)-- (%s) -- (%s)\n",
-#endif
-               pmid.c_str(), chunkname.c_str(), chunk_size,
-               iou.c_str(), rank_authority.c_str());
+               HexCstring(pmid), HexCstring(chunkname), chunk_size,
+               HexCstring(iou), HexCstring(rank_authority));
 #endif
         res = -1496;
       }
@@ -281,7 +271,7 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       if (chunkname.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s)\n", iou.c_str(),
-               rank_authority.c_str());
+               HexCstring(rank_authority));
 #endif
         res = -1496;
       }
@@ -292,13 +282,9 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       if (pmid.empty() || chunkname.empty() || chunk_size == 0 ||
          iou.empty() || !rank_authority.empty()) {
 #ifdef DEBUG
-#ifdef MAIDSAFE_WIN32
-        printf("Wrong parameters (%s) -- (%s) -- (%I64u)-- (%s) -- (%s)\n",
-#else
         printf("Wrong parameters (%s) -- (%s) -- (%llu)-- (%s) -- (%s)\n",
-#endif
-               pmid.c_str(), chunkname.c_str(), chunk_size,
-               iou.c_str(), rank_authority.c_str());
+               HexCstring(pmid), HexCstring(chunkname), chunk_size,
+               HexCstring(iou), HexCstring(rank_authority));
 #endif
         res = -1497;
       }
@@ -307,7 +293,7 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       if (pmid.empty() || chunkname.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s)\n",
-               pmid.c_str(), chunkname.c_str());
+               HexCstring(pmid), HexCstring(chunkname));
 #endif
         res = -1497;
       }

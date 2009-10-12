@@ -39,6 +39,7 @@
 
 #include <string>
 
+#include "maidsafe/returncodes.h"
 #include "protobuf/datamaps.pb.h"
 #include "protobuf/packet.pb.h"
 
@@ -322,10 +323,10 @@ enum ValueType {
 
 }  // namespace maidsafe
 
-inline std::string HexEncodeSubstring(const std::string &non_hex) {
+inline const char *HexCstring(const std::string &non_hex) {
   std::string hex;
   base::encode_to_hex(non_hex, &hex);
-  return hex.substr(0, 10) + "...";
+  return (hex.substr(0, 10) + "...").c_str();
 }
 
 #endif  // MAIDSAFE_MAIDSAFE_H_

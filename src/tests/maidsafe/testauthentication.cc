@@ -149,18 +149,18 @@ TEST_F(AuthenticationTest, BEH_MAID_Login) {
       new Authentication(sm.get()));
   DataAtlas data_atlas;
   std::string ser_da_login, ser_da_register;
-  Exitcode result = authentication->GetUserInfo(username, pin);
-  EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
+  int result = authentication->GetUserInfo(username, pin);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
-  ASSERT_EQ(OK, result) << "Unable to register user";
+  ASSERT_EQ(kSuccess, result) << "Unable to register user";
   ss->SerialisedKeyRing(&ser_da_register);
   cb.Reset();
   result = authentication->GetUserInfo(username, pin);
-  ASSERT_EQ(USER_EXISTS, result) << "User does not exist";
+  ASSERT_EQ(kUserExists, result) << "User does not exist";
   result = authentication->GetUserData(password, ser_da_login);
-  ASSERT_EQ(OK, result)<< "Unable to get registered user's data";
+  ASSERT_EQ(kSuccess, result)<< "Unable to get registered user's data";
   ASSERT_NE("", ser_da_login)
       << "Serialised DA recovered from login empty string";
   ASSERT_TRUE(data_atlas.ParseFromString(ser_da_login))
@@ -179,17 +179,17 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get()));
   std::string ser_da, ser_da_login;
-  Exitcode result = authentication->GetUserInfo(username, pin);
-  EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
+  int result = authentication->GetUserInfo(username, pin);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
-  ASSERT_EQ(OK, result)<< "Unable to register user";
+  ASSERT_EQ(kSuccess, result)<< "Unable to register user";
   cb.Reset();
   result = authentication->GetUserInfo(username, pin);
-  ASSERT_EQ(USER_EXISTS, result) << "User does not exist";
+  ASSERT_EQ(kUserExists, result) << "User does not exist";
   result = authentication->GetUserData("password_tonto", ser_da_login);
-  ASSERT_EQ(PASSWORD_FAIL, result);
+  ASSERT_EQ(kPasswordFailure, result);
 }
 
 TEST_F(AuthenticationTest, BEH_MAID_RegisterUser) {
@@ -201,13 +201,13 @@ TEST_F(AuthenticationTest, BEH_MAID_RegisterUser) {
   DataAtlas data_atlas;
   std::string ser_da;
 
-  Exitcode result = authentication->GetUserInfo(username, pin);
-  EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
+  int result = authentication->GetUserInfo(username, pin);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
   ss->SerialisedKeyRing(&ser_da);
-  ASSERT_EQ(OK, result)<< "Unable to register user";
+  ASSERT_EQ(kSuccess, result)<< "Unable to register user";
   ASSERT_NE("", ser_da);
   ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
               "Data Atlas hasn't the correct format";
@@ -226,19 +226,19 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
   DataAtlas data_atlas;
   std::string ser_da;
 
-  Exitcode result = authentication->GetUserInfo(username, pin);
-  EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
+  int result = authentication->GetUserInfo(username, pin);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
-  ASSERT_EQ(OK, result)<< "Unable to register user";
+  ASSERT_EQ(kSuccess, result)<< "Unable to register user";
   ss->SerialisedKeyRing(&ser_da);
   ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
               "Data Atlas hasn't the correct format";
   //  User registered twice.
   ss->ResetSession();
   result = authentication->GetUserInfo(username, pin);
-  ASSERT_EQ(USER_EXISTS, result) << "The same user was registered twice";
+  ASSERT_EQ(kUserExists, result) << "The same user was registered twice";
   // need to wait before exiting because in the background it is getting
   // the TMID of the user
   boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -249,11 +249,11 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
     DataAtlas data_atlas;
     DataAtlasHandler dah;
     std::string ser_da;
-    Exitcode result = authentication->CreateUserSysPackets(username,
+    int result = authentication->CreateUserSysPackets(username,
                                                            pin,
                                                            password,
                                                            ser_da);
-    ASSERT_EQ(OK, result) << "Result not OK";
+    ASSERT_EQ(kSuccess, result) << "Result not kSuccess";
 
     ASSERT_TRUE(dah.Init("DAH.db"));
     ASSERT_TRUE(dah.ParseFromStringDataAtlas(ser_da)) << "No DA --> Db";
@@ -261,7 +261,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
     std::list<Key_Type> lasquis;
     dah.GetKeyRing(lasquis);
     EXPECT_EQ((unsigned int)4,lasquis.size()) << "Not all keys perhaps...";
-    ASSERT_EQ(OK, authentication->RemoveMe(lasquis))
+    ASSERT_EQ(kSuccess, authentication->RemoveMe(lasquis))
       << "Not completely removed from maidsafe network";
     dah.Close();
   }
@@ -277,12 +277,12 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   std::string ser_da;
   PacketParams lasquis, pubkeys;
 
-  Exitcode result = authentication->GetUserInfo(username, pin);
-  EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
+  int result = authentication->GetUserInfo(username, pin);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
-  ASSERT_EQ(OK, result)<< "Unable to register user";
+  ASSERT_EQ(kSuccess, result)<< "Unable to register user";
   ss->SerialisedKeyRing(&ser_da);
   ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
               "Data Atlas hasn't the correct format";
@@ -306,21 +306,21 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
     }
   }
 
-  ASSERT_EQ(OK, authentication->ChangeUsername(ser_da, lasquis, pubkeys,
+  ASSERT_EQ(kSuccess, authentication->ChangeUsername(ser_da, lasquis, pubkeys,
             "el iuserneim")) << "Unable to change iuserneim";
   ASSERT_EQ("el iuserneim", ss->Username()) << "iuserneim is still the old one";
   std::string ser_da_login;
   printf("%s\t%s\t%s\n", username.c_str(), pin.c_str(), password.c_str());
 
   result = authentication->GetUserInfo("el iuserneim", pin);
-  ASSERT_EQ(USER_EXISTS, result) << "User does not exist";
+  ASSERT_EQ(kUserExists, result) << "User does not exist";
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   result = authentication->GetUserData(password, ser_da_login);
-  ASSERT_EQ(OK, result) << "Can't login with new iuserneim";
+  ASSERT_EQ(kSuccess, result) << "Can't login with new iuserneim";
 
   printf("%s\t%s\t%s\n", username.c_str(), pin.c_str(), password.c_str());
   result = authentication->GetUserInfo(username, pin);
-  ASSERT_EQ(NON_EXISTING_USER, result);
+  ASSERT_EQ(kUserDoesntExist, result);
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
@@ -332,12 +332,12 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   PacketParams lasquis, pubkeys;
   DataAtlas data_atlas;
   std::string ser_da;
-  Exitcode result = authentication->GetUserInfo(username, pin);
-  EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
+  int result = authentication->GetUserInfo(username, pin);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
-  ASSERT_EQ(OK, result)<< "Unable to register user";
+  ASSERT_EQ(kSuccess, result)<< "Unable to register user";
   ss->SerialisedKeyRing(&ser_da);
   ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
               "Data Atlas hasn't the correct format";
@@ -360,16 +360,16 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
       default: {}
     }
   }
-  ASSERT_EQ(OK, authentication->ChangePin(ser_da, lasquis, pubkeys, "7894"))
-            << "Unable to change pin";
+  ASSERT_EQ(kSuccess, authentication->ChangePin(ser_da, lasquis, pubkeys,
+      "7894")) << "Unable to change pin";
   ASSERT_EQ("7894", ss->Pin()) << "pin is still the old one";
   std::string ser_da_login;
   result = authentication->GetUserInfo(username, "7894");
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   result = authentication->GetUserData(password, ser_da_login);
-  ASSERT_EQ(OK, result) << "Can't login with new pin";
+  ASSERT_EQ(kSuccess, result) << "Can't login with new pin";
   result = authentication->GetUserInfo(username, pin);
-  ASSERT_EQ(NON_EXISTING_USER, result);
+  ASSERT_EQ(kUserDoesntExist, result);
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
@@ -382,13 +382,13 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   PacketParams lasquis, pubkeys;
   DataAtlas data_atlas;
   std::string ser_da;
-  Exitcode result = authentication->GetUserInfo(username, pin);
-  EXPECT_EQ(NON_EXISTING_USER, result) << "User already exists";
+  int result = authentication->GetUserInfo(username, pin);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   cb.Reset();
   result = authentication->CreateUserSysPackets(username,
                                                 pin,
                                                 password);
-  ASSERT_EQ(OK, result) << "Unable to register user";
+  ASSERT_EQ(kSuccess, result) << "Unable to register user";
   EXPECT_TRUE(data_atlas.ParseFromString(ser_da));
   ss->SerialisedKeyRing(&ser_da);
   ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
@@ -412,7 +412,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
       default: {}
     }
   }
-  ASSERT_EQ(OK, authentication->ChangePassword(ser_da, lasquis, pubkeys,
+  ASSERT_EQ(kSuccess, authentication->ChangePassword(ser_da, lasquis, pubkeys,
             "elpasguord")) << "Unable to change password";
 
   ASSERT_EQ("elpasguord", ss->Password()) << "Password is still the old one";
@@ -421,14 +421,14 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   FakeCallback fcb;
   result = authentication->GetUserInfo(username, pin);
   cb.Reset();
-  ASSERT_EQ(USER_EXISTS, result) << "User does not exist";
+  ASSERT_EQ(kUserExists, result) << "User does not exist";
   result = authentication->GetUserData("elpasguord", ser_da_login);
-  ASSERT_EQ(OK, result) << "Can't login with new password";
+  ASSERT_EQ(kSuccess, result) << "Can't login with new password";
   cb.Reset();
   result = authentication->GetUserInfo(username, pin);
-  ASSERT_EQ(USER_EXISTS, result) << "User does not exist";
+  ASSERT_EQ(kUserExists, result) << "User does not exist";
   result = authentication->GetUserData(password, ser_da_login);
-  ASSERT_EQ(PASSWORD_FAIL, result);
+  ASSERT_EQ(kPasswordFailure, result);
 }
 
 TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
@@ -441,9 +441,9 @@ TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
   crypto::Crypto crypto_obj;
   crypto_obj.set_symm_algorithm(crypto::AES_256);
   crypto_obj.set_hash_algorithm(crypto::SHA_512);
-  ASSERT_EQ(OK, authentication->CreatePublicName("el public iuserneim",
+  ASSERT_EQ(kSuccess, authentication->CreatePublicName("el public iuserneim",
             &result)) << "Can't create public username";
-  ASSERT_EQ(PUBLIC_USERNAME_EXISTS,
+  ASSERT_EQ(kPublicUsernameExists,
             authentication->CreatePublicName("el public iuserneim", &result))
             << "Created public username twice";
 }
@@ -463,8 +463,8 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
 
   boost::scoped_ptr<Authentication> authentication(
       new Authentication(sm.get()));
-  Exitcode result = authentication->GetUserInfo(username, pin);
-  EXPECT_EQ(INVALID_USERNAME_PIN, result);
+  int result = authentication->GetUserInfo(username, pin);
+  EXPECT_EQ(kInvalidUsernameOrPin, result);
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {

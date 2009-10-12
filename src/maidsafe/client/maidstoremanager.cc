@@ -588,7 +588,7 @@ int MaidsafeStoreManager::CreateBP(const std::string &bufferpacketname,
     if (!create_response.IsInitialized() || create_response.result() == kNack) {
 #ifdef DEBUG
       printf("Node %s failed to store the BP chunk.\n",
-              HexEncodeSubstring(new_peer.node_id()).c_str());
+              HexCstring(new_peer.node_id()));
 #endif
       exclude.push_back(new_peer);
       continue;
@@ -598,7 +598,7 @@ int MaidsafeStoreManager::CreateBP(const std::string &bufferpacketname,
         false)) {
 #ifdef DEBUG
       printf("Node %s sent back untrust-worthy credentials.\n",
-              HexEncodeSubstring(new_peer.node_id()).c_str());
+              HexCstring(new_peer.node_id()));
 #endif
       exclude.push_back(new_peer);
       continue;

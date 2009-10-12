@@ -224,12 +224,12 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContactRequest) {
   ss->ResetSession();
   ss->AddKey(maidsafe::MPID, public_username, private_key, public_key, "");
 
-  // Getting buffer packet
+  // Getting buffer packet messages
   std::list<maidsafe::ValidatedBufferPacketMessage> valid_messages;
-  ASSERT_EQ(0, clientbufferpackethandler.GetBufferPacket(maidsafe::MPID,
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
             &valid_messages));
   // Must have one message and no authorised users
-  ASSERT_EQ(1, valid_messages.size());
+  ASSERT_EQ(size_t(1), valid_messages.size());
   ASSERT_EQ(size_t(0), ss->AuthorisedUsers().size());
 
   // Get message and validate its ADD_CONTACT_RQST and contents
@@ -248,8 +248,7 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContactRequest) {
   // Use the method to get messages only to verify message was deleted
   ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
                                                      &valid_messages));
-  int messages_size(valid_messages.size());
-  ASSERT_EQ(0, messages_size);
+  ASSERT_EQ(size_t(0), valid_messages.size());
 
   // Adding user to buffer packet's authorised users
   users.clear();
@@ -257,9 +256,9 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContactRequest) {
   ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
 
   // No more messages & one authorised user
-  ASSERT_EQ(0, clientbufferpackethandler.GetBufferPacket(maidsafe::MPID,
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
             &valid_messages));
-  ASSERT_EQ(0, valid_messages.size());
+  ASSERT_EQ(size_t(0), valid_messages.size());
   ASSERT_EQ(size_t(1), ss->AuthorisedUsers().size());
   // TODO(Team#5#): 2009-07-10 - Maybe check the user is really the one added
 
@@ -297,17 +296,16 @@ TEST_F(MsgHandlerTest, BEH_MAID_SendAddContactRequest) {
   ss->ResetSession();
   ss->AddKey(maidsafe::MPID, sender, sender_privkey, sender_pubkey, "");
 
-  // Getting buffer packet
-  ASSERT_EQ(0, clientbufferpackethandler.GetBufferPacket(maidsafe::MPID,
+  // Getting buffer packet messages
+  ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
             &valid_messages));
   // Must have one message and no authorised users
-  ASSERT_EQ(1, valid_messages.size());
-  ASSERT_EQ(size_t(1), ss->AuthorisedUsers().size());
+  ASSERT_EQ(size_t(1), valid_messages.size());
+  ASSERT_EQ(size_t(0), ss->AuthorisedUsers().size());
   cb.Reset();
 
   // Use the method to get messages only to verify message was deleted
   ASSERT_EQ(0, clientbufferpackethandler.GetMessages(maidsafe::MPID,
                                                      &valid_messages));
-  messages_size = static_cast<int>(valid_messages.size());
-  ASSERT_EQ(0, messages_size);
+  ASSERT_EQ(size_t(0), valid_messages.size());
 }

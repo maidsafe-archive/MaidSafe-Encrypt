@@ -443,9 +443,9 @@ void VaultService::StoreIOU(google::protobuf::RpcController*,
 #ifdef DEBUG
 //  printf("In VaultService::StoreIOU (%s), added operation with status"
 //         " IOU_RECEIVED for chunk %s & vault %s\n",
-//         HexEncodeSubstring(knode_->node_id()).c_str(),
-//         HexEncodeSubstring(request->chunkname()).c_str(),
-//         HexEncodeSubstring(request->collector_pmid()).c_str());
+//         HexCstring(knode_->node_id()),
+//         HexCstring(request->chunkname()),
+//         HexCstring(request->collector_pmid()));
 #endif
   response->set_result(kAck);
   done->Run();

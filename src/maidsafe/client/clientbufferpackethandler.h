@@ -44,28 +44,23 @@ class ClientBufferPacketHandler {
  public:
   explicit ClientBufferPacketHandler(maidsafe::StoreManagerInterface *sm);
   int CreateBufferPacket(const std::string &owner_id,
-      const std::string &public_key, const std::string &private_key);
-  int AddUsers(const std::set<std::string> &users,
-               const PacketType &type);
-  int DeleteUsers(const std::set<std::string> &users,
-      const PacketType &type);
-  int ChangeStatus(int status, const PacketType &type);
+                         const std::string &public_key,
+                         const std::string &private_key);
+  int ChangeStatus(const int &status, const PacketType &type);
+  int AddUsers(const std::set<std::string> &users, const PacketType &type);
+  int DeleteUsers(const std::set<std::string> &users, const PacketType &type);
   int GetMessages(const PacketType &type,
                   std::list<ValidatedBufferPacketMessage> *valid_messages);
-  int GetBufferPacket(const PacketType &type,
-                      std::list<ValidatedBufferPacketMessage> *valid_messages);
-//  int ClearMessages(const PacketType &type);
   int GetBufferPacketInfo(const PacketType &type);
-
+//  int ClearMessages(const PacketType &type);
  private:
+  ClientBufferPacketHandler &operator=(const ClientBufferPacketHandler);
+  ClientBufferPacketHandler(const ClientBufferPacketHandler&);
+  bool UserList(const PacketType &type, std::set<std::string> *list);
+  bool SetUserList(const PacketType &type, const std::set<std::string> &list);
   crypto::Crypto crypto_obj_;
   maidsafe::SessionSingleton *ss_;
   maidsafe::StoreManagerInterface *sm_;
-
-  bool UserList(std::set<std::string> *list, PacketType type);
-  bool SetUserList(std::set<std::string> list, PacketType type);
-  ClientBufferPacketHandler &operator=(const ClientBufferPacketHandler);
-  ClientBufferPacketHandler(const ClientBufferPacketHandler&);
 };
 
 }  // namespace maidsafe

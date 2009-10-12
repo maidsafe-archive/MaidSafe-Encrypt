@@ -34,20 +34,6 @@
 
 namespace maidsafe {
 
-enum Exitcode {
-  OK,
-  FAIL,
-  PASSWORD_FAIL,
-  NON_EXISTING_USER,
-  USER_EXISTS,
-  NO_CONNECTION,
-  INVALID_USERNAME,
-  INVALID_PIN,
-  INVALID_PASSWORD,
-  PUBLIC_USERNAME_EXISTS,
-  INVALID_USERNAME_PIN
-};
-
 class AuthCallbackResult {
  public:
   AuthCallbackResult();
@@ -59,33 +45,31 @@ class AuthCallbackResult {
 class Authentication {
  public:
   explicit Authentication(StoreManagerInterface *storemanager);
-  Exitcode GetUserInfo(const std::string &username,
-                      const std::string &pin);
-  Exitcode GetUserData(const std::string &password, std::string &ser_da);
-  Exitcode CreateUserSysPackets(const std::string &username,
-                                const std::string &pin,
-                                const std::string &password);
-  Exitcode SaveSession(std::string ser_da,
-                       PacketParams priv_keys,
-                       PacketParams pub_keys);
-  Exitcode RemoveMe(std::list<KeyAtlasRow> sig_keys);
-  Exitcode CreatePublicName(std::string public_username,
-                            PacketParams *result);
-  Exitcode ChangeUsername(std::string ser_da,
-                          PacketParams priv_keys,
-                          PacketParams pub_keys,
-                          std::string new_username);
-  Exitcode ChangePin(std::string ser_da,
+  int GetUserInfo(const std::string &username, const std::string &pin);
+  int GetUserData(const std::string &password, std::string &ser_da);
+  int CreateUserSysPackets(const std::string &username,
+                           const std::string &pin,
+                           const std::string &password);
+  int SaveSession(std::string ser_da,
+                  PacketParams priv_keys,
+                  PacketParams pub_keys);
+  int RemoveMe(std::list<KeyAtlasRow> sig_keys);
+  int CreatePublicName(std::string public_username, PacketParams *result);
+  int ChangeUsername(std::string ser_da,
                      PacketParams priv_keys,
                      PacketParams pub_keys,
-                     std::string new_pin);
-  Exitcode ChangePassword(std::string ser_da,
-                          PacketParams priv_keys,
-                          PacketParams pub_keys,
-                          std::string new_password);
+                     std::string new_username);
+  int ChangePin(std::string ser_da,
+                PacketParams priv_keys,
+                PacketParams pub_keys,
+                std::string new_pin);
+  int ChangePassword(std::string ser_da,
+                     PacketParams priv_keys,
+                     PacketParams pub_keys,
+                     std::string new_password);
   bool CheckUserExists(std::string username, std::string pin);
-  Exitcode PublicUsernamePublicKey(const std::string &public_username,
-                                   std::string &public_key);
+  int PublicUsernamePublicKey(const std::string &public_username,
+                              std::string &public_key);
   void CreateMSIDPacket(base::callback_func_type cb);
  private:
   std::string createSignaturePackets(const PacketType &type_da,

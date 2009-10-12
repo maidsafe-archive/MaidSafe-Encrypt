@@ -397,8 +397,8 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //      }
 //      // Check vaults are returned in order closest to furthest from key.
 //      for (boost::uint16_t i = 0; i < contacts.size(); ++i) {
-//        printf("MSM (%i) - %s...\n", i,
-//               HexEncodeSubstring(contacts.at(i).node_id()).c_str());
+//        printf("MSM (%i) - %s\n", i,
+//               HexCstring(contacts.at(i).node_id()));
 //        testpdvault::BigInt current_kad_distance(
 //            testpdvault::KademliaDistance(kad_key, contacts.at(i).node_id()));
 //        // Check current xor dist is greater than previous vault's
@@ -423,13 +423,13 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //        vault_contacts.clear();
 //        ASSERT_EQ(0, pdvaults_.at(j)->FindKNodes(kad_key, &vault_contacts));
 //        for (boost::uint16_t i = 0; i < vault_contacts.size(); ++i) {
-//          printf("Vault %i (%i) - %s...\n", j, i,
-//                 HexEncodeSubstring(vault_contacts.at(i).node_id()).c_str());
+//          printf("Vault %i (%i) - %s\n", j, i,
+//                 HexCstring(vault_contacts.at(i).node_id()));
 //        }
 //        for (boost::uint16_t i = 0; i < vault_contacts.size(); ++i) {
 //          printf("i = %i\n", i);
-//          ASSERT_EQ(HexEncodeSubstring(contacts.at(i).node_id()),
-//                    HexEncodeSubstring(vault_contacts.at(i).node_id()));
+//          ASSERT_EQ(HexCstring(contacts.at(i).node_id()),
+//                    HexCstring(vault_contacts.at(i).node_id()));
 //        }
 //      }
 //    }
@@ -476,10 +476,10 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //        vault_contacts.clear();
 //        ASSERT_EQ(0, pdvaults_.at(j)->FindKNodes(kad_key, &vault_contacts));
 //        for (boost::uint16_t i = 0; i < vault_contacts.size(); ++i) {
-//          printf("Vault %i (%i) - %s...\n", j, i,
-//                 HexEncodeSubstring(vault_contacts.at(i).node_id()).c_str());
-//          ASSERT_EQ(HexEncodeSubstring(contacts.at(i).node_id()),
-//                    HexEncodeSubstring(vault_contacts.at(i).node_id()));
+//          printf("Vault %i (%i) - %s\n", j, i,
+//                 HexCstring(vault_contacts.at(i).node_id()));
+//          ASSERT_EQ(HexCstring(contacts.at(i).node_id()),
+//                    HexCstring(vault_contacts.at(i).node_id()));
 //        }
 //      }
 //    }

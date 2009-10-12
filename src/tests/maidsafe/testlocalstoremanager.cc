@@ -414,7 +414,7 @@ TEST_F(StoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   // Retrive message and check that it is the correct one
   std::list<std::string> messages;
   ASSERT_EQ(0, storemanager->LoadBPMessages(bufferpacketname, &messages));
-  ASSERT_EQ(1, messages.size());
+  ASSERT_EQ(size_t(1), messages.size());
   maidsafe::ValidatedBufferPacketMessage vbpm;
   ASSERT_TRUE(vbpm.ParseFromString(messages.front()));
   ASSERT_EQ("Juanito", vbpm.sender());
@@ -424,7 +424,7 @@ TEST_F(StoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
 
   // Check message is gone
   ASSERT_EQ(0, storemanager->LoadBPMessages(bufferpacketname, &messages));
-  ASSERT_EQ(0, messages.size());
+  ASSERT_EQ(size_t(0), messages.size());
 }
 
 /*
@@ -631,7 +631,7 @@ TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   ser_bp = load_res.content();
   maidsafe::BufferPacket bp;
   bp.ParseFromString(ser_bp);
-  ASSERT_EQ(1, bp.messages_size());
+  ASSERT_EQ(size_t(1), bp.messages_size());
   load_res.Clear();
   cb.Reset();
 

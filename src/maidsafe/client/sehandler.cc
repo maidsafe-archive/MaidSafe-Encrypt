@@ -246,7 +246,7 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
   // are backed up completely
   // we should keep these and pass many at once to session
   // pass a finish flag to this.
-  //    if (auth->SaveSession(da->SerialiseDataAtlas()) == OK)
+  //    if (auth->SaveSession(da->SerialiseDataAtlas()) == kSuccess)
   //    {
   //      for (int i=0;i < sizeof(vectorofnamesbackedup); i++)
   //        RETURN (!FSYS->WITEPATH(ENTRY,FSYS->DONE));
