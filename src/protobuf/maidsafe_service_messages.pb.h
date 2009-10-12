@@ -716,12 +716,12 @@ class StoreRequest : public ::google::protobuf::Message {
   inline void set_signed_request(const void* value, size_t size);
   inline ::std::string* mutable_signed_request();
   
-  // required uint32 data_type = 7;
+  // required int32 data_type = 7;
   inline bool has_data_type() const;
   inline void clear_data_type();
   static const int kDataTypeFieldNumber = 7;
-  inline ::google::protobuf::uint32 data_type() const;
-  inline void set_data_type(::google::protobuf::uint32 value);
+  inline ::google::protobuf::int32 data_type() const;
+  inline void set_data_type(::google::protobuf::int32 value);
   
   // optional uint32 offset = 8;
   inline bool has_offset() const;
@@ -753,7 +753,7 @@ class StoreRequest : public ::google::protobuf::Message {
   static const ::std::string _default_signed_public_key_;
   ::std::string* signed_request_;
   static const ::std::string _default_signed_request_;
-  ::google::protobuf::uint32 data_type_;
+  ::google::protobuf::int32 data_type_;
   ::google::protobuf::uint32 offset_;
   ::google::protobuf::uint32 chunklet_size_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
@@ -5851,18 +5851,18 @@ inline ::std::string* StoreRequest::mutable_signed_request() {
   return signed_request_;
 }
 
-// required uint32 data_type = 7;
+// required int32 data_type = 7;
 inline bool StoreRequest::has_data_type() const {
   return _has_bit(6);
 }
 inline void StoreRequest::clear_data_type() {
-  data_type_ = 0u;
+  data_type_ = 0;
   _clear_bit(6);
 }
-inline ::google::protobuf::uint32 StoreRequest::data_type() const {
+inline ::google::protobuf::int32 StoreRequest::data_type() const {
   return data_type_;
 }
-inline void StoreRequest::set_data_type(::google::protobuf::uint32 value) {
+inline void StoreRequest::set_data_type(::google::protobuf::int32 value) {
   _set_bit(6);
   data_type_ = value;
 }

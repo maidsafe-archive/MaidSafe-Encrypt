@@ -41,7 +41,7 @@ message StoreRequest {
   required bytes public_key = 4;
   required bytes signed_public_key = 5;
   required bytes signed_request = 6;
-  required uint32 data_type = 7;
+  required int32 data_type = 7;
   optional uint32 offset = 8;
   optional uint32 chunklet_size = 9;
 };

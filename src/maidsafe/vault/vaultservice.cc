@@ -440,7 +440,13 @@ void VaultService::StoreIOU(google::protobuf::RpcController*,
     done->Run();
     return;
   }
-
+#ifdef DEBUG
+//  printf("In VaultService::StoreIOU (%s), added operation with status"
+//         " IOU_RECEIVED for chunk %s & vault %s\n",
+//         HexEncodeSubstring(knode_->node_id()).c_str(),
+//         HexEncodeSubstring(request->chunkname()).c_str(),
+//         HexEncodeSubstring(request->collector_pmid()).c_str());
+#endif
   response->set_result(kAck);
   done->Run();
   return;
@@ -572,6 +578,9 @@ void VaultService::CheckChunk(google::protobuf::RpcController*,
                               const maidsafe::CheckChunkRequest* request,
                               maidsafe::CheckChunkResponse* response,
                               google::protobuf::Closure* done) {
+#ifdef DEBUG
+//  printf("In VaultService::CheckChunk (%i)\n", knode_->host_port());
+#endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
@@ -738,6 +747,9 @@ void VaultService::Delete(google::protobuf::RpcController*,
                           const maidsafe::DeleteRequest* request,
                           maidsafe::DeleteResponse* response,
                           google::protobuf::Closure* done) {
+#ifdef DEBUG
+//  printf("In VaultService::Delete (%i)\n", knode_->host_port());
+#endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
@@ -804,6 +816,9 @@ void VaultService::ValidityCheck(google::protobuf::RpcController*,
                                  const maidsafe::ValidityCheckRequest* request,
                                  maidsafe::ValidityCheckResponse* response,
                                  google::protobuf::Closure* done) {
+#ifdef DEBUG
+//  printf("In VaultService::ValidityCheck (%i)\n", knode_->host_port());
+#endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
@@ -833,6 +848,9 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
                              const maidsafe::SwapChunkRequest* request,
                              maidsafe::SwapChunkResponse* response,
                              google::protobuf::Closure* done) {
+#ifdef DEBUG
+//  printf("In VaultService::SwapChunk (%i)\n", knode_->host_port());
+#endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
@@ -892,6 +910,9 @@ void VaultService::VaultStatus(google::protobuf::RpcController*,
                                const maidsafe::VaultStatusRequest* request,
                                maidsafe::VaultStatusResponse* response,
                                google::protobuf::Closure* done) {
+#ifdef DEBUG
+//  printf("In VaultService::VaultStatus (%i)\n", knode_->host_port());
+#endif
   if (!request->IsInitialized()) {
     response->set_result(kNack);
     done->Run();

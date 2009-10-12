@@ -38,7 +38,7 @@ class ClientRpcs {
  public:
   explicit ClientRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
       channel_manager);
-  ~ClientRpcs() {}
+  virtual ~ClientRpcs() {}
   void StorePrep(const kad::Contact &peer,
                  bool local,
                  StorePrepRequest *store_prep_request,
@@ -57,12 +57,12 @@ class ClientRpcs {
                    StoreResponse *store_response,
                    rpcprotocol::Controller *controller,
                    google::protobuf::Closure *done);
-  void StoreIOU(const kad::Contact &peer,
-                bool local,
-                StoreIOURequest *store_iou_request,
-                StoreIOUResponse *store_iou_response,
-                rpcprotocol::Controller *controller,
-                google::protobuf::Closure *done);
+  virtual void StoreIOU(const kad::Contact &peer,
+                        bool local,
+                        StoreIOURequest *store_iou_request,
+                        StoreIOUResponse *store_iou_response,
+                        rpcprotocol::Controller *controller,
+                        google::protobuf::Closure *done);
   void IOUDone(const kad::Contact &peer,
                bool local,
                IOUDoneRequest *iou_done_request,

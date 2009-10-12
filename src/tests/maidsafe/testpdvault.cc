@@ -247,7 +247,7 @@ void CreateMessage(const std::string &message,
 }
 
 //  typedef boost::mp_math::mp_int<> BigInt;
-
+//
 //  BigInt KademliaDistance(const std::string &key1, const std::string &key2) {
 //    std::string hex_key1, hex_key2;
 //    base::encode_to_hex(key1, &hex_key1);
@@ -397,6 +397,8 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //      }
 //      // Check vaults are returned in order closest to furthest from key.
 //      for (boost::uint16_t i = 0; i < contacts.size(); ++i) {
+//        printf("MSM (%i) - %s...\n", i,
+//               HexEncodeSubstring(contacts.at(i).node_id()).c_str());
 //        testpdvault::BigInt current_kad_distance(
 //            testpdvault::KademliaDistance(kad_key, contacts.at(i).node_id()));
 //        // Check current xor dist is greater than previous vault's
@@ -415,6 +417,20 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //      for (boost::uint16_t k = 0; k < vaults.size(); ++k) {
 //        ASSERT_GT(testpdvault::KademliaDistance(kad_key, vaults.at(k)),
 //                  kad_distance);
+//      }
+//      std::vector<kad::Contact> vault_contacts;
+//      for (boost::uint16_t j = 0; j < pdvaults_.size(); ++j) {
+//        vault_contacts.clear();
+//        ASSERT_EQ(0, pdvaults_.at(j)->FindKNodes(kad_key, &vault_contacts));
+//        for (boost::uint16_t i = 0; i < vault_contacts.size(); ++i) {
+//          printf("Vault %i (%i) - %s...\n", j, i,
+//                 HexEncodeSubstring(vault_contacts.at(i).node_id()).c_str());
+//        }
+//        for (boost::uint16_t i = 0; i < vault_contacts.size(); ++i) {
+//          printf("i = %i\n", i);
+//          ASSERT_EQ(HexEncodeSubstring(contacts.at(i).node_id()),
+//                    HexEncodeSubstring(vault_contacts.at(i).node_id()));
+//        }
 //      }
 //    }
 //    for (char d = 'a'; d < 'f'; ++d) {
@@ -455,9 +471,20 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //        ASSERT_GT(testpdvault::KademliaDistance(kad_key, vaults.at(k)),
 //                  kad_distance);
 //      }
+//      std::vector<kad::Contact> vault_contacts;
+//      for (boost::uint16_t j = 0; j < pdvaults_.size(); ++j) {
+//        vault_contacts.clear();
+//        ASSERT_EQ(0, pdvaults_.at(j)->FindKNodes(kad_key, &vault_contacts));
+//        for (boost::uint16_t i = 0; i < vault_contacts.size(); ++i) {
+//          printf("Vault %i (%i) - %s...\n", j, i,
+//                 HexEncodeSubstring(vault_contacts.at(i).node_id()).c_str());
+//          ASSERT_EQ(HexEncodeSubstring(contacts.at(i).node_id()),
+//                    HexEncodeSubstring(vault_contacts.at(i).node_id()));
+//        }
+//      }
 //    }
 //  }
-//
+
 //  TEST_F(TestPDVault, FUNC_MAID_Kademlia_FindValues) {
 //    for (char c = '0'; c < '9'; ++c) {
 //      std::string kad_key(64, c);
@@ -480,7 +507,7 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
   // add some valid chunks to client chunkstore and store to network
   std::map<std::string, std::string> chunks_;
-  const boost::uint32_t kNumOfTestChunks(19);
+  const boost::uint32_t kNumOfTestChunks(29);
   testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
   std::map<std::string, std::string>::iterator it_;
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {

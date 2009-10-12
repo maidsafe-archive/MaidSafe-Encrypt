@@ -95,9 +95,10 @@ class PDClient {
  public:
   PDClient(boost::shared_ptr<rpcprotocol::ChannelManager> ch_mangr,
            boost::shared_ptr<kad::KNode> knode,
-           ClientRpcs *client_rpcs) : channel_manager_(ch_mangr),
-                                      knode_(knode),
-                                      client_rpcs_(client_rpcs) {}
+           boost::shared_ptr<ClientRpcs> client_rpcs)
+               : channel_manager_(ch_mangr),
+                 knode_(knode),
+                 client_rpcs_(client_rpcs) {}
 
   ~PDClient() {}
   void DeleteChunk(const std::string &chunk_name,
@@ -135,7 +136,7 @@ class PDClient {
   PDClient& operator=(const PDClient&);
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
-  ClientRpcs *client_rpcs_;
+  boost::shared_ptr<ClientRpcs> client_rpcs_;
 };
 }  // namespace maidsafe
 

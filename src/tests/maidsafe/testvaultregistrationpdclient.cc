@@ -99,7 +99,6 @@ class TestPDClientOwnVault : public testing::Test {
       {}
   ~TestPDClientOwnVault() {
     server.CleanUpTransport();
-    delete rpcs;
   }
  protected:
   void SetUp() {
@@ -123,7 +122,7 @@ class TestPDClientOwnVault : public testing::Test {
   rpcprotocol::ChannelManager server;
   boost::shared_ptr<rpcprotocol::Channel> service_channel;
   boost::shared_ptr<kad::KNode> knode;
-  maidsafe::ClientRpcs *rpcs;
+  boost::shared_ptr<maidsafe::ClientRpcs> rpcs;
   maidsafe::PDClient pdclient;
   boost::function<void(const maidsafe::OwnVaultResult&, const std::string&)> cb;
   boost::function<void(const maidsafe::VaultStatus&)> cb1;

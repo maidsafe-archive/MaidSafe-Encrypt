@@ -45,7 +45,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
     : channel_manager_(new rpcprotocol::ChannelManager()),
       knode_(new kad::KNode(channel_manager_, kad::CLIENT, "", "", false,
           false)),
-      client_rpcs_(channel_manager_),
+      client_rpcs_(new ClientRpcs(channel_manager_)),
       pdclient_(NULL),
       ss_(SessionSingleton::getInstance()),
       client_chunkstore_(cstore),
@@ -56,7 +56,8 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       store_packet_conditional_(),
       get_chunk_conditional_(),
       find_conditional_(),
-      cv_(new boost::condition_variable) {
+      cv_(new boost::condition_variable),
+      mock_rpcs_(false) {
   knode_->SetAlternativeStore(client_chunkstore_.get());
 }
 
@@ -109,7 +110,7 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
 #endif
-  pdclient_ = new PDClient(channel_manager_, knode_, &client_rpcs_);
+  pdclient_ = new PDClient(channel_manager_, knode_, client_rpcs_);
 }
 
 void MaidsafeStoreManager::Close(base::callback_func_type cb,
@@ -576,7 +577,7 @@ int MaidsafeStoreManager::CreateBP(const std::string &bufferpacketname,
                                       &MaidsafeStoreManager::CreateBPCallback,
                                       &create_cond_data);
     rpcprotocol::Controller controller;
-    client_rpcs_.CreateBP(new_peer, false, &create_request, &create_response,
+    client_rpcs_->CreateBP(new_peer, false, &create_request, &create_response,
                           &controller, done);
     {
       boost::mutex::scoped_lock lock(create_cond_data.cond_mutex);
@@ -755,7 +756,7 @@ void MaidsafeStoreManager::PreSendAnalysis(const StoreTask &store_task,
 //      res = SendPacket(store_task, kMinChunkCopies);
     SetStoreReturnValue(res, return_value);
   }
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+//  boost::this_thread::sleep(boost::posix_time::seconds(2));
 }
 
 int MaidsafeStoreManager::SendChunk(
@@ -778,7 +779,7 @@ int MaidsafeStoreManager::SendChunk(
     StoreRequest store_request;
     IOUDoneRequest iou_done_request;
     kad::Contact peer;
-    bool local;
+    bool local(false);
     float ideal_rtt = largest_rtt * (1 - (duplicate_count/copies));
     if (GetStorePeer(ideal_rtt, exclude, &peer, &local) != 0)
       continue;  // try another peer
@@ -845,6 +846,9 @@ int MaidsafeStoreManager::GetStoreRequests(const StoreTask &store_task,
                                            StorePrepRequest *store_prep_request,
                                            StoreRequest *store_request,
                                            IOUDoneRequest *iou_done_request) {
+  store_prep_request->Clear();
+  store_request->Clear();
+  iou_done_request->Clear();
   ValueType data_type = DATA;
   if (store_task.dir_type_ == ANONYMOUS)
     data_type = PDDIR_NOTSIGNED;
@@ -910,14 +914,16 @@ void MaidsafeStoreManager::GetRequestSignature(
     const std::string &private_key,
     std::string *request_signature) {
   *request_signature = "";
-  if (public_key == "" || public_key_signature == "" || private_key == "")
-    return;
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
   if (dir_type == ANONYMOUS) {
     *request_signature = kAnonymousSignedRequest;
+  } else if (public_key == "" ||
+             public_key_signature == "" ||
+             private_key == "") {
+    return;
   } else {
+    crypto::Crypto co;
+    co.set_symm_algorithm(crypto::AES_256);
+    co.set_hash_algorithm(crypto::SHA_512);
     *request_signature = co.AsymSign(co.Hash(
         public_key_signature + non_hex_name + recipient_id, "",
         crypto::STRING_STRING, false), "", private_key, crypto::STRING_STRING);
@@ -958,7 +964,7 @@ int MaidsafeStoreManager::SendPrep(
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &MaidsafeStoreManager::SendPrepCallback, &send_prep_cond_data);
   rpcprotocol::Controller controller;
-  client_rpcs_.StorePrep(peer, local, store_prep_request,
+  client_rpcs_->StorePrep(peer, local, store_prep_request,
       store_prep_response, &controller, callback);
   {
     boost::mutex::scoped_lock lock(send_prep_cond_data.cond_mutex);
@@ -994,10 +1000,10 @@ int MaidsafeStoreManager::SendContent(
       &MaidsafeStoreManager::SendContentCallback, &send_cond_data);
   rpcprotocol::Controller controller;
   if (is_chunk) {
-    client_rpcs_.StoreChunk(peer, local, store_request, store_response.get(),
+    client_rpcs_->StoreChunk(peer, local, store_request, store_response.get(),
         &controller, callback);
   } else {
-    client_rpcs_.StorePacket(peer, local, store_request, store_response.get(),
+    client_rpcs_->StorePacket(peer, local, store_request, store_response.get(),
         &controller, callback);
   }
   {
@@ -1073,7 +1079,7 @@ int MaidsafeStoreManager::StoreIOUs(
   // Find the chunk reference holders
   std::vector<kad::Contact> ref_holders;
   if (FindKNodes(store_task.non_hex_key_, &ref_holders) != 0) {
-    return -1;
+    return -2;
   }
 #ifdef DEBUG
 //  std::string hex_key;
@@ -1118,25 +1124,28 @@ int MaidsafeStoreManager::StoreIOUs(
   }
   // Once we've got enough successful replies, cancel the remaining store IOU
   // RPCs (they should still succeed, we just won't handle the reply)
-  int successful_count(0);
-  boost::uint16_t returns(0);
+  boost::uint16_t successful_count(0);
+  boost::uint16_t failed_count(0);
   while (successful_count < kKadStoreThreshold_ &&
-         returns < ref_holders.size()) {
+         failed_count < kad::K - kKadStoreThreshold_ + 1 &&
+         successful_count + failed_count < ref_holders.size()) {
     for (boost::uint16_t i = 0; i < results.size(); ++i) {
       boost::mutex::scoped_lock lock(store_iou_mutex);
       if (results.at(i)->store_iou_response_returned) {
         int n = HandleStoreIOUResponse(results.at(i), &ref_holder_ids);
-        if (n == 0)
+        if (n == 0) {
           ++successful_count;
+        } else {
+          ++failed_count;
+        }
         results.at(i)->store_iou_response_returned = false;
-        ++returns;
         break;
       }
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   if (successful_count < kKadStoreThreshold_)
-    return -1;  // We've not received enough successful responses
+    return -3;  // We've not received enough successful responses
   // Cancel outstanding RPCs
   for (boost::uint16_t j = 0; j < results.size(); ++j) {
     if (!results.at(j)->store_iou_response_returned)
@@ -1281,7 +1290,7 @@ void MaidsafeStoreManager::FindAvailableChunkHolders(
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
           &MaidsafeStoreManager::HasChunkCallback, chunk_holders->at(i),
           available_chunk_holder_index);
-      client_rpcs_.CheckChunk(chunk_holders->at(i)->chunk_holder_contact,
+      client_rpcs_->CheckChunk(chunk_holders->at(i)->chunk_holder_contact,
           chunk_holders->at(i)->local, &check_chunk_request,
           &chunk_holders->at(i)->check_chunk_response, controller.get(),
           callback);
@@ -1524,7 +1533,7 @@ void MaidsafeStoreManager::GetChunk(const std::string &chunk_name,
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &MaidsafeStoreManager::GetChunkCallback, get_mutex, &get_chunk_done);
   rpcprotocol::Controller controller;
-  client_rpcs_.Get(chunk_holder->chunk_holder_contact, chunk_holder->local,
+  client_rpcs_->Get(chunk_holder->chunk_holder_contact, chunk_holder->local,
       &get_request, &get_response, &controller, callback);
   {
     boost::mutex::scoped_lock lock(*get_mutex);
@@ -1578,7 +1587,7 @@ void MaidsafeStoreManager::GetMessages(
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &MaidsafeStoreManager::GetChunkCallback, get_mutex, &get_messages_done);
   rpcprotocol::Controller controller;
-  client_rpcs_.GetBPMessages(chunk_holder->chunk_holder_contact,
+  client_rpcs_->GetBPMessages(chunk_holder->chunk_holder_contact,
       chunk_holder->local, &get_messages_request, &get_messages_response,
       &controller, callback);
   {
@@ -1641,7 +1650,7 @@ int MaidsafeStoreManager::SendIouToRefHolder(
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &MaidsafeStoreManager::SendIouToRefHolderCallback,
       &store_iou_result_holder->store_iou_response_returned, store_iou_mutex);
-  client_rpcs_.StoreIOU(ref_holder, local, &store_iou_request,
+  client_rpcs_->StoreIOU(ref_holder, local, &store_iou_request,
       &store_iou_result_holder->store_iou_response,
       store_iou_result_holder->controller.get(), callback);
 #ifdef DEBUG
@@ -1668,17 +1677,23 @@ int MaidsafeStoreManager::HandleStoreIOUResponse(
     std::set<std::string> *ref_holder_ids) {
   maidsafe::StoreIOUResponse sir =
       store_iou_result_holder->store_iou_response;
-  if (sir.result() == kNack) {
+  if (sir.result() != kAck) {
 #ifdef DEBUG
-    printf("In MSM, response from rpc id %d came back failed (%d).\n",
-           store_iou_result_holder->controller->req_id(), knode_->host_port());
+    if (!mock_rpcs_) {
+      printf("In MSM, response from rpc id %d came back failed (%d).\n",
+             store_iou_result_holder->controller->req_id(),
+             knode_->host_port());
+    }
 #endif
     return -1;
   }
   if (ref_holder_ids->find(sir.pmid_id()) == ref_holder_ids->end()) {
 #ifdef DEBUG
-    printf("In MSM, response on rpc id %d has fake identity (%d).\n",
-           store_iou_result_holder->controller->req_id(), knode_->host_port());
+    if (!mock_rpcs_) {
+      printf("In MSM, response on rpc id %d has fake identity (%d).\n",
+             store_iou_result_holder->controller->req_id(),
+             knode_->host_port());
+    }
 #endif
     return -1;
   }
@@ -1695,7 +1710,7 @@ int MaidsafeStoreManager::SendIOUDone(
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &MaidsafeStoreManager::IOUDoneCallback, &iou_done_cond_data);
   rpcprotocol::Controller controller;
-  client_rpcs_.IOUDone(peer, local, iou_done_request, &iou_done_response,
+  client_rpcs_->IOUDone(peer, local, iou_done_request, &iou_done_response,
       &controller, callback);
   {
     boost::mutex::scoped_lock lock(iou_done_cond_data.cond_mutex);
@@ -1875,7 +1890,7 @@ void MaidsafeStoreManager::UpdateChunk(
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &MaidsafeStoreManager::UpdateChunkCallback, update_conditional,
       controller);
-  client_rpcs_.Update(chunk_holder->chunk_holder_contact, chunk_holder->local,
+  client_rpcs_->Update(chunk_holder->chunk_holder_contact, chunk_holder->local,
       &update_request, update_resonse, controller.get(), callback);
 }
 
@@ -1920,11 +1935,8 @@ void MaidsafeStoreManager::PollVaultInfo(base::callback_func_type cb) {
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   rpcprotocol::Channel *channel = new rpcprotocol::Channel(
       channel_manager_.get(), ss_->VaultIP(), ss_->VaultPort(), "", 0, "", 0);
-  client_rpcs_.PollVaultInfo(enc_ser_vc,
-                             &vault_status_response,
-                             controller,
-                             channel,
-                             done);
+  client_rpcs_->PollVaultInfo(enc_ser_vc, &vault_status_response, controller,
+      channel, done);
 }
 
 void MaidsafeStoreManager::PollVaultInfoCallback(

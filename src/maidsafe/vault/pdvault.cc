@@ -258,6 +258,12 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
 //  base::encode_to_hex(iou_ready_details.get<1>(), &hex_key);
 //  printf("Vault (%i) list of ref holders (key - %s...) : ",
 //         host_port(), hex_key.substr(0, 6).c_str());
+//  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
+//    std::string hex_id;
+//    base::encode_to_hex(ref_holders.at(h).node_id(), &hex_id);
+//    printf("%s  ", hex_id.substr(0, 6).c_str());
+//  }
+//  printf("\n");
 #endif
   for (std::vector<kad::Contact>::iterator it = ref_holders.begin();
        it != ref_holders.end(); ++it) {

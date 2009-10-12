@@ -163,7 +163,7 @@ class SessionSingleton;
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
-  ~MaidsafeStoreManager() {}
+  virtual ~MaidsafeStoreManager() {}
   void Init(int port, base::callback_func_type cb);
   void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
@@ -232,7 +232,16 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
-  FRIEND_TEST(TestPDVault, FUNC_MAID_Kademlia_FindNodes);
+//  FRIEND_TEST(TestPDVault, FUNC_MAID_Kademlia_FindNodes);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_PreSendAnalysis);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
+  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendChunk);
+  // Replace real ClientRpcs with mock object for testing
+  void SetMockRpcs(boost::shared_ptr<ClientRpcs> mock_rpcs) {
+    client_rpcs_ = mock_rpcs;
+    mock_rpcs_ = true;
+  }
   void SimpleResult_Callback(const std::string &result,
                              base::callback_func_type cb);
   void DeleteChunk_Callback(const std::string &result,
@@ -243,16 +252,17 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void AddStorePacketTask(const StoreTask &store_task,
                           int *return_value,
                           GenericConditionData *generic_cond_data);
-  void AddNormalStoreTask(const StoreTask &store_task,
-                          IfExists if_exists);
+  virtual void AddNormalStoreTask(const StoreTask &store_task,
+                                  IfExists if_exists);
   // Assess and select a store method for an individual chunk.
-  void PreSendAnalysis(const StoreTask &store_task,
-                       IfExists if_exists,
-                       int *return_value);
+  virtual void PreSendAnalysis(const StoreTask &store_task,
+                               IfExists if_exists,
+                               int *return_value);
   // Store copies of an individual chunk onto the network.
-  int SendChunk(const StoreTask &store_task,
-                boost::shared_ptr<boost::condition_variable> cond_variable,
-                int copies);
+  virtual int SendChunk(
+      const StoreTask &store_task,
+      boost::shared_ptr<boost::condition_variable> cond_variable,
+      int copies);
   // Set up the requests needed to perform the store RPCs.
   int GetStoreRequests(const StoreTask &store_task,
                        const std::string &recipient_id,
@@ -275,42 +285,44 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // closest to the ideal_rtt will be chosen from those not in the vector to
   // exclude.  If the ideal_rtt is -1.0, then the contact with the highest rtt
   // will be chosen.
-  int GetStorePeer(const float &ideal_rtt,
-                   const std::vector<kad::Contact> &exclude,
-                   kad::Contact *new_peer,
-                   bool *local);
+  virtual int GetStorePeer(const float &ideal_rtt,
+                           const std::vector<kad::Contact> &exclude,
+                           kad::Contact *new_peer,
+                           bool *local);
   // Send the "preparation to store" message and wait until called back.
-  int SendPrep(const kad::Contact &peer,
-               bool local,
-               boost::shared_ptr<boost::condition_variable> cond_variable,
-               StorePrepRequest *store_prep_request,
-               StorePrepResponse *store_prep_response);
+  virtual int SendPrep(
+      const kad::Contact &peer,
+      bool local,
+      boost::shared_ptr<boost::condition_variable> cond_variable,
+      StorePrepRequest *store_prep_request,
+      StorePrepResponse *store_prep_response);
   void SendPrepCallback(GenericConditionData *send_prep_cond_data);
   // Send the actual data content to the peer.
-  int SendContent(const kad::Contact &peer,
-                  bool local,
-                  boost::shared_ptr<boost::condition_variable> cond_variable,
-                  bool is_in_chunkstore,
-                  StoreRequest *store_request);
+  virtual int SendContent(
+      const kad::Contact &peer,
+      bool local,
+      boost::shared_ptr<boost::condition_variable> cond_variable,
+      bool is_in_chunkstore,
+      StoreRequest *store_request);
   void SendContentCallback(GenericConditionData *send_cond_data);
   // Pass the IOU for the peer vault to the k chunk reference holders.
-  int StoreIOUs(const StoreTask &store_task,
-                const boost::uint64_t &chunk_size,
-                const StorePrepResponse &store_prep_response);
+  virtual int StoreIOUs(const StoreTask &store_task,
+                        const boost::uint64_t &chunk_size,
+                        const StorePrepResponse &store_prep_response);
   // Blocking call to Kademlia Find Nodes.
-  int FindKNodes(const std::string &kad_key,
-                 std::vector<kad::Contact> *contacts);
+  virtual int FindKNodes(const std::string &kad_key,
+                         std::vector<kad::Contact> *contacts);
   // Blocking call to Kademlia Find Value.  If the maidsafe value is cached,
   // this may yield serialised contact details for a cache copy holder.
   // Otherwise it should yield the reference holders.  It also yields the
   // details of the last kad node to not return the value during the lookup.
   // If check_local is true, it also checks local chunkstore first.  The values
   // (ie chunk_holders_ids) are loaded in reverse order.
-  int FindValue(const std::string &kad_key,
-                bool check_local,
-                kad::ContactInfo *cache_holder,
-                std::vector<std::string> *chunk_holders_ids,
-                std::string *needs_cache_copy_id);
+  virtual int FindValue(const std::string &kad_key,
+                        bool check_local,
+                        kad::ContactInfo *cache_holder,
+                        std::vector<std::string> *chunk_holders_ids,
+                        std::string *needs_cache_copy_id);
   // Populates a vector of chunk holders.  Those that are contactable have
   // non-empty contact details and those that have the chunk have their variable
   // check_chunk_response_.result() == kAck.
@@ -341,12 +353,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // is received.  If public_key and signed_public_key are not empty, then it
   // is assumed we are loading a buffer packet (the bool load_data has no effect
   // in this case) and the GetMessages RPC is used.
-  int FindAndLoadChunk(const std::string &chunk_name,
-                       const std::vector<std::string> &chunk_holders_ids,
-                       bool load_data,
-                       const std::string &public_key,
-                       const std::string &signed_public_key,
-                       std::string *data);
+  virtual int FindAndLoadChunk(
+      const std::string &chunk_name,
+      const std::vector<std::string> &chunk_holders_ids,
+      bool load_data,
+      const std::string &public_key,
+      const std::string &signed_public_key,
+      std::string *data);
   // Get a chunk's content from a specific peer.
   void GetChunk(const std::string &chunk_name,
                 boost::shared_ptr<ChunkHolder> chunk_holder,
@@ -361,7 +374,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    boost::mutex *get_mutex);
   void GetChunkCallback(boost::mutex *mutex, bool *get_chunk_done);
   // Passes the IOU to an individual reference holder.
-  int SendIouToRefHolder(
+  virtual int SendIouToRefHolder(
       const kad::Contact &ref_holder,
       StoreIOURequest store_iou_request,
       boost::mutex *store_iou_mutex,
@@ -373,23 +386,25 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       std::set<std::string> *ref_holder_ids);
   // Notifies a peer that this vault has passed the IOUs to the appropriate
   // reference holders.
-  int SendIOUDone(const kad::Contact &peer,
-                  bool local,
-                  boost::shared_ptr<boost::condition_variable> cond_variable,
-                  IOUDoneRequest *iou_done_request);
+  virtual int SendIOUDone(
+      const kad::Contact &peer,
+      bool local,
+      boost::shared_ptr<boost::condition_variable> cond_variable,
+      IOUDoneRequest *iou_done_request);
   void IOUDoneCallback(GenericConditionData *iou_done_cond_data);
   // Store an individual packet to the network as a kademlia value.
-  void SendPacket(const StoreTask &store_task,
-                  int *return_value,
-                  GenericConditionData *generic_cond_data);
+  virtual void SendPacket(const StoreTask &store_task,
+                          int *return_value,
+                          GenericConditionData *generic_cond_data);
   int GetStorePacketRequest(const StoreTask &store_task,
                             const std::string &recipient_id,
                             StoreRequest *store_request);
   // Updates all available copies of a chunk on the network.  The shared pointer
   // to the RPC controller is passed to UpdateChunkCallback purely to avoid a
   // premature destruct being called on the controller.
-  int UpdateChunkCopies(const StoreTask &store_task,
-                        const std::vector<std::string> &chunk_holders_ids);
+  virtual int UpdateChunkCopies(
+      const StoreTask &store_task,
+      const std::vector<std::string> &chunk_holders_ids);
   void UpdateChunk(const boost::shared_ptr<ChunkHolder> chunk_holder,
                    const StoreTask &store_task,
                    UpdateResponse *update_resonse,
@@ -398,7 +413,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                            boost::shared_ptr<rpcprotocol::Controller>);
   // If return_value pointer is not NULL, sets it to value and calls
   // notify_all() on store_packet_conditional_ variable.
-  void SetStoreReturnValue(int value, int *return_value);
+  virtual void SetStoreReturnValue(int value, int *return_value);
   void PollVaultInfoCallback(const VaultStatusResponse *response,
                              base::callback_func_type cb);
   void CreateBPCallback(GenericConditionData *send_prep_cond_data);
@@ -407,7 +422,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
 //                                base::callback_func_type cb);
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
-  ClientRpcs client_rpcs_;
+  boost::shared_ptr<ClientRpcs> client_rpcs_;
   PDClient *pdclient_;
   SessionSingleton *ss_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
@@ -429,6 +444,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   boost::condition_variable get_chunk_conditional_;
   boost::condition_variable find_conditional_;
   boost::shared_ptr<boost::condition_variable> cv_;
+  bool mock_rpcs_;
 };
 
 struct StoreTask {

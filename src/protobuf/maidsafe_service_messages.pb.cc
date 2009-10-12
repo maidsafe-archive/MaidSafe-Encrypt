@@ -1063,7 +1063,7 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
     "oreRequest\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004data\030\002 "
     "\002(\014\022\014\n\004pmid\030\003 \001(\014\022\022\n\npublic_key\030\004 \002(\014\022\031\n"
     "\021signed_public_key\030\005 \002(\014\022\026\n\016signed_reque"
-    "st\030\006 \002(\014\022\021\n\tdata_type\030\007 \002(\r\022\016\n\006offset\030\010 "
+    "st\030\006 \002(\014\022\021\n\tdata_type\030\007 \002(\005\022\016\n\006offset\030\010 "
     "\001(\r\022\025\n\rchunklet_size\030\t \001(\r\"0\n\rStoreRespo"
     "nse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\"\265\001\n"
     "\017StoreIOURequest\022\021\n\tchunkname\030\001 \002(\014\022\021\n\td"
@@ -2660,7 +2660,7 @@ StoreRequest::StoreRequest()
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
     signed_public_key_(const_cast< ::std::string*>(&_default_signed_public_key_)),
     signed_request_(const_cast< ::std::string*>(&_default_signed_request_)),
-    data_type_(0u),
+    data_type_(0),
     offset_(0u),
     chunklet_size_(0u) {
   SharedCtor();
@@ -2678,7 +2678,7 @@ StoreRequest::StoreRequest(const StoreRequest& from)
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
     signed_public_key_(const_cast< ::std::string*>(&_default_signed_public_key_)),
     signed_request_(const_cast< ::std::string*>(&_default_signed_request_)),
-    data_type_(0u),
+    data_type_(0),
     offset_(0u),
     chunklet_size_(0u) {
   SharedCtor();
@@ -2693,7 +2693,7 @@ void StoreRequest::SharedCtor() {
   public_key_ = const_cast< ::std::string*>(&_default_public_key_);
   signed_public_key_ = const_cast< ::std::string*>(&_default_signed_public_key_);
   signed_request_ = const_cast< ::std::string*>(&_default_signed_request_);
-  data_type_ = 0u;
+  data_type_ = 0;
   offset_ = 0u;
   chunklet_size_ = 0u;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -2773,7 +2773,7 @@ void StoreRequest::Clear() {
         signed_request_->clear();
       }
     }
-    data_type_ = 0u;
+    data_type_ = 0;
     offset_ = 0u;
   }
   if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
@@ -2860,14 +2860,14 @@ bool StoreRequest::MergePartialFromCodedStream(
         break;
       }
       
-      // required uint32 data_type = 7;
+      // required int32 data_type = 7;
       case 7: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
        parse_data_type:
-        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+        DO_(::google::protobuf::internal::WireFormat::ReadInt32(
               input, &data_type_));
         _set_bit(6);
         if (input->ExpectTag(64)) goto parse_offset;
@@ -2956,9 +2956,9 @@ void StoreRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBytes(6, this->signed_request(), output);
   }
   
-  // required uint32 data_type = 7;
+  // required int32 data_type = 7;
   if (_has_bit(6)) {
-    ::google::protobuf::internal::WireFormat::WriteUInt32(7, this->data_type(), output);
+    ::google::protobuf::internal::WireFormat::WriteInt32(7, this->data_type(), output);
   }
   
   // optional uint32 offset = 8;
@@ -3009,9 +3009,9 @@ void StoreRequest::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(6, this->signed_request(), target);
   }
   
-  // required uint32 data_type = 7;
+  // required int32 data_type = 7;
   if (_has_bit(6)) {
-    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(7, this->data_type(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(7, this->data_type(), target);
   }
   
   // optional uint32 offset = 8;
@@ -3071,10 +3071,10 @@ int StoreRequest::ByteSize() const {
         ::google::protobuf::internal::WireFormat::BytesSize(this->signed_request());
     }
     
-    // required uint32 data_type = 7;
+    // required int32 data_type = 7;
     if (has_data_type()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::UInt32Size(
+        ::google::protobuf::internal::WireFormat::Int32Size(
           this->data_type());
     }
     
