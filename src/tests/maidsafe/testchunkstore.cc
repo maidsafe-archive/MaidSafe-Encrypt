@@ -149,7 +149,7 @@ class ThreadedTest {
   }
   void DeleteChunk(const boost::posix_time::milliseconds &delay,
                    const std::string &name,
-                   boost::shared_ptr<bool> result) {
+                   boost::shared_ptr<int> result) {
     boost::this_thread::sleep(delay);
     *result = chunkstore_->DeleteChunk(name);
   }
@@ -173,11 +173,11 @@ class ThreadedTest {
   void LoadRandomChunk(const boost::posix_time::milliseconds &delay,
                        boost::shared_ptr<std::string> name,
                        boost::shared_ptr<std::string> value,
-                       boost::shared_ptr<bool> result) {
+                       boost::shared_ptr<int> result) {
     boost::this_thread::sleep(delay);
     std::string key = *name;
     std::string val = *value;
-    bool res = chunkstore_->LoadRandomChunk(&key, &val);
+    int res = chunkstore_->LoadRandomChunk(&key, &val);
     *name = key;
     *value = val;
     *result = res;
@@ -270,18 +270,25 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreInit) {
   ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
                                           &h_value, &h_name));
   ASSERT_FALSE(chunkstore->Has(h_name.at(0)));
-  ASSERT_NE(0, chunkstore->Store(h_name.at(0), h_value.at(0)));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->Store(h_name.at(0), h_value.at(0)));
   ASSERT_TRUE(fs::exists(file_path));
-  ASSERT_NE(0, chunkstore->Store(h_name.at(0), file_path));
-  ASSERT_NE(0, chunkstore->AddChunkToOutgoing(h_name.at(0), h_value.at(0)));
-  ASSERT_FALSE(chunkstore->DeleteChunk(h_name.at(0)));
-  ASSERT_NE(0, chunkstore->UpdateChunk(h_name.at(0), h_value.at(0)));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->Store(h_name.at(0), file_path));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->AddChunkToOutgoing(h_name.at(0), h_value.at(0)));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->DeleteChunk(h_name.at(0)));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->UpdateChunk(h_name.at(0), h_value.at(0)));
   std::string value("value");
-  ASSERT_NE(0, chunkstore->Load(h_name.at(0), &value));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->Load(h_name.at(0), &value));
   ASSERT_EQ("", value);
   std::string key("key");
   value = "value";
-  ASSERT_FALSE(chunkstore->LoadRandomChunk(&key, &value));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->LoadRandomChunk(&key, &value));
   ASSERT_EQ("", key);
   ASSERT_EQ("", value);
   std::list<std::string> chunk_names, failed_keys;
@@ -289,13 +296,15 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreInit) {
   ASSERT_NE(size_t(0), chunk_names.size());
   chunkstore->GetAllChunks(&chunk_names);
   ASSERT_EQ(size_t(0), chunk_names.size());
-  ASSERT_NE(0, chunkstore->HashCheckChunk(h_name.at(0)));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->HashCheckChunk(h_name.at(0)));
   failed_keys.push_back("key");
   ASSERT_NE(size_t(0), failed_keys.size());
-  ASSERT_NE(0, chunkstore->HashCheckAllChunks(true, &failed_keys));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->HashCheckAllChunks(true, &failed_keys));
   ASSERT_EQ(size_t(0), failed_keys.size());
   maidsafe::ChunkType type = maidsafe::kHashable | maidsafe::kNormal;
-  ASSERT_NE(0, chunkstore->ChangeChunkType(h_name.at(0), type));
+  ASSERT_EQ(kChunkstoreError, chunkstore->ChangeChunkType(h_name.at(0), type));
   boost::shared_ptr<VaultChunkStore> chunkstore1(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore1, 60000);
@@ -326,9 +335,10 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStore) {
                                              chunkstore->kNormalLeaf_));
   // check we can't overwrite existing value using Store
   ASSERT_TRUE(fs::exists(file_path));
-  ASSERT_NE(0, chunkstore->Store(h_name.at(test_chunk), file_path));
-  ASSERT_NE(0, chunkstore->Store(h_name.at(test_chunk),
-                                 std::string("New value")));
+  ASSERT_EQ(kInvalidChunkType,
+            chunkstore->Store(h_name.at(test_chunk), file_path));
+  ASSERT_EQ(kInvalidChunkType,
+            chunkstore->Store(h_name.at(test_chunk), std::string("New value")));
   ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
   // check contents of file
   ASSERT_NE(found.filename(), "");
@@ -343,7 +353,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStore) {
   ASSERT_EQ(h_value.at(test_chunk), stored_value1);
   // move to Outgoing and check we can store again
   ASSERT_EQ(0, chunkstore->ChangeChunkType(h_name.at(test_chunk),
-      maidsafe::kHashable | maidsafe::kOutgoing));
+            maidsafe::kHashable | maidsafe::kOutgoing));
   ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
                                         &found));
@@ -358,7 +368,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStore) {
                                              chunkstore->kOutgoingLeaf_));
   // check a hashable chunk which is already cached can be stored
   ASSERT_EQ(0, chunkstore->ChangeChunkType(h_name.at(test_chunk),
-      maidsafe::kHashable | maidsafe::kCache));
+            maidsafe::kHashable | maidsafe::kCache));
   ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
                                         &found));
@@ -372,7 +382,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStore) {
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
                                              chunkstore->kNormalLeaf_));
   ASSERT_EQ(0, chunkstore->ChangeChunkType(h_name.at(test_chunk),
-      maidsafe::kHashable | maidsafe::kTempCache));
+            maidsafe::kHashable | maidsafe::kTempCache));
   ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
                                         &found));
@@ -424,7 +434,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStore) {
                                              chunkstore->kNormalLeaf_));
   // check values can't be stored under keys of wrong length
   std::string wrong_length_key("too short");
-  ASSERT_NE(0, chunkstore->Store(wrong_length_key, h_value.at(0)));
+  ASSERT_EQ(maidsafe::kIncorrectKeySize,
+      chunkstore->Store(wrong_length_key, h_value.at(0)));
   ASSERT_EQ(size_t(4), chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(test_chunkstore::FindFile(storedir, wrong_length_key, &found));
   ASSERT_FALSE(chunkstore->Has(wrong_length_key));
@@ -449,9 +460,11 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
   // check file has been added to correct directory
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
                                              chunkstore->kOutgoingLeaf_));
-  // try to add file again (should return 1 as file now stored)
-  ASSERT_EQ(1, chunkstore->AddChunkToOutgoing(h_name.at(test_chunk),
-                                              h_value.at(test_chunk)));
+  // try to add file again (should return kChunkExistsInChunkstore as file now
+  // stored)
+  ASSERT_EQ(maidsafe::kChunkExistsInChunkstore,
+            chunkstore->AddChunkToOutgoing(h_name.at(test_chunk),
+                                           h_value.at(test_chunk)));
 
   // TODO(Team#5#): 2009-04-06 - Decide when to overwrite file using Store
   //  std::string new_val("New value");
@@ -487,9 +500,11 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
   // check file has been added to correct directory
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found,
       chunkstore->kNonHashableLeaf_, chunkstore->kOutgoingLeaf_));
-  // try to add file again (should return 1 as file now stored)
-  ASSERT_EQ(1, chunkstore->AddChunkToOutgoing(h_name.at(test_chunk),
-                                              h_value.at(test_chunk)));
+  // try to add file again (should return kChunkExistsInChunkstore as file now
+  // stored)
+  ASSERT_EQ(maidsafe::kChunkExistsInChunkstore,
+            chunkstore->AddChunkToOutgoing(h_name.at(test_chunk),
+                                           h_value.at(test_chunk)));
   // check contents of file
   ASSERT_NE(found.filename(), "");
   chunk_size = fs::file_size(found);
@@ -511,7 +526,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
                                              chunkstore->kOutgoingLeaf_));
   // check values can't be stored under keys of wrong length
   std::string wrong_length_key("too short");
-  ASSERT_NE(0, chunkstore->Store(wrong_length_key, h_value.at(0)));
+  ASSERT_EQ(kIncorrectKeySize,
+            chunkstore->Store(wrong_length_key, h_value.at(0)));
   ASSERT_EQ(size_t(4), chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(test_chunkstore::FindFile(storedir, wrong_length_key, &found));
   ASSERT_FALSE(chunkstore->Has(wrong_length_key));
@@ -542,10 +558,10 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoad) {
   // check using non-existant chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
-  ASSERT_NE(0, chunkstore->Load(othername, &rec_value));
+  ASSERT_EQ(kInvalidChunkType, chunkstore->Load(othername, &rec_value));
   // check we can handle keys of wrong length
   std::string wrong_length_key("too short");
-  ASSERT_NE(0, chunkstore->Load(wrong_length_key, &rec_value));
+  ASSERT_EQ(kIncorrectKeySize, chunkstore->Load(wrong_length_key, &rec_value));
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHas) {
@@ -594,11 +610,11 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk) {
                                         &found));
   ASSERT_NE(found.filename(), "");
   ASSERT_TRUE(fs::exists(found));
-  ASSERT_TRUE(chunkstore->DeleteChunk(h_name.at(test_chunk)));
+  ASSERT_EQ(0, chunkstore->DeleteChunk(h_name.at(test_chunk)));
   ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(chunkstore->Has(h_name.at(test_chunk)));
   ASSERT_FALSE(fs::exists(found));
-  ASSERT_TRUE(chunkstore->DeleteChunk(h_name.at(test_chunk)));
+  ASSERT_EQ(0, chunkstore->DeleteChunk(h_name.at(test_chunk)));
   ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
   // check using non-hashable chunk
   ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, 3, 32000, &nh_size,
@@ -612,19 +628,19 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk) {
                                         &found));
   ASSERT_NE(found.filename(), "");
   ASSERT_TRUE(fs::exists(found));
-  ASSERT_TRUE(chunkstore->DeleteChunk(nh_name.at(test_chunk)));
+  ASSERT_EQ(0, chunkstore->DeleteChunk(nh_name.at(test_chunk)));
   ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(chunkstore->Has(nh_name.at(test_chunk)));
   ASSERT_FALSE(fs::exists(found));
-  ASSERT_TRUE(chunkstore->DeleteChunk(nh_name.at(test_chunk)));
+  ASSERT_EQ(0, chunkstore->DeleteChunk(nh_name.at(test_chunk)));
   ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
   // check using non-existant chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
-  ASSERT_TRUE(chunkstore->DeleteChunk(othername));
+  ASSERT_EQ(0, chunkstore->DeleteChunk(othername));
   // check we can handle keys of wrong length
   std::string wrong_length_key("too short");
-  ASSERT_FALSE(chunkstore->DeleteChunk(wrong_length_key));
+  ASSERT_EQ(kIncorrectKeySize, chunkstore->DeleteChunk(wrong_length_key));
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk) {
@@ -634,7 +650,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk) {
   ASSERT_TRUE(chunkstore->is_initialised());
   // test when chunkstore is empty
   std::string key("key"), val("val");
-  ASSERT_FALSE(chunkstore->LoadRandomChunk(&key, &val));
+  ASSERT_EQ(kChunkstoreError, chunkstore->LoadRandomChunk(&key, &val));
   ASSERT_EQ(key, std::string(""));
   ASSERT_EQ(val, std::string(""));
   const int kNumberOfChunks = 10;
@@ -646,7 +662,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk) {
   ASSERT_EQ(size_t(kNumberOfChunks), chunkstore->chunkstore_set_.size());
   key = "key";
   val = "val";
-  ASSERT_FALSE(chunkstore->LoadRandomChunk(&key, &val));
+  ASSERT_EQ(kChunkstoreError, chunkstore->LoadRandomChunk(&key, &val));
   ASSERT_EQ("", key);
   ASSERT_EQ("", val);
   // test with hashable chunks
@@ -657,7 +673,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk) {
   ASSERT_EQ(size_t(2 * kNumberOfChunks), chunkstore->chunkstore_set_.size());
   key = "key";
   val = "val";
-  ASSERT_TRUE(chunkstore->LoadRandomChunk(&key, &val));
+  ASSERT_EQ(0, chunkstore->LoadRandomChunk(&key, &val));
   ASSERT_EQ(key, cry_obj->Hash(val, "", crypto::STRING_STRING, false));
   fs::path found("");
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, key, &found));
@@ -713,10 +729,12 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreUpdateChunk) {
   // check using non-existant chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
-  ASSERT_NE(0, chunkstore->UpdateChunk(othername, h_value.at(0)));
+  ASSERT_EQ(kInvalidChunkType,
+            chunkstore->UpdateChunk(othername, h_value.at(0)));
   // check we can handle keys of wrong length
   std::string wrong_length_key("too short");
-  ASSERT_NE(0, chunkstore->UpdateChunk(wrong_length_key, h_value.at(0)));
+  ASSERT_EQ(kIncorrectKeySize,
+            chunkstore->UpdateChunk(wrong_length_key, h_value.at(0)));
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk) {
@@ -756,14 +774,15 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk) {
                                           &nh_value, &nh_name));
   ASSERT_EQ(0, chunkstore->Store(nh_name.at(test_chunk),
                                      nh_value.at(test_chunk)));
-  ASSERT_NE(0, chunkstore->HashCheckChunk(nh_name.at(test_chunk)));
+  ASSERT_EQ(kFailedHashCheck,
+            chunkstore->HashCheckChunk(nh_name.at(test_chunk)));
   // check using non-existant chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
-  ASSERT_NE(0, chunkstore->HashCheckChunk(othername));
+  ASSERT_EQ(kInvalidChunkType, chunkstore->HashCheckChunk(othername));
   // check we can handle keys of wrong length
   std::string wrong_length_key("too short");
-  ASSERT_NE(0, chunkstore->HashCheckChunk(wrong_length_key));
+  ASSERT_EQ(kIncorrectKeySize, chunkstore->HashCheckChunk(wrong_length_key));
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreChangeChunkType) {
@@ -850,7 +869,8 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreChangeChunkType) {
                                              chunkstore->kNormalLeaf_));
   // check using invalid type
   maidsafe::ChunkType type = 3;
-  ASSERT_NE(0, chunkstore->ChangeChunkType(nh_name.at(1), type));
+  ASSERT_EQ(kInvalidChunkType,
+            chunkstore->ChangeChunkType(nh_name.at(1), type));
   type = (maidsafe::kNonHashable | maidsafe::kNormal);
   {
     boost::mutex::scoped_lock lock(chunkstore->chunkstore_set_mutex_);
@@ -865,12 +885,12 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreChangeChunkType) {
   // check using non-existant chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
-  ASSERT_NE(0, chunkstore->ChangeChunkType(othername,
-      (maidsafe::kHashable | maidsafe::kNormal)));
+  ASSERT_EQ(kChunkstoreError, chunkstore->ChangeChunkType(othername,
+            (maidsafe::kHashable | maidsafe::kNormal)));
   // check we can handle keys of wrong length
   std::string wrong_length_key("too short");
-  ASSERT_NE(0, chunkstore->ChangeChunkType(wrong_length_key,
-      (maidsafe::kHashable | maidsafe::kNormal)));
+  ASSERT_EQ(kChunkstoreError, chunkstore->ChangeChunkType(wrong_length_key,
+            (maidsafe::kHashable | maidsafe::kNormal)));
 }
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreChunkType) {
@@ -931,7 +951,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreSpace) {
   ASSERT_EQ(boost::uint64_t(kStartingFreeSpace - h_size.at(0)),
             chunkstore->FreeSpace());
   // delete the chunk
-  ASSERT_TRUE(chunkstore->DeleteChunk(h_name.at(0)));
+  ASSERT_EQ(0, chunkstore->DeleteChunk(h_name.at(0)));
   ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
   // check space has been amended correctly
   ASSERT_EQ(boost::uint64_t(kStartingAvailableSpace),
@@ -1093,16 +1113,16 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreCheckAllChunks) {
   ASSERT_FALSE(chunkstore->Has(h_name.at(10)));
   ASSERT_FALSE(chunkstore->Has(h_name.at(15)));
   rec_value = "Value";
-  ASSERT_NE(0, chunkstore->Load(h_name.at(0), &rec_value));
+  ASSERT_EQ(kInvalidChunkType, chunkstore->Load(h_name.at(0), &rec_value));
   ASSERT_NE(modified_content, rec_value);
   rec_value = "Value";
-  ASSERT_NE(0, chunkstore->Load(h_name.at(5), &rec_value));
+  ASSERT_EQ(kInvalidChunkType, chunkstore->Load(h_name.at(5), &rec_value));
   ASSERT_NE(modified_content, rec_value);
   rec_value = "Value";
-  ASSERT_NE(0, chunkstore->Load(h_name.at(10), &rec_value));
+  ASSERT_EQ(kInvalidChunkType, chunkstore->Load(h_name.at(10), &rec_value));
   ASSERT_NE(modified_content, rec_value);
   rec_value = "Value";
-  ASSERT_NE(0, chunkstore->Load(h_name.at(15), &rec_value));
+  ASSERT_EQ(kInvalidChunkType, chunkstore->Load(h_name.at(15), &rec_value));
   ASSERT_NE(modified_content, rec_value);
   ASSERT_EQ(size_t(4), failed_chunk_names.size());
   failed_chunk_names.remove(h_name.at(0));
@@ -1282,10 +1302,10 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedDelete) {
   test_chunkstore::ThreadedTest tester(chunkstore);
   // Prepare delete vectors
   boost::posix_time::milliseconds delete_delay(0);
-  std::vector<boost::shared_ptr<bool> > delete_result;
+  std::vector<boost::shared_ptr<int> > delete_result;
   boost::thread_group delete_thread_group;
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
+    boost::shared_ptr<int> res(new int(1));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     delete_result.push_back(res);
   }
   // Store chunks
@@ -1319,7 +1339,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedDelete) {
   // it threw a filesystem exception
   int successful_deletes(0);
   for (int i = 0; i < kNumberOfChunks; ++i) {
-    if (*delete_result.at(i))
+    if (*delete_result.at(i) == 0)
       ++successful_deletes;
   }
   ASSERT_GE(successful_deletes, kNumberOfChunks - 2);
@@ -1371,14 +1391,14 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedRandLoad) {
   boost::posix_time::milliseconds rand_load_delay(0);
   std::vector<boost::shared_ptr<std::string> > rand_load_name;
   std::vector<boost::shared_ptr<std::string> > rand_load_value;
-  std::vector<boost::shared_ptr<bool> > rand_load_result;
+  std::vector<boost::shared_ptr<int> > rand_load_result;
   boost::thread_group rand_load_thread_group;
   for (int i = 0; i < kRandomLoads; ++i) {
     boost::shared_ptr<std::string> key(new std::string("Key"));
     rand_load_name.push_back(key);
     boost::shared_ptr<std::string> val(new std::string("Value"));
     rand_load_value.push_back(val);
-    boost::shared_ptr<bool> res(new bool(false));  // NOLINT (Fraser) - Incorrect interpretation by lint.
+    boost::shared_ptr<int> res(new int(1));  // NOLINT (Fraser) - Incorrect interpretation by lint.
     rand_load_result.push_back(res);
     rand_load_thread_group.create_thread(boost::bind(
         &test_chunkstore::ThreadedTest::LoadRandomChunk, tester,
@@ -1407,7 +1427,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedRandLoad) {
   ASSERT_TRUE(result);
   // Check all random loads returned true
   for (int i = 0; i < kRandomLoads; ++i)
-    result = result && *rand_load_result.at(i);
+    result = result && (*rand_load_result.at(i) == kSuccess);
   ASSERT_TRUE(result);
 }
 

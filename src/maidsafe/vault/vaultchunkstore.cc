@@ -26,16 +26,16 @@ int VaultChunkStore::UpdateChunk(const std::string &key,
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::UpdateChunk.\n");
 #endif
-    return -1;
+    return kChunkstoreUninitialised;
   }
   if (key.size() != kKeySize) {
 #ifdef DEBUG
     printf("In ChunkStore::UpdateChunk, incorrect key size.\n");
 #endif
-    return -1;
+    return kIncorrectKeySize;
   }
   // check we have the chunk already
-  maidsafe::ChunkType type = 0;
+  maidsafe::ChunkType type = kInvalidChunkType;
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
     maidsafe::chunk_set_by_non_hex_name::iterator itr =
@@ -43,16 +43,17 @@ int VaultChunkStore::UpdateChunk(const std::string &key,
     if (itr != chunkstore_set_.end())
       type = (*itr).type_;
   }
-  if (type == 0) {
+  if (type == kInvalidChunkType) {
 #ifdef DEBUG
     printf("In ChunkStore::UpdateChunk, don't currently have chunk.\n");
 #endif
-    return -1;
+    return kInvalidChunkType;
   }
   fs::path chunk_path(GetChunkPath(key, type, false));
-  if (!DeleteChunkFunction(key, chunk_path))
-    return false;
-  return StoreChunkFunction(key, value, chunk_path, type);
+  if (DeleteChunkFunction(key, chunk_path) != kSuccess)
+    return kChunkstoreFailedUpdate;
+  return (StoreChunkFunction(key, value, chunk_path, type) == kSuccess) ?
+      kSuccess : kChunkstoreFailedUpdate;
 }
 
 maidsafe::ChunkInfo VaultChunkStore::GetOldestChecked() {
@@ -66,14 +67,14 @@ maidsafe::ChunkInfo VaultChunkStore::GetOldestChecked() {
   return chunk;
 }
 
-bool VaultChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
+int VaultChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
   key->clear();
   value->clear();
   if (!is_initialised()) {
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::LoadRandomChunk.\n");
 #endif
-    return false;
+    return kChunkstoreUninitialised;
   }
   bool result(false);
   {
@@ -85,7 +86,7 @@ bool VaultChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
 #ifdef DEBUG
     printf("In ChunkStore::LoadRandomChunk: there are no chunks stored.\n");
 #endif
-    return false;
+    return kChunkstoreError;
   }
   maidsafe::ChunkType type = (maidsafe::kHashable | maidsafe::kNormal);
   boost::uint64_t hashable_count(0);
@@ -96,7 +97,7 @@ bool VaultChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
     hashable_count = sorted_index.count(type);
   }
   if (!hashable_count)  // i.e. there are no chunks available
-    return false;
+    return kChunkstoreError;
   int randindex = static_cast<int>(base::random_32bit_uinteger()
       % hashable_count);
   {
@@ -109,9 +110,9 @@ bool VaultChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
     result = ((*itr).type_ == type);
   }
   if (result)
-    return (Load(*key, value) == 0);
+    return Load(*key, value);
   else
-    return false;
+    return kChunkstoreError;
 }
 
 void VaultChunkStore::GetAllChunks(std::list<std::string> *chunk_names) {
@@ -137,7 +138,7 @@ int VaultChunkStore::HashCheckAllChunks(bool delete_failures,
 #ifdef DEBUG
     printf("Not initialised in ChunkStore::HashCheckAllChunks.\n");
 #endif
-    return -1;
+    return kChunkstoreUninitialised;
   }
   boost::uint64_t filecount;
   bool result(true);
@@ -152,16 +153,14 @@ int VaultChunkStore::HashCheckAllChunks(bool delete_failures,
   if (delete_failures) {
     std::list<std::string>::iterator itr;
     for (itr = failed_keys->begin(); itr != failed_keys->end(); ++itr) {
-      if (DeleteChunk((*itr))) {
+      if (DeleteChunk((*itr)) == kSuccess) {
         --filecount;
       } else {
         result = false;
       }
     }
   }
-  if (!result)
-    return -1;
-  return 0;
+  return result ? kSuccess : kFailedHashCheck;
 }
 
 }  // namespace maidsafe_vault

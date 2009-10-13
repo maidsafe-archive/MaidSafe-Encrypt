@@ -327,7 +327,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
   }
 #ifdef DEBUG
   printf("Vault %i stored chunk %s\n", knode_->host_port(),
-         HexCstring(request->chunkname()));
+         HexSubstr(request->chunkname()).c_str());
 #endif
   done->Run();
 }
@@ -441,9 +441,9 @@ void VaultService::StoreIOU(google::protobuf::RpcController*,
 #ifdef DEBUG
 //  printf("In VaultService::StoreIOU (%s), added operation with status"
 //         " IOU_RECEIVED for chunk %s & vault %s\n",
-//         HexCstring(knode_->node_id()),
-//         HexCstring(request->chunkname()),
-//         HexCstring(request->collector_pmid()));
+//         HexSubstr(knode_->node_id()).c_str(),
+//         HexSubstr(request->chunkname()).c_str(),
+//         HexSubstr(request->collector_pmid()).c_str());
 #endif
   response->set_result(kAck);
   done->Run();
@@ -489,7 +489,8 @@ void VaultService::StoreChunkReference(
   #ifdef DEBUG
       printf("In VaultService::StoreChunkReference (%i), failed to get IOU"
              " for chunk %s saved by vault %s\n", knode_->host_port(),
-             HexCstring(request->chunkname()), HexCstring(request->pmid()));
+             HexSubstr(request->chunkname()).c_str(),
+             HexSubstr(request->pmid()).c_str());
   #endif
       response->set_result(kNack);
       done->Run();
@@ -865,7 +866,8 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
     // Use random chunk temporarily
     std::string chunkname2;
     std::string chunkcontent2;
-    if (!vault_chunkstore_->LoadRandomChunk(&chunkname2, &chunkcontent2)) {
+    if (vault_chunkstore_->LoadRandomChunk(&chunkname2, &chunkcontent2) !=
+        kSuccess) {
       response->set_result(kNack);
       done->Run();
       return;
@@ -1363,21 +1365,21 @@ bool VaultService::HasChunkLocal(const std::string &chunkname) {
 
 bool VaultService::StoreChunkLocal(const std::string &chunkname,
                                    const std::string &content) {
-  return (vault_chunkstore_->Store(chunkname, content) == 0);
+  return (vault_chunkstore_->Store(chunkname, content) == kSuccess);
 }
 
 bool VaultService::UpdateChunkLocal(const std::string &chunkname,
                                     const std::string &content) {
-  return (vault_chunkstore_->UpdateChunk(chunkname, content) == 0);
+  return (vault_chunkstore_->UpdateChunk(chunkname, content) == kSuccess);
 }
 
 bool VaultService::LoadChunkLocal(const std::string &chunkname,
                                   std::string *content) {
-  return (vault_chunkstore_->Load(chunkname, content) == 0);
+  return (vault_chunkstore_->Load(chunkname, content) == kSuccess);
 }
 
 bool VaultService::DeleteChunkLocal(const std::string &chunkname) {
-  return vault_chunkstore_->DeleteChunk(chunkname);
+  return (vault_chunkstore_->DeleteChunk(chunkname) == kSuccess);
 }
 
 void VaultService::StoreChunkReference(const std::string &non_hex_chunkname) {

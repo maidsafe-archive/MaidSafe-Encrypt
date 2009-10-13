@@ -54,9 +54,20 @@ enum ReturnCode {
   kBPStoreDeletedUserError = -2011,
   kBPRetrievalError = -2012,
   kBPMessagesRetrievalError = -2013,
-  kGetBPInfoError = -2014
+  kGetBPInfoError = -2014,
 
   // Chunkstore
+  kInvalidChunkType = -127,
+  kChunkstoreError = -3001,
+  kChunkFileDoesntExist = -3003,
+  kErrorReadingChunkFile = -3004,
+  kChunkstoreUninitialised = -3005,
+  kIncorrectKeySize = -3006,
+  kChunkstoreFailedStore = -3007,
+  kChunkstoreFailedDelete = -3008,
+  kChunkstoreException = -3009,
+  kFailedHashCheck = -3010,
+  kChunkExistsInChunkstore = 3001  // intentionally positive
 
   // Client Controller
 
@@ -81,8 +92,8 @@ namespace maidsafe_vault {
 
 enum ReturnCode {
   // General
-  kSuccess = 0,
-  kGeneralError = -1
+  kSuccess = maidsafe::kSuccess,
+  kGeneralError = maidsafe::kGeneralError,
 
   // Service
 
@@ -91,6 +102,12 @@ enum ReturnCode {
   // Vault Buffer Packet Handler
 
   // Vault Chunkstore
+  kChunkstoreError = maidsafe::kChunkstoreError,
+  kInvalidChunkType = maidsafe::kInvalidChunkType,
+  kChunkstoreUninitialised = maidsafe::kChunkstoreUninitialised,
+  kIncorrectKeySize = maidsafe::kIncorrectKeySize,
+  kFailedHashCheck = maidsafe::kFailedHashCheck,
+  kChunkstoreFailedUpdate = -3501
 };
 
 }  // namespace maidsafe_vault

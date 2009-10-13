@@ -234,7 +234,8 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
       printf("In MaidsafeStoreManager::LoadChunk (%i), FindValue yielded %i:\n"
              "Cache holder: %s\tno of chunk holders: %i\n\n",
              knode_->host_port(), find_result,
-             HexCstring(cache_holder.node_id()), chunk_holders_ids.size());
+             HexSubstr(cache_holder.node_id()).c_str(),
+             chunk_holders_ids.size());
 #endif
       if (find_result == 0)
         break;
@@ -580,7 +581,7 @@ int MaidsafeStoreManager::CreateBP(const std::string &bufferpacketname,
     if (!create_response.IsInitialized() || create_response.result() == kNack) {
 #ifdef DEBUG
       printf("Node %s failed to store the BP chunk.\n",
-              HexCstring(new_peer.node_id()));
+             HexSubstr(new_peer.node_id()).c_str());
 #endif
       exclude.push_back(new_peer);
       continue;
@@ -590,7 +591,7 @@ int MaidsafeStoreManager::CreateBP(const std::string &bufferpacketname,
         false)) {
 #ifdef DEBUG
       printf("Node %s sent back untrust-worthy credentials.\n",
-              HexCstring(new_peer.node_id()));
+             HexSubstr(new_peer.node_id()).c_str());
 #endif
       exclude.push_back(new_peer);
       continue;
@@ -604,7 +605,7 @@ int MaidsafeStoreManager::CreateBP(const std::string &bufferpacketname,
 void MaidsafeStoreManager::CreateBPCallback(
     GenericConditionData *send_prep_cond_data) {
 #ifdef DEBUG
-//  printf("In MaidsafeStoreManager::SendPrepCallback.\n");
+//  printf("In MaidsafeStoreManager::CreateBPCallback.\n");
 #endif
   {  // NOLINT(Fraser)
     boost::lock_guard<boost::mutex> lock(send_prep_cond_data->cond_mutex);
@@ -783,8 +784,9 @@ int MaidsafeStoreManager::SendChunk(
 //    base::EncodeToHex(, &hex_name);
 //    base::EncodeToHex(, &hex_id);
 //    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
-//           "peer size: %i\n\n\n", HexCstring(store_task.non_hex_key_),
-//           HexCstring(peer.node_id()), duplicate_count, exclude.size());
+//           "peer size: %i\n\n\n", HexSubstr(store_task.non_hex_key_).c_str(),
+//           HexSubstr(peer.node_id()).c_str(), duplicate_count,
+//           exclude.size());
 #endif
     if (duplicate_count == 0) {  // set largest_rtt from first peer
 // TODO(Fraser#5#): 2009-08-14 - Uncomment lines below
@@ -1005,8 +1007,8 @@ int MaidsafeStoreManager::SendContent(
   if (store_response->pmid_id() != peer.node_id()) {
 #ifdef DEBUG
     printf("In MSM::SendContent, ids are not OK: response pmid: %s "
-           "peer node ID: %s\n", HexCstring(store_response->pmid_id()),
-           HexCstring(peer.node_id()));
+           "peer node ID: %s\n", HexSubstr(store_response->pmid_id()).c_str(),
+           HexSubstr(peer.node_id()).c_str());
 #endif
     return -1;
   }
@@ -1070,9 +1072,9 @@ int MaidsafeStoreManager::StoreIOUs(
   }
 #ifdef DEBUG
 //  printf("Client list of ref holders (key - %s) : ",
-//         HexCstring(store_task.non_hex_key_));
+//         HexSubstr(store_task.non_hex_key_).c_str());
 //  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
-//    printf("%s  ", HexCstring(ref_holders.at(h).node_id()));
+//    printf("%s  ", HexSubstr(ref_holders.at(h).node_id()).c_str());
 //  }
 //  printf("\n");
 #endif
@@ -1106,9 +1108,12 @@ int MaidsafeStoreManager::StoreIOUs(
   // RPCs (they should still succeed, we just won't handle the reply)
   boost::uint16_t successful_count(0);
   boost::uint16_t failed_count(0);
-  while (successful_count < kKadStoreThreshold_ &&
-         failed_count < kad::K - kKadStoreThreshold_ + 1 &&
-         successful_count + failed_count < ref_holders.size()) {
+//  while (successful_count < kKadStoreThreshold_ &&
+//         failed_count < kad::K - kKadStoreThreshold_ + 1 &&
+//         successful_count + failed_count < ref_holders.size()) {
+// TODO(Fraser#5#): 2009-10-13 - Preceding lines cause segfault on Unix due to
+// callbacks trying to lock destructed mutex - figure out why.
+  while (successful_count + failed_count < ref_holders.size()) {
     for (boost::uint16_t i = 0; i < results.size(); ++i) {
       boost::mutex::scoped_lock lock(store_iou_mutex);
       if (results.at(i)->store_iou_response_returned) {
@@ -1127,11 +1132,14 @@ int MaidsafeStoreManager::StoreIOUs(
   if (successful_count < kKadStoreThreshold_)
     return -3;  // We've not received enough successful responses
   // Cancel outstanding RPCs
-  for (boost::uint16_t j = 0; j < results.size(); ++j) {
-    if (!results.at(j)->store_iou_response_returned)
-      channel_manager_->
-          DeletePendingRequest(results.at(j)->controller->req_id());
-  }
+// TODO(Fraser#5#): 2009-10-13 - Once preceding todo is resolved, reinstate
+// following code.  Bool store_iou_response_returned needs replaced with
+// three state flag, kPending, kReturned, kDone or similar.
+//  for (boost::uint16_t j = 0; j < results.size(); ++j) {
+//    if (!results.at(j)->store_iou_response_returned)
+//      channel_manager_->
+//          DeletePendingRequest(results.at(j)->controller->req_id());
+//  }
   return 0;
 }
 
@@ -1635,7 +1643,8 @@ int MaidsafeStoreManager::SendIouToRefHolder(
       store_iou_result_holder->controller.get(), callback);
 #ifdef DEBUG
 //  printf("Ref Holder Vault (%i) req to store iou for vault id %s...\n",
-//      ref_holder.host_port(), HexCstring(store_iou_request.collector_pmid()));
+//      ref_holder.host_port(),
+//      HexSubstr(store_iou_request.collector_pmid()).c_str());
 #endif
   return 0;
 }

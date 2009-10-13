@@ -108,7 +108,7 @@ int PendingOperationsHandler::AdvanceStatus(const std::string &pmid,
   if (p.first == p.second) {
 #ifdef DEBUG
     printf("In POH::AdvanceStatus, Pending operation not found (%s)\n",
-           HexCstring(chunkname));
+           HexSubstr(chunkname).c_str());
 #endif
     return -1493;
   }
@@ -144,14 +144,14 @@ int PendingOperationsHandler::FindOperation(const std::string &pmid,
   if (p.first == p.second) {
 #ifdef DEBUG
     printf("In POH::FindOperation, Pending operation not found (%s)\n",
-           HexCstring(chunkname));
+           HexSubstr(chunkname).c_str());
 #endif
     return -1494;
   }
   ++p.first;
   if (p.first != p.second) {
 #ifdef DEBUG
-    printf("More than one found (%s)\n", HexCstring(chunkname));
+    printf("More than one found (%s)\n", HexSubstr(chunkname).c_str());
 #endif
     return -1494;
   }
@@ -168,7 +168,7 @@ int PendingOperationsHandler::EraseOperation(
   if (p.first == p.second) {
 #ifdef DEBUG
     printf("In POH::EraseOperation, Pending operation not found (%s)\n",
-           HexCstring(chunkname));
+           HexSubstr(chunkname).c_str());
 #endif
     return -1495;
   }
@@ -258,8 +258,9 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
           !iou.empty() || !rank_authority.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s) -- (%llu)-- (%s) -- (%s)\n",
-               HexCstring(pmid), HexCstring(chunkname), chunk_size,
-               HexCstring(iou), HexCstring(rank_authority));
+               HexSubstr(pmid).c_str(), HexSubstr(chunkname).c_str(),
+               chunk_size, HexSubstr(iou).c_str(),
+               HexSubstr(rank_authority).c_str());
 #endif
         res = -1496;
       }
@@ -271,7 +272,7 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       if (chunkname.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s)\n", iou.c_str(),
-               HexCstring(rank_authority));
+               HexSubstr(rank_authority).c_str());
 #endif
         res = -1496;
       }
@@ -283,8 +284,9 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
          iou.empty() || !rank_authority.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s) -- (%llu)-- (%s) -- (%s)\n",
-               HexCstring(pmid), HexCstring(chunkname), chunk_size,
-               HexCstring(iou), HexCstring(rank_authority));
+               HexSubstr(pmid).c_str(), HexSubstr(chunkname).c_str(),
+               chunk_size, HexSubstr(iou).c_str(),
+               HexSubstr(rank_authority).c_str());
 #endif
         res = -1497;
       }
@@ -293,7 +295,7 @@ int PendingOperationsHandler::AnalyseParameters(const std::string &pmid,
       if (pmid.empty() || chunkname.empty()) {
 #ifdef DEBUG
         printf("Wrong parameters (%s) -- (%s)\n",
-               HexCstring(pmid), HexCstring(chunkname));
+               HexSubstr(pmid).c_str(), HexSubstr(chunkname).c_str());
 #endif
         res = -1497;
       }

@@ -394,7 +394,7 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //      // Check vaults are returned in order closest to furthest from key.
 //      for (boost::uint16_t i = 0; i < contacts.size(); ++i) {
 //        printf("MSM (%i) - %s\n", i,
-//               HexCstring(contacts.at(i).node_id()));
+//               HexSubstr(contacts.at(i).node_id()).c_str());
 //        testpdvault::BigInt current_kad_distance(
 //            testpdvault::KademliaDistance(kad_key, contacts.at(i).node_id()));
 //        // Check current xor dist is greater than previous vault's
@@ -420,12 +420,12 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //        ASSERT_EQ(0, pdvaults_.at(j)->FindKNodes(kad_key, &vault_contacts));
 //        for (boost::uint16_t i = 0; i < vault_contacts.size(); ++i) {
 //          printf("Vault %i (%i) - %s\n", j, i,
-//                 HexCstring(vault_contacts.at(i).node_id()));
+//                 HexSubstr(vault_contacts.at(i).node_id()).c_str());
 //        }
 //        for (boost::uint16_t i = 0; i < vault_contacts.size(); ++i) {
 //          printf("i = %i\n", i);
-//          ASSERT_EQ(HexCstring(contacts.at(i).node_id()),
-//                    HexCstring(vault_contacts.at(i).node_id()));
+//          ASSERT_EQ(HexSubstr(contacts.at(i).node_id()),
+//                    HexSubstr(vault_contacts.at(i).node_id()));
 //        }
 //      }
 //    }
@@ -473,9 +473,9 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //        ASSERT_EQ(0, pdvaults_.at(j)->FindKNodes(kad_key, &vault_contacts));
 //        for (boost::uint16_t i = 0; i < vault_contacts.size(); ++i) {
 //          printf("Vault %i (%i) - %s\n", j, i,
-//                 HexCstring(vault_contacts.at(i).node_id()));
-//          ASSERT_EQ(HexCstring(contacts.at(i).node_id()),
-//                    HexCstring(vault_contacts.at(i).node_id()));
+//                 HexSubstr(vault_contacts.at(i).node_id()).c_str());
+//          ASSERT_EQ(HexSubstr(contacts.at(i).node_id()),
+//                    HexSubstr(vault_contacts.at(i).node_id()));
 //        }
 //      }
 //    }
@@ -588,7 +588,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
-    ASSERT_TRUE(client_chunkstore_->DeleteChunk(non_hex_chunk_name));
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_chunk_name));
     printf("Getting test chunk remotely.\n");
     std::string data;
     ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
@@ -651,7 +651,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetNonDuplicatedChunk) {
             "from vault[" + base::itos(vault_no) + "] on port " +
             base::itos(pdvaults_[vault_no]->host_port()) + ".";
         SCOPED_TRACE(trace);
-        ASSERT_TRUE(pdvaults_[vault_no]->
+        ASSERT_EQ(0, pdvaults_[vault_no]->
             vault_chunkstore_.DeleteChunk(non_hex_name));
         printf("%s\n", trace.c_str());
       }
@@ -662,7 +662,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetNonDuplicatedChunk) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
-    ASSERT_TRUE(client_chunkstore_->DeleteChunk(non_hex_chunk_name));
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_chunk_name));
     printf("Getting test chunk remotely.\n");
     std::string data;
     ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
@@ -706,7 +706,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetMissingChunk) {
           std::string trace = "Trying to delete chunk from vault["
               + base::itos(vault_no) + "].";
           SCOPED_TRACE(trace);
-          ASSERT_TRUE(pdvaults_[vault_no]->
+          ASSERT_EQ(0, pdvaults_[vault_no]->
               vault_chunkstore_.DeleteChunk(non_hex_name));
           ++chunk_count;
         }
@@ -720,7 +720,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetMissingChunk) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_, ++chunk_number) {
     std::string hex_chunk_name = (*it_).first;
     std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
-    ASSERT_TRUE(client_chunkstore_->DeleteChunk(non_hex_chunk_name));
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_chunk_name));
     printf("Trying to get test chunk remotely.\n");
     std::string data;
     if (chunk_number == kNumOfTestChunks -1) {
@@ -762,7 +762,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
 //    printf("Getting test packet remotely.\n");
     std::string hex_packet_name = (*it).first;
     std::string non_hex_packet_name = base::DecodeFromHex(hex_packet_name);
-    ASSERT_TRUE(client_chunkstore_->DeleteChunk(non_hex_packet_name));
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_packet_name));
     std::string packet_content;
     sm_->LoadPacket(hex_packet_name, &packet_content);
     maidsafe::GetResponse resp;

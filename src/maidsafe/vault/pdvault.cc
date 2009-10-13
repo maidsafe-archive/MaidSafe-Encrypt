@@ -253,9 +253,9 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
   }
 #ifdef DEBUG
 //  printf("Vault (%i) list of ref holders (key - %s) : ",
-//         host_port(), HexCstring(iou_ready_details.get<1>()));
+//         host_port(), HexSubstr(iou_ready_details.get<1>()).c_str());
 //  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
-//    printf("%s  ", HexCstring(ref_holders.at(h).node_id()));
+//    printf("%s  ", HexSubstr(ref_holders.at(h).node_id()).c_str());
 //  }
 //  printf("\n");
 #endif
@@ -264,8 +264,8 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
     if ((*it).node_id() == knode_.node_id()) {
 #ifdef DEBUG
       printf("Vault %s listed as a ref holder to itself for chunk %s\n",
-             HexCstring((*it).node_id()),
-             HexCstring(iou_ready_details.get<1>()));
+             HexSubstr((*it).node_id()).c_str(),
+             HexSubstr(iou_ready_details.get<1>()).c_str());
 #endif
       ref_holders.erase(it);
       break;

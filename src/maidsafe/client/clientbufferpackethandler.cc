@@ -165,7 +165,7 @@ int ClientBufferPacketHandler::AddUsers(const std::set<std::string> &users,
   int res = sm_->ModifyBPInfo(bufferpacketname, ser_gp);
 #ifdef DEBUG
   printf("ClientBufferPacketHandler::AddUsers - ModifyBPInfo %d. %s %s\n", res,
-         ss_->Id(type).c_str(), HexCstring(ss_->PublicKey(type)));
+         ss_->Id(type).c_str(), HexSubstr(ss_->PublicKey(type)).c_str());
 #endif
   if (res == kSuccess) {
     return SetUserList(type, users) ? kSuccess : kBPAddUserError;

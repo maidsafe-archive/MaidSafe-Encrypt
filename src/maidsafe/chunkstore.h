@@ -125,7 +125,7 @@ class ChunkStore : public base::AlternativeStore {
   int AddChunkToOutgoing(const std::string &key, const std::string &value);
   int AddChunkToOutgoing(const std::string &key, const fs::path &file);
   int Load(const std::string &key, std::string *value);
-  bool DeleteChunk(const std::string &key);
+  int DeleteChunk(const std::string &key);
   fs::path GetChunkPath(const std::string &key,
                         ChunkType type,
                         bool create_path);
@@ -145,8 +145,7 @@ class ChunkStore : public base::AlternativeStore {
   bool Init();
   // Populate map of <ChunkType, path to chunk root directory>
   bool PopulatePathMap();
-  // Directory iterator
-  bool DeleteChunkFunction(const std::string &key, const fs::path &chunk_path);
+  int DeleteChunkFunction(const std::string &key, const fs::path &chunk_path);
   void FindFiles(const fs::path &root_dir_path,
                  ChunkType type,
                  bool hash_check,

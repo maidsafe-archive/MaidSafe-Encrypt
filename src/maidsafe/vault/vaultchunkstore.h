@@ -47,7 +47,7 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   // This replaces the existing value - it doesn't append to the existing value
   int UpdateChunk(const std::string &key, const std::string &value);
   // Loads a chunk chosen at random from hashable normal (ie not cached) chunks
-  bool LoadRandomChunk(std::string *key, std::string *value);
+  int LoadRandomChunk(std::string *key, std::string *value);
   void GetAllChunks(std::list<std::string> *chunk_names);
   // Hash check all local chunks and add to list those that fail.  Bool set to
   // true causes failed chunks to be deleted.
