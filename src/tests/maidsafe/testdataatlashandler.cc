@@ -56,11 +56,10 @@ class FakeCallback {
   std::string result;
 };
 
-void wait_for_result_seh_(const FakeCallback &cb,
-                          boost::recursive_mutex *mutex) {
+void wait_for_result_seh_(const FakeCallback &cb, boost::mutex *mutex) {
   while (true) {
     {
-      base::pd_scoped_lock guard(*mutex);
+      boost::mutex::scoped_lock guard(*mutex);
       if (cb.result != "")
         return;
     }
@@ -75,7 +74,7 @@ namespace fs = boost::filesystem;
 
 class DataAtlasHandlerTest : public testing::Test {
  public:
-  DataAtlasHandlerTest() : rec_mutex(), sm(), cb() {
+  DataAtlasHandlerTest() : sm(), cb() {
     try {
       if (fs::exists("KademilaDb.db"))
         fs::remove(fs::path("KademilaDb.db"));
@@ -119,12 +118,12 @@ class DataAtlasHandlerTest : public testing::Test {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
       count += 10;
     }
-    rec_mutex = new boost::recursive_mutex();
     boost::shared_ptr<LocalStoreManager>
         sm(new LocalStoreManager(client_chunkstore_));
     // sm = sm_;
     sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-    wait_for_result_seh_(cb, rec_mutex);
+    boost::mutex mutex;
+    wait_for_result_seh_(cb, &mutex);
     GenericResponse res;
     if ((!res.ParseFromString(cb.result)) ||
         (res.result() == kNack)) {
@@ -181,7 +180,6 @@ class DataAtlasHandlerTest : public testing::Test {
   }
   void TearDown() {}
   // LocalStoreManager *sm;
-  boost::recursive_mutex *rec_mutex;
   boost::shared_ptr<LocalStoreManager> sm;
   FakeCallback cb;
  private:

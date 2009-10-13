@@ -178,8 +178,7 @@ void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,
 #endif
   fs::path file_path("StoreChunks");
   file_path = file_path / hex_chunk_name;
-  std::string non_hex("");
-  base::decode_from_hex(hex_chunk_name, &non_hex);
+  std::string non_hex = base::DecodeFromHex(hex_chunk_name);
   client_chunkstore_->Store(non_hex, file_path);
 
   ChunkType type = client_chunkstore_->chunk_type(non_hex);
@@ -231,8 +230,7 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
                                      const std::string &signed_public_key,
                                      const ValueType &type,
                                      base::callback_func_type cb) {
-  std::string key("");
-  base::decode_from_hex(hex_key, &key);
+  std::string key = base::DecodeFromHex(hex_key);
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   if (!co.AsymCheckSig(public_key, signed_public_key, public_key,
@@ -258,7 +256,7 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
       return;
     }
     std::string val = q.fieldValue(static_cast<unsigned int>(0));
-    base::decode_from_hex(val, &result);
+    result = base::DecodeFromHex(val);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
@@ -317,8 +315,7 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
         boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
         return;
       } else {
-        std::string enc_value("");
-        base::encode_to_hex(result, &enc_value);
+        std::string enc_value = base::EncodeToHex(result);
         bufSQL.format("insert into network values ('%s', %Q);",
           hex_key.c_str(), enc_value.c_str());
         db_.execDML(bufSQL);
@@ -356,8 +353,7 @@ int LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,
     CppSQLite3Query q = db_.execQuery(s.c_str());
     CppSQLite3Buffer bufSQL;
 
-    enc_value = "";
-    base::encode_to_hex(value, &enc_value);
+    enc_value = base::EncodeToHex(value);
 
     if (!q.eof()) {
       std::string s1 = "delete from network where key='" + hex_key + "';";
@@ -544,7 +540,7 @@ int LocalStoreManager::FlushDataIntoChunk(const std::string &chunkname,
 //        return false;
 //      }
 //      std::string val = q.fieldValue(static_cast<unsigned int>(0));
-//      base::decode_from_hex(val, &ser_bp);
+//      ser_bp = base::DecodeFromHex(val);
 //    }
 //    catch(CppSQLite3Exception &e) {  // NOLINT
 //      return false;
@@ -567,7 +563,7 @@ std::string LocalStoreManager::GetValue_FromDB(const std::string &hex_key) {
       return result;
     }
     std::string val = q.fieldValue(static_cast<unsigned int>(0));
-    base::decode_from_hex(val, &result);
+    result = base::DecodeFromHex(val);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     return result;

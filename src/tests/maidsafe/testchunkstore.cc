@@ -86,8 +86,7 @@ bool FindFile(const fs::path &root_dir_path,
     *path_found = fs::path("");
     return false;
   }
-  std::string hex_filename("");
-  base::encode_to_hex(non_hex_filename, &hex_filename);
+  std::string hex_filename = base::EncodeToHex(non_hex_filename);
   fs::directory_iterator end_itr;
   for (fs::directory_iterator itr(root_dir_path); itr != end_itr; ++itr) {
 //    printf("Iter at %s\n", itr->path().filename().c_str());

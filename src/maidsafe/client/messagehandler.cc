@@ -105,10 +105,8 @@ void MessageHandler::CreateSignature(const std::string &buffer_name,
                                     "",
                                     ss_->PrivateKey(type),
                                     crypto::STRING_STRING);
-  std::string non_hex_buffer_name("");
-  base::decode_from_hex(buffer_name, &non_hex_buffer_name);
   *signed_request = co_.AsymSign(co_.Hash(ss_->PublicKey(type) +
-                    *signed_public_key + non_hex_buffer_name, "",
+                    *signed_public_key + base::DecodeFromHex(buffer_name), "",
                     crypto::STRING_STRING, false), "", ss_->PrivateKey(type),
                     crypto::STRING_STRING);
 }

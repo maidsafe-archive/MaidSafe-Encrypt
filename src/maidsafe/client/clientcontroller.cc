@@ -2017,15 +2017,12 @@ void ClientController::OwnLocalVault_Callback(const OwnVaultResult &result,
       const std::string &pmid_name, bool *callback_arrived,
       OwnVaultResult *res) {
   if (result == OWNED_SUCCESS) {
-    std::string pmid_name_exp;
-    base::decode_from_hex(ss_->Id(PMID), &pmid_name_exp);
-    std::string mierda("");
-    base::encode_to_hex(pmid_name, &mierda);
+    std::string mierda = base::EncodeToHex(pmid_name);
 #ifdef DEBUG
     printf("ClientController::OwnLocalVault_Callback %s -- %s\n",
            ss_->Id(PMID).c_str(), mierda.c_str());
 #endif
-    if (pmid_name == pmid_name_exp) {
+    if (pmid_name == base::DecodeFromHex(ss_->Id(PMID))) {
       *res = result;
     } else {
       // FAILURE -- incorrect pmid name returned by the vault

@@ -90,7 +90,7 @@ class VaultServicesTest : public testing::Test {
                                           crypto::STRING_STRING);
         pmid_ = co.Hash(pmid_public_ + signed_pmid_public_, "",
                         crypto::STRING_STRING, true);
-        base::decode_from_hex(pmid_, &non_hex_pmid_);
+        non_hex_pmid_ = base::DecodeFromHex(pmid_);
       }
 
       try {

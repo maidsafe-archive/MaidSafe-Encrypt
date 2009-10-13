@@ -78,7 +78,7 @@ PDVault::PDVault(const std::string &pmid_public,
   co_.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co_.Hash(pmid_public_ + signed_pmid_public_, "",
                    crypto::STRING_STRING, true);
-  base::decode_from_hex(pmid_, &non_hex_pmid_);
+  non_hex_pmid_ = base::DecodeFromHex(pmid_);
   signed_non_hex_pmid_ = co_.AsymSign(non_hex_pmid_, "", pmid_private_,
                                       crypto::STRING_STRING);
   knode_.SetAlternativeStore(&vault_chunkstore_);
@@ -202,9 +202,7 @@ void PDVault::UnRegisterMaidService() {
 }
 
 std::string PDVault::hex_node_id() const {
-  std::string hex_id("");
-  base::encode_to_hex(knode_.node_id(), &hex_id);
-  return hex_id;
+  return base::EncodeToHex(knode_.node_id());
 }
 
 VaultStatus PDVault::vault_status() {
@@ -254,14 +252,10 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
     return;
   }
 #ifdef DEBUG
-//  std::string hex_key;
-//  base::encode_to_hex(iou_ready_details.get<1>(), &hex_key);
-//  printf("Vault (%i) list of ref holders (key - %s...) : ",
-//         host_port(), hex_key.substr(0, 6).c_str());
+//  printf("Vault (%i) list of ref holders (key - %s) : ",
+//         host_port(), HexCstring(iou_ready_details.get<1>()));
 //  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
-//    std::string hex_id;
-//    base::encode_to_hex(ref_holders.at(h).node_id(), &hex_id);
-//    printf("%s  ", hex_id.substr(0, 6).c_str());
+//    printf("%s  ", HexCstring(ref_holders.at(h).node_id()));
 //  }
 //  printf("\n");
 #endif
@@ -269,11 +263,9 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
        it != ref_holders.end(); ++it) {
     if ((*it).node_id() == knode_.node_id()) {
 #ifdef DEBUG
-      std::string hex_id, hex_key;
-      base::encode_to_hex((*it).node_id(), &hex_id);
-      base::encode_to_hex(iou_ready_details.get<1>(), &hex_key);
-      printf("Vault %s... listed as a ref holder to itself for chunk %s...\n",
-             hex_id.substr(0, 10).c_str(), hex_key.substr(0, 10).c_str());
+      printf("Vault %s listed as a ref holder to itself for chunk %s\n",
+             HexCstring((*it).node_id()),
+             HexCstring(iou_ready_details.get<1>()));
 #endif
       ref_holders.erase(it);
       break;
@@ -859,8 +851,7 @@ void PDVault::IterativePublishChunkRef(
     printf("*");
     std::string chunk_name = data->chunk_names.front();
     data->chunk_names.pop_front();
-    std::string non_hex_chunk_name("");
-    base::decode_from_hex(chunk_name, &non_hex_chunk_name);
+    std::string non_hex_chunk_name = base::DecodeFromHex(chunk_name);
     std::string signed_request_ = co_.AsymSign(
         co_.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
                 "",
@@ -1269,8 +1260,7 @@ void PDVault::SwapChunkAcceptChunk(
   std::string chunk_name_ = swap_chunk_response->chunkname2();
   vault_chunkstore_.Store(chunk_name_, swap_chunk_response->chunkcontent2());
   // Store chunk reference
-  std::string non_hex_chunk_name("");
-  base::decode_from_hex(chunk_name_, &non_hex_chunk_name);
+  std::string non_hex_chunk_name = base::DecodeFromHex(chunk_name_);
   std::string signed_request = co_.AsymSign(
       co_.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
               "",

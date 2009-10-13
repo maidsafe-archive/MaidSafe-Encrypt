@@ -150,8 +150,7 @@ void MakeChunks(boost::shared_ptr<maidsafe::ChunkStore> chunkstore,
     std::string non_hex_chunk_name_ = cryobj_.Hash(chunk_content_,
         "", crypto::STRING_STRING, false);
     fs::path chunk_path_("./TestVault");
-    std::string hex_chunk_name_("");
-    base::encode_to_hex(non_hex_chunk_name_, &hex_chunk_name_);
+    std::string hex_chunk_name_ = base::EncodeToHex(non_hex_chunk_name_);
     chunk_path_ /= hex_chunk_name_;
     std::ofstream ofs_;
     ofs_.open(chunk_path_.string().c_str());
@@ -177,11 +176,9 @@ void CreatePacketType(const std::string &priv_key,
     gp.SerializeToString(&ser_packet);
     std::string packet_name = co.Hash(ser_packet, "", crypto::STRING_STRING,
                                       false);
-    std::string hex_packet_name("");
-    base::encode_to_hex(packet_name, &hex_packet_name);
 //    chunkstore->AddChunkToOutgoing(*packet_name, *ser_packet);
     packets->insert(std::pair<std::string, std::string>
-        (hex_packet_name, ser_packet));
+        (base::EncodeToHex(packet_name), ser_packet));
     printf("Created packet %i.\n", packets->size());
   }
 }
@@ -249,9 +246,8 @@ void CreateMessage(const std::string &message,
 //  typedef boost::mp_math::mp_int<> BigInt;
 //
 //  BigInt KademliaDistance(const std::string &key1, const std::string &key2) {
-//    std::string hex_key1, hex_key2;
-//    base::encode_to_hex(key1, &hex_key1);
-//    base::encode_to_hex(key2, &hex_key2);
+//    std::string hex_key1 = base::EncodeToHex(key1);
+//    std::string hex_key2 = base::EncodeToHex(key2);
 //  //  printf("Dist between %s... & %s... is ", hex_key1.substr(0, 10).c_str(),
 //  //         hex_key2.substr(0, 10).c_str());
 //    hex_key1 = "0x" + hex_key1;
@@ -391,8 +387,8 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //      // Create vector of test vault IDs
 //      std::vector<std::string> vaults;
 //      for (boost::uint16_t h = 0; h < pdvaults_.size(); ++h) {
-//        std::string node_id;
-//        base::decode_from_hex(pdvaults_.at(h)->hex_node_id(), &node_id);
+//        std::string node_id =
+//            base::DecodeFromHex(pdvaults_.at(h)->hex_node_id());
 //        vaults.push_back(node_id);
 //      }
 //      // Check vaults are returned in order closest to furthest from key.
@@ -446,8 +442,8 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //      // Create vector of test vault IDs
 //      std::vector<std::string> vaults;
 //      for (boost::uint16_t h = 0; h < pdvaults_.size(); ++h) {
-//        std::string node_id;
-//        base::decode_from_hex(pdvaults_.at(h)->hex_node_id(), &node_id);
+//        std::string node_id =
+//            base::DecodeFromHex(pdvaults_.at(h)->hex_node_id());
 //        vaults.push_back(node_id);
 //      }
 //      // Check vaults are returned in order closest to furthest from key.
@@ -521,8 +517,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
   int timeout(300);  // seconds.
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
-    std::string non_hex_name;
-    base::decode_from_hex(hex_chunk_name, &non_hex_name);
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
     int chunk_count = 0;
     int time_count = 0;
     while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
@@ -563,8 +558,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
   int timeout(300);  // seconds.
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
-    std::string non_hex_name;
-    base::decode_from_hex(hex_chunk_name, &non_hex_name);
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
     int chunk_count = 0;
     int time_count = 0;
     while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
@@ -593,8 +587,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
   // Check each chunk can be retrieved correctly from the net
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
-    std::string non_hex_chunk_name;
-    base::decode_from_hex(hex_chunk_name, &non_hex_chunk_name);
+    std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
     ASSERT_TRUE(client_chunkstore_->DeleteChunk(non_hex_chunk_name));
     printf("Getting test chunk remotely.\n");
     std::string data;
@@ -626,8 +619,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetNonDuplicatedChunk) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     int chunk_count = 0;
     std::string hex_chunk_name = (*it_).first;
-    std::string non_hex_name;
-    base::decode_from_hex(hex_chunk_name, &non_hex_name);
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
     int time_count = 0;
     while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
       for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
@@ -647,8 +639,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetNonDuplicatedChunk) {
   // multiple chunk holders.
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
-    std::string non_hex_name;
-    base::decode_from_hex(hex_chunk_name, &non_hex_name);
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
     bool first_copy(true);
     for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
       if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
@@ -670,8 +661,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetNonDuplicatedChunk) {
   // holders but one missing.
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
-    std::string non_hex_chunk_name;
-    base::decode_from_hex(hex_chunk_name, &non_hex_chunk_name);
+    std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
     ASSERT_TRUE(client_chunkstore_->DeleteChunk(non_hex_chunk_name));
     printf("Getting test chunk remotely.\n");
     std::string data;
@@ -707,8 +697,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetMissingChunk) {
     if (chunk_number == kNumOfTestChunks -1)
       break;
     std::string hex_chunk_name = (*it_).first;
-    std::string non_hex_name;
-    base::decode_from_hex(hex_chunk_name, &non_hex_name);
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
     int chunk_count = 0;
     int time_count = 0;
     while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
@@ -730,8 +719,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetMissingChunk) {
   chunk_number = 0;
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_, ++chunk_number) {
     std::string hex_chunk_name = (*it_).first;
-    std::string non_hex_chunk_name;
-    base::decode_from_hex(hex_chunk_name, &non_hex_chunk_name);
+    std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
     ASSERT_TRUE(client_chunkstore_->DeleteChunk(non_hex_chunk_name));
     printf("Trying to get test chunk remotely.\n");
     std::string data;
@@ -773,8 +761,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
   for (it = packets.begin(); it != packets.end(); ++it) {
 //    printf("Getting test packet remotely.\n");
     std::string hex_packet_name = (*it).first;
-    std::string non_hex_packet_name;
-    base::decode_from_hex(hex_packet_name, &non_hex_packet_name);
+    std::string non_hex_packet_name = base::DecodeFromHex(hex_packet_name);
     ASSERT_TRUE(client_chunkstore_->DeleteChunk(non_hex_packet_name));
     std::string packet_content;
     sm_->LoadPacket(hex_packet_name, &packet_content);
@@ -826,8 +813,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
   std::string non_hex_chunk_name = crypto_.Hash("abc", "",
                                         crypto::STRING_STRING, false);
   std::string chunk_content = base::RandomString(200);
-  std::string hex_chunk_name("");
-  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
+  std::string hex_chunk_name = base::EncodeToHex(non_hex_chunk_name);
   std::string signed_request_ =
         crypto_.AsymSign(crypto_.Hash(client_public_key_ +
                                       client_signed_public_key_ +
@@ -895,8 +881,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateSystemPacket) {
   std::string non_hex_chunk_name, chunk_content;
   testpdvault::CreatePacketType(client_private_key_, &non_hex_chunk_name,
     &chunk_content);
-  std::string hex_chunk_name("");
-  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
+  std::string hex_chunk_name = base::EncodeToHex(non_hex_chunk_name);
   std::string signed_request =
       crypto_.AsymSign(crypto_.Hash(client_public_key_ +
                                     client_signed_public_key_ +
@@ -954,8 +939,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
   std::string non_hex_chunk_name, chunk_content;
   testpdvault::CreatePacketType(client_private_key_, &non_hex_chunk_name,
     &chunk_content);
-  std::string hex_chunk_name("");
-  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
+  std::string hex_chunk_name = base::EncodeToHex(non_hex_chunk_name);
   std::string signed_request =
       crypto_.AsymSign(crypto_.Hash(client_public_key_ +
                                     client_signed_public_key_ +
@@ -1045,8 +1029,7 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
   testpdvault::CreateBufferPacket("publicuser", client_public_key_,
       client_private_key_,
     &non_hex_chunk_name, &chunk_content);
-  std::string hex_chunk_name("");
-  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
+  std::string hex_chunk_name = base::EncodeToHex(non_hex_chunk_name);
   std::string signed_request =
       crypto_.AsymSign(crypto_.Hash(client_public_key_ +
                                     client_signed_public_key_ +

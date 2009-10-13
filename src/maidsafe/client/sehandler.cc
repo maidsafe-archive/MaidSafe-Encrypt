@@ -476,8 +476,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
     }
   }
 #ifdef DEBUG
-//  std::string hex_dm("");
-//  base::encode_to_hex(enc_dm_, &hex_dm);
+//  std::string hex_dm = base::EncodeToHex(enc_dm_);
 //  printf("Inserting dir_path(%s) and enc_dm_(%s) into uptodate_datamaps_.\n",
 //    dir_path.c_str(), hex_dm.c_str());
 #endif
@@ -561,8 +560,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       return -1;
     }
 #ifdef DEBUG
-//    std::string hex_dm("");
-//    base::encode_to_hex(enc_dm_, &hex_dm);
+//    std::string hex_dm = base::EncodeToHex(enc_dm_);
 //    printf("Searching dir_path(%s) and enc_dm_(%s) in uptodate_datamaps_\n",
 //      dir_path.c_str(), hex_dm.c_str());
 #endif
@@ -813,7 +811,7 @@ int SEHandler::LoadChunks(const DataMap &dm) {
   }
 
   return chunks_found;
-//  base::pd_scoped_lock gaurd(*mutex_);
+//  boost::recursive_mutex::scoped_lock gaurd(*mutex_);
 //  DirType dir_type = PRIVATE;
 //  std::string msid("");
 //  boost::shared_ptr<ChunksData> data(new ChunksData(dm, dir_type, msid, cb));
@@ -900,7 +898,7 @@ void SEHandler::StoreChunks(const DataMap &dm,
 //  void SEHandler::WaitForResult(const CallbackResult &cb) {
 //    while (true) {
 //      {
-//        base::pd_scoped_lock gaurd(mutex_);
+//        boost::recursive_mutex::scoped_lock gaurd(mutex_);
 //        if (cb.result != "")
 //          return;
 //      }

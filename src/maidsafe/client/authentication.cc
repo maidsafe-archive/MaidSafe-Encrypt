@@ -933,8 +933,6 @@ int Authentication::CreateSignedRequest(const std::string &private_key,
                                         const std::string &hex_packet_name,
                                         std::string *signed_public_key,
                                         std::string *signed_request) {
-  std::string non_hex_key("");
-  base::decode_from_hex(hex_packet_name, &non_hex_key);
   crypto::Crypto cry_obj_;
   cry_obj_.set_symm_algorithm(crypto::AES_256);
   cry_obj_.set_hash_algorithm(crypto::SHA_512);
@@ -943,10 +941,11 @@ int Authentication::CreateSignedRequest(const std::string &private_key,
                                          private_key,
                                          crypto::STRING_STRING);
   *signed_request = cry_obj_.AsymSign(
-      cry_obj_.Hash(public_key + *signed_public_key + non_hex_key,
-                    "",
-                    crypto::STRING_STRING,
-                    false),
+      cry_obj_.Hash(public_key + *signed_public_key +
+                    base::DecodeFromHex(hex_packet_name),
+                        "",
+                        crypto::STRING_STRING,
+                        false),
       "",
       private_key,
       crypto::STRING_STRING);

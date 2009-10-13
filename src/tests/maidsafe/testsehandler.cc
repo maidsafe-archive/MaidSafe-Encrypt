@@ -64,11 +64,10 @@ class FakeCallback {
   std::string result;
 };
 
-void wait_for_result_seh(const FakeCallback &cb,
-    boost::recursive_mutex *mutex) {
+void wait_for_result_seh(const FakeCallback &cb, boost::mutex *mutex) {
   while (true) {
     {
-      base::pd_scoped_lock guard(*mutex);
+      boost::mutex::scoped_lock guard(*mutex);
       if (cb.result != "")
         return;
     }
@@ -81,7 +80,6 @@ namespace maidsafe {
 class TestSEHandler : public testing::Test {
  protected:
   TestSEHandler() : sm(),
-                    rec_mutex(NULL),
                     client_chunkstore_(),
                     cb(),
                     db_str1_(""),
@@ -131,12 +129,12 @@ class TestSEHandler : public testing::Test {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
       count += 10;
     }
-    rec_mutex = new boost::recursive_mutex();
     boost::shared_ptr<LocalStoreManager>
         sm(new LocalStoreManager(client_chunkstore_));
     cb.Reset();
     sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-    wait_for_result_seh(cb, rec_mutex);
+    boost::mutex mutex;
+    wait_for_result_seh(cb, &mutex);
     GenericResponse result;
     if ((!result.ParseFromString(cb.result)) ||
         (result.result() == kNack)) {
@@ -220,11 +218,9 @@ class TestSEHandler : public testing::Test {
   }
   void TearDown() {
     cb.Reset();
-    delete rec_mutex;
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
   boost::shared_ptr<LocalStoreManager> sm;
-  boost::recursive_mutex *rec_mutex;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   FakeCallback cb;
   std::string db_str1_;

@@ -156,8 +156,7 @@ void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
 //  printf("In MaidsafeStoreManager::StoreChunk (%i), chunk_name = %s\n",
 //         knode_->host_port(), hex.c_str());
 #endif
-  std::string chunk_name("");
-  base::decode_from_hex(hex_chunk_name, &chunk_name);
+  std::string chunk_name = base::DecodeFromHex(hex_chunk_name);
   ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
   if (chunk_type < 0) {
 #ifdef DEBUG
@@ -181,8 +180,7 @@ int MaidsafeStoreManager::StorePacket(
   printf("In MaidsafeStoreManager::StorePacket (%i), packet_name = %s\n",
          knode_->host_port(), hex.c_str());
 #endif
-  std::string packet_name;
-  base::decode_from_hex(hex_packet_name, &packet_name);
+  std::string packet_name = base::DecodeFromHex(hex_packet_name);
   int return_value(1);
   GenericConditionData generic_cond_data(cv_);
   AddStorePacketTask(StoreTask(packet_name, value, system_packet_type,
@@ -208,8 +206,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
 //         knode_->host_port(), hex.c_str());
 #endif
   *data = "";
-  std::string chunk_name("");
-  base::decode_from_hex(hex_chunk_name, &chunk_name);
+  std::string chunk_name = base::DecodeFromHex(hex_chunk_name);
   if (client_chunkstore_->Load(chunk_name, data) == 0) {
 #ifdef DEBUG
 //    printf("(%i) Found chunk %s in local chunkstore.\n",
@@ -234,12 +231,10 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
       return -1;
     } else {
 #ifdef DEBUG
-      std::string hex_id;
-      base::encode_to_hex(cache_holder.node_id(), &hex_id);
       printf("In MaidsafeStoreManager::LoadChunk (%i), FindValue yielded %i:\n"
              "Cache holder: %s\tno of chunk holders: %i\n\n",
-             knode_->host_port(), find_result, hex_id.substr(0, 10).c_str(),
-             chunk_holders_ids.size());
+             knode_->host_port(), find_result,
+             HexCstring(cache_holder.node_id()), chunk_holders_ids.size());
 #endif
       if (find_result == 0)
         break;
@@ -285,8 +280,7 @@ void MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
 #endif
   std::string data, ser_result;
   GetResponse result_msg;
-  std::string packet_name("");
-  base::decode_from_hex(hex_packet_name, &packet_name);
+  std::string packet_name = base::DecodeFromHex(hex_packet_name);
   if (client_chunkstore_->Load(packet_name, &data) == 0) {
     result_msg.set_result(kAck);
     result_msg.set_content(data);
@@ -330,8 +324,8 @@ void MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
 //    messages->clear();
 //    if (public_key == "" || signed_public_key == "")
 //      return -1;
-//    std::string buffer_packet_name("");
-//    base::decode_from_hex(hex_buffer_packet_name, &buffer_packet_name);
+//    std::string buffer_packet_name =
+//        base::DecodeFromHex(hex_buffer_packet_name);
 //    kad::ContactInfo cache_holder;
 //    std::vector<std::string> chunk_holders_ids;
 //    std::string needs_cache_copy_id;
@@ -371,8 +365,7 @@ bool MaidsafeStoreManager::KeyUnique(const std::string &hex_key,
 //  printf("In MaidsafeStoreManager::KeyUnique (%i), packet_name = %s\n",
 //         knode_->host_port(), hex.c_str());
 #endif
-  std::string non_hex_key;
-  base::decode_from_hex(hex_key, &non_hex_key);
+  std::string non_hex_key = base::DecodeFromHex(hex_key);
   kad::ContactInfo cache_holder;
   std::vector<std::string> chunk_holders_ids;
   std::string needs_cache_copy_id;
@@ -399,8 +392,7 @@ void MaidsafeStoreManager::DeletePacket(const std::string &hex_key,
                                         const std::string &signed_public_key,
                                         const ValueType &type,
                                         base::callback_func_type cb) {
-  std::string key("");
-  base::decode_from_hex(hex_key, &key);
+  std::string key = base::DecodeFromHex(hex_key);
   pdclient_->DeleteChunk(key, public_key, signed_public_key, signature, type,
       boost::bind(&MaidsafeStoreManager::DeleteChunk_Callback, this, _1, cb));
 }
@@ -788,11 +780,11 @@ int MaidsafeStoreManager::SendChunk(
                                 // not be trying this peer again
 #ifdef DEBUG
 //    std::string hex_name, hex_id;
-//    base::encode_to_hex(store_task.non_hex_key_, &hex_name);
-//    base::encode_to_hex(peer.node_id(), &hex_id);
-//    printf("Chunkname: %s... Peer PMID: %s... Dup count: %i  Exclude "
-//           "peer size: %i\n\n\n", hex_name.substr(0,10).c_str(),
-//           hex_id.substr(0,10).c_str(), duplicate_count, exclude.size());
+//    base::EncodeToHex(, &hex_name);
+//    base::EncodeToHex(, &hex_id);
+//    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
+//           "peer size: %i\n\n\n", HexCstring(store_task.non_hex_key_),
+//           HexCstring(peer.node_id()), duplicate_count, exclude.size());
 #endif
     if (duplicate_count == 0) {  // set largest_rtt from first peer
 // TODO(Fraser#5#): 2009-08-14 - Uncomment lines below
@@ -882,9 +874,7 @@ int MaidsafeStoreManager::GetStoreRequests(const StoreTask &store_task,
   GetRequestSignature(store_task, recipient_id, &request_signature);
   if (request_signature == "")
     return -3;
-  std::string pmid = ss_->Id(PMID);
-  std::string non_hex_pmid;
-  base::decode_from_hex(pmid, &non_hex_pmid);
+  std::string non_hex_pmid = base::DecodeFromHex(ss_->Id(PMID));
   store_prep_request->set_chunkname(store_task.non_hex_key_);
   store_prep_request->set_data_size(chunk_size);
   store_prep_request->set_pmid(non_hex_pmid);
@@ -1014,12 +1004,9 @@ int MaidsafeStoreManager::SendContent(
   }
   if (store_response->pmid_id() != peer.node_id()) {
 #ifdef DEBUG
-    std::string hex1, hex2;
-    base::encode_to_hex(store_response->pmid_id(), &hex1);
-    base::encode_to_hex(peer.node_id(), &hex2);
-    printf("In MSM::SendContent, ids are not OK: response pmid: %s... "
-           "peer node ID: %s...\n", hex1.substr(0, 10).c_str(),
-           hex2.substr(0, 10).c_str());
+    printf("In MSM::SendContent, ids are not OK: response pmid: %s "
+           "peer node ID: %s\n", HexCstring(store_response->pmid_id()),
+           HexCstring(peer.node_id()));
 #endif
     return -1;
   }
@@ -1082,26 +1069,19 @@ int MaidsafeStoreManager::StoreIOUs(
     return -2;
   }
 #ifdef DEBUG
-//  std::string hex_key;
-//  base::encode_to_hex(store_task.non_hex_key_, &hex_key);
-//  printf("Client list of ref holders (key - %s...) : ",
-//         hex_key.substr(0, 6).c_str());
+//  printf("Client list of ref holders (key - %s) : ",
+//         HexCstring(store_task.non_hex_key_));
 //  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
-//    std::string hex_id;
-//    base::encode_to_hex(ref_holders.at(h).node_id(), &hex_id);
-//    printf("%s  ", hex_id.substr(0, 6).c_str());
+//    printf("%s  ", HexCstring(ref_holders.at(h).node_id()));
 //  }
 //  printf("\n");
 #endif
-  std::string own_pmid = ss_->Id(PMID);
-  std::string own_non_hex_pmid;
-  base::decode_from_hex(own_pmid, &own_non_hex_pmid);
   StoreIOURequest store_iou_request;
   store_iou_request.set_chunkname(store_task.non_hex_key_);
   store_iou_request.set_data_size(chunk_size);
   store_iou_request.set_collector_pmid(store_prep_response.pmid_id());
   store_iou_request.set_iou(serialised_iou);
-  store_iou_request.set_own_pmid(own_non_hex_pmid);
+  store_iou_request.set_own_pmid(base::DecodeFromHex(ss_->Id(PMID)));
   store_iou_request.set_public_key(store_task.public_key_);
   store_iou_request.set_signed_public_key(store_task.public_key_signature_);
   std::vector< boost::shared_ptr<StoreIouResultHolder> > results;
@@ -1654,10 +1634,8 @@ int MaidsafeStoreManager::SendIouToRefHolder(
       &store_iou_result_holder->store_iou_response,
       store_iou_result_holder->controller.get(), callback);
 #ifdef DEBUG
-//  std::string hex_id;
-//  base::encode_to_hex(store_iou_request.collector_pmid(), &hex_id);
 //  printf("Ref Holder Vault (%i) req to store iou for vault id %s...\n",
-//         ref_holder.host_port(), hex_id.substr(0, 10).c_str());
+//      ref_holder.host_port(), HexCstring(store_iou_request.collector_pmid()));
 #endif
   return 0;
 }
@@ -1873,9 +1851,6 @@ void MaidsafeStoreManager::UpdateChunk(
                       &request_signature);
   if (request_signature == "")
     return;
-  std::string pmid = ss_->Id(PMID);
-  std::string non_hex_pmid;
-  base::decode_from_hex(pmid, &non_hex_pmid);
   ValueType data_type = DATA;
   if (store_task.dir_type_ == ANONYMOUS)
     data_type = PDDIR_NOTSIGNED;

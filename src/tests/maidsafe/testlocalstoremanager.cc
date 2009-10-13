@@ -179,8 +179,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
 
   std::string signed_public_key = crypto_obj.AsymSign(rsa_obj.public_key(), "",
                                   rsa_obj.private_key(), crypto::STRING_STRING);
-  std::string non_hex_gp_name("");
-  base::decode_from_hex(gp_name, &non_hex_gp_name);
+  std::string non_hex_gp_name = base::DecodeFromHex(gp_name);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(
       rsa_obj.public_key() + signed_public_key + non_hex_gp_name, "",
       crypto::STRING_STRING, false),
@@ -224,8 +223,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
 
   signed_public_key = crypto_obj.AsymSign(public_key, "", rsa_obj.private_key(),
                       crypto::STRING_STRING);
-  std::string non_hex_gp_name;
-  base::decode_from_hex(gp_name, &non_hex_gp_name);
+  std::string non_hex_gp_name = base::DecodeFromHex(gp_name);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(
       rsa_obj.public_key() + signed_public_key + non_hex_gp_name, "",
       crypto::STRING_STRING, false), "", rsa_obj.private_key(),
@@ -260,8 +258,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   std::string chunk_content = base::RandomString(256 * 1024);
   std::string non_hex_chunk_name = crypto_obj.Hash(chunk_content, "",
                                    crypto::STRING_STRING, false);
-  std::string hex_chunk_name;
-  base::encode_to_hex(non_hex_chunk_name, &hex_chunk_name);
+  std::string hex_chunk_name = base::EncodeToHex(non_hex_chunk_name);
   fs::path chunk_path("./TestStoreManager");
   chunk_path /= hex_chunk_name;
   boost::filesystem::ofstream ofs;
@@ -461,8 +458,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   std::string signed_public_key = crypto_obj.AsymSign(rsa_obj.public_key(), "",
                                    rsa_obj.private_key(),
                                    crypto::STRING_STRING);
-  std::string non_hex_bufferpacketname;
-  base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
+  std::string non_hex_bufferpacketname = base::DecodeFromHex(bufferpacketname);
   std::string signed_request = crypto_obj.AsymSign(crypto_obj.Hash(
       rsa_obj.public_key() + signed_public_key1 + non_hex_bufferpacketname, "",
       crypto::STRING_STRING, false), "", rsa_obj.private_key(),

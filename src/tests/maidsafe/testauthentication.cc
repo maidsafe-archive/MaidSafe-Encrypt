@@ -48,10 +48,10 @@ class FakeCallback {
   std::string result;
 };
 
-void wait_for_result_ta(const FakeCallback &cb, boost::recursive_mutex *mutex) {
+void wait_for_result_ta(const FakeCallback &cb, boost::mutex *mutex) {
   while (true) {
     {
-      base::pd_scoped_lock guard(*mutex);
+      boost::mutex::scoped_lock guard(*mutex);
       if (cb.result != "")
         return;
     }
@@ -68,7 +68,6 @@ class AuthenticationTest : public testing::Test {
                          username("user1"),
                          pin("1234"),
                          password("password1"),
-                         mutex(),
                          cb() {
     try {
       boost::filesystem::remove_all("./TestAuth");
@@ -96,7 +95,6 @@ class AuthenticationTest : public testing::Test {
     username = "user1";
     pin = "1234";
     password = "password1";
-    mutex = new boost::recursive_mutex();
     client_chunkstore_ =
         boost::shared_ptr<ChunkStore>(new ChunkStore("./TestAuth", 0, 0));
     int count(0);
@@ -107,7 +105,8 @@ class AuthenticationTest : public testing::Test {
     boost::shared_ptr<LocalStoreManager>
         storemanager(new LocalStoreManager(client_chunkstore_));
     storemanager->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-    wait_for_result_ta(cb, mutex);
+    boost::mutex mutex;
+    wait_for_result_ta(cb, &mutex);
     GenericResponse res;
     if ((!res.ParseFromString(cb.result)) ||
         (res.result() == kNack)) {
@@ -134,7 +133,6 @@ class AuthenticationTest : public testing::Test {
   std::string username;
   std::string pin;
   std::string password;
-  boost::recursive_mutex *mutex;
   FakeCallback cb;
  private:
   explicit AuthenticationTest(const AuthenticationTest&);
@@ -480,7 +478,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   cb.Reset();
   authentication->CreateMSIDPacket(boost::bind(&FakeCallback::CallbackFunc,
                                    &cb, _1));
-  wait_for_result_ta(cb, mutex);
+  boost::mutex mutex;
+  wait_for_result_ta(cb, &mutex);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   CreateMSIDResult msid_result;
   ASSERT_TRUE(msid_result.ParseFromString(cb.result));

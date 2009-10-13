@@ -239,11 +239,10 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
     // store chunk via client_chunkstore.  If it has already been saved
     // or queued to be saved, StoreChunk does not try to re-store chunk.
     std::string post_enc_hash_ = SHA512(temp_chunk_name_);
-    std::string non_hex("");
-    base::decode_from_hex(post_enc_hash_, &non_hex);
     // ensure uniqueness of post-encryption hash
     // HashUnique(post_enc_hash_, dm, false);
-    client_chunkstore_->AddChunkToOutgoing(non_hex, temp_chunk_name_);
+    client_chunkstore_->AddChunkToOutgoing(base::DecodeFromHex(post_enc_hash_),
+                                           temp_chunk_name_);
     // store the post-encryption hash to datamap
     dm->add_encrypted_chunk_name(post_enc_hash_);
   }
@@ -474,10 +473,8 @@ bool SelfEncryption::CreateProcessDirectory(fs::path *processing_path) {
 
 
 fs::path SelfEncryption::GetChunkPath(const std::string &hex_chunk_name) {
-  std::string non_hex("");
-  base::decode_from_hex(hex_chunk_name, &non_hex);
-  return client_chunkstore_->GetChunkPath(non_hex, (kHashable | kOutgoing),
-      true);
+  return client_chunkstore_->GetChunkPath(base::DecodeFromHex(hex_chunk_name),
+      (kHashable | kOutgoing), true);
 }  // end GetChunkPath
 
 

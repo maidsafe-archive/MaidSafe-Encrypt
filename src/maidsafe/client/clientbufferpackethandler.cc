@@ -227,7 +227,7 @@ int ClientBufferPacketHandler::GetMessages(
     std::list<ValidatedBufferPacketMessage> *valid_messages) {
   valid_messages->clear();
 // TODO(Team#5#): 2009-09-15 - Confirm that mutex is not required here
-// base::pd_scoped_lock gaurd(*mutex_);
+// boost::recursive_mutex::scoped_lock gaurd(*mutex_);
   std::string bufferpacketname = crypto_obj_.Hash(ss_->Id(type) +
                                  ss_->PublicKey(type), "",
                                  crypto::STRING_STRING, true);
@@ -289,8 +289,8 @@ int ClientBufferPacketHandler::GetBufferPacketInfo(const PacketType &type) {
 //                                    ss_->PublicKey(type), "",
 //                                    ss_->PrivateKey(type),
 //                                    crypto::STRING_STRING);
-//    std::string non_hex_bufferpacketname("");
-//    base::decode_from_hex(bufferpacketname, &non_hex_bufferpacketname);
+//    std::string non_hex_bufferpacketname =
+//        base::DecodeFromHex(bufferpacketname);
 //    std::string signed_request = crypto_obj_.AsymSign(
 //      crypto_obj_.Hash(ss_->PublicKey(type) + signed_public_key +
 //      non_hex_bufferpacketname, "", crypto::STRING_STRING, false), "",

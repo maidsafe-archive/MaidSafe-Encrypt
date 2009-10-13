@@ -27,7 +27,7 @@
 
 #include <boost/cstdint.hpp>
 #include <maidsafe/maidsafe-dht.h>
-#define THIS_MAIDSAFE_DHT_VERSION 11
+#define THIS_MAIDSAFE_DHT_VERSION 12
 #if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
@@ -324,9 +324,7 @@ enum ValueType {
 }  // namespace maidsafe
 
 inline const char *HexCstring(const std::string &non_hex) {
-  std::string hex;
-  base::encode_to_hex(non_hex, &hex);
-  return (hex.substr(0, 10) + "...").c_str();
+  return ((base::EncodeToHex(non_hex).substr(0, 10) + "...").c_str());
 }
 
 #endif  // MAIDSAFE_MAIDSAFE_H_

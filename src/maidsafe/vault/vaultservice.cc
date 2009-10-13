@@ -67,7 +67,7 @@ VaultService::VaultService(const std::string &pmid_public,
   co.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co.Hash(pmid_public + signed_pmid_public_, "", crypto::STRING_STRING,
                   true);
-  base::decode_from_hex(pmid_, &non_hex_pmid_);
+  non_hex_pmid_ = base::DecodeFromHex(pmid_);
 }
 
 void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
@@ -326,10 +326,8 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     response->set_result(kNack);
   }
 #ifdef DEBUG
-  std::string hex;
-  base::encode_to_hex(request->chunkname(), &hex);
-  printf("Vault %i stored chunk %s...\n", knode_->host_port(),
-         hex.substr(0, 10).c_str());
+  printf("Vault %i stored chunk %s\n", knode_->host_port(),
+         HexCstring(request->chunkname()));
 #endif
   done->Run();
 }
@@ -489,13 +487,9 @@ void VaultService::StoreChunkReference(
                                 &chunksize, &iou);
     if (n != 0) {
   #ifdef DEBUG
-      std::string hex_chunkname, hex_vault_pmid;
-      base::encode_to_hex(request->chunkname(), &hex_chunkname);
-      base::encode_to_hex(request->pmid(), &hex_vault_pmid);
       printf("In VaultService::StoreChunkReference (%i), failed to get IOU"
-             " for chunk %s... saved by vault %s...\n", knode_->host_port(),
-             hex_chunkname.substr(0, 10).c_str(),
-             hex_vault_pmid.substr(0, 10).c_str());
+             " for chunk %s saved by vault %s\n", knode_->host_port(),
+             HexCstring(request->chunkname()), HexCstring(request->pmid()));
   #endif
       response->set_result(kNack);
       done->Run();
@@ -1308,8 +1302,6 @@ bool VaultService::ValidateSignedRequest(const std::string &public_key,
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string hex;
-  base::encode_to_hex(pmid, &hex);
   if (pmid != "" && pmid != co.Hash(public_key + signed_public_key, "",
       crypto::STRING_STRING, false)) {
 #ifdef DEBUG

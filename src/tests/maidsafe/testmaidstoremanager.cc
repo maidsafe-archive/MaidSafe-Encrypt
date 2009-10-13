@@ -142,7 +142,7 @@ class MaidStoreManagerTest : public testing::Test {
         maid_pri, crypto::STRING_STRING);
     hex_client_pmid_ = crypto_.Hash(pmid_pub +
         client_pmid_public_signature_, "", crypto::STRING_STRING, true);
-    base::decode_from_hex(hex_client_pmid_, &client_pmid_);
+    client_pmid_ = base::DecodeFromHex(hex_client_pmid_);
     SessionSingleton::getInstance()->AddKey(PMID, hex_client_pmid_, pmid_pri,
         pmid_pub, client_pmid_public_signature_);
     SessionSingleton::getInstance()->SetConnectionStatus(0);
@@ -204,8 +204,7 @@ class MockMsmKeyUnique : public MaidsafeStoreManager {
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   MockMsmKeyUnique msm(client_chunkstore_);
   std::string non_hex_key = crypto_.Hash("a", "", crypto::STRING_STRING, false);
-  std::string hex_key;
-  base::encode_to_hex(non_hex_key, &hex_key);
+  std::string hex_key = base::EncodeToHex(non_hex_key);
   EXPECT_CALL(msm, FindValue(non_hex_key, true, testing::_, testing::_,
       testing::_)).WillOnce(testing::Return(1))
       .WillOnce(testing::Return(0));
@@ -221,8 +220,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_PreSendAnalysis) {
   MockMsmKeyUnique msm(client_chunkstore_);
   std::string non_hex_key = crypto_.Hash("A", "", crypto::STRING_STRING, false);
-  std::string hex_key;
-  base::encode_to_hex(non_hex_key, &hex_key);
+  std::string hex_key = base::EncodeToHex(non_hex_key);
   // Set up data for calls to FindValue
   kad::ContactInfo cache_holder;
   cache_holder.set_node_id(crypto_.Hash("B", "", crypto::STRING_STRING, false));
@@ -849,8 +847,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
       anmpid_pri, crypto::STRING_STRING);
   std::string mpid_name = crypto_.Hash("PublicName", "", crypto::STRING_STRING,
       false);
-  std::string hex_mpid_name;
-  base::encode_to_hex(mpid_name, &hex_mpid_name);
+  std::string hex_mpid_name = base::EncodeToHex(mpid_name);
   SessionSingleton::getInstance()->AddKey(MPID, hex_mpid_name, mpid_pri,
       mpid_pub, mpid_pub_sig);
   std::string chunkname_public_share =
@@ -1297,8 +1294,7 @@ class MockMsmSendChunk : public MaidsafeStoreManager {
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendChunk) {
   MockMsmSendChunk msm(client_chunkstore_);
   std::string chunkname = crypto_.Hash("ddd", "", crypto::STRING_STRING, false);
-  std::string hex_chunkname;
-  base::encode_to_hex(chunkname, &hex_chunkname);
+  std::string hex_chunkname = base::EncodeToHex(chunkname);
   client_chunkstore_->AddChunkToOutgoing(chunkname, std::string("ddd"));
   StoreTask store_task(chunkname, PRIVATE, "");
   boost::shared_ptr<boost::condition_variable> cond_variable;
@@ -1333,9 +1329,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePacket) {
                                                  crypto::STRING_STRING, false);
   std::string packetname_non_hashable = crypto_.Hash("Non-Hashable", "",
                                                  crypto::STRING_STRING, false);
-  std::string hex_packetname_hashable, hex_packetname_non_hashable;
-  base::encode_to_hex(packetname_hashable, &hex_packetname_hashable);
-  base::encode_to_hex(packetname_non_hashable, &hex_packetname_non_hashable);
+  std::string hex_packetname_hashable = base::EncodeToHex(packetname_hashable);
+  std::string hex_packetname_non_hashable =
+      base::EncodeToHex(packetname_non_hashable);
   StoreTask store_task_hashable(packetname_hashable, PRIVATE, "");
   StoreTask store_task_non_hashable(packetname_non_hashable, PRIVATE, "");
   boost::shared_ptr<boost::condition_variable> cond_variable;

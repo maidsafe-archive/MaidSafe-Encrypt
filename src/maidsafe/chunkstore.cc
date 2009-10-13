@@ -71,8 +71,8 @@ bool ChunkStore::Init() {
     for (path_map_iterator path_map_itr = path_map_.begin();
          path_map_itr != path_map_.end(); ++path_map_itr) {
       if (fs::exists((*path_map_itr).second)) {
-        temp_result = temp_result && PopulateChunkSet((*path_map_itr).first,
-                                                      (*path_map_itr).second);
+        temp_result = PopulateChunkSet((*path_map_itr).first,
+            (*path_map_itr).second) && temp_result;
 //        printf("Found %s\n", (*path_map_itr).second.string().c_str());
       } else {
         temp_result = temp_result &&
@@ -152,8 +152,8 @@ void ChunkStore::FindFiles(const fs::path &root_dir_path,
                   failed_keys);
       } else  {
         ++(*filecount);
-        if (base::decode_from_hex(itr->path().filename(), &non_hex_name) &&
-            fs::file_size(itr->path()) >= 2) {
+        non_hex_name = base::DecodeFromHex(itr->path().filename());
+        if (fs::file_size(itr->path()) >= 2) {
           ChunkInfo chunk(non_hex_name,
               boost::posix_time::microsec_clock::local_time(), type);
           {
@@ -318,8 +318,7 @@ fs::path ChunkStore::GetChunkPath(const std::string &key,
 #endif
     return fs::path("");
   }
-  std::string hex_key("");
-  base::encode_to_hex(key, &hex_key);
+  std::string hex_key = base::EncodeToHex(key);
   std::string dir_one, dir_two, dir_three;
   dir_one = hex_key.substr(0, 1);
   dir_two = hex_key.substr(1, 1);
