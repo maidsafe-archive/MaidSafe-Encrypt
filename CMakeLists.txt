@@ -57,6 +57,9 @@ MESSAGE ("")
 MESSAGE ("    To alter this (e.g. for Boost 1.40.x),      cmake ../.. -DBOOST_VERSION=1_40")
 MESSAGE ("    To have no Boost version set,               cmake ../.. -DBOOST_VERSION=none")
 
+
+
+
 IF(NOT BOOST_INCLUDES)
 	IF(WIN32)
     SET(BOOST_INCLUDES "c:\\usr\\include\\boost${BOOST_VERSION}" CACHE INTERNAL "Set location of BOOST headers eg c:\\usr\\include\\boost${BOOST_VERSION}" FORCE)
@@ -95,6 +98,33 @@ IF(CMAKE_COMPILER_IS_GNUCC)
     STRING(REPLACE "gcc" "mgw" GCC_VERSION "${GCC_VERSION}")
   ENDIF(${CMAKE_GENERATOR} MATCHES "MinGW Makefiles")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
+
+##################################################################################
+# Qt setup code                                                                  #
+##################################################################################
+
+  MESSAGE ("================================================================================")
+       FIND_PACKAGE( Qt4 )
+IF(NOT QTDIR_LOC) 
+message(" Cannot find QT you will need to manually set the directory it is installed in ")
+message(" please use cmake ../../ -D QTDIR_LOC=<location of QT installation>")  
+  IF(WIN32)
+    SET(QTDIR_LOC "C:/Qt/4.5.0" CACHE INTERNAL "SET QTDIR location ie C:/Qt/4.5.0" FORCE)      
+  ELSE()
+    SET(QTDIR_LOC "/usr/local/Trolltech/Qt-4.5.3/" CACHE INTERNAL "SET QTDIR location ie /usr/local/Trolltech/Qt-4.5.3/" FORCE)   
+  ENDIF(WIN32)
+		
+ELSE(NOT QTDIR_LOC) 
+  MESSAGE ("================================================================================")
+message(" QTDIR set to \"${QTDIR_LOC}\"")
+message(" To alter please use cmake ../../ -D QTDIR_LOC=<location of QT installation>")  
+  MESSAGE ("================================================================================")
+ SET(ENV{QTDIR} ${QTDIR_LOC})
+ENDIF(NOT QTDIR_LOC) 
+
+	SET(QT_STATIC 1)
+
+
 
 set(CPACK_PACKAGE_VERSION_PATCH ${pddate})
 
@@ -170,17 +200,8 @@ LIST(REMOVE_ITEM T_MAIDSAFE_DIR "${SOURCE_DIR}/tests/maidsafe/functionaltestclie
 LIST(REMOVE_ITEM T_MAIDSAFE_DIR "${SOURCE_DIR}/tests/maidsafe/testpdvault.cc")
 FILE(GLOB T_MAIN  "${SOURCE_DIR}/tests/main.cc")                                 #
 FILE(GLOB T_FS  "${SOURCE_DIR}/tests/fs/*.c*")                                   #
-##################################################################################
-# Qt setup code                                                                  #
-##################################################################################
- 	##bloody stupid windows
-       IF(WIN32)
-       	SET(ENV{QTDIR} "C:/Qt/4.5.0")
-	SET(QT_STATIC 1)
-       ENDIF(WIN32)	
-	SET(QT_STATIC 0)
-       FIND_PACKAGE( Qt4 )
-  INCLUDE( ${QT_USE_FILE} )
+##################################################################################  
+INCLUDE( ${QT_USE_FILE} )
   QT4_ADD_RESOURCES(  M_QT_C ${M_QT_QRC} )
   QT4_WRAP_UI( M_QT_UI ${M_QT_UI} )
   QT4_WRAP_CPP( M_QT_C ${M_QT_H} )
