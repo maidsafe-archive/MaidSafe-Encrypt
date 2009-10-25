@@ -8,6 +8,6 @@ set(CTEST_PROJECT_NAME "PerpetualData")
 set(CTEST_NIGHTLY_START_TIME "00:01:00 GMT")
 
 set(CTEST_DROP_METHOD "http")
-set(CTEST_DROP_SITE "dash2.maidsafe.net")
+set(CTEST_DROP_SITE "dash.maidsafe.net")
 set(CTEST_DROP_LOCATION "/submit.php?project=PerpetualData")
 set(CTEST_DROP_SITE_CDASH TRUE)

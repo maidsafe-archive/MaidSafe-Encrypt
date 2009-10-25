@@ -3,6 +3,7 @@
 <source><![CDATA[#![maidsafe IOU Management]
 
 IOU_Orig_Creator:vault
+Client_buffer_packet:vault
 Vault To:vault
 RefHolder To:vault
 IOU Store (kad):vault
@@ -12,23 +13,26 @@ IOU Store (kad):vault
 ############
 [c: Creating an IOU]
 IOU_Orig_Creator:IOU Store (kad).create KAD packet 
+IOU_Orig_Creator:Client_buffer_packet.IOU_ID (SPACE:SERIAL)
 *1 IOU Store (kad)
 Kad key is
-[PMID(owner-pmid):SPACE:SERIAL#:TTL (600 days):
+###############################
+[PMID(owner-pmid):SPACE:SERIAL#
+###############################
 Kad value is 
+##########################################
 [PMID(owner-pmid):PMID(current-holder):PMID (last)SPACE:SERIAL#:TTL:Valid]
 (signed by last holder)(signed by current holder)
-[PMID(owner-pmid):PMID(current-holder)SPACE:SERIAL#:TTL:Used:Sign of last holder]
-(signed by current holder)
+##########################################
 for inital value last and current are same PMID
 *1
 *2 IOU_Orig_Creator
 Keep list of SPACE:SERIAL:TTL
-to find kad keys
+to find kad keys (and values)
 Kept in Data Atlas  / delete used 
 IOU's as they happen
 *2
-IOU_Orig_Creator:Vault To.
+
 [/c:]
 
 #####################
@@ -44,7 +48,6 @@ the vault can ask the original node for it
 again. Should not be an issue though as it will exist in 
 K refholders
 *3
-
  
 RefHolder To:Vault To.Got valid IOU used message
 
