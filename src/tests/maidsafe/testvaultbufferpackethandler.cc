@@ -39,7 +39,7 @@ class VaultBufferPacketHandlerTest : public testing::Test {
     maidsafe::BufferPacketInfo bpi;
     bpi.set_owner("test bufferpacket");
     bpi.set_ownerpublickey(public_key);
-    bpi.add_users(testuser);
+    bpi.add_users(cry_obj.Hash(testuser, "", crypto::STRING_STRING, false));
     maidsafe::BufferPacket bp;
     maidsafe::GenericPacket *info = bp.add_owner_info();
     std::string ser_bpi;
@@ -124,7 +124,9 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   ASSERT_EQ(maidsafe::INSTANT_MSG, type);
 
   std::string sender_id = cry_obj.Hash(rsakp.public_key() + signed_public_key,
-                          "", crypto::STRING_STRING, true);
+                          "", crypto::STRING_STRING, false);
+  std::string hashed_sender_id = cry_obj.Hash(sender_id, "",
+                                 crypto::STRING_STRING, false);
   bp_msg.set_sender_id(sender_id);
   bp_msg.SerializeToString(&ser_bp_msg);
   bp_msg.set_sender_public_key(rsakp.public_key());
@@ -145,7 +147,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   maidsafe::GenericPacket bp_info = bp.owner_info(0);
   maidsafe::BufferPacketInfo bpi;
   bpi.ParseFromString(bp_info.data());
-  bpi.add_users(sender_id);
+  bpi.add_users(hashed_sender_id);
   bp.clear_owner_info();
   maidsafe::GenericPacket *bp_info_up = bp.add_owner_info();
   std::string new_ser_bpi;

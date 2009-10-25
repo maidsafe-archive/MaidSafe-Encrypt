@@ -1608,7 +1608,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   bpi.set_owner("Dan");
   bpi.set_ownerpublickey(pub_key);
   bpi.set_online(1);
-  bpi.add_users("newuser");
+  bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();
   std::string ser_bpi;

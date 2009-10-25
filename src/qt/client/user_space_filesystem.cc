@@ -68,6 +68,12 @@ UserSpaceFileSystem::~UserSpaceFileSystem() {
 }
 
 bool UserSpaceFileSystem::mount() {
+#ifdef DEBUG
+  qDebug() << "UserSpaceFileSystem::mount before 2 sec sleep";
+  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  qDebug() << "UserSpaceFileSystem::mount after 2 sec sleep";
+#endif
+
   maidsafe::SessionSingleton::getInstance()->SetMounted(0);
 
   std::string debug_mode("-d");

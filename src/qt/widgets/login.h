@@ -88,7 +88,7 @@ class Login : public QWidget {
     void onCreateClicked();
     void onLoginClicked();
     void UserExists_Callback(bool b);
-
+    void UserValidated(bool b);
   private:
     Ui::LoginScreen ui_;
 
@@ -109,7 +109,8 @@ class Login : public QWidget {
       EDIT_USER,
       EDIT_PIN,
       WAITING_ON_USER_CHECK,
-      EDIT_PASSWORD
+      EDIT_PASSWORD,
+      LOGGING_IN
     };
 
     State state_;

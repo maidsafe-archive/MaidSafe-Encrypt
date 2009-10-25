@@ -366,7 +366,8 @@ TEST_F(StoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
   buffer_packet_info.set_ownerpublickey(ss_->PublicKey(maidsafe::MPID));
   buffer_packet_info.set_online(false);
-  buffer_packet_info.add_users("Juanito");
+  buffer_packet_info.add_users(crypto_obj.Hash("Juanito", "",
+                               crypto::STRING_STRING, false));
 
   std::string ser_info;
   buffer_packet_info.SerializeToString(&ser_info);

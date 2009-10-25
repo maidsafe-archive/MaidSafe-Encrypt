@@ -27,6 +27,7 @@
 #include "maidsafe/client/clientcontroller.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "qt/client/check_user_thread.h"
+#include "qt/client/validate_user_thread.h"
 
 // local
 namespace {
@@ -39,10 +40,10 @@ class ThreadSafeUpdateEvent : public QEvent {
       : QEvent(static_cast<QEvent::Type>(EventNumber)) {}
 };
 
-bool isCorrectPassword(const QString& password) {
-  return maidsafe::ClientController::getInstance()->ValidateUser(
-         password.toStdString());
-}
+//  bool isCorrectPassword(const QString& password) {
+//    return maidsafe::ClientController::getInstance()->ValidateUser(
+//           password.toStdString());
+//  }
 
 // switch focus and enable fields
 void advance(QLineEdit* from, QLineEdit* to,
@@ -217,15 +218,15 @@ void Login::updateUI() {
         ui_.password->setFocus(Qt::OtherFocusReason);
         break;
       }
-//    case LOGGING_IN:
-//      {
-//          ui_.progress_label->setVisible(true);
-//          ui_.progress_bar->setVisible(true);
-//          ui_.password->setEnabled(false);
-//
-//          ui_.progress_label->setText(tr("Logging in..."));
-//          break;
-//      }
+    case LOGGING_IN:
+      {
+          ui_.progress_label->setVisible(true);
+          ui_.progress_bar->setVisible(true);
+          ui_.password->setEnabled(false);
+
+          ui_.progress_label->setText(tr("Validating password..."));
+          break;
+      }
   }
 
   ui_.login->setVisible(user_exists_);
@@ -291,14 +292,22 @@ void Login::onLoginClicked() {
   Q_ASSERT(user_exists_);
   Q_ASSERT(validate(ui_.password));
 
-  // verify the password)
-  if (!isCorrectPassword(password())) {
-    QMessageBox::warning(this, tr("Error!"),
-                         tr("Please verify your credentials."));
-    return;
-  }
+  ValidateUserThread *vut = new ValidateUserThread(password());
+  connect(vut,  SIGNAL(completed(bool)),
+          this, SLOT(UserValidated(bool)));
+  vut->start();
 
-  emit existingUser();
+  state_ = LOGGING_IN;
+
+  updateUI();
+  // verify the password
+//  if (!isCorrectPassword(password())) {
+//    QMessageBox::warning(this, tr("Error!"),
+//                         tr("Please verify your credentials."));
+//    return;
+//  }
+
+//  emit existingUser();
 }
 
 void Login::reset() {
@@ -358,6 +367,14 @@ void Login::UserExists_Callback(bool b) {
 
   QApplication::postEvent(this, new ThreadSafeUpdateEvent,
                           Qt::HighEventPriority);
+}
+
+void Login::UserValidated(bool b) {
+  if (b)
+    emit existingUser();
+  else
+    QMessageBox::warning(this, tr("Error!"),
+                         tr("Please verify your credentials."));
 }
 
 bool Login::event(QEvent* event) {

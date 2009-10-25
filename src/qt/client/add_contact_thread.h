@@ -13,35 +13,33 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_MOUNT_THREAD_H_
-#define QT_CLIENT_MOUNT_THREAD_H_
+#ifndef QT_CLIENT_ADD_CONTACT_THREAD_H_
+#define QT_CLIENT_ADD_CONTACT_THREAD_H_
 
 #include "qt/client/worker_thread.h"
 
-
-// Worker thread for mounting
+// Worker thread for adding users
 /*!
-    Mounting is blocking and can take a while so we use a worker thread
-    to ensure that it doesn't block the main gui.
+    Adding a user is blocking and can take a while so we use a worker
+    thread to ensure that it doesn't block the main gui.
 
     Currently intended for single use.
 */
-class MountThread : public WorkerThread {
+class AddContactThread : public WorkerThread {
   Q_OBJECT
  public:
-  typedef enum MountAction {
-    MOUNT,
-    UNMOUNT
-  };
-
-  MountThread(MountAction action, QObject* parent = 0);
-  virtual ~MountThread();
+  AddContactThread(const QString& publicUsername,
+                   QObject* parent = 0);
+  virtual ~AddContactThread();
 
   virtual void run();
 
  private:
-  MountAction action_;
+  QString publicUsername_;
+
+  signals:
+    void completed(int, QString);
 };
 
-#endif  // QT_CLIENT_MOUNT_THREAD_H_
+#endif  // QT_CLIENT_ADD_CONTACT_THREAD_H_
 

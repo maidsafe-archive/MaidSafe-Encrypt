@@ -907,7 +907,7 @@ int ClientController::HandleMessages(
 
     received_messages_.insert(std::pair<std::string, boost::uint32_t>(
                               valid_messages->front().message(),
-                              base::get_epoch_time()));
+                              valid_messages->front().timestamp()));
     rec_msg_mutex_.unlock();
 #ifdef DEBUG
     printf("ClientController::HandleMessages timestamp: %d\n",
@@ -1563,76 +1563,75 @@ int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
 int ClientController::AddContact(const std::string &public_name) {
   std::string public_key("aaa");
   int result = auth_->PublicUsernamePublicKey(public_name, public_key);
-  if (result == kSuccess) {
-    // Sending the request to add the contact
-    // TODO(Richard): the info is empty because there is no way
-    // to get the users contact data
-    maidsafe::Receivers rec;
-    rec.id = public_name;
-    rec.public_key = public_key;
-    std::vector<Receivers> recs;
-    recs.push_back(rec);
-
-    InstantMessage im;
-    ContactNotification *cn = im.mutable_contact_notification();
-    ContactInfo *info = cn->mutable_contact();
-
-    info->set_name("Mock");
-    info->set_birthday("Today");
-    info->set_office_number("0987456321");
-    info->set_gender("F");
-    info->set_country(22);
-    info->set_city("Troon");
-    info->set_language(7);
-
-    cn->set_action(0);
-
-    im.set_sender(ss_->PublicUsername());
-    im.set_date(base::get_epoch_time());
-    std::string message("\"");
-    message += im.sender() + "\" has requested to add you as a contact.";
-    im.set_message(message);
-
-    std::string ser_im;
-    im.SerializeToString(&ser_im);
-
-    CC_CallbackResult cb;
-    msgh_->SendMessage(ser_im,
-                       recs,
-                       MPID,
-                       ADD_CONTACT_RQST,
-                       boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
-    WaitForResult(cb);
-    StoreMessagesResult res;
-    if ((!res.ParseFromString(cb.result)) ||
-        (res.result() == kNack)) {
-#ifdef DEBUG
-      printf("Callbackfailure send msg.\n");
-#endif
-      return -22;
-    }
-    if (res.stored_msgs() != 1)
-      return -22;
-
-    std::set<std::string> s;
-    s.insert(public_name);
-
-    if (!AuthoriseUsers(s))
-      return -22;
-
-    maidsafe::Contact c;
-    c.SetPublicName(public_name);
-    c.SetPublicKey(public_key);
-    c.SetConfirmed('U');
-
-    return ss_->AddContact(public_name, public_key, "", "", "", '-', -1,
-           -1, "", 'U', 0, 0);
-  } else {
+  if (result != kSuccess) {
 #ifdef DEBUG
     printf("Couldn't find contact's public key.\n");
 #endif
     return -221;
   }
+  // Sending the request to add the contact
+  // TODO(Richard): the info is empty because there is no way
+  // to get the users contact data
+  maidsafe::Receivers rec;
+  rec.id = public_name;
+  rec.public_key = public_key;
+  std::vector<Receivers> recs;
+  recs.push_back(rec);
+
+  InstantMessage im;
+  ContactNotification *cn = im.mutable_contact_notification();
+  ContactInfo *info = cn->mutable_contact();
+
+  info->set_name("Mock");
+  info->set_birthday("Today");
+  info->set_office_number("0987456321");
+  info->set_gender("F");
+  info->set_country(22);
+  info->set_city("Troon");
+  info->set_language(7);
+
+  cn->set_action(0);
+
+  im.set_sender(ss_->PublicUsername());
+  im.set_date(base::get_epoch_time());
+  std::string message("\"");
+  message += im.sender() + "\" has requested to add you as a contact.";
+  im.set_message(message);
+
+  std::string ser_im;
+  im.SerializeToString(&ser_im);
+
+  CC_CallbackResult cb;
+  msgh_->SendMessage(ser_im,
+                     recs,
+                     MPID,
+                     ADD_CONTACT_RQST,
+                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
+  WaitForResult(cb);
+  StoreMessagesResult res;
+  if ((!res.ParseFromString(cb.result)) ||
+      (res.result() == kNack)) {
+#ifdef DEBUG
+    printf("Callbackfailure send msg.\n");
+#endif
+    return -22;
+  }
+  if (res.stored_msgs() != 1)
+    return -22;
+
+  std::set<std::string> s;
+  s.insert(public_name);
+
+  if (!AuthoriseUsers(s))
+    return -22;
+
+  maidsafe::Contact c;
+  c.SetPublicName(public_name);
+  c.SetPublicKey(public_key);
+  c.SetConfirmed('U');
+
+  return ss_->AddContact(public_name, public_key, "", "", "", '-', -1,
+         -1, "", 'U', 0, 0);
 }
 
 int ClientController::DeleteContact(const std::string &public_name) {

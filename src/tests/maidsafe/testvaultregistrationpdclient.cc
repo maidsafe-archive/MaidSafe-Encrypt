@@ -204,7 +204,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
   resulthandler.Reset();
   service.Reset();
   pdclient.OwnLocalVault(priv_key, pub_key,
-      signed_public_key, client->external_port(), "ChunkStore", 1024, cb);
+      signed_public_key, client->local_port(), "ChunkStore", 1024, cb);
   while (!resulthandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::INVALID_PORT, resulthandler.result());

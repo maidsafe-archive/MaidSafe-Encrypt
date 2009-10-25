@@ -318,6 +318,11 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddBPUsers) {
   users.insert(usuarios[0]);
   users.insert(usuarios[1]);
   users.insert(usuarios[2]);
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string hashed_users[3];
+  for (unsigned int n = 0; n < users.size(); ++n)
+    hashed_users[n] = co.Hash(usuarios[n], "", crypto::STRING_STRING, false);
 
   ASSERT_EQ(0, clientbufferpackethandler.AddUsers(users, maidsafe::MPID));
 
@@ -333,9 +338,9 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddBPUsers) {
   ASSERT_EQ(3, bpi.users_size());
 
   for (int i = 0; i < bpi.users_size(); ++i)
-    ASSERT_TRUE(bpi.users(i) == usuarios[0] ||
-                bpi.users(i) == usuarios[1] ||
-                bpi.users(i) == usuarios[2]);
+    ASSERT_TRUE(bpi.users(i) == hashed_users[0] ||
+                bpi.users(i) == hashed_users[1] ||
+                bpi.users(i) == hashed_users[2]);
 }
 
 TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddBPMessage) {
@@ -363,7 +368,8 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddBPMessage) {
   rsa_obj.GenerateKeys(maidsafe::kRsaKeySize);
   bpm.set_sender_id(usuarios[0]);
   bpm.set_sender_public_key(rsa_obj.public_key());
-  bpm.set_rsaenc_key(crypto_obj.AsymEncrypt(key, "", rsa_obj.public_key(),
+  bpm.set_rsaenc_key(crypto_obj.AsymEncrypt(key, "",
+                     ss->PublicKey(maidsafe::MPID),
                      crypto::STRING_STRING));
   bpm.set_aesenc_message(crypto_obj.SymmEncrypt("test msg", "",
                          crypto::STRING_STRING, key));

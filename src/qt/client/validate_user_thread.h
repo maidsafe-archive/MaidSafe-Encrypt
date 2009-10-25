@@ -13,35 +13,29 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_MOUNT_THREAD_H_
-#define QT_CLIENT_MOUNT_THREAD_H_
+#ifndef QT_CLIENT_VALIDATE_USER_THREAD_H_
+#define QT_CLIENT_VALIDATE_USER_THREAD_H_
 
 #include "qt/client/worker_thread.h"
 
-
-// Worker thread for mounting
+// Worker thread for validating users
 /*!
-    Mounting is blocking and can take a while so we use a worker thread
-    to ensure that it doesn't block the main gui.
+    Validating a user is blocking and can take a while so we use a worker
+    thread to ensure that it doesn't block the main gui.
 
     Currently intended for single use.
 */
-class MountThread : public WorkerThread {
+class ValidateUserThread : public WorkerThread {
   Q_OBJECT
  public:
-  typedef enum MountAction {
-    MOUNT,
-    UNMOUNT
-  };
-
-  MountThread(MountAction action, QObject* parent = 0);
-  virtual ~MountThread();
+  ValidateUserThread(const QString& password, QObject* parent = 0);
+  virtual ~ValidateUserThread();
 
   virtual void run();
 
  private:
-  MountAction action_;
+  QString password_;
 };
 
-#endif  // QT_CLIENT_MOUNT_THREAD_H_
+#endif  // QT_CLIENT_VALIDATE_USER_THREAD_H_
 

@@ -59,6 +59,8 @@ class Contacts : public Panel {
     void onAddedContact(const QString &name);
     void onConfirmedContact(const QString &name);
     void onDeletedContact(const QString &name);
+
+    void DoneAddingContact(int result, QString contact);
 };
 
 #endif  // QT_WIDGETS_CONTACTS_H_

@@ -28,6 +28,7 @@
 #include "maidsafe/client/clientcontroller.h"
 
 // local
+#include "qt/client/add_contact_thread.h"
 #include "qt/client/client_controller.h"
 
 
@@ -146,19 +147,12 @@ void Contacts::onAddContactClicked() {
     return;
   }
 
+  AddContactThread *act = new AddContactThread(contact_name, this);
 
-  const int n = ClientController::instance()->addContact(contact_name);
-  switch (n) {
-    case 0: addContact(new Contact(contact_name));
-            ui_.contactLineEdit->setText(tr(""));
-            break;
-    case -221:  QMessageBox::warning(this, tr("Problem!"),
-                    tr("Error adding contact. Username doesn't exist."));
-                break;
-    case -7:  QMessageBox::warning(this, tr("Notification"),
-                  tr("User already exists in your list."));
-              break;
-  }
+  connect(act,  SIGNAL(completed(int, QString)),
+          this, SLOT(DoneAddingContact(int, QString)));
+
+  act->start();
 }
 
 void Contacts::onClearSearchClicked() {
@@ -413,5 +407,20 @@ void Contacts::onDeletedContact(const QString &name) {
       QPixmap pixmap(":/icons/16/question");
       item->setIcon(pixmap);
     }
+  }
+}
+
+void Contacts::DoneAddingContact(int result, QString contact) {
+//  const QString contact_name = QString::fromStdString(contact);
+  switch (result) {
+    case 0: addContact(new Contact(contact));
+            ui_.contactLineEdit->setText(tr(""));
+            break;
+    case -221: QMessageBox::warning(this, tr("Problem!"),
+                   tr("Error adding contact. Username doesn't exist."));
+               break;
+    case -7: QMessageBox::warning(this, tr("Notification"),
+                                  tr("User already exists in your list."));
+             break;
   }
 }

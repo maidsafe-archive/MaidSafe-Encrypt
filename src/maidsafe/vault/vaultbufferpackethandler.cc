@@ -261,6 +261,8 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
     return false;
   }
 
+  std::string hashed_sender_id = crypto_obj_.Hash(bpm.sender_id(), "",
+                                                  crypto::STRING_STRING, false);
   if (bpm.type() != ADD_CONTACT_RQST) {
     BufferPacketInfo bpi;
     bpi.ParseFromString(bufferpacket.owner_info(0).data());
@@ -268,15 +270,15 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
     // TODO(Team#5#): here ther should be no check for user in list
     // if it is decided to accept from all
     for (int i = 0; i < bpi.users_size(); i++) {
-      if (bpi.users(i) == bpm.sender_id()) {
+      if (bpi.users(i) == hashed_sender_id) {
         i = bpi.users_size();
         flag = true;
-        break;
+//        break;
       }
     }
     if (!flag) {
 #ifdef DEBUG
-      printf("unauthorised user %s\n", bpm.sender_id().c_str());
+      printf("unauthorised user %s\n", hashed_sender_id.c_str());
 #endif
       return false;
     }

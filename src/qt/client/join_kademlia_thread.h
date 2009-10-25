@@ -18,23 +18,20 @@
 
 #include "qt/client/worker_thread.h"
 
-// Worker thread for creating users
+// Worker thread for joining the kademlia network
 /*!
-    Checking for a user is blocking and can take a while so we use a worker
-    thread to ensure that it doesn't block the main gui.
+    Joining the kadmlia network is blocking and can take a while so we
+    use a worker thread to ensure that it doesn't block the main gui.
 
     Currently intended for single use.
 */
 class JoinKademliaThread : public WorkerThread {
   Q_OBJECT
  public:
-  JoinKademliaThread(QObject* parent = 0);
+  explicit JoinKademliaThread(QObject* parent = 0);
   virtual ~JoinKademliaThread();
 
   virtual void run();
-
- private:
-  QString username_, pin_;
 };
 
 #endif  // QT_CLIENT_JOIN_KADEMLIA_THREAD_H_

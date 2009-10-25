@@ -133,9 +133,9 @@ int ClientBufferPacketHandler::AddUsers(const std::set<std::string> &users,
   if (!UserList(type, &current_users))
     return kBPError;
 
-  std::set<std::string> local_users = users;
-  for (std::set<std::string>::iterator p = local_users.begin();
-    p != local_users.end(); ++p) {
+//  std::set<std::string> local_users = users;
+  for (std::set<std::string>::iterator p = users.begin();
+       p != users.end(); ++p) {
     current_users.insert(*p);
   }
 
@@ -143,9 +143,12 @@ int ClientBufferPacketHandler::AddUsers(const std::set<std::string> &users,
   packet_info.set_ownerpublickey(ss_->PublicKey(type));
   packet_info.set_online(0);
 
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
   for (std::set<std::string>::iterator p = current_users.begin();
-    p != current_users.end(); p++) {
-    packet_info.add_users(*p);
+       p != current_users.end(); p++) {
+    std::string contact(*p);
+    packet_info.add_users(co.Hash(contact, "", crypto::STRING_STRING, false));
   }
 
   std::string ser_info;

@@ -18,8 +18,11 @@
 // qt
 #include <QWizardPage>
 
+#include <string>
+
 // generated
 #include "ui_create_page_localvault_setup.h"
+
 
 class QWizardPage;
 
