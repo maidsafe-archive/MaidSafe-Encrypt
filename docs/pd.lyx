@@ -3845,6 +3845,7 @@ To store a bit of data - we want to find nodes to store this on - so what
 \begin_layout Standard
 \begin_inset Graphics
 	filename seq/STORE_CHUNK.png
+	lyxscale 45
 	scale 20
 
 \end_inset
