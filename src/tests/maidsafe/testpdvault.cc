@@ -806,11 +806,11 @@ TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
   std::string hex_packet_name((*packets.begin()).first);
   // Try to store system packet with other incorrect content
   std::string packet_content("not a system packet");
-  ASSERT_EQ(maidsafe::kSendPacketFindValueFailure, sm_->StorePacket(
-      hex_packet_name, packet_content, maidsafe::MPID, maidsafe::PRIVATE, ""));
+  ASSERT_EQ(maidsafe::kSendPacketFailure, sm_->StorePacket(hex_packet_name,
+      packet_content, maidsafe::MPID, maidsafe::PRIVATE, ""));
   packet_content = "some other bollocks";
-  ASSERT_EQ(maidsafe::kSendPacketFindValueFailure, sm_->StorePacket(
-      hex_packet_name, packet_content, maidsafe::MPID, maidsafe::PRIVATE, ""));
+  ASSERT_EQ(maidsafe::kSendPacketFailure, sm_->StorePacket(hex_packet_name,
+      packet_content, maidsafe::MPID, maidsafe::PRIVATE, ""));
 }
 
 /*

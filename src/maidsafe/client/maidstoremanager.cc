@@ -347,7 +347,8 @@ int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
   kad::ContactInfo cache_holder;
   std::vector<std::string> values;
   std::string needs_cache_copy_id;
-  // This blocking Kad call to FindValue should yield the actual packet values.
+  // If this blocking Kad call to FindValue yields multiple values, they are
+  // packet holder IDs.  If there is just one, it should be the actual value.
   for (int attempt = 0; attempt < kMaxChunkLoadRetries; ++attempt) {
     if (FindValue(packet_name, false, &cache_holder, &values,
         &needs_cache_copy_id) != kSuccess) {
@@ -365,9 +366,15 @@ int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
       break;
     }
   }
-  // Take the first value (values are loaded in reverse order) and call back.
-  *result = values.front();
-  return kSuccess;
+  // If only one value returned, it should be the packet value
+  if (values.size() == 1) {
+    *result = values.front();
+    return kSuccess;
+  } else if (values.size() > 1) {
+    return LoadPacketFromVaults(packet_name, values, result);
+  } else {
+    return kFindValueFailure;
+  }
 }
 
 //  int MaidsafeStoreManager::LoadBPMessages(const std::string
@@ -2324,6 +2331,13 @@ void MaidsafeStoreManager::UpdateChunkCallback(
 //  printf("In MaidsafeStoreManager::UpdateChunkCallback.\n");
 #endif
   cond->notify_one();
+}
+
+int MaidsafeStoreManager::LoadPacketFromVaults(
+    const std::string &hex_packet_name,
+    const std::vector<std::string> &holder_ids,
+    std::string *result) {
+  return kSuccess;
 }
 
 void MaidsafeStoreManager::SetStoreReturnValue(ReturnCode rc, int *ret_value) {

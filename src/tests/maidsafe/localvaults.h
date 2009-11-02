@@ -23,8 +23,8 @@
 * ============================================================================
 */
 
-#ifndef TESTS_MAIDSAFE_LOCALVAULTS_H_
-#define TESTS_MAIDSAFE_LOCALVAULTS_H_
+#ifndef MAIDSAFE_LOCALVAULTS_H_
+#define MAIDSAFE_LOCALVAULTS_H_
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -269,4 +269,4 @@ class Env: public testing::Environment {
 
 }  // namespace localvaults
 
-#endif  // TESTS_MAIDSAFE_LOCALVAULTS_H_
+#endif  // MAIDSAFE_LOCALVAULTS_H_

@@ -579,6 +579,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    boost::condition_variable *update_conditional);
   void UpdateChunkCallback(boost::condition_variable *cond,
                            boost::shared_ptr<rpcprotocol::Controller>);
+  int LoadPacketFromVaults(const std::string &hex_packet_name,
+                           const std::vector<std::string> &holder_ids,
+                           std::string *result);
   // If ret_value pointer is not NULL, sets it to rc and calls
   // notify_all() on store_packet_conditional_ variable.
   virtual void SetStoreReturnValue(ReturnCode rc, int *ret_value);
