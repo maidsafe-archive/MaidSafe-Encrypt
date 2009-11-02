@@ -305,7 +305,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                   DirType dir_type,
                   const std::string &msid);
   int LoadChunk(const std::string &hex_chunk_name, std::string *data);
+  // Loads the most recently stored value under the packet name
   int LoadPacket(const std::string &hex_packet_name, std::string *result);
+  // Loads all values stored under the packet name (most recent first)
+  int LoadPacket(const std::string &hex_packet_name,
+                 std::vector<std::string> *results);
   int DeletePacket(const std::string &hex_key,
                    const std::string &signature,
                    const std::string &public_key,
@@ -465,7 +469,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // pushes them into the list of contacts provided.  If the RPC fails, the
   // chunk holder's status_ is set to kFailedHolder.  Having done this,
   // notify is called on the conditional variable.
-  void GetChunkHolderContactCallback(
+  void GetHolderContactCallback(
       const std::string &chunk_holder_id,
       const std::string &result,
       std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
@@ -580,8 +584,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void UpdateChunkCallback(boost::condition_variable *cond,
                            boost::shared_ptr<rpcprotocol::Controller>);
   int LoadPacketFromVaults(const std::string &hex_packet_name,
-                           const std::vector<std::string> &holder_ids,
-                           std::string *result);
+                           const std::vector<std::string> &packet_holder_ids,
+                           std::vector<std::string> *result);
   // If ret_value pointer is not NULL, sets it to rc and calls
   // notify_all() on store_packet_conditional_ variable.
   virtual void SetStoreReturnValue(ReturnCode rc, int *ret_value);
@@ -591,7 +595,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
 
 //  void VaultContactInfoCallback(const std::string &ser_result,
 //                                base::callback_func_type cb);
-  boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
+  transport::Transport transport_;
+  rpcprotocol::ChannelManager channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<ClientRpcs> client_rpcs_;
   PDClient *pdclient_;

@@ -152,7 +152,7 @@ message GetResponse {
 }
 
 message GetPacketRequest {
-  required bytes chunkname = 1;
+  required bytes packetname = 1;
 }
 
 message GetPacketResponse {

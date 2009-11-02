@@ -2609,22 +2609,22 @@ class GetPacketRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes chunkname = 1;
-  inline bool has_chunkname() const;
-  inline void clear_chunkname();
-  static const int kChunknameFieldNumber = 1;
-  inline const ::std::string& chunkname() const;
-  inline void set_chunkname(const ::std::string& value);
-  inline void set_chunkname(const char* value);
-  inline void set_chunkname(const void* value, size_t size);
-  inline ::std::string* mutable_chunkname();
+  // required bytes packetname = 1;
+  inline bool has_packetname() const;
+  inline void clear_packetname();
+  static const int kPacketnameFieldNumber = 1;
+  inline const ::std::string& packetname() const;
+  inline void set_packetname(const ::std::string& value);
+  inline void set_packetname(const char* value);
+  inline void set_packetname(const void* value, size_t size);
+  inline ::std::string* mutable_packetname();
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* chunkname_;
-  static const ::std::string _default_chunkname_;
+  ::std::string* packetname_;
+  static const ::std::string _default_packetname_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
@@ -8649,46 +8649,46 @@ inline ::std::string* GetResponse::mutable_pmid_id() {
 
 // GetPacketRequest
 
-// required bytes chunkname = 1;
-inline bool GetPacketRequest::has_chunkname() const {
+// required bytes packetname = 1;
+inline bool GetPacketRequest::has_packetname() const {
   return _has_bit(0);
 }
-inline void GetPacketRequest::clear_chunkname() {
-  if (chunkname_ != &_default_chunkname_) {
-    chunkname_->clear();
+inline void GetPacketRequest::clear_packetname() {
+  if (packetname_ != &_default_packetname_) {
+    packetname_->clear();
   }
   _clear_bit(0);
 }
-inline const ::std::string& GetPacketRequest::chunkname() const {
-  return *chunkname_;
+inline const ::std::string& GetPacketRequest::packetname() const {
+  return *packetname_;
 }
-inline void GetPacketRequest::set_chunkname(const ::std::string& value) {
+inline void GetPacketRequest::set_packetname(const ::std::string& value) {
   _set_bit(0);
-  if (chunkname_ == &_default_chunkname_) {
-    chunkname_ = new ::std::string;
+  if (packetname_ == &_default_packetname_) {
+    packetname_ = new ::std::string;
   }
-  chunkname_->assign(value);
+  packetname_->assign(value);
 }
-inline void GetPacketRequest::set_chunkname(const char* value) {
+inline void GetPacketRequest::set_packetname(const char* value) {
   _set_bit(0);
-  if (chunkname_ == &_default_chunkname_) {
-    chunkname_ = new ::std::string;
+  if (packetname_ == &_default_packetname_) {
+    packetname_ = new ::std::string;
   }
-  chunkname_->assign(value);
+  packetname_->assign(value);
 }
-inline void GetPacketRequest::set_chunkname(const void* value, size_t size) {
+inline void GetPacketRequest::set_packetname(const void* value, size_t size) {
   _set_bit(0);
-  if (chunkname_ == &_default_chunkname_) {
-    chunkname_ = new ::std::string;
+  if (packetname_ == &_default_packetname_) {
+    packetname_ = new ::std::string;
   }
-  chunkname_->assign(reinterpret_cast<const char*>(value), size);
+  packetname_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* GetPacketRequest::mutable_chunkname() {
+inline ::std::string* GetPacketRequest::mutable_packetname() {
   _set_bit(0);
-  if (chunkname_ == &_default_chunkname_) {
-    chunkname_ = new ::std::string;
+  if (packetname_ == &_default_packetname_) {
+    packetname_ = new ::std::string;
   }
-  return chunkname_;
+  return packetname_;
 }
 
 // -------------------------------------------------------------------

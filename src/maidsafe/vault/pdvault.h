@@ -261,7 +261,7 @@ class PDVault {
                  const std::string &rendezvous_ip,
                  const boost::uint16_t &rendezvous_port,
                  base::callback_func_type cb);
-  void StopRvPing() { knode_.StopRvPing(); }
+  void StopRvPing() { transport_.StopPingRendezvous(); }
   friend class localvaults::Env;
   friend void AddToRefPacketTask::run();
  private:
@@ -352,7 +352,8 @@ class PDVault {
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   boost::uint16_t port_;
-  boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
+  transport::Transport transport_;
+  rpcprotocol::ChannelManager channel_manager_;
   kad::KNode knode_;
   VaultRpcs vault_rpcs_;
   VaultChunkStore vault_chunkstore_;

@@ -90,21 +90,29 @@ class ResultHandler {
 
 class TestPDClientOwnVault : public testing::Test {
  public:
-  TestPDClientOwnVault() : resulthandler(), service(), client(new
-      rpcprotocol::ChannelManager), server(), service_channel(new
-      rpcprotocol::Channel(&server)), knode(), rpcs(
-      new maidsafe::ClientRpcs(client)), pdclient(client, knode, rpcs),
-      cb(boost::bind(&ResultHandler::OwnVault_Callback, &resulthandler, _1,
-      _2)), cb1(boost::bind(&ResultHandler::IsOwn_Callback, &resulthandler, _1))
-      {}
+  TestPDClientOwnVault()
+      : resulthandler(),
+        service(),
+        client_transport_(),
+        client(&client_transport_),
+        server_transport_(),
+        server(&server_transport_),
+        service_channel(new rpcprotocol::Channel(&server, &server_transport_)),
+        knode(),
+        rpcs(new maidsafe::ClientRpcs(&client_transport_, &client)),
+        pdclient(&client_transport_, &client, knode, rpcs),
+        cb(boost::bind(&ResultHandler::OwnVault_Callback, &resulthandler, _1,
+                       _2)),
+        cb1(boost::bind(&ResultHandler::IsOwn_Callback, &resulthandler, _1)) {}
   ~TestPDClientOwnVault() {
-    server.CleanUpTransport();
+    transport::CleanUp();
   }
  protected:
   void SetUp() {
-    ASSERT_EQ(0, client->StartTransport(0, boost::bind(&HandleDeadServer, _1,
-        _2, _3)));
-    ASSERT_EQ(0, server.StartLocalTransport(kLocalPort));
+    ASSERT_EQ(0, client_transport_.Start(0));
+    ASSERT_EQ(0, client.Start());
+    ASSERT_EQ(0, server_transport_.StartLocal(kLocalPort));
+    ASSERT_EQ(0, server.Start());
     service_channel->SetService(service.pservice());
     server.RegisterChannel(service.pservice()->GetDescriptor()->name(),
         service_channel.get());
@@ -112,13 +120,15 @@ class TestPDClientOwnVault : public testing::Test {
   void TearDown() {
     resulthandler.Reset();
     service.Reset();
-    server.StopTransport();
+    server_transport_.Stop();
     server.ClearChannels();
-    client->StopTransport();
+    client_transport_.Stop();
   }
   ResultHandler resulthandler;
   RegistrationServiceHolder service;
-  boost::shared_ptr<rpcprotocol::ChannelManager> client;
+  transport::Transport client_transport_;
+  rpcprotocol::ChannelManager client;
+  transport::Transport server_transport_;
   rpcprotocol::ChannelManager server;
   boost::shared_ptr<rpcprotocol::Channel> service_channel;
   boost::shared_ptr<kad::KNode> knode;
@@ -203,8 +213,8 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
 
   resulthandler.Reset();
   service.Reset();
-  pdclient.OwnLocalVault(priv_key, pub_key,
-      signed_public_key, client->local_port(), "ChunkStore", 1024, cb);
+  pdclient.OwnLocalVault(priv_key, pub_key, signed_public_key,
+      client_transport_.listening_port(), "ChunkStore", 1024, cb);
   while (!resulthandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::INVALID_PORT, resulthandler.result());
@@ -254,7 +264,8 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
 
   resulthandler.Reset();
   service.Reset();
-  server.StopTransport();
+  server_transport_.Stop();
+  server.Stop();
   pdclient.IsLocalVaultOwned(cb1);
   while (!resulthandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));

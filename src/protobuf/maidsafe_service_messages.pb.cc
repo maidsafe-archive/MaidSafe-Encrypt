@@ -507,7 +507,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       sizeof(GetResponse));
   GetPacketRequest_descriptor_ = file->message_type(19);
   static const int GetPacketRequest_offsets_[1] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetPacketRequest, chunkname_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetPacketRequest, packetname_),
   };
   GetPacketRequest_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -1205,75 +1205,75 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
     "1\n\016DeleteResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmi"
     "d_id\030\002 \001(\014\"\037\n\nGetRequest\022\021\n\tchunkname\030\001 "
     "\002(\014\"?\n\013GetResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007co"
-    "ntent\030\002 \001(\014\022\017\n\007pmid_id\030\003 \001(\014\"%\n\020GetPacke"
-    "tRequest\022\021\n\tchunkname\030\001 \002(\014\"E\n\021GetPacket"
-    "Response\022\016\n\006result\030\001 \002(\r\022\017\n\007content\030\002 \003("
-    "\014\022\017\n\007pmid_id\030\003 \001(\014\"&\n\021CheckChunkRequest\022"
-    "\021\n\tchunkname\030\001 \002(\014\"5\n\022CheckChunkResponse"
-    "\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \002(\014\">\n\024Val"
-    "idityCheckRequest\022\021\n\tchunkname\030\001 \002(\014\022\023\n\013"
-    "random_data\030\002 \002(\014\"N\n\025ValidityCheckRespon"
-    "se\022\016\n\006result\030\001 \002(\r\022\024\n\014hash_content\030\002 \001(\014"
-    "\022\017\n\007pmid_id\030\003 \002(\014\"\212\001\n\rUpdateRequest\022\021\n\tc"
-    "hunkname\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\022\n\npublic_k"
-    "ey\030\003 \002(\014\022\031\n\021signed_public_key\030\004 \002(\014\022\026\n\016s"
-    "igned_request\030\005 \002(\014\022\021\n\tdata_type\030\006 \002(\005\"1"
-    "\n\016UpdateResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid"
-    "_id\030\002 \001(\014\"v\n\020SwapChunkRequest\022\024\n\014request"
-    "_type\030\001 \002(\005\022\022\n\nchunkname1\030\002 \002(\014\022\025\n\rchunk"
-    "content1\030\003 \001(\014\022\r\n\005size1\030\004 \001(\005\022\022\n\nchunkna"
-    "me2\030\005 \001(\014\"\276\001\n\021SwapChunkResponse\022\024\n\014reque"
-    "st_type\030\001 \002(\005\022\016\n\006result\030\002 \002(\r\022\022\n\nchunkna"
-    "me1\030\003 \001(\014\022\025\n\rchunkcontent1\030\004 \001(\014\022\r\n\005size"
-    "1\030\005 \001(\005\022\022\n\nchunkname2\030\006 \001(\014\022\025\n\rchunkcont"
-    "ent2\030\007 \001(\014\022\r\n\005size2\030\010 \001(\005\022\017\n\007pmid_id\030\t \002"
-    "(\014\"\200\001\n\022VaultCommunication\022\022\n\nchunkstore\030"
-    "\001 \001(\014\022\025\n\roffered_space\030\002 \001(\004\022\022\n\nfree_spa"
-    "ce\030\003 \001(\004\022\n\n\002ip\030\004 \001(\014\022\014\n\004port\030\005 \001(\r\022\021\n\tti"
-    "mestamp\030\006 \002(\r\"/\n\022VaultStatusRequest\022\031\n\021e"
-    "ncrypted_request\030\001 \002(\014\"A\n\023VaultStatusRes"
-    "ponse\022\016\n\006result\030\001 \002(\r\022\032\n\022encrypted_respo"
-    "nse\030\002 \001(\014\"\212\001\n\017OwnVaultRequest\022\022\n\npublic_"
-    "key\030\001 \002(\014\022\023\n\013private_key\030\002 \002(\014\022\031\n\021signed"
-    "_public_key\030\003 \002(\014\022\026\n\016chunkstore_dir\030\004 \002("
-    "\014\022\014\n\004port\030\005 \002(\r\022\r\n\005space\030\006 \002(\004\"O\n\020OwnVau"
-    "ltResponse\022(\n\006result\030\001 \002(\0162\030.maidsafe.Ow"
-    "nVaultResult\022\021\n\tpmid_name\030\002 \001(\014\"\020\n\016IsOwn"
-    "edRequest\"8\n\017IsOwnedResponse\022%\n\006status\030\001"
-    " \002(\0162\025.maidsafe.VaultStatus\"\217\001\n\017CreateBP"
-    "Request\022\031\n\021bufferpacket_name\030\001 \002(\014\022\014\n\004da"
-    "ta\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002"
-    "(\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026\n\016signed_"
-    "request\030\006 \002(\014\"b\n\020CreateBPResponse\022\016\n\006res"
-    "ult\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npublic_key"
-    "\030\003 \001(\014\022\031\n\021signed_public_key\030\004 \001(\014\"\223\001\n\023Mo"
-    "difyBPInfoRequest\022\031\n\021bufferpacket_name\030\001"
-    " \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npubl"
-    "ic_key\030\004 \002(\014\022\031\n\021signed_public_key\030\005 \002(\014\022"
-    "\026\n\016signed_request\030\006 \002(\014\"f\n\024ModifyBPInfoR"
-    "esponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014"
-    "\022\022\n\npublic_key\030\003 \001(\014\022\031\n\021signed_public_ke"
-    "y\030\004 \001(\014\"\206\001\n\024GetBPMessagesRequest\022\031\n\021buff"
-    "erpacket_name\030\001 \002(\014\022\022\n\npublic_key\030\002 \002(\014\022"
-    "\014\n\004pmid\030\003 \002(\014\022\031\n\021signed_public_key\030\004 \002(\014"
-    "\022\026\n\016signed_request\030\005 \002(\014\"y\n\025GetBPMessage"
-    "sResponse\022\016\n\006result\030\001 \002(\r\022\020\n\010messages\030\002 "
-    "\003(\014\022\017\n\007pmid_id\030\003 \001(\014\022\022\n\npublic_key\030\004 \001(\014"
-    "\022\031\n\021signed_public_key\030\005 \001(\014\"\223\001\n\023AddBPMes"
-    "sageRequest\022\031\n\021bufferpacket_name\030\001 \002(\014\022\014"
-    "\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key"
-    "\030\004 \002(\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026\n\016sig"
-    "ned_request\030\006 \002(\014\"f\n\024AddBPMessageRespons"
-    "e\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npu"
-    "blic_key\030\003 \001(\014\022\031\n\021signed_public_key\030\004 \001("
-    "\014*\357\001\n\016OwnVaultResult\022\021\n\rOWNED_SUCCESS\020\000\022"
-    "\027\n\023VAULT_ALREADY_OWNED\020\001\022\021\n\rVAULT_IS_DOW"
-    "N\020\002\022\024\n\020INVALID_RSA_KEYS\020\003\022\024\n\020NOT_ENOUGH_"
-    "SPACE\020\004\022\026\n\022NO_SPACE_ALLOCATED\020\005\022\020\n\014INVAL"
-    "ID_PORT\020\006\022\031\n\025FAILED_TO_START_VAULT\020\007\022\026\n\022"
-    "INVALID_OWNREQUEST\020\010\022\025\n\021INVALID_PMID_NAM"
-    "E\020\t*I\n\013VaultStatus\022\r\n\tNOT_OWNED\020\000\022\t\n\005OWN"
-    "ED\020\001\022\010\n\004DOWN\020\002\022\026\n\022ISOWNRPC_CANCELLED\020\003", 4878);
+    "ntent\030\002 \001(\014\022\017\n\007pmid_id\030\003 \001(\014\"&\n\020GetPacke"
+    "tRequest\022\022\n\npacketname\030\001 \002(\014\"E\n\021GetPacke"
+    "tResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007content\030\002 \003"
+    "(\014\022\017\n\007pmid_id\030\003 \001(\014\"&\n\021CheckChunkRequest"
+    "\022\021\n\tchunkname\030\001 \002(\014\"5\n\022CheckChunkRespons"
+    "e\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \002(\014\">\n\024Va"
+    "lidityCheckRequest\022\021\n\tchunkname\030\001 \002(\014\022\023\n"
+    "\013random_data\030\002 \002(\014\"N\n\025ValidityCheckRespo"
+    "nse\022\016\n\006result\030\001 \002(\r\022\024\n\014hash_content\030\002 \001("
+    "\014\022\017\n\007pmid_id\030\003 \002(\014\"\212\001\n\rUpdateRequest\022\021\n\t"
+    "chunkname\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\022\n\npublic_"
+    "key\030\003 \002(\014\022\031\n\021signed_public_key\030\004 \002(\014\022\026\n\016"
+    "signed_request\030\005 \002(\014\022\021\n\tdata_type\030\006 \002(\005\""
+    "1\n\016UpdateResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmi"
+    "d_id\030\002 \001(\014\"v\n\020SwapChunkRequest\022\024\n\014reques"
+    "t_type\030\001 \002(\005\022\022\n\nchunkname1\030\002 \002(\014\022\025\n\rchun"
+    "kcontent1\030\003 \001(\014\022\r\n\005size1\030\004 \001(\005\022\022\n\nchunkn"
+    "ame2\030\005 \001(\014\"\276\001\n\021SwapChunkResponse\022\024\n\014requ"
+    "est_type\030\001 \002(\005\022\016\n\006result\030\002 \002(\r\022\022\n\nchunkn"
+    "ame1\030\003 \001(\014\022\025\n\rchunkcontent1\030\004 \001(\014\022\r\n\005siz"
+    "e1\030\005 \001(\005\022\022\n\nchunkname2\030\006 \001(\014\022\025\n\rchunkcon"
+    "tent2\030\007 \001(\014\022\r\n\005size2\030\010 \001(\005\022\017\n\007pmid_id\030\t "
+    "\002(\014\"\200\001\n\022VaultCommunication\022\022\n\nchunkstore"
+    "\030\001 \001(\014\022\025\n\roffered_space\030\002 \001(\004\022\022\n\nfree_sp"
+    "ace\030\003 \001(\004\022\n\n\002ip\030\004 \001(\014\022\014\n\004port\030\005 \001(\r\022\021\n\tt"
+    "imestamp\030\006 \002(\r\"/\n\022VaultStatusRequest\022\031\n\021"
+    "encrypted_request\030\001 \002(\014\"A\n\023VaultStatusRe"
+    "sponse\022\016\n\006result\030\001 \002(\r\022\032\n\022encrypted_resp"
+    "onse\030\002 \001(\014\"\212\001\n\017OwnVaultRequest\022\022\n\npublic"
+    "_key\030\001 \002(\014\022\023\n\013private_key\030\002 \002(\014\022\031\n\021signe"
+    "d_public_key\030\003 \002(\014\022\026\n\016chunkstore_dir\030\004 \002"
+    "(\014\022\014\n\004port\030\005 \002(\r\022\r\n\005space\030\006 \002(\004\"O\n\020OwnVa"
+    "ultResponse\022(\n\006result\030\001 \002(\0162\030.maidsafe.O"
+    "wnVaultResult\022\021\n\tpmid_name\030\002 \001(\014\"\020\n\016IsOw"
+    "nedRequest\"8\n\017IsOwnedResponse\022%\n\006status\030"
+    "\001 \002(\0162\025.maidsafe.VaultStatus\"\217\001\n\017CreateB"
+    "PRequest\022\031\n\021bufferpacket_name\030\001 \002(\014\022\014\n\004d"
+    "ata\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 "
+    "\002(\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026\n\016signed"
+    "_request\030\006 \002(\014\"b\n\020CreateBPResponse\022\016\n\006re"
+    "sult\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npublic_ke"
+    "y\030\003 \001(\014\022\031\n\021signed_public_key\030\004 \001(\014\"\223\001\n\023M"
+    "odifyBPInfoRequest\022\031\n\021bufferpacket_name\030"
+    "\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npub"
+    "lic_key\030\004 \002(\014\022\031\n\021signed_public_key\030\005 \002(\014"
+    "\022\026\n\016signed_request\030\006 \002(\014\"f\n\024ModifyBPInfo"
+    "Response\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001("
+    "\014\022\022\n\npublic_key\030\003 \001(\014\022\031\n\021signed_public_k"
+    "ey\030\004 \001(\014\"\206\001\n\024GetBPMessagesRequest\022\031\n\021buf"
+    "ferpacket_name\030\001 \002(\014\022\022\n\npublic_key\030\002 \002(\014"
+    "\022\014\n\004pmid\030\003 \002(\014\022\031\n\021signed_public_key\030\004 \002("
+    "\014\022\026\n\016signed_request\030\005 \002(\014\"y\n\025GetBPMessag"
+    "esResponse\022\016\n\006result\030\001 \002(\r\022\020\n\010messages\030\002"
+    " \003(\014\022\017\n\007pmid_id\030\003 \001(\014\022\022\n\npublic_key\030\004 \001("
+    "\014\022\031\n\021signed_public_key\030\005 \001(\014\"\223\001\n\023AddBPMe"
+    "ssageRequest\022\031\n\021bufferpacket_name\030\001 \002(\014\022"
+    "\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_ke"
+    "y\030\004 \002(\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026\n\016si"
+    "gned_request\030\006 \002(\014\"f\n\024AddBPMessageRespon"
+    "se\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\np"
+    "ublic_key\030\003 \001(\014\022\031\n\021signed_public_key\030\004 \001"
+    "(\014*\357\001\n\016OwnVaultResult\022\021\n\rOWNED_SUCCESS\020\000"
+    "\022\027\n\023VAULT_ALREADY_OWNED\020\001\022\021\n\rVAULT_IS_DO"
+    "WN\020\002\022\024\n\020INVALID_RSA_KEYS\020\003\022\024\n\020NOT_ENOUGH"
+    "_SPACE\020\004\022\026\n\022NO_SPACE_ALLOCATED\020\005\022\020\n\014INVA"
+    "LID_PORT\020\006\022\031\n\025FAILED_TO_START_VAULT\020\007\022\026\n"
+    "\022INVALID_OWNREQUEST\020\010\022\025\n\021INVALID_PMID_NA"
+    "ME\020\t*I\n\013VaultStatus\022\r\n\tNOT_OWNED\020\000\022\t\n\005OW"
+    "NED\020\001\022\010\n\004DOWN\020\002\022\026\n\022ISOWNRPC_CANCELLED\020\003", 4879);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service_messages.proto", &protobuf_RegisterTypes);
   IOUAuthority::default_instance_ = new IOUAuthority();
@@ -8328,16 +8328,16 @@ const ::google::protobuf::Reflection* GetResponse::GetReflection() const {
 
 // ===================================================================
 
-const ::std::string GetPacketRequest::_default_chunkname_;
+const ::std::string GetPacketRequest::_default_packetname_;
 #ifndef _MSC_VER
-const int GetPacketRequest::kChunknameFieldNumber;
+const int GetPacketRequest::kPacketnameFieldNumber;
 #endif  // !_MSC_VER
 
 GetPacketRequest::GetPacketRequest()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    chunkname_(const_cast< ::std::string*>(&_default_chunkname_)) {
+    packetname_(const_cast< ::std::string*>(&_default_packetname_)) {
   SharedCtor();
 }
 
@@ -8347,14 +8347,14 @@ GetPacketRequest::GetPacketRequest(const GetPacketRequest& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    chunkname_(const_cast< ::std::string*>(&_default_chunkname_)) {
+    packetname_(const_cast< ::std::string*>(&_default_packetname_)) {
   SharedCtor();
   MergeFrom(from);
 }
 
 void GetPacketRequest::SharedCtor() {
   _cached_size_ = 0;
-  chunkname_ = const_cast< ::std::string*>(&_default_chunkname_);
+  packetname_ = const_cast< ::std::string*>(&_default_packetname_);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -8363,8 +8363,8 @@ GetPacketRequest::~GetPacketRequest() {
 }
 
 void GetPacketRequest::SharedDtor() {
-  if (chunkname_ != &_default_chunkname_) {
-    delete chunkname_;
+  if (packetname_ != &_default_packetname_) {
+    delete packetname_;
   }
   if (this != default_instance_) {
   }
@@ -8388,8 +8388,8 @@ GetPacketRequest* GetPacketRequest::New() const {
 void GetPacketRequest::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (_has_bit(0)) {
-      if (chunkname_ != &_default_chunkname_) {
-        chunkname_->clear();
+      if (packetname_ != &_default_packetname_) {
+        packetname_->clear();
       }
     }
   }
@@ -8403,13 +8403,13 @@ bool GetPacketRequest::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes chunkname = 1;
+      // required bytes packetname = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_chunkname()));
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_packetname()));
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -8438,9 +8438,9 @@ void GetPacketRequest::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes chunkname = 1;
+  // required bytes packetname = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->chunkname(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->packetname(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -8451,9 +8451,9 @@ void GetPacketRequest::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* GetPacketRequest::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes chunkname = 1;
+  // required bytes packetname = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->chunkname(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->packetname(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -8467,10 +8467,10 @@ int GetPacketRequest::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes chunkname = 1;
-    if (has_chunkname()) {
+    // required bytes packetname = 1;
+    if (has_packetname()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->chunkname());
+        ::google::protobuf::internal::WireFormat::BytesSize(this->packetname());
     }
     
   }
@@ -8499,7 +8499,7 @@ void GetPacketRequest::MergeFrom(const GetPacketRequest& from) {
   GOOGLE_CHECK_NE(&from, this);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from._has_bit(0)) {
-      set_chunkname(from.chunkname());
+      set_packetname(from.packetname());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -8519,7 +8519,7 @@ void GetPacketRequest::CopyFrom(const GetPacketRequest& from) {
 
 void GetPacketRequest::Swap(GetPacketRequest* other) {
   if (other != this) {
-    std::swap(chunkname_, other->chunkname_);
+    std::swap(packetname_, other->packetname_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

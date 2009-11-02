@@ -29,6 +29,7 @@
 #include <boost/utility.hpp>
 #include <maidsafe/general_messages.pb.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
+#include <maidsafe/transport-api.h>
 #include <map>
 
 #include "fs/filesystem.h"
@@ -85,10 +86,11 @@ void StorePacketToKadTask::run() {
 }
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
-    : channel_manager_(new rpcprotocol::ChannelManager()),
-      knode_(new kad::KNode(channel_manager_, kad::CLIENT, "", "", false,
-          false)),
-      client_rpcs_(new ClientRpcs(channel_manager_)),
+    : transport_(),
+      channel_manager_(&transport_),
+      knode_(new kad::KNode(&channel_manager_, &transport_, kad::CLIENT, "", "",
+          false, false)),
+      client_rpcs_(new ClientRpcs(&transport_, &channel_manager_)),
       pdclient_(NULL),
       ss_(SessionSingleton::getInstance()),
       client_chunkstore_(cstore),
@@ -105,6 +107,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
 void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
   // If kad config file exists in dir we're in, use that, otherwise get default
   // path to file.
+  bool success(true);
   std::string kadconfig_str("");
   try {
     if (fs::exists(".kadconfig")) {
@@ -120,24 +123,34 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
 #ifdef DEBUG
     printf("%s\n", ex.what());
 #endif
+    success = false;
   }
 #ifdef DEBUG
 //  printf("kadconfig_path: %s\n", kadconfig_str.c_str());
 #endif
-  channel_manager_->StartTransport(port,
-    boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_.get(), _1));
+  if (success)
+    success = channel_manager_.RegisterNotifiersToTransport();
+  if (success)
+    success = transport_.RegisterOnServerDown(boost::bind(
+        &kad::KNode::HandleDeadRendezvousServer, knode_.get(), _1));
+  if (success)
+    success = (transport_.Start(port) == 0);
+  if (success)
+    success = (channel_manager_.Start() == 0);
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Init, before Join.\n");
 #endif
   CallbackObj kad_cb_obj;
-  knode_->Join(kadconfig_str, boost::bind(&CallbackObj::CallbackFunc,
-      &kad_cb_obj, _1));
-  kad_cb_obj.WaitForCallback();
+  if (success) {
+    knode_->Join(kadconfig_str, boost::bind(&CallbackObj::CallbackFunc,
+        &kad_cb_obj, _1));
+    kad_cb_obj.WaitForCallback();
+  }
   base::GeneralResponse kad_response;
   GenericResponse maid_response;
   std::string kad_result = kad_cb_obj.result();
   std::string maid_result;
-  if (!kad_response.ParseFromString(kad_result) ||
+  if (!success || !kad_response.ParseFromString(kad_result) ||
       kad_response.result() != kad::kRpcResultSuccess) {
     maid_response.set_result(kNack);
     maid_response.SerializeToString(&maid_result);
@@ -153,7 +166,8 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
 #endif
-  pdclient_ = new PDClient(channel_manager_, knode_, client_rpcs_);
+  pdclient_ = new PDClient(&transport_, &channel_manager_, knode_,
+      client_rpcs_);
 }
 
 void MaidsafeStoreManager::Close(base::callback_func_type cb, bool) {
@@ -173,7 +187,7 @@ void MaidsafeStoreManager::Close(base::callback_func_type cb, bool) {
 //  printf("\tIn MaidsafeStoreManager::Close, after Leave. "
 //         "Stopping transport.\n");
 #endif
-  channel_manager_->StopTransport();
+  channel_manager_.Stop();
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Close, transport stopped.\n");
 #endif
@@ -187,7 +201,7 @@ void MaidsafeStoreManager::Close(base::callback_func_type cb, bool) {
 }
 
 void MaidsafeStoreManager::CleanUpTransport() {
-  channel_manager_->CleanUpTransport();
+  transport::CleanUp();
 }
 
 void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
@@ -335,29 +349,36 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
 
 int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
                                      std::string *result) {
-  result->clear();
+  std::vector<std::string> results;
+  int retrn = LoadPacket(hex_packet_name, &results);
+  if (retrn != kSuccess)
+    return retrn;
+  *result = results.front();
+  return kSuccess;
+}
+
+int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
+                                     std::vector<std::string> *results) {
+  results->clear();
 #ifdef DEBUG
   std::string hex(hex_packet_name.substr(0, 10) + "...");
   printf("In MaidsafeStoreManager::LoadPacket (%i), packet_name = %s\n",
          knode_->host_port(), hex.c_str());
 #endif
   std::string packet_name = base::DecodeFromHex(hex_packet_name);
-  if (client_chunkstore_->Load(packet_name, result) == kSuccess)
-    return kSuccess;
   kad::ContactInfo cache_holder;
-  std::vector<std::string> values;
   std::string needs_cache_copy_id;
   // If this blocking Kad call to FindValue yields multiple values, they are
   // packet holder IDs.  If there is just one, it should be the actual value.
   for (int attempt = 0; attempt < kMaxChunkLoadRetries; ++attempt) {
-    if (FindValue(packet_name, false, &cache_holder, &values,
+    if (FindValue(packet_name, false, &cache_holder, results,
         &needs_cache_copy_id) != kSuccess) {
       if (attempt == kMaxChunkLoadRetries - 1) {
 #ifdef DEBUG
         printf("In MaidsafeStoreManager::LoadPacket (%i), failed FindValue\n",
                knode_->host_port());
 #endif
-        result->clear();
+        results->clear();
         return kFindValueFailure;
       } else {
         continue;
@@ -367,11 +388,11 @@ int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
     }
   }
   // If only one value returned, it should be the packet value
-  if (values.size() == 1) {
-    *result = values.front();
+  if (results->size() == 1) {
     return kSuccess;
-  } else if (values.size() > 1) {
-    return LoadPacketFromVaults(packet_name, values, result);
+  } else if (results->size() > 1) {
+    std::vector<std::string> packet_holder_ids(*results);
+    return LoadPacketFromVaults(packet_name, packet_holder_ids, results);
   } else {
     return kFindValueFailure;
   }
@@ -1231,7 +1252,7 @@ int MaidsafeStoreManager::StoreIOUs(
 // three state flag, kPending, kReturned, kDone or similar.
 //  for (boost::uint16_t j = 0; j < results.size(); ++j) {
 //    if (!results.at(j)->store_iou_response_returned)
-//      channel_manager_->
+//      channel_manager_.
 //          DeletePendingRequest(results.at(j)->controller->req_id());
 //  }
   return kSuccess;
@@ -1347,8 +1368,8 @@ void MaidsafeStoreManager::FindAvailableChunkHolders(
   // Find chunk holders' contact details
   for (size_t h = 0; h < chunk_holders_ids.size(); ++h) {
     knode_->FindCloseNodes(chunk_holders_ids[h],
-        boost::bind(&MaidsafeStoreManager::GetChunkHolderContactCallback,
-        this, chunk_holders_ids[h], _1, chunk_holders, cond_data));
+        boost::bind(&MaidsafeStoreManager::GetHolderContactCallback, this,
+        chunk_holders_ids[h], _1, chunk_holders, cond_data));
   }
   // For each, if we have their contact details, check they still have the chunk
   for (size_t i = 0; i < chunk_holders_ids.size(); ++i) {
@@ -1379,7 +1400,7 @@ void MaidsafeStoreManager::FindAvailableChunkHolders(
   }
 }
 
-void MaidsafeStoreManager::GetChunkHolderContactCallback(
+void MaidsafeStoreManager::GetHolderContactCallback(
     const std::string &chunk_holder_id,
     const std::string &result,
     std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
@@ -1389,7 +1410,7 @@ void MaidsafeStoreManager::GetChunkHolderContactCallback(
   failed_chunkholder->status = kFailedHolder;
   if (result == "") {
 #ifdef DEBUG
-    printf("In MSM::GetChunkHolderContactCallback, fail - timeout.\n");
+    printf("In MSM::GetHolderContactCallback, fail - timeout.\n");
 #endif
     {  // NOLINT (Fraser)
       boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
@@ -1401,7 +1422,7 @@ void MaidsafeStoreManager::GetChunkHolderContactCallback(
   kad::FindResponse find_response;
   if (!find_response.ParseFromString(result)) {
 #ifdef DEBUG
-    printf("In MSM::GetChunkHolderContactCallback, can't parse result.\n");
+    printf("In MSM::GetHolderContactCallback, can't parse result.\n");
 #endif
     {  // NOLINT (Fraser)
       boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
@@ -1412,7 +1433,7 @@ void MaidsafeStoreManager::GetChunkHolderContactCallback(
   }
   if (find_response.result() != kad::kRpcResultSuccess) {
 #ifdef DEBUG
-    printf("In MSM::GetChunkHolderContactCallback, Kad operation failed.\n");
+    printf("In MSM::GetHolderContactCallback, Kad operation failed.\n");
 #endif
     {  // NOLINT (Fraser)
       boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
@@ -1438,7 +1459,7 @@ void MaidsafeStoreManager::GetChunkHolderContactCallback(
     }
   }
 #ifdef DEBUG
-  printf("In MSM::GetChunkHolderContactCallback, didn't get node's details.\n");
+  printf("In MSM::GetHolderContactCallback, didn't get node's details.\n");
 #endif
   {  // NOLINT (Fraser)
     boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
@@ -1595,7 +1616,7 @@ int MaidsafeStoreManager::FindAndLoadChunk(
   for (int m = 0; m < holder_count; ++m) {
     if (chunk_holders.at(m)->status == kContactable) {
       if (chunk_holders.at(m)->controller.get() != NULL) {
-        channel_manager_->DeletePendingRequest(
+        channel_manager_.DeletePendingRequest(
             chunk_holders.at(m)->controller->req_id());
       }
     }
@@ -2095,8 +2116,8 @@ void MaidsafeStoreManager::FindPacketHolders(
   // Find packet holders' contact details
   for (size_t h = 0; h < packet_holders_ids.size(); ++h) {
     knode_->FindCloseNodes(packet_holders_ids.at(h),
-        boost::bind(&MaidsafeStoreManager::GetChunkHolderContactCallback,
-        this, packet_holders_ids.at(h), _1, packet_holders, cond_data));
+        boost::bind(&MaidsafeStoreManager::GetHolderContactCallback, this,
+        packet_holders_ids.at(h), _1, packet_holders, cond_data));
   }
 }
 
@@ -2335,8 +2356,21 @@ void MaidsafeStoreManager::UpdateChunkCallback(
 
 int MaidsafeStoreManager::LoadPacketFromVaults(
     const std::string &hex_packet_name,
-    const std::vector<std::string> &holder_ids,
-    std::string *result) {
+    const std::vector<std::string> &packet_holder_ids,
+    std::vector<std::string> *result) {
+  result->clear();
+  std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders;
+  boost::shared_ptr<boost::condition_variable>
+      cond_var(new boost::condition_variable);
+  GenericConditionData cond_data(cond_var);
+  // Find packet holders' contact details
+  for (size_t h = 0; h < packet_holder_ids.size(); ++h) {
+    knode_->FindCloseNodes(packet_holder_ids.at(h),
+        boost::bind(&MaidsafeStoreManager::GetHolderContactCallback, this,
+        packet_holder_ids.at(h), _1, packet_holders, &cond_data));
+  }
+
+
   return kSuccess;
 }
 
@@ -2371,7 +2405,8 @@ void MaidsafeStoreManager::PollVaultInfo(base::callback_func_type cb) {
       &vault_status_response, cb);
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   rpcprotocol::Channel *channel = new rpcprotocol::Channel(
-      channel_manager_.get(), ss_->VaultIP(), ss_->VaultPort(), "", 0, "", 0);
+      &channel_manager_, &transport_, ss_->VaultIP(), ss_->VaultPort(), "", 0,
+      "", 0);
   client_rpcs_->PollVaultInfo(enc_ser_vc, &vault_status_response, controller,
       channel, done);
 }

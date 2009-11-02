@@ -624,8 +624,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
 
 class MockClientRpcs : public ClientRpcs {
  public:
-  explicit MockClientRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
-      channel_manager) : ClientRpcs(channel_manager) {}
+  MockClientRpcs(transport::Transport *transport,
+                 rpcprotocol::ChannelManager *channel_manager)
+                     : ClientRpcs(transport, channel_manager) {}
   MOCK_METHOD6(StoreIOU, void(const kad::Contact &peer,
                               bool local,
                               StoreIOURequest *store_iou_request,
@@ -649,7 +650,7 @@ class MockMsmStoreIOUs : public MaidsafeStoreManager {
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
   MockMsmStoreIOUs msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs>
-      mock_rpcs(new MockClientRpcs(msm.channel_manager_));
+      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
   msm.SetMockRpcs(mock_rpcs);
   std::string recipient_id = crypto_.Hash("RecipientID", "",
       crypto::STRING_STRING, false);

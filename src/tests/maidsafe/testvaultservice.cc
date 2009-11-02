@@ -73,7 +73,8 @@ class VaultServicesTest : public testing::Test {
           signed_pmid_public_(),
           pmid_(),
           non_hex_pmid_(),
-          channel_manager_(),
+          transport_(),
+          channel_manager_(&transport_),
           knode_(),
           vault_chunkstore_(),
           vault_service_(),
@@ -99,10 +100,8 @@ class VaultServicesTest : public testing::Test {
       catch(const std::exception &e) {
         printf("%s\n", e.what());
       }
-
-      channel_manager_.reset(new rpcprotocol::ChannelManager());
-      knode_ = new kad::KNode(channel_manager_, kad::VAULT, pmid_private_,
-                              pmid_public_, false, false);
+      knode_ = new kad::KNode(&channel_manager_, &transport_, kad::VAULT,
+                              pmid_private_, pmid_public_, false, false);
       vault_chunkstore_ = new VaultChunkStore(chunkstore_dir_.string(),
                                               kAvailableSpace, 0);
 
@@ -110,22 +109,22 @@ class VaultServicesTest : public testing::Test {
                                         signed_pmid_public_, vault_chunkstore_,
                                         knode_, &poh_);
 
-      svc_channel_ = new rpcprotocol::Channel(channel_manager_.get());
+      svc_channel_ = new rpcprotocol::Channel(&channel_manager_, &transport_);
       svc_channel_->SetService(vault_service_);
-      channel_manager_->RegisterChannel(vault_service_->GetDescriptor()->name(),
-                                        svc_channel_);
+      channel_manager_.RegisterChannel(vault_service_->GetDescriptor()->name(),
+                                       svc_channel_);
     }
 
     virtual void TearDown() {
-      channel_manager_->UnRegisterChannel(
+      channel_manager_.UnRegisterChannel(
           vault_service_->GetDescriptor()->name());
-      channel_manager_->StopTransport();
-      channel_manager_->CleanUpTransport();
+      transport_.Stop();
+      channel_manager_.Stop();
+      transport::CleanUp();
       delete svc_channel_;
       delete vault_service_;
       delete vault_chunkstore_;
       delete knode_;
-      channel_manager_.reset();
 
       try {
         fs::remove_all(chunkstore_dir_);
@@ -138,7 +137,8 @@ class VaultServicesTest : public testing::Test {
     fs::path chunkstore_dir_;
     std::string pmid_public_, pmid_private_, signed_pmid_public_;
     std::string pmid_, non_hex_pmid_;
-    boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
+    transport::Transport transport_;
+    rpcprotocol::ChannelManager channel_manager_;
     kad::KNode *knode_;
     VaultChunkStore *vault_chunkstore_;
     VaultService *vault_service_;

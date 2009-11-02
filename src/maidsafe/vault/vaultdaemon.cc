@@ -36,7 +36,7 @@ namespace maidsafe_vault {
 
 VaultDaemon::~VaultDaemon() {
   if (registration_service_ != NULL) {
-    local_ch_manager_->StopTransport();
+    local_transport_.Stop();
     local_ch_manager_->ClearChannels();
     delete registration_service_;
     delete registration_channel_;
@@ -160,14 +160,15 @@ bool VaultDaemon::StartVault() {
   }
   bool started_registration_service = true;
   // No Config file, starting a not owned vault
-  local_ch_manager_ = new rpcprotocol::ChannelManager();
-  registration_channel_ = new rpcprotocol::Channel(local_ch_manager_);
+  local_ch_manager_ = new rpcprotocol::ChannelManager(&local_transport_);
+  registration_channel_ = new rpcprotocol::Channel(local_ch_manager_,
+      &local_transport_);
   registration_service_ = new maidsafe_vault::RegistrationService(boost::bind(
       &VaultDaemon::RegistrationNotification, this, _1));
   registration_channel_->SetService(registration_service_);
   local_ch_manager_->RegisterChannel(
       registration_service_->GetDescriptor()->name(), registration_channel_);
-  if (0 != local_ch_manager_->StartLocalTransport(kLocalPort)) {
+  if (0 != local_transport_.StartLocal(kLocalPort)) {
     local_ch_manager_->ClearChannels();
     delete registration_service_;
     delete registration_channel_;

@@ -93,10 +93,12 @@ struct IsVaultOwnedCallbackArgs {
 
 class PDClient {
  public:
-  PDClient(boost::shared_ptr<rpcprotocol::ChannelManager> ch_mangr,
+  PDClient(transport::Transport *transport,
+           rpcprotocol::ChannelManager *ch_mangr,
            boost::shared_ptr<kad::KNode> knode,
            boost::shared_ptr<ClientRpcs> client_rpcs)
-               : channel_manager_(ch_mangr),
+               : transport_(transport),
+                 channel_manager_(ch_mangr),
                  knode_(knode),
                  client_rpcs_(client_rpcs) {}
 
@@ -134,7 +136,8 @@ class PDClient {
   void IsVaultOwnedCallback(IsVaultOwnedCallbackArgs  callback_args);
   PDClient(const PDClient&);
   PDClient& operator=(const PDClient&);
-  boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
+  transport::Transport *transport_;
+  rpcprotocol::ChannelManager *channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<ClientRpcs> client_rpcs_;
 };

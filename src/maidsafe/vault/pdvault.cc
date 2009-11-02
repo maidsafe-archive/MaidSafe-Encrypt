@@ -61,10 +61,11 @@ PDVault::PDVault(const std::string &pmid_public,
                  const boost::uint64_t &available_space,
                  const boost::uint64_t &used_space)
     : port_(port),
-      channel_manager_(new rpcprotocol::ChannelManager()),
-      knode_(channel_manager_, kad::VAULT, pmid_private, pmid_public,
-          port_forwarded, use_upnp),
-      vault_rpcs_(channel_manager_),
+      transport_(),
+      channel_manager_(&transport_),
+      knode_(&channel_manager_, &transport_, kad::VAULT, pmid_private,
+          pmid_public, port_forwarded, use_upnp),
+      vault_rpcs_(&transport_, &channel_manager_),
       vault_chunkstore_(chunkstore_dir, available_space, used_space),
       vault_service_(),
       kad_joined_(false),
@@ -104,40 +105,48 @@ PDVault::~PDVault() {
 void PDVault::Start(bool first_node) {
   if (vault_status() == kVaultStarted)
     return;
-  channel_manager_->StartTransport(port_,
-      boost::bind(&kad::KNode::HandleDeadRendezvousServer, &knode_, _1));
-  RegisterMaidService();
-  boost::mutex kad_join_mutex;
-  if (first_node) {
-    boost::asio::ip::address local_ip;
-    base::get_local_address(&local_ip);
-    knode_.Join(pmid_, kad_config_file_, local_ip.to_string(),
-        channel_manager_->ptransport()->listening_port(),
-        boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
-  } else {
-    knode_.Join(pmid_, kad_config_file_,
-        boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
+  bool success = channel_manager_.RegisterNotifiersToTransport();
+  if (success)
+    success = transport_.RegisterOnServerDown(boost::bind(
+        &kad::KNode::HandleDeadRendezvousServer, &knode_, _1));
+  if (success)
+    success = (transport_.Start(port_) == 0);
+  if (success)
+    success = (channel_manager_.Start() == 0);
+  if (success) {
+    RegisterMaidService();
+    boost::mutex kad_join_mutex;
+    if (first_node) {
+      boost::asio::ip::address local_ip;
+      base::get_local_address(&local_ip);
+      knode_.Join(pmid_, kad_config_file_, local_ip.to_string(),
+          transport_.listening_port(),
+          boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
+    } else {
+      knode_.Join(pmid_, kad_config_file_,
+          boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
+    }
+    // Hash check all current chunks in chunkstore
+    std::list<std::string> failed_keys;
+    if (0 != vault_chunkstore_.HashCheckAllChunks(true, &failed_keys)) {
+      return;
+    }
+    // Block until we've joined the Kademlia network.
+    boost::mutex::scoped_lock lock(kad_join_mutex);
+    while (!kad_joined_) {
+      kad_join_cond_.wait(lock);
+    }
+    // Set port, so that if vault is restarted before it is destroyed, it
+    // re-uses port (unless this port has become unavailable).
+    port_ = knode_.host_port();
+    if (kad_joined_)
+      SetVaultStatus(kVaultStarted);
+    // Start repeating pruning worker thread
+    prune_pending_ops_thread_ =
+        boost::thread(&PDVault::PrunePendingOperations, this);
+    // Start repeating pending IOU worker thread
+    pending_ious_thread_ = boost::thread(&PDVault::CheckPendingIOUs, this);
   }
-  // Hash check all current chunks in chunkstore
-  std::list<std::string> failed_keys;
-  if (0 != vault_chunkstore_.HashCheckAllChunks(true, &failed_keys)) {
-    return;
-  }
-  // Block until we've joined the Kademlia network.
-  boost::mutex::scoped_lock lock(kad_join_mutex);
-  while (!kad_joined_) {
-    kad_join_cond_.wait(lock);
-  }
-  // Set port, so that if vault is restarted before it is destroyed, it re-uses
-  // port (unless this port has become unavailable).
-  port_ = knode_.host_port();
-  if (kad_joined_)
-    SetVaultStatus(kVaultStarted);
-  // Start repeating pruning worker thread
-  prune_pending_ops_thread_ =
-      boost::thread(&PDVault::PrunePendingOperations, this);
-  // Start repeating pending IOU worker thread
-  pending_ious_thread_ = boost::thread(&PDVault::CheckPendingIOUs, this);
 }
 
 void PDVault::KadJoinedCallback(const std::string &result,
@@ -183,12 +192,12 @@ int PDVault::Stop(bool cancel_pending_ops) {
     SetVaultStatus(kVaultStarted);
   else
     SetVaultStatus(kVaultStopped);
-  channel_manager_->StopTransport();
+  transport_.Stop();
   return 0;
 }
 
 void PDVault::CleanUp() {
-  channel_manager_->CleanUpTransport();
+  transport::CleanUp();
 }
 
 void PDVault::RegisterMaidService() {
@@ -200,14 +209,14 @@ void PDVault::RegisterMaidService() {
                      &knode_,
                      &poh_));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
-      new rpcprotocol::Channel(channel_manager_.get()));
+      new rpcprotocol::Channel(&channel_manager_, &transport_));
   svc_channel_->SetService(vault_service_.get());
-  channel_manager_->RegisterChannel(
+  channel_manager_.RegisterChannel(
     vault_service_->GetDescriptor()->name(), svc_channel_.get());
 }
 
 void PDVault::UnRegisterMaidService() {
-  channel_manager_->UnRegisterChannel(
+  channel_manager_.UnRegisterChannel(
     vault_service_->GetDescriptor()->name());
   svc_channel_.reset();
   vault_service_.reset();
@@ -324,7 +333,7 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   for (boost::uint16_t j = 0; j < results.size(); ++j) {
-    channel_manager_->DeletePendingRequest(results.at(j).controller_->req_id());
+    channel_manager_.DeletePendingRequest(results.at(j).controller_->req_id());
   }
 #ifdef DEBUG
   printf("In PDVault::AddToRefPacket (%i): count = %i (success if count>11).\n",
@@ -488,7 +497,7 @@ int PDVault::FindKNodes(const std::string &kad_key,
   }
   // Insert our own contact details if we are within the k closest.
   kad::Contact our_details(knode_.contact_info());
-  base::InsertKadContact(kad_key, our_details, contacts);
+  kad::InsertKadContact(kad_key, our_details, contacts);
   contacts->pop_back();
 #ifdef DEBUG
 //  printf("In PDVault::FindKNodes, succeeded.\n");

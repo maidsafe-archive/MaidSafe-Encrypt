@@ -37,13 +37,25 @@ const int kRsaKeySize = 4096;
 class VaultDaemon {
   // A daemon class to assist PD vault functions
  public:
-  explicit VaultDaemon(int port) : pdvault_(NULL), val_check_(),
-      is_owned_(false), config_file_(), local_config_file_(),
-      kad_config_file_(), vault_path_(), pmid_public_(""), pmid_private_(""),
-      signed_pmid_public_(""), chunkstore_dir_(""), port_(port),
-      vault_available_space_(0), used_space_(0), local_ch_manager_(NULL),
-      registration_channel_(NULL), registration_service_(NULL),
-      config_mutex_() {}
+  explicit VaultDaemon(int port) : pdvault_(NULL),
+                                   val_check_(),
+                                   is_owned_(false),
+                                   config_file_(),
+                                   local_config_file_(),
+                                   kad_config_file_(),
+                                   vault_path_(),
+                                   pmid_public_(""),
+                                   pmid_private_(""),
+                                   signed_pmid_public_(""),
+                                   chunkstore_dir_(""),
+                                   port_(port),
+                                   vault_available_space_(0),
+                                   used_space_(0),
+                                   local_transport_(),
+                                   local_ch_manager_(NULL),
+                                   registration_channel_(NULL),
+                                   registration_service_(NULL),
+                                   config_mutex_() {}
   ~VaultDaemon();
   void Status();
   // Returns false if it fails to start the already owned vault or the not owned
@@ -78,6 +90,7 @@ class VaultDaemon {
   std::string chunkstore_dir_;
   boost::uint16_t port_;
   boost::uint64_t vault_available_space_, used_space_;
+  transport::Transport local_transport_;
   rpcprotocol::ChannelManager *local_ch_manager_;
   rpcprotocol::Channel *registration_channel_;
   RegistrationService *registration_service_;

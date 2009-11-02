@@ -36,8 +36,10 @@ namespace maidsafe {
 
 class ClientRpcs {
  public:
-  explicit ClientRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
-      channel_manager);
+  ClientRpcs(transport::Transport *transport,
+             rpcprotocol::ChannelManager *channel_manager)
+      : transport_(transport),
+        channel_manager_(channel_manager) {}
   virtual ~ClientRpcs() {}
   void StorePrep(const kad::Contact &peer,
                  bool local,
@@ -147,7 +149,8 @@ class ClientRpcs {
  private:
   ClientRpcs(const ClientRpcs&);
   ClientRpcs& operator=(const ClientRpcs&);
-  boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
+  transport::Transport *transport_;
+  rpcprotocol::ChannelManager *channel_manager_;
 };
 
 }  // namespace maidsafe

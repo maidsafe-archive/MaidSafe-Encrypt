@@ -36,8 +36,11 @@ namespace maidsafe_vault {
 
 class VaultRpcs {
  public:
-  explicit VaultRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
-      channel_manager);
+  VaultRpcs(transport::Transport *transport,
+            rpcprotocol::ChannelManager *channel_manager)
+                : transport_(transport),
+                  channel_manager_(channel_manager),
+                  own_non_hex_id_("") {}
   ~VaultRpcs() {}
   void StoreChunkReference(const kad::Contact &peer,
                            bool local,
@@ -134,7 +137,8 @@ class VaultRpcs {
  private:
   VaultRpcs(const VaultRpcs&);
   VaultRpcs& operator=(const VaultRpcs&);
-  boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
+  transport::Transport *transport_;
+  rpcprotocol::ChannelManager *channel_manager_;
   std::string own_non_hex_id_;
 };
 }  // namespace maidsafe_vault

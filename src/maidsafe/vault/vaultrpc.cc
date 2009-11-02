@@ -24,12 +24,7 @@
 
 #include "maidsafe/vault/vaultrpc.h"
 
-#include <boost/shared_ptr.hpp>
-
 namespace maidsafe_vault {
-
-VaultRpcs::VaultRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
-    channel_manager) : channel_manager_(channel_manager), own_non_hex_id_("") {}
 
 void VaultRpcs::StoreChunkReference(
     const kad::Contact &peer,
@@ -49,7 +44,7 @@ void VaultRpcs::StoreChunkReference(
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -77,8 +72,8 @@ void VaultRpcs::StoreChunk(const std::string &chunkname,
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
   args.set_data_type(data_type);
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      "", 0, rendezvous_ip, rendezvous_port);
+  rpcprotocol::Channel channel(channel_manager_, transport_, remote_ip,
+      remote_port, "", 0, rendezvous_ip, rendezvous_port);
   maidsafe::MaidsafeService::Stub service(&channel);
   service.StoreChunk(controller, &args, response, done);
 }
@@ -93,8 +88,8 @@ void VaultRpcs::CheckChunk(const std::string &chunkname,
                            google::protobuf::Closure *done) {
   maidsafe::CheckChunkRequest args;
   args.set_chunkname(chunkname);
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      "", 0, rendezvous_ip, rendezvous_port);
+  rpcprotocol::Channel channel(channel_manager_, transport_, remote_ip,
+      remote_port, "", 0, rendezvous_ip, rendezvous_port);
   maidsafe::MaidsafeService::Stub service(&channel);
   service.CheckChunk(controller, &args, response, done);
 }
@@ -109,8 +104,8 @@ void VaultRpcs::Get(const std::string &chunkname,
                     google::protobuf::Closure *done) {
   maidsafe::GetRequest args;
   args.set_chunkname(chunkname);
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      "", 0, rendezvous_ip, rendezvous_port);
+  rpcprotocol::Channel channel(channel_manager_, transport_, remote_ip,
+      remote_port, "", 0, rendezvous_ip, rendezvous_port);
   maidsafe::MaidsafeService::Stub service(&channel);
   service.Get(controller, &args, response, done);
 }
@@ -135,8 +130,8 @@ void VaultRpcs::Update(const std::string &chunkname,
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
   args.set_data_type(data_type);
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      "", 0, rendezvous_ip, rendezvous_port);
+  rpcprotocol::Channel channel(channel_manager_, transport_, remote_ip,
+      remote_port, "", 0, rendezvous_ip, rendezvous_port);
   maidsafe::MaidsafeService::Stub service(&channel);
   service.Update(controller, &args, response, done);
 }
@@ -159,8 +154,8 @@ void VaultRpcs::Delete(const std::string &chunkname,
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
   args.set_data_type(data_type);
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      "", 0, rendezvous_ip, rendezvous_port);
+  rpcprotocol::Channel channel(channel_manager_, transport_, remote_ip,
+      remote_port, "", 0, rendezvous_ip, rendezvous_port);
   maidsafe::MaidsafeService::Stub service(&channel);
   service.Delete(controller, &args, response, done);
 }
@@ -177,8 +172,8 @@ void VaultRpcs::ValidityCheck(const std::string &chunkname,
   maidsafe::ValidityCheckRequest args;
   args.set_chunkname(chunkname);
   args.set_random_data(random_data);
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      "", 0, rendezvous_ip, rendezvous_port);
+  rpcprotocol::Channel channel(channel_manager_, transport_, remote_ip,
+      remote_port, "", 0, rendezvous_ip, rendezvous_port);
   maidsafe::MaidsafeService::Stub service(&channel);
   service.ValidityCheck(controller, &args, response, done);
 }
@@ -197,8 +192,8 @@ void VaultRpcs::GetMessages(const std::string &buffer_packet_name,
   args.set_bufferpacket_name(buffer_packet_name);
   args.set_public_key(public_key);
   args.set_signed_public_key(signed_public_key);
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      "", 0, rendezvous_ip, rendezvous_port);
+  rpcprotocol::Channel channel(channel_manager_, transport_, remote_ip,
+      remote_port, "", 0, rendezvous_ip, rendezvous_port);
   maidsafe::MaidsafeService::Stub service(&channel);
   service.GetBPMessages(controller, &args, response, done);
 }
@@ -222,8 +217,8 @@ void VaultRpcs::SwapChunk(const boost::uint32_t request_type,
   } else {
     args.set_chunkcontent1(chunkcontent1);
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      "", 0, rendezvous_ip, rendezvous_port);
+  rpcprotocol::Channel channel(channel_manager_, transport_, remote_ip,
+      remote_port, "", 0, rendezvous_ip, rendezvous_port);
   maidsafe::MaidsafeService::Stub service(&channel);
   service.SwapChunk(controller, &args, response, done);
 }

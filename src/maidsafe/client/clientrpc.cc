@@ -24,12 +24,7 @@
 
 #include "maidsafe/client/clientrpc.h"
 
-#include <boost/shared_ptr.hpp>
-
 namespace maidsafe {
-
-ClientRpcs::ClientRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
-    channel_manager) : channel_manager_(channel_manager) {}
 
 void ClientRpcs::StorePrep(const kad::Contact &peer,
                            bool local,
@@ -43,7 +38,7 @@ void ClientRpcs::StorePrep(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -63,7 +58,7 @@ void ClientRpcs::StoreChunk(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -82,7 +77,7 @@ void ClientRpcs::StorePacket(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -102,7 +97,7 @@ void ClientRpcs::StoreIOU(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -121,7 +116,7 @@ void ClientRpcs::IOUDone(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -140,7 +135,7 @@ void ClientRpcs::CheckChunk(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -160,7 +155,7 @@ void ClientRpcs::Get(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -179,7 +174,7 @@ void ClientRpcs::GetPacket(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -198,7 +193,7 @@ void ClientRpcs::Update(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -223,8 +218,8 @@ void ClientRpcs::Delete(const std::string &chunkname,
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
   args.set_data_type(data_type);
-  rpcprotocol::Channel channel(channel_manager_.get(), remote_ip, remote_port,
-      "", 0, rendezvous_ip, rendezvous_port);
+  rpcprotocol::Channel channel(channel_manager_, transport_, remote_ip,
+      remote_port, "", 0, rendezvous_ip, rendezvous_port);
   maidsafe::MaidsafeService::Stub service(&channel);
   service.Delete(controller, &args, response, done);
 }
@@ -241,7 +236,7 @@ void ClientRpcs::CreateBP(const kad::Contact &peer, bool local,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -259,7 +254,7 @@ void ClientRpcs::ModifyBPInfo(const kad::Contact &peer, bool local,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -277,7 +272,7 @@ void ClientRpcs::GetBPMessages(const kad::Contact &peer, bool local,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
@@ -296,7 +291,7 @@ void ClientRpcs::AddBPMessage(const kad::Contact &peer, bool local,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_.get(), peer.host_ip(),
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);

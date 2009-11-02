@@ -118,29 +118,38 @@ class OwnershipSenderHandler {
 
 class VaultRegistrationTest : public testing::Test {
  public:
-  VaultRegistrationTest() : server(), client(),
-      service_channel(new rpcprotocol::Channel(&server)), handler(),
-      service() {}
+  VaultRegistrationTest()
+      : server_transport_(),
+        client_transport_(),
+        server(&server_transport_),
+        client(&client_transport_),
+        service_channel(new rpcprotocol::Channel(&server, &server_transport_)),
+        handler(),
+        service() {}
   ~VaultRegistrationTest() {
-      server.CleanUpTransport();
+      transport::CleanUp();
   }
  protected:
   virtual void SetUp() {
-    ASSERT_EQ(0, server.StartLocalTransport(0));
+    ASSERT_EQ(0, server_transport_.StartLocal(0));
+    ASSERT_EQ(0, server.Start());
     service.reset(new maidsafe_vault::RegistrationService(boost::bind(
           &NotifierHandler::OwnedNotification, &handler, _1)));
     service_channel->SetService(service.get());
     server.RegisterChannel(service->GetDescriptor()->name(),
         service_channel.get());
-    ASSERT_EQ(0, client.StartTransport(0, boost::bind(&HandleDeadServer, _1, _2,
-        _3)));
+    ASSERT_EQ(0, client_transport_.Start(0));
+    ASSERT_EQ(0, client.Start());
   }
   virtual void TearDown() {
     handler.Reset();
-    server.StopTransport();
-    client.StopTransport();
+    server_transport_.Stop();
+    server.Stop();
+    client_transport_.Stop();
+    client.Stop();
     server.ClearChannels();
   }
+  transport::Transport server_transport_, client_transport_;
   rpcprotocol::ChannelManager server, client;
   boost::shared_ptr<rpcprotocol::Channel> service_channel;
   NotifierHandler handler;
@@ -159,15 +168,15 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectOwnVault) {
     crypto::STRING_STRING, false);
   OwnershipSenderHandler senderhandler;
   rpcprotocol::Controller ctrl;
-  rpcprotocol::Channel out_channel(&client, "127.0.0.1",
-      server.local_port(), "", 0, "", 0);
+  rpcprotocol::Channel out_channel(&client, &client_transport_, "127.0.0.1",
+      server_transport_.listening_port(), "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice(&out_channel);
   maidsafe::OwnVaultRequest request;
   request.set_private_key(keypair.private_key());
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key(cobj.AsymSign(keypair.public_key(), "",
       keypair.private_key(), crypto::STRING_STRING));
-  request.set_port(server.local_port()+1);
+  request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   maidsafe::OwnVaultResponse response;
@@ -189,7 +198,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectOwnVault) {
   ASSERT_EQ(keypair.public_key(), handler.public_key());
   ASSERT_EQ(singed_pub_key, handler.signed_public_key());
   ASSERT_EQ(std::string("/ChunkStore"), handler.chunkstore_dir());
-  ASSERT_EQ(server.local_port()+1, handler.port());
+  ASSERT_EQ(server_transport_.listening_port()+1, handler.port());
   ASSERT_EQ(boost::uint64_t(1000), handler.available_space());
 
   ASSERT_EQ(maidsafe::OWNED, service->status());
@@ -233,14 +242,14 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
       keypair.private_key(), crypto::STRING_STRING);
   OwnershipSenderHandler senderhandler;
   rpcprotocol::Controller ctrl;
-  rpcprotocol::Channel out_channel(&client, "127.0.0.1",
-      server.local_port(), "", 0, "", 0);
+  rpcprotocol::Channel out_channel(&client, &client_transport_, "127.0.0.1",
+      server_transport_.listening_port(), "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice(&out_channel);
   maidsafe::OwnVaultRequest request;
   request.set_private_key(keypair.private_key());
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key("invalidsignedpublickey");
-  request.set_port(server.local_port()+1);
+  request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   maidsafe::OwnVaultResponse response;
@@ -268,7 +277,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_private_key("invalidprivatekey");
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key(signed_public_key);
-  request.set_port(server.local_port()+1);
+  request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<
@@ -295,7 +304,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_private_key(keypair.private_key());
   request.set_public_key("invalidpublickey");
   request.set_signed_public_key(signed_public_key);
-  request.set_port(server.local_port()+1);
+  request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<
@@ -327,7 +336,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_private_key(keypair.private_key());
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key(signed_public_key);
-  request.set_port(server.local_port()+1);
+  request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<
@@ -354,7 +363,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_private_key(priv_key);
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key(signed_public_key);
-  request.set_port(server.local_port()+1);
+  request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done5 = google::protobuf::NewCallback<
@@ -381,7 +390,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_private_key(keypair.private_key());
   request.set_public_key(pub_key);
   request.set_signed_public_key(signed_public_key);
-  request.set_port(server.local_port()+1);
+  request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done6 = google::protobuf::NewCallback<
@@ -410,7 +419,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_private_key(priv_key);
   request.set_public_key(pub_key);
   request.set_signed_public_key(signed_public_key);
-  request.set_port(client.local_port());
+  request.set_port(client_transport_.listening_port());
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done7 = google::protobuf::NewCallback<
@@ -439,7 +448,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_private_key(keypair.private_key());
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key(signed_public_key);
-  request.set_port(server.local_port()+1);
+  request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(0);
   google::protobuf::Closure *done8 = google::protobuf::NewCallback<
@@ -470,7 +479,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_private_key(keypair.private_key());
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key(signed_public_key);
-  request.set_port(server.local_port()+1);
+  request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(info.available + 10);
   google::protobuf::Closure *done9 = google::protobuf::NewCallback<
@@ -499,7 +508,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_private_key(priv_key);
   request.set_public_key(pub_key);
   request.set_signed_public_key(signed_public_key);
-  request.set_port(server.local_port()+1);
+  request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done10 = google::protobuf::NewCallback<
@@ -528,7 +537,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_private_key(priv_key);
   request.set_public_key(pub_key);
   request.set_signed_public_key(signed_public_key);
-  request.set_port(server.local_port()+1);
+  request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done11 = google::protobuf::NewCallback<
@@ -547,8 +556,8 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
 
 TEST_F(VaultRegistrationTest, FUNC_MAID_IsOwnedRpc) {
   rpcprotocol::Controller ctrl;
-  rpcprotocol::Channel out_channel(&client, "127.0.0.1",
-      server.local_port(), "", 0, "", 0);
+  rpcprotocol::Channel out_channel(&client, &client_transport_, "127.0.0.1",
+      server_transport_.listening_port(), "", 0, "", 0);
   maidsafe::IsOwnedRequest request;
   maidsafe::IsOwnedResponse response;
   OwnershipSenderHandler senderhandler;
@@ -577,8 +586,8 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_IsOwnedRpc) {
   response.Clear();
   ctrl.Reset();
   senderhandler.Reset();
-  rpcprotocol::Channel out_channel2(&client, "127.0.0.1",
-      server.local_port()+1, "", 0, "", 0);
+  rpcprotocol::Channel out_channel2(&client, &client_transport_, "127.0.0.1",
+      server_transport_.listening_port()+1, "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice2(&out_channel2);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::IsOwnedResponse*,
@@ -621,9 +630,10 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
   boost::thread thrd(CreateVaultDaemon, &finished);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
 
-  rpcprotocol::ChannelManager client;
-  ASSERT_EQ(0, client.StartTransport(0, boost::bind(&HandleDeadServer, _1, _2,
-      _3)));
+  transport::Transport client_transport;
+  rpcprotocol::ChannelManager client(&client_transport);
+  ASSERT_EQ(0, client_transport.Start(0));
+  ASSERT_EQ(0, client.Start());
   crypto::Crypto cobj;
   crypto::RsaKeyPair keypair;
   keypair.GenerateKeys(maidsafe::kRsaKeySize);
@@ -634,7 +644,7 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
     crypto::STRING_STRING, false);
   OwnershipSenderHandler senderhandler;
   rpcprotocol::Controller ctrl;
-  rpcprotocol::Channel out_channel(&client, "127.0.0.1",
+  rpcprotocol::Channel out_channel(&client, &client_transport, "127.0.0.1",
       kLocalPort, "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice(&out_channel);
   maidsafe::OwnVaultRequest request;

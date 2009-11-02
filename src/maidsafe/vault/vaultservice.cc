@@ -569,6 +569,34 @@ void VaultService::Get(google::protobuf::RpcController*,
   done->Run();
 }
 
+void VaultService::GetPacket(google::protobuf::RpcController*,
+                             const maidsafe::GetPacketRequest* request,
+                             maidsafe::GetPacketResponse* response,
+                             google::protobuf::Closure* done) {
+#ifdef DEBUG
+  printf("In VaultService::GetPacket (%i)\n", knode_->host_port());
+#endif
+  response->set_pmid_id(non_hex_pmid_);
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::GetPacket (%i), request isn't initialised.\n",
+           knode_->host_port());
+#endif
+    response->set_result(kNack);
+    done->Run();
+    return;
+  }
+  if (!LoadPacketLocal(request->packetname(), response)) {
+#ifdef DEBUG
+    printf("In VaultService::GetPacket (%i), couldn't find chunk locally.\n",
+           knode_->host_port());
+#endif
+    response->clear_content();
+    response->set_result(kNack);
+  }
+  done->Run();
+}
+
 void VaultService::CheckChunk(google::protobuf::RpcController*,
                               const maidsafe::CheckChunkRequest* request,
                               maidsafe::CheckChunkResponse* response,
@@ -1379,6 +1407,20 @@ bool VaultService::UpdateChunkLocal(const std::string &chunkname,
 bool VaultService::LoadChunkLocal(const std::string &chunkname,
                                   std::string *content) {
   return (vault_chunkstore_->Load(chunkname, content) == kSuccess);
+}
+
+bool VaultService::LoadPacketLocal(const std::string &packetname,
+                                   maidsafe::GetPacketResponse* response) {
+  response->set_result(kNack);
+  std::vector<maidsafe::GenericPacket> gps;
+  if (vault_chunkstore_->LoadPacket(packetname, &gps) != kSuccess) {
+    response->set_result(kNack);
+    return false;
+  }
+  response->set_result(kAck);
+  for (size_t i = 0; i < gps.size(); ++i)
+    response->add_content(gps.at(i).data());
+  return true;
 }
 
 bool VaultService::DeleteChunkLocal(const std::string &chunkname) {

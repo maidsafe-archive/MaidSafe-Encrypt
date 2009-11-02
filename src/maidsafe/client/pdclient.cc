@@ -288,8 +288,8 @@ void PDClient::OwnLocalVault(const std::string &priv_key,
   // started successfully
   cb_args.ctrl->set_timeout(20);
   cb_args.response = new OwnVaultResponse;
-  rpcprotocol::Channel channel(channel_manager_.get(), "127.0.0.1", kLocalPort,
-      "", 0, "", 0);
+  rpcprotocol::Channel channel(channel_manager_, transport_, "127.0.0.1",
+      kLocalPort, "", 0, "", 0);
   google::protobuf::Closure* done = google::protobuf::NewCallback<PDClient,
       OwnVaultCallbackArgs>(this, &PDClient::OwnVaultCallback,
       cb_args);
@@ -324,8 +324,8 @@ void PDClient::IsLocalVaultOwned(boost::function<void(const VaultStatus&)>
   cb_args.ctrl = new rpcprotocol::Controller;
   cb_args.response = new IsOwnedResponse;
   cb_args.cb = cb;
-  rpcprotocol::Channel channel(channel_manager_.get(), "127.0.0.1", kLocalPort,
-      "", 0, "", 0);
+  rpcprotocol::Channel channel(channel_manager_, transport_, "127.0.0.1",
+      kLocalPort, "", 0, "", 0);
   google::protobuf::Closure *done = google::protobuf::NewCallback< PDClient,
       IsVaultOwnedCallbackArgs >(this, &PDClient::IsVaultOwnedCallback,
       cb_args);

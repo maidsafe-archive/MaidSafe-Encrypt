@@ -87,6 +87,10 @@ class VaultService : public maidsafe::MaidsafeService {
                    const maidsafe::GetRequest* request,
                    maidsafe::GetResponse* response,
                    google::protobuf::Closure* done);
+  virtual void GetPacket(google::protobuf::RpcController*,
+                         const maidsafe::GetPacketRequest* request,
+                         maidsafe::GetPacketResponse* response,
+                         google::protobuf::Closure* done);
   virtual void CheckChunk(google::protobuf::RpcController* controller,
                           const maidsafe::CheckChunkRequest* request,
                           maidsafe::CheckChunkResponse* response,
@@ -171,6 +175,8 @@ class VaultService : public maidsafe::MaidsafeService {
   bool UpdateChunkLocal(const std::string &chunkname,
                         const std::string &content);
   bool LoadChunkLocal(const std::string &chunkname, std::string *content);
+  bool LoadPacketLocal(const std::string &packetname,
+                       maidsafe::GetPacketResponse* response);
   bool DeleteChunkLocal(const std::string &chunkname);
   void StoreChunkReference(const std::string &non_hex_chunkname);
   void FindCloseNodesCallback(const std::string &result,
