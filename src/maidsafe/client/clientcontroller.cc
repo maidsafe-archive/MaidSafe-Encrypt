@@ -86,21 +86,20 @@ ClientController::ClientController() : auth_(),
                                        ser_da_(),
                                        db_enc_queue_(),
                                        seh_(),
-//                                       mutex_(),
                                        messages_(),
                                        fsys_(),
                                        received_messages_(),
                                        rec_msg_mutex_(),
-                                       thread_pool_(1),
+                                       clear_messages_thread_(),
                                        client_store_(),
                                        logging_out_(false) {
   fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
   client_path /= "client" + base::RandomString(8);
-  while (fs::exists(client_path))
-    client_path = fs::path(client_path.string().substr(0,
-        client_path.string().size()-8) + base::RandomString(8));
-  client_store_ = client_path.string();
   try {
+    while (fs::exists(client_path))
+      client_path = fs::path(client_path.string().substr(0,
+          client_path.string().size()-8) + base::RandomString(8));
+    client_store_ = client_path.string();
     if (!fs::exists(client_path)) {
       fs::create_directories(client_path);
     }
@@ -163,6 +162,12 @@ bool ClientController::JoinKademlia() {
 
 int ClientController::ParseDa() {
   DataAtlas data_atlas;
+  if (ser_da_ == "") {
+#ifdef DEBUG
+    printf("TMID brought is \"\".\n");
+#endif
+    return -9000;
+  }
   if (!data_atlas.ParseFromString(ser_da_)) {
 #ifdef DEBUG
     printf("TMID brought doesn't parse as a DA.\n");
@@ -555,9 +560,8 @@ bool ClientController::ValidateUser(const std::string &password) {
       printf("Failed to load BP Info.\n");
 #endif
   }
-  thread_pool_.schedule(boost::threadpool::looped_task_func(
-                        boost::bind(&ClientController::ClearStaleMessages,
-                        this), 10000));
+  clear_messages_thread_ =
+      boost::thread(&ClientController::ClearStaleMessages, this);
   return true;
 }
 
@@ -610,8 +614,7 @@ bool ClientController::Logout() {
 
   SerialiseDa();
   int result = auth_->SaveSession(ser_da_, priv_keys, pub_keys);
-  thread_pool_.clear();
-  thread_pool_.wait();
+  clear_messages_thread_.join();
 
 //  int connection_status(0);
 //  int n = ChangeConnectionStatus(connection_status);
@@ -620,7 +623,6 @@ bool ClientController::Logout() {
 //  }
 //  ss_->SetConnectionStatus(connection_status);
 
-//  sm_->ClearStoreQueue();
   if (result == kSuccess && !RunDbEncQueue()) {
     printf("ClientController::Logout - OK and ran DB queue.\n");
     while (sm_->NotDoneWithUploading()) {
@@ -926,25 +928,32 @@ int ClientController::HandleMessages(
   return result;
 }
 
-bool ClientController::ClearStaleMessages() {
-  if (logging_out_)
-    return false;
+void ClientController::ClearStaleMessages() {
+  int recheck_interval = 100;  // milliseconds
+  int total_sleep = 10000;  // milliseconds
+  while (!logging_out_) {
 #ifdef DEBUG
-  printf("ClientController::ClearStaleMessages timestamp: %d\n",
-         base::get_epoch_time());
+    printf("ClientController::ClearStaleMessages timestamp: %d\n",
+           base::get_epoch_time());
 #endif
-  if (ss_->PublicUsername() == "")
-    return false;
-  boost::mutex::scoped_lock loch(rec_msg_mutex_);
-  boost::uint32_t now = base::get_epoch_time() - 10;
-  std::map<std::string, boost::uint32_t>::iterator it;
-  for (it = received_messages_.begin();
-       it != received_messages_.end(); ++it) {
-    if (it->second > now)
-      break;
+    if (ss_->PublicUsername() == "")
+      return;
+    boost::mutex::scoped_lock loch(rec_msg_mutex_);
+    boost::uint32_t now = base::get_epoch_time() - 10;
+    std::map<std::string, boost::uint32_t>::iterator it;
+    for (it = received_messages_.begin();
+         it != received_messages_.end(); ++it) {
+      if (it->second > now)
+        break;
+    }
+    received_messages_.erase(received_messages_.begin(), it);
+    int count = 0;
+    while (!logging_out_ && count < total_sleep) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(
+          recheck_interval));
+      count += recheck_interval;
+    }
   }
-  received_messages_.erase(received_messages_.begin(), it);
-  return true;
 }
 
 int ClientController::HandleDeleteContactNotification(
@@ -2591,7 +2600,7 @@ int ClientController::rmdir(const std::string &path) {
   std::string msid("");
   if (GetDb(path, &dir_type, &msid))
     return -1;
-  std::map<std::string, itemtype> children;
+  std::map<std::string, ItemType> children;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   dah_->ListFolder(path, &children);
   if (children.size())  // ie the dir is not empty
@@ -2637,7 +2646,7 @@ int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
 }
 
 int ClientController::readdir(const std::string &path,  // NOLINT
-                              std::map<std::string, itemtype> &children) {
+                              std::map<std::string, ItemType> &children) {
 #ifdef DEBUG
   printf("\t\tCC::readdir %s\n", path.c_str());
 #endif

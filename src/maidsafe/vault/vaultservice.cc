@@ -326,8 +326,8 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     response->set_result(kNack);
   }
 #ifdef DEBUG
-  printf("Vault %i stored chunk %s\n", knode_->host_port(),
-         HexSubstr(request->chunkname()).c_str());
+//  printf("Vault %i stored chunk %s\n", knode_->host_port(),
+//         HexSubstr(request->chunkname()).c_str());
 #endif
   done->Run();
 }
@@ -1298,16 +1298,16 @@ bool VaultService::ValidateSignedRequest(const std::string &public_key,
                                          const std::string &signed_public_key,
                                          const std::string &signed_request,
                                          const std::string &key,
-                                         const std::string &pmid) {
+                                         const std::string &signing_id) {
   if (signed_request == kAnonymousSignedRequest)
     return true;
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  if (pmid != "" && pmid != co.Hash(public_key + signed_public_key, "",
-      crypto::STRING_STRING, false)) {
+  if (signing_id != "" && signing_id != co.Hash(public_key + signed_public_key,
+      "", crypto::STRING_STRING, false)) {
 #ifdef DEBUG
-    printf("VaultService::ValidateSignedRequest: Failed to validate PMID.\n");
+    printf("VaultService::ValidateSignedRequest: Didn't validate signing_id\n");
 #endif
     return false;
   }
@@ -1339,8 +1339,8 @@ bool VaultService::ValidateDataChunk(const std::string &chunkname,
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string computed_chunkname = co.Hash(content, "",
-    crypto::STRING_STRING, false);
+  std::string computed_chunkname = co.Hash(content, "", crypto::STRING_STRING,
+                                           false);
   return chunkname == computed_chunkname;
 }
 
@@ -1365,7 +1365,10 @@ bool VaultService::HasChunkLocal(const std::string &chunkname) {
 
 bool VaultService::StoreChunkLocal(const std::string &chunkname,
                                    const std::string &content) {
-  return (vault_chunkstore_->Store(chunkname, content) == kSuccess);
+  int result = vault_chunkstore_->Store(chunkname, content);
+  // If result == kInvalidChunkType, the chunk already exists in the store.
+  // Assuming chunk contents don't change, this is an overall success.
+  return (result == kSuccess || result == kInvalidChunkType);
 }
 
 bool VaultService::UpdateChunkLocal(const std::string &chunkname,

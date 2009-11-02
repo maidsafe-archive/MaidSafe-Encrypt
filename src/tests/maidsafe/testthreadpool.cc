@@ -21,7 +21,7 @@
 *
 * ============================================================================
 */
-
+/*
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <gtest/gtest.h>
 #include <vector>
@@ -337,3 +337,5 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolPriority) {
 }
 
 }  // namespace maidsafe
+
+*/

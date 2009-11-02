@@ -22,18 +22,10 @@ namespace maidsafe_vault {
 
 int VaultChunkStore::UpdateChunk(const std::string &key,
                                  const std::string &value) {
-  if (!is_initialised()) {
-#ifdef DEBUG
-    printf("Not initialised in ChunkStore::UpdateChunk.\n");
-#endif
-    return kChunkstoreUninitialised;
-  }
-  if (key.size() != kKeySize) {
-#ifdef DEBUG
-    printf("In ChunkStore::UpdateChunk, incorrect key size.\n");
-#endif
-    return kIncorrectKeySize;
-  }
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
+    return valid;
+
   // check we have the chunk already
   maidsafe::ChunkType type = kInvalidChunkType;
   {
@@ -51,9 +43,9 @@ int VaultChunkStore::UpdateChunk(const std::string &key,
   }
   fs::path chunk_path(GetChunkPath(key, type, false));
   if (DeleteChunkFunction(key, chunk_path) != kSuccess)
-    return kChunkstoreFailedUpdate;
+    return kChunkstoreUpdateFailure;
   return (StoreChunkFunction(key, value, chunk_path, type) == kSuccess) ?
-      kSuccess : kChunkstoreFailedUpdate;
+      kSuccess : kChunkstoreUpdateFailure;
 }
 
 maidsafe::ChunkInfo VaultChunkStore::GetOldestChecked() {
@@ -160,7 +152,199 @@ int VaultChunkStore::HashCheckAllChunks(bool delete_failures,
       }
     }
   }
-  return result ? kSuccess : kFailedHashCheck;
+  return result ? kSuccess : kHashCheckFailure;
+}
+
+int VaultChunkStore::StorePacket(const std::string &packet_name,
+                                 const maidsafe::GenericPacket &gp) {
+  int valid = InitialOperationVerification(packet_name);
+  if (valid != kSuccess)
+    return valid;
+
+  boost::mutex::scoped_lock loch(packetstore_set_mutex_);
+  typedef packet_store_set::index<store_packet_unique_key>::type
+          store_packet_by_unique_key;
+  store_packet_by_unique_key& packet_store_projection =
+      pss_.get<store_packet_unique_key>();
+  store_packet_by_unique_key::iterator it = packet_store_projection.find(
+      boost::make_tuple(packet_name, gp.data()));
+  if (it != packet_store_projection.end())
+    return kPacketStoreValueExists;
+
+  PacketStoreRow psr(packet_name, gp.data(), gp.signature(), 1);
+  std::pair<packet_store_set::iterator, bool> result = pss_.insert(psr);
+
+  return result.second ? kSuccess : kPacketStoreFailure;
+}
+
+int VaultChunkStore::AppendToPacket(const std::string &packet_name,
+                                    const maidsafe::GenericPacket &gp,
+                                    const std::string &public_key) {
+  int valid = InitialOperationVerification(packet_name);
+  if (valid != kSuccess)
+    return valid;
+
+  boost::mutex::scoped_lock loch(packetstore_set_mutex_);
+  typedef packet_store_set::index<store_packet_unique_key>::type
+          store_packet_by_unique_key;
+  typedef packet_store_set::index<store_packet_index>::type
+          store_packet_by_index;
+  store_packet_by_unique_key& unique_key_index =
+      pss_.get<store_packet_unique_key>();
+  store_packet_by_index& index_index = pss_.get<store_packet_index>();
+  store_packet_by_unique_key::iterator uk_it = unique_key_index.find(
+      boost::make_tuple(packet_name, gp.data()));
+  if (uk_it != unique_key_index.end())
+    return kPacketAppendValueExists;
+  store_packet_by_index::iterator i_it = index_index.find(
+      boost::make_tuple(packet_name));
+  if (i_it == index_index.end())
+    return kPacketAppendNotFound;
+
+  std::string data = (*i_it).data_;
+  std::string signature = (*i_it).signature_;
+  crypto::Crypto co;
+  if (!co.AsymCheckSig(data, signature, public_key, crypto::STRING_STRING))
+    return kPacketAppendNotOwned;
+
+  int next_id = (*i_it).index_ + 1;
+  PacketStoreRow psr(packet_name, gp.data(), gp.signature(), next_id);
+  std::pair<packet_store_set::iterator, bool> result = pss_.insert(psr);
+
+  return result.second ? kSuccess : kPacketAppendFailure;
+}
+
+int VaultChunkStore::OverwritePacket(
+    const std::string &packet_name,
+    const std::vector<maidsafe::GenericPacket> &gps,
+    const std::string &public_key) {
+  int valid = InitialOperationVerification(packet_name);
+  if (valid != kSuccess)
+    return valid;
+
+  boost::mutex::scoped_lock loch(packetstore_set_mutex_);
+  typedef packet_store_set::index<store_packet_unique_key>::type
+          store_packet_by_unique_key;
+  std::pair<packet_store_set::iterator, packet_store_set::iterator> p;
+  p = pss_.equal_range(boost::make_tuple(packet_name));
+  if (p.first == p.second)
+    return kPacketOverwriteNotFound;
+
+  packet_store_set::iterator it = p.first;
+  std::string data = (*it).data_;
+  std::string signature = (*it).signature_;
+  crypto::Crypto co;
+  if (!co.AsymCheckSig(data, signature, public_key, crypto::STRING_STRING))
+    return kPacketOverwriteNotOwned;
+
+  while (it != p.second)
+    it = pss_.erase(it);
+
+  bool inserts = true;
+  std::set<std::string> data_set;
+  for (size_t n = 0; n < gps.size(); ++n) {
+    std::pair<std::set<std::string>::iterator, bool> p;
+    p = data_set.insert(gps[n].data());
+    if (!p.second)
+      continue;
+    PacketStoreRow psr(packet_name, gps[n].data(), gps[n].signature(),
+                       gps.size() - (n + 1));
+    std::pair<packet_store_set::iterator, bool> result = pss_.insert(psr);
+    if (!result.second) {
+      inserts = false;
+      break;
+    }
+  }
+
+  if (!inserts) {
+    p = pss_.equal_range(boost::make_tuple(packet_name));
+    store_packet_by_unique_key::iterator it = p.first;
+    while (it != p.second)
+      it = pss_.erase(it);
+  }
+
+  return inserts ? kSuccess : kPacketOverwriteFailure;
+}
+
+int VaultChunkStore::DeletePacket(
+    const std::string &packet_name,
+    const std::vector<maidsafe::GenericPacket> &gps,
+    const std::string &public_key) {
+  int valid = InitialOperationVerification(packet_name);
+  if (valid != kSuccess)
+    return valid;
+
+  boost::mutex::scoped_lock loch(packetstore_set_mutex_);
+  typedef packet_store_set::index<store_packet_unique_key>::type
+          store_packet_by_unique_key;
+  store_packet_by_unique_key& packet_store_projection =
+      pss_.get<store_packet_unique_key>();
+  store_packet_by_unique_key::iterator it = packet_store_projection.find(
+      boost::make_tuple(packet_name));
+  if (it == packet_store_projection.end())
+    return kPacketDeleteNotFound;
+
+  std::string data = (*it).data_;
+  std::string signature = (*it).signature_;
+  crypto::Crypto co;
+  if (!co.AsymCheckSig(data, signature, public_key, crypto::STRING_STRING))
+    return kPacketDeleteNotOwned;
+
+  if (gps.size() == 0) {
+    std::pair<store_packet_by_unique_key::iterator,
+              store_packet_by_unique_key::iterator> p;
+    p = pss_.equal_range(boost::make_tuple(packet_name));
+    while (it != p.second) {
+      it = pss_.erase(it);
+    }
+  } else {
+    for (size_t n = 0; n < gps.size(); ++n) {
+      it = packet_store_projection.find(boost::make_tuple(packet_name,
+           gps[n].data()));
+      if (it != packet_store_projection.end())
+        pss_.erase(it);
+    }
+  }
+  return kSuccess;
+}
+
+int VaultChunkStore::LoadPacket(const std::string &packet_name,
+                                std::vector<maidsafe::GenericPacket> *gps) {
+  gps->clear();
+  int valid = InitialOperationVerification(packet_name);
+  if (valid != kSuccess)
+    return valid;
+
+  boost::mutex::scoped_lock loch(packetstore_set_mutex_);
+  typedef packet_store_set::index<store_packet_index>::type
+          store_packet_by_index;
+  store_packet_by_index& index_index = pss_.get<store_packet_index>();
+  store_packet_by_index::iterator i_it = index_index.find(
+      boost::make_tuple(packet_name));
+  if (i_it == index_index.end())
+    return kPacketLoadNotFound;
+
+  while (i_it != index_index.end() && (*i_it).packet_name_ == packet_name) {
+    maidsafe::GenericPacket gp;
+    gp.set_data((*i_it).data_);
+    gp.set_signature((*i_it).signature_);
+    gps->push_back(gp);
+    ++i_it;
+  }
+  return kSuccess;
+}
+
+bool VaultChunkStore::HasPacket(const std::string &packet_name) {
+  int valid = InitialOperationVerification(packet_name);
+  if (valid != kSuccess)
+    return false;
+  boost::mutex::scoped_lock loch(packetstore_set_mutex_);
+  typedef packet_store_set::index<store_packet_index>::type
+          store_packet_by_index;
+  store_packet_by_index& index_index = pss_.get<store_packet_index>();
+  store_packet_by_index::iterator i_it = index_index.find(
+      boost::make_tuple(packet_name));
+  return i_it == index_index.end();
 }
 
 }  // namespace maidsafe_vault

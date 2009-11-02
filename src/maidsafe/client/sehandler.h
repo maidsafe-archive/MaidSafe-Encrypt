@@ -88,20 +88,20 @@ class SEHandler {
   SEHandler(StoreManagerInterface *storem,
             boost::shared_ptr<ChunkStore> client_chunkstore);
   ~SEHandler() {}
-  itemtype CheckEntry(const std::string &full_entry, uint64_t *file_size);
+  ItemType CheckEntry(const std::string &full_entry, uint64_t *file_size);
   //  Get the hash of the file contents if bool = true, else hash filename
   std::string SHA512(const std::string &full_entry, bool hash_contents);
   int EncryptFile(const std::string &rel_entry,
                   const DirType dir_type,
                   const std::string &msid);
   bool ProcessMetaData(const std::string &rel_entry,
-                       const itemtype type,
+                       const ItemType type,
                        const std::string &hash,
                        const uint64_t &file_size,
                        std::string *ser_mdm);
   int DecryptFile(const std::string &rel_entry);
   bool MakeElement(const std::string &rel_entry,
-                   const itemtype type,
+                   const ItemType type,
                    const DirType dir_type,
                    const std::string &msid,
                    const std::string &dir_key);

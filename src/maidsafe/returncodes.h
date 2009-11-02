@@ -66,16 +66,67 @@ enum ReturnCode {
   kChunkstoreFailedStore = -3007,
   kChunkstoreFailedDelete = -3008,
   kChunkstoreException = -3009,
-  kFailedHashCheck = -3010,
-  kChunkExistsInChunkstore = 3001  // intentionally positive
+  kHashCheckFailure = -3010,
+  kChunkExistsInChunkstore = 3001,  // intentionally positive
 
   // Client Controller
 
   // Data Atlas Handler
+  kDataAtlasError = -4001,
+  kDBDoesntExist = -4002,
+  kDBOpenException = -4003,
+  kDBCreateException = -4004,
+  kDBReadWriteException = -4005,
+  kDBCloseException = -4006,
+  kDBCantFindFile = -4007,
+  kDBCantFindDirKey = -4008,
+  kParseDataMapError = -4009,
+  kAddElementError = -4010,
+  kModifyElementError = -4011,
+  kRemoveElementError = -4012,
+  kRenameElementError = -4013,
+  kCopyElementError = -4014,
+  kDataAtlasException = -4015,
 
   // Key Atlas Handler
+  kKeyAtlasError = -5001,
 
   // Store Manager
+  kStoreManagerError = -6001,
+  kNotConnected = -6002,
+  kLoadChunkFindValueFailure = -6003,
+  kPreSendFindValueFailure = -6004,
+  kPreSendChunkAlreadyExists = -6005,
+  kPreSendOverwriteCached = -6006,
+  kChunkNotInChunkstore = -6007,
+  kGetRequestSigError = -6008,
+  kGetStorePeerError = -6009,
+  kSendPrepFailure = -6010,
+  kSendContentFailure = -6011,
+  kIOUsSerialiseError = -6012,
+  kStoreIOUsFindNodesFailure = -6013,
+  kStoreIOUsFailure = -6014,
+  kFindNodesError = -6015,
+  kFindNodesFailure = -6016,
+  kFindNodesParseError = -6017,
+  kFindValueError = -6018,
+  kFindValueFailure = -6019,
+  kFindValueParseError = -6020,
+  kLoadChunkFailure = -6021,
+  kLoadedChunkEmpty = -6022,
+  kGetChunkFailure = -6023,
+  kStoreIOUFailure = -6024,
+  kSendIOUDoneFailure = -6025,
+  kSendPacketError = -6026,
+  kSendPacketFailure = -6027,
+  kSendPacketFindValueFailure = -6028,
+  kSendPacketCached = -6029,
+  kSendPacketParseError = -6030,
+  kUpdateChunksFailure = -6031,
+  kCommonChecksumUndecided = -6032,
+  kCommonChecksumMajority = -6033,
+  kPacketUnknownType = -6034,
+  kStoreManagerException = -6035,
 
   // Message Handler
 
@@ -106,8 +157,20 @@ enum ReturnCode {
   kInvalidChunkType = maidsafe::kInvalidChunkType,
   kChunkstoreUninitialised = maidsafe::kChunkstoreUninitialised,
   kIncorrectKeySize = maidsafe::kIncorrectKeySize,
-  kFailedHashCheck = maidsafe::kFailedHashCheck,
-  kChunkstoreFailedUpdate = -3501
+  kHashCheckFailure = maidsafe::kHashCheckFailure,
+  kChunkstoreUpdateFailure = -3501,
+  kPacketStoreValueExists = -3502,
+  kPacketStoreFailure = -3503,
+  kPacketAppendValueExists = -3504,
+  kPacketAppendNotFound = -3505,
+  kPacketAppendNotOwned = -3506,
+  kPacketAppendFailure = -3507,
+  kPacketOverwriteNotFound = -3508,
+  kPacketOverwriteNotOwned = -3509,
+  kPacketOverwriteFailure = -3510,
+  kPacketDeleteNotFound = -3511,
+  kPacketDeleteNotOwned = -3512,
+  kPacketLoadNotFound = -3513
 };
 
 }  // namespace maidsafe_vault

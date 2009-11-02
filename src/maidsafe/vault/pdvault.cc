@@ -41,6 +41,15 @@ namespace maidsafe_vault {
 
 void pdv_dummy_callback(const std::string&) {}
 
+AddToRefPacketTask::AddToRefPacketTask(const IouReadyTuple &iou_ready_details,
+                                       PDVault *pdvault)
+    : iou_ready_details_(iou_ready_details),
+      pdvault_(pdvault) {}
+
+void AddToRefPacketTask::run() {
+  pdvault_->AddToRefPacket(iou_ready_details_);
+}
+
 PDVault::PDVault(const std::string &pmid_public,
                  const std::string &pmid_private,
                  const std::string &signed_pmid_public,
@@ -72,7 +81,9 @@ PDVault::PDVault(const std::string &pmid_public,
       svc_channel_(),
       kad_config_file_(kad_config_file),
       poh_(),
-      thread_pool_(5),
+      thread_pool_(),
+      pending_ious_thread_(),
+      prune_pending_ops_thread_(),
       kKadStoreThreshold_(kad::K * kad::kMinSuccessfulPecentageStore) {
   co_.set_symm_algorithm(crypto::AES_256);
   co_.set_hash_algorithm(crypto::SHA_512);
@@ -83,6 +94,7 @@ PDVault::PDVault(const std::string &pmid_public,
                                       crypto::STRING_STRING);
   knode_.SetAlternativeStore(&vault_chunkstore_);
   vault_rpcs_.SetOwnId(non_hex_pmid_);
+  thread_pool_.setMaxThreadCount(5);
 }
 
 PDVault::~PDVault() {
@@ -121,13 +133,11 @@ void PDVault::Start(bool first_node) {
   port_ = knode_.host_port();
   if (kad_joined_)
     SetVaultStatus(kVaultStarted);
-// TODO(Fraser#5#): 2009-08-28 - Uncomment prune pending ops thread below.
-//  // Start repeating pruning worker thread
-//  thread_pool_.schedule(boost::threadpool::looped_task_func(boost::bind(
-//      &PDVault::PrunePendingOperations, this), 1000));
+  // Start repeating pruning worker thread
+  prune_pending_ops_thread_ =
+      boost::thread(&PDVault::PrunePendingOperations, this);
   // Start repeating pending IOU worker thread
-  thread_pool_.schedule(boost::threadpool::looped_task_func(boost::bind(
-      &PDVault::CheckPendingIOUs, this), 1000));
+  pending_ious_thread_ = boost::thread(&PDVault::CheckPendingIOUs, this);
 }
 
 void PDVault::KadJoinedCallback(const std::string &result,
@@ -161,9 +171,11 @@ int PDVault::Stop(bool cancel_pending_ops) {
     return -2;
   }
   SetVaultStatus(kVaultStopping);
-  if (cancel_pending_ops)
-    thread_pool_.clear();
-  thread_pool_.wait();
+//  if (cancel_pending_ops)
+//    thread_pool_.clear();
+  thread_pool_.waitForDone();
+  prune_pending_ops_thread_.join();
+  pending_ious_thread_.join();
   UnRegisterMaidService();
   knode_.Leave();
   kad_joined_ = knode_.is_joined();
@@ -215,24 +227,30 @@ void PDVault::SetVaultStatus(const VaultStatus &vault_status) {
   vault_status_ = vault_status;
 }
 
-bool PDVault::PrunePendingOperations() {
-  poh_.PrunePendingOps();
-  return vault_status() == kVaultStarted;
+void PDVault::PrunePendingOperations() {
+  while (vault_status() == kVaultStarted) {
+    poh_.PrunePendingOps();
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
 }
 
-bool PDVault::CheckPendingIOUs() {
-  std::list<IouReadyTuple> iou_readys;
-  if (poh_.GetAllIouReadys(&iou_readys) == 0) {
-    for (boost::uint16_t i = 0; i < iou_readys.size(); ++i) {
-      IouReadyTuple iou_ready_details = iou_readys.front();
-      thread_pool_.schedule(boost::bind(&PDVault::AddToRefPacket, this,
-          iou_ready_details));
-      poh_.AdvanceStatus("", iou_ready_details.get<1>(), 0, "", "", "",
-                         IOU_PROCESSING);
-      iou_readys.pop_front();
+void PDVault::CheckPendingIOUs() {
+  while (vault_status() == kVaultStarted) {
+    std::list<IouReadyTuple> iou_readys;
+    if (poh_.GetAllIouReadys(&iou_readys) == 0) {
+      for (boost::uint16_t i = 0; i < iou_readys.size(); ++i) {
+        IouReadyTuple iou_ready_details = iou_readys.front();
+        // thread_pool_ handles destruction of task.
+        AddToRefPacketTask *task = new AddToRefPacketTask(iou_ready_details,
+            this);
+        thread_pool_.start(task);
+        poh_.AdvanceStatus("", iou_ready_details.get<1>(), 0, "", "", "",
+                           IOU_PROCESSING);
+        iou_readys.pop_front();
+      }
     }
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
-  return vault_status() == kVaultStarted;
 }
 
 std::string PDVault::GetSignedRequest(const std::string &non_hex_name,
@@ -263,9 +281,9 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
        it != ref_holders.end(); ++it) {
     if ((*it).node_id() == knode_.node_id()) {
 #ifdef DEBUG
-      printf("Vault %s listed as a ref holder to itself for chunk %s\n",
-             HexSubstr((*it).node_id()).c_str(),
-             HexSubstr(iou_ready_details.get<1>()).c_str());
+//      printf("Vault %s listed as a ref holder to itself for chunk %s\n",
+//             HexSubstr((*it).node_id()).c_str(),
+//             HexSubstr(iou_ready_details.get<1>()).c_str());
 #endif
       ref_holders.erase(it);
       break;
@@ -284,9 +302,12 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
     SendToRefPacket(ref_holders.at(i), iou_ready_details, &store_ref_mutex,
                     &results.at(i));
   }
-// TODO(Fraser#5#): 2009-08-15 - This loop logic needs tidied - also need to
-//                               break out of it.
-  while (successful_count < kKadStoreThreshold_ && called_back_count < kad::K) {
+// TODO(Fraser#5#): 2009-08-15 - This loop logic needs tidied.
+  int timeout = 30000;
+  int time_count = 0;
+  while (successful_count < kKadStoreThreshold_ &&
+         called_back_count < kad::K &&
+         time_count < timeout) {
     for (boost::uint16_t i = 0; i < results.size(); ++i) {
       boost::mutex::scoped_lock loch(store_ref_mutex);
       if (results.at(i).store_ref_response_returned_) {
@@ -299,6 +320,7 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
         break;
       }
     }
+    time_count += 10;
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   for (boost::uint16_t j = 0; j < results.size(); ++j) {

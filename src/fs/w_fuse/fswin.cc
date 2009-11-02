@@ -778,11 +778,11 @@ static int WinFindFiles(LPCWSTR FileName,
   GetFilePath(&filePathStr, filePath);
   GetFilePath(&relPathStr, FileName);
   wcscat(filePath, yenStar);
-  std::map<std::string, maidsafe::itemtype> children;
+  std::map<std::string, maidsafe::ItemType> children;
   maidsafe::ClientController::getInstance()->readdir(relPathStr, children);
   while (!children.empty()) {
     std::string s = children.begin()->first;
-    maidsafe::itemtype ityp = children.begin()->second;
+    maidsafe::ItemType ityp = children.begin()->second;
     maidsafe::MetaDataMap mdm;
     std::string ser_mdm;
     fs::path path_(relPathStr);
@@ -910,7 +910,7 @@ static int WinDeleteDirectory(LPCWSTR FileName,
   GetFilePath(filePath, FileName);
   std::string relPathStr;
   GetFilePath(&relPathStr, FileName);
-  std::map<std::string, maidsafe::itemtype> children;
+  std::map<std::string, maidsafe::ItemType> children;
   if (maidsafe::ClientController::getInstance()->readdir(relPathStr, children))
     return -errno;
 #ifdef DEBUG

@@ -15,8 +15,9 @@
 
 #include <boost/filesystem/fstream.hpp>
 #include <gtest/gtest.h>
-#include <maidsafe/utils.h>
 #include <maidsafe/crypto.h>
+#include <maidsafe/utils.h>
+#include "maidsafe/returncodes.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 
 namespace test_chunkstore {
@@ -74,6 +75,70 @@ bool MakeChunks(const boost::uint32_t &num_chunks,
   }
   return (chunksize->size() == num_chunks && value->size() == num_chunks &&
           name->size() == num_chunks);
+}
+
+bool MakeKeys(const boost::uint32_t &num_keys,
+              std::vector<std::string> *private_key,
+              std::vector<std::string> *public_key) {
+  for (boost::uint32_t i = 0; i < num_keys; ++i) {
+    crypto::RsaKeyPair kp;
+    kp.GenerateKeys(4096);
+    private_key->push_back(kp.private_key());
+    public_key->push_back(kp.public_key());
+//    printf("Key pair %i :- pri: %s pub: %s\n", i,
+//           base::EncodeToHex(kp.private_key()).substr(100, 110).c_str(),
+//           base::EncodeToHex(kp.public_key()).substr(0, 60).c_str());
+  }
+  return true;
+}
+
+// Makes (num_packets) packets of length between min_packet_size and
+// max_packet_size bytes.  min_packet_size will be resized to 3 if too small and
+// max_packet_size will be resized to 1024 if too large.
+bool MakePackets(const boost::uint32_t &num_packets,
+                 boost::shared_ptr<crypto::Crypto> cry_obj,
+                 const boost::uint64_t &min_packet_size,
+                 const boost::uint64_t &max_packet_size,
+                 std::vector<std::string> private_key,
+                 std::vector<boost::uint64_t> *packetsize,
+                 std::vector<maidsafe::GenericPacket> *value,
+                 std::vector<std::string> *name) {
+  packetsize->clear();
+  value->clear();
+  name->clear();
+  if (private_key.size() != num_packets) {
+    printf("private_key.size() (%u) != num_packets (%u)\n", private_key.size(),
+           num_packets);
+    return false;
+  }
+  boost::uint64_t lower = min_packet_size;
+  boost::uint64_t upper = max_packet_size;
+  if (lower < 3)
+    lower = 3;
+  if (upper > 1048576)
+    upper = 1048576;
+  if (lower >= upper) {
+    lower = 3;
+    upper = 32000;
+  }
+  for (boost::uint32_t i = 0; i < num_packets; ++i) {
+    double factor = static_cast<double>(upper - lower) / RAND_MAX;
+    boost::uint64_t packet_size(lower + (rand() * factor));  // NOLINT (Fraser)
+    // just in case!
+    while (packet_size > upper)
+      packet_size = packet_size / 2;
+    packetsize->push_back(packet_size);
+    std::string data = base::RandomString(packetsize->at(i));
+    maidsafe::GenericPacket gp;
+    gp.set_data(data);
+    gp.set_signature(cry_obj->AsymSign(data, "", private_key.at(i),
+                     crypto::STRING_STRING));
+    value->push_back(gp);
+    name->push_back(cry_obj->Hash(base::itos(i), "", crypto::STRING_STRING,
+                                  false));
+  }
+  return (packetsize->size() == num_packets && value->size() == num_packets &&
+          name->size() == num_packets);
 }
 
 // Checks for the existance of non_hex_filename's stored chunk in root_dir_path
@@ -224,10 +289,15 @@ class TestChunkstore : public testing::Test {
         cry_obj(new crypto::Crypto),
         h_size(),
         nh_size(),
+        p_size(),
         h_value(),
         nh_value(),
         h_name(),
-        nh_name() {}
+        nh_name(),
+        p_name(),
+        private_key(),
+        public_key(),
+        p_value() {}
   void SetUp() {
     cry_obj->set_symm_algorithm(crypto::AES_256);
     cry_obj->set_hash_algorithm(crypto::SHA_512);
@@ -258,8 +328,10 @@ class TestChunkstore : public testing::Test {
   fs::path storedir, file_path;
   std::string file_content, hash_file_content, other_hash;
   boost::shared_ptr<crypto::Crypto> cry_obj;
-  std::vector<boost::uint64_t> h_size, nh_size;
-  std::vector<std::string> h_value, nh_value, h_name, nh_name;
+  std::vector<boost::uint64_t> h_size, nh_size, p_size;
+  std::vector<std::string> h_value, nh_value, h_name, nh_name, p_name;
+  std::vector<std::string> private_key, public_key;
+  std::vector<maidsafe::GenericPacket> p_value;
 };
 
 TEST_F(TestChunkstore, BEH_MAID_ChunkstoreInit) {
@@ -304,7 +376,24 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreInit) {
             chunkstore->HashCheckAllChunks(true, &failed_keys));
   ASSERT_EQ(size_t(0), failed_keys.size());
   maidsafe::ChunkType type = maidsafe::kHashable | maidsafe::kNormal;
-  ASSERT_EQ(kChunkstoreError, chunkstore->ChangeChunkType(h_name.at(0), type));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->ChangeChunkType(h_name.at(0), type));
+  ASSERT_TRUE(test_chunkstore::MakeKeys(1, &private_key, &public_key));
+  ASSERT_TRUE(test_chunkstore::MakePackets(1, cry_obj, 3, 1024, private_key,
+      &p_size, &p_value, &p_name));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->StorePacket(p_name.at(0), p_value.at(0)));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->AppendToPacket(p_name.at(0), p_value.at(0),
+            public_key.at(0)));
+  std::vector<maidsafe::GenericPacket> gps;
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->DeletePacket(p_name.at(0), gps, public_key.at(0)));
+  gps.push_back(p_value.at(0));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->OverwritePacket(p_name.at(0), gps, public_key.at(0)));
+  ASSERT_EQ(kChunkstoreUninitialised,
+            chunkstore->LoadPacket(p_name.at(0), &gps));
   boost::shared_ptr<VaultChunkStore> chunkstore1(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore1, 60000);
@@ -314,7 +403,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreInit) {
   ASSERT_EQ(storedir.string(), chunkstore1->ChunkStoreDir());
 }
 
-TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStore) {
+TEST_F(TestChunkstore, BEH_MAID_ChunkstoreStoreChunk) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
@@ -533,7 +622,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
   ASSERT_FALSE(chunkstore->Has(wrong_length_key));
 }
 
-TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoad) {
+TEST_F(TestChunkstore, BEH_MAID_ChunkstoreLoadChunk) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
@@ -774,7 +863,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk) {
                                           &nh_value, &nh_name));
   ASSERT_EQ(0, chunkstore->Store(nh_name.at(test_chunk),
                                      nh_value.at(test_chunk)));
-  ASSERT_EQ(kFailedHashCheck,
+  ASSERT_EQ(kHashCheckFailure,
             chunkstore->HashCheckChunk(nh_name.at(test_chunk)));
   // check using non-existant chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
@@ -889,7 +978,7 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreChangeChunkType) {
             (maidsafe::kHashable | maidsafe::kNormal)));
   // check we can handle keys of wrong length
   std::string wrong_length_key("too short");
-  ASSERT_EQ(kChunkstoreError, chunkstore->ChangeChunkType(wrong_length_key,
+  ASSERT_EQ(kIncorrectKeySize, chunkstore->ChangeChunkType(wrong_length_key,
             (maidsafe::kHashable | maidsafe::kNormal)));
 }
 
@@ -1631,6 +1720,341 @@ TEST_F(TestChunkstore, BEH_MAID_ChunkstoreThreadedChangeType) {
     result = result && (*load_result.at(i) == 0);
   }
   ASSERT_TRUE(result);
+}
+
+TEST_F(TestChunkstore, FUNC_MAID_ChunkstoreStorePackets) {
+  boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
+      storedir.string(), 1073741824, 0));
+  test_chunkstore::WaitForInitialisation(chunkstore, 60000);
+  ASSERT_TRUE(chunkstore->is_initialised());
+  // Check valid stores succeed.
+  const int kNumberOfPackets = 10;
+  ASSERT_TRUE(test_chunkstore::MakeKeys(kNumberOfPackets, &private_key,
+      &public_key));
+  ASSERT_TRUE(test_chunkstore::MakePackets(kNumberOfPackets, cry_obj, 3, 1024,
+      private_key, &p_size, &p_value, &p_name));
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kSuccess, chunkstore->StorePacket(p_name.at(i), p_value.at(i)));
+  }
+  ASSERT_EQ(size_t(kNumberOfPackets), chunkstore->pss_.size());
+  // check further valid stores return kPacketAlreadyStored
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kPacketStoreValueExists,
+              chunkstore->StorePacket(p_name.at(i), p_value.at(i)));
+  }
+  ASSERT_EQ(size_t(kNumberOfPackets), chunkstore->pss_.size());
+  // Check StorePacket call with invalid packet name fails.
+  std::string data = base::RandomString(64);
+  maidsafe::GenericPacket gp;
+  gp.set_data(data);
+  gp.set_signature(cry_obj->AsymSign(data, "", private_key.at(0),
+                   crypto::STRING_STRING));
+  ASSERT_EQ(kIncorrectKeySize, chunkstore->StorePacket("Invalid",
+      p_value.at(0)));
+  ASSERT_EQ(size_t(kNumberOfPackets), chunkstore->pss_.size());
+}
+
+TEST_F(TestChunkstore, FUNC_MAID_ChunkstoreAppendToPackets) {
+  boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
+      storedir.string(), 1073741824, 0));
+  test_chunkstore::WaitForInitialisation(chunkstore, 60000);
+  ASSERT_TRUE(chunkstore->is_initialised());
+  // Check append to non-existing name fails.
+  const int kNumberOfPackets = 10;
+  ASSERT_TRUE(test_chunkstore::MakeKeys(kNumberOfPackets, &private_key,
+      &public_key));
+  ASSERT_TRUE(test_chunkstore::MakePackets(kNumberOfPackets, cry_obj, 3, 1024,
+      private_key, &p_size, &p_value, &p_name));
+  ASSERT_EQ(kPacketAppendNotFound, chunkstore->AppendToPacket(p_name.at(0),
+      p_value.at(0), public_key.at(0)));
+  // Store packets.
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kSuccess, chunkstore->StorePacket(p_name.at(i), p_value.at(i)));
+  }
+  size_t current_size(kNumberOfPackets);
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Check a round of valid appends succeed.
+  std::vector<std::string> original_p_name(p_name);
+  std::vector<maidsafe::GenericPacket> original_p_value(p_value);
+  ASSERT_TRUE(test_chunkstore::MakePackets(kNumberOfPackets, cry_obj, 3, 1024,
+      private_key, &p_size, &p_value, &p_name));
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kSuccess, chunkstore->AppendToPacket(original_p_name.at(i),
+        p_value.at(i), public_key.at(i)));
+  }
+  current_size *= 2;
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Check a second round of valid appends fail.
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kPacketAppendValueExists, chunkstore->AppendToPacket(
+        original_p_name.at(i), p_value.at(i), public_key.at(i)));
+  }
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Check further append with different public key fails.
+  ASSERT_EQ(kPacketAppendNotOwned, chunkstore->AppendToPacket(
+      original_p_name.at(0), p_value.at(1), public_key.at(1)));
+  // Check multiple appends to one packet name succeed.
+  for (int i = 1; i < kNumberOfPackets; ++i) {
+    // Amend generic packet to be signed by first private key.
+    p_value.at(i).set_signature(cry_obj->AsymSign(p_value.at(i).data(), "",
+        private_key.at(0), crypto::STRING_STRING));
+    ASSERT_EQ(kSuccess, chunkstore->AppendToPacket(original_p_name.at(0),
+        p_value.at(i), public_key.at(0)));
+  }
+  current_size += (kNumberOfPackets - 1);
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Check AppendToPacket call with invalid packet name fails.
+  ASSERT_EQ(kIncorrectKeySize, chunkstore->AppendToPacket("Invalid",
+      p_value.at(0), public_key.at(0)));
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Reload first packet and check its values are correct (content & LIFO order)
+  std::vector<maidsafe::GenericPacket> first_generic_packets;
+  ASSERT_EQ(kSuccess, chunkstore->LoadPacket(original_p_name.at(0),
+      &first_generic_packets));
+  ASSERT_EQ(size_t(kNumberOfPackets + 1), first_generic_packets.size());
+  ASSERT_EQ(original_p_value.at(0).data(),
+            first_generic_packets.at(first_generic_packets.size() - 1).data());
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(p_value.at(i).data(),
+              first_generic_packets.at(kNumberOfPackets - 1 - i).data());
+  }
+  // Reload other packets and check values are correct (content & LIFO order)
+  for (int i = 1; i < kNumberOfPackets; ++i) {
+    std::vector<maidsafe::GenericPacket> generic_packets;
+    ASSERT_EQ(kSuccess, chunkstore->LoadPacket(original_p_name.at(i),
+        &generic_packets));
+    ASSERT_EQ(size_t(2), generic_packets.size());
+    ASSERT_EQ(p_value.at(i).data(), generic_packets.at(0).data());
+    ASSERT_EQ(original_p_value.at(i).data(), generic_packets.at(1).data());
+  }
+}
+
+TEST_F(TestChunkstore, FUNC_MAID_ChunkstoreOverwritePackets) {
+  boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
+      storedir.string(), 1073741824, 0));
+  test_chunkstore::WaitForInitialisation(chunkstore, 60000);
+  ASSERT_TRUE(chunkstore->is_initialised());
+  // Set up 2 vectors of 10 vectors of 1 and 7 GenericPackets
+  const int kNumberOfPackets = 10;
+  const int kNumberOfValues = 7;
+  ASSERT_TRUE(test_chunkstore::MakeKeys(kNumberOfPackets, &private_key,
+      &public_key));
+  ASSERT_TRUE(test_chunkstore::MakePackets(kNumberOfPackets, cry_obj, 3, 1024,
+      private_key, &p_size, &p_value, &p_name));
+  std::vector<std::string> original_p_name(p_name);
+  // Copy a GenericPacket for each key into a vector of vectors
+  std::vector< std::vector<maidsafe::GenericPacket> > first_group;
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    std::vector<maidsafe::GenericPacket> gps;
+    gps.push_back(p_value.at(i));
+    first_group.push_back(gps);
+  }
+  // Copy GenericPackets for each key into a second vector of vectors
+  std::vector< std::vector<maidsafe::GenericPacket> > second_group;
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    std::vector<maidsafe::GenericPacket> gps;
+    for (int j = 0; j < kNumberOfValues; ++j) {
+      ASSERT_TRUE(test_chunkstore::MakePackets(kNumberOfPackets, cry_obj, 3,
+          1024, private_key, &p_size, &p_value, &p_name));
+      gps.push_back(p_value.at(i));
+    }
+    second_group.push_back(gps);
+  }
+  // Check overwrite to non-existing name fails.
+  ASSERT_EQ(kPacketOverwriteNotFound, chunkstore->OverwritePacket(p_name.at(0),
+      first_group.at(0), public_key.at(0)));
+  size_t current_size(0);
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Set up 10 new packets for storing
+  ASSERT_TRUE(test_chunkstore::MakePackets(kNumberOfPackets, cry_obj, 3, 1024,
+      private_key, &p_size, &p_value, &p_name));
+  // Store packets.
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kSuccess, chunkstore->StorePacket(original_p_name.at(i),
+              p_value.at(i)));
+  }
+  current_size = kNumberOfPackets;
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Check a round of valid overwrites succeeds.
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kSuccess, chunkstore->OverwritePacket(original_p_name.at(i),
+        first_group.at(i), public_key.at(i)));
+  }
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Load packets and check values
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    std::vector<maidsafe::GenericPacket> generic_packets;
+    ASSERT_EQ(kSuccess, chunkstore->LoadPacket(original_p_name.at(i),
+        &generic_packets));
+    ASSERT_EQ(size_t(1), generic_packets.size());
+    ASSERT_EQ(first_group.at(i).at(0).data(), generic_packets.at(0).data());
+  }
+  // Check a second round of valid overwrites succeeds.
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kSuccess, chunkstore->OverwritePacket(original_p_name.at(i),
+        second_group.at(i), public_key.at(i)));
+  }
+  current_size *= kNumberOfValues;
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Load packets and check values
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    std::vector<maidsafe::GenericPacket> generic_packets;
+    ASSERT_EQ(kSuccess, chunkstore->LoadPacket(original_p_name.at(i),
+        &generic_packets));
+    ASSERT_EQ(size_t(kNumberOfValues), generic_packets.size());
+    for (int j = 0; j < kNumberOfValues; ++j)
+      ASSERT_EQ(second_group.at(i).at(j).data(), generic_packets.at(j).data());
+  }
+  // Check further overwrite with different public key fails.
+  ASSERT_EQ(kPacketOverwriteNotOwned, chunkstore->OverwritePacket(
+      original_p_name.at(0), second_group.at(0), public_key.at(1)));
+  std::vector<maidsafe::GenericPacket> gps;
+  ASSERT_EQ(kSuccess, chunkstore->LoadPacket(original_p_name.at(0),
+      &gps));
+  ASSERT_EQ(size_t(kNumberOfValues), gps.size());
+  for (int j = 0; j < kNumberOfValues; ++j) {
+    ASSERT_EQ(second_group.at(0).at(j).data(), gps.at(j).data());
+  }
+  // Check a third round of valid overwrites succeeds.
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kSuccess, chunkstore->OverwritePacket(original_p_name.at(i),
+        first_group.at(i), public_key.at(i)));
+  }
+  current_size = kNumberOfPackets;
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Load packets and check values
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    std::vector<maidsafe::GenericPacket> generic_packets;
+    ASSERT_EQ(kSuccess, chunkstore->LoadPacket(original_p_name.at(i),
+        &generic_packets));
+    ASSERT_EQ(size_t(1), generic_packets.size());
+    ASSERT_EQ(first_group.at(i).at(0).data(), generic_packets.at(0).data());
+  }
+  // Check OverwritePacket call with two identical values per name succeeds.
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    // Modify each vector to duplicate a value per packet name
+    second_group.at(i).push_back(second_group.at(i).at(0));
+    ASSERT_EQ(kSuccess, chunkstore->OverwritePacket(original_p_name.at(i),
+        second_group.at(i), public_key.at(i)));
+  }
+  current_size *= kNumberOfValues;
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Load packets and check values
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    std::vector<maidsafe::GenericPacket> generic_packets;
+    ASSERT_EQ(kSuccess, chunkstore->LoadPacket(original_p_name.at(i),
+        &generic_packets));
+    ASSERT_EQ(size_t(kNumberOfValues), generic_packets.size());
+    for (int j = 0; j < kNumberOfValues; ++j)
+      ASSERT_EQ(second_group.at(i).at(j).data(), generic_packets.at(j).data());
+  }
+  // Check OverwritePacket call with invalid packet name fails.
+  std::string data = base::RandomString(64);
+  ASSERT_EQ(kIncorrectKeySize, chunkstore->OverwritePacket("Invalid",
+      second_group.at(0), public_key.at(0)));
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+}
+
+TEST_F(TestChunkstore, FUNC_MAID_ChunkstoreDeletePackets) {
+  boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
+      storedir.string(), 1073741824, 0));
+  test_chunkstore::WaitForInitialisation(chunkstore, 60000);
+  ASSERT_TRUE(chunkstore->is_initialised());
+  // Set up a vector of 10 vectors of 7 GenericPackets
+  const int kNumberOfPackets = 10;
+  const int kNumberOfValues = 7;
+  ASSERT_GE(kNumberOfValues, 3);  // To enable deletion of 2 individual values
+  ASSERT_TRUE(test_chunkstore::MakeKeys(kNumberOfPackets, &private_key,
+      &public_key));
+  ASSERT_TRUE(test_chunkstore::MakePackets(kNumberOfPackets, cry_obj, 3, 1024,
+      private_key, &p_size, &p_value, &p_name));
+  std::vector<std::string> original_p_name(p_name);
+  // Copy a GenericPacket for each key into the vector of vectors
+  std::vector< std::vector<maidsafe::GenericPacket> > group;
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    std::vector<maidsafe::GenericPacket> gps;
+    for (int j = 0; j < kNumberOfValues; ++j) {
+      ASSERT_TRUE(test_chunkstore::MakePackets(kNumberOfPackets, cry_obj, 3,
+          1024, private_key, &p_size, &p_value, &p_name));
+      gps.push_back(p_value.at(i));
+    }
+    group.push_back(gps);
+  }
+  // Create 2 vector of vectors of existing values to be deleted and remaining
+  std::vector< std::vector<maidsafe::GenericPacket> > delete_group;
+  std::vector< std::vector<maidsafe::GenericPacket> > remain_group;
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    std::vector<maidsafe::GenericPacket> delete_gps;
+    std::vector<maidsafe::GenericPacket> remain_gps;
+    for (int j = 0; j < kNumberOfValues; ++j) {
+      if ((j == i % kNumberOfValues) ||
+          (j == ((i % kNumberOfValues) + 2) % kNumberOfValues)) {
+        delete_gps.push_back(group.at(i).at(j));
+      } else {
+        remain_gps.push_back(group.at(i).at(j));
+      }
+    }
+    ASSERT_EQ(size_t(2), delete_gps.size());
+    delete_group.push_back(delete_gps);
+    remain_group.push_back(remain_gps);
+  }
+  // Reverse order of delete vector values
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    std::vector<maidsafe::GenericPacket> gps(delete_group.at(i));
+    delete_group.at(i).clear();
+    delete_group.at(i).push_back(gps.back());
+    delete_group.at(i).push_back(gps.front());
+  }
+  // Check delete to non-existing name fails.
+  std::vector<maidsafe::GenericPacket> gps;
+  ASSERT_EQ(kPacketDeleteNotFound,
+      chunkstore->DeletePacket(original_p_name.at(0), gps, public_key.at(0)));
+  // Store 10 single-value packets and overwrite them with the 7-value packets
+  ASSERT_TRUE(test_chunkstore::MakePackets(kNumberOfPackets, cry_obj, 3, 1024,
+      private_key, &p_size, &p_value, &p_name));
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kSuccess, chunkstore->StorePacket(original_p_name.at(i),
+              p_value.at(i)));
+    ASSERT_EQ(kSuccess, chunkstore->OverwritePacket(original_p_name.at(i),
+        group.at(i), public_key.at(i)));
+  }
+  size_t current_size(kNumberOfPackets * kNumberOfValues);
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Check delete two values per packet_name with different public key fails.
+  ASSERT_EQ(kPacketDeleteNotOwned, chunkstore->DeletePacket(
+      original_p_name.at(0), delete_group.at(0), public_key.at(1)));
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Check delete all values per packet_name with different public key fails.
+  ASSERT_EQ(kPacketDeleteNotOwned, chunkstore->DeletePacket(
+      original_p_name.at(0), gps, public_key.at(1)));
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Check delete two values per packet_name succeeds.
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kSuccess, chunkstore->DeletePacket(original_p_name.at(i),
+        delete_group.at(i), public_key.at(i)));
+  }
+  current_size = kNumberOfPackets * (kNumberOfValues - 2);
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Load packets and check values
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    std::vector<maidsafe::GenericPacket> generic_packets;
+    ASSERT_EQ(kSuccess, chunkstore->LoadPacket(original_p_name.at(i),
+        &generic_packets));
+    ASSERT_EQ(size_t(kNumberOfValues - 2), generic_packets.size());
+    for (int j = 0; j < kNumberOfValues - 2; ++j)
+      ASSERT_EQ(remain_group.at(i).at(j).data(), generic_packets.at(j).data());
+  }
+  // Check delete all values per packet_name succeeds.
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kSuccess, chunkstore->DeletePacket(original_p_name.at(i), gps,
+        public_key.at(i)));
+  }
+  current_size = 0;
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
+  // Check DeletePacket call with invalid packet name fails.
+  ASSERT_EQ(kIncorrectKeySize, chunkstore->DeletePacket("Invalid", gps,
+      public_key.at(0)));
+  ASSERT_EQ(current_size, chunkstore->pss_.size());
 }
 
 }  // namespace maidsafe_vault

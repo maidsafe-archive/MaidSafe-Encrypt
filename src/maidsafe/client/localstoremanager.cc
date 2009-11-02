@@ -129,19 +129,10 @@ int LocalStoreManager::LoadChunk(const std::string &hex_chunk_name,
   return FindAndLoadChunk(hex_chunk_name, data);
 }
 
-void LocalStoreManager::LoadPacket(const std::string &hex_key,
-                                   std::string *result) {
-  std::string value = GetValue_FromDB(hex_key);
-  GetResponse gr;
-  std::string ser_result;
-  if (value != "") {
-    gr.set_result(kAck);
-    gr.set_content(value);
-  } else {
-    gr.set_result(kNack);
-  }
-  gr.SerializeToString(result);
-  return;
+int LocalStoreManager::LoadPacket(const std::string &hex_key,
+                                  std::string *result) {
+  *result = GetValue_FromDB(hex_key);
+  return kSuccess;
 }
 
 //  int LocalStoreManager::LoadBPMessages(const std::string &bufferpacket_name,
@@ -224,26 +215,26 @@ bool LocalStoreManager::KeyUnique(const std::string &hex_key, bool) {
   return result;
 }
 
-void LocalStoreManager::DeletePacket(const std::string &hex_key,
-                                     const std::string &signature,
-                                     const std::string &public_key,
-                                     const std::string &signed_public_key,
-                                     const ValueType &type,
-                                     base::callback_func_type cb) {
+int LocalStoreManager::DeletePacket(const std::string &hex_key,
+                                    const std::string &signature,
+                                    const std::string &public_key,
+                                    const std::string &signed_public_key,
+                                    const ValueType &type,
+                                    base::callback_func_type cb) {
   std::string key = base::DecodeFromHex(hex_key);
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   if (!co.AsymCheckSig(public_key, signed_public_key, public_key,
       crypto::STRING_STRING)) {
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
-    return;
+    return -2;
   }
 
   if (!co.AsymCheckSig(co.Hash(
       public_key + signed_public_key + key, "", crypto::STRING_STRING, false),
       signature, public_key, crypto::STRING_STRING)) {
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
-    return;
+    return -3;
   }
 
   std::string result = "";
@@ -253,19 +244,19 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
     CppSQLite3Query q = db_.execQuery(s.c_str());
     if (q.eof()) {
       boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
-      return;
+      return -4;
     }
     std::string val = q.fieldValue(static_cast<unsigned int>(0));
     result = base::DecodeFromHex(val);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
-    return;
+    return -5;
   }
 
   if (result == "") {
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
-    return;
+    return -6;
   }
 
   GenericPacket syspacket;
@@ -273,28 +264,28 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
     case SYSTEM_PACKET:
         if (!syspacket.ParseFromString(result)) {
           boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
-          return;
+          return -7;
         }
         if (!co.AsymCheckSig(syspacket.data(), syspacket.signature(),
             public_key, crypto::STRING_STRING)) {
           boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
-          return;
+          return -8;
         }
         break;
 //    case BUFFER_PACKET:
 //        if (!vbph_.ValidateOwnerSignature(public_key, result)) {
 //          boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-//          return;
+//          return -9;
 //        }
 //        break;
 //    case BUFFER_PACKET_MESSAGE:
 //        if (!vbph_.ValidateOwnerSignature(public_key, result)) {
 //          boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-//          return;
+//          return -10;
 //        }
 //        if (!vbph_.ClearMessages(&result)) {
 //          boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
-//          return;
+//          return -11;
 //        }
 //        break;
 //    case BUFFER_PACKET_INFO: break;
@@ -313,24 +304,24 @@ void LocalStoreManager::DeletePacket(const std::string &hex_key,
     if ( nRows > 0 ) {
       if (type != BUFFER_PACKET_MESSAGE) {
         boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
-        return;
+        return 0;
       } else {
         std::string enc_value = base::EncodeToHex(result);
         bufSQL.format("insert into network values ('%s', %Q);",
           hex_key.c_str(), enc_value.c_str());
         db_.execDML(bufSQL);
         boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
-        return;
+        return 0;
       }
     } else {
       boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
-      return;
+      return -12;
     }
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     std::cerr << e.errorCode() << "ddddddd:" << e.errorMessage() << std::endl;
     boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
-    return;
+    return -13;
   }
 }
 

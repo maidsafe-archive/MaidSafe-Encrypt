@@ -7,12 +7,13 @@ service MaidsafeService {
   rpc StoreIOU( StoreIOURequest ) returns ( StoreIOUResponse );
   rpc IOUDone( IOUDoneRequest ) returns ( IOUDoneResponse );
   rpc StoreChunk( StoreRequest ) returns ( StoreResponse );
-  rpc StorePacket( StoreRequest ) returns ( StoreResponse );
+  rpc StorePacket( StorePacketRequest ) returns ( StorePacketResponse );
   rpc StoreChunkReference( StoreReferenceRequest )
       returns ( StoreReferenceResponse );
   // check if a chunk exists
   rpc CheckChunk( CheckChunkRequest ) returns ( CheckChunkResponse );
   rpc Get( GetRequest ) returns ( GetResponse );
+  rpc GetPacket( GetPacketRequest ) returns ( GetPacketResponse );
   rpc Update( UpdateRequest ) returns ( UpdateResponse );
   rpc Delete( DeleteRequest ) returns ( DeleteResponse );
   rpc ValidityCheck( ValidityCheckRequest ) returns ( ValidityCheckResponse );

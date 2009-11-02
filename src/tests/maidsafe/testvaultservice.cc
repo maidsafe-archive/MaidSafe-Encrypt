@@ -419,7 +419,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
 
   // #1 make PendingOperationsHandler::FindOperation() fail
   // #2 actually store the chunk
-  // #3 try storing again, will make StoreChunkLocal() fail
+  // #3 try storing again, will make StoreChunkLocal() fail, but service wiil
+  //    return overall success
   for (int i = 0; i < 3; ++i) {
     if (i > 0) {
       EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunkname, content.size(), "",
@@ -429,7 +430,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->StoreChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
-    if (i == 1) {
+    if (i > 0) {
       EXPECT_EQ(kAck, static_cast<int>(response.result()));
     } else {
       EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -474,6 +475,18 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePacket) {
+/* Refactor to test:
+1 - Invalid stores fail (of each type)
+2 - Valid initial stores succeed (of each type)
+3 - Invalid second stores (overwrite) fail and don't affect packetstore
+    (of each type)
+4 - Invalid second stores (append) fail and don't affect packetstore
+    (of each type)
+5 - Valid second (overwrite) stores succeed
+5 - Valid third (append) stores succeed
+*/
+
+
   rpcprotocol::Controller controller;
   maidsafe::StoreRequest request;
   maidsafe::StoreResponse response;
@@ -498,7 +511,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePacket) {
         request.set_chunkname(chunkname);
         request.set_data(content);
         request.set_pmid(pmid);
-        request.set_public_key("fail");  // !
+        request.set_public_key("fail");
         request.set_signed_public_key(sig_pub_key);
         request.set_signed_request(sig_req);
         request.set_data_type(maidsafe::SYSTEM_PACKET);
@@ -583,11 +596,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePacket) {
           (&cb_obj, &Callback::CallbackFunction);
       vault_service_->StorePacket(&controller, &request, &response, done);
       EXPECT_TRUE(response.IsInitialized());
-      if (j == 0) {
-        EXPECT_EQ(kAck, static_cast<int>(response.result()));
-      } else {
-        EXPECT_NE(kAck, static_cast<int>(response.result()));
-      }
+      EXPECT_EQ(kAck, static_cast<int>(response.result()));
       response.Clear();
     }
     poh_.ClearPendingOperations();

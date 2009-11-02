@@ -26,7 +26,7 @@
 
 namespace maidsafe {
 
-AuthCallbackResult::AuthCallbackResult() :result("") {}
+AuthCallbackResult::AuthCallbackResult() : result("") {}
 
 void AuthCallbackResult::CallbackFunc(const std::string &res) {
   result = res;
@@ -155,7 +155,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
       boost::any_cast<std::string>(mid_result["ser_packet"]), MID, PRIVATE,
-      "") != 0) {
+      "") != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -168,7 +168,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(smid_result["name"]),
       boost::any_cast<std::string>(smid_result["ser_packet"]), SMID,
-      PRIVATE, "") != 0) {
+      PRIVATE, "") != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -217,7 +217,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
-      PRIVATE, "") != 0) {
+      PRIVATE, "") != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -267,7 +267,7 @@ int Authentication::SaveSession(std::string ser_da,
     if (storemanager_->StorePacket(
         boost::any_cast<std::string>(result["name"]),
         boost::any_cast<std::string>(result["ser_packet"]), SMID, PRIVATE,
-        "") != 0) {
+        "") != kSuccess) {
       return kAuthenticationError;
     }
 
@@ -601,14 +601,11 @@ int Authentication::ChangeUsername(std::string ser_da,
   old_user_params["rid"] = ss_->MidRid();
 
   std::string packet_content;
-  storemanager_->LoadPacket(tmidPacket->PacketName(&old_user_params),
-                            &packet_content);
-  GetResponse load_res;
-  if ((!load_res.ParseFromString(packet_content)) ||
-      (load_res.result() == kNack) ||
-      (!load_res.has_content()))
+  int result = storemanager_->LoadPacket(tmidPacket->PacketName(
+      &old_user_params), &packet_content);
+  if (result != kSuccess || packet_content.empty())
     return kAuthenticationError;
-  std::string ser_tmid = load_res.content();
+  std::string ser_tmid = packet_content;
   PacketParams rec_tmid = tmidPacket->GetData(ser_tmid, ss_->Password(),
     ss_->MidRid());
   std::string tmid_data = boost::any_cast<std::string>(rec_tmid["data"]);
@@ -769,14 +766,11 @@ int Authentication::ChangePin(std::string ser_da,
   old_user_params["rid"] = ss_->MidRid();
 
   std::string packet_content;
-  storemanager_->LoadPacket(tmidPacket->PacketName(&old_user_params),
-                            &packet_content);
-  GetResponse load_res;
-  if ((!load_res.ParseFromString(packet_content)) ||
-      (load_res.result() != kAck) ||
-      (!load_res.has_content()))
+  int result = storemanager_->LoadPacket(tmidPacket->PacketName(
+      &old_user_params), &packet_content);
+  if (result != kSuccess || packet_content.empty())
     return kAuthenticationError;
-  std::string ser_tmid = load_res.content();
+  std::string ser_tmid = packet_content;
   PacketParams rec_data = tmidPacket->GetData(ser_tmid,
     ss_->Password(), ss_->MidRid());
   std::string tmid_data = boost::any_cast<std::string>(rec_data["data"]);
@@ -975,15 +969,12 @@ bool Authentication::GetMid(const std::string &username,
 
   std::string ser_packet;
   std::string packet_content;
-  storemanager_->LoadPacket(mid_name, &packet_content);
-  GetResponse load_res;
-  if ((!load_res.ParseFromString(packet_content)) ||
-      (load_res.result() != kAck) ||
-      (!load_res.has_content())) {
+  int result = storemanager_->LoadPacket(mid_name, &packet_content);
+  if (result != kSuccess || packet_content.empty()) {
     delete midPacket;
     return false;
   }
-  ser_packet = load_res.content();
+  ser_packet = packet_content;
   PacketParams info = midPacket->GetData(ser_packet, username, pin);
   // The key of mid_name clashed with another value that is not a mid
   // hence, it could not recover a valid mid but we can not return false
@@ -1010,15 +1001,12 @@ bool Authentication::GetSmid(const std::string &username,
   std::string smid_name = smidPacket->PacketName(&params);
   std::string ser_packet;
   std::string packet_content;
-  storemanager_->LoadPacket(smid_name, &packet_content);
-  GetResponse load_res;
-  if ((!load_res.ParseFromString(packet_content)) ||
-      (load_res.result() != kAck) ||
-      (!load_res.has_content())) {
+  int result = storemanager_->LoadPacket(smid_name, &packet_content);
+  if (result != kSuccess || packet_content.empty()) {
     delete smidPacket;
     return false;
   }
-  ser_packet = load_res.content();
+  ser_packet = packet_content;
   PacketParams info = smidPacket->GetData(ser_packet, username, pin);
   uint32_t rec_data = boost::any_cast<uint32_t>(info["data"]);
   if (rec_data != 0) {
@@ -1043,19 +1031,16 @@ void Authentication::GetUserTmid(bool smid) {
   params["rid"] = ss_->MidRid();
   std::string tmid_name = tmidPacket->PacketName(&params);
   std::string packet_content;
-  storemanager_->LoadPacket(tmid_name, &packet_content);
-  GetResponse load_res;
-  if ((!load_res.ParseFromString(packet_content)) ||
-      (load_res.result() != kAck) ||
-      (!load_res.has_content())) {
-#ifdef DEBUG
-    if (!load_res.ParseFromString(packet_content))
-      printf("Authentication::GetUserTmid - Doesn't parse as GetUserTmid.\n");
-    if (load_res.result() != kAck)
-      printf("Authentication::GetUserTmid - came back with failure.\n");
-    if (!load_res.has_content())
-      printf("Authentication::GetUserTmid - came back with no content.\n");
-#endif
+  int result = storemanager_->LoadPacket(tmid_name, &packet_content);
+// #ifdef DEBUG
+//    if (!load_res.ParseFromString(packet_content))
+//      printf("Authentication::GetUserTmid - Doesn't parse as GetUserTmid.\n");
+//    if (load_res.result() != kAck)
+//      printf("Authentication::GetUserTmid - came back with failure.\n");
+//    if (!load_res.has_content())
+//      printf("Authentication::GetUserTmid - came back with no content.\n");
+// #endif
+  if (result != kSuccess || packet_content.empty()) {
     if (smid) {
 #ifdef DEBUG
       printf("Authentication::GetUserTmid - Failure 1\n");
@@ -1081,7 +1066,7 @@ void Authentication::GetUserTmid(bool smid) {
       return;
     }
   }
-  tmid_content_ = load_res.content();
+  tmid_content_ = packet_content;
 #ifdef DEBUG
   printf("Authentication::GetUserTmidCallback returning content result\n");
 #endif
@@ -1095,14 +1080,11 @@ int Authentication::PublicUsernamePublicKey(const std::string &public_username,
     static_cast<MpidPacket*>(PacketFactory::Factory(MPID));
 
   std::string packet_content;
-  storemanager_->LoadPacket(mpidPacket->PacketName(&params), &packet_content);
-  GetResponse load_res;
-  if ((!load_res.ParseFromString(packet_content)) ||
-      (load_res.result() != kAck) ||
-      (!load_res.has_content())) {
+  int result = storemanager_->LoadPacket(mpidPacket->PacketName(&params),
+                                         &packet_content);
+  if (result != kSuccess || packet_content.empty())
     return kUserDoesntExist;
-  }
-  std::string ser_generic_packet = load_res.content();
+  std::string ser_generic_packet = packet_content;
   GenericPacket gp;
   if (!gp.ParseFromString(ser_generic_packet)) {
     return kAuthenticationError;  //  Packet corrupt

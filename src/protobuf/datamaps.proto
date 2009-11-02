@@ -1,6 +1,8 @@
+import "packet.proto";
+
 package maidsafe;
 
-enum itemtype {
+enum ItemType {
   REGULAR_FILE = 0;
   SMALL_FILE = 1;
   EMPTY_FILE = 2;
@@ -10,25 +12,7 @@ enum itemtype {
   LINK = 6;
   NOT_FOR_PROCESSING = 7;
   UNKNOWN = 8;
-};
-
-enum PacketType {
-  MID = 0;
-  SMID = 1;
-  TMID = 2;
-  MPID = 3;
-  PMID = 4;
-  MAID = 5;
-  ANMID = 6;
-  ANSMID = 7;
-  ANTMID = 8;
-  ANMPID = 9;
-  MSID = 10;
-  PD_DIR = 11;
-  BUFFER = 12;
-  BUFFER_INFO = 13;
-  BUFFER_MESSAGE = 14;
-};
+}
 
 message PublicContact {
   required bytes pub_name = 1;
@@ -79,7 +63,7 @@ message DataMap {
 message MetaDataMap {
   required int32 id = 1;
   required bytes display_name = 2;
-  required itemtype type = 3;
+  required ItemType type = 3;
   repeated bytes file_hash = 4;
   optional bytes stats = 5;
   optional bytes tag = 6;

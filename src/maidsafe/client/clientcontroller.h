@@ -33,7 +33,6 @@
 #include <string>
 #include <vector>
 
-#include "boost/threadpool.hpp"  // NB - This is NOT an accepted boost lib.
 #include "fs/filesystem.h"
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/client/clientbufferpackethandler.h"
@@ -150,7 +149,7 @@ class ClientController {
   int rmdir(const std::string &path);
   int getattr(const std::string &path, std::string &ser_mdm);
   int readdir(const std::string &path,  // NOLINT - readdir_r suggested
-              std::map<std::string, itemtype> &children);
+              std::map<std::string, ItemType> &children);
   int mknod(const std::string &path);
   int unlink(const std::string &path);
   int link(const std::string &path, const std::string &path2);
@@ -209,7 +208,7 @@ class ClientController {
   int RemoveDb(const std::string &path_);
   DirType GetDirType(const std::string &path_);
   int PathDistinction(const std::string &path, std::string *msid);
-  bool ClearStaleMessages();
+  void ClearStaleMessages();
   void OwnLocalVault_Callback(const OwnVaultResult &result, const
       std::string &pmid_name, bool *callback_arrived, OwnVaultResult *res);
   VaultStatus LocalVaultStatus() const;
@@ -232,12 +231,7 @@ class ClientController {
   file_system::FileSystem fsys_;
   std::map<std::string, boost::uint32_t> received_messages_;
   boost::mutex rec_msg_mutex_;
-  boost::threadpool::thread_pool<
-      boost::threadpool::task_func,
-      boost::threadpool::fifo_scheduler,
-      boost::threadpool::static_size,
-      boost::threadpool::resize_controller,
-      boost::threadpool::immediately> thread_pool_;
+  boost::thread clear_messages_thread_;
   std::string client_store_;
   bool logging_out_;
 };

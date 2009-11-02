@@ -52,7 +52,7 @@ class PdDirTest : public testing::Test {
 
 void PrepareMDM(const int32_t id,
                         const std::string &display_name,
-                        const itemtype &type,
+                        const ItemType &type,
                         const std::string &file_hash,
                         const std::string &stats,
                         const std::string &tag,
@@ -409,7 +409,7 @@ TEST_F(PdDirTest, BEH_MAID_ListFolder) {
       "Directory3 was not added to db1.";
 
   // recover list of children
-  std::map<std::string, itemtype> children_;
+  std::map<std::string, ItemType> children_;
   ASSERT_EQ(0, da_->ListFolder(&children_)) << "Retrieved list incorrectly.";
   ASSERT_EQ(size_t(6), children_.size()) << "List size incorrect.";
   ASSERT_EQ(EMPTY_DIRECTORY, children_[dir_name2_]) <<

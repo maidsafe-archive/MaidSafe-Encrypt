@@ -35,8 +35,7 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* DataAtlas_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   DataAtlas_reflection_ = NULL;
-const ::google::protobuf::EnumDescriptor* itemtype_descriptor_ = NULL;
-const ::google::protobuf::EnumDescriptor* PacketType_descriptor_ = NULL;
+const ::google::protobuf::EnumDescriptor* ItemType_descriptor_ = NULL;
 
 }  // namespace
 
@@ -210,8 +209,7 @@ void protobuf_AssignDesc_datamaps_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(DataAtlas));
-  itemtype_descriptor_ = file->enum_type(0);
-  PacketType_descriptor_ = file->enum_type(1);
+  ItemType_descriptor_ = file->enum_type(0);
 }
 
 namespace {
@@ -269,49 +267,45 @@ void protobuf_AddDesc_datamaps_2eproto() {
   already_here = true;
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
+  ::maidsafe::protobuf_AddDesc_packet_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\016datamaps.proto\022\010maidsafe\"\345\001\n\rPublicCon"
-    "tact\022\020\n\010pub_name\030\001 \002(\014\022\017\n\007pub_key\030\002 \002(\014\022"
-    "\021\n\tfull_name\030\003 \002(\014\022\024\n\014office_phone\030\004 \002(\014"
-    "\022\020\n\010birthday\030\005 \002(\014\022\016\n\006gender\030\006 \002(\014\022\020\n\010la"
-    "nguage\030\007 \002(\005\022\017\n\007country\030\010 \002(\005\022\014\n\004city\030\t "
-    "\002(\014\022\021\n\tconfirmed\030\n \002(\014\022\014\n\004rank\030\013 \002(\005\022\024\n\014"
-    "last_contact\030\014 \002(\005\"R\n\020ShareParticipant\022\023"
-    "\n\013public_name\030\001 \002(\014\022\033\n\023public_name_pub_k"
-    "ey\030\002 \001(\014\022\014\n\004role\030\003 \002(\014\"\201\001\n\005Share\022\014\n\004name"
-    "\030\001 \002(\014\022\014\n\004msid\030\002 \002(\014\022\024\n\014msid_pub_key\030\003 \002"
-    "(\014\022\024\n\014msid_pri_key\030\004 \001(\014\0220\n\014participants"
-    "\030\005 \003(\0132\032.maidsafe.ShareParticipant\"|\n\003Ke"
-    "y\022\n\n\002id\030\001 \002(\014\022\"\n\004type\030\002 \002(\0162\024.maidsafe.P"
-    "acketType\022\023\n\013private_key\030\003 \002(\014\022\022\n\npublic"
-    "_key\030\004 \002(\014\022\034\n\024public_key_signature\030\005 \002(\014"
-    "\"\225\001\n\007DataMap\022\021\n\tfile_hash\030\001 \002(\014\022\022\n\nse_ve"
-    "rsion\030\002 \001(\014\022\022\n\nchunk_name\030\003 \003(\014\022\034\n\024encry"
-    "pted_chunk_name\030\004 \003(\014\022\022\n\nchunk_size\030\005 \003("
-    "\004\022\035\n\016compression_on\030\006 \001(\010:\005false\"\362\001\n\013Met"
-    "aDataMap\022\n\n\002id\030\001 \002(\005\022\024\n\014display_name\030\002 \002"
-    "(\014\022 \n\004type\030\003 \002(\0162\022.maidsafe.itemtype\022\021\n\t"
-    "file_hash\030\004 \003(\014\022\r\n\005stats\030\005 \001(\014\022\013\n\003tag\030\006 "
-    "\001(\014\022\026\n\016file_size_high\030\007 \001(\005\022\025\n\rfile_size"
-    "_low\030\010 \001(\005\022\025\n\rcreation_time\030\t \001(\005\022\025\n\rlas"
-    "t_modified\030\n \001(\005\022\023\n\013last_access\030\013 \001(\005\"Z\n"
-    "\005Chunk\022\030\n\020compression_type\030\001 \001(\014\022\020\n\010chun"
-    "klet\030\002 \003(\014\022%\n\035pre_compression_chunklet_s"
-    "ize\030\003 \003(\005\"\316\001\n\tDataAtlas\022\023\n\013root_db_key\030\001"
-    " \001(\014\022\033\n\004keys\030\002 \003(\0132\r.maidsafe.Key\022#\n\004mdm"
-    "s\030\003 \003(\0132\025.maidsafe.MetaDataMap\022\036\n\003dms\030\004 "
-    "\003(\0132\021.maidsafe.DataMap\022)\n\010contacts\030\005 \003(\013"
-    "2\027.maidsafe.PublicContact\022\037\n\006shares\030\006 \003("
-    "\0132\017.maidsafe.Share*\240\001\n\010itemtype\022\020\n\014REGUL"
-    "AR_FILE\020\000\022\016\n\nSMALL_FILE\020\001\022\016\n\nEMPTY_FILE\020"
-    "\002\022\017\n\013LOCKED_FILE\020\003\022\r\n\tDIRECTORY\020\004\022\023\n\017EMP"
-    "TY_DIRECTORY\020\005\022\010\n\004LINK\020\006\022\026\n\022NOT_FOR_PROC"
-    "ESSING\020\007\022\013\n\007UNKNOWN\020\010*\275\001\n\nPacketType\022\007\n\003"
-    "MID\020\000\022\010\n\004SMID\020\001\022\010\n\004TMID\020\002\022\010\n\004MPID\020\003\022\010\n\004P"
-    "MID\020\004\022\010\n\004MAID\020\005\022\t\n\005ANMID\020\006\022\n\n\006ANSMID\020\007\022\n"
-    "\n\006ANTMID\020\010\022\n\n\006ANMPID\020\t\022\010\n\004MSID\020\n\022\n\n\006PD_D"
-    "IR\020\013\022\n\n\006BUFFER\020\014\022\017\n\013BUFFER_INFO\020\r\022\022\n\016BUF"
-    "FER_MESSAGE\020\016", 1653);
+    "\n\016datamaps.proto\022\010maidsafe\032\014packet.proto"
+    "\"\345\001\n\rPublicContact\022\020\n\010pub_name\030\001 \002(\014\022\017\n\007"
+    "pub_key\030\002 \002(\014\022\021\n\tfull_name\030\003 \002(\014\022\024\n\014offi"
+    "ce_phone\030\004 \002(\014\022\020\n\010birthday\030\005 \002(\014\022\016\n\006gend"
+    "er\030\006 \002(\014\022\020\n\010language\030\007 \002(\005\022\017\n\007country\030\010 "
+    "\002(\005\022\014\n\004city\030\t \002(\014\022\021\n\tconfirmed\030\n \002(\014\022\014\n\004"
+    "rank\030\013 \002(\005\022\024\n\014last_contact\030\014 \002(\005\"R\n\020Shar"
+    "eParticipant\022\023\n\013public_name\030\001 \002(\014\022\033\n\023pub"
+    "lic_name_pub_key\030\002 \001(\014\022\014\n\004role\030\003 \002(\014\"\201\001\n"
+    "\005Share\022\014\n\004name\030\001 \002(\014\022\014\n\004msid\030\002 \002(\014\022\024\n\014ms"
+    "id_pub_key\030\003 \002(\014\022\024\n\014msid_pri_key\030\004 \001(\014\0220"
+    "\n\014participants\030\005 \003(\0132\032.maidsafe.SharePar"
+    "ticipant\"|\n\003Key\022\n\n\002id\030\001 \002(\014\022\"\n\004type\030\002 \002("
+    "\0162\024.maidsafe.PacketType\022\023\n\013private_key\030\003"
+    " \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\034\n\024public_key_s"
+    "ignature\030\005 \002(\014\"\225\001\n\007DataMap\022\021\n\tfile_hash\030"
+    "\001 \002(\014\022\022\n\nse_version\030\002 \001(\014\022\022\n\nchunk_name\030"
+    "\003 \003(\014\022\034\n\024encrypted_chunk_name\030\004 \003(\014\022\022\n\nc"
+    "hunk_size\030\005 \003(\004\022\035\n\016compression_on\030\006 \001(\010:"
+    "\005false\"\362\001\n\013MetaDataMap\022\n\n\002id\030\001 \002(\005\022\024\n\014di"
+    "splay_name\030\002 \002(\014\022 \n\004type\030\003 \002(\0162\022.maidsaf"
+    "e.ItemType\022\021\n\tfile_hash\030\004 \003(\014\022\r\n\005stats\030\005"
+    " \001(\014\022\013\n\003tag\030\006 \001(\014\022\026\n\016file_size_high\030\007 \001("
+    "\005\022\025\n\rfile_size_low\030\010 \001(\005\022\025\n\rcreation_tim"
+    "e\030\t \001(\005\022\025\n\rlast_modified\030\n \001(\005\022\023\n\013last_a"
+    "ccess\030\013 \001(\005\"Z\n\005Chunk\022\030\n\020compression_type"
+    "\030\001 \001(\014\022\020\n\010chunklet\030\002 \003(\014\022%\n\035pre_compress"
+    "ion_chunklet_size\030\003 \003(\005\"\316\001\n\tDataAtlas\022\023\n"
+    "\013root_db_key\030\001 \001(\014\022\033\n\004keys\030\002 \003(\0132\r.maids"
+    "afe.Key\022#\n\004mdms\030\003 \003(\0132\025.maidsafe.MetaDat"
+    "aMap\022\036\n\003dms\030\004 \003(\0132\021.maidsafe.DataMap\022)\n\010"
+    "contacts\030\005 \003(\0132\027.maidsafe.PublicContact\022"
+    "\037\n\006shares\030\006 \003(\0132\017.maidsafe.Share*\240\001\n\010Ite"
+    "mType\022\020\n\014REGULAR_FILE\020\000\022\016\n\nSMALL_FILE\020\001\022"
+    "\016\n\nEMPTY_FILE\020\002\022\017\n\013LOCKED_FILE\020\003\022\r\n\tDIRE"
+    "CTORY\020\004\022\023\n\017EMPTY_DIRECTORY\020\005\022\010\n\004LINK\020\006\022\026"
+    "\n\022NOT_FOR_PROCESSING\020\007\022\013\n\007UNKNOWN\020\010", 1475);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "datamaps.proto", &protobuf_RegisterTypes);
   PublicContact::default_instance_ = new PublicContact();
@@ -340,11 +334,11 @@ struct StaticDescriptorInitializer_datamaps_2eproto {
   }
 } static_descriptor_initializer_datamaps_2eproto_;
 
-const ::google::protobuf::EnumDescriptor* itemtype_descriptor() {
+const ::google::protobuf::EnumDescriptor* ItemType_descriptor() {
   protobuf_AssignDescriptorsOnce();
-  return itemtype_descriptor_;
+  return ItemType_descriptor_;
 }
-bool itemtype_IsValid(int value) {
+bool ItemType_IsValid(int value) {
   switch(value) {
     case 0:
     case 1:
@@ -355,33 +349,6 @@ bool itemtype_IsValid(int value) {
     case 6:
     case 7:
     case 8:
-      return true;
-    default:
-      return false;
-  }
-}
-
-const ::google::protobuf::EnumDescriptor* PacketType_descriptor() {
-  protobuf_AssignDescriptorsOnce();
-  return PacketType_descriptor_;
-}
-bool PacketType_IsValid(int value) {
-  switch(value) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-    case 9:
-    case 10:
-    case 11:
-    case 12:
-    case 13:
-    case 14:
       return true;
     default:
       return false;
@@ -2756,7 +2723,7 @@ bool MetaDataMap::MergePartialFromCodedStream(
         break;
       }
       
-      // required .maidsafe.itemtype type = 3;
+      // required .maidsafe.ItemType type = 3;
       case 3: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
@@ -2765,8 +2732,8 @@ bool MetaDataMap::MergePartialFromCodedStream(
        parse_type:
         int value;
         DO_(::google::protobuf::internal::WireFormat::ReadEnum(input, &value));
-        if (maidsafe::itemtype_IsValid(value)) {
-          set_type(static_cast< maidsafe::itemtype >(value));
+        if (maidsafe::ItemType_IsValid(value)) {
+          set_type(static_cast< maidsafe::ItemType >(value));
         } else {
           mutable_unknown_fields()->AddVarint(3, value);
         }
@@ -2916,7 +2883,7 @@ void MetaDataMap::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBytes(2, this->display_name(), output);
   }
   
-  // required .maidsafe.itemtype type = 3;
+  // required .maidsafe.ItemType type = 3;
   if (_has_bit(2)) {
     ::google::protobuf::internal::WireFormat::WriteEnum(3, this->type(), output);
   }
@@ -2979,7 +2946,7 @@ void MetaDataMap::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->display_name(), target);
   }
   
-  // required .maidsafe.itemtype type = 3;
+  // required .maidsafe.ItemType type = 3;
   if (_has_bit(2)) {
     target = ::google::protobuf::internal::WireFormat::WriteEnumToArray(3, this->type(), target);
   }
@@ -3048,7 +3015,7 @@ int MetaDataMap::ByteSize() const {
         ::google::protobuf::internal::WireFormat::BytesSize(this->display_name());
     }
     
-    // required .maidsafe.itemtype type = 3;
+    // required .maidsafe.ItemType type = 3;
     if (has_type()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::EnumSize(this->type());

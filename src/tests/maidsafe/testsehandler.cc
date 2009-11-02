@@ -477,7 +477,7 @@ TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptPrivateDb) {
   boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
   file_system::FileSystem fsys_;
   fs::path db_path_(db_str1_, fs::native);
-  std::string key_("somekey");
+  std::string key_(seh->SHA512("somekey", false));
 //  std::string key_("");
 //  ASSERT_EQ(0, seh->GenerateUniqueKey(PRIVATE, "", 0, &key_));
 //  dah->GetDirKey(kRootSubdir[0][0], &key_);

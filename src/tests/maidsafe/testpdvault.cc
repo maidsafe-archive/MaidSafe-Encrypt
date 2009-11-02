@@ -22,7 +22,6 @@
 * ============================================================================
 */
 
-#include <boost/thread/thread.hpp>
 #include <gtest/gtest.h>
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
@@ -63,13 +62,15 @@ inline void DeleteCallback(const std::string &result) {
 }
 
 inline void GetPacketCallback(const std::string &result) {
-  maidsafe::GetResponse resp;
+//  maidsafe::GetResponse resp;
+//  boost::mutex::scoped_lock lock(callback_mutex_);
+//  if (!resp.ParseFromString(result) || resp.result() != kAck) {
+//    callback_packets_.push_back("Failed");
+//  } else {
+//    callback_packets_.push_back(resp.content());
+//  }
   boost::mutex::scoped_lock lock(callback_mutex_);
-  if (!resp.ParseFromString(result) || resp.result() != kAck) {
-    callback_packets_.push_back("Failed");
-  } else {
-    callback_packets_.push_back(resp.content());
-  }
+  callback_packets_.push_back(result);
 }
 
 inline void GetMessagesCallback(const std::string &result) {
@@ -179,7 +180,7 @@ void CreatePacketType(const std::string &priv_key,
 //    chunkstore->AddChunkToOutgoing(*packet_name, *ser_packet);
     packets->insert(std::pair<std::string, std::string>
         (base::EncodeToHex(packet_name), ser_packet));
-    printf("Created packet %i.\n", packets->size());
+//    printf("Created packet %i.\n", packets->size());
   }
 }
 
@@ -243,6 +244,33 @@ void CreateMessage(const std::string &message,
   val_msg.SerializeToString(ser_expected_msg);
 }
 
+size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
+                         const int &timeout_seconds,
+                         boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm) {
+  size_t chunk_count = 0;
+  int time_count = 0;
+  std::map<std::string, std::string>::iterator it;
+  for (it = chunks.begin(); it != chunks.end(); ++it) {
+    std::string hex_chunk_name = (*it).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    kad::ContactInfo cache_holder;
+    std::vector<std::string> chunk_holders_ids;
+    std::string needs_cache_copy_id;
+    while (time_count < timeout_seconds) {
+      sm->FindValue(non_hex_name, false, &cache_holder, &chunk_holders_ids,
+          &needs_cache_copy_id);
+      if (chunk_holders_ids.size() >= size_t(kMinChunkCopies)) {
+        ++chunk_count;
+        break;
+      } else {
+        time_count += 10;
+        boost::this_thread::sleep(boost::posix_time::seconds(10));
+      }
+    }
+  }
+  return chunk_count;
+}
+
 //  typedef boost::mp_math::mp_int<> BigInt;
 //
 //  BigInt KademliaDistance(const std::string &key1, const std::string &key2) {
@@ -264,14 +292,7 @@ void CreateMessage(const std::string &message,
 namespace maidsafe_vault {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
-#ifdef MAIDSAFE_WIN32
 static const int kNetworkSize_ = 20;
-#else
-// Fedora doesn't appear to be able to handle more than 16 vaults' threads.
-// TODO(Fraser#5#): 2009-09-10 - See if there's a fix for this - not ideal
-//                               having network size == k.
-static const int kNetworkSize_ = 16;
-#endif
 static const int kTestK_ = 16;
 
 class TestPDVault : public testing::Test {
@@ -499,7 +520,7 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //          &chunk_holders_ids, &needs_cache_copy_id));
 //    }
 //  }
-//
+
 TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
   // add some valid chunks to client chunkstore and store to network
   std::map<std::string, std::string> chunks_;
@@ -513,7 +534,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
   printf("%i chunks enqueued for storing.\n\n", kNumOfTestChunks);
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times and each chunk copy is valid (i.e. name == Hash(contents))
-  boost::this_thread::sleep(boost::posix_time::seconds(120));
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
   int timeout(300);  // seconds.
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
@@ -538,9 +559,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
   }
   // We need to allow enough time to let the vaults finish publishing themselves
   // as chunk holders and retrieving their IOUs.
-  printf("FUNC_MAID_StoreChunks - Before 60 sec sleep\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
-  printf("FUNC_MAID_StoreChunks - After 60 sec sleep\n");
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
 }
 
 TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
@@ -584,6 +603,9 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
     ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
         true));
   }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
   // Check each chunk can be retrieved correctly from the net
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
@@ -596,9 +618,6 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
     ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
         true));
   }
-  // We need to allow enough time to let the vaults finish publishing themselves
-  // as chunk holders and retrieving their IOUs.
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
 }
 
 TEST_F(TestPDVault, FUNC_MAID_GetNonDuplicatedChunk) {
@@ -670,9 +689,6 @@ TEST_F(TestPDVault, FUNC_MAID_GetNonDuplicatedChunk) {
     ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
         true));
   }
-  // We need to allow enough time to let the vaults finish publishing themselves
-  // as chunk holders and retrieving their IOUs.
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
 }
 
 TEST_F(TestPDVault, FUNC_MAID_GetMissingChunk) {
@@ -732,9 +748,6 @@ TEST_F(TestPDVault, FUNC_MAID_GetMissingChunk) {
       ASSERT_NE(0, sm_->LoadChunk(hex_chunk_name, &data));
     }
   }
-  // We need to allow enough time to let the vaults finish publishing themselves
-  // as chunk holders and retrieving their IOUs.
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
 }
 
 TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
@@ -753,7 +766,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
 //    printf("Packet %i stored.\n", i);
 //    ++i;
   }
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+                      boost::this_thread::sleep(boost::posix_time::seconds(1));
 //  printf("About to prepare callback results\n");
   // Check the packets can be retrieved correctly from the network
   testpdvault::PrepareCallbackResults();
@@ -765,12 +778,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
     ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_packet_name));
     std::string packet_content;
     sm_->LoadPacket(hex_packet_name, &packet_content);
-    maidsafe::GetResponse resp;
-    if (!resp.ParseFromString(packet_content) || resp.result() != kAck) {
-      callback_packets_.push_back("Failed");
-    } else {
-      callback_packets_.push_back(resp.content());
-    }
+    callback_packets_.push_back(packet_content);
   }
   // Wait for all packets to load
 //  size_t callback_packets_size(0);
@@ -798,14 +806,11 @@ TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
   std::string hex_packet_name((*packets.begin()).first);
   // Try to store system packet with other incorrect content
   std::string packet_content("not a system packet");
-  ASSERT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
-      maidsafe::PD_DIR, maidsafe::PRIVATE, ""));
+  ASSERT_EQ(maidsafe::kSendPacketFindValueFailure, sm_->StorePacket(
+      hex_packet_name, packet_content, maidsafe::MPID, maidsafe::PRIVATE, ""));
   packet_content = "some other bollocks";
-  ASSERT_EQ(0, sm_->StorePacket(hex_packet_name, packet_content,
-      maidsafe::PD_DIR, maidsafe::PRIVATE, ""));
-  // We need to allow enough time to let the vaults finish publishing themselves
-  // as chunk holders and retrieving their IOUs.
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  ASSERT_EQ(maidsafe::kSendPacketFindValueFailure, sm_->StorePacket(
+      hex_packet_name, packet_content, maidsafe::MPID, maidsafe::PRIVATE, ""));
 }
 
 /*

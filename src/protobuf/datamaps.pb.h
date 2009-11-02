@@ -21,6 +21,7 @@
 #include <google/protobuf/generated_message_reflection.h>
 #include <google/protobuf/repeated_field.h>
 #include <google/protobuf/extension_set.h>
+#include "packet.pb.h"
 
 namespace maidsafe {
 
@@ -38,7 +39,7 @@ class MetaDataMap;
 class Chunk;
 class DataAtlas;
 
-enum itemtype {
+enum ItemType {
   REGULAR_FILE = 0,
   SMALL_FILE = 1,
   EMPTY_FILE = 2,
@@ -49,50 +50,19 @@ enum itemtype {
   NOT_FOR_PROCESSING = 7,
   UNKNOWN = 8
 };
-const ::google::protobuf::EnumDescriptor* itemtype_descriptor();
-bool itemtype_IsValid(int value);
-const itemtype itemtype_MIN = REGULAR_FILE;
-const itemtype itemtype_MAX = UNKNOWN;
+const ::google::protobuf::EnumDescriptor* ItemType_descriptor();
+bool ItemType_IsValid(int value);
+const ItemType ItemType_MIN = REGULAR_FILE;
+const ItemType ItemType_MAX = UNKNOWN;
 
-inline const ::std::string& itemtype_Name(itemtype value) {
+inline const ::std::string& ItemType_Name(ItemType value) {
   return ::google::protobuf::internal::NameOfEnum(
-    itemtype_descriptor(), value);
+    ItemType_descriptor(), value);
 }
-inline bool itemtype_Parse(
-    const ::std::string& name, itemtype* value) {
-  return ::google::protobuf::internal::ParseNamedEnum<itemtype>(
-    itemtype_descriptor(), name, value);
-}
-enum PacketType {
-  MID = 0,
-  SMID = 1,
-  TMID = 2,
-  MPID = 3,
-  PMID = 4,
-  MAID = 5,
-  ANMID = 6,
-  ANSMID = 7,
-  ANTMID = 8,
-  ANMPID = 9,
-  MSID = 10,
-  PD_DIR = 11,
-  BUFFER = 12,
-  BUFFER_INFO = 13,
-  BUFFER_MESSAGE = 14
-};
-const ::google::protobuf::EnumDescriptor* PacketType_descriptor();
-bool PacketType_IsValid(int value);
-const PacketType PacketType_MIN = MID;
-const PacketType PacketType_MAX = BUFFER_MESSAGE;
-
-inline const ::std::string& PacketType_Name(PacketType value) {
-  return ::google::protobuf::internal::NameOfEnum(
-    PacketType_descriptor(), value);
-}
-inline bool PacketType_Parse(
-    const ::std::string& name, PacketType* value) {
-  return ::google::protobuf::internal::ParseNamedEnum<PacketType>(
-    PacketType_descriptor(), name, value);
+inline bool ItemType_Parse(
+    const ::std::string& name, ItemType* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<ItemType>(
+    ItemType_descriptor(), name, value);
 }
 // ===================================================================
 
@@ -918,12 +888,12 @@ class MetaDataMap : public ::google::protobuf::Message {
   inline void set_display_name(const void* value, size_t size);
   inline ::std::string* mutable_display_name();
   
-  // required .maidsafe.itemtype type = 3;
+  // required .maidsafe.ItemType type = 3;
   inline bool has_type() const;
   inline void clear_type();
   static const int kTypeFieldNumber = 3;
-  inline maidsafe::itemtype type() const;
-  inline void set_type(maidsafe::itemtype value);
+  inline maidsafe::ItemType type() const;
+  inline void set_type(maidsafe::ItemType value);
   
   // repeated bytes file_hash = 4;
   inline int file_hash_size() const;
@@ -2503,7 +2473,7 @@ inline ::std::string* MetaDataMap::mutable_display_name() {
   return display_name_;
 }
 
-// required .maidsafe.itemtype type = 3;
+// required .maidsafe.ItemType type = 3;
 inline bool MetaDataMap::has_type() const {
   return _has_bit(2);
 }
@@ -2511,11 +2481,11 @@ inline void MetaDataMap::clear_type() {
   type_ = 0;
   _clear_bit(2);
 }
-inline maidsafe::itemtype MetaDataMap::type() const {
-  return static_cast< maidsafe::itemtype >(type_);
+inline maidsafe::ItemType MetaDataMap::type() const {
+  return static_cast< maidsafe::ItemType >(type_);
 }
-inline void MetaDataMap::set_type(maidsafe::itemtype value) {
-  GOOGLE_DCHECK(maidsafe::itemtype_IsValid(value));
+inline void MetaDataMap::set_type(maidsafe::ItemType value) {
+  GOOGLE_DCHECK(maidsafe::ItemType_IsValid(value));
   _set_bit(2);
   type_ = value;
 }

@@ -41,7 +41,6 @@
 #include "maidsafe/client/selfencryption.h"
 #include "maidsafe/vault/pdvault.h"
 #include "protobuf/datamaps.pb.h"
-#include "protobuf/general_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 
@@ -79,21 +78,20 @@ bool CheckUserExists(maidsafe::ClientController *cc,
                      const std::string &pin,
                      int duration) {
   FakeCallback cb;
-  maidsafe::exitcode result = cc->CheckUserExists(username, pin, boost::bind(
-      &FakeCallback::CallbackFunc, &cb, _1), maidsafe::DEFCON3);
+  int result = cc->CheckUserExists(username, pin, maidsafe::DEFCON3);
   cb.Wait(10000);
-  if (maidsafe::USER_EXISTS != result)
+  if (maidsafe::kUserExists != result)
     return false;
   boost::posix_time::milliseconds timeout(duration);
   boost::posix_time::milliseconds count(0);
   boost::posix_time::milliseconds increment(10);
   maidsafe::GetResponse load_res;
-  while (kCallbackSuccess != load_res.result() && count < timeout) {
+  while (kAck != load_res.result() && count < timeout) {
     load_res.ParseFromString(cb.result());
     count += increment;
     boost::this_thread::sleep(increment);
   }
-  return kCallbackSuccess == load_res.result();
+  return kAck == load_res.result();
 }
 }  // namespace cc_test
 
@@ -101,14 +99,22 @@ namespace maidsafe {
 
 class FunctionalClientControllerTest : public testing::Test {
  protected:
-  FunctionalClientControllerTest() : cc(),
-                                     authentication(),
-                                     ss(),
-                                     se(),
-                                     dir1_(""),
-                                     dir2_(""),
-                                     final_dir_() {}
+  FunctionalClientControllerTest()
+      : cc(),
+        authentication(),
+        ss(),
+        chunkstore_(new ChunkStore("./TestCC", 0, 0)),
+        se(chunkstore_),
+        dir1_(""),
+        dir2_(""),
+        final_dir_(),
+        vcp_() {}
   void SetUp() {
+    int count(0);
+    while (!chunkstore_->is_initialised() && count < 10000) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      count += 10;
+    }
     cc = ClientController::getInstance();
     if (!cc_test::initialised_) {
       ASSERT_TRUE(cc->JoinKademlia());
@@ -129,8 +135,10 @@ class FunctionalClientControllerTest : public testing::Test {
   ClientController *cc;
   Authentication *authentication;
   SessionSingleton *ss;
+  boost::shared_ptr<ChunkStore> chunkstore_;
   SelfEncryption se;
   std::string dir1_, dir2_, final_dir_;
+  VaultConfigParameters vcp_;
  private:
   FunctionalClientControllerTest(const FunctionalClientControllerTest&);
   FunctionalClientControllerTest &operator=
@@ -148,7 +156,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLoginSequence) {
   printf("Preconditions fulfilled.\n");
 
   ASSERT_FALSE(cc_test::CheckUserExists(cc, username, pin, 10000));
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_TRUE(cc->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -159,6 +167,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLoginSequence) {
   ASSERT_EQ("", ss->Pin());
   ASSERT_EQ("", ss->Password());
   printf("Logged out.\n");
+                      boost::this_thread::sleep(boost::posix_time::seconds(10));
 
   ASSERT_TRUE(cc_test::CheckUserExists(cc, username, pin, 10000));
   ASSERT_TRUE(cc->ValidateUser(password));
@@ -172,6 +181,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLoginSequence) {
   ASSERT_EQ("", ss->Pin());
   ASSERT_EQ("", ss->Password());
   printf("Logged out.\n");
+                      boost::this_thread::sleep(boost::posix_time::seconds(10));
 
   ASSERT_FALSE(cc_test::CheckUserExists(cc, "juan.smer", pin, 10000));
   printf("Can't log in with fake details.\n");
@@ -188,7 +198,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
   printf("Preconditions fulfilled.\n");
 
   ASSERT_FALSE(cc_test::CheckUserExists(cc, username, pin, 10000));
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_TRUE(cc->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -285,7 +295,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
   printf("Preconditions fulfilled.\n");
 
   ASSERT_FALSE(cc_test::CheckUserExists(cc, username, pin, 10000));
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_TRUE(cc->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -317,7 +327,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
   printf("Preconditions fulfilled.\n");
 
   ASSERT_FALSE(cc_test::CheckUserExists(cc, username, pin, 10000));
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_TRUE(cc->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -343,7 +353,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
   ASSERT_FALSE(cc_test::CheckUserExists(cc, username, pin, 10000));
   printf("User no longer exists.\n");
 
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_TRUE(cc->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -367,7 +377,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   printf("Preconditions fulfilled.\n");
 
   ASSERT_FALSE(cc_test::CheckUserExists(cc, username, pin, 10000));
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_TRUE(cc->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -434,7 +444,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerUserAuthorisation) {
   printf("Preconditions fulfilled.\n");
 
   ASSERT_FALSE(cc_test::CheckUserExists(cc, username, pin, 10000));
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_TRUE(cc->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());
@@ -545,7 +555,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerUserAuthorisation) {
 //    ASSERT_EQ("", ss->Password());
 //    printf("Preconditions fulfilled.\n");
 //
-//    ASSERT_TRUE(cc->CreateUser(username, pin, password));
+//    ASSERT_TRUE(cc->CreateUser(username, pin, password, vcp_));
 //    ASSERT_EQ(username, ss->Username());
 //    ASSERT_EQ(pin, ss->Pin());
 //    ASSERT_EQ(password, ss->Password());
@@ -575,7 +585,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerUserAuthorisation) {
 //    ASSERT_EQ("", ss->Password());
 //    printf("Logged out.\n");
 //
-//    ASSERT_TRUE(cc->CreateUser("smer","7777","palofeo"));
+//    ASSERT_TRUE(cc->CreateUser("smer","7777","palofeo", vcp_));
 //    ASSERT_TRUE(ss->Username() == "smer");
 //    ASSERT_TRUE(ss->Pin() == "7777");
 //    ASSERT_TRUE(ss->Password() == "palofeo");
@@ -640,7 +650,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {
   printf("Preconditions fulfilled.\n");
 
   ASSERT_FALSE(cc_test::CheckUserExists(cc, username, pin, 10000));
-  ASSERT_TRUE(cc->CreateUser(username, pin, password));
+  ASSERT_TRUE(cc->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss->Username());
   ASSERT_EQ(pin, ss->Pin());
   ASSERT_EQ(password, ss->Password());

@@ -209,19 +209,9 @@ bool ChunkStore::PopulateChunkSet(ChunkType type, const fs::path &dir_path) {
 }
 
 bool ChunkStore::Has(const std::string &key) {
-  if (!is_initialised()) {
-#ifdef DEBUG
-    printf("Not initialised in ChunkStore::HasChunk.\n");
-#endif
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
     return false;
-  }
-  if (key.size() != kKeySize) {
-#ifdef DEBUG
-    printf("In ChunkStore::HasChunk, key size passed is %u, not %u.\n",
-           key.size(), kKeySize);
-#endif
-    return false;
-  }
   bool result(false);
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
@@ -233,19 +223,9 @@ bool ChunkStore::Has(const std::string &key) {
 }
 
 ChunkType ChunkStore::chunk_type(const std::string &key) {
-  if (!is_initialised()) {
-#ifdef DEBUG
-    printf("Not initialised in ChunkStore::chunk_type.\n");
-#endif
-    return kInvalidChunkType;
-  }
-  if (key.size() != kKeySize) {
-#ifdef DEBUG
-    printf("In ChunkStore::chunk_type, key size passed is %u, not %u.\n",
-           key.size(), kKeySize);
-#endif
-    return kInvalidChunkType;
-  }
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
+    return valid;
   boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
   chunk_set_by_non_hex_name::iterator itr =
       chunkstore_set_.get<non_hex_name>().find(key);
@@ -350,19 +330,9 @@ fs::path ChunkStore::GetChunkPath(const std::string &key,
 }
 
 int ChunkStore::Store(const std::string &key, const std::string &value) {
-  if (!is_initialised()) {
-#ifdef DEBUG
-    printf("Not initialised in ChunkStore::StoreChunk.\n");
-#endif
-    return kChunkstoreUninitialised;
-  }
-  if (key.size() != kKeySize) {
-#ifdef DEBUG
-    printf("In ChunkStore::StoreChunk, key size passed is %u, not %u.\n",
-           key.size(), kKeySize);
-#endif
-    return kIncorrectKeySize;
-  }
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
+    return valid;
   if (Has(key)) {
 #ifdef DEBUG
     printf("Chunk %s already exists in ChunkStore::StoreChunk.\n",
@@ -382,19 +352,9 @@ int ChunkStore::Store(const std::string &key, const std::string &value) {
 }
 
 int ChunkStore::Store(const std::string &key, const fs::path &file) {
-  if (!is_initialised()) {
-#ifdef DEBUG
-    printf("Not initialised in ChunkStore::StoreChunk.\n");
-#endif
-    return kChunkstoreUninitialised;
-  }
-  if (key.size() != kKeySize) {
-#ifdef DEBUG
-    printf("In ChunkStore::StoreChunk, key size passed is %u, not %u.\n",
-           key.size(), kKeySize);
-#endif
-    return kIncorrectKeySize;
-  }
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
+    return valid;
   if (Has(key)) {
 // If chunk is cached and is hashable, change type to kNormal.  If chunk is
 // in Outgoing dir, leave it there.
@@ -414,19 +374,9 @@ int ChunkStore::Store(const std::string &key, const fs::path &file) {
 
 int ChunkStore::AddChunkToOutgoing(const std::string &key,
                                    const std::string &value) {
-  if (!is_initialised()) {
-#ifdef DEBUG
-    printf("Not initialised in ChunkStore::AddChunkToOutgoing.\n");
-#endif
-    return kChunkstoreUninitialised;
-  }
-  if (key.size() != kKeySize) {
-#ifdef DEBUG
-    printf("In ChunkStore::AddChunkToOutgoing, key size passed is %u, "
-           "not %u.\n", key.size(), kKeySize);
-#endif
-    return kIncorrectKeySize;
-  }
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
+    return valid;
   if (Has(key)) {
 #ifdef DEBUG
     printf("Chunk already exists in ChunkStore::AddChunkToOutgoing.\n");
@@ -441,19 +391,9 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
 
 int ChunkStore::AddChunkToOutgoing(const std::string &key,
                                    const fs::path &file) {
-  if (!is_initialised()) {
-#ifdef DEBUG
-    printf("Not initialised in ChunkStore::AddChunkToOutgoing.\n");
-#endif
-    return kChunkstoreUninitialised;
-  }
-  if (key.size() != kKeySize) {
-#ifdef DEBUG
-    printf("In ChunkStore::AddChunkToOutgoing, key size passed is %u, "
-           "not %u.\n", key.size(), kKeySize);
-#endif
-    return kIncorrectKeySize;
-  }
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
+    return valid;
   if (Has(key)) {
 #ifdef DEBUG
     printf("Chunk already exists in ChunkStore::AddChunkToOutgoing.\n");
@@ -530,19 +470,9 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
 }
 
 int ChunkStore::DeleteChunk(const std::string &key) {
-  if (!is_initialised()) {
-#ifdef DEBUG
-    printf("Not initialised in ChunkStore::DeleteChunk.\n");
-#endif
-    return kChunkstoreUninitialised;
-  }
-  if (key.size() != kKeySize) {
-#ifdef DEBUG
-    printf("In ChunkStore::DeleteChunk, key size passed is %u, not %u.\n",
-           key.size(), kKeySize);
-#endif
-    return kIncorrectKeySize;
-  }
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
+    return valid;
   ChunkType type = chunk_type(key);
   // Chunk is not in multi-index
   if (type == kInvalidChunkType)
@@ -583,19 +513,9 @@ int ChunkStore::DeleteChunkFunction(const std::string &key,
 
 int ChunkStore::Load(const std::string &key, std::string *value) {
   value->clear();
-  if (!is_initialised()) {
-#ifdef DEBUG
-    printf("Not initialised in ChunkStore::LoadChunk.\n");
-#endif
-    return kChunkstoreUninitialised;
-  }
-  if (key.size() != kKeySize) {
-#ifdef DEBUG
-    printf("In ChunkStore::LoadChunk, key size passed is %u, not %u.\n",
-           key.size(), kKeySize);
-#endif
-    return kIncorrectKeySize;
-  }
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
+    return valid;
   ChunkType type = chunk_type(key);
   if (type == kInvalidChunkType)
     return kInvalidChunkType;
@@ -622,19 +542,9 @@ int ChunkStore::Load(const std::string &key, std::string *value) {
 }
 
 int ChunkStore::HashCheckChunk(const std::string &key) {
-  if (!is_initialised()) {
-#ifdef DEBUG
-    printf("Not initialised in ChunkStore::HashCheckChunk.\n");
-#endif
-    return kChunkstoreUninitialised;
-  }
-  if (key.size() != kKeySize) {
-#ifdef DEBUG
-    printf("In ChunkStore::HashCheckChunk, key size passed is %u, not %u.\n",
-           key.size(), kKeySize);
-#endif
-    return kIncorrectKeySize;
-  }
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
+    return valid;
   ChunkType type = chunk_type(key);
   if (type == kInvalidChunkType)
     return kInvalidChunkType;
@@ -662,10 +572,13 @@ int ChunkStore::HashCheckChunk(const std::string &key,
     non_hex_filename = (*itr).non_hex_name_;
     non_hex_name_index.modify(itr, change_last_checked(now));
   }
-  return file_hash == non_hex_filename ? kSuccess : kFailedHashCheck;
+  return file_hash == non_hex_filename ? kSuccess : kHashCheckFailure;
 }
 
 int ChunkStore::ChangeChunkType(const std::string &key, ChunkType type) {
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
+    return valid;
   ChunkType current_type = chunk_type(key);
   if (current_type == kInvalidChunkType) {
 #ifdef DEBUG
@@ -711,6 +624,23 @@ int ChunkStore::ChangeChunkType(const std::string &key, ChunkType type) {
         chunkstore_set_.get<non_hex_name>();
     chunk_set_by_non_hex_name::iterator itr = non_hex_name_index.find(key);
     non_hex_name_index.modify(itr, change_type(type));
+  }
+  return kSuccess;
+}
+
+int ChunkStore::InitialOperationVerification(const std::string &key) {
+  if (!is_initialised()) {
+#ifdef DEBUG
+    printf("ChunkStore not initialised.\n");
+#endif
+    return kChunkstoreUninitialised;
+  }
+  if (key.size() != kKeySize) {
+#ifdef DEBUG
+    printf("In ChunkStore, key size passed is %u, not %u.\n",
+           key.size(), kKeySize);
+#endif
+    return kIncorrectKeySize;
   }
   return kSuccess;
 }

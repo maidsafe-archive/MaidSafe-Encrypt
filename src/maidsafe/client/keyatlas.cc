@@ -60,7 +60,7 @@ int KeyAtlas::AddKey(const int &packet_type,
   KeyAtlasRow kar(packet_type, packet_id, private_key, public_key,
                   signed_pub_key);
   key_ring_.insert(kar);
-  return 0;
+  return kSuccess;
 }
 
 std::string KeyAtlas::SearchKeyring(const int &packet_type,
@@ -110,10 +110,10 @@ int KeyAtlas::RemoveKey(const int &packet_type) {
 #ifdef DEBUG
     printf("Key type(%d) not present in keyring.\n", packet_type);
 #endif
-    return -1801;
+    return kKeyAtlasError;
   }
   key_ring_.erase(packet_type);
-  return 0;
+  return kSuccess;
 }
 
 void KeyAtlas::GetKeyRing(std::list<KeyAtlasRow> *keyring) {

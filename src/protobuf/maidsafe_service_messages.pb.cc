@@ -50,6 +50,12 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* StoreReferenceResponse_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   StoreReferenceResponse_reflection_ = NULL;
+const ::google::protobuf::Descriptor* StorePacketRequest_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  StorePacketRequest_reflection_ = NULL;
+const ::google::protobuf::Descriptor* StorePacketResponse_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  StorePacketResponse_reflection_ = NULL;
 const ::google::protobuf::Descriptor* DeleteRequest_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   DeleteRequest_reflection_ = NULL;
@@ -62,6 +68,12 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* GetResponse_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   GetResponse_reflection_ = NULL;
+const ::google::protobuf::Descriptor* GetPacketRequest_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  GetPacketRequest_reflection_ = NULL;
+const ::google::protobuf::Descriptor* GetPacketResponse_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  GetPacketResponse_reflection_ = NULL;
 const ::google::protobuf::Descriptor* CheckChunkRequest_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   CheckChunkRequest_reflection_ = NULL;
@@ -384,7 +396,49 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(StoreReferenceResponse));
-  DeleteRequest_descriptor_ = file->message_type(13);
+  StorePacketRequest_descriptor_ = file->message_type(13);
+  static const int StorePacketRequest_offsets_[8] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketRequest, packetname_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketRequest, signed_data_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketRequest, key_id_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketRequest, public_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketRequest, public_key_signature_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketRequest, request_signature_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketRequest, data_type_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketRequest, append_),
+  };
+  StorePacketRequest_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      StorePacketRequest_descriptor_,
+      StorePacketRequest::default_instance_,
+      StorePacketRequest_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketRequest, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketRequest, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(StorePacketRequest));
+  StorePacketResponse_descriptor_ = file->message_type(14);
+  static const int StorePacketResponse_offsets_[6] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketResponse, result_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketResponse, pmid_id_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketResponse, public_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketResponse, public_key_signature_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketResponse, response_signature_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketResponse, checksum_),
+  };
+  StorePacketResponse_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      StorePacketResponse_descriptor_,
+      StorePacketResponse::default_instance_,
+      StorePacketResponse_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketResponse, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StorePacketResponse, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(StorePacketResponse));
+  DeleteRequest_descriptor_ = file->message_type(15);
   static const int DeleteRequest_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteRequest, chunkname_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteRequest, public_key_),
@@ -403,7 +457,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(DeleteRequest));
-  DeleteResponse_descriptor_ = file->message_type(14);
+  DeleteResponse_descriptor_ = file->message_type(16);
   static const int DeleteResponse_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteResponse, pmid_id_),
@@ -419,7 +473,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(DeleteResponse));
-  GetRequest_descriptor_ = file->message_type(15);
+  GetRequest_descriptor_ = file->message_type(17);
   static const int GetRequest_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetRequest, chunkname_),
   };
@@ -434,7 +488,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(GetRequest));
-  GetResponse_descriptor_ = file->message_type(16);
+  GetResponse_descriptor_ = file->message_type(18);
   static const int GetResponse_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetResponse, content_),
@@ -451,7 +505,39 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(GetResponse));
-  CheckChunkRequest_descriptor_ = file->message_type(17);
+  GetPacketRequest_descriptor_ = file->message_type(19);
+  static const int GetPacketRequest_offsets_[1] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetPacketRequest, chunkname_),
+  };
+  GetPacketRequest_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      GetPacketRequest_descriptor_,
+      GetPacketRequest::default_instance_,
+      GetPacketRequest_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetPacketRequest, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetPacketRequest, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(GetPacketRequest));
+  GetPacketResponse_descriptor_ = file->message_type(20);
+  static const int GetPacketResponse_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetPacketResponse, result_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetPacketResponse, content_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetPacketResponse, pmid_id_),
+  };
+  GetPacketResponse_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      GetPacketResponse_descriptor_,
+      GetPacketResponse::default_instance_,
+      GetPacketResponse_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetPacketResponse, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetPacketResponse, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(GetPacketResponse));
+  CheckChunkRequest_descriptor_ = file->message_type(21);
   static const int CheckChunkRequest_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CheckChunkRequest, chunkname_),
   };
@@ -466,7 +552,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CheckChunkRequest));
-  CheckChunkResponse_descriptor_ = file->message_type(18);
+  CheckChunkResponse_descriptor_ = file->message_type(22);
   static const int CheckChunkResponse_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CheckChunkResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CheckChunkResponse, pmid_id_),
@@ -482,7 +568,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CheckChunkResponse));
-  ValidityCheckRequest_descriptor_ = file->message_type(19);
+  ValidityCheckRequest_descriptor_ = file->message_type(23);
   static const int ValidityCheckRequest_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ValidityCheckRequest, chunkname_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ValidityCheckRequest, random_data_),
@@ -498,7 +584,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(ValidityCheckRequest));
-  ValidityCheckResponse_descriptor_ = file->message_type(20);
+  ValidityCheckResponse_descriptor_ = file->message_type(24);
   static const int ValidityCheckResponse_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ValidityCheckResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ValidityCheckResponse, hash_content_),
@@ -515,7 +601,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(ValidityCheckResponse));
-  UpdateRequest_descriptor_ = file->message_type(21);
+  UpdateRequest_descriptor_ = file->message_type(25);
   static const int UpdateRequest_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(UpdateRequest, chunkname_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(UpdateRequest, data_),
@@ -535,7 +621,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(UpdateRequest));
-  UpdateResponse_descriptor_ = file->message_type(22);
+  UpdateResponse_descriptor_ = file->message_type(26);
   static const int UpdateResponse_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(UpdateResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(UpdateResponse, pmid_id_),
@@ -551,7 +637,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(UpdateResponse));
-  SwapChunkRequest_descriptor_ = file->message_type(23);
+  SwapChunkRequest_descriptor_ = file->message_type(27);
   static const int SwapChunkRequest_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SwapChunkRequest, request_type_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SwapChunkRequest, chunkname1_),
@@ -570,7 +656,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SwapChunkRequest));
-  SwapChunkResponse_descriptor_ = file->message_type(24);
+  SwapChunkResponse_descriptor_ = file->message_type(28);
   static const int SwapChunkResponse_offsets_[9] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SwapChunkResponse, request_type_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SwapChunkResponse, result_),
@@ -593,7 +679,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SwapChunkResponse));
-  VaultCommunication_descriptor_ = file->message_type(25);
+  VaultCommunication_descriptor_ = file->message_type(29);
   static const int VaultCommunication_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultCommunication, chunkstore_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultCommunication, offered_space_),
@@ -613,7 +699,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(VaultCommunication));
-  VaultStatusRequest_descriptor_ = file->message_type(26);
+  VaultStatusRequest_descriptor_ = file->message_type(30);
   static const int VaultStatusRequest_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultStatusRequest, encrypted_request_),
   };
@@ -628,7 +714,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(VaultStatusRequest));
-  VaultStatusResponse_descriptor_ = file->message_type(27);
+  VaultStatusResponse_descriptor_ = file->message_type(31);
   static const int VaultStatusResponse_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultStatusResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultStatusResponse, encrypted_response_),
@@ -644,7 +730,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(VaultStatusResponse));
-  OwnVaultRequest_descriptor_ = file->message_type(28);
+  OwnVaultRequest_descriptor_ = file->message_type(32);
   static const int OwnVaultRequest_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OwnVaultRequest, public_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OwnVaultRequest, private_key_),
@@ -664,7 +750,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(OwnVaultRequest));
-  OwnVaultResponse_descriptor_ = file->message_type(29);
+  OwnVaultResponse_descriptor_ = file->message_type(33);
   static const int OwnVaultResponse_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OwnVaultResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OwnVaultResponse, pmid_name_),
@@ -680,7 +766,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(OwnVaultResponse));
-  IsOwnedRequest_descriptor_ = file->message_type(30);
+  IsOwnedRequest_descriptor_ = file->message_type(34);
   static const int IsOwnedRequest_offsets_[1] = {
   };
   IsOwnedRequest_reflection_ =
@@ -694,7 +780,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(IsOwnedRequest));
-  IsOwnedResponse_descriptor_ = file->message_type(31);
+  IsOwnedResponse_descriptor_ = file->message_type(35);
   static const int IsOwnedResponse_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(IsOwnedResponse, status_),
   };
@@ -709,7 +795,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(IsOwnedResponse));
-  CreateBPRequest_descriptor_ = file->message_type(32);
+  CreateBPRequest_descriptor_ = file->message_type(36);
   static const int CreateBPRequest_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateBPRequest, bufferpacket_name_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateBPRequest, data_),
@@ -729,7 +815,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CreateBPRequest));
-  CreateBPResponse_descriptor_ = file->message_type(33);
+  CreateBPResponse_descriptor_ = file->message_type(37);
   static const int CreateBPResponse_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateBPResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateBPResponse, pmid_id_),
@@ -747,7 +833,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CreateBPResponse));
-  ModifyBPInfoRequest_descriptor_ = file->message_type(34);
+  ModifyBPInfoRequest_descriptor_ = file->message_type(38);
   static const int ModifyBPInfoRequest_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ModifyBPInfoRequest, bufferpacket_name_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ModifyBPInfoRequest, data_),
@@ -767,7 +853,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(ModifyBPInfoRequest));
-  ModifyBPInfoResponse_descriptor_ = file->message_type(35);
+  ModifyBPInfoResponse_descriptor_ = file->message_type(39);
   static const int ModifyBPInfoResponse_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ModifyBPInfoResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ModifyBPInfoResponse, pmid_id_),
@@ -785,7 +871,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(ModifyBPInfoResponse));
-  GetBPMessagesRequest_descriptor_ = file->message_type(36);
+  GetBPMessagesRequest_descriptor_ = file->message_type(40);
   static const int GetBPMessagesRequest_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetBPMessagesRequest, bufferpacket_name_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetBPMessagesRequest, public_key_),
@@ -804,7 +890,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(GetBPMessagesRequest));
-  GetBPMessagesResponse_descriptor_ = file->message_type(37);
+  GetBPMessagesResponse_descriptor_ = file->message_type(41);
   static const int GetBPMessagesResponse_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetBPMessagesResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GetBPMessagesResponse, messages_),
@@ -823,7 +909,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(GetBPMessagesResponse));
-  AddBPMessageRequest_descriptor_ = file->message_type(38);
+  AddBPMessageRequest_descriptor_ = file->message_type(42);
   static const int AddBPMessageRequest_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AddBPMessageRequest, bufferpacket_name_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AddBPMessageRequest, data_),
@@ -843,7 +929,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(AddBPMessageRequest));
-  AddBPMessageResponse_descriptor_ = file->message_type(39);
+  AddBPMessageResponse_descriptor_ = file->message_type(43);
   static const int AddBPMessageResponse_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AddBPMessageResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AddBPMessageResponse, pmid_id_),
@@ -902,6 +988,10 @@ void protobuf_RegisterTypes() {
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     StoreReferenceResponse_descriptor_, &StoreReferenceResponse::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    StorePacketRequest_descriptor_, &StorePacketRequest::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    StorePacketResponse_descriptor_, &StorePacketResponse::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     DeleteRequest_descriptor_, &DeleteRequest::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     DeleteResponse_descriptor_, &DeleteResponse::default_instance());
@@ -909,6 +999,10 @@ void protobuf_RegisterTypes() {
     GetRequest_descriptor_, &GetRequest::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     GetResponse_descriptor_, &GetResponse::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    GetPacketRequest_descriptor_, &GetPacketRequest::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    GetPacketResponse_descriptor_, &GetPacketResponse::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     CheckChunkRequest_descriptor_, &CheckChunkRequest::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
@@ -986,6 +1080,10 @@ void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto() {
   delete StoreReferenceRequest_reflection_;
   delete StoreReferenceResponse::default_instance_;
   delete StoreReferenceResponse_reflection_;
+  delete StorePacketRequest::default_instance_;
+  delete StorePacketRequest_reflection_;
+  delete StorePacketResponse::default_instance_;
+  delete StorePacketResponse_reflection_;
   delete DeleteRequest::default_instance_;
   delete DeleteRequest_reflection_;
   delete DeleteResponse::default_instance_;
@@ -994,6 +1092,10 @@ void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto() {
   delete GetRequest_reflection_;
   delete GetResponse::default_instance_;
   delete GetResponse_reflection_;
+  delete GetPacketRequest::default_instance_;
+  delete GetPacketRequest_reflection_;
+  delete GetPacketResponse::default_instance_;
+  delete GetPacketResponse_reflection_;
   delete CheckChunkRequest::default_instance_;
   delete CheckChunkRequest_reflection_;
   delete CheckChunkResponse::default_instance_;
@@ -1048,117 +1150,130 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
   already_here = true;
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
+  ::maidsafe::protobuf_AddDesc_packet_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\037maidsafe_service_messages.proto\022\010maids"
-    "afe\"/\n\014IOUAuthority\022\021\n\tdata_size\030\001 \002(\004\022\014"
-    "\n\004pmid\030\002 \002(\014\"X\n\003IOU\022 \n\030serialised_iou_au"
-    "thority\030\001 \002(\014\022\034\n\024signed_iou_authority\030\002 "
-    "\002(\014\022\021\n\tsignature\030\003 \002(\014\"\215\001\n\020StorePrepRequ"
-    "est\022\021\n\tchunkname\030\001 \002(\014\022\021\n\tdata_size\030\002 \002("
-    "\004\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\031\n\021s"
-    "igned_public_key\030\005 \002(\014\022\026\n\016signed_request"
-    "\030\006 \002(\014\"i\n\021StorePrepResponse\022\016\n\006result\030\001 "
-    "\002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\025\n\riou_authority\030\003 "
-    "\001(\014\022\034\n\024signed_iou_authority\030\004 \001(\014\"\276\001\n\014St"
-    "oreRequest\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004data\030\002 "
-    "\002(\014\022\014\n\004pmid\030\003 \001(\014\022\022\n\npublic_key\030\004 \002(\014\022\031\n"
-    "\021signed_public_key\030\005 \002(\014\022\026\n\016signed_reque"
-    "st\030\006 \002(\014\022\021\n\tdata_type\030\007 \002(\005\022\016\n\006offset\030\010 "
-    "\001(\r\022\025\n\rchunklet_size\030\t \001(\r\"0\n\rStoreRespo"
-    "nse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\"\265\001\n"
-    "\017StoreIOURequest\022\021\n\tchunkname\030\001 \002(\014\022\021\n\td"
-    "ata_size\030\002 \002(\004\022\026\n\016collector_pmid\030\003 \002(\014\022\013"
-    "\n\003iou\030\004 \002(\014\022\020\n\010own_pmid\030\005 \002(\014\022\022\n\npublic_"
-    "key\030\006 \002(\014\022\031\n\021signed_public_key\030\007 \002(\014\022\026\n\016"
-    "signed_request\030\010 \002(\014\"3\n\020StoreIOUResponse"
-    "\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\"j\n\016IOU"
-    "DoneRequest\022\021\n\tchunkname\030\001 \002(\014\022\022\n\npublic"
-    "_key\030\002 \002(\014\022\031\n\021signed_public_key\030\003 \002(\014\022\026\n"
-    "\016signed_request\030\004 \002(\014\"2\n\017IOUDoneResponse"
-    "\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\"C\n\rRan"
-    "kAuthority\022\021\n\tchunkname\030\001 \002(\014\022\021\n\tdata_si"
-    "ze\030\002 \002(\004\022\014\n\004pmid\030\003 \002(\014\"\251\001\n\025StoreReferenc"
-    "eRequest\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004pmid\030\002 \002("
-    "\014\022\023\n\013signed_pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002"
+    "afe\032\014packet.proto\"/\n\014IOUAuthority\022\021\n\tdat"
+    "a_size\030\001 \002(\004\022\014\n\004pmid\030\002 \002(\014\"X\n\003IOU\022 \n\030ser"
+    "ialised_iou_authority\030\001 \002(\014\022\034\n\024signed_io"
+    "u_authority\030\002 \002(\014\022\021\n\tsignature\030\003 \002(\014\"\215\001\n"
+    "\020StorePrepRequest\022\021\n\tchunkname\030\001 \002(\014\022\021\n\t"
+    "data_size\030\002 \002(\004\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_"
+    "key\030\004 \002(\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026\n\016"
+    "signed_request\030\006 \002(\014\"i\n\021StorePrepRespons"
+    "e\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\025\n\rio"
+    "u_authority\030\003 \001(\014\022\034\n\024signed_iou_authorit"
+    "y\030\004 \001(\014\"\276\001\n\014StoreRequest\022\021\n\tchunkname\030\001 "
+    "\002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \001(\014\022\022\n\npubli"
+    "c_key\030\004 \002(\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026"
+    "\n\016signed_request\030\006 \002(\014\022\021\n\tdata_type\030\007 \002("
+    "\005\022\016\n\006offset\030\010 \001(\r\022\025\n\rchunklet_size\030\t \001(\r"
+    "\"0\n\rStoreResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmi"
+    "d_id\030\002 \001(\014\"\265\001\n\017StoreIOURequest\022\021\n\tchunkn"
+    "ame\030\001 \002(\014\022\021\n\tdata_size\030\002 \002(\004\022\026\n\016collecto"
+    "r_pmid\030\003 \002(\014\022\013\n\003iou\030\004 \002(\014\022\020\n\010own_pmid\030\005 "
+    "\002(\014\022\022\n\npublic_key\030\006 \002(\014\022\031\n\021signed_public"
+    "_key\030\007 \002(\014\022\026\n\016signed_request\030\010 \002(\014\"3\n\020St"
+    "oreIOUResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_i"
+    "d\030\002 \001(\014\"j\n\016IOUDoneRequest\022\021\n\tchunkname\030\001"
+    " \002(\014\022\022\n\npublic_key\030\002 \002(\014\022\031\n\021signed_publi"
+    "c_key\030\003 \002(\014\022\026\n\016signed_request\030\004 \002(\014\"2\n\017I"
+    "OUDoneResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_i"
+    "d\030\002 \001(\014\"C\n\rRankAuthority\022\021\n\tchunkname\030\001 "
+    "\002(\014\022\021\n\tdata_size\030\002 \002(\004\022\014\n\004pmid\030\003 \002(\014\"\251\001\n"
+    "\025StoreReferenceRequest\022\021\n\tchunkname\030\001 \002("
+    "\014\022\014\n\004pmid\030\002 \002(\014\022\023\n\013signed_pmid\030\003 \002(\014\022\022\n\n"
+    "public_key\030\004 \002(\014\022\031\n\021signed_public_key\030\005 "
+    "\002(\014\022\026\n\016signed_request\030\006 \002(\014\022\023\n\013no_iou_ra"
+    "nk\030\007 \001(\010\"\254\001\n\026StoreReferenceResponse\022\016\n\006r"
+    "esult\030\001 \002(\r\022\026\n\016rank_authority\030\002 \001(\014\022\035\n\025s"
+    "igned_rank_authority\030\003 \001(\014\022\013\n\003iou\030\004 \001(\014\022"
+    "\017\n\007pmid_id\030\005 \001(\014\022\022\n\npublic_key\030\006 \001(\014\022\031\n\021"
+    "signed_public_key\030\007 \001(\014\"\326\001\n\022StorePacketR"
+    "equest\022\022\n\npacketname\030\001 \002(\014\022,\n\013signed_dat"
+    "a\030\002 \003(\0132\027.maidsafe.GenericPacket\022\016\n\006key_"
+    "id\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\034\n\024public_k"
+    "ey_signature\030\005 \002(\014\022\031\n\021request_signature\030"
+    "\006 \002(\014\022\021\n\tdata_type\030\007 \002(\005\022\016\n\006append\030\010 \002(\010"
+    "\"\226\001\n\023StorePacketResponse\022\016\n\006result\030\001 \002(\r"
+    "\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npublic_key\030\003 \001(\014\022\034\n"
+    "\024public_key_signature\030\004 \001(\014\022\032\n\022response_"
+    "signature\030\005 \001(\014\022\020\n\010checksum\030\006 \001(\014\"|\n\rDel"
+    "eteRequest\022\021\n\tchunkname\030\001 \002(\014\022\022\n\npublic_"
+    "key\030\002 \002(\014\022\031\n\021signed_public_key\030\003 \002(\014\022\026\n\016"
+    "signed_request\030\004 \002(\014\022\021\n\tdata_type\030\005 \002(\005\""
+    "1\n\016DeleteResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmi"
+    "d_id\030\002 \001(\014\"\037\n\nGetRequest\022\021\n\tchunkname\030\001 "
+    "\002(\014\"?\n\013GetResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007co"
+    "ntent\030\002 \001(\014\022\017\n\007pmid_id\030\003 \001(\014\"%\n\020GetPacke"
+    "tRequest\022\021\n\tchunkname\030\001 \002(\014\"E\n\021GetPacket"
+    "Response\022\016\n\006result\030\001 \002(\r\022\017\n\007content\030\002 \003("
+    "\014\022\017\n\007pmid_id\030\003 \001(\014\"&\n\021CheckChunkRequest\022"
+    "\021\n\tchunkname\030\001 \002(\014\"5\n\022CheckChunkResponse"
+    "\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \002(\014\">\n\024Val"
+    "idityCheckRequest\022\021\n\tchunkname\030\001 \002(\014\022\023\n\013"
+    "random_data\030\002 \002(\014\"N\n\025ValidityCheckRespon"
+    "se\022\016\n\006result\030\001 \002(\r\022\024\n\014hash_content\030\002 \001(\014"
+    "\022\017\n\007pmid_id\030\003 \002(\014\"\212\001\n\rUpdateRequest\022\021\n\tc"
+    "hunkname\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\022\n\npublic_k"
+    "ey\030\003 \002(\014\022\031\n\021signed_public_key\030\004 \002(\014\022\026\n\016s"
+    "igned_request\030\005 \002(\014\022\021\n\tdata_type\030\006 \002(\005\"1"
+    "\n\016UpdateResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid"
+    "_id\030\002 \001(\014\"v\n\020SwapChunkRequest\022\024\n\014request"
+    "_type\030\001 \002(\005\022\022\n\nchunkname1\030\002 \002(\014\022\025\n\rchunk"
+    "content1\030\003 \001(\014\022\r\n\005size1\030\004 \001(\005\022\022\n\nchunkna"
+    "me2\030\005 \001(\014\"\276\001\n\021SwapChunkResponse\022\024\n\014reque"
+    "st_type\030\001 \002(\005\022\016\n\006result\030\002 \002(\r\022\022\n\nchunkna"
+    "me1\030\003 \001(\014\022\025\n\rchunkcontent1\030\004 \001(\014\022\r\n\005size"
+    "1\030\005 \001(\005\022\022\n\nchunkname2\030\006 \001(\014\022\025\n\rchunkcont"
+    "ent2\030\007 \001(\014\022\r\n\005size2\030\010 \001(\005\022\017\n\007pmid_id\030\t \002"
+    "(\014\"\200\001\n\022VaultCommunication\022\022\n\nchunkstore\030"
+    "\001 \001(\014\022\025\n\roffered_space\030\002 \001(\004\022\022\n\nfree_spa"
+    "ce\030\003 \001(\004\022\n\n\002ip\030\004 \001(\014\022\014\n\004port\030\005 \001(\r\022\021\n\tti"
+    "mestamp\030\006 \002(\r\"/\n\022VaultStatusRequest\022\031\n\021e"
+    "ncrypted_request\030\001 \002(\014\"A\n\023VaultStatusRes"
+    "ponse\022\016\n\006result\030\001 \002(\r\022\032\n\022encrypted_respo"
+    "nse\030\002 \001(\014\"\212\001\n\017OwnVaultRequest\022\022\n\npublic_"
+    "key\030\001 \002(\014\022\023\n\013private_key\030\002 \002(\014\022\031\n\021signed"
+    "_public_key\030\003 \002(\014\022\026\n\016chunkstore_dir\030\004 \002("
+    "\014\022\014\n\004port\030\005 \002(\r\022\r\n\005space\030\006 \002(\004\"O\n\020OwnVau"
+    "ltResponse\022(\n\006result\030\001 \002(\0162\030.maidsafe.Ow"
+    "nVaultResult\022\021\n\tpmid_name\030\002 \001(\014\"\020\n\016IsOwn"
+    "edRequest\"8\n\017IsOwnedResponse\022%\n\006status\030\001"
+    " \002(\0162\025.maidsafe.VaultStatus\"\217\001\n\017CreateBP"
+    "Request\022\031\n\021bufferpacket_name\030\001 \002(\014\022\014\n\004da"
+    "ta\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002"
     "(\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026\n\016signed_"
-    "request\030\006 \002(\014\022\023\n\013no_iou_rank\030\007 \001(\010\"\254\001\n\026S"
-    "toreReferenceResponse\022\016\n\006result\030\001 \002(\r\022\026\n"
-    "\016rank_authority\030\002 \001(\014\022\035\n\025signed_rank_aut"
-    "hority\030\003 \001(\014\022\013\n\003iou\030\004 \001(\014\022\017\n\007pmid_id\030\005 \001"
-    "(\014\022\022\n\npublic_key\030\006 \001(\014\022\031\n\021signed_public_"
-    "key\030\007 \001(\014\"|\n\rDeleteRequest\022\021\n\tchunkname\030"
-    "\001 \002(\014\022\022\n\npublic_key\030\002 \002(\014\022\031\n\021signed_publ"
-    "ic_key\030\003 \002(\014\022\026\n\016signed_request\030\004 \002(\014\022\021\n\t"
-    "data_type\030\005 \002(\005\"1\n\016DeleteResponse\022\016\n\006res"
-    "ult\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\"\037\n\nGetRequest"
-    "\022\021\n\tchunkname\030\001 \002(\014\"?\n\013GetResponse\022\016\n\006re"
-    "sult\030\001 \002(\r\022\017\n\007content\030\002 \001(\014\022\017\n\007pmid_id\030\003"
-    " \001(\014\"&\n\021CheckChunkRequest\022\021\n\tchunkname\030\001"
-    " \002(\014\"5\n\022CheckChunkResponse\022\016\n\006result\030\001 \002"
-    "(\r\022\017\n\007pmid_id\030\002 \002(\014\">\n\024ValidityCheckRequ"
-    "est\022\021\n\tchunkname\030\001 \002(\014\022\023\n\013random_data\030\002 "
-    "\002(\014\"N\n\025ValidityCheckResponse\022\016\n\006result\030\001"
-    " \002(\r\022\024\n\014hash_content\030\002 \001(\014\022\017\n\007pmid_id\030\003 "
-    "\002(\014\"\212\001\n\rUpdateRequest\022\021\n\tchunkname\030\001 \002(\014"
-    "\022\014\n\004data\030\002 \002(\014\022\022\n\npublic_key\030\003 \002(\014\022\031\n\021si"
-    "gned_public_key\030\004 \002(\014\022\026\n\016signed_request\030"
-    "\005 \002(\014\022\021\n\tdata_type\030\006 \002(\005\"1\n\016UpdateRespon"
-    "se\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\"v\n\020S"
-    "wapChunkRequest\022\024\n\014request_type\030\001 \002(\005\022\022\n"
-    "\nchunkname1\030\002 \002(\014\022\025\n\rchunkcontent1\030\003 \001(\014"
-    "\022\r\n\005size1\030\004 \001(\005\022\022\n\nchunkname2\030\005 \001(\014\"\276\001\n\021"
-    "SwapChunkResponse\022\024\n\014request_type\030\001 \002(\005\022"
-    "\016\n\006result\030\002 \002(\r\022\022\n\nchunkname1\030\003 \001(\014\022\025\n\rc"
-    "hunkcontent1\030\004 \001(\014\022\r\n\005size1\030\005 \001(\005\022\022\n\nchu"
-    "nkname2\030\006 \001(\014\022\025\n\rchunkcontent2\030\007 \001(\014\022\r\n\005"
-    "size2\030\010 \001(\005\022\017\n\007pmid_id\030\t \002(\014\"\200\001\n\022VaultCo"
-    "mmunication\022\022\n\nchunkstore\030\001 \001(\014\022\025\n\roffer"
-    "ed_space\030\002 \001(\004\022\022\n\nfree_space\030\003 \001(\004\022\n\n\002ip"
-    "\030\004 \001(\014\022\014\n\004port\030\005 \001(\r\022\021\n\ttimestamp\030\006 \002(\r\""
-    "/\n\022VaultStatusRequest\022\031\n\021encrypted_reque"
-    "st\030\001 \002(\014\"A\n\023VaultStatusResponse\022\016\n\006resul"
-    "t\030\001 \002(\r\022\032\n\022encrypted_response\030\002 \001(\014\"\212\001\n\017"
-    "OwnVaultRequest\022\022\n\npublic_key\030\001 \002(\014\022\023\n\013p"
-    "rivate_key\030\002 \002(\014\022\031\n\021signed_public_key\030\003 "
-    "\002(\014\022\026\n\016chunkstore_dir\030\004 \002(\014\022\014\n\004port\030\005 \002("
-    "\r\022\r\n\005space\030\006 \002(\004\"O\n\020OwnVaultResponse\022(\n\006"
-    "result\030\001 \002(\0162\030.maidsafe.OwnVaultResult\022\021"
-    "\n\tpmid_name\030\002 \001(\014\"\020\n\016IsOwnedRequest\"8\n\017I"
-    "sOwnedResponse\022%\n\006status\030\001 \002(\0162\025.maidsaf"
-    "e.VaultStatus\"\217\001\n\017CreateBPRequest\022\031\n\021buf"
-    "ferpacket_name\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pm"
-    "id\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\031\n\021signed_p"
-    "ublic_key\030\005 \002(\014\022\026\n\016signed_request\030\006 \002(\014\""
-    "b\n\020CreateBPResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007p"
-    "mid_id\030\002 \001(\014\022\022\n\npublic_key\030\003 \001(\014\022\031\n\021sign"
-    "ed_public_key\030\004 \001(\014\"\223\001\n\023ModifyBPInfoRequ"
-    "est\022\031\n\021bufferpacket_name\030\001 \002(\014\022\014\n\004data\030\002"
-    " \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\031"
-    "\n\021signed_public_key\030\005 \002(\014\022\026\n\016signed_requ"
-    "est\030\006 \002(\014\"f\n\024ModifyBPInfoResponse\022\016\n\006res"
+    "request\030\006 \002(\014\"b\n\020CreateBPResponse\022\016\n\006res"
     "ult\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npublic_key"
-    "\030\003 \001(\014\022\031\n\021signed_public_key\030\004 \001(\014\"\206\001\n\024Ge"
-    "tBPMessagesRequest\022\031\n\021bufferpacket_name\030"
-    "\001 \002(\014\022\022\n\npublic_key\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022"
-    "\031\n\021signed_public_key\030\004 \002(\014\022\026\n\016signed_req"
-    "uest\030\005 \002(\014\"y\n\025GetBPMessagesResponse\022\016\n\006r"
-    "esult\030\001 \002(\r\022\020\n\010messages\030\002 \003(\014\022\017\n\007pmid_id"
-    "\030\003 \001(\014\022\022\n\npublic_key\030\004 \001(\014\022\031\n\021signed_pub"
-    "lic_key\030\005 \001(\014\"\223\001\n\023AddBPMessageRequest\022\031\n"
-    "\021bufferpacket_name\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014"
-    "\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\031\n\021sign"
-    "ed_public_key\030\005 \002(\014\022\026\n\016signed_request\030\006 "
-    "\002(\014\"f\n\024AddBPMessageResponse\022\016\n\006result\030\001 "
-    "\002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npublic_key\030\003 \001(\014"
-    "\022\031\n\021signed_public_key\030\004 \001(\014*\357\001\n\016OwnVault"
-    "Result\022\021\n\rOWNED_SUCCESS\020\000\022\027\n\023VAULT_ALREA"
-    "DY_OWNED\020\001\022\021\n\rVAULT_IS_DOWN\020\002\022\024\n\020INVALID"
-    "_RSA_KEYS\020\003\022\024\n\020NOT_ENOUGH_SPACE\020\004\022\026\n\022NO_"
-    "SPACE_ALLOCATED\020\005\022\020\n\014INVALID_PORT\020\006\022\031\n\025F"
-    "AILED_TO_START_VAULT\020\007\022\026\n\022INVALID_OWNREQ"
-    "UEST\020\010\022\025\n\021INVALID_PMID_NAME\020\t*I\n\013VaultSt"
-    "atus\022\r\n\tNOT_OWNED\020\000\022\t\n\005OWNED\020\001\022\010\n\004DOWN\020\002"
-    "\022\026\n\022ISOWNRPC_CANCELLED\020\003", 4384);
+    "\030\003 \001(\014\022\031\n\021signed_public_key\030\004 \001(\014\"\223\001\n\023Mo"
+    "difyBPInfoRequest\022\031\n\021bufferpacket_name\030\001"
+    " \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npubl"
+    "ic_key\030\004 \002(\014\022\031\n\021signed_public_key\030\005 \002(\014\022"
+    "\026\n\016signed_request\030\006 \002(\014\"f\n\024ModifyBPInfoR"
+    "esponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014"
+    "\022\022\n\npublic_key\030\003 \001(\014\022\031\n\021signed_public_ke"
+    "y\030\004 \001(\014\"\206\001\n\024GetBPMessagesRequest\022\031\n\021buff"
+    "erpacket_name\030\001 \002(\014\022\022\n\npublic_key\030\002 \002(\014\022"
+    "\014\n\004pmid\030\003 \002(\014\022\031\n\021signed_public_key\030\004 \002(\014"
+    "\022\026\n\016signed_request\030\005 \002(\014\"y\n\025GetBPMessage"
+    "sResponse\022\016\n\006result\030\001 \002(\r\022\020\n\010messages\030\002 "
+    "\003(\014\022\017\n\007pmid_id\030\003 \001(\014\022\022\n\npublic_key\030\004 \001(\014"
+    "\022\031\n\021signed_public_key\030\005 \001(\014\"\223\001\n\023AddBPMes"
+    "sageRequest\022\031\n\021bufferpacket_name\030\001 \002(\014\022\014"
+    "\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key"
+    "\030\004 \002(\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026\n\016sig"
+    "ned_request\030\006 \002(\014\"f\n\024AddBPMessageRespons"
+    "e\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npu"
+    "blic_key\030\003 \001(\014\022\031\n\021signed_public_key\030\004 \001("
+    "\014*\357\001\n\016OwnVaultResult\022\021\n\rOWNED_SUCCESS\020\000\022"
+    "\027\n\023VAULT_ALREADY_OWNED\020\001\022\021\n\rVAULT_IS_DOW"
+    "N\020\002\022\024\n\020INVALID_RSA_KEYS\020\003\022\024\n\020NOT_ENOUGH_"
+    "SPACE\020\004\022\026\n\022NO_SPACE_ALLOCATED\020\005\022\020\n\014INVAL"
+    "ID_PORT\020\006\022\031\n\025FAILED_TO_START_VAULT\020\007\022\026\n\022"
+    "INVALID_OWNREQUEST\020\010\022\025\n\021INVALID_PMID_NAM"
+    "E\020\t*I\n\013VaultStatus\022\r\n\tNOT_OWNED\020\000\022\t\n\005OWN"
+    "ED\020\001\022\010\n\004DOWN\020\002\022\026\n\022ISOWNRPC_CANCELLED\020\003", 4878);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service_messages.proto", &protobuf_RegisterTypes);
   IOUAuthority::default_instance_ = new IOUAuthority();
@@ -1174,10 +1289,14 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
   RankAuthority::default_instance_ = new RankAuthority();
   StoreReferenceRequest::default_instance_ = new StoreReferenceRequest();
   StoreReferenceResponse::default_instance_ = new StoreReferenceResponse();
+  StorePacketRequest::default_instance_ = new StorePacketRequest();
+  StorePacketResponse::default_instance_ = new StorePacketResponse();
   DeleteRequest::default_instance_ = new DeleteRequest();
   DeleteResponse::default_instance_ = new DeleteResponse();
   GetRequest::default_instance_ = new GetRequest();
   GetResponse::default_instance_ = new GetResponse();
+  GetPacketRequest::default_instance_ = new GetPacketRequest();
+  GetPacketResponse::default_instance_ = new GetPacketResponse();
   CheckChunkRequest::default_instance_ = new CheckChunkRequest();
   CheckChunkResponse::default_instance_ = new CheckChunkResponse();
   ValidityCheckRequest::default_instance_ = new ValidityCheckRequest();
@@ -1214,10 +1333,14 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
   RankAuthority::default_instance_->InitAsDefaultInstance();
   StoreReferenceRequest::default_instance_->InitAsDefaultInstance();
   StoreReferenceResponse::default_instance_->InitAsDefaultInstance();
+  StorePacketRequest::default_instance_->InitAsDefaultInstance();
+  StorePacketResponse::default_instance_->InitAsDefaultInstance();
   DeleteRequest::default_instance_->InitAsDefaultInstance();
   DeleteResponse::default_instance_->InitAsDefaultInstance();
   GetRequest::default_instance_->InitAsDefaultInstance();
   GetResponse::default_instance_->InitAsDefaultInstance();
+  GetPacketRequest::default_instance_->InitAsDefaultInstance();
+  GetPacketResponse::default_instance_->InitAsDefaultInstance();
   CheckChunkRequest::default_instance_->InitAsDefaultInstance();
   CheckChunkResponse::default_instance_->InitAsDefaultInstance();
   ValidityCheckRequest::default_instance_->InitAsDefaultInstance();
@@ -6096,6 +6219,955 @@ const ::google::protobuf::Reflection* StoreReferenceResponse::GetReflection() co
 
 // ===================================================================
 
+const ::std::string StorePacketRequest::_default_packetname_;
+const ::std::string StorePacketRequest::_default_key_id_;
+const ::std::string StorePacketRequest::_default_public_key_;
+const ::std::string StorePacketRequest::_default_public_key_signature_;
+const ::std::string StorePacketRequest::_default_request_signature_;
+#ifndef _MSC_VER
+const int StorePacketRequest::kPacketnameFieldNumber;
+const int StorePacketRequest::kSignedDataFieldNumber;
+const int StorePacketRequest::kKeyIdFieldNumber;
+const int StorePacketRequest::kPublicKeyFieldNumber;
+const int StorePacketRequest::kPublicKeySignatureFieldNumber;
+const int StorePacketRequest::kRequestSignatureFieldNumber;
+const int StorePacketRequest::kDataTypeFieldNumber;
+const int StorePacketRequest::kAppendFieldNumber;
+#endif  // !_MSC_VER
+
+StorePacketRequest::StorePacketRequest()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    packetname_(const_cast< ::std::string*>(&_default_packetname_)),
+    signed_data_(),
+    key_id_(const_cast< ::std::string*>(&_default_key_id_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)),
+    request_signature_(const_cast< ::std::string*>(&_default_request_signature_)),
+    data_type_(0),
+    append_(false) {
+  SharedCtor();
+}
+
+void StorePacketRequest::InitAsDefaultInstance() {}
+
+StorePacketRequest::StorePacketRequest(const StorePacketRequest& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    packetname_(const_cast< ::std::string*>(&_default_packetname_)),
+    signed_data_(),
+    key_id_(const_cast< ::std::string*>(&_default_key_id_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)),
+    request_signature_(const_cast< ::std::string*>(&_default_request_signature_)),
+    data_type_(0),
+    append_(false) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void StorePacketRequest::SharedCtor() {
+  _cached_size_ = 0;
+  packetname_ = const_cast< ::std::string*>(&_default_packetname_);
+  key_id_ = const_cast< ::std::string*>(&_default_key_id_);
+  public_key_ = const_cast< ::std::string*>(&_default_public_key_);
+  public_key_signature_ = const_cast< ::std::string*>(&_default_public_key_signature_);
+  request_signature_ = const_cast< ::std::string*>(&_default_request_signature_);
+  data_type_ = 0;
+  append_ = false;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+StorePacketRequest::~StorePacketRequest() {
+  SharedDtor();
+}
+
+void StorePacketRequest::SharedDtor() {
+  if (packetname_ != &_default_packetname_) {
+    delete packetname_;
+  }
+  if (key_id_ != &_default_key_id_) {
+    delete key_id_;
+  }
+  if (public_key_ != &_default_public_key_) {
+    delete public_key_;
+  }
+  if (public_key_signature_ != &_default_public_key_signature_) {
+    delete public_key_signature_;
+  }
+  if (request_signature_ != &_default_request_signature_) {
+    delete request_signature_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* StorePacketRequest::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return StorePacketRequest_descriptor_;
+}
+
+const StorePacketRequest& StorePacketRequest::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();  return *default_instance_;
+}
+
+StorePacketRequest* StorePacketRequest::default_instance_ = NULL;
+
+StorePacketRequest* StorePacketRequest::New() const {
+  return new StorePacketRequest;
+}
+
+void StorePacketRequest::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (_has_bit(0)) {
+      if (packetname_ != &_default_packetname_) {
+        packetname_->clear();
+      }
+    }
+    if (_has_bit(2)) {
+      if (key_id_ != &_default_key_id_) {
+        key_id_->clear();
+      }
+    }
+    if (_has_bit(3)) {
+      if (public_key_ != &_default_public_key_) {
+        public_key_->clear();
+      }
+    }
+    if (_has_bit(4)) {
+      if (public_key_signature_ != &_default_public_key_signature_) {
+        public_key_signature_->clear();
+      }
+    }
+    if (_has_bit(5)) {
+      if (request_signature_ != &_default_request_signature_) {
+        request_signature_->clear();
+      }
+    }
+    data_type_ = 0;
+    append_ = false;
+  }
+  signed_data_.Clear();
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool StorePacketRequest::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required bytes packetname = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_packetname()));
+        if (input->ExpectTag(18)) goto parse_signed_data;
+        break;
+      }
+      
+      // repeated .maidsafe.GenericPacket signed_data = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_signed_data:
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, add_signed_data()));
+        if (input->ExpectTag(18)) goto parse_signed_data;
+        if (input->ExpectTag(26)) goto parse_key_id;
+        break;
+      }
+      
+      // required bytes key_id = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_key_id:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_key_id()));
+        if (input->ExpectTag(34)) goto parse_public_key;
+        break;
+      }
+      
+      // required bytes public_key = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_public_key:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key()));
+        if (input->ExpectTag(42)) goto parse_public_key_signature;
+        break;
+      }
+      
+      // required bytes public_key_signature = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_public_key_signature:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key_signature()));
+        if (input->ExpectTag(50)) goto parse_request_signature;
+        break;
+      }
+      
+      // required bytes request_signature = 6;
+      case 6: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_request_signature:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_request_signature()));
+        if (input->ExpectTag(56)) goto parse_data_type;
+        break;
+      }
+      
+      // required int32 data_type = 7;
+      case 7: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_data_type:
+        DO_(::google::protobuf::internal::WireFormat::ReadInt32(
+              input, &data_type_));
+        _set_bit(6);
+        if (input->ExpectTag(64)) goto parse_append;
+        break;
+      }
+      
+      // required bool append = 8;
+      case 8: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_append:
+        DO_(::google::protobuf::internal::WireFormat::ReadBool(
+              input, &append_));
+        _set_bit(7);
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void StorePacketRequest::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    StorePacketRequest::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required bytes packetname = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->packetname(), output);
+  }
+  
+  // repeated .maidsafe.GenericPacket signed_data = 2;
+  for (int i = 0; i < this->signed_data_size(); i++) {
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(2, this->signed_data(i), output);
+  }
+  
+  // required bytes key_id = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->key_id(), output);
+  }
+  
+  // required bytes public_key = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->public_key(), output);
+  }
+  
+  // required bytes public_key_signature = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->public_key_signature(), output);
+  }
+  
+  // required bytes request_signature = 6;
+  if (_has_bit(5)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(6, this->request_signature(), output);
+  }
+  
+  // required int32 data_type = 7;
+  if (_has_bit(6)) {
+    ::google::protobuf::internal::WireFormat::WriteInt32(7, this->data_type(), output);
+  }
+  
+  // required bool append = 8;
+  if (_has_bit(7)) {
+    ::google::protobuf::internal::WireFormat::WriteBool(8, this->append(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* StorePacketRequest::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required bytes packetname = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->packetname(), target);
+  }
+  
+  // repeated .maidsafe.GenericPacket signed_data = 2;
+  for (int i = 0; i < this->signed_data_size(); i++) {
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(2, this->signed_data(i), target);
+  }
+  
+  // required bytes key_id = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->key_id(), target);
+  }
+  
+  // required bytes public_key = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->public_key(), target);
+  }
+  
+  // required bytes public_key_signature = 5;
+  if (_has_bit(4)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->public_key_signature(), target);
+  }
+  
+  // required bytes request_signature = 6;
+  if (_has_bit(5)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(6, this->request_signature(), target);
+  }
+  
+  // required int32 data_type = 7;
+  if (_has_bit(6)) {
+    target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(7, this->data_type(), target);
+  }
+  
+  // required bool append = 8;
+  if (_has_bit(7)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBoolToArray(8, this->append(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int StorePacketRequest::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required bytes packetname = 1;
+    if (has_packetname()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->packetname());
+    }
+    
+    // required bytes key_id = 3;
+    if (has_key_id()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->key_id());
+    }
+    
+    // required bytes public_key = 4;
+    if (has_public_key()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_key());
+    }
+    
+    // required bytes public_key_signature = 5;
+    if (has_public_key_signature()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_key_signature());
+    }
+    
+    // required bytes request_signature = 6;
+    if (has_request_signature()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->request_signature());
+    }
+    
+    // required int32 data_type = 7;
+    if (has_data_type()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::Int32Size(
+          this->data_type());
+    }
+    
+    // required bool append = 8;
+    if (has_append()) {
+      total_size += 1 + 1;
+    }
+    
+  }
+  // repeated .maidsafe.GenericPacket signed_data = 2;
+  total_size += 1 * this->signed_data_size();
+  for (int i = 0; i < this->signed_data_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+        this->signed_data(i));
+  }
+  
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void StorePacketRequest::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const StorePacketRequest* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const StorePacketRequest*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void StorePacketRequest::MergeFrom(const StorePacketRequest& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  signed_data_.MergeFrom(from.signed_data_);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_packetname(from.packetname());
+    }
+    if (from._has_bit(2)) {
+      set_key_id(from.key_id());
+    }
+    if (from._has_bit(3)) {
+      set_public_key(from.public_key());
+    }
+    if (from._has_bit(4)) {
+      set_public_key_signature(from.public_key_signature());
+    }
+    if (from._has_bit(5)) {
+      set_request_signature(from.request_signature());
+    }
+    if (from._has_bit(6)) {
+      set_data_type(from.data_type());
+    }
+    if (from._has_bit(7)) {
+      set_append(from.append());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void StorePacketRequest::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void StorePacketRequest::CopyFrom(const StorePacketRequest& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void StorePacketRequest::Swap(StorePacketRequest* other) {
+  if (other != this) {
+    std::swap(packetname_, other->packetname_);
+    signed_data_.Swap(&other->signed_data_);
+    std::swap(key_id_, other->key_id_);
+    std::swap(public_key_, other->public_key_);
+    std::swap(public_key_signature_, other->public_key_signature_);
+    std::swap(request_signature_, other->request_signature_);
+    std::swap(data_type_, other->data_type_);
+    std::swap(append_, other->append_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool StorePacketRequest::IsInitialized() const {
+  if ((_has_bits_[0] & 0x000000fd) != 0x000000fd) return false;
+  
+  for (int i = 0; i < signed_data_size(); i++) {
+    if (!this->signed_data(i).IsInitialized()) return false;
+  }
+  return true;
+}
+
+const ::google::protobuf::Descriptor* StorePacketRequest::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* StorePacketRequest::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return StorePacketRequest_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string StorePacketResponse::_default_pmid_id_;
+const ::std::string StorePacketResponse::_default_public_key_;
+const ::std::string StorePacketResponse::_default_public_key_signature_;
+const ::std::string StorePacketResponse::_default_response_signature_;
+const ::std::string StorePacketResponse::_default_checksum_;
+#ifndef _MSC_VER
+const int StorePacketResponse::kResultFieldNumber;
+const int StorePacketResponse::kPmidIdFieldNumber;
+const int StorePacketResponse::kPublicKeyFieldNumber;
+const int StorePacketResponse::kPublicKeySignatureFieldNumber;
+const int StorePacketResponse::kResponseSignatureFieldNumber;
+const int StorePacketResponse::kChecksumFieldNumber;
+#endif  // !_MSC_VER
+
+StorePacketResponse::StorePacketResponse()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    result_(0u),
+    pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)),
+    response_signature_(const_cast< ::std::string*>(&_default_response_signature_)),
+    checksum_(const_cast< ::std::string*>(&_default_checksum_)) {
+  SharedCtor();
+}
+
+void StorePacketResponse::InitAsDefaultInstance() {}
+
+StorePacketResponse::StorePacketResponse(const StorePacketResponse& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    result_(0u),
+    pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)),
+    response_signature_(const_cast< ::std::string*>(&_default_response_signature_)),
+    checksum_(const_cast< ::std::string*>(&_default_checksum_)) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void StorePacketResponse::SharedCtor() {
+  _cached_size_ = 0;
+  result_ = 0u;
+  pmid_id_ = const_cast< ::std::string*>(&_default_pmid_id_);
+  public_key_ = const_cast< ::std::string*>(&_default_public_key_);
+  public_key_signature_ = const_cast< ::std::string*>(&_default_public_key_signature_);
+  response_signature_ = const_cast< ::std::string*>(&_default_response_signature_);
+  checksum_ = const_cast< ::std::string*>(&_default_checksum_);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+StorePacketResponse::~StorePacketResponse() {
+  SharedDtor();
+}
+
+void StorePacketResponse::SharedDtor() {
+  if (pmid_id_ != &_default_pmid_id_) {
+    delete pmid_id_;
+  }
+  if (public_key_ != &_default_public_key_) {
+    delete public_key_;
+  }
+  if (public_key_signature_ != &_default_public_key_signature_) {
+    delete public_key_signature_;
+  }
+  if (response_signature_ != &_default_response_signature_) {
+    delete response_signature_;
+  }
+  if (checksum_ != &_default_checksum_) {
+    delete checksum_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* StorePacketResponse::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return StorePacketResponse_descriptor_;
+}
+
+const StorePacketResponse& StorePacketResponse::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();  return *default_instance_;
+}
+
+StorePacketResponse* StorePacketResponse::default_instance_ = NULL;
+
+StorePacketResponse* StorePacketResponse::New() const {
+  return new StorePacketResponse;
+}
+
+void StorePacketResponse::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    result_ = 0u;
+    if (_has_bit(1)) {
+      if (pmid_id_ != &_default_pmid_id_) {
+        pmid_id_->clear();
+      }
+    }
+    if (_has_bit(2)) {
+      if (public_key_ != &_default_public_key_) {
+        public_key_->clear();
+      }
+    }
+    if (_has_bit(3)) {
+      if (public_key_signature_ != &_default_public_key_signature_) {
+        public_key_signature_->clear();
+      }
+    }
+    if (_has_bit(4)) {
+      if (response_signature_ != &_default_response_signature_) {
+        response_signature_->clear();
+      }
+    }
+    if (_has_bit(5)) {
+      if (checksum_ != &_default_checksum_) {
+        checksum_->clear();
+      }
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool StorePacketResponse::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required uint32 result = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(0);
+        if (input->ExpectTag(18)) goto parse_pmid_id;
+        break;
+      }
+      
+      // optional bytes pmid_id = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_pmid_id:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pmid_id()));
+        if (input->ExpectTag(26)) goto parse_public_key;
+        break;
+      }
+      
+      // optional bytes public_key = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_public_key:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key()));
+        if (input->ExpectTag(34)) goto parse_public_key_signature;
+        break;
+      }
+      
+      // optional bytes public_key_signature = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_public_key_signature:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key_signature()));
+        if (input->ExpectTag(42)) goto parse_response_signature;
+        break;
+      }
+      
+      // optional bytes response_signature = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_response_signature:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_response_signature()));
+        if (input->ExpectTag(50)) goto parse_checksum;
+        break;
+      }
+      
+      // optional bytes checksum = 6;
+      case 6: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_checksum:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_checksum()));
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void StorePacketResponse::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    StorePacketResponse::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required uint32 result = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
+  }
+  
+  // optional bytes pmid_id = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->pmid_id(), output);
+  }
+  
+  // optional bytes public_key = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->public_key(), output);
+  }
+  
+  // optional bytes public_key_signature = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->public_key_signature(), output);
+  }
+  
+  // optional bytes response_signature = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->response_signature(), output);
+  }
+  
+  // optional bytes checksum = 6;
+  if (_has_bit(5)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(6, this->checksum(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* StorePacketResponse::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required uint32 result = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
+  }
+  
+  // optional bytes pmid_id = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->pmid_id(), target);
+  }
+  
+  // optional bytes public_key = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->public_key(), target);
+  }
+  
+  // optional bytes public_key_signature = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->public_key_signature(), target);
+  }
+  
+  // optional bytes response_signature = 5;
+  if (_has_bit(4)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->response_signature(), target);
+  }
+  
+  // optional bytes checksum = 6;
+  if (_has_bit(5)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(6, this->checksum(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int StorePacketResponse::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required uint32 result = 1;
+    if (has_result()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
+    }
+    
+    // optional bytes pmid_id = 2;
+    if (has_pmid_id()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->pmid_id());
+    }
+    
+    // optional bytes public_key = 3;
+    if (has_public_key()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_key());
+    }
+    
+    // optional bytes public_key_signature = 4;
+    if (has_public_key_signature()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_key_signature());
+    }
+    
+    // optional bytes response_signature = 5;
+    if (has_response_signature()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->response_signature());
+    }
+    
+    // optional bytes checksum = 6;
+    if (has_checksum()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->checksum());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void StorePacketResponse::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const StorePacketResponse* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const StorePacketResponse*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void StorePacketResponse::MergeFrom(const StorePacketResponse& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_result(from.result());
+    }
+    if (from._has_bit(1)) {
+      set_pmid_id(from.pmid_id());
+    }
+    if (from._has_bit(2)) {
+      set_public_key(from.public_key());
+    }
+    if (from._has_bit(3)) {
+      set_public_key_signature(from.public_key_signature());
+    }
+    if (from._has_bit(4)) {
+      set_response_signature(from.response_signature());
+    }
+    if (from._has_bit(5)) {
+      set_checksum(from.checksum());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void StorePacketResponse::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void StorePacketResponse::CopyFrom(const StorePacketResponse& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void StorePacketResponse::Swap(StorePacketResponse* other) {
+  if (other != this) {
+    std::swap(result_, other->result_);
+    std::swap(pmid_id_, other->pmid_id_);
+    std::swap(public_key_, other->public_key_);
+    std::swap(public_key_signature_, other->public_key_signature_);
+    std::swap(response_signature_, other->response_signature_);
+    std::swap(checksum_, other->checksum_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool StorePacketResponse::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
+  
+  return true;
+}
+
+const ::google::protobuf::Descriptor* StorePacketResponse::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* StorePacketResponse::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return StorePacketResponse_reflection_;
+}
+
+// ===================================================================
+
 const ::std::string DeleteRequest::_default_chunkname_;
 const ::std::string DeleteRequest::_default_public_key_;
 const ::std::string DeleteRequest::_default_signed_public_key_;
@@ -7252,6 +8324,513 @@ const ::google::protobuf::Descriptor* GetResponse::GetDescriptor() const {
 const ::google::protobuf::Reflection* GetResponse::GetReflection() const {
   protobuf_AssignDescriptorsOnce();
   return GetResponse_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string GetPacketRequest::_default_chunkname_;
+#ifndef _MSC_VER
+const int GetPacketRequest::kChunknameFieldNumber;
+#endif  // !_MSC_VER
+
+GetPacketRequest::GetPacketRequest()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    chunkname_(const_cast< ::std::string*>(&_default_chunkname_)) {
+  SharedCtor();
+}
+
+void GetPacketRequest::InitAsDefaultInstance() {}
+
+GetPacketRequest::GetPacketRequest(const GetPacketRequest& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    chunkname_(const_cast< ::std::string*>(&_default_chunkname_)) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void GetPacketRequest::SharedCtor() {
+  _cached_size_ = 0;
+  chunkname_ = const_cast< ::std::string*>(&_default_chunkname_);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+GetPacketRequest::~GetPacketRequest() {
+  SharedDtor();
+}
+
+void GetPacketRequest::SharedDtor() {
+  if (chunkname_ != &_default_chunkname_) {
+    delete chunkname_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* GetPacketRequest::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return GetPacketRequest_descriptor_;
+}
+
+const GetPacketRequest& GetPacketRequest::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();  return *default_instance_;
+}
+
+GetPacketRequest* GetPacketRequest::default_instance_ = NULL;
+
+GetPacketRequest* GetPacketRequest::New() const {
+  return new GetPacketRequest;
+}
+
+void GetPacketRequest::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (_has_bit(0)) {
+      if (chunkname_ != &_default_chunkname_) {
+        chunkname_->clear();
+      }
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool GetPacketRequest::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required bytes chunkname = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_chunkname()));
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void GetPacketRequest::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    GetPacketRequest::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required bytes chunkname = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->chunkname(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* GetPacketRequest::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required bytes chunkname = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->chunkname(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int GetPacketRequest::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required bytes chunkname = 1;
+    if (has_chunkname()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->chunkname());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void GetPacketRequest::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const GetPacketRequest* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const GetPacketRequest*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void GetPacketRequest::MergeFrom(const GetPacketRequest& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_chunkname(from.chunkname());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void GetPacketRequest::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void GetPacketRequest::CopyFrom(const GetPacketRequest& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void GetPacketRequest::Swap(GetPacketRequest* other) {
+  if (other != this) {
+    std::swap(chunkname_, other->chunkname_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool GetPacketRequest::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
+  
+  return true;
+}
+
+const ::google::protobuf::Descriptor* GetPacketRequest::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* GetPacketRequest::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return GetPacketRequest_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string GetPacketResponse::_default_pmid_id_;
+#ifndef _MSC_VER
+const int GetPacketResponse::kResultFieldNumber;
+const int GetPacketResponse::kContentFieldNumber;
+const int GetPacketResponse::kPmidIdFieldNumber;
+#endif  // !_MSC_VER
+
+GetPacketResponse::GetPacketResponse()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    result_(0u),
+    content_(),
+    pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
+  SharedCtor();
+}
+
+void GetPacketResponse::InitAsDefaultInstance() {}
+
+GetPacketResponse::GetPacketResponse(const GetPacketResponse& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    result_(0u),
+    content_(),
+    pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void GetPacketResponse::SharedCtor() {
+  _cached_size_ = 0;
+  result_ = 0u;
+  pmid_id_ = const_cast< ::std::string*>(&_default_pmid_id_);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+GetPacketResponse::~GetPacketResponse() {
+  SharedDtor();
+}
+
+void GetPacketResponse::SharedDtor() {
+  if (pmid_id_ != &_default_pmid_id_) {
+    delete pmid_id_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* GetPacketResponse::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return GetPacketResponse_descriptor_;
+}
+
+const GetPacketResponse& GetPacketResponse::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();  return *default_instance_;
+}
+
+GetPacketResponse* GetPacketResponse::default_instance_ = NULL;
+
+GetPacketResponse* GetPacketResponse::New() const {
+  return new GetPacketResponse;
+}
+
+void GetPacketResponse::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    result_ = 0u;
+    if (_has_bit(2)) {
+      if (pmid_id_ != &_default_pmid_id_) {
+        pmid_id_->clear();
+      }
+    }
+  }
+  content_.Clear();
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool GetPacketResponse::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required uint32 result = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(0);
+        if (input->ExpectTag(18)) goto parse_content;
+        break;
+      }
+      
+      // repeated bytes content = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_content:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(
+             input, add_content()));
+        if (input->ExpectTag(18)) goto parse_content;
+        if (input->ExpectTag(26)) goto parse_pmid_id;
+        break;
+      }
+      
+      // optional bytes pmid_id = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_pmid_id:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pmid_id()));
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void GetPacketResponse::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    GetPacketResponse::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required uint32 result = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
+  }
+  
+  // repeated bytes content = 2;
+  for (int i = 0; i < this->content_size(); i++) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->content(i), output);
+  }
+  
+  // optional bytes pmid_id = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->pmid_id(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* GetPacketResponse::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required uint32 result = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
+  }
+  
+  // repeated bytes content = 2;
+  for (int i = 0; i < this->content_size(); i++) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->content(i), target);
+  }
+  
+  // optional bytes pmid_id = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->pmid_id(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int GetPacketResponse::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required uint32 result = 1;
+    if (has_result()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
+    }
+    
+    // optional bytes pmid_id = 3;
+    if (has_pmid_id()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->pmid_id());
+    }
+    
+  }
+  // repeated bytes content = 2;
+  total_size += 1 * this->content_size();
+  for (int i = 0; i < this->content_size(); i++) {
+    total_size += ::google::protobuf::internal::WireFormat::BytesSize(
+      this->content(i));
+  }
+  
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void GetPacketResponse::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const GetPacketResponse* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const GetPacketResponse*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void GetPacketResponse::MergeFrom(const GetPacketResponse& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  content_.MergeFrom(from.content_);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_result(from.result());
+    }
+    if (from._has_bit(2)) {
+      set_pmid_id(from.pmid_id());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void GetPacketResponse::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void GetPacketResponse::CopyFrom(const GetPacketResponse& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void GetPacketResponse::Swap(GetPacketResponse* other) {
+  if (other != this) {
+    std::swap(result_, other->result_);
+    content_.Swap(&other->content_);
+    std::swap(pmid_id_, other->pmid_id_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool GetPacketResponse::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
+  
+  return true;
+}
+
+const ::google::protobuf::Descriptor* GetPacketResponse::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* GetPacketResponse::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return GetPacketResponse_reflection_;
 }
 
 // ===================================================================

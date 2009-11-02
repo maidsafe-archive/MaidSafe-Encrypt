@@ -48,6 +48,7 @@ const ::google::protobuf::Descriptor* CreateMSIDResult_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   CreateMSIDResult_reflection_ = NULL;
 const ::google::protobuf::EnumDescriptor* MessageType_descriptor_ = NULL;
+const ::google::protobuf::EnumDescriptor* PacketType_descriptor_ = NULL;
 
 }  // namespace
 
@@ -278,6 +279,7 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(CreateMSIDResult));
   MessageType_descriptor_ = file->enum_type(0);
+  PacketType_descriptor_ = file->enum_type(1);
 }
 
 namespace {
@@ -390,7 +392,11 @@ void protobuf_AddDesc_packet_2eproto() {
     "\022\014\n\004name\030\002 \001(\014\022\023\n\013private_key\030\003 \001(\014\022\022\n\np"
     "ublic_key\030\004 \001(\014*F\n\013MessageType\022\024\n\020ADD_CO"
     "NTACT_RQST\020\001\022\017\n\013INSTANT_MSG\020\002\022\020\n\014STATUS_"
-    "CHECK\020\003", 1527);
+    "CHECK\020\003*\275\001\n\nPacketType\022\007\n\003MID\020\000\022\010\n\004SMID\020"
+    "\001\022\010\n\004TMID\020\002\022\010\n\004MPID\020\003\022\010\n\004PMID\020\004\022\010\n\004MAID\020"
+    "\005\022\t\n\005ANMID\020\006\022\n\n\006ANSMID\020\007\022\n\n\006ANTMID\020\010\022\n\n\006"
+    "ANMPID\020\t\022\010\n\004MSID\020\n\022\n\n\006PD_DIR\020\013\022\n\n\006BUFFER"
+    "\020\014\022\017\n\013BUFFER_INFO\020\r\022\022\n\016BUFFER_MESSAGE\020\016", 1719);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "packet.proto", &protobuf_RegisterTypes);
   GenericPacket::default_instance_ = new GenericPacket();
@@ -436,6 +442,33 @@ bool MessageType_IsValid(int value) {
     case 1:
     case 2:
     case 3:
+      return true;
+    default:
+      return false;
+  }
+}
+
+const ::google::protobuf::EnumDescriptor* PacketType_descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return PacketType_descriptor_;
+}
+bool PacketType_IsValid(int value) {
+  switch(value) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
       return true;
     default:
       return false;

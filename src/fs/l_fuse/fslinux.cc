@@ -460,7 +460,7 @@ int FSLinux::ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
   path_ = std::string(path);
     printf("ms_readdir PATH:  %s\n", path);
 
-  std::map<std::string, maidsafe::itemtype> children;
+  std::map<std::string, maidsafe::ItemType> children;
   if (maidsafe::ClientController::getInstance()->readdir(base::TidyPath(
     path_), children) != 0)
     return -errno;
@@ -630,7 +630,7 @@ int FSLinux::ms_rmdir(const char *path) {
       base::TidyPath(path_), gui_private_share_))
     return -13;
 
-  std::map<std::string, maidsafe::itemtype> children;
+  std::map<std::string, maidsafe::ItemType> children;
   maidsafe::ClientController::getInstance()->readdir(base::TidyPath(
     path_), children);
   if (!children.empty())

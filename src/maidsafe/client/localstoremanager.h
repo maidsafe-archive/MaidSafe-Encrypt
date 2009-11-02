@@ -49,7 +49,6 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual void Init(int, base::callback_func_type cb);
   virtual void Close(base::callback_func_type cb, bool);
   virtual void CleanUpTransport() {}
-  virtual void ClearStoreQueue() {}
   virtual bool NotDoneWithUploading();
   virtual bool KeyUnique(const std::string &hex_key, bool check_local);
 
@@ -60,19 +59,18 @@ class LocalStoreManager : public StoreManagerInterface {
                           const std::string&);
 
   // Packets
-  virtual void LoadPacket(const std::string &hex_key,
-                          std::string *result);
+  virtual int LoadPacket(const std::string &hex_key, std::string *result);
   virtual int StorePacket(const std::string &hex_packet_name,
                           const std::string &value,
                           PacketType system_packet_type,
                           DirType dir_type,
                           const std::string &msid);
-  virtual void DeletePacket(const std::string &hex_key,
-                            const std::string &signature,
-                            const std::string &public_key,
-                            const std::string &signed_public_key,
-                            const ValueType &type,
-                            base::callback_func_type cb);
+  virtual int DeletePacket(const std::string &hex_key,
+                           const std::string &signature,
+                           const std::string &public_key,
+                           const std::string &signed_public_key,
+                           const ValueType &type,
+                           base::callback_func_type cb);
 
   // Buffer packet
   virtual int CreateBP(const std::string &bufferpacketname,
@@ -94,7 +92,7 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual void LocalVaultStatus(boost::function<void(const VaultStatus&)> cb);
 
  private:
-  FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_AddBPMessage);
+  FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_AddSingleBPMessage);
   FRIEND_TEST(ClientBufferPacketHandlerTest,
               BEH_MAID_AddBPMessageNonAuthorisedUser);
   FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_DeleteBPUsers);

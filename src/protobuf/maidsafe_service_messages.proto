@@ -1,15 +1,17 @@
 // Maidsafe rpc arguments and responses
-// data_type is defined in  maidsafe/maidsafe.h as the enum value_types
+// data_type is defined in  maidsafe/maidsafe.h as the enum ValueType
 // In comments throughout, where a client is requesting a store to a vault, the
 // requester provides the pmid of (one of) his vault(s) - known as "client's
 // PMID" and the recipient's is know as "vault's PMID".
+
+import "packet.proto";
 
 package maidsafe;
 
 message IOUAuthority {
   required uint64 data_size = 1;
   required bytes pmid = 2;  // client's PMID
-};
+}
 
 message IOU {
   required bytes serialised_iou_authority = 1;
@@ -24,7 +26,7 @@ message StorePrepRequest {
   required bytes public_key = 4;
   required bytes signed_public_key = 5;
   required bytes signed_request = 6;
-};
+}
 
 message StorePrepResponse {
   required uint32 result = 1;
@@ -32,7 +34,7 @@ message StorePrepResponse {
   optional bytes iou_authority = 3;  // serialised IOUAuthority
   optional bytes signed_iou_authority = 4;  // serialised IOUAuthority, signed
                                             // by vault's PMID
-};
+}
 
 message StoreRequest {
   required bytes chunkname = 1;
@@ -44,12 +46,12 @@ message StoreRequest {
   required int32 data_type = 7;
   optional uint32 offset = 8;
   optional uint32 chunklet_size = 9;
-};
+}
 
 message StoreResponse {
   required uint32 result = 1;
   optional bytes pmid_id = 2;  // vault's PMID
-};
+}
 
 message StoreIOURequest {
   required bytes chunkname = 1;
@@ -60,30 +62,30 @@ message StoreIOURequest {
   required bytes public_key = 6;
   required bytes signed_public_key = 7;
   required bytes signed_request = 8;
-};
+}
 
 message StoreIOUResponse {
   required uint32 result = 1;
   optional bytes pmid_id = 2;  // ref-holder's PMID
-};
+}
 
 message IOUDoneRequest {
   required bytes chunkname = 1;
   required bytes public_key = 2;
   required bytes signed_public_key = 3;
   required bytes signed_request = 4;
-};
+}
 
 message IOUDoneResponse {
   required uint32 result = 1;
   optional bytes pmid_id = 2;  // vault's PMID
-};
+}
 
 message RankAuthority {
   required bytes chunkname = 1;
   required uint64 data_size = 2;
   required bytes pmid = 3;  // vault's PMID
-};
+}
 
 message StoreReferenceRequest {
   required bytes chunkname = 1;
@@ -93,7 +95,7 @@ message StoreReferenceRequest {
   required bytes signed_public_key = 5;
   required bytes signed_request = 6;
   optional bool no_iou_rank = 7;
-};
+}
 
 message StoreReferenceResponse {
   required uint32 result = 1;
@@ -104,7 +106,27 @@ message StoreReferenceResponse {
   optional bytes pmid_id = 5;  // ref-holder's PMID
   optional bytes public_key = 6;
   optional bytes signed_public_key = 7;
-};
+}
+
+message StorePacketRequest {
+  required bytes packetname = 1;
+  repeated GenericPacket signed_data = 2;
+  required bytes key_id = 3;  // ID of e.g. ANMID, ANTMID, ...
+  required bytes public_key = 4;
+  required bytes public_key_signature = 5;
+  required bytes request_signature = 6;
+  required int32 data_type = 7;
+  required bool append = 8;
+}
+
+message StorePacketResponse {
+  required uint32 result = 1;
+  optional bytes pmid_id = 2;  // vault's PMID
+  optional bytes public_key = 3;
+  optional bytes public_key_signature = 4;
+  optional bytes response_signature = 5;
+  optional bytes checksum = 6;
+}
 
 message DeleteRequest {
   required bytes chunkname = 1;
@@ -112,42 +134,52 @@ message DeleteRequest {
   required bytes signed_public_key = 3;
   required bytes signed_request = 4;
   required int32 data_type = 5;
-};
+}
 
 message DeleteResponse {
   required uint32 result = 1;
   optional bytes pmid_id = 2;
-};
+}
 
 message GetRequest {
   required bytes chunkname = 1;
-};
+}
 
 message GetResponse {
   required uint32 result = 1;
   optional bytes content = 2;
   optional bytes pmid_id = 3;
-};
+}
+
+message GetPacketRequest {
+  required bytes chunkname = 1;
+}
+
+message GetPacketResponse {
+  required uint32 result = 1;
+  repeated bytes content = 2;
+  optional bytes pmid_id = 3;
+}
 
 message CheckChunkRequest {
   required bytes chunkname = 1;
-};
+}
 
 message CheckChunkResponse {
   required uint32 result = 1;
   required bytes pmid_id = 2;
-};
+}
 
 message ValidityCheckRequest {
   required bytes chunkname = 1;
   required bytes random_data = 2;
-};
+}
 
 message ValidityCheckResponse {
   required uint32 result = 1;
   optional bytes hash_content = 2;
   required bytes pmid_id = 3;
-};
+}
 
 message UpdateRequest {
   required bytes chunkname = 1;
@@ -156,12 +188,12 @@ message UpdateRequest {
   required bytes signed_public_key = 4;
   required bytes signed_request = 5;
   required int32 data_type = 6;
-};
+}
 
 message UpdateResponse {
   required uint32 result = 1;
   optional bytes pmid_id = 2;
-};
+}
 
 message SwapChunkRequest {
   required int32 request_type = 1;
@@ -169,7 +201,7 @@ message SwapChunkRequest {
   optional bytes chunkcontent1 = 3;
   optional int32 size1 = 4;
   optional bytes chunkname2 = 5;
-};
+}
 
 message SwapChunkResponse {
   required int32 request_type = 1;
@@ -181,7 +213,7 @@ message SwapChunkResponse {
   optional bytes chunkcontent2 = 7;
   optional int32 size2 = 8;
   required bytes pmid_id = 9;
-};
+}
 
 message VaultCommunication {
   optional bytes chunkstore = 1;
@@ -190,16 +222,16 @@ message VaultCommunication {
   optional bytes ip = 4;
   optional uint32 port = 5;
   required uint32 timestamp = 6;
-};
+}
 
 message VaultStatusRequest {
   required bytes encrypted_request = 1;  // Serialised encrypted VaultCommunication
-};
+}
 
 message VaultStatusResponse {
   required uint32 result = 1;
   optional bytes encrypted_response = 2;  // Serialised encrypted VaultCommunication
-};
+}
 
 enum OwnVaultResult {
   OWNED_SUCCESS = 0;
@@ -250,14 +282,14 @@ message CreateBPRequest {
   required bytes public_key = 4;
   required bytes signed_public_key = 5;
   required bytes signed_request = 6;
-};
+}
 
 message CreateBPResponse {
   required uint32 result = 1;
   optional bytes pmid_id = 2;
   optional bytes public_key = 3;
   optional bytes signed_public_key = 4;
-};
+}
 
 message ModifyBPInfoRequest {
   required bytes bufferpacket_name = 1;
@@ -266,14 +298,14 @@ message ModifyBPInfoRequest {
   required bytes public_key = 4;
   required bytes signed_public_key = 5;
   required bytes signed_request = 6;
-};
+}
 
 message ModifyBPInfoResponse {
   required uint32 result = 1;
   optional bytes pmid_id = 2;
   optional bytes public_key = 3;
   optional bytes signed_public_key = 4;
-};
+}
 
 message GetBPMessagesRequest {
   required bytes bufferpacket_name = 1;
@@ -281,7 +313,7 @@ message GetBPMessagesRequest {
   required bytes pmid = 3;
   required bytes signed_public_key = 4;
   required bytes signed_request = 5;
-};
+}
 
 message GetBPMessagesResponse {
   required uint32 result = 1;
@@ -289,7 +321,7 @@ message GetBPMessagesResponse {
   optional bytes pmid_id = 3;
   optional bytes public_key = 4;
   optional bytes signed_public_key = 5;
-};
+}
 
 message AddBPMessageRequest {
   required bytes bufferpacket_name = 1;

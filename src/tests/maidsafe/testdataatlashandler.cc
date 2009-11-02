@@ -201,7 +201,7 @@ void PrepareDataMap(const std::string &file_hash, std::string &ser_dm) {
 }
 
 void PrepareMetaDataMap(const int32_t id, const std::string &display_name,
-                        const itemtype &type, const std::string &file_hash,
+                        const ItemType &type, const std::string &file_hash,
                         const std::string &stats, const std::string &tag,
                         const uint32_t &file_size_high,
                         const uint32_t &file_size_low,

@@ -174,7 +174,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
   // Create the buffer packet
   ASSERT_EQ(0, clientbufferpackethandler.CreateBufferPacket(public_username,
       public_key, private_key));
-  ss->SetConnectionStatus(1);
+  ss->SetConnectionStatus(0);
 
   std::set<std::string> users;
   std::string usuarios[3] = {"Mambert", "Chupitos", "soy.tu.padre"};
@@ -343,7 +343,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddBPUsers) {
                 bpi.users(i) == hashed_users[2]);
 }
 
-TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddBPMessage) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_AddSingleBPMessage) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));

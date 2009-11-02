@@ -206,7 +206,7 @@ int PendingOperationsHandler::PrunePendingOps() {
       pending_ops_.get<pending_op_timestamp>();
   if (pending_op_index.begin() == pending_op_index.end()) {
 #ifdef DEBUG
-    printf("NO pending ops.\n");
+//    printf("NO pending ops.\n");
 #endif
     return deletes;
   }
@@ -216,16 +216,17 @@ int PendingOperationsHandler::PrunePendingOps() {
       pending_op_index.lower_bound(bound);
   if (pending_op_index.begin() == limit) {
 #ifdef DEBUG
-    printf("NO prunable ops.\n");
+//    printf("NO prunable ops.\n");
 #endif
     return deletes;
   }
   while (it != limit) {
     if ((*it).status_ != STORE_ACCEPTED) {
-      pending_op_index.erase(it);
+      it = pending_op_index.erase(it);
       ++deletes;
+    } else {
+      ++it;
     }
-    ++it;
   }
   return deletes;
 }

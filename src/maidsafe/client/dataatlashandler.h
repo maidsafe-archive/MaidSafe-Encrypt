@@ -37,41 +37,14 @@
 
 namespace maidsafe {
 
-// These types are used by other components (i.e. authentication) also, other
-// packet types are missing, these are only the signature packets.  Probably
-// it would be useful to set this enumeration in another common header file.
-enum CompareResults {EQUAL, UNEQUAL, COMPARE_ILLEGAL};
-
 class DataAtlasHandler {
- private:
-  FRIEND_TEST(DataAtlasHandlerTest, AddGetDataMapDAH);
-  std::string db_dir_;
-  // static DataAtlasHandler *single;
-  boost::shared_ptr<PdDir> GetPdDir(const std::string &element_path,
-                                    DbInitFlag flag_,
-                                    int *result);
-  std::string GetElementNameFromPath(const std::string &element_path);
-  // file_system::FileSystem *fsys_;
-  std::map<std::string, PdDir*> dirs_;
-  int CopyDb(const std::string &original_path_,
-             const std::string &target_path_);
-  int ListSubDirs(const std::string &element_path,
-                  std::vector<std::string> *subdirs_);
-  int CopySubDbs(const std::string &original_path_,
-                 const std::string &target_path_);
-
-  // methods for the Key Ring
-  boost::shared_ptr<KeyAtlas> GetKeysDb(DbInitFlag flag_, int *result);
-
  public:
-  // static DataAtlasHandler *getInstance();
   DataAtlasHandler();
-  ~DataAtlasHandler() {}  // delete single; }
-  int Init(bool new_user_);
-
+  ~DataAtlasHandler() {}
+  int Init(bool new_user);
   // methods for normal folder Data Atlases
   void GetDbPath(const std::string &element_path,
-                 DbInitFlag flag_,
+                 DbInitFlag flag,
                  std::string *db_path);
   int AddElement(const std::string &element_path,
                  const std::string &ser_mdm,
@@ -84,7 +57,7 @@ class DataAtlasHandler {
                         // amend MDMs for files only
   int RemoveElement(const std::string &element_path);
   int ListFolder(const std::string &element_path,
-                 std::map<std::string, itemtype> *children);
+                 std::map<std::string, ItemType> *children);
   int RenameElement(const std::string &original_path,
                     const std::string &target_path,
                     bool force);
@@ -99,7 +72,6 @@ class DataAtlasHandler {
   int ChangeMtime(const std::string &element_path);
   int ChangeAtime(const std::string &element_path);
   int DisconnectPdDir(const std::string &branch_path);
-
   // methods for the Key Ring
 //  void GetKeyDbPath(std::string *keys_db_name_);
 //  int DisconnectKeysDb();
@@ -113,6 +85,22 @@ class DataAtlasHandler {
 //  std::string GetPublicKey(const std::string &packet_type);
 //  int RemoveKeys(const std::string &package_type);
 //  void GetKeyRing(std::list<Key_Type> *keyring);  // GetKeyRing List of strcts
+
+ private:
+  FRIEND_TEST(DataAtlasHandlerTest, AddGetDataMapDAH);
+  std::string GetElementNameFromPath(const std::string &element_path);
+  boost::shared_ptr<PdDir> GetPdDir(const std::string &element_path,
+                                    DbInitFlag flag,
+                                    int *result);
+  int CopyDb(const std::string &original_path_,
+             const std::string &target_path_);
+  int ListSubDirs(const std::string &element_path,
+                  std::vector<std::string> *subdirs_);
+  int CopySubDbs(const std::string &original_path_,
+                 const std::string &target_path_);
+  boost::shared_ptr<KeyAtlas> GetKeysDb(DbInitFlag flag_, int *result);
+  std::string db_dir_;
+  std::map<std::string, PdDir*> dirs_;
 };
 
 }  // namespace maidsafe

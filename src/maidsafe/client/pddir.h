@@ -64,24 +64,24 @@ namespace maidsafe {
 
 class PdDir {
  public:
-  PdDir() : db_name_(""), db_() {}
+  PdDir() : db_name_(""), db_(), connected_(false) {}
   PdDir(const std::string &db_name, DbInitFlag flag_, int *result_);
   ~PdDir();
-  int GetDirKey(const std::string &file_name, std::string *dir_key);
   // retrieve dir_key so that db can be built
-  int GetIdFromName(const std::string &file_name);
+  int GetDirKey(const std::string &file_name, std::string *dir_key);
   // returns the file's id in the db
+  int GetIdFromName(const std::string &file_name);
+  // returns TRUE if the DM exists for the file
   bool DataMapExists(const int &id);
   // returns TRUE if the DM exists for the file
   bool DataMapExists(const std::string &file_hash);
-  // returns TRUE if the DM exists for the file
   int AddElement(const std::string &ser_mdm,
                  const std::string &ser_dm,
                  const std::string &dir_key="");
-  int ModifyMetaDataMap(const std::string &ser_mdm, const std::string &ser_dm);
   // amend MDMs for files only
+  int ModifyMetaDataMap(const std::string &ser_mdm, const std::string &ser_dm);
   int RemoveElement(const std::string &file_name);
-  int ListFolder(std::map<std::string, itemtype> *children);
+  int ListFolder(std::map<std::string, ItemType> *children);
   int ListSubDirs(std::vector<std::string> *subdirs_);
   int GetDataMapFromHash(const std::string &file_hash, std::string *ser_dm);
   int GetDataMap(const std::string &file_name, std::string *ser_dm);
@@ -91,10 +91,7 @@ class PdDir {
   int ChangeAtime(const std::string &file_name);
 
  private:
-  std::string db_name_;
-  boost::shared_ptr<CppSQLite3DB> db_;
-  // CppSQLite3DB *db_;
-  int Init(DbInitFlag flag_);
+  int Init(DbInitFlag flag);
   // call one of connect, create, or build
   FRIEND_TEST(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDA);
   int Connect();
@@ -104,6 +101,9 @@ class PdDir {
   int Disconnect();
   // disconnect from current db.
   int ChangeTime(const std::string &file_name, char time_type);
+  std::string db_name_;
+  boost::shared_ptr<CppSQLite3DB> db_;
+  bool connected_;
 };
 
 }  // namespace maidsafe

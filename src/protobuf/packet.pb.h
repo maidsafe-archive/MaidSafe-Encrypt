@@ -61,6 +61,37 @@ inline bool MessageType_Parse(
   return ::google::protobuf::internal::ParseNamedEnum<MessageType>(
     MessageType_descriptor(), name, value);
 }
+enum PacketType {
+  MID = 0,
+  SMID = 1,
+  TMID = 2,
+  MPID = 3,
+  PMID = 4,
+  MAID = 5,
+  ANMID = 6,
+  ANSMID = 7,
+  ANTMID = 8,
+  ANMPID = 9,
+  MSID = 10,
+  PD_DIR = 11,
+  BUFFER = 12,
+  BUFFER_INFO = 13,
+  BUFFER_MESSAGE = 14
+};
+const ::google::protobuf::EnumDescriptor* PacketType_descriptor();
+bool PacketType_IsValid(int value);
+const PacketType PacketType_MIN = MID;
+const PacketType PacketType_MAX = BUFFER_MESSAGE;
+
+inline const ::std::string& PacketType_Name(PacketType value) {
+  return ::google::protobuf::internal::NameOfEnum(
+    PacketType_descriptor(), value);
+}
+inline bool PacketType_Parse(
+    const ::std::string& name, PacketType* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<PacketType>(
+    PacketType_descriptor(), name, value);
+}
 // ===================================================================
 
 class GenericPacket : public ::google::protobuf::Message {

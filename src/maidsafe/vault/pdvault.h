@@ -27,16 +27,17 @@
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/utils.h>
+#include <QThreadPool>
 
 #include <string>
 #include <list>
 #include <vector>
 
-#include "boost/threadpool.hpp"  // NB - This is NOT an accepted boost lib.
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
@@ -199,6 +200,19 @@ struct SwapChunkArgs {
   base::callback_func_type cb_;
 };
 
+class PDVault;
+
+class AddToRefPacketTask : public QRunnable {
+ public:
+  AddToRefPacketTask(const IouReadyTuple &iou_ready_details, PDVault *pdvault);
+  void run();
+ private:
+  AddToRefPacketTask &operator=(const AddToRefPacketTask&);
+  AddToRefPacketTask(const AddToRefPacketTask&);
+  IouReadyTuple iou_ready_details_;
+  PDVault *pdvault_;
+};
+
 class PDVault {
  public:
   PDVault(const std::string &pmid_public,
@@ -249,6 +263,7 @@ class PDVault {
                  base::callback_func_type cb);
   void StopRvPing() { knode_.StopRvPing(); }
   friend class localvaults::Env;
+  friend void AddToRefPacketTask::run();
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
@@ -262,11 +277,11 @@ class PDVault {
                          boost::mutex *kad_joined_mutex);
   void RegisterMaidService();
   void UnRegisterMaidService();
-  // This runs in a continuous loop until vault_status_ becomes kVaultStopping.
-  bool PrunePendingOperations();
-  // This runs in a continuous loop until vault_status_ becomes kVaultStopping
+  // This runs in a continuous loop until vault_status_ is not kVaultStarted.
+  void PrunePendingOperations();
+  // This runs in a continuous loop until vault_status_ is not kVaultStarted
   // and on receipt of an IOU_Ready messgage, it adds an AddToRefPacket task.
-  bool CheckPendingIOUs();
+  void CheckPendingIOUs();
   // Returns a signature for validation by recipient of RPC
   std::string GetSignedRequest(const std::string &non_hex_name,
                                const std::string &recipient_id);
@@ -352,12 +367,8 @@ class PDVault {
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   std::string kad_config_file_;
   PendingOperationsHandler poh_;
-  boost::threadpool::thread_pool<
-      boost::threadpool::task_func,
-      boost::threadpool::fifo_scheduler,
-      boost::threadpool::static_size,
-      boost::threadpool::resize_controller,
-      boost::threadpool::immediately> thread_pool_;
+  QThreadPool thread_pool_;
+  boost::thread pending_ious_thread_, prune_pending_ops_thread_;
   const boost::uint16_t kKadStoreThreshold_;
 };
 

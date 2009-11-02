@@ -496,12 +496,9 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
 
   // Check the packet exits
   std::string packet_content;
-  sm->LoadPacket(msid_name, &packet_content);
-  GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(packet_content));
-  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
+  ASSERT_EQ(kSuccess, sm->LoadPacket(msid_name, &packet_content));
   GenericPacket gp;
-  ASSERT_TRUE(gp.ParseFromString(load_res.content()));
+  ASSERT_TRUE(gp.ParseFromString(packet_content));
 
   // Check packet is correct and signed
   ASSERT_EQ(pub_key, gp.data());

@@ -67,8 +67,8 @@ class MaidsafeService : public ::google::protobuf::Service {
                        ::maidsafe::StoreResponse* response,
                        ::google::protobuf::Closure* done);
   virtual void StorePacket(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::StoreRequest* request,
-                       ::maidsafe::StoreResponse* response,
+                       const ::maidsafe::StorePacketRequest* request,
+                       ::maidsafe::StorePacketResponse* response,
                        ::google::protobuf::Closure* done);
   virtual void StoreChunkReference(::google::protobuf::RpcController* controller,
                        const ::maidsafe::StoreReferenceRequest* request,
@@ -81,6 +81,10 @@ class MaidsafeService : public ::google::protobuf::Service {
   virtual void Get(::google::protobuf::RpcController* controller,
                        const ::maidsafe::GetRequest* request,
                        ::maidsafe::GetResponse* response,
+                       ::google::protobuf::Closure* done);
+  virtual void GetPacket(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::GetPacketRequest* request,
+                       ::maidsafe::GetPacketResponse* response,
                        ::google::protobuf::Closure* done);
   virtual void Update(::google::protobuf::RpcController* controller,
                        const ::maidsafe::UpdateRequest* request,
@@ -164,8 +168,8 @@ class MaidsafeService_Stub : public MaidsafeService {
                        ::maidsafe::StoreResponse* response,
                        ::google::protobuf::Closure* done);
   void StorePacket(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::StoreRequest* request,
-                       ::maidsafe::StoreResponse* response,
+                       const ::maidsafe::StorePacketRequest* request,
+                       ::maidsafe::StorePacketResponse* response,
                        ::google::protobuf::Closure* done);
   void StoreChunkReference(::google::protobuf::RpcController* controller,
                        const ::maidsafe::StoreReferenceRequest* request,
@@ -178,6 +182,10 @@ class MaidsafeService_Stub : public MaidsafeService {
   void Get(::google::protobuf::RpcController* controller,
                        const ::maidsafe::GetRequest* request,
                        ::maidsafe::GetResponse* response,
+                       ::google::protobuf::Closure* done);
+  void GetPacket(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::GetPacketRequest* request,
+                       ::maidsafe::GetPacketResponse* response,
                        ::google::protobuf::Closure* done);
   void Update(::google::protobuf::RpcController* controller,
                        const ::maidsafe::UpdateRequest* request,

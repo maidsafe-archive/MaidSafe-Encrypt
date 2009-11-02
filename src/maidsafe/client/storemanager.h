@@ -44,7 +44,6 @@ class StoreManagerInterface {
   virtual void Close(base::callback_func_type cb, bool cancel_pending_ops)=0;
   virtual void CleanUpTransport()=0;
   virtual bool NotDoneWithUploading()=0;
-  virtual void ClearStoreQueue()=0;
   virtual bool KeyUnique(const std::string &hex_key, bool check_local)=0;
 
   // Chunks
@@ -54,19 +53,18 @@ class StoreManagerInterface {
                           const std::string &msid)=0;
 
   // Packets
-  virtual void LoadPacket(const std::string &hex_key,
-                          std::string *result)=0;
+  virtual int LoadPacket(const std::string &hex_key, std::string *result)=0;
   virtual int StorePacket(const std::string &hex_packet_name,
                           const std::string &value,
                           PacketType system_packet_type,
                           DirType dir_type,
                           const std::string &msid)=0;
-  virtual void DeletePacket(const std::string &hex_key,
-                            const std::string &signature,
-                            const std::string &public_key,
-                            const std::string &signed_public_key,
-                            const ValueType &type,
-                            base::callback_func_type cb)=0;
+  virtual int DeletePacket(const std::string &hex_key,
+                           const std::string &signature,
+                           const std::string &public_key,
+                           const std::string &signed_public_key,
+                           const ValueType &type,
+                           base::callback_func_type cb)=0;
 
   // Buffer packet
   virtual int CreateBP(const std::string &bufferpacketname,

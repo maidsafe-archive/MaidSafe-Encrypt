@@ -72,8 +72,8 @@ void ClientRpcs::StoreChunk(const kad::Contact &peer,
 
 void ClientRpcs::StorePacket(const kad::Contact &peer,
                              bool local,
-                             StoreRequest *store_request,
-                             StoreResponse *store_response,
+                             StorePacketRequest *store_packet_request,
+                             StorePacketResponse *store_packet_response,
                              rpcprotocol::Controller *controller,
                              google::protobuf::Closure *done) {
   std::string local_ip("");
@@ -86,7 +86,8 @@ void ClientRpcs::StorePacket(const kad::Contact &peer,
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.StorePacket(controller, store_request, store_response, done);
+  service.StorePacket(controller, store_packet_request, store_packet_response,
+                      done);
 }
 
 void ClientRpcs::StoreIOU(const kad::Contact &peer,

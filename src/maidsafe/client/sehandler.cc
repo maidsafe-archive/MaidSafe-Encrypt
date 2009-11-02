@@ -31,6 +31,7 @@
 #include <cstdio>
 
 #include "fs/filesystem.h"
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/privateshares.h"
 #include "protobuf/packet.pb.h"
@@ -48,7 +49,7 @@ SEHandler::SEHandler(StoreManagerInterface *storem,
                            ss_(SessionSingleton::getInstance()),
                            fsys_(), uptodate_datamaps_() {}
 
-itemtype SEHandler::CheckEntry(const std::string &full_entry,
+ItemType SEHandler::CheckEntry(const std::string &full_entry,
                                uint64_t *file_size) {
   if (full_entry.size()>245) {
 #ifdef DEBUG
@@ -132,7 +133,7 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
   std::string full_entry_ = fsys_.FullMSPathFromRelPath(rel_entry);
 
   uint64_t file_size_ = 0;
-  itemtype type_ = CheckEntry(full_entry_, &file_size_);
+  ItemType type_ = CheckEntry(full_entry_, &file_size_);
   DataMap dm_, dm_retrieved_;
   std::string ser_dm_retrieved_="", ser_dm_="", ser_mdm_="";
   std::string file_hash_="", dir_key_="";
@@ -254,7 +255,7 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
 }  // end EncryptFile
 
 bool SEHandler::ProcessMetaData(const std::string &rel_entry,
-                                const itemtype type,
+                                const ItemType type,
                                 const std::string &hash,
                                 const uint64_t &file_size,
                                 std::string *ser_mdm) {
@@ -332,7 +333,7 @@ int SEHandler::DecryptFile(const std::string &rel_entry) {
 }
 
 bool SEHandler::MakeElement(const std::string &rel_entry,
-                            const itemtype type,
+                            const ItemType type,
                             const DirType dir_type,
                             const std::string &msid,
                             const std::string &dir_key) {
@@ -453,13 +454,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   if (se.Encrypt(db_path, dm) != 0) {
     return -1;
   }
-#ifdef DEBUG
-  printf("SEHandler::EncryptDb - Hello there, Chavez! It's nice to be nice.\n");
-#endif
   StoreChunks(*dm, dir_type, msid);
-#ifdef DEBUG
-  printf("SEHandler::EncryptDb - After store chunks\n");
-#endif
   dm->SerializeToString(&ser_dm);
   // if (ser_dm != "")
   //   ser_dm = ser_dm_;
@@ -501,18 +496,16 @@ int SEHandler::EncryptDb(const std::string &dir_path,
     pd_dir_type = PDDIR_NOTSIGNED;
   else
     pd_dir_type = PDDIR_SIGNED;
-  if (storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type,
-      msid) == 0) {
+  return storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid);
 #ifdef DEBUG
-    printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());
+//   printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());
 #endif
-    return 0;
-  } else {
+  return 0;
+//  } else {
 #ifdef DEBUG
-    printf("SEHandler::EncryptDb dir_path(%s) failed.\n", dir_path.c_str());
+//    printf("SEHandler::EncryptDb dir_path(%s) failed.\n", dir_path.c_str());
 #endif
-    return -1;
-  }
+//    return -1;
 }
 
 int SEHandler::DecryptDb(const std::string &dir_path,
@@ -532,27 +525,29 @@ int SEHandler::DecryptDb(const std::string &dir_path,
   if (ser_dm == "") {
     std::string packet_content;
     storem_->LoadPacket(dir_key, &packet_content);
-    GetResponse load_result;
-    if (!load_result.ParseFromString(packet_content)) {
-#ifdef DEBUG
-      printf("Failed to load packet NO PARSE.\n");
-#endif
-      return -1;
-    }
-    if (load_result.result() != kAck) {
-#ifdef DEBUG
-      printf("Failed to load packet kNACK.\n");
-#endif
-      return -1;
-    }
-    if (!load_result.has_content()) {
-#ifdef DEBUG
-      printf("Failed to load packet NO CONTENT.\n");
-#endif
-      return -1;
-    }
+//      GetResponse load_result;
+//      if (!load_result.ParseFromString(packet_content)) {
+//  #ifdef DEBUG
+//        printf("Failed to load packet NO PARSE.\n");
+//  #endif
+//        return -1;
+//      }
+//      if (load_result.result() != kAck) {
+//  #ifdef DEBUG
+//        printf("Failed to load packet kNack.\n");
+//  #endif
+//        return -1;
+//      }
+//      if (!load_result.has_content()) {
+//  #ifdef DEBUG
+//        printf("Failed to load packet NO CONTENT.\n");
+//  #endif
+//        return -1;
+//      }
+//
+//      enc_dm_ = load_result.content();
 
-    enc_dm_ = load_result.content();
+    enc_dm_ = packet_content;
     if (enc_dm_ == "") {
 #ifdef DEBUG
       printf("Enc dm is empty.\n");

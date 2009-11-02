@@ -183,6 +183,8 @@ class ChunkStore : public base::AlternativeStore {
   inline void DecrementUsedSpace(boost::uint64_t file_size) {
     used_space_ -= file_size;
   }
+  int InitialOperationVerification(const std::string &key);
+
   chunk_set chunkstore_set_;
   std::map<ChunkType, fs::path> path_map_;
   const fs::path kChunkstorePath_;

@@ -55,9 +55,9 @@ void wait_for_result_lsm(const FakeCallback &cb, boost::mutex *mutex) {
   }
 };
 
-class StoreManagerTest : public testing::Test {
+class LocalStoreManagerTest : public testing::Test {
  public:
-  StoreManagerTest() : cb(), client_chunkstore_(), storemanager(),
+  LocalStoreManagerTest() : cb(), client_chunkstore_(), storemanager(),
       crypto_obj(), rsa_obj(), mutex_(),
       ss_(maidsafe::SessionSingleton::getInstance()) {
     try {
@@ -67,7 +67,7 @@ class StoreManagerTest : public testing::Test {
       printf("%s\n", e.what());
     }
   }
-  ~StoreManagerTest() {
+  ~LocalStoreManagerTest() {
     try {
       boost::filesystem::remove_all("./TestStoreManager");
     }
@@ -140,11 +140,11 @@ class StoreManagerTest : public testing::Test {
   boost::mutex *mutex_;
   maidsafe::SessionSingleton *ss_;
  private:
-  StoreManagerTest(const StoreManagerTest&);
-  StoreManagerTest &operator=(const StoreManagerTest&);
+  LocalStoreManagerTest(const LocalStoreManagerTest&);
+  LocalStoreManagerTest &operator=(const LocalStoreManagerTest&);
 };
 
-TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
+TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
   maidsafe::GenericPacket gp;
   rsa_obj.GenerateKeys(4096);
   gp.set_data("Generic System Packet Data");
@@ -160,13 +160,13 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreSystemPacket) {
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
   std::string result;
   storemanager->LoadPacket(gp_name, &result);
-  maidsafe::GetResponse load_res;
-  ASSERT_TRUE(load_res.ParseFromString(result));
-  ASSERT_EQ(kAck, static_cast<int>(load_res.result()));
-  ASSERT_EQ(gp_content, load_res.content());
+  maidsafe::GenericPacket gp_res;
+  ASSERT_TRUE(gp_res.ParseFromString(result));
+  ASSERT_EQ(gp.data(), gp_res.data());
+  ASSERT_EQ(gp.signature(), gp_res.signature());
 }
 
-TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
+TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacket) {
   maidsafe::GenericPacket gp;
   rsa_obj.GenerateKeys(4096);
   gp.set_data("Generic System Packet Data");
@@ -199,7 +199,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacket) {
   ASSERT_TRUE(storemanager->KeyUnique(gp_name, false));
 }
 
-TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
+TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   maidsafe::GenericPacket gp;
   rsa_obj.GenerateKeys(4096);
   std::string public_key = rsa_obj.public_key();
@@ -254,7 +254,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
 }
 
-TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
+TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
   std::string chunk_content = base::RandomString(256 * 1024);
   std::string non_hex_chunk_name = crypto_obj.Hash(chunk_content, "",
                                    crypto::STRING_STRING, false);
@@ -275,7 +275,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreChunk) {
   ASSERT_EQ(chunk_content, result_str);
 }
 
-TEST_F(StoreManagerTest, BEH_MAID_StoreAndLoadBufferPacket) {
+TEST_F(LocalStoreManagerTest, BEH_MAID_StoreAndLoadBufferPacket) {
   std::string bufferpacketname = crypto_obj.Hash(ss_->Id(maidsafe::MPID) +
                                  ss_->PublicKey(maidsafe::MPID), "",
                                  crypto::STRING_STRING, true);
@@ -304,7 +304,7 @@ TEST_F(StoreManagerTest, BEH_MAID_StoreAndLoadBufferPacket) {
   ASSERT_EQ(ser_bp.size(), packet_content.size());
 }
 
-TEST_F(StoreManagerTest, BEH_MAID_ModifyBufferPacketInfo) {
+TEST_F(LocalStoreManagerTest, BEH_MAID_ModifyBufferPacketInfo) {
   std::string bufferpacketname = crypto_obj.Hash(ss_->Id(maidsafe::MPID) +
                                  ss_->PublicKey(maidsafe::MPID), "",
                                  crypto::STRING_STRING, true);
@@ -355,7 +355,7 @@ TEST_F(StoreManagerTest, BEH_MAID_ModifyBufferPacketInfo) {
   ASSERT_EQ(ser_info_gp, ser_gp);
 }
 
-TEST_F(StoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
+TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   std::string bufferpacketname = crypto_obj.Hash(ss_->Id(maidsafe::MPID) +
                                  ss_->PublicKey(maidsafe::MPID), "",
                                  crypto::STRING_STRING, true);
@@ -426,7 +426,7 @@ TEST_F(StoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
 }
 
 /*
-TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
+TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   std::string bufferpacketname = crypto_obj.Hash(ss_->Id(maidsafe::MPID) +
                                  ss_->PublicKey(maidsafe::MPID), "",
                                  crypto::STRING_STRING, true);
@@ -475,7 +475,7 @@ TEST_F(StoreManagerTest, BEH_MAID_DeleteBufferPacketNotOwner) {
   del_res.Clear();
 }
 
-TEST_F(StoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
+TEST_F(LocalStoreManagerTest, BEH_MAID_Add_Get_Clear_BufferPacket_Msgs) {
   std::string bufferpacketname = crypto_obj.Hash(ss_->Id(maidsafe::MPID) +
                                  ss_->PublicKey(maidsafe::MPID), "",
                                  crypto::STRING_STRING, true);
