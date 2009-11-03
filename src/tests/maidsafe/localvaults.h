@@ -23,8 +23,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LOCALVAULTS_H_
-#define MAIDSAFE_LOCALVAULTS_H_
+#ifndef TESTS_MAIDSAFE_LOCALVAULTS_H_
+#define TESTS_MAIDSAFE_LOCALVAULTS_H_
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -34,7 +34,6 @@
 #include <maidsafe/general_messages.pb.h>
 #include <string>
 #include <vector>
-#include <fstream>  // NOLINT (Fraser) - for protobuf config file
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/vault/pdvault.h"
 #include "protobuf/maidsafe_messages.pb.h"
@@ -269,4 +268,4 @@ class Env: public testing::Environment {
 
 }  // namespace localvaults
 
-#endif  // MAIDSAFE_LOCALVAULTS_H_
+#endif  // TESTS_MAIDSAFE_LOCALVAULTS_H_

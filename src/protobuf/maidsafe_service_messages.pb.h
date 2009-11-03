@@ -2619,16 +2619,64 @@ class GetPacketRequest : public ::google::protobuf::Message {
   inline void set_packetname(const void* value, size_t size);
   inline ::std::string* mutable_packetname();
   
+  // optional bytes key_id = 2;
+  inline bool has_key_id() const;
+  inline void clear_key_id();
+  static const int kKeyIdFieldNumber = 2;
+  inline const ::std::string& key_id() const;
+  inline void set_key_id(const ::std::string& value);
+  inline void set_key_id(const char* value);
+  inline void set_key_id(const void* value, size_t size);
+  inline ::std::string* mutable_key_id();
+  
+  // optional bytes public_key = 3;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 3;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // optional bytes public_key_signature = 4;
+  inline bool has_public_key_signature() const;
+  inline void clear_public_key_signature();
+  static const int kPublicKeySignatureFieldNumber = 4;
+  inline const ::std::string& public_key_signature() const;
+  inline void set_public_key_signature(const ::std::string& value);
+  inline void set_public_key_signature(const char* value);
+  inline void set_public_key_signature(const void* value, size_t size);
+  inline ::std::string* mutable_public_key_signature();
+  
+  // optional bytes request_signature = 5;
+  inline bool has_request_signature() const;
+  inline void clear_request_signature();
+  static const int kRequestSignatureFieldNumber = 5;
+  inline const ::std::string& request_signature() const;
+  inline void set_request_signature(const ::std::string& value);
+  inline void set_request_signature(const char* value);
+  inline void set_request_signature(const void* value, size_t size);
+  inline ::std::string* mutable_request_signature();
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   ::std::string* packetname_;
   static const ::std::string _default_packetname_;
+  ::std::string* key_id_;
+  static const ::std::string _default_key_id_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* public_key_signature_;
+  static const ::std::string _default_public_key_signature_;
+  ::std::string* request_signature_;
+  static const ::std::string _default_request_signature_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(1 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -2707,21 +2755,15 @@ class GetPacketResponse : public ::google::protobuf::Message {
   inline ::google::protobuf::uint32 result() const;
   inline void set_result(::google::protobuf::uint32 value);
   
-  // repeated bytes content = 2;
+  // repeated .maidsafe.GenericPacket content = 2;
   inline int content_size() const;
   inline void clear_content();
   static const int kContentFieldNumber = 2;
-  inline const ::google::protobuf::RepeatedPtrField< ::std::string>& content() const;
-  inline ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_content();
-  inline const ::std::string& content(int index) const;
-  inline ::std::string* mutable_content(int index);
-  inline void set_content(int index, const ::std::string& value);
-  inline void set_content(int index, const char* value);
-  inline void set_content(int index, const void* value, size_t size);
-  inline ::std::string* add_content();
-  inline void add_content(const ::std::string& value);
-  inline void add_content(const char* value);
-  inline void add_content(const void* value, size_t size);
+  inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >& content() const;
+  inline ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >* mutable_content();
+  inline const ::maidsafe::GenericPacket& content(int index) const;
+  inline ::maidsafe::GenericPacket* mutable_content(int index);
+  inline ::maidsafe::GenericPacket* add_content();
   
   // optional bytes pmid_id = 3;
   inline bool has_pmid_id() const;
@@ -2738,7 +2780,7 @@ class GetPacketResponse : public ::google::protobuf::Message {
   mutable int _cached_size_;
   
   ::google::protobuf::uint32 result_;
-  ::google::protobuf::RepeatedPtrField< ::std::string> content_;
+  ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket > content_;
   ::std::string* pmid_id_;
   static const ::std::string _default_pmid_id_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
@@ -8691,6 +8733,174 @@ inline ::std::string* GetPacketRequest::mutable_packetname() {
   return packetname_;
 }
 
+// optional bytes key_id = 2;
+inline bool GetPacketRequest::has_key_id() const {
+  return _has_bit(1);
+}
+inline void GetPacketRequest::clear_key_id() {
+  if (key_id_ != &_default_key_id_) {
+    key_id_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& GetPacketRequest::key_id() const {
+  return *key_id_;
+}
+inline void GetPacketRequest::set_key_id(const ::std::string& value) {
+  _set_bit(1);
+  if (key_id_ == &_default_key_id_) {
+    key_id_ = new ::std::string;
+  }
+  key_id_->assign(value);
+}
+inline void GetPacketRequest::set_key_id(const char* value) {
+  _set_bit(1);
+  if (key_id_ == &_default_key_id_) {
+    key_id_ = new ::std::string;
+  }
+  key_id_->assign(value);
+}
+inline void GetPacketRequest::set_key_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (key_id_ == &_default_key_id_) {
+    key_id_ = new ::std::string;
+  }
+  key_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetPacketRequest::mutable_key_id() {
+  _set_bit(1);
+  if (key_id_ == &_default_key_id_) {
+    key_id_ = new ::std::string;
+  }
+  return key_id_;
+}
+
+// optional bytes public_key = 3;
+inline bool GetPacketRequest::has_public_key() const {
+  return _has_bit(2);
+}
+inline void GetPacketRequest::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& GetPacketRequest::public_key() const {
+  return *public_key_;
+}
+inline void GetPacketRequest::set_public_key(const ::std::string& value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void GetPacketRequest::set_public_key(const char* value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void GetPacketRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetPacketRequest::mutable_public_key() {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// optional bytes public_key_signature = 4;
+inline bool GetPacketRequest::has_public_key_signature() const {
+  return _has_bit(3);
+}
+inline void GetPacketRequest::clear_public_key_signature() {
+  if (public_key_signature_ != &_default_public_key_signature_) {
+    public_key_signature_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& GetPacketRequest::public_key_signature() const {
+  return *public_key_signature_;
+}
+inline void GetPacketRequest::set_public_key_signature(const ::std::string& value) {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(value);
+}
+inline void GetPacketRequest::set_public_key_signature(const char* value) {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(value);
+}
+inline void GetPacketRequest::set_public_key_signature(const void* value, size_t size) {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetPacketRequest::mutable_public_key_signature() {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  return public_key_signature_;
+}
+
+// optional bytes request_signature = 5;
+inline bool GetPacketRequest::has_request_signature() const {
+  return _has_bit(4);
+}
+inline void GetPacketRequest::clear_request_signature() {
+  if (request_signature_ != &_default_request_signature_) {
+    request_signature_->clear();
+  }
+  _clear_bit(4);
+}
+inline const ::std::string& GetPacketRequest::request_signature() const {
+  return *request_signature_;
+}
+inline void GetPacketRequest::set_request_signature(const ::std::string& value) {
+  _set_bit(4);
+  if (request_signature_ == &_default_request_signature_) {
+    request_signature_ = new ::std::string;
+  }
+  request_signature_->assign(value);
+}
+inline void GetPacketRequest::set_request_signature(const char* value) {
+  _set_bit(4);
+  if (request_signature_ == &_default_request_signature_) {
+    request_signature_ = new ::std::string;
+  }
+  request_signature_->assign(value);
+}
+inline void GetPacketRequest::set_request_signature(const void* value, size_t size) {
+  _set_bit(4);
+  if (request_signature_ == &_default_request_signature_) {
+    request_signature_ = new ::std::string;
+  }
+  request_signature_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* GetPacketRequest::mutable_request_signature() {
+  _set_bit(4);
+  if (request_signature_ == &_default_request_signature_) {
+    request_signature_ = new ::std::string;
+  }
+  return request_signature_;
+}
+
 // -------------------------------------------------------------------
 
 // GetPacketResponse
@@ -8711,48 +8921,29 @@ inline void GetPacketResponse::set_result(::google::protobuf::uint32 value) {
   result_ = value;
 }
 
-// repeated bytes content = 2;
+// repeated .maidsafe.GenericPacket content = 2;
 inline int GetPacketResponse::content_size() const {
   return content_.size();
 }
 inline void GetPacketResponse::clear_content() {
   content_.Clear();
 }
-inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
+inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >&
 GetPacketResponse::content() const {
   return content_;
 }
-inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+inline ::google::protobuf::RepeatedPtrField< ::maidsafe::GenericPacket >*
 GetPacketResponse::mutable_content() {
   return &content_;
 }
-inline const ::std::string& GetPacketResponse::content(int index) const {
+inline const ::maidsafe::GenericPacket& GetPacketResponse::content(int index) const {
   return content_.Get(index);
 }
-inline ::std::string* GetPacketResponse::mutable_content(int index) {
+inline ::maidsafe::GenericPacket* GetPacketResponse::mutable_content(int index) {
   return content_.Mutable(index);
 }
-inline void GetPacketResponse::set_content(int index, const ::std::string& value) {
-  content_.Mutable(index)->assign(value);
-}
-inline void GetPacketResponse::set_content(int index, const char* value) {
-  content_.Mutable(index)->assign(value);
-}
-inline void GetPacketResponse::set_content(int index, const void* value, size_t size) {
-  content_.Mutable(index)->assign(
-    reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* GetPacketResponse::add_content() {
+inline ::maidsafe::GenericPacket* GetPacketResponse::add_content() {
   return content_.Add();
-}
-inline void GetPacketResponse::add_content(const ::std::string& value) {
-  content_.Add()->assign(value);
-}
-inline void GetPacketResponse::add_content(const char* value) {
-  content_.Add()->assign(value);
-}
-inline void GetPacketResponse::add_content(const void* value, size_t size) {
-  content_.Add()->assign(reinterpret_cast<const char*>(value), size);
 }
 
 // optional bytes pmid_id = 3;

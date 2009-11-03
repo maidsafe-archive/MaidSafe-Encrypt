@@ -154,6 +154,7 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetBPMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPMessages);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetPacket);
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
   bool ValidateSignedRequest(const std::string &public_key,

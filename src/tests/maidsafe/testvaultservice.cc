@@ -1789,4 +1789,97 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   ASSERT_EQ(0, get_msg_response.messages_size());
 }
 
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
+  rpcprotocol::Controller controller;
+  maidsafe::GetPacketRequest request;
+  maidsafe::GetPacketResponse response;
+  maidsafe::GenericPacket *random_gp = response.add_content();
+  random_gp->set_data("petting the one-eyed snake");
+
+  // Not initialised
+  Callback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+                                    (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->GetPacket(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_EQ(0, response.content_size());
+  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+
+  // Generate packet and signatures
+  std::string pub_key, priv_key, key_id, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  std::string packetname = co.Hash("packetname", "", crypto::STRING_STRING,
+                           false);
+  CreateSignedRequest(pub_key, priv_key, packetname, &key_id, &sig_pub_key,
+                      &sig_req);
+
+  request.set_key_id(key_id);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->GetPacket(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_EQ(0, response.content_size());
+  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+
+  request.set_public_key(pub_key);
+  request.set_public_key_signature(sig_pub_key);
+  request.set_request_signature(sig_req);
+  request.set_packetname(packetname);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->GetPacket(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_EQ(0, response.content_size());
+  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+
+  // single value
+  maidsafe::GenericPacket injection_gp;
+  injection_gp.set_data("some random data, not to do with chickens or snakes");
+  injection_gp.set_signature(co.AsymSign(injection_gp.data(), "", priv_key,
+                             crypto::STRING_STRING));
+  ASSERT_EQ(kSuccess, vault_service_->vault_chunkstore_->StorePacket(packetname,
+            injection_gp));
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->GetPacket(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
+  ASSERT_EQ(1, response.content_size());
+  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(injection_gp.data(), response.content(0).data());
+  ASSERT_EQ(injection_gp.signature(), response.content(0).signature());
+
+  // multiple values
+  size_t kNumTestPackets(46);
+  std::vector<maidsafe::GenericPacket> injection_gps;
+  for (size_t i = 0; i < kNumTestPackets; ++i) {
+    maidsafe::GenericPacket injection_gp;
+    injection_gp.set_data(base::itos(i));
+    injection_gp.set_signature(co.AsymSign(injection_gp.data(), "", priv_key,
+                               crypto::STRING_STRING));
+    injection_gps.push_back(injection_gp);
+  }
+  // as single value has already been stored then overwrite with multiple values
+  ASSERT_EQ(kSuccess, vault_service_->vault_chunkstore_->OverwritePacket(
+            packetname, injection_gps, pub_key));
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  vault_service_->GetPacket(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
+  ASSERT_EQ(static_cast<int>(kNumTestPackets), response.content_size());
+  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  for (size_t i = 0; i < kNumTestPackets; ++i) {
+    ASSERT_EQ(injection_gps.at(i).data(), response.content(i).data());
+    ASSERT_EQ(injection_gps.at(i).signature(), response.content(i).signature());
+  }
+}
+
 }  // namespace maidsafe_vault

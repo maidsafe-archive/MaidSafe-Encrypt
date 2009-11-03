@@ -573,6 +573,7 @@ void VaultService::GetPacket(google::protobuf::RpcController*,
                              const maidsafe::GetPacketRequest* request,
                              maidsafe::GetPacketResponse* response,
                              google::protobuf::Closure* done) {
+  response->Clear();
 #ifdef DEBUG
   printf("In VaultService::GetPacket (%i)\n", knode_->host_port());
 #endif
@@ -586,6 +587,21 @@ void VaultService::GetPacket(google::protobuf::RpcController*,
     done->Run();
     return;
   }
+
+  if (request->has_key_id()) {
+    if (!ValidateSignedRequest(request->public_key(),
+         request->public_key_signature(), request->request_signature(),
+         request->packetname(), request->key_id())) {
+      response->set_result(kNack);
+      done->Run();
+  #ifdef DEBUG
+      printf("In VaultService::GetPacket (%i), ", knode_->host_port());
+      printf("failed to validate signed request.\n");
+  #endif
+      return;
+    }
+  }
+
   if (!LoadPacketLocal(request->packetname(), response)) {
 #ifdef DEBUG
     printf("In VaultService::GetPacket (%i), couldn't find chunk locally.\n",
@@ -1067,7 +1083,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::CreateBP (%i), ", knode_->host_port());
+    printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
     printf("failed to validate signed public key.\n");
 #endif
     return;
@@ -1080,7 +1096,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::CreateBP (%i), ", knode_->host_port());
+    printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
     printf("failed to validate signed request.\n");
 #endif
     return;
@@ -1179,7 +1195,7 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::CreateBP (%i), ", knode_->host_port());
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
     printf("failed to validate signed public key.\n");
 #endif
     return;
@@ -1192,7 +1208,7 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::CreateBP (%i), ", knode_->host_port());
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
     printf("failed to validate signed request.\n");
 #endif
     return;
@@ -1263,7 +1279,7 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::CreateBP (%i), ", knode_->host_port());
+    printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
     printf("failed to validate signed public key.\n");
 #endif
     return;
@@ -1276,7 +1292,7 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::CreateBP (%i), ", knode_->host_port());
+    printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
     printf("failed to validate signed request.\n");
 #endif
     return;
@@ -1418,8 +1434,10 @@ bool VaultService::LoadPacketLocal(const std::string &packetname,
     return false;
   }
   response->set_result(kAck);
-  for (size_t i = 0; i < gps.size(); ++i)
-    response->add_content(gps.at(i).data());
+  for (size_t i = 0; i < gps.size(); ++i) {
+    maidsafe::GenericPacket *gp = response->add_content();
+    *gp = gps.at(i);
+  }
   return true;
 }
 

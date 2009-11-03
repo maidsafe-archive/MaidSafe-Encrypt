@@ -72,7 +72,7 @@ std::string KeyAtlas::SearchKeyring(const int &packet_type,
 #endif
     return result;
   }
-  key_atlas_set::iterator  it = key_ring_.find(packet_type);
+  key_atlas_set::iterator it = key_ring_.find(packet_type);
   if (it == key_ring_.end()) {
 #ifdef DEBUG
     printf("Key type(%d) not present in keyring\n", packet_type);

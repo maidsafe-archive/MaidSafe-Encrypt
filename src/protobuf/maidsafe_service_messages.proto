@@ -153,11 +153,15 @@ message GetResponse {
 
 message GetPacketRequest {
   required bytes packetname = 1;
+  optional bytes key_id = 2;  // ID of e.g. ANMID, ANTMID, ...
+  optional bytes public_key = 3;
+  optional bytes public_key_signature = 4;
+  optional bytes request_signature = 5;
 }
 
 message GetPacketResponse {
   required uint32 result = 1;
-  repeated bytes content = 2;
+  repeated GenericPacket content = 2;
   optional bytes pmid_id = 3;
 }
 
