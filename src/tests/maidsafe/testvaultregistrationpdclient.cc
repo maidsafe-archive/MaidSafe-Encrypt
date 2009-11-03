@@ -109,8 +109,14 @@ class TestPDClientOwnVault : public testing::Test {
   }
  protected:
   void SetUp() {
+    ASSERT_TRUE(client.RegisterNotifiersToTransport());
+    ASSERT_TRUE(client_transport_.RegisterOnServerDown(boost::bind(
+        &HandleDeadServer, _1, _2, _3)));
     ASSERT_EQ(0, client_transport_.Start(0));
     ASSERT_EQ(0, client.Start());
+    ASSERT_TRUE(server.RegisterNotifiersToTransport());
+    ASSERT_TRUE(server_transport_.RegisterOnServerDown(boost::bind(
+        &HandleDeadServer, _1, _2, _3)));
     ASSERT_EQ(0, server_transport_.StartLocal(kLocalPort));
     ASSERT_EQ(0, server.Start());
     service_channel->SetService(service.pservice());

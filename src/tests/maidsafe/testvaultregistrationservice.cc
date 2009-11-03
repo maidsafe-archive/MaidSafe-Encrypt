@@ -131,6 +131,14 @@ class VaultRegistrationTest : public testing::Test {
   }
  protected:
   virtual void SetUp() {
+    ASSERT_TRUE(client.RegisterNotifiersToTransport());
+    ASSERT_TRUE(client_transport_.RegisterOnServerDown(boost::bind(
+        &HandleDeadServer, _1, _2, _3)));
+    ASSERT_EQ(0, client_transport_.Start(0));
+    ASSERT_EQ(0, client.Start());
+    ASSERT_TRUE(server.RegisterNotifiersToTransport());
+    ASSERT_TRUE(server_transport_.RegisterOnServerDown(boost::bind(
+        &HandleDeadServer, _1, _2, _3)));
     ASSERT_EQ(0, server_transport_.StartLocal(0));
     ASSERT_EQ(0, server.Start());
     service.reset(new maidsafe_vault::RegistrationService(boost::bind(
@@ -138,8 +146,6 @@ class VaultRegistrationTest : public testing::Test {
     service_channel->SetService(service.get());
     server.RegisterChannel(service->GetDescriptor()->name(),
         service_channel.get());
-    ASSERT_EQ(0, client_transport_.Start(0));
-    ASSERT_EQ(0, client.Start());
   }
   virtual void TearDown() {
     handler.Reset();
@@ -632,6 +638,9 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
 
   transport::Transport client_transport;
   rpcprotocol::ChannelManager client(&client_transport);
+  ASSERT_TRUE(client.RegisterNotifiersToTransport());
+  ASSERT_TRUE(client_transport.RegisterOnServerDown(boost::bind(
+      &HandleDeadServer, _1, _2, _3)));
   ASSERT_EQ(0, client_transport.Start(0));
   ASSERT_EQ(0, client.Start());
   crypto::Crypto cobj;

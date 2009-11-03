@@ -192,6 +192,7 @@ int PDVault::Stop(bool cancel_pending_ops) {
     SetVaultStatus(kVaultStarted);
   else
     SetVaultStatus(kVaultStopped);
+  channel_manager_.Stop();
   transport_.Stop();
   return 0;
 }
