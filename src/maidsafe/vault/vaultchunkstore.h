@@ -128,23 +128,23 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   inline boost::uint64_t used_space() { return used_space_; }
   inline boost::uint64_t FreeSpace() { return available_space_ - used_space_; }
  private:
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreInit);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreInvalidKeySize);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreStoreChunk);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreAddChunkToOutgoing);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreDeleteChunk);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreLoadRandomChunk);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreReuseDirectory);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreHashCheckChunk);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreChangeChunkType);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreChunkType);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreSpace);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreCheckAllChunks);
-  FRIEND_TEST(TestChunkstore, BEH_MAID_ChunkstoreThreadedChangeType);
-  FRIEND_TEST(TestChunkstore, FUNC_MAID_ChunkstoreStorePackets);
-  FRIEND_TEST(TestChunkstore, FUNC_MAID_ChunkstoreAppendToPackets);
-  FRIEND_TEST(TestChunkstore, FUNC_MAID_ChunkstoreOverwritePackets);
-  FRIEND_TEST(TestChunkstore, FUNC_MAID_ChunkstoreDeletePackets);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreInit);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreInvalidKeySize);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreDeleteChunk);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreLoadRandomChunk);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreReuseDirectory);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreHashCheckChunk);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreChangeChunkType);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreChunkType);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreSpace);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreCheckAllChunks);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedChangeType);
+  FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreStorePackets);
+  FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreAppendToPackets);
+  FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreOverwritePackets);
+  FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreDeletePackets);
   // Returns ChunkInfo for the chunk which was checked the longest time ago.  If
   // several chunks qualify, only the first one is returned.
   maidsafe::ChunkInfo GetOldestChecked();

@@ -295,9 +295,9 @@ static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNetworkSize_ = 20;
 static const int kTestK_ = 16;
 
-class TestPDVault : public testing::Test {
+class PDVaultTest : public testing::Test {
  protected:
-  TestPDVault() : client_chunkstore_dir_("./TestVault/ClientChunkstore"),
+  PDVaultTest() : client_chunkstore_dir_("./TestVault/ClientChunkstore"),
                   client_chunkstore_(),
                   chunkstore_dirs_(),
                   sm_(),
@@ -336,7 +336,7 @@ class TestPDVault : public testing::Test {
     maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(0);
   }
 
-  virtual ~TestPDVault() {
+  virtual ~PDVaultTest() {
     try {
       boost::filesystem::remove_all("./TestVault");
     }
@@ -375,11 +375,11 @@ class TestPDVault : public testing::Test {
   crypto::Crypto crypto_;
 
  private:
-  TestPDVault(const TestPDVault&);
-  TestPDVault &operator=(const TestPDVault&);
+  PDVaultTest(const PDVaultTest&);
+  PDVaultTest &operator=(const PDVaultTest&);
 };
 
-TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
+TEST_F(PDVaultTest, FUNC_MAID_VaultStartStop) {
   // check pdvaults can be started and stopped multiple times
   bool success_(false);
   const int kTestVaultNo(4);
@@ -394,7 +394,7 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
   }
 }
 
-//  TEST_F(TestPDVault, FUNC_MAID_Kademlia_FindNodes) {
+//  TEST_F(PDVaultTest, FUNC_MAID_Kademlia_FindNodes) {
 //    for (char c = '0'; c < '9'; ++c) {
 //      std::string kad_key(64, c);
 //      std::vector<kad::Contact> contacts;
@@ -502,7 +502,7 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //    }
 //  }
 
-//  TEST_F(TestPDVault, FUNC_MAID_Kademlia_FindValues) {
+//  TEST_F(PDVaultTest, FUNC_MAID_Kademlia_FindValues) {
 //    for (char c = '0'; c < '9'; ++c) {
 //      std::string kad_key(64, c);
 //      kad::ContactInfo cache_holder;
@@ -521,7 +521,7 @@ TEST_F(TestPDVault, FUNC_MAID_VaultStartStop) {
 //    }
 //  }
 
-TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
+TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
   // add some valid chunks to client chunkstore and store to network
   std::map<std::string, std::string> chunks_;
   const boost::uint32_t kNumOfTestChunks(29);
@@ -562,7 +562,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreChunks) {
   ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
 }
 
-TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
+TEST_F(PDVaultTest, FUNC_MAID_GetChunk) {
   std::map<std::string, std::string> chunks_;
   const boost::uint32_t kNumOfTestChunks(20);
   testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
@@ -620,7 +620,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetChunk) {
   }
 }
 
-TEST_F(TestPDVault, FUNC_MAID_GetNonDuplicatedChunk) {
+TEST_F(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk) {
   std::map<std::string, std::string> chunks_;
   const boost::uint32_t kNumOfTestChunks(3);
   testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
@@ -691,7 +691,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetNonDuplicatedChunk) {
   }
 }
 
-TEST_F(TestPDVault, FUNC_MAID_GetMissingChunk) {
+TEST_F(PDVaultTest, FUNC_MAID_GetMissingChunk) {
   std::map<std::string, std::string> chunks_;
   const boost::uint32_t kNumOfTestChunks(3);
   ASSERT_GE(kNumOfTestChunks, boost::uint32_t(2)) <<
@@ -750,7 +750,7 @@ TEST_F(TestPDVault, FUNC_MAID_GetMissingChunk) {
   }
 }
 
-TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
+TEST_F(PDVaultTest, FUNC_MAID_StoreSystemPacket) {
   std::map<std::string, std::string> packets;
   const boost::uint32_t kNumOfTestPackets(29);
   testpdvault::CreatePacketType(client_maid_keys_.private_key(),
@@ -799,7 +799,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreSystemPacket) {
   }
 }
 
-TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
+TEST_F(PDVaultTest, FUNC_MAID_StoreInvalidSystemPacket) {
   std::map<std::string, std::string> packets;
   testpdvault::CreatePacketType(client_maid_keys_.private_key(), 1,
       &packets);
@@ -814,7 +814,7 @@ TEST_F(TestPDVault, FUNC_MAID_StoreInvalidSystemPacket) {
 }
 
 /*
-TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
+TEST_F(PDVaultTest, FUNC_MAID_UpdatePDDirNotSigned) {
   std::string non_hex_chunk_name = crypto_.Hash("abc", "",
                                         crypto::STRING_STRING, false);
   std::string chunk_content = base::RandomString(200);
@@ -882,7 +882,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdatePDDirNotSigned) {
   ASSERT_FALSE(callback_timed_out_);
 }
 
-TEST_F(TestPDVault, FUNC_MAID_UpdateSystemPacket) {
+TEST_F(PDVaultTest, FUNC_MAID_UpdateSystemPacket) {
   std::string non_hex_chunk_name, chunk_content;
   testpdvault::CreatePacketType(client_private_key_, &non_hex_chunk_name,
     &chunk_content);
@@ -940,7 +940,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateSystemPacket) {
   ASSERT_FALSE(callback_timed_out_);
 }
 
-TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
+TEST_F(PDVaultTest, FUNC_MAID_UpdateInvalidSystemPacket) {
   std::string non_hex_chunk_name, chunk_content;
   testpdvault::CreatePacketType(client_private_key_, &non_hex_chunk_name,
     &chunk_content);
@@ -1029,7 +1029,7 @@ TEST_F(TestPDVault, FUNC_MAID_UpdateInvalidSystemPacket) {
   ASSERT_FALSE(callback_timed_out_);
 }
 
-TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
+TEST_F(PDVaultTest, FUNC_MAID_AddGetMessages) {
   std::string non_hex_chunk_name, chunk_content;
   testpdvault::CreateBufferPacket("publicuser", client_public_key_,
       client_private_key_,
@@ -1182,14 +1182,14 @@ TEST_F(TestPDVault, FUNC_MAID_AddGetMessages) {
   ASSERT_EQ(size_t(0), callback_messages_.size());
 }
 */
-TEST_F(TestPDVault, DISABLED_FUNC_MAID_SwapChunk) {
+TEST_F(PDVaultTest, DISABLED_FUNC_MAID_SwapChunk) {
 }
 
-TEST_F(TestPDVault, DISABLED_FUNC_MAID_VaultValidateChunk) {
+TEST_F(PDVaultTest, DISABLED_FUNC_MAID_VaultValidateChunk) {
   // check pre-loaded chunks are not corrupted
 }
 
-TEST_F(TestPDVault, DISABLED_FUNC_MAID_VaultRepublishChunkRef) {
+TEST_F(PDVaultTest, DISABLED_FUNC_MAID_VaultRepublishChunkRef) {
 }
 
 }  // namespace maidsafe_vault

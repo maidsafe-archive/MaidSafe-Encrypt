@@ -36,9 +36,9 @@ crypto::RsaKeyPair create_keys() {
 
 namespace maidsafe {
 
-class PacketHandlerTest : public testing::Test {
+class SystemPacketHandlerTest : public testing::Test {
  public:
-  PacketHandlerTest() : co_(), input_param() {}
+  SystemPacketHandlerTest() : co_(), input_param() {}
  protected:
   virtual void SetUp() {
     co_.set_symm_algorithm(crypto::AES_256);
@@ -48,7 +48,7 @@ class PacketHandlerTest : public testing::Test {
   PacketParams input_param;
 };
 
-TEST_F(PacketHandlerTest, BEH_MAID_CreateMID) {
+TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateMID) {
   Packet *packet = PacketFactory::Factory(MID);
   MidPacket *midPacket = static_cast<MidPacket*>(packet);
   uint32_t rid = 0;
@@ -77,7 +77,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateMID) {
   ASSERT_NE(str_rid, mid.data());
 }
 
-TEST_F(PacketHandlerTest, BEH_MAID_GetRidMID) {
+TEST_F(SystemPacketHandlerTest, BEH_MAID_GetRidMID) {
   Packet *packet = PacketFactory::Factory(MID);
   MidPacket *midPacket = static_cast<MidPacket*>(packet);
   crypto::RsaKeyPair keys;
@@ -92,7 +92,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetRidMID) {
   ASSERT_EQ(rid, boost::any_cast<uint32_t>(recovered_rid["data"]));
 }
 
-TEST_F(PacketHandlerTest, BEH_MAID_CreateSigPacket) {
+TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateSigPacket) {
   // Signature packets are signed by themselves
   std::string name;
   crypto::RsaKeyPair keys;
@@ -117,7 +117,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateSigPacket) {
   ASSERT_EQ(expected_name, name);
 }
 
-TEST_F(PacketHandlerTest, BEH_MAID_CreateMPID) {
+TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateMPID) {
   std::string name;
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize);
@@ -139,7 +139,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateMPID) {
   ASSERT_EQ(expected_name, name);
 }
 
-TEST_F(PacketHandlerTest, BEH_MAID_GetKeyFromPacket) {
+TEST_F(SystemPacketHandlerTest, BEH_MAID_GetKeyFromPacket) {
   crypto::RsaKeyPair keys;
   std::string ser_packet;
   PacketParams result;
@@ -174,7 +174,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetKeyFromPacket) {
     boost::any_cast<std::string>(mpidPacket->GetData(ser_packet)["data"]));
 }
 
-TEST_F(PacketHandlerTest, BEH_MAID_CreatePMID) {
+TEST_F(SystemPacketHandlerTest, BEH_MAID_CreatePMID) {
   std::string name;
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize);
@@ -195,7 +195,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreatePMID) {
   ASSERT_EQ(expected_name, name);
 }
 
-TEST_F(PacketHandlerTest, BEH_MAID_CreateTMID) {
+TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateTMID) {
   TmidPacket *tmid_packet =
       static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
   // MidPacket *midPacket = (packet);
@@ -229,7 +229,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateTMID) {
   ASSERT_NE(boost::any_cast<std::string>(input_param["data"]), tmid.data());
 }
 
-TEST_F(PacketHandlerTest, BEH_MAID_GetDataFromTMID) {
+TEST_F(SystemPacketHandlerTest, BEH_MAID_GetDataFromTMID) {
   TmidPacket *tmid_packet =
       static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
   input_param["username"] = std::string("user1");
@@ -251,7 +251,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_GetDataFromTMID) {
       boost::any_cast<std::string>(rec_data["data"]));
 }
 
-TEST_F(PacketHandlerTest, BEH_MAID_CreateSMID) {
+TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateSMID) {
   SmidPacket *smidPacket =
       static_cast<SmidPacket*>(PacketFactory::Factory(SMID));
   GenericPacket smid;
@@ -276,7 +276,7 @@ TEST_F(PacketHandlerTest, BEH_MAID_CreateSMID) {
     keys.public_key(), crypto::STRING_STRING));
 }
 
-TEST_F(PacketHandlerTest, BEH_MAID_GetRidSMID) {
+TEST_F(SystemPacketHandlerTest, BEH_MAID_GetRidSMID) {
   SmidPacket *smidPacket =
       static_cast<SmidPacket*>(PacketFactory::Factory(SMID));
   crypto::RsaKeyPair keys;

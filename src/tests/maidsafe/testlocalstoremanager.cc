@@ -166,7 +166,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
   ASSERT_EQ(gp.signature(), gp_res.signature());
 }
 
-TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacket) {
+TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
   maidsafe::GenericPacket gp;
   rsa_obj.GenerateKeys(4096);
   gp.set_data("Generic System Packet Data");

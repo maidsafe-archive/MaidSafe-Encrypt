@@ -217,7 +217,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   ASSERT_FALSE(msm.KeyUnique(hex_key, false));
 }
 
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_PreSendAnalysis) {
+TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PreSendAnalysis) {
   MockMsmKeyUnique msm(client_chunkstore_);
   std::string non_hex_key = crypto_.Hash("A", "", crypto::STRING_STRING, false);
   std::string hex_key = base::EncodeToHex(non_hex_key);
@@ -1333,7 +1333,7 @@ class MockMsmSendChunk : public MaidsafeStoreManager {
                                      GenericConditionData *generic_cond_data));
 };
 
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendChunk) {
+TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
   MockMsmSendChunk msm(client_chunkstore_);
   std::string chunkname = crypto_.Hash("ddd", "", crypto::STRING_STRING, false);
   std::string hex_chunkname = base::EncodeToHex(chunkname);

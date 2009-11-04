@@ -88,9 +88,9 @@ class ResultHandler {
   maidsafe::VaultStatus local_vault_status_;
 };
 
-class TestPDClientOwnVault : public testing::Test {
+class PDClientOwnVaultTest : public testing::Test {
  public:
-  TestPDClientOwnVault()
+  PDClientOwnVaultTest()
       : resulthandler(),
         service(),
         client_transport_(),
@@ -104,7 +104,7 @@ class TestPDClientOwnVault : public testing::Test {
         cb(boost::bind(&ResultHandler::OwnVault_Callback, &resulthandler, _1,
                        _2)),
         cb1(boost::bind(&ResultHandler::IsOwn_Callback, &resulthandler, _1)) {}
-  ~TestPDClientOwnVault() {
+  ~PDClientOwnVaultTest() {
     transport::CleanUp();
   }
  protected:
@@ -143,11 +143,11 @@ class TestPDClientOwnVault : public testing::Test {
   boost::function<void(const maidsafe::OwnVaultResult&, const std::string&)> cb;
   boost::function<void(const maidsafe::VaultStatus&)> cb1;
  private:
-  TestPDClientOwnVault(const TestPDClientOwnVault&);
-  TestPDClientOwnVault &operator=(const TestPDClientOwnVault&);
+  PDClientOwnVaultTest(const PDClientOwnVaultTest&);
+  PDClientOwnVaultTest &operator=(const PDClientOwnVaultTest&);
 };
 
-TEST_F(TestPDClientOwnVault, FUNC_MAID_OwnLocalVault) {
+TEST_F(PDClientOwnVaultTest, BEH_MAID_OwnLocalVault) {
   crypto::Crypto cobj;
   crypto::RsaKeyPair keypair;
   keypair.GenerateKeys(maidsafe::kRsaKeySize);
@@ -181,7 +181,7 @@ TEST_F(TestPDClientOwnVault, FUNC_MAID_OwnLocalVault) {
   ASSERT_EQ(maidsafe::OWNED, resulthandler.local_vault_status());
 }
 
-TEST_F(TestPDClientOwnVault, FUNC_MAID_InvalidOwnLocalVault) {
+TEST_F(PDClientOwnVaultTest, FUNC_MAID_InvalidOwnLocalVault) {
   crypto::Crypto cobj;
   crypto::RsaKeyPair keypair;
   keypair.GenerateKeys(maidsafe::kRsaKeySize);

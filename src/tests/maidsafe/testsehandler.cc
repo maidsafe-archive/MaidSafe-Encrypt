@@ -77,9 +77,9 @@ void wait_for_result_seh(const FakeCallback &cb, boost::mutex *mutex) {
 
 namespace maidsafe {
 
-class TestSEHandler : public testing::Test {
+class SEHandlerTest : public testing::Test {
  protected:
-  TestSEHandler() : sm(),
+  SEHandlerTest() : sm(),
                     client_chunkstore_(),
                     cb(),
                     db_str1_(""),
@@ -105,7 +105,7 @@ class TestSEHandler : public testing::Test {
       printf("%s\n", e.what());
     }
   }
-  ~TestSEHandler() {
+  ~SEHandlerTest() {
     fs::path db("MaidDataAtlas.db");
     try {
       if (fs::exists(db))
@@ -226,12 +226,12 @@ class TestSEHandler : public testing::Test {
   std::string db_str1_;
   std::string db_str2_;
  private:
-  TestSEHandler(const TestSEHandler&);
-  TestSEHandler &operator=(const TestSEHandler&);
+  SEHandlerTest(const SEHandlerTest&);
+  SEHandlerTest &operator=(const SEHandlerTest&);
 };
 
 
-TEST_F(TestSEHandler, FUNC_MAID_Check_Entry) {
+TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   boost::scoped_ptr<SEHandler>seh(new SEHandler(sm.get(), client_chunkstore_));
   boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
 
@@ -293,7 +293,7 @@ TEST_F(TestSEHandler, FUNC_MAID_Check_Entry) {
                                                     &returned_size8_));
 }
 
-TEST_F(TestSEHandler, FUNC_MAID_EncryptFile) {
+TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
   boost::scoped_ptr<LocalStoreManager>
       sm_(new LocalStoreManager(client_chunkstore_));
   sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -320,7 +320,7 @@ TEST_F(TestSEHandler, FUNC_MAID_EncryptFile) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
-TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_ChunksPrevLoaded) {
+TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithChunksPrevLoaded) {
   boost::scoped_ptr<LocalStoreManager>
       sm_(new LocalStoreManager(client_chunkstore_));
   sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -353,7 +353,7 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_ChunksPrevLoaded) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
-TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
+TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithLoadChunks) {
   SessionSingleton::getInstance()->SetDefConLevel(DEFCON2);
   boost::scoped_ptr<LocalStoreManager>
       sm_(new LocalStoreManager(client_chunkstore_));
@@ -405,7 +405,7 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
-//  TEST_F(TestSEHandler, FUNC_MAID_Decrypt_FailedToLoadChunk) {
+//  TEST_F(SEHandlerTest, FUNC_MAID_Decrypt_FailedToLoadChunk) {
 //   boost::scoped_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
 //    sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
 //    boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));
@@ -469,7 +469,7 @@ TEST_F(TestSEHandler, FUNC_MAID_DecryptFile_LoadChunks) {
 //    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 //  }
 
-TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptPrivateDb) {
+TEST_F(SEHandlerTest, FUNC_MAID_EncryptAndDecryptPrivateDb) {
   boost::scoped_ptr<LocalStoreManager>
       sm_(new LocalStoreManager(client_chunkstore_));
   sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -524,7 +524,7 @@ TEST_F(TestSEHandler, BEH_MAID_EncryptAndDecryptPrivateDb) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
-TEST_F(TestSEHandler, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
   boost::scoped_ptr<LocalStoreManager>
       sm_(new LocalStoreManager(client_chunkstore_));
   sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));

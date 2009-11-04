@@ -642,12 +642,11 @@ class FileInfo:
 
     if os.path.exists(fullname):
       project_dir = os.path.dirname(fullname)
-
       root_dir = os.path.dirname(fullname)
       while (root_dir != os.path.dirname(root_dir) and
-             not os.path.exists(os.path.join(root_dir, "maidsafe"))):
+             not os.path.exists(os.path.join(root_dir, "tests"))):
         root_dir = os.path.dirname(root_dir)
-        if os.path.exists(os.path.join(root_dir, "maidsafe")):
+        if os.path.exists(os.path.join(root_dir, "tests")):
           prefix = os.path.commonprefix([root_dir, project_dir])
           return fullname[len(prefix) + 1:]
       if os.path.exists(os.path.join(project_dir, ".svn")):

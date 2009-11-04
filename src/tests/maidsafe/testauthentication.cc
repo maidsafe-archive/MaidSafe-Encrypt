@@ -190,7 +190,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
   ASSERT_EQ(kPasswordFailure, result);
 }
 
-TEST_F(AuthenticationTest, BEH_MAID_RegisterUser) {
+TEST_F(AuthenticationTest, BEH_MAID_RegisterUserOnce) {
   boost::scoped_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -215,7 +215,7 @@ TEST_F(AuthenticationTest, BEH_MAID_RegisterUser) {
   ASSERT_EQ(password, ss->Password()) << "Saved password doesn't correspond";
 }
 
-TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
+TEST_F(AuthenticationTest, BEH_MAID_RegisterUserTwice) {
   boost::scoped_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -465,7 +465,7 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   EXPECT_EQ(kInvalidUsernameOrPin, result);
 }
 
-TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
+TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
   boost::scoped_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));

@@ -78,16 +78,16 @@ class SelfEncryption {
   bool ResizeObfuscationHash(const std::string &obfuscate_hash,
                              const uint16_t &length_,
                              std::string *resized_obs_hash);
-  FRIEND_TEST(TestSelfEncryption, FUNC_MAID_CheckEntry);
-  FRIEND_TEST(TestSelfEncryption, BEH_MAID_CreateProcessDirectory);
-  FRIEND_TEST(TestSelfEncryption, BEH_MAID_CheckCompressibility);
-  FRIEND_TEST(TestSelfEncryption, BEH_MAID_CalculateChunkSizes);
-  FRIEND_TEST(TestSelfEncryption, BEH_MAID_ChunkAddition);
-  FRIEND_TEST(TestSelfEncryption, FUNC_MAID_GeneratePreEncHashes);
-  FRIEND_TEST(TestSelfEncryption, FUNC_MAID_HashUnique);
-  FRIEND_TEST(TestSelfEncryption, FUNC_MAID_ResizeObfuscationHash);
-  FRIEND_TEST(TestSelfEncryption, FUNC_MAID_EncryptFile);
-  FRIEND_TEST(TestSelfEncryption, FUNC_MAID_DecryptFile);
+  FRIEND_TEST(SelfEncryptionTest, BEH_MAID_CheckEntry);
+  FRIEND_TEST(SelfEncryptionTest, BEH_MAID_CreateProcessDirectory);
+  FRIEND_TEST(SelfEncryptionTest, BEH_MAID_CheckCompressibility);
+  FRIEND_TEST(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes);
+  FRIEND_TEST(SelfEncryptionTest, BEH_MAID_ChunkAddition);
+  FRIEND_TEST(SelfEncryptionTest, BEH_MAID_GeneratePreEncHashes);
+  FRIEND_TEST(SelfEncryptionTest, BEH_MAID_HashUnique);
+  FRIEND_TEST(SelfEncryptionTest, BEH_MAID_ResizeObfuscationHash);
+  FRIEND_TEST(SelfEncryptionTest, BEH_MAID_SelfEncryptFiles);
+  FRIEND_TEST(SelfEncryptionTest, BEH_MAID_DecryptFile);
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   const std::string version_;
   const uint16_t min_chunks_;

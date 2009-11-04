@@ -93,7 +93,7 @@ class PdDir {
  private:
   int Init(DbInitFlag flag);
   // call one of connect, create, or build
-  FRIEND_TEST(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDA);
+  FRIEND_TEST(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail);
   int Connect();
   // connect to existing db in folder
   int Create();

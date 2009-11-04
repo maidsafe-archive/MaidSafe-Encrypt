@@ -119,7 +119,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetPublicKey) {
   }
 }
 
-TEST_F(KeyAtlasTest, BEH_MAID_GetSignedPublicKey) {
+TEST_F(KeyAtlasTest, FUNC_MAID_GetSignedPublicKey) {
   // try to get non-existant public key
   ASSERT_EQ("", key_ring_.PrivateKey(0))
             << "Returned public key for non-existant key.";

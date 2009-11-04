@@ -267,12 +267,12 @@ class PDVault {
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
-//  FRIEND_TEST(TestPDVault, FUNC_MAID_Kademlia_FindNodes);
-  FRIEND_TEST(TestPDVault, FUNC_MAID_StoreChunks);
-  FRIEND_TEST(TestPDVault, FUNC_MAID_GetChunk);
-  FRIEND_TEST(TestPDVault, FUNC_MAID_GetNonDuplicatedChunk);
-  FRIEND_TEST(TestPDVault, FUNC_MAID_GetMissingChunk);
-  FRIEND_TEST(TestPDVault, FUNC_MAID_StoreSystemPacket);
+//  FRIEND_TEST(PDVaultTest, FUNC_MAID_Kademlia_FindNodes);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreChunks);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetChunk);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetMissingChunk);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreSystemPacket);
   void KadJoinedCallback(const std::string &result,
                          boost::mutex *kad_joined_mutex);
   void RegisterMaidService();

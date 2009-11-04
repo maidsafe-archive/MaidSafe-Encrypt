@@ -223,7 +223,7 @@ void PrepareMetaDataMap(const int32_t id, const std::string &display_name,
   mdm.SerializeToString(&ser_mdm);
 }
 
-TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDA) {
+TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail) {
   // Test to insert a DataMap and Retrieve it
   // also checks to retrieve metadata for a filepath
   // checks the testDataMap existance
@@ -562,7 +562,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_ObscureFilename) {
   }
 }
 
-TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFile) {
+TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileAndPath) {
   // Test to check the removal of a MSFile and the removal of its ms_path
 
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());

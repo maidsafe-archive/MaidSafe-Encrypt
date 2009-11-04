@@ -71,9 +71,9 @@ std::string CreateRandomFile(const std::string &filename,
 
 namespace maidsafe {
 
-class TestSelfEncryption : public testing::Test {
+class SelfEncryptionTest : public testing::Test {
  public:
-  TestSelfEncryption()
+  SelfEncryptionTest()
       : ss(NULL),
         client_chunkstore_() {
     try {
@@ -87,7 +87,7 @@ class TestSelfEncryption : public testing::Test {
       printf("%s\n", e.what());
     }
   }
-  ~TestSelfEncryption() {
+  ~SelfEncryptionTest() {
     try {
       if (fs::exists("./TestSE"))
         fs::remove_all("./TestSE");
@@ -128,11 +128,11 @@ class TestSelfEncryption : public testing::Test {
   SessionSingleton *ss;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
  private:
-  explicit TestSelfEncryption(const maidsafe::TestSelfEncryption&);
-  TestSelfEncryption &operator=(const maidsafe::TestSelfEncryption&);
+  explicit SelfEncryptionTest(const maidsafe::SelfEncryptionTest&);
+  SelfEncryptionTest &operator=(const maidsafe::SelfEncryptionTest&);
 };
 
-TEST_F(TestSelfEncryption, FUNC_MAID_CheckEntry) {
+TEST_F(SelfEncryptionTest, BEH_MAID_CheckEntry) {
   std::string test_file1("test01.txt");
   std::string test_file2("test02.txt");
   std::string test_file3("test03.txt");
@@ -148,7 +148,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_CheckEntry) {
   ASSERT_EQ(0, se.CheckEntry(path4));
 }
 
-TEST_F(TestSelfEncryption, BEH_MAID_CreateProcessDirectory) {
+TEST_F(SelfEncryptionTest, BEH_MAID_CreateProcessDirectory) {
   fs::path process_path("");
   SelfEncryption se(client_chunkstore_);
   se.file_hash_ = "TheFileHash";
@@ -175,7 +175,7 @@ TEST_F(TestSelfEncryption, BEH_MAID_CreateProcessDirectory) {
   }
 }
 
-TEST_F(TestSelfEncryption, BEH_MAID_CheckCompressibility) {
+TEST_F(SelfEncryptionTest, BEH_MAID_CheckCompressibility) {
   file_system::FileSystem fsys;
   fs::path ms_home(fsys.MaidsafeHomeDir());
   //  make compressible .txt file
@@ -208,7 +208,7 @@ TEST_F(TestSelfEncryption, BEH_MAID_CheckCompressibility) {
   ASSERT_FALSE(se.CheckCompressibility(path3));
 }
 
-TEST_F(TestSelfEncryption, BEH_MAID_ChunkAddition) {
+TEST_F(SelfEncryptionTest, BEH_MAID_ChunkAddition) {
   SelfEncryption se(client_chunkstore_);
   ASSERT_EQ(-8, se.ChunkAddition('0'));
   ASSERT_EQ(-7, se.ChunkAddition('1'));
@@ -236,7 +236,7 @@ TEST_F(TestSelfEncryption, BEH_MAID_ChunkAddition) {
   ASSERT_EQ(0, se.ChunkAddition(' '));
 }
 
-TEST_F(TestSelfEncryption, BEH_MAID_CalculateChunkSizes) {
+TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   SelfEncryption se(client_chunkstore_);
   uint16_t min_chunks = se.min_chunks_;
   uint16_t max_chunks = se.max_chunks_;
@@ -452,7 +452,7 @@ TEST_F(TestSelfEncryption, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 }
 
-TEST_F(TestSelfEncryption, BEH_MAID_HashFile) {
+TEST_F(SelfEncryptionTest, BEH_MAID_HashFile) {
   SelfEncryption se(client_chunkstore_);
   file_system::FileSystem fsys;
   fs::path ms_home(fsys.MaidsafeHomeDir());
@@ -479,7 +479,7 @@ TEST_F(TestSelfEncryption, BEH_MAID_HashFile) {
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
 }
 
-TEST_F(TestSelfEncryption, BEH_MAID_HashString) {
+TEST_F(SelfEncryptionTest, BEH_MAID_HashString) {
   SelfEncryption se(client_chunkstore_);
   ASSERT_EQ(se.SHA512(static_cast<std::string>("abc")),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
@@ -491,7 +491,7 @@ TEST_F(TestSelfEncryption, BEH_MAID_HashString) {
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
 }
 
-TEST_F(TestSelfEncryption, FUNC_MAID_GeneratePreEncHashes) {
+TEST_F(SelfEncryptionTest, BEH_MAID_GeneratePreEncHashes) {
   SelfEncryption se(client_chunkstore_);
   file_system::FileSystem fsys;
   fs::path ms_home(fsys.MaidsafeHomeDir());
@@ -525,7 +525,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_GeneratePreEncHashes) {
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
 }
 
-TEST_F(TestSelfEncryption, FUNC_MAID_HashUnique) {
+TEST_F(SelfEncryptionTest, BEH_MAID_HashUnique) {
   SelfEncryption se(client_chunkstore_);
   std::string hash = se.SHA512(static_cast<std::string>("abc"));
   DataMap dm;
@@ -549,7 +549,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_HashUnique) {
   ASSERT_EQ(hash, hashafter);
 }
 
-TEST_F(TestSelfEncryption, FUNC_MAID_ResizeObfuscationHash) {
+TEST_F(SelfEncryptionTest, BEH_MAID_ResizeObfuscationHash) {
   SelfEncryption se(client_chunkstore_);
   std::string hash = se.SHA512(static_cast<std::string>("abc"));
   ASSERT_EQ(hash,
@@ -564,7 +564,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_ResizeObfuscationHash) {
   ASSERT_EQ(amended_hash, hash+hash+hash+hash+hash+hash+hash+hash+hash+hash);
 }
 
-TEST_F(TestSelfEncryption, FUNC_MAID_EncryptFile) {
+TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptFiles) {
   std::string test_file1("test01.txt");
   std::string test_file2("test02.txt");
   std::string test_file3("test03.txt");
@@ -599,7 +599,7 @@ TEST_F(TestSelfEncryption, FUNC_MAID_EncryptFile) {
   ASSERT_EQ(3, dm5.chunk_name_size());
 }
 
-TEST_F(TestSelfEncryption, FUNC_MAID_DecryptFile) {
+TEST_F(SelfEncryptionTest, BEH_MAID_DecryptFile) {
   std::string test_file1("test01.txt");
   std::string test_file2("test02.txt");
   std::string test_file3("test03.txt");

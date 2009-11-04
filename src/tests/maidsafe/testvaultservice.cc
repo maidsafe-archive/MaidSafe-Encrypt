@@ -355,7 +355,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
   EXPECT_EQ(signed_iou_authority, response.signed_iou_authority());
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
   rpcprotocol::Controller controller;
   maidsafe::StoreRequest request;
   maidsafe::StoreResponse response;

@@ -45,7 +45,7 @@
 
 
 
-// These forward declarations are to allow TestPDVault functions to be declared
+// These forward declarations are to allow PDVaultTest functions to be declared
 // as friends of MaidsafeStoreManager.
 namespace maidsafe {
 class MaidsafeStoreManager;
@@ -359,10 +359,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_PreSendAnalysis);
+  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_PreSendAnalysis);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendChunk);
+  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
   // Replace real ClientRpcs with mock object for testing
   void SetMockRpcs(boost::shared_ptr<ClientRpcs> mock_rpcs) {
     client_rpcs_ = mock_rpcs;
