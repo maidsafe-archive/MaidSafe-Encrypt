@@ -663,7 +663,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreHasChunk) {
                                           &h_value, &h_name));
   int test_chunk = 0;
   ASSERT_EQ(0, chunkstore->Store(h_name.at(test_chunk),
-                                     h_value.at(test_chunk)));
+                                 h_value.at(test_chunk)));
   ASSERT_TRUE(chunkstore->Has(h_name.at(test_chunk)));
   // check using non-hashable chunk
   ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, 3, 32000, &nh_size,
@@ -2055,6 +2055,33 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreDeletePackets) {
   ASSERT_EQ(kIncorrectKeySize, chunkstore->DeletePacket("Invalid", gps,
       public_key.at(0)));
   ASSERT_EQ(current_size, chunkstore->pss_.size());
+}
+
+TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreHasPackets) {
+  boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
+      storedir.string(), 1073741824, 0));
+  test_chunkstore::WaitForInitialisation(chunkstore, 60000);
+  ASSERT_TRUE(chunkstore->is_initialised());
+  // Store packets
+  const int kNumberOfPackets = 10;
+  ASSERT_TRUE(test_chunkstore::MakeKeys(kNumberOfPackets, &private_key,
+      &public_key));
+  ASSERT_TRUE(test_chunkstore::MakePackets(kNumberOfPackets, cry_obj, 3, 1024,
+      private_key, &p_size, &p_value, &p_name));
+  for (int i = 0; i < kNumberOfPackets; ++i) {
+    ASSERT_EQ(kSuccess, chunkstore->StorePacket(p_name.at(i), p_value.at(i)));
+  }
+  ASSERT_EQ(size_t(kNumberOfPackets), chunkstore->pss_.size());
+  // Check HasPacket succeeds
+  for (int i = 0; i < kNumberOfPackets; ++i)
+    ASSERT_TRUE(chunkstore->HasPacket(p_name.at(i)));
+  // Check HasPacket fails using non-existant chunk
+  std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
+                                        false);
+  ASSERT_FALSE(chunkstore->HasPacket(othername));
+  // check we can handle keys of wrong length
+  std::string wrong_length_key("too short");
+  ASSERT_FALSE(chunkstore->HasPacket(wrong_length_key));
 }
 
 }  // namespace maidsafe_vault

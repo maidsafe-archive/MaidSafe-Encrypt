@@ -145,6 +145,7 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreAppendToPackets);
   FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreOverwritePackets);
   FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreDeletePackets);
+  FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreHasPackets);
   // Returns ChunkInfo for the chunk which was checked the longest time ago.  If
   // several chunks qualify, only the first one is returned.
   maidsafe::ChunkInfo GetOldestChecked();

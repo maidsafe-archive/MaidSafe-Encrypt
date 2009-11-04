@@ -344,7 +344,7 @@ bool VaultChunkStore::HasPacket(const std::string &packet_name) {
   store_packet_by_index& index_index = pss_.get<store_packet_index>();
   store_packet_by_index::iterator i_it = index_index.find(
       boost::make_tuple(packet_name));
-  return i_it == index_index.end();
+  return i_it != index_index.end();
 }
 
 }  // namespace maidsafe_vault
