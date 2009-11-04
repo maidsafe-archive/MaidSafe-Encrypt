@@ -1880,7 +1880,7 @@ class StorePacketRequest : public ::google::protobuf::Message {
   inline ::maidsafe::GenericPacket* mutable_signed_data(int index);
   inline ::maidsafe::GenericPacket* add_signed_data();
   
-  // required bytes key_id = 3;
+  // optional bytes key_id = 3;
   inline bool has_key_id() const;
   inline void clear_key_id();
   static const int kKeyIdFieldNumber = 3;
@@ -1890,7 +1890,7 @@ class StorePacketRequest : public ::google::protobuf::Message {
   inline void set_key_id(const void* value, size_t size);
   inline ::std::string* mutable_key_id();
   
-  // required bytes public_key = 4;
+  // optional bytes public_key = 4;
   inline bool has_public_key() const;
   inline void clear_public_key();
   static const int kPublicKeyFieldNumber = 4;
@@ -1900,7 +1900,7 @@ class StorePacketRequest : public ::google::protobuf::Message {
   inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // required bytes public_key_signature = 5;
+  // optional bytes public_key_signature = 5;
   inline bool has_public_key_signature() const;
   inline void clear_public_key_signature();
   static const int kPublicKeySignatureFieldNumber = 5;
@@ -1910,7 +1910,7 @@ class StorePacketRequest : public ::google::protobuf::Message {
   inline void set_public_key_signature(const void* value, size_t size);
   inline ::std::string* mutable_public_key_signature();
   
-  // required bytes request_signature = 6;
+  // optional bytes request_signature = 6;
   inline bool has_request_signature() const;
   inline void clear_request_signature();
   static const int kRequestSignatureFieldNumber = 6;
@@ -7857,7 +7857,7 @@ inline ::maidsafe::GenericPacket* StorePacketRequest::add_signed_data() {
   return signed_data_.Add();
 }
 
-// required bytes key_id = 3;
+// optional bytes key_id = 3;
 inline bool StorePacketRequest::has_key_id() const {
   return _has_bit(2);
 }
@@ -7899,7 +7899,7 @@ inline ::std::string* StorePacketRequest::mutable_key_id() {
   return key_id_;
 }
 
-// required bytes public_key = 4;
+// optional bytes public_key = 4;
 inline bool StorePacketRequest::has_public_key() const {
   return _has_bit(3);
 }
@@ -7941,7 +7941,7 @@ inline ::std::string* StorePacketRequest::mutable_public_key() {
   return public_key_;
 }
 
-// required bytes public_key_signature = 5;
+// optional bytes public_key_signature = 5;
 inline bool StorePacketRequest::has_public_key_signature() const {
   return _has_bit(4);
 }
@@ -7983,7 +7983,7 @@ inline ::std::string* StorePacketRequest::mutable_public_key_signature() {
   return public_key_signature_;
 }
 
-// required bytes request_signature = 6;
+// optional bytes request_signature = 6;
 inline bool StorePacketRequest::has_request_signature() const {
   return _has_bit(5);
 }

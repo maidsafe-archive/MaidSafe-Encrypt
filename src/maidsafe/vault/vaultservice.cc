@@ -136,84 +136,78 @@ void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
 }
 
 void VaultService::StorePacket(google::protobuf::RpcController*,
-                               const maidsafe::StoreRequest* request,
-                               maidsafe::StoreResponse* response,
+                               const maidsafe::StorePacketRequest* request,
+                               maidsafe::StorePacketResponse* response,
                                google::protobuf::Closure* done) {
-#ifdef DEBUG
-  printf("In VaultService::StorePacket (%i), Data Type: %i\n",
-         knode_->host_port(), request->data_type());
-#endif
   response->set_pmid_id(non_hex_pmid_);
-  if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StorePacket (%i), request is not initialized.\n",
-           knode_->host_port());
-#endif
-    return;
-  }
-
-  if (!ValidateSignedRequest(request->public_key(),
-       request->signed_public_key(), request->signed_request(),
-       request->chunkname(), request->pmid())) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StorePacket (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
-#endif
-    return;
-  }
-
-  maidsafe::VaultBufferPacketHandler vbph;
-  if (request->data_type() != maidsafe::SYSTEM_PACKET &&
-      request->data_type() != maidsafe::BUFFER_PACKET) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StorePacket (%i), ", knode_->host_port());
-    printf("wrong type of data sent.\n");
-#endif
-    return;
-  }
-
-  bool valid_data(false);
-  switch (request->data_type()) {
-    case maidsafe::SYSTEM_PACKET: {
-                                    if (ValidateSystemPacket(request->data(),
-                                      request->public_key()))
-                                    valid_data = true;
-                                  } break;
-    case maidsafe::BUFFER_PACKET: {
-                                    maidsafe::VaultBufferPacketHandler vph;
-                                    if (vph.ValidateOwnerSignature(
-                                      request->public_key(), request->data()))
-                                    valid_data = true;
-                                  } break;
-    default: break;  // No specific check for data
-  }
-
-  if (!valid_data) {
-#ifdef DEBUG
-    printf("In VaultService::StorePacket (%i), failed to validate data.\n",
-           knode_->host_port());
-#endif
+  if (!request->IsInitialized() || request->signed_data_size() == 0) {
     response->set_result(kNack);
     done->Run();
     return;
   }
 
-  if (!StoreChunkLocal(request->chunkname(), request->data())) {
-#ifdef DEBUG
-    printf("In VaultService::StorePacket (%i), ", knode_->host_port());
-    printf("failed to store packet as chunk locally.\n");
-#endif
-    response->set_result(kNack);
-    done->Run();
-    return;
+  // Check Type of data
+  if (request->data_type() != maidsafe::PDDIR_NOTSIGNED) {
+      // Checking request has public key, signed public key and signed
+      // request
+      if (!request->has_public_key_signature()
+        || !request->has_request_signature() || !request->has_public_key()
+        || !request->has_key_id()) {
+            response->set_result(kNack);
+            done->Run();
+            return;
+       }
+
+       // Checking signature is valid
+       if (!ValidateSignedRequest(request->public_key(),
+         request->public_key_signature(), request->request_signature(),
+         request->packetname(), request->key_id())) {
+          response->set_result(kNack);
+          done->Run();
+          return;
+        }
+
+        // Validating data is signed by the same person
+        for (int i = 0; i < request->signed_data_size(); ++i) {
+            if (!ValidateSystemPacket(request->signed_data(i),
+              request->public_key())) {
+                response->set_result(kNack);
+                done->Run();
+                return;
+            }
+        }
+
+      // Now we can store :)
+      int store_result = -1;
+      if (vault_chunkstore_->HasPacket(request->packetname())) {
+          if (request->append()) {
+              // Append Packet
+              if (request->signed_data_size() == 1)
+                store_result = vault_chunkstore_->AppendToPacket(
+                    request->packetname(), request->signed_data(0),
+                    request->public_key());
+          } else {
+              // Overwrite Packet
+              std::vector<maidsafe::GenericPacket> values;
+              for (int i = 0; i < request->signed_data_size(); ++i)
+                values.push_back(request->signed_data(i));
+              store_result = vault_chunkstore_->OverwritePacket(
+                request->packetname(), values, request->public_key());
+          }
+          if (store_result == kSuccess)
+            response->set_result(kAck);
+          else
+            response->set_result(kNack);
+          done->Run();
+          return;
+      }
   }
-  response->set_result(kAck);
+  // Store Packet
+  if (vault_chunkstore_->StorePacket(request->packetname(),
+        request->signed_data(0)) == kSuccess)
+    response->set_result(kAck);
+  else
+    response->set_result(kNack);
   done->Run();
 }
 
@@ -575,13 +569,15 @@ void VaultService::GetPacket(google::protobuf::RpcController*,
                              google::protobuf::Closure* done) {
   response->Clear();
 #ifdef DEBUG
-  printf("In VaultService::GetPacket (%i)\n", knode_->host_port());
+  if (knode_ != NULL)
+    printf("In VaultService::GetPacket (%i)\n", knode_->host_port());
 #endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
 #ifdef DEBUG
-    printf("In VaultService::GetPacket (%i), request isn't initialised.\n",
-           knode_->host_port());
+    if (knode_ != NULL)
+      printf("In VaultService::GetPacket (%i), request isn't initialised.\n",
+             knode_->host_port());
 #endif
     response->set_result(kNack);
     done->Run();
@@ -595,8 +591,10 @@ void VaultService::GetPacket(google::protobuf::RpcController*,
       response->set_result(kNack);
       done->Run();
   #ifdef DEBUG
-      printf("In VaultService::GetPacket (%i), ", knode_->host_port());
-      printf("failed to validate signed request.\n");
+      if (knode_ != NULL) {
+        printf("In VaultService::GetPacket (%i), ", knode_->host_port());
+        printf("failed to validate signed request.\n");
+      }
   #endif
       return;
     }
@@ -604,8 +602,9 @@ void VaultService::GetPacket(google::protobuf::RpcController*,
 
   if (!LoadPacketLocal(request->packetname(), response)) {
 #ifdef DEBUG
-    printf("In VaultService::GetPacket (%i), couldn't find chunk locally.\n",
-           knode_->host_port());
+    if (knode_ != NULL)
+      printf("In VaultService::GetPacket (%i), couldn't find chunk locally.\n",
+             knode_->host_port());
 #endif
     response->clear_content();
     response->set_result(kNack);
@@ -1371,9 +1370,12 @@ bool VaultService::ValidateSystemPacket(const std::string &ser_content,
   maidsafe::GenericPacket gp;
   if (!gp.ParseFromString(ser_content))
     return false;
+  return ValidateSystemPacket(gp, public_key);
+}
+
+bool VaultService::ValidateSystemPacket(const maidsafe::GenericPacket &gp,
+      const std::string &public_key) {
   crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
   return co.AsymCheckSig(gp.data(), gp.signature(), public_key,
     crypto::STRING_STRING);
 }

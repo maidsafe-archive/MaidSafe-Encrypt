@@ -111,10 +111,10 @@ message StoreReferenceResponse {
 message StorePacketRequest {
   required bytes packetname = 1;
   repeated GenericPacket signed_data = 2;
-  required bytes key_id = 3;  // ID of e.g. ANMID, ANTMID, ...
-  required bytes public_key = 4;
-  required bytes public_key_signature = 5;
-  required bytes request_signature = 6;
+  optional bytes key_id = 3;  // ID of e.g. ANMID, ANTMID, ...
+  optional bytes public_key = 4;
+  optional bytes public_key_signature = 5;
+  optional bytes request_signature = 6;
   required int32 data_type = 7;
   required bool append = 8;
 }

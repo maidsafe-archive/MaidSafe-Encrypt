@@ -22,6 +22,7 @@
 */
 
 #include <boost/shared_ptr.hpp>
+#include <boost/lexical_cast.hpp>
 #include <gtest/gtest.h>
 #include <google/protobuf/descriptor.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
@@ -471,135 +472,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
-  }
-}
-
-TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePacket) {
-/* Refactor to test:
-1 - Invalid stores fail (of each type)
-2 - Valid initial stores succeed (of each type)
-3 - Invalid second stores (overwrite) fail and don't affect packetstore
-    (of each type)
-4 - Invalid second stores (append) fail and don't affect packetstore
-    (of each type)
-5 - Valid second (overwrite) stores succeed
-5 - Valid third (append) stores succeed
-*/
-
-
-  rpcprotocol::Controller controller;
-  maidsafe::StoreRequest request;
-  maidsafe::StoreResponse response;
-
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
-  CreateRSAKeys(&pub_key, &priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string content("This is a data chunk");
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                      &sig_req);
-
-  Callback cb_obj;
-
-  for (int i = 0; i <= 2; ++i) {
-    switch (i) {
-      case 0:  // uninitialized request
-        break;
-      case 1:  // invalid request
-        request.set_chunkname(chunkname);
-        request.set_data(content);
-        request.set_pmid(pmid);
-        request.set_public_key("fail");
-        request.set_signed_public_key(sig_pub_key);
-        request.set_signed_request(sig_req);
-        request.set_data_type(maidsafe::SYSTEM_PACKET);
-        // request.set_offset(  );
-        // request.set_chunklet_size(  );
-        break;
-      case 2:  // unsupported data type
-        request.set_public_key(pub_key);
-        request.set_data_type(maidsafe::DATA);
-        break;
-    }
-
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->StorePacket(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  request.set_data("abcdef");
-
-  // TODO(anyone) add more data types
-  int data_type[] = { maidsafe::SYSTEM_PACKET, maidsafe::BUFFER_PACKET };
-
-  // invalid data for all data types
-  for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
-    request.set_data_type(data_type[i]);
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->StorePacket(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  request.set_data(content);
-
-  // check success for all data types; second iteration fails StoreChunkLocal()
-  for (int j = 0; j <= 1; ++j) {
-    for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
-      request.set_data_type(data_type[i]);
-      // printf("*** starting iteration %d.%d ***\n", j, i);
-
-      switch (data_type[i]) {
-        case maidsafe::SYSTEM_PACKET: {
-          maidsafe::GenericPacket gp;
-          gp.set_data("Generic System Packet Data " + base::itos(i));
-          gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
-                                       crypto::STRING_STRING));
-          content = gp.SerializeAsString();
-          break;
-        }
-        case maidsafe::BUFFER_PACKET: {
-          maidsafe::BufferPacketInfo bpi;
-          bpi.set_owner("test bufferpacket " + base::itos(i));
-          bpi.set_ownerpublickey(pub_key);
-          bpi.add_users("testuser");
-          maidsafe::BufferPacket bp;
-          maidsafe::GenericPacket *info = bp.add_owner_info();
-          info->set_data(bpi.SerializeAsString());
-          info->set_signature(co.AsymSign(info->data(), "", priv_key,
-                                          crypto::STRING_STRING));
-          content = bp.SerializeAsString();
-          break;
-        }
-      }
-
-      chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
-      CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                          &sig_req);
-      request.set_chunkname(chunkname);
-      request.set_data(content);
-      request.set_pmid(pmid);
-      request.set_signed_public_key(sig_pub_key);
-      request.set_signed_request(sig_req);
-
-      EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunkname, content.size(), "",
-                                            "", 0, pub_key, STORE_ACCEPTED));
-
-      google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-          (&cb_obj, &Callback::CallbackFunction);
-      vault_service_->StorePacket(&controller, &request, &response, done);
-      EXPECT_TRUE(response.IsInitialized());
-      EXPECT_EQ(kAck, static_cast<int>(response.result()));
-      response.Clear();
-    }
-    poh_.ClearPendingOperations();
   }
 }
 
@@ -1880,6 +1752,658 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
     ASSERT_EQ(injection_gps.at(i).data(), response.content(i).data());
     ASSERT_EQ(injection_gps.at(i).signature(), response.content(i).signature());
   }
+}
+
+struct StorePacketCallback {
+  StorePacketCallback() : is_called_back(false) {}
+  void Callback() {
+    is_called_back = true;
+  }
+  void Reset() {
+    is_called_back = false;
+  }
+  bool is_called_back;
+};
+
+class TestStorePacket : public testing::Test {
+ public:
+  TestStorePacket() : dir_(""), pmid_public_(""), pmid_private_(""),
+    pmid_signed_public_(""), pmid_id_(""), co_()  {
+    co_.set_hash_algorithm(crypto::SHA_512);
+  }
+ protected:
+  virtual void SetUp() {
+    dir_ += "ChunkStore";
+    dir_ += boost::lexical_cast<std::string>(base::random_32bit_uinteger());
+    crypto::RsaKeyPair kp;
+    kp.GenerateKeys(4096);
+    pmid_public_ = kp.public_key();
+    pmid_private_ = kp.private_key();
+    pmid_signed_public_ = co_.AsymSign(pmid_public_, "", pmid_private_,
+      crypto::STRING_STRING);
+    pmid_id_ = co_.Hash(pmid_public_ + pmid_signed_public_, "",
+      crypto::STRING_STRING, false);
+  }
+  virtual void TearDown() {
+    try {
+      fs::remove_all(dir_);
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
+  std::string dir_;
+  std::string pmid_public_, pmid_private_, pmid_signed_public_, pmid_id_;
+  crypto::Crypto co_;
+};
+
+TEST_F(TestStorePacket, BEH_MAID_StoreSystemPacket) {
+  VaultChunkStore chunkstore(dir_, 10000, 0);
+  VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
+    &chunkstore, NULL, NULL);
+  rpcprotocol::Controller ctrl;
+  StorePacketCallback cb;
+  maidsafe::StorePacketRequest request;
+  maidsafe::StorePacketResponse response;
+  google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
+    StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
+  request.set_packetname(packetname);
+  request.set_data_type(maidsafe::SYSTEM_PACKET);
+  request.set_append(false);
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  // Create the system packet
+  std::string private_key, public_key, sig_public_key, packet_id, sig_request;
+  CreateRSAKeys(&public_key, &private_key);
+  CreateSignedRequest(public_key, private_key, packetname, &packet_id,
+    &sig_public_key, &sig_request);
+
+  std::string data("data1");
+  maidsafe::GenericPacket *gp = request.add_signed_data();
+  gp->set_data(data);
+  gp->set_signature(co_.AsymSign(data, "", private_key, crypto::STRING_STRING));
+
+  request.set_key_id(packet_id);
+  request.set_public_key(public_key);
+  request.set_public_key_signature(sig_public_key);
+  request.set_request_signature(sig_request);
+
+  ASSERT_TRUE(request.signed_data(0).IsInitialized());
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  delete done;
+
+  std::vector<maidsafe::GenericPacket> result;
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(gp->data(), result[0].data());
+  ASSERT_EQ(gp->signature(), result[0].signature());
+}
+
+TEST_F(TestStorePacket, BEH_MAID_OverWriteSystemPacket) {
+  VaultChunkStore chunkstore(dir_, 10000, 0);
+  VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
+    &chunkstore, NULL, NULL);
+  rpcprotocol::Controller ctrl;
+  StorePacketCallback cb;
+  maidsafe::StorePacketRequest request;
+  maidsafe::StorePacketResponse response;
+  google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
+    StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+
+  std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
+  request.set_packetname(packetname);
+  request.set_data_type(maidsafe::SYSTEM_PACKET);
+  request.set_append(false);
+
+  std::string private_key, public_key, sig_public_key, packet_id, sig_request;
+  CreateRSAKeys(&public_key, &private_key);
+  CreateSignedRequest(public_key, private_key, packetname, &packet_id,
+    &sig_public_key, &sig_request);
+
+  std::string data("data1");
+  maidsafe::GenericPacket *gp = request.add_signed_data();
+  gp->set_data(data);
+  gp->set_signature(co_.AsymSign(data, "", private_key, crypto::STRING_STRING));
+
+  request.set_key_id(packet_id);
+  request.set_public_key(public_key);
+  request.set_public_key_signature(sig_public_key);
+  request.set_request_signature(sig_request);
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  std::vector<maidsafe::GenericPacket> result;
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(gp->data(), result[0].data());
+  ASSERT_EQ(gp->signature(), result[0].signature());
+
+  // setting false to overwrite
+  request.set_append(false);
+  request.clear_signed_data();
+
+  std::string new_data("new data");
+
+  maidsafe::GenericPacket *gp1 = request.add_signed_data();
+  gp1->set_data(new_data);
+  gp1->set_signature(co_.AsymSign(new_data, "", private_key,
+    crypto::STRING_STRING));
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  result.clear();
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(gp1->data(), result[0].data());
+  ASSERT_NE(data, result[0].data());
+  ASSERT_EQ(gp1->signature(), result[0].signature());
+  delete done;
+}
+
+TEST_F(TestStorePacket, BEH_MAID_AppendSystemPacket) {
+  VaultChunkStore chunkstore(dir_, 10000, 0);
+  VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
+    &chunkstore, NULL, NULL);
+  rpcprotocol::Controller ctrl;
+  StorePacketCallback cb;
+  maidsafe::StorePacketRequest request;
+  maidsafe::StorePacketResponse response;
+  google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
+    StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+
+  std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
+  request.set_packetname(packetname);
+  request.set_data_type(maidsafe::SYSTEM_PACKET);
+  request.set_append(true);
+
+  std::string private_key, public_key, sig_public_key, packet_id, sig_request;
+  CreateRSAKeys(&public_key, &private_key);
+  CreateSignedRequest(public_key, private_key, packetname, &packet_id,
+    &sig_public_key, &sig_request);
+
+  std::string data("data1");
+  maidsafe::GenericPacket *gp = request.add_signed_data();
+  gp->set_data(data);
+  gp->set_signature(co_.AsymSign(data, "", private_key, crypto::STRING_STRING));
+
+  request.set_key_id(packet_id);
+  request.set_public_key(public_key);
+  request.set_public_key_signature(sig_public_key);
+  request.set_request_signature(sig_request);
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  std::vector<maidsafe::GenericPacket> result;
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(gp->data(), result[0].data());
+  ASSERT_EQ(gp->signature(), result[0].signature());
+
+  // setting true to append
+  request.set_append(true);
+  request.clear_signed_data();
+
+  std::string new_data("new data");
+
+  maidsafe::GenericPacket *gp1 = request.add_signed_data();
+  gp1->set_data(new_data);
+  gp1->set_signature(co_.AsymSign(new_data, "", private_key,
+    crypto::STRING_STRING));
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  result.clear();
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(2, result.size());
+
+  for (unsigned int i = 0; i < result.size(); ++i) {
+    if (result[i].data() != data && result[i].data() != new_data)
+      FAIL() << "did not retrieved the correct values";
+  }
+  delete done;
+}
+
+TEST_F(TestStorePacket, BEH_MAID_IncorrectSignatures) {
+  VaultChunkStore chunkstore(dir_, 10000, 0);
+  VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
+    &chunkstore, NULL, NULL);
+  rpcprotocol::Controller ctrl;
+  StorePacketCallback cb;
+  maidsafe::StorePacketRequest request;
+  maidsafe::StorePacketResponse response;
+  google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
+    StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+
+  std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
+  request.set_packetname(packetname);
+  request.set_data_type(maidsafe::SYSTEM_PACKET);
+  request.set_append(false);
+
+  std::string private_key, public_key, sig_public_key, packet_id, sig_request;
+  CreateRSAKeys(&public_key, &private_key);
+  CreateSignedRequest(public_key, private_key, packetname, &packet_id,
+    &sig_public_key, &sig_request);
+
+  std::string public_key1, private_key1;
+  CreateRSAKeys(&public_key1, &private_key1);
+
+  std::string data("data1");
+  maidsafe::GenericPacket *gp = request.add_signed_data();
+  gp->set_data(data);
+  gp->set_signature(co_.AsymSign(data, "", private_key, crypto::STRING_STRING));
+
+  request.set_key_id(packet_id);
+  request.set_public_key(public_key1);
+  request.set_public_key_signature(sig_public_key);
+  request.set_request_signature(sig_request);
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  std::vector<maidsafe::GenericPacket> result;
+  ASSERT_EQ(kPacketLoadNotFound, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_TRUE(result.empty());
+
+  request.clear_public_key();
+  request.set_public_key(public_key);
+  request.clear_key_id();
+  request.set_key_id("invalid ID");
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+  ASSERT_EQ(kPacketLoadNotFound, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_TRUE(result.empty());
+
+  request.clear_key_id();
+  request.set_key_id(packet_id);
+
+  maidsafe::GenericPacket *gp1 = request.add_signed_data();
+  gp1->set_data(data + "1");
+  gp1->set_signature(co_.AsymSign(data + "1", "", private_key1,
+    crypto::STRING_STRING));
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+  ASSERT_EQ(kPacketLoadNotFound, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_TRUE(result.empty());
+
+}
+
+TEST_F(TestStorePacket, BEH_MAID_InvalidOverWrite) {
+  VaultChunkStore chunkstore(dir_, 10000, 0);
+  VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
+    &chunkstore, NULL, NULL);
+  rpcprotocol::Controller ctrl;
+  StorePacketCallback cb;
+  maidsafe::StorePacketRequest request;
+  maidsafe::StorePacketResponse response;
+  google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
+    StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+
+  std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
+  request.set_packetname(packetname);
+  request.set_data_type(maidsafe::SYSTEM_PACKET);
+  request.set_append(false);
+
+  std::string private_key, public_key, sig_public_key, packet_id, sig_request;
+  CreateRSAKeys(&public_key, &private_key);
+  CreateSignedRequest(public_key, private_key, packetname, &packet_id,
+    &sig_public_key, &sig_request);
+
+  std::string data("data1");
+  maidsafe::GenericPacket *gp = request.add_signed_data();
+  gp->set_data(data);
+  gp->set_signature(co_.AsymSign(data, "", private_key, crypto::STRING_STRING));
+
+  request.set_key_id(packet_id);
+  request.set_public_key(public_key);
+  request.set_public_key_signature(sig_public_key);
+  request.set_request_signature(sig_request);
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  std::vector<maidsafe::GenericPacket> result;
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(gp->data(), result[0].data());
+  ASSERT_EQ(gp->signature(), result[0].signature());
+
+  // setting false to overwrite
+  request.set_append(false);
+  request.clear_signed_data();
+  request.clear_public_key();
+  request.clear_public_key_signature();
+  request.clear_request_signature();
+  request.clear_key_id();
+
+  std::string private_key1, public_key1, sig_public_key1, packet_id1,
+    sig_request1;
+  CreateRSAKeys(&public_key1, &private_key1);
+  CreateSignedRequest(public_key1, private_key1, packetname, &packet_id1,
+    &sig_public_key1, &sig_request1);
+
+  std::string new_data("new data");
+
+  maidsafe::GenericPacket *gp1 = request.add_signed_data();
+  gp1->set_data(new_data);
+  gp1->set_signature(co_.AsymSign(new_data, "", private_key1,
+    crypto::STRING_STRING));
+
+  request.set_public_key(public_key1);
+  request.set_public_key_signature(sig_public_key1);
+  request.set_request_signature(sig_request1);
+  request.set_key_id(packet_id1);
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  result.clear();
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(data, result[0].data());
+  delete done;
+}
+
+TEST_F(TestStorePacket, BEH_MAID_InvalidAppend) {
+  VaultChunkStore chunkstore(dir_, 10000, 0);
+  VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
+    &chunkstore, NULL, NULL);
+  rpcprotocol::Controller ctrl;
+  StorePacketCallback cb;
+  maidsafe::StorePacketRequest request;
+  maidsafe::StorePacketResponse response;
+  google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
+    StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+
+  std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
+  request.set_packetname(packetname);
+  request.set_data_type(maidsafe::SYSTEM_PACKET);
+  request.set_append(true);
+
+  std::string private_key, public_key, sig_public_key, packet_id, sig_request;
+  CreateRSAKeys(&public_key, &private_key);
+  CreateSignedRequest(public_key, private_key, packetname, &packet_id,
+    &sig_public_key, &sig_request);
+
+  std::string data("data1");
+  maidsafe::GenericPacket *gp = request.add_signed_data();
+  gp->set_data(data);
+  gp->set_signature(co_.AsymSign(data, "", private_key, crypto::STRING_STRING));
+
+  request.set_key_id(packet_id);
+  request.set_public_key(public_key);
+  request.set_public_key_signature(sig_public_key);
+  request.set_request_signature(sig_request);
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  std::vector<maidsafe::GenericPacket> result;
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(gp->data(), result[0].data());
+  ASSERT_EQ(gp->signature(), result[0].signature());
+
+  // setting true to append
+  request.set_append(true);
+  request.clear_signed_data();
+
+  std::string new_data("new data");
+
+  maidsafe::GenericPacket *gp1 = request.add_signed_data();
+  gp1->set_data(new_data);
+  gp1->set_signature(co_.AsymSign(new_data, "", private_key,
+    crypto::STRING_STRING));
+  new_data += "1";
+  maidsafe::GenericPacket *gp2 = request.add_signed_data();
+  gp2->set_data(new_data);
+  gp2->set_signature(co_.AsymSign(new_data, "", private_key,
+    crypto::STRING_STRING));
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  result.clear();
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(data, result[0].data());
+
+  request.clear_signed_data();
+  request.clear_public_key();
+  request.clear_public_key_signature();
+  request.clear_request_signature();
+  request.clear_key_id();
+
+  std::string private_key1, public_key1, sig_public_key1, packet_id1,
+    sig_request1;
+  CreateRSAKeys(&public_key1, &private_key1);
+  CreateSignedRequest(public_key1, private_key1, packetname, &packet_id1,
+    &sig_public_key1, &sig_request1);
+
+  maidsafe::GenericPacket *gp3 = request.add_signed_data();
+  gp3->set_data(new_data);
+  gp3->set_signature(co_.AsymSign(new_data, "", private_key1,
+    crypto::STRING_STRING));
+
+  request.set_public_key(public_key1);
+  request.set_public_key_signature(sig_public_key1);
+  request.set_request_signature(sig_request1);
+  request.set_key_id(packet_id1);
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  result.clear();
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(data, result[0].data());
+
+  delete done;
+}
+
+TEST_F(TestStorePacket, BEH_MAID_StorePDDIR_NOT_SIGNED) {
+  VaultChunkStore chunkstore(dir_, 10000, 0);
+  VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
+    &chunkstore, NULL, NULL);
+  rpcprotocol::Controller ctrl;
+  StorePacketCallback cb;
+  maidsafe::StorePacketRequest request;
+  maidsafe::StorePacketResponse response;
+  google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
+    StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+
+  std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
+  request.set_packetname(packetname);
+  request.set_data_type(maidsafe::PDDIR_NOTSIGNED);
+  request.set_append(false);
+
+  std::string data("data1");
+  maidsafe::GenericPacket *gp = request.add_signed_data();
+  gp->set_data(data);
+  gp->set_signature("FFFFFFFFFFFFFFFF");
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  std::vector<maidsafe::GenericPacket> result;
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(gp->data(), result[0].data());
+  ASSERT_EQ(gp->signature(), result[0].signature());
+
+  request.clear_signed_data();
+  data += "1";
+  maidsafe::GenericPacket *gp1 = request.add_signed_data();
+  gp1->set_data(data);
+  gp1->set_signature("FFFFFFFFFFFFFFFF");
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+
+  delete done;
+}
+
+TEST_F(TestStorePacket, BEH_MAID_StoreThenLoadSystemPacket) {
+  VaultChunkStore chunkstore(dir_, 10000, 0);
+  VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
+    &chunkstore, NULL, NULL);
+  rpcprotocol::Controller ctrl;
+  StorePacketCallback cb;
+  maidsafe::StorePacketRequest request;
+  maidsafe::StorePacketResponse response;
+  google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
+    StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+
+  std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
+  request.set_packetname(packetname);
+  request.set_data_type(maidsafe::SYSTEM_PACKET);
+  request.set_append(false);
+
+  std::string private_key, public_key, sig_public_key, packet_id, sig_request;
+  CreateRSAKeys(&public_key, &private_key);
+  CreateSignedRequest(public_key, private_key, packetname, &packet_id,
+    &sig_public_key, &sig_request);
+
+  std::string data("data1");
+  maidsafe::GenericPacket *gp = request.add_signed_data();
+  gp->set_data(data);
+  gp->set_signature(co_.AsymSign(data, "", private_key, crypto::STRING_STRING));
+
+  request.set_key_id(packet_id);
+  request.set_public_key(public_key);
+  request.set_public_key_signature(sig_public_key);
+  request.set_request_signature(sig_request);
+
+  service.StorePacket(&ctrl, &request, &response, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(pmid_id_, response.pmid_id());
+  response.Clear();
+  cb.Reset();
+
+  std::vector<maidsafe::GenericPacket> result;
+  ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
+  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(gp->data(), result[0].data());
+  ASSERT_EQ(gp->signature(), result[0].signature());
+
+  maidsafe::GetPacketRequest gp_req;
+  maidsafe::GetPacketResponse gp_resp;
+
+  gp_req.set_packetname(packetname);
+  gp_req.set_key_id(packet_id);
+  gp_req.set_public_key(public_key);
+  gp_req.set_public_key_signature(sig_public_key);
+  gp_req.set_request_signature(sig_request);
+
+  service.GetPacket(&ctrl, &gp_req, &gp_resp, done);
+  while (!cb.is_called_back)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_EQ(kAck, gp_resp.result());
+
+  ASSERT_EQ(1, gp_resp.content_size());
+  ASSERT_EQ(gp->data(), gp_resp.content(0).data());
+  ASSERT_EQ(gp->signature(), gp_resp.content(0).signature());
+  ASSERT_EQ(pmid_id_, gp_resp.pmid_id());
+
+  delete done;
 }
 
 }  // namespace maidsafe_vault

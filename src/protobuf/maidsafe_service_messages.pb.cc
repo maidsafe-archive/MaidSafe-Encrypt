@@ -1196,9 +1196,9 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
     "signed_public_key\030\007 \001(\014\"\326\001\n\022StorePacketR"
     "equest\022\022\n\npacketname\030\001 \002(\014\022,\n\013signed_dat"
     "a\030\002 \003(\0132\027.maidsafe.GenericPacket\022\016\n\006key_"
-    "id\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\034\n\024public_k"
-    "ey_signature\030\005 \002(\014\022\031\n\021request_signature\030"
-    "\006 \002(\014\022\021\n\tdata_type\030\007 \002(\005\022\016\n\006append\030\010 \002(\010"
+    "id\030\003 \001(\014\022\022\n\npublic_key\030\004 \001(\014\022\034\n\024public_k"
+    "ey_signature\030\005 \001(\014\022\031\n\021request_signature\030"
+    "\006 \001(\014\022\021\n\tdata_type\030\007 \002(\005\022\016\n\006append\030\010 \002(\010"
     "\"\226\001\n\023StorePacketResponse\022\016\n\006result\030\001 \002(\r"
     "\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npublic_key\030\003 \001(\014\022\034\n"
     "\024public_key_signature\030\004 \001(\014\022\032\n\022response_"
@@ -6392,7 +6392,7 @@ bool StorePacketRequest::MergePartialFromCodedStream(
         break;
       }
       
-      // required bytes key_id = 3;
+      // optional bytes key_id = 3;
       case 3: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
@@ -6404,7 +6404,7 @@ bool StorePacketRequest::MergePartialFromCodedStream(
         break;
       }
       
-      // required bytes public_key = 4;
+      // optional bytes public_key = 4;
       case 4: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
@@ -6416,7 +6416,7 @@ bool StorePacketRequest::MergePartialFromCodedStream(
         break;
       }
       
-      // required bytes public_key_signature = 5;
+      // optional bytes public_key_signature = 5;
       case 5: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
@@ -6428,7 +6428,7 @@ bool StorePacketRequest::MergePartialFromCodedStream(
         break;
       }
       
-      // required bytes request_signature = 6;
+      // optional bytes request_signature = 6;
       case 6: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
@@ -6502,22 +6502,22 @@ void StorePacketRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(2, this->signed_data(i), output);
   }
   
-  // required bytes key_id = 3;
+  // optional bytes key_id = 3;
   if (_has_bit(2)) {
     ::google::protobuf::internal::WireFormat::WriteBytes(3, this->key_id(), output);
   }
   
-  // required bytes public_key = 4;
+  // optional bytes public_key = 4;
   if (_has_bit(3)) {
     ::google::protobuf::internal::WireFormat::WriteBytes(4, this->public_key(), output);
   }
   
-  // required bytes public_key_signature = 5;
+  // optional bytes public_key_signature = 5;
   if (_has_bit(4)) {
     ::google::protobuf::internal::WireFormat::WriteBytes(5, this->public_key_signature(), output);
   }
   
-  // required bytes request_signature = 6;
+  // optional bytes request_signature = 6;
   if (_has_bit(5)) {
     ::google::protobuf::internal::WireFormat::WriteBytes(6, this->request_signature(), output);
   }
@@ -6550,22 +6550,22 @@ void StorePacketRequest::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(2, this->signed_data(i), target);
   }
   
-  // required bytes key_id = 3;
+  // optional bytes key_id = 3;
   if (_has_bit(2)) {
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->key_id(), target);
   }
   
-  // required bytes public_key = 4;
+  // optional bytes public_key = 4;
   if (_has_bit(3)) {
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->public_key(), target);
   }
   
-  // required bytes public_key_signature = 5;
+  // optional bytes public_key_signature = 5;
   if (_has_bit(4)) {
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->public_key_signature(), target);
   }
   
-  // required bytes request_signature = 6;
+  // optional bytes request_signature = 6;
   if (_has_bit(5)) {
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(6, this->request_signature(), target);
   }
@@ -6597,25 +6597,25 @@ int StorePacketRequest::ByteSize() const {
         ::google::protobuf::internal::WireFormat::BytesSize(this->packetname());
     }
     
-    // required bytes key_id = 3;
+    // optional bytes key_id = 3;
     if (has_key_id()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->key_id());
     }
     
-    // required bytes public_key = 4;
+    // optional bytes public_key = 4;
     if (has_public_key()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->public_key());
     }
     
-    // required bytes public_key_signature = 5;
+    // optional bytes public_key_signature = 5;
     if (has_public_key_signature()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->public_key_signature());
     }
     
-    // required bytes request_signature = 6;
+    // optional bytes request_signature = 6;
     if (has_request_signature()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->request_signature());
@@ -6721,7 +6721,7 @@ void StorePacketRequest::Swap(StorePacketRequest* other) {
 }
 
 bool StorePacketRequest::IsInitialized() const {
-  if ((_has_bits_[0] & 0x000000fd) != 0x000000fd) return false;
+  if ((_has_bits_[0] & 0x000000c1) != 0x000000c1) return false;
   
   for (int i = 0; i < signed_data_size(); i++) {
     if (!this->signed_data(i).IsInitialized()) return false;
