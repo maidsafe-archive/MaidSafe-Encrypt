@@ -83,12 +83,12 @@ class ClientRpcs {
            GetResponse *get_response,
            rpcprotocol::Controller *controller,
            google::protobuf::Closure *done);
-  void GetPacket(const kad::Contact &peer,
-                 bool local,
-                 GetPacketRequest *get_request,
-                 GetPacketResponse *get_response,
-                 rpcprotocol::Controller *controller,
-                 google::protobuf::Closure *done);
+  virtual void GetPacket(const kad::Contact &peer,
+                         bool local,
+                         GetPacketRequest *get_request,
+                         GetPacketResponse *get_response,
+                         rpcprotocol::Controller *controller,
+                         google::protobuf::Closure *done);
   void Update(const kad::Contact &peer,
               bool local,
               UpdateRequest *update_request,

@@ -81,7 +81,7 @@ void ConditionNotify(int set_return,
                      int *return_value,
                      maidsafe::GenericConditionData *generic_cond_data) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(
-      base::random_32bit_uinteger() % 5000));
+      base::random_32bit_uinteger() % 1000 + 5000));
   {
     boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
     *return_value = set_return;
@@ -100,6 +100,55 @@ void ThreadedConditionNotifyNegOne(
     int *return_value,
     maidsafe::GenericConditionData *generic_cond_data) {
   boost::thread(ConditionNotify, -1, return_value, generic_cond_data);
+}
+
+void FailedContactCallback(
+    const kad::Contact &holder,
+    std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
+    maidsafe::GenericConditionData *cond_data) {
+//  boost::this_thread::sleep(boost::posix_time::milliseconds(
+//      base::random_32bit_uinteger() % 1000 + 3000));
+  boost::shared_ptr<maidsafe::ChunkHolder> failed_chunkholder(
+      new maidsafe::ChunkHolder(kad::Contact(holder.node_id(), "", 0)));
+  failed_chunkholder->status = maidsafe::kFailedHolder;
+  {  // NOLINT (Fraser)
+    boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
+    packet_holders->push_back(failed_chunkholder);
+  }
+  cond_data->cond_variable->notify_all();
+}
+
+void ContactCallback(
+    const kad::Contact &holder,
+    std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
+    maidsafe::GenericConditionData *cond_data) {
+//  boost::this_thread::sleep(boost::posix_time::milliseconds(
+//      base::random_32bit_uinteger() % 1000 + 3000));
+  boost::shared_ptr<maidsafe::ChunkHolder>
+      chunkholder(new maidsafe::ChunkHolder(holder));
+  chunkholder->status = maidsafe::kContactable;
+  {
+    boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
+    packet_holders->push_back(chunkholder);
+  }
+  cond_data->cond_variable->notify_all();
+}
+
+void ThreadedGetHolderContactCallbacks(
+    const std::vector<kad::Contact> &holders,
+    const int &failures,
+    std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
+    maidsafe::GenericConditionData *cond_data) {
+  for (size_t i = 0, failed = 0; i < holders.size(); ++i) {
+    if (failed < failures) {
+      boost::thread thr(FailedContactCallback, holders.at(i), packet_holders,
+                        cond_data);
+      ++failed;
+    } else {
+      boost::thread thr(ContactCallback, holders.at(i), packet_holders,
+                        cond_data);
+    }
+  }
 }
 
 }  // namespace test_msm
@@ -633,6 +682,12 @@ class MockClientRpcs : public ClientRpcs {
                               StoreIOUResponse *store_iou_response,
                               rpcprotocol::Controller *controller,
                               google::protobuf::Closure *done));
+  MOCK_METHOD6(GetPacket, void(const kad::Contact &peer,
+                               bool local,
+                               GetPacketRequest *get_request,
+                               GetPacketResponse *get_response,
+                               rpcprotocol::Controller *controller,
+                               google::protobuf::Closure *done));
 };
 
 class MockMsmStoreIOUs : public MaidsafeStoreManager {
@@ -1402,6 +1457,96 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePacket) {
             ANMID, PRIVATE, ""));
   ASSERT_EQ(kPacketUnknownType, msm.StorePacket(
             hex_packetname_non_hashable, "eee", BUFFER_INFO, PRIVATE, ""));
+}
+
+class MockMsmLoadPacket : public MaidsafeStoreManager {
+ public:
+  explicit MockMsmLoadPacket(boost::shared_ptr<ChunkStore> cstore)
+      : MaidsafeStoreManager(cstore) {}
+  ~MockMsmLoadPacket() {
+    // Allow time for all RPCs to return as we can't cancel them
+//    boost::this_thread::sleep(boost::posix_time::seconds(15));
+  }
+  MOCK_METHOD5(FindValue, int(const std::string &kad_key,
+                              bool check_local,
+                              kad::ContactInfo *cache_holder,
+                              std::vector<std::string> *chunk_holders_ids,
+                              std::string *needs_cache_copy_id));
+  MOCK_METHOD3(FindCloseNodes, void(
+      const std::vector<std::string> &packet_holder_ids,
+      std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
+      GenericConditionData *find_cond_data));
+};
+
+TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacket) {
+  MockMsmLoadPacket msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs>
+      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
+  msm.SetMockRpcs(mock_rpcs);
+  std::string original_packet_content("original_packet_content");
+  GenericPacket gp;
+  gp.set_data(original_packet_content);
+  gp.set_signature("Sig");
+  std::string packet_content("F");
+  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
+  std::string hex_packetname = base::EncodeToHex(packetname);
+  std::vector<std::string> find_value_results;
+  find_value_results.push_back(original_packet_content);
+  std::vector<std::string> peernames;
+  std::vector<kad::Contact> peers;
+  std::vector<GetPacketResponse> get_packet_responses_all_good;
+  std::vector<GetPacketResponse> get_packet_responses_all_bad;
+  std::vector<GetPacketResponse> get_packet_responses_one_good;
+  for (int i = 0; i < 4; ++i) {
+    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
+        crypto::STRING_STRING, false));
+    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
+    GetPacketResponse get_packet_response;
+    get_packet_response.set_result(kAck);
+    GenericPacket *gp_add = get_packet_response.add_content();
+    *gp_add = gp;
+    get_packet_response.set_pmid_id(peernames[i]);
+    get_packet_responses_all_good.push_back(get_packet_response);
+                        printf("Contact %i - %s\n", i, HexSubstr(peernames[i]).c_str());
+    if (i == 3)
+      get_packet_responses_one_good.push_back(get_packet_response);
+    get_packet_response.set_result(kNack);
+    if (i != 3)
+      get_packet_responses_one_good.push_back(get_packet_response);
+    get_packet_responses_all_bad.push_back(get_packet_response);
+  }
+
+  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
+      testing::_))
+          .Times(7)
+          .WillOnce(testing::Return(-1))  // Call 1
+          .WillOnce(testing::Return(-1))  // Call 1
+          .WillOnce(testing::Return(-1))  // Call 1
+          .WillOnce(testing::Return(kSuccess))  // Call 2
+          .WillOnce(testing::Return(kSuccess))  // Call 2
+          .WillOnce(DoAll(testing::SetArgumentPointee<3>(find_value_results),
+                          testing::Return(0)))  // Call 2
+          .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(peernames),
+                                testing::Return(0)));  // Call 3
+  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
+      .Times(1)
+      .WillRepeatedly(testing::WithArgs<1, 2>(testing::Invoke(
+                      boost::bind(&test_msm::ThreadedGetHolderContactCallbacks,
+                      peers, 0, _1, _2))));  // Call 3
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
+        testing::_, testing::_, testing::_))
+            .Times(1)  // Call 3
+            .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
+                                      get_packet_responses_one_good.at(i)),
+                                  testing::WithArgs<5>(testing::Invoke(
+                                      test_msm::ThreadedDoneRun))));
+  }
+  ASSERT_EQ(kFindValueFailure, msm.LoadPacket(hex_packetname, &packet_content));  // Call 1
+  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));  // Call 2
+  ASSERT_EQ(original_packet_content, packet_content);
+  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));  // Call 3
 }
 
 }  // namespace maidsafe

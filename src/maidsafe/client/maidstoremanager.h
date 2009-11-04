@@ -363,6 +363,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
+  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacket);
   // Replace real ClientRpcs with mock object for testing
   void SetMockRpcs(boost::shared_ptr<ClientRpcs> mock_rpcs) {
     client_rpcs_ = mock_rpcs;
@@ -583,9 +584,15 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    boost::condition_variable *update_conditional);
   void UpdateChunkCallback(boost::condition_variable *cond,
                            boost::shared_ptr<rpcprotocol::Controller>);
-  int LoadPacketFromVaults(const std::string &hex_packet_name,
+  int LoadPacketFromVaults(const std::string &packet_name,
                            const std::vector<std::string> &packet_holder_ids,
                            std::vector<std::string> *result);
+  virtual void FindCloseNodes(
+      const std::vector<std::string> &packet_holder_ids,
+      std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
+      GenericConditionData *find_cond_data);
+  void GetPacketCallback(GenericConditionData *cond_data,
+                         size_t *returned_rpc_count);
   // If ret_value pointer is not NULL, sets it to rc and calls
   // notify_all() on store_packet_conditional_ variable.
   virtual void SetStoreReturnValue(ReturnCode rc, int *ret_value);

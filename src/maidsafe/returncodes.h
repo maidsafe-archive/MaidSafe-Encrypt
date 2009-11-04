@@ -126,7 +126,8 @@ enum ReturnCode {
   kCommonChecksumUndecided = -6032,
   kCommonChecksumMajority = -6033,
   kPacketUnknownType = -6034,
-  kStoreManagerException = -6035,
+  kLoadPacketFailure = -6035,
+  kStoreManagerException = -6036,
 
   // Message Handler
 

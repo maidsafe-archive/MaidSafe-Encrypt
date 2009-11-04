@@ -251,11 +251,11 @@ int MaidsafeStoreManager::MutablePacket(PacketType system_packet_type,
   switch (system_packet_type) {
     case MID:
     case SMID:
-    case TMID:
     case MSID:
     case PD_DIR:
       *mutable_packet = true;
       break;
+    case TMID:
     case MPID:
     case PMID:
     case MAID:
@@ -371,8 +371,9 @@ int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
   // If this blocking Kad call to FindValue yields multiple values, they are
   // packet holder IDs.  If there is just one, it should be the actual value.
   for (int attempt = 0; attempt < kMaxChunkLoadRetries; ++attempt) {
-    if (FindValue(packet_name, false, &cache_holder, results,
-        &needs_cache_copy_id) != kSuccess) {
+    int res = FindValue(packet_name, false, &cache_holder, results,
+        &needs_cache_copy_id);
+    if (res != kSuccess || results->empty()) {
       if (attempt == kMaxChunkLoadRetries - 1) {
 #ifdef DEBUG
         printf("In MaidsafeStoreManager::LoadPacket (%i), failed FindValue\n",
@@ -2355,23 +2356,118 @@ void MaidsafeStoreManager::UpdateChunkCallback(
 }
 
 int MaidsafeStoreManager::LoadPacketFromVaults(
-    const std::string &hex_packet_name,
+    const std::string &packet_name,
     const std::vector<std::string> &packet_holder_ids,
     std::vector<std::string> *result) {
   result->clear();
-  std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders;
+  std::vector< boost::shared_ptr<ChunkHolder> > packet_holders;
   boost::shared_ptr<boost::condition_variable>
-      cond_var(new boost::condition_variable);
-  GenericConditionData cond_data(cond_var);
+      find_cond_var(new boost::condition_variable);
+  GenericConditionData find_cond_data(find_cond_var);
+  boost::shared_ptr<boost::condition_variable>
+      load_cond_var(new boost::condition_variable);
+  GenericConditionData load_cond_data(load_cond_var);
   // Find packet holders' contact details
+  FindCloseNodes(packet_holder_ids, &packet_holders, &find_cond_data);
+  // For each, if we have their contact details, retrieve the packet
+  std::vector<GetPacketResponse> get_packet_responses;
+  int success_index(-1);
+  size_t returned_rpc_count(0);
+  for (size_t i = 0; i < packet_holder_ids.size() && success_index < 0; ++i) {
+    boost::mutex::scoped_lock lock(find_cond_data.cond_mutex);
+    while (i >= packet_holders.size()) {
+      find_cond_data.cond_variable->wait(lock);
+    }
+    packet_holders.at(i)->index = i;
+    if (packet_holders.at(i)->status != kFailedHolder) {
+      printf("Good packet_holders %i - %s\n", i, HexSubstr(packet_holders[i]->chunk_holder_contact.node_id()).c_str());
+      kad::Contact new_peer = packet_holders.at(i)->chunk_holder_contact;
+      packet_holders.at(i)->local = (knode_->CheckContactLocalAddress(
+          new_peer.node_id(), new_peer.local_ip(), new_peer.local_port(),
+          new_peer.host_ip()) == kad::LOCAL);
+      GetPacketRequest get_packet_request;
+      get_packet_request.set_packetname(packet_name);
+      GetPacketResponse get_packet_response;
+      get_packet_responses.push_back(get_packet_response);
+      packet_holders.at(i)->mutex = &load_cond_data.cond_mutex;
+      boost::shared_ptr<rpcprotocol::Controller>
+          controller(new rpcprotocol::Controller);
+      packet_holders.at(i)->controller = controller;
+      google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+          &MaidsafeStoreManager::GetPacketCallback, &load_cond_data,
+          &returned_rpc_count);
+      client_rpcs_->GetPacket(packet_holders.at(i)->chunk_holder_contact,
+          packet_holders.at(i)->local, &get_packet_request,
+          &get_packet_responses.at(i), controller.get(), callback);
+      for (size_t n = 0; n < i; ++n) {
+        boost::mutex::scoped_lock loch(load_cond_data.cond_mutex);
+        if (get_packet_responses.at(n).result() == kAck &&
+            packet_holders.at(n)->chunk_holder_contact.node_id() ==
+            get_packet_responses.at(n).pmid_id()) {
+                    printf("1 - Success packet_holder %i - %s\n", n, HexSubstr(packet_holders[n]->chunk_holder_contact.node_id()).c_str());
+
+          success_index = n;
+          break;
+        }
+      }
+    } else {
+            printf("Bad packet_holders %i - %s\n", i, HexSubstr(packet_holders[i]->chunk_holder_contact.node_id()).c_str());
+    }
+  }
+  for (size_t i = 0; i < get_packet_responses.size() && success_index < 0;
+      ++i) {
+                                                                  printf("Before lock - success_index = %i\n", success_index);
+    boost::mutex::scoped_lock loch(load_cond_data.cond_mutex);
+                                                                  printf("After lock %i -- %i\n", i, returned_rpc_count);
+    while (i <= returned_rpc_count)
+      load_cond_data.cond_variable->wait(loch);
+                                                                  printf("After wait %i -- %i\n", i, returned_rpc_count);
+    if (get_packet_responses.at(i).result() == kAck &&
+        packet_holders.at(i)->chunk_holder_contact.node_id() ==
+        get_packet_responses.at(i).pmid_id()) {
+                    printf("2 - Success packet_holder %i - %s\n", i, HexSubstr(packet_holders[i]->chunk_holder_contact.node_id()).c_str());
+      success_index = i;
+      break;
+    }
+  }
+#ifdef DEBUG
+  if (mock_rpcs_)
+    boost::this_thread::sleep(boost::posix_time::seconds(15));
+#else
+  for (size_t i = 0; i < get_packet_responses.size(); ++i) {
+    channel_manager_.
+        DeletePendingRequest(packet_holders.at(i)->controller->req_id());
+  }
+#endif
+  return (success_index >= 0) ? kSuccess : kLoadPacketFailure;
+}
+
+void MaidsafeStoreManager::FindCloseNodes(
+    const std::vector<std::string> &packet_holder_ids,
+    std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
+    GenericConditionData *find_cond_data) {
   for (size_t h = 0; h < packet_holder_ids.size(); ++h) {
     knode_->FindCloseNodes(packet_holder_ids.at(h),
         boost::bind(&MaidsafeStoreManager::GetHolderContactCallback, this,
-        packet_holder_ids.at(h), _1, packet_holders, &cond_data));
+        packet_holder_ids.at(h), _1, packet_holders, find_cond_data));
   }
+}
 
+void MaidsafeStoreManager::GetPacketCallback(GenericConditionData *cond_data,
+                                             size_t *returned_rpc_count) {
+#ifdef DEBUG
+//  printf("In MaidsafeStoreManager::GetPacketCallback.\n");
+#endif
+  {  // NOLINT (Fraser)
+            printf("In MaidsafeStoreManager::GetPacketCallback - outside loch\n");
 
-  return kSuccess;
+    boost::mutex::scoped_lock lock(cond_data->cond_mutex);
+            printf("In MaidsafeStoreManager::GetPacketCallback - inside loch\n");
+    ++(*returned_rpc_count);
+  }
+            printf("In MaidsafeStoreManager::GetPacketCallback -  unloched - about to notify\n");
+  cond_data->cond_variable->notify_all();
+            printf("In MaidsafeStoreManager::GetPacketCallback -  notified\n");
 }
 
 void MaidsafeStoreManager::SetStoreReturnValue(ReturnCode rc, int *ret_value) {
