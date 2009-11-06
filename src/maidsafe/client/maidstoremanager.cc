@@ -2380,7 +2380,6 @@ int MaidsafeStoreManager::LoadPacketFromVaults(
     }
     packet_holders.at(i)->index = i;
     if (packet_holders.at(i)->status != kFailedHolder) {
-      printf("Good packet_holders %i - %s\n", i, HexSubstr(packet_holders[i]->chunk_holder_contact.node_id()).c_str());
       kad::Contact new_peer = packet_holders.at(i)->chunk_holder_contact;
       packet_holders.at(i)->local = (knode_->CheckContactLocalAddress(
           new_peer.node_id(), new_peer.local_ip(), new_peer.local_port(),
@@ -2404,42 +2403,45 @@ int MaidsafeStoreManager::LoadPacketFromVaults(
         if (get_packet_responses.at(n).result() == kAck &&
             packet_holders.at(n)->chunk_holder_contact.node_id() ==
             get_packet_responses.at(n).pmid_id()) {
-                    printf("1 - Success packet_holder %i - %s\n", n, HexSubstr(packet_holders[n]->chunk_holder_contact.node_id()).c_str());
-
           success_index = n;
           break;
         }
       }
-    } else {
-            printf("Bad packet_holders %i - %s\n", i, HexSubstr(packet_holders[i]->chunk_holder_contact.node_id()).c_str());
     }
   }
-  for (size_t i = 0; i < get_packet_responses.size() && success_index < 0;
-      ++i) {
-                                                                  printf("Before lock - success_index = %i\n", success_index);
-    boost::mutex::scoped_lock loch(load_cond_data.cond_mutex);
-                                                                  printf("After lock %i -- %i\n", i, returned_rpc_count);
-    while (i <= returned_rpc_count)
+  for (size_t i = 0; ((i < get_packet_responses.size()) && (success_index < 0));
+       ++i) {
+      boost::mutex::scoped_lock loch(load_cond_data.cond_mutex);
+    if (returned_rpc_count < get_packet_responses.size()) {
       load_cond_data.cond_variable->wait(loch);
-                                                                  printf("After wait %i -- %i\n", i, returned_rpc_count);
+    }
     if (get_packet_responses.at(i).result() == kAck &&
         packet_holders.at(i)->chunk_holder_contact.node_id() ==
         get_packet_responses.at(i).pmid_id()) {
-                    printf("2 - Success packet_holder %i - %s\n", i, HexSubstr(packet_holders[i]->chunk_holder_contact.node_id()).c_str());
       success_index = i;
       break;
     }
   }
 #ifdef DEBUG
-  if (mock_rpcs_)
+  if (mock_rpcs_) {
+    printf("Would have returned by now; sleeping until mock RPCs call back.\n");
     boost::this_thread::sleep(boost::posix_time::seconds(15));
+  }
 #else
   for (size_t i = 0; i < get_packet_responses.size(); ++i) {
     channel_manager_.
         DeletePendingRequest(packet_holders.at(i)->controller->req_id());
   }
 #endif
-  return (success_index >= 0) ? kSuccess : kLoadPacketFailure;
+  result->clear();
+  if (success_index < 0)
+    return kLoadPacketFailure;
+  for (int i = 0; i < get_packet_responses.at(success_index).content_size();
+      ++i) {
+    result->push_back(
+        get_packet_responses.at(success_index).content(i).data());
+  }
+  return kSuccess;
 }
 
 void MaidsafeStoreManager::FindCloseNodes(
@@ -2459,15 +2461,10 @@ void MaidsafeStoreManager::GetPacketCallback(GenericConditionData *cond_data,
 //  printf("In MaidsafeStoreManager::GetPacketCallback.\n");
 #endif
   {  // NOLINT (Fraser)
-            printf("In MaidsafeStoreManager::GetPacketCallback - outside loch\n");
-
     boost::mutex::scoped_lock lock(cond_data->cond_mutex);
-            printf("In MaidsafeStoreManager::GetPacketCallback - inside loch\n");
     ++(*returned_rpc_count);
   }
-            printf("In MaidsafeStoreManager::GetPacketCallback -  unloched - about to notify\n");
   cond_data->cond_variable->notify_all();
-            printf("In MaidsafeStoreManager::GetPacketCallback -  notified\n");
 }
 
 void MaidsafeStoreManager::SetStoreReturnValue(ReturnCode rc, int *ret_value) {

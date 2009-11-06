@@ -363,7 +363,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
-  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacket);
+  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed);
+  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail);
+  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed);
   // Replace real ClientRpcs with mock object for testing
   void SetMockRpcs(boost::shared_ptr<ClientRpcs> mock_rpcs) {
     client_rpcs_ = mock_rpcs;

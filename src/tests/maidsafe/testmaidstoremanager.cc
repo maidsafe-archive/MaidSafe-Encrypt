@@ -67,14 +67,24 @@ class GeneralCallback {
   boost::mutex callback_mutex_;
 };
 
-void DoneRun(google::protobuf::Closure* callback) {
-  boost::this_thread::sleep(boost::posix_time::milliseconds(
-      base::random_32bit_uinteger() % 5000));
+void DoneRun(const int &min_delay,
+             const int &max_delay,
+             google::protobuf::Closure* callback) {
+  int min(min_delay);
+  if (min < 0)
+    min = 0;
+  int diff = max_delay - min;
+  if (diff < 1)
+    diff = 1;
+  int sleep_time(base::random_32bit_uinteger() % diff + min);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(sleep_time));
   callback->Run();
 }
 
-void ThreadedDoneRun(google::protobuf::Closure* callback) {
-  boost::thread(DoneRun, callback);
+void ThreadedDoneRun(const int &min_delay,
+                     const int &max_delay,
+                     google::protobuf::Closure* callback) {
+  boost::thread(DoneRun, min_delay, max_delay, callback);
 }
 
 void ConditionNotify(int set_return,
@@ -104,10 +114,13 @@ void ThreadedConditionNotifyNegOne(
 
 void FailedContactCallback(
     const kad::Contact &holder,
+    const int &min_delay,
+    const int &max_delay,
     std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
     maidsafe::GenericConditionData *cond_data) {
-//  boost::this_thread::sleep(boost::posix_time::milliseconds(
-//      base::random_32bit_uinteger() % 1000 + 3000));
+  int diff = max_delay - min_delay;
+  int sleep_time(base::random_32bit_uinteger() % diff + min_delay);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(sleep_time));
   boost::shared_ptr<maidsafe::ChunkHolder> failed_chunkholder(
       new maidsafe::ChunkHolder(kad::Contact(holder.node_id(), "", 0)));
   failed_chunkholder->status = maidsafe::kFailedHolder;
@@ -120,10 +133,13 @@ void FailedContactCallback(
 
 void ContactCallback(
     const kad::Contact &holder,
+    const int &min_delay,
+    const int &max_delay,
     std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
     maidsafe::GenericConditionData *cond_data) {
-//  boost::this_thread::sleep(boost::posix_time::milliseconds(
-//      base::random_32bit_uinteger() % 1000 + 3000));
+  int diff = max_delay - min_delay;
+  int sleep_time(base::random_32bit_uinteger() % diff + min_delay);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(sleep_time));
   boost::shared_ptr<maidsafe::ChunkHolder>
       chunkholder(new maidsafe::ChunkHolder(holder));
   chunkholder->status = maidsafe::kContactable;
@@ -137,16 +153,27 @@ void ContactCallback(
 void ThreadedGetHolderContactCallbacks(
     const std::vector<kad::Contact> &holders,
     const int &failures,
+    const int &min_delay,
+    const int &max_delay,
     std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
     maidsafe::GenericConditionData *cond_data) {
+  int min(min_delay);
+  if (min < 0)
+    min = 0;
+  int max(max_delay);
+  if (max - min < 1)
+    max = min + 1;
   for (size_t i = 0, failed = 0; i < holders.size(); ++i) {
-    if (failed < failures) {
-      boost::thread thr(FailedContactCallback, holders.at(i), packet_holders,
-                        cond_data);
+    // Add 500ms to each delay, to allow holders to callback in order
+    min += 500;
+    max += 500;
+    if (static_cast<int>(failed) < failures) {
+      boost::thread thr(FailedContactCallback, holders.at(i), min, max,
+          packet_holders, cond_data);
       ++failed;
     } else {
-      boost::thread thr(ContactCallback, holders.at(i), packet_holders,
-                        cond_data);
+      boost::thread thr(ContactCallback, holders.at(i), min, max,
+          packet_holders, cond_data);
     }
   }
 }
@@ -852,7 +879,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
             .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
                                       store_iou_responses.at(x)),
                                   testing::WithArgs<5>(testing::Invoke(
-                                      test_msm::ThreadedDoneRun))));
+                  boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
   // For "kKadStoreThreshold_"th StoreIOU RPC, set result to kNack once and
   // thereafter kAck.
@@ -877,12 +904,12 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                               failed_store_iou_responses.at(
                                   msm.kKadStoreThreshold_ - 1)),
                           testing::WithArgs<5>(testing::Invoke(
-                              test_msm::ThreadedDoneRun))))
+              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
           .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
                                     store_iou_responses.at(
                                         msm.kKadStoreThreshold_ - 1)),
                                 testing::WithArgs<5>(testing::Invoke(
-                                    test_msm::ThreadedDoneRun))));
+              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   // For remaining StoreIOU RPCs, set result to kNack twice and thereafter kAck.
   for (int y = msm.kKadStoreThreshold_; y < kad::K; ++y) {
     EXPECT_CALL(*mock_rpcs, StoreIOU(
@@ -904,15 +931,15 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 failed_store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))))
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 failed_store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))))
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))));
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
 
   // ********** PUBLIC_SHARE **********
@@ -992,7 +1019,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
             .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
                                       store_iou_responses.at(x)),
                                   testing::WithArgs<5>(testing::Invoke(
-                                      test_msm::ThreadedDoneRun))));
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
   // For "kKadStoreThreshold_"th StoreIOU RPC, set result to kNack once and
   // thereafter kAck.
@@ -1017,12 +1044,12 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                               failed_store_iou_responses.at(
                                   msm.kKadStoreThreshold_ - 1)),
                           testing::WithArgs<5>(testing::Invoke(
-                              test_msm::ThreadedDoneRun))))
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
           .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
                                     store_iou_responses.at(
                                         msm.kKadStoreThreshold_ - 1)),
                                 testing::WithArgs<5>(testing::Invoke(
-                                    test_msm::ThreadedDoneRun))));
+              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   // For remaining StoreIOU RPCs, set result to kNack twice and thereafter kAck.
   for (int y = msm.kKadStoreThreshold_; y < kad::K; ++y) {
     EXPECT_CALL(*mock_rpcs, StoreIOU(
@@ -1044,15 +1071,15 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 failed_store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))))
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 failed_store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))))
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))));
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
 
   // ********** ANONYMOUS **********
@@ -1106,7 +1133,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
             .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
                                       store_iou_responses.at(x)),
                                   testing::WithArgs<5>(testing::Invoke(
-                                      test_msm::ThreadedDoneRun))));
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
   // For "kKadStoreThreshold_"th StoreIOU RPC, set result to kNack once and
   // thereafter kAck.
@@ -1129,12 +1156,12 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                               failed_store_iou_responses.at(
                                   msm.kKadStoreThreshold_ - 1)),
                           testing::WithArgs<5>(testing::Invoke(
-                              test_msm::ThreadedDoneRun))))
+              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
           .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
                                     store_iou_responses.at(
                                         msm.kKadStoreThreshold_ - 1)),
                                 testing::WithArgs<5>(testing::Invoke(
-                                    test_msm::ThreadedDoneRun))));
+              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   // For remaining StoreIOU RPCs, set result to kNack twice and thereafter kAck.
   for (int y = msm.kKadStoreThreshold_; y < kad::K; ++y) {
     EXPECT_CALL(*mock_rpcs, StoreIOU(
@@ -1155,15 +1182,15 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 failed_store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))))
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 failed_store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))))
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))));
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
 
   // ********** PRIVATE **********
@@ -1227,7 +1254,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
             .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
                                       store_iou_responses.at(x)),
                                   testing::WithArgs<5>(testing::Invoke(
-                                      test_msm::ThreadedDoneRun))));
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
   // For "kKadStoreThreshold_"th StoreIOU RPC, set result to kNack once and
   // thereafter kAck.
@@ -1252,12 +1279,12 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                               failed_store_iou_responses.at(
                                   msm.kKadStoreThreshold_ - 1)),
                           testing::WithArgs<5>(testing::Invoke(
-                              test_msm::ThreadedDoneRun))))
+              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
           .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
                                     store_iou_responses.at(
                                         msm.kKadStoreThreshold_ - 1)),
                                 testing::WithArgs<5>(testing::Invoke(
-                                    test_msm::ThreadedDoneRun))));
+              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   // For remaining StoreIOU RPCs, set result to kNack twice and thereafter kAck.
   for (int y = msm.kKadStoreThreshold_; y < kad::K; ++y) {
     EXPECT_CALL(*mock_rpcs, StoreIOU(
@@ -1279,15 +1306,15 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 failed_store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))))
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 failed_store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))))
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
             .WillOnce(DoAll(testing::SetArgumentPointee<3>(
                                 store_iou_responses.at(y)),
                             testing::WithArgs<5>(testing::Invoke(
-                                test_msm::ThreadedDoneRun))));
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
 
   // Run test calls - sleeps allow all RPCs to return as we can't cancel them
@@ -1478,7 +1505,7 @@ class MockMsmLoadPacket : public MaidsafeStoreManager {
       GenericConditionData *find_cond_data));
 };
 
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacket) {
+TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
   MockMsmLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs>
       mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
@@ -1495,9 +1522,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacket) {
   std::vector<std::string> peernames;
   std::vector<kad::Contact> peers;
   std::vector<GetPacketResponse> get_packet_responses_all_good;
-  std::vector<GetPacketResponse> get_packet_responses_all_bad;
-  std::vector<GetPacketResponse> get_packet_responses_one_good;
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < 2; ++i) {
     peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
         crypto::STRING_STRING, false));
     peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
@@ -1507,14 +1532,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacket) {
     *gp_add = gp;
     get_packet_response.set_pmid_id(peernames[i]);
     get_packet_responses_all_good.push_back(get_packet_response);
-                        printf("Contact %i - %s\n", i, HexSubstr(peernames[i]).c_str());
-    if (i == 3)
-      get_packet_responses_one_good.push_back(get_packet_response);
-    get_packet_response.set_result(kNack);
-    if (i != 3)
-      get_packet_responses_one_good.push_back(get_packet_response);
-    get_packet_responses_all_bad.push_back(get_packet_response);
   }
+
 
   EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
       testing::_))
@@ -1530,23 +1549,137 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacket) {
                                 testing::Return(0)));  // Call 3
   EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
       .Times(1)
-      .WillRepeatedly(testing::WithArgs<1, 2>(testing::Invoke(
-                      boost::bind(&test_msm::ThreadedGetHolderContactCallbacks,
-                      peers, 0, _1, _2))));  // Call 3
-
-  for (int i = 0; i < 4; ++i) {
+      .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedGetHolderContactCallbacks,
+                peers, 0, 1950, 2000, _1, _2))));  // Call 3
+  for (int i = 0; i < 2; ++i) {
     EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
         testing::_, testing::_, testing::_))
             .Times(1)  // Call 3
-            .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
-                                      get_packet_responses_one_good.at(i)),
+            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+                                      get_packet_responses_all_good.at(i)),
                                   testing::WithArgs<5>(testing::Invoke(
-                                      test_msm::ThreadedDoneRun))));
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
-  ASSERT_EQ(kFindValueFailure, msm.LoadPacket(hex_packetname, &packet_content));  // Call 1
-  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));  // Call 2
+
+  // Call 1
+  ASSERT_EQ(kFindValueFailure, msm.LoadPacket(hex_packetname, &packet_content));
+
+  // Call 2
+  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));
   ASSERT_EQ(original_packet_content, packet_content);
-  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));  // Call 3
+
+  // Call 3
+  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));
+  ASSERT_EQ(original_packet_content, packet_content);
+}
+
+TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail) {
+  MockMsmLoadPacket msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs>
+      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
+  msm.SetMockRpcs(mock_rpcs);
+  std::string original_packet_content("original_packet_content");
+  GenericPacket gp;
+  gp.set_data(original_packet_content);
+  gp.set_signature("Sig");
+  std::string packet_content("F");
+  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
+  std::string hex_packetname = base::EncodeToHex(packetname);
+  std::vector<std::string> find_value_results;
+  find_value_results.push_back(original_packet_content);
+  std::vector<std::string> peernames;
+  std::vector<kad::Contact> peers;
+  std::vector<GetPacketResponse> get_packet_responses_all_bad;
+  for (int i = 0; i < 4; ++i) {
+    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
+        crypto::STRING_STRING, false));
+    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
+    GetPacketResponse get_packet_response;
+    get_packet_response.set_result(kNack);
+    GenericPacket *gp_add = get_packet_response.add_content();
+    *gp_add = gp;
+    get_packet_response.set_pmid_id(peernames[i]);
+    get_packet_responses_all_bad.push_back(get_packet_response);
+  }
+
+
+  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
+      testing::_))
+          .Times(1)
+          .WillOnce(DoAll(testing::SetArgumentPointee<3>(peernames),
+                          testing::Return(0)));
+  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
+      .Times(1)
+      .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedGetHolderContactCallbacks,
+                peers, 0, 1950, 2000, _1, _2))));
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
+        testing::_, testing::_, testing::_))
+            .Times(1)
+            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+                            get_packet_responses_all_bad.at(i)),
+                            testing::WithArgs<5>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
+  }
+  ASSERT_EQ(kLoadPacketFailure,
+            msm.LoadPacket(hex_packetname, &packet_content));
+}
+
+TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed) {
+  MockMsmLoadPacket msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs>
+      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
+  msm.SetMockRpcs(mock_rpcs);
+  std::string original_packet_content("original_packet_content");
+  GenericPacket gp;
+  gp.set_data(original_packet_content);
+  gp.set_signature("Sig");
+  std::string packet_content("F");
+  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
+  std::string hex_packetname = base::EncodeToHex(packetname);
+  std::vector<std::string> find_value_results;
+  find_value_results.push_back(original_packet_content);
+  std::vector<std::string> peernames;
+  std::vector<kad::Contact> peers;
+  std::vector<GetPacketResponse> get_packet_responses_one_good;
+  for (int i = 0; i < 4; ++i) {
+    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
+        crypto::STRING_STRING, false));
+    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
+    GetPacketResponse get_packet_response;
+    get_packet_response.set_result(kNack);
+    GenericPacket *gp_add = get_packet_response.add_content();
+    *gp_add = gp;
+    get_packet_response.set_pmid_id(peernames[i]);
+    if (i == 3)
+      get_packet_response.set_result(kAck);
+    get_packet_responses_one_good.push_back(get_packet_response);
+  }
+
+
+  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
+      testing::_))
+          .Times(1)
+          .WillOnce(DoAll(testing::SetArgumentPointee<3>(peernames),
+                          testing::Return(0)));
+  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
+      .Times(1)
+      .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedGetHolderContactCallbacks,
+                peers, 0, 1950, 2000, _1, _2))));
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
+        testing::_, testing::_, testing::_))
+            .Times(1)
+            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+                            get_packet_responses_one_good.at(i)),
+                            testing::WithArgs<5>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
+  }
+  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));
+  ASSERT_EQ(original_packet_content, packet_content);
 }
 
 }  // namespace maidsafe
