@@ -53,12 +53,12 @@ class ClientRpcs {
                   StoreResponse *store_response,
                   rpcprotocol::Controller *controller,
                   google::protobuf::Closure *done);
-  void StorePacket(const kad::Contact &peer,
-                   bool local,
-                   StorePacketRequest *store_packet_request,
-                   StorePacketResponse *store_packet_response,
-                   rpcprotocol::Controller *controller,
-                   google::protobuf::Closure *done);
+  virtual void StorePacket(const kad::Contact &peer,
+                           bool local,
+                           StorePacketRequest *store_packet_request,
+                           StorePacketResponse *store_packet_response,
+                           rpcprotocol::Controller *controller,
+                           google::protobuf::Closure *done);
   virtual void StoreIOU(const kad::Contact &peer,
                         bool local,
                         StoreIOURequest *store_iou_request,

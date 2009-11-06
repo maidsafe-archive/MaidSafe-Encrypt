@@ -363,6 +363,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AnalyseResults);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed);
@@ -468,6 +469,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       GenericConditionData *cond_data,
       std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
       int *available_chunk_holder_index);
+  // Returns true if the peer is on the local network
+  bool AddressIsLocal(const kad::Contact &peer);
   // Populates the contact details of a peer vault (with ID chunk_holder_id) and
   // pushes them into the list of contacts provided.  If the RPC fails, the
   // chunk holder's status_ is set to kFailedHolder.  Having done this,
@@ -554,7 +557,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   int SendPacketToVaults(
       const StoreData &store_data,
       boost::shared_ptr<boost::condition_variable> cond_variable);
-  void FindPacketHolders(
+  virtual void FindPacketHolders(
       const std::vector<std::string> &packet_holders_ids,
       GenericConditionData *cond_data,
       std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders);

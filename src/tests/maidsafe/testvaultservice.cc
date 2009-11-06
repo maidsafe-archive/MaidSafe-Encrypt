@@ -2088,7 +2088,6 @@ TEST_F(TestStorePacket, BEH_MAID_IncorrectSignatures) {
   cb.Reset();
   ASSERT_EQ(kPacketLoadNotFound, chunkstore.LoadPacket(packetname, &result));
   ASSERT_TRUE(result.empty());
-
 }
 
 TEST_F(TestStorePacket, BEH_MAID_InvalidOverWrite) {

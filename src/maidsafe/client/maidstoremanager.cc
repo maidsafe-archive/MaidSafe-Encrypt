@@ -235,26 +235,15 @@ int MaidsafeStoreManager::StorePacket(const std::string &hex_packet_name,
                                       PacketType system_packet_type,
                                       DirType dir_type,
                                       const std::string &msid) {
-  bool mutable_packet(false);
-  if (MutablePacket(system_packet_type, &mutable_packet) != kSuccess)
-    return kPacketUnknownType;
-  if (mutable_packet)
-    return StorePacketToVaults(hex_packet_name, value, system_packet_type,
-                               dir_type, msid, false);
-  else
-    return StorePacketToKad(hex_packet_name, value, system_packet_type,
-                            dir_type, msid);
-}
-
-int MaidsafeStoreManager::MutablePacket(PacketType system_packet_type,
-                                        bool *mutable_packet) {
   switch (system_packet_type) {
     case MID:
     case SMID:
     case MSID:
+      return StorePacketToVaults(hex_packet_name, value, system_packet_type,
+                                 dir_type, msid, false);  // Overwrite
     case PD_DIR:
-      *mutable_packet = true;
-      break;
+      return StorePacketToVaults(hex_packet_name, value, system_packet_type,
+                                 dir_type, msid, true);  // Append
     case TMID:
     case MPID:
     case PMID:
@@ -263,15 +252,11 @@ int MaidsafeStoreManager::MutablePacket(PacketType system_packet_type,
     case ANSMID:
     case ANTMID:
     case ANMPID:
-      *mutable_packet = false;
-      break;
-    case BUFFER:
-    case BUFFER_INFO:
-    case BUFFER_MESSAGE:
+      return StorePacketToKad(hex_packet_name, value, system_packet_type,
+                              dir_type, msid);
     default:
       return kPacketUnknownType;
   }
-  return kSuccess;
 }
 
 int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
@@ -1064,9 +1049,7 @@ int MaidsafeStoreManager::GetStorePeer(const float &,
   if (result.size() == static_cast<unsigned int>(0))
     return kGetStorePeerError;
   *new_peer = result.at(0);
-  *local = (knode_->CheckContactLocalAddress(new_peer->node_id(),
-      new_peer->local_ip(), new_peer->local_port(), new_peer->host_ip()) ==
-      kad::LOCAL);
+  *local = AddressIsLocal(*new_peer);
   return kSuccess;
 }
 
@@ -1381,9 +1364,7 @@ void MaidsafeStoreManager::FindAvailableChunkHolders(
     chunk_holders->at(i)->index = i;
     if (chunk_holders->at(i)->status != kFailedHolder) {
       kad::Contact new_peer = chunk_holders->at(i)->chunk_holder_contact;
-      chunk_holders->at(i)->local = (knode_->CheckContactLocalAddress(
-          new_peer.node_id(), new_peer.local_ip(), new_peer.local_port(),
-          new_peer.host_ip()) == kad::LOCAL);
+      chunk_holders->at(i)->local = AddressIsLocal(new_peer);
       CheckChunkRequest check_chunk_request;
       check_chunk_request.set_chunkname(chunk_name);
       chunk_holders->at(i)->mutex = &cond_data->cond_mutex;
@@ -1749,9 +1730,7 @@ int MaidsafeStoreManager::SendIouToRefHolder(
     StoreIOURequest store_iou_request,
     boost::mutex *store_iou_mutex,
     boost::shared_ptr<StoreIouResultHolder> store_iou_result_holder) {
-  bool local = (knode_->CheckContactLocalAddress(ref_holder.node_id(),
-      ref_holder.local_ip(), ref_holder.local_port(), ref_holder.host_ip())
-      == kad::LOCAL);
+  bool local = AddressIsLocal(ref_holder);
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &MaidsafeStoreManager::SendIouToRefHolderCallback,
       &store_iou_result_holder->store_iou_response_returned, store_iou_mutex);
@@ -1911,6 +1890,11 @@ int MaidsafeStoreManager::StorePacketToKad(
   return return_value;
 }
 
+bool MaidsafeStoreManager::AddressIsLocal(const kad::Contact &peer) {
+  return knode_->CheckContactLocalAddress(peer.node_id(), peer.local_ip(),
+      peer.local_port(), peer.host_ip()) == kad::LOCAL;
+}
+
 int MaidsafeStoreManager::SendPacketToVaults(
     const StoreData &store_data,
     boost::shared_ptr<boost::condition_variable> cond_variable) {
@@ -1966,9 +1950,7 @@ int MaidsafeStoreManager::SendPacketToVaults(
     // If we got the details, send StorePacket RPC.
     if (packet_holders.at(i)->status != kFailedHolder) {
       kad::Contact new_peer = packet_holders.at(i)->chunk_holder_contact;
-      packet_holders.at(i)->local = (knode_->CheckContactLocalAddress(
-          new_peer.node_id(), new_peer.local_ip(), new_peer.local_port(),
-          new_peer.host_ip()) == kad::LOCAL);
+      packet_holders.at(i)->local = AddressIsLocal(new_peer);
       packet_holders.at(i)->mutex = &store_cond_data.cond_mutex;
       exclude.push_back(new_peer);  // whether we succeed in storing or not,
                                     // we'll not be trying this peer again.
@@ -2141,6 +2123,7 @@ int MaidsafeStoreManager::AssessPacketStoreResults(
     std::vector< boost::shared_ptr<ChunkHolder> > *failed_packet_holders,
     std::string *common_checksum) {
   common_checksum->clear();
+  failed_packet_holders->clear();
   // Make a map of <checksum, vector index>
   std::multimap<std::string, int> check;
   for (size_t i = 0; i < packet_holders->size(); ++i) {
@@ -2166,14 +2149,24 @@ int MaidsafeStoreManager::AssessPacketStoreResults(
       *common_checksum = (*map_iter).first;
       common_checksum_count = check.count((*map_iter).first);
       tie = false;
+      if (common_checksum_count > (packet_holders->size() / 2))
+        break;
     } else if (check.count((*map_iter).first) == common_checksum_count) {
       common_checksum->clear();
       tie = true;
     }
   }
   // If we cannot establish a common checksum, return error.
-  if (tie)
+  if (tie) {
+    std::vector< boost::shared_ptr<ChunkHolder> >::iterator it =
+        packet_holders->begin();
+    while (it != packet_holders->end()) {
+      (*it)->status = kFailedChecksum;
+      failed_packet_holders->push_back(*it);
+      it = packet_holders->erase(it);
+    }
     return kCommonChecksumUndecided;
+  }
   // If all holders have the same checksum, return success.
   if (common_checksum_count == packet_holders->size())
     return kSuccess;
@@ -2190,7 +2183,7 @@ int MaidsafeStoreManager::AssessPacketStoreResults(
   std::vector< boost::shared_ptr<ChunkHolder> >::iterator it =
       packet_holders->begin();
   while (it != packet_holders->end()) {
-    if ((*it)->status == kFailedHolder) {
+    if ((*it)->status == kFailedHolder || (*it)->status == kFailedChecksum) {
       failed_packet_holders->push_back(*it);
       it = packet_holders->erase(it);
     } else {
@@ -2381,9 +2374,7 @@ int MaidsafeStoreManager::LoadPacketFromVaults(
     packet_holders.at(i)->index = i;
     if (packet_holders.at(i)->status != kFailedHolder) {
       kad::Contact new_peer = packet_holders.at(i)->chunk_holder_contact;
-      packet_holders.at(i)->local = (knode_->CheckContactLocalAddress(
-          new_peer.node_id(), new_peer.local_ip(), new_peer.local_port(),
-          new_peer.host_ip()) == kad::LOCAL);
+      packet_holders.at(i)->local = AddressIsLocal(new_peer);
       GetPacketRequest get_packet_request;
       get_packet_request.set_packetname(packet_name);
       GetPacketResponse get_packet_response;

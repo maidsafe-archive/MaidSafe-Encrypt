@@ -715,6 +715,12 @@ class MockClientRpcs : public ClientRpcs {
                                GetPacketResponse *get_response,
                                rpcprotocol::Controller *controller,
                                google::protobuf::Closure *done));
+  MOCK_METHOD6(StorePacket, void(const kad::Contact &peer,
+                                 bool local,
+                                 StorePacketRequest *store_packet_request,
+                                 StorePacketResponse *store_packet_response,
+                                 rpcprotocol::Controller *controller,
+                                 google::protobuf::Closure *done));
 };
 
 class MockMsmStoreIOUs : public MaidsafeStoreManager {
@@ -1486,14 +1492,119 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePacket) {
             hex_packetname_non_hashable, "eee", BUFFER_INFO, PRIVATE, ""));
 }
 
-class MockMsmLoadPacket : public MaidsafeStoreManager {
- public:
-  explicit MockMsmLoadPacket(boost::shared_ptr<ChunkStore> cstore)
-      : MaidsafeStoreManager(cstore) {}
-  ~MockMsmLoadPacket() {
-    // Allow time for all RPCs to return as we can't cancel them
-//    boost::this_thread::sleep(boost::posix_time::seconds(15));
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AnalyseResults) {
+  MaidsafeStoreManager msm(client_chunkstore_);
+  crypto_.set_hash_algorithm(crypto::SHA_1);
+  std::string good_checksum = crypto_.Hash("DFGHJK", "", crypto::STRING_STRING,
+                                           false);
+  std::string bad_checksum = crypto_.Hash("POIKKJ", "", crypto::STRING_STRING,
+                                           false);
+  crypto_.set_hash_algorithm(crypto::SHA_512);
+  std::vector<std::string> good_peernames, bad_peernames;
+  std::vector<kad::Contact> good_peers, bad_peers;
+  std::vector< boost::shared_ptr<ChunkHolder> > good_packet_holders;
+  std::vector< boost::shared_ptr<ChunkHolder> > bad_packet_holders;
+  std::vector< boost::shared_ptr<ChunkHolder> > three_good_packet_holders;
+  std::vector< boost::shared_ptr<ChunkHolder> > two_good_packet_holders;
+  std::vector< boost::shared_ptr<ChunkHolder> > three_knack_packet_holders;
+  for (int i = 0; i < 10; ++i) {
+    good_peernames.push_back(crypto_.Hash("good_peer" + base::itos(i), "",
+        crypto::STRING_STRING, false));
+    good_peers.push_back(kad::Contact(good_peernames[i], "192.192.1.1", 999+i));
+    StorePacketResponse store_packet_response;
+    store_packet_response.set_result(kAck);
+    store_packet_response.set_pmid_id(good_peernames[i]);
+    store_packet_response.set_checksum(good_checksum);
+    boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(good_peers.at(i)));
+    ch->store_packet_response = store_packet_response;
+    ch->status = kContactable;
+    if (i < 4) {
+      good_packet_holders.push_back(ch);
+    } else if (i < 7) {
+      three_good_packet_holders.push_back(ch);
+    } else if (i < 9) {
+      two_good_packet_holders.push_back(ch);
+    } else {
+      three_knack_packet_holders.push_back(ch);
+    }
   }
+  for (int i = 0; i < 6; ++i) {
+    bad_peernames.push_back(crypto_.Hash("baaaaaad_peer" + base::itos(i), "",
+        crypto::STRING_STRING, false));
+    bad_peers.push_back(kad::Contact(bad_peernames[i], "192.192.1.1", 999+i));
+    StorePacketResponse store_packet_response;
+    store_packet_response.set_result(kAck);
+    store_packet_response.set_pmid_id(bad_peernames[i]);
+    store_packet_response.set_checksum(bad_checksum);
+    boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(bad_peers.at(i)));
+    ch->store_packet_response = store_packet_response;
+    ch->status = kContactable;
+    if (i < 3) {
+      ch->store_packet_response.set_result(kNack);
+      three_knack_packet_holders.push_back(ch);
+    } else if (i < 5) {
+      two_good_packet_holders.push_back(ch);
+    } else {
+      three_good_packet_holders.push_back(ch);
+    }
+  }
+  std::vector< boost::shared_ptr<ChunkHolder> > failed_packet_holders;
+  std::string common_checksum("Junk");
+
+  // All four good peers
+  ASSERT_EQ(kSuccess, msm.AssessPacketStoreResults(&good_packet_holders,
+                                                   &failed_packet_holders,
+                                                   &common_checksum));
+  ASSERT_EQ(good_checksum, common_checksum);
+  ASSERT_EQ(size_t(0), failed_packet_holders.size());
+  common_checksum = "Junk";
+
+  // Three good peers, one bad
+  ASSERT_EQ(kCommonChecksumMajority,
+            msm.AssessPacketStoreResults(&three_good_packet_holders,
+                                         &failed_packet_holders,
+                                         &common_checksum));
+  ASSERT_EQ(good_checksum, common_checksum);
+  ASSERT_EQ(size_t(1), failed_packet_holders.size());
+  ASSERT_EQ(size_t(3), three_good_packet_holders.size());
+  ASSERT_EQ(kFailedChecksum, failed_packet_holders.at(0)->status);
+  for (int i = 0; i < 3; ++i)
+    ASSERT_EQ(kDone, three_good_packet_holders.at(i)->status);
+  ASSERT_EQ(bad_peernames.at(5),
+            failed_packet_holders.at(0)->chunk_holder_contact.node_id());
+  common_checksum = "Junk";
+
+  // Two good peers, two bad
+  ASSERT_EQ(kCommonChecksumUndecided,
+            msm.AssessPacketStoreResults(&two_good_packet_holders,
+                                         &failed_packet_holders,
+                                         &common_checksum));
+  ASSERT_TRUE(common_checksum.empty());
+  ASSERT_EQ(size_t(4), failed_packet_holders.size());
+  ASSERT_EQ(size_t(0), two_good_packet_holders.size());
+  for (int i = 0; i < 4; ++i)
+    ASSERT_EQ(kFailedChecksum, failed_packet_holders.at(i)->status);
+  common_checksum = "Junk";
+
+  // Three kNack peers, one good
+  ASSERT_EQ(kCommonChecksumMajority,
+            msm.AssessPacketStoreResults(&three_knack_packet_holders,
+                                         &failed_packet_holders,
+                                         &common_checksum));
+  ASSERT_EQ(good_checksum, common_checksum);
+  ASSERT_EQ(size_t(3), failed_packet_holders.size());
+  ASSERT_EQ(size_t(1), three_knack_packet_holders.size());
+  ASSERT_EQ(kDone, three_knack_packet_holders.at(0)->status);
+  for (int i = 0; i < 3; ++i)
+    ASSERT_EQ(kFailedHolder, failed_packet_holders.at(i)->status);
+  ASSERT_EQ(good_peernames.at(9),
+            three_knack_packet_holders.at(0)->chunk_holder_contact.node_id());
+}
+
+class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
+ public:
+  explicit MockMsmStoreLoadPacket(boost::shared_ptr<ChunkStore> cstore)
+      : MaidsafeStoreManager(cstore) {}
   MOCK_METHOD5(FindValue, int(const std::string &kad_key,
                               bool check_local,
                               kad::ContactInfo *cache_holder,
@@ -1503,10 +1614,18 @@ class MockMsmLoadPacket : public MaidsafeStoreManager {
       const std::vector<std::string> &packet_holder_ids,
       std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
       GenericConditionData *find_cond_data));
+  MOCK_METHOD3(FindPacketHolders, void(
+      const std::vector<std::string> &packet_holders_ids,
+      GenericConditionData *cond_data,
+      std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders));
+  MOCK_METHOD4(GetStorePeer, int(const float &,
+                                const std::vector<kad::Contact> &exclude,
+                                kad::Contact *new_peer,
+                                bool *local));
 };
 
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
-  MockMsmLoadPacket msm(client_chunkstore_);
+  MockMsmStoreLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs>
       mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
   msm.SetMockRpcs(mock_rpcs);
@@ -1575,7 +1694,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
 }
 
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail) {
-  MockMsmLoadPacket msm(client_chunkstore_);
+  MockMsmStoreLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs>
       mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
   msm.SetMockRpcs(mock_rpcs);
@@ -1628,7 +1747,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail) {
 }
 
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed) {
-  MockMsmLoadPacket msm(client_chunkstore_);
+  MockMsmStoreLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs>
       mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
   msm.SetMockRpcs(mock_rpcs);
