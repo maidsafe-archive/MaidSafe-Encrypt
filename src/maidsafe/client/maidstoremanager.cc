@@ -68,7 +68,14 @@ StorePacketToVaultsTask::StorePacketToVaultsTask(
           generic_cond_data_(generic_cond_data) {}
 
 void StorePacketToVaultsTask::run() {
-  msm_->SendPacketToVaults(store_data_, generic_cond_data_->cond_variable);
+  int ret = msm_->SendPacketToVaults(store_data_,
+                                     generic_cond_data_->cond_variable);
+  {
+    boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
+    generic_cond_data_->cond_flag = true;
+    *return_value_ = ret;
+  }
+  generic_cond_data_->cond_variable->notify_all();
 }
 
 StorePacketToKadTask::StorePacketToKadTask(
@@ -83,6 +90,11 @@ StorePacketToKadTask::StorePacketToKadTask(
 
 void StorePacketToKadTask::run() {
   msm_->SendPacketToKad(store_data_, return_value_, generic_cond_data_);
+  {
+    boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
+    generic_cond_data_->cond_flag = true;
+  }
+  generic_cond_data_->cond_variable->notify_all();
 }
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
@@ -306,10 +318,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
 // TODO(Fraser#5#): 2009-08-21 - We should maybe try again - we may get a
 //                               different chunkholder next time?
     boost::shared_ptr<ChunkHolder> chunk_holder(new ChunkHolder(cache_holder));
-    chunk_holder->local = (knode_->CheckContactLocalAddress(
-        cache_holder.node_id(), cache_holder.local_ip(),
-        cache_holder.local_port(), cache_holder.ip())
-        == kad::LOCAL);
+    chunk_holder->local = AddressIsLocal(cache_holder);
     boost::mutex mutex;
     int get_result = GetChunk(chunk_name, chunk_holder, data, &mutex);
 // TODO(Fraser#5#): 2009-08-31 - Store cache copy to needs_cache_copy_id
@@ -706,7 +715,6 @@ int MaidsafeStoreManager::AddBPMessage(const std::string &bufferpacketname,
                                        const std::string &ser_gp) {
   return kSuccess;
 }
-
 
 void MaidsafeStoreManager::AddStorePacketTask(
     const StoreData &store_data,
@@ -1382,6 +1390,16 @@ void MaidsafeStoreManager::FindAvailableChunkHolders(
   }
 }
 
+bool MaidsafeStoreManager::AddressIsLocal(const kad::Contact &peer) {
+  return knode_->CheckContactLocalAddress(peer.node_id(), peer.local_ip(),
+      peer.local_port(), peer.host_ip()) == kad::LOCAL;
+}
+
+bool MaidsafeStoreManager::AddressIsLocal(const kad::ContactInfo &peer) {
+  return knode_->CheckContactLocalAddress(peer.node_id(), peer.local_ip(),
+      peer.local_port(), peer.ip()) == kad::LOCAL;
+}
+
 void MaidsafeStoreManager::GetHolderContactCallback(
     const std::string &chunk_holder_id,
     const std::string &result,
@@ -1664,6 +1682,7 @@ void MaidsafeStoreManager::GetMessages(
     const std::string &signed_public_key,
     std::string *serialised_get_messages_response,
     boost::mutex *get_mutex) {
+// TODO(Fraser#5#): 2009-11-07 - Remove this method
   GetBPMessagesRequest get_messages_request;
   get_messages_request.set_bufferpacket_name(buffer_packet_name);
   get_messages_request.set_public_key(public_key);
@@ -1832,7 +1851,7 @@ int MaidsafeStoreManager::StorePacketToVaults(
   if (ss_->ConnectionStatus() == 1)
     return kNotConnected;
   std::string packet_name = base::DecodeFromHex(hex_packet_name);
-  int return_value(1);
+  int return_value(99999);
   boost::shared_ptr<boost::condition_variable>
       cv(new boost::condition_variable);
   GenericConditionData generic_cond_data(cv);
@@ -1890,11 +1909,6 @@ int MaidsafeStoreManager::StorePacketToKad(
   return return_value;
 }
 
-bool MaidsafeStoreManager::AddressIsLocal(const kad::Contact &peer) {
-  return knode_->CheckContactLocalAddress(peer.node_id(), peer.local_ip(),
-      peer.local_port(), peer.host_ip()) == kad::LOCAL;
-}
-
 int MaidsafeStoreManager::SendPacketToVaults(
     const StoreData &store_data,
     boost::shared_ptr<boost::condition_variable> cond_variable) {
@@ -1934,7 +1948,7 @@ int MaidsafeStoreManager::SendPacketToVaults(
   co.set_hash_algorithm(crypto::SHA_512);
   // Update copies currently available, otherwise store new copies until
   // kMinChunkCopies have been stored.
-  FindPacketHolders(packet_holders_ids, &find_cond_data, &packet_holders);
+  FindCloseNodes(packet_holders_ids, &packet_holders, &find_cond_data);
   // For each, if we have their contact details, send StorePacket.
   int sent_rpc_count(0);
   int returned_rpc_count(0);
@@ -2047,6 +2061,7 @@ int MaidsafeStoreManager::SendPacketToVaults(
           &returned_rpc_count);
       client_rpcs_->StorePacket(peer, local, &store_packet_request,
           &packet_holder->store_packet_response, controller.get(), callback);
+      packet_holders.push_back(packet_holder);
       ++sent_rpc_count;
     }
     // Wait for all RPCs to return.
@@ -2067,7 +2082,7 @@ int MaidsafeStoreManager::SendPacketToVaults(
       return kCommonChecksumUndecided;
     }
     // Count how many good copies we have.
-    int duplicate_count(0);
+    duplicate_count = 0;
     std::vector< boost::shared_ptr<ChunkHolder> >::iterator it =
         packet_holders.begin();
     while (it != packet_holders.end()) {
@@ -2085,22 +2100,22 @@ int MaidsafeStoreManager::SendPacketToVaults(
     }
   }
   // TODO(Fraser#5#): 2009-10-27 - finally, spawn new thread which sends delete
-  // packet rpc to all chunkholder with status kFailedHolder.
+  // packet rpc to all chunkholders with status kFailedHolder.
 
 //  boost::this_thread::sleep(boost::posix_time::seconds(1));
   return kSuccess;
 }
 
-void MaidsafeStoreManager::FindPacketHolders(
-    const std::vector<std::string> &packet_holders_ids,
-    GenericConditionData *cond_data,
-    std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders) {
+void MaidsafeStoreManager::FindCloseNodes(
+    const std::vector<std::string> &packet_holder_ids,
+    std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
+    GenericConditionData *find_cond_data) {
   packet_holders->clear();
   // Find packet holders' contact details
-  for (size_t h = 0; h < packet_holders_ids.size(); ++h) {
-    knode_->FindCloseNodes(packet_holders_ids.at(h),
+  for (size_t h = 0; h < packet_holder_ids.size(); ++h) {
+    knode_->FindCloseNodes(packet_holder_ids.at(h),
         boost::bind(&MaidsafeStoreManager::GetHolderContactCallback, this,
-        packet_holders_ids.at(h), _1, packet_holders, cond_data));
+        packet_holder_ids.at(h), _1, packet_holders, find_cond_data));
   }
 }
 
@@ -2124,6 +2139,8 @@ int MaidsafeStoreManager::AssessPacketStoreResults(
     std::string *common_checksum) {
   common_checksum->clear();
   failed_packet_holders->clear();
+  if (packet_holders->size() == size_t(0))
+    return kSuccess;
   // Make a map of <checksum, vector index>
   std::multimap<std::string, int> check;
   for (size_t i = 0; i < packet_holders->size(); ++i) {
@@ -2433,17 +2450,6 @@ int MaidsafeStoreManager::LoadPacketFromVaults(
         get_packet_responses.at(success_index).content(i).data());
   }
   return kSuccess;
-}
-
-void MaidsafeStoreManager::FindCloseNodes(
-    const std::vector<std::string> &packet_holder_ids,
-    std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
-    GenericConditionData *find_cond_data) {
-  for (size_t h = 0; h < packet_holder_ids.size(); ++h) {
-    knode_->FindCloseNodes(packet_holder_ids.at(h),
-        boost::bind(&MaidsafeStoreManager::GetHolderContactCallback, this,
-        packet_holder_ids.at(h), _1, packet_holders, find_cond_data));
-  }
 }
 
 void MaidsafeStoreManager::GetPacketCallback(GenericConditionData *cond_data,

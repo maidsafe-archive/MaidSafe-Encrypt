@@ -1507,7 +1507,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AnalyseResults) {
   std::vector< boost::shared_ptr<ChunkHolder> > three_good_packet_holders;
   std::vector< boost::shared_ptr<ChunkHolder> > two_good_packet_holders;
   std::vector< boost::shared_ptr<ChunkHolder> > three_knack_packet_holders;
-  for (int i = 0; i < 10; ++i) {
+  std::vector< boost::shared_ptr<ChunkHolder> > all_different_packet_holders;
+  for (int i = 0; i < 12; ++i) {
     good_peernames.push_back(crypto_.Hash("good_peer" + base::itos(i), "",
         crypto::STRING_STRING, false));
     good_peers.push_back(kad::Contact(good_peernames[i], "192.192.1.1", 999+i));
@@ -1518,17 +1519,36 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AnalyseResults) {
     boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(good_peers.at(i)));
     ch->store_packet_response = store_packet_response;
     ch->status = kContactable;
-    if (i < 4) {
-      good_packet_holders.push_back(ch);
-    } else if (i < 7) {
-      three_good_packet_holders.push_back(ch);
-    } else if (i < 9) {
-      two_good_packet_holders.push_back(ch);
-    } else {
-      three_knack_packet_holders.push_back(ch);
+    std::string new_string(good_checksum);
+    switch (i) {
+      case(0):
+      case(1):
+      case(2):
+      case(3):
+        good_packet_holders.push_back(ch);
+        break;
+      case(4):
+      case(5):
+      case(6):
+        three_good_packet_holders.push_back(ch);
+        break;
+      case(7):
+      case(8):
+        two_good_packet_holders.push_back(ch);
+        break;
+      case(9):
+        three_knack_packet_holders.push_back(ch);
+        break;
+      case(10):
+        ch->store_packet_response.set_checksum(new_string.replace(0, 10,
+            "aaaaaaaaaa"));
+        all_different_packet_holders.push_back(ch);
+        break;
+      default:
+        all_different_packet_holders.push_back(ch);
     }
   }
-  for (int i = 0; i < 6; ++i) {
+  for (int i = 0; i < 8; ++i) {
     bad_peernames.push_back(crypto_.Hash("baaaaaad_peer" + base::itos(i), "",
         crypto::STRING_STRING, false));
     bad_peers.push_back(kad::Contact(bad_peernames[i], "192.192.1.1", 999+i));
@@ -1539,13 +1559,28 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AnalyseResults) {
     boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(bad_peers.at(i)));
     ch->store_packet_response = store_packet_response;
     ch->status = kContactable;
-    if (i < 3) {
-      ch->store_packet_response.set_result(kNack);
-      three_knack_packet_holders.push_back(ch);
-    } else if (i < 5) {
-      two_good_packet_holders.push_back(ch);
-    } else {
-      three_good_packet_holders.push_back(ch);
+    std::string new_string(bad_checksum);
+    switch (i) {
+      case(0):
+      case(1):
+      case(2):
+        ch->store_packet_response.set_result(kNack);
+        three_knack_packet_holders.push_back(ch);
+        break;
+      case(3):
+      case(4):
+        two_good_packet_holders.push_back(ch);
+        break;
+      case(5):
+        three_good_packet_holders.push_back(ch);
+        break;
+      case(6):
+        ch->store_packet_response.set_checksum(new_string.replace(0, 10,
+            "zzzzzzzzzz"));
+        all_different_packet_holders.push_back(ch);
+        break;
+      default:
+        all_different_packet_holders.push_back(ch);
     }
   }
   std::vector< boost::shared_ptr<ChunkHolder> > failed_packet_holders;
@@ -1599,6 +1634,18 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AnalyseResults) {
     ASSERT_EQ(kFailedHolder, failed_packet_holders.at(i)->status);
   ASSERT_EQ(good_peernames.at(9),
             three_knack_packet_holders.at(0)->chunk_holder_contact.node_id());
+  common_checksum = "Junk";
+
+  // All different peers
+  ASSERT_EQ(kCommonChecksumUndecided,
+            msm.AssessPacketStoreResults(&all_different_packet_holders,
+                                         &failed_packet_holders,
+                                         &common_checksum));
+  ASSERT_TRUE(common_checksum.empty());
+  ASSERT_EQ(size_t(4), failed_packet_holders.size());
+  ASSERT_EQ(size_t(0), all_different_packet_holders.size());
+  for (int i = 0; i < 4; ++i)
+    ASSERT_EQ(kFailedChecksum, failed_packet_holders.at(i)->status);
 }
 
 class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
@@ -1614,15 +1661,247 @@ class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
       const std::vector<std::string> &packet_holder_ids,
       std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
       GenericConditionData *find_cond_data));
-  MOCK_METHOD3(FindPacketHolders, void(
-      const std::vector<std::string> &packet_holders_ids,
-      GenericConditionData *cond_data,
-      std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders));
   MOCK_METHOD4(GetStorePeer, int(const float &,
-                                const std::vector<kad::Contact> &exclude,
-                                kad::Contact *new_peer,
-                                bool *local));
+                                 const std::vector<kad::Contact> &exclude,
+                                 kad::Contact *new_peer,
+                                 bool *local));
+  MOCK_METHOD3(AssessPacketStoreResults, int(
+      std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
+      std::vector< boost::shared_ptr<ChunkHolder> > *failed_packet_holders,
+      std::string *common_checksum));
 };
+
+TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreNewPacket) {
+  MockMsmStoreLoadPacket msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs>
+      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
+  msm.SetMockRpcs(mock_rpcs);
+  crypto::RsaKeyPair anmid_keys;
+  anmid_keys.GenerateKeys(kRsaKeySize);
+  std::string anmid_pri = anmid_keys.private_key();
+  std::string anmid_pub = anmid_keys.public_key();
+  std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",
+      anmid_pri, crypto::STRING_STRING);
+  std::string maid_name = crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
+      crypto::STRING_STRING, true);
+  SessionSingleton::getInstance()->AddKey(ANMID, maid_name, anmid_pri,
+      anmid_pub, anmid_pub_key_signature);
+  std::string original_packet_content("original_packet_content");
+  crypto_.set_hash_algorithm(crypto::SHA_1);
+  std::string good_checksum = crypto_.Hash("DFGHJK", "", crypto::STRING_STRING,
+                                           false);
+  std::string bad_checksum = crypto_.Hash("POIKKJ", "", crypto::STRING_STRING,
+                                           false);
+  crypto_.set_hash_algorithm(crypto::SHA_512);
+  std::string packet_content("F");
+  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
+  std::string hex_packetname = base::EncodeToHex(packetname);
+  std::vector<std::string> peernames;
+  std::vector<kad::Contact> peers;
+  std::vector< boost::shared_ptr<ChunkHolder> > packet_holders;
+  for (int i = 0; i < 4; ++i) {
+    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
+        crypto::STRING_STRING, false));
+    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
+    StorePacketResponse store_packet_response;
+    store_packet_response.set_result(kAck);
+    store_packet_response.set_pmid_id(peernames[i]);
+    store_packet_response.set_checksum(good_checksum);
+    boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(peers.at(i)));
+    ch->store_packet_response = store_packet_response;
+    ch->status = kContactable;
+    packet_holders.push_back(ch);
+  }
+  kad::ContactInfo cache_holder;
+  cache_holder.set_node_id("a");
+
+  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
+      testing::_))
+          .Times(4)
+          .WillOnce(testing::Return(-1))  // Call 1
+          .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
+                          testing::Return(0)))  // Call 2
+          .WillOnce(testing::Return(kFindValueFailure))  // Call 3
+          .WillOnce(testing::Return(kFindValueFailure));  // Call 4
+
+  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
+      .Times(2);
+
+  EXPECT_CALL(msm, GetStorePeer(testing::_, testing::_, testing::_, testing::_))
+      .Times(8)
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[0]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[1]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[2]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[3]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[0]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[1]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[2]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[3]->
+          chunk_holder_contact), testing::Return(0)));
+
+  EXPECT_CALL(msm, AssessPacketStoreResults(testing::_, testing::_, testing::_))
+      .Times(4)
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
+                      testing::Return(0)))  // Call 3
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
+                      testing::Return(0)))  // Call 3
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
+                      testing::Return(0)))  // Call 4
+      .WillOnce(testing::Return(kCommonChecksumUndecided));  // Call 4
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_CALL(*mock_rpcs, StorePacket(packet_holders[i]->chunk_holder_contact,
+        testing::_, testing::_, testing::_, testing::_, testing::_))
+            .Times(2)  // Call 3 then 4
+            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+                                      packet_holders[i]->store_packet_response),
+                            testing::WithArgs<5>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
+            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+                                      packet_holders[i]->store_packet_response),
+                            testing::WithArgs<5>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
+  }
+
+  // Call 1
+  ASSERT_EQ(kSendPacketFindValueFailure, msm.StorePacket(hex_packetname,
+      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+
+  // Call 2
+  ASSERT_EQ(kSendPacketCached, msm.StorePacket(hex_packetname,
+      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+
+  // Call 3
+  ASSERT_EQ(kSuccess, msm.StorePacket(hex_packetname,
+      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+
+  // Call 4
+  ASSERT_EQ(kCommonChecksumUndecided, msm.StorePacket(hex_packetname,
+      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+}
+
+TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreExistingPacket) {
+  MockMsmStoreLoadPacket msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs>
+      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
+  msm.SetMockRpcs(mock_rpcs);
+  crypto::RsaKeyPair anmid_keys;
+  anmid_keys.GenerateKeys(kRsaKeySize);
+  std::string anmid_pri = anmid_keys.private_key();
+  std::string anmid_pub = anmid_keys.public_key();
+  std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",
+      anmid_pri, crypto::STRING_STRING);
+  std::string maid_name = crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
+      crypto::STRING_STRING, true);
+  SessionSingleton::getInstance()->AddKey(ANMID, maid_name, anmid_pri,
+      anmid_pub, anmid_pub_key_signature);
+  std::string original_packet_content("original_packet_content");
+  crypto_.set_hash_algorithm(crypto::SHA_1);
+  std::string good_checksum = crypto_.Hash("DFGHJK", "", crypto::STRING_STRING,
+                                           false);
+  std::string bad_checksum = crypto_.Hash("POIKKJ", "", crypto::STRING_STRING,
+                                           false);
+  crypto_.set_hash_algorithm(crypto::SHA_512);
+  std::string packet_content("F");
+  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
+  std::string hex_packetname = base::EncodeToHex(packetname);
+  std::vector<std::string> peernames;
+  std::vector<kad::Contact> peers;
+  std::vector< boost::shared_ptr<ChunkHolder> > packet_holders;
+  for (int i = 0; i < 4; ++i) {
+    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
+        crypto::STRING_STRING, false));
+    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
+    StorePacketResponse store_packet_response;
+    store_packet_response.set_result(kAck);
+    store_packet_response.set_pmid_id(peernames[i]);
+    store_packet_response.set_checksum(good_checksum);
+    boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(peers.at(i)));
+    ch->store_packet_response = store_packet_response;
+    ch->status = kContactable;
+    packet_holders.push_back(ch);
+  }
+  kad::ContactInfo cache_holder;
+  cache_holder.set_node_id("a");
+
+  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
+      testing::_))
+          .Times(4)
+          .WillOnce(testing::Return(-1))  // Call 1
+          .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
+                          testing::Return(0)))  // Call 2
+          .WillOnce(testing::Return(kFindValueFailure))  // Call 3
+          .WillOnce(testing::Return(kFindValueFailure));  // Call 4
+
+  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
+      .Times(2);
+
+  EXPECT_CALL(msm, GetStorePeer(testing::_, testing::_, testing::_, testing::_))
+      .Times(8)
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[0]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[1]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[2]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[3]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[0]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[1]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[2]->
+          chunk_holder_contact), testing::Return(0)))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[3]->
+          chunk_holder_contact), testing::Return(0)));
+
+  EXPECT_CALL(msm, AssessPacketStoreResults(testing::_, testing::_, testing::_))
+      .Times(4)
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
+                      testing::Return(0)))  // Call 3
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
+                      testing::Return(0)))  // Call 3
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
+                      testing::Return(0)))  // Call 4
+      .WillOnce(testing::Return(kCommonChecksumUndecided));  // Call 4
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_CALL(*mock_rpcs, StorePacket(packet_holders[i]->chunk_holder_contact,
+        testing::_, testing::_, testing::_, testing::_, testing::_))
+            .Times(2)  // Call 3 then 4
+            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+                                      packet_holders[i]->store_packet_response),
+                            testing::WithArgs<5>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
+            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+                                      packet_holders[i]->store_packet_response),
+                            testing::WithArgs<5>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
+  }
+
+  // Call 1
+  ASSERT_EQ(kSendPacketFindValueFailure, msm.StorePacket(hex_packetname,
+      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+
+  // Call 2
+  ASSERT_EQ(kSendPacketCached, msm.StorePacket(hex_packetname,
+      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+
+  // Call 3
+  ASSERT_EQ(kSuccess, msm.StorePacket(hex_packetname,
+      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+
+  // Call 4
+  ASSERT_EQ(kCommonChecksumUndecided, msm.StorePacket(hex_packetname,
+      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+}
 
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);

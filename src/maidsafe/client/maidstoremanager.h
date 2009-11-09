@@ -364,6 +364,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AnalyseResults);
+  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreNewPacket);
+  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreExistingPacket);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed);
@@ -372,7 +374,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
     client_rpcs_ = mock_rpcs;
     mock_rpcs_ = true;
   }
-  int MutablePacket(PacketType system_packet_type, bool *mutable_packet);
   void SimpleResult_Callback(const std::string &result,
                              base::callback_func_type cb);
   void DeleteChunk_Callback(const std::string &result,
@@ -471,6 +472,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       int *available_chunk_holder_index);
   // Returns true if the peer is on the local network
   bool AddressIsLocal(const kad::Contact &peer);
+  bool AddressIsLocal(const kad::ContactInfo &peer);
   // Populates the contact details of a peer vault (with ID chunk_holder_id) and
   // pushes them into the list of contacts provided.  If the RPC fails, the
   // chunk holder's status_ is set to kFailedHolder.  Having done this,
@@ -557,13 +559,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   int SendPacketToVaults(
       const StoreData &store_data,
       boost::shared_ptr<boost::condition_variable> cond_variable);
-  virtual void FindPacketHolders(
-      const std::vector<std::string> &packet_holders_ids,
-      GenericConditionData *cond_data,
-      std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders);
+  virtual void FindCloseNodes(
+      const std::vector<std::string> &packet_holder_ids,
+      std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
+      GenericConditionData *find_cond_data);
   void StorePacketCallback(GenericConditionData *store_cond_data,
                            int *returned_rpc_count);
-  int AssessPacketStoreResults(
+  virtual int AssessPacketStoreResults(
       std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
       std::vector< boost::shared_ptr<ChunkHolder> > *failed_packet_holders,
       std::string *common_checksum);
@@ -592,10 +594,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   int LoadPacketFromVaults(const std::string &packet_name,
                            const std::vector<std::string> &packet_holder_ids,
                            std::vector<std::string> *result);
-  virtual void FindCloseNodes(
-      const std::vector<std::string> &packet_holder_ids,
-      std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
-      GenericConditionData *find_cond_data);
   void GetPacketCallback(GenericConditionData *cond_data,
                          size_t *returned_rpc_count);
   // If ret_value pointer is not NULL, sets it to rc and calls
