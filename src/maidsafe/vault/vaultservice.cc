@@ -208,6 +208,18 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
     response->set_result(kAck);
   else
     response->set_result(kNack);
+
+  // Storing chunk reference
+  if (response->result() == kAck && knode_ != NULL) {
+    kad::SignedValue sig_value;
+    sig_value.set_value(non_hex_pmid_);
+    sig_value.set_value_signature(co.AsymSign(non_hex_pmid_, "", pmid_private_,
+      crypto::STRING_STRING));
+    // TTL set to 24 hrs
+    knode_->StoreValue(request->packetname(), sig_value, pmid_public_,
+      signed_pmid_public_, signed_request_, 86400, &vsvc_dummy_callback);
+  }
+
   done->Run();
 }
 
