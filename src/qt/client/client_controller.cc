@@ -20,8 +20,15 @@
 #include <QDebug>
 #include <QTimer>
 
-// core
 #include <maidsafe/maidsafe-dht.h>
+
+// std
+#include <list>
+#include <set>
+#include <string>
+#include <vector>
+
+// core
 #include "fs/filesystem.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/sessionsingleton.h"

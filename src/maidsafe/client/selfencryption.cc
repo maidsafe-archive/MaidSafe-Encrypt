@@ -40,6 +40,7 @@
 
 #include <stdint.h>
 #include <cstdio>
+#include <set>
 #include <string>
 #include <vector>
 

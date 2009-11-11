@@ -24,6 +24,8 @@
 
 #include "maidsafe/vault/pendingoperations.h"
 
+#include <utility>
+
 
 namespace maidsafe_vault {
 

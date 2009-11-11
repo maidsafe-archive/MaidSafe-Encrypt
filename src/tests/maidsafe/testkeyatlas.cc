@@ -54,9 +54,9 @@ TEST_F(KeyAtlasTest, BEH_MAID_AddKeys) {
 }
 
 TEST_F(KeyAtlasTest, BEH_MAID_GetPackageID) {
-  // try to get non-existant package Id
+  // try to get non-existent package Id
   ASSERT_EQ("", key_ring_.PackageID(0))
-        << "Returned package Id for non-existant key.";
+        << "Returned package Id for non-existent key.";
 
   // add keys
   for (int i = 0; i < 11; i++) {
@@ -76,9 +76,9 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetPackageID) {
 }
 
 TEST_F(KeyAtlasTest, BEH_MAID_GetPrivateKey) {
-  // try to get non-existant private key
+  // try to get non-existent private key
   ASSERT_EQ("", key_ring_.PrivateKey(0))
-            << "Returned private key for non-existant key.";
+            << "Returned private key for non-existent key.";
 
   // add keys
   for (int i = 0; i < 11; i++) {
@@ -98,9 +98,9 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetPrivateKey) {
 }
 
 TEST_F(KeyAtlasTest, BEH_MAID_GetPublicKey) {
-  // try to get non-existant public key
+  // try to get non-existent public key
   ASSERT_EQ("", key_ring_.PrivateKey(0))
-            << "Returned public key for non-existant key.";
+            << "Returned public key for non-existent key.";
 
   // add keys
   for (int i = 0; i < 11; i++) {
@@ -120,9 +120,9 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetPublicKey) {
 }
 
 TEST_F(KeyAtlasTest, FUNC_MAID_GetSignedPublicKey) {
-  // try to get non-existant public key
+  // try to get non-existent public key
   ASSERT_EQ("", key_ring_.PrivateKey(0))
-            << "Returned public key for non-existant key.";
+            << "Returned public key for non-existent key.";
 
   // add keys
   std::string pub_keys[11];

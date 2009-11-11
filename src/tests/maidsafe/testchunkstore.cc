@@ -644,7 +644,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreLoadChunk) {
   rec_value = "Value";
   ASSERT_EQ(0, chunkstore->Load(nh_name.at(test_chunk), &rec_value));
   ASSERT_EQ(nh_value.at(test_chunk), rec_value);
-  // check using non-existant chunk
+  // check using non-existent chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
   ASSERT_EQ(kInvalidChunkType, chunkstore->Load(othername, &rec_value));
@@ -671,7 +671,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreHasChunk) {
   ASSERT_EQ(0, chunkstore->Store(nh_name.at(test_chunk),
                                      nh_value.at(test_chunk)));
   ASSERT_TRUE(chunkstore->Has(nh_name.at(test_chunk)));
-  // check using non-existant chunk
+  // check using non-existent chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
   ASSERT_FALSE(chunkstore->Has(othername));
@@ -723,7 +723,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreDeleteChunk) {
   ASSERT_FALSE(fs::exists(found));
   ASSERT_EQ(0, chunkstore->DeleteChunk(nh_name.at(test_chunk)));
   ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
-  // check using non-existant chunk
+  // check using non-existent chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
   ASSERT_EQ(0, chunkstore->DeleteChunk(othername));
@@ -815,7 +815,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreUpdateChunk) {
   rec_value = "Value";
   ASSERT_EQ(0, chunkstore->Load(nh_name.at(0), &rec_value));
   ASSERT_EQ(nh_value.at(1), rec_value);
-  // check using non-existant chunk
+  // check using non-existent chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
   ASSERT_EQ(kInvalidChunkType,
@@ -865,7 +865,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreHashCheckChunk) {
                                      nh_value.at(test_chunk)));
   ASSERT_EQ(kHashCheckFailure,
             chunkstore->HashCheckChunk(nh_name.at(test_chunk)));
-  // check using non-existant chunk
+  // check using non-existent chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
   ASSERT_EQ(kInvalidChunkType, chunkstore->HashCheckChunk(othername));
@@ -971,7 +971,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreChangeChunkType) {
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found_path,
                                              chunkstore->kNonHashableLeaf_,
                                              chunkstore->kNormalLeaf_));
-  // check using non-existant chunk
+  // check using non-existent chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
   ASSERT_EQ(kChunkstoreError, chunkstore->ChangeChunkType(othername,
@@ -2075,7 +2075,7 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreHasPackets) {
   // Check HasPacket succeeds
   for (int i = 0; i < kNumberOfPackets; ++i)
     ASSERT_TRUE(chunkstore->HasPacket(p_name.at(i)));
-  // Check HasPacket fails using non-existant chunk
+  // Check HasPacket fails using non-existent chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
   ASSERT_FALSE(chunkstore->HasPacket(othername));

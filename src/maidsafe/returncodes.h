@@ -31,6 +31,7 @@ enum ReturnCode {
   // General
   kSuccess = 0,
   kGeneralError = -1,
+  kIncorrectKeySize = -2,
 
   // Authentication
   kAuthenticationError = -1001,
@@ -62,11 +63,10 @@ enum ReturnCode {
   kChunkFileDoesntExist = -3003,
   kErrorReadingChunkFile = -3004,
   kChunkstoreUninitialised = -3005,
-  kIncorrectKeySize = -3006,
-  kChunkstoreFailedStore = -3007,
-  kChunkstoreFailedDelete = -3008,
-  kChunkstoreException = -3009,
-  kHashCheckFailure = -3010,
+  kChunkstoreFailedStore = -3006,
+  kChunkstoreFailedDelete = -3007,
+  kChunkstoreException = -3008,
+  kHashCheckFailure = -3009,
   kChunkExistsInChunkstore = 3001,  // intentionally positive
 
   // Client Controller

@@ -23,6 +23,9 @@
 #include <QFileDialog>
 #include <QDebug>
 
+// std
+#include <string>
+
 // local
 #include "qt/client/client_controller.h"
 

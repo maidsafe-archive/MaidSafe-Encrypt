@@ -713,9 +713,9 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_CopyMSFile) {
   DataMap recovered_dm_copy1, recovered_dm_exists, recovered_dm_copy2;
   MetaDataMap recovered_mdmcopy1, recovered_mdmexists, recovered_mdmcopy2;
 
-  // Check file is not copied to non-existant dir
+  // Check file is not copied to non-existent dir
   ASSERT_NE(0, dah_->CopyElement(element_path_original,
-            "non-existant dir/non-existant file", "", false));
+            "non-existent dir/non-existent file", "", false));
 
   // Check file is not copied to itself
   ASSERT_NE(0, dah_->CopyElement(element_path_original, element_path_original,
@@ -857,9 +857,9 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
   DataMap recovered_dm_copy1, recovered_dm_exists, recovered_dm_copy2;
   MetaDataMap recovered_mdmcopy1, recovered_mdmexists, recovered_mdmcopy2;
 
-  // Check file is not renamed to non-existant dir
+  // Check file is not renamed to non-existent dir
   ASSERT_NE(0, dah_->RenameElement(element_path_original,
-            "non-existant dir/non-existant file", false));
+            "non-existent dir/non-existent file", false));
 
   // Check file is not renamed to itself
   ASSERT_NE(0, dah_->RenameElement(element_path_original, element_path_original,

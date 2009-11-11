@@ -41,11 +41,11 @@ void vsvc_dummy_callback(const std::string &result) {
   kad::StoreResponse result_msg;
   if (!result_msg.ParseFromString(result))
     printf("Can't parse store result.\n");
-  printf("%s\n", result_msg.DebugString().c_str());
-  if (result_msg.result() == kad::kRpcResultSuccess)
+//  printf("%s\n", result_msg.DebugString().c_str());
+  if (result_msg.result() != kad::kRpcResultSuccess)
     printf("Storing chunk reference failed.\n");
-  else
-    printf("Storing chunk reference succeeded.\n");
+//  else
+//    printf("Storing chunk reference succeeded.\n");
 #endif
 }
 
@@ -213,11 +213,18 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
   if (response->result() == kAck && knode_ != NULL) {
     kad::SignedValue sig_value;
     sig_value.set_value(non_hex_pmid_);
+    crypto::Crypto co;
+    co.set_hash_algorithm(crypto::SHA_512);
     sig_value.set_value_signature(co.AsymSign(non_hex_pmid_, "", pmid_private_,
       crypto::STRING_STRING));
     // TTL set to 24 hrs
+    std::string signed_request = co.AsymSign(co.Hash(pmid_public_ +
+                                 signed_pmid_public_ + request->packetname(),
+                                 "", crypto::STRING_STRING, true), "",
+                                 pmid_private_, crypto::STRING_STRING);
     knode_->StoreValue(request->packetname(), sig_value, pmid_public_,
-      signed_pmid_public_, signed_request_, 86400, &vsvc_dummy_callback);
+                       signed_pmid_public_, signed_request, 86400,
+                       &vsvc_dummy_callback);
   }
 
   done->Run();
@@ -1463,7 +1470,7 @@ void VaultService::StoreChunkReference(const std::string &non_hex_chunkname) {
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string signed_request_ = co.AsymSign(co.Hash(pmid_public_ +
+  std::string signed_request = co.AsymSign(co.Hash(pmid_public_ +
       signed_pmid_public_ + non_hex_chunkname, "", crypto::STRING_STRING,
       false), "", pmid_private_, crypto::STRING_STRING);
   kad::ContactInfo ci = knode_->contact_info();
@@ -1482,7 +1489,7 @@ void VaultService::StoreChunkReference(const std::string &non_hex_chunkname) {
                      signed_value,
                      pmid_public_,
                      signed_pmid_public_,
-                     signed_request_,
+                     signed_request,
                      86400,
                      &vsvc_dummy_callback);
   return;

@@ -27,6 +27,8 @@
   #include <shellapi.h>
 #endif
 
+#include <string>
+
 // core
 #include "fs/filesystem.h"
 #include "maidsafe/client/clientcontroller.h"

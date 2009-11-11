@@ -18,6 +18,9 @@
 // qt
 #include <QDebug>
 
+// std
+#include <string>
+
 // core
 #include "maidsafe/client/clientcontroller.h"
 

@@ -329,6 +329,7 @@ bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password,
                                   const VaultConfigParameters &) {
+  ss_->SetConnectionStatus(0);
   int result = auth_->CreateUserSysPackets(username, pin, password);
 #ifdef DEBUG
   printf("ClientController::CreateUser --- "
@@ -350,7 +351,6 @@ bool ClientController::CreateUser(const std::string &username,
 //  #endif
 
   ss_->SetSessionName(false);
-  ss_->SetConnectionStatus(0);
   std::string root_db_key;
   seh_ = new SEHandler(sm_, client_chunkstore_);
   printf("In ClientController::CreateUser 01\n");
@@ -2498,7 +2498,7 @@ int ClientController::mkdir(const std::string &path) {
   }
 
   // need to save newly-created db also - do this by passing path
-  // for (non-existant) element within new dir to SaveDb function
+  // for (non-existent) element within new dir to SaveDb function
   fs::path imaginary_(path);
   imaginary_ /= "a";
   msid = "";
@@ -2793,7 +2793,7 @@ int ClientController::cpdir(const std::string &path,
     }
   }
   // need to save newly-created db also - do this by passing path
-  // for (non-existant) element within new dir to SaveDb function
+  // for (non-existent) element within new dir to SaveDb function
   fs::path imaginary_(path2);
   imaginary_ /= "a";
   if (msid == "") {

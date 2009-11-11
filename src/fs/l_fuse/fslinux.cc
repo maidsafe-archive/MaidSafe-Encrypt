@@ -43,6 +43,7 @@
 #include <pwd.h>
 #include <string>
 #include <cstdlib>
+#include <map>
 
 #include "maidsafe/client/clientcontroller.h"
 #include "protobuf/datamaps.pb.h"

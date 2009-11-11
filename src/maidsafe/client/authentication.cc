@@ -152,13 +152,16 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   user_params["privateKey"] =
       createSignaturePackets(ANMID, public_key);
   PacketParams mid_result = midPacket->Create(&user_params);
-  if (storemanager_->StorePacket(
+  int n = storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
       boost::any_cast<std::string>(mid_result["ser_packet"]), MID, PRIVATE,
-      "") != kSuccess) {
+      "");
+  if (n != kSuccess) {
+    printf("Fucked in MID store: %i\n", n);
     return kAuthenticationError;
   }
 
+  printf("AAAAAAAAAAAAAA\n");
   user_params["privateKey"] =
       createSignaturePackets(ANSMID, public_key);
   SmidPacket *smidPacket =
@@ -172,6 +175,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
     return kAuthenticationError;
   }
 
+  printf("BBBBBBBBBBBBBB\n");
   std::string privkey = createSignaturePackets(MAID, public_key);
 
   // user_params["privateKey"] =
@@ -194,6 +198,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
     return kAuthenticationError;
   }
 
+  printf("CCCCCCCCCCCCCC\n");
   ss_->AddKey(PMID, boost::any_cast<std::string>(pmid_result["name"]),
               boost::any_cast<std::string>(pmid_result["privateKey"]),
               boost::any_cast<std::string>(pmid_result["publicKey"]),
@@ -221,6 +226,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
     return kAuthenticationError;
   }
 
+  printf("DDDDDDDDDDDDDDD\n");
   ss_->SetUsername(username);
   ss_->SetPin(pin);
   ss_->SetPassword(password);

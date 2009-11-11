@@ -81,7 +81,9 @@ class CallbackObj {
     called_ = true;
   }
   std::string result() {
+//    printf("Callback obj result() - afore lock\n");
     boost::mutex::scoped_lock lock(mutex_);
+//    printf("Callback obj result() - after lock\n");
     return called_ ? result_ : "";
   }
   bool called() {
@@ -98,8 +100,12 @@ class CallbackObj {
   }
   //  Block until callback happens.
   void WaitForCallback() {
-    while (!called())
+//    printf("Callback obj WaitForCallback() - start\n");
+    while (!called()) {
+//      printf("Callback obj WaitForCallback() - afore sleep\n");
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//      printf("Callback obj WaitForCallback() - after slepp\n");
+    }
   }
  private:
   boost::mutex mutex_;
@@ -556,9 +562,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                        DirType dir_type,
                        const std::string &msid);
   // Store an individual packet to maidsafe vaults.
-  int SendPacketToVaults(
-      const StoreData &store_data,
-      boost::shared_ptr<boost::condition_variable> cond_variable);
+  int SendPacketToVaults(const StoreData &store_data);
   virtual void FindCloseNodes(
       const std::vector<std::string> &packet_holder_ids,
       std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,

@@ -18,6 +18,8 @@
 #include <boost/scoped_array.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <set>
+
 namespace maidsafe_vault {
 
 int VaultChunkStore::UpdateChunk(const std::string &key,

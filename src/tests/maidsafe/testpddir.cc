@@ -99,13 +99,13 @@ TEST_F(PdDirTest, BEH_MAID_CreateDb) {
 }
 
 TEST_F(PdDirTest, BEH_MAID_ConnectDb) {
-  // try to connect to non-existant db
+  // try to connect to non-existent db
   {
     int result_ = -1;
     boost::scoped_ptr<PdDir>
-        da_(new PdDir("Non-existant db", CONNECT, &result_));
+        da_(new PdDir("Non-existent db", CONNECT, &result_));
     ASSERT_NE(0, result_) << "Db creation incorrectly returned result 0";
-    ASSERT_FALSE(fs::exists("Non-existant db")) << "Db was not created.";
+    ASSERT_FALSE(fs::exists("Non-existent db")) << "Db was not created.";
   }
 
   // create db1
@@ -195,7 +195,7 @@ TEST_F(PdDirTest, BEH_MAID_GetIdFromName) {
       "Returned wrong id for file3.";
   ASSERT_EQ(1, da_->GetIdFromName(file_name1_)) <<
       "Returned wrong id for file1.";
-  ASSERT_LT(da_->GetIdFromName("Non-existant File"), 0) <<
+  ASSERT_LT(da_->GetIdFromName("Non-existent File"), 0) <<
       "Returned ID for file which doesn't exist.";
 }
 
@@ -235,7 +235,7 @@ TEST_F(PdDirTest, BEH_MAID_GetDirKey) {
 
   // get dir keys
   std::string dir_key_recovered1_ = "", dir_key_recovered2_ = "",
-      dir_key_recovered3_ = "", dir_key_non_existant_ = "";
+      dir_key_recovered3_ = "", dir_key_non_existent_ = "";
   ASSERT_EQ(0, da_->GetDirKey(dir_name3_, &dir_key_recovered3_)) <<
       "Failed to recover dir key for dir3.";
   ASSERT_EQ(dir_key3_, dir_key_recovered3_) <<
@@ -249,7 +249,7 @@ TEST_F(PdDirTest, BEH_MAID_GetDirKey) {
   ASSERT_EQ(dir_key2_, dir_key_recovered2_) <<
       "Returned wrong dir key for dir2.";
 
-  ASSERT_NE(0, da_->GetDirKey("Non-existant Directory", &dir_key_non_existant_))
+  ASSERT_NE(0, da_->GetDirKey("Non-existent Directory", &dir_key_non_existent_))
       << "Returned dir key for dir which doesn't exist.";
 }
 
@@ -272,8 +272,8 @@ TEST_F(PdDirTest, BEH_MAID_DmExistsFromId) {
 
   // check for existance of Dm
   int id = da_->GetIdFromName(file_name_);
-  ASSERT_TRUE(da_->DataMapExists(id)) << "Didn't find existant Dm.";
-  ASSERT_FALSE(da_->DataMapExists(id+1)) << "Found non-existant Dm.";
+  ASSERT_TRUE(da_->DataMapExists(id)) << "Didn't find existent Dm.";
+  ASSERT_FALSE(da_->DataMapExists(id+1)) << "Found non-existent Dm.";
 }
 
 TEST_F(PdDirTest, BEH_MAID_DmExistsFromHash) {
@@ -294,9 +294,9 @@ TEST_F(PdDirTest, BEH_MAID_DmExistsFromHash) {
       "File was not added to db1.";
 
   // check for existance of Dm
-  ASSERT_TRUE(da_->DataMapExists(file_hash_)) << "Didn't find existant Dm.";
-  ASSERT_FALSE(da_->DataMapExists("Non-existant File Hash")) <<
-      "Found non-existant Dm.";
+  ASSERT_TRUE(da_->DataMapExists(file_hash_)) << "Didn't find existent Dm.";
+  ASSERT_FALSE(da_->DataMapExists("Non-existent File Hash")) <<
+      "Found non-existent Dm.";
 }
 
 TEST_F(PdDirTest, BEH_MAID_RemoveElement) {
@@ -340,8 +340,8 @@ TEST_F(PdDirTest, BEH_MAID_RemoveElement) {
   ASSERT_FALSE(da_->DataMapExists(file_id_)) << "Dm still exists for file.";
   ASSERT_EQ(0, da_->RemoveElement(dir_name_)) << "Removed dir incorrectly.";
   ASSERT_LT(da_->GetIdFromName(dir_name_), 0) << "Didn't remove dir.";
-  ASSERT_NE(0, da_->RemoveElement("Non-existant File")) <<
-      "Removed non-existant file.";
+  ASSERT_NE(0, da_->RemoveElement("Non-existent File")) <<
+      "Removed non-existent file.";
 }
 
 TEST_F(PdDirTest, BEH_MAID_ListFolder) {
@@ -533,7 +533,7 @@ TEST_F(PdDirTest, BEH_MAID_GetDmFromHash) {
 
   // get serialised Dms
   std::string ser_dm_recovered1_ = "", ser_dm_recovered2_ = "";
-  std::string ser_dm_recovered3_ = "", ser_dm_non_existant_ = "";
+  std::string ser_dm_recovered3_ = "", ser_dm_non_existent_ = "";
   ASSERT_EQ(0, da_->GetDataMapFromHash(file_hash3_, &ser_dm_recovered3_)) <<
       "Retrieved ser_dm for file3 incorrectly.";
   ASSERT_EQ(ser_dm3_, ser_dm_recovered3_) << "Returned wrong ser_dm for file3.";
@@ -543,8 +543,8 @@ TEST_F(PdDirTest, BEH_MAID_GetDmFromHash) {
   ASSERT_EQ(0, da_->GetDataMapFromHash(file_hash2_, &ser_dm_recovered2_)) <<
       "Retrieved ser_dm for file2 incorrectly.";
   ASSERT_EQ(ser_dm2_, ser_dm_recovered2_) << "Returned wrong ser_dm for file2.";
-  ASSERT_LT(da_->GetDataMapFromHash("Non-existant File Hash",
-      &ser_dm_non_existant_), 0) <<
+  ASSERT_LT(da_->GetDataMapFromHash("Non-existent File Hash",
+      &ser_dm_non_existent_), 0) <<
       "Returned ser_dm for file which doesn't exist.";
 }
 
@@ -587,7 +587,7 @@ TEST_F(PdDirTest, BEH_MAID_GetDmFromFileName) {
 
   // get serialised Dms
   std::string ser_dm_recovered1_ = "", ser_dm_recovered2_ = "";
-  std::string ser_dm_recovered3_ = "", ser_dm_non_existant_ = "";
+  std::string ser_dm_recovered3_ = "", ser_dm_non_existent_ = "";
   ASSERT_EQ(0, da_->GetDataMap(file_name1_, &ser_dm_recovered1_)) <<
       "Retrieved ser_dm for file1 incorrectly.";
   ASSERT_EQ(ser_dm1_, ser_dm_recovered1_) << "Returned wrong ser_dm for file1.";
@@ -597,7 +597,7 @@ TEST_F(PdDirTest, BEH_MAID_GetDmFromFileName) {
   ASSERT_EQ(0, da_->GetDataMap(file_name2_, &ser_dm_recovered2_)) <<
       "Retrieved ser_dm for file2 incorrectly.";
   ASSERT_EQ(ser_dm2_, ser_dm_recovered2_) << "Returned wrong ser_dm for file2.";
-  ASSERT_LT(da_->GetDataMap("Non-existant File", &ser_dm_non_existant_), 0) <<
+  ASSERT_LT(da_->GetDataMap("Non-existent File", &ser_dm_non_existent_), 0) <<
       "Returned ser_dm for file which doesn't exist.";
 }
 
@@ -639,15 +639,15 @@ TEST_F(PdDirTest, BEH_MAID_GetMdm) {
 
   // get serialised Mdms
   std::string ser_mdm_recovered1_ = "", ser_mdm_recovered2_ = "";
-  std::string ser_mdm_recovered3_ = "", ser_mdm_non_existant_ = "";
+  std::string ser_mdm_recovered3_ = "", ser_mdm_non_existent_ = "";
   ASSERT_EQ(0, da_->GetMetaDataMap(file_name1_, &ser_mdm_recovered1_)) <<
       "Retrieved ser_mdm for file1 incorrectly.";
   ASSERT_EQ(0, da_->GetMetaDataMap(file_name2_, &ser_mdm_recovered2_)) <<
       "Retrieved ser_mdm for file2 incorrectly.";
   ASSERT_EQ(0, da_->GetMetaDataMap(dir_name3_, &ser_mdm_recovered3_)) <<
       "Retrieved ser_mdm for dir3 incorrectly.";
-  ASSERT_LT(da_->GetMetaDataMap("Non-existant File",
-      &ser_mdm_non_existant_), 0) <<
+  ASSERT_LT(da_->GetMetaDataMap("Non-existent File",
+      &ser_mdm_non_existent_), 0) <<
       "Returned ser_mdm for file which doesn't exist.";
 
   // parse Mdms and check
@@ -914,8 +914,8 @@ TEST_F(PdDirTest, BEH_MAID_ChangeCtime) {
       "Failed to change creation time for file.";
   ASSERT_EQ(0, da_->ChangeCtime(dir_name_)) <<
       "Failed to change creation time for dir.";
-  ASSERT_NE(0, da_->ChangeCtime("Non-existant File")) <<
-      "Changed creation time for non-existant file.";
+  ASSERT_NE(0, da_->ChangeCtime("Non-existent File")) <<
+      "Changed creation time for non-existent file.";
 
   // get current value for creation times
   ASSERT_EQ(0, da_->GetMetaDataMap(file_name_, &ser_mdm_after1_)) <<
@@ -993,8 +993,8 @@ TEST_F(PdDirTest, BEH_MAID_ChangeMtime) {
       "Failed to change last_modified time for file.";
   ASSERT_EQ(0, da_->ChangeMtime(dir_name_)) <<
       "Failed to change last_modified time for dir.";
-  ASSERT_NE(0, da_->ChangeMtime("Non-existant File")) <<
-      "Changed last_modified time for non-existant file.";
+  ASSERT_NE(0, da_->ChangeMtime("Non-existent File")) <<
+      "Changed last_modified time for non-existent file.";
 
   // get current value for last_modified times
   ASSERT_EQ(0, da_->GetMetaDataMap(file_name_, &ser_mdm_after1_)) <<
@@ -1076,8 +1076,8 @@ TEST_F(PdDirTest, BEH_MAID_ChangeAtime) {
       "Failed to change last_access time for file.";
   ASSERT_EQ(0, da_->ChangeAtime(dir_name_)) <<
       "Failed to change last_access time for dir.";
-  ASSERT_NE(0, da_->ChangeAtime("Non-existant File")) <<
-      "Changed last_access time for non-existant file.";
+  ASSERT_NE(0, da_->ChangeAtime("Non-existent File")) <<
+      "Changed last_access time for non-existent file.";
 
   // get current value for last_access times
   ASSERT_EQ(0, da_->GetMetaDataMap(file_name_, &ser_mdm_after1_)) <<
