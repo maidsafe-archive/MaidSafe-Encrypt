@@ -101,10 +101,11 @@ namespace maidsafe {
 class FunctionalClientControllerTest : public testing::Test {
  protected:
   FunctionalClientControllerTest()
-      : cc_(),
+      : test_root_dir_(file_system::FileSystem::TempDir() + "/maidsafe_TestCC"),
+        cc_(),
         authentication_(),
         ss_(),
-        chunkstore_(new ChunkStore("./TestCC", 0, 0)),
+        chunkstore_(new ChunkStore(test_root_dir_, 0, 0)),
         se_(chunkstore_),
         dir1_(""),
         dir2_(""),
@@ -112,6 +113,13 @@ class FunctionalClientControllerTest : public testing::Test {
         vcp_() {}
 
   void SetUp() {
+    try {
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
     ss_ = SessionSingleton::getInstance();
     int count(0);
     while (!chunkstore_->is_initialised() && count < 10000) {
@@ -127,6 +135,8 @@ class FunctionalClientControllerTest : public testing::Test {
   }
   void TearDown() {
     try {
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
       if (final_dir_ != "" && fs::exists(final_dir_))
         fs::remove_all(final_dir_);
     }
@@ -134,6 +144,7 @@ class FunctionalClientControllerTest : public testing::Test {
       printf("Error: %s\n", e.what());
     }
   }
+  std::string test_root_dir_;
   ClientController *cc_;
   Authentication *authentication_;
   SessionSingleton *ss_;

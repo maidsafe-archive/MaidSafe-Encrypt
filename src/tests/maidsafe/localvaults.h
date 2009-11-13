@@ -34,6 +34,7 @@
 #include <maidsafe/general_messages.pb.h>
 #include <string>
 #include <vector>
+#include "fs/filesystem.h"
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/vault/pdvault.h"
 #include "protobuf/maidsafe_messages.pb.h"
@@ -62,7 +63,7 @@ class Env: public testing::Environment {
   Env(const int kNetworkSize,
       const int kTestK,
       std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults)
-      : vault_dir_("LocalVaults"),
+      : vault_dir_(file_system::FileSystem::TempDir()+"/maidsafe_TestVaults"),
         chunkstore_dir_(vault_dir_ + "/Chunkstores"),
         kad_config_file_(".kadconfig"),
         chunkstore_dirs_(),

@@ -23,6 +23,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <maidsafe/contact_info.pb.h>
+#include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -191,7 +192,9 @@ namespace maidsafe {
 
 class MaidStoreManagerTest : public testing::Test {
  protected:
-  MaidStoreManagerTest() : client_chunkstore_dir_("./TestMSM/Chunkstore"),
+  MaidStoreManagerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
+                                 "/maidsafe_TestMSM"),
+                           client_chunkstore_dir_(test_root_dir_+"/Chunkstore"),
                            client_chunkstore_(),
                            client_pmid_keys_(),
                            client_maid_keys_(),
@@ -201,12 +204,12 @@ class MaidStoreManagerTest : public testing::Test {
                            mutex_(),
                            crypto_() {
     try {
-      boost::filesystem::remove_all("./TestMSM");
+      boost::filesystem::remove_all(test_root_dir_);
     }
     catch(const std::exception &e) {
       printf("In MaidStoreManagerTest ctor - %s\n", e.what());
     }
-    fs::create_directories("./TestMSM");
+    fs::create_directories(test_root_dir_);
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     client_maid_keys_.GenerateKeys(kRsaKeySize);
@@ -234,7 +237,7 @@ class MaidStoreManagerTest : public testing::Test {
   virtual ~MaidStoreManagerTest() {
     try {
       SessionSingleton::getInstance()->ResetSession();
-      boost::filesystem::remove_all("./TestMSM");
+      boost::filesystem::remove_all(test_root_dir_);
     }
     catch(const std::exception &e) {
       printf("In MaidStoreManagerTest dtor - %s\n", e.what());
@@ -247,7 +250,7 @@ class MaidStoreManagerTest : public testing::Test {
   }
   virtual void TearDown() {}
 
-  std::string client_chunkstore_dir_;
+  std::string test_root_dir_, client_chunkstore_dir_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   crypto::RsaKeyPair client_pmid_keys_, client_maid_keys_;
   std::string client_pmid_public_signature_, hex_client_pmid_, client_pmid_;

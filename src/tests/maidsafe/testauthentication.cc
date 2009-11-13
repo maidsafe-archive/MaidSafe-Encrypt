@@ -24,6 +24,7 @@
 
 #include <gtest/gtest.h>
 
+#include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/client/dataatlashandler.h"
@@ -33,6 +34,7 @@
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "maidsafe/client/packetfactory.h"
 
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
@@ -62,41 +64,32 @@ void wait_for_result_ta(const FakeCallback &cb, boost::mutex *mutex) {
 
 class AuthenticationTest : public testing::Test {
  public:
-  AuthenticationTest() : ss(),
+  AuthenticationTest() : test_root_dir_(file_system::FileSystem::TempDir() +
+                                        "/maidsafe_TestAuth"),
+                         ss(),
                          storemanager(),
                          client_chunkstore_(),
                          username("user1"),
                          pin("1234"),
                          password("password1"),
-                         cb() {
-    try {
-      boost::filesystem::remove_all("./TestAuth");
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-  }
-  ~AuthenticationTest() {
-    try {
-      boost::filesystem::remove_all("./TestAuth");
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-  }
+                         cb() {}
+  ~AuthenticationTest() {}
  protected:
   void SetUp() {
-    if (boost::filesystem::exists("KademilaDb.db"))
-      boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
-    if (boost::filesystem::exists("DAH.db"))
-      boost::filesystem::remove(boost::filesystem::path("DAH.db"));
-    if (boost::filesystem::exists("StoreChunks"))
-      boost::filesystem::remove_all(boost::filesystem::path("StoreChunks"));
+    try {
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
     username = "user1";
     pin = "1234";
     password = "password1";
     client_chunkstore_ =
-        boost::shared_ptr<ChunkStore>(new ChunkStore("./TestAuth", 0, 0));
+        boost::shared_ptr<ChunkStore>(new ChunkStore(test_root_dir_, 0, 0));
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -119,14 +112,18 @@ class AuthenticationTest : public testing::Test {
   }
   void TearDown() {
     cb.Reset();
-    if (boost::filesystem::exists("KademilaDb.db"))
-      boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
-    if (boost::filesystem::exists("DAH.db"))
-      boost::filesystem::remove(boost::filesystem::path("DAH.db"));
-    if (boost::filesystem::exists("StoreChunks"))
-      boost::filesystem::remove_all(boost::filesystem::path("StoreChunks"));
+    try {
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
   }
 
+  std::string test_root_dir_;
   SessionSingleton *ss;
   boost::shared_ptr<LocalStoreManager> storemanager;
   boost::shared_ptr<ChunkStore> client_chunkstore_;

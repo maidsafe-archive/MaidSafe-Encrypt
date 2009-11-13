@@ -25,11 +25,14 @@
 #include <maidsafe/utils.h>
 #include <boost/filesystem/fstream.hpp>
 
+#include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
+
+namespace fs = boost::filesystem;
 
 class FakeCallback {
  public:
@@ -57,19 +60,21 @@ void wait_for_result_lsm(const FakeCallback &cb, boost::mutex *mutex) {
 
 class LocalStoreManagerTest : public testing::Test {
  public:
-  LocalStoreManagerTest() : cb(), client_chunkstore_(), storemanager(),
-      crypto_obj(), rsa_obj(), mutex_(),
-      ss_(maidsafe::SessionSingleton::getInstance()) {
-    try {
-      boost::filesystem::remove_all("./TestStoreManager");
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-  }
+  LocalStoreManagerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
+                                           "/maidsafe_TestStoreManager"),
+                            cb(),
+                            client_chunkstore_(),
+                            storemanager(),
+                            crypto_obj(),
+                            rsa_obj(),
+                            mutex_(),
+                            ss_(maidsafe::SessionSingleton::getInstance()) {}
   ~LocalStoreManagerTest() {
     try {
-      boost::filesystem::remove_all("./TestStoreManager");
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
     }
     catch(const std::exception &e) {
       printf("%s\n", e.what());
@@ -79,17 +84,17 @@ class LocalStoreManagerTest : public testing::Test {
   void SetUp() {
     ss_->ResetSession();
     try {
-      if (boost::filesystem::exists("KademilaDb.db"))
-        boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
-      if (boost::filesystem::exists("StoreChunks"))
-        boost::filesystem::remove_all(boost::filesystem::path("StoreChunks"));
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
     }
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
     mutex_ = new boost::mutex();
     client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
-         (new maidsafe::ChunkStore("./TestStoreManager", 0, 0));
+         (new maidsafe::ChunkStore(test_root_dir_, 0, 0));
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -122,16 +127,17 @@ class LocalStoreManagerTest : public testing::Test {
     ASSERT_TRUE(res.ParseFromString(cb.result_));
     if (res.result() == kAck) {
       try {
-        if (boost::filesystem::exists("KademilaDb.db"))
-          boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
-        if (boost::filesystem::exists("StoreChunks"))
-          boost::filesystem::remove_all(boost::filesystem::path("StoreChunks"));
+        if (fs::exists(test_root_dir_))
+          fs::remove_all(test_root_dir_);
+        if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+          fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
       }
       catch(const std::exception &e) {
         printf("%s\n", e.what());
       }
     }
   }
+  std::string test_root_dir_;
   FakeCallback cb;
   boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore_;
   maidsafe::LocalStoreManager *storemanager;
@@ -259,9 +265,9 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
   std::string non_hex_chunk_name = crypto_obj.Hash(chunk_content, "",
                                    crypto::STRING_STRING, false);
   std::string hex_chunk_name = base::EncodeToHex(non_hex_chunk_name);
-  fs::path chunk_path("./TestStoreManager");
+  fs::path chunk_path(test_root_dir_);
   chunk_path /= hex_chunk_name;
-  boost::filesystem::ofstream ofs;
+  fs::ofstream ofs;
   ofs.open(chunk_path.string().c_str());
   ofs << chunk_content;
   ofs.close();

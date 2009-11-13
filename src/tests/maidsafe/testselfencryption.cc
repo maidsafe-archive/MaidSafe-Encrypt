@@ -27,13 +27,13 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
-#include <maidsafe/utils.h>
 #include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/utils.h>
 
-#include "maidsafe/chunkstore.h"
-#include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/client/selfencryption.h"
 #include "fs/filesystem.h"
+#include "maidsafe/chunkstore.h"
+#include "maidsafe/client/selfencryption.h"
+#include "maidsafe/client/sessionsingleton.h"
 
 namespace fs = boost::filesystem;
 
@@ -74,32 +74,24 @@ namespace maidsafe {
 class SelfEncryptionTest : public testing::Test {
  public:
   SelfEncryptionTest()
-      : ss(NULL),
-        client_chunkstore_() {
+      : test_root_dir_(file_system::FileSystem::TempDir() + "/maidsafe_TestSE"),
+        ss(NULL),
+        client_chunkstore_() {}
+  ~SelfEncryptionTest() {}
+ protected:
+  void SetUp() {
     try {
       file_system::FileSystem fsys;
       if (fs::exists(fsys.MaidsafeDir()))
         fs::remove_all(fsys.MaidsafeDir());
-      if (fs::exists("./TestSE"))
-        fs::remove_all("./TestSE");
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
-  }
-  ~SelfEncryptionTest() {
-    try {
-      if (fs::exists("./TestSE"))
-        fs::remove_all("./TestSE");
-    }
-    catch(const std::exception& e) {
-      printf("%s\n", e.what());
-    }
-  }
- protected:
-  void SetUp() {
     client_chunkstore_ =
-        boost::shared_ptr<ChunkStore>(new ChunkStore("./TestSE", 0, 0));
+        boost::shared_ptr<ChunkStore>(new ChunkStore(test_root_dir_, 0, 0));
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -120,11 +112,14 @@ class SelfEncryptionTest : public testing::Test {
       file_system::FileSystem fsys;
       if (fs::exists(fsys.MaidsafeDir()))
         fs::remove_all(fsys.MaidsafeDir());
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
   }
+  std::string test_root_dir_;
   SessionSingleton *ss;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
  private:

@@ -30,7 +30,7 @@
 #include <map>
 #include <vector>
 
-//  #include "boost/mp_math/mp_int.hpp"//NB - This is NOT an accepted boost lib.
+#include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -150,7 +150,8 @@ void MakeChunks(boost::shared_ptr<maidsafe::ChunkStore> chunkstore,
     std::string chunk_content_ = base::RandomString(100);
     std::string non_hex_chunk_name_ = cryobj_.Hash(chunk_content_,
         "", crypto::STRING_STRING, false);
-    fs::path chunk_path_("./TestVault");
+    fs::path chunk_path_(file_system::FileSystem::TempDir() +
+                         "/maidsafe_TestVault");
     std::string hex_chunk_name_ = base::EncodeToHex(non_hex_chunk_name_);
     chunk_path_ /= hex_chunk_name_;
     std::ofstream ofs_;
@@ -313,7 +314,9 @@ static const int kTestK_ = 16;
 
 class PDVaultTest : public testing::Test {
  protected:
-  PDVaultTest() : client_chunkstore_dir_("./TestVault/ClientChunkstore"),
+  PDVaultTest() : test_root_dir_(file_system::FileSystem::TempDir() +
+                                 "/maidsafe_TestVault"),
+                  client_chunkstore_dir_(test_root_dir_ + "/ClientChunkstore"),
                   client_chunkstore_(),
                   chunkstore_dirs_(),
                   sm_(),
@@ -323,12 +326,12 @@ class PDVaultTest : public testing::Test {
                   mutex_(),
                   crypto_() {
     try {
-      boost::filesystem::remove_all("./TestVault");
+      boost::filesystem::remove_all(test_root_dir_);
     }
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
-    fs::create_directories("./TestVault");
+    fs::create_directories(test_root_dir_);
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     client_maid_keys_.GenerateKeys(maidsafe::kRsaKeySize);
@@ -354,7 +357,7 @@ class PDVaultTest : public testing::Test {
 
   virtual ~PDVaultTest() {
     try {
-      boost::filesystem::remove_all("./TestVault");
+      boost::filesystem::remove_all(test_root_dir_);
     }
     catch(const std::exception &e) {
       printf("%s\n", e.what());
@@ -381,7 +384,7 @@ class PDVaultTest : public testing::Test {
     ASSERT_FALSE(callback_timed_out_);
   }
 
-  std::string client_chunkstore_dir_;
+  std::string test_root_dir_, client_chunkstore_dir_;
   boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore_;
   std::vector<fs::path> chunkstore_dirs_;
   boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm_;

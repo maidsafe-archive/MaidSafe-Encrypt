@@ -15,6 +15,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <vector>
 
+#include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -89,20 +90,24 @@ void ExecCallbackVaultInfo(const base::callback_func_type &cb,
 
 LocalStoreManager::LocalStoreManager(
     boost::shared_ptr<ChunkStore> client_chunkstore)
-        : db_(), vbph_(), mutex_(), client_chunkstore_(client_chunkstore),
+        : db_(),
+          vbph_(),
+          mutex_(),
+          local_sm_dir_(file_system::FileSystem::LocalStoreManagerDir()),
+          client_chunkstore_(client_chunkstore),
           ss_(SessionSingleton::getInstance()) {}
 
 void LocalStoreManager::Init(int, base::callback_func_type cb) {
   try {
-    if (fs::exists("KademilaDb.db")) {
-      db_.open("KademilaDb.db");
+    if (!fs::exists(local_sm_dir_ + "/StoreChunks")) {
+      fs::create_directories(local_sm_dir_ + "/StoreChunks");
+    }
+    if (fs::exists(local_sm_dir_ + "/KademilaDb.db")) {
+      db_.open(std::string(local_sm_dir_ + "/KademilaDb.db").c_str());
     } else {
       boost::mutex::scoped_lock loch(mutex_);
-      db_.open("KademilaDb.db");
+      db_.open(std::string(local_sm_dir_ + "/KademilaDb.db").c_str());
       db_.execDML("create table network(key text primary key,value text);");
-    }
-    if (!fs::exists("StoreChunks")) {
-      fs::create_directory("StoreChunks");
     }
     boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
   }
@@ -167,7 +172,7 @@ void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,
 //  printf("LocalStoreManager::StoreChunk - %s\n",
 //          hex_chunk_name.substr(0, 10).c_str());
 #endif
-  fs::path file_path("StoreChunks");
+  fs::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / hex_chunk_name;
   std::string non_hex = base::DecodeFromHex(hex_chunk_name);
   client_chunkstore_->Store(non_hex, file_path);
@@ -208,7 +213,7 @@ bool LocalStoreManager::KeyUnique(const std::string &hex_key, bool) {
     result = false;
   }
   if (result) {
-    fs::path file_path("StoreChunks");
+    fs::path file_path(local_sm_dir_ + "/StoreChunks");
     file_path = file_path / hex_key;
     result = (!fs::exists(file_path));
   }
@@ -470,7 +475,7 @@ int LocalStoreManager::AddBPMessage(const std::string &bufferpacketname,
 
 int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
                                         std::string *data) {
-  fs::path file_path("StoreChunks");
+  fs::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / chunkname;
   try {
     if (!fs::exists(file_path)) {
@@ -499,7 +504,7 @@ int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
 int LocalStoreManager::FlushDataIntoChunk(const std::string &chunkname,
                                           const std::string &data,
                                           const bool &overwrite) {
-  fs::path file_path("StoreChunks");
+  fs::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / chunkname;
   try {
     if (boost::filesystem::exists(file_path) && !overwrite) {

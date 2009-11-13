@@ -103,6 +103,7 @@ class LocalStoreManager : public StoreManagerInterface {
   CppSQLite3DB db_;
   VaultBufferPacketHandler vbph_;
   boost::mutex mutex_;
+  std::string local_sm_dir_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);

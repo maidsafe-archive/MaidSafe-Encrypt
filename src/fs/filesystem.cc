@@ -97,8 +97,6 @@ std::string FileSystem::HomeDir() {
     dirname = std::getenv("userprofile");
   else if (std::getenv("HOME"))
     dirname = std::getenv("HOME");
-  else
-    dirname ="";
   return dirname;
 }
 
@@ -121,6 +119,45 @@ std::string FileSystem::ApplicationDataDir() {
   app_path = fs::path("/Library/maidsafe/", fs::native);
 #endif
   return app_path.string();
+}
+
+std::string FileSystem::TempDir() {
+#if defined(MAIDSAFE_WIN32)
+  std::string temp_dir;
+  if (std::getenv("TEMP"))
+    temp_dir = std::getenv("TEMP");
+  else if (std::getenv("TMP"))
+    temp_dir = std::getenv("TMP");
+#elif defined(P_tmpdir)
+  std::string temp_dir(P_tmpdir);
+#else
+  std::string temp_dir;
+  if (std::getenv("TMPDIR")) {
+    temp_dir = std::getenv("TMPDIR");
+  } else {
+    fs::path temp_path("/tmp", fs::native);
+    try {
+      if (!fs::exists(temp_path))
+        temp_path = fs::path("");
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("In FileSystem::TempDir: %s\n", e.what());
+#endif
+      temp_path = fs::path("");
+    }
+    temp_dir = temp_path.string();
+  }
+#endif
+  size_t last_char = temp_dir.size() - 1;
+  if (temp_dir[last_char] == '/' || temp_dir[last_char] == '\\')
+    temp_dir.resize(last_char);
+  return temp_dir;
+}
+
+std::string FileSystem::LocalStoreManagerDir() {
+  fs::path lsm(TempDir() + "/maidsafe_LocalStoreManager", fs::native);
+  return lsm.string();
 }
 
 std::string FileSystem::MaidsafeDir() {

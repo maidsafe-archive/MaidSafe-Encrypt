@@ -72,6 +72,8 @@ class FileSystem {
     std::string FullMSPathFromRelPath(const char *path_);
     std::string HomeDir();  // when using fuse this will be altered
     std::string ApplicationDataDir();
+    static std::string TempDir();
+    static std::string LocalStoreManagerDir();
     std::string MaidsafeDir();
     std::string MaidsafeHomeDir();  // save read ms files here
     std::string MaidsafeFuseDir();

@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 
+#include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/keyatlas.h"
@@ -38,7 +39,6 @@
 #include "maidsafe/client/selfencryption.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/packetfactory.h"
-#include "fs/filesystem.h"
 #include "protobuf/datamaps.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
@@ -74,45 +74,27 @@ namespace fs = boost::filesystem;
 
 class DataAtlasHandlerTest : public testing::Test {
  public:
-  DataAtlasHandlerTest() : sm(), cb() {
-    try {
-      if (fs::exists("KademilaDb.db"))
-        fs::remove(fs::path("KademilaDb.db"));
-      if (fs::exists("StoreChunks"))
-        fs::remove_all("StoreChunks");
-      if (fs::exists("./TestDAH"))
-        fs::remove_all("./TestDAH");
-      if (fs::exists("KademilaDb.db"))
-        printf("Kademila.db still there.\n");
-      if (fs::exists("StoreChunks"))
-        printf("StoreChunks still there.\n");
-      if (fs::exists("./TestDAH"))
-        printf("./TestDAH still there.\n");
-      file_system::FileSystem fsys_;
-      if (fs::exists(fsys_.MaidsafeDir()))
-        fs::remove_all(fsys_.MaidsafeDir());
-    }
-    catch(const std::exception& e) {
-      printf("%s\n", e.what());
-    }
-  }
-  ~DataAtlasHandlerTest() {
-    try {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-      file_system::FileSystem fsys;
-      fs::remove_all(fsys.MaidsafeDir());
-      fs::remove_all("./TestDAH");
-      fs::remove_all("StoreChunks");
-      fs::remove("KademilaDb.db");
-    }
-    catch(const std::exception& e) {
-      printf("%s\n", e.what());
-    }
-  }
+  DataAtlasHandlerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
+                                          "/maidsafe_TestDAH"),
+                           sm(),
+                           cb() {}
+  ~DataAtlasHandlerTest() {}
  protected:
   void SetUp() {
+    try {
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+      file_system::FileSystem fsys;
+      if (fs::exists(fsys.MaidsafeDir()))
+        fs::remove_all(fsys.MaidsafeDir());
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
     boost::shared_ptr<ChunkStore>
-        client_chunkstore_(new ChunkStore("./TestDAH", 0, 0));
+        client_chunkstore_(new ChunkStore(test_root_dir_, 0, 0));
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -178,8 +160,21 @@ class DataAtlasHandlerTest : public testing::Test {
     }
     cb.Reset();
   }
-  void TearDown() {}
-  // LocalStoreManager *sm;
+  void TearDown() {
+    try {
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+      file_system::FileSystem fsys;
+      if (fs::exists(fsys.MaidsafeDir()))
+        fs::remove_all(fsys.MaidsafeDir());
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
+  }
+  std::string test_root_dir_;
   boost::shared_ptr<LocalStoreManager> sm;
   FakeCallback cb;
  private:

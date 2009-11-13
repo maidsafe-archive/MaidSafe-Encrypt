@@ -1797,7 +1797,7 @@ class TestStorePacket : public testing::Test {
   crypto::Crypto co_;
 };
 
-TEST_F(TestStorePacket, BEH_MAID_StoreSystemPacket) {
+TEST_F(TestStorePacket, BEH_MAID_StoreSysPacket) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
   VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
     &chunkstore, NULL, NULL);
@@ -1810,7 +1810,7 @@ TEST_F(TestStorePacket, BEH_MAID_StoreSystemPacket) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
@@ -1823,7 +1823,7 @@ TEST_F(TestStorePacket, BEH_MAID_StoreSystemPacket) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
@@ -1849,7 +1849,7 @@ TEST_F(TestStorePacket, BEH_MAID_StoreSystemPacket) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
@@ -1858,7 +1858,7 @@ TEST_F(TestStorePacket, BEH_MAID_StoreSystemPacket) {
 
   std::vector<maidsafe::GenericPacket> result;
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(size_t(1), result.size());
   ASSERT_EQ(gp->data(), result[0].data());
   ASSERT_EQ(gp->signature(), result[0].signature());
 }
@@ -1897,14 +1897,14 @@ TEST_F(TestStorePacket, BEH_MAID_OverWriteSystemPacket) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
 
   std::vector<maidsafe::GenericPacket> result;
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(size_t(1), result.size());
   ASSERT_EQ(gp->data(), result[0].data());
   ASSERT_EQ(gp->signature(), result[0].signature());
 
@@ -1922,14 +1922,14 @@ TEST_F(TestStorePacket, BEH_MAID_OverWriteSystemPacket) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
 
   result.clear();
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(size_t(1), result.size());
   ASSERT_EQ(gp1->data(), result[0].data());
   ASSERT_NE(data, result[0].data());
   ASSERT_EQ(gp1->signature(), result[0].signature());
@@ -1970,14 +1970,14 @@ TEST_F(TestStorePacket, BEH_MAID_AppendSystemPacket) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
 
   std::vector<maidsafe::GenericPacket> result;
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(size_t(1), result.size());
   ASSERT_EQ(gp->data(), result[0].data());
   ASSERT_EQ(gp->signature(), result[0].signature());
 
@@ -1995,14 +1995,14 @@ TEST_F(TestStorePacket, BEH_MAID_AppendSystemPacket) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
 
   result.clear();
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(2, result.size());
+  ASSERT_EQ(size_t(2), result.size());
 
   for (unsigned int i = 0; i < result.size(); ++i) {
     if (result[i].data() != data && result[i].data() != new_data)
@@ -2048,7 +2048,7 @@ TEST_F(TestStorePacket, BEH_MAID_IncorrectSignatures) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
@@ -2065,7 +2065,7 @@ TEST_F(TestStorePacket, BEH_MAID_IncorrectSignatures) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
@@ -2082,7 +2082,7 @@ TEST_F(TestStorePacket, BEH_MAID_IncorrectSignatures) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
@@ -2124,14 +2124,14 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidOverWrite) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
 
   std::vector<maidsafe::GenericPacket> result;
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(size_t(1), result.size());
   ASSERT_EQ(gp->data(), result[0].data());
   ASSERT_EQ(gp->signature(), result[0].signature());
 
@@ -2164,14 +2164,14 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidOverWrite) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
 
   result.clear();
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(size_t(1), result.size());
   ASSERT_EQ(data, result[0].data());
   delete done;
 }
@@ -2210,14 +2210,14 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidAppend) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
 
   std::vector<maidsafe::GenericPacket> result;
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(size_t(1), result.size());
   ASSERT_EQ(gp->data(), result[0].data());
   ASSERT_EQ(gp->signature(), result[0].signature());
 
@@ -2240,14 +2240,14 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidAppend) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
 
   result.clear();
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(size_t(1), result.size());
   ASSERT_EQ(data, result[0].data());
 
   request.clear_signed_data();
@@ -2275,14 +2275,14 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidAppend) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
 
   result.clear();
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(size_t(1), result.size());
   ASSERT_EQ(data, result[0].data());
 
   delete done;
@@ -2312,14 +2312,14 @@ TEST_F(TestStorePacket, BEH_MAID_StorePDDIR_NOT_SIGNED) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
 
   std::vector<maidsafe::GenericPacket> result;
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(size_t(1), result.size());
   ASSERT_EQ(gp->data(), result[0].data());
   ASSERT_EQ(gp->signature(), result[0].signature());
 
@@ -2332,7 +2332,7 @@ TEST_F(TestStorePacket, BEH_MAID_StorePDDIR_NOT_SIGNED) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kNack, response.result());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
 
   delete done;
@@ -2372,14 +2372,14 @@ TEST_F(TestStorePacket, BEH_MAID_StoreThenLoadSystemPacket) {
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
   ASSERT_EQ(pmid_id_, response.pmid_id());
   response.Clear();
   cb.Reset();
 
   std::vector<maidsafe::GenericPacket> result;
   ASSERT_EQ(kSuccess, chunkstore.LoadPacket(packetname, &result));
-  ASSERT_EQ(1, result.size());
+  ASSERT_EQ(size_t(1), result.size());
   ASSERT_EQ(gp->data(), result[0].data());
   ASSERT_EQ(gp->signature(), result[0].signature());
 
@@ -2395,7 +2395,7 @@ TEST_F(TestStorePacket, BEH_MAID_StoreThenLoadSystemPacket) {
   service.GetPacket(&ctrl, &gp_req, &gp_resp, done);
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  ASSERT_EQ(kAck, gp_resp.result());
+  ASSERT_EQ(kAck, static_cast<int>(gp_resp.result()));
 
   ASSERT_EQ(1, gp_resp.content_size());
   ASSERT_EQ(gp->data(), gp_resp.content(0).data());

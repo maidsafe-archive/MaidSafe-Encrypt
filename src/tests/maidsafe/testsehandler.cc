@@ -79,51 +79,29 @@ namespace maidsafe {
 
 class SEHandlerTest : public testing::Test {
  protected:
-  SEHandlerTest() : sm(),
+  SEHandlerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
+                                   "/maidsafe_TestSEH"),
+                    sm(),
                     client_chunkstore_(),
                     cb(),
                     db_str1_(""),
-                    db_str2_("")  {
+                    db_str2_("")  {}
+  ~SEHandlerTest() {}
+  void SetUp() {
     try {
-      if (fs::exists("KademilaDb.db"))
-        fs::remove(fs::path("KademilaDb.db"));
-      if (fs::exists("StoreChunks"))
-        fs::remove_all("StoreChunks");
-      if (fs::exists("./TestSEH"))
-        fs::remove_all("./TestSEH");
-      if (fs::exists("KademilaDb.db"))
-        printf("Kademila.db still there.\n");
-      if (fs::exists("StoreChunks"))
-        printf("StoreChunks still there.\n");
-      if (fs::exists("./TestSEH"))
-        printf("./TestSEH still there.\n");
-      file_system::FileSystem fsys_;
-      if (fs::exists(fsys_.MaidsafeDir()))
-        fs::remove_all(fsys_.MaidsafeDir());
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+      file_system::FileSystem fsys;
+      if (fs::exists(fsys.MaidsafeDir()))
+        fs::remove_all(fsys.MaidsafeDir());
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
-  }
-  ~SEHandlerTest() {
-    fs::path db("MaidDataAtlas.db");
-    try {
-      if (fs::exists(db))
-        fs::remove(db);
-      file_system::FileSystem fsys_;
-      fs::remove_all(fsys_.MaidsafeDir());
-      fs::remove_all("./TestSEH");
-      fs::remove_all("StoreChunks");
-      fs::path kaddb("KademilaDb.db");
-      fs::remove(kaddb);
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-  }
-  void SetUp() {
     client_chunkstore_ =
-        boost::shared_ptr<ChunkStore>(new ChunkStore("./TestSEH", 0, 0));
+        boost::shared_ptr<ChunkStore>(new ChunkStore(test_root_dir_, 0, 0));
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -219,7 +197,20 @@ class SEHandlerTest : public testing::Test {
   void TearDown() {
     cb.Reset();
     boost::this_thread::sleep(boost::posix_time::seconds(1));
+    try {
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+      file_system::FileSystem fsys;
+      if (fs::exists(fsys.MaidsafeDir()))
+        fs::remove_all(fsys.MaidsafeDir());
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
   }
+  std::string test_root_dir_;
   boost::shared_ptr<LocalStoreManager> sm;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   FakeCallback cb;

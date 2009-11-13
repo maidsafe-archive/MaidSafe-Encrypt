@@ -29,6 +29,7 @@
 #include <string>
 #include <cstdlib>
 
+#include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/clientbufferpackethandler.h"
 #include "maidsafe/client/localstoremanager.h"
@@ -38,6 +39,7 @@
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
+namespace fs = boost::filesystem;
 
 class FakeCallback {
  public:
@@ -68,40 +70,34 @@ namespace maidsafe {
 class ClientBufferPacketHandlerTest : public testing::Test {
  public:
   ClientBufferPacketHandlerTest()
-      : crypto_obj(), rsa_obj(), private_key(), public_key(),
-        public_username("el tonto smer"), public_key_signature(),
-        client_chunkstore_(), sm(),
-        ss(maidsafe::SessionSingleton::getInstance()), mutex(), cb() {
-    try {
-      boost::filesystem::remove_all("./TestBuffer");
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-  }
-  ~ClientBufferPacketHandlerTest() {
-    try {
-      boost::filesystem::remove_all("./TestBuffer");
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-  }
+      : test_root_dir_(file_system::FileSystem::TempDir()+"/maidsafe_TestCBPH"),
+        crypto_obj(),
+        rsa_obj(),
+        private_key(),
+        public_key(),
+        public_username("el tonto smer"),
+        public_key_signature(),
+        client_chunkstore_(),
+        sm(),
+        ss(maidsafe::SessionSingleton::getInstance()),
+        mutex(),
+        cb() {}
+  ~ClientBufferPacketHandlerTest() {}
  protected:
   virtual void SetUp() {
     ss->ResetSession();
     try {
-      if (boost::filesystem::exists("KademilaDb.db"))
-        boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
-      if (boost::filesystem::exists("StoreChunks"))
-        boost::filesystem::remove_all(boost::filesystem::path("StoreChunks"));
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
     }
-    catch(const std::exception &ex_) {
-      printf("%s\n", ex_.what());
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
     }
     mutex = new boost::mutex();
     client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
-         (new maidsafe::ChunkStore("./TestBuffer", 0, 0));
+         (new maidsafe::ChunkStore(test_root_dir_, 0, 0));
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -130,19 +126,20 @@ class ClientBufferPacketHandlerTest : public testing::Test {
   virtual void TearDown() {
     cb.Reset();
     try {
-      if (boost::filesystem::exists("KademilaDb.db"))
-        boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
-      if (boost::filesystem::exists("StoreChunks"))
-        boost::filesystem::remove_all(boost::filesystem::path("StoreChunks"));
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
     }
-    catch(const std::exception &ex_) {
-      printf("%s\n", ex_.what());
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
     }
     delete mutex;
     boost::this_thread::sleep(boost::posix_time::seconds(1));
     ss->Destroy();
   }
 
+  std::string test_root_dir_;
   crypto::Crypto crypto_obj;
   crypto::RsaKeyPair rsa_obj;
   std::string private_key;

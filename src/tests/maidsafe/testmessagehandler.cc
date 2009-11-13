@@ -25,6 +25,7 @@
 #include <maidsafe/utils.h>
 #include <cstdlib>
 #include <string>
+#include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/clientbufferpackethandler.h"
@@ -61,7 +62,9 @@ void wait_for_result_tmsgh(const FakeCallback &cb,
 
 class MsgHandlerTest : public testing::Test {
  public:
-  MsgHandlerTest() : crypto_obj(),
+  MsgHandlerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
+                                    "/maidsafe_TestMsgHandler"),
+                     crypto_obj(),
                      rsa_obj(),
                      private_key(rsa_obj.private_key()),
                      public_key(rsa_obj.public_key()),
@@ -70,27 +73,22 @@ class MsgHandlerTest : public testing::Test {
                      sm(),
                      ss(),
                      mutex(),
-                     cb() {
-    try {
-      boost::filesystem::remove_all("./TestMsgHandler");
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-  }
-  ~MsgHandlerTest() {
-    try {
-      boost::filesystem::remove_all("./TestMsgHandler");
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-  }
+                     cb() {}
+  ~MsgHandlerTest() {}
  protected:
   void SetUp() {
+    try {
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
     mutex = new boost::mutex();
     client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
-                         (new maidsafe::ChunkStore("./TestMsgHandler", 0, 0));
+                         (new maidsafe::ChunkStore(test_root_dir_, 0, 0));
     boost::shared_ptr<maidsafe::LocalStoreManager>
         sm(new maidsafe::LocalStoreManager(client_chunkstore_));
     int count(0);
@@ -119,19 +117,20 @@ class MsgHandlerTest : public testing::Test {
   virtual void TearDown() {
     cb.Reset();
     try {
-      if (boost::filesystem::exists("KademilaDb.db"))
-        boost::filesystem::remove(boost::filesystem::path("KademilaDb.db"));
-      if (boost::filesystem::exists("StoreChunks"))
-        boost::filesystem::remove_all(boost::filesystem::path("StoreChunks"));
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
+        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
     }
-    catch(const std::exception &ex_) {
-      printf("%s\n", ex_.what());
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
     }
     delete mutex;
     boost::this_thread::sleep(boost::posix_time::seconds(1));
     ss->Destroy();
   }
 
+  std::string test_root_dir_;
   crypto::Crypto crypto_obj;
   crypto::RsaKeyPair rsa_obj;
   std::string private_key;
