@@ -284,16 +284,16 @@ int Authentication::SaveSession(std::string ser_da,
                         tmidname,
                         &signed_public_key,
                         &signed_request);
-    AuthCallbackResult cb;
-    storemanager_->DeletePacket(tmidname, signed_request,
-        boost::any_cast<std::string>(pub_keys["ANTMID"]), signed_public_key,
-        SYSTEM_PACKET, boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-    WaitForResult(cb);
-    DeleteResponse del_res;
-    if ((!del_res.ParseFromString(cb.result)) ||
-      (del_res.result() == kNack)) {
-      return kAuthenticationError;
-    }
+//    AuthCallbackResult cb;
+//    storemanager_->DeletePacket(tmidname, signed_request,
+//        boost::any_cast<std::string>(pub_keys["ANTMID"]), signed_public_key,
+//        SYSTEM_PACKET, boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+//    WaitForResult(cb);
+//    DeleteResponse del_res;
+//    if ((!del_res.ParseFromString(cb.result)) ||
+//      (del_res.result() == kNack)) {
+//      return kAuthenticationError;
+//    }
     ss_->SetSmidRid(ss_->MidRid());
   }
 
@@ -631,57 +631,57 @@ int Authentication::ChangeUsername(std::string ser_da,
   }
   user_params["username"] = ss_->Username();
 
-  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANMID"]),
-                      boost::any_cast<std::string>(pub_keys["ANMID"]),
-                      midPacket->PacketName(&user_params),
-                      &signed_public_key,
-                      &signed_request);
-  storemanager_->DeletePacket(midPacket->PacketName(&user_params),
-    signed_request, boost::any_cast<std::string>(pub_keys["ANMID"]),
-    signed_public_key, SYSTEM_PACKET,
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
+//  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANMID"]),
+//                      boost::any_cast<std::string>(pub_keys["ANMID"]),
+//                      midPacket->PacketName(&user_params),
+//                      &signed_public_key,
+//                      &signed_request);
+//  storemanager_->DeletePacket(midPacket->PacketName(&user_params),
+//    signed_request, boost::any_cast<std::string>(pub_keys["ANMID"]),
+//    signed_public_key, SYSTEM_PACKET,
+//    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+//  WaitForResult(cb);
 
-  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANSMID"]),
-                      boost::any_cast<std::string>(pub_keys["ANSMID"]),
-                      smidPacket->PacketName(&user_params),
-                      &signed_public_key,
-                      &signed_request);
-  cb.Reset();
-  storemanager_->DeletePacket(smidPacket->PacketName(&user_params),
-    signed_request, boost::any_cast<std::string>(pub_keys["ANSMID"]),
-    signed_public_key, SYSTEM_PACKET,
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
+//  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANSMID"]),
+//                      boost::any_cast<std::string>(pub_keys["ANSMID"]),
+//                      smidPacket->PacketName(&user_params),
+//                      &signed_public_key,
+//                      &signed_request);
+//  cb.Reset();
+//  storemanager_->DeletePacket(smidPacket->PacketName(&user_params),
+//    signed_request, boost::any_cast<std::string>(pub_keys["ANSMID"]),
+//    signed_public_key, SYSTEM_PACKET,
+//    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+//  WaitForResult(cb);
 
-  user_params["rid"] = ss_->MidRid();
+//  user_params["rid"] = ss_->MidRid();
+//
+//  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
+//                      boost::any_cast<std::string>(pub_keys["ANTMID"]),
+//                      tmidPacket->PacketName(&user_params),
+//                      &signed_public_key,
+//                      &signed_request);
+//  cb.Reset();
+//  storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
+//    signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
+//    signed_public_key, SYSTEM_PACKET,
+//    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+//  WaitForResult(cb);
 
-  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
-                      boost::any_cast<std::string>(pub_keys["ANTMID"]),
-                      tmidPacket->PacketName(&user_params),
-                      &signed_public_key,
-                      &signed_request);
-  cb.Reset();
-  storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
-    signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
-    signed_public_key, SYSTEM_PACKET,
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
-
-  if (ss_->MidRid() != ss_->SmidRid()) {
-    user_params["rid"] = ss_->SmidRid();
-    CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
-                        boost::any_cast<std::string>(pub_keys["ANTMID"]),
-                        tmidPacket->PacketName(&user_params),
-                        &signed_public_key,
-                        &signed_request);
-    cb.Reset();
-    storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
-      signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
-      signed_public_key, SYSTEM_PACKET,
-      boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-    WaitForResult(cb);
-  }
+//  if (ss_->MidRid() != ss_->SmidRid()) {
+//    user_params["rid"] = ss_->SmidRid();
+//    CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
+//                        boost::any_cast<std::string>(pub_keys["ANTMID"]),
+//                        tmidPacket->PacketName(&user_params),
+//                        &signed_public_key,
+//                        &signed_request);
+//    cb.Reset();
+//    storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
+//      signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
+//      signed_public_key, SYSTEM_PACKET,
+//      boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+//    WaitForResult(cb);
+//  }
 
   ss_->SetUsername(new_username);
   ss_->SetSmidRid(ss_->MidRid());
@@ -795,61 +795,61 @@ int Authentication::ChangePin(std::string ser_da,
     return kAuthenticationError;
   }
 
-  user_params["PIN"] = ss_->Pin();
+//  user_params["PIN"] = ss_->Pin();
 
-  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANMID"]),
-                      boost::any_cast<std::string>(pub_keys["ANMID"]),
-                      midPacket->PacketName(&user_params),
-                      &signed_public_key,
-                      &signed_request);
-  cb.Reset();
-  storemanager_->DeletePacket(midPacket->PacketName(&user_params),
-    signed_request, boost::any_cast<std::string>(pub_keys["ANMID"]),
-    signed_public_key, SYSTEM_PACKET,
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
+//  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANMID"]),
+//                      boost::any_cast<std::string>(pub_keys["ANMID"]),
+//                      midPacket->PacketName(&user_params),
+//                      &signed_public_key,
+//                      &signed_request);
+//  cb.Reset();
+//  storemanager_->DeletePacket(midPacket->PacketName(&user_params),
+//    signed_request, boost::any_cast<std::string>(pub_keys["ANMID"]),
+//    signed_public_key, SYSTEM_PACKET,
+//    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+//  WaitForResult(cb);
 
-  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANSMID"]),
-                      boost::any_cast<std::string>(pub_keys["ANSMID"]),
-                      smidPacket->PacketName(&user_params),
-                      &signed_public_key,
-                      &signed_request);
-  cb.Reset();
-  storemanager_->DeletePacket(smidPacket->PacketName(&user_params),
-    signed_request, boost::any_cast<std::string>(pub_keys["ANSMID"]),
-    signed_public_key, SYSTEM_PACKET,
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
+//  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANSMID"]),
+//                      boost::any_cast<std::string>(pub_keys["ANSMID"]),
+//                      smidPacket->PacketName(&user_params),
+//                      &signed_public_key,
+//                      &signed_request);
+//  cb.Reset();
+//  storemanager_->DeletePacket(smidPacket->PacketName(&user_params),
+//    signed_request, boost::any_cast<std::string>(pub_keys["ANSMID"]),
+//    signed_public_key, SYSTEM_PACKET,
+//    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+//  WaitForResult(cb);
 
-  user_params["rid"] = ss_->MidRid();
-  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
-                      boost::any_cast<std::string>(pub_keys["ANTMID"]),
-                      tmidPacket->PacketName(&user_params),
-                      &signed_public_key,
-                      &signed_request);
-  cb.Reset();
-  storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
-    signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
-    signed_public_key, SYSTEM_PACKET,
-    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
+//  user_params["rid"] = ss_->MidRid();
+//  CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
+//                      boost::any_cast<std::string>(pub_keys["ANTMID"]),
+//                      tmidPacket->PacketName(&user_params),
+//                      &signed_public_key,
+//                      &signed_request);
+//  cb.Reset();
+//  storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
+//    signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
+//    signed_public_key, SYSTEM_PACKET,
+//    boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+//  WaitForResult(cb);
 
 
-  if (ss_->MidRid() != ss_->SmidRid()) {
-    user_params["rid"] = ss_->SmidRid();
-    AuthCallbackResult cb3;
-    CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
-                        boost::any_cast<std::string>(pub_keys["ANTMID"]),
-                        tmidPacket->PacketName(&user_params),
-                        &signed_public_key,
-                        &signed_request);
-    cb.Reset();
-    storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
-      signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
-      signed_public_key, SYSTEM_PACKET,
-      boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
-    WaitForResult(cb);
-  }
+//  if (ss_->MidRid() != ss_->SmidRid()) {
+//    user_params["rid"] = ss_->SmidRid();
+//    AuthCallbackResult cb3;
+//    CreateSignedRequest(boost::any_cast<std::string>(priv_keys["ANTMID"]),
+//                        boost::any_cast<std::string>(pub_keys["ANTMID"]),
+//                        tmidPacket->PacketName(&user_params),
+//                        &signed_public_key,
+//                        &signed_request);
+//    cb.Reset();
+//    storemanager_->DeletePacket(tmidPacket->PacketName(&user_params),
+//      signed_request, boost::any_cast<std::string>(pub_keys["ANTMID"]),
+//      signed_public_key, SYSTEM_PACKET,
+//      boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+//    WaitForResult(cb);
+//  }
 
   ss_->SetPin(new_pin);
   ss_->SetSmidRid(ss_->MidRid());

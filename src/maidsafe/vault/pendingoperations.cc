@@ -64,6 +64,7 @@ int PendingOperationsHandler::AddPendingOperation(const std::string &pmid,
 #endif
     return -1492;
   }
+//  printf("POH::AddPendingOperation: us: %s -- them: %s -- chunk: %s\n", HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str(), HexSubstr(chunkname).c_str());
   return 0;
 }
 
@@ -190,7 +191,9 @@ int PendingOperationsHandler::GetSizeAndIOU(const std::string &pmid,
                                                  pmid));
   if (p.first == p.second) {
 #ifdef DEBUG
-    printf("In POH::GetSizeAndIOU, Pending operation not found.\n");
+    printf("POH::GetSizeAndIOU: Pending operation not found: us: %s -- them: %s"
+           "-- chunk: %s\n", HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str(),
+           HexSubstr(chunkname).c_str());
 #endif
     return -1496;
   }

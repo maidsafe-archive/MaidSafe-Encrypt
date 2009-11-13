@@ -98,6 +98,18 @@ void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
 #endif
     return;
   }
+  // Check we're not being asked to store ourselves as a reference holder for
+  // ourself.
+  if (request->pmid() == non_hex_pmid_) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("Of all the vaults in all the worlds, you had to try and store a "
+           "reference packet here.  Feck off. (%s)\n",
+           HexSubstr(non_hex_pmid_).c_str());
+#endif
+    return;
+  }
   boost::uint64_t data_size = request->data_size();
   if (Storable(data_size) != 0) {
 #ifdef DEBUG
@@ -148,63 +160,63 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
 
   // Check Type of data
   if (request->data_type() != maidsafe::PDDIR_NOTSIGNED) {
-      // Checking request has public key, signed public key and signed
-      // request
-      if (!request->has_public_key_signature()
+    // Checking request has public key, signed public key and signed
+    // request
+    if (!request->has_public_key_signature()
         || !request->has_request_signature() || !request->has_public_key()
         || !request->has_key_id()) {
-            response->set_result(kNack);
-            done->Run();
-            return;
-       }
+      response->set_result(kNack);
+      done->Run();
+      return;
+    }
 
-       // Checking signature is valid
-       if (!ValidateSignedRequest(request->public_key(),
-         request->public_key_signature(), request->request_signature(),
-         request->packetname(), request->key_id())) {
-          response->set_result(kNack);
-          done->Run();
-          return;
-        }
+    // Checking signature is valid
+    if (!ValidateSignedRequest(request->public_key(),
+        request->public_key_signature(), request->request_signature(),
+        request->packetname(), request->key_id())) {
+      response->set_result(kNack);
+      done->Run();
+      return;
+    }
 
-        // Validating data is signed by the same person
-        for (int i = 0; i < request->signed_data_size(); ++i) {
-            if (!ValidateSystemPacket(request->signed_data(i),
-              request->public_key())) {
-                response->set_result(kNack);
-                done->Run();
-                return;
-            }
-        }
-
-      // Now we can store :)
-      int store_result = -1;
-      if (vault_chunkstore_->HasPacket(request->packetname())) {
-          if (request->append()) {
-              // Append Packet
-              if (request->signed_data_size() == 1)
-                store_result = vault_chunkstore_->AppendToPacket(
-                    request->packetname(), request->signed_data(0),
-                    request->public_key());
-          } else {
-              // Overwrite Packet
-              std::vector<maidsafe::GenericPacket> values;
-              for (int i = 0; i < request->signed_data_size(); ++i)
-                values.push_back(request->signed_data(i));
-              store_result = vault_chunkstore_->OverwritePacket(
-                request->packetname(), values, request->public_key());
-          }
-          if (store_result == kSuccess)
-            response->set_result(kAck);
-          else
-            response->set_result(kNack);
-          done->Run();
-          return;
+    // Validating data is signed by the same person
+    for (int i = 0; i < request->signed_data_size(); ++i) {
+      if (!ValidateSystemPacket(request->signed_data(i),
+          request->public_key())) {
+        response->set_result(kNack);
+        done->Run();
+        return;
       }
+    }
+
+    // Now we can store :)
+    int store_result = -1;
+    if (vault_chunkstore_->HasPacket(request->packetname())) {
+      if (request->append()) {
+        // Append Packet
+        if (request->signed_data_size() == 1)
+          store_result = vault_chunkstore_->AppendToPacket(
+                         request->packetname(), request->signed_data(0),
+                         request->public_key());
+      } else {
+        // Overwrite Packet
+        std::vector<maidsafe::GenericPacket> values;
+        for (int i = 0; i < request->signed_data_size(); ++i)
+          values.push_back(request->signed_data(i));
+        store_result = vault_chunkstore_->OverwritePacket(
+                       request->packetname(), values, request->public_key());
+      }
+      if (store_result == kSuccess)
+        response->set_result(kAck);
+      else
+        response->set_result(kNack);
+      done->Run();
+      return;
+    }
   }
   // Store Packet
   if (vault_chunkstore_->StorePacket(request->packetname(),
-        request->signed_data(0)) == kSuccess)
+      request->signed_data(0)) == kSuccess)
     response->set_result(kAck);
   else
     response->set_result(kNack);
@@ -556,7 +568,7 @@ void VaultService::Get(google::protobuf::RpcController*,
                        maidsafe::GetResponse* response,
                        google::protobuf::Closure* done) {
 #ifdef DEBUG
-  printf("In VaultService::Get (%i)\n", knode_->host_port());
+//  printf("In VaultService::Get (%i)\n", knode_->host_port());
 #endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
@@ -589,7 +601,7 @@ void VaultService::GetPacket(google::protobuf::RpcController*,
   response->Clear();
 #ifdef DEBUG
   if (knode_ != NULL)
-    printf("In VaultService::GetPacket (%i)\n", knode_->host_port());
+//    printf("In VaultService::GetPacket (%i)\n", knode_->host_port());
 #endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {

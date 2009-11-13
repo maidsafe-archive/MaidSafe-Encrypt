@@ -96,6 +96,7 @@ PDVault::PDVault(const std::string &pmid_public,
   knode_.SetAlternativeStore(&vault_chunkstore_);
   vault_rpcs_.SetOwnId(non_hex_pmid_);
   thread_pool_.setMaxThreadCount(5);
+  poh_.SetPmid(non_hex_pmid_);
 }
 
 PDVault::~PDVault() {
@@ -271,6 +272,8 @@ std::string PDVault::GetSignedRequest(const std::string &non_hex_name,
 }
 
 void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
+//  printf("1. Vault %s - contacts size: %u\n", HexSubstr(non_hex_pmid_).c_str(),
+//         (*base::PDRoutingTable::getInstance())[base::itos(port_)]->size());
   // Find the chunk reference holders
   std::vector<kad::Contact> ref_holders;
   if ((FindKNodes(iou_ready_details.get<1>(), &ref_holders) != 0) ||
@@ -280,25 +283,35 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
     return;
   }
 #ifdef DEBUG
-//  printf("Vault (%i) list of ref holders (key - %s) : ",
-//         host_port(), HexSubstr(iou_ready_details.get<1>()).c_str());
+//  printf("2. Vault %s - contacts size: %u\n", HexSubstr(non_hex_pmid_).c_str(),
+//         (*base::PDRoutingTable::getInstance())[base::itos(port_)]->size());
 //  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
-//    printf("%s  ", HexSubstr(ref_holders.at(h).node_id()).c_str());
+//    printf("Before - Vault %s,  chunk %s,  ref holder %i: %s\n",
+//           HexSubstr(non_hex_pmid_).c_str(),
+//           HexSubstr(iou_ready_details.get<1>()).c_str(), h,
+//           HexSubstr(ref_holders.at(h).node_id()).c_str());
 //  }
-//  printf("\n");
 #endif
   for (std::vector<kad::Contact>::iterator it = ref_holders.begin();
        it != ref_holders.end(); ++it) {
     if ((*it).node_id() == knode_.node_id()) {
 #ifdef DEBUG
-//      printf("Vault %s listed as a ref holder to itself for chunk %s\n",
-//             HexSubstr((*it).node_id()).c_str(),
-//             HexSubstr(iou_ready_details.get<1>()).c_str());
+      printf("Vault %s listed as a ref holder to itself for chunk %s\n",
+             HexSubstr((*it).node_id()).c_str(),
+             HexSubstr(iou_ready_details.get<1>()).c_str());
 #endif
       ref_holders.erase(it);
       break;
     }
   }
+#ifdef DEBUG
+//  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
+//    printf("After - Vault %s,  chunk %s,  ref holder %i: %s\n",
+//           HexSubstr(non_hex_pmid_).c_str(),
+//           HexSubstr(iou_ready_details.get<1>()).c_str(), h,
+//           HexSubstr(ref_holders.at(h).node_id()).c_str());
+//  }
+#endif
   bool got_valid_iou(false);
   int successful_count(0);
   int called_back_count(0);

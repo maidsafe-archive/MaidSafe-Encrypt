@@ -153,6 +153,7 @@ void MakeChunks(boost::shared_ptr<maidsafe::ChunkStore> chunkstore,
     fs::path chunk_path_(file_system::FileSystem::TempDir() +
                          "/maidsafe_TestVault");
     std::string hex_chunk_name_ = base::EncodeToHex(non_hex_chunk_name_);
+    printf("Chunk %i - %s\n", i, HexSubstr(non_hex_chunk_name_).c_str());
     chunk_path_ /= hex_chunk_name_;
     std::ofstream ofs_;
     ofs_.open(chunk_path_.string().c_str());
@@ -309,7 +310,7 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
 namespace maidsafe_vault {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
-static const int kNetworkSize_ = 16;
+static const int kNetworkSize_ = 17;
 static const int kTestK_ = 16;
 
 class PDVaultTest : public testing::Test {
@@ -413,10 +414,10 @@ TEST_F(PDVaultTest, FUNC_MAID_VaultStartStop) {
   }
 }
 
-TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
+TEST_F(PDVaultTest, FUNC_MAID_StoreChunks1) {
   // add some valid chunks to client chunkstore and store to network
   std::map<std::string, std::string> chunks_;
-  const boost::uint32_t kNumOfTestChunks(29);
+  const boost::uint32_t kNumOfTestChunks(20);
   testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
   std::map<std::string, std::string>::iterator it_;
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
@@ -455,7 +456,301 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
   ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
 }
 
-TEST_F(PDVaultTest, FUNC_MAID_GetChunk) {
+TEST_F(PDVaultTest, FUNC_MAID_StoreChunks2) {
+  // add some valid chunks to client chunkstore and store to network
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(1);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+  }
+  printf("%i chunks enqueued for storing.\n\n", kNumOfTestChunks);
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      chunk_count = 0;
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+          ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_.
+              HashCheckChunk(non_hex_name));
+          printf("Found chunk %s\n", HexSubstr(non_hex_name).c_str());
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_StoreChunks3) {
+  // add some valid chunks to client chunkstore and store to network
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(1);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+  }
+  printf("%i chunks enqueued for storing.\n\n", kNumOfTestChunks);
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      chunk_count = 0;
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+          ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_.
+              HashCheckChunk(non_hex_name));
+          printf("Found chunk %s\n", HexSubstr(non_hex_name).c_str());
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_StoreChunks4) {
+  // add some valid chunks to client chunkstore and store to network
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(1);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+  }
+  printf("%i chunks enqueued for storing.\n\n", kNumOfTestChunks);
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      chunk_count = 0;
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+          ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_.
+              HashCheckChunk(non_hex_name));
+          printf("Found chunk %s\n", HexSubstr(non_hex_name).c_str());
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_StoreChunks5) {
+  // add some valid chunks to client chunkstore and store to network
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(1);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+  }
+  printf("%i chunks enqueued for storing.\n\n", kNumOfTestChunks);
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      chunk_count = 0;
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+          ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_.
+              HashCheckChunk(non_hex_name));
+          printf("Found chunk %s\n", HexSubstr(non_hex_name).c_str());
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_StoreChunks6) {
+  // add some valid chunks to client chunkstore and store to network
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(1);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+  }
+  printf("%i chunks enqueued for storing.\n\n", kNumOfTestChunks);
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      chunk_count = 0;
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+          ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_.
+              HashCheckChunk(non_hex_name));
+          printf("Found chunk %s\n", HexSubstr(non_hex_name).c_str());
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_StoreChunks7) {
+  // add some valid chunks to client chunkstore and store to network
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(1);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+  }
+  printf("%i chunks enqueued for storing.\n\n", kNumOfTestChunks);
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      chunk_count = 0;
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+          ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_.
+              HashCheckChunk(non_hex_name));
+          printf("Found chunk %s\n", HexSubstr(non_hex_name).c_str());
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_StoreChunks8) {
+  // add some valid chunks to client chunkstore and store to network
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(1);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+  }
+  printf("%i chunks enqueued for storing.\n\n", kNumOfTestChunks);
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times and each chunk copy is valid (i.e. name == Hash(contents))
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      chunk_count = 0;
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+          ASSERT_EQ(0, pdvaults_[vault_no]->vault_chunkstore_.
+              HashCheckChunk(non_hex_name));
+          printf("Found chunk %s\n", HexSubstr(non_hex_name).c_str());
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_GetChunk1) {
   std::map<std::string, std::string> chunks_;
   const boost::uint32_t kNumOfTestChunks(20);
   testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
@@ -463,6 +758,420 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunk) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+
+  }
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times.
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // Check each chunk can be retrieved correctly
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    printf("Getting test chunk locally.\n");
+    std::string hex_chunk_name = (*it_).first;
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+  // Check each chunk can be retrieved correctly from the net
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_chunk_name));
+    printf("Getting test chunk remotely.\n");
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_GetChunk2) {
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(20);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+
+  }
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times.
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // Check each chunk can be retrieved correctly
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    printf("Getting test chunk locally.\n");
+    std::string hex_chunk_name = (*it_).first;
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+  // Check each chunk can be retrieved correctly from the net
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_chunk_name));
+    printf("Getting test chunk remotely.\n");
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_GetChunk3) {
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(20);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+
+  }
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times.
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // Check each chunk can be retrieved correctly
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    printf("Getting test chunk locally.\n");
+    std::string hex_chunk_name = (*it_).first;
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+  // Check each chunk can be retrieved correctly from the net
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_chunk_name));
+    printf("Getting test chunk remotely.\n");
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_GetChunk4) {
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(20);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+
+  }
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times.
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // Check each chunk can be retrieved correctly
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    printf("Getting test chunk locally.\n");
+    std::string hex_chunk_name = (*it_).first;
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+  // Check each chunk can be retrieved correctly from the net
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_chunk_name));
+    printf("Getting test chunk remotely.\n");
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_GetChunk5) {
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(20);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+
+  }
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times.
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // Check each chunk can be retrieved correctly
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    printf("Getting test chunk locally.\n");
+    std::string hex_chunk_name = (*it_).first;
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+  // Check each chunk can be retrieved correctly from the net
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_chunk_name));
+    printf("Getting test chunk remotely.\n");
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_GetChunk6) {
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(20);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+
+  }
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times.
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // Check each chunk can be retrieved correctly
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    printf("Getting test chunk locally.\n");
+    std::string hex_chunk_name = (*it_).first;
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+  // Check each chunk can be retrieved correctly from the net
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_chunk_name));
+    printf("Getting test chunk remotely.\n");
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_GetChunk7) {
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(20);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+
+  }
+  // iterate through all vault chunkstores to ensure each chunk stored
+  // enough times.
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  int timeout(300);  // seconds.
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
+    int chunk_count = 0;
+    int time_count = 0;
+    while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
+      for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          SCOPED_TRACE(trace);
+          ++chunk_count;
+        }
+      }
+      time_count += 10;
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+    }
+    EXPECT_GE(chunk_count, kMinChunkCopies);
+  }
+  // Check each chunk can be retrieved correctly
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    printf("Getting test chunk locally.\n");
+    std::string hex_chunk_name = (*it_).first;
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+  // We need to allow enough time to let the vaults finish publishing themselves
+  // as chunk holders and retrieving their IOUs.
+  ASSERT_EQ(chunks_.size(), testpdvault::CheckStoredCopies(chunks_, 300, sm_));
+  // Check each chunk can be retrieved correctly from the net
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    std::string non_hex_chunk_name = base::DecodeFromHex(hex_chunk_name);
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(non_hex_chunk_name));
+    printf("Getting test chunk remotely.\n");
+    std::string data;
+    ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));
+    ASSERT_EQ(data, (*it_).second);
+    ASSERT_EQ(hex_chunk_name, crypto_.Hash(data, "", crypto::STRING_STRING,
+        true));
+  }
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_GetChunk8) {
+  std::map<std::string, std::string> chunks_;
+  const boost::uint32_t kNumOfTestChunks(20);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  std::map<std::string, std::string>::iterator it_;
+  for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
+    std::string hex_chunk_name = (*it_).first;
+    sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
+
   }
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times.

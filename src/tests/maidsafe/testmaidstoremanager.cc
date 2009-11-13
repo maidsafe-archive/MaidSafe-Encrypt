@@ -91,19 +91,26 @@ void ThreadedDoneRun(const int &min_delay,
 void ConditionNotify(int set_return,
                      int *return_value,
                      maidsafe::GenericConditionData *generic_cond_data) {
-  printf("ConditionNotify Before Lock\n");
   boost::this_thread::sleep(boost::posix_time::milliseconds(
       base::random_32bit_uinteger() % 1000 + 5000));
-  printf("ConditionNotify Before Lock\n");
   {
-    printf("ConditionNotify Before Lock\n");
     boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
-    printf("ConditionNotify After Lock\n");
     *return_value = set_return;
     generic_cond_data->cond_flag = true;
   }
   generic_cond_data->cond_variable->notify_all();
-  printf("Notified!!! %d\n", set_return);
+}
+
+void ConditionNotifyNoFlag(int set_return,
+                           int *return_value,
+                           maidsafe::GenericConditionData *generic_cond_data) {
+  boost::this_thread::sleep(boost::posix_time::milliseconds(
+      base::random_32bit_uinteger() % 1000 + 5000));
+  {
+    boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
+    *return_value = set_return;
+  }
+  generic_cond_data->cond_variable->notify_all();
 }
 
 void ThreadedConditionNotifyZero(
@@ -115,9 +122,7 @@ void ThreadedConditionNotifyZero(
 void ThreadedConditionNotifyNegOne(
     int *return_value,
     maidsafe::GenericConditionData *generic_cond_data) {
-  printf("ThreadedConditionNotifyNegOne 1\n");
   boost::thread(ConditionNotify, -1, return_value, generic_cond_data);
-  printf("ThreadedConditionNotifyNegOne 2\n");
 }
 
 void FailedContactCallback(
@@ -1491,9 +1496,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePacket) {
   kad::Contact peer(peername, "192.192.1.2", 9998);
   EXPECT_CALL(msm, SendPacketToKad(testing::_, testing::_, testing::_))
       .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
-                          test_msm::ThreadedConditionNotifyNegOne)))
+           boost::bind(&test_msm::ConditionNotifyNoFlag, -1, _1, _2))))
       .WillRepeatedly(testing::WithArgs<1, 2>(testing::Invoke(
-                          test_msm::ThreadedConditionNotifyZero)));
+           boost::bind(&test_msm::ConditionNotifyNoFlag, 0, _1, _2))));
   ASSERT_EQ(-1, msm.StorePacket(hex_packetname_hashable,
             "Hashable", MPID, PRIVATE, ""));
   ASSERT_EQ(kSuccess, msm.StorePacket(hex_packetname_hashable, "Hashable",

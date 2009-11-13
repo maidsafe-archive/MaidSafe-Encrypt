@@ -52,9 +52,13 @@ StoreChunkTask::StoreChunkTask(const StoreData &store_data,
                                      msm_(msm) {}
 
 void StoreChunkTask::run() {
-  int *p_int = NULL;
-  msm_->PreSendAnalysis(store_data_, if_exists_, p_int);
-  delete p_int;
+  int p_int(-9999);
+  printf("StoreChunkTask - chunk %s ENQUEUEDISED\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
+  msm_->PreSendAnalysis(store_data_, if_exists_, &p_int);
+  printf("StoreChunkTask - chunk %s - result %i\n",
+         HexSubstr(store_data_.non_hex_key_).c_str(), p_int);
+//  delete p_int;
 }
 
 StorePacketToVaultsTask::StorePacketToVaultsTask(
@@ -68,6 +72,8 @@ StorePacketToVaultsTask::StorePacketToVaultsTask(
           generic_cond_data_(generic_cond_data) {}
 
 void StorePacketToVaultsTask::run() {
+  printf("StorePacketToVaultsTask start %s\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
   int ret = msm_->SendPacketToVaults(store_data_);
   {
     boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
@@ -75,6 +81,8 @@ void StorePacketToVaultsTask::run() {
     *return_value_ = ret;
   }
   generic_cond_data_->cond_variable->notify_all();
+  printf("StorePacketToVaultsTask end %s\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
 }
 
 StorePacketToKadTask::StorePacketToKadTask(
@@ -88,12 +96,16 @@ StorePacketToKadTask::StorePacketToKadTask(
           generic_cond_data_(generic_cond_data) {}
 
 void StorePacketToKadTask::run() {
+  printf("StorePacketToVaultsTask start %s\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
   msm_->SendPacketToKad(store_data_, return_value_, generic_cond_data_);
   {
     boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
     generic_cond_data_->cond_flag = true;
   }
   generic_cond_data_->cond_variable->notify_all();
+  printf("StorePacketToVaultsTask end %s\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
 }
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
@@ -818,7 +830,7 @@ void MaidsafeStoreManager::PreSendAnalysis(const StoreData &store_data,
 //      res = SendPacket(store_data, kMinChunkCopies);
     SetStoreReturnValue(static_cast<ReturnCode>(res), return_value);
   }
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+//  boost::this_thread::sleep(boost::posix_time::seconds(1));
 }
 
 int MaidsafeStoreManager::SendChunk(
@@ -1480,9 +1492,9 @@ void MaidsafeStoreManager::HasChunkCallback(
     boost::lock_guard<boost::mutex> lock(*(chunk_holder->mutex));
     if (chunk_holder->check_chunk_response.result() == kNack) {
   #ifdef DEBUG
-      printf("In MSM::HasChunkCallback (%d), %d doesn't have the chunk.\n",
-             knode_->host_port(),
-             chunk_holder->chunk_holder_contact.host_port());
+//      printf("In MSM::HasChunkCallback (%d), %d doesn't have the chunk.\n",
+//             knode_->host_port(),
+//             chunk_holder->chunk_holder_contact.host_port());
   #endif
       chunk_holder->status = kFailedHolder;
       // If available_chunk_holder_index is < 0, decrement it to indicate

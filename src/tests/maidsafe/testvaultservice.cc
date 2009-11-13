@@ -287,6 +287,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
+    EXPECT_EQ(non_hex_pmid_, response.pmid_id());
     response.Clear();
   }
 
@@ -304,6 +305,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
+    EXPECT_EQ(non_hex_pmid_, response.pmid_id());
     response.Clear();
   }
 
@@ -317,6 +319,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
+    EXPECT_EQ(non_hex_pmid_, response.pmid_id());
     response.Clear();
   }
 
@@ -330,10 +333,34 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
+    EXPECT_EQ(non_hex_pmid_, response.pmid_id());
     response.Clear();
   }
 
   request.set_data_size(content.size());
+  std::string sig_req_to_self;
+  CreateSignedRequest(pmid_public_, pmid_private_, chunkname, &pmid_,
+                      &signed_pmid_public_, &sig_req_to_self);
+  request.set_pmid(pmid_);
+  request.set_public_key(pmid_public_);
+  request.set_signed_public_key(signed_pmid_public_);
+  request.set_signed_request(sig_req_to_self);
+
+  // request to store ourself
+  {
+    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+        (&cb_obj, &Callback::CallbackFunction);
+    vault_service_->StoreChunkPrep(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
+    EXPECT_EQ(non_hex_pmid_, response.pmid_id());
+    response.Clear();
+  }
+
+  request.set_pmid(pmid);
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(sig_pub_key);
+  request.set_signed_request(sig_req);
 
   // proper request
   {

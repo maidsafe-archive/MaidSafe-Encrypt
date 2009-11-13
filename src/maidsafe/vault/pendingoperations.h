@@ -126,7 +126,7 @@ typedef boost::multi_index_container<
 
 class PendingOperationsHandler {
  public:
-  PendingOperationsHandler() : multi_index_mutex_(), pending_ops_() {}
+  PendingOperationsHandler() : multi_index_mutex_(), pending_ops_(), pmid_() {}
   ~PendingOperationsHandler() {}
   void ClearPendingOperations();
   int PendingOperationsCount();
@@ -170,6 +170,8 @@ class PendingOperationsHandler {
                               std::string> >
       *iou_readys);
 
+  void SetPmid(const std::string &pmid) { pmid_ = pmid; }
+
  private:
   FRIEND_TEST(PendingOperationContainerTest, BEH_VAULT_ParameterAnalysis);
   int AnalyseParameters(const std::string &pmid,
@@ -181,6 +183,7 @@ class PendingOperationsHandler {
                         const vault_operation_status &status);
   boost::mutex multi_index_mutex_;
   pending_operation_set pending_ops_;
+  std::string pmid_;
 };
 
 }  // namespace maidsafe_vault
