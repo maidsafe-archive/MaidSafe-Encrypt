@@ -1040,8 +1040,9 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::CreateBP (%i), request is not initialized.\n",
-           knode_->host_port());
+    if (knode_ != NULL)
+      printf("In VaultService::CreateBP (%i), request is not initialized.\n",
+             knode_->host_port());
 #endif
     return;
   }
@@ -1053,8 +1054,10 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::CreateBP (%i), ", knode_->host_port());
-    printf("failed to validate signed public key.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::CreateBP (%i), ", knode_->host_port());
+      printf("failed to validate signed public key.\n");
+    }
 #endif
     return;
   }
@@ -1066,8 +1069,10 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::CreateBP (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::CreateBP (%i), ", knode_->host_port());
+      printf("failed to validate signed request.\n");
+    }
 #endif
     return;
   }
@@ -1076,14 +1081,27 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::CreateBP (%i), ", knode_->host_port());
-    printf("failed to store chunk locally.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::CreateBP (%i), ", knode_->host_port());
+      printf("failed to store chunk locally.\n");
+    }
 #endif
     return;
   }
 
-  // What a todo with the reference storing?
-
+  if (knode_ != NULL) {
+    kad::SignedValue sig_value;
+    sig_value.set_value(non_hex_pmid_);
+    co.set_hash_algorithm(crypto::SHA_512);
+    sig_value.set_value_signature(co.AsymSign(non_hex_pmid_, "", pmid_private_,
+      crypto::STRING_STRING));
+    // TTL set to 24 hrs
+    std::string signed_request = co.AsymSign(co.Hash(pmid_public_ +
+      signed_pmid_public_ + request->bufferpacket_name(), "",
+      crypto::STRING_STRING, true), "", pmid_private_, crypto::STRING_STRING);
+    knode_->StoreValue(request->bufferpacket_name(), sig_value, pmid_public_,
+      signed_pmid_public_, signed_request, 86400,  &vsvc_dummy_callback);
+  }
   response->set_result(kAck);
   done->Run();
 }
@@ -1100,7 +1118,8 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::ModifyBPInfo (%i), request is not initialized.\n",
+    if (knode_ != NULL)
+      printf("In VaultService::ModifyBPInfo(%i), request is not initialized.\n",
            knode_->host_port());
 #endif
     return;
@@ -1113,8 +1132,10 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
-    printf("failed to validate signed public key.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
+      printf("failed to validate signed public key.\n");
+    }
 #endif
     return;
   }
@@ -1126,8 +1147,10 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
+      printf("failed to validate signed request.\n");
+    }
 #endif
     return;
   }
@@ -1137,8 +1160,10 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
-    printf("data sent is not a Generic Packet.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
+      printf("data sent is not a Generic Packet.\n");
+    }
 #endif
     return;
   }
@@ -1148,8 +1173,10 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
-    printf("data inside Generic Packet is not BufferPacketInfo.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
+      printf("data inside Generic Packet is not BufferPacketInfo.\n");
+    }
 #endif
     return;
   }
@@ -1159,8 +1186,10 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
-    printf("failed to load the local chunk where the BP is held.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
+      printf("failed to load the local chunk where the BP is held.\n");
+    }
 #endif
     return;
   }
@@ -1170,8 +1199,10 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
-    printf("failed to validate the Buffer Packet ownership.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
+      printf("failed to validate the Buffer Packet ownership.\n");
+    }
 #endif
     return;
   }
@@ -1180,8 +1211,10 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
-    printf("failed to update the BufferPacketInfo.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
+      printf("failed to update the BufferPacketInfo.\n");
+    }
 #endif
     return;
   }
@@ -1190,8 +1223,10 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
-    printf("failed to update the local chunk store.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::ModifyBPInfo (%i), ", knode_->host_port());
+      printf("failed to update the local chunk store.\n");
+    }
 #endif
     return;
   }
@@ -1212,7 +1247,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%i), request is not initialized.\n",
+    if (knode_ != NULL)
+      printf("In VaultService::GetBPMessages(%i),request is not initialized.\n",
            knode_->host_port());
 #endif
     return;
@@ -1225,8 +1261,10 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-    printf("failed to validate signed public key.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+      printf("failed to validate signed public key.\n");
+    }
 #endif
     return;
   }
@@ -1238,8 +1276,10 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+      printf("failed to validate signed request.\n");
+    }
 #endif
     return;
   }
@@ -1249,8 +1289,10 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-    printf("failed to load the local chunk where the BP is held.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+      printf("failed to load the local chunk where the BP is held.\n");
+    }
 #endif
     return;
   }
@@ -1261,8 +1303,10 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-    printf("failed to extract the messages.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+      printf("failed to extract the messages.\n");
+    }
 #endif
     return;
   }
@@ -1274,8 +1318,10 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-    printf("failed to update the local chunk store.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+      printf("failed to update the local chunk store.\n");
+    }
 #endif
     return;
   }
@@ -1296,7 +1342,8 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::AddBPMessage (%i), request is not initialized.\n",
+    if (knode_ != NULL)
+      printf("In VaultService::AddBPMessage(%i), request is not initialized.\n",
            knode_->host_port());
 #endif
     return;
@@ -1309,8 +1356,10 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
-    printf("failed to validate signed public key.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
+      printf("failed to validate signed public key.\n");
+    }
 #endif
     return;
   }
@@ -1322,8 +1371,10 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
+      printf("failed to validate signed request.\n");
+    }
 #endif
     return;
   }
@@ -1333,8 +1384,10 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
-    printf("failed to load the local chunk where the BP is held.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
+      printf("failed to load the local chunk where the BP is held.\n");
+    }
 #endif
     return;
   }
@@ -1346,8 +1399,10 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
-    printf("failed to add the message.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
+      printf("failed to add the message.\n");
+    }
 #endif
     return;
   }
@@ -1356,8 +1411,10 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
-    printf("failed to update the local chunk store.\n");
+    if (knode_ != NULL) {
+      printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
+      printf("failed to update the local chunk store.\n");
+    }
 #endif
     return;
   }

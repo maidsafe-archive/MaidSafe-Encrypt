@@ -56,6 +56,7 @@ enum ReturnCode {
   kBPRetrievalError = -2012,
   kBPMessagesRetrievalError = -2013,
   kGetBPInfoError = -2014,
+  kBPAddMessageError = -2015,
 
   // Chunkstore
   kInvalidChunkType = -127,
