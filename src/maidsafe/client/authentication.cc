@@ -287,7 +287,7 @@ int Authentication::SaveSession(std::string ser_da,
 //    AuthCallbackResult cb;
 //    storemanager_->DeletePacket(tmidname, signed_request,
 //        boost::any_cast<std::string>(pub_keys["ANTMID"]), signed_public_key,
-//        SYSTEM_PACKET, boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
+//      SYSTEM_PACKET, boost::bind(&AuthCallbackResult::CallbackFunc, &cb, _1));
 //    WaitForResult(cb);
 //    DeleteResponse del_res;
 //    if ((!del_res.ParseFromString(cb.result)) ||

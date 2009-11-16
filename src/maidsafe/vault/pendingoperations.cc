@@ -64,7 +64,9 @@ int PendingOperationsHandler::AddPendingOperation(const std::string &pmid,
 #endif
     return -1492;
   }
-//  printf("POH::AddPendingOperation: us: %s -- them: %s -- chunk: %s\n", HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str(), HexSubstr(chunkname).c_str());
+//  printf("POH::AddPendingOperation: us: %s -- them: %s -- chunk: %s\n",
+//         HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str(),
+//         HexSubstr(chunkname).c_str());
   return 0;
 }
 

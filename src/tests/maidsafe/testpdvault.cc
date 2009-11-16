@@ -310,7 +310,7 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
 namespace maidsafe_vault {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
-static const int kNetworkSize_ = 17;
+static const int kNetworkSize_ = 20;
 static const int kTestK_ = 16;
 
 class PDVaultTest : public testing::Test {
@@ -758,7 +758,6 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunk1) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
-
   }
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times.
@@ -817,7 +816,6 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunk2) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
-
   }
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times.
@@ -876,7 +874,6 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunk3) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
-
   }
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times.
@@ -935,7 +932,6 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunk4) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
-
   }
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times.
@@ -949,7 +945,8 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunk4) {
     while ((time_count < timeout) && (chunk_count < kMinChunkCopies)) {
       for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
         if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
-          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk.";
+          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk ";
+          trace += HexSubstr(non_hex_name);
           SCOPED_TRACE(trace);
           ++chunk_count;
         }
@@ -994,7 +991,6 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunk5) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
-
   }
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times.
@@ -1053,7 +1049,6 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunk6) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
-
   }
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times.
@@ -1112,7 +1107,6 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunk7) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
-
   }
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times.
@@ -1171,7 +1165,6 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunk8) {
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
     std::string hex_chunk_name = (*it_).first;
     sm_->StoreChunk(hex_chunk_name, maidsafe::PRIVATE, "");
-
   }
   // iterate through all vault chunkstores to ensure each chunk stored
   // enough times.

@@ -152,17 +152,15 @@ void PDVault::Start(bool first_node) {
 
 void PDVault::KadJoinedCallback(const std::string &result,
                                 boost::mutex *kad_joined_mutex) {
-  {
-    boost::mutex::scoped_lock lock(*kad_joined_mutex);
-    base::GeneralResponse result_;
-    if (!result_.ParseFromString(result)) {
-      kad_joined_ = false;
-    } else if (result_.result() != kad::kRpcResultSuccess) {
-      UnRegisterMaidService();
-      kad_joined_ = false;
-    } else {
-      kad_joined_ = true;
-    }
+  boost::mutex::scoped_lock lock(*kad_joined_mutex);
+  base::GeneralResponse result_;
+  if (!result_.ParseFromString(result)) {
+    kad_joined_ = false;
+  } else if (result_.result() != kad::kRpcResultSuccess) {
+    UnRegisterMaidService();
+    kad_joined_ = false;
+  } else {
+    kad_joined_ = true;
   }
   kad_join_cond_.notify_one();
 }
@@ -272,7 +270,7 @@ std::string PDVault::GetSignedRequest(const std::string &non_hex_name,
 }
 
 void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
-//  printf("1. Vault %s - contacts size: %u\n", HexSubstr(non_hex_pmid_).c_str(),
+// printf("1. Vault %s - contacts size: %u\n", HexSubstr(non_hex_pmid_).c_str(),
 //         (*base::PDRoutingTable::getInstance())[base::itos(port_)]->size());
   // Find the chunk reference holders
   std::vector<kad::Contact> ref_holders;
@@ -283,7 +281,7 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
     return;
   }
 #ifdef DEBUG
-//  printf("2. Vault %s - contacts size: %u\n", HexSubstr(non_hex_pmid_).c_str(),
+// printf("2. Vault %s - contacts size: %u\n", HexSubstr(non_hex_pmid_).c_str(),
 //         (*base::PDRoutingTable::getInstance())[base::itos(port_)]->size());
 //  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
 //    printf("Before - Vault %s,  chunk %s,  ref holder %i: %s\n",

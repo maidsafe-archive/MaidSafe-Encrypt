@@ -75,10 +75,8 @@ class Env: public testing::Environment {
         mutex_(),
         single_function_timeout(60) {
     try {
-      if (fs::exists(vault_dir_)) {
-        printf("It thinks %s exists.\n", vault_dir_.c_str());
+      if (fs::exists(vault_dir_))
         fs::remove_all(vault_dir_);
-      }
       if (fs::exists(kad_config_file_))
         fs::remove(kad_config_file_);
     }

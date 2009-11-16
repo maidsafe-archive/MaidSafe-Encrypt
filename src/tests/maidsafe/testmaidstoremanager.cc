@@ -93,11 +93,9 @@ void ConditionNotify(int set_return,
                      maidsafe::GenericConditionData *generic_cond_data) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(
       base::random_32bit_uinteger() % 1000 + 5000));
-  {
-    boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
-    *return_value = set_return;
-    generic_cond_data->cond_flag = true;
-  }
+  boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
+  *return_value = set_return;
+  generic_cond_data->cond_flag = true;
   generic_cond_data->cond_variable->notify_all();
 }
 
@@ -106,10 +104,8 @@ void ConditionNotifyNoFlag(int set_return,
                            maidsafe::GenericConditionData *generic_cond_data) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(
       base::random_32bit_uinteger() % 1000 + 5000));
-  {
-    boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
-    *return_value = set_return;
-  }
+  boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
+  *return_value = set_return;
   generic_cond_data->cond_variable->notify_all();
 }
 
@@ -137,10 +133,8 @@ void FailedContactCallback(
   boost::shared_ptr<maidsafe::ChunkHolder> failed_chunkholder(
       new maidsafe::ChunkHolder(kad::Contact(holder.node_id(), "", 0)));
   failed_chunkholder->status = maidsafe::kFailedHolder;
-  {  // NOLINT (Fraser)
-    boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
-    packet_holders->push_back(failed_chunkholder);
-  }
+  boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
+  packet_holders->push_back(failed_chunkholder);
   cond_data->cond_variable->notify_all();
 }
 
@@ -156,10 +150,8 @@ void ContactCallback(
   boost::shared_ptr<maidsafe::ChunkHolder>
       chunkholder(new maidsafe::ChunkHolder(holder));
   chunkholder->status = maidsafe::kContactable;
-  {
-    boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
-    packet_holders->push_back(chunkholder);
-  }
+  boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
+  packet_holders->push_back(chunkholder);
   cond_data->cond_variable->notify_all();
 }
 

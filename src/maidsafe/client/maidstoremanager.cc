@@ -72,17 +72,15 @@ StorePacketToVaultsTask::StorePacketToVaultsTask(
           generic_cond_data_(generic_cond_data) {}
 
 void StorePacketToVaultsTask::run() {
-  printf("StorePacketToVaultsTask start %s\n",
-         HexSubstr(store_data_.non_hex_key_).c_str());
+//  printf("StorePacketToVaultsTask start %s\n",
+//         HexSubstr(store_data_.non_hex_key_).c_str());
   int ret = msm_->SendPacketToVaults(store_data_);
-  {
-    boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
-    generic_cond_data_->cond_flag = true;
-    *return_value_ = ret;
-  }
+  boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
+  generic_cond_data_->cond_flag = true;
+  *return_value_ = ret;
   generic_cond_data_->cond_variable->notify_all();
-  printf("StorePacketToVaultsTask end %s\n",
-         HexSubstr(store_data_.non_hex_key_).c_str());
+//  printf("StorePacketToVaultsTask end %s\n",
+//         HexSubstr(store_data_.non_hex_key_).c_str());
 }
 
 StorePacketToKadTask::StorePacketToKadTask(
@@ -96,16 +94,14 @@ StorePacketToKadTask::StorePacketToKadTask(
           generic_cond_data_(generic_cond_data) {}
 
 void StorePacketToKadTask::run() {
-  printf("StorePacketToVaultsTask start %s\n",
-         HexSubstr(store_data_.non_hex_key_).c_str());
+//  printf("StorePacketToVaultsTask start %s\n",
+//         HexSubstr(store_data_.non_hex_key_).c_str());
   msm_->SendPacketToKad(store_data_, return_value_, generic_cond_data_);
-  {
-    boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
-    generic_cond_data_->cond_flag = true;
-  }
+  boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
+  generic_cond_data_->cond_flag = true;
   generic_cond_data_->cond_variable->notify_all();
-  printf("StorePacketToVaultsTask end %s\n",
-         HexSubstr(store_data_.non_hex_key_).c_str());
+//  printf("StorePacketToVaultsTask end %s\n",
+//         HexSubstr(store_data_.non_hex_key_).c_str());
 }
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
@@ -121,7 +117,6 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       packet_thread_pool_(),
       kKadStoreThreshold_(kad::K * kad::kMinSuccessfulPecentageStore),
       store_packet_mutex_(),
-      store_packet_conditional_(),
       get_chunk_conditional_(),
       mock_rpcs_(false) {
   knode_->SetAlternativeStore(client_chunkstore_.get());
@@ -710,10 +705,8 @@ void MaidsafeStoreManager::CreateBPCallback(
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::CreateBPCallback.\n");
 #endif
-  {  // NOLINT(Fraser)
-    boost::lock_guard<boost::mutex> lock(send_prep_cond_data->cond_mutex);
-    send_prep_cond_data->cond_flag = true;
-  }
+  boost::lock_guard<boost::mutex> lock(send_prep_cond_data->cond_mutex);
+  send_prep_cond_data->cond_flag = true;
   send_prep_cond_data->cond_variable->notify_all();
 }
 
@@ -830,7 +823,6 @@ void MaidsafeStoreManager::PreSendAnalysis(const StoreData &store_data,
 //      res = SendPacket(store_data, kMinChunkCopies);
     SetStoreReturnValue(static_cast<ReturnCode>(res), return_value);
   }
-//  boost::this_thread::sleep(boost::posix_time::seconds(1));
 }
 
 int MaidsafeStoreManager::SendChunk(
@@ -1094,6 +1086,7 @@ int MaidsafeStoreManager::SendPrep(
     while (!send_prep_cond_data.cond_flag) {
       send_prep_cond_data.cond_variable->wait(lock);
     }
+    send_prep_cond_data.cond_flag = false;
   }
   return (store_prep_response->pmid_id() == peer.node_id() &&
           store_prep_response->result() == kAck) ? kSuccess : kSendPrepFailure;
@@ -1104,10 +1097,8 @@ void MaidsafeStoreManager::SendPrepCallback(
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::SendPrepCallback.\n");
 #endif
-  {  // NOLINT(Fraser)
-    boost::lock_guard<boost::mutex> lock(send_prep_cond_data->cond_mutex);
-    send_prep_cond_data->cond_flag = true;
-  }
+  boost::lock_guard<boost::mutex> lock(send_prep_cond_data->cond_mutex);
+  send_prep_cond_data->cond_flag = true;
   send_prep_cond_data->cond_variable->notify_all();
 }
 
@@ -1128,6 +1119,7 @@ int MaidsafeStoreManager::SendContent(
     while (!send_cond_data.cond_flag) {
       send_cond_data.cond_variable->wait(lock);
     }
+    send_cond_data.cond_flag = false;
   }
   if (store_response->pmid_id() != peer.node_id()) {
 #ifdef DEBUG
@@ -1165,10 +1157,8 @@ void MaidsafeStoreManager::SendContentCallback(
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::SendContentCallback.\n");
 #endif
-  {  // NOLINT (Fraser)
-    boost::lock_guard<boost::mutex> lock(send_cond_data->cond_mutex);
-    send_cond_data->cond_flag = true;
-  }
+  boost::lock_guard<boost::mutex> lock(send_cond_data->cond_mutex);
+  send_cond_data->cond_flag = true;
   send_cond_data->cond_variable->notify_all();
 }
 
@@ -1201,6 +1191,19 @@ int MaidsafeStoreManager::StoreIOUs(
 //  }
 //  printf("\n");
 #endif
+  // Check for (and remove if present) collector's details
+  for (std::vector<kad::Contact>::iterator it = ref_holders.begin();
+       it != ref_holders.end(); ++it) {
+    if ((*it).node_id() == store_prep_response.pmid_id()) {
+#ifdef DEBUG
+      printf("In MSM: Vault %s listed as a ref holder to itself for chunk %s\n",
+             HexSubstr((*it).node_id()).c_str(),
+             HexSubstr(store_data.non_hex_key_).c_str());
+#endif
+      ref_holders.erase(it);
+      break;
+    }
+  }
   StoreIOURequest store_iou_request;
   store_iou_request.set_chunkname(store_data.non_hex_key_);
   store_iou_request.set_data_size(chunk_size);
@@ -1443,8 +1446,8 @@ void MaidsafeStoreManager::GetHolderContactCallback(
     {  // NOLINT (Fraser)
       boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
       chunk_holders->push_back(failed_chunkholder);
+      cond_data->cond_variable->notify_all();
     }
-    cond_data->cond_variable->notify_all();
     return;
   }
   if (find_response.result() != kad::kRpcResultSuccess) {
@@ -1454,8 +1457,8 @@ void MaidsafeStoreManager::GetHolderContactCallback(
     {  // NOLINT (Fraser)
       boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
       chunk_holders->push_back(failed_chunkholder);
+      cond_data->cond_variable->notify_all();
     }
-    cond_data->cond_variable->notify_all();
     return;
   }
   // If we have the desired node's details, return them, otherwise push back a
@@ -1469,8 +1472,8 @@ void MaidsafeStoreManager::GetHolderContactCallback(
       {
         boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
         chunk_holders->push_back(chunkholder);
+        cond_data->cond_variable->notify_all();
       }
-      cond_data->cond_variable->notify_all();
       return;
     }
   }
@@ -1480,8 +1483,8 @@ void MaidsafeStoreManager::GetHolderContactCallback(
   {  // NOLINT (Fraser)
     boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
     chunk_holders->push_back(failed_chunkholder);
+    cond_data->cond_variable->notify_all();
   }
-  cond_data->cond_variable->notify_all();
   return;
 }
 
@@ -1519,8 +1522,8 @@ void MaidsafeStoreManager::HasChunkCallback(
       if (*available_chunk_holder_index < 0)
         *available_chunk_holder_index = chunk_holder->index;
     }
+    get_chunk_conditional_.notify_all();
   }
-  get_chunk_conditional_.notify_all();
 }
 
 int MaidsafeStoreManager::FindAndLoadChunk(
@@ -1756,8 +1759,8 @@ void MaidsafeStoreManager::GetChunkCallback(boost::mutex *mutex,
   {  // NOLINT (Fraser)
     boost::lock_guard<boost::mutex> lock(*mutex);
     *get_chunk_done = true;
+    get_chunk_conditional_.notify_all();
   }
-  get_chunk_conditional_.notify_all();
 }
 
 int MaidsafeStoreManager::SendIouToRefHolder(
@@ -1835,6 +1838,7 @@ int MaidsafeStoreManager::SendIOUDone(
     while (!iou_done_cond_data.cond_flag) {
       iou_done_cond_data.cond_variable->wait(lock);
     }
+    iou_done_cond_data.cond_flag = false;
   }
   return (iou_done_response.pmid_id() == peer.node_id() &&
           iou_done_response.result() == kAck) ? kSuccess : kSendIOUDoneFailure;
@@ -1845,10 +1849,8 @@ void MaidsafeStoreManager::IOUDoneCallback(
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::IOUDoneCallback.\n");
 #endif
-  {  // NOLINT (Fraser)
-    boost::lock_guard<boost::mutex> lock(iou_done_cond_data->cond_mutex);
-    iou_done_cond_data->cond_flag = true;
-  }
+  boost::lock_guard<boost::mutex> lock(iou_done_cond_data->cond_mutex);
+  iou_done_cond_data->cond_flag = true;
   iou_done_cond_data->cond_variable->notify_all();
 }
 
@@ -2120,7 +2122,6 @@ int MaidsafeStoreManager::SendPacketToVaults(const StoreData &store_data) {
   // TODO(Fraser#5#): 2009-10-27 - finally, spawn new thread which sends delete
   // packet rpc to all chunkholders with status kFailedHolder.
 
-//  boost::this_thread::sleep(boost::posix_time::seconds(1));
   return kSuccess;
 }
 
@@ -2143,11 +2144,9 @@ void MaidsafeStoreManager::StorePacketCallback(
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::StorePacketCallback.\n");
 #endif
-  {  // NOLINT (Fraser)
-    boost::lock_guard<boost::mutex> lock(store_cond_data->cond_mutex);
-    store_cond_data->cond_flag = true;
-    ++(*returned_rpc_count);
-  }
+  boost::lock_guard<boost::mutex> lock(store_cond_data->cond_mutex);
+  store_cond_data->cond_flag = true;
+  ++(*returned_rpc_count);
   store_cond_data->cond_variable->notify_all();
 }
 
@@ -2261,11 +2260,9 @@ void MaidsafeStoreManager::SendPacketToKad(
 #ifdef DEBUG
     printf("In MaidsafeStoreManager::SendPacket, fail - timeout.\n");
 #endif
-    {  // NOLINT (Fraser)
-      boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
-      *return_value = kSendPacketError;
+    boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
+    *return_value = kSendPacketError;
 //      generic_cond_data->cond_flag = true;
-    }
     generic_cond_data->cond_variable->notify_all();
     return;
   }
@@ -2274,11 +2271,9 @@ void MaidsafeStoreManager::SendPacketToKad(
 #ifdef DEBUG
     printf("In MaidsafeStoreManager::SendPacket, can't parse result.\n");
 #endif
-    {  // NOLINT (Fraser)
-      boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
-      *return_value = kSendPacketParseError;
+    boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
+    *return_value = kSendPacketParseError;
 //      generic_cond_data->cond_flag = true;
-    }
     generic_cond_data->cond_variable->notify_all();
     return;
   }
@@ -2286,21 +2281,16 @@ void MaidsafeStoreManager::SendPacketToKad(
 #ifdef DEBUG
     printf("In MaidsafeStoreManager::SendPacket, Kademlia operation failed.\n");
 #endif
-    {  // NOLINT (Fraser)
-      boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
-      *return_value = kSendPacketFailure;
+    boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
+    *return_value = kSendPacketFailure;
 //      generic_cond_data->cond_flag = true;
-    }
     generic_cond_data->cond_variable->notify_all();
     return;
   }
-  {
-    boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
-    *return_value = kSuccess;
+  boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
+  *return_value = kSuccess;
 //    generic_cond_data->cond_flag = true;
-  }
   generic_cond_data->cond_variable->notify_all();
-//  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
 int MaidsafeStoreManager::UpdateChunkCopies(
@@ -2488,20 +2478,15 @@ void MaidsafeStoreManager::GetPacketCallback(GenericConditionData *cond_data,
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::GetPacketCallback.\n");
 #endif
-  {  // NOLINT (Fraser)
-    boost::mutex::scoped_lock lock(cond_data->cond_mutex);
-    ++(*returned_rpc_count);
-  }
+  boost::mutex::scoped_lock lock(cond_data->cond_mutex);
+  ++(*returned_rpc_count);
   cond_data->cond_variable->notify_all();
 }
 
 void MaidsafeStoreManager::SetStoreReturnValue(ReturnCode rc, int *ret_value) {
   if (ret_value != NULL) {
-    {
-      boost::lock_guard<boost::mutex> lock(store_packet_mutex_);
-      *ret_value = rc;
-    }
-    store_packet_conditional_.notify_all();
+    boost::lock_guard<boost::mutex> lock(store_packet_mutex_);
+    *ret_value = rc;
   }
 }
 

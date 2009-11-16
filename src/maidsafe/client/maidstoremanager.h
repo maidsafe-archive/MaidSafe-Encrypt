@@ -619,7 +619,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   QThreadPool chunk_thread_pool_, packet_thread_pool_;
   const boost::uint16_t kKadStoreThreshold_;
   boost::mutex store_packet_mutex_;
-  boost::condition_variable store_packet_conditional_;
   boost::condition_variable get_chunk_conditional_;
   bool mock_rpcs_;
 };
