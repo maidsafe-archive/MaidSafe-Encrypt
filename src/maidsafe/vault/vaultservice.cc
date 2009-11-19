@@ -75,7 +75,8 @@ void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
                                   maidsafe::StorePrepResponse* response,
                                   google::protobuf::Closure* done) {
 #ifdef DEBUG
-//  printf("In VaultService::StoreChunkPrep (%i)\n", knode_->host_port());
+  printf("In VaultService::StoreChunkPrep (%i), Chunk name: %s\n",
+         knode_->host_port(), HexSubstr(request->chunkname()).c_str());
 #endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
@@ -254,8 +255,8 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
 //  printf("Signed Pub Key: %s\n", request->signed_public_key().c_str());
 //  printf("Signed Request: %s\n", request->signed_request().c_str());
 
-//  printf("In VaultService::StoreChunk (%i), Data Type: %i\n",
-//         knode_->host_port(), request->data_type());
+  printf("In VaultService::StoreChunk (%i), Chunk name: %s\n",
+         knode_->host_port(), HexSubstr(request->chunkname()).c_str());
 #endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
@@ -362,7 +363,8 @@ void VaultService::IOUDone(google::protobuf::RpcController*,
                            maidsafe::IOUDoneResponse* response,
                            google::protobuf::Closure* done) {
 #ifdef DEBUG
-//  printf("In VaultService::IOUDone (%i)\n", knode_->host_port());
+  printf("In VaultService::IOUDone (%i), Chunk name: %s\n",
+         knode_->host_port(), HexSubstr(request->chunkname()).c_str());
 #endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
@@ -407,7 +409,8 @@ void VaultService::StoreIOU(google::protobuf::RpcController*,
                             maidsafe::StoreIOUResponse* response,
                             google::protobuf::Closure* done) {
 #ifdef DEBUG
-//  printf("In VaultService::StoreIOU (%i)\n", knode_->host_port());
+  printf("In VaultService::StoreIOU (%i), Chunk name: %s\n",
+         knode_->host_port(), HexSubstr(request->chunkname()).c_str());
 #endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {
@@ -481,7 +484,9 @@ void VaultService::StoreChunkReference(
     maidsafe::StoreReferenceResponse* response,
     google::protobuf::Closure* done) {
 #ifdef DEBUG
-//  printf("In VaultService::StoreChunkReference (%i)\n", knode_->host_port());
+  printf("In VaultService::StoreChunkReference (%i), Chunk name: %s, PMID: %s\n",
+         knode_->host_port(), HexSubstr(request->chunkname()).c_str(),
+         base::EncodeToHex(request->pmid()).substr(0, 10).c_str());
 #endif
   response->set_pmid_id(non_hex_pmid_);
   if (!request->IsInitialized()) {

@@ -189,12 +189,23 @@ struct GenericConditionData {
  public:
   explicit GenericConditionData(boost::shared_ptr<boost::condition_variable> cv)
       : cond_flag(false),
+        cond_variable(cv),
         cond_mutex(),
-        cond_variable(cv) {}
-  ~GenericConditionData() {}
+        dtor_output(false) {}
+  GenericConditionData(boost::shared_ptr<boost::condition_variable> cv,
+                       bool dtr_output)
+      : cond_flag(false),
+        cond_variable(cv),
+        cond_mutex(),
+        dtor_output(dtr_output) {}
+  ~GenericConditionData() {
+    if (dtor_output)
+      printf("\t\tIn dtor of GenericConditionData\n");
+  }
   bool cond_flag;
-  boost::mutex cond_mutex;
   boost::shared_ptr<boost::condition_variable> cond_variable;
+  boost::mutex cond_mutex;
+  bool dtor_output;
  private:
   GenericConditionData &operator=(const GenericConditionData&);
   GenericConditionData(const GenericConditionData&);
@@ -375,6 +386,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetChunk1);
   // Replace real ClientRpcs with mock object for testing
   void SetMockRpcs(boost::shared_ptr<ClientRpcs> mock_rpcs) {
     client_rpcs_ = mock_rpcs;
@@ -469,13 +481,18 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                         std::string *needs_cache_copy_id);
   // Populates a vector of chunk holders.  Those that are contactable have
   // non-empty contact details and those that have the chunk have their variable
-  // check_chunk_response_.result() == kAck.
+  // check_chunk_response_.result() == kAck.  To stop the function from sending
+  // any further RPCs (e.g. if a previous one has yielded a satisfactory result
+  // for the calling method), set stop_sending to true.  The function increments
+  // check_chunk_rpc_count each time an RPC is sent.
   void FindAvailableChunkHolders(
       const std::string &chunk_name,
       const std::vector<std::string> &chunk_holders_ids,
-      GenericConditionData *cond_data,
+      boost::shared_ptr<GenericConditionData> cond_data,
       std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
-      int *available_chunk_holder_index);
+      int *available_chunk_holder_index,
+      bool *stop_sending,
+      int *check_chunk_rpc_count);
   // Returns true if the peer is on the local network
   bool AddressIsLocal(const kad::Contact &peer);
   bool AddressIsLocal(const kad::ContactInfo &peer);
@@ -487,7 +504,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const std::string &chunk_holder_id,
       const std::string &result,
       std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
-      GenericConditionData *cond_data);
+      boost::shared_ptr<GenericConditionData> cond_data);
   // This populates the chunk holder's check_chunk_response_ variable (i.e.
   // confirms whether the peer has the chunk or not).  If the RPC fails, the
   // chunk holder's status_ is set to kFailedHolder.  If not, the chunk holder's
@@ -566,7 +583,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual void FindCloseNodes(
       const std::vector<std::string> &packet_holder_ids,
       std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
-      GenericConditionData *find_cond_data);
+      boost::shared_ptr<GenericConditionData> find_cond_data);
   void StorePacketCallback(GenericConditionData *store_cond_data,
                            int *returned_rpc_count);
   virtual int AssessPacketStoreResults(

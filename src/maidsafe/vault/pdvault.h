@@ -262,6 +262,7 @@ class PDVault {
                  const boost::uint16_t &rendezvous_port,
                  base::callback_func_type cb);
   void StopRvPing() { transport_.StopPingRendezvous(); }
+  void SetKThreshold(const boost::uint16_t &kKadStoreThreshold);
   friend class localvaults::Env;
   friend void AddToRefPacketTask::run();
  private:
@@ -384,7 +385,7 @@ class PDVault {
   PendingOperationsHandler poh_;
   QThreadPool thread_pool_;
   boost::thread pending_ious_thread_, prune_pending_ops_thread_;
-  const boost::uint16_t kKadStoreThreshold_;
+  boost::uint16_t kKadStoreThreshold_;
 };
 
 }  // namespace maidsafe_vault

@@ -191,8 +191,8 @@ int PDVault::Stop(bool cancel_pending_ops) {
     SetVaultStatus(kVaultStarted);
   else
     SetVaultStatus(kVaultStopped);
-  channel_manager_.Stop();
   transport_.Stop();
+  channel_manager_.Stop();
   return 0;
 }
 
@@ -326,9 +326,8 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
 // TODO(Fraser#5#): 2009-08-15 - This loop logic needs tidied.
   int timeout = 30000;
   int time_count = 0;
-  while (successful_count < kKadStoreThreshold_ &&
-         called_back_count < kad::K &&
-         time_count < timeout) {
+  while (called_back_count < kad::K && time_count < timeout &&
+         successful_count < kKadStoreThreshold_) {
     for (boost::uint16_t i = 0; i < results.size(); ++i) {
       boost::mutex::scoped_lock loch(store_ref_mutex);
       if (results.at(i).store_ref_response_returned_) {
@@ -345,11 +344,12 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   for (boost::uint16_t j = 0; j < results.size(); ++j) {
-    channel_manager_.DeletePendingRequest(results.at(j).controller_->req_id());
+    channel_manager_.CancelPendingRequest(
+        results.at(j).controller_->req_id());
   }
 #ifdef DEBUG
-  printf("In PDVault::AddToRefPacket (%i): count = %i (success if count>11).\n",
-         host_port(), successful_count);
+  printf("In PDVault::AddToRefPacket (%i): count = %i (success: count=>%i).\n",
+         host_port(), successful_count, kKadStoreThreshold_);
 #endif
   if (successful_count < kKadStoreThreshold_ || !got_valid_iou)
     return;  // We've not received enough successful responses or got valid IOU
@@ -550,8 +550,10 @@ void PDVault::SendToRefPacketCallback(
 #ifdef DEBUG
 //  printf("In PDVault::SendToRefPacketCallback.\n");
 #endif
-  boost::mutex::scoped_lock loch(*store_ref_mutex);
-  store_ref_result_holder->store_ref_response_returned_ = true;
+  if (store_ref_mutex) {
+    boost::mutex::scoped_lock loch(*store_ref_mutex);
+    store_ref_result_holder->store_ref_response_returned_ = true;
+  }
 }
 
 
@@ -1329,6 +1331,10 @@ void PDVault::SwapChunkAcceptChunk(
   local_result.set_result(kAck);
   local_result.SerializeToString(&local_result_str);
   swap_chunk_args->cb_(local_result_str);
+}
+
+void PDVault::SetKThreshold(const boost::uint16_t &kKadStoreThreshold) {
+  kKadStoreThreshold_ = kKadStoreThreshold;
 }
 
 }  // namespace maidsafe_vault

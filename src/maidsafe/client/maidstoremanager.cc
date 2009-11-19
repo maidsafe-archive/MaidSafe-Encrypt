@@ -205,6 +205,7 @@ void MaidsafeStoreManager::Close(base::callback_func_type cb, bool) {
 //  printf("\tIn MaidsafeStoreManager::Close, after Leave. "
 //         "Stopping transport.\n");
 #endif
+  transport_.Stop();
   channel_manager_.Stop();
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Close, transport stopped.\n");
@@ -1338,8 +1339,8 @@ int MaidsafeStoreManager::FindValue(const std::string &kad_key,
   }
   if (find_response.result() != kad::kRpcResultSuccess) {
 #ifdef DEBUG
-//    printf("In MaidsafeStoreManager::FindValue, Kademlia operation "
-//           "failed to find the value.\n");
+    printf("In MaidsafeStoreManager::FindValue, Kademlia operation "
+           "failed to find the value for key %s.\n", HexSubstr(kad_key).c_str());
 //    printf("Found %i nodes\n", find_response.closest_nodes_size());
 //    printf("Found %i values\n", find_response.values_size());
 //    printf("Found alt val holder: %i\n",
@@ -1359,12 +1360,12 @@ int MaidsafeStoreManager::FindValue(const std::string &kad_key,
 #endif
     return kSuccess;
   }
-  for (int i = find_response.values_size(); i >= 1; --i) {
+  for (int i = find_response.values_size(); i > 0; --i) {
     chunk_holders_ids->push_back(find_response.values(i - 1));
   }
 #ifdef DEBUG
-//    printf("In MaidsafeStoreManager::FindValue, %i values have returned.\n",
-//           chunk_holders_ids->size());
+  printf("In MaidsafeStoreManager::FindValue, %i values have returned.\n",
+         chunk_holders_ids->size());
 #endif
   return (chunk_holders_ids->size() > 0) ? kSuccess : kFindValueFailure;
 }
@@ -1372,10 +1373,13 @@ int MaidsafeStoreManager::FindValue(const std::string &kad_key,
 void MaidsafeStoreManager::FindAvailableChunkHolders(
     const std::string &chunk_name,
     const std::vector<std::string> &chunk_holders_ids,
-    GenericConditionData *cond_data,
+    boost::shared_ptr<GenericConditionData> cond_data,
     std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
-    int *available_chunk_holder_index) {
+    int *available_chunk_holder_index,
+    bool *stop_sending,
+    int *check_chunk_rpc_count) {
   chunk_holders->clear();
+  *check_chunk_rpc_count = 0;
   // Find chunk holders' contact details
   for (size_t h = 0; h < chunk_holders_ids.size(); ++h) {
     knode_->FindCloseNodes(chunk_holders_ids[h],
@@ -1384,11 +1388,19 @@ void MaidsafeStoreManager::FindAvailableChunkHolders(
   }
   // For each, if we have their contact details, check they still have the chunk
   for (size_t i = 0; i < chunk_holders_ids.size(); ++i) {
+    // End now if calling function is satisfied that no more CheckChunk RPCs
+    // need sent.
+    if (*stop_sending)
+      break;
     boost::mutex::scoped_lock lock(cond_data->cond_mutex);
     while (i >= chunk_holders->size()) {
+//      printf("MaidsafeStoreManager::FindAvailableChunkHolders locked %u\n", i);
       cond_data->cond_variable->wait(lock);
+//      printf("MaidsafeStoreManager::FindAvailableChunkHolders unlocked %u\n", i);
     }
     chunk_holders->at(i)->index = i;
+    if (*stop_sending)
+      break;
     if (chunk_holders->at(i)->status != kFailedHolder) {
       kad::Contact new_peer = chunk_holders->at(i)->chunk_holder_contact;
       chunk_holders->at(i)->local = AddressIsLocal(new_peer);
@@ -1405,8 +1417,10 @@ void MaidsafeStoreManager::FindAvailableChunkHolders(
           chunk_holders->at(i)->local, &check_chunk_request,
           &chunk_holders->at(i)->check_chunk_response, controller.get(),
           callback);
+      ++(*check_chunk_rpc_count);
     }
   }
+//  boost::this_thread::sleep(boost::posix_time::milliseconds(250));
 }
 
 bool MaidsafeStoreManager::AddressIsLocal(const kad::Contact &peer) {
@@ -1423,7 +1437,7 @@ void MaidsafeStoreManager::GetHolderContactCallback(
     const std::string &chunk_holder_id,
     const std::string &result,
     std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
-    GenericConditionData *cond_data) {
+    boost::shared_ptr<GenericConditionData> cond_data) {
   boost::shared_ptr<ChunkHolder>
       failed_chunkholder(new ChunkHolder(kad::Contact(chunk_holder_id, "", 0)));
   failed_chunkholder->status = kFailedHolder;
@@ -1432,10 +1446,12 @@ void MaidsafeStoreManager::GetHolderContactCallback(
     printf("In MSM::GetHolderContactCallback, fail - timeout.\n");
 #endif
     {  // NOLINT (Fraser)
+//      printf("MaidsafeStoreManager::GetHolderContactCallback 1 locked\n");
       boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
       chunk_holders->push_back(failed_chunkholder);
+      cond_data->cond_variable->notify_all();
     }
-    cond_data->cond_variable->notify_all();
+//    printf("MaidsafeStoreManager::GetHolderContactCallback 1 unlocked\n");
     return;
   }
   kad::FindResponse find_response;
@@ -1444,10 +1460,12 @@ void MaidsafeStoreManager::GetHolderContactCallback(
     printf("In MSM::GetHolderContactCallback, can't parse result.\n");
 #endif
     {  // NOLINT (Fraser)
+//      printf("MaidsafeStoreManager::GetHolderContactCallback 2 locked\n");
       boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
       chunk_holders->push_back(failed_chunkholder);
       cond_data->cond_variable->notify_all();
     }
+//    printf("MaidsafeStoreManager::GetHolderContactCallback 2 unlocked\n");
     return;
   }
   if (find_response.result() != kad::kRpcResultSuccess) {
@@ -1455,10 +1473,12 @@ void MaidsafeStoreManager::GetHolderContactCallback(
     printf("In MSM::GetHolderContactCallback, Kad operation failed.\n");
 #endif
     {  // NOLINT (Fraser)
+//      printf("MaidsafeStoreManager::GetHolderContactCallback 3 locked\n");
       boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
       chunk_holders->push_back(failed_chunkholder);
       cond_data->cond_variable->notify_all();
     }
+//    printf("MaidsafeStoreManager::GetHolderContactCallback 3 unlocked\n");
     return;
   }
   // If we have the desired node's details, return them, otherwise push back a
@@ -1470,10 +1490,12 @@ void MaidsafeStoreManager::GetHolderContactCallback(
       boost::shared_ptr<ChunkHolder> chunkholder(new ChunkHolder(contact));
       chunkholder->status = kContactable;
       {
+//        printf("MaidsafeStoreManager::GetHolderContactCallback 4 locked\n");
         boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
         chunk_holders->push_back(chunkholder);
         cond_data->cond_variable->notify_all();
       }
+//      printf("MaidsafeStoreManager::GetHolderContactCallback 4 unlocked\n");
       return;
     }
   }
@@ -1481,10 +1503,12 @@ void MaidsafeStoreManager::GetHolderContactCallback(
   printf("In MSM::GetHolderContactCallback, didn't get node's details.\n");
 #endif
   {  // NOLINT (Fraser)
+//    printf("MaidsafeStoreManager::GetHolderContactCallback 5 locked\n");
     boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
     chunk_holders->push_back(failed_chunkholder);
     cond_data->cond_variable->notify_all();
   }
+//  printf("MaidsafeStoreManager::GetHolderContactCallback 5 unlocked\n");
   return;
 }
 
@@ -1494,11 +1518,11 @@ void MaidsafeStoreManager::HasChunkCallback(
   {  // NOLINT (Fraser)
     boost::lock_guard<boost::mutex> lock(*(chunk_holder->mutex));
     if (chunk_holder->check_chunk_response.result() == kNack) {
-  #ifdef DEBUG
+#ifdef DEBUG
 //      printf("In MSM::HasChunkCallback (%d), %d doesn't have the chunk.\n",
 //             knode_->host_port(),
 //             chunk_holder->chunk_holder_contact.host_port());
-  #endif
+#endif
       chunk_holder->status = kFailedHolder;
       // If available_chunk_holder_index is < 0, decrement it to indicate
       // another unsuccessful CheckChunk RPC.
@@ -1506,10 +1530,10 @@ void MaidsafeStoreManager::HasChunkCallback(
         --(*available_chunk_holder_index);
     } else if (chunk_holder->chunk_holder_contact.node_id() !=
                chunk_holder->check_chunk_response.pmid_id()) {
-  #ifdef DEBUG
+#ifdef DEBUG
       printf("In MSM, response from HasChunk came back from wrong node (%d).\n",
              knode_->host_port());
-  #endif
+#endif
       chunk_holder->status = kFailedHolder;
       // If available_chunk_holder_index is < 0, decrement it to indicate
       // another unsuccessful CheckChunk RPC.
@@ -1524,6 +1548,7 @@ void MaidsafeStoreManager::HasChunkCallback(
     }
     get_chunk_conditional_.notify_all();
   }
+//  printf("MaidsafeStoreManager::HasChunkCallback - Unstuck\n");
 }
 
 int MaidsafeStoreManager::FindAndLoadChunk(
@@ -1536,11 +1561,14 @@ int MaidsafeStoreManager::FindAndLoadChunk(
   bool get_messages = (public_key != "") && (signed_public_key != "");
   boost::shared_ptr<boost::condition_variable>
       cond_variable(new boost::condition_variable);
-  GenericConditionData cond_data(cond_variable);
+  boost::shared_ptr<GenericConditionData>
+      cond_data(new GenericConditionData(cond_variable, true));
   boost::mutex get_mutex;
   std::vector< boost::shared_ptr<ChunkHolder> > chunk_holders;
   int available_chunk_holder_index(-1);
   int holder_count(0);
+  bool stop_sending(false);
+  int check_chunk_rpc_count(0);
   // If we need to load the data, iterate through all holders until the data has
   // been loaded, otherwise we can return after only one holder has confirmed
   // they have the data.
@@ -1559,9 +1587,10 @@ int MaidsafeStoreManager::FindAndLoadChunk(
         boost::mutex::scoped_lock lock(get_mutex);
         // This function reads the chunk ref packet to get the IDs of holders &
         // querys them via CheckChunk RPCs, but doesn't wait for the responses.
-        FindAvailableChunkHolders(chunk_name, chunk_holders_ids, &cond_data,
+        FindAvailableChunkHolders(chunk_name, chunk_holders_ids, cond_data,
                                   &chunk_holders,
-                                  &available_chunk_holder_index);
+                                  &available_chunk_holder_index,
+                                  &stop_sending, &check_chunk_rpc_count);
         holder_count = static_cast<int>(chunk_holders_ids.size());
         // Wait until we get a positive response to one of the CheckChunk RPCs
         // or until they have all failed.
@@ -1593,7 +1622,7 @@ int MaidsafeStoreManager::FindAndLoadChunk(
         available_holder = true;
         first_respondent_index = index;
         {
-          boost::lock_guard<boost::mutex> lock(cond_data.cond_mutex);
+          boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
           chunk_holders.at(index)->status = kAwaitingChunk;
         }
         if (get_messages)
@@ -1606,7 +1635,7 @@ int MaidsafeStoreManager::FindAndLoadChunk(
           if (chunk_holders.at(k)->status == kHasChunk) {
             available_holder = true;
             {
-              boost::lock_guard<boost::mutex> lock(cond_data.cond_mutex);
+              boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
               chunk_holders.at(k)->status = kAwaitingChunk;
             }
             GetChunk(chunk_name, chunk_holders.at(k), data, &get_mutex);
@@ -1622,8 +1651,9 @@ int MaidsafeStoreManager::FindAndLoadChunk(
     boost::mutex::scoped_lock lock(get_mutex);
     // This function reads the chunk ref packet to get the IDs of holders &
     // querys them via CheckChunk RPCs, but doesn't wait for the responses.
-    FindAvailableChunkHolders(chunk_name, chunk_holders_ids, &cond_data,
-                              &chunk_holders, &available_chunk_holder_index);
+    FindAvailableChunkHolders(chunk_name, chunk_holders_ids, cond_data,
+                              &chunk_holders, &available_chunk_holder_index,
+                              &stop_sending, &check_chunk_rpc_count);
     holder_count = static_cast<int>(chunk_holders_ids.size());
     // Wait until we get a positive response to one of the CheckChunk RPCs or
     // until they have all failed.
@@ -1631,17 +1661,27 @@ int MaidsafeStoreManager::FindAndLoadChunk(
            (available_chunk_holder_index != (-1 - holder_count)))
       get_chunk_conditional_.wait(lock);
   }
+  // Stop FindAvailableChunkHolders from sending further RPCs
+  stop_sending = true;
   // Cancel outstanding RPCs
-  for (int m = 0; m < holder_count; ++m) {
-    if (chunk_holders.at(m)->status == kContactable) {
-      if (chunk_holders.at(m)->controller.get() != NULL) {
-        channel_manager_.DeletePendingRequest(
-            chunk_holders.at(m)->controller->req_id());
+  {
+    boost::mutex::scoped_lock loch(cond_data->cond_mutex);
+    for (int m = 0; m < holder_count; ++m) {
+      if (chunk_holders.at(m)->status == kContactable) {
+        if (chunk_holders.at(m)->controller.get() != NULL) {
+          channel_manager_.CancelPendingRequest(
+              chunk_holders.at(m)->controller->req_id());
+        }
       }
     }
   }
   if (load_data)
     return data->empty() ? kLoadedChunkEmpty : kSuccess;
+
+//  while (!find_holders_finshed) {
+//    printf("FindAvailableChunkHolders still hasn't finished\n");
+//    boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+//  }
   return (available_chunk_holder_index < 0) ? kLoadChunkFailure : kSuccess;
 }
 
@@ -1956,7 +1996,8 @@ int MaidsafeStoreManager::SendPacketToVaults(const StoreData &store_data) {
       find_cond_variable(new boost::condition_variable);
   boost::shared_ptr<boost::condition_variable>
       store_cond_variable(new boost::condition_variable);
-  GenericConditionData find_cond_data(find_cond_variable);
+  boost::shared_ptr<GenericConditionData>
+      find_cond_data(new GenericConditionData(find_cond_variable));
   GenericConditionData store_cond_data(store_cond_variable);
   std::vector< boost::shared_ptr<ChunkHolder> > packet_holders;
   std::vector< boost::shared_ptr<ChunkHolder> > failed_packet_holders;
@@ -1966,17 +2007,17 @@ int MaidsafeStoreManager::SendPacketToVaults(const StoreData &store_data) {
   co.set_hash_algorithm(crypto::SHA_512);
   // Update copies currently available, otherwise store new copies until
   // kMinChunkCopies have been stored.
-  FindCloseNodes(packet_holders_ids, &packet_holders, &find_cond_data);
+  FindCloseNodes(packet_holders_ids, &packet_holders, find_cond_data);
   // For each, if we have their contact details, send StorePacket.
   int sent_rpc_count(0);
   int returned_rpc_count(0);
   std::vector<std::string> packet_values;
   std::vector<kad::Contact> exclude;
   for (size_t i = 0; i < packet_holders_ids.size(); ++i) {
-    boost::mutex::scoped_lock lock(find_cond_data.cond_mutex);
+    boost::mutex::scoped_lock lock(find_cond_data->cond_mutex);
     // Wait until we've got details for current packet holder.
     while (i >= packet_holders.size()) {
-      find_cond_data.cond_variable->wait(lock);
+      find_cond_data->cond_variable->wait(lock);
     }
     packet_holders.at(i)->index = i;
     // If we got the details, send StorePacket RPC.
@@ -2128,7 +2169,7 @@ int MaidsafeStoreManager::SendPacketToVaults(const StoreData &store_data) {
 void MaidsafeStoreManager::FindCloseNodes(
     const std::vector<std::string> &packet_holder_ids,
     std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
-    GenericConditionData *find_cond_data) {
+    boost::shared_ptr<GenericConditionData> find_cond_data) {
   packet_holders->clear();
   // Find packet holders' contact details
   for (size_t h = 0; h < packet_holder_ids.size(); ++h) {
@@ -2300,14 +2341,18 @@ int MaidsafeStoreManager::UpdateChunkCopies(
   boost::shared_ptr<boost::condition_variable>
       has_conditional(new boost::condition_variable);
   boost::condition_variable update_conditional;
-  GenericConditionData cond_data(has_conditional);
+  boost::shared_ptr<GenericConditionData>
+      cond_data(new GenericConditionData(has_conditional));
   std::vector< boost::shared_ptr<ChunkHolder> > chunk_holders;
   int available_chunk_holder_index;
+  bool stop_sending(false);
+  int check_chunk_rpc_count(0);
   FindAvailableChunkHolders(store_data.non_hex_key_, chunk_holders_ids,
-                            &cond_data, &chunk_holders,
-                            &available_chunk_holder_index);
+                            cond_data, &chunk_holders,
+                            &available_chunk_holder_index, &stop_sending,
+                            &check_chunk_rpc_count);
   bool uncontacted_chunk_holders(true);
-  boost::mutex::scoped_lock lock(cond_data.cond_mutex);
+  boost::mutex::scoped_lock lock(cond_data->cond_mutex);
   // Iterate through all holders until the data has been updated.
   std::vector<UpdateResponse> update_responses;
   while (uncontacted_chunk_holders) {
@@ -2381,12 +2426,13 @@ int MaidsafeStoreManager::LoadPacketFromVaults(
   std::vector< boost::shared_ptr<ChunkHolder> > packet_holders;
   boost::shared_ptr<boost::condition_variable>
       find_cond_var(new boost::condition_variable);
-  GenericConditionData find_cond_data(find_cond_var);
+  boost::shared_ptr<GenericConditionData>
+      find_cond_data(new GenericConditionData(find_cond_var));
   boost::shared_ptr<boost::condition_variable>
       load_cond_var(new boost::condition_variable);
   GenericConditionData load_cond_data(load_cond_var);
   // Find packet holders' contact details
-  FindCloseNodes(packet_holder_ids, &packet_holders, &find_cond_data);
+  FindCloseNodes(packet_holder_ids, &packet_holders, find_cond_data);
 //  printf("FindCloseNodes result: %u - %u\n", packet_holder_ids.size(),
 //         packet_holders.size());
   // For each, if we have their contact details, retrieve the packet
@@ -2398,9 +2444,9 @@ int MaidsafeStoreManager::LoadPacketFromVaults(
   int success_index(-1);
   size_t returned_rpc_count(0);
   for (size_t i = 0; i < packet_holder_ids.size(); ++i) {
-    boost::mutex::scoped_lock lock(find_cond_data.cond_mutex);
+    boost::mutex::scoped_lock lock(find_cond_data->cond_mutex);
     while (i >= packet_holders.size()) {
-      find_cond_data.cond_variable->wait(lock);
+      find_cond_data->cond_variable->wait(lock);
     }
     packet_holders.at(i)->index = i;
     if (packet_holders.at(i)->status != kFailedHolder && success_index < 0) {
@@ -2452,14 +2498,14 @@ int MaidsafeStoreManager::LoadPacketFromVaults(
 //    printf("Deleting the potential RPCs. %u\n", get_packet_responses.size());
     for (size_t i = 0; i < packet_holders.size(); ++i) {
       if (packet_holders.at(i)->controller.get() != NULL)
-        channel_manager_.DeletePendingRequest(packet_holders.at(i)->
+        channel_manager_.CancelPendingRequest(packet_holders.at(i)->
                                               controller->req_id());
     }
   }
 #else
   for (size_t i = 0; i < packet_holders.size(); ++i) {
     channel_manager_.
-        DeletePendingRequest(packet_holders.at(i)->controller->req_id());
+        CancelPendingRequest(packet_holders.at(i)->controller->req_id());
   }
 #endif
   result->clear();
