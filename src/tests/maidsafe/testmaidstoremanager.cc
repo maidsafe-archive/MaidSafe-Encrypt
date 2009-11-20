@@ -126,7 +126,7 @@ void FailedContactCallback(
     const int &min_delay,
     const int &max_delay,
     std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
-    maidsafe::GenericConditionData *cond_data) {
+    boost::shared_ptr<maidsafe::GenericConditionData> cond_data) {
   int diff = max_delay - min_delay;
   int sleep_time(base::random_32bit_uinteger() % diff + min_delay);
   boost::this_thread::sleep(boost::posix_time::milliseconds(sleep_time));
@@ -143,7 +143,7 @@ void ContactCallback(
     const int &min_delay,
     const int &max_delay,
     std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
-    maidsafe::GenericConditionData *cond_data) {
+    boost::shared_ptr<maidsafe::GenericConditionData> cond_data) {
   int diff = max_delay - min_delay;
   int sleep_time(base::random_32bit_uinteger() % diff + min_delay);
   boost::this_thread::sleep(boost::posix_time::milliseconds(sleep_time));
@@ -161,7 +161,7 @@ void ThreadedGetHolderContactCallbacks(
     const int &min_delay,
     const int &max_delay,
     std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
-    maidsafe::GenericConditionData *cond_data) {
+    boost::shared_ptr<maidsafe::GenericConditionData> cond_data) {
   int min(min_delay);
   if (min < 0)
     min = 0;
@@ -1667,7 +1667,7 @@ class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
   MOCK_METHOD3(FindCloseNodes, void(
       const std::vector<std::string> &packet_holder_ids,
       std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
-      GenericConditionData *find_cond_data));
+      boost::shared_ptr<GenericConditionData> find_cond_data));
   MOCK_METHOD4(GetStorePeer, int(const float &,
                                  const std::vector<kad::Contact> &exclude,
                                  kad::Contact *new_peer,
