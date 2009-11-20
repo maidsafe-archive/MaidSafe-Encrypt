@@ -619,10 +619,9 @@ bool SelfEncryption::CalculateChunkSizes(const fs::path &entry_path,
     // maximum bytes added to them.
     float max_ratio_ = static_cast<float>(1)/(max_chunks_*16);
 #ifdef DEBUG
-//    printf("file hash: %s\n", file_hash_);
-//    printf("file_hash_.c_str()[%i] = %s\tChunkAddition = %i\tAdding %i\n",
-//           this_chunk_, file_hash_.c_str()[this_chunk_].c_str(),
-//           ChunkAddition(file_hash_.c_str()[this_chunk_]),
+//    printf("file hash: %s\n", file_hash_.c_str());
+//    printf("%i - ChunkAddition = %i\tAdding %i\n",
+//           this_chunk_, ChunkAddition(file_hash_.c_str()[this_chunk_]),
 //           static_cast<int>(max_ratio_
 //                            *ChunkAddition(file_hash_.c_str()[this_chunk_])
 //                            *this_avg_chunk_size_));
@@ -679,6 +678,7 @@ bool SelfEncryption::GeneratePreEncHashes(const fs::path &entry_path,
 
     boost::scoped_ptr<char> buffer_(new char[buffer_size_]);
     std::ostringstream this_hash_(std::ostringstream::binary);
+    fin_.seekg(pointer_, std::ifstream::beg);
     fin_.read(buffer_.get(), buffer_size_);
     this_hash_.write(buffer_.get(), buffer_size_);
     pre_enc_hash_ = SHA512(this_hash_.str());

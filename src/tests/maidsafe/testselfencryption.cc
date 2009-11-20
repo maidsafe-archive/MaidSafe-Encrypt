@@ -518,6 +518,24 @@ TEST_F(SelfEncryptionTest, BEH_MAID_GeneratePreEncHashes) {
   ASSERT_EQ(dm.chunk_name(2),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
+
+  // Modify default chunklet size so that pre-encryption hashes are generated
+  // from only first 2 chars of each chunk.
+  uint16_t *new_default_chunklet_size_ =
+      const_cast<uint16_t*>(&se.default_chunklet_size_);
+  *new_default_chunklet_size_ = 2;
+  dm.clear_chunk_name();
+  ASSERT_TRUE(se.GeneratePreEncHashes(path1, &dm));
+  ASSERT_EQ(3, dm.chunk_name_size());
+  ASSERT_EQ(dm.chunk_name(0),
+        "2d408a0717ec188158278a796c689044361dc6fdde28d6f04973b80896e1823975cdbf"
+        "12eb63f9e0591328ee235d80e9b5bf1aa6a44f4617ff3caf6400eb172d");
+  ASSERT_EQ(dm.chunk_name(1),
+        "2d408a0717ec188158278a796c689044361dc6fdde28d6f04973b80896e1823975cdbf"
+        "12eb63f9e0591328ee235d80e9b5bf1aa6a44f4617ff3caf6400eb172d");
+  ASSERT_EQ(dm.chunk_name(2),
+        "2d408a0717ec188158278a796c689044361dc6fdde28d6f04973b80896e1823975cdbf"
+        "12eb63f9e0591328ee235d80e9b5bf1aa6a44f4617ff3caf6400eb172d");
 }
 
 TEST_F(SelfEncryptionTest, BEH_MAID_HashUnique) {
