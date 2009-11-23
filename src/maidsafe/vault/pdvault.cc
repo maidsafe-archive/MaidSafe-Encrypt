@@ -47,7 +47,8 @@ AddToRefPacketTask::AddToRefPacketTask(const IouReadyTuple &iou_ready_details,
       pdvault_(pdvault) {}
 
 void AddToRefPacketTask::run() {
-  pdvault_->AddToRefPacket(iou_ready_details_);
+  if (pdvault_->vault_status() == kVaultStarted)
+    pdvault_->AddToRefPacket(iou_ready_details_);
 }
 
 PDVault::PDVault(const std::string &pmid_public,
@@ -100,7 +101,7 @@ PDVault::PDVault(const std::string &pmid_public,
 }
 
 PDVault::~PDVault() {
-  Stop(true);
+//  Stop(true);
 }
 
 void PDVault::Start(bool first_node) {
@@ -165,12 +166,12 @@ void PDVault::KadJoinedCallback(const std::string &result,
   kad_join_cond_.notify_one();
 }
 
-int PDVault::Stop(bool cancel_pending_ops) {
+int PDVault::Stop() {
   if (vault_status() == kVaultStopped) {
 #ifdef DEBUG
     printf("In PDVault::Stop(), already stopped.\n");
 #endif
-    return -1;
+    return 0;
   }
   if (vault_status() == kVaultStopping) {
 #ifdef DEBUG
@@ -179,9 +180,7 @@ int PDVault::Stop(bool cancel_pending_ops) {
     return -2;
   }
   SetVaultStatus(kVaultStopping);
-//  if (cancel_pending_ops)
-//    thread_pool_.clear();
-  thread_pool_.waitForDone();
+//  thread_pool_.waitForDone();
   prune_pending_ops_thread_.join();
   pending_ious_thread_.join();
   UnRegisterMaidService();
@@ -272,6 +271,13 @@ std::string PDVault::GetSignedRequest(const std::string &non_hex_name,
 void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
 // printf("1. Vault %s - contacts size: %u\n", HexSubstr(non_hex_pmid_).c_str(),
 //         (*base::PDRoutingTable::getInstance())[base::itos(port_)]->size());
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
+
   // Find the chunk reference holders
   std::vector<kad::Contact> ref_holders;
   if ((FindKNodes(iou_ready_details.get<1>(), &ref_holders) != 0) ||
@@ -294,9 +300,9 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
        it != ref_holders.end(); ++it) {
     if ((*it).node_id() == knode_.node_id()) {
 #ifdef DEBUG
-      printf("Vault %s listed as a ref holder to itself for chunk %s\n",
-             HexSubstr((*it).node_id()).c_str(),
-             HexSubstr(iou_ready_details.get<1>()).c_str());
+//      printf("Vault %s listed as a ref holder to itself for chunk %s\n",
+//             HexSubstr((*it).node_id()).c_str(),
+//             HexSubstr(iou_ready_details.get<1>()).c_str());
 #endif
       ref_holders.erase(it);
       break;
@@ -347,12 +353,21 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
     channel_manager_.CancelPendingRequest(
         results.at(j).controller_->req_id());
   }
+  if (successful_count < kKadStoreThreshold_ || !got_valid_iou) {
 #ifdef DEBUG
-  printf("In PDVault::AddToRefPacket (%i): count = %i (success: count=>%i).\n",
-         host_port(), successful_count, kKadStoreThreshold_);
+  printf("In PDVault::AddToRefPacket (%i) - failed to add ourself (%s) "
+         "as ref holder for key %s\n", host_port(),
+         HexSubstr(non_hex_pmid_).c_str(),
+         HexSubstr(iou_ready_details.get<1>()).c_str());
 #endif
-  if (successful_count < kKadStoreThreshold_ || !got_valid_iou)
     return;  // We've not received enough successful responses or got valid IOU
+  }
+#ifdef DEBUG
+//  printf("In PDVault::AddToRefPacket (%i) - successfully added ourself (%s) "
+//         "as ref holder for key %s\n", host_port(),
+//         HexSubstr(non_hex_pmid_).c_str(),
+//         HexSubstr(iou_ready_details.get<1>()).c_str());
+#endif
   poh_.AdvanceStatus("", iou_ready_details.get<1>(), 0, "", "", "",
                      IOU_RANK_RETRIEVED);
 // TODO(Fraser#5#): 2009-08-12 - Increment our rank and clear pending op.
@@ -362,6 +377,13 @@ int PDVault::HandleStoreRefResponse(
     const IouReadyTuple &iou_ready_details,
     const StoreRefResultHolder &store_ref_result_holder,
     bool *got_valid_iou) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return kVaultOffline;
+  }
+
   maidsafe::StoreReferenceResponse srr =
       store_ref_result_holder.store_ref_response_;
   if (srr.result() == kNack) {
@@ -475,6 +497,13 @@ int PDVault::HandleStoreRefResponse(
 
 int PDVault::FindKNodes(const std::string &kad_key,
                         std::vector<kad::Contact> *contacts) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return kVaultOffline;
+  }
+
   KadCallback kad_callback;
   knode_.FindCloseNodes(kad_key, boost::bind(&KadCallback::SetResponse,
       &kad_callback, _1));
@@ -522,6 +551,13 @@ int PDVault::SendToRefPacket(
     const IouReadyTuple &iou_ready_details,
     boost::mutex *store_ref_mutex,
     StoreRefResultHolder *store_ref_result_holder) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return kVaultOffline;
+  }
+
   maidsafe::StoreReferenceRequest store_ref_request;
   std::string chunk_name = iou_ready_details.get<1>();
   std::string signed_request =  GetSignedRequest(chunk_name,
@@ -550,6 +586,12 @@ void PDVault::SendToRefPacketCallback(
 #ifdef DEBUG
 //  printf("In PDVault::SendToRefPacketCallback.\n");
 #endif
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (store_ref_mutex) {
     boost::mutex::scoped_lock loch(*store_ref_mutex);
     store_ref_result_holder->store_ref_response_returned_ = true;
@@ -567,6 +609,12 @@ void PDVault::SyncVault(base::callback_func_type cb) {
   // 2. Do validity check for each chunk with an arbitrary alive partner.
   // 3. If chunk content is stale, synchronize chunk content with the partner.
   // otherwise, do the next vadility check.
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   boost::shared_ptr<SyncVaultData> data(new struct SyncVaultData());
   vault_chunkstore_.GetAllChunks(&data->chunk_names);
   if (!data->chunk_names.empty()) {
@@ -591,6 +639,12 @@ void PDVault::SyncVault(base::callback_func_type cb) {
 }
 
 void PDVault::IterativeSyncVault(boost::shared_ptr<SyncVaultData> data) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (data->is_callbacked) return;
   if (data->chunk_names.empty() && data->active_updating == 0) {
     // no more chunks need to be updated, job done!
@@ -624,6 +678,12 @@ void PDVault::IterativeSyncVault(boost::shared_ptr<SyncVaultData> data) {
 void PDVault::SyncVault_FindAlivePartner(const std::string& result,
                                          boost::shared_ptr<SyncVaultData> data,
                                          std::string chunk_name) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   kad::FindResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
       result_msg.result() == kad::kRpcResultFailure ||
@@ -672,6 +732,12 @@ void PDVault::SyncVault_FindAlivePartner_Callback(
     const std::string& result,
     boost::shared_ptr<GetAlivePartner> partner_data,
     kad::Contact remote) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (partner_data->is_found) return;
   ++partner_data->contacted_partners;
   kad::PingResponse result_msg;
@@ -706,6 +772,12 @@ void PDVault::ValidityCheck(const std::string &chunk_name,
                             const kad::Contact &remote,
                             int attempt,
                             base::callback_func_type cb) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (attempt > kValidityCheckRetry) {
     maidsafe::GenericResponse local_result;
     std::string local_result_str("");
@@ -756,6 +828,12 @@ void PDVault::ValidityCheck(const std::string &chunk_name,
 void PDVault::ValidityCheckCallback(
     boost::shared_ptr<maidsafe::ValidityCheckResponse> validity_check_response,
     boost::shared_ptr<ValidityCheckArgs> validity_check_args) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   // TODO(Fraser#5#): 2009-03-18 -Handle timeout: call ValdtyChck with ++attempt
 
   if (!validity_check_response->IsInitialized())
@@ -806,6 +884,12 @@ void PDVault::IterativeSyncVault_SyncChunk(
     boost::shared_ptr<SyncVaultData> data,
     std::string chunk_name,
     kad::Contact remote) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   maidsafe::ValidityCheckResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
       result_msg.result() == kNack) {
@@ -845,6 +929,12 @@ void PDVault::IterativeSyncVault_SyncChunk(
 void PDVault::IterativeSyncVault_UpdateChunk(
     boost::shared_ptr<maidsafe::GetResponse> get_chunk_response,
     boost::shared_ptr<SynchArgs> synch_args) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   maidsafe::GetResponse result_msg;
   if (!get_chunk_response->IsInitialized() ||
       get_chunk_response->result() == kNack) {
@@ -861,6 +951,12 @@ void PDVault::IterativeSyncVault_UpdateChunk(
 void PDVault::RepublishChunkRef(base::callback_func_type cb) {
   boost::shared_ptr<RepublishChunkRefData>
     data(new struct RepublishChunkRefData());
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   vault_chunkstore_.GetAllChunks(&data->chunk_names);
   if (!data->chunk_names.empty()) {
     printf("Republishing chunk references (One * represents one chunk):\n");
@@ -878,6 +974,12 @@ void PDVault::RepublishChunkRef(base::callback_func_type cb) {
 
 void PDVault::IterativePublishChunkRef(
     boost::shared_ptr<RepublishChunkRefData> data) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (data->is_callbacked) return;
   if (data->chunk_names.empty()) {
     // no more chunks need to be republished, job done!
@@ -925,6 +1027,12 @@ void PDVault::IterativePublishChunkRef(
 void PDVault::IterativePublishChunkRef_Next(
     const std::string& result,
     boost::shared_ptr<RepublishChunkRefData> data) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   kad::StoreResponse result_msg;
   if (result_msg.ParseFromString(result))
     if (result_msg.result() == kad::kRpcResultFailure)
@@ -934,12 +1042,24 @@ void PDVault::IterativePublishChunkRef_Next(
 
 void PDVault::GetChunk(const std::string &chunk_name,
                        base::callback_func_type cb) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   // preparing the shared pointer with data for the LoadChunk operation
   boost::shared_ptr<LoadChunkData> data(new LoadChunkData(chunk_name, cb));
   FindChunkRef(data);
 }
 
 void PDVault::FindChunkRef(boost::shared_ptr<struct LoadChunkData> data) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   knode_.FindValue(data->chunk_name, false,
                    boost::bind(&PDVault::FindChunkRefCallback, this, _1, data));
 }
@@ -947,6 +1067,12 @@ void PDVault::FindChunkRef(boost::shared_ptr<struct LoadChunkData> data) {
 void PDVault::FindChunkRefCallback(
     const std::string &result,
     boost::shared_ptr<struct LoadChunkData> data) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (data->is_callbacked || !knode_.is_joined()) {
     // callback can only be called once
     return;
@@ -996,6 +1122,12 @@ void PDVault::FindChunkRefCallback(
 
 
 void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   boost::shared_ptr<maidsafe::CheckChunkResponse>
       check_chunk_response(new maidsafe::CheckChunkResponse());
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
@@ -1021,6 +1153,12 @@ void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
 void PDVault::CheckChunkCallback(
     boost::shared_ptr<maidsafe::CheckChunkResponse> check_chunk_response,
     boost::shared_ptr<GetArgs> get_args) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (get_args->data_->is_callbacked ||
       !knode_.is_joined()) {
     // callback can only be called once
@@ -1104,6 +1242,12 @@ void PDVault::GetMessages(const std::string &chunk_name,
                            const std::string &public_key,
                            const std::string &signed_public_key,
                            base::callback_func_type cb) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   boost::shared_ptr<LoadChunkData> data(new LoadChunkData(chunk_name, cb));
   data->get_msgs = true;
   data->pub_key = public_key;
@@ -1114,6 +1258,12 @@ void PDVault::GetMessages(const std::string &chunk_name,
 void PDVault::GetMessagesCallback(
     boost::shared_ptr<maidsafe::GetBPMessagesResponse> get_messages_response,
     boost::shared_ptr<GetArgs> get_args) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (get_args->data_->is_callbacked)
     return;
   if (get_messages_response->IsInitialized() &&
@@ -1152,6 +1302,12 @@ void PDVault::GetMessagesCallback(
 void PDVault::GetChunkCallback(
     boost::shared_ptr<maidsafe::GetResponse> get_response,
     boost::shared_ptr<GetArgs> get_args) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (get_args->data_->is_callbacked)
     return;
   if (get_response->IsInitialized() &&
@@ -1188,6 +1344,12 @@ void PDVault::GetChunkCallback(
 }
 
 void PDVault::RetryGetChunk(boost::shared_ptr<struct LoadChunkData> data) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (data->is_callbacked || !knode_.is_joined()) {
     // callback can only be called once
     return;
@@ -1229,6 +1391,12 @@ void PDVault::SwapChunk(const std::string &chunk_name,
                         const std::string &rendezvous_ip,
                         const boost::uint16_t &rendezvous_port,
                         base::callback_func_type cb) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   boost::shared_ptr<SwapChunkArgs> swap_chunk_args(
       new SwapChunkArgs(chunk_name, remote_ip, remote_port, rendezvous_ip,
       rendezvous_port, cb));
@@ -1255,6 +1423,12 @@ void PDVault::SwapChunk(const std::string &chunk_name,
 void PDVault::SwapChunkSendChunk(
     boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
     boost::shared_ptr<SwapChunkArgs> swap_chunk_args) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (!swap_chunk_response->IsInitialized()
       ||(swap_chunk_response->result() == kNack)) {
     maidsafe::SwapChunkResponse local_result;
@@ -1288,6 +1462,12 @@ void PDVault::SwapChunkSendChunk(
 void PDVault::SwapChunkAcceptChunk(
     boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
     boost::shared_ptr<SwapChunkArgs> swap_chunk_args) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
   if (!swap_chunk_response->IsInitialized()
       || (swap_chunk_response->result() == kNack
       || (swap_chunk_response->request_type() != 1)

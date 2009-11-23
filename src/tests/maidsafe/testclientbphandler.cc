@@ -1,11 +1,35 @@
+/*
+* ============================================================================
+*
+* Copyright [2009] maidsafe.net limited
+*
+* Description:  Test for Clientbufferpackethandler using Gmock
+* Version:      1.0
+* Created:      2009-11-18-10.11.25
+* Revision:     none
+* Compiler:     gcc
+* Author:       Team
+* Company:      maidsafe.net limited
+*
+* The following source code is property of maidsafe.net limited and is not
+* meant for external use.  The use of this code is governed by the license
+* file LICENSE.TXT found in the root of this directory and also on
+* www.maidsafe.net.
+*
+* You are not free to copy, amend or otherwise use this source code without
+* the explicit written permission of the board of directors of maidsafe.net.
+*
+* ============================================================================
+*/
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
-
-#include "maidsafe/clientbufferpackethandler.h"
 #include <maidsafe/general_messages.pb.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
+
+#include "maidsafe/clientbufferpackethandler.h"
 
 using ::testing::_;
 using ::testing::Invoke;
@@ -163,17 +187,17 @@ class GetMsgsHelper {
 };
 
 class MockBPRpcs : public maidsafe::BufferPacketRpcs {
-public:
-  MOCK_METHOD6(CreateBP, void (const kad::Contact&, bool,
+ public:
+  MOCK_METHOD6(CreateBP, void(const kad::Contact&, bool,
     const maidsafe::CreateBPRequest*, maidsafe::CreateBPResponse*,
     rpcprotocol::Controller*, google::protobuf::Closure *));
-  MOCK_METHOD6(ModifyBPInfo, void (const kad::Contact&, bool,
+  MOCK_METHOD6(ModifyBPInfo, void(const kad::Contact&, bool,
     const maidsafe::ModifyBPInfoRequest*, maidsafe::ModifyBPInfoResponse*,
     rpcprotocol::Controller*, google::protobuf::Closure*));
-  MOCK_METHOD6(GetBPMessages, void (const kad::Contact&, bool,
+  MOCK_METHOD6(GetBPMessages, void(const kad::Contact&, bool,
     const maidsafe::GetBPMessagesRequest*, maidsafe::GetBPMessagesResponse*,
     rpcprotocol::Controller*, google::protobuf::Closure*));
-  MOCK_METHOD6(AddBPMessage, void (const kad::Contact&, bool,
+  MOCK_METHOD6(AddBPMessage, void(const kad::Contact&, bool,
     const maidsafe::AddBPMessageRequest*, maidsafe::AddBPMessageResponse*,
     rpcprotocol::Controller*, google::protobuf::Closure*));
 };
@@ -183,11 +207,10 @@ class MockBPH : public maidsafe::ClientBufferPacketHandler {
   MockBPH(maidsafe::BufferPacketRpcs *rpcs, kad::KNode *knode)
     : maidsafe::ClientBufferPacketHandler(rpcs, knode) {}
   MOCK_METHOD2(FindReferences,
-    void (base::callback_func_type, boost::shared_ptr<maidsafe::ChangeBPData>));
+    void(base::callback_func_type, boost::shared_ptr<maidsafe::ChangeBPData>));
   MOCK_METHOD3(FindRemoteContact,
-    void (base::callback_func_type, boost::shared_ptr<maidsafe::ChangeBPData>,
+    void(base::callback_func_type, boost::shared_ptr<maidsafe::ChangeBPData>,
     const int&));
-
 };
 
 class TestClientBP : public testing::Test {
@@ -260,7 +283,7 @@ class TestClientBP : public testing::Test {
   crypto::Crypto cryp;
 };
 
-TEST_F(TestClientBP, BEH_MAID_CreateBP) {
+TEST_F(TestClientBP, BEH_MAID_CreateBP_OK) {
   maidsafe::ClientBufferPacketHandler cbph(&BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
@@ -277,12 +300,12 @@ TEST_F(TestClientBP, BEH_MAID_CreateBP) {
     signed_pub_key, "", crypto::STRING_STRING, false), keys.public_key(),
     keys.private_key()};
 
-  cbph.CreateBufferPacket(bpip, boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
+  cbph.CreateBufferPacket(bpip,
+                          boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-
 }
 
-TEST_F(TestClientBP, BEH_MAID_CreateBPFail) {
+TEST_F(TestClientBP, BEH_MAID_CreateBPFailOnce) {
   maidsafe::ClientBufferPacketHandler cbph(&BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
@@ -299,9 +322,9 @@ TEST_F(TestClientBP, BEH_MAID_CreateBPFail) {
     signed_pub_key, "", crypto::STRING_STRING, false), keys.public_key(),
     keys.private_key()};
 
-  cbph.CreateBufferPacket(bpip, boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
+  cbph.CreateBufferPacket(bpip,
+                          boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   ASSERT_EQ(maidsafe::kStoreNewBPError, cb.result);
-
 }
 
 TEST_F(TestClientBP, BEH_MAID_CreateBPFailThenSucceed) {
@@ -322,9 +345,9 @@ TEST_F(TestClientBP, BEH_MAID_CreateBPFailThenSucceed) {
     signed_pub_key, "", crypto::STRING_STRING, false), keys.public_key(),
     keys.private_key()};
 
-  cbph.CreateBufferPacket(bpip, boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
+  cbph.CreateBufferPacket(bpip,
+                          boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfo) {
@@ -353,11 +376,11 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfo) {
     keys.private_key()};
 
   std::vector<std::string> users;
-  cbph.ModifyOwnerInfo(bpip, 0, users, boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
+  cbph.ModifyOwnerInfo(bpip, 0, users,
+                       boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOINoReferences) {
@@ -384,11 +407,11 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOINoReferences) {
     keys.private_key()};
 
   std::vector<std::string> users;
-  cbph.ModifyOwnerInfo(bpip, 0, users, boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
+  cbph.ModifyOwnerInfo(bpip, 0, users,
+                       boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
-
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOIFailAllFindContacts) {
@@ -404,7 +427,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailAllFindContacts) {
 
   EXPECT_CALL(cbph, FindRemoteContact(_, _, _))
     .Times(kMinChunkCopies)
-    .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)));;
+    .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)));
 
   EXPECT_CALL(BPMock, ModifyBPInfo(_, _, _, _, _, _))
     .Times(0);
@@ -416,11 +439,11 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailAllFindContacts) {
     keys.private_key()};
 
   std::vector<std::string> users;
-  cbph.ModifyOwnerInfo(bpip, 0, users, boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
+  cbph.ModifyOwnerInfo(bpip, 0, users,
+                       boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
-
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOIFailOneFindContacts) {
@@ -451,11 +474,11 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailOneFindContacts) {
     keys.private_key()};
 
   std::vector<std::string> users;
-  cbph.ModifyOwnerInfo(bpip, 0, users, boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
+  cbph.ModifyOwnerInfo(bpip, 0, users,
+                       boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOIFailModifyInfoRpc) {
@@ -484,11 +507,11 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailModifyInfoRpc) {
     keys.private_key()};
 
   std::vector<std::string> users;
-  cbph.ModifyOwnerInfo(bpip, 0, users, boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
+  cbph.ModifyOwnerInfo(bpip, 0, users,
+                       boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
-
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddMessage) {
@@ -569,10 +592,9 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgNoReferences) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPAddMessageError, cb.result);
-
 }
 
-TEST_F(TestClientBP, BEH_MAID_AddMsgFailAllFindContacts) {
+TEST_F(TestClientBP, FUNC_MAID_AddMsgFailAllFindContacts) {
   MockBPH cbph(&BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
@@ -585,7 +607,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgFailAllFindContacts) {
 
   EXPECT_CALL(cbph, FindRemoteContact(_, _, _))
     .Times(kMinChunkCopies)
-    .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)));;
+    .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)));
 
   EXPECT_CALL(BPMock, AddBPMessage(_, _, _, _, _, _))
     .Times(0);
@@ -610,10 +632,9 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgFailAllFindContacts) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPAddMessageError, cb.result);
-
 }
 
-TEST_F(TestClientBP, BEH_MAID_AddMsgFailOneFindContacts) {
+TEST_F(TestClientBP, FUNC_MAID_AddMsgFailOneFindContacts) {
   MockBPH cbph(&BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
@@ -654,7 +675,6 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgFailOneFindContacts) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddMsgFailAddMessageRpc) {
@@ -696,7 +716,6 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgFailAddMessageRpc) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPAddMessageError, cb.result);
-
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMessages) {
@@ -733,7 +752,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessages) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  ASSERT_EQ(3, cb.msgs.size());
+  ASSERT_EQ(size_t(3), cb.msgs.size());
   maidsafe::ValidatedBufferPacketMessage msg = cb.msgs.front();
   ASSERT_EQ("msg1", msg.message());
   cb.msgs.pop_front();
@@ -782,7 +801,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesOneFindContacsFail) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  ASSERT_EQ(3, cb.msgs.size());
+  ASSERT_EQ(size_t(3), cb.msgs.size());
   maidsafe::ValidatedBufferPacketMessage msg = cb.msgs.front();
   ASSERT_EQ("msg---1", msg.message());
   cb.msgs.pop_front();
@@ -822,7 +841,6 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsNoReferences) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
-
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMsgsFailAllFindContacts) {
@@ -838,7 +856,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailAllFindContacts) {
 
   EXPECT_CALL(cbph, FindRemoteContact(_, _, _))
     .Times(kMinChunkCopies)
-    .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)));;
+    .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)));
 
   EXPECT_CALL(BPMock, AddBPMessage(_, _, _, _, _, _))
     .Times(0);
@@ -853,7 +871,6 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailAllFindContacts) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
-
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMsgsFailGetBPMessagesRpc) {
@@ -887,5 +904,4 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailGetBPMessagesRpc) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
-
 }

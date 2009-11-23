@@ -225,7 +225,7 @@ TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CheckConnectionStatus) {
 }
 */
 
-TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CreateBP) {
+TEST_F(ClientBufferPacketHandlerTest, BEH_MAID_CreateBufferPacket) {
   boost::scoped_ptr<maidsafe::LocalStoreManager>
       sm(new maidsafe::LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));

@@ -227,7 +227,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
   ASSERT_EQ("", ss_->SessionName());
 }
 
-TEST_F(SessionSingletonTest, BEH_MAID_SessionKeyRingIO) {
+TEST_F(SessionSingletonTest, FUNC_MAID_SessionKeyRingIO) {
   std::string pub_keys[7];
   std::string pri_keys[7];
   DataAtlas da;

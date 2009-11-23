@@ -400,7 +400,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 1; ++i) {
+  for (boost::uint32_t i = 0; i <= 1; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -519,7 +519,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesIOUDone) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 2; ++i) {
+  for (boost::uint32_t i = 0; i <= 2; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -574,7 +574,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreIOU) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 4; ++i) {
+  for (boost::uint32_t i = 0; i <= 4; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -641,7 +641,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkReference) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 2; ++i) {
+  for (boost::uint32_t i = 0; i <= 2; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -709,7 +709,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheck) {
   Callback cb_obj;
 
   // test Get()'s error handling
-  for (int i = 0; i <= 1; ++i) {
+  for (boost::uint32_t i = 0; i <= 1; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -727,7 +727,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheck) {
   }
 
   // test CheckChunk()'s error handling
-  for (int i = 0; i <= 1; ++i) {
+  for (boost::uint32_t i = 0; i <= 1; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -783,7 +783,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 2; ++i) {
+  for (boost::uint32_t i = 0; i <= 2; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -933,7 +933,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 2; ++i) {
+  for (boost::uint32_t i = 0; i <= 2; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -1055,7 +1055,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 1; ++i) {
+  for (boost::uint32_t i = 0; i <= 1; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -1104,7 +1104,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 2; ++i) {
+  for (boost::uint32_t i = 0; i <= 2; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -1149,7 +1149,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 1; ++i) {
+  for (boost::uint32_t i = 0; i <= 1; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;

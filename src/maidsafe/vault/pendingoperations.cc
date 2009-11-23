@@ -217,7 +217,7 @@ int PendingOperationsHandler::PrunePendingOps() {
 #endif
     return deletes;
   }
-  boost::uint32_t bound = base::get_epoch_time() - 14;
+  boost::uint32_t bound = base::get_epoch_time() - 28;
   pending_operation_set_timestamp::iterator it = pending_op_index.begin();
   pending_operation_set_timestamp::iterator limit =
       pending_op_index.lower_bound(bound);

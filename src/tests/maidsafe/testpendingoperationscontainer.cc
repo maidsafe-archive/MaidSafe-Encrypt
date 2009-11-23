@@ -262,9 +262,9 @@ TEST_F(PendingOperationContainerTest, FUNC_VAULT_PrunePendingOps) {
   }
   ASSERT_EQ(0, poh_.PrunePendingOps());
 
-  printf("Before 15 sec sleep.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(15));
-  printf("After 15 sec sleep.\n");
+  printf("Before 30 sec sleep.\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  printf("After 30 sec sleep.\n");
   ASSERT_EQ(static_cast<int>(cycles), poh_.PrunePendingOps());
   ASSERT_EQ(0, poh_.PendingOperationsCount());
 
@@ -281,9 +281,9 @@ TEST_F(PendingOperationContainerTest, FUNC_VAULT_PrunePendingOps) {
     ASSERT_EQ(static_cast<int>(a + cycles + 1), poh_.PendingOperationsCount());
   }
 
-  printf("Before 15 sec sleep.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(15));
-  printf("After 15 sec sleep.\n");
+  printf("Before 30 sec sleep.\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  printf("After 30 sec sleep.\n");
   ASSERT_EQ(static_cast<int>(cycles), poh_.PrunePendingOps());
   ASSERT_EQ(static_cast<int>(cycles), poh_.PendingOperationsCount());
 }

@@ -49,6 +49,7 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual void Init(int, base::callback_func_type cb);
   virtual void Close(base::callback_func_type cb, bool);
   virtual void CleanUpTransport() {}
+  virtual void StopRvPing() {}
   virtual bool NotDoneWithUploading();
   virtual bool KeyUnique(const std::string &hex_key, bool check_local);
 

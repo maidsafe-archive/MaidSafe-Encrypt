@@ -418,7 +418,7 @@ TEST_F(PDVaultTest, FUNC_MAID_VaultStartStop) {
   const int kTestVaultNo(4);
   for (int loop = 0; loop < 7; ++loop) {
     success_ = false;
-    pdvaults_[kTestVaultNo]->Stop(true);
+    pdvaults_[kTestVaultNo]->Stop();
     ASSERT_NE(kVaultStarted, pdvaults_[kTestVaultNo]->vault_status());
     printf("Vault stopped - iteration %i.\n", loop+1);
     pdvaults_[kTestVaultNo]->Start(false);

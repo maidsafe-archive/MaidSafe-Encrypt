@@ -173,7 +173,7 @@ class Env: public testing::Environment {
     kad_contact->set_port((*pdvaults_)[0]->host_port());
     kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
     kad_contact->set_local_port((*pdvaults_)[0]->local_host_port());
-    ASSERT_EQ(0, (*pdvaults_)[1]->Stop(true));
+    ASSERT_EQ(0, (*pdvaults_)[1]->Stop());
     ASSERT_NE(maidsafe_vault::kVaultStarted, (*pdvaults_)[1]->vault_status());
     // Save kad config to files and start all remaining vaults
     for (int k = 1; k < kNetworkSize_; ++k) {
@@ -232,7 +232,7 @@ class Env: public testing::Environment {
     for (int i = 0; i < current_nodes_created_; ++i) {
       printf("Trying to stop vault %i.\n", i);
       success = false;
-      (*pdvaults_)[i]->Stop(true);
+      (*pdvaults_)[i]->Stop();
       if ((*pdvaults_)[i]->vault_status() != maidsafe_vault::kVaultStarted)
         printf("Vault %i stopped.\n", i);
       else

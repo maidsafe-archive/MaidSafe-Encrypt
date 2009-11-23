@@ -139,7 +139,7 @@ TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateMPID) {
   ASSERT_EQ(expected_name, name);
 }
 
-TEST_F(SystemPacketHandlerTest, BEH_MAID_GetKeyFromPacket) {
+TEST_F(SystemPacketHandlerTest, FUNC_MAID_GetKeyFromPacket) {
   crypto::RsaKeyPair keys;
   std::string ser_packet;
   PacketParams result;

@@ -2058,7 +2058,6 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreDeletePackets) {
 }
 
 TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreHasPackets) {
-  printf("%s\n\n\n\n", base::EncodeToHex("1a5268a72805ecd8e6a1e07c338724d").c_str());
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);

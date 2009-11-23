@@ -48,7 +48,7 @@ VaultDaemon::~VaultDaemon() {
   stop_ += boost::posix_time::to_simple_string(now_);
   WriteToLog(stop_);
   if (pdvault_ != NULL) {
-    pdvault_->Stop(true);
+    pdvault_->Stop();
     pdvault_->CleanUp();
     delete pdvault_;
   }
@@ -282,7 +282,7 @@ bool VaultDaemon::StartNotOwnedVault() {
 }
 
 void VaultDaemon::StopNotOwnedVault() {
-  pdvault_->Stop(true);
+  pdvault_->Stop();
   delete pdvault_;
   pdvault_ = NULL;
   fs::path chunkstore_dir(vault_path_);

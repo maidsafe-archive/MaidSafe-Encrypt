@@ -43,6 +43,7 @@ class StoreManagerInterface {
   virtual void Init(int port, base::callback_func_type cb)=0;
   virtual void Close(base::callback_func_type cb, bool cancel_pending_ops)=0;
   virtual void CleanUpTransport()=0;
+  virtual void StopRvPing()=0;
   virtual bool NotDoneWithUploading()=0;
   virtual bool KeyUnique(const std::string &hex_key, bool check_local)=0;
 

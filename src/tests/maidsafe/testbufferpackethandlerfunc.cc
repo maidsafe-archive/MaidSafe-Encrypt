@@ -1,6 +1,31 @@
+/*
+* ============================================================================
+*
+* Copyright [2009] maidsafe.net limited
+*
+* Description:  Functional test for Clientbufferpackethandler
+* Version:      1.0
+* Created:      2009-11-18-10.09.29
+* Revision:     none
+* Compiler:     gcc
+* Author:       Team
+* Company:      maidsafe.net limited
+*
+* The following source code is property of maidsafe.net limited and is not
+* meant for external use.  The use of this code is governed by the license
+* file LICENSE.TXT found in the root of this directory and also on
+* www.maidsafe.net.
+*
+* You are not free to copy, amend or otherwise use this source code without
+* the explicit written permission of the board of directors of maidsafe.net.
+*
+* ============================================================================
+*/
+
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
+#include <maidsafe/general_messages.pb.h>
 
 #include "maidsafe/clientbufferpackethandler.h"
 
@@ -11,8 +36,6 @@
 #include "maidsafe/client/systempackets.h"
 #include "maidsafe/kademlia_service_messages.pb.h"
 #include "tests/maidsafe/localvaults.h"
-
-#include <maidsafe/general_messages.pb.h>
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
 static const int kNetworkSize_ = 16;
@@ -94,7 +117,6 @@ class CBPHandlerTest : public testing::Test {
       boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result);
     ASSERT_TRUE(knode->is_joined());
-
   }
 
   virtual void TearDown() {
@@ -147,7 +169,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   cb.Reset();
   cbph->CreateBufferPacket(bpip, boost::bind(&BPCallback::BPOperation_CB,
     &cb, _1));
-  while(cb.result == -1)
+  while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
   boost::this_thread::sleep(boost::posix_time::seconds(10));
@@ -199,7 +221,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  ASSERT_EQ(1, cb.msgs.size());
+  ASSERT_EQ(size_t(1), cb.msgs.size());
   ASSERT_EQ("Hello World", cb.msgs.front().message());
   ASSERT_EQ(sender_id, cb.msgs.front().sender());
 

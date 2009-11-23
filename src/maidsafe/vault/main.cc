@@ -256,7 +256,7 @@ class RunPDVaults {
     kad_contact->set_port((*pdvaults_)[0]->host_port());
     kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
     kad_contact->set_local_port((*pdvaults_)[0]->local_host_port());
-    if (0 != (*pdvaults_)[1]->Stop(true)) {
+    if (0 != (*pdvaults_)[1]->Stop()) {
       printf("\nVault 1 didn't stop properly!\n");
       return;
     }
@@ -325,7 +325,7 @@ class RunPDVaults {
     for (int i = 0; i < current_nodes_created_; ++i) {
       printf("Trying to stop vault %i.\n", i);
       success = false;
-      (*pdvaults_)[i]->Stop(true);
+      (*pdvaults_)[i]->Stop();
       if ((*pdvaults_)[i]->vault_status() != maidsafe_vault::kVaultStarted)
         printf("Vault %i stopped.\n", i);
       else

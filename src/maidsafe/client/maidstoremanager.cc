@@ -1197,9 +1197,9 @@ int MaidsafeStoreManager::StoreIOUs(
        it != ref_holders.end(); ++it) {
     if ((*it).node_id() == store_prep_response.pmid_id()) {
 #ifdef DEBUG
-      printf("In MSM: Vault %s listed as a ref holder to itself for chunk %s\n",
-             HexSubstr((*it).node_id()).c_str(),
-             HexSubstr(store_data.non_hex_key_).c_str());
+//    printf("In MSM: Vault %s listed as a ref holder to itself for chunk %s\n",
+//             HexSubstr((*it).node_id()).c_str(),
+//             HexSubstr(store_data.non_hex_key_).c_str());
 #endif
       ref_holders.erase(it);
       break;
@@ -1340,9 +1340,10 @@ int MaidsafeStoreManager::FindValue(const std::string &kad_key,
   if (find_response.result() != kad::kRpcResultSuccess) {
 #ifdef DEBUG
     printf("In MaidsafeStoreManager::FindValue, Kademlia operation "
-           "failed to find the value for key %s.\n", HexSubstr(kad_key).c_str());
-//    printf("Found %i nodes\n", find_response.closest_nodes_size());
-//    printf("Found %i values\n", find_response.values_size());
+           "failed to find the value for key %s.\n",
+           HexSubstr(kad_key).c_str());
+    printf("Found %i nodes\n", find_response.closest_nodes_size());
+    printf("Found %i values\n", find_response.values_size());
 //    printf("Found alt val holder: %i\n",
 //           find_response.has_alternative_value_holder());
 #endif
@@ -1394,9 +1395,9 @@ void MaidsafeStoreManager::FindAvailableChunkHolders(
       break;
     boost::mutex::scoped_lock lock(cond_data->cond_mutex);
     while (i >= chunk_holders->size()) {
-//      printf("MaidsafeStoreManager::FindAvailableChunkHolders locked %u\n", i);
+//     printf("MaidsafeStoreManager::FindAvailableChunkHolders locked %u\n", i);
       cond_data->cond_variable->wait(lock);
-//      printf("MaidsafeStoreManager::FindAvailableChunkHolders unlocked %u\n", i);
+//   printf("MaidsafeStoreManager::FindAvailableChunkHolders unlocked %u\n", i);
     }
     chunk_holders->at(i)->index = i;
     if (*stop_sending)
@@ -1445,12 +1446,10 @@ void MaidsafeStoreManager::GetHolderContactCallback(
 #ifdef DEBUG
     printf("In MSM::GetHolderContactCallback, fail - timeout.\n");
 #endif
-    {  // NOLINT (Fraser)
-//      printf("MaidsafeStoreManager::GetHolderContactCallback 1 locked\n");
-      boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
-      chunk_holders->push_back(failed_chunkholder);
-      cond_data->cond_variable->notify_all();
-    }
+//    printf("MaidsafeStoreManager::GetHolderContactCallback 1 locked\n");
+    boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
+    chunk_holders->push_back(failed_chunkholder);
+    cond_data->cond_variable->notify_all();
 //    printf("MaidsafeStoreManager::GetHolderContactCallback 1 unlocked\n");
     return;
   }
@@ -1459,12 +1458,10 @@ void MaidsafeStoreManager::GetHolderContactCallback(
 #ifdef DEBUG
     printf("In MSM::GetHolderContactCallback, can't parse result.\n");
 #endif
-    {  // NOLINT (Fraser)
-//      printf("MaidsafeStoreManager::GetHolderContactCallback 2 locked\n");
-      boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
-      chunk_holders->push_back(failed_chunkholder);
-      cond_data->cond_variable->notify_all();
-    }
+//    printf("MaidsafeStoreManager::GetHolderContactCallback 2 locked\n");
+    boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
+    chunk_holders->push_back(failed_chunkholder);
+    cond_data->cond_variable->notify_all();
 //    printf("MaidsafeStoreManager::GetHolderContactCallback 2 unlocked\n");
     return;
   }
@@ -1472,12 +1469,10 @@ void MaidsafeStoreManager::GetHolderContactCallback(
 #ifdef DEBUG
     printf("In MSM::GetHolderContactCallback, Kad operation failed.\n");
 #endif
-    {  // NOLINT (Fraser)
-//      printf("MaidsafeStoreManager::GetHolderContactCallback 3 locked\n");
-      boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
-      chunk_holders->push_back(failed_chunkholder);
-      cond_data->cond_variable->notify_all();
-    }
+//    printf("MaidsafeStoreManager::GetHolderContactCallback 3 locked\n");
+    boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
+    chunk_holders->push_back(failed_chunkholder);
+    cond_data->cond_variable->notify_all();
 //    printf("MaidsafeStoreManager::GetHolderContactCallback 3 unlocked\n");
     return;
   }
@@ -1489,12 +1484,10 @@ void MaidsafeStoreManager::GetHolderContactCallback(
     if (contact.node_id() == chunk_holder_id) {
       boost::shared_ptr<ChunkHolder> chunkholder(new ChunkHolder(contact));
       chunkholder->status = kContactable;
-      {
-//        printf("MaidsafeStoreManager::GetHolderContactCallback 4 locked\n");
-        boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
-        chunk_holders->push_back(chunkholder);
-        cond_data->cond_variable->notify_all();
-      }
+//      printf("MaidsafeStoreManager::GetHolderContactCallback 4 locked\n");
+      boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
+      chunk_holders->push_back(chunkholder);
+      cond_data->cond_variable->notify_all();
 //      printf("MaidsafeStoreManager::GetHolderContactCallback 4 unlocked\n");
       return;
     }
@@ -1502,12 +1495,10 @@ void MaidsafeStoreManager::GetHolderContactCallback(
 #ifdef DEBUG
   printf("In MSM::GetHolderContactCallback, didn't get node's details.\n");
 #endif
-  {  // NOLINT (Fraser)
-//    printf("MaidsafeStoreManager::GetHolderContactCallback 5 locked\n");
-    boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
-    chunk_holders->push_back(failed_chunkholder);
-    cond_data->cond_variable->notify_all();
-  }
+//  printf("MaidsafeStoreManager::GetHolderContactCallback 5 locked\n");
+  boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
+  chunk_holders->push_back(failed_chunkholder);
+  cond_data->cond_variable->notify_all();
 //  printf("MaidsafeStoreManager::GetHolderContactCallback 5 unlocked\n");
   return;
 }
@@ -1515,40 +1506,37 @@ void MaidsafeStoreManager::GetHolderContactCallback(
 void MaidsafeStoreManager::HasChunkCallback(
     boost::shared_ptr<ChunkHolder> chunk_holder,
     int *available_chunk_holder_index) {
-  {  // NOLINT (Fraser)
-    boost::lock_guard<boost::mutex> lock(*(chunk_holder->mutex));
-    if (chunk_holder->check_chunk_response.result() == kNack) {
+  boost::lock_guard<boost::mutex> lock(*(chunk_holder->mutex));
+  if (chunk_holder->check_chunk_response.result() == kNack) {
 #ifdef DEBUG
 //      printf("In MSM::HasChunkCallback (%d), %d doesn't have the chunk.\n",
 //             knode_->host_port(),
 //             chunk_holder->chunk_holder_contact.host_port());
 #endif
-      chunk_holder->status = kFailedHolder;
-      // If available_chunk_holder_index is < 0, decrement it to indicate
-      // another unsuccessful CheckChunk RPC.
-      if (*available_chunk_holder_index < 0)
-        --(*available_chunk_holder_index);
-    } else if (chunk_holder->chunk_holder_contact.node_id() !=
-               chunk_holder->check_chunk_response.pmid_id()) {
+    chunk_holder->status = kFailedHolder;
+    // If available_chunk_holder_index is < 0, decrement it to indicate
+    // another unsuccessful CheckChunk RPC.
+    if (*available_chunk_holder_index < 0)
+      --(*available_chunk_holder_index);
+  } else if (chunk_holder->chunk_holder_contact.node_id() !=
+             chunk_holder->check_chunk_response.pmid_id()) {
 #ifdef DEBUG
-      printf("In MSM, response from HasChunk came back from wrong node (%d).\n",
-             knode_->host_port());
+    printf("In MSM, response from HasChunk came back from wrong node (%d).\n",
+           knode_->host_port());
 #endif
-      chunk_holder->status = kFailedHolder;
-      // If available_chunk_holder_index is < 0, decrement it to indicate
-      // another unsuccessful CheckChunk RPC.
-      if (*available_chunk_holder_index < 0)
-        --(*available_chunk_holder_index);
-    } else {
-      chunk_holder->status = kHasChunk;
-      // If available_chunk_holder_index is < 0, this is the first successful
-      // response to the round of CheckChunk RPCs.
-      if (*available_chunk_holder_index < 0)
-        *available_chunk_holder_index = chunk_holder->index;
-    }
-    get_chunk_conditional_.notify_all();
+    chunk_holder->status = kFailedHolder;
+    // If available_chunk_holder_index is < 0, decrement it to indicate
+    // another unsuccessful CheckChunk RPC.
+    if (*available_chunk_holder_index < 0)
+      --(*available_chunk_holder_index);
+  } else {
+    chunk_holder->status = kHasChunk;
+    // If available_chunk_holder_index is < 0, this is the first successful
+    // response to the round of CheckChunk RPCs.
+    if (*available_chunk_holder_index < 0)
+      *available_chunk_holder_index = chunk_holder->index;
   }
-//  printf("MaidsafeStoreManager::HasChunkCallback - Unstuck\n");
+  get_chunk_conditional_.notify_all();
 }
 
 int MaidsafeStoreManager::FindAndLoadChunk(
@@ -1562,7 +1550,7 @@ int MaidsafeStoreManager::FindAndLoadChunk(
   boost::shared_ptr<boost::condition_variable>
       cond_variable(new boost::condition_variable);
   boost::shared_ptr<GenericConditionData>
-      cond_data(new GenericConditionData(cond_variable, true));
+      cond_data(new GenericConditionData(cond_variable));
   boost::mutex get_mutex;
   std::vector< boost::shared_ptr<ChunkHolder> > chunk_holders;
   int available_chunk_holder_index(-1);
@@ -1796,11 +1784,9 @@ void MaidsafeStoreManager::GetChunkCallback(boost::mutex *mutex,
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::GetChunkCallback.\n");
 #endif
-  {  // NOLINT (Fraser)
-    boost::lock_guard<boost::mutex> lock(*mutex);
-    *get_chunk_done = true;
-    get_chunk_conditional_.notify_all();
-  }
+  boost::lock_guard<boost::mutex> lock(*mutex);
+  *get_chunk_done = true;
+  get_chunk_conditional_.notify_all();
 }
 
 int MaidsafeStoreManager::SendIouToRefHolder(

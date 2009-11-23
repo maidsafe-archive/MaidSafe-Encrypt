@@ -151,8 +151,7 @@ enum ReturnCode {
   // Service
 
   // Vault
-
-  // Vault Buffer Packet Handler
+  kVaultOffline = -2501,
 
   // Vault Chunkstore
   kChunkstoreError = maidsafe::kChunkstoreError,
@@ -173,6 +172,8 @@ enum ReturnCode {
   kPacketDeleteNotFound = -3511,
   kPacketDeleteNotOwned = -3512,
   kPacketLoadNotFound = -3513
+
+  // Vault Buffer Packet Handler
 };
 
 }  // namespace maidsafe_vault

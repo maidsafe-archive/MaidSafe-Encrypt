@@ -136,7 +136,7 @@ class AuthenticationTest : public testing::Test {
   AuthenticationTest &operator=(const AuthenticationTest&);
 };
 
-TEST_F(AuthenticationTest, BEH_MAID_Login) {
+TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   boost::scoped_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
@@ -212,7 +212,7 @@ TEST_F(AuthenticationTest, BEH_MAID_RegisterUserOnce) {
   ASSERT_EQ(password, ss->Password()) << "Saved password doesn't correspond";
 }
 
-TEST_F(AuthenticationTest, BEH_MAID_RegisterUserTwice) {
+TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
   boost::scoped_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));

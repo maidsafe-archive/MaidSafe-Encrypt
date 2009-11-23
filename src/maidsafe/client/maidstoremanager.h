@@ -190,22 +190,11 @@ struct GenericConditionData {
   explicit GenericConditionData(boost::shared_ptr<boost::condition_variable> cv)
       : cond_flag(false),
         cond_variable(cv),
-        cond_mutex(),
-        dtor_output(false) {}
-  GenericConditionData(boost::shared_ptr<boost::condition_variable> cv,
-                       bool dtr_output)
-      : cond_flag(false),
-        cond_variable(cv),
-        cond_mutex(),
-        dtor_output(dtr_output) {}
-  ~GenericConditionData() {
-    if (dtor_output)
-      printf("\t\tIn dtor of GenericConditionData\n");
-  }
+        cond_mutex() {}
+  ~GenericConditionData() {}
   bool cond_flag;
   boost::shared_ptr<boost::condition_variable> cond_variable;
   boost::mutex cond_mutex;
-  bool dtor_output;
  private:
   GenericConditionData &operator=(const GenericConditionData&);
   GenericConditionData(const GenericConditionData&);
@@ -305,6 +294,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void Init(int port, base::callback_func_type cb);
   void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
+  void StopRvPing() { transport_.StopPingRendezvous(); }
   bool KeyUnique(const std::string &hex_key, bool check_local);
   bool NotDoneWithUploading();
   // Adds the chunk to the store queue.  It must already be in the chunkstore.

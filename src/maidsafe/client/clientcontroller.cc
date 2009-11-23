@@ -567,6 +567,7 @@ bool ClientController::ValidateUser(const std::string &password) {
 
 void ClientController::CloseConnection(bool clean_up_transport) {
   CC_CallbackResult cb;
+  sm_->StopRvPing();
   sm_->Close(boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1), true);
   WaitForResult(cb);
   GenericResponse result;
@@ -861,7 +862,7 @@ bool ClientController::GetMessages() {
   std::list<ValidatedBufferPacketMessage> valid_messages;
   if (cbph_->GetMessages(MPID, &valid_messages) != 0)
     return false;
-  if (valid_messages.size() == 0)
+  if (valid_messages.size() == size_t(0))
     // TODO(Richard): return code for no messages
     return true;
   HandleMessages(&valid_messages);

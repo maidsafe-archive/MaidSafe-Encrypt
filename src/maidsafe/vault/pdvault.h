@@ -227,7 +227,7 @@ class PDVault {
           const boost::uint64_t &vault_used_space);
   ~PDVault();
   void Start(bool first_node);
-  int Stop(bool cancel_pending_ops);
+  int Stop();
   void CleanUp();
   VaultStatus vault_status();
   void SetVaultStatus(const VaultStatus &vault_status);

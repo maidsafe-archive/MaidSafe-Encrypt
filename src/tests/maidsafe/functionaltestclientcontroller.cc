@@ -381,7 +381,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
   ASSERT_EQ("", ss_->Password());
   printf("Logged out.\n");
 }
-
+*/
 
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   std::string username = "User5";
@@ -393,7 +393,8 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   ASSERT_EQ("", ss_->Password());
   printf("Preconditions fulfilled.\n");
 
-  ASSERT_FALSE(cc_test::CheckUserExists(cc_, username, pin, 10000));
+  ASSERT_EQ(maidsafe::kUserDoesntExist,
+            cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
@@ -411,7 +412,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   fs::ofstream testfile(full_path_.string().c_str());
   testfile << base::RandomString(1024*1024);
   testfile.close();
-  std::string hash_original_file = se.SHA512(full_path_);
+  std::string hash_original_file = se_.SHA512(full_path_);
   {
     boost::progress_timer t;
     ASSERT_EQ(0, cc_->write(rel_str_));
@@ -424,10 +425,13 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   ASSERT_EQ("", ss_->Password());
   printf("Logged out user.\n");
 
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+
   if (fs::exists(full_path_))
       fs::remove(full_path_);
 
-  ASSERT_TRUE(cc_test::CheckUserExists(cc_, username, pin, 10000));
+  ASSERT_EQ(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
   ASSERT_TRUE(cc_->ValidateUser(password));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
@@ -440,7 +444,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
     ASSERT_EQ(0, cc_->read(rel_str_));
     printf("Self decrypted file in ");
   }
-  std::string hash_dec_file = se.SHA512(full_path_);
+  std::string hash_dec_file = se_.SHA512(full_path_);
   ASSERT_EQ(hash_original_file, hash_dec_file);
 
   ASSERT_TRUE(cc_->Logout());
@@ -450,6 +454,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   printf("Logged out user.\n");
 }
 
+/*
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerUserAuthorisation) {
   std::string username = "User6";
   std::string pin = "6789";
