@@ -140,31 +140,6 @@ int LocalStoreManager::LoadPacket(const std::string &hex_key,
   return kSuccess;
 }
 
-//  int LocalStoreManager::LoadBPMessages(const std::string &bufferpacket_name,
-//                                        std::list<std::string> *messages) {
-//    messages->clear();
-//    if (!co.AsymCheckSig(public_key, signed_public_key, public_key,
-//        crypto::STRING_STRING)) {
-//      return -1;
-//    }
-//    std::string ser_bp = GetValue_FromDB(hex_key);
-//    if (ser_bp == "") {
-//      return -2;
-//    }
-//    // Valitading singature with packet to see
-//    // if owner is trying to get messages
-//    if (!vbph_.ValidateOwnerSignature(public_key, ser_bp)) {
-//      return -3;
-//    }
-//    std::vector<std::string> result;
-//    if (!vbph_.GetMessages(&ser_bp, &result)) {
-//      return -4;
-//    }
-//    for (boost::uint32_t i = 0; i < result.size(); ++i)
-//      messages->push_back(result.at(i));
-//    return 0;
-//  }
-
 void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,
                                    const DirType,
                                    const std::string&) {
@@ -379,18 +354,36 @@ bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
 }
 
 // Buffer packet
-int LocalStoreManager::CreateBP(const std::string &bufferpacketname,
-                                const std::string &ser_packet) {
+int LocalStoreManager::CreateBP() {
+  if (ss_->Id(MPID) == "")
+    return -666;
+
+  std::string bufferpacketname(BufferPacketName()), ser_packet;
 #ifdef DEBUG
-    printf("LocalStoreManager::CreateBP - BP chunk(%s).\n",
-           bufferpacketname.substr(0, 10).c_str());
+  printf("LocalStoreManager::CreateBP - BP chunk(%s).\n",
+         bufferpacketname.substr(0, 10).c_str());
 #endif
+  BufferPacket buffer_packet;
+  GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
+  BufferPacketInfo buffer_packet_info;
+  buffer_packet_info.set_owner(ss_->Id(MPID));
+  buffer_packet_info.set_ownerpublickey(ss_->PublicKey(MPID));
+  buffer_packet_info.set_online(1);
+  ser_owner_info->set_data(buffer_packet_info.SerializeAsString());
+  crypto::Crypto co;
+  ser_owner_info->set_signature(co.AsymSign(ser_owner_info->data(), "",
+                                ss_->PrivateKey(MPID), crypto::STRING_STRING));
+  buffer_packet.SerializeToString(&ser_packet);
   return FlushDataIntoChunk(bufferpacketname, ser_packet, false);
 }
 
-int LocalStoreManager::LoadBPMessages(const std::string &bufferpacketname,
-                                      std::list<std::string> *messages) {
+int LocalStoreManager::LoadBPMessages(
+    std::list<maidsafe::ValidatedBufferPacketMessage> *messages) {
+  if (ss_->Id(MPID) == "")
+    return -666;
+
   std::string bp_in_chunk;
+  std::string bufferpacketname(BufferPacketName());
   if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
 #ifdef DEBUG
     printf("LocalStoreManager::LoadBPMessages - Failed to find BP chunk.\n");
@@ -405,8 +398,18 @@ int LocalStoreManager::LoadBPMessages(const std::string &bufferpacketname,
     return -1;
   }
   messages->clear();
-  for (unsigned int n = 0; n < msgs.size(); ++n)
-    messages->push_back(msgs[n]);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  for (size_t n = 0; n < msgs.size(); ++n) {
+    ValidatedBufferPacketMessage valid_message;
+    if (valid_message.ParseFromString(msgs[n])) {
+      std::string aes_key = co.AsymDecrypt(valid_message.index(), "",
+                            ss_->PrivateKey(MPID), crypto::STRING_STRING);
+      valid_message.set_message(co.SymmDecrypt(valid_message.message(),
+                                "", crypto::STRING_STRING, aes_key));
+      messages->push_back(valid_message);
+    }
+  }
   if (FlushDataIntoChunk(bufferpacketname, bp_in_chunk, true) != 0) {
 #ifdef DEBUG
     printf("LocalStoreManager::LoadBPMessages - "
@@ -417,12 +420,21 @@ int LocalStoreManager::LoadBPMessages(const std::string &bufferpacketname,
   return 0;
 }
 
-int LocalStoreManager::ModifyBPInfo(const std::string &bufferpacketname,
-                                    const std::string &ser_gp) {
+int LocalStoreManager::ModifyBPInfo(const std::string &info) {
+  if (ss_->Id(MPID) == "")
+    return -666;
+
   std::string bp_in_chunk;
+  std::string bufferpacketname(BufferPacketName()), ser_gp;
+  GenericPacket gp;
+  gp.set_data(info);
+  crypto::Crypto co;
+  gp.set_signature(co.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
+                   crypto::STRING_STRING));
+  gp.SerializeToString(&ser_gp);
   if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
 #ifdef DEBUG
-    printf("LocalStoreManager::LoadBPMessages - Failed to find BP chunk(%s).\n",
+    printf("LocalStoreManager::ModifyBPInfo - Failed to find BP chunk(%s).\n",
            bufferpacketname.substr(0, 10).c_str());
 #endif
     return -1;
@@ -430,47 +442,63 @@ int LocalStoreManager::ModifyBPInfo(const std::string &bufferpacketname,
   std::string new_bp;
   if (!vbph_.ChangeOwnerInfo(ser_gp, &bp_in_chunk, ss_->PublicKey(MPID))) {
 #ifdef DEBUG
-    printf("LocalStoreManager::LoadBPMessages - Failed to get messages.\n");
+    printf("LocalStoreManager::ModifyBPInfo - Failed to change owner info.\n");
 #endif
     return -2;
   }
   if (FlushDataIntoChunk(bufferpacketname, bp_in_chunk, true) != 0) {
 #ifdef DEBUG
-    printf("LocalStoreManager::LoadBPMessages - "
-           "Failed to flush BP into chunk.\n");
+    printf("LocalStoreManager::ModifyBPInfo - Failed to flush BP to chunk.\n");
 #endif
     return -3;
   }
   return 0;
 }
 
-int LocalStoreManager::AddBPMessage(const std::string &bufferpacketname,
-                                    const std::string &ser_gp) {
-  std::string bp_in_chunk;
-  if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
-#ifdef DEBUG
-    printf("LocalStoreManager::LoadBPMessages - Failed to find BP chunk.\n");
-#endif
-    return -1;
-  }
+int LocalStoreManager::AddBPMessage(const std::vector<std::string> &receivers,
+                                    const std::string &message,
+                                    const MessageType &m_type) {
+  if (ss_->Id(MPID) == "")
+    return -666;
 
-  std::vector<std::string> msgs;
-  std::string updated_bp;
-  if (!vbph_.AddMessage(bp_in_chunk, ser_gp, "", &updated_bp)) {
+  std::string bp_in_chunk, ser_gp;
+  int fails = 0;
+  boost::uint32_t timestamp = base::get_epoch_time();
+  for (size_t n = 0; n < receivers.size(); ++n) {
+    std::string rec_pub_key(ss_->GetContactPublicKey(receivers[n]));
+    std::string bufferpacketname(BufferPacketName(receivers[n], rec_pub_key));
+    if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
 #ifdef DEBUG
-    printf("LocalStoreManager::LoadBPMessages - Failed to get messages.\n");
+      printf("LocalStoreManager::AddBPMessage - Failed to find BP chunk (%s)\n",
+             receivers[n].c_str());
 #endif
-    return -1;
-  }
+      ++fails;
+      continue;
+    }
 
-  if (FlushDataIntoChunk(bufferpacketname, updated_bp, true) != 0) {
+    std::string updated_bp;
+    if (!vbph_.AddMessage(bp_in_chunk,
+        CreateMessage(message, rec_pub_key, m_type, timestamp), "",
+        &updated_bp)) {
 #ifdef DEBUG
-    printf("LocalStoreManager::LoadBPMessages - "
-           "Failed to flush BP into chunk.\n");
+      printf("LocalStoreManager::AddBPMessage - Failed to add message (%s).\n",
+             receivers[n].c_str());
 #endif
-    return -1;
+      ++fails;
+      continue;
+    }
+
+    if (FlushDataIntoChunk(bufferpacketname, updated_bp, true) != 0) {
+#ifdef DEBUG
+      printf("LocalStoreManager::AddBPMessage - "
+             "Failed to flush BP into chunk. (%s).\n",
+             receivers[n].c_str());
+#endif
+      ++fails;
+      continue;
+    }
   }
-  return 0;
+  return fails;
 }
 
 int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
@@ -524,29 +552,47 @@ int LocalStoreManager::FlushDataIntoChunk(const std::string &chunkname,
   return 0;
 }
 
-//  int LocalStoreManager::ModifyBPInfo(const std::string &hex_key,
-//                                      const std::string &value) {
-//    // Validating that owner is sending request
-//    CppSQLite3Binary blob;
-//    std::string ser_bp("");
-//    try {
-//      std::string s = "select value from network where key='"+ hex_key + "';";
-//      CppSQLite3Query q = db_.execQuery(s.c_str());
-//      if (q.eof()) {
-//        return false;
-//      }
-//      std::string val = q.fieldValue(static_cast<unsigned int>(0));
-//      ser_bp = base::DecodeFromHex(val);
-//    }
-//    catch(CppSQLite3Exception &e) {  // NOLINT
-//      return false;
-//    }
-//    if (!vbph_.ChangeOwnerInfo(value, &ser_bp,
-//        maidsafe::SessionSingleton::getInstance()->PublicKey(MPID)))
-//      return false;
-//  //  value = ser_bp;
-//    return true;
-//  }
+std::string LocalStoreManager::BufferPacketName() {
+  return BufferPacketName(ss_->Id(MPID), ss_->PublicKey(MPID));
+}
+
+std::string LocalStoreManager::BufferPacketName(
+    const std::string &publicusername, const std::string &public_key) {
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  return co.Hash(publicusername + public_key, "", crypto::STRING_STRING, true);
+}
+
+std::string LocalStoreManager::CreateMessage(const std::string &message,
+                                             const std::string &rec_public_key,
+                                             const MessageType &m_type,
+                                             const boost::uint32_t &timestamp) {
+  BufferPacketMessage bpm;
+  GenericPacket gp;
+
+  bpm.set_sender_id(ss_->Id(MPID));
+  bpm.set_sender_public_key(ss_->PublicKey(MPID));
+  bpm.set_type(m_type);
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  co.set_symm_algorithm(crypto::AES_256);
+  int iter = base::random_32bit_uinteger() % 1000 +1;
+  std::string aes_key = co.SecurePassword(co.Hash(message, "",
+                        crypto::STRING_STRING, true), iter);
+  bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", rec_public_key,
+                                    crypto::STRING_STRING));
+  bpm.set_aesenc_message(co.SymmEncrypt(message, "", crypto::STRING_STRING,
+                         aes_key));
+  bpm.set_timestamp(timestamp);
+  std::string ser_bpm;
+  bpm.SerializeToString(&ser_bpm);
+  gp.set_data(ser_bpm);
+  gp.set_signature(co.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
+                   crypto::STRING_STRING));
+  std::string ser_gp;
+  gp.SerializeToString(&ser_gp);
+  return ser_gp;
+}
 
 std::string LocalStoreManager::GetValue_FromDB(const std::string &hex_key) {
   CppSQLite3Binary blob;

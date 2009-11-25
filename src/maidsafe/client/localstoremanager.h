@@ -31,6 +31,7 @@
 
 #include <list>
 #include <string>
+#include <vector>
 
 #include "maidsafe/cppsqlite3.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -74,14 +75,13 @@ class LocalStoreManager : public StoreManagerInterface {
                            base::callback_func_type cb);
 
   // Buffer packet
-  virtual int CreateBP(const std::string &bufferpacketname,
-                       const std::string &ser_packet);
-  virtual int LoadBPMessages(const std::string &bufferpacketname,
-                             std::list<std::string> *messages);
-  virtual int ModifyBPInfo(const std::string &bufferpacketname,
-                           const std::string &ser_gp);
-  virtual int AddBPMessage(const std::string &bufferpacketname,
-                           const std::string &ser_gp);
+  virtual int CreateBP();
+  virtual int LoadBPMessages(
+      std::list<maidsafe::ValidatedBufferPacketMessage> *messages);
+  virtual int ModifyBPInfo(const std::string &info);
+  virtual int AddBPMessage(const std::vector<std::string> &receivers,
+                           const std::string &message,
+                           const MessageType &m_type);
 
   // Vault
   virtual void PollVaultInfo(base::callback_func_type cb);
@@ -114,6 +114,13 @@ class LocalStoreManager : public StoreManagerInterface {
   int FindAndLoadChunk(const std::string &chunkname, std::string *data);
   int FlushDataIntoChunk(const std::string &chunkname, const std::string &data,
                          const bool &overwrite);
+  std::string BufferPacketName();
+  std::string BufferPacketName(const std::string &publicusername,
+                               const std::string &public_key);
+  std::string CreateMessage(const std::string &message,
+                            const std::string &rec_public_key,
+                            const MessageType &m_type,
+                            const boost::uint32_t &timestamp);
 };
 
 }  // namespace maidsafe

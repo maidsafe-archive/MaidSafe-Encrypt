@@ -40,10 +40,10 @@
 #include <string>
 #include <vector>
 
+#include "maidsafe/bufferpacketrpc.h"
+#include "maidsafe/clientbufferpackethandler.h"
 #include "maidsafe/client/pdclient.h"
 #include "maidsafe/client/storemanager.h"
-
-
 
 // These forward declarations are to allow PDVaultTest functions to be declared
 // as friends of MaidsafeStoreManager.
@@ -111,6 +111,63 @@ class CallbackObj {
   boost::mutex mutex_;
   bool called_;
   std::string result_;
+};
+
+class BPCallbackObj {
+ public:
+  BPCallbackObj(bool *called_back,
+                boost::condition_variable *cond_var,
+                boost::mutex *mutex,
+                ReturnCode *result)
+                    : called_back_(called_back),
+                      cond_var_(cond_var),
+                      mutex_(mutex),
+                      result_(result),
+                      messages_(NULL) {
+    boost::mutex::scoped_lock lock(*mutex_);
+    *called_back = false;
+    *result_ = kBPAwaitingCallback;
+  }
+  BPCallbackObj(bool *called_back,
+                boost::condition_variable *cond_var,
+                boost::mutex *mutex,
+                ReturnCode *result,
+                std::list<ValidatedBufferPacketMessage> *messages)
+                    : called_back_(called_back),
+                      cond_var_(cond_var),
+                      mutex_(mutex),
+                      result_(result),
+                      messages_(messages) {
+    boost::mutex::scoped_lock lock(*mutex_);
+    *called_back = false;
+    *result_ = kBPAwaitingCallback;
+    messages_->clear();
+  }
+  void BPOperationCallback(const ReturnCode &return_code) {
+    boost::mutex::scoped_lock lock(*mutex_);
+    *result_ = return_code;
+    *called_back_ = true;
+    cond_var_->notify_all();
+  }
+  void BPGetMessagesCallback(
+      const ReturnCode &return_code,
+      const std::list<ValidatedBufferPacketMessage> &rec_msgs) {
+    boost::mutex::scoped_lock lock(*mutex_);
+    if (messages_ == NULL) {
+      *result_ = kBPError;
+    } else {
+      *result_ = return_code;
+      *messages_ = rec_msgs;
+    }
+    *called_back_ = true;
+    cond_var_->notify_all();
+  }
+ private:
+  bool *called_back_;
+  boost::condition_variable *cond_var_;
+  boost::mutex *mutex_;
+  ReturnCode *result_;
+  std::list<ValidatedBufferPacketMessage> *messages_;
 };
 
 struct StoreIouResultHolder {
@@ -245,7 +302,8 @@ class StoreChunkTask : public QRunnable {
  public:
   StoreChunkTask(const StoreData &store_data,
                  IfExists if_exists,
-                 MaidsafeStoreManager *msm);
+                 MaidsafeStoreManager *msm,
+                 const boost::uint16_t &task_id);
   void run();
  private:
   StoreChunkTask &operator=(const StoreChunkTask&);
@@ -253,6 +311,7 @@ class StoreChunkTask : public QRunnable {
   StoreData store_data_;
   IfExists if_exists_;
   MaidsafeStoreManager *msm_;
+  boost::uint16_t task_id_;
 };
 
 class StorePacketToVaultsTask : public QRunnable {
@@ -260,7 +319,8 @@ class StorePacketToVaultsTask : public QRunnable {
   StorePacketToVaultsTask(const StoreData &store_data,
                           MaidsafeStoreManager *msm,
                           int *return_value,
-                          GenericConditionData *generic_cond_data);
+                          GenericConditionData *generic_cond_data,
+                          const boost::uint16_t &task_id);
   void run();
  private:
   StorePacketToVaultsTask &operator=(const StorePacketToVaultsTask&);
@@ -269,6 +329,7 @@ class StorePacketToVaultsTask : public QRunnable {
   MaidsafeStoreManager *msm_;
   int *return_value_;
   GenericConditionData *generic_cond_data_;
+  boost::uint16_t task_id_;
 };
 
 class StorePacketToKadTask : public QRunnable {
@@ -276,7 +337,8 @@ class StorePacketToKadTask : public QRunnable {
   StorePacketToKadTask(const StoreData &store_data,
                   MaidsafeStoreManager *msm,
                   int *return_value,
-                  GenericConditionData *generic_cond_data);
+                  GenericConditionData *generic_cond_data,
+                  const boost::uint16_t &task_id);
   void run();
  private:
   StorePacketToKadTask &operator=(const StorePacketToKadTask&);
@@ -285,6 +347,7 @@ class StorePacketToKadTask : public QRunnable {
   MaidsafeStoreManager *msm_;
   int *return_value_;
   GenericConditionData *generic_cond_data_;
+  boost::uint16_t task_id_;
 };
 
 class MaidsafeStoreManager : public StoreManagerInterface {
@@ -325,14 +388,12 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    base::callback_func_type cb);
 
   // Buffer packet
-  virtual int CreateBP(const std::string &bufferpacketname,
-                       const std::string &ser_packet);
-  virtual int LoadBPMessages(const std::string &bufferpacketname,
-                             std::list<std::string> *messages);
-  virtual int ModifyBPInfo(const std::string &bufferpacketname,
-                           const std::string &ser_gp);
-  virtual int AddBPMessage(const std::string &bufferpacketname,
-                           const std::string &ser_gp);
+  virtual int CreateBP();
+  virtual int LoadBPMessages(std::list<ValidatedBufferPacketMessage> *messages);
+  virtual int ModifyBPInfo(const std::string &info);
+  virtual int AddBPMessage(const std::vector<std::string> &receivers,
+                           const std::string &message,
+                           const MessageType &type);
 
   // Vault
   void PollVaultInfo(base::callback_func_type cb);
@@ -612,8 +673,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual void SetStoreReturnValue(ReturnCode rc, int *ret_value);
   void PollVaultInfoCallback(const VaultStatusResponse *response,
                              base::callback_func_type cb);
-  void CreateBPCallback(GenericConditionData *send_prep_cond_data);
 
+  bool SetResultToTask(const boost::uint16_t &task_id, const int &result);
 //  void VaultContactInfoCallback(const std::string &ser_result,
 //                                base::callback_func_type cb);
   transport::Transport transport_;
@@ -628,6 +689,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   boost::mutex store_packet_mutex_;
   boost::condition_variable get_chunk_conditional_;
   bool mock_rpcs_;
+  boost::mutex tasks_mutex_;
+  std::map<boost::uint16_t, boost::tuple<std::string, int> > tasks_;
+  boost::uint16_t task_id_;
+  boost::shared_ptr<BufferPacketRpcs> bprpcs_;
+  ClientBufferPacketHandler cbph_;
 };
 
 }  // namespace maidsafe

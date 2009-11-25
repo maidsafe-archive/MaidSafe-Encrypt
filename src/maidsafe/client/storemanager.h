@@ -30,6 +30,7 @@
 
 #include <list>
 #include <string>
+#include <vector>
 
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "maidsafe/maidsafe.h"
@@ -68,14 +69,13 @@ class StoreManagerInterface {
                            base::callback_func_type cb)=0;
 
   // Buffer packet
-  virtual int CreateBP(const std::string &bufferpacketname,
-                       const std::string &ser_packet)=0;
-  virtual int LoadBPMessages(const std::string &bufferpacketname,
-                             std::list<std::string> *messages)=0;
-  virtual int ModifyBPInfo(const std::string &bufferpacketname,
-                           const std::string &ser_gp)=0;
-  virtual int AddBPMessage(const std::string &bufferpacketname,
-                           const std::string &ser_gp)=0;
+  virtual int CreateBP()=0;
+  virtual int LoadBPMessages(
+      std::list<maidsafe::ValidatedBufferPacketMessage> *messages)=0;
+  virtual int ModifyBPInfo(const std::string &info)=0;
+  virtual int AddBPMessage(const std::vector<std::string> &receivers,
+                           const std::string &message,
+                           const MessageType &m_type)=0;
 
   // Vault
   virtual void PollVaultInfo(base::callback_func_type cb)=0;

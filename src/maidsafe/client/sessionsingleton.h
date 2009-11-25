@@ -258,12 +258,14 @@ class SessionSingleton {
                              const char &value);
   int SetLastContactRank(const std::string &pub_name);
   int GetContactInfo(const std::string &pub_name, mi_contact *mic);
+  std::string GetContactPublicKey(const std::string &pub_name);
 
   // type:  1  - for most contacted
   //        2  - for most recent
   //        0  - (default) alphabetical
   int GetContactList(std::vector<mi_contact> *list,
                      int type = 0);
+  int GetPublicUsernameList(std::vector<std::string> *list);
   int ClearContacts();
 
   ////////////////////////////////

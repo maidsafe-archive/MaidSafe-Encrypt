@@ -18,7 +18,8 @@
 namespace maidsafe {
 
 ClientBufferPacketHandler::ClientBufferPacketHandler(
-    maidsafe::BufferPacketRpcs *rpcs, kad::KNode *knode) : crypto_obj_(),
+    boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
+    boost::shared_ptr<kad::KNode> knode) : crypto_obj_(),
     rpcs_(rpcs), knode_(knode) {
   crypto_obj_.set_hash_algorithm(crypto::SHA_512);
   crypto_obj_.set_symm_algorithm(crypto::AES_256);

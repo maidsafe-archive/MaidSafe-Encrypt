@@ -35,7 +35,6 @@
 
 #include "fs/filesystem.h"
 #include "maidsafe/client/authentication.h"
-#include "maidsafe/client/clientbufferpackethandler.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/privateshares.h"
 #include "maidsafe/client/messagehandler.h"
@@ -72,6 +71,7 @@ class ClientController {
   // clean_up_transport is true, UDT cannot be restarted, so this is a
   // permanent cessation of the transport layer.
   void CloseConnection(bool clean_up_transport);
+  void StopRvPing();
 
   int ParseDa();
   int SerialiseDa();
@@ -92,8 +92,8 @@ class ClientController {
   bool ChangeUsername(std::string new_username);
   bool ChangePin(std::string new_pin);
   bool ChangePassword(std::string new_password);
-  bool AuthoriseUsers(std::set<std::string> users);
-  bool DeauthoriseUsers(std::set<std::string> users);
+//  bool AuthoriseUsers(std::set<std::string> users);
+//  bool DeauthoriseUsers(std::set<std::string> users);
   int ChangeConnectionStatus(int status);
   int RunDbEncQueue();
 
@@ -214,6 +214,7 @@ class ClientController {
   VaultStatus LocalVaultStatus() const;
   void LocalVaultStatus_Callback(const VaultStatus &result,
       bool *callback_arrived, VaultStatus *res);
+  std::string GenerateBPInfo();
 
   // Variables
   Authentication *auth_;
@@ -221,12 +222,10 @@ class ClientController {
   StoreManagerInterface *sm_;
   SessionSingleton *ss_;
   MessageHandler *msgh_;
-  ClientBufferPacketHandler *cbph_;
   std::string ser_da_;
   std::map<std::string, std::pair<std::string, std::string> >db_enc_queue_;
   SEHandler *seh_;
   static ClientController *single;
-//  boost::mutex mutex_;
   std::list<InstantMessage> messages_;
   file_system::FileSystem fsys_;
   std::map<std::string, boost::uint32_t> received_messages_;

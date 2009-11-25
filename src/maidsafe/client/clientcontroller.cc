@@ -82,7 +82,6 @@ ClientController::ClientController() : auth_(),
                                        sm_(),
                                        ss_(),
                                        msgh_(),
-                                       cbph_(),
                                        ser_da_(),
                                        db_enc_queue_(),
                                        seh_(),
@@ -137,7 +136,7 @@ void ClientController::Destroy() {
 bool ClientController::Init() {
   auth_ = new Authentication(sm_);
   ss_ = SessionSingleton::getInstance();
-  cbph_ = new ClientBufferPacketHandler(sm_);
+//  cbph_ = new ClientBufferPacketHandler(sm_);
 //  cbph_->SetChunkStore(client_chunkstore_);
   return true;
 }
@@ -532,6 +531,7 @@ bool ClientController::ValidateUser(const std::string &password) {
     ss_->ResetSession();
     return false;
   }
+
   if (dah_->Init(false)) {
     delete seh_;
     delete msgh_;
@@ -546,6 +546,7 @@ bool ClientController::ValidateUser(const std::string &password) {
   if (ss_->PublicUsername() == "") {
     return true;
   }
+
     // CHANGE CONNECTION STATUS
 //      int connection_status(1);
 //      int n = ChangeConnectionStatus(connection_status);
@@ -554,14 +555,8 @@ bool ClientController::ValidateUser(const std::string &password) {
 //      }
 //      ss_->SetConnectionStatus(connection_status);
 
-  // Get BP info and put it to the session
-  if (cbph_->GetBufferPacketInfo(MPID) != 0) {
-#ifdef DEBUG
-      printf("Failed to load BP Info.\n");
-#endif
-  }
-  clear_messages_thread_ =
-      boost::thread(&ClientController::ClearStaleMessages, this);
+  clear_messages_thread_ = boost::thread(&ClientController::ClearStaleMessages,
+                                         this);
   return true;
 }
 
@@ -585,6 +580,11 @@ void ClientController::CloseConnection(bool clean_up_transport) {
   if (clean_up_transport)
     sm_->CleanUpTransport();
   return;
+}
+
+void ClientController::StopRvPing() {
+  if (sm_)
+    sm_->StopRvPing();
 }
 
 bool ClientController::Logout() {
@@ -628,7 +628,6 @@ bool ClientController::Logout() {
     printf("ClientController::Logout - OK and ran DB queue.\n");
     while (sm_->NotDoneWithUploading()) {
       boost::this_thread::sleep(boost::posix_time::seconds(1));
-      printf(".");
     }
 
     printf("ClientController::Logout - After threads done.\n");
@@ -637,21 +636,20 @@ bool ClientController::Logout() {
     delete seh_;
     delete msgh_;
     messages_.clear();
-    if (fs::exists(client_store_)) {
-      try {
+    try {
+      if (fs::exists(client_store_)) {
         fs::remove_all(client_store_);
       }
-      catch(const std::exception &e) {
-        printf("Couldn't delete client path\n");
-      }
     }
+    catch(const std::exception &e) {
+      printf("Couldn't delete client path\n");
+    }
+
     logging_out_ = false;
     ser_da_ = "";
     return true;
   }
 
-//  delete seh_;
-//  delete msgh_;
   logging_out_ = false;
   return false;
 }
@@ -798,6 +796,7 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
 #endif
     return false;
   }
+
   PacketParams keys_result;
   int result = auth_->CreatePublicName(public_username, &keys_result);
   if (result != kSuccess) {
@@ -807,11 +806,10 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
     return false;
   }
 
-  if (cbph_->CreateBufferPacket(public_username,
-      boost::any_cast<std::string>(keys_result["mpid_public_key"]),
-      boost::any_cast<std::string>(keys_result["mpid_private_key"])) != 0) {
+  if (sm_->CreateBP() != kSuccess) {
 #ifdef DEBUG
-    printf("Error creating the buffer packet.\n");
+    printf("ClientController::CreatePublicUsername - "
+           "Failed to create the BP.\n");
 #endif
     return false;
   }
@@ -819,19 +817,20 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
   return true;
 }
 
+/*
 bool ClientController::AuthoriseUsers(std::set<std::string> users) {
   if (ss_->PublicUsername() == "" || users.empty())
     return false;
-  return cbph_->AddUsers(users, MPID) == 0;
+//  return cbph_->AddUsers(users, MPID) == 0;
 }
 
 bool ClientController::DeauthoriseUsers(std::set<std::string> users) {
   if (ss_->PublicUsername() == "" || users.empty())
     return false;
-  return cbph_->DeleteUsers(users, MPID) == 0;
+//  return cbph_->DeleteUsers(users, MPID) == 0;
 }
 
-/*
+
 int ClientController::ChangeConnectionStatus(int status) {
   if (ss_->ConnectionStatus() == status)
     return -3;
@@ -860,25 +859,12 @@ bool ClientController::GetMessages() {
     return false;
 
   std::list<ValidatedBufferPacketMessage> valid_messages;
-  if (cbph_->GetMessages(MPID, &valid_messages) != 0)
+  if (sm_->LoadBPMessages(&valid_messages) != 0)
     return false;
   if (valid_messages.size() == size_t(0))
-    // TODO(Richard): return code for no messages
+    // TODO(Team#5#): return code for no messages
     return true;
   HandleMessages(&valid_messages);
-//    CC_CallbackResult cb;
-//    cbph_->ClearMessages(MPID,
-//                         boost::bind(&CC_CallbackResult::CallbackFunc,
-//                                     &cb, _1));
-//    WaitForResult(cb);
-//    DeleteResponse clear_result;
-//    if ((!clear_result.ParseFromString(cb.result)) ||
-//         (clear_result.result() == kNack)) {
-//  #ifdef DEBUG
-//      printf("Error clearing messages from buffer packet.");
-//  #endif
-//      return false;
-//    }
   return true;
 }
 
@@ -1187,11 +1173,7 @@ int ClientController::AddInstantFile(
 
 int ClientController::HandleAddContactRequest(
     const ContactInfo &ci, const std::string &sender) {
-#ifdef DEBUG
-  printf("\n\n\nHandleAddContactRequest\nHandleAddContactRequest\n\n\n");
-#endif
-
-  // TODO(Richard): return choice to the user to accept/reject contact
+  // TODO(Team#5#): return choice to the user to accept/reject contact
 
   // Check if contact is on the list and has unconfirmed status
   std::string rec_public_key;
@@ -1201,14 +1183,14 @@ int ClientController::HandleAddContactRequest(
 #ifdef DEBUG
       printf("Sender's already confirmed.\n");
 #endif
-      return -70;
+      return -7;
     }
     int n =  ss_->UpdateContactConfirmed(sender, 'C');
     if (n != 0) {
 #ifdef DEBUG
       printf("Couldn't update sender's confirmed status.\n");
 #endif
-      return -770;
+      return -77;
     }
     rec_public_key = mic.pub_key_;
   } else {  // Contact didn't exist. Add from scratch.
@@ -1218,11 +1200,8 @@ int ClientController::HandleAddContactRequest(
 #ifdef DEBUG
       printf("Can't get sender's public key.\n");
 #endif
-      return -77;
+      return -777;
     }
-#ifdef DEBUG
-    printf("Got sender's public key.\n");
-#endif
 
     Contact c;
     c.SetPublicName(sender);
@@ -1240,28 +1219,28 @@ int ClientController::HandleAddContactRequest(
     int n = ss_->AddContact(sender, rec_public_key, ci.name(),
             ci.office_number(), ci.birthday(), ci.gender().at(0), ci.language(),
             ci.country(), ci.city(), 'C', 0, 0);
-#ifdef DEBUG
-    printf("Result add contact: %i\n", n);
-#endif
     if (n != 0) {
 #ifdef DEBUG
-      printf("Adding contact failed.\n");
+      printf("ClientController::HandleAddContactRequest - "
+             "Adding contact failed.\n");
 #endif
-      return -777;
+      return -7777;
     }
-#ifdef DEBUG
-    printf("Added Contact.\n");
-#endif
-  }
 
-  // Add to authorised users in BP
-  std::set<std::string> s;
-  s.insert(sender);
-  if (!AuthoriseUsers(s))
-    return -7777;
+    std::string bpinfo = GenerateBPInfo();
+    if (bpinfo.empty()) {
 #ifdef DEBUG
-  printf("Authorised Contact to write to BP.\n");
+      printf("ClientController::HandleAddContactRequest - BPI empty\n");
 #endif
+      return -77777;
+    }
+    if (sm_->ModifyBPInfo(bpinfo) != kSuccess) {
+#ifdef DEBUG
+      printf("ClientController::HandleAddContactRequest - Failed save BPI\n");
+#endif
+      return -777777;
+    }
+  }
 
   // Send message back with own details
   maidsafe::Receivers rec;
@@ -1292,37 +1271,22 @@ int ClientController::HandleAddContactRequest(
   std::string ser_im;
   im.SerializeToString(&ser_im);
 
-  CC_CallbackResult cb;
-  msgh_->SendMessage(ser_im,
-                     recs,
-                     MPID,
-                     INSTANT_MSG,
-                     boost::bind(&CC_CallbackResult::CallbackFunc,
-                     &cb, _1));
-  WaitForResult(cb);
-  StoreMessagesResult res;
-  if ((!res.ParseFromString(cb.result)) ||
-      (res.result() == kNack)) {
+  std::vector<std::string> contact_names;
+  contact_names.push_back(sender);
+  if (sm_->AddBPMessage(contact_names, ser_im, INSTANT_MSG) !=
+      kSuccess) {
 #ifdef DEBUG
-    printf("Callbackfailure send msg.\n");
+    printf("ClientController::HandleAddContactRequest - Failed send msg\n");
 #endif
-    return -77777;
+    return -7777777;
   }
-  if (res.stored_msgs() != 1)
-    return -777777;
-#ifdef DEBUG
-  printf("Sent Contact Addition Response.\n");
-#endif
+
   return 0;
 }
 
 int ClientController::HandleAddContactResponse(
     const ContactInfo &ci, const std::string &sender) {
-#ifdef DEBUG
-  printf("\n\n\nHandleAddContactResponse\nHandleAddContactResponse\n\n\n");
-#endif
-
-  // Check if contact exists in local DB
+  // Check if contact exists in local session
   Contact c;
   c.SetPublicName(sender);
   c.SetPublicKey("");
@@ -1338,15 +1302,13 @@ int ClientController::HandleAddContactResponse(
   std::vector<maidsafe::Contact> list;
   maidsafe::mi_contact mic;
   int n = ss_->GetContactInfo(sender, &mic);
-#ifdef DEBUG
-  printf("GetContactList result: %i\n", n);
-#endif
   if (n != 0) {
 #ifdef DEBUG
-    printf("Getting contact list failed.\n");
+    printf("ClientController::HandleAddContactResponse - Get list failed.\n");
 #endif
-    return -88;
+    return -8;
   }
+
   n = ss_->UpdateContactFullName(sender, ci.name());
   n += ss_->UpdateContactOfficePhone(sender, ci.office_number());
   n += ss_->UpdateContactBirthday(sender, ci.birthday());
@@ -1355,14 +1317,11 @@ int ClientController::HandleAddContactResponse(
   n += ss_->UpdateContactCountry(sender, ci.country());
   n += ss_->UpdateContactCity(sender, ci.city());
   n += ss_->UpdateContactConfirmed(sender, 'C');
-#ifdef DEBUG
-  printf("UpdateContact result: %i\n", n);
-#endif
   if (n != 0) {
 #ifdef DEBUG
-    printf("Could not update contact.\n");
+    printf("ClientController::HandleAddContactResponse - No update contact.\n");
 #endif
-    return -8888;
+    return -88;
   }
   return 0;
 }
@@ -1398,25 +1357,10 @@ int ClientController::SendInstantMessage(const std::string &message,
   im.set_date(base::get_epoch_time());
   im.SerializeToString(&ser_im);
 
-  CC_CallbackResult cb;
-  msgh_->SendMessage(ser_im,
-                     recs,
-                     MPID,
-                     INSTANT_MSG,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
-  StoreMessagesResult store_res;
-  if ((!store_res.ParseFromString(cb.result)) ||
-      (store_res.result() == kNack)) {
+  if (sm_->AddBPMessage(contact_names, ser_im, INSTANT_MSG) != kSuccess) {
 #ifdef DEBUG
-    printf("Callback failure sending instant message.\n");
-#endif
-    return -99;
-  }
-  if (store_res.stored_msgs() != static_cast<int>(recs.size())) {
-#ifdef DEBUG
-    printf("Not all recepients got the message -- %d -- %d.\n",
-            store_res.stored_msgs(), recs.size());
+    printf("ClientController::SendInstantMessage - Not all recepients got "
+           "the message\n");
 #endif
     return -999;
   }
@@ -1507,25 +1451,11 @@ int ClientController::SendInstantFile(std::string *filename,
     recs.push_back(rec);
   }
 
-  CC_CallbackResult cb;
-  msgh_->SendMessage(ser_instant_file,
-                     recs,
-                     MPID,
-                     INSTANT_MSG,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
-  StoreMessagesResult res;
-  if ((!res.ParseFromString(cb.result)) ||
-      (res.result() == kNack)) {
+  if (sm_->AddBPMessage(contact_names, ser_instant_file, INSTANT_MSG) !=
+      kSuccess) {
 #ifdef DEBUG
-    printf("Callbackfailure send msg.\n");
-#endif
-    return -66666;
-  }
-  if (res.stored_msgs() != static_cast<int>(recs.size())) {
-#ifdef DEBUG
-    printf("Messages sent: %i -- Received: %i\n",
-            res.stored_msgs(), recs.size());
+    printf("ClientController::SendInstantFile - Not all recepients got "
+           "the message\n");
 #endif
     return -666666;
   }
@@ -1579,6 +1509,7 @@ int ClientController::AddContact(const std::string &public_name) {
 #endif
     return -221;
   }
+
   // Sending the request to add the contact
   // TODO(Richard): the info is empty because there is no way
   // to get the users contact data
@@ -1611,37 +1542,43 @@ int ClientController::AddContact(const std::string &public_name) {
   std::string ser_im;
   im.SerializeToString(&ser_im);
 
-  CC_CallbackResult cb;
-  msgh_->SendMessage(ser_im,
-                     recs,
-                     MPID,
-                     ADD_CONTACT_RQST,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
-  StoreMessagesResult res;
-  if ((!res.ParseFromString(cb.result)) ||
-      (res.result() == kNack)) {
-#ifdef DEBUG
-    printf("Callbackfailure send msg.\n");
-#endif
-    return -22;
-  }
-  if (res.stored_msgs() != 1)
-    return -22;
-
-  std::set<std::string> s;
-  s.insert(public_name);
-
-  if (!AuthoriseUsers(s))
-    return -22;
-
   maidsafe::Contact c;
   c.SetPublicName(public_name);
   c.SetPublicKey(public_key);
   c.SetConfirmed('U');
+  if (ss_->AddContact(public_name, public_key, "", "", "", '-', -1,
+         -1, "", 'U', 0, 0) != 0) {
+#ifdef DEBUG
+    printf("ClientController::AddContact - Failed to add contact to session\n");
+#endif
+    return -2;
+  }
 
-  return ss_->AddContact(public_name, public_key, "", "", "", '-', -1,
-         -1, "", 'U', 0, 0);
+  std::string bpinfo = GenerateBPInfo();
+  if (bpinfo.empty()) {
+#ifdef DEBUG
+    printf("ClientController::AddContact - BPInfo is empty\n");
+#endif
+    return -22;
+  }
+  if (sm_->ModifyBPInfo(bpinfo) != kSuccess) {
+#ifdef DEBUG
+    printf("ClientController::AddContact - Failed to modify BPInfo\n");
+#endif
+    return -222;
+  }
+
+  std::vector<std::string> contact_names;
+  contact_names.push_back(public_name);
+  if (sm_->AddBPMessage(contact_names, ser_im, ADD_CONTACT_RQST) !=
+      kSuccess) {
+#ifdef DEBUG
+    printf("ClientController::AddContact - Failed to send request\n");
+#endif
+    return -2222;
+  }
+
+  return 0;
 }
 
 int ClientController::DeleteContact(const std::string &public_name) {
@@ -1650,30 +1587,12 @@ int ClientController::DeleteContact(const std::string &public_name) {
   std::set<std::string> s;
   s.insert(public_name);
 
-  // This int receives a bool
-  int n = DeauthoriseUsers(s);
-  if (n == 0) {
-#ifdef DEBUG
-    printf("Deauthorisation of user failed.\n");
-#endif
-    return -501;
-  }
-
-  maidsafe::mi_contact mic;
-  n = ss_->GetContactInfo(public_name, &mic);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("Selection from contacts list failed: n - %i.\n", n);
-#endif
-    return -502;
-  }
-
   InstantMessage im;
   ContactNotification *cn = im.mutable_contact_notification();
   cn->set_action(2);
 
   std::string deletion_msg(base::itos(base::get_epoch_nanoseconds()));
-  deletion_msg += " deleted " + mic.pub_name_ + " update " +
+  deletion_msg += " deleted " + public_name + " update " +
     ss_->PublicUsername();
 #ifdef DEBUG
   printf("MSG: %s\n", deletion_msg.c_str());
@@ -1684,38 +1603,56 @@ int ClientController::DeleteContact(const std::string &public_name) {
   std::string ser_im;
   im.SerializeToString(&ser_im);
 
-  std::vector<Receivers> recs;
-  Receivers r;
-  r.id = mic.pub_name_;
-  r.public_key = mic.pub_key_;
-  recs.push_back(r);
-
-  CC_CallbackResult cb;
-  msgh_->SendMessage(ser_im,
-                     recs,
-                     MPID,
-                     INSTANT_MSG,
-                     boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
-  StoreMessagesResult res;
-  if ((!res.ParseFromString(cb.result)) ||
-      (res.result() == kNack) ||
-      (res.stored_msgs() != 1)) {
+  std::vector<std::string> contact_names;
+  contact_names.push_back(public_name);
+  if (sm_->AddBPMessage(contact_names, ser_im, ADD_CONTACT_RQST) !=
+      kSuccess) {
 #ifdef DEBUG
-    printf("Callbackfailure in sending the deletion notification.\n");
+    printf("ClientController::DeleteContact - Failed to send deletion msg\n");
 #endif
-    return -503;
+    return -504;
   }
 
-  n = ss_->DeleteContact(public_name);
+  int n = ss_->DeleteContact(public_name);
   if (n != 0) {
 #ifdef DEBUG
-    printf("Deletion of the contact in DB failed.\n");
+    printf("ClientController::DeleteContact - Failed session delete.\n");
+#endif
+    return -504;
+  }
+
+  std::string bpinfo = GenerateBPInfo();
+  if (bpinfo.empty()) {
+#ifdef DEBUG
+    printf("ClientController::DeleteContact - BPInfo is empty\n");
+#endif
+    return -504;
+  }
+  if (sm_->ModifyBPInfo(bpinfo) != kSuccess) {
+#ifdef DEBUG
+    printf("ClientController::DeleteContact - Failed to save new BPInfo\n");
 #endif
     return -504;
   }
 
   return 0;
+}
+
+std::string ClientController::GenerateBPInfo() {
+  std::vector<std::string> contacts;
+  if (ss_->GetPublicUsernameList(&contacts) != 0)
+    return "";
+  BufferPacketInfo bpi;
+  bpi.set_owner("a pile of shit");
+  bpi.set_ownerpublickey("public key belonging to the pile of shit");
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  for (size_t n = 0; n < contacts.size(); ++n) {
+    bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
+  }
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  return ser_bpi;
 }
 
 //////////////////////
@@ -1773,6 +1710,7 @@ int ClientController::CreateNewShare(const std::string &name,
 
   std::list<maidsafe::ShareParticipants> participants;
   std::vector<maidsafe::ShareParticipants> parts;
+  std::vector<std::string> admin_recs;
   std::set<std::string>::iterator it;
   for (it = admins.begin(); it != admins.end(); ++it) {
     std::vector<maidsafe::Contact> c_list;
@@ -1786,7 +1724,9 @@ int ClientController::CreateNewShare(const std::string &name,
       participants.push_back(sp);
       parts.push_back(sp);
     }
+    admin_recs.push_back(*it);
   }
+  std::vector<std::string> ro_recs;
   for (it = readonlys.begin(); it != readonlys.end(); ++it) {
     std::vector<maidsafe::Contact> c_list;
     maidsafe::mi_contact mic;
@@ -1799,6 +1739,7 @@ int ClientController::CreateNewShare(const std::string &name,
       participants.push_back(sp);
       parts.push_back(sp);
     }
+    ro_recs.push_back(*it);
   }
 
   int n = ss_->AddPrivateShare(attributes, &participants);
@@ -1840,43 +1781,19 @@ int ClientController::CreateNewShare(const std::string &name,
   std::string share_message;
   im.SerializeToString(&share_message);
 
-  // Send to READONLYS
-  std::vector<Receivers> recs;
-  StoreMessagesResult res;
-  if (readonlys.size() > 0) {
-    for (unsigned int n = 0; n < parts.size(); n++) {
-      if (parts[n].role == 'R') {
-        Receivers r;
-        r.id = parts[n].id;
-        r.public_key = parts[n].public_key;
-        recs.push_back(r);
-        std::string *ro = psn->add_readonlys();
-        *ro = parts[n].id;
-      } else {
-        std::string *admin = psn->add_admins();
-        *admin = parts[n].id;
-      }
+  if (ro_recs.size() > 0) {
+    if (sm_->AddBPMessage(ro_recs, share_message, INSTANT_MSG) !=
+        kSuccess) {
+  #ifdef DEBUG
+      printf("ClientController::CreateNewShare - Not all recepients got "
+             "the message\n");
+  #endif
+      return -22;
     }
-    cbr.Reset();
-    msgh_->SendMessage(share_message,
-                       recs,
-                       MPID,
-                       INSTANT_MSG,
-                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
-    WaitForResult(cbr);
-    if ((!res.ParseFromString(cbr.result)) ||
-        (res.result() == kNack)) {
-#ifdef DEBUG
-      printf("Callback failure send msg to readonlys.\n");
-#endif
-      return -30003;
-    }
-    if (static_cast<unsigned int>(res.stored_msgs()) != recs.size())
-      return -30004;
   }
 
   // Send to ADMINS
-  if (admins.size() > 0) {
+  if (admin_recs.size() > 0) {
     std::string *me = psn->add_admins();
     *me = ss_->PublicUsername();
     psn->set_private_key(cmsidr.private_key());
@@ -1885,35 +1802,13 @@ int ClientController::CreateNewShare(const std::string &name,
                "to share " + name;
     im.set_message(message);
     im.SerializeToString(&share_message);
-    recs.clear();
-    for (unsigned int n = 0; n < parts.size(); n++) {
-      if (parts[n].role == 'A') {
-        Receivers r;
-        r.id = parts[n].id;
-        r.public_key = parts[n].public_key;
-        recs.push_back(r);
-      }
-    }
-    cbr.Reset();
-    msgh_->SendMessage(share_message,
-                       recs,
-                       MPID,
-                       INSTANT_MSG,
-                       boost::bind(&CC_CallbackResult::CallbackFunc, &cbr, _1));
-    WaitForResult(cbr);
-    if ((!res.ParseFromString(cbr.result)) ||
-        (res.result() == kNack)) {
+    if (sm_->AddBPMessage(admin_recs, share_message, INSTANT_MSG) !=
+        kSuccess) {
   #ifdef DEBUG
-      printf("Callback failure send msg to admins.\n");
+      printf("ClientController::CreateNewShare - Not all recepients got "
+             "the message\n");
   #endif
-      return -30005;
-    }
-    if (static_cast<unsigned int>(res.stored_msgs()) != recs.size()) {
-  #ifdef DEBUG
-      printf("Couldn't send message to all participants: %i out of %i.\n",
-        res.stored_msgs(), recs.size());
-  #endif
-      return -30006;
+      return -22;
     }
   }
 
@@ -2082,8 +1977,8 @@ int ClientController::RetrieveElement(const std::string &path) {
 }
 
 int ClientController::RemoveElement(std::string path) {
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  if (dah_->RemoveElement(path))
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
+  if (dah->RemoveElement(path))
     return -1;
   if (fs::exists(fsys_.FullMSPathFromRelPath(path)))
     fs::remove_all(fsys_.FullMSPathFromRelPath(path));

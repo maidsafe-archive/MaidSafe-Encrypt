@@ -95,8 +95,8 @@ class ClientBufferPacketHandler {
   static const boost::uint16_t kParallelStores = 1;
   static const boost::uint16_t kParallelFindCtcs = 1;
  public:
-  ClientBufferPacketHandler(maidsafe::BufferPacketRpcs *rpcs,
-    kad::KNode *knode);
+  ClientBufferPacketHandler(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
+    boost::shared_ptr<kad::KNode> knode);
   virtual ~ClientBufferPacketHandler() {}
   void CreateBufferPacket(const BPInputParameters &args, bp_operations_cb cb);
   void ModifyOwnerInfo(const BPInputParameters &args, const int &status,
@@ -123,8 +123,8 @@ class ClientBufferPacketHandler {
   ClientBufferPacketHandler &operator=(const ClientBufferPacketHandler);
   ClientBufferPacketHandler(const ClientBufferPacketHandler&);
   crypto::Crypto crypto_obj_;
-  maidsafe::BufferPacketRpcs *rpcs_;
-  kad::KNode *knode_;
+  boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs_;
+  boost::shared_ptr<kad::KNode> knode_;
 };
 
 }  // namespace maidsafe

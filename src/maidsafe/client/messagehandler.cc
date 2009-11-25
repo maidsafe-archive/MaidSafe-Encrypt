@@ -181,7 +181,8 @@ void MessageHandler::StoreMessage(int index,
                   data->p_type,
                   &signed_request,
                   &signed_public_key);
-  if (sm_->AddBPMessage(bufferpacketname, ser_msg) == 0) {
+  std::vector<std::string> receivers;
+  if (sm_->AddBPMessage(receivers, data->msg, data->m_type) == 0) {
     ++data->successful_stores;
   } else {
     data->no_auth_rec.push_back(data->receivers[index].id);

@@ -67,7 +67,6 @@ void wait_for_result_seh_(const FakeCallback &cb, boost::mutex *mutex) {
   }
 };
 
-
 namespace maidsafe {
 
 namespace fs = boost::filesystem;
@@ -77,8 +76,8 @@ class DataAtlasHandlerTest : public testing::Test {
   DataAtlasHandlerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
                                           "/maidsafe_TestDAH"),
                            sm(),
-                           cb() {}
-  ~DataAtlasHandlerTest() {}
+                           cb() { }
+  ~DataAtlasHandlerTest() { }
  protected:
   void SetUp() {
     try {
@@ -911,6 +910,78 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
             &ser_dm_recovered_original));
   ASSERT_NE(0, dah_->GetMetaDataMap(element_path_original,
             &ser_mdmrecovered_original));
+}
+
+TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameDir) {
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
+//  std::string ser_dm, recovered_ser_dm;
+  std::string ser_mdm, recovered_ser_mdm;
+  std::string dir_name("summat");
+  std::string dir_path(base::TidyPath(kRootSubdir[0][0]) + "/" + dir_name);
+  MetaDataMap mdm, recovered_mdm;
+  mdm.set_id(-2);
+  mdm.set_display_name(dir_name);
+  mdm.set_type(EMPTY_DIRECTORY);
+  mdm.set_stats("STATS1");
+  mdm.set_tag("TAG1");
+  mdm.set_creation_time(6);
+  mdm.set_last_modified(7);
+  mdm.set_last_access(8);
+  mdm.SerializeToString(&ser_mdm);
+
+  //  Add and retrieve data for folder
+  ASSERT_EQ(0, dah->AddElement(dir_path, ser_mdm, "", "Dir Key", true))
+            << "Metadata of directory was not added to DataAtlas";
+  ASSERT_EQ(0, dah->GetMetaDataMap(dir_path, &recovered_ser_mdm)) <<
+            "Didn't retrieve MetaDataMap from DataAtlas";
+  EXPECT_TRUE(recovered_mdm.ParseFromString(recovered_ser_mdm)) <<
+              "Metadata corrupted (cannot be parsed)";
+  ASSERT_EQ(mdm.display_name(), recovered_mdm.display_name()) <<
+            "Display name has changed in MetaDataMap";
+  ASSERT_EQ(mdm.type(), recovered_mdm.type()) <<
+            "Directory type has changed in MetaDataMap";
+  ASSERT_EQ(mdm.stats(), recovered_mdm.stats()) <<
+            "Stats have changed in MetaDataMap";
+  ASSERT_EQ(mdm.tag(), recovered_mdm.tag()) <<
+            "Tag has changed in MetaDataMap";
+  ASSERT_EQ(mdm.file_size_high(), recovered_mdm.file_size_high()) <<
+            "file_size_high has changed in MetaDataMap";
+  ASSERT_EQ(mdm.file_size_low(), recovered_mdm.file_size_low()) <<
+            "file_size_low has changed in MetaDataMap";
+  ASSERT_EQ(mdm.creation_time(), recovered_mdm.creation_time()) <<
+            "Creation time has changed in MetaDataMap";
+  ASSERT_NE(mdm.last_modified(), recovered_mdm.last_modified()) <<
+            "Last modified time has not changed in MetaDataMap";
+  ASSERT_NE(mdm.last_access(), recovered_mdm.last_access()) <<
+            "Last access time has not changed in MetaDataMap";
+
+  std::string new_dir_name("summat_else");
+  std::string new_dir_path(base::TidyPath(kRootSubdir[0][0]) + "/" +
+                           new_dir_name);
+  mdm.set_display_name(new_dir_name);
+  ASSERT_EQ(0, dah->RenameElement(dir_path, new_dir_path, true));
+  ASSERT_EQ(0, dah->GetMetaDataMap(new_dir_path, &recovered_ser_mdm)) <<
+            "Didn't retrieve MetaDataMap from DataAtlas";
+  EXPECT_TRUE(recovered_mdm.ParseFromString(recovered_ser_mdm)) <<
+              "Metadata corrupted (cannot be parsed)";
+  ASSERT_EQ(mdm.display_name(), recovered_mdm.display_name()) <<
+            "Display name has changed in MetaDataMap";
+  ASSERT_EQ(mdm.type(), recovered_mdm.type()) <<
+            "Directory type has changed in MetaDataMap";
+  ASSERT_EQ(mdm.stats(), recovered_mdm.stats()) <<
+            "Stats have changed in MetaDataMap";
+  ASSERT_EQ(mdm.tag(), recovered_mdm.tag()) <<
+            "Tag has changed in MetaDataMap";
+  ASSERT_EQ(mdm.file_size_high(), recovered_mdm.file_size_high()) <<
+            "file_size_high has changed in MetaDataMap";
+  ASSERT_EQ(mdm.file_size_low(), recovered_mdm.file_size_low()) <<
+            "file_size_low has changed in MetaDataMap";
+  ASSERT_EQ(mdm.creation_time(), recovered_mdm.creation_time()) <<
+            "Creation time has changed in MetaDataMap";
+  ASSERT_NE(mdm.last_modified(), recovered_mdm.last_modified()) <<
+            "Last modified time has not changed in MetaDataMap";
+  ASSERT_NE(mdm.last_access(), recovered_mdm.last_access()) <<
+            "Last access time has not changed in MetaDataMap";
 }
 
 TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileRepeatedDataMap) {

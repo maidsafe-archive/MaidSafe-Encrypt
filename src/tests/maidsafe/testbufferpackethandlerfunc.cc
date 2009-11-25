@@ -78,8 +78,9 @@ class BPCallback {
 
 class CBPHandlerTest : public testing::Test {
  public:
-  CBPHandlerTest() : trans(NULL), ch_man(NULL), knode(NULL), bp_rpcs(NULL),
-    test_dir_(""), kad_config_file_(""), cryp(), keys(), cb_() {
+  CBPHandlerTest() : trans(NULL), ch_man(NULL), knode(), cbph(NULL), bp_rpcs(),
+      test_dir_(""),
+      kad_config_file_(""), cryp(), keys(), cb_() {
     test_dir_ = std::string("CBPHTest") +
         boost::lexical_cast<std::string>(base::random_32bit_uinteger());
     kad_config_file_ = test_dir_ + std::string("/.kadconfig");
@@ -90,9 +91,9 @@ class CBPHandlerTest : public testing::Test {
   virtual void SetUp() {
     trans = new transport::Transport;
     ch_man = new rpcprotocol::ChannelManager(trans);
-    knode = new kad::KNode(ch_man, trans, kad::VAULT, keys.private_key(),
-      keys.public_key(), false, false);
-    bp_rpcs = new maidsafe::BufferPacketRpcsImpl(trans, ch_man);
+    knode.reset(new kad::KNode(ch_man, trans, kad::VAULT, keys.private_key(),
+      keys.public_key(), false, false));
+    bp_rpcs.reset(new maidsafe::BufferPacketRpcsImpl(trans, ch_man));
     cbph = new maidsafe::ClientBufferPacketHandler(bp_rpcs, knode);
     ASSERT_TRUE(ch_man->RegisterNotifiersToTransport());
     ASSERT_TRUE(trans->RegisterOnServerDown(
@@ -124,8 +125,6 @@ class CBPHandlerTest : public testing::Test {
     trans->Stop();
     ch_man->Stop();
     delete cbph;
-    delete bp_rpcs;
-    delete knode;
     delete trans;
     delete ch_man;
     try {
@@ -139,9 +138,9 @@ class CBPHandlerTest : public testing::Test {
 
   transport::Transport *trans;
   rpcprotocol::ChannelManager *ch_man;
-  kad::KNode *knode;
+  boost::shared_ptr<kad::KNode> knode;
   maidsafe::ClientBufferPacketHandler *cbph;
-  maidsafe::BufferPacketRpcsImpl *bp_rpcs;
+  boost::shared_ptr<maidsafe::BufferPacketRpcs> bp_rpcs;
   std::string test_dir_, kad_config_file_;
   crypto::Crypto cryp;
   crypto::RsaKeyPair keys;

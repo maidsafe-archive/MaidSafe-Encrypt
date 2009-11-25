@@ -80,7 +80,8 @@ namespace maidsafe {
 class FunctionalClientControllerTest : public testing::Test {
  protected:
   FunctionalClientControllerTest()
-      : test_root_dir_(file_system::FileSystem::TempDir() + "/maidsafe_TestCC"),
+      : test_root_dir_(file_system::FileSystem::TempDir() + "/maidsafe_TestCC" +
+                       base::itos_ul(base::random_32bit_uinteger())),
         cc_(),
         authentication_(),
         ss_(),
@@ -89,7 +90,11 @@ class FunctionalClientControllerTest : public testing::Test {
         dir1_(""),
         dir2_(""),
         final_dir_(),
-        vcp_() {}
+        vcp_() { }
+
+  static void TearDownTestCase() {
+    transport::CleanUp();
+  }
 
   void SetUp() {
     try {
@@ -111,8 +116,10 @@ class FunctionalClientControllerTest : public testing::Test {
       ASSERT_TRUE(cc_->Init());
       cc_test::initialised_ = true;
     }
+    cc_->StopRvPing();
     ss_->SetConnectionStatus(0);
   }
+
   void TearDown() {
     try {
       if (fs::exists(test_root_dir_))
@@ -124,6 +131,7 @@ class FunctionalClientControllerTest : public testing::Test {
       printf("Error: %s\n", e.what());
     }
   }
+
   std::string test_root_dir_;
   ClientController *cc_;
   Authentication *authentication_;
@@ -224,8 +232,8 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
   printf("Logged in.\n");
-  file_system::FileSystem fsys_;
-  dir1_ = fsys_.MaidsafeDir();
+  file_system::FileSystem fsys;
+  dir1_ = fsys.MaidsafeDir();
 
   ASSERT_TRUE(cc_->ChangePin("2207"));
   ASSERT_EQ("juan.smer", ss_->Username());
@@ -251,7 +259,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
   ASSERT_EQ("2207", ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
   printf("Logged in.\n");
-  dir2_ = fsys_.MaidsafeDir();
+  dir2_ = fsys.MaidsafeDir();
 
   ASSERT_TRUE(cc_->ChangePassword("elpasguor"));
   ASSERT_EQ("juan.smer", ss_->Username());
@@ -401,13 +409,13 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   ASSERT_EQ(password, ss_->Password());
   printf("User created.\n");
 
-  file_system::FileSystem fsys_;
-  fs::create_directories(fsys_.MaidsafeHomeDir()+kRootSubdir[0][0]);
+  file_system::FileSystem fsys;
+  fs::create_directories(fsys.MaidsafeHomeDir()+kRootSubdir[0][0]);
   fs::path rel_path_(kRootSubdir[0][0]);
   rel_path_ /= "testencryption.txt";
   std::string rel_str_ = base::TidyPath(rel_path_.string());
 
-  fs::path full_path_(fsys_.MaidsafeHomeDir());
+  fs::path full_path_(fsys.MaidsafeHomeDir());
   full_path_ /= rel_path_;
   fs::ofstream testfile(full_path_.string().c_str());
   testfile << base::RandomString(1024*1024);
@@ -437,7 +445,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
   printf("User logged in.\n");
-  fs::create_directories(fsys_.MaidsafeHomeDir()+kRootSubdir[0][0]);
+  fs::create_directories(fsys.MaidsafeHomeDir()+kRootSubdir[0][0]);
 
   {
     boost::progress_timer t;
@@ -661,7 +669,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerUserAuthorisation) {
     if (fs::exists(path))
       fs::remove(fs::path(path));
   }
-
+*/
 
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {
   std::string username = "User7";
@@ -671,21 +679,22 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
+  ASSERT_EQ(maidsafe::kUserDoesntExist,
+            cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
   printf("Preconditions fulfilled.\n");
 
-  ASSERT_FALSE(cc_test::CheckUserExists(cc_, username, pin, 10000));
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
   printf("User created.\n");
 
-  file_system::FileSystem fsys_;
-  fs::create_directories(fsys_.MaidsafeHomeDir()+kRootSubdir[0][0]);
+  file_system::FileSystem fsys;
+  fs::create_directories(fsys.MaidsafeHomeDir() + kRootSubdir[0][0]);
   fs::path rel_path_(kRootSubdir[0][0]);
   fs::path testfile[15];
-  fs::path homedir(fsys_.HomeDir());
-  fs::path mshomedir(fsys_.MaidsafeHomeDir());
+  fs::path homedir(fsys.HomeDir());
+  fs::path mshomedir(fsys.MaidsafeHomeDir());
   // fs::path newdir = homedir / "NewDir";
   // fs::path msnewdir = mshomedir / "NewDir";
   fs::path my_files(base::TidyPath(kRootSubdir[0][0]));
@@ -825,15 +834,17 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {
   // ASSERT_EQ(0, cc_->statfs());
   // printf("Got the FS stats.\n\n");
 
-  final_dir_ = fsys_.MaidsafeDir();
+  final_dir_ = fsys.MaidsafeDir();
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
   printf("Logged out user.\n");
+
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
 }
-*/
+
 }  // namespace maidsafe
 
 int main(int argc, char **argv) {

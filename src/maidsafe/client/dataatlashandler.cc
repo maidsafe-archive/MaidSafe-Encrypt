@@ -83,8 +83,8 @@ int DataAtlasHandler::Init(bool new_user) {
 std::string DataAtlasHandler::GetElementNameFromPath(
     const std::string &element_path) {
 #ifdef DEBUG
-  // printf("\t\tGetElementNameFromPath::GetMetaDataMap %s\n",
-  //   element_path.c_str());
+//   printf("\t\tGetElementNameFromPath::GetMetaDataMap %s\n",
+//          element_path.c_str());
 #endif
   fs::path path(element_path, fs::native);
   return path.filename();
@@ -125,20 +125,20 @@ boost::shared_ptr<PdDir> DataAtlasHandler::GetPdDir(
     int *result) {
   std::string db_name;
 #ifdef DEBUG
-  // printf("In getpddir: element_path = %s\tand flag = %i\n",
-  //         element_path.c_str(), flag);
+//   printf("In getpddir: element_path = %s\tand flag = %i\n",
+//           element_path.c_str(), flag);
 #endif
   GetDbPath(element_path, flag, &db_name);
 #ifdef DEBUG
-  // printf("In getpddir: getdbpath returned db_name as %s\n",
-  //        db_name.c_str());
+//   printf("In getpddir: getdbpath returned db_name as %s\n",
+//          db_name.c_str());
 #endif
-  int res = kDataAtlasError;
-  boost::shared_ptr<PdDir> da(new PdDir(db_name, flag, &res));
+//  int res = kDataAtlasError;
+  boost::shared_ptr<PdDir> da(new PdDir(db_name, flag, result));
 #ifdef DEBUG
-  // printf("In getpddir: made new db with result %i\n", res);
+//   printf("In getpddir: made new db with result %i\n", res);
 #endif
-  *result = res;
+//  *result = res;
   return da;
 }
 
@@ -193,16 +193,35 @@ int DataAtlasHandler::ModifyMetaDataMap(const std::string &element_path,
 
 int DataAtlasHandler::RemoveElement(const std::string &element_path) {
   int result = kDataAtlasError;
+  std::string ser_mdm("");
+  result = GetMetaDataMap(element_path, &ser_mdm);
+  if (result != kSuccess) {
+    printf("DataAtlasHandler::RemoveElement fail 0\n");
+    return result;
+  }
+  MetaDataMap mdm;
+  if (!mdm.ParseFromString(ser_mdm)) {
+    printf("DataAtlasHandler::RemoveElement fail 0.5\n");
+    return result;
+  }
   std::string ser_dm("");
-  result = GetDataMap(element_path, &ser_dm);
-  if (result != kSuccess)
+  if (mdm.type() != DIRECTORY && mdm.type() != EMPTY_DIRECTORY) {
+    result = GetDataMap(element_path, &ser_dm);
+    if (result != kSuccess) {
+      printf("DataAtlasHandler::RemoveElement fail 1\n");
+      return result;
+    }
+  }
+  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
+  if (result != kSuccess) {
+    printf("DataAtlasHandler::RemoveElement fail 2\n");
     return result;
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
-  if (result != kSuccess)
+  }
+  result = da->RemoveElement(GetElementNameFromPath(element_path));
+  if (result != kSuccess) {
+    printf("DataAtlasHandler::RemoveElement fail 3\n");
     return result;
-  result = da_->RemoveElement(GetElementNameFromPath(element_path));
-  if (result != kSuccess)
-    return result;
+  }
   if (ser_dm == "") {
     try {
       std::string db_to_delete("");
@@ -428,23 +447,27 @@ int DataAtlasHandler::GetDirKey(const std::string &element_path,
     *dir_key = maidsafe::SessionSingleton::getInstance()->RootDbKey();
     return kSuccess;
   }
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
+  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In DAH::GetDirKey, result from GetPdDir = %i\n", result);
 #endif
     return result;
   }
-  return da_->GetDirKey(GetElementNameFromPath(element_path), dir_key);
+  return da->GetDirKey(GetElementNameFromPath(element_path), dir_key);
 }
 
 int DataAtlasHandler::GetDataMap(const std::string &element_path,
                                  std::string *ser_dm) {
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
-  if (result != kSuccess)
+  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
+  if (result != kSuccess) {
+#ifdef DEBUG
+    printf("In DAH::GetDataMap, result from GetPdDir = %i\n", result);
+#endif
     return result;
-  return da_->GetDataMap(GetElementNameFromPath(element_path), ser_dm);
+  }
+  return da->GetDataMap(GetElementNameFromPath(element_path), ser_dm);
 }
 
 int DataAtlasHandler::GetMetaDataMap(const std::string &element_path,

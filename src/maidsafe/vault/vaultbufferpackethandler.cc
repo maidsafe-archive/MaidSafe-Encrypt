@@ -108,8 +108,9 @@ bool VaultBufferPacketHandler::ClearMessages(std::string *ser_bufferpacket) {
 bool VaultBufferPacketHandler::ChangeOwnerInfo(std::string ser_gp,
                                                std::string *ser_packet,
                                                std::string public_key) {
-  if (!ValidateOwnerSignature(public_key, *ser_packet))
+  if (!ValidateOwnerSignature(public_key, *ser_packet)) {
     return false;
+  }
   BufferPacket bp;
   bp.ParseFromString(*ser_packet);
   bp.clear_owner_info();
@@ -118,8 +119,9 @@ bool VaultBufferPacketHandler::ChangeOwnerInfo(std::string ser_gp,
     return false;
   } else {
     BufferPacketInfo bpi;
-    if (!bpi.ParseFromString(gp->data()))
+    if (!bpi.ParseFromString(gp->data())) {
       return false;
+    }
   }
   bp.SerializeToString(ser_packet);
   return true;
@@ -273,7 +275,6 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
       if (bpi.users(i) == hashed_sender_id) {
         i = bpi.users_size();
         flag = true;
-//        break;
       }
     }
     if (!flag) {

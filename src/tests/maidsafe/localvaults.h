@@ -237,8 +237,8 @@ class Env: public testing::Environment {
         printf("Vault %i stopped.\n", i);
       else
         printf("Vault %i failed to stop correctly.\n", i);
-      if (i == current_nodes_created_ - 1)
-        (*pdvaults_)[current_nodes_created_ - 1]->CleanUp();
+//      if (i == current_nodes_created_ - 1)
+//        (*pdvaults_)[current_nodes_created_ - 1]->CleanUp();
 //      (*pdvaults_)[i].reset();
     }
     try {

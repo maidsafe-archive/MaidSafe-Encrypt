@@ -216,6 +216,13 @@ int SessionSingleton::GetContactInfo(const std::string &pub_name,
                                      mi_contact *mic) {
   return ch_.GetContactInfo(pub_name, mic);
 }
+std::string SessionSingleton::GetContactPublicKey(
+    const std::string &pub_name) {
+  mi_contact mic;
+  if (ch_.GetContactInfo(pub_name, &mic) != 0)
+    return "";
+  return mic.pub_key_;
+}
 
 // type:  1  - for most contacted
 //        2  - for most recent
@@ -223,6 +230,15 @@ int SessionSingleton::GetContactInfo(const std::string &pub_name,
 int SessionSingleton::GetContactList(std::vector<mi_contact> *list,
                                      int type) {
   return ch_.GetContactList(list, type);
+}
+int SessionSingleton::GetPublicUsernameList(std::vector<std::string> *list) {
+  list->clear();
+  std::vector<mi_contact> mic_list;
+  if (ch_.GetContactList(&mic_list, 0) != 0)
+    return -666;
+  for (size_t n = 0; n < mic_list.size(); ++n)
+    list->push_back(mic_list[n].pub_name_);
+  return 0;
 }
 int SessionSingleton::ClearContacts() {
   return ch_.ClearContacts();

@@ -437,4 +437,30 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
   }
 }
 
+TEST_F(SessionSingletonTest, BEH_MAID_PublicUsernameList) {
+  for (size_t n = 0; n < 10; n++) {
+    ASSERT_EQ(0, ss_->AddContact("pub_name_" + base::itos(n),
+              "pub_key_" + base::itos(n), "full_name_" + base::itos(n),
+              "office_phone_" + base::itos(n), "birthday_" + base::itos(n),
+              'M', n, n, "city_" + base::itos(n), 'C', 0, 0));
+  }
+  std::vector<std::string> publicusernames;
+  ASSERT_EQ(0, ss_->GetPublicUsernameList(&publicusernames));
+  ASSERT_EQ(10, publicusernames.size());
+  for (size_t a = 0; a < publicusernames.size(); ++a)
+    ASSERT_EQ("pub_name_" + base::itos(a), publicusernames[a]);
+}
+
+TEST_F(SessionSingletonTest, BEH_MAID_ContactPublicKey) {
+  for (size_t n = 0; n < 10; n++) {
+    ASSERT_EQ(0, ss_->AddContact("pub_name_" + base::itos(n),
+              "pub_key_" + base::itos(n), "full_name_" + base::itos(n),
+              "office_phone_" + base::itos(n), "birthday_" + base::itos(n),
+              'M', n, n, "city_" + base::itos(n), 'C', 0, 0));
+  }
+  for (size_t a = 0; a < 10; ++a)
+    ASSERT_EQ("pub_key_" + base::itos(a),
+              ss_->GetContactPublicKey("pub_name_" + base::itos(a)));
+}
+
 }  // namespace maidsafe

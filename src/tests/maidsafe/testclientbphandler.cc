@@ -204,7 +204,8 @@ class MockBPRpcs : public maidsafe::BufferPacketRpcs {
 
 class MockBPH : public maidsafe::ClientBufferPacketHandler {
  public:
-  MockBPH(maidsafe::BufferPacketRpcs *rpcs, kad::KNode *knode)
+  MockBPH(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
+          boost::shared_ptr<kad::KNode> knode)
     : maidsafe::ClientBufferPacketHandler(rpcs, knode) {}
   MOCK_METHOD2(FindReferences,
     void(base::callback_func_type, boost::shared_ptr<maidsafe::ChangeBPData>));
@@ -215,7 +216,7 @@ class MockBPH : public maidsafe::ClientBufferPacketHandler {
 
 class TestClientBP : public testing::Test {
  public:
-  TestClientBP() : trans_(NULL), ch_man_(NULL), knode_(NULL), BPMock(),
+  TestClientBP() : trans_(NULL), ch_man_(NULL), knode_(), BPMock(),
     keys_(), cb_(), test_dir_(""), kad_config_file_(""), cryp()  {
     keys_.GenerateKeys(4096);
     test_dir_ = std::string("KnodeTest") +
@@ -231,8 +232,9 @@ class TestClientBP : public testing::Test {
   void SetUp() {
     trans_ = new transport::Transport();
     ch_man_ = new rpcprotocol::ChannelManager(trans_);
-    knode_ = new kad::KNode(ch_man_, trans_, kad::VAULT, keys_.private_key(),
-      keys_.public_key(), false, false);
+    knode_.reset(new kad::KNode(ch_man_, trans_, kad::VAULT,
+                 keys_.private_key(), keys_.public_key(), false, false));
+    BPMock.reset(new MockBPRpcs);
     ASSERT_TRUE(ch_man_->RegisterNotifiersToTransport());
     ASSERT_TRUE(trans_->RegisterOnServerDown(
       boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_, _1)));
@@ -262,7 +264,7 @@ class TestClientBP : public testing::Test {
     knode_->Leave();
     trans_->Stop();
     ch_man_->Stop();
-    delete knode_;
+//    delete knode_;
     delete trans_;
     delete ch_man_;
     try {
@@ -275,8 +277,8 @@ class TestClientBP : public testing::Test {
   }
   transport::Transport *trans_;
   rpcprotocol::ChannelManager *ch_man_;
-  kad::KNode *knode_;
-  MockBPRpcs BPMock;
+  boost::shared_ptr<kad::KNode> knode_;
+  boost::shared_ptr<MockBPRpcs> BPMock;
   crypto::RsaKeyPair keys_;
   KadCB cb_;
   std::string test_dir_, kad_config_file_;
@@ -284,13 +286,13 @@ class TestClientBP : public testing::Test {
 };
 
 TEST_F(TestClientBP, BEH_MAID_CreateBP_OK) {
-  maidsafe::ClientBufferPacketHandler cbph(&BPMock, knode_);
+  maidsafe::ClientBufferPacketHandler cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
   BPCallback cb;
 
-  EXPECT_CALL(BPMock, CreateBP(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, CreateBP(_, _, _, _, _, _))
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0, 3, 5>(Invoke(BPCallbackSucceed)));
 
@@ -306,13 +308,13 @@ TEST_F(TestClientBP, BEH_MAID_CreateBP_OK) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_CreateBPFailOnce) {
-  maidsafe::ClientBufferPacketHandler cbph(&BPMock, knode_);
+  maidsafe::ClientBufferPacketHandler cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
   BPCallback cb;
 
-  EXPECT_CALL(BPMock, CreateBP(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, CreateBP(_, _, _, _, _, _))
     .Times(kMinChunkCopies+1)
     .WillRepeatedly(WithArgs<0, 3, 5>(Invoke(BPCallbackFail)));
 
@@ -328,13 +330,13 @@ TEST_F(TestClientBP, BEH_MAID_CreateBPFailOnce) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_CreateBPFailThenSucceed) {
-  maidsafe::ClientBufferPacketHandler cbph(&BPMock, knode_);
+  maidsafe::ClientBufferPacketHandler cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
   BPCallback cb;
 
-  EXPECT_CALL(BPMock, CreateBP(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, CreateBP(_, _, _, _, _, _))
     .Times(kMinChunkCopies+1)
     .WillOnce(WithArgs<0, 3, 5>(Invoke(BPCallbackFail)))
     .WillRepeatedly(WithArgs<0, 3, 5>(Invoke(BPCallbackSucceed)));
@@ -351,7 +353,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBPFailThenSucceed) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfo) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -365,7 +367,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfo) {
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
 
-  EXPECT_CALL(BPMock, ModifyBPInfo(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, ModifyBPInfo(_, _, _, _, _, _))
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0, 3, 5>(Invoke(BPInfoCallbackSucceed)));
 
@@ -384,7 +386,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfo) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOINoReferences) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -397,7 +399,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOINoReferences) {
   EXPECT_CALL(cbph, FindRemoteContact(_, _, _))
     .Times(0);
 
-  EXPECT_CALL(BPMock, ModifyBPInfo(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, ModifyBPInfo(_, _, _, _, _, _))
     .Times(0);
 
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
@@ -415,7 +417,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOINoReferences) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOIFailAllFindContacts) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -429,7 +431,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailAllFindContacts) {
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)));
 
-  EXPECT_CALL(BPMock, ModifyBPInfo(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, ModifyBPInfo(_, _, _, _, _, _))
     .Times(0);
 
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
@@ -447,7 +449,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailAllFindContacts) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOIFailOneFindContacts) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -463,7 +465,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailOneFindContacts) {
     .WillOnce(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)))
     .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
 
-  EXPECT_CALL(BPMock, ModifyBPInfo(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, ModifyBPInfo(_, _, _, _, _, _))
     .Times(kMinChunkCopies-1)
     .WillRepeatedly(WithArgs<0, 3, 5>(Invoke(BPInfoCallbackSucceed)));
 
@@ -482,7 +484,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailOneFindContacts) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOIFailModifyInfoRpc) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -496,7 +498,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailModifyInfoRpc) {
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
 
-  EXPECT_CALL(BPMock, ModifyBPInfo(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, ModifyBPInfo(_, _, _, _, _, _))
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0, 3, 5>(Invoke(BPInfoCallbackFailed)));
 
@@ -515,7 +517,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailModifyInfoRpc) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddMessage) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -529,7 +531,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessage) {
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
 
-  EXPECT_CALL(BPMock, AddBPMessage(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _))
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0, 3, 5>(Invoke(BPAddMsgCallbackSucceed)));
 
@@ -556,7 +558,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessage) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddMsgNoReferences) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -569,7 +571,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgNoReferences) {
   EXPECT_CALL(cbph, FindRemoteContact(_, _, _))
     .Times(0);
 
-  EXPECT_CALL(BPMock, AddBPMessage(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _))
     .Times(0);
 
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
@@ -595,7 +597,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgNoReferences) {
 }
 
 TEST_F(TestClientBP, FUNC_MAID_AddMsgFailAllFindContacts) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -609,7 +611,7 @@ TEST_F(TestClientBP, FUNC_MAID_AddMsgFailAllFindContacts) {
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)));
 
-  EXPECT_CALL(BPMock, AddBPMessage(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _))
     .Times(0);
 
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
@@ -635,7 +637,7 @@ TEST_F(TestClientBP, FUNC_MAID_AddMsgFailAllFindContacts) {
 }
 
 TEST_F(TestClientBP, FUNC_MAID_AddMsgFailOneFindContacts) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -651,7 +653,7 @@ TEST_F(TestClientBP, FUNC_MAID_AddMsgFailOneFindContacts) {
     .WillOnce(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)))
     .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
 
-  EXPECT_CALL(BPMock, AddBPMessage(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _))
     .Times(kMinChunkCopies-1)
     .WillRepeatedly(WithArgs<0, 3, 5>(Invoke(BPAddMsgCallbackSucceed)));
 
@@ -678,7 +680,7 @@ TEST_F(TestClientBP, FUNC_MAID_AddMsgFailOneFindContacts) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddMsgFailAddMessageRpc) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -692,7 +694,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgFailAddMessageRpc) {
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
 
-  EXPECT_CALL(BPMock, AddBPMessage(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _))
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0, 3, 5>(Invoke(BPAddMsgCallbackFailed)));
 
@@ -719,7 +721,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgFailAddMessageRpc) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMessages) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -737,7 +739,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessages) {
     .Times(1)
     .WillOnce(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
 
-  EXPECT_CALL(BPMock, GetBPMessages(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, GetBPMessages(_, _, _, _, _, _))
     .Times(1)
     .WillOnce(WithArgs<0, 3, 5>(Invoke
       (&helper, &GetMsgsHelper::BPGetMsgsCallbackSucceed)));
@@ -766,7 +768,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessages) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMessagesOneFindContacsFail) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -786,7 +788,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesOneFindContacsFail) {
     .WillOnce(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)))
     .WillOnce(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
 
-  EXPECT_CALL(BPMock, GetBPMessages(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, GetBPMessages(_, _, _, _, _, _))
     .Times(1)
     .WillOnce(WithArgs<0, 3, 5>(Invoke
       (&helper, &GetMsgsHelper::BPGetMsgsCallbackSucceed)));
@@ -815,7 +817,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesOneFindContacsFail) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMsgsNoReferences) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -828,7 +830,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsNoReferences) {
   EXPECT_CALL(cbph, FindRemoteContact(_, _, _))
     .Times(0);
 
-  EXPECT_CALL(BPMock, AddBPMessage(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _))
     .Times(0);
 
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
@@ -844,7 +846,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsNoReferences) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMsgsFailAllFindContacts) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -858,7 +860,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailAllFindContacts) {
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)));
 
-  EXPECT_CALL(BPMock, AddBPMessage(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _))
     .Times(0);
 
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
@@ -874,7 +876,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailAllFindContacts) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMsgsFailGetBPMessagesRpc) {
-  MockBPH cbph(&BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
 
@@ -889,7 +891,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailGetBPMessagesRpc) {
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
 
-  EXPECT_CALL(BPMock, GetBPMessages(_, _, _, _, _, _))
+  EXPECT_CALL(*BPMock, GetBPMessages(_, _, _, _, _, _))
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0, 3, 5>(Invoke
       (&helper, &GetMsgsHelper::BPGetMsgsCallbackFailed)));
