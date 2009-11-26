@@ -45,6 +45,7 @@
 #include <vector>
 
 #include "maidsafe/chunkstore.h"
+#include "maidsafe/client/dataiohandler.h"
 
 namespace fs = boost::filesystem;
 
@@ -76,56 +77,46 @@ SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
   }
 
 int SelfEncryption::Encrypt(const std::string &entry_str,
-                            maidsafe::DataMap *dm) {
-  fs::path entry_path_(entry_str, fs::native);
+    maidsafe::DataMap *dm, const bool &is_string) {
+  boost::shared_ptr<DataIOHandler> iohandler;
 
-#ifdef DEBUG
-//  printf("Encrypting %s\n", entry_str);
-#endif
+  if (is_string)
+    iohandler.reset(new StringIOHandler);
+  else
+    iohandler.reset(new FileIOHandler);
+
+  iohandler->SetData(entry_str, true);
 
   // check file is encryptable
-  int valid_file_ = CheckEntry(entry_path_);
-  if (valid_file_ != 0) {
-#ifdef DEBUG
-//    printf("\nError \"%i\"...\nCannot process %s\n", valid_file_,
-//           entry_path_.string().c_str());
-#endif
+  if (CheckEntry(iohandler) != 0) {
+    // delete iohandler;
     return -1;
   }
 
   file_hash_ = dm->file_hash();
-#ifdef DEBUG
-//  printf("File hash = %s\n", file_hash_.c_str());
-#endif
+
   dm->set_se_version(version_);
 
   // create process directory
   fs::path processing_path_;
   if (!CreateProcessDirectory(&processing_path_)) {
-#ifdef DEBUG
-//      printf("Error - Cannot create process directories.\n");
-#endif
     return -1;
   }
 
   // check file to see if it should get compressed
   bool compress_file_ = compress_;
-  if (compress_file_)
-    compress_file_ = CheckCompressibility(entry_path_);
-#ifdef DEBUG
-//  if (compress_file_)
-//    printf("Compression ON for '%s'\n", fs::extension(entry_path_).c_str());
-//  else
-//    printf("Compression OFF for '%s'\n", fs::extension(entry_path_).c_str());
-#endif
+  if (compress_file_) {
+    compress_file_ = (is_string) ? CheckCompressibility("", iohandler) :
+      CheckCompressibility(entry_str, iohandler);
+  }
   if (compress_file_)
     dm->set_compression_on(true);
 
   // get file and chunk sizes
-  CalculateChunkSizes(entry_path_, dm);
+  CalculateChunkSizes(iohandler, dm);
 
   // populate pre-encryption hash vector
-  if (!GeneratePreEncHashes(entry_path_, dm)) {
+  if (!GeneratePreEncHashes(iohandler, dm)) {
 #ifdef DEBUG
 //      printf("Error - Cannot create pre-encryption hashes.\n");
 #endif
@@ -133,8 +124,7 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
   }
 
   // Encrypt chunks
-  fs::ifstream fin_(entry_path_, std::ifstream::binary);
-  if (!fin_.good())
+  if (!iohandler->Open())
     return -1;
   // loop through each chunk
   for (int chunk_no_ = 0; chunk_no_ != chunk_count_; ++chunk_no_) {
@@ -171,7 +161,11 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
       std::string this_chunklet_;
       boost::scoped_ptr<char> bufferlet_(new char[this_chunklet_size_]);
       std::ostringstream this_chunklet_oss_(std::ostringstream::binary);
-      fin_.read(bufferlet_.get(), this_chunklet_size_);
+
+      if (!iohandler->Read(bufferlet_.get(), this_chunklet_size_))
+        return -1;
+
+//      fin_.read(bufferlet_.get(), this_chunklet_size_);
       this_chunklet_oss_.write(bufferlet_.get(), this_chunklet_size_);
       // compress if required and reset this chunklet size
       crypto::Crypto enc_crypto_;
@@ -195,27 +189,12 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
       std::string resized_obs_hash_;
       ResizeObfuscationHash(obfuscate_hash_, this_chunklet_size_,
                             &resized_obs_hash_);
-#ifdef DEBUG
-//      printf("Chunk No. - %i\n\n%u - %s\n%u - %s\n\n",
-//             chunk_no_, obfuscate_hash_no_, obfuscate_hash_.c_str(),
-//              encryption_hash_no_, encryption_hash_.c_str());
-#endif
       // output encrypted chunklet
       std::string post_enc_;
       post_enc_ = enc_crypto_.SymmEncrypt((
         enc_crypto_.Obfuscate(
           this_chunklet_, resized_obs_hash_, crypto::XOR)),
           "", crypto::STRING_STRING, encryption_hash_);
-#ifdef DEBUG
-//      printf("chunklet's orig data     : %s\n", this_chunklet_.c_str());
-//      printf("chunklet's orig data size: %lu\n\n", this_chunklet_.size());
-//      printf("chunklet's XOR hash      : %s\n", obfuscate_hash_.c_str());
-//      printf("chunklet's XOR hash size : %lu\n", obfuscate_hash_.size());
-//      printf("chunklet's enc hash      : %s\n", encryption_hash_.c_str());
-//      printf("chunklet's enc hash size : %lu\n", encryption_hash_.size());
-//      printf("chunklet's enc data      : %s\n", post_enc_.c_str());
-//      printf("chunklet's enc data size : %lu\n", post_enc_.size());
-#endif
       chunk_.add_chunklet(this_chunklet_);
     }
     // assign temporary name for chunk
@@ -247,7 +226,7 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
     // store the post-encryption hash to datamap
     dm->add_encrypted_chunk_name(post_enc_hash_);
   }
-  fin_.close();
+  iohandler->Close();
   // delete process dir
   try {
     if (fs::exists(processing_path_))
@@ -261,11 +240,8 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
   return 0;
 }  // end encrypt
 
-
 int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
-                            const std::string &entry_str,
-                            const uint64_t &offset,
-                            bool overwrite) {
+    const std::string &entry_str, const uint64_t &offset, bool overwrite) {
   try {
     if (fs::exists(entry_str)) {
       if (overwrite)
@@ -280,6 +256,20 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
 #endif
     return -1;
   }
+  boost::shared_ptr<DataIOHandler> iohandler(new FileIOHandler);
+  return Decrypt(dm, offset, iohandler, NULL, entry_str);
+}
+
+int SelfEncryption::Decrypt(const maidsafe::DataMap &dm, const uint64_t &offset,
+    std::string *decrypted_str) {
+  boost::shared_ptr<DataIOHandler> iohandler(new StringIOHandler);
+  iohandler->SetData();
+  return Decrypt(dm, offset, iohandler, decrypted_str, "");
+}
+
+int SelfEncryption::Decrypt(const maidsafe::DataMap &dm, const uint64_t &offset,
+    boost::shared_ptr<DataIOHandler> iohandler, std::string *decrypted_str,
+    const std::string &path) {
 
   file_hash_ = dm.file_hash();
   // if there is no file hash, then the file has never been encrypted
@@ -288,10 +278,13 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
 
   int chunk_count_ = dm.chunk_name_size();
   if (chunk_count_ == 0) {
-    std::ofstream ofstream_;
-    ofstream_.open(entry_str.c_str(),
-                   std::ofstream::binary | std::ofstream::trunc);
-    ofstream_.close();
+    if (path.empty()) {
+      *decrypted_str = "";
+    } else {
+      iohandler->SetData(path);
+      iohandler->Open();
+      iohandler->Close();
+    }
     return 0;
   }
 
@@ -303,14 +296,6 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
 #endif
     return -1;
   }
-
-#ifdef DEBUG
-//    printf("%s\n\n", file_hash.c_str());
-//    for (int i = 0; i < chunk_count_; ++i)
-//      printf("%s\n\n", dm->chunk_name(i).c_str());
-//    for (int i = 0; i < chunk_count_; ++i)
-//      printf("%s\n\n", dm->encrypted_chunk_name(i).c_str());
-#endif
 
   // create process directory
   fs::path processing_path_;
@@ -326,15 +311,20 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
     // Decrypt chunklets
     fs::path temp_file_path_ = processing_path_/(file_hash_.substr(0, 8)
                                                  + ".tmp");
-    std::ofstream temp_ofstream_;
-    temp_ofstream_.open(temp_file_path_.string().c_str(),
-        std::ofstream::binary | std::ofstream::app);
+
+    if (path.empty())
+      iohandler->SetData("");
+    else
+      iohandler->SetData(temp_file_path_.string());
+    if (!iohandler->Open())
+      return -1;
     // loop through each chunk
     for (int chunk_no_ = 0; chunk_no_ != chunk_count_; ++chunk_no_) {
       // get chunk
       Chunk chunk_;
       fs::path this_chunk_path_ = GetChunkPath(
                                       dm.encrypted_chunk_name(chunk_no_));
+
       fs::ifstream fin_(this_chunk_path_, std::ifstream::binary);
       if (!fin_.good())
         return -1;
@@ -358,11 +348,6 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
             obfuscate_hash_,
             static_cast<uint16_t>(this_chunklet_.size()),
             &resized_obs_hash_);
-#ifdef DEBUG
-//          printf("Chunk No. - %i\n\n%u - %s\n%u - %s\n\n",
-//                 chunk_no_, obfuscate_hash_no_, obfuscate_hash_.c_str(),
-//                 encryption_hash_no_, encryption_hash_.c_str());
-#endif
         std::string decrypt_;
         crypto::Crypto dec_crypto_;
         dec_crypto_.set_symm_algorithm(crypto::AES_256);
@@ -372,54 +357,42 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
                        "",
                        crypto::STRING_STRING, encryption_hash_)),
                        resized_obs_hash_, crypto::XOR);
-#ifdef DEBUG
-//          printf("this chunklet's decrypted content: %s", decrypt_.c_str());
-//          printf("\nand size: %lu\n", decrypt_.size());
-//          printf("this chunklet's XOR hash: %s", obfuscate_hash_.c_str());
-//          printf("\nand size: %lu\n", obfuscate_hash_.size());
-//          printf("this chunklet's enc hash: %s", encryption_hash_.c_str());
-//          printf("\nand size: %lu\n", encryption_hash_.size());
-#endif
         // decompress if required
         if (compress_) {
           this_chunklet_ = dec_crypto_.Uncompress(this_chunklet_, "",
               crypto::STRING_STRING);
         }
-        temp_ofstream_.write(this_chunklet_.c_str(), this_chunklet_.size());
+        iohandler->Write(this_chunklet_.c_str(), this_chunklet_.size());
       }
       fin_.close();
     }
-    temp_ofstream_.close();
+    iohandler->Close();
     // move file to correct location and delete process dir
-    fs::path final_path_(entry_str, fs::native);
-    try {
-      if (fs::exists(final_path_))
-        fs::remove(final_path_);
-      fs::rename(temp_file_path_, final_path_);
-      fs::remove(processing_path_);
-    }
-    catch(const std::exception &e) {
+    if (!path.empty()) {
+      fs::path final_path_(path, fs::native);
+      try {
+        if (fs::exists(final_path_))
+          fs::remove(final_path_);
+        fs::rename(temp_file_path_, final_path_);
+        fs::remove(processing_path_);
+      }
+      catch(const std::exception &e) {
 #ifdef DEBUG
-      printf("%s\n", e.what());
+        printf("%s\n", e.what());
 #endif
+      }
+    } else {
+      *decrypted_str = iohandler->GetAsString();
     }
   }
   return 0;
 }  // end decrypt
 
 
-int SelfEncryption::CheckEntry(const fs::path &entry_path) {
+int SelfEncryption::CheckEntry(boost::shared_ptr<DataIOHandler> iohandler) {
   // if file size < 2 bytes, it's too small to chunk
   uint64_t filesize(0);
-  try {
-    filesize = fs::file_size(entry_path);
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("SelfEncryption::CheckEntry - path: %s - %s\n",
-           entry_path.string().c_str(), e.what());
-#endif
-  }
+  iohandler->Size(&filesize);
   return filesize < 2 ? -1 : 0;
 }  // end CheckEntry
 
@@ -428,9 +401,7 @@ std::string SelfEncryption::SHA512(const fs::path &file_path) {  // files
   crypto::Crypto filehash_crypto;
   filehash_crypto.set_hash_algorithm(crypto::SHA_512);
   std::string file_hash_ = filehash_crypto.Hash(file_path.string(),
-                                                "",
-                                                crypto::FILE_STRING,
-                                                true);
+     "", crypto::FILE_STRING, true);
   return file_hash_;
 }  // end SHA512 for files
 
@@ -438,11 +409,8 @@ std::string SelfEncryption::SHA512(const fs::path &file_path) {  // files
 std::string SelfEncryption::SHA512(const std::string &content) {  // strings
   crypto::Crypto stringhash_crypto;
   stringhash_crypto.set_hash_algorithm(crypto::SHA_512);
-  std::string string_hash_ = stringhash_crypto.Hash(
-                                 content,
-                                 "",
-                                 crypto::STRING_STRING,
-                                 true);
+  std::string string_hash_ = stringhash_crypto.Hash(content, "",
+    crypto::STRING_STRING, true);
   return string_hash_;
 }  // end SHA512 for strings
 
@@ -479,47 +447,49 @@ fs::path SelfEncryption::GetChunkPath(const std::string &hex_chunk_name) {
 }  // end GetChunkPath
 
 
-bool SelfEncryption::CheckCompressibility(const fs::path &entry_path) {
+bool SelfEncryption::CheckCompressibility(const std::string &path,
+    boost::shared_ptr<DataIOHandler> iohandler) {
   int nElements = sizeof(no_compress_type) / sizeof(no_compress_type[0]);
-  std::set<std::string> no_comp(no_compress_type, no_compress_type+nElements);
-  std::set<std::string>::iterator it;
-  try {
-    it = no_comp.find(fs::extension(entry_path));
+  if (!path.empty()) {
+    std::set<std::string> no_comp(no_compress_type, no_compress_type+nElements);
+    std::set<std::string>::iterator it;
+    try {
+      it = no_comp.find(fs::extension(fs::path(path)));
+    }
+    catch(const std::exception &e) {
+  #ifdef DEBUG
+      printf("%s\n", e.what());
+  #endif
+      return false;
+    }
+    if (it != no_comp.end())
+      return false;
   }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("%s\n", e.what());
-#endif
-    return false;
-  }
-  if (it != no_comp.end())
-    return false;
-  fs::ifstream fin_comp_test_(entry_path, std::ifstream::binary);
-  if (!fin_comp_test_.good())
-    return false;
+
   uint64_t test_chunk_size_ = 256;
   uint64_t pointer_ = 0;
   uint64_t pre_comp_file_size_ = 0;
-  try {
-    pre_comp_file_size_ = fs::file_size(entry_path);
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("SelfEncryption::CheckCompressibility - path: %s - %s\n",
-           entry_path.string().c_str(), e.what());
-#endif
-    return -1;
-  }
+  if (!iohandler->Size(&pre_comp_file_size_))
+    return false;
+
+  if (!iohandler->Open())
+    return false;
+
   if (2*test_chunk_size_ > pre_comp_file_size_)
     test_chunk_size_ = static_cast<uint16_t>(pre_comp_file_size_);
   else
     pointer_ = pre_comp_file_size_/2;
   boost::scoped_ptr<char>buffer_(new char[test_chunk_size_]);
   std::ostringstream test_chunk_(std::ostringstream::binary);
-  fin_comp_test_.seekg(static_cast<uint64_t>(pointer_), std::ios::beg);
-  fin_comp_test_.read(buffer_.get(), test_chunk_size_);
+
+  if (!iohandler->SetGetPointer(pointer_) ||
+      !iohandler->Read(buffer_.get(), test_chunk_size_))
+    return false;
+
   test_chunk_.write(buffer_.get(), test_chunk_size_);
-  fin_comp_test_.close();
+
+  iohandler->Close();
+
   std::string uncompressed_test_chunk_, compressed_test_chunk_;
   uncompressed_test_chunk_ = test_chunk_.str();
   try {
@@ -528,15 +498,8 @@ bool SelfEncryption::CheckCompressibility(const fs::path &entry_path) {
         9, crypto::STRING_STRING);
     float ratio_ = static_cast<float>(compressed_test_chunk_.size()
         / test_chunk_size_);
-#ifdef DEBUG
-//      printf("File size: %lu\nPre comp: %lu\tPost comp: %lu\tRatio: %f\n\n",
-//             fs::file_size(path_), test_chunk_size_,
-//             compressed_test_chunk_.size(), ratio_);
-#endif
-    if (ratio_>0.9)
-      return false;
-    else
-      return true;
+
+    return (ratio_<=0.9);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -547,30 +510,12 @@ bool SelfEncryption::CheckCompressibility(const fs::path &entry_path) {
 }  // end CheckCompressibility
 
 
-bool SelfEncryption::CalculateChunkSizes(const fs::path &entry_path,
-                                         maidsafe::DataMap *dm) {
-#ifdef DEBUG
-//  printf("file_hash_ = %s\n", file_hash_.c_str());
-#endif
+bool SelfEncryption::CalculateChunkSizes(boost::shared_ptr<DataIOHandler>
+   iohandler, maidsafe::DataMap *dm) {
   uint64_t file_size_ = 0;
-  try {
-    file_size_ = fs::file_size(entry_path);
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("SelfEncryption::CalculateChunkSizes - path: %s - %s\n",
-           entry_path.string().c_str(), e.what());
-#endif
+  if (!iohandler->Size(&file_size_))
     return false;
-  }
   uint64_t this_avg_chunk_size_ = default_chunk_size_;
-#ifdef DEBUG
-//    printf("Start CalculateChunkSize...\n");
-//    printf("file_size_ = %lu\tthis_avg_chunk_size_ = %lu",
-//           file_size_, this_avg_chunk_size_);
-//    printf("\t_max_chunks_ = %u\tmin_chunks_ = %u\n\n",
-//           max_chunks_, min_chunks_);
-#endif
 
   // If the file is so large it will split into more chunks than max_chunks_,
   // resize chunks to yield no more than max_chunks_
@@ -597,35 +542,17 @@ bool SelfEncryption::CalculateChunkSizes(const fs::path &entry_path,
     chunk_count_ = static_cast<int>(file_size_/this_avg_chunk_size_);
     this_avg_chunk_size_ = (file_size_/chunk_count_);
   }
-#ifdef DEBUG
-//    printf("After CalculateChunkSize...\n");
-//    printf("file_size_ = %lu\tthis_avg_chunk_size_ = %lu",
-//           file_size_, this_avg_chunk_size_);
-//    printf("\t_max_chunks_ = %u\tmin_chunks_ = %u\n\n",
-//           max_chunks_, min_chunks_);
-#endif
 
   // iterate through each chunk except the last, adding or subtracting bytes
   // based on the file hash
   uint64_t remainder_ = file_size_;
 
-#ifdef DEBUG
-//  printf("max_chunks_ = %u\n", max_chunks_);
-//  printf("remainder_ = %lu\n", remainder_);
-#endif
   for (int this_chunk_ = 0; this_chunk_ < chunk_count_-1; ++this_chunk_) {
     // get maximum ratio to add/subtract from chunks so that we're not left
     // with a negative-sized final chunk should all previous chunks have had
     // maximum bytes added to them.
     float max_ratio_ = static_cast<float>(1)/(max_chunks_*16);
-#ifdef DEBUG
-//    printf("file hash: %s\n", file_hash_.c_str());
-//    printf("%i - ChunkAddition = %i\tAdding %i\n",
-//           this_chunk_, ChunkAddition(file_hash_.c_str()[this_chunk_]),
-//           static_cast<int>(max_ratio_
-//                            *ChunkAddition(file_hash_.c_str()[this_chunk_])
-//                            *this_avg_chunk_size_));
-#endif
+
     uint64_t this_chunk_size_ = static_cast<uint64_t>(
         this_avg_chunk_size_
         *(1+(max_ratio_*ChunkAddition(file_hash_.c_str()[this_chunk_]))));
@@ -633,10 +560,6 @@ bool SelfEncryption::CalculateChunkSizes(const fs::path &entry_path,
       ++this_chunk_size_;
     dm->add_chunk_size(this_chunk_size_);
     remainder_ -= this_chunk_size_;
-#ifdef DEBUG
-//    printf("this_chunk_size_ (%i) = %lu\tremainder_ = %lu\n",
-//           this_chunk_, this_chunk_size_, remainder_);
-#endif
   }
   // get size of last chunk
   dm->add_chunk_size(remainder_);
@@ -655,19 +578,11 @@ int SelfEncryption::ChunkAddition(const char &hex_digit) {
 }  // end ChunkAddition
 
 
-bool SelfEncryption::GeneratePreEncHashes(const fs::path &entry_path,
-                                          maidsafe::DataMap *dm) {
-  fs::ifstream fin_;
-  fin_.open(entry_path, std::ifstream::binary);
-  if (!fin_.good())
+bool SelfEncryption::GeneratePreEncHashes(boost::shared_ptr<DataIOHandler>
+    iohandler, maidsafe::DataMap *dm) {
+  if (!iohandler->Open())
     return false;
-  uint64_t pointer_ = 0;
-
-#ifdef DEBUG
-//  printf("file_hash_ = %s\n", file_hash_.c_str());
-//  printf("chunk_count_ = %i\tmax_chunks_ = %u\n",
-//         chunk_count_, max_chunks_);
-#endif
+  uint64_t pointer = 0;
 
   for (int i = 0; i < chunk_count_; ++i) {
     std::string pre_enc_hash_;
@@ -678,20 +593,18 @@ bool SelfEncryption::GeneratePreEncHashes(const fs::path &entry_path,
 
     boost::scoped_ptr<char> buffer_(new char[buffer_size_]);
     std::ostringstream this_hash_(std::ostringstream::binary);
-    fin_.seekg(pointer_, std::ifstream::beg);
-    fin_.read(buffer_.get(), buffer_size_);
+
+    if (!iohandler->SetGetPointer(pointer) ||
+        !iohandler->Read(buffer_.get(), buffer_size_))
+      return false;
     this_hash_.write(buffer_.get(), buffer_size_);
     pre_enc_hash_ = SHA512(this_hash_.str());
-    pointer_ += this_chunk_size_;
+    pointer += this_chunk_size_;
     // ensure uniqueness of all pre-encryption hashes
     // HashUnique(pre_enc_hash_, dm, true);
     dm->add_chunk_name(pre_enc_hash_);
-#ifdef DEBUG
-//      printf("\tfin_.peek() = %c\n\n", fin_.peek());
-//      printf("pre_enc_hash_%i: %s\n", i, pre_enc_hash_.c_str());
-#endif
   }
-  fin_.close();
+  iohandler->Close();
   return true;
 }  // end GeneratePreEncHashes
 

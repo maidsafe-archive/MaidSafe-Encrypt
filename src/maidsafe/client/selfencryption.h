@@ -37,6 +37,8 @@
 
 namespace fs = boost::filesystem;
 
+class DataIOHandler;
+
 namespace maidsafe {
 
 class ChunkStore;
@@ -46,28 +48,35 @@ class SelfEncryption {
   explicit SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore);
   ~SelfEncryption() {}
   // encrypt entire file
-  int Encrypt(const std::string &entry_str, maidsafe::DataMap *dm);
+  int Encrypt(const std::string &entry_str, maidsafe::DataMap *dm,
+    const bool &is_string = false);
   // decrypt chunks starting at chunklet spanning offset point
-  int Decrypt(const maidsafe::DataMap &dm,
-              const std::string &entry_str,
-              const uint64_t &offset,
-              bool overwrite);
+  int Decrypt(const maidsafe::DataMap &dm, const std::string &entry_str,
+    const uint64_t &offset, bool overwrite);
+
+  int Decrypt(const maidsafe::DataMap &dm, const uint64_t &offset,
+    std::string *decrypted_str);
+
   std::string SHA512(const fs::path &file_path);
   std::string SHA512(const std::string &content);
   fs::path GetChunkPath(const std::string &hex_chunk_name);
 
  private:
+  int Decrypt(const maidsafe::DataMap &dm, const uint64_t &offset,
+    boost::shared_ptr<DataIOHandler> iohandler, std::string *decrypted_str,
+    const std::string &path);
   // check to ensure entry is encryptable
-  int CheckEntry(const fs::path &entry_path);
+  int CheckEntry(boost::shared_ptr<DataIOHandler> iohandler);
   bool CreateProcessDirectory(fs::path *processing_path);
-  bool CheckCompressibility(const fs::path &entry_path);
-  bool CalculateChunkSizes(const fs::path &entry_path,
-                           maidsafe::DataMap *dm);
+  bool CheckCompressibility(const std::string &path,
+    boost::shared_ptr<DataIOHandler> iohandler);
+  bool CalculateChunkSizes(boost::shared_ptr<DataIOHandler> iohandler,
+    maidsafe::DataMap *dm);
   // returns a positive or negative int based on char passed into it to
   // allow for random chunk sizes '0' returns -8, '1' returns -7, etc...
   // through to 'f' returns 7
   int ChunkAddition(const char &hex_digit);
-  bool GeneratePreEncHashes(const fs::path &entry_path,
+  bool GeneratePreEncHashes(boost::shared_ptr<DataIOHandler> iohandler,
                             maidsafe::DataMap *dm);
   // ensure uniqueness of all chunk hashes (unless chunks are identical)
   // if pre_enc is true, hashes relate to pre-encryption, otherwise post-

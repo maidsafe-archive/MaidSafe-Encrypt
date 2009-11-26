@@ -38,6 +38,7 @@ bool StringIOHandler::SetData(const std::string &iput, const bool &read) {
 
 bool StringIOHandler::Open() {
   isOpen_ = true;
+  SetGetPointer(0);
   return true;
 }
 
@@ -52,8 +53,6 @@ void StringIOHandler::Reset() {
 }
 
 std::string StringIOHandler::GetAsString() const {
-  if (!isOpen_)
-    return "";
   return input_;
 }
 

@@ -39,13 +39,13 @@ bool FileIOHandler::SetData(const std::string &iput, const bool &read) {
 bool FileIOHandler::Open() {
   if (read_) {
     try {
-    fd_.open(p_, std::fstream::in | std::fstream::binary);
+      fd_.open(p_, std::fstream::in | std::fstream::binary);
     } catch(...) {
       return false;
     }
   } else {
     try {
-    fd_.open(p_, std::fstream::out | std::fstream::binary);
+      fd_.open(p_, std::fstream::out | std::fstream::binary);
     } catch(...) {
       return false;
     }
