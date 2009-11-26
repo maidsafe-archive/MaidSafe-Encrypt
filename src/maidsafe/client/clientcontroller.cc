@@ -855,15 +855,24 @@ int ClientController::ChangeConnectionStatus(int status) {
 
 bool ClientController::GetMessages() {
   // Only getting MPID buffer packet
-  if (ss_->PublicUsername() == "")
+  if (ss_->PublicUsername() == "") {
+#ifdef DEBUG
+    printf("ClientController::GetMessages - How about the P.U.?\n");
+#endif
     return false;
+  }
 
   std::list<ValidatedBufferPacketMessage> valid_messages;
-  if (sm_->LoadBPMessages(&valid_messages) != 0)
+  if (sm_->LoadBPMessages(&valid_messages) != 0) {
+#ifdef DEBUG
+    printf("ClientController::GetMessages - Muffed the load\n");
+#endif
     return false;
-  if (valid_messages.size() == size_t(0))
+  }
+  if (valid_messages.size() == size_t(0)) {
     // TODO(Team#5#): return code for no messages
     return true;
+  }
   HandleMessages(&valid_messages);
   return true;
 }
@@ -875,20 +884,16 @@ int ClientController::HandleMessages(
       printf("=========================================\n");
 #endif
   while (!valid_messages->empty()) {
-#ifdef DEBUG
-    printf("ClientController::HandleMessages message: %s\n",
-           valid_messages->front().message().c_str());
-#endif
     std::map<std::string, boost::uint32_t>::iterator it;
     rec_msg_mutex_.lock();
 #ifdef DEBUG
-    printf("ClientController::HandleMessages received_messages_ size: %d\n",
+    printf("ClientController::HandleMessages - received_messages_ size: %d\n",
            received_messages_.size());
 #endif
     it = received_messages_.find(valid_messages->front().message());
     if (it != received_messages_.end()) {
 #ifdef DEBUG
-      printf("Previously received message.");
+      printf("ClientController::HandleMessages - Previously received message.");
 #endif
       rec_msg_mutex_.unlock();
       continue;
@@ -1097,7 +1102,7 @@ int ClientController::HandleInstantMessage(
   if (im.ParseFromString(vbpm.message())) {
       messages_.push_back(im);
 #ifdef DEBUG
-      printf("%s\n", vbpm.message().c_str());
+      printf("%s\n", im.message().c_str());
 #endif
     return 0;
   } else {
@@ -1367,8 +1372,7 @@ int ClientController::SendInstantMessage(const std::string &message,
   return 0;
 }
 
-int ClientController::GetInstantMessages(
-  std::list<InstantMessage> *messages) {
+int ClientController::GetInstantMessages(std::list<InstantMessage> *messages) {
   *messages = messages_;
   messages_.clear();
   return 0;

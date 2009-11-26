@@ -198,10 +198,10 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
-  printf("Preconditions fulfilled.\n");
-
   ASSERT_NE(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
+  printf("Preconditions fulfilled.\n");
+
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
@@ -306,7 +306,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
   printf("Can't log in with old u/p/w.\n");
 }
 
-/*
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
   std::string username = "User3";
   std::string pin = "3456";
@@ -315,9 +314,10 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
+  ASSERT_NE(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
   printf("Preconditions fulfilled.\n");
 
-  ASSERT_FALSE(cc_test::CheckUserExists(cc_, username, pin, 10000));
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
@@ -332,14 +332,48 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
   ASSERT_EQ("el.mambo.tonnnnnto", ss_->PublicUsername());
   printf("Public Username already created.\n");
 
+  boost::this_thread::sleep(boost::posix_time::seconds(6));
+
+  ASSERT_TRUE(cc_->GetMessages());
+  std::list<maidsafe::InstantMessage> messages;
+  ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
+  ASSERT_EQ(0, messages.size());
+
   ASSERT_TRUE(cc_->Logout());
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
   printf("Logged out.\n");
+
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+
+  ASSERT_EQ(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
+  ASSERT_TRUE(cc_->ValidateUser(password));
+  ASSERT_EQ(username, ss_->Username());
+  ASSERT_EQ(pin, ss_->Pin());
+  ASSERT_EQ(password, ss_->Password());
+  ASSERT_EQ("el.mambo.tonnnnnto", ss_->PublicUsername());
+
+  boost::this_thread::sleep(boost::posix_time::seconds(6));
+
+  ASSERT_TRUE(cc_->GetMessages());
+  messages.clear();
+  ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
+  ASSERT_EQ(0, messages.size());
+
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_EQ("", ss_->Username());
+  ASSERT_EQ("", ss_->Pin());
+  ASSERT_EQ("", ss_->Password());
+  printf("Logged out.\n");
+
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
 }
 
-
+/*
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
   std::string username = "User4";
   std::string pin = "4567";
@@ -399,10 +433,10 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
-  printf("Preconditions fulfilled.\n");
-
   ASSERT_EQ(maidsafe::kUserDoesntExist,
             cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
+  printf("Preconditions fulfilled.\n");
+
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
@@ -462,26 +496,27 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   printf("Logged out user.\n");
 }
 
-/*
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerUserAuthorisation) {
-  std::string username = "User6";
-  std::string pin = "6789";
-  std::string password = "The deleted folder has landed.";
+TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
+  std::string username("User6");
+  std::string pin("6789");
+  std::string password("The deleted folder has landed.");
   ss_ = SessionSingleton::getInstance();
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
+  ASSERT_EQ(maidsafe::kUserDoesntExist,
+            cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
   printf("Preconditions fulfilled.\n");
 
-  ASSERT_FALSE(cc_test::CheckUserExists(cc_, username, pin, 10000));
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
   printf("User created.\n");
 
-  ASSERT_TRUE(cc_->CreatePublicUsername("el.mambo.nalga"));
-  ASSERT_EQ("el.mambo.nalga", ss_->PublicUsername());
+  std::string public_username("el.mambo.nalga");
+  ASSERT_TRUE(cc_->CreatePublicUsername(public_username));
+  ASSERT_EQ(public_username, ss_->PublicUsername());
   printf("Public Username created.\n");
 
   ASSERT_TRUE(cc_->Logout());
@@ -490,17 +525,168 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerUserAuthorisation) {
   ASSERT_EQ("", ss_->Password());
   printf("Logged out.\n");
 
-  ASSERT_TRUE(cc_test::CheckUserExists(cc_, username, pin, 10000));
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+
+  std::string username1("User61");
+  std::string pin1("67891");
+  std::string password1("The deleted folder has landed.1");
+  std::string public_username1("el.mambo.nalga1");
+
+  ASSERT_TRUE(cc_->CreateUser(username1, pin1, password1, vcp_));
+  ASSERT_EQ(username1, ss_->Username());
+  ASSERT_EQ(pin1, ss_->Pin());
+  ASSERT_EQ(password1, ss_->Password());
+  printf("User1 created.\n");
+
+  ASSERT_TRUE(cc_->CreatePublicUsername(public_username1));
+  ASSERT_EQ(public_username1, ss_->PublicUsername());
+  printf("Public Username 1 created.\n");
+
+  boost::this_thread::sleep(boost::posix_time::seconds(6));
+
+  ASSERT_EQ(0, cc_->AddContact(public_username));
+  printf("Public Username 1 added Public Username.\n");
+
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_EQ("", ss_->Username());
+  ASSERT_EQ("", ss_->Pin());
+  ASSERT_EQ("", ss_->Password());
+  printf("Logged out 1.\n");
+
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+
+  ASSERT_EQ(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
   ASSERT_TRUE(cc_->ValidateUser(password));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
-  ASSERT_EQ("el.mambo.nalga", ss_->PublicUsername());
+  ASSERT_EQ(public_username, ss_->PublicUsername());
   printf("Logged in.\n");
 
+  boost::this_thread::sleep(boost::posix_time::seconds(6));
+
+  ASSERT_TRUE(cc_->GetMessages());
+  std::list<maidsafe::InstantMessage> messages;
+  ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
+  ASSERT_EQ(1, messages.size());
+  maidsafe::InstantMessage im = messages.front();
+  ASSERT_TRUE(im.has_contact_notification());
+  ASSERT_EQ(public_username1, im.sender());
+  ASSERT_EQ("\"" + public_username1 +
+            "\" has requested to add you as a contact.", im.message());
+  maidsafe::ContactNotification cn = im.contact_notification();
+  ASSERT_EQ(0, cn.action());
+  maidsafe::ContactInfo ci;
+  if (cn.has_contact())
+    ci = cn.contact();
+  ASSERT_EQ(0, cc_->HandleAddContactRequest(ci, im.sender()));
+  ASSERT_NE("", ss_->GetContactPublicKey(public_username1));
+  printf("Public Username confirmed Public Username 1.\n");
+
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_EQ("", ss_->Username());
+  ASSERT_EQ("", ss_->Pin());
+  ASSERT_EQ("", ss_->Password());
+  printf("Logged out.\n");
+
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+
+  ASSERT_EQ(maidsafe::kUserExists,
+            cc_->CheckUserExists(username1, pin1, maidsafe::DEFCON3));
+  ASSERT_TRUE(cc_->ValidateUser(password1));
+  ASSERT_EQ(username1, ss_->Username());
+  ASSERT_EQ(pin1, ss_->Pin());
+  ASSERT_EQ(password1, ss_->Password());
+  ASSERT_EQ(public_username1, ss_->PublicUsername());
+  printf("Logged in 1.\n");
+
+  boost::this_thread::sleep(boost::posix_time::seconds(6));
+
+  ASSERT_TRUE(cc_->GetMessages());
+  messages.clear();
+  ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
+  ASSERT_EQ(1, messages.size());
+  maidsafe::InstantMessage im1 = messages.front();
+  ASSERT_TRUE(im1.has_contact_notification());
+  ASSERT_EQ(public_username, im1.sender());
+  ASSERT_EQ("\"" + public_username + "\" has confirmed you as a contact.",
+            im1.message());
+  maidsafe::ContactNotification cn1 = im1.contact_notification();
+  ASSERT_EQ(1, cn1.action());
+  maidsafe::ContactInfo ci1;
+  if (cn1.has_contact())
+    ci1 = cn1.contact();
+  ASSERT_EQ(0, cc_->HandleAddContactResponse(ci1, im1.sender()));
+  printf("Public Username 1 received Public Username confirmation.\n");
+
+  std::string text_msg("The arctic trails have their secret tales");
+  std::vector<std::string> contact_names;
+  contact_names.push_back(public_username);
+  ASSERT_EQ(0, cc_->SendInstantMessage(text_msg, contact_names));
+  printf("Public Username 1 sent txt message  to Public Username.\n");
+
+  boost::this_thread::sleep(boost::posix_time::seconds(6));
+
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_EQ("", ss_->Username());
+  ASSERT_EQ("", ss_->Pin());
+  ASSERT_EQ("", ss_->Password());
+  printf("Logged out 1.\n");
+
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+
+  ASSERT_EQ(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
+  ASSERT_TRUE(cc_->ValidateUser(password));
+  ASSERT_EQ(username, ss_->Username());
+  ASSERT_EQ(pin, ss_->Pin());
+  ASSERT_EQ(password, ss_->Password());
+  ASSERT_EQ(public_username, ss_->PublicUsername());
+
+  boost::this_thread::sleep(boost::posix_time::seconds(6));
+
+  ASSERT_TRUE(cc_->GetMessages());
+  messages.clear();
+  ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
+  ASSERT_EQ(1, messages.size());
+  maidsafe::InstantMessage im2 = messages.front();
+  ASSERT_FALSE(im2.has_contact_notification());
+  ASSERT_FALSE(im2.has_instantfile_notification());
+  ASSERT_FALSE(im2.has_privateshare_notification());
+  ASSERT_EQ(public_username1, im2.sender());
+  ASSERT_EQ(text_msg, im2.message());
+
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_EQ("", ss_->Username());
+  ASSERT_EQ("", ss_->Pin());
+  ASSERT_EQ("", ss_->Password());
+  printf("Logged out.\n");
+
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+}
+
+/*
+TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerShares) {
+  ss_ = SessionSingleton::getInstance();
+  ASSERT_EQ("", ss_->Username());
+  ASSERT_EQ("", ss_->Pin());
+  ASSERT_EQ("", ss_->Password());
+  printf("Preconditions fulfilled.\n");
+
+  ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
+  ASSERT_EQ(username, ss_->Username());
+  ASSERT_EQ(pin, ss_->Pin());
+  ASSERT_EQ(password, ss_->Password());
+  printf("User created.\n");
+
+  ASSERT_TRUE(cc_->CreatePublicUsername("el.mambo.tonnnnnto"));
+  ASSERT_EQ("el.mambo.tonnnnnto", ss_->PublicUsername());
+  printf("Public Username created.\n");
+
   std::set<std::string> auth_users;
-  std::string users[3] = {"esssmer", "es tu", "padre"};
-  for (int n = 0; n < 3 ; ++n)
+  std::string users[3] = {"el.dan.liiiiiisto", "es tu", "padre"};
+  for (int n=0; n<3 ; n++)
     auth_users.insert(users[n]);
 
   ASSERT_TRUE(cc_->AuthoriseUsers(auth_users));
@@ -508,7 +694,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerUserAuthorisation) {
   for (std::set<std::string>::iterator p = local_set.begin();
        p != local_set.end();
        ++p)
-    ASSERT_TRUE(*p == users[0] || *p == users[1] || *p == users[2])
+    ASSERT_TRUE(*p==users[0] || *p==users[1] || *p==users[2])
       << "User missing";
   printf("Authorised 3 users.\n");
 
@@ -518,34 +704,49 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerUserAuthorisation) {
   ASSERT_EQ("", ss_->Password());
   printf("Logged out.\n");
 
-  ASSERT_TRUE(cc_test::CheckUserExists(cc_, username, pin, 10000));
-  ASSERT_TRUE(cc_->ValidateUser(password));
+  ASSERT_TRUE(cc_->CreateUser("smer","7777","palofeo", vcp_));
+  ASSERT_TRUE(ss_->Username() == "smer");
+  ASSERT_TRUE(ss_->Pin() == "7777");
+  ASSERT_TRUE(ss_->Password() == "palofeo");
+  printf("User created.\n");
+
+  ASSERT_TRUE(cc_->CreatePublicUsername("el.dan.liiiiiisto"));
+  ASSERT_TRUE(ss_->PublicUsername() == "el.dan.liiiiiisto");
+  printf("Public Username created.\n");
+
+  std::string path = file_system::FileSystem::getInstance()->HomeDir() +
+                     "/testencryption.txt";
+  fs::path path_(path);
+  fs::ofstream testfile(path.c_str());
+  testfile << base::RandomString(1024*1024);
+  testfile.close();
+  std::string hash_original_file = se.SHA512(path_);
+  ASSERT_TRUE(cc_->BackupElement(path));
+  while(ss_->SelfEncrypting())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  OutputProcessedJobs(cc);
+  printf("File backed up.\n");
+
+  std::vector<std::string> paths, share_users;
+  std::string ms_path = path;
+  ms_path.erase(0,
+                file_system::FileSystem::getInstance()->HomeDir().size());
+  paths.push_back(ms_path);
+  share_users.push_back("el.mambo.tonnnnnto");
+  ASSERT_TRUE(cc_->CreateShare(paths,share_users,"fotos puercas"));
+  printf("Created share.\n");
+
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_EQ("", ss_->Username());
+  ASSERT_EQ("", ss_->Pin());
+  ASSERT_EQ("", ss_->Password());
+  printf("Logged out.\n");
+
+  ASSERT_TRUE(cc_->Start(username, pin, password));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
-  ASSERT_EQ("el.mambo.nalga", ss_->PublicUsername());
-  printf("Logged in.\n");
-
-  ASSERT_TRUE(cc_->AuthoriseUsers(auth_users));
-  local_set.clear();
-  local_set = ss_->AuthorisedUsers();
-  for (std::set<std::string>::iterator p = local_set.begin();
-       p != local_set.end();
-       ++p)
-    ASSERT_TRUE(*p == users[0] || *p == users[1] || *p == users[2])
-      << "User missing";
-  printf("Authorised users still there.\n");
-
-  std::set<std::string> deauth_users;
-  deauth_users.insert(users[0]);
-  ASSERT_TRUE(cc_->DeauthoriseUsers(deauth_users));
-  local_set.clear();
-  local_set = ss_->AuthorisedUsers();
-  for (std::set<std::string>::iterator p = local_set.begin();
-       p != local_set.end();
-       ++p)
-    ASSERT_TRUE(*p == users[1] || *p == users[2]) << "User missing";
-  printf("Deauthorised a user.\n");
+  printf("User logged in.\n");
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_EQ("", ss_->Username());
@@ -553,122 +754,9 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerUserAuthorisation) {
   ASSERT_EQ("", ss_->Password());
   printf("Logged out.\n");
 
-  ASSERT_TRUE(cc_test::CheckUserExists(cc_, username, pin, 10000));
-  ASSERT_TRUE(cc_->ValidateUser(password));
-  ASSERT_EQ(username, ss_->Username());
-  ASSERT_EQ(pin, ss_->Pin());
-  ASSERT_EQ(password, ss_->Password());
-  ASSERT_EQ("el.mambo.nalga", ss_->PublicUsername());
-  printf("Logged in.\n");
-
-  local_set.clear();
-  local_set = ss_->AuthorisedUsers();
-  for (std::set<std::string>::iterator p = local_set.begin();
-       p != local_set.end();
-       ++p) {
-    bool b_ = (*p == users[1] || *p == users[2]);
-    ASSERT_TRUE(b_) << "User missing";
-  }
-  printf("2 authorised users.\n");
-
-  ASSERT_TRUE(cc_->Logout());
-  ASSERT_EQ("", ss_->Username());
-  ASSERT_EQ("", ss_->Pin());
-  ASSERT_EQ("", ss_->Password());
-  printf("Logged out.\n");
+  if (fs::exists(path))
+    fs::remove(fs::path(path));
 }
-
-
-  TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerShares) {
-    ss_ = SessionSingleton::getInstance();
-    ASSERT_EQ("", ss_->Username());
-    ASSERT_EQ("", ss_->Pin());
-    ASSERT_EQ("", ss_->Password());
-    printf("Preconditions fulfilled.\n");
-
-    ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
-    ASSERT_EQ(username, ss_->Username());
-    ASSERT_EQ(pin, ss_->Pin());
-    ASSERT_EQ(password, ss_->Password());
-    printf("User created.\n");
-
-    ASSERT_TRUE(cc_->CreatePublicUsername("el.mambo.tonnnnnto"));
-    ASSERT_EQ("el.mambo.tonnnnnto", ss_->PublicUsername());
-    printf("Public Username created.\n");
-
-    std::set<std::string> auth_users;
-    std::string users[3] = {"el.dan.liiiiiisto", "es tu", "padre"};
-    for (int n=0; n<3 ; n++)
-      auth_users.insert(users[n]);
-
-    ASSERT_TRUE(cc_->AuthoriseUsers(auth_users));
-    std::set<std::string> local_set = ss_->AuthorisedUsers();
-    for (std::set<std::string>::iterator p = local_set.begin();
-         p != local_set.end();
-         ++p)
-      ASSERT_TRUE(*p==users[0] || *p==users[1] || *p==users[2])
-        << "User missing";
-    printf("Authorised 3 users.\n");
-
-    ASSERT_TRUE(cc_->Logout());
-    ASSERT_EQ("", ss_->Username());
-    ASSERT_EQ("", ss_->Pin());
-    ASSERT_EQ("", ss_->Password());
-    printf("Logged out.\n");
-
-    ASSERT_TRUE(cc_->CreateUser("smer","7777","palofeo", vcp_));
-    ASSERT_TRUE(ss_->Username() == "smer");
-    ASSERT_TRUE(ss_->Pin() == "7777");
-    ASSERT_TRUE(ss_->Password() == "palofeo");
-    printf("User created.\n");
-
-    ASSERT_TRUE(cc_->CreatePublicUsername("el.dan.liiiiiisto"));
-    ASSERT_TRUE(ss_->PublicUsername() == "el.dan.liiiiiisto");
-    printf("Public Username created.\n");
-
-    std::string path = file_system::FileSystem::getInstance()->HomeDir() +
-                       "/testencryption.txt";
-    fs::path path_(path);
-    fs::ofstream testfile(path.c_str());
-    testfile << base::RandomString(1024*1024);
-    testfile.close();
-    std::string hash_original_file = se.SHA512(path_);
-    ASSERT_TRUE(cc_->BackupElement(path));
-    while(ss_->SelfEncrypting())
-      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    OutputProcessedJobs(cc);
-    printf("File backed up.\n");
-
-    std::vector<std::string> paths, share_users;
-    std::string ms_path = path;
-    ms_path.erase(0,
-                  file_system::FileSystem::getInstance()->HomeDir().size());
-    paths.push_back(ms_path);
-    share_users.push_back("el.mambo.tonnnnnto");
-    ASSERT_TRUE(cc_->CreateShare(paths,share_users,"fotos puercas"));
-    printf("Created share.\n");
-
-    ASSERT_TRUE(cc_->Logout());
-    ASSERT_EQ("", ss_->Username());
-    ASSERT_EQ("", ss_->Pin());
-    ASSERT_EQ("", ss_->Password());
-    printf("Logged out.\n");
-
-    ASSERT_TRUE(cc_->Start(username, pin, password));
-    ASSERT_EQ(username, ss_->Username());
-    ASSERT_EQ(pin, ss_->Pin());
-    ASSERT_EQ(password, ss_->Password());
-    printf("User logged in.\n");
-
-    ASSERT_TRUE(cc_->Logout());
-    ASSERT_EQ("", ss_->Username());
-    ASSERT_EQ("", ss_->Pin());
-    ASSERT_EQ("", ss_->Password());
-    printf("Logged out.\n");
-
-    if (fs::exists(path))
-      fs::remove(fs::path(path));
-  }
 */
 
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {

@@ -648,9 +648,9 @@ int MaidsafeStoreManager::LoadBPMessages(
   boost::condition_variable cond_var;
   boost::mutex mutex;
   ReturnCode result;
-  std::list<ValidatedBufferPacketMessage> received_messages;
+//  std::list<ValidatedBufferPacketMessage> received_messages;
   BPCallbackObj bp_callback_obj(&called_back, &cond_var, &mutex, &result,
-      &received_messages);
+                                messages);
   cbph_.GetMessages(bi_input_params, boost::bind(
       &BPCallbackObj::BPGetMessagesCallback, &bp_callback_obj, _1, _2));
   {
@@ -658,18 +658,19 @@ int MaidsafeStoreManager::LoadBPMessages(
     while (!called_back)
       cond_var.wait(lock);
   }
-  crypto::Crypto crypto_obj_;
-  crypto_obj_.set_hash_algorithm(crypto::SHA_512);
-  crypto_obj_.set_symm_algorithm(crypto::AES_256);
-  while (!received_messages.empty()) {
-    ValidatedBufferPacketMessage valid_message = received_messages.front();
-    std::string aes_key = crypto_obj_.AsymDecrypt(valid_message.index(), "",
-        ss_->PrivateKey(MPID), crypto::STRING_STRING);
-    valid_message.set_message(crypto_obj_.SymmDecrypt(valid_message.message(),
-        "", crypto::STRING_STRING, aes_key));
-    messages->push_back(valid_message);
-    received_messages.pop_front();
-  }
+
+//  crypto::Crypto crypto_obj_;
+//  crypto_obj_.set_hash_algorithm(crypto::SHA_512);
+//  crypto_obj_.set_symm_algorithm(crypto::AES_256);
+//  while (!received_messages.empty()) {
+//    ValidatedBufferPacketMessage valid_message = received_messages.front();
+//    std::string aes_key = crypto_obj_.AsymDecrypt(valid_message.index(), "",
+//        ss_->PrivateKey(MPID), crypto::STRING_STRING);
+//    valid_message.set_message(crypto_obj_.SymmDecrypt(valid_message.message(),
+//        "", crypto::STRING_STRING, aes_key));
+//    messages->push_back(valid_message);
+//    received_messages.pop_front();
+//  }
   return result;
 }
 
@@ -683,8 +684,10 @@ int MaidsafeStoreManager::ModifyBPInfo(const std::string &info) {
   BPCallbackObj bp_callback_obj(&called_back, &cond_var, &mutex, &result);
   std::vector<std::string> users;
   BufferPacketInfo buffer_packet_info;
-  if (!buffer_packet_info.ParseFromString(info))
+  if (!buffer_packet_info.ParseFromString(info)) {
+    printf("MaidsafeStoreManager::ModifyBPInfo - Wrong BPI\n");
     return kBPInfoParseError;
+  }
   for (int i = 0; i < buffer_packet_info.users_size(); ++i)
     users.push_back(buffer_packet_info.users(i));
   cbph_.ModifyOwnerInfo(bi_input_params, ss_->ConnectionStatus(), users,
@@ -712,7 +715,8 @@ int MaidsafeStoreManager::AddBPMessage(
   for (size_t i = 0; i < receivers.size(); ++i) {
     ReturnCode result(kBPError);
     results.push_back(result);
-    BPCallbackObj bp_callback_obj(&called_back, &cond_var, &mutex, &result);
+    BPCallbackObj bp_callback_obj(&called_back, &cond_var, &mutex,
+        &results.at(i));
     bp_callback_objs.push_back(bp_callback_obj);
   }
   // Add the message to each receiver's bp
@@ -734,6 +738,8 @@ int MaidsafeStoreManager::AddBPMessage(
   ReturnCode result(kSuccess);
   for (size_t i = 0; i < receivers.size(); ++i) {
     if (results.at(i) != kSuccess) {
+      printf("In MSM::AddBPMessage, failed to AddMessage - result %u is %i\n",
+             i, results.at(i));
       result = results.at(i);
       break;
     }
