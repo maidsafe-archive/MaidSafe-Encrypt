@@ -25,9 +25,11 @@
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/thread.hpp>
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/utils.h>
 #include "maidsafe/vault/pendingoperations.h"
+
 
 namespace fs = boost::filesystem;
 
@@ -48,6 +50,7 @@ class PendingOperationContainerTest : public testing::Test {
 typedef boost::tuple<std::string, std::string, boost::uint64_t,
                      std::string> IouReadyTuple;
 
+
 bool CompareTupleByChunkSize(IouReadyTuple first, IouReadyTuple second) {
   try {
   return (first.get<2>() < second.get<2>());
@@ -56,6 +59,97 @@ bool CompareTupleByChunkSize(IouReadyTuple first, IouReadyTuple second) {
     printf("%s\n", e.what());
   }
   return false;
+}
+
+void AdvanceThroughSequence(const std::string pmid,
+    const std::string chunkname, const boost::uint64_t chunk_size,
+    const std::string iou, const std::string rank_authority,
+    boost::uint32_t timestamp, const std::string public_key,
+    PendingOperationsHandler *poh_) {
+
+    ASSERT_EQ(0, poh_->AddPendingOperation(pmid, chunkname, chunk_size, iou,
+                            rank_authority, timestamp, public_key,
+                            STORE_ACCEPTED));
+
+    printf("OP ADDED: ID (%s)\n", pmid.c_str());
+
+    boost::this_thread::sleep(boost::posix_time::milliseconds(
+    base::random_32bit_uinteger() % 1000 * 30));
+
+    ASSERT_EQ(0, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
+                            rank_authority, public_key, STORE_DONE));
+
+    printf("STATUS DONE: ID (%s)\n", pmid.c_str());
+
+    boost::this_thread::sleep(boost::posix_time::milliseconds(
+    base::random_32bit_uinteger() % 1000 * 30));
+
+    ASSERT_EQ(0, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
+                            rank_authority, public_key, IOU_READY));
+
+    printf("IOU READY: ID (%s)\n", pmid.c_str());
+
+    boost::this_thread::sleep(boost::posix_time::milliseconds(
+    base::random_32bit_uinteger() % 1000 * 30));
+
+    ASSERT_EQ(0, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
+                            rank_authority, public_key, IOU_PROCESSING));
+
+    printf("IOU PROCESSING: ID (%s)\n", pmid.c_str());
+}
+
+void AdvanceThroughSequenceTryErrors(const std::string pmid,
+    const std::string chunkname, const boost::uint64_t chunk_size,
+    const std::string iou, const std::string rank_authority,
+    boost::uint32_t timestamp, const std::string public_key,
+    PendingOperationsHandler *poh_) {
+
+    int lag = base::random_32bit_uinteger() % 1000 *300;
+
+    ASSERT_EQ(0, poh_->AddPendingOperation(pmid, chunkname, chunk_size, iou,
+                            rank_authority, timestamp, public_key,
+                            STORE_ACCEPTED));
+
+    printf("OP ADDED: ID (%s)\n", pmid.c_str());
+
+    boost::this_thread::sleep(boost::posix_time::milliseconds(
+    lag));
+
+    ASSERT_EQ(0, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
+                            rank_authority, public_key, STORE_DONE));
+
+    ASSERT_EQ(-1492, poh_->AddPendingOperation(pmid, chunkname, chunk_size, iou,
+              rank_authority, timestamp, public_key,
+              STORE_DONE));
+
+    printf("STORE DONE: ID (%s)\n", pmid.c_str());
+
+    boost::this_thread::sleep(boost::posix_time::milliseconds(
+    lag));
+
+    ASSERT_EQ(0, poh_->FindOperation(pmid, chunkname, chunk_size, iou,
+                            rank_authority, STORE_DONE));
+
+    printf("Found %s after delay of %u \n", pmid.c_str(), lag);
+
+    ASSERT_EQ(0, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
+                            rank_authority, public_key, IOU_READY));
+
+    ASSERT_EQ(-1493, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
+                            rank_authority, public_key, IOU_READY));
+
+    printf("IOU READY: ID (%s)\n", pmid.c_str());
+
+    boost::this_thread::sleep(boost::posix_time::milliseconds(
+    lag));
+
+    ASSERT_EQ(0, poh_->FindOperation(pmid, chunkname, chunk_size, iou,
+                            rank_authority, IOU_READY));
+
+    ASSERT_EQ(0, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
+                            rank_authority, public_key, IOU_PROCESSING));
+
+    printf("IOU PROCESSING: ID (%s)\n", pmid.c_str());
 }
 
 
@@ -335,6 +429,64 @@ TEST_F(PendingOperationContainerTest, BEH_VAULT_ErasePendingOp) {
     ASSERT_EQ(static_cast<int>(test_size - i - 1),
         poh_.PendingOperationsCount());
   }
+}
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_AddPendingOpThread) {
+    ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+    boost::thread_group threadGroup;
+
+    for (unsigned int x = 0; x < 50; ++x) {
+     boost::thread *start_add_pending_thread = new boost::thread(
+                       &PendingOperationsHandler::AddPendingOperation, &poh_,
+                       "pmid" +base::itos(x), "chunkname" +base::itos(x),
+                       123456, "", "", 0, "public_key" +base::itos(x),
+                       STORE_ACCEPTED);
+
+    threadGroup.add_thread(start_add_pending_thread);
+    }
+
+    threadGroup.join_all();
+
+    ASSERT_EQ(50, poh_.PendingOperationsCount());
+}
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_AddAndAdvanceStatusThread) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  boost::thread_group threadGroup;
+
+  for (unsigned int x = 0; x < 50; ++x) {
+        boost::thread *start_add_pending_thread = new boost::thread(
+        &AdvanceThroughSequence, "pmid" +base::itos(x),
+        "chunkname" +base::itos(x), 123456, "", "", 0,
+        "public_key" +base::itos(x), &poh_);
+
+    threadGroup.add_thread(start_add_pending_thread);
+    }
+
+    threadGroup.join_all();
+
+    ASSERT_EQ(50, poh_.PendingOperationsCount());
+}
+
+TEST_F(PendingOperationContainerTest, BEH_VAULT_ThreadedTryError) {
+  ASSERT_EQ(0, poh_.PendingOperationsCount());
+
+  boost::thread_group threadGroup;
+
+  for (unsigned int x = 0; x < 50; ++x) {
+        boost::thread *start_add_pending_thread = new boost::thread(
+        &AdvanceThroughSequenceTryErrors, "pmid" +base::itos(x),
+        "chunkname" +base::itos(x), 123456, "", "", 0,
+        "public_key" +base::itos(x), &poh_);
+
+    threadGroup.add_thread(start_add_pending_thread);
+    }
+
+    threadGroup.join_all();
+
+    ASSERT_EQ(50, poh_.PendingOperationsCount());
 }
 
 
