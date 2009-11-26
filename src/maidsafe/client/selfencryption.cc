@@ -499,7 +499,7 @@ bool SelfEncryption::CheckCompressibility(const std::string &path,
     float ratio_ = static_cast<float>(compressed_test_chunk_.size()
         / test_chunk_size_);
 
-    return (ratio_<=0.9);
+    return (ratio_ <= 0.9);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -511,7 +511,7 @@ bool SelfEncryption::CheckCompressibility(const std::string &path,
 
 
 bool SelfEncryption::CalculateChunkSizes(boost::shared_ptr<DataIOHandler>
-   iohandler, maidsafe::DataMap *dm) {
+    iohandler, maidsafe::DataMap *dm) {
   uint64_t file_size_ = 0;
   if (!iohandler->Size(&file_size_))
     return false;

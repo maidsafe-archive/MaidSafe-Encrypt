@@ -311,6 +311,94 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
+TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
+  boost::scoped_ptr<LocalStoreManager>
+      sm_(new LocalStoreManager(client_chunkstore_));
+  sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), client_chunkstore_));
+
+  std::string data(base::RandomString(1024)), ser_dm;
+  int result = seh->EncryptString(data, &ser_dm);
+  ASSERT_EQ(0, result);
+
+  // Check the chunks are stored
+  maidsafe::DataMap dm;
+  ASSERT_TRUE(dm.ParseFromString(ser_dm));
+
+  for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i)
+    ASSERT_FALSE(sm_->KeyUnique(dm.encrypted_chunk_name(i), false));
+  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1), true);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+}
+
+TEST_F(SEHandlerTest, FUNC_MAID_DecryptStringWithChunksPrevLoaded) {
+  boost::scoped_ptr<LocalStoreManager>
+      sm_(new LocalStoreManager(client_chunkstore_));
+  sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), client_chunkstore_));
+  boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
+
+  std::string data(base::RandomString(1024)), ser_dm;
+
+  SelfEncryption se(client_chunkstore_);
+  int result = seh->EncryptString(data, &ser_dm);
+  ASSERT_EQ(0, result);
+
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  std::string dec_string;
+  result = seh->DecryptString(ser_dm, &dec_string);
+  ASSERT_EQ(0, result);
+  ASSERT_EQ(data, dec_string);
+  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1), true);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+}
+
+TEST_F(SEHandlerTest, FUNC_MAID_DecryptStringWithLoadChunks) {
+  SessionSingleton::getInstance()->SetDefConLevel(DEFCON2);
+  boost::scoped_ptr<LocalStoreManager>
+      sm_(new LocalStoreManager(client_chunkstore_));
+  sm_->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+  boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), client_chunkstore_));
+  boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
+
+  std::string data(base::RandomString(1024)), ser_dm;
+
+  SelfEncryption se(client_chunkstore_);
+  int result = seh->EncryptString(data, &ser_dm);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  ASSERT_EQ(0, result);
+  file_system::FileSystem fsys;
+  // All dirs are removed on fsys_.Mount() below.  We need to temporarily rename
+  // DbDir (which contains dir's db files) to avoid deletion.
+  std::string db_dir_original = fsys.DbDir();
+  std::string db_dir_new = "./W";
+  try {
+    fs::remove_all(db_dir_new);
+    fs::rename(db_dir_original, db_dir_new);
+  }
+  catch(const std::exception &e) {
+    printf("%s\n", e.what());
+  }
+  fsys.Mount();
+
+  fs::create_directories(fsys.MaidsafeHomeDir() + kRootSubdir[0][0]);
+  try {
+    fs::remove_all(db_dir_original);
+    fs::rename(db_dir_new, db_dir_original);
+  }
+  catch(const std::exception &e) {
+    printf("%s\n", e.what());
+  }
+  std::string dec_string;
+  result = seh->DecryptString(ser_dm, &dec_string);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  ASSERT_EQ(0, result);
+
+  ASSERT_EQ(data, dec_string);
+  sm_->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1), true);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+}
+
 TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithChunksPrevLoaded) {
   boost::scoped_ptr<LocalStoreManager>
       sm_(new LocalStoreManager(client_chunkstore_));

@@ -94,12 +94,14 @@ class SEHandler {
   int EncryptFile(const std::string &rel_entry,
                   const DirType dir_type,
                   const std::string &msid);
+  int EncryptString(const std::string &data, std::string *ser_dm);
   bool ProcessMetaData(const std::string &rel_entry,
                        const ItemType type,
                        const std::string &hash,
                        const uint64_t &file_size,
                        std::string *ser_mdm);
   int DecryptFile(const std::string &rel_entry);
+  int DecryptString(const std::string &ser_dm, std::string *dec_string);
   bool MakeElement(const std::string &rel_entry,
                    const ItemType type,
                    const DirType dir_type,

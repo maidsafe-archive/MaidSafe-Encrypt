@@ -836,6 +836,31 @@ int SEHandler::RemoveKeyFromUptodateDms(const std::string &key) {
   return 0;
 }
 
+int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
+  maidsafe::DataMap dm;
+  SelfEncryption se(client_chunkstore_);
+  ser_dm->clear();
+  dm.set_file_hash(se.SHA512(data));
+  if (se.Encrypt(data, &dm, true))
+    return -2;
+  StoreChunks(dm, PRIVATE, "");
+  dm.SerializeToString(ser_dm);
+  return 0;
+}
+
+int SEHandler::DecryptString(const std::string &ser_dm,
+    std::string *dec_string) {
+  DataMap dm;
+  dec_string->clear();
+  dm.ParseFromString(ser_dm);
+  if (LoadChunks(dm) != 0)
+    return -1;
+  SelfEncryption se(client_chunkstore_);
+  if (se.Decrypt(dm, 0, dec_string))
+    return -1;
+  return 0;
+}
+
 
 CallbackResult::CallbackResult() : result("") {}
 
