@@ -37,7 +37,6 @@
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/privateshares.h"
-#include "maidsafe/client/messagehandler.h"
 #include "maidsafe/client/sehandler.h"
 
 namespace maidsafe {
@@ -221,7 +220,6 @@ class ClientController {
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   StoreManagerInterface *sm_;
   SessionSingleton *ss_;
-  MessageHandler *msgh_;
   std::string ser_da_;
   std::map<std::string, std::pair<std::string, std::string> >db_enc_queue_;
   SEHandler *seh_;

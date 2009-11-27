@@ -28,10 +28,10 @@
 StringIOHandler::StringIOHandler() : input_(""), read_(false),
   isOpen_(false), readptr_(0) {}
 
-bool StringIOHandler::SetData(const std::string &iput, const bool &read) {
+bool StringIOHandler::SetData(const std::string &input, const bool &read) {
   if (isOpen_)
     return false;
-  input_ = iput;
+  input_ = input;
   read_ = read;
   return true;
 }

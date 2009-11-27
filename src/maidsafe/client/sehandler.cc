@@ -161,7 +161,7 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
         dm_retrieved_.ParseFromString(ser_dm_retrieved_);
       if (ser_dm_retrieved_ == "" || dm_retrieved_.file_hash() != file_hash_) {
         dm_.set_file_hash(file_hash_);
-        if (se_.Encrypt(full_entry_, &dm_))
+        if (se_.Encrypt(full_entry_, false, &dm_))
           return -2;
 //          for(int i=0;i < dm_.encrypted_chunk_name_size();i++) {
 //          //this needs threads or defereds threads is easier
@@ -254,6 +254,18 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
   //    }
 }  // end EncryptFile
 
+int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
+  maidsafe::DataMap dm;
+  SelfEncryption se(client_chunkstore_);
+  ser_dm->clear();
+  dm.set_file_hash(se.SHA512(data));
+  if (se.Encrypt(data, true, &dm))
+    return -2;
+  StoreChunks(dm, PRIVATE, "");
+  dm.SerializeToString(ser_dm);
+  return 0;
+}
+
 bool SEHandler::ProcessMetaData(const std::string &rel_entry,
                                 const ItemType type,
                                 const std::string &hash,
@@ -330,6 +342,19 @@ int SEHandler::DecryptFile(const std::string &rel_entry) {
       return 0;
   }
   return -2;
+}
+
+int SEHandler::DecryptString(const std::string &ser_dm,
+                             std::string *dec_string) {
+  DataMap dm;
+  dec_string->clear();
+  dm.ParseFromString(ser_dm);
+  if (LoadChunks(dm) != 0)
+    return -1;
+  SelfEncryption se(client_chunkstore_);
+  if (se.Decrypt(dm, 0, dec_string))
+    return -1;
+  return 0;
 }
 
 bool SEHandler::MakeElement(const std::string &rel_entry,
@@ -451,7 +476,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   // printf("File hash = %s\n", file_hash);
 #endif
   dm->set_file_hash(file_hash);
-  if (se.Encrypt(db_path, dm) != 0) {
+  if (se.Encrypt(db_path, false, dm) != 0) {
     return -1;
   }
   StoreChunks(*dm, dir_type, msid);
@@ -835,32 +860,6 @@ int SEHandler::RemoveKeyFromUptodateDms(const std::string &key) {
     return -1;
   return 0;
 }
-
-int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
-  maidsafe::DataMap dm;
-  SelfEncryption se(client_chunkstore_);
-  ser_dm->clear();
-  dm.set_file_hash(se.SHA512(data));
-  if (se.Encrypt(data, &dm, true))
-    return -2;
-  StoreChunks(dm, PRIVATE, "");
-  dm.SerializeToString(ser_dm);
-  return 0;
-}
-
-int SEHandler::DecryptString(const std::string &ser_dm,
-    std::string *dec_string) {
-  DataMap dm;
-  dec_string->clear();
-  dm.ParseFromString(ser_dm);
-  if (LoadChunks(dm) != 0)
-    return -1;
-  SelfEncryption se(client_chunkstore_);
-  if (se.Decrypt(dm, 0, dec_string))
-    return -1;
-  return 0;
-}
-
 
 CallbackResult::CallbackResult() : result("") {}
 

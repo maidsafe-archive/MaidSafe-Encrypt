@@ -81,7 +81,6 @@ ClientController::ClientController() : auth_(),
                                        client_chunkstore_(),
                                        sm_(),
                                        ss_(),
-                                       msgh_(),
                                        ser_da_(),
                                        db_enc_queue_(),
                                        seh_(),
@@ -363,7 +362,6 @@ bool ClientController::CreateUser(const std::string &username,
   fsys_.Mount();
   fsys_.FuseMountPoint();
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
-  msgh_ = new MessageHandler(sm_);
   DataAtlas da;
 
   res += dah->Init(true);
@@ -447,7 +445,6 @@ bool ClientController::CreateUser(const std::string &username,
   if (0 != res) {
     printf("In ClientController::CreateUser 16\n");
     delete seh_;
-    delete msgh_;
     return false;
   }
 
@@ -456,7 +453,6 @@ bool ClientController::CreateUser(const std::string &username,
   if (0 != res) {
     printf("In ClientController::CreateUser 18\n");
     delete seh_;
-    delete msgh_;
     return false;
   }
 
@@ -524,17 +520,14 @@ bool ClientController::ValidateUser(const std::string &password) {
   fsys_.Mount();
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   seh_ = new SEHandler(sm_, client_chunkstore_);
-  msgh_ = new MessageHandler(sm_);
   if (ParseDa() != 0) {
     delete seh_;
-    delete msgh_;
     ss_->ResetSession();
     return false;
   }
 
   if (dah_->Init(false)) {
     delete seh_;
-    delete msgh_;
     ss_->ResetSession();
     return false;
   }
@@ -634,7 +627,6 @@ bool ClientController::Logout() {
     fsys_.UnMount();
     ss_->ResetSession();
     delete seh_;
-    delete msgh_;
     messages_.clear();
     try {
       if (fs::exists(client_store_)) {
@@ -664,7 +656,6 @@ bool ClientController::LeaveMaidsafeNetwork() {
   }
   if (result == kSuccess) {
     delete seh_;
-    delete msgh_;
     try {
       fs::remove_all(dir_);
     }
@@ -1247,13 +1238,6 @@ int ClientController::HandleAddContactRequest(
     }
   }
 
-  // Send message back with own details
-  maidsafe::Receivers rec;
-  rec.id = sender;
-  rec.public_key = rec_public_key;
-  std::vector<Receivers> recs;
-  recs.push_back(rec);
-
   InstantMessage im;
   ContactNotification *cn = im.mutable_contact_notification();
   ContactInfo *info = cn->mutable_contact();
@@ -1338,21 +1322,6 @@ int ClientController::SendInstantMessage(const std::string &message,
     printf("Can't send a message while off-line.\n");
 #endif
     return -9999;
-  }
-  std::vector<Receivers> recs;
-  for (unsigned int a = 0; a < contact_names.size(); ++a) {
-    maidsafe::mi_contact mic;
-    int n = ss_->GetContactInfo(contact_names[a], &mic);
-    if (n != 0) {
-  #ifdef DEBUG
-      printf("Couldn't find contact: %i\n", n);
-  #endif
-      return -9;
-    }
-    maidsafe::Receivers rec;
-    rec.id = mic.pub_name_;
-    rec.public_key = mic.pub_key_;
-    recs.push_back(rec);
   }
 
   std::string ser_im;
@@ -1439,22 +1408,6 @@ int ClientController::SendInstantFile(std::string *filename,
   std::string ser_instant_file;
   im.SerializeToString(&ser_instant_file);
 
-  std::vector<Receivers> recs;
-  for (unsigned int a = 0; a < contact_names.size(); ++a) {
-    maidsafe::mi_contact mic;
-    int n = ss_->GetContactInfo(contact_names[a], &mic);
-    if (n != 0) {
-  #ifdef DEBUG
-      printf("Couldn't find contact: %i\n", n);
-  #endif
-      return -6666;
-    }
-    maidsafe::Receivers rec;
-    rec.id = mic.pub_name_;
-    rec.public_key = mic.pub_key_;
-    recs.push_back(rec);
-  }
-
   if (sm_->AddBPMessage(contact_names, ser_instant_file, INSTANT_MSG) !=
       kSuccess) {
 #ifdef DEBUG
@@ -1517,11 +1470,6 @@ int ClientController::AddContact(const std::string &public_name) {
   // Sending the request to add the contact
   // TODO(Richard): the info is empty because there is no way
   // to get the users contact data
-  maidsafe::Receivers rec;
-  rec.id = public_name;
-  rec.public_key = public_key;
-  std::vector<Receivers> recs;
-  recs.push_back(rec);
 
   InstantMessage im;
   ContactNotification *cn = im.mutable_contact_notification();

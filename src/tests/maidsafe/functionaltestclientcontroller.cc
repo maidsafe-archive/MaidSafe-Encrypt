@@ -337,7 +337,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
   ASSERT_TRUE(cc_->GetMessages());
   std::list<maidsafe::InstantMessage> messages;
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
-  ASSERT_EQ(0, messages.size());
+  ASSERT_EQ(size_t(0), messages.size());
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_EQ("", ss_->Username());
@@ -360,7 +360,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
   ASSERT_TRUE(cc_->GetMessages());
   messages.clear();
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
-  ASSERT_EQ(0, messages.size());
+  ASSERT_EQ(size_t(0), messages.size());
 
   boost::this_thread::sleep(boost::posix_time::seconds(10));
 
@@ -569,7 +569,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_TRUE(cc_->GetMessages());
   std::list<maidsafe::InstantMessage> messages;
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
-  ASSERT_EQ(1, messages.size());
+  ASSERT_EQ(size_t(1), messages.size());
   maidsafe::InstantMessage im = messages.front();
   ASSERT_TRUE(im.has_contact_notification());
   ASSERT_EQ(public_username1, im.sender());
@@ -606,7 +606,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_TRUE(cc_->GetMessages());
   messages.clear();
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
-  ASSERT_EQ(1, messages.size());
+  ASSERT_EQ(size_t(1), messages.size());
   maidsafe::InstantMessage im1 = messages.front();
   ASSERT_TRUE(im1.has_contact_notification());
   ASSERT_EQ(public_username, im1.sender());
@@ -649,7 +649,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_TRUE(cc_->GetMessages());
   messages.clear();
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
-  ASSERT_EQ(1, messages.size());
+  ASSERT_EQ(size_t(1), messages.size());
   maidsafe::InstantMessage im2 = messages.front();
   ASSERT_FALSE(im2.has_contact_notification());
   ASSERT_FALSE(im2.has_instantfile_notification());

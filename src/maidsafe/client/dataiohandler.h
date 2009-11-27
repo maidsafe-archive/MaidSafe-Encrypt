@@ -30,13 +30,13 @@
 
 class DataIOHandler {
  public:
+  virtual ~DataIOHandler() {}
   /** SetData sets file path or the string to handle IO operations tos
    *  input - string or path to file
    *  read - True if read, false if write
    *  return True if success, false otherwise
    */
-  virtual bool SetData(const std::string &iput = "",
-    const bool &read = false) = 0;
+  virtual bool SetData(const std::string &input, const bool &read) = 0;
 
   /** Opens access to the data
   */
@@ -83,13 +83,13 @@ class DataIOHandler {
    *  pos - positon of the pointer
    *  return True if success, false otherwise
    */
-  virtual bool SetGetPointer(const unsigned int &pos) = 0;  //NOLINT
+  virtual bool SetGetPointer(const unsigned int &pos) = 0;  // NOLINT
 };
 
 class StringIOHandler : public DataIOHandler {
  public:
   StringIOHandler();
-  virtual bool SetData(const std::string &iput = "", const bool &read = false);  // NOLINT
+  virtual bool SetData(const std::string &input, const bool &read);
   virtual bool Open();
   virtual void Close();
   virtual void Reset();
@@ -107,7 +107,7 @@ class StringIOHandler : public DataIOHandler {
 class FileIOHandler : public DataIOHandler {
  public:
   FileIOHandler();
-  virtual bool SetData(const std::string &iput = "", const bool &read = false);  // NOLINT
+  virtual bool SetData(const std::string &input, const bool &read);
   virtual bool Open();
   virtual void Close();
   virtual void Reset();

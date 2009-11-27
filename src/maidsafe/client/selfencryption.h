@@ -48,30 +48,33 @@ class SelfEncryption {
   explicit SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore);
   ~SelfEncryption() {}
   // encrypt entire file
-  int Encrypt(const std::string &entry_str, maidsafe::DataMap *dm,
-    const bool &is_string = false);
+  int Encrypt(const std::string &entry_str,
+              bool is_string,
+              maidsafe::DataMap *dm);
   // decrypt chunks starting at chunklet spanning offset point
-  int Decrypt(const maidsafe::DataMap &dm, const std::string &entry_str,
-    const uint64_t &offset, bool overwrite);
-
-  int Decrypt(const maidsafe::DataMap &dm, const uint64_t &offset,
-    std::string *decrypted_str);
-
+  int Decrypt(const maidsafe::DataMap &dm,
+              const std::string &entry_str,
+              const uint64_t &offset,
+              bool overwrite);
+  int Decrypt(const maidsafe::DataMap &dm,
+              const uint64_t &offset,
+              std::string *decrypted_str);
   std::string SHA512(const fs::path &file_path);
   std::string SHA512(const std::string &content);
   fs::path GetChunkPath(const std::string &hex_chunk_name);
-
  private:
-  int Decrypt(const maidsafe::DataMap &dm, const uint64_t &offset,
-    boost::shared_ptr<DataIOHandler> iohandler, std::string *decrypted_str,
-    const std::string &path);
+  int Decrypt(const maidsafe::DataMap &dm,
+              const uint64_t &offset,
+              const std::string &path,
+              boost::shared_ptr<DataIOHandler> iohandler,
+              std::string *decrypted_str);
   // check to ensure entry is encryptable
   int CheckEntry(boost::shared_ptr<DataIOHandler> iohandler);
   bool CreateProcessDirectory(fs::path *processing_path);
   bool CheckCompressibility(const std::string &path,
-    boost::shared_ptr<DataIOHandler> iohandler);
+                            boost::shared_ptr<DataIOHandler> iohandler);
   bool CalculateChunkSizes(boost::shared_ptr<DataIOHandler> iohandler,
-    maidsafe::DataMap *dm);
+                           maidsafe::DataMap *dm);
   // returns a positive or negative int based on char passed into it to
   // allow for random chunk sizes '0' returns -8, '1' returns -7, etc...
   // through to 'f' returns 7
@@ -85,7 +88,7 @@ class SelfEncryption {
                   std::string *hash);
   // concatenate copies of hash until desired length reached
   bool ResizeObfuscationHash(const std::string &obfuscate_hash,
-                             const uint16_t &length_,
+                             const uint16_t &length,
                              std::string *resized_obs_hash);
   FRIEND_TEST(SelfEncryptionTest, BEH_MAID_CheckEntry);
   FRIEND_TEST(SelfEncryptionTest, BEH_MAID_CreateProcessDirectory);

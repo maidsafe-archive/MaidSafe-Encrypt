@@ -90,12 +90,12 @@ TEST_F(TestStringIOHandler, BEH_MAID_TestSetGetPointerString) {
 }
 
 TEST_F(TestStringIOHandler, BEH_MAID_WriteToString) {
-  ASSERT_TRUE(handler_.SetData());
+  ASSERT_TRUE(handler_.SetData("", false));
   ASSERT_FALSE(handler_.Write("abc", 3));
   unsigned int size(10);
   char *read_data = new char[size];
   ASSERT_TRUE(handler_.Open());
-  ASSERT_FALSE(handler_.SetData());
+  ASSERT_FALSE(handler_.SetData("", false));
   ASSERT_FALSE(handler_.Read(read_data, size));
   std::string in_data = base::RandomString(20);
   std::string result = in_data;
@@ -214,7 +214,7 @@ TEST_F(TestFileIOHandler, BEH_MAID_TestSetGetPointerFile) {
 }
 
 TEST_F(TestFileIOHandler, BEH_MAID_WriteToFile) {
-  handler_.SetData(out);
+  handler_.SetData(out, false);
   ASSERT_FALSE(handler_.Write("abc", 3));
   unsigned int size(10);
   char *read_data = new char[size];

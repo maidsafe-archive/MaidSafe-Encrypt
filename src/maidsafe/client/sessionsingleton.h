@@ -303,6 +303,6 @@ class SessionSingleton {
   PrivateShareHandler psh_;
   SessionSingleton() : ud_(), ka_(), ch_(), psh_() { ResetSession(); }
 };
-}  // namesapce maidsafe
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_CLIENT_SESSIONSINGLETON_H_

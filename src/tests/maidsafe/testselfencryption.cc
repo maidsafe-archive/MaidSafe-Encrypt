@@ -137,22 +137,22 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CheckEntry) {
   iohandler.reset(new FileIOHandler);
   SelfEncryption se(client_chunkstore_);
 
-  iohandler->SetData(file_path.string());
+  iohandler->SetData(file_path.string(), false);
   CreateRandomFile(file, 0);
   ASSERT_EQ(-1, se.CheckEntry(iohandler));
   fs::remove(file_path);
 
-  iohandler->SetData(file_path.string());
+  iohandler->SetData(file_path.string(), false);
   CreateRandomFile(file, 1);
   ASSERT_EQ(-1, se.CheckEntry(iohandler));
   fs::remove(file_path);
 
-  iohandler->SetData(file_path.string());
+  iohandler->SetData(file_path.string(), false);
   CreateRandomFile(file, 2);
   ASSERT_EQ(0, se.CheckEntry(iohandler));
   fs::remove(file_path);
 
-  iohandler->SetData(file_path.string());
+  iohandler->SetData(file_path.string(), false);
   CreateRandomFile(file, 1234567);
   ASSERT_EQ(0, se.CheckEntry(iohandler));
   // fs::remove(file_path);
@@ -296,7 +296,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   DataMap dm;
   se.file_hash_ = "8888888888888888888888888888888888888888";
   uint64_t chunk_size_total = 0;
-  iohandler->SetData(path1.string());
+  iohandler->SetData(path1.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(max_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size(); i++) {
@@ -307,7 +307,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path2.string());
+  iohandler->SetData(path2.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(max_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size(); i++) {
@@ -318,7 +318,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path3.string());
+  iohandler->SetData(path3.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   // std::cout << "File Size: " << file_size3 << std::endl;
   // std::cout << "Default: " << default_chunk_size_ << "\tChunk[0]: "
@@ -339,7 +339,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path4.string());
+  iohandler->SetData(path4.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(min_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size(); i++) {
@@ -350,7 +350,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path5.string());
+  iohandler->SetData(path5.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(dm.chunk_size_size(), 3);
   ASSERT_EQ(static_cast<boost::uint32_t>(1), dm.chunk_size(0));
@@ -361,7 +361,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   //  set file hash so that each chunk size is increased
   se.file_hash_ = "ffffffffffffffffffffffffffffffffffffffff";
   chunk_size_total = 0;
-  iohandler->SetData(path1.string());
+  iohandler->SetData(path1.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(max_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size() - 1; i++) {
@@ -375,7 +375,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path2.string());
+  iohandler->SetData(path2.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(max_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size()-1; i++) {
@@ -389,7 +389,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path3.string());
+  iohandler->SetData(path3.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   for (int i = 1; i < dm.chunk_size_size() - 1; i++) {
     // std::cout << "Default: " << default_chunk_size_ << "\tChunk[" << i << "]:
@@ -406,7 +406,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path4.string());
+  iohandler->SetData(path4.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(min_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size(); i++) {
@@ -418,7 +418,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path5.string());
+  iohandler->SetData(path5.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(dm.chunk_size_size(), 3);
   ASSERT_EQ(size_t(1), dm.chunk_size(0));
@@ -429,7 +429,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   //  set file hash so that each chunk size is reduced
   se.file_hash_ = "0000000000000000000000000000000000000000";
   chunk_size_total = 0;
-  iohandler->SetData(path1.string());
+  iohandler->SetData(path1.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(max_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size()-1; i++) {
@@ -442,7 +442,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path2.string());
+  iohandler->SetData(path2.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(max_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size()-1; i++) {
@@ -455,7 +455,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path3.string());
+  iohandler->SetData(path3.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   for (int i = 1; i < dm.chunk_size_size()-1; i++) {
     // std::cout << "Default: " << default_chunk_size_ << "\tChunk[" << i << "]:
@@ -471,7 +471,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path4.string());
+  iohandler->SetData(path4.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(min_chunks, dm.chunk_size_size());
   for (int i = 0; i < dm.chunk_size_size(); i++) {
@@ -482,7 +482,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   dm.Clear();
 
   chunk_size_total = 0;
-  iohandler->SetData(path5.string());
+  iohandler->SetData(path5.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(dm.chunk_size_size(), 3);
   ASSERT_EQ(static_cast<boost::uint32_t>(1), dm.chunk_size(0));
@@ -648,14 +648,14 @@ TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptFiles) {
   dm3.set_file_hash(se.SHA512(path3));
   dm4.set_file_hash(se.SHA512(path4));
   dm5.set_file_hash(se.SHA512(path5));
-  ASSERT_LT(se.Encrypt(path1.string(), &dm1), 0);
-  ASSERT_EQ(0, se.Encrypt(path2.string(), &dm2));
+  ASSERT_LT(se.Encrypt(path1.string(), false, &dm1), 0);
+  ASSERT_EQ(0, se.Encrypt(path2.string(), false, &dm2));
   ASSERT_EQ(3, dm2.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(path3.string(), &dm3));
+  ASSERT_EQ(0, se.Encrypt(path3.string(), false, &dm3));
   ASSERT_EQ(3, dm3.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(path4.string(), &dm4));
+  ASSERT_EQ(0, se.Encrypt(path4.string(), false, &dm4));
   ASSERT_EQ(3, dm4.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(path5.string(), &dm5));
+  ASSERT_EQ(0, se.Encrypt(path5.string(), false, &dm5));
   ASSERT_EQ(3, dm5.chunk_name_size());
 }
 
@@ -679,10 +679,10 @@ TEST_F(SelfEncryptionTest, BEH_MAID_DecryptFile) {
   dm2.set_file_hash(se.SHA512(path2));
   dm3.set_file_hash(se.SHA512(path3));
   dm4.set_file_hash(se.SHA512(path4));
-  ASSERT_EQ(0, se.Encrypt(path1.string(), &dm1));
-  ASSERT_EQ(0, se.Encrypt(path2.string(), &dm2));
-  ASSERT_EQ(0, se.Encrypt(path3.string(), &dm3));
-  ASSERT_EQ(0, se.Encrypt(path4.string(), &dm4));
+  ASSERT_EQ(0, se.Encrypt(path1.string(), false, &dm1));
+  ASSERT_EQ(0, se.Encrypt(path2.string(), false, &dm2));
+  ASSERT_EQ(0, se.Encrypt(path3.string(), false, &dm3));
+  ASSERT_EQ(0, se.Encrypt(path4.string(), false, &dm4));
 
   fs::path decrypted1_(path1.string()+".decrypted", fs::native);
   fs::path decrypted2_(path2.string()+".decrypted", fs::native);
@@ -714,14 +714,14 @@ TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptStrings) {
   dm3.set_file_hash(se.SHA512(str3));
   dm4.set_file_hash(se.SHA512(str4));
   dm5.set_file_hash(se.SHA512(str5));
-  ASSERT_LT(se.Encrypt(str1, &dm1, true), 0);
-  ASSERT_EQ(0, se.Encrypt(str2, &dm2, true));
+  ASSERT_LT(se.Encrypt(str1, true, &dm1), 0);
+  ASSERT_EQ(0, se.Encrypt(str2, true, &dm2));
   ASSERT_EQ(3, dm2.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(str3, &dm3, true));
+  ASSERT_EQ(0, se.Encrypt(str3, true, &dm3));
   ASSERT_EQ(3, dm3.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(str4, &dm4, true));
+  ASSERT_EQ(0, se.Encrypt(str4, true, &dm4));
   ASSERT_EQ(3, dm4.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(str5, &dm5, true));
+  ASSERT_EQ(0, se.Encrypt(str5, true, &dm5));
   ASSERT_EQ(3, dm5.chunk_name_size());
 }
 
@@ -737,10 +737,10 @@ TEST_F(SelfEncryptionTest, BEH_MAID_DecryptString) {
   dm2.set_file_hash(se.SHA512(str2));
   dm3.set_file_hash(se.SHA512(str3));
   dm4.set_file_hash(se.SHA512(str4));
-  ASSERT_EQ(0, se.Encrypt(str1, &dm1, true));
-  ASSERT_EQ(0, se.Encrypt(str2, &dm2, true));
-  ASSERT_EQ(0, se.Encrypt(str3, &dm3, true));
-  ASSERT_EQ(0, se.Encrypt(str4, &dm4, true));
+  ASSERT_EQ(0, se.Encrypt(str1, true, &dm1));
+  ASSERT_EQ(0, se.Encrypt(str2, true, &dm2));
+  ASSERT_EQ(0, se.Encrypt(str3, true, &dm3));
+  ASSERT_EQ(0, se.Encrypt(str4, true, &dm4));
 
   std::string dec1, dec2, dec3, dec4;
 

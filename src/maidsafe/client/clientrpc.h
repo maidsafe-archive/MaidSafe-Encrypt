@@ -107,26 +107,6 @@ class ClientRpcs {
               DeleteResponse *response,
               rpcprotocol::Controller *controller,
               google::protobuf::Closure *done);
-  void CreateBP(const kad::Contact &peer, bool local,
-                CreateBPRequest *create_request,
-                CreateBPResponse *create_response,
-                rpcprotocol::Controller *controller,
-                google::protobuf::Closure *done);
-  void ModifyBPInfo(const kad::Contact &peer, bool local,
-                    ModifyBPInfoRequest *modify_request,
-                    ModifyBPInfoResponse *modify_response,
-                    rpcprotocol::Controller *controller,
-                    google::protobuf::Closure *done);
-  void GetBPMessages(const kad::Contact &peer, bool local,
-                     GetBPMessagesRequest *get_messages_request,
-                     GetBPMessagesResponse *get_messages_response,
-                     rpcprotocol::Controller *controller,
-                     google::protobuf::Closure *done);
-  void AddBPMessage(const kad::Contact &peer, bool local,
-                    AddBPMessageRequest *add_message_request,
-                    AddBPMessageResponse *add_message_response,
-                    rpcprotocol::Controller *controller,
-                    google::protobuf::Closure *done);
   void IsVaultOwned(IsOwnedResponse *response,
                     rpcprotocol::Controller *controller,
                     rpcprotocol::Channel *channel,
