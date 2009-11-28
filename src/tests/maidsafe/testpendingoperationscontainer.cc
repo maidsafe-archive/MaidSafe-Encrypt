@@ -71,7 +71,7 @@ void AdvanceThroughSequence(const std::string pmid,
                             rank_authority, timestamp, public_key,
                             STORE_ACCEPTED));
 
-    printf("OP ADDED: ID (%s)\n", pmid.c_str());
+//    printf("OP ADDED: ID (%s)\n", pmid.c_str());
 
     boost::this_thread::sleep(boost::posix_time::milliseconds(
     base::random_32bit_uinteger() % 1000 * 30));
@@ -79,7 +79,7 @@ void AdvanceThroughSequence(const std::string pmid,
     ASSERT_EQ(0, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
                             rank_authority, public_key, STORE_DONE));
 
-    printf("STATUS DONE: ID (%s)\n", pmid.c_str());
+//    printf("STATUS DONE: ID (%s)\n", pmid.c_str());
 
     boost::this_thread::sleep(boost::posix_time::milliseconds(
     base::random_32bit_uinteger() % 1000 * 30));
@@ -87,7 +87,7 @@ void AdvanceThroughSequence(const std::string pmid,
     ASSERT_EQ(0, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
                             rank_authority, public_key, IOU_READY));
 
-    printf("IOU READY: ID (%s)\n", pmid.c_str());
+//    printf("IOU READY: ID (%s)\n", pmid.c_str());
 
     boost::this_thread::sleep(boost::posix_time::milliseconds(
     base::random_32bit_uinteger() % 1000 * 30));
@@ -95,7 +95,7 @@ void AdvanceThroughSequence(const std::string pmid,
     ASSERT_EQ(0, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
                             rank_authority, public_key, IOU_PROCESSING));
 
-    printf("IOU PROCESSING: ID (%s)\n", pmid.c_str());
+//    printf("IOU PROCESSING: ID (%s)\n", pmid.c_str());
 }
 
 void AdvanceThroughSequenceTryErrors(const std::string pmid,
@@ -104,13 +104,13 @@ void AdvanceThroughSequenceTryErrors(const std::string pmid,
     boost::uint32_t timestamp, const std::string public_key,
     PendingOperationsHandler *poh_) {
 
-    int lag = base::random_32bit_uinteger() % 1000 *300;
+    int lag = base::random_32bit_uinteger() % 1000 *30;
 
     ASSERT_EQ(0, poh_->AddPendingOperation(pmid, chunkname, chunk_size, iou,
                             rank_authority, timestamp, public_key,
                             STORE_ACCEPTED));
 
-    printf("OP ADDED: ID (%s)\n", pmid.c_str());
+//    printf("OP ADDED: ID (%s)\n", pmid.c_str());
 
     boost::this_thread::sleep(boost::posix_time::milliseconds(
     lag));
@@ -122,7 +122,7 @@ void AdvanceThroughSequenceTryErrors(const std::string pmid,
               rank_authority, timestamp, public_key,
               STORE_DONE));
 
-    printf("STORE DONE: ID (%s)\n", pmid.c_str());
+//    printf("STORE DONE: ID (%s)\n", pmid.c_str());
 
     boost::this_thread::sleep(boost::posix_time::milliseconds(
     lag));
@@ -130,7 +130,7 @@ void AdvanceThroughSequenceTryErrors(const std::string pmid,
     ASSERT_EQ(0, poh_->FindOperation(pmid, chunkname, chunk_size, iou,
                             rank_authority, STORE_DONE));
 
-    printf("Found %s after delay of %u \n", pmid.c_str(), lag);
+//    printf("Found %s after delay of %u \n", pmid.c_str(), lag);
 
     ASSERT_EQ(0, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
                             rank_authority, public_key, IOU_READY));
@@ -138,7 +138,7 @@ void AdvanceThroughSequenceTryErrors(const std::string pmid,
     ASSERT_EQ(-1493, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
                             rank_authority, public_key, IOU_READY));
 
-    printf("IOU READY: ID (%s)\n", pmid.c_str());
+//    printf("IOU READY: ID (%s)\n", pmid.c_str());
 
     boost::this_thread::sleep(boost::posix_time::milliseconds(
     lag));
@@ -149,7 +149,7 @@ void AdvanceThroughSequenceTryErrors(const std::string pmid,
     ASSERT_EQ(0, poh_->AdvanceStatus(pmid, chunkname, chunk_size, iou,
                             rank_authority, public_key, IOU_PROCESSING));
 
-    printf("IOU PROCESSING: ID (%s)\n", pmid.c_str());
+//    printf("IOU PROCESSING: ID (%s)\n", pmid.c_str());
 }
 
 
@@ -451,7 +451,7 @@ TEST_F(PendingOperationContainerTest, BEH_VAULT_AddPendingOpThread) {
     ASSERT_EQ(50, poh_.PendingOperationsCount());
 }
 
-TEST_F(PendingOperationContainerTest, BEH_VAULT_AddAndAdvanceStatusThread) {
+TEST_F(PendingOperationContainerTest, FUNC_VAULT_AddAndAdvanceStatusThread) {
   ASSERT_EQ(0, poh_.PendingOperationsCount());
 
   boost::thread_group threadGroup;
@@ -470,7 +470,7 @@ TEST_F(PendingOperationContainerTest, BEH_VAULT_AddAndAdvanceStatusThread) {
     ASSERT_EQ(50, poh_.PendingOperationsCount());
 }
 
-TEST_F(PendingOperationContainerTest, BEH_VAULT_ThreadedTryError) {
+TEST_F(PendingOperationContainerTest, FUNC_VAULT_ThreadedTryError) {
   ASSERT_EQ(0, poh_.PendingOperationsCount());
 
   boost::thread_group threadGroup;
@@ -488,6 +488,5 @@ TEST_F(PendingOperationContainerTest, BEH_VAULT_ThreadedTryError) {
 
     ASSERT_EQ(50, poh_.PendingOperationsCount());
 }
-
 
 }  // namespace maidsafe_vault

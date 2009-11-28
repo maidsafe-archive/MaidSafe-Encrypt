@@ -771,7 +771,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreLoadPacketAsChunk) {
     std::string pub_key_signature = crypto_.AsymSign(rkp.public_key(), "",
                                     rkp.private_key(), crypto::STRING_STRING);
     std::string packetname = crypto_.Hash(rkp.public_key() + pub_key_signature,
-                             "", crypto::STRING_STRING, false);
+                             "", crypto::STRING_STRING, true);
     switch (n) {
       case 0: type_of_packet.push_back(maidsafe::MID);
               signing_packet.push_back(maidsafe::ANMID);

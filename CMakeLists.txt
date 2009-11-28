@@ -301,6 +301,17 @@ ELSE(PROTOBUF_LIBRARY)
 ENDIF(PROTOBUF_LIBRARY)
 
 ###################################################################################################
+# Python library search                                                                           #
+###################################################################################################
+INCLUDE(FindPythonLibs)
+FIND_PACKAGE(PythonLibs)
+IF(PYTHONLIBS_FOUND)
+  MESSAGE("-- Found library ${PYTHON_LIBRARIES}")
+ELSE(PYTHONLIBS_FOUND)
+  MESSAGE("-- Didn't find python: style checking disabled.")
+ENDIF(PYTHONLIBS_FOUND)
+
+###################################################################################################
 # maidsafe-dht library search                                                                     #
 ###################################################################################################
 UNSET(MAIDSAFE_DHT_LIBRARY CACHE)
@@ -583,11 +594,13 @@ ADD_TEST(Testbph ${EXECUTABLE_OUTPUT_PATH}/TESTbph)
 SET_PROPERTY(TEST Testclientcontroller PROPERTY TIMEOUT 3600)
 SET_PROPERTY(TEST Testpdvault PROPERTY TIMEOUT 3600)
 SET_PROPERTY(TEST Testbph PROPERTY TIMEOUT 3600)
-IF(UNIX)
-  ADD_TEST(STYLE_CHECK ${SOURCE_DIR}/cpplint.py ${STYLE_MAIDSAFE})
-ELSE(UNIX)
-  ADD_TEST(STYLE_CHECK finderrorsall.bat)
-ENDIF(UNIX)
+IF(PYTHONLIBS_FOUND)
+  IF(UNIX)
+    ADD_TEST(STYLE_CHECK ${SOURCE_DIR}/cpplint.py ${STYLE_MAIDSAFE})
+  ELSE(UNIX)
+    ADD_TEST(STYLE_CHECK finderrorsall.bat)
+  ENDIF(UNIX)
+ENDIF(PYTHONLIBS_FOUND)
 
 IF(UNIX)
 	SET(MAID_TEST_PATH ${EXECUTABLE_OUTPUT_PATH}TESTmaidsafe)
