@@ -42,7 +42,6 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/maidsafe.h"
 
 namespace fs = boost::filesystem;

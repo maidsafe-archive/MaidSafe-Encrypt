@@ -2655,7 +2655,7 @@ bool MaidsafeStoreManager::NotDoneWithUploading() {
     boost::mutex::scoped_lock loch(tasks_mutex_);
     std::map<boost::uint16_t, boost::tuple<std::string, int> >::iterator it;
     for (it = tasks_.begin(); it != tasks_.end(); ++it)
-      if (it->second.get<1>() == 7)
+//      if (it->second.get<1>() == 7)
         printf("MaidsafeStoreManager::NotDoneWithUploading task %i dealing"
                " with name %s still hasn't finished.\n", it->first,
                it->second.get<0>().c_str());

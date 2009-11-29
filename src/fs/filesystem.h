@@ -28,9 +28,9 @@
 
 #ifndef FS_FILESYSTEM_H_
 #define FS_FILESYSTEM_H_
+#include <boost/filesystem.hpp>
 #include <string>
 #include <vector>
-#include "boost/filesystem.hpp"
 #include "maidsafe/client/sessionsingleton.h"
 // if (BOOST_PLATFORM == "linux")
 //   #include "fs/l_fuse/fusecpp.h"
