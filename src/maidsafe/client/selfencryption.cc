@@ -76,9 +76,8 @@ SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
 #endif
 }
 
-int SelfEncryption::Encrypt(const std::string &entry_str,
-                            bool is_string,
-                            maidsafe::DataMap *dm) {
+int SelfEncryption::Encrypt(const std::string &entry_str, const bool &is_string,
+    maidsafe::DataMap *dm) {
   boost::shared_ptr<DataIOHandler> iohandler;
 
   if (is_string)
@@ -232,9 +231,8 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
 }
 
 int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
-                            const std::string &entry_str,
-                            const uint64_t &offset,
-                            bool overwrite) {
+    const std::string &entry_str, const uint64_t &offset,
+    const bool &overwrite) {
   try {
     if (fs::exists(entry_str)) {
       if (overwrite)
@@ -253,19 +251,16 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
   return Decrypt(dm, offset, entry_str, iohandler, NULL);
 }
 
-int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
-                            const uint64_t &offset,
-                            std::string *decrypted_str) {
+int SelfEncryption::Decrypt(const maidsafe::DataMap &dm, const uint64_t &offset,
+    std::string *decrypted_str) {
   boost::shared_ptr<DataIOHandler> iohandler(new StringIOHandler);
   iohandler->SetData("", false);
   return Decrypt(dm, offset, "", iohandler, decrypted_str);
 }
 
-int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
-                            const uint64_t &offset,
-                            const std::string &path,
-                            boost::shared_ptr<DataIOHandler> iohandler,
-                            std::string *decrypted_str) {
+int SelfEncryption::Decrypt(const maidsafe::DataMap &dm, const uint64_t &offset,
+    const std::string &path, boost::shared_ptr<DataIOHandler> iohandler,
+    std::string *decrypted_str) {
   file_hash_ = dm.file_hash();
   // if there is no file hash, then the file has never been encrypted
   if (file_hash_.empty())
@@ -484,8 +479,7 @@ bool SelfEncryption::CheckCompressibility(
 }
 
 bool SelfEncryption::CalculateChunkSizes(
-    boost::shared_ptr<DataIOHandler> iohandler,
-    maidsafe::DataMap *dm) {
+    boost::shared_ptr<DataIOHandler> iohandler, maidsafe::DataMap *dm) {
   uint64_t file_size = 0;
   if (!iohandler->Size(&file_size))
     return false;
@@ -494,7 +488,7 @@ bool SelfEncryption::CalculateChunkSizes(
   // If the file is so large it will split into more chunks than max_chunks_,
   // resize chunks to yield no more than max_chunks_
   if (file_size/max_chunks_ > default_chunk_size_) {
-      this_avg_chunk_size = file_size/max_chunks_;
+    this_avg_chunk_size = file_size/max_chunks_;
     chunk_count_ = max_chunks_;
   } else if (file_size == 4) {
     // set chunk_size for file of size 4 bytes to avoid only 2 chunks being
@@ -550,8 +544,7 @@ int SelfEncryption::ChunkAddition(const char &hex_digit) {
 }
 
 bool SelfEncryption::GeneratePreEncHashes(
-    boost::shared_ptr<DataIOHandler> iohandler,
-    maidsafe::DataMap *dm) {
+    boost::shared_ptr<DataIOHandler> iohandler, maidsafe::DataMap *dm) {
   if (!iohandler->Open())
     return false;
   uint64_t pointer = 0;

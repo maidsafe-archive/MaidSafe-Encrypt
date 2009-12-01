@@ -35,6 +35,7 @@
 #include "maidsafe/client/selfencryption.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/dataiohandler.h"
+#include "protobuf/datamaps.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -753,6 +754,103 @@ TEST_F(SelfEncryptionTest, BEH_MAID_DecryptString) {
   ASSERT_EQ(str2, dec2);
   ASSERT_EQ(str3, dec3);
   ASSERT_EQ(str4, dec4);
+}
+
+TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptStringSerDA) {
+  DataAtlas da;
+  crypto::Crypto co;
+  crypto::RsaKeyPair keys;
+  std::vector<PacketType> types;
+  types.push_back(ANMID);
+  types.push_back(ANSMID);
+  types.push_back(ANTMID);
+  types.push_back(MAID);
+  da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, true));
+  for (unsigned int i = 0; i < types.size(); ++i) {
+    Key *k = da.add_keys();
+    keys.ClearKeys();
+    keys.GenerateKeys(4096);
+    k->set_type(types[i]);
+    k->set_private_key(keys.private_key());
+    k->set_public_key(keys.public_key());
+    k->set_public_key_signature(co.AsymSign(keys.public_key(), "",
+      keys.private_key(), crypto::STRING_STRING));
+    k->set_id(co.Hash(keys.public_key() + k->public_key_signature(), "",
+      crypto::STRING_STRING, true));
+  }
+  std::string ser_da("");
+  ASSERT_TRUE(da.SerializeToString(&ser_da));
+  DataMap dm1;
+
+  SelfEncryption se(client_chunkstore_);
+
+  dm1.set_file_hash(se.SHA512(ser_da));
+  ASSERT_EQ(0, se.Encrypt(ser_da, true, &dm1));
+
+  std::string dec_str("");
+  ASSERT_EQ(0, se.Decrypt(dm1, 0, &dec_str));
+  EXPECT_EQ(se.SHA512(ser_da), se.SHA512(dec_str));
+  EXPECT_EQ(ser_da.size(), dec_str.size());
+  EXPECT_EQ(ser_da, dec_str);
+  da.Clear();
+  EXPECT_TRUE(da.ParseFromString(ser_da));
+  da.Clear();
+  EXPECT_TRUE(da.ParseFromString(dec_str));
+//  fs::remove(fpath);
+}
+
+TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptFileSerDA) {
+  DataAtlas da;
+  crypto::Crypto co;
+  crypto::RsaKeyPair keys;
+  std::vector<PacketType> types;
+  types.push_back(ANMID);
+  types.push_back(ANSMID);
+  types.push_back(ANTMID);
+  types.push_back(MAID);
+  da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, true));
+  for (unsigned int i = 0; i < types.size(); ++i) {
+    Key *k = da.add_keys();
+    keys.ClearKeys();
+    keys.GenerateKeys(4096);
+    k->set_type(types[i]);
+    k->set_private_key(keys.private_key());
+    k->set_public_key(keys.public_key());
+    k->set_public_key_signature(co.AsymSign(keys.public_key(), "",
+      keys.private_key(), crypto::STRING_STRING));
+    k->set_id(co.Hash(keys.public_key() + k->public_key_signature(), "",
+      crypto::STRING_STRING, true));
+  }
+  std::string filename("ser_da");
+  std::fstream output(filename.c_str(),
+    std::ios::out | std::ios::trunc | std::ios::binary);
+  ASSERT_TRUE(da.SerializeToOstream(&output));
+  output.close();
+
+  fs::path filepath(filename, fs::native);
+  DataMap dm;
+
+  SelfEncryption se(client_chunkstore_);
+  dm.set_file_hash(se.SHA512(filepath));
+  ASSERT_EQ(0, se.Encrypt(filepath.string(), false, &dm));
+
+  fs::path decfilepath(filename + "dec", fs::native);
+  ASSERT_EQ(0, se.Decrypt(dm, decfilepath.string(), 0, false));
+
+  EXPECT_EQ(se.SHA512(filepath), se.SHA512(decfilepath));
+
+  std::ifstream input1(filepath.string().c_str(),
+    std::ios::in | std::ios::binary);
+  da.Clear();
+  EXPECT_TRUE(da.ParseFromIstream(&input1));
+  input1.close();
+  std::ifstream input2(decfilepath.string().c_str(),
+    std::ios::in | std::ios::binary);
+  da.Clear();
+  EXPECT_TRUE(da.ParseFromIstream(&input2));
+  input2.close();
+  fs::remove(filepath);
+  fs::remove(decfilepath);
 }
 
 }  // namespace maidsafe

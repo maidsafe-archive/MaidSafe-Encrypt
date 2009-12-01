@@ -345,7 +345,7 @@ int SEHandler::DecryptFile(const std::string &rel_entry) {
 }
 
 int SEHandler::DecryptString(const std::string &ser_dm,
-                             std::string *dec_string) {
+    std::string *dec_string) {
   DataMap dm;
   dec_string->clear();
   dm.ParseFromString(ser_dm);

@@ -338,7 +338,7 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptStringWithChunksPrevLoaded) {
   boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), client_chunkstore_));
   boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
 
-  std::string data(base::RandomString(1024)), ser_dm;
+  std::string data(base::RandomString(19891/*1024*/)), ser_dm;
 
   SelfEncryption se(client_chunkstore_);
   int result = seh->EncryptString(data, &ser_dm);

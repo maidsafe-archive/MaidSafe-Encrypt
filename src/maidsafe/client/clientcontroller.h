@@ -220,7 +220,7 @@ class ClientController {
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   StoreManagerInterface *sm_;
   SessionSingleton *ss_;
-  std::string ser_da_;
+  std::string ser_da_, ser_dm_;
   std::map<std::string, std::pair<std::string, std::string> >db_enc_queue_;
   SEHandler *seh_;
   static ClientController *single;

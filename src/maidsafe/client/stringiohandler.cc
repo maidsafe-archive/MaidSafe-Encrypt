@@ -69,7 +69,7 @@ bool StringIOHandler::Read(char *data, const unsigned int &size) {  // NOLINT
   if (readptr_ == input_.size())
     return true;
 
-  strncpy(data, input_.substr(readptr_, size).c_str(),
+  memcpy(data, input_.substr(readptr_, size).c_str(),
     input_.substr(readptr_, size).size());
 
   readptr_ += size;

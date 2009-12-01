@@ -47,9 +47,11 @@ class Authentication {
   explicit Authentication(StoreManagerInterface *storemanager);
   int GetUserInfo(const std::string &username, const std::string &pin);
   int GetUserData(const std::string &password, std::string &ser_da);
-  int CreateUserSysPackets(const std::string &username,
-                           const std::string &pin,
-                           const std::string &password);
+  int CreateUserSysPackets(const std::string &username, const std::string &pin,
+    const std::string &password, uint32_t *rid = NULL);
+  int CreateTmidPacket(const std::string &username, const std::string &pin,
+    const std::string &password, const uint32_t& rid,
+    const std::string &ser_dm);
   int SaveSession(std::string ser_da,
                   PacketParams priv_keys,
                   PacketParams pub_keys);

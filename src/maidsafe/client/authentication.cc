@@ -108,7 +108,7 @@ int Authentication::GetUserInfo(const std::string &username,
 }
 
 int Authentication::GetUserData(const std::string &password,
-                                std::string &ser_da) {
+    std::string &ser_da) {
   //  still have not recovered the tmid
   TmidPacket *tmidPacket =
     static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
@@ -116,19 +116,15 @@ int Authentication::GetUserData(const std::string &password,
       ss_->MidRid());
   ser_da = boost::any_cast<std::string>(rec_data["data"]);
 
-  DataAtlas da;
-  if (!da.ParseFromString(ser_da))
+  DataMap dm;
+  if (!dm.ParseFromString(ser_da))
     return kPasswordFailure;
   ss_->SetPassword(password);
   return kSuccess;
 }
 
 int Authentication::CreateUserSysPackets(const std::string &username,
-                                         const std::string &pin,
-                                         const std::string &password) {
-//  int fakerid = 0;
-//  if (GetMid(username, pin, &fakerid))
-//    return kUserExists;
+    const std::string &pin, const std::string &password, uint32_t *rid) {
 
   PacketParams check_unique_params;
   check_unique_params["username"] = username;
@@ -146,7 +142,6 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   PacketParams user_params;
   user_params["username"] = username;
   user_params["PIN"] = pin;
-  DataAtlas data_atlas;
   std::string public_key;
 
   user_params["privateKey"] =
@@ -183,7 +178,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   user_params["privateKey"] = privkey;
   PmidPacket *pmidPacket =
       static_cast<PmidPacket*>(PacketFactory::Factory(PMID));
-  // user_params["rid"] = boost::any_cast<uint32_t>(mid_result["rid"]);
+
   PacketParams pmid_result = pmidPacket->Create(&user_params);
 
   std::string ser_packet =
@@ -206,19 +201,30 @@ int Authentication::CreateUserSysPackets(const std::string &username,
 
   user_params["privateKey"] =
     createSignaturePackets(ANTMID, public_key);
+  *rid = boost::any_cast<uint32_t>(mid_result["rid"]);
+
+  delete check_unique_mid_packet;
+  delete midPacket;
+  delete smidPacket;
+  return kSuccess;
+}
+
+int Authentication::CreateTmidPacket(const std::string &username,
+    const std::string &pin, const std::string &password, const uint32_t& rid,
+    const std::string &ser_dm) {
+  PacketParams user_params;
+  user_params["username"] = username;
+  user_params["PIN"] = pin;
+  user_params["privateKey"] = ss_->PrivateKey(ANTMID);
   user_params["password"] = password;
+  user_params["rid"] = rid;
 
   TmidPacket *tmidPacket =
       static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
 
-  // STORING SERLIALISED DATA ATLAS
-  std::string ser_da;
-  ss_->SerialisedKeyRing(&ser_da);
-  user_params["data"] = ser_da;
+  // STORING SERLIALISED DATA MAP OF DATA ATLAS
+  user_params["data"] = ser_dm;
   PacketParams tmid_result = tmidPacket->Create(&user_params);
-#ifdef DEBUG
-  // printf("TMID %s\n", tmid_result);
-#endif
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
@@ -231,14 +237,10 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   ss_->SetPin(pin);
   ss_->SetPassword(password);
 
-  ss_->SetMidRid(boost::any_cast<uint32_t>(mid_result["rid"]));
-  ss_->SetSmidRid(boost::any_cast<uint32_t>(mid_result["rid"]));
+  ss_->SetMidRid(rid);
+  ss_->SetSmidRid(rid);
 
-  delete check_unique_mid_packet;
-  delete midPacket;
-  delete smidPacket;
   delete tmidPacket;
-
   return kSuccess;
 }
 

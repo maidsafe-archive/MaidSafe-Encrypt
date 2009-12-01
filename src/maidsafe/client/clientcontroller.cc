@@ -82,6 +82,7 @@ ClientController::ClientController() : auth_(),
                                        sm_(),
                                        ss_(),
                                        ser_da_(),
+                                       ser_dm_(""),
                                        db_enc_queue_(),
                                        seh_(),
                                        messages_(),
@@ -308,10 +309,25 @@ int ClientController::SerialiseDa() {
     ps_list.pop_front();
   }
   printf("ClientController::SerialiseDa() - Finished with Shares.\n");
-
+  ser_da_.clear();
+  ser_dm_.clear();
   data_atlas_.SerializeToString(&ser_da_);
+  printf("size of ser da %d\n", ser_da_.size());
+  seh_->EncryptString(ser_da_, &ser_dm_);
+  DataAtlas da;
+  if (da.ParseFromString(ser_da_))
+    printf("SerialiseDA data ser_ok\n");
+  else
+    printf("SerialiseDA ERROR serialising DA\n");
+  std::string str("");
+  seh_->DecryptString(ser_dm_, &str);
+  if (str != ser_da_)
+    printf("ERROR tttttttttttttttttttttttttt\n");
+  else
+    printf("OK ttttttttttttttttttttttttttttt\n");
 
   printf("ClientController::SerialiseDa() - Serialised.\n");
+
   return 0;
 }
 
@@ -328,7 +344,8 @@ bool ClientController::CreateUser(const std::string &username,
                                   const std::string &password,
                                   const VaultConfigParameters &) {
   ss_->SetConnectionStatus(0);
-  int result = auth_->CreateUserSysPackets(username, pin, password);
+  uint32_t rid;
+  int result = auth_->CreateUserSysPackets(username, pin, password, &rid);
 #ifdef DEBUG
   printf("ClientController::CreateUser --- "
          "Finished with CreateUserSysPackets: %d ---\n", result);
@@ -339,7 +356,20 @@ bool ClientController::CreateUser(const std::string &username,
     ss_->ResetSession();
     return false;
   }
-
+  seh_ = new SEHandler(sm_, client_chunkstore_);
+  std::string ser_da(""), ser_dm("");
+  ss_->SerialisedKeyRing(&ser_da);
+  if (seh_->EncryptString(ser_da, &ser_dm) != 0) {
+    printf("In ClientController::CreateUser Cannot SelfEncrypt DA\n");
+    ss_->ResetSession();
+    return false;
+  }
+  result = auth_->CreateTmidPacket(username, pin, password, rid, ser_dm);
+  if (result != kSuccess) {
+    printf("In ClientController::CreateUser Cannot create tmid packet\n");
+    ss_->ResetSession();
+    return false;
+  }
   // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
   //                             Parameters come in VaultConfigParameters.
 //  OwnVaultResult ovr = OwnLocalVault(vcp.port, vcp.space * 1024 * 1024,
@@ -350,7 +380,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   ss_->SetSessionName(false);
   std::string root_db_key;
-  seh_ = new SEHandler(sm_, client_chunkstore_);
+//  seh_ = new SEHandler(sm_, client_chunkstore_);
   printf("In ClientController::CreateUser 01\n");
   int res = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
   if (res != 0) {
@@ -504,7 +534,8 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
 
 bool ClientController::ValidateUser(const std::string &password) {
   ser_da_ = "";
-  int result = auth_->GetUserData(password, ser_da_);
+  ser_dm_ = "";
+  int result = auth_->GetUserData(password, ser_dm_);
 
   if (result != kSuccess) {
     // Password validation failed
@@ -514,12 +545,19 @@ bool ClientController::ValidateUser(const std::string &password) {
 #endif
     return false;
   }
+  seh_ = new SEHandler(sm_, client_chunkstore_);
+  if(seh_->DecryptString(ser_dm_, &ser_da_) != 0) {
+    ss_->ResetSession();
+#ifdef DEBUG
+    printf("Can not decrypt DA.\n");
+#endif
+    return false;
+  }
 
   ss_->SetConnectionStatus(0);
   ss_->SetSessionName(false);
   fsys_.Mount();
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  seh_ = new SEHandler(sm_, client_chunkstore_);
   if (ParseDa() != 0) {
     delete seh_;
     ss_->ResetSession();
@@ -607,7 +645,8 @@ bool ClientController::Logout() {
   }
 
   SerialiseDa();
-  int result = auth_->SaveSession(ser_da_, priv_keys, pub_keys);
+
+  int result = auth_->SaveSession(ser_dm_, priv_keys, pub_keys);
   clear_messages_thread_.join();
 
 //  int connection_status(0);
@@ -639,6 +678,7 @@ bool ClientController::Logout() {
 
     logging_out_ = false;
     ser_da_ = "";
+    ser_dm_ = "";
     return true;
   }
 
@@ -695,7 +735,7 @@ bool ClientController::ChangeUsername(std::string new_username) {
     }
   }
 
-  int result = auth_->ChangeUsername(ser_da_, priv_keys, pub_keys,
+  int result = auth_->ChangeUsername(ser_dm_, priv_keys, pub_keys,
                                      new_username);
 #ifdef DEBUG
   // printf("%i\n", result);
@@ -731,7 +771,7 @@ bool ClientController::ChangePin(std::string new_pin) {
     }
   }
 
-  int result = auth_->ChangePin(ser_da_, priv_keys, pub_keys, new_pin);
+  int result = auth_->ChangePin(ser_dm_, priv_keys, pub_keys, new_pin);
 #ifdef DEBUG
   // printf("%i\n", result);
 #endif
@@ -766,7 +806,7 @@ bool ClientController::ChangePassword(std::string new_password) {
     }
   }
 
-  int result = auth_->ChangePassword(ser_da_, priv_keys, pub_keys,
+  int result = auth_->ChangePassword(ser_dm_, priv_keys, pub_keys,
                                      new_password);
 #ifdef DEBUG
   // printf("%i\n", result);
