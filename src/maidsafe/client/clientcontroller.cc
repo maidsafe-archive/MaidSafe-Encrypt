@@ -312,19 +312,7 @@ int ClientController::SerialiseDa() {
   ser_da_.clear();
   ser_dm_.clear();
   data_atlas_.SerializeToString(&ser_da_);
-  printf("size of ser da %d\n", ser_da_.size());
   seh_->EncryptString(ser_da_, &ser_dm_);
-  DataAtlas da;
-  if (da.ParseFromString(ser_da_))
-    printf("SerialiseDA data ser_ok\n");
-  else
-    printf("SerialiseDA ERROR serialising DA\n");
-  std::string str("");
-  seh_->DecryptString(ser_dm_, &str);
-  if (str != ser_da_)
-    printf("ERROR tttttttttttttttttttttttttt\n");
-  else
-    printf("OK ttttttttttttttttttttttttttttt\n");
 
   printf("ClientController::SerialiseDa() - Serialised.\n");
 
@@ -380,7 +368,6 @@ bool ClientController::CreateUser(const std::string &username,
 
   ss_->SetSessionName(false);
   std::string root_db_key;
-//  seh_ = new SEHandler(sm_, client_chunkstore_);
   printf("In ClientController::CreateUser 01\n");
   int res = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
   if (res != 0) {
@@ -533,8 +520,8 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
 }
 
 bool ClientController::ValidateUser(const std::string &password) {
-  ser_da_ = "";
-  ser_dm_ = "";
+  ser_da_.clear();
+  ser_dm_.clear();
   int result = auth_->GetUserData(password, ser_dm_);
 
   if (result != kSuccess) {
@@ -546,7 +533,7 @@ bool ClientController::ValidateUser(const std::string &password) {
     return false;
   }
   seh_ = new SEHandler(sm_, client_chunkstore_);
-  if(seh_->DecryptString(ser_dm_, &ser_da_) != 0) {
+  if (seh_->DecryptString(ser_dm_, &ser_da_) != 0) {
     ss_->ResetSession();
 #ifdef DEBUG
     printf("Can not decrypt DA.\n");
@@ -677,8 +664,8 @@ bool ClientController::Logout() {
     }
 
     logging_out_ = false;
-    ser_da_ = "";
-    ser_dm_ = "";
+    ser_da_.clear();
+    ser_dm_.clear();
     return true;
   }
 
