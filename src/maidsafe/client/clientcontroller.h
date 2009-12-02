@@ -25,6 +25,7 @@
 #ifndef MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
 #define MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
 
+#include <gtest/gtest_prod.h>
 #include <maidsafe/utils.h>
 
 #include <list>
@@ -86,11 +87,12 @@ class ClientController {
   bool ValidateUser(const std::string &password);
 
   bool Logout();
+  int SaveSession();
   bool LeaveMaidsafeNetwork();
-  bool CreatePublicUsername(std::string public_username);
-  bool ChangeUsername(std::string new_username);
-  bool ChangePin(std::string new_pin);
-  bool ChangePassword(std::string new_password);
+  bool CreatePublicUsername(const std::string &public_username);
+  bool ChangeUsername(const std::string &new_username);
+  bool ChangePin(const std::string &new_pin);
+  bool ChangePassword(const std::string &new_password);
 //  bool AuthoriseUsers(std::set<std::string> users);
 //  bool DeauthoriseUsers(std::set<std::string> users);
   int ChangeConnectionStatus(int status);
@@ -184,6 +186,9 @@ class ClientController {
   static int fgetattr(const std::string &path);
 
  private:
+  // Friend tests
+  FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile);
+  FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession);
   // Functions
   ClientController();
   ~ClientController() { }

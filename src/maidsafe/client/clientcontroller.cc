@@ -66,7 +66,6 @@ void CC_CallbackResult::CallbackFunc(const std::string &res) {
 void ClientController::WaitForResult(const CC_CallbackResult &cb) {
   while (true) {
     {
-//      boost::mutex::scoped_lock gaurd(mutex_);
       if (cb.result != "")
         return;
     }
@@ -333,14 +332,12 @@ bool ClientController::CreateUser(const std::string &username,
                                   const VaultConfigParameters &) {
   ss_->SetConnectionStatus(0);
   uint32_t rid;
-  int result = auth_->CreateUserSysPackets(username, pin, password, &rid);
-#ifdef DEBUG
-  printf("ClientController::CreateUser --- "
-         "Finished with CreateUserSysPackets: %d ---\n", result);
-#endif
+  int result = auth_->CreateUserSysPackets(username, pin, &rid);
 
   if (result != kSuccess) {
-    printf("In ClientController::CreateUser 19\n");
+#ifdef DEBUG
+    printf("In CC::CreateUser - Failed to create user system packets\n");
+#endif
     ss_->ResetSession();
     return false;
   }
@@ -348,13 +345,17 @@ bool ClientController::CreateUser(const std::string &username,
   std::string ser_da(""), ser_dm("");
   ss_->SerialisedKeyRing(&ser_da);
   if (seh_->EncryptString(ser_da, &ser_dm) != 0) {
-    printf("In ClientController::CreateUser Cannot SelfEncrypt DA\n");
+#ifdef DEBUG
+    printf("In ClientController::CreateUser - Cannot SelfEncrypt DA\n");
+#endif
     ss_->ResetSession();
     return false;
   }
   result = auth_->CreateTmidPacket(username, pin, password, rid, ser_dm);
   if (result != kSuccess) {
-    printf("In ClientController::CreateUser Cannot create tmid packet\n");
+#ifdef DEBUG
+    printf("In ClientController::CreateUser - Cannot create tmid packet\n");
+#endif
     ss_->ResetSession();
     return false;
   }
@@ -368,13 +369,13 @@ bool ClientController::CreateUser(const std::string &username,
 
   ss_->SetSessionName(false);
   std::string root_db_key;
-  printf("In ClientController::CreateUser 01\n");
   int res = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
   if (res != 0) {
+#ifdef DEBUG
     printf("In ClientController::CreateUser - Bombing out on no root_db_key\n");
+#endif
     return false;
   }
-  printf("In ClientController::CreateUser 02\n");
   ss_->SetRootDbKey(root_db_key);
   fsys_.Mount();
   fsys_.FuseMountPoint();
@@ -382,7 +383,6 @@ bool ClientController::CreateUser(const std::string &username,
   DataAtlas da;
 
   res += dah->Init(true);
-  printf("In ClientController::CreateUser 03\n");
 
   // set up root subdirs
   for (int i = 0; i < kRootSubdirSize; ++i) {
@@ -400,18 +400,14 @@ bool ClientController::CreateUser(const std::string &username,
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
     if (kRootSubdir[i][1] == "") {
-      printf("In ClientController::CreateUser 04 - %i\n", i);
       seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
-      printf("In ClientController::CreateUser 05 - %i\n", i);
     } else {
       key = kRootSubdir[i][1];
     }
     res += dah->AddElement(base::TidyPath(kRootSubdir[i][0]),
                            ser_mdm, "", key, true);
-    printf("In ClientController::CreateUser 06 - %i\n", i);
     seh_->EncryptDb(base::TidyPath(kRootSubdir[i][0]),
                     PRIVATE, key, "", true, &dm);
-    printf("In ClientController::CreateUser 07 - %i\n", i);
   }
 
   // set up share subdirs
@@ -432,43 +428,38 @@ bool ClientController::CreateUser(const std::string &username,
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
     if (kSharesSubdir[i][1] == "") {  // ie no preassigned key so not public
-      printf("In ClientController::CreateUser 08 - %i\n", i);
       seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
-      printf("In ClientController::CreateUser 09 - %i\n", i);
       res += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
                              ser_mdm, "", key, true);
-      printf("In ClientController::CreateUser 10 - %i\n", i);
       seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
                       PRIVATE, key, "", true, &dm);
-      printf("In ClientController::CreateUser 11 - %i\n", i);
     } else {
       key = kSharesSubdir[i][1];
       res += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
                              ser_mdm, "", key, true);
-      printf("In ClientController::CreateUser 12 - %i\n", i);
       if (seh_->DecryptDb(base::TidyPath(kSharesSubdir[i][0]),
                           ANONYMOUS, "", key, "", true, true)) {
-        printf("In ClientController::CreateUser 13 - %i\n", i);
         // ie Public and Anon have never been saved before on the network
         std::string ser_dm;
         seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]), ANONYMOUS,
                         kSharesSubdir[i][1], "", true, &dm);
-        printf("In ClientController::CreateUser 14 - %i\n", i);
       }
     }
   }
 
-  printf("In ClientController::CreateUser 15\n");
   if (0 != res) {
-    printf("In ClientController::CreateUser 16\n");
+#ifdef DEBUG
+    printf("In ClientController::CreateUser error creating DBs\n");
+#endif
     delete seh_;
     return false;
   }
 
   res = SetVaultConfig(ss_->PublicKey(PMID), ss_->PrivateKey(PMID));
-  printf("In ClientController::CreateUser 17\n");
   if (0 != res) {
-    printf("In ClientController::CreateUser 18\n");
+#ifdef DEBUG
+    printf("In ClientController::CreateUser error stting vault config\n");
+#endif
     delete seh_;
     return false;
   }
@@ -528,7 +519,7 @@ bool ClientController::ValidateUser(const std::string &password) {
     // Password validation failed
     ss_->ResetSession();
 #ifdef DEBUG
-    printf("Invalid password.\n");
+    printf("ClientController::ValidateUser - Invalid password.\n");
 #endif
     return false;
   }
@@ -536,7 +527,7 @@ bool ClientController::ValidateUser(const std::string &password) {
   if (seh_->DecryptString(ser_dm_, &ser_da_) != 0) {
     ss_->ResetSession();
 #ifdef DEBUG
-    printf("Can not decrypt DA.\n");
+    printf("ClientController::ValidateUser - Cannot decrypt DA.\n");
 #endif
     return false;
   }
@@ -546,12 +537,18 @@ bool ClientController::ValidateUser(const std::string &password) {
   fsys_.Mount();
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   if (ParseDa() != 0) {
+#ifdef DEBUG
+    printf("ClientController::ValidateUser - Cannot parse DA.\n");
+#endif
     delete seh_;
     ss_->ResetSession();
     return false;
   }
 
   if (dah_->Init(false)) {
+#ifdef DEBUG
+    printf("ClientController::ValidateUser - Cannot initialise DAH.\n");
+#endif
     delete seh_;
     ss_->ResetSession();
     return false;
@@ -565,13 +562,13 @@ bool ClientController::ValidateUser(const std::string &password) {
     return true;
   }
 
-    // CHANGE CONNECTION STATUS
-//      int connection_status(1);
-//      int n = ChangeConnectionStatus(connection_status);
-//      if (n != 0) {
-//        // Alert for BP problems
-//      }
-//      ss_->SetConnectionStatus(connection_status);
+//  // CHANGE CONNECTION STATUS
+//  int connection_status(1);
+//  int n = ChangeConnectionStatus(connection_status);
+//  if (n != 0) {
+//    // Alert for BP problems
+//  }
+//  ss_->SetConnectionStatus(connection_status);
 
   clear_messages_thread_ = boost::thread(&ClientController::ClearStaleMessages,
                                          this);
@@ -587,13 +584,13 @@ void ClientController::CloseConnection(bool clean_up_transport) {
   if ((!result.ParseFromString(cb.result)) ||
       (result.result() == kNack)) {
 #ifdef DEBUG
-    printf("Error leaving network.\n");
+    printf("ClientController::CloseConnection - Error leaving network.\n");
 #endif
     return;
   }
 
 #ifdef DEBUG
-  printf("Successfully left kademlia.\n");
+  printf("ClientController::CloseConnection - Successfully left kademlia.\n");
 #endif
   if (clean_up_transport)
     sm_->CleanUpTransport();
@@ -607,6 +604,53 @@ void ClientController::StopRvPing() {
 
 bool ClientController::Logout() {
   logging_out_ = true;
+  int result = SaveSession();
+  clear_messages_thread_.join();
+
+//  int connection_status(0);
+//  int n = ChangeConnectionStatus(connection_status);
+//  if (n != 0) {
+//    // Alert for BP problems
+//  }
+//  ss_->SetConnectionStatus(connection_status);
+
+  if (result == kSuccess) {
+#ifdef DEBUG
+    printf("ClientController::Logout - OK and ran DB queue.\n");
+#endif
+    while (sm_->NotDoneWithUploading()) {
+      boost::this_thread::sleep(boost::posix_time::seconds(1));
+    }
+
+#ifdef DEBUG
+    printf("ClientController::Logout - After threads done.\n");
+#endif
+    fsys_.UnMount();
+    ss_->ResetSession();
+    delete seh_;
+    messages_.clear();
+    try {
+      if (fs::exists(client_store_)) {
+        fs::remove_all(client_store_);
+      }
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("ClientController::Logout - Couldn't delete client path\n");
+#endif
+    }
+
+    logging_out_ = false;
+    ser_da_.clear();
+    ser_dm_.clear();
+    return true;
+  }
+
+  logging_out_ = false;
+  return false;
+}
+
+int ClientController::SaveSession() {
   PacketParams priv_keys, pub_keys;
   std::list<KeyAtlasRow> keys;
   ss_->GetKeys(&keys);
@@ -631,52 +675,30 @@ bool ClientController::Logout() {
     }
   }
 
-  SerialiseDa();
-
-  int result = auth_->SaveSession(ser_dm_, priv_keys, pub_keys);
-  clear_messages_thread_.join();
-
-//  int connection_status(0);
-//  int n = ChangeConnectionStatus(connection_status);
-//  if (n != 0) {
-//    // Alert for BP problems
-//  }
-//  ss_->SetConnectionStatus(connection_status);
-
-  if (result == kSuccess && !RunDbEncQueue()) {
-    printf("ClientController::Logout - OK and ran DB queue.\n");
-    while (sm_->NotDoneWithUploading()) {
-      boost::this_thread::sleep(boost::posix_time::seconds(1));
-    }
-
-    printf("ClientController::Logout - After threads done.\n");
-    fsys_.UnMount();
-    ss_->ResetSession();
-    delete seh_;
-    messages_.clear();
-    try {
-      if (fs::exists(client_store_)) {
-        fs::remove_all(client_store_);
-      }
-    }
-    catch(const std::exception &e) {
-      printf("Couldn't delete client path\n");
-    }
-
-    logging_out_ = false;
-    ser_da_.clear();
-    ser_dm_.clear();
-    return true;
+  int n = SerialiseDa();
+  if (n != 0) {
+#ifdef DEBUG
+    printf("ClientController::SaveSession - Failed to serialise DA.\n");
+#endif
+    return n;
   }
-
-  logging_out_ = false;
-  return false;
+  n = auth_->SaveSession(ser_dm_, priv_keys, pub_keys);
+  if (n != 0) {
+#ifdef DEBUG
+    printf("ClientController::SaveSession - Failed to Save Session.\n");
+#endif
+    return n;
+  }
+  while (sm_->NotDoneWithUploading()) {
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
+  return 0;
 }
 
 bool ClientController::LeaveMaidsafeNetwork() {
   std::list<KeyAtlasRow> keys;
   int result;
-  std::string dir_ = fsys_.MaidsafeDir();
+  std::string dir = fsys_.MaidsafeDir();
   {
     ss_->GetKeys(&keys);
     result = auth_->RemoveMe(keys);
@@ -684,11 +706,11 @@ bool ClientController::LeaveMaidsafeNetwork() {
   if (result == kSuccess) {
     delete seh_;
     try {
-      fs::remove_all(dir_);
+      fs::remove_all(dir);
     }
-    catch(const std::exception &exception_) {
+    catch(const std::exception &e) {
 #ifdef DEBUG
-      printf("Error: %s\n", exception_.what());
+      printf("ClientController::LeaveMaidsafeNetwork - %s\n", e.what());
 #endif
     }
     return true;
@@ -696,7 +718,7 @@ bool ClientController::LeaveMaidsafeNetwork() {
   return false;
 }
 
-bool ClientController::ChangeUsername(std::string new_username) {
+bool ClientController::ChangeUsername(const std::string &new_username) {
   PacketParams priv_keys, pub_keys;
   SerialiseDa();
   std::list<KeyAtlasRow> keys;
@@ -724,15 +746,12 @@ bool ClientController::ChangeUsername(std::string new_username) {
 
   int result = auth_->ChangeUsername(ser_dm_, priv_keys, pub_keys,
                                      new_username);
-#ifdef DEBUG
-  // printf("%i\n", result);
-#endif
   if (result == kSuccess)
     return true;
   return false;
 }
 
-bool ClientController::ChangePin(std::string new_pin) {
+bool ClientController::ChangePin(const std::string &new_pin) {
   PacketParams priv_keys, pub_keys;
   SerialiseDa();
   std::list<KeyAtlasRow> keys;
@@ -759,15 +778,12 @@ bool ClientController::ChangePin(std::string new_pin) {
   }
 
   int result = auth_->ChangePin(ser_dm_, priv_keys, pub_keys, new_pin);
-#ifdef DEBUG
-  // printf("%i\n", result);
-#endif
   if (result == kSuccess)
     return true;
   return false;
 }
 
-bool ClientController::ChangePassword(std::string new_password) {
+bool ClientController::ChangePassword(const std::string &new_password) {
   PacketParams priv_keys, pub_keys;
   SerialiseDa();
   std::list<KeyAtlasRow> keys;
@@ -795,9 +811,6 @@ bool ClientController::ChangePassword(std::string new_password) {
 
   int result = auth_->ChangePassword(ser_dm_, priv_keys, pub_keys,
                                      new_password);
-#ifdef DEBUG
-  // printf("%i\n", result);
-#endif
   if (result == kSuccess)
     return true;
   return false;
@@ -807,10 +820,11 @@ bool ClientController::ChangePassword(std::string new_password) {
 // Buffer Packet Operations //
 //////////////////////////////
 
-bool ClientController::CreatePublicUsername(std::string public_username) {
+bool ClientController::CreatePublicUsername(
+    const std::string &public_username) {
   if (ss_->PublicUsername() != "") {
 #ifdef DEBUG
-    printf("Already have public username.\n");
+    printf("CC::CreatePublicUsername - Already have public username.\n");
 #endif
     return false;
   }
@@ -819,15 +833,14 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
   int result = auth_->CreatePublicName(public_username, &keys_result);
   if (result != kSuccess) {
 #ifdef DEBUG
-    printf("Error in CreatePublicName.\n");
+    printf("CC::CreatePublicUsername - Error in CreatePublicName.\n");
 #endif
     return false;
   }
 
   if (sm_->CreateBP() != kSuccess) {
 #ifdef DEBUG
-    printf("ClientController::CreatePublicUsername - "
-           "Failed to create the BP.\n");
+    printf("CC::CreatePublicUsername - Failed to create the BP.\n");
 #endif
     return false;
   }
@@ -836,19 +849,6 @@ bool ClientController::CreatePublicUsername(std::string public_username) {
 }
 
 /*
-bool ClientController::AuthoriseUsers(std::set<std::string> users) {
-  if (ss_->PublicUsername() == "" || users.empty())
-    return false;
-//  return cbph_->AddUsers(users, MPID) == 0;
-}
-
-bool ClientController::DeauthoriseUsers(std::set<std::string> users) {
-  if (ss_->PublicUsername() == "" || users.empty())
-    return false;
-//  return cbph_->DeleteUsers(users, MPID) == 0;
-}
-
-
 int ClientController::ChangeConnectionStatus(int status) {
   if (ss_->ConnectionStatus() == status)
     return -3;
@@ -2136,8 +2136,8 @@ int ClientController::SaveDb(const std::string &db_path,
     db_enc_queue_.insert(std::pair<std::string,
                                    std::pair<std::string, std::string> >
                                        (parent_path_, key_and_msid_));
-    if (db_enc_queue_.size() > kSaveUpdatesTrigger)
-      RunDbEncQueue();
+//    if (db_enc_queue_.size() > kSaveUpdatesTrigger)
+    RunDbEncQueue();
     return 0;
   } else {
     DataMap dm;

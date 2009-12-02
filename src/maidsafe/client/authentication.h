@@ -48,7 +48,7 @@ class Authentication {
   int GetUserInfo(const std::string &username, const std::string &pin);
   int GetUserData(const std::string &password, std::string &ser_da);
   int CreateUserSysPackets(const std::string &username, const std::string &pin,
-    const std::string &password, uint32_t *rid);
+                           uint32_t *rid);
   int CreateTmidPacket(const std::string &username, const std::string &pin,
     const std::string &password, const uint32_t& rid,
     const std::string &ser_dm);

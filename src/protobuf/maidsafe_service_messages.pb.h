@@ -1225,20 +1225,30 @@ class IOUDoneRequest : public ::google::protobuf::Message {
   inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // required bytes signed_public_key = 3;
+  // required bytes own_pmid = 3;
+  inline bool has_own_pmid() const;
+  inline void clear_own_pmid();
+  static const int kOwnPmidFieldNumber = 3;
+  inline const ::std::string& own_pmid() const;
+  inline void set_own_pmid(const ::std::string& value);
+  inline void set_own_pmid(const char* value);
+  inline void set_own_pmid(const void* value, size_t size);
+  inline ::std::string* mutable_own_pmid();
+  
+  // required bytes signed_public_key = 4;
   inline bool has_signed_public_key() const;
   inline void clear_signed_public_key();
-  static const int kSignedPublicKeyFieldNumber = 3;
+  static const int kSignedPublicKeyFieldNumber = 4;
   inline const ::std::string& signed_public_key() const;
   inline void set_signed_public_key(const ::std::string& value);
   inline void set_signed_public_key(const char* value);
   inline void set_signed_public_key(const void* value, size_t size);
   inline ::std::string* mutable_signed_public_key();
   
-  // required bytes signed_request = 4;
+  // required bytes signed_request = 5;
   inline bool has_signed_request() const;
   inline void clear_signed_request();
-  static const int kSignedRequestFieldNumber = 4;
+  static const int kSignedRequestFieldNumber = 5;
   inline const ::std::string& signed_request() const;
   inline void set_signed_request(const ::std::string& value);
   inline void set_signed_request(const char* value);
@@ -1253,6 +1263,8 @@ class IOUDoneRequest : public ::google::protobuf::Message {
   static const ::std::string _default_chunkname_;
   ::std::string* public_key_;
   static const ::std::string _default_public_key_;
+  ::std::string* own_pmid_;
+  static const ::std::string _default_own_pmid_;
   ::std::string* signed_public_key_;
   static const ::std::string _default_signed_public_key_;
   ::std::string* signed_request_;
@@ -1260,7 +1272,7 @@ class IOUDoneRequest : public ::google::protobuf::Message {
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -2183,40 +2195,50 @@ class DeleteRequest : public ::google::protobuf::Message {
   inline void set_chunkname(const void* value, size_t size);
   inline ::std::string* mutable_chunkname();
   
-  // required bytes public_key = 2;
+  // required bytes pmid_id = 2;
+  inline bool has_pmid_id() const;
+  inline void clear_pmid_id();
+  static const int kPmidIdFieldNumber = 2;
+  inline const ::std::string& pmid_id() const;
+  inline void set_pmid_id(const ::std::string& value);
+  inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
+  inline ::std::string* mutable_pmid_id();
+  
+  // required bytes public_key = 3;
   inline bool has_public_key() const;
   inline void clear_public_key();
-  static const int kPublicKeyFieldNumber = 2;
+  static const int kPublicKeyFieldNumber = 3;
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
   inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // required bytes signed_public_key = 3;
+  // required bytes signed_public_key = 4;
   inline bool has_signed_public_key() const;
   inline void clear_signed_public_key();
-  static const int kSignedPublicKeyFieldNumber = 3;
+  static const int kSignedPublicKeyFieldNumber = 4;
   inline const ::std::string& signed_public_key() const;
   inline void set_signed_public_key(const ::std::string& value);
   inline void set_signed_public_key(const char* value);
   inline void set_signed_public_key(const void* value, size_t size);
   inline ::std::string* mutable_signed_public_key();
   
-  // required bytes signed_request = 4;
+  // required bytes signed_request = 5;
   inline bool has_signed_request() const;
   inline void clear_signed_request();
-  static const int kSignedRequestFieldNumber = 4;
+  static const int kSignedRequestFieldNumber = 5;
   inline const ::std::string& signed_request() const;
   inline void set_signed_request(const ::std::string& value);
   inline void set_signed_request(const char* value);
   inline void set_signed_request(const void* value, size_t size);
   inline ::std::string* mutable_signed_request();
   
-  // required int32 data_type = 5;
+  // required int32 data_type = 6;
   inline bool has_data_type() const;
   inline void clear_data_type();
-  static const int kDataTypeFieldNumber = 5;
+  static const int kDataTypeFieldNumber = 6;
   inline ::google::protobuf::int32 data_type() const;
   inline void set_data_type(::google::protobuf::int32 value);
   
@@ -2226,6 +2248,8 @@ class DeleteRequest : public ::google::protobuf::Message {
   
   ::std::string* chunkname_;
   static const ::std::string _default_chunkname_;
+  ::std::string* pmid_id_;
+  static const ::std::string _default_pmid_id_;
   ::std::string* public_key_;
   static const ::std::string _default_public_key_;
   ::std::string* signed_public_key_;
@@ -2236,7 +2260,7 @@ class DeleteRequest : public ::google::protobuf::Message {
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -3282,40 +3306,50 @@ class UpdateRequest : public ::google::protobuf::Message {
   inline void set_data(const void* value, size_t size);
   inline ::std::string* mutable_data();
   
-  // required bytes public_key = 3;
+  // required bytes pmid_id = 3;
+  inline bool has_pmid_id() const;
+  inline void clear_pmid_id();
+  static const int kPmidIdFieldNumber = 3;
+  inline const ::std::string& pmid_id() const;
+  inline void set_pmid_id(const ::std::string& value);
+  inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
+  inline ::std::string* mutable_pmid_id();
+  
+  // required bytes public_key = 4;
   inline bool has_public_key() const;
   inline void clear_public_key();
-  static const int kPublicKeyFieldNumber = 3;
+  static const int kPublicKeyFieldNumber = 4;
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
   inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // required bytes signed_public_key = 4;
+  // required bytes signed_public_key = 5;
   inline bool has_signed_public_key() const;
   inline void clear_signed_public_key();
-  static const int kSignedPublicKeyFieldNumber = 4;
+  static const int kSignedPublicKeyFieldNumber = 5;
   inline const ::std::string& signed_public_key() const;
   inline void set_signed_public_key(const ::std::string& value);
   inline void set_signed_public_key(const char* value);
   inline void set_signed_public_key(const void* value, size_t size);
   inline ::std::string* mutable_signed_public_key();
   
-  // required bytes signed_request = 5;
+  // required bytes signed_request = 6;
   inline bool has_signed_request() const;
   inline void clear_signed_request();
-  static const int kSignedRequestFieldNumber = 5;
+  static const int kSignedRequestFieldNumber = 6;
   inline const ::std::string& signed_request() const;
   inline void set_signed_request(const ::std::string& value);
   inline void set_signed_request(const char* value);
   inline void set_signed_request(const void* value, size_t size);
   inline ::std::string* mutable_signed_request();
   
-  // required int32 data_type = 6;
+  // required int32 data_type = 7;
   inline bool has_data_type() const;
   inline void clear_data_type();
-  static const int kDataTypeFieldNumber = 6;
+  static const int kDataTypeFieldNumber = 7;
   inline ::google::protobuf::int32 data_type() const;
   inline void set_data_type(::google::protobuf::int32 value);
   
@@ -3327,6 +3361,8 @@ class UpdateRequest : public ::google::protobuf::Message {
   static const ::std::string _default_chunkname_;
   ::std::string* data_;
   static const ::std::string _default_data_;
+  ::std::string* pmid_id_;
+  static const ::std::string _default_pmid_id_;
   ::std::string* public_key_;
   static const ::std::string _default_public_key_;
   ::std::string* signed_public_key_;
@@ -3337,7 +3373,7 @@ class UpdateRequest : public ::google::protobuf::Message {
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -6992,84 +7028,126 @@ inline ::std::string* IOUDoneRequest::mutable_public_key() {
   return public_key_;
 }
 
-// required bytes signed_public_key = 3;
-inline bool IOUDoneRequest::has_signed_public_key() const {
+// required bytes own_pmid = 3;
+inline bool IOUDoneRequest::has_own_pmid() const {
   return _has_bit(2);
+}
+inline void IOUDoneRequest::clear_own_pmid() {
+  if (own_pmid_ != &_default_own_pmid_) {
+    own_pmid_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& IOUDoneRequest::own_pmid() const {
+  return *own_pmid_;
+}
+inline void IOUDoneRequest::set_own_pmid(const ::std::string& value) {
+  _set_bit(2);
+  if (own_pmid_ == &_default_own_pmid_) {
+    own_pmid_ = new ::std::string;
+  }
+  own_pmid_->assign(value);
+}
+inline void IOUDoneRequest::set_own_pmid(const char* value) {
+  _set_bit(2);
+  if (own_pmid_ == &_default_own_pmid_) {
+    own_pmid_ = new ::std::string;
+  }
+  own_pmid_->assign(value);
+}
+inline void IOUDoneRequest::set_own_pmid(const void* value, size_t size) {
+  _set_bit(2);
+  if (own_pmid_ == &_default_own_pmid_) {
+    own_pmid_ = new ::std::string;
+  }
+  own_pmid_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* IOUDoneRequest::mutable_own_pmid() {
+  _set_bit(2);
+  if (own_pmid_ == &_default_own_pmid_) {
+    own_pmid_ = new ::std::string;
+  }
+  return own_pmid_;
+}
+
+// required bytes signed_public_key = 4;
+inline bool IOUDoneRequest::has_signed_public_key() const {
+  return _has_bit(3);
 }
 inline void IOUDoneRequest::clear_signed_public_key() {
   if (signed_public_key_ != &_default_signed_public_key_) {
     signed_public_key_->clear();
   }
-  _clear_bit(2);
+  _clear_bit(3);
 }
 inline const ::std::string& IOUDoneRequest::signed_public_key() const {
   return *signed_public_key_;
 }
 inline void IOUDoneRequest::set_signed_public_key(const ::std::string& value) {
-  _set_bit(2);
+  _set_bit(3);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(value);
 }
 inline void IOUDoneRequest::set_signed_public_key(const char* value) {
-  _set_bit(2);
+  _set_bit(3);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(value);
 }
 inline void IOUDoneRequest::set_signed_public_key(const void* value, size_t size) {
-  _set_bit(2);
+  _set_bit(3);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* IOUDoneRequest::mutable_signed_public_key() {
-  _set_bit(2);
+  _set_bit(3);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   return signed_public_key_;
 }
 
-// required bytes signed_request = 4;
+// required bytes signed_request = 5;
 inline bool IOUDoneRequest::has_signed_request() const {
-  return _has_bit(3);
+  return _has_bit(4);
 }
 inline void IOUDoneRequest::clear_signed_request() {
   if (signed_request_ != &_default_signed_request_) {
     signed_request_->clear();
   }
-  _clear_bit(3);
+  _clear_bit(4);
 }
 inline const ::std::string& IOUDoneRequest::signed_request() const {
   return *signed_request_;
 }
 inline void IOUDoneRequest::set_signed_request(const ::std::string& value) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
 }
 inline void IOUDoneRequest::set_signed_request(const char* value) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
 }
 inline void IOUDoneRequest::set_signed_request(const void* value, size_t size) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* IOUDoneRequest::mutable_signed_request() {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
@@ -8333,145 +8411,187 @@ inline ::std::string* DeleteRequest::mutable_chunkname() {
   return chunkname_;
 }
 
-// required bytes public_key = 2;
-inline bool DeleteRequest::has_public_key() const {
+// required bytes pmid_id = 2;
+inline bool DeleteRequest::has_pmid_id() const {
   return _has_bit(1);
+}
+inline void DeleteRequest::clear_pmid_id() {
+  if (pmid_id_ != &_default_pmid_id_) {
+    pmid_id_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& DeleteRequest::pmid_id() const {
+  return *pmid_id_;
+}
+inline void DeleteRequest::set_pmid_id(const ::std::string& value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void DeleteRequest::set_pmid_id(const char* value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void DeleteRequest::set_pmid_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* DeleteRequest::mutable_pmid_id() {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  return pmid_id_;
+}
+
+// required bytes public_key = 3;
+inline bool DeleteRequest::has_public_key() const {
+  return _has_bit(2);
 }
 inline void DeleteRequest::clear_public_key() {
   if (public_key_ != &_default_public_key_) {
     public_key_->clear();
   }
-  _clear_bit(1);
+  _clear_bit(2);
 }
 inline const ::std::string& DeleteRequest::public_key() const {
   return *public_key_;
 }
 inline void DeleteRequest::set_public_key(const ::std::string& value) {
-  _set_bit(1);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void DeleteRequest::set_public_key(const char* value) {
-  _set_bit(1);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void DeleteRequest::set_public_key(const void* value, size_t size) {
-  _set_bit(1);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* DeleteRequest::mutable_public_key() {
-  _set_bit(1);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   return public_key_;
 }
 
-// required bytes signed_public_key = 3;
+// required bytes signed_public_key = 4;
 inline bool DeleteRequest::has_signed_public_key() const {
-  return _has_bit(2);
+  return _has_bit(3);
 }
 inline void DeleteRequest::clear_signed_public_key() {
   if (signed_public_key_ != &_default_signed_public_key_) {
     signed_public_key_->clear();
   }
-  _clear_bit(2);
+  _clear_bit(3);
 }
 inline const ::std::string& DeleteRequest::signed_public_key() const {
   return *signed_public_key_;
 }
 inline void DeleteRequest::set_signed_public_key(const ::std::string& value) {
-  _set_bit(2);
+  _set_bit(3);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(value);
 }
 inline void DeleteRequest::set_signed_public_key(const char* value) {
-  _set_bit(2);
+  _set_bit(3);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(value);
 }
 inline void DeleteRequest::set_signed_public_key(const void* value, size_t size) {
-  _set_bit(2);
+  _set_bit(3);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* DeleteRequest::mutable_signed_public_key() {
-  _set_bit(2);
+  _set_bit(3);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   return signed_public_key_;
 }
 
-// required bytes signed_request = 4;
+// required bytes signed_request = 5;
 inline bool DeleteRequest::has_signed_request() const {
-  return _has_bit(3);
+  return _has_bit(4);
 }
 inline void DeleteRequest::clear_signed_request() {
   if (signed_request_ != &_default_signed_request_) {
     signed_request_->clear();
   }
-  _clear_bit(3);
+  _clear_bit(4);
 }
 inline const ::std::string& DeleteRequest::signed_request() const {
   return *signed_request_;
 }
 inline void DeleteRequest::set_signed_request(const ::std::string& value) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
 }
 inline void DeleteRequest::set_signed_request(const char* value) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
 }
 inline void DeleteRequest::set_signed_request(const void* value, size_t size) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* DeleteRequest::mutable_signed_request() {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   return signed_request_;
 }
 
-// required int32 data_type = 5;
+// required int32 data_type = 6;
 inline bool DeleteRequest::has_data_type() const {
-  return _has_bit(4);
+  return _has_bit(5);
 }
 inline void DeleteRequest::clear_data_type() {
   data_type_ = 0;
-  _clear_bit(4);
+  _clear_bit(5);
 }
 inline ::google::protobuf::int32 DeleteRequest::data_type() const {
   return data_type_;
 }
 inline void DeleteRequest::set_data_type(::google::protobuf::int32 value) {
-  _set_bit(4);
+  _set_bit(5);
   data_type_ = value;
 }
 
@@ -9376,145 +9496,187 @@ inline ::std::string* UpdateRequest::mutable_data() {
   return data_;
 }
 
-// required bytes public_key = 3;
-inline bool UpdateRequest::has_public_key() const {
+// required bytes pmid_id = 3;
+inline bool UpdateRequest::has_pmid_id() const {
   return _has_bit(2);
+}
+inline void UpdateRequest::clear_pmid_id() {
+  if (pmid_id_ != &_default_pmid_id_) {
+    pmid_id_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& UpdateRequest::pmid_id() const {
+  return *pmid_id_;
+}
+inline void UpdateRequest::set_pmid_id(const ::std::string& value) {
+  _set_bit(2);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void UpdateRequest::set_pmid_id(const char* value) {
+  _set_bit(2);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void UpdateRequest::set_pmid_id(const void* value, size_t size) {
+  _set_bit(2);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* UpdateRequest::mutable_pmid_id() {
+  _set_bit(2);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  return pmid_id_;
+}
+
+// required bytes public_key = 4;
+inline bool UpdateRequest::has_public_key() const {
+  return _has_bit(3);
 }
 inline void UpdateRequest::clear_public_key() {
   if (public_key_ != &_default_public_key_) {
     public_key_->clear();
   }
-  _clear_bit(2);
+  _clear_bit(3);
 }
 inline const ::std::string& UpdateRequest::public_key() const {
   return *public_key_;
 }
 inline void UpdateRequest::set_public_key(const ::std::string& value) {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void UpdateRequest::set_public_key(const char* value) {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void UpdateRequest::set_public_key(const void* value, size_t size) {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* UpdateRequest::mutable_public_key() {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   return public_key_;
 }
 
-// required bytes signed_public_key = 4;
+// required bytes signed_public_key = 5;
 inline bool UpdateRequest::has_signed_public_key() const {
-  return _has_bit(3);
+  return _has_bit(4);
 }
 inline void UpdateRequest::clear_signed_public_key() {
   if (signed_public_key_ != &_default_signed_public_key_) {
     signed_public_key_->clear();
   }
-  _clear_bit(3);
+  _clear_bit(4);
 }
 inline const ::std::string& UpdateRequest::signed_public_key() const {
   return *signed_public_key_;
 }
 inline void UpdateRequest::set_signed_public_key(const ::std::string& value) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(value);
 }
 inline void UpdateRequest::set_signed_public_key(const char* value) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(value);
 }
 inline void UpdateRequest::set_signed_public_key(const void* value, size_t size) {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* UpdateRequest::mutable_signed_public_key() {
-  _set_bit(3);
+  _set_bit(4);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   return signed_public_key_;
 }
 
-// required bytes signed_request = 5;
+// required bytes signed_request = 6;
 inline bool UpdateRequest::has_signed_request() const {
-  return _has_bit(4);
+  return _has_bit(5);
 }
 inline void UpdateRequest::clear_signed_request() {
   if (signed_request_ != &_default_signed_request_) {
     signed_request_->clear();
   }
-  _clear_bit(4);
+  _clear_bit(5);
 }
 inline const ::std::string& UpdateRequest::signed_request() const {
   return *signed_request_;
 }
 inline void UpdateRequest::set_signed_request(const ::std::string& value) {
-  _set_bit(4);
+  _set_bit(5);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
 }
 inline void UpdateRequest::set_signed_request(const char* value) {
-  _set_bit(4);
+  _set_bit(5);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
 }
 inline void UpdateRequest::set_signed_request(const void* value, size_t size) {
-  _set_bit(4);
+  _set_bit(5);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* UpdateRequest::mutable_signed_request() {
-  _set_bit(4);
+  _set_bit(5);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   return signed_request_;
 }
 
-// required int32 data_type = 6;
+// required int32 data_type = 7;
 inline bool UpdateRequest::has_data_type() const {
-  return _has_bit(5);
+  return _has_bit(6);
 }
 inline void UpdateRequest::clear_data_type() {
   data_type_ = 0;
-  _clear_bit(5);
+  _clear_bit(6);
 }
 inline ::google::protobuf::int32 UpdateRequest::data_type() const {
   return data_type_;
 }
 inline void UpdateRequest::set_data_type(::google::protobuf::int32 value) {
-  _set_bit(5);
+  _set_bit(6);
   data_type_ = value;
 }
 

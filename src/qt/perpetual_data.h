@@ -77,6 +77,9 @@ class PerpetualData : public QMainWindow {
     void onMountCompleted(bool success);
     void onUnmountCompleted(bool success);
 
+    // Save session completed
+    void onSaveSessionCompleted(int result);
+
     //
     void onFailureAcknowledged();
 
@@ -88,6 +91,7 @@ class PerpetualData : public QMainWindow {
     void onMyFiles();
     void onPrivateShares();
     void onGoOffline(bool);
+    void onSaveSession();
 
     void onMessageReceived(ClientController::MessageType,
                            const QDateTime& time,
@@ -111,7 +115,8 @@ class PerpetualData : public QMainWindow {
     ABOUT,
     MY_FILES,
     PRIVATE_SHARES,
-    GO_OFFLINE
+    GO_OFFLINE,
+    SAVE_SESSION
   };
   typedef QMap<Action, QAction*> ActionMap;
   ActionMap actions_;

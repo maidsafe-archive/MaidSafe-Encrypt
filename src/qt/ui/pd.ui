@@ -47,6 +47,7 @@
     <addaction name="actionMy_Files"/>
     <addaction name="actionPrivate_Shares"/>
     <addaction name="actionOffline"/>
+    <addaction name="actionSave_Session"/>
    </widget>
    <widget class="QMenu" name="menuApplications">
     <property name="title">
@@ -134,6 +135,11 @@
    </property>
    <property name="text">
     <string>Go Offline</string>
+   </property>
+  </action>
+  <action name="actionSave_Session">
+   <property name="text">
+    <string>Save Session</string>
    </property>
   </action>
  </widget>

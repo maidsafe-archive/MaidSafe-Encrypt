@@ -115,7 +115,7 @@ TEST_F(TestStringIOHandler, BEH_MAID_WriteToString) {
 
 class TestFileIOHandler : public testing::Test {
  public:
-  TestFileIOHandler() : handler_(),
+  TestFileIOHandler() : handler_(), in_file(), out_file(),
     data_(base::RandomString(255*1024)), in("in_file"), out("out_file") {
     in += boost::lexical_cast<std::string>(
       base::random_32bit_integer());

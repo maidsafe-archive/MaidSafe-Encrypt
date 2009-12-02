@@ -32,18 +32,15 @@
 #include "qt/client/create_user_thread.h"
 #include "qt/client/join_kademlia_thread.h"
 #include "qt/client/mount_thread.h"
+#include "qt/client/save_session_thread.h"
 #include "qt/client/user_space_filesystem.h"
 
 // generated
 #include "ui_about.h"
 
 PerpetualData::PerpetualData(QWidget* parent)
-    : QMainWindow(parent)
-    , login_(NULL)
-    , create_(NULL)
-    , message_status_(NULL)
-    , state_(LOGIN)
-    , quitting_(false) {
+    : QMainWindow(parent), login_(NULL), create_(NULL), message_status_(NULL),
+      state_(LOGIN), quitting_(false) {
   setAttribute(Qt::WA_DeleteOnClose, false);
   setWindowIcon(QPixmap(":/icons/16/globe"));
 
@@ -115,7 +112,6 @@ PerpetualData::~PerpetualData() {
   onLogout();
 }
 
-
 void PerpetualData::createActions() {
   // most of the actions have already been created for the menubar
   actions_[ QUIT ] = ui_.actionQuit;
@@ -125,6 +121,7 @@ void PerpetualData::createActions() {
   actions_[ MY_FILES ] = ui_.actionMy_Files;
   actions_[ PRIVATE_SHARES ] = ui_.actionPrivate_Shares;
   actions_[ GO_OFFLINE ] = ui_.actionOffline;
+  actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
   actions_[ QUIT ]->setShortcut(Qt::ALT + Qt::Key_F4);
   actions_[ FULLSCREEN ]->setShortcut(Qt::Key_F11);
@@ -143,6 +140,8 @@ void PerpetualData::createActions() {
           this,                       SLOT(onPrivateShares()));
   connect(actions_[ GO_OFFLINE ], SIGNAL(toggled(bool)),
           this,                   SLOT(onGoOffline(bool)));
+  connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
+          this,                     SLOT(onSaveSession()));
 }
 
 void PerpetualData::createMenus() {
@@ -371,6 +370,14 @@ void PerpetualData::onUnmountCompleted(bool success) {
   }
 }
 
+void PerpetualData::onSaveSessionCompleted(int result) {
+  QString saveSessionMsg("Died saving the session.");
+  if (result == 0)
+    saveSessionMsg = tr("Save session successful!");
+  qDebug() << "PerpetualData::onSaveSessionCompleted - Result: " << result;
+  QMessageBox::warning(this, tr("Notification!"), saveSessionMsg);
+}
+
 void PerpetualData::onFailureAcknowledged() {
   setState(LOGIN);
 }
@@ -436,6 +443,14 @@ void PerpetualData::onGoOffline(bool b) {
   }
 }
 
+void PerpetualData::onSaveSession() {
+  SaveSessionThread *sst = new SaveSessionThread();
+  connect(sst,  SIGNAL(completed(int)),
+          this, SLOT(onSaveSessionCompleted(int)));
+
+  sst->start();
+}
+
 void PerpetualData::onToggleFullScreen(bool b) {
   if (b) {
     showFullScreen();
@@ -476,7 +491,7 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
 }
 
 void PerpetualData::onShareReceived(const QString& from,
-                                     const QString& share_name) {
+                                    const QString& share_name) {
   QString title = tr("Share received");
   QString message = tr("'%1' has shared '%2' with you")
                     .arg(from).arg(share_name);

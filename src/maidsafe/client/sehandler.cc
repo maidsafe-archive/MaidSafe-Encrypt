@@ -534,7 +534,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
 }
 
 int SEHandler::DecryptDb(const std::string &dir_path,
-                         const DirType dir_type,
+                         const DirType &dir_type,
                          const std::string &ser_dm,
                          const std::string &dir_key,
                          const std::string &msid,

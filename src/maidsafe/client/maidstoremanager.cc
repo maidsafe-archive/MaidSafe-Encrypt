@@ -1005,6 +1005,7 @@ int MaidsafeStoreManager::GetStoreRequests(const StoreData &store_data,
   store_request->set_data_type(data_type);
   iou_done_request->set_chunkname(store_data.non_hex_key_);
   iou_done_request->set_public_key(store_data.public_key_);
+  iou_done_request->set_own_pmid(non_hex_pmid);
   iou_done_request->set_signed_public_key(store_data.public_key_signature_);
   iou_done_request->set_signed_request(request_signature);
   return kSuccess;
@@ -2652,15 +2653,18 @@ bool MaidsafeStoreManager::NotDoneWithUploading() {
   tasks_mutex_.unlock();
   if (chunk_thread_pool_.activeThreadCount() == 0 &&
       packet_thread_pool_.activeThreadCount() == 0) {
+    return false;
+  } else {
     boost::mutex::scoped_lock loch(tasks_mutex_);
     std::map<boost::uint16_t, boost::tuple<std::string, int> >::iterator it;
+    int cnt(0);
     for (it = tasks_.begin(); it != tasks_.end(); ++it)
-//      if (it->second.get<1>() == 7)
-        printf("MaidsafeStoreManager::NotDoneWithUploading task %i dealing"
-               " with name %s still hasn't finished.\n", it->first,
-               it->second.get<0>().c_str());
-    return false;
+      if (it->second.get<1>() == 7)
+        ++cnt;
+    printf("MaidsafeStoreManager::NotDoneWithUploading - %i  tasks pending\n",
+           cnt);
   }
+
   return true;
 }
 
@@ -2676,6 +2680,11 @@ bool MaidsafeStoreManager::SetResultToTask(const boost::uint16_t &task_id,
 
   it->second = boost::tuple<std::string, int>(it->second.get<0>(), result);
   return true;
+}
+
+void MaidsafeStoreManager::ClearStoreResultMap() {
+  boost::mutex::scoped_lock loch(tasks_mutex_);
+  tasks_.clear();
 }
 
 }  // namespace maidsafe

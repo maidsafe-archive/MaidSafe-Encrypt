@@ -479,3 +479,7 @@ int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
 
   return n;
 }
+
+int ClientController::SaveSession() {
+  return maidsafe::ClientController::getInstance()->SaveSession();
+}

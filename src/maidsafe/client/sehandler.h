@@ -127,7 +127,7 @@ class SEHandler {
                 DataMap *dm);
   //  Decrypts dir's db by extracting datamap from ser_dm_
   int DecryptDb(const std::string &dir_path,
-                const DirType dir_type,
+                const DirType &dir_type,
                 const std::string &ser_dm,
                 const std::string &dir_key,
                 const std::string &msid,

@@ -72,8 +72,9 @@ message StoreIOUResponse {
 message IOUDoneRequest {
   required bytes chunkname = 1;
   required bytes public_key = 2;
-  required bytes signed_public_key = 3;
-  required bytes signed_request = 4;
+  required bytes own_pmid = 3;  // client's PMID
+  required bytes signed_public_key = 4;
+  required bytes signed_request = 5;
 }
 
 message IOUDoneResponse {
@@ -130,10 +131,11 @@ message StorePacketResponse {
 
 message DeleteRequest {
   required bytes chunkname = 1;
-  required bytes public_key = 2;
-  required bytes signed_public_key = 3;
-  required bytes signed_request = 4;
-  required int32 data_type = 5;
+  required bytes pmid_id = 2;  // vault's PMID
+  required bytes public_key = 3;
+  required bytes signed_public_key = 4;
+  required bytes signed_request = 5;
+  required int32 data_type = 6;
 }
 
 message DeleteResponse {
@@ -188,10 +190,11 @@ message ValidityCheckResponse {
 message UpdateRequest {
   required bytes chunkname = 1;
   required bytes data = 2;
-  required bytes public_key = 3;
-  required bytes signed_public_key = 4;
-  required bytes signed_request = 5;
-  required int32 data_type = 6;
+  required bytes pmid_id = 3;  // vault's PMID
+  required bytes public_key = 4;
+  required bytes signed_public_key = 5;
+  required bytes signed_request = 6;
+  required int32 data_type = 7;
 }
 
 message UpdateResponse {

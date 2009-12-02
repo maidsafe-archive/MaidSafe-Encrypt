@@ -511,6 +511,27 @@ int ChunkStore::DeleteChunkFunction(const std::string &key,
   return result ? kSuccess : kChunkstoreFailedDelete;
 }
 
+/**
+*   Clears the Chunkstore
+*/
+int ChunkStore::Clear() {
+  // Delete the directory
+  printf("About to delete dir %s\n", kChunkstorePath_.string().c_str());
+  try {
+    if (fs::exists(kChunkstorePath_)) {
+      fs::remove_all(kChunkstorePath_);
+    }
+  } catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("Couldn't remove directory %s in ChunkStore::DeleteDir - %s\n",
+           kChunkstorePath_.string().c_str(), e.what());
+    return kChunkstoreFailedDelete;
+#endif
+  }
+  chunkstore_set_.clear();
+  return kSuccess;
+}
+
 int ChunkStore::Load(const std::string &key, std::string *value) {
   value->clear();
   int valid = InitialOperationVerification(key);

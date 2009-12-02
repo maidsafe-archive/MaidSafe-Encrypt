@@ -313,7 +313,7 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
     printf("Could NOT load chunks:\n");
     for (std::set<std::string>::iterator not_stored_it = not_stored.begin();
          not_stored_it != not_stored.end(); ++not_stored_it)
-      printf("\t - %s\n", HexSubstr(*not_stored_it).c_str());
+      printf("\t - %s\n", not_stored_it->c_str());
   }
 
   return chunk_ref_count;
@@ -558,6 +558,8 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunks) {
   // Check each chunk can be retrieved correctly
   for (it = chunks.begin(); it != chunks.end(); ++it) {
     std::string hex_chunk_name = (*it).first;
+    ASSERT_EQ(0, client_chunkstore_->DeleteChunk(base::DecodeFromHex(
+              hex_chunk_name)));
     printf("Getting chunk %s.\n", hex_chunk_name.substr(0, 10).c_str());
     std::string data;
     ASSERT_EQ(0, sm_->LoadChunk(hex_chunk_name, &data));

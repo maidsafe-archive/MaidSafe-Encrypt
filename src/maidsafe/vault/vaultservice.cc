@@ -378,7 +378,7 @@ void VaultService::IOUDone(google::protobuf::RpcController*,
   }
   if (!ValidateSignedRequest(request->public_key(),
       request->signed_public_key(), request->signed_request(),
-      request->chunkname(), "")) {
+      request->chunkname(), request->own_pmid())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -686,7 +686,7 @@ void VaultService::Update(google::protobuf::RpcController*,
   }
   if (!ValidateSignedRequest(request->public_key(),
        request->signed_public_key(), request->signed_request(),
-       request->chunkname(), "")) {
+       request->chunkname(), request->pmid_id())) {
 #ifdef DEBUG
     printf("In VaultService::Update (%i), request didn't validate.\n",
            knode_->host_port());
@@ -719,13 +719,6 @@ void VaultService::Update(google::protobuf::RpcController*,
                                    valid_data = true;
                                   }
                                  break;
-    case maidsafe::BUFFER_PACKET_MESSAGE: if (vbph.AddMessage(
-                                              current_content,
-                                              request->data(),
-                                              request->signed_public_key(),
-                                              &updated_value))
-                                            valid_data = true;
-                                          break;
     case maidsafe::PDDIR_SIGNED: if (ValidateSystemPacket(request->data(),
                                       request->public_key())) {
                                    if (ValidateSystemPacket(current_content,
@@ -735,14 +728,6 @@ void VaultService::Update(google::protobuf::RpcController*,
                                    }
                                  }
                                  break;
-    case maidsafe::BUFFER_PACKET_INFO: if (ModifyBufferPacketInfo(
-                                             request->data(),
-                                             request->public_key(),
-                                             &current_content)) {
-                                         updated_value = current_content;
-                                         valid_data = true;
-                                        }
-                                        break;
     // TODO(David/Fraser#5#): check the validity of a pddir not signed DB
     case maidsafe::PDDIR_NOTSIGNED: if (!gp.ParseFromString(current_content)) {
                                       valid_data = true;
@@ -833,7 +818,7 @@ void VaultService::Delete(google::protobuf::RpcController*,
   }
   if (!ValidateSignedRequest(request->public_key(),
       request->signed_public_key(), request->signed_request(),
-      request->chunkname(), "")) {
+      request->chunkname(), request->pmid_id())) {
     response->set_result(kNack);
     done->Run();
     return;
@@ -854,15 +839,6 @@ void VaultService::Delete(google::protobuf::RpcController*,
                                          request->public_key()))
                                     can_delete = true;
                                   break;
-    case maidsafe::BUFFER_PACKET:
-        if (vbph.ValidateOwnerSignature(request->public_key(), content))
-          can_delete = true;
-        break;
-    case maidsafe::BUFFER_PACKET_MESSAGE:
-        if (vbph.ValidateOwnerSignature(request->public_key(), content))
-          if (vbph.ClearMessages(&content))
-            can_delete = true;
-        break;
     case maidsafe::PDDIR_SIGNED: if (ValidateSystemPacket(content,
                                          request->public_key()))
                                    can_delete = true;
@@ -1441,10 +1417,15 @@ bool VaultService::ValidateSignedRequest(const std::string &public_key,
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  if (signing_id != "" && signing_id != co.Hash(public_key + signed_public_key,
+  if (signing_id == "" || signing_id != co.Hash(public_key + signed_public_key,
       "", crypto::STRING_STRING, false)) {
 #ifdef DEBUG
-    printf("VaultService::ValidateSignedRequest: Didn't validate signing_id\n");
+    if (signing_id == "")
+      printf("VaultService::ValidateSignedRequest - Empty id\n");
+    else
+      printf("VaultService::ValidateSignedRequest - Wrong id\n");
+    printf("VaultService::ValidateSignedRequest: Didn't validate signing_id %s"
+           "\n", HexSubstr(signing_id).c_str());
 #endif
     return false;
   }

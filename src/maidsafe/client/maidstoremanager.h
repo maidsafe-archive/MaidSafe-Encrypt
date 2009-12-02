@@ -424,6 +424,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const int &timeout,
       boost::shared_ptr<MaidsafeStoreManager> sm);
 
+  void ClearStoreResultMap();
+
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);

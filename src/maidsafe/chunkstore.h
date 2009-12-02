@@ -126,6 +126,7 @@ class ChunkStore : public base::AlternativeStore {
   int AddChunkToOutgoing(const std::string &key, const fs::path &file);
   int Load(const std::string &key, std::string *value);
   int DeleteChunk(const std::string &key);
+  int Clear();
   fs::path GetChunkPath(const std::string &key,
                         ChunkType type,
                         bool create_path);

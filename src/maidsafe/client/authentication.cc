@@ -124,7 +124,7 @@ int Authentication::GetUserData(const std::string &password,
 }
 
 int Authentication::CreateUserSysPackets(const std::string &username,
-    const std::string &pin, const std::string &password, uint32_t *rid) {
+    const std::string &pin, uint32_t *rid) {
 
   PacketParams check_unique_params;
   check_unique_params["username"] = username;
@@ -156,7 +156,6 @@ int Authentication::CreateUserSysPackets(const std::string &username,
     return kAuthenticationError;
   }
 
-  printf("AAAAAAAAAAAAAA\n");
   user_params["privateKey"] =
       createSignaturePackets(ANSMID, public_key);
   SmidPacket *smidPacket =
@@ -170,7 +169,6 @@ int Authentication::CreateUserSysPackets(const std::string &username,
     return kAuthenticationError;
   }
 
-  printf("BBBBBBBBBBBBBB\n");
   std::string privkey = createSignaturePackets(MAID, public_key);
 
   // user_params["privateKey"] =
@@ -193,7 +191,6 @@ int Authentication::CreateUserSysPackets(const std::string &username,
     return kAuthenticationError;
   }
 
-  printf("CCCCCCCCCCCCCC\n");
   ss_->AddKey(PMID, boost::any_cast<std::string>(pmid_result["name"]),
               boost::any_cast<std::string>(pmid_result["privateKey"]),
               boost::any_cast<std::string>(pmid_result["publicKey"]),
@@ -232,7 +229,6 @@ int Authentication::CreateTmidPacket(const std::string &username,
     return kAuthenticationError;
   }
 
-  printf("DDDDDDDDDDDDDDD\n");
   ss_->SetUsername(username);
   ss_->SetPin(pin);
   ss_->SetPassword(password);
@@ -536,7 +532,7 @@ int Authentication::CreatePublicName(std::string public_username,
 
 int Authentication::ChangeUsername(std::string ser_da,
                                    PacketParams priv_keys,
-                                   PacketParams pub_keys,
+                                   PacketParams,
                                    std::string new_username) {
   //   if (!CheckUsername(new_username) || new_username == ss_->Username())
   //     return INVALID_USERNAME;
@@ -697,7 +693,7 @@ int Authentication::ChangeUsername(std::string ser_da,
 
 int Authentication::ChangePin(std::string ser_da,
                               PacketParams priv_keys,
-                              PacketParams pub_keys,
+                              PacketParams,
                               std::string new_pin) {
   //   if (!CheckPin(new_pin) || new_pin == ss_->Pin())
   //     return INVALID_PIN;

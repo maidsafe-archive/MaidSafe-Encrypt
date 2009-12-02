@@ -92,6 +92,9 @@ class ClientController : public QObject {
                      boost::uint32_t *port);
   bool IsLocalVaultOwned();
 
+  // Session
+  int SaveSession();
+
  signals:
   void messageReceived(ClientController::MessageType type,
                        const QDateTime& time,

@@ -80,36 +80,15 @@ namespace maidsafe {
 class FunctionalClientControllerTest : public testing::Test {
  protected:
   FunctionalClientControllerTest()
-      : test_root_dir_(file_system::FileSystem::TempDir() + "/maidsafe_TestCC" +
-                       base::itos_ul(base::random_32bit_uinteger())),
-        cc_(),
-        authentication_(),
-        ss_(),
-        chunkstore_(new ChunkStore(test_root_dir_, 0, 0)),
-        se_(chunkstore_),
-        dir1_(""),
-        dir2_(""),
-        final_dir_(),
-        vcp_() { }
+      : cc_(), authentication_(), ss_(), chunkstore_(), dir1_(""), dir2_(""),
+        final_dir_(), vcp_() { }
 
   static void TearDownTestCase() {
     transport::CleanUp();
   }
 
   void SetUp() {
-    try {
-      if (fs::exists(test_root_dir_))
-        fs::remove_all(test_root_dir_);
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
     ss_ = SessionSingleton::getInstance();
-    int count(0);
-    while (!chunkstore_->is_initialised() && count < 10000) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-      count += 10;
-    }
     cc_ = ClientController::getInstance();
     if (!cc_test::initialised_) {
       ASSERT_TRUE(cc_->JoinKademlia());
@@ -120,24 +99,12 @@ class FunctionalClientControllerTest : public testing::Test {
     ss_->SetConnectionStatus(0);
   }
 
-  void TearDown() {
-    try {
-      if (fs::exists(test_root_dir_))
-        fs::remove_all(test_root_dir_);
-      if (final_dir_ != "" && fs::exists(final_dir_))
-        fs::remove_all(final_dir_);
-    }
-    catch(const std::exception &e) {
-      printf("Error: %s\n", e.what());
-    }
-  }
+  void TearDown() {}
 
-  std::string test_root_dir_;
   ClientController *cc_;
   Authentication *authentication_;
   SessionSingleton *ss_;
   boost::shared_ptr<ChunkStore> chunkstore_;
-  SelfEncryption se_;
   std::string dir1_, dir2_, final_dir_;
   VaultConfigParameters vcp_;
  private:
@@ -445,16 +412,17 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
 
   file_system::FileSystem fsys;
   fs::create_directories(fsys.MaidsafeHomeDir()+kRootSubdir[0][0]);
-  fs::path rel_path_(kRootSubdir[0][0]);
-  rel_path_ /= "testencryption.txt";
-  std::string rel_str_ = base::TidyPath(rel_path_.string());
+  fs::path rel_path(kRootSubdir[0][0]);
+  rel_path /= "testencryption.txt";
+  std::string rel_str_ = base::TidyPath(rel_path.string());
 
-  fs::path full_path_(fsys.MaidsafeHomeDir());
-  full_path_ /= rel_path_;
-  fs::ofstream testfile(full_path_.string().c_str());
+  fs::path full_path(fsys.MaidsafeHomeDir());
+  full_path /= rel_path;
+  fs::ofstream testfile(full_path.string().c_str());
   testfile << base::RandomString(1024*1024);
   testfile.close();
-  std::string hash_original_file = se_.SHA512(full_path_);
+  maidsafe::SelfEncryption se(cc_->client_chunkstore_);
+  std::string hash_original_file = se.SHA512(full_path);
   {
     boost::progress_timer t;
     ASSERT_EQ(0, cc_->write(rel_str_));
@@ -469,8 +437,8 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
 
   boost::this_thread::sleep(boost::posix_time::seconds(10));
 
-  if (fs::exists(full_path_))
-      fs::remove(full_path_);
+  if (fs::exists(full_path))
+      fs::remove(full_path);
 
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
@@ -479,14 +447,14 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
   printf("User logged in.\n");
-  fs::create_directories(fsys.MaidsafeHomeDir()+kRootSubdir[0][0]);
+  fs::create_directories(fsys.MaidsafeHomeDir() + kRootSubdir[0][0]);
 
   {
     boost::progress_timer t;
     ASSERT_EQ(0, cc_->read(rel_str_));
     printf("Self decrypted file in ");
   }
-  std::string hash_dec_file = se_.SHA512(full_path_);
+  std::string hash_dec_file = se.SHA512(full_path);
   ASSERT_EQ(hash_original_file, hash_dec_file);
 
   ASSERT_TRUE(cc_->Logout());
@@ -494,6 +462,101 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
   printf("Logged out user.\n");
+}
+
+TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession) {
+  // Create a user
+  std::string username = "User5";
+  std::string pin = "5678";
+  std::string password = "The limping dog has landed.";
+  ss_ = SessionSingleton::getInstance();
+  ASSERT_EQ("", ss_->Username());
+  ASSERT_EQ("", ss_->Pin());
+  ASSERT_EQ("", ss_->Password());
+  ASSERT_EQ(maidsafe::kUserDoesntExist,
+            cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
+  printf("Preconditions fulfilled.\n");
+
+  ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
+  ASSERT_EQ(username, ss_->Username());
+  ASSERT_EQ(pin, ss_->Pin());
+  ASSERT_EQ(password, ss_->Password());
+  printf("User created.\n");
+  std::string pmid = ss_->Id(maidsafe::PMID);
+  // Create a file
+  file_system::FileSystem fsys;
+  fs::create_directories(fsys.MaidsafeHomeDir()+kRootSubdir[0][0]);
+  fs::path rel_path(kRootSubdir[0][0]);
+  rel_path /= "testencryption.txt";
+  std::string rel_str = base::TidyPath(rel_path.string());
+
+  fs::path full_path(fsys.MaidsafeHomeDir());
+  full_path /= rel_path;
+  fs::ofstream testfile(full_path.string().c_str());
+  testfile << base::RandomString(1024*1024);
+  testfile.close();
+  maidsafe::SelfEncryption se(cc_->client_chunkstore_);
+  std::string hash_original_file = se.SHA512(full_path);
+  {
+    boost::progress_timer t;
+    ASSERT_EQ(0, cc_->write(rel_str));
+    printf("File backed up in ");
+  }
+
+  // Save the session
+  ASSERT_EQ(0, cc_->SaveSession());
+  printf("\n\n\nSaved the session\n\n\n");
+
+  // Reset the client controller
+  /*
+  printf("Client controller address before: %d\n", cc_);
+  cc_ = NULL;
+  cc_ = maidsafe::ClientController::getInstance();
+  printf("Client controller address after: %d\n", cc_);
+  */
+  cc_->client_chunkstore_->Clear();
+  printf("\n\n\nCleared the chunkstore\n\n\n");
+  ss_->ResetSession();
+  printf("\n\n\nReset the session\n\n\n");
+
+  // Remove the local file
+  if (fs::exists(full_path))
+      fs::remove(full_path);
+
+  // Login
+  ASSERT_EQ(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
+  printf("\n\n\nChecked for user\n\n\n");
+  ASSERT_TRUE(cc_->ValidateUser(password));
+  printf("\n\n\nLogged in\n\n\n");
+  ASSERT_EQ(username, ss_->Username());
+  ASSERT_EQ(pin, ss_->Pin());
+  ASSERT_EQ(password, ss_->Password());
+  ASSERT_EQ(pmid, ss_->Id(maidsafe::PMID));
+//  ASSERT_EQ(pmid, ss_->PublicKey(maidsafe::PMID));
+//  ASSERT_EQ(pmid, ss_->PrivateKey(maidsafe::PMID));
+//  ASSERT_EQ(pmid, ss_->Signed(maidsafe::PMID));
+
+
+  // Check for file
+  fs::create_directories(fsys.MaidsafeHomeDir()+kRootSubdir[0][0]);
+  {
+    boost::progress_timer t;
+    ASSERT_EQ(0, cc_->read(rel_str));
+    printf("Self decrypted file in ");
+  }
+  std::string hash_dec_file = se.SHA512(full_path);
+  ASSERT_EQ(hash_original_file, hash_dec_file);
+  printf("Hashes match\n");
+
+  // Log out
+  ASSERT_TRUE(cc_->Logout());
+  printf("Logged out\n");
+
+  // Clean up
+  // Delete file
+  if (fs::exists(full_path))
+      fs::remove(full_path);
 }
 
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
@@ -779,7 +842,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {
 
   file_system::FileSystem fsys;
   fs::create_directories(fsys.MaidsafeHomeDir() + kRootSubdir[0][0]);
-  fs::path rel_path_(kRootSubdir[0][0]);
+  fs::path rel_path(kRootSubdir[0][0]);
   fs::path testfile[15];
   fs::path homedir(fsys.HomeDir());
   fs::path mshomedir(fsys.MaidsafeHomeDir());
