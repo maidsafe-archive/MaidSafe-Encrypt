@@ -42,12 +42,15 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-SEHandler::SEHandler(StoreManagerInterface *storem,
-                     boost::shared_ptr<ChunkStore> client_chunkstore)
-                         : storem_(storem),
-                           client_chunkstore_(client_chunkstore),
-                           ss_(SessionSingleton::getInstance()),
-                           fsys_(), uptodate_datamaps_() {}
+SEHandler::SEHandler()
+    : storem_(), client_chunkstore_(), ss_(), fsys_(), uptodate_datamaps_() {}
+
+void SEHandler::Init(boost::shared_ptr<StoreManagerInterface> storem,
+                     boost::shared_ptr<ChunkStore> client_chunkstore) {
+  ss_ = SessionSingleton::getInstance();
+  storem_ = storem;
+  client_chunkstore_ = client_chunkstore;
+}
 
 ItemType SEHandler::CheckEntry(const std::string &full_entry,
                                uint64_t *file_size) {

@@ -62,9 +62,8 @@ ClientController::~ClientController() {
   impl_ = NULL;
 }
 
-bool ClientController::Init() {
-  return (maidsafe::ClientController::getInstance()->JoinKademlia() &&
-          maidsafe::ClientController::getInstance()->Init());
+int ClientController::Init() {
+  return (maidsafe::ClientController::getInstance()->Init());
 }
 
 void ClientController::StartCheckingMessages() {

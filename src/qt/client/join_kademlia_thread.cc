@@ -32,7 +32,7 @@ void JoinKademliaThread::run() {
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   qDebug() << "JoinKademliaThread::run - After SLEEP";
 #endif
-  if (ClientController::instance()->Init()) {
+  if (ClientController::instance()->Init() == maidsafe::kSuccess) {
     emit completed(true);
   } else {
     emit completed(false);

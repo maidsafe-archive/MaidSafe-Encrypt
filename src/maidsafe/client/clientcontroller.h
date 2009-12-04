@@ -64,15 +64,12 @@ class ClientController {
  public:
   static ClientController *getInstance();
   static void Destroy();
-
-  bool Init();
-  bool JoinKademlia();
+  int Init();
   // Close connection to kademlia/stub storage.  Currently with UDT, if
   // clean_up_transport is true, UDT cannot be restarted, so this is a
   // permanent cessation of the transport layer.
   void CloseConnection(bool clean_up_transport);
   void StopRvPing();
-
   int ParseDa();
   int SerialiseDa();
   int CheckUserExists(const std::string &username,
@@ -85,7 +82,6 @@ class ClientController {
   int SetVaultConfig(const std::string &pmid_public,
                      const std::string &pmid_private);
   bool ValidateUser(const std::string &password);
-
   bool Logout();
   int SaveSession();
   bool LeaveMaidsafeNetwork();
@@ -97,6 +93,7 @@ class ClientController {
 //  bool DeauthoriseUsers(std::set<std::string> users);
   int ChangeConnectionStatus(int status);
   int RunDbEncQueue();
+  inline bool initialised() { return intialised_; }
 
   // Messages
   bool GetMessages();
@@ -191,9 +188,10 @@ class ClientController {
   FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession);
   // Functions
   ClientController();
-  ~ClientController() { }
+  ~ClientController() {}
   ClientController &operator=(const ClientController&);
   ClientController(const ClientController&);
+  bool JoinKademlia();
   void WaitForResult(const CC_CallbackResult &cb);
   int BackupElement(const std::string &path,
                     const DirType dir_type,
@@ -221,13 +219,13 @@ class ClientController {
   std::string GenerateBPInfo();
 
   // Variables
-  Authentication *auth_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
-  StoreManagerInterface *sm_;
+  boost::shared_ptr<StoreManagerInterface> sm_;
+  Authentication auth_;
   SessionSingleton *ss_;
   std::string ser_da_, ser_dm_;
   std::map<std::string, std::pair<std::string, std::string> >db_enc_queue_;
-  SEHandler *seh_;
+  SEHandler seh_;
   static ClientController *single;
   std::list<InstantMessage> messages_;
   file_system::FileSystem fsys_;
@@ -235,6 +233,7 @@ class ClientController {
   boost::mutex rec_msg_mutex_;
   boost::thread clear_messages_thread_;
   std::string client_store_;
+  bool intialised_;
   bool logging_out_;
 };
 

@@ -80,8 +80,13 @@ namespace maidsafe {
 class FunctionalClientControllerTest : public testing::Test {
  protected:
   FunctionalClientControllerTest()
-      : cc_(), authentication_(), ss_(), chunkstore_(), dir1_(""), dir2_(""),
-        final_dir_(), vcp_() { }
+      : cc_(),
+        authentication_(),
+        ss_(),
+        dir1_(""),
+        dir2_(""),
+        final_dir_(),
+        vcp_() {}
 
   static void TearDownTestCase() {
     transport::CleanUp();
@@ -89,22 +94,30 @@ class FunctionalClientControllerTest : public testing::Test {
 
   void SetUp() {
     ss_ = SessionSingleton::getInstance();
+    ss_->ResetSession();
     cc_ = ClientController::getInstance();
     if (!cc_test::initialised_) {
-      ASSERT_TRUE(cc_->JoinKademlia());
-      ASSERT_TRUE(cc_->Init());
-      cc_test::initialised_ = true;
+      ASSERT_EQ(kSuccess, cc_->Init());
+      cc_test::initialised_ = cc_->initialised();
     }
     cc_->StopRvPing();
     ss_->SetConnectionStatus(0);
   }
 
-  void TearDown() {}
+  void TearDown() {
+    try {
+      ss_->ResetSession();
+      if (final_dir_ != "" && fs::exists(final_dir_))
+        fs::remove_all(final_dir_);
+    }
+    catch(const std::exception &e) {
+      printf("Error: %s\n", e.what());
+    }
+  }
 
   ClientController *cc_;
   Authentication *authentication_;
   SessionSingleton *ss_;
-  boost::shared_ptr<ChunkStore> chunkstore_;
   std::string dir1_, dir2_, final_dir_;
   VaultConfigParameters vcp_;
  private:

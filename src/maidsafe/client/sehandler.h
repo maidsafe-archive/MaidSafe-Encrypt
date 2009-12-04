@@ -85,7 +85,8 @@ class CallbackResult {
 
 class SEHandler {
  public:
-  SEHandler(StoreManagerInterface *storem,
+  SEHandler();
+  void Init(boost::shared_ptr<StoreManagerInterface> storem,
             boost::shared_ptr<ChunkStore> client_chunkstore);
   ~SEHandler() {}
   ItemType CheckEntry(const std::string &full_entry, uint64_t *file_size);
@@ -166,7 +167,7 @@ class SEHandler {
   void LoadChunk(const std::string &chunk_name,
                  int retry,
                  boost::shared_ptr<ChunksData> data);
-  StoreManagerInterface *storem_;
+  boost::shared_ptr<StoreManagerInterface> storem_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;
 //  boost::recursive_mutex *mutex_;

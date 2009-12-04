@@ -137,11 +137,11 @@ class AuthenticationTest : public testing::Test {
 };
 
 TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
-  boost::scoped_ptr<LocalStoreManager>
+  boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::shared_ptr<Authentication> authentication(
-      new Authentication(sm.get()));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
   DataAtlas data_atlas;
   std::string ser_dm_login;
   int result = authentication->GetUserInfo(username, pin);
@@ -186,11 +186,11 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
-  boost::scoped_ptr<LocalStoreManager>
+  boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<Authentication> authentication(
-      new Authentication(sm.get()));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
   std::string ser_dm, ser_dm_login;
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -220,11 +220,11 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
 }
 
 TEST_F(AuthenticationTest, BEH_MAID_RegisterUserOnce) {
-  boost::scoped_ptr<LocalStoreManager>
+  boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<Authentication> authentication(
-      new Authentication(sm.get()));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
   DataAtlas data_atlas;
 
   int result = authentication->GetUserInfo(username, pin);
@@ -260,11 +260,11 @@ TEST_F(AuthenticationTest, BEH_MAID_RegisterUserOnce) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
-  boost::scoped_ptr<LocalStoreManager>
+  boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<Authentication> authentication(
-      new Authentication(sm.get()));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
   DataAtlas data_atlas;
 
   int result = authentication->GetUserInfo(username, pin);
@@ -325,11 +325,11 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
 */
 
 TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_ChangeUsername) {
-  boost::scoped_ptr<LocalStoreManager>
+  boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<Authentication> authentication(
-      new Authentication(sm.get()));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
   DataAtlas data_atlas;
   PacketParams lasquis, pubkeys;
 
@@ -396,11 +396,11 @@ TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_ChangeUsername) {
 }
 
 TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_ChangePin) {
-  boost::scoped_ptr<LocalStoreManager>
+  boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<Authentication> authentication(
-      new Authentication(sm.get()));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
   PacketParams lasquis, pubkeys;
   DataAtlas data_atlas;
   int result = authentication->GetUserInfo(username, pin);
@@ -461,11 +461,11 @@ TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_ChangePin) {
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   cb.Reset();
-  boost::scoped_ptr<LocalStoreManager>
+  boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<Authentication> authentication(
-      new Authentication(sm.get()));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
   PacketParams lasquis, pubkeys;
   DataAtlas data_atlas;
   int result = authentication->GetUserInfo(username, pin);
@@ -533,11 +533,11 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
 }
 
 TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
-  boost::scoped_ptr<LocalStoreManager>
+  boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<Authentication> authentication(
-      new Authentication(sm.get()));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
   PacketParams result;
   crypto::Crypto crypto_obj;
   crypto_obj.set_symm_algorithm(crypto::AES_256);
@@ -550,7 +550,7 @@ TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
 }
 
 TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
-  boost::scoped_ptr<LocalStoreManager>
+  boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   MidPacket *midPacket = static_cast<MidPacket*>
@@ -562,18 +562,18 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   ASSERT_EQ(0, sm->StorePacket(mid_name, "rubish data with same mid name",
       MID, maidsafe::PRIVATE, ""));
 
-  boost::scoped_ptr<Authentication> authentication(
-      new Authentication(sm.get()));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kInvalidUsernameOrPin, result);
 }
 
 TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
-  boost::scoped_ptr<LocalStoreManager>
+  boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  boost::scoped_ptr<Authentication> authentication(
-      new Authentication(sm.get()));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);

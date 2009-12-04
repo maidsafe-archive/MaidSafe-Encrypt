@@ -767,7 +767,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessages) {
   ASSERT_EQ("msg3", msg.message());
 }
 
-TEST_F(TestClientBP, BEH_MAID_GetMessagesOneFindContacsFail) {
+TEST_F(TestClientBP, BEH_MAID_GetMsgsOneFindContactsFail) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);

@@ -51,6 +51,7 @@ class FileSystem {
     // still does not mean we can have sensitive data there though !!!
 
     maidsafe::DefConLevels defcon_;  // this is set in the sesion singleton
+    bool CreateDirs();
     bool DeleteDirs();
 
   // protected:
@@ -59,7 +60,6 @@ class FileSystem {
     FileSystem();
     ~FileSystem();
     // enum PathStatus {PROCESSING, ENCRYPTED, DONE};
-    bool CreateDirs();  // create directories of required needs to be private
     bool FuseMountPoint();
     bool Mount();  //  Eventually actually mount a FUSE drive
     bool UnMount();  // unmount and rewrite space with 0's TODO

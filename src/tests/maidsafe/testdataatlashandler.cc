@@ -129,10 +129,10 @@ class DataAtlasHandlerTest : public testing::Test {
         rsakp.public_key(), "");
     file_system::FileSystem fsys;
     fsys.Mount();
-    boost::scoped_ptr<DataAtlasHandler>dah_(new DataAtlasHandler());
-    boost::shared_ptr<SEHandler>seh_(
-        new SEHandler(sm.get(), client_chunkstore_));
-    if (dah_->Init(true))
+    boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
+    boost::shared_ptr<SEHandler> seh(new SEHandler());
+    seh->Init(sm, client_chunkstore_);
+    if (dah->Init(true))
       FAIL();
 
     //  set up default dirs
@@ -150,11 +150,11 @@ class DataAtlasHandlerTest : public testing::Test {
       mdm.set_creation_time(current_time_);
       mdm.SerializeToString(&ser_mdm);
       if (kRootSubdir[i][1] == "")
-        seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
+        seh->GenerateUniqueKey(PRIVATE, "", 0, &key);
       else
         key = kRootSubdir[i][1];
       fs::create_directories(fsys.MaidsafeHomeDir() + kRootSubdir[i][0]);
-      dah_->AddElement(base::TidyPath(kRootSubdir[i][0]), ser_mdm, "", key,
+      dah->AddElement(base::TidyPath(kRootSubdir[i][0]), ser_mdm, "", key,
                        true);
     }
     cb.Reset();

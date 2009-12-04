@@ -431,7 +431,7 @@ TEST_F(PendingOperationContainerTest, BEH_VAULT_ErasePendingOp) {
   }
 }
 
-TEST_F(PendingOperationContainerTest, BEH_VAULT_AddPendingOpThread) {
+TEST_F(PendingOperationContainerTest, BEH_VAULT_ThreadedAddPendingOp) {
     ASSERT_EQ(0, poh_.PendingOperationsCount());
 
     boost::thread_group threadGroup;
@@ -451,7 +451,7 @@ TEST_F(PendingOperationContainerTest, BEH_VAULT_AddPendingOpThread) {
     ASSERT_EQ(50, poh_.PendingOperationsCount());
 }
 
-TEST_F(PendingOperationContainerTest, FUNC_VAULT_AddAndAdvanceStatusThread) {
+TEST_F(PendingOperationContainerTest, FUNC_VAULT_ThreadedAddAndAdvanceStatus) {
   ASSERT_EQ(0, poh_.PendingOperationsCount());
 
   boost::thread_group threadGroup;

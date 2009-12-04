@@ -76,9 +76,9 @@ void ClientController::WaitForResult(const CC_CallbackResult &cb) {
 
 ClientController *ClientController::single = 0;
 
-ClientController::ClientController() : auth_(),
-                                       client_chunkstore_(),
+ClientController::ClientController() : client_chunkstore_(),
                                        sm_(),
+                                       auth_(),
                                        ss_(),
                                        ser_da_(),
                                        ser_dm_(""),
@@ -90,31 +90,8 @@ ClientController::ClientController() : auth_(),
                                        rec_msg_mutex_(),
                                        clear_messages_thread_(),
                                        client_store_(),
-                                       logging_out_(false) {
-  fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
-  client_path /= "client" + base::RandomString(8);
-  try {
-    while (fs::exists(client_path))
-      client_path = fs::path(client_path.string().substr(0,
-          client_path.string().size()-8) + base::RandomString(8));
-    client_store_ = client_path.string();
-    if (!fs::exists(client_path)) {
-      fs::create_directories(client_path);
-    }
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("Couldn't create client path: %s\n", e.what());
-#endif
-  }
-  client_chunkstore_ = boost::shared_ptr<ChunkStore>
-      (new ChunkStore(client_path.string(), 0, 0));
-#ifdef LOCAL_PDVAULT
-    sm_ = new LocalStoreManager(client_chunkstore_);
-#else
-    sm_ = new MaidsafeStoreManager(client_chunkstore_);
-#endif
-}
+                                       intialised_(false),
+                                       logging_out_(false) {}
 
 boost::mutex cc_mutex;
 
@@ -132,12 +109,56 @@ void ClientController::Destroy() {
   single = 0;
 }
 
-bool ClientController::Init() {
-  auth_ = new Authentication(sm_);
+int ClientController::Init() {
+  if (intialised_)
+    return 0;
+  fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
+  try {
+    // If main app dir isn't already there, create it
+    if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
+#ifdef DEBUG
+      printf("CC::Init - Couldn't create app path (check permissions?): %s\n",
+             client_path.string().c_str());
+#endif
+      return -2;
+    }
+    client_path /= "client" + base::RandomString(8);
+    while (fs::exists(client_path))
+      client_path = fs::path(client_path.string().substr(0,
+          client_path.string().size()-8) + base::RandomString(8));
+    client_store_ = client_path.string();
+    if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
+#ifdef DEBUG
+      printf("CC::Init -Couldn't create client path (check permissions?): %s\n",
+             client_path.string().c_str());
+#endif
+      return -3;
+    }
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("CC::Init - Couldn't create path (check permissions?): %s\n",
+           e.what());
+#endif
+    return -4;
+  }
+  client_chunkstore_ = boost::shared_ptr<ChunkStore>
+      (new ChunkStore(client_path.string(), 0, 0));
+#ifdef LOCAL_PDVAULT
+    sm_.reset(new LocalStoreManager(client_chunkstore_));
+#else
+    sm_.reset(new MaidsafeStoreManager(client_chunkstore_));
+#endif
+  if (!JoinKademlia()) {
+#ifdef DEBUG
+    printf("CC::Init - Couldn't join Kademlia!\n");
+#endif
+    return -1;
+  }
+  auth_.Init(sm_);
   ss_ = SessionSingleton::getInstance();
-//  cbph_ = new ClientBufferPacketHandler(sm_);
-//  cbph_->SetChunkStore(client_chunkstore_);
-  return true;
+  intialised_ = true;
+  return 0;
 }
 
 bool ClientController::JoinKademlia() {
@@ -218,13 +239,13 @@ int ClientController::ParseDa() {
 #ifdef DEBUG
   // printf("ser_dm_root_ = %s\n", ser_dm_root_);
 #endif
-  int i = seh_->DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
+  int i = seh_.DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
 #ifdef DEBUG
   printf("result of decrypt root: %i -- (%s)\n", i, ""/*ser_dm_root.c_str()*/);
 #endif
   if (i != 0)
     return -1;
-  i = seh_->DecryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, ser_dm_shares,
+  i = seh_.DecryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, ser_dm_shares,
                       "", "", false, false);
 #ifdef DEBUG
   printf("result of decrypt %s: %i -- (%s)\n", kRootSubdir[1][0].c_str(), i,
@@ -237,8 +258,8 @@ int ClientController::SerialiseDa() {
   DataAtlas data_atlas_;
   data_atlas_.set_root_db_key(ss_->RootDbKey());
   DataMap root_dm, shares_dm;
-  seh_->EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
-  seh_->EncryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
+  seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
+  seh_.EncryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
                   &shares_dm);
   DataMap *dm = data_atlas_.add_dms();
   *dm = root_dm;
@@ -311,7 +332,7 @@ int ClientController::SerialiseDa() {
   ser_da_.clear();
   ser_dm_.clear();
   data_atlas_.SerializeToString(&ser_da_);
-  seh_->EncryptString(ser_da_, &ser_dm_);
+  seh_.EncryptString(ser_da_, &ser_dm_);
 
   printf("ClientController::SerialiseDa() - Serialised.\n");
 
@@ -323,7 +344,7 @@ int ClientController::CheckUserExists(const std::string &username,
                                       DefConLevels level) {
   ss_->ResetSession();
   ss_->SetDefConLevel(level);
-  return auth_->GetUserInfo(username, pin);
+  return auth_.GetUserInfo(username, pin);
 }
 
 bool ClientController::CreateUser(const std::string &username,
@@ -332,7 +353,7 @@ bool ClientController::CreateUser(const std::string &username,
                                   const VaultConfigParameters &) {
   ss_->SetConnectionStatus(0);
   uint32_t rid;
-  int result = auth_->CreateUserSysPackets(username, pin, &rid);
+  int result = auth_.CreateUserSysPackets(username, pin, &rid);
 
   if (result != kSuccess) {
 #ifdef DEBUG
@@ -341,17 +362,17 @@ bool ClientController::CreateUser(const std::string &username,
     ss_->ResetSession();
     return false;
   }
-  seh_ = new SEHandler(sm_, client_chunkstore_);
+  seh_.Init(sm_, client_chunkstore_);
   std::string ser_da(""), ser_dm("");
   ss_->SerialisedKeyRing(&ser_da);
-  if (seh_->EncryptString(ser_da, &ser_dm) != 0) {
+  if (seh_.EncryptString(ser_da, &ser_dm) != 0) {
 #ifdef DEBUG
     printf("In ClientController::CreateUser - Cannot SelfEncrypt DA\n");
 #endif
     ss_->ResetSession();
     return false;
   }
-  result = auth_->CreateTmidPacket(username, pin, password, rid, ser_dm);
+  result = auth_.CreateTmidPacket(username, pin, password, rid, ser_dm);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In ClientController::CreateUser - Cannot create tmid packet\n");
@@ -369,7 +390,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   ss_->SetSessionName(false);
   std::string root_db_key;
-  int res = seh_->GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
+  int res = seh_.GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
   if (res != 0) {
 #ifdef DEBUG
     printf("In ClientController::CreateUser - Bombing out on no root_db_key\n");
@@ -400,13 +421,13 @@ bool ClientController::CreateUser(const std::string &username,
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
     if (kRootSubdir[i][1] == "") {
-      seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
+      seh_.GenerateUniqueKey(PRIVATE, "", 0, &key);
     } else {
       key = kRootSubdir[i][1];
     }
     res += dah->AddElement(base::TidyPath(kRootSubdir[i][0]),
                            ser_mdm, "", key, true);
-    seh_->EncryptDb(base::TidyPath(kRootSubdir[i][0]),
+    seh_.EncryptDb(base::TidyPath(kRootSubdir[i][0]),
                     PRIVATE, key, "", true, &dm);
   }
 
@@ -428,20 +449,20 @@ bool ClientController::CreateUser(const std::string &username,
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
     if (kSharesSubdir[i][1] == "") {  // ie no preassigned key so not public
-      seh_->GenerateUniqueKey(PRIVATE, "", 0, &key);
+      seh_.GenerateUniqueKey(PRIVATE, "", 0, &key);
       res += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
                              ser_mdm, "", key, true);
-      seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
+      seh_.EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
                       PRIVATE, key, "", true, &dm);
     } else {
       key = kSharesSubdir[i][1];
       res += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
                              ser_mdm, "", key, true);
-      if (seh_->DecryptDb(base::TidyPath(kSharesSubdir[i][0]),
+      if (seh_.DecryptDb(base::TidyPath(kSharesSubdir[i][0]),
                           ANONYMOUS, "", key, "", true, true)) {
         // ie Public and Anon have never been saved before on the network
         std::string ser_dm;
-        seh_->EncryptDb(base::TidyPath(kSharesSubdir[i][0]), ANONYMOUS,
+        seh_.EncryptDb(base::TidyPath(kSharesSubdir[i][0]), ANONYMOUS,
                         kSharesSubdir[i][1], "", true, &dm);
       }
     }
@@ -451,7 +472,6 @@ bool ClientController::CreateUser(const std::string &username,
 #ifdef DEBUG
     printf("In ClientController::CreateUser error creating DBs\n");
 #endif
-    delete seh_;
     return false;
   }
 
@@ -460,7 +480,6 @@ bool ClientController::CreateUser(const std::string &username,
 #ifdef DEBUG
     printf("In ClientController::CreateUser error stting vault config\n");
 #endif
-    delete seh_;
     return false;
   }
 
@@ -513,7 +532,7 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
 bool ClientController::ValidateUser(const std::string &password) {
   ser_da_.clear();
   ser_dm_.clear();
-  int result = auth_->GetUserData(password, ser_dm_);
+  int result = auth_.GetUserData(password, ser_dm_);
 
   if (result != kSuccess) {
     // Password validation failed
@@ -523,8 +542,8 @@ bool ClientController::ValidateUser(const std::string &password) {
 #endif
     return false;
   }
-  seh_ = new SEHandler(sm_, client_chunkstore_);
-  if (seh_->DecryptString(ser_dm_, &ser_da_) != 0) {
+  seh_.Init(sm_, client_chunkstore_);
+  if (seh_.DecryptString(ser_dm_, &ser_da_) != 0) {
     ss_->ResetSession();
 #ifdef DEBUG
     printf("ClientController::ValidateUser - Cannot decrypt DA.\n");
@@ -540,7 +559,6 @@ bool ClientController::ValidateUser(const std::string &password) {
 #ifdef DEBUG
     printf("ClientController::ValidateUser - Cannot parse DA.\n");
 #endif
-    delete seh_;
     ss_->ResetSession();
     return false;
   }
@@ -549,7 +567,6 @@ bool ClientController::ValidateUser(const std::string &password) {
 #ifdef DEBUG
     printf("ClientController::ValidateUser - Cannot initialise DAH.\n");
 #endif
-    delete seh_;
     ss_->ResetSession();
     return false;
   }
@@ -627,7 +644,6 @@ bool ClientController::Logout() {
 #endif
     fsys_.UnMount();
     ss_->ResetSession();
-    delete seh_;
     messages_.clear();
     try {
       if (fs::exists(client_store_)) {
@@ -682,7 +698,7 @@ int ClientController::SaveSession() {
 #endif
     return n;
   }
-  n = auth_->SaveSession(ser_dm_, priv_keys, pub_keys);
+  n = auth_.SaveSession(ser_dm_, priv_keys, pub_keys);
   if (n != 0) {
 #ifdef DEBUG
     printf("ClientController::SaveSession - Failed to Save Session.\n");
@@ -701,10 +717,9 @@ bool ClientController::LeaveMaidsafeNetwork() {
   std::string dir = fsys_.MaidsafeDir();
   {
     ss_->GetKeys(&keys);
-    result = auth_->RemoveMe(keys);
+    result = auth_.RemoveMe(keys);
   }
   if (result == kSuccess) {
-    delete seh_;
     try {
       fs::remove_all(dir);
     }
@@ -744,7 +759,7 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
     }
   }
 
-  int result = auth_->ChangeUsername(ser_dm_, priv_keys, pub_keys,
+  int result = auth_.ChangeUsername(ser_dm_, priv_keys, pub_keys,
                                      new_username);
   if (result == kSuccess)
     return true;
@@ -777,7 +792,7 @@ bool ClientController::ChangePin(const std::string &new_pin) {
     }
   }
 
-  int result = auth_->ChangePin(ser_dm_, priv_keys, pub_keys, new_pin);
+  int result = auth_.ChangePin(ser_dm_, priv_keys, pub_keys, new_pin);
   if (result == kSuccess)
     return true;
   return false;
@@ -809,7 +824,7 @@ bool ClientController::ChangePassword(const std::string &new_password) {
     }
   }
 
-  int result = auth_->ChangePassword(ser_dm_, priv_keys, pub_keys,
+  int result = auth_.ChangePassword(ser_dm_, priv_keys, pub_keys,
                                      new_password);
   if (result == kSuccess)
     return true;
@@ -830,7 +845,7 @@ bool ClientController::CreatePublicUsername(
   }
 
   PacketParams keys_result;
-  int result = auth_->CreatePublicName(public_username, &keys_result);
+  int result = auth_.CreatePublicName(public_username, &keys_result);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("CC::CreatePublicUsername - Error in CreatePublicName.\n");
@@ -1023,7 +1038,7 @@ int ClientController::HandleReceivedShare(
         sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
         std::string public_key("aaa");
-        int result = auth_->PublicUsernamePublicKey(sp.id, public_key);
+        int result = auth_.PublicUsernamePublicKey(sp.id, public_key);
         if (result != kSuccess) {
 #ifdef DEBUG
           printf("Couldn't find %s's public key.\n", sp.id.c_str());
@@ -1046,7 +1061,7 @@ int ClientController::HandleReceivedShare(
         sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
         std::string public_key("aaa");
-        int result = auth_->PublicUsernamePublicKey(sp.id, public_key);
+        int result = auth_.PublicUsernamePublicKey(sp.id, public_key);
         if (result != kSuccess) {
 #ifdef DEBUG
           printf("Couldn't find %s's public key.\n", sp.id.c_str());
@@ -1079,7 +1094,7 @@ int ClientController::HandleReceivedShare(
   msid = "";
   PathDistinction(share_path, &msid);
   dir_type = GetDirType(share_path);
-  if (!seh_->ProcessMetaData(share_path, EMPTY_DIRECTORY, "", 0, &ser_mdm)) {
+  if (!seh_.ProcessMetaData(share_path, EMPTY_DIRECTORY, "", 0, &ser_mdm)) {
 #ifdef DEBUG
     printf("Didn't process metadata.\n");
 #endif
@@ -1218,7 +1233,7 @@ int ClientController::HandleAddContactRequest(
     rec_public_key = mic.pub_key_;
   } else {  // Contact didn't exist. Add from scratch.
     // Get contact's public key
-    int result = auth_->PublicUsernamePublicKey(sender, rec_public_key);
+    int result = auth_.PublicUsernamePublicKey(sender, rec_public_key);
     if (result != kSuccess) {
 #ifdef DEBUG
       printf("Can't get sender's public key.\n");
@@ -1486,7 +1501,7 @@ int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
 
 int ClientController::AddContact(const std::string &public_name) {
   std::string public_key("aaa");
-  int result = auth_->PublicUsernamePublicKey(public_name, public_key);
+  int result = auth_.PublicUsernamePublicKey(public_name, public_key);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("Couldn't find contact's public key.\n");
@@ -1663,7 +1678,7 @@ int ClientController::CreateNewShare(const std::string &name,
     return -30008;
   }
   CC_CallbackResult cbr;
-  auth_->CreateMSIDPacket(boost::bind(&CC_CallbackResult::CallbackFunc,
+  auth_.CreateMSIDPacket(boost::bind(&CC_CallbackResult::CallbackFunc,
                           &cbr, _1));
   WaitForResult(cbr);
   CreateMSIDResult cmsidr;
@@ -1947,11 +1962,11 @@ void ClientController::LocalVaultStatus_Callback(const VaultStatus &result,
 int ClientController::BackupElement(const std::string &path,
                                     const DirType dir_type,
                                     const std::string &msid) {
-  return seh_->EncryptFile(path, dir_type, msid);
+  return seh_.EncryptFile(path, dir_type, msid);
 }
 
 int ClientController::RetrieveElement(const std::string &path) {
-  int result = seh_->DecryptFile(path);
+  int result = seh_.DecryptFile(path);
   return result;
 }
 
@@ -2102,7 +2117,7 @@ int ClientController::GetDb(const std::string &orig_path_,
     *dir_type = GetDirType(path_);
     overwrite = true;
   }
-  if (seh_->DecryptDb(parent_path_, *dir_type, "", dir_key_,
+  if (seh_.DecryptDb(parent_path_, *dir_type, "", dir_key_,
       *msid, true, overwrite)) {
 #ifdef DEBUG
     printf("\t\tFailed trying to decrypt dm of db with dir key: %s\n",
@@ -2141,7 +2156,7 @@ int ClientController::SaveDb(const std::string &db_path,
     return 0;
   } else {
     DataMap dm;
-    if (seh_->EncryptDb(parent_path_, dir_type, dir_key_, msid, true, &dm) != 0)
+    if (seh_.EncryptDb(parent_path_, dir_type, dir_key_, msid, true, &dm) != 0)
       return -errno;
   }
     return 0;
@@ -2188,7 +2203,7 @@ int ClientController::RunDbEncQueue() {
           (*it).first.c_str(), db_type, (*it).second.first.c_str());
     printf("sec.second: %s\n", (*it).second.second.c_str());
 #endif
-    int int_res = seh_->EncryptDb((*it).first, db_type, (*it).second.first,
+    int int_res = seh_.EncryptDb((*it).first, db_type, (*it).second.first,
                                   (*it).second.second, true, &dm);
 #ifdef DEBUG
     printf(" with result %i\n", int_res);
@@ -2339,9 +2354,9 @@ int ClientController::mkdir(const std::string &path) {
   msid = "";
   PathDistinction(path, &msid);
   dir_type = GetDirType(path);
-  if (!seh_->MakeElement(path, EMPTY_DIRECTORY, dir_type, msid, "")) {
+  if (!seh_.MakeElement(path, EMPTY_DIRECTORY, dir_type, msid, "")) {
 #ifdef DEBUG
-    printf("\t\tIn CC::mkdir, seh_->MakeElement(%s, EMPTY_DIRECTORY) failed\n",
+    printf("\t\tIn CC::mkdir, seh_.MakeElement(%s, EMPTY_DIRECTORY) failed\n",
            path.c_str());
 #endif
     return -1;
@@ -2547,7 +2562,7 @@ int ClientController::mknod(const std::string &path) {
   printf("MSID after GetDb: %s\n", msid.c_str());
 #endif
 
-  if (!seh_->MakeElement(path, EMPTY_FILE, dir_type, msid, ""))
+  if (!seh_.MakeElement(path, EMPTY_FILE, dir_type, msid, ""))
     return -1;
 #ifdef DEBUG
   printf("MSID after MakeElement: %s\n", msid.c_str());
@@ -2645,7 +2660,7 @@ int ClientController::cpdir(const std::string &path,
 
   std::string new_rel_root_ = n_path.parent_path().string();
   std::string new_dir_key_;
-  seh_->GenerateUniqueKey(db_type2, msid2, 0, &new_dir_key_);
+  seh_.GenerateUniqueKey(db_type2, msid2, 0, &new_dir_key_);
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   if (dah_->CopyElement(ms_old_rel_entry_,
                         ms_new_rel_entry_,

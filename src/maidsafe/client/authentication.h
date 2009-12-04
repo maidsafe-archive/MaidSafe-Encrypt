@@ -44,7 +44,8 @@ class AuthCallbackResult {
 
 class Authentication {
  public:
-  explicit Authentication(StoreManagerInterface *storemanager);
+  Authentication();
+  void Init(boost::shared_ptr<StoreManagerInterface> smgr);
   int GetUserInfo(const std::string &username, const std::string &pin);
   int GetUserData(const std::string &password, std::string &ser_da);
   int CreateUserSysPackets(const std::string &username, const std::string &pin,
@@ -94,10 +95,10 @@ class Authentication {
   UserDetails ud_;
   boost::mutex mutex_;
   crypto::Crypto crypto_;
-  StoreManagerInterface *storemanager_;
+  boost::shared_ptr<StoreManagerInterface> storemanager_;
   SessionSingleton *ss_;
   std::string tmid_content_;
-  Authentication &operator=(const Authentication &) { return *this; }
+  Authentication &operator=(const Authentication &);
   Authentication(const Authentication &);
 };
 

@@ -137,7 +137,7 @@ class RunPDVaults {
     fs::path temp_(test_dir_);
     printf("Are you really, really, really sure that you want to delete %s?\n",
            test_dir_.c_str());
-    std::string delete_dir_("");
+    std::string delete_dir_;
     while (delete_dir_ != "y" &&
            delete_dir_ != "Y" &&
            delete_dir_ != "n" &&
@@ -184,7 +184,7 @@ class RunPDVaults {
         boost::uint16_t this_port = 0;
         if (initial_vault_port_ != 0)
           this_port = initial_vault_port_ + j;
-        std::string public_key(""), private_key(""), signed_key(""), node_id("");
+        std::string public_key, private_key, signed_key, node_id;
         GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
         boost::shared_ptr<maidsafe_vault::PDVault>
             pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
@@ -223,7 +223,7 @@ class RunPDVaults {
         chunkstore_dirs_.push_back(chunkstore_local_path);
         std::string kad_config_location = chunkstore_local + "/" +
             kad_config_file_;
-        std::string public_key(""), private_key(""), signed_key(""), node_id("");
+        std::string public_key, private_key, signed_key, node_id;
         GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
         boost::shared_ptr<maidsafe_vault::PDVault>
             pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
@@ -237,8 +237,9 @@ class RunPDVaults {
       // Start second vault and add as bootstrapping node for first vault
       (*pdvaults_)[1]->Start(true);
       boost::posix_time::ptime stop =
-          boost::posix_time::second_clock::local_time()+single_function_timeout_;
-      while (((*pdvaults_)[1]->vault_status() != maidsafe_vault::kVaultStarted) &&
+          boost::posix_time::second_clock::local_time() +
+          single_function_timeout_;
+      while (((*pdvaults_)[1]->vault_status() != kVaultStarted) &&
              boost::posix_time::second_clock::local_time() < stop) {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
       }
@@ -261,12 +262,12 @@ class RunPDVaults {
         return;
       }
       output1.close();
-      // Start first vault, add him as bootstrapping node for all others and stop
+      // Start first vault, add him as bootstrapping node for all others & stop
       // second vault
       (*pdvaults_)[0]->Start(false);
       stop = boost::posix_time::second_clock::local_time() +
           single_function_timeout_;
-      while (((*pdvaults_)[0]->vault_status() != maidsafe_vault::kVaultStarted) &&
+      while (((*pdvaults_)[0]->vault_status() != kVaultStarted) &&
              boost::posix_time::second_clock::local_time() < stop) {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
       }
@@ -306,7 +307,7 @@ class RunPDVaults {
         (*pdvaults_)[k]->Start(false);
         stop = boost::posix_time::second_clock::local_time() +
             single_function_timeout_;
-        while (((*pdvaults_)[k]->vault_status() != maidsafe_vault::kVaultStarted)
+        while (((*pdvaults_)[k]->vault_status() != kVaultStarted)
                && boost::posix_time::second_clock::local_time() < stop) {
           boost::this_thread::sleep(boost::posix_time::seconds(1));
         }
@@ -409,7 +410,7 @@ class RunPDVaults {
 int main(int argc, char* argv[]) {
   int num(10);
   std::string root_dir("Vaults");
-  std::string node_id("");
+  std::string node_id;
   std::string ip, local_ip;
   boost::uint16_t port, local_port;
   boost::uint16_t vault_port(0);

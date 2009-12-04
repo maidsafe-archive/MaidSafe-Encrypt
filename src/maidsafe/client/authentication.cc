@@ -61,14 +61,18 @@ char *utils_trim(char *szSource) {
   return utils_trim_left(utils_trim_right(utils_trim_left(szSource)));
 }
 
-Authentication::Authentication(StoreManagerInterface *storemanager)
+Authentication::Authentication()
     : ud_(),
       mutex_(),
       crypto_(),
-      storemanager_(storemanager),
-      ss_(SessionSingleton::getInstance()),
-      tmid_content_() {
-  ss_->ResetSession();
+      storemanager_(),
+      ss_(),
+      tmid_content_() {}
+
+
+void Authentication::Init(boost::shared_ptr<StoreManagerInterface> smgr) {
+  storemanager_ = smgr;
+  ss_ = SessionSingleton::getInstance();
   crypto_.set_hash_algorithm(crypto::SHA_512);
   crypto_.set_symm_algorithm(crypto::AES_256);
 }

@@ -58,7 +58,7 @@ class ClientController : public QObject {
 
   static ClientController* instance();
   void shutdown();
-  bool Init();
+  int Init();
 
   QString publicUsername() const;
 
