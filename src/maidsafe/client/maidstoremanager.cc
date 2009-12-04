@@ -2520,15 +2520,16 @@ int MaidsafeStoreManager::LoadPacketFromVaults(
   } else {
 //    printf("Deleting the potential RPCs. %u\n", get_packet_responses.size());
     for (size_t i = 0; i < packet_holders.size(); ++i) {
-      if (packet_holders.at(i)->controller.get() != NULL)
+      if (packet_holders.at(i)->controller)
         channel_manager_.CancelPendingRequest(packet_holders.at(i)->
                                               controller->req_id());
     }
   }
 #else
   for (size_t i = 0; i < packet_holders.size(); ++i) {
-    channel_manager_.
-        CancelPendingRequest(packet_holders.at(i)->controller->req_id());
+    if (packet_holders.at(i)->controller)
+      channel_manager_.
+          CancelPendingRequest(packet_holders.at(i)->controller->req_id());
   }
 #endif
   result->clear();
