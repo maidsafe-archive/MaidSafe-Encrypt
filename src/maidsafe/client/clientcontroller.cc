@@ -180,6 +180,12 @@ bool ClientController::JoinKademlia() {
 }
 
 int ClientController::ParseDa() {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::ParseDa - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   DataAtlas data_atlas;
   if (ser_da_ == "") {
 #ifdef DEBUG
@@ -255,6 +261,12 @@ int ClientController::ParseDa() {
 }
 
 int ClientController::SerialiseDa() {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::SerialiseDa - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   DataAtlas data_atlas_;
   data_atlas_.set_root_db_key(ss_->RootDbKey());
   DataMap root_dm, shares_dm;
@@ -342,6 +354,12 @@ int ClientController::SerialiseDa() {
 int ClientController::CheckUserExists(const std::string &username,
                                       const std::string &pin,
                                       DefConLevels level) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::CheckUserExists - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   ss_->ResetSession();
   ss_->SetDefConLevel(level);
   return auth_.GetUserInfo(username, pin);
@@ -351,6 +369,12 @@ bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password,
                                   const VaultConfigParameters &) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::CreateUser - Not initialised.\n");
+#endif
+    return false;
+  }
   ss_->SetConnectionStatus(0);
   uint32_t rid;
   int result = auth_.CreateUserSysPackets(username, pin, &rid);
@@ -488,6 +512,12 @@ bool ClientController::CreateUser(const std::string &username,
 
 int ClientController::SetVaultConfig(const std::string &pmid_public,
                                      const std::string &pmid_private) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::SetVaultConfig - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   fs::path vault_path(fsys_.ApplicationDataDir(), fs::native);
   vault_path /= "vault";
   try {
@@ -530,6 +560,12 @@ int ClientController::SetVaultConfig(const std::string &pmid_public,
 }
 
 bool ClientController::ValidateUser(const std::string &password) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::ValidateUser - Not initialised.\n");
+#endif
+    return false;
+  }
   ser_da_.clear();
   ser_dm_.clear();
   int result = auth_.GetUserData(password, ser_dm_);
@@ -593,6 +629,12 @@ bool ClientController::ValidateUser(const std::string &password) {
 }
 
 void ClientController::CloseConnection(bool clean_up_transport) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::CloseConnection - Not initialised.\n");
+#endif
+    return;
+  }
   CC_CallbackResult cb;
   sm_->StopRvPing();
   sm_->Close(boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1), true);
@@ -615,11 +657,23 @@ void ClientController::CloseConnection(bool clean_up_transport) {
 }
 
 void ClientController::StopRvPing() {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::StopRvPing - Not initialised.\n");
+#endif
+    return;
+  }
   if (sm_)
     sm_->StopRvPing();
 }
 
 bool ClientController::Logout() {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::Logout - Not initialised.\n");
+#endif
+    return false;
+  }
   logging_out_ = true;
   int result = SaveSession();
   clear_messages_thread_.join();
@@ -667,6 +721,12 @@ bool ClientController::Logout() {
 }
 
 int ClientController::SaveSession() {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::SaveSession - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   PacketParams priv_keys, pub_keys;
   std::list<KeyAtlasRow> keys;
   ss_->GetKeys(&keys);
@@ -712,6 +772,12 @@ int ClientController::SaveSession() {
 }
 
 bool ClientController::LeaveMaidsafeNetwork() {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::LeaveMaidsafeNetwork - Not initialised.\n");
+#endif
+    return false;
+  }
   std::list<KeyAtlasRow> keys;
   int result;
   std::string dir = fsys_.MaidsafeDir();
@@ -734,6 +800,12 @@ bool ClientController::LeaveMaidsafeNetwork() {
 }
 
 bool ClientController::ChangeUsername(const std::string &new_username) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::ChangeUsername - Not initialised.\n");
+#endif
+    return false;
+  }
   PacketParams priv_keys, pub_keys;
   SerialiseDa();
   std::list<KeyAtlasRow> keys;
@@ -767,6 +839,12 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
 }
 
 bool ClientController::ChangePin(const std::string &new_pin) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::ChangePin - Not initialised.\n");
+#endif
+    return false;
+  }
   PacketParams priv_keys, pub_keys;
   SerialiseDa();
   std::list<KeyAtlasRow> keys;
@@ -799,6 +877,12 @@ bool ClientController::ChangePin(const std::string &new_pin) {
 }
 
 bool ClientController::ChangePassword(const std::string &new_password) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::ChangePassword - Not initialised.\n");
+#endif
+    return false;
+  }
   PacketParams priv_keys, pub_keys;
   SerialiseDa();
   std::list<KeyAtlasRow> keys;
@@ -837,6 +921,12 @@ bool ClientController::ChangePassword(const std::string &new_password) {
 
 bool ClientController::CreatePublicUsername(
     const std::string &public_username) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::CreatePublicUsername - Not initialised.\n");
+#endif
+    return false;
+  }
   if (ss_->PublicUsername() != "") {
 #ifdef DEBUG
     printf("CC::CreatePublicUsername - Already have public username.\n");
@@ -887,6 +977,12 @@ int ClientController::ChangeConnectionStatus(int status) {
 ////////////////////////
 
 bool ClientController::GetMessages() {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::GetMessages - Not initialised.\n");
+#endif
+    return false;
+  }
   // Only getting MPID buffer packet
   if (ss_->PublicUsername() == "") {
 #ifdef DEBUG
@@ -912,6 +1008,12 @@ bool ClientController::GetMessages() {
 
 int ClientController::HandleMessages(
     std::list<ValidatedBufferPacketMessage> *valid_messages) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::HandleMessages - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   int result = 0;
 #ifdef DEBUG
       printf("=========================================\n");
@@ -983,6 +1085,12 @@ void ClientController::ClearStaleMessages() {
 
 int ClientController::HandleDeleteContactNotification(
     const std::string &sender) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::HandleDeleteContactNotification - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   int n = ss_->UpdateContactConfirmed(sender, 'U');
   if (n != 0) {
 #ifdef DEBUG
@@ -997,6 +1105,12 @@ int ClientController::HandleDeleteContactNotification(
 int ClientController::HandleReceivedShare(
     const PrivateShareNotification &psn,
     const std::string &name) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::HandleReceivedShare - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("Dir key: %s", psn.dir_db_key().c_str());
   printf("Public key: %s", psn.public_key().c_str());
@@ -1127,6 +1241,12 @@ int ClientController::HandleReceivedShare(
 
 int ClientController::HandleInstantMessage(
     const ValidatedBufferPacketMessage &vbpm) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::HandleInstantMessage - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("INSTANT MESSAGE received\n");
   printf("Sender: %s\n", vbpm.sender().c_str());
@@ -1146,6 +1266,12 @@ int ClientController::HandleInstantMessage(
 int ClientController::AddInstantFile(
     const InstantFileNotification &ifm,
     const std::string &location) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::AddInstantFile - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   fs::path path(base::TidyPath(kRootSubdir[0][0]));
 
   maidsafe::MetaDataMap sent_mdm;
@@ -1211,6 +1337,12 @@ int ClientController::AddInstantFile(
 
 int ClientController::HandleAddContactRequest(
     const ContactInfo &ci, const std::string &sender) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::HandleAddContactRequest - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   // TODO(Team#5#): return choice to the user to accept/reject contact
 
   // Check if contact is on the list and has unconfirmed status
@@ -1317,6 +1449,12 @@ int ClientController::HandleAddContactRequest(
 
 int ClientController::HandleAddContactResponse(
     const ContactInfo &ci, const std::string &sender) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::HandleAddContactResponse - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   // Check if contact exists in local session
   Contact c;
   c.SetPublicName(sender);
@@ -1359,6 +1497,12 @@ int ClientController::HandleAddContactResponse(
 
 int ClientController::SendInstantMessage(const std::string &message,
     const std::vector<std::string> &contact_names) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::SendInstantMessage - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   if (ss_->ConnectionStatus() == 1) {
 #ifdef DEBUG
     printf("Can't send a message while off-line.\n");
@@ -1384,6 +1528,12 @@ int ClientController::SendInstantMessage(const std::string &message,
 }
 
 int ClientController::GetInstantMessages(std::list<InstantMessage> *messages) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::GetInstantMessages - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   *messages = messages_;
   messages_.clear();
   return 0;
@@ -1391,6 +1541,12 @@ int ClientController::GetInstantMessages(std::list<InstantMessage> *messages) {
 
 int ClientController::SendInstantFile(std::string *filename,
     const std::string &msg, const std::vector<std::string> &contact_names) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::SendInstantFile - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   if (ss_->ConnectionStatus() == 1) {
 #ifdef DEBUG
     printf("Can't send a message while off-line.\n");
@@ -1468,6 +1624,12 @@ int ClientController::SendInstantFile(std::string *filename,
 
 int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
                                   const std::string &pub_name) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::ContactList - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   std::vector<maidsafe::mi_contact> mic_list;
   if (pub_name.empty()) {
     int n = ss_->GetContactList(&mic_list);
@@ -1500,6 +1662,12 @@ int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
 }
 
 int ClientController::AddContact(const std::string &public_name) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::AddContact - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   std::string public_key("aaa");
   int result = auth_.PublicUsernamePublicKey(public_name, public_key);
   if (result != kSuccess) {
@@ -1576,6 +1744,12 @@ int ClientController::AddContact(const std::string &public_name) {
 }
 
 int ClientController::DeleteContact(const std::string &public_name) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::DeleteContact - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   // TODO(Richard): Maybe it would be good to send a message for the other
   //                user's GUI to know to change the status of the contact.
   std::set<std::string> s;
@@ -1655,6 +1829,12 @@ std::string ClientController::GenerateBPInfo() {
 
 int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
                                    const std::string &value) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::GetShareList - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   int n = 0;
   if (value.empty()) {
     n = ss_->GetFullShareList(ps_list);
@@ -1671,6 +1851,12 @@ int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
 int ClientController::CreateNewShare(const std::string &name,
                       const std::set<std::string> &admins,
                       const std::set<std::string> &readonlys) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::CreateNewShare - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   if (ss_->ConnectionStatus() == 1) {
 #ifdef DEBUG
     printf("Can't send a message while off-line.\n");
@@ -1818,6 +2004,12 @@ bool ClientController::PollVaultInfo(std::string *chunkstore,
                                      boost::uint64_t *free_space,
                                      std::string *ip,
                                      boost::uint32_t *port) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::PollVaultInfo - Not initialised.\n");
+#endif
+    return false;
+  }
   if (ss_->VaultIP() == "" || ss_->VaultPort() == 0) {
     if (!VaultContactInfo()) {
       return false;
@@ -1860,6 +2052,12 @@ bool ClientController::PollVaultInfo(std::string *chunkstore,
 }
 
 bool ClientController::VaultContactInfo() {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::VaultContactInfo - Not initialised.\n");
+#endif
+    return false;
+  }
 #ifdef LOCAL_PDVAULT
   ss_->SetVaultIP("192.168.1.7");
   ss_->SetVaultPort(55555);
@@ -1962,15 +2160,33 @@ void ClientController::LocalVaultStatus_Callback(const VaultStatus &result,
 int ClientController::BackupElement(const std::string &path,
                                     const DirType dir_type,
                                     const std::string &msid) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::BackupElement - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   return seh_.EncryptFile(path, dir_type, msid);
 }
 
 int ClientController::RetrieveElement(const std::string &path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::RetrieveElement - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   int result = seh_.DecryptFile(path);
   return result;
 }
 
 int ClientController::RemoveElement(std::string path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::RemoveElement - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   if (dah->RemoveElement(path))
     return -1;
@@ -2189,6 +2405,12 @@ int ClientController::RemoveDb(const std::string &path) {
 }
 
 int ClientController::RunDbEncQueue() {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::RunDbEncQueue - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
   std::map<std::string, std::pair<std::string, std::string> >::iterator it;
   int result = 0;
 #ifdef DEBUG
@@ -2220,6 +2442,12 @@ int ClientController::RunDbEncQueue() {
 }
 
 bool ClientController::ReadOnly(const std::string &path, bool gui) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::ReadOnly - Not initialised.\n");
+#endif
+    return true;
+  }
 #ifdef DEBUG
   printf("\n\t\tCC::ReadOnly, path = %s\t%i\t", path.c_str(), gui);
 #endif
@@ -2315,6 +2543,12 @@ bool ClientController::ReadOnly(const std::string &path, bool gui) {
 //////////////////////////////
 
 char ClientController::DriveLetter() {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::RunDbEncQueue - Not initialised.\n");
+#endif
+    return 'c';
+  }
   for (char drive = 'm'; drive <= 'z'; ++drive) {
     std::ostringstream oss;
     oss << drive;
@@ -2337,6 +2571,12 @@ char ClientController::DriveLetter() {
 }
 
 int ClientController::mkdir(const std::string &path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::mkdir - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::mkdir %s\n", path.c_str());
 #endif
@@ -2417,6 +2657,12 @@ int ClientController::mkdir(const std::string &path) {
 
 int ClientController::rename(const std::string &path,
                              const std::string &path2) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::rename - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::rename %s to %s\n", path.c_str(), path2.c_str());
 #endif
@@ -2483,6 +2729,12 @@ int ClientController::rename(const std::string &path,
 }
 
 int ClientController::rmdir(const std::string &path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::rmdir - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::rmdir %s\n", path.c_str());
 #endif
@@ -2520,6 +2772,12 @@ int ClientController::rmdir(const std::string &path) {
 }
 
 int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::getattr - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::getattr %s\n", path.c_str());
 #endif
@@ -2537,6 +2795,12 @@ int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
 
 int ClientController::readdir(const std::string &path,  // NOLINT
                               std::map<std::string, ItemType> &children) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::readdir - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::readdir %s\n", path.c_str());
 #endif
@@ -2551,6 +2815,12 @@ int ClientController::readdir(const std::string &path,  // NOLINT
 }
 
 int ClientController::mknod(const std::string &path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::mknod - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::mknod %s\n", path.c_str());
 #endif
@@ -2578,6 +2848,12 @@ int ClientController::mknod(const std::string &path) {
 }
 
 int ClientController::unlink(const std::string &path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::unlink - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::unlink %s\n", path.c_str());
 #endif
@@ -2607,6 +2883,12 @@ int ClientController::unlink(const std::string &path) {
 }
 
 int ClientController::link(const std::string &path, const std::string &path2) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::link - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::link %s to %s\n", path.c_str(), path2.c_str());
 #endif
@@ -2645,6 +2927,12 @@ int ClientController::link(const std::string &path, const std::string &path2) {
 
 int ClientController::cpdir(const std::string &path,
                             const std::string &path2) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::cpdir - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::cpdir %s to %s\n", path.c_str(), path2.c_str());
 #endif
@@ -2705,6 +2993,12 @@ int ClientController::cpdir(const std::string &path,
 }
 
 int ClientController::utime(const std::string &path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::utime - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::utime %s\n", path.c_str());
 #endif
@@ -2735,6 +3029,12 @@ int ClientController::utime(const std::string &path) {
 }
 
 int ClientController::atime(const std::string &path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::atime - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::atime %s\n", path.c_str());
 #endif
@@ -2757,6 +3057,12 @@ int ClientController::atime(const std::string &path) {
 }
 
 int ClientController::open(const std::string &path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::open - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::open %s\n", path.c_str());
 #endif
@@ -2768,6 +3074,12 @@ int ClientController::open(const std::string &path) {
 }
 
 int ClientController::read(const std::string &path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::read - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::read %s\n", path.c_str());
 #endif
@@ -2779,6 +3091,12 @@ int ClientController::read(const std::string &path) {
 }
 
 int ClientController::write(const std::string &path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::write - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::write %s\n", path.c_str());
 #endif
@@ -2809,6 +3127,12 @@ int ClientController::write(const std::string &path) {
 }
 
 int ClientController::create(const std::string &path) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::create - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
 #ifdef DEBUG
   printf("\t\tCC::create %s\n", path.c_str());
 #endif

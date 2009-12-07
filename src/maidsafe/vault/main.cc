@@ -256,7 +256,7 @@ class RunPDVaults {
 //      kad_contact->set_local_port((*pdvaults_)[1]->local_host_port());
 //      kad_config_file_ = chunkstore_dir_+"/Chunkstore0/.kadconfig";
 //      std::fstream output1(kad_config_file_.c_str(),
-//                           std::ios::out | std::ios::trunc | std::ios::binary);
+//                          std::ios::out | std::ios::trunc | std::ios::binary);
 //      if (!kad_config.SerializeToOstream(&output1)) {
 //        printf("\nDidn't serialise kadconfig properly.\n");
 //        return;

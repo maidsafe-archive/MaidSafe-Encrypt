@@ -1117,7 +1117,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreClear) {
 
   // Clear empty chunk store
   ASSERT_EQ(0, chunkstore->Clear());
-  ASSERT_EQ(0, chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(fs::exists(chunkstore->kChunkstorePath_));
 
   // Empty with one chunk in
@@ -1125,17 +1125,17 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreClear) {
   std::string tempval;
   ASSERT_EQ(0, chunkstore->Load(h_name.at(0), &tempval));
   ASSERT_EQ(h_value.at(0), tempval);
-  ASSERT_EQ(1, chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
   ASSERT_EQ(0, chunkstore->Clear());
-  ASSERT_EQ(0, chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(fs::exists(chunkstore->kChunkstorePath_));
 
   // Empty with kNumberOfChunks chunks
   for (size_t i = 0; i < h_value.size(); ++i)
     ASSERT_EQ(0, chunkstore->Store(h_name.at(i), h_value.at(i)));
-  ASSERT_EQ(kNumberOfChunks, chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(size_t(kNumberOfChunks), chunkstore->chunkstore_set_.size());
   ASSERT_EQ(0, chunkstore->Clear());
-  ASSERT_EQ(0, chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(fs::exists(chunkstore->kChunkstorePath_));
 }
 

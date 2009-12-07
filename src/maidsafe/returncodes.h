@@ -72,6 +72,8 @@ enum ReturnCode {
   kChunkExistsInChunkstore = 3001,  // intentionally positive
 
   // Client Controller
+  kClientControllerError = -10001,
+  kClientControllerNotInitialised = -10002,
 
   // Data Atlas Handler
   kDataAtlasError = -4001,
