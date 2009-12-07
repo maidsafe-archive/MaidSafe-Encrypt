@@ -234,38 +234,39 @@ class RunPDVaults {
         printf(".");
       }
       printf("\n\tStarting vaults");
-      // Start second vault and add as bootstrapping node for first vault
-      (*pdvaults_)[1]->Start(true);
-      boost::posix_time::ptime stop =
-          boost::posix_time::second_clock::local_time() +
-          single_function_timeout_;
-      while (((*pdvaults_)[1]->vault_status() != kVaultStarted) &&
-             boost::posix_time::second_clock::local_time() < stop) {
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
-      }
-      if (maidsafe_vault::kVaultStarted != (*pdvaults_)[1]->vault_status()) {
-        printf("\nVault 1 didn't start properly!\n");
-        return;
-      }
-      base::KadConfig kad_config;
-      base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-      kad_contact->set_node_id((*pdvaults_)[1]->hex_node_id());
-      kad_contact->set_ip((*pdvaults_)[1]->host_ip());
-      kad_contact->set_port((*pdvaults_)[1]->host_port());
-      kad_contact->set_local_ip((*pdvaults_)[1]->local_host_ip());
-      kad_contact->set_local_port((*pdvaults_)[1]->local_host_port());
-      kad_config_file_ = chunkstore_dir_+"/Chunkstore0/.kadconfig";
-      std::fstream output1(kad_config_file_.c_str(),
-                           std::ios::out | std::ios::trunc | std::ios::binary);
-      if (!kad_config.SerializeToOstream(&output1)) {
-        printf("\nDidn't serialise kadconfig properly.\n");
-        return;
-      }
-      output1.close();
+//      // Start second vault and add as bootstrapping node for first vault
+//      (*pdvaults_)[1]->Start(true);
+//      boost::posix_time::ptime stop =
+//          boost::posix_time::second_clock::local_time() +
+//          single_function_timeout_;
+//      while (((*pdvaults_)[1]->vault_status() != kVaultStarted) &&
+//             boost::posix_time::second_clock::local_time() < stop) {
+//        boost::this_thread::sleep(boost::posix_time::seconds(1));
+//      }
+//      if (maidsafe_vault::kVaultStarted != (*pdvaults_)[1]->vault_status()) {
+//        printf("\nVault 1 didn't start properly!\n");
+//        return;
+//      }
+//      base::KadConfig kad_config;
+//      base::KadConfig::Contact *kad_contact = kad_config.add_contact();
+//      kad_contact->set_node_id((*pdvaults_)[1]->hex_node_id());
+//      kad_contact->set_ip((*pdvaults_)[1]->host_ip());
+//      kad_contact->set_port((*pdvaults_)[1]->host_port());
+//      kad_contact->set_local_ip((*pdvaults_)[1]->local_host_ip());
+//      kad_contact->set_local_port((*pdvaults_)[1]->local_host_port());
+//      kad_config_file_ = chunkstore_dir_+"/Chunkstore0/.kadconfig";
+//      std::fstream output1(kad_config_file_.c_str(),
+//                           std::ios::out | std::ios::trunc | std::ios::binary);
+//      if (!kad_config.SerializeToOstream(&output1)) {
+//        printf("\nDidn't serialise kadconfig properly.\n");
+//        return;
+//      }
+//      output1.close();
       // Start first vault, add him as bootstrapping node for all others & stop
       // second vault
-      (*pdvaults_)[0]->Start(false);
-      stop = boost::posix_time::second_clock::local_time() +
+      (*pdvaults_)[0]->Start(true);
+      boost::posix_time::ptime stop =
+          boost::posix_time::second_clock::local_time() +
           single_function_timeout_;
       while (((*pdvaults_)[0]->vault_status() != kVaultStarted) &&
              boost::posix_time::second_clock::local_time() < stop) {
@@ -277,22 +278,23 @@ class RunPDVaults {
       }
 
       printf(".");
-      kad_contact->Clear();
-      kad_config.Clear();
-      kad_contact = kad_config.add_contact();
+//      kad_contact->Clear();
+//      kad_config.Clear();
+      base::KadConfig kad_config;
+      base::KadConfig::Contact *kad_contact = kad_config.add_contact();
       kad_contact->set_node_id((*pdvaults_)[0]->hex_node_id());
       kad_contact->set_ip((*pdvaults_)[0]->host_ip());
       kad_contact->set_port((*pdvaults_)[0]->host_port());
       kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
       kad_contact->set_local_port((*pdvaults_)[0]->local_host_port());
-      if (0 != (*pdvaults_)[1]->Stop()) {
-        printf("\nVault 1 didn't stop properly!\n");
-        return;
-      }
-      if (maidsafe_vault::kVaultStarted == (*pdvaults_)[1]->vault_status()) {
-        printf("\nVault 1 is still running!\n");
-        return;
-      }
+//      if (0 != (*pdvaults_)[1]->Stop()) {
+//        printf("\nVault 1 didn't stop properly!\n");
+//        return;
+//      }
+//      if (maidsafe_vault::kVaultStarted == (*pdvaults_)[1]->vault_status()) {
+//        printf("\nVault 1 is still running!\n");
+//        return;
+//      }
       // Save kad config to files and start all remaining vaults
       for (int k = 1; k < no_of_vaults_; ++k) {
         kad_config_file_ = chunkstore_dir_+"/Chunkstore"+ base::itos(k) +
