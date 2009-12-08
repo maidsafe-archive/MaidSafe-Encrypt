@@ -49,19 +49,6 @@ class GeneralCallback {
       called_back_ = true;
     }
   }
-  bool Success() {
-    bool got_callback = false;
-    while (!got_callback) {
-      {
-        boost::mutex::scoped_lock lock(callback_mutex_);
-        if (called_back_) {
-          got_callback = true;
-        }
-      }
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-    }
-    return callback_succeeded_;
-  }
  private:
   bool called_back_;
   bool callback_succeeded_;
@@ -88,17 +75,6 @@ void ThreadedDoneRun(const int &min_delay,
   boost::thread(DoneRun, min_delay, max_delay, callback);
 }
 
-void ConditionNotify(int set_return,
-                     int *return_value,
-                     maidsafe::GenericConditionData *generic_cond_data) {
-  boost::this_thread::sleep(boost::posix_time::milliseconds(
-      base::random_32bit_uinteger() % 1000 + 5000));
-  boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
-  *return_value = set_return;
-  generic_cond_data->cond_flag = true;
-  generic_cond_data->cond_variable->notify_all();
-}
-
 void ConditionNotifyNoFlag(int set_return,
                            int *return_value,
                            maidsafe::GenericConditionData *generic_cond_data) {
@@ -107,18 +83,6 @@ void ConditionNotifyNoFlag(int set_return,
   boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
   *return_value = set_return;
   generic_cond_data->cond_variable->notify_all();
-}
-
-void ThreadedConditionNotifyZero(
-    int *return_value,
-    maidsafe::GenericConditionData *generic_cond_data) {
-  boost::thread(ConditionNotify, 0, return_value, generic_cond_data);
-}
-
-void ThreadedConditionNotifyNegOne(
-    int *return_value,
-    maidsafe::GenericConditionData *generic_cond_data) {
-  boost::thread(ConditionNotify, -1, return_value, generic_cond_data);
 }
 
 void FailedContactCallback(
@@ -244,6 +208,7 @@ class MaidStoreManagerTest : public testing::Test {
   virtual void SetUp() {
     client_chunkstore_ = boost::shared_ptr<ChunkStore>
         (new ChunkStore(client_chunkstore_dir_, 0, 0));
+    ASSERT_TRUE(client_chunkstore_->Init());
   }
   virtual void TearDown() {}
 

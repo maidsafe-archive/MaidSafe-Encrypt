@@ -144,6 +144,12 @@ int ClientController::Init() {
   }
   client_chunkstore_ = boost::shared_ptr<ChunkStore>
       (new ChunkStore(client_path.string(), 0, 0));
+  if (!client_chunkstore_->Init()) {
+#ifdef DEBUG
+    printf("CC::Init - Failed to initialise client chunkstore.\n");
+#endif
+    return -5;
+  }
 #ifdef LOCAL_PDVAULT
     sm_.reset(new LocalStoreManager(client_chunkstore_));
 #else
@@ -386,6 +392,7 @@ bool ClientController::CreateUser(const std::string &username,
     ss_->ResetSession();
     return false;
   }
+  client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);
   std::string ser_da(""), ser_dm("");
   ss_->SerialisedKeyRing(&ser_da);
@@ -578,6 +585,7 @@ bool ClientController::ValidateUser(const std::string &password) {
 #endif
     return false;
   }
+  client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);
   if (seh_.DecryptString(ser_dm_, &ser_da_) != 0) {
     ss_->ResetSession();
@@ -699,17 +707,7 @@ bool ClientController::Logout() {
     fsys_.UnMount();
     ss_->ResetSession();
     messages_.clear();
-    try {
-      if (fs::exists(client_store_)) {
-        fs::remove_all(client_store_);
-      }
-    }
-    catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("ClientController::Logout - Couldn't delete client path\n");
-#endif
-    }
-
+    client_chunkstore_->Clear();
     logging_out_ = false;
     ser_da_.clear();
     ser_dm_.clear();

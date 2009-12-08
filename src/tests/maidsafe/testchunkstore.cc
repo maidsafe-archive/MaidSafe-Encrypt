@@ -340,6 +340,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreInit) {
   std::string invalid_path_length(257, ' ');
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       invalid_path_length, 1073741824, 0));
+  ASSERT_FALSE(chunkstore->Init());
   ASSERT_FALSE(chunkstore->is_initialised());
   ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
                                           &h_value, &h_name));
@@ -398,6 +399,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreInit) {
             chunkstore->LoadPacket(p_name.at(0), &gps));
   boost::shared_ptr<VaultChunkStore> chunkstore1(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore1->Init());
   test_chunkstore::WaitForInitialisation(chunkstore1, 60000);
   ASSERT_TRUE(chunkstore1->is_initialised());
   ASSERT_TRUE(chunkstore1->Init());
@@ -408,6 +410,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreInit) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
@@ -535,6 +538,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
@@ -627,6 +631,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreLoadChunk) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
@@ -658,6 +663,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreLoadChunk) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreHasChunk) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
@@ -685,6 +691,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreHasChunk) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreDeleteChunk) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
@@ -737,6 +744,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreDeleteChunk) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreLoadRandomChunk) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // test when chunkstore is empty
@@ -797,6 +805,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreLoadRandomChunk) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreUpdateChunk) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
@@ -831,6 +840,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreUpdateChunk) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreHashCheckChunk) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // check using hashable chunk
@@ -879,6 +889,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreHashCheckChunk) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreChangeChunkType) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = chunkstore->path_map_.size();  // 8
@@ -987,6 +998,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreChangeChunkType) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreChunkType) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = chunkstore->path_map_.size();  // 8
@@ -1021,6 +1033,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreSpace) {
   const int kStartingFreeSpace(kStartingAvailableSpace - kStartingUsedSpace);
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), kStartingAvailableSpace, kStartingUsedSpace));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
@@ -1060,6 +1073,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreSpace) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreReuseDirectory) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 5 * chunkstore->path_map_.size();  // 40
@@ -1087,6 +1101,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreReuseDirectory) {
   // Create a new chunkstore that has same root dir
   boost::shared_ptr<VaultChunkStore> chunkstore1(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore1->Init());
   test_chunkstore::WaitForInitialisation(chunkstore1, 60000);
   ASSERT_TRUE(chunkstore1->is_initialised());
   ASSERT_EQ(size_t(kNumberOfChunks), chunkstore1->chunkstore_set_.size());
@@ -1100,6 +1115,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreReuseDirectory) {
   ASSERT_EQ(0, chunkstore->UpdateChunk(h_name.at(0), "modified content"));
   boost::shared_ptr<VaultChunkStore> chunkstore2(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore2->Init());
   test_chunkstore::WaitForInitialisation(chunkstore2, 60000);
   ASSERT_TRUE(chunkstore2->is_initialised());
   ASSERT_EQ(size_t(kNumberOfChunks - 1), chunkstore2->chunkstore_set_.size());
@@ -1109,6 +1125,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreReuseDirectory) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreClear) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 5 * chunkstore->path_map_.size();  // 40
@@ -1121,6 +1138,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreClear) {
   ASSERT_FALSE(fs::exists(chunkstore->kChunkstorePath_));
 
   // Empty with one chunk in
+  ASSERT_TRUE(chunkstore->Init());
   ASSERT_EQ(0, chunkstore->Store(h_name.at(0), h_value.at(0)));
   std::string tempval;
   ASSERT_EQ(0, chunkstore->Load(h_name.at(0), &tempval));
@@ -1131,6 +1149,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreClear) {
   ASSERT_FALSE(fs::exists(chunkstore->kChunkstorePath_));
 
   // Empty with kNumberOfChunks chunks
+  ASSERT_TRUE(chunkstore->Init());
   for (size_t i = 0; i < h_value.size(); ++i)
     ASSERT_EQ(0, chunkstore->Store(h_name.at(i), h_value.at(i)));
   ASSERT_EQ(size_t(kNumberOfChunks), chunkstore->chunkstore_set_.size());
@@ -1142,6 +1161,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreClear) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreGetAllChunks) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // Check with empty chunkstore.
@@ -1170,6 +1190,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreGetAllChunks) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCheckAllChunks) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 5 * chunkstore->path_map_.size();  // 40
@@ -1259,6 +1280,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCheckAllChunks) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedStoreAndLoad) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -1331,6 +1353,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedStoreAndLoad) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedUpdate) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -1417,6 +1440,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedUpdate) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedDelete) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -1491,6 +1515,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedDelete) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedRandLoad) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -1558,6 +1583,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedRandLoad) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedCheckSingle) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -1617,6 +1643,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedCheckSingle) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedCheckAll) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 50;
@@ -1666,6 +1693,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedCheckAll) {
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedChangeType) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   const int kNumberOfChunks = 80;
@@ -1760,6 +1788,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedChangeType) {
 TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreStorePackets) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // Check valid stores succeed.
@@ -1792,6 +1821,7 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreStorePackets) {
 TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreAppendToPackets) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // Check append to non-existing name fails.
@@ -1867,6 +1897,7 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreAppendToPackets) {
 TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreOverwritePackets) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // Set up 2 vectors of 10 vectors of 1 and 7 GenericPackets
@@ -1993,6 +2024,7 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreOverwritePackets) {
 TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreDeletePackets) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // Set up a vector of 10 vectors of 7 GenericPackets
@@ -2095,6 +2127,7 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreDeletePackets) {
 TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreHasPackets) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
   // Store packets

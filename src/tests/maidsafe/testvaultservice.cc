@@ -105,6 +105,7 @@ class VaultServicesTest : public testing::Test {
                               pmid_private_, pmid_public_, false, false);
       vault_chunkstore_ = new VaultChunkStore(chunkstore_dir_.string(),
                                               kAvailableSpace, 0);
+      ASSERT_TRUE(vault_chunkstore_->Init());
 
       vault_service_ = new VaultService(pmid_public_, pmid_private_,
                                         signed_pmid_public_, vault_chunkstore_,
@@ -1735,6 +1736,7 @@ class TestStorePacket : public testing::Test {
 
 TEST_F(TestStorePacket, BEH_MAID_StoreSysPacket) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
+  ASSERT_TRUE(chunkstore.Init());
   VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
     &chunkstore, NULL, NULL);
   rpcprotocol::Controller ctrl;
@@ -1801,6 +1803,7 @@ TEST_F(TestStorePacket, BEH_MAID_StoreSysPacket) {
 
 TEST_F(TestStorePacket, BEH_MAID_OverWriteSystemPacket) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
+  ASSERT_TRUE(chunkstore.Init());
   VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
     &chunkstore, NULL, NULL);
   rpcprotocol::Controller ctrl;
@@ -1874,6 +1877,7 @@ TEST_F(TestStorePacket, BEH_MAID_OverWriteSystemPacket) {
 
 TEST_F(TestStorePacket, BEH_MAID_AppendSystemPacket) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
+  ASSERT_TRUE(chunkstore.Init());
   VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
     &chunkstore, NULL, NULL);
   rpcprotocol::Controller ctrl;
@@ -1949,6 +1953,7 @@ TEST_F(TestStorePacket, BEH_MAID_AppendSystemPacket) {
 
 TEST_F(TestStorePacket, BEH_MAID_IncorrectSignatures) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
+  ASSERT_TRUE(chunkstore.Init());
   VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
     &chunkstore, NULL, NULL);
   rpcprotocol::Controller ctrl;
@@ -2028,6 +2033,7 @@ TEST_F(TestStorePacket, BEH_MAID_IncorrectSignatures) {
 
 TEST_F(TestStorePacket, BEH_MAID_InvalidOverWrite) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
+  ASSERT_TRUE(chunkstore.Init());
   VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
     &chunkstore, NULL, NULL);
   rpcprotocol::Controller ctrl;
@@ -2114,6 +2120,7 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidOverWrite) {
 
 TEST_F(TestStorePacket, BEH_MAID_InvalidAppend) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
+  ASSERT_TRUE(chunkstore.Init());
   VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
     &chunkstore, NULL, NULL);
   rpcprotocol::Controller ctrl;
@@ -2226,6 +2233,7 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidAppend) {
 
 TEST_F(TestStorePacket, BEH_MAID_StorePDDIR_NOT_SIGNED) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
+  ASSERT_TRUE(chunkstore.Init());
   VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
     &chunkstore, NULL, NULL);
   rpcprotocol::Controller ctrl;
@@ -2276,6 +2284,7 @@ TEST_F(TestStorePacket, BEH_MAID_StorePDDIR_NOT_SIGNED) {
 
 TEST_F(TestStorePacket, BEH_MAID_StoreThenLoadSystemPacket) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
+  ASSERT_TRUE(chunkstore.Init());
   VaultService service(pmid_public_, pmid_private_, pmid_signed_public_,
     &chunkstore, NULL, NULL);
   rpcprotocol::Controller ctrl;

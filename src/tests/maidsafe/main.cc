@@ -34,7 +34,7 @@ class NetTest {
  public:
   NetTest() :num_nodes_(10), start_port_(5483) {}
   int StartNodes() { return 0; }
-  int StopNodes() { return 0; }
+//  int StopNodes() { return 0; }
   bool num_nodes() { return num_nodes_; }
   void set_num_nodes(int num_nodes) { num_nodes_ = num_nodes; }
  private:

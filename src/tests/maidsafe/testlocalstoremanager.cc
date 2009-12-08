@@ -96,6 +96,7 @@ class LocalStoreManagerTest : public testing::Test {
     mutex_ = new boost::mutex();
     client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
          (new maidsafe::ChunkStore(test_root_dir_, 0, 0));
+    ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));

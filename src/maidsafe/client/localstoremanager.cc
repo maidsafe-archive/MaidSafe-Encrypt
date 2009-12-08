@@ -46,30 +46,6 @@ void ExecuteFailureCallback(const base::callback_func_type &cb,
   cb(ser_result);
 }
 
-void ExeCallbackLoad(const base::callback_func_type &cb, std::string content,
-                     boost::mutex *mutex) {
-  boost::mutex::scoped_lock gaurd(*mutex);
-  GetResponse result;
-  std::string ser_result;
-  result.set_result(kAck);
-  result.set_content(content);
-  result.SerializeToString(&ser_result);
-  cb(ser_result);
-}
-
-void ExeCallbackGetMsgs(const base::callback_func_type &cb,
-                        const std::vector<std::string> &msgs,
-                        boost::mutex *mutex) {
-  boost::mutex::scoped_lock gaurd(*mutex);
-  GetBPMessagesResponse result;
-  std::string ser_result;
-  result.set_result(kAck);
-  for (uint16_t i = 0; i < msgs.size(); i++)
-    result.add_messages(msgs[i]);
-  result.SerializeToString(&ser_result);
-  cb(ser_result);
-}
-
 void ExecCallbackVaultInfo(const base::callback_func_type &cb,
                            boost::mutex *mutex) {
   boost::mutex::scoped_lock loch(*mutex);

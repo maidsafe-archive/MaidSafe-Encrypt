@@ -276,7 +276,7 @@ int ContactsHandler::GetContactList(std::vector<mi_contact> *list,
                     contact_set_by_pub_name;
             for (contact_set_by_pub_name::iterator it =
                  cs_.get<pub_name>().begin();
-                 it != cs_.get<pub_name>().end(); it++) {
+                 it != cs_.get<pub_name>().end(); ++it) {
               mi_contact mic = *it;
               list->push_back(mic);
             }
@@ -284,7 +284,7 @@ int ContactsHandler::GetContactList(std::vector<mi_contact> *list,
     case 1: typedef contact_set::index<rank>::type
                     contact_set_by_rank;
             for (contact_set_by_rank::iterator it = cs_.get<rank>().begin();
-                 it != cs_.get<rank>().end(); it++) {
+                 it != cs_.get<rank>().end(); ++it) {
               mi_contact mic = *it;
               list->push_back(mic);
             }
@@ -293,7 +293,7 @@ int ContactsHandler::GetContactList(std::vector<mi_contact> *list,
                     contact_set_by_last_contact;
             for (contact_set_by_last_contact::iterator it =
                  cs_.get<last_contact>().begin();
-                 it != cs_.get<last_contact>().end(); it++) {
+                 it != cs_.get<last_contact>().end(); ++it) {
               mi_contact mic = *it;
               list->push_back(mic);
             }

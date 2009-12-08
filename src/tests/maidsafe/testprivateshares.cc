@@ -29,59 +29,48 @@
 #include <maidsafe/utils.h>
 #include "maidsafe/client/privateshares.h"
 
-void RefillParticipants(std::list<maidsafe::ShareParticipants> *participants) {
-  participants->clear();
-  maidsafe::ShareParticipants r;
-  r.id = "Dan";
-  r.public_key = base::RandomString(512);
-  r.role = 'R';
-  participants->push_back(r);
-  r.id = "The Hutch";
-  r.public_key = base::RandomString(512);
-  r.role = 'A';
-  participants->push_back(r);
-}
-
 class PrivateSharesTest : public testing::Test {
-  protected:
-    maidsafe::PrivateShareHandler *psh_;
-    maidsafe::PrivateShare *ps_;
-    std::string name;
-    std::list<maidsafe::ShareParticipants> participants;
-    std::vector<std::string> attributes;
+ protected:
+  PrivateSharesTest()
+      : psh_(NULL),
+        ps_(NULL),
+        name(),
+        participants(),
+        attributes() {}
 
-    PrivateSharesTest() : psh_(NULL), ps_(NULL),
-      name(), participants(),
-      attributes() {
-    }
-    PrivateSharesTest(const PrivateSharesTest&);
-    PrivateSharesTest& operator=(const PrivateSharesTest&) {
-      return *this;
-    }
+  virtual void SetUp() {
+    psh_ = new maidsafe::PrivateShareHandler();
+    std::string share_name("My First Share");
+    attributes.push_back(share_name);
+    attributes.push_back(base::RandomString(64));
+    attributes.push_back(base::RandomString(512));
+    attributes.push_back(base::RandomString(512));
+    maidsafe::ShareParticipants r;
+    r.id = "Dan";
+    r.public_key = base::RandomString(512);
+    r.role = 'R';
+    participants.push_back(r);
+    r.id = "The Hutch";
+    r.public_key = base::RandomString(512);
+    r.role = 'A';
+    participants.push_back(r);
+    ps_ = new maidsafe::PrivateShare(attributes, participants);
+  }
 
-    virtual void SetUp() {
-      psh_ = new maidsafe::PrivateShareHandler();
-      std::string share_name("My First Share");
-      attributes.push_back(share_name);
-      attributes.push_back(base::RandomString(64));
-      attributes.push_back(base::RandomString(512));
-      attributes.push_back(base::RandomString(512));
-      maidsafe::ShareParticipants r;
-      r.id = "Dan";
-      r.public_key = base::RandomString(512);
-      r.role = 'R';
-      participants.push_back(r);
-      r.id = "The Hutch";
-      r.public_key = base::RandomString(512);
-      r.role = 'A';
-      participants.push_back(r);
-      ps_ = new maidsafe::PrivateShare(attributes, participants);
-    }
+  virtual void TearDown() {
+    delete psh_;
+    delete ps_;
+  }
 
-    virtual void TearDown() {
-      delete psh_;
-      delete ps_;
-    }
+  maidsafe::PrivateShareHandler *psh_;
+  maidsafe::PrivateShare *ps_;
+  std::string name;
+  std::list<maidsafe::ShareParticipants> participants;
+  std::vector<std::string> attributes;
+
+ private:
+  PrivateSharesTest(const PrivateSharesTest&);
+  PrivateSharesTest& operator=(const PrivateSharesTest&);
 };
 
 TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {

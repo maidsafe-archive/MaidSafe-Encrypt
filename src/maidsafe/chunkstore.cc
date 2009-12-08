@@ -36,9 +36,7 @@ ChunkStore::ChunkStore(const std::string &chunkstore_dir,
       kOutgoingLeaf_("Outgoing"),
       kTempCacheLeaf_("TempCache"),
       available_space_(available_space),
-      used_space_(used_space) {
-  Init();
-}
+      used_space_(used_space) {}
 
 bool ChunkStore::is_initialised() {
   bool init_result(false);
@@ -482,7 +480,7 @@ int ChunkStore::DeleteChunk(const std::string &key) {
 }
 
 int ChunkStore::DeleteChunkFunction(const std::string &key,
-                                     const fs::path &chunk_path) {
+                                    const fs::path &chunk_path) {
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
     chunk_set_by_non_hex_name::iterator itr =
@@ -511,9 +509,6 @@ int ChunkStore::DeleteChunkFunction(const std::string &key,
   return result ? kSuccess : kChunkstoreFailedDelete;
 }
 
-/**
-*   Clears the Chunkstore
-*/
 int ChunkStore::Clear() {
   // Delete the directory
   printf("About to delete dir %s\n", kChunkstorePath_.string().c_str());
@@ -529,6 +524,7 @@ int ChunkStore::Clear() {
 #endif
   }
   chunkstore_set_.clear();
+  set_is_initialised(false);
   return kSuccess;
 }
 
@@ -543,6 +539,14 @@ int ChunkStore::Load(const std::string &key, std::string *value) {
   fs::path chunk_path(GetChunkPath(key, type, false));
   boost::uint64_t chunk_size(0);
   try {
+    if (!fs::exists(chunk_path)) {
+#ifdef DEBUG
+      printf("ChunkStore::Load - path: %s doesn't exist.\n",
+             chunk_path.string().c_str());
+#endif
+      DeleteChunkFunction(key, chunk_path);
+      return kChunkFileDoesntExist;
+    }
     chunk_size = fs::file_size(chunk_path);
     boost::scoped_array<char> temp(new char[chunk_size]);
     fs::ifstream fstr;

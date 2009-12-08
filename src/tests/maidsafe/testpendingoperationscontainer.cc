@@ -61,10 +61,14 @@ bool CompareTupleByChunkSize(IouReadyTuple first, IouReadyTuple second) {
   return false;
 }
 
-void AdvanceThroughSequence(const std::string pmid,
-    const std::string chunkname, const boost::uint64_t chunk_size,
-    const std::string iou, const std::string rank_authority,
-    boost::uint32_t timestamp, const std::string public_key,
+void AdvanceThroughSequence(
+    const std::string &pmid,
+    const std::string &chunkname,
+    const boost::uint64_t &chunk_size,
+    const std::string &iou,
+    const std::string &rank_authority,
+    const boost::uint32_t &timestamp,
+    const std::string &public_key,
     PendingOperationsHandler *poh_) {
 
     ASSERT_EQ(0, poh_->AddPendingOperation(pmid, chunkname, chunk_size, iou,
@@ -98,10 +102,14 @@ void AdvanceThroughSequence(const std::string pmid,
 //    printf("IOU PROCESSING: ID (%s)\n", pmid.c_str());
 }
 
-void AdvanceThroughSequenceTryErrors(const std::string pmid,
-    const std::string chunkname, const boost::uint64_t chunk_size,
-    const std::string iou, const std::string rank_authority,
-    boost::uint32_t timestamp, const std::string public_key,
+void AdvanceThroughSequenceTryErrors(
+    const std::string &pmid,
+    const std::string &chunkname,
+    const boost::uint64_t &chunk_size,
+    const std::string &iou,
+    const std::string &rank_authority,
+    const boost::uint32_t &timestamp,
+    const std::string &public_key,
     PendingOperationsHandler *poh_) {
 
     int lag = base::random_32bit_uinteger() % 1000 *30;

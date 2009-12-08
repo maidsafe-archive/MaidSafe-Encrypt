@@ -87,6 +87,7 @@ PDVault::PDVault(const std::string &pmid_public,
       pending_ious_thread_(),
       prune_pending_ops_thread_(),
       kKadStoreThreshold_(kad::K * kad::kMinSuccessfulPecentageStore) {
+  vault_chunkstore_.Init();
   co_.set_symm_algorithm(crypto::AES_256);
   co_.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co_.Hash(pmid_public_ + signed_pmid_public_, "",

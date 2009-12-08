@@ -47,6 +47,7 @@ SEHandler::SEHandler()
 
 void SEHandler::Init(boost::shared_ptr<StoreManagerInterface> storem,
                      boost::shared_ptr<ChunkStore> client_chunkstore) {
+  uptodate_datamaps_.clear();
   ss_ = SessionSingleton::getInstance();
   storem_ = storem;
   client_chunkstore_ = client_chunkstore;
@@ -553,28 +554,6 @@ int SEHandler::DecryptDb(const std::string &dir_path,
   if (ser_dm == "") {
     std::string packet_content;
     storem_->LoadPacket(dir_key, &packet_content);
-//      GetResponse load_result;
-//      if (!load_result.ParseFromString(packet_content)) {
-//  #ifdef DEBUG
-//        printf("Failed to load packet NO PARSE.\n");
-//  #endif
-//        return -1;
-//      }
-//      if (load_result.result() != kAck) {
-//  #ifdef DEBUG
-//        printf("Failed to load packet kNack.\n");
-//  #endif
-//        return -1;
-//      }
-//      if (!load_result.has_content()) {
-//  #ifdef DEBUG
-//        printf("Failed to load packet NO CONTENT.\n");
-//  #endif
-//        return -1;
-//      }
-//
-//      enc_dm_ = load_result.content();
-
     enc_dm_ = packet_content;
     if (enc_dm_ == "") {
 #ifdef DEBUG

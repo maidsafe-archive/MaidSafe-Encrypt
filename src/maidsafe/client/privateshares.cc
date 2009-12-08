@@ -239,7 +239,7 @@ int PrivateShareHandler::MI_GetShareList(
   private_share_set_name& private_share_index =
       pss_.get<private_share_name>();
   for (private_share_set_name::iterator it = private_share_index.begin();
-       it != private_share_index.end(); it++) {
+       it != private_share_index.end(); ++it) {
     private_share pr((*it).name_, (*it).msid_, (*it).msid_pub_key_,
                     (*it).msid_priv_key_);
     ps_list->push_back(pr);

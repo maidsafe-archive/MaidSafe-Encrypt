@@ -26,8 +26,6 @@
 
 namespace maidsafe {
 
-inline void dummy_callback(const std::string&) {}
-
 void PDClient::DeleteChunk(const std::string &chunk_name,
                            const std::string &public_key,
                            const std::string &signed_public_key,

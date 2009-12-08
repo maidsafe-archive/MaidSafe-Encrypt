@@ -81,10 +81,13 @@ void StorePacketToVaultsTask::run() {
   printf("StorePacketToVaultsTask start %s\n",
          HexSubstr(store_data_.non_hex_key_).c_str());
   int ret = msm_->SendPacketToVaults(store_data_);
-  boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
-  generic_cond_data_->cond_flag = true;
-  *return_value_ = ret;
-  generic_cond_data_->cond_variable->notify_all();
+  // If we're not waiting for results, the ret val and cond data will be NULL
+  if (return_value_ != NULL && generic_cond_data_ != NULL) {
+    boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
+    generic_cond_data_->cond_flag = true;
+    *return_value_ = ret;
+    generic_cond_data_->cond_variable->notify_all();
+  }
   if (msm_->SetResultToTask(task_id_, ret))
     printf("StorePacketToVaultsTask end %s\n",
            HexSubstr(store_data_.non_hex_key_).c_str());
@@ -286,8 +289,7 @@ int MaidsafeStoreManager::StorePacket(const std::string &hex_packet_name,
       return StorePacketToVaults(hex_packet_name, value, system_packet_type,
                                  dir_type, msid, false);  // Overwrite
     case PD_DIR:
-      return StorePacketToVaults(hex_packet_name, value, system_packet_type,
-                                 dir_type, msid, true);  // Append
+      return StorePdDirToVaults(hex_packet_name, value, dir_type, msid);
     case TMID:
     case MPID:
     case PMID:
@@ -873,11 +875,13 @@ int MaidsafeStoreManager::SendChunk(
   if (copies <= 0)
     return kStoreManagerError;
   int duplicate_count = 0;
+  int failed_count = 0;
   float largest_rtt = -1.0f;  // set to -1.0 so first store is to furthest peer
   std::vector<kad::Contact> exclude;
   base::PDRoutingTableHandler rt_handler;
 // TODO(Fraser#5#): 2009-08-10 - Account for online status in while loop also
-  while (duplicate_count < copies) {
+  while (duplicate_count < copies &&
+         failed_count < kMaxChunkStoreTries * kMinChunkCopies) {
     StorePrepRequest store_prep_request;
     StorePrepResponse store_prep_response;
     StoreRequest store_request;
@@ -886,19 +890,18 @@ int MaidsafeStoreManager::SendChunk(
     bool local(false);
     float ideal_rtt =
         largest_rtt * (1 - (static_cast<float>(duplicate_count)/copies));
-    if (GetStorePeer(ideal_rtt, exclude, &peer, &local) != kSuccess)
+    if (GetStorePeer(ideal_rtt, exclude, &peer, &local) != kSuccess) {
+      ++failed_count;
       continue;  // try another peer
-    else
+    } else {
       exclude.push_back(peer);  // whether we succeed in storing or not, we'll
-                                // not be trying this peer again
+    }                           // not be trying this peer again
 #ifdef DEBUG
-//    std::string hex_name, hex_id;
-//    base::EncodeToHex(, &hex_name);
-//    base::EncodeToHex(, &hex_id);
-//    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
-//           "peer size: %i\n\n\n", HexSubstr(store_data.non_hex_key_).c_str(),
-//           HexSubstr(peer.node_id()).c_str(), duplicate_count,
-//           exclude.size());
+    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
+           "peer size: %i  --  1\n\n",
+           HexSubstr(store_data.non_hex_key_).c_str(),
+           HexSubstr(peer.node_id()).c_str(), duplicate_count,
+           exclude.size());
 #endif
     if (duplicate_count == 0) {  // set largest_rtt from first peer
 // TODO(Fraser#5#): 2009-08-14 - Uncomment lines below
@@ -909,11 +912,29 @@ int MaidsafeStoreManager::SendChunk(
       largest_rtt = 1.0f;
     }
     if (GetStoreRequests(store_data, peer.node_id(), &store_prep_request,
-        &store_request, &iou_done_request) != kSuccess)
+        &store_request, &iou_done_request) != kSuccess) {
+      ++failed_count;
       continue;  // try another peer
+    }
+#ifdef DEBUG
+    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
+           "peer size: %i  --  2\n\n",
+           HexSubstr(store_data.non_hex_key_).c_str(),
+           HexSubstr(peer.node_id()).c_str(), duplicate_count,
+           exclude.size());
+#endif
     if (SendPrep(peer, local, cond_variable, &store_prep_request,
-        &store_prep_response) != kSuccess)
+        &store_prep_response) != kSuccess) {
+      ++failed_count;
       continue;  // try another peer
+    }
+#ifdef DEBUG
+    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
+           "peer size: %i  --  3\n\n",
+           HexSubstr(store_data.non_hex_key_).c_str(),
+           HexSubstr(peer.node_id()).c_str(), duplicate_count,
+           exclude.size());
+#endif
     int failed_attempt_count = 0;
     while (failed_attempt_count < kMaxChunkStoreTries) {
       if (SendContent(peer, local, cond_variable, &store_request) == kSuccess) {
@@ -922,27 +943,55 @@ int MaidsafeStoreManager::SendChunk(
         ++failed_attempt_count;
       }
     }
+#ifdef DEBUG
+    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
+           "peer size: %i  --  4\n\n",
+           HexSubstr(store_data.non_hex_key_).c_str(),
+           HexSubstr(peer.node_id()).c_str(), duplicate_count,
+           exclude.size());
+#endif
     if (failed_attempt_count >= kMaxChunkStoreTries) {
       if (!duplicate_count)  // if this is failed 1st copy, reset largest rtt
         largest_rtt = -1.0f;
+      ++failed_count;
       continue;
     }
+#ifdef DEBUG
+    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
+           "peer size: %i  --  5\n\n",
+           HexSubstr(store_data.non_hex_key_).c_str(),
+           HexSubstr(peer.node_id()).c_str(), duplicate_count,
+           exclude.size());
+#endif
 // TODO(Fraser#5#): 2009-08-13 - Do we want to get the ref holders again if the
 //                               previous store was relatively fast?
     if (StoreIOUs(store_data, store_prep_request.data_size(),
         store_prep_response) != kSuccess) {
       if (!duplicate_count)  // if this is failed 1st copy, reset largest rtt
         largest_rtt = -1.0f;
+      ++failed_count;
       continue;
     }
+#ifdef DEBUG
+    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
+           "peer size: %i  --  6\n\n",
+           HexSubstr(store_data.non_hex_key_).c_str(),
+           HexSubstr(peer.node_id()).c_str(), duplicate_count,
+           exclude.size());
+#endif
     if (SendIOUDone(peer, local, cond_variable, &iou_done_request) ==
         kSuccess) {
       ++duplicate_count;
     } else {
       if (!duplicate_count)  // if this is failed 1st copy, reset largest rtt
         largest_rtt = -1.0f;
+      ++failed_count;
     }
   }
+#ifdef DEBUG
+    printf("Chunkname: %s  Dup count: %i  --  7\n\n",
+           HexSubstr(store_data.non_hex_key_).c_str(), duplicate_count);
+#endif
 // TODO(Fraser#5#): 2009-08-14 - Check later that there are enough vaults
 // listed in ref packet to ensure upload ultimately successful.
   return kSuccess;
@@ -1278,7 +1327,10 @@ int MaidsafeStoreManager::StoreIOUs(
 //         successful_count + failed_count < ref_holders.size()) {
 // TODO(Fraser#5#): 2009-10-13 - Preceding lines cause segfault on Unix due to
 // callbacks trying to lock destructed mutex - figure out why.
-  while (successful_count + failed_count < ref_holders.size()) {
+  int timeout = 10000;  // milliseconds
+  int timeout_count = 0;
+  while ((successful_count + failed_count < ref_holders.size()) &&
+         (timeout_count < timeout)) {
     for (boost::uint16_t i = 0; i < results.size(); ++i) {
       boost::mutex::scoped_lock lock(store_iou_mutex);
       if (results.at(i)->store_iou_response_returned) {
@@ -1292,7 +1344,10 @@ int MaidsafeStoreManager::StoreIOUs(
         break;
       }
     }
+    timeout_count += 10;
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    if (timeout_count >= timeout)
+      printf("\n\n\n\n\n\n\nStoreIOUs TIMED OUT\n\n\n\n\n\n\n\n");
   }
   if (successful_count < kKadStoreThreshold_)
     return kStoreIOUsFailure;  // We've not received enough successful responses
@@ -1954,6 +2009,27 @@ int MaidsafeStoreManager::StorePacketToVaults(
     }
   }
   return return_value;
+}
+
+int MaidsafeStoreManager::StorePdDirToVaults(const std::string &hex_packet_name,
+                                             const std::string &value,
+                                             DirType dir_type,
+                                             const std::string &msid) {
+#ifdef DEBUG
+//  std::string hex(hex_chunk_name.substr(0, 10) + "...");
+//  printf("In MaidsafeStoreManager::StorePacketToVaults (%i), packet name = "
+//         "%s\n", knode_->host_port(), hex.c_str());
+#endif
+  if (ss_->ConnectionStatus() == 1)
+    return kNotConnected;
+  std::string packet_name = base::DecodeFromHex(hex_packet_name);
+  std::string key_id, public_key, public_key_signature, private_key;
+  GetPacketSignatureKeys(PD_DIR, dir_type, msid, &key_id,
+      &public_key, &public_key_signature, &private_key);
+  AddStorePacketTask(StoreData(packet_name, value, PD_DIR, dir_type, msid,
+      key_id, public_key, public_key_signature, private_key, true), true, NULL,
+      NULL);
+  return kSuccess;
 }
 
 int MaidsafeStoreManager::StorePacketToKad(
@@ -2654,14 +2730,18 @@ bool MaidsafeStoreManager::NotDoneWithUploading() {
   tasks_mutex_.unlock();
   if (chunk_thread_pool_.activeThreadCount() == 0 &&
       packet_thread_pool_.activeThreadCount() == 0) {
+    ClearStoreResultMap();
     return false;
   } else {
     boost::mutex::scoped_lock loch(tasks_mutex_);
     std::map<boost::uint16_t, boost::tuple<std::string, int> >::iterator it;
     int cnt(0);
     for (it = tasks_.begin(); it != tasks_.end(); ++it)
-      if (it->second.get<1>() == 7)
+      if (it->second.get<1>() == 7) {
         ++cnt;
+        printf("MSM::NotDoneWithUploading - chunk name %s\n",
+               it->second.get<0>().c_str());
+      }
     printf("MaidsafeStoreManager::NotDoneWithUploading - %i  tasks pending\n",
            cnt);
   }

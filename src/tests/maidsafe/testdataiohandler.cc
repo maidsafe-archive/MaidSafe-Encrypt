@@ -49,7 +49,7 @@ TEST_F(TestStringIOHandler, BEH_MAID_TestReadFromString) {
   ASSERT_TRUE(handler_.SetData(data_, true));
   boost::uint64_t tempsize;
   handler_.Size(&tempsize);
-  ASSERT_EQ(255*1024, tempsize);
+  ASSERT_EQ(boost::uint64_t(255*1024), tempsize);
   ASSERT_FALSE(handler_.Write("abc", 3));
   unsigned int size(10);
   char *read_data = new char[size];
@@ -107,7 +107,7 @@ TEST_F(TestStringIOHandler, BEH_MAID_WriteToString) {
   handler_.Close();
   boost::uint64_t tempsize;
   handler_.Size(&tempsize);
-  ASSERT_EQ(30, tempsize);
+  ASSERT_EQ(boost::uint64_t(30), tempsize);
   handler_.Reset();
   ASSERT_EQ(std::string(""), handler_.GetAsString());
   delete [] read_data;
@@ -230,7 +230,7 @@ TEST_F(TestFileIOHandler, BEH_MAID_WriteToFile) {
   ASSERT_EQ(result, ReadDataFromOutFile());
   boost::uint64_t tempsize;
   handler_.Size(&tempsize);
-  ASSERT_EQ(30, tempsize);
+  ASSERT_EQ(boost::uint64_t(30), tempsize);
   handler_.Reset();
   ASSERT_EQ(std::string(""), handler_.GetAsString());
   delete [] read_data;

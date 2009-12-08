@@ -423,7 +423,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       std::map<std::string, std::string> chunks,
       const int &timeout,
       boost::shared_ptr<MaidsafeStoreManager> sm);
-
   void ClearStoreResultMap();
 
  private:
@@ -621,6 +620,12 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           DirType dir_type,
                           const std::string &msid,
                           bool append);
+  // Non-blocking specialised version of the StorePacketToVaults method used to
+  // store encrypted PD dirs only.
+  int StorePdDirToVaults(const std::string &hex_packet_name,
+                         const std::string &value,
+                         DirType dir_type,
+                         const std::string &msid);
   // Adds the packet to the priority store queue for uploading as a Kademlia
   // key, value.  If the packet already exists on the net, the value is added
   // to the existing one(s).  Subsequent loading of the key, values does not

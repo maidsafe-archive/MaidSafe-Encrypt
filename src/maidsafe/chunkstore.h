@@ -119,6 +119,7 @@ class ChunkStore : public base::AlternativeStore {
              const boost::uint64_t &available_space,
              const boost::uint64_t &used_space);
   virtual ~ChunkStore() {}
+  bool Init();
   bool Has(const std::string &key);
   int Store(const std::string &key, const std::string &value);
   int Store(const std::string &key, const fs::path &file);
@@ -143,7 +144,6 @@ class ChunkStore : public base::AlternativeStore {
   ChunkStore(const ChunkStore&);
   ChunkStore& operator=(const ChunkStore&);
   void set_is_initialised(bool value);
-  bool Init();
   // Populate map of <ChunkType, path to chunk root directory>
   bool PopulatePathMap();
   int DeleteChunkFunction(const std::string &key, const fs::path &chunk_path);

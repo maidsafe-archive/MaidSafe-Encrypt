@@ -382,6 +382,7 @@ class PDVaultTest : public testing::Test {
   virtual void SetUp() {
     client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
         (new maidsafe::ChunkStore(client_chunkstore_dir_, 0, 0));
+    ASSERT_TRUE(client_chunkstore_->Init());
     boost::shared_ptr<maidsafe::MaidsafeStoreManager>
         sm_local_(new maidsafe::MaidsafeStoreManager(client_chunkstore_));
     sm_ = sm_local_;

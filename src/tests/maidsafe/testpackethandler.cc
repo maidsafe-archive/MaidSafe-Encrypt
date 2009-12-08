@@ -28,12 +28,6 @@
 #include <cstdlib>
 #include "maidsafe/client/systempackets.h"
 
-crypto::RsaKeyPair create_keys() {
-  crypto::RsaKeyPair rsakp;
-  rsakp.GenerateKeys(maidsafe::kRsaKeySize);
-  return rsakp;
-}
-
 namespace maidsafe {
 
 class SystemPacketHandlerTest : public testing::Test {

@@ -94,6 +94,7 @@ class DataAtlasHandlerTest : public testing::Test {
     }
     boost::shared_ptr<ChunkStore>
         client_chunkstore_(new ChunkStore(test_root_dir_, 0, 0));
+    ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -180,42 +181,6 @@ class DataAtlasHandlerTest : public testing::Test {
   explicit DataAtlasHandlerTest(const maidsafe::DataAtlasHandlerTest&);
   DataAtlasHandlerTest &operator=(const maidsafe::DataAtlasHandlerTest&);
 };
-
-void PrepareDataMap(const std::string &file_hash, std::string &ser_dm) {
-  // Creating DataMap
-  DataMap dm;
-  dm.set_file_hash(file_hash);
-  dm.add_chunk_name(base::RandomString(64));
-  dm.add_chunk_name(base::RandomString(64));
-  dm.add_chunk_name(base::RandomString(64));
-  dm.add_encrypted_chunk_name(base::RandomString(64));
-  dm.add_encrypted_chunk_name(base::RandomString(64));
-  dm.add_encrypted_chunk_name(base::RandomString(64));
-  dm.SerializeToString(&ser_dm);
-}
-
-void PrepareMetaDataMap(const int32_t id, const std::string &display_name,
-                        const ItemType &type, const std::string &file_hash,
-                        const std::string &stats, const std::string &tag,
-                        const uint32_t &file_size_high,
-                        const uint32_t &file_size_low,
-                        const uint32_t &creation_time,
-                        const uint32_t &last_modified,
-                        const uint32_t &last_access, std::string &ser_mdm) {
-  MetaDataMap mdm;
-  mdm.set_id(id);
-  mdm.set_display_name(display_name);
-  mdm.set_type(type);
-  mdm.add_file_hash(file_hash);
-  mdm.set_stats(stats);
-  mdm.set_tag(tag);
-  mdm.set_file_size_high(file_size_high);
-  mdm.set_file_size_low(file_size_low);
-  mdm.set_creation_time(creation_time);
-  mdm.set_last_modified(last_modified);
-  mdm.set_last_access(last_access);
-  mdm.SerializeToString(&ser_mdm);
-}
 
 TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail) {
   // Test to insert a DataMap and Retrieve it
