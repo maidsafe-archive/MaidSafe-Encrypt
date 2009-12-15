@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram>
+<source><![CDATA[#![Store New Chunk]
+client:client "First Client"
+peer:vault "Peer Vault"
+watch:vault "Watchlist Holders x16"
+ref:vault "Reference Holders x16"
+c_account:vault "Client Account Holders x16"
+v_account:vault "Vault Account Holders x16"
+
+client:Nack =ref. Kademlia FIND_VALUE
+
+client:client. Check rank if exists.&
+
+*1 client
+TODO: If chunk exists at 
+lower rank, we must promote
+which will be store and delete
+lower ranked chunks.
+*1
+
+[c: If chunk does not exist on network or at lower rank, loop till saved   ]
+
+client:client. Wait till online.&
+
+*2 client
+Select peer vault - use rank, stated
+space available and RTT to decide.
+*2
+
+client:Ack/Nack in Signed Contract =peer. STORE_PREP_REQUEST&
+
+*3 client
+Validate signed response & signed
+contract.  If Nack or failed validation,
+send signed Nack with contract to Peer
+Vault Account Holders & restart store loop.
+*3
+
+*5 watch
+As this is the first time the chunk has
+been stored, client must pay 4x for it.
+So this message requests 4x original
+space be deducted from client's account.
+*5
+
+client:>peer. STORE_REQUEST
+[c: If this is the first store loop:   ]
+*4 client
+Find the Watchlist Holders' details and
+establish "kad pal" for each.  Then for each...
+*4
+
+client:>watch. ADD_TO_WATCHLIST_REQUEST
+(5)watch:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken)&
+watch:>client.Ack/Nack &
+[/c]
+peer:>client.Ack/Nack &
+
+peer:Ack/Nack =ref. STORE_REFERENCE_REQUEST
+*6 ref
+If >= 5 nodes listed as chunk holders, remove
+lowest rank vault and send him a CACHE_CHUNK
+message.
+*6
+ref:Ack/Nack =v_account. AMEND_ACCOUNT_REQUEST (Space Given)&
+[/c]]]></source>
+<configuration>
+<property name="actorWidth" value="25"/>
+<property name="arrowSize" value="6"/>
+<property name="colorizeThreads" value="true"/>
+<property name="destructorWidth" value="30"/>
+<property family="Dialog" name="font" size="12" style="0"/>
+<property name="fragmentMargin" value="8"/>
+<property name="fragmentPadding" value="10"/>
+<property name="fragmentTextPadding" value="3"/>
+<property name="glue" value="0"/>
+<property name="headHeight" value="35"/>
+<property name="headLabelPadding" value="5"/>
+<property name="headWidth" value="100"/>
+<property name="initialSpace" value="10"/>
+<property name="leftMargin" value="5"/>
+<property name="lineWrap" value="true"/>
+<property name="lowerMargin" value="5"/>
+<property name="mainLifelineWidth" value="8"/>
+<property name="messageLabelSpace" value="3"/>
+<property name="messagePadding" value="6"/>
+<property name="noteMargin" value="6"/>
+<property name="notePadding" value="6"/>
+<property name="opaqueMessageText" value="false"/>
+<property name="returnArrowVisible" value="true"/>
+<property name="rightMargin" value="5"/>
+<property name="selfMessageHorizontalSpace" value="15"/>
+<property name="separatorBottomMargin" value="8"/>
+<property name="separatorTopMargin" value="15"/>
+<property name="spaceBeforeActivation" value="2"/>
+<property name="spaceBeforeAnswerToSelf" value="10"/>
+<property name="spaceBeforeConstruction" value="6"/>
+<property name="spaceBeforeSelfMessage" value="7"/>
+<property name="subLifelineWidth" value="6"/>
+<property name="threadNumbersVisible" value="false"/>
+<property name="threaded" value="true"/>
+<property name="upperMargin" value="5"/>
+<property name="verticallySplit" value="false"/>
+</configuration>
+</diagram>

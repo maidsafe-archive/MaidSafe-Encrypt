@@ -225,43 +225,6 @@ void CreateBufferPacket(const std::string &owner,
   buffer_packet.SerializeToString(ser_packet);
 }
 
-void CreateMessage(const std::string &message,
-                   const std::string &public_key,
-                   const std::string &private_key,
-                   const std::string &sender_id,
-                   const maidsafe::MessageType &m_type,
-                   std::string *ser_message,
-                   std::string *ser_expected_msg) {
-  std::string key("AESkey");
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  co.set_symm_algorithm(crypto::AES_256);
-  maidsafe::BufferPacketMessage bpmsg;
-  bpmsg.set_sender_id(sender_id);
-  bpmsg.set_rsaenc_key(co.AsymEncrypt(key, "", public_key,
-    crypto::STRING_STRING));
-  bpmsg.set_aesenc_message(co.SymmEncrypt(message, "",
-    crypto::STRING_STRING, key));
-  bpmsg.set_type(m_type);
-  bpmsg.set_sender_public_key(public_key);
-  std::string ser_bpmsg;
-  bpmsg.SerializeToString(&ser_bpmsg);
-  maidsafe::GenericPacket bpmsg_gp;
-  bpmsg_gp.set_data(ser_bpmsg);
-  bpmsg_gp.set_signature(co.AsymSign(ser_bpmsg, "", private_key,
-    crypto::STRING_STRING));
-  std::string ser_bpmsg_gp;
-  bpmsg_gp.SerializeToString(ser_message);
-
-  // Expected result for GetMsgs
-  maidsafe::ValidatedBufferPacketMessage val_msg;
-  val_msg.set_index(bpmsg.rsaenc_key());
-  val_msg.set_message(bpmsg.aesenc_message());
-  val_msg.set_sender(bpmsg.sender_id());
-  val_msg.set_type(bpmsg.type());
-  val_msg.SerializeToString(ser_expected_msg);
-}
-
 size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
                          const int &timeout_seconds,
                          boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm) {
