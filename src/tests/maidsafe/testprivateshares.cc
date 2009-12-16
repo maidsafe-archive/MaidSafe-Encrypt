@@ -76,7 +76,8 @@ class PrivateSharesTest : public testing::Test {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
@@ -151,7 +152,8 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
@@ -183,7 +185,8 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
             "Participant lists different in size.";
 
   // Check with GetShareList
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
   ASSERT_EQ(size_t(1), share_list.size()) <<
             "Share container empty on selection.";
   ASSERT_EQ(attributes[0], share_list.front().name_) << "Name different.";
@@ -245,10 +248,11 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
   cp = participants;
 
   // Add same private share again
-  ASSERT_EQ(0, psh_->MI_AddPrivateShare(attributes, &cp)) <<
+  ASSERT_EQ(-2010, psh_->MI_AddPrivateShare(attributes, &cp)) <<
             "Failed to add share";
   // Check with GetShareList
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
   ASSERT_EQ(size_t(1), share_list.size()) <<
             "Share container empty or with > 1 element.";
 }
@@ -256,14 +260,15 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
   // Copy the list for comparison
   std::list<maidsafe::ShareParticipants> cp;
 
-  for (int n = 0; n < 10; n++) {
+  for (int n = 0; n < 10; ++n) {
     // Attributes
     std::vector<std::string> atts;
     atts.push_back("NAME_" + base::itos(n));
@@ -292,7 +297,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
   ASSERT_EQ(0, psh_->MI_GetFullShareList(&full_share_list)) <<
             "Failed getting full list";
   ASSERT_EQ(size_t(10), full_share_list.size()) <<
-            "Share container not empty on creation.";
+            "Failed to get all share elements.";
   int y = 0;
   while (!full_share_list.empty()) {
     int e = 0;
@@ -349,14 +354,15 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
   // Copy the list for comparison
   std::list<maidsafe::ShareParticipants> cp;
 
-  for (int n = 0; n < 10; n++) {
+  for (int n = 0; n < 10; ++n) {
     // Attributes
     std::vector<std::string> atts;
     atts.push_back("NAME_" + base::itos(n));
@@ -439,7 +445,8 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
@@ -525,7 +532,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
       ASSERT_EQ("PUB_NAME_PUB_KEY_" + base::itos(n),
                 sp_list.front().public_key_) << "Msid wrong.";
       ASSERT_EQ('N', sp_list.front().role_) << "Msid wrong.";
-      n++;
+      ++n;
     }
     sp_list.pop_front();
   }
@@ -534,7 +541,8 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteContactFromShare) {
   // Test share list to be empty
   std::list<maidsafe::private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
@@ -604,7 +612,8 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteContactFromShare) {
   // Add private share
   ASSERT_EQ(0, psh_->MI_AddPrivateShare(attributes, &sps)) <<
             "Failed to add share";
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list)) << "Failed getting list.";
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
   ASSERT_EQ(size_t(2), share_list.size()) <<
             "Share container empty after insertions.";
 
@@ -636,5 +645,132 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteContactFromShare) {
     if (sp_list.front().public_name_ == "PUB_NAME_" + base::itos(e))
       found = true;
     sp_list.pop_front();
+  }
+}
+
+TEST_F(PrivateSharesTest, BEH_MAID_MI_TouchShare) {
+  // Test share list to be empty
+  std::list<maidsafe::private_share> share_list;
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
+  ASSERT_EQ(size_t(0), share_list.size()) <<
+            "Share container not empty on creation.";
+
+  // Copy the list for comparison
+  std::list<maidsafe::ShareParticipants> cp = participants;
+
+  // Add private share
+  ASSERT_EQ(0, psh_->MI_AddPrivateShare(attributes, &cp)) <<
+            "Failed to add share";
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
+  ASSERT_EQ(size_t(1), share_list.size()) <<
+            "Share container empty or with > 1 element.";
+
+  ASSERT_EQ(0 , psh_->MI_TouchShare(attributes[0], 0));
+  maidsafe::PrivateShare by_name;
+  ASSERT_EQ(0, psh_->MI_GetShareInfo(attributes[0], 0, &by_name)) <<
+            "Failed to locate share by name";
+  ASSERT_EQ(attributes[0], by_name.Name()) << "Name different.";
+  ASSERT_EQ(attributes[1], by_name.Msid()) << "Msid different.";
+  ASSERT_EQ(attributes[2], by_name.MsidPubKey()) << "MsidPubKey different.";
+  ASSERT_EQ(attributes[3], by_name.MsidPriKey()) << "MsidPriKey different.";
+  ASSERT_EQ(1, by_name.Rank()) << "Wrong rank.";
+  ASSERT_NE(0, by_name.LastViewed()) << "Wrong timestamp.";
+  boost::uint32_t last_view(by_name.LastViewed());
+
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  ASSERT_EQ(0 , psh_->MI_TouchShare(attributes[1], 1));
+  ASSERT_EQ(0, psh_->MI_GetShareInfo(attributes[0], 0, &by_name)) <<
+            "Failed to locate share by name";
+  ASSERT_EQ(attributes[0], by_name.Name()) << "Name different.";
+  ASSERT_EQ(attributes[1], by_name.Msid()) << "Msid different.";
+  ASSERT_EQ(attributes[2], by_name.MsidPubKey()) << "MsidPubKey different.";
+  ASSERT_EQ(attributes[3], by_name.MsidPriKey()) << "MsidPriKey different.";
+  ASSERT_EQ(2, by_name.Rank()) << "Wrong rank.";
+  ASSERT_LT(last_view, by_name.LastViewed()) << "Wrong timestamp.";
+}
+
+TEST_F(PrivateSharesTest, BEH_MAID_MI_ListByRank) {
+  // Test share list to be empty
+  std::list<maidsafe::private_share> share_list;
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
+  ASSERT_EQ(size_t(0), share_list.size()) <<
+            "Share container not empty on creation.";
+
+  // Copy the list for comparison
+  std::list<maidsafe::ShareParticipants> cp;
+
+  for (int n = 0; n < 10; ++n) {
+    // Attributes
+    std::vector<std::string> atts;
+    atts.push_back("NAME_" + base::itos(n));
+    atts.push_back("MSID_" + base::itos(n));
+    atts.push_back("MSID_PUB_KEY_" + base::itos(n));
+    atts.push_back("MSID_PRI_KEY_" + base::itos(n));
+
+    // Add private share
+    ASSERT_EQ(0, psh_->MI_AddPrivateShare(atts, &cp)) <<
+              "Failed to add share";
+
+    int r = (base::random_32bit_uinteger() % 10) + 1;
+    for (int n = 0; n < r; ++n) {
+      ASSERT_EQ(0 , psh_->MI_TouchShare(atts[0], 0));
+    }
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
+
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::RANK)) <<
+            "Failed getting list.";
+  ASSERT_EQ(10, share_list.size());
+
+  maidsafe::private_share past;
+  while (!share_list.empty()) {
+    ASSERT_LE(past.rank_, share_list.front().rank_);
+    past = share_list.front();
+    share_list.pop_front();
+  }
+}
+
+TEST_F(PrivateSharesTest, BEH_MAID_MI_ListByLastViewed) {
+  // Test share list to be empty
+  std::list<maidsafe::private_share> share_list;
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::ALPHA)) <<
+            "Failed getting list.";
+  ASSERT_EQ(size_t(0), share_list.size()) <<
+            "Share container not empty on creation.";
+
+  // Copy the list for comparison
+  std::list<maidsafe::ShareParticipants> cp;
+
+  for (int n = 0; n < 10; ++n) {
+    // Attributes
+    std::vector<std::string> atts;
+    atts.push_back("NAME_" + base::itos(n));
+    atts.push_back("MSID_" + base::itos(n));
+    atts.push_back("MSID_PUB_KEY_" + base::itos(n));
+    atts.push_back("MSID_PRI_KEY_" + base::itos(n));
+
+    // Add private share
+    ASSERT_EQ(0, psh_->MI_AddPrivateShare(atts, &cp)) <<
+              "Failed to add share";
+  }
+  for (int nn = 9; nn > -1; --nn) {
+    ASSERT_EQ(0 , psh_->MI_TouchShare("NAME_" + base::itos(nn), 0));
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
+
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, maidsafe::LAST)) <<
+            "Failed getting list.";
+  ASSERT_EQ(10, share_list.size());
+
+  maidsafe::private_share past;
+  while (!share_list.empty()) {
+//    printf("%s\t%u\t%u\n", share_list.front().name_.c_str(),
+//           share_list.front().rank_, share_list.front().last_view_);
+    ASSERT_LE(past.last_view_, share_list.front().last_view_);
+    past = share_list.front();
+    share_list.pop_front();
   }
 }

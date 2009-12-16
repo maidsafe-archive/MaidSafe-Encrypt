@@ -375,7 +375,9 @@ void PerpetualData::onSaveSessionCompleted(int result) {
   if (result == 0)
     saveSessionMsg = tr("Save session successful!");
   qDebug() << "PerpetualData::onSaveSessionCompleted - Result: " << result;
-  QMessageBox::warning(this, tr("Notification!"), saveSessionMsg);
+
+//  QMessageBox::warning(this, tr("Notification!"), saveSessionMsg);
+  SystemTrayIcon::instance()->showMessage(tr("Alert!"), saveSessionMsg);
 }
 
 void PerpetualData::onFailureAcknowledged() {

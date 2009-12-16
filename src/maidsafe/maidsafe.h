@@ -321,6 +321,8 @@ enum ValueType {
   CHUNK_REFERENCE, WATCH_LIST, DATA, PDDIR_SIGNED, PDDIR_NOTSIGNED
 };
 
+enum SortingMode { ALPHA, RANK, LAST };
+
 }  // namespace maidsafe
 
 inline std::string HexSubstr(const std::string &non_hex) {

@@ -306,8 +306,9 @@ int SessionSingleton::GetShareKeys(const std::string &msid,
   return 0;
 }
 int SessionSingleton::GetShareList(
-    std::list<maidsafe::private_share> *ps_list) {
-  return psh_.MI_GetShareList(ps_list);
+    std::list<maidsafe::private_share> *ps_list,
+    const SortingMode &sm) {
+  return psh_.MI_GetShareList(ps_list, sm);
 }
 int SessionSingleton::GetFullShareList(std::list<PrivateShare> *ps_list) {
   return psh_.MI_GetFullShareList(ps_list);

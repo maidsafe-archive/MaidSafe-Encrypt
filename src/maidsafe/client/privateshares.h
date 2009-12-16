@@ -40,6 +40,8 @@
 #include <list>
 #include <vector>
 
+#include "maidsafe/maidsafe.h"
+
 namespace maidsafe {
 
 struct ShareParticipants {
@@ -64,6 +66,8 @@ class PrivateShare {
   std::string msid_;
   std::string msid_pub_key_;
   std::string msid_priv_key_;
+  boost::uint32_t rank_;
+  boost::uint32_t last_view_;
   std::list<ShareParticipants> participants_;
 
  public:
@@ -72,6 +76,7 @@ class PrivateShare {
   PrivateShare(const std::vector<std::string> &attributes,
                std::list<ShareParticipants> participants);
   void Construct(const std::vector<std::string> &attributes,
+                 const std::vector<boost::uint32_t> &share_stats,
                  std::list<ShareParticipants> participants);
 
   //  Getters
@@ -80,6 +85,8 @@ class PrivateShare {
   inline std::string MsidPubKey() { return msid_pub_key_; }
   inline std::string MsidPriKey() { return msid_priv_key_; }
   inline std::list<ShareParticipants> Participants() { return participants_; }
+  inline boost::uint32_t Rank() { return rank_; }
+  inline boost::uint32_t LastViewed() { return last_view_; }
   // Setters
 };
 
@@ -88,12 +95,15 @@ struct private_share {
   std::string msid_;
   std::string msid_pub_key_;
   std::string msid_priv_key_;
+  boost::uint32_t rank_;
+  boost::uint32_t last_view_;
 
-  private_share() : name_(), msid_(), msid_pub_key_(), msid_priv_key_() {}
+  private_share() : name_(), msid_(), msid_pub_key_(), msid_priv_key_(),
+                    rank_(0), last_view_(0) {}
   private_share(std::string name, std::string msid, std::string msid_pub_key,
                 std::string msid_priv_key)
                 : name_(name), msid_(msid), msid_pub_key_(msid_pub_key),
-                  msid_priv_key_(msid_priv_key) {}
+                  msid_priv_key_(msid_priv_key), rank_(0), last_view_(0) {}
 };
 
 struct share_participant {
@@ -111,6 +121,8 @@ struct share_participant {
 /* Tags */
 struct private_share_name {};
 struct private_share_msid {};
+struct private_share_rank {};
+struct private_share_view {};
 struct share_participant_key {};
 struct share_participant_msid {};
 struct share_participant_public_name {};
@@ -125,6 +137,14 @@ typedef boost::multi_index::multi_index_container<
     boost::multi_index::ordered_unique<
       boost::multi_index::tag<private_share_msid>,
       BOOST_MULTI_INDEX_MEMBER(private_share, std::string, msid_)
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<private_share_rank>,
+      BOOST_MULTI_INDEX_MEMBER(private_share, boost::uint32_t, rank_)
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<private_share_view>,
+      BOOST_MULTI_INDEX_MEMBER(private_share, boost::uint32_t, last_view_)
     >
   >
 > private_share_set;
@@ -167,9 +187,11 @@ class PrivateShareHandler {
   int MI_DeleteContactsFromPrivateShare(const std::string &value,
                                         const int &field,
                                         std::list<std::string> *participants);
+  int MI_TouchShare(const std::string &value, const int &field);
   int MI_GetShareInfo(const std::string &value, const int &field,
                       PrivateShare *ps);
-  int MI_GetShareList(std::list<maidsafe::private_share> *ps_list);
+  int MI_GetShareList(std::list<maidsafe::private_share> *ps_list,
+                      const SortingMode &sm);
   int MI_GetFullShareList(std::list<PrivateShare> *ps_list);
   int MI_GetParticipantsList(const std::string &value, const int &field,
                              std::list<share_participant> *sp_list);
