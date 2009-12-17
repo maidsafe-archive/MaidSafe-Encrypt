@@ -40,6 +40,11 @@
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
+// TODO(Fraser#5#): 2009-12-17 - Reconsider use of ValueType when sending
+//                               chunks/packets for storing.  If client chooses
+//                               type, there's little incentive to not set all
+//                               chunks as Anon avoiding paying for them.
+
 namespace fs = boost::filesystem;
 
 namespace maidsafe {

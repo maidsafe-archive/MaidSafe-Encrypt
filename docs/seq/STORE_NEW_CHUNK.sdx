@@ -3,39 +3,40 @@
 <source><![CDATA[#![Store New Chunk]
 client:client "First Client"
 peer:vault "Peer Vault"
-watch:vault "Watchlist Holders x16"
-ref:vault "Reference Holders x16"
+watch:vault "Watch List Holders x16"
+ref:vault "Reference List Holders x16"
 c_account:vault "Client Account Holders x16"
 v_account:vault "Vault Account Holders x16"
 
++1 watch
+Watch List comprises:
+  * list of PMIDs of current 4 paying clients
+  * further list of reserve watchers
+  * count of total watchers
+  * checksum of current watchers
+  * chunk size
+  * minimum rank required of chunk holders.
++1
+
 client:Nack =ref. Kademlia FIND_VALUE
 
-client:client. Check rank if exists.&
-
-*1 client
-TODO: If chunk exists at 
-lower rank, we must promote
-which will be store and delete
-lower ranked chunks.
-*1
-
-[c: If chunk does not exist on network or at lower rank, loop till saved   ]
+[c:Loop If chunk does not exist on network, loop till saved   ]
 
 client:client. Wait till online.&
 
-*2 client
+*3 client
 Select peer vault - use rank, stated
 space available and RTT to decide.
-*2
+*3
 
 client:Ack/Nack in Signed Contract =peer. STORE_PREP_REQUEST&
 
-*3 client
+*4 client
 Validate signed response & signed
 contract.  If Nack or failed validation,
 send signed Nack with contract to Peer
 Vault Account Holders & restart store loop.
-*3
+*4
 
 *5 watch
 As this is the first time the chunk has
@@ -44,26 +45,27 @@ So this message requests 4x original
 space be deducted from client's account.
 *5
 
-client:>peer. STORE_REQUEST
-[c: If this is the first store loop:   ]
-*4 client
-Find the Watchlist Holders' details and
-establish "kad pal" for each.  Then for each...
-*4
+client:>peer. STORE_CHUNK_REQUEST
+[c:Condition If this is the first store loop]
+*6 client
+For each Watch List Holder...
+*6
 
-client:>watch. ADD_TO_WATCHLIST_REQUEST
-(5)watch:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken)&
+client:>watch. ADD_TO_WATCH_LIST_REQUEST
+watch:watch. Validate request.&
 watch:>client.Ack/Nack &
+(5)watch:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)&
+watch:watch. Create new Watch List.&
 [/c]
 peer:>client.Ack/Nack &
 
-peer:Ack/Nack =ref. STORE_REFERENCE_REQUEST
-*6 ref
+peer:Ack/Nack =ref. ADD_TO_REFERENCE_LIST_REQUEST
+*7 ref
 If >= 5 nodes listed as chunk holders, remove
 lowest rank vault and send him a CACHE_CHUNK
 message.
-*6
-ref:Ack/Nack =v_account. AMEND_ACCOUNT_REQUEST (Space Given)&
+*7
+ref:Ack/Nack =v_account. AMEND_ACCOUNT_REQUEST (Space Given Inc)&
 [/c]]]></source>
 <configuration>
 <property name="actorWidth" value="25"/>
