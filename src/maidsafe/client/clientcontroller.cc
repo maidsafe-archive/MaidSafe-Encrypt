@@ -1620,8 +1620,9 @@ int ClientController::SendInstantFile(std::string *filename,
 // Contact Operations //
 ////////////////////////
 
-int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
-                                  const std::string &pub_name) {
+int ClientController::ContactList(const std::string &pub_name,
+                                  const SortingMode &sm,
+                                  std::vector<maidsafe::Contact> *c_list) {
   if (!intialised_) {
 #ifdef DEBUG
     printf("CC::ContactList - Not initialised.\n");
@@ -1630,7 +1631,7 @@ int ClientController::ContactList(std::vector<maidsafe::Contact> *c_list,
   }
   std::vector<maidsafe::mi_contact> mic_list;
   if (pub_name.empty()) {
-    int n = ss_->GetContactList(&mic_list);
+    int n = ss_->GetContactList(&mic_list, sm);
     if (n != 0)
       return n;
   } else {
@@ -1826,6 +1827,7 @@ std::string ClientController::GenerateBPInfo() {
 //////////////////////
 
 int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
+                                   const SortingMode &sm,
                                    const std::string &value) {
   if (!intialised_) {
 #ifdef DEBUG
@@ -1845,6 +1847,24 @@ int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
   }
   return n;
 }
+
+int ClientController::GetSortedShareList(
+                                  std::list<maidsafe::private_share> *ps_list,
+                                  const SortingMode &sm,
+                                  const std::string &value) {
+  if (!intialised_) {
+#ifdef DEBUG
+    printf("CC::GetShareList - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
+  int n = 0;
+  if (value.empty()) {
+    n = ss_->GetShareList(ps_list, sm);
+  }
+  return n;
+}
+
 
 int ClientController::CreateNewShare(const std::string &name,
                       const std::set<std::string> &admins,

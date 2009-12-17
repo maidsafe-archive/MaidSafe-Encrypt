@@ -62,8 +62,8 @@ ClientController::~ClientController() {
   impl_ = NULL;
 }
 
-int ClientController::Init() {
-  return (maidsafe::ClientController::getInstance()->Init());
+bool ClientController::Init() {
+  return maidsafe::ClientController::getInstance()->Init();
 }
 
 void ClientController::StartCheckingMessages() {
@@ -112,11 +112,34 @@ bool ClientController::createShare(const QString& shareName,
   return false;
 }
 
-ShareList ClientController::shares() const {
+ShareList ClientController::getSortedShares(int type) const {
+  ShareList rv;
+  std::list<maidsafe::private_share> ps_list;
+
+  const int n =
+        maidsafe::ClientController::getInstance()->GetSortedShareList(&ps_list,
+                                          maidsafe::SortingMode(type), "");
+ if (n == 0) {
+    while (!ps_list.empty()) {
+      maidsafe::private_share ps = ps_list.front();
+      ps_list.pop_front();
+
+      QString shareName = QString::fromStdString(ps.name_);
+      Share share(shareName);
+
+      rv.push_back(share);
+    }
+ }
+
+  return rv;
+}
+
+ShareList ClientController::shares(int type) const {
   ShareList rv;
   std::list<maidsafe::PrivateShare> ps_list;
   const int n =
-          maidsafe::ClientController::getInstance()->GetShareList(&ps_list, "");
+          maidsafe::ClientController::getInstance()->GetShareList(&ps_list,
+                                          maidsafe::SortingMode(type), "");
   qDebug() << ps_list.size();
   if (n == 0) {
     while (!ps_list.empty()) {
@@ -206,7 +229,8 @@ QDir ClientController::myFilesDirRoot(const QString& name) const {
 QStringList ClientController::contactsNames() const {
   std::vector<maidsafe::Contact> contact_list;
   const int n =
-      maidsafe::ClientController::getInstance()->ContactList(&contact_list, "");
+      maidsafe::ClientController::getInstance()->ContactList("",
+      maidsafe::ALPHA, &contact_list);
   if (n != 0) {
 #ifdef DEBUG
     qDebug() << "ClientController::contactNames(): failed to get contacts. Err:"
@@ -223,10 +247,12 @@ QStringList ClientController::contactsNames() const {
   return rv;
 }
 
-ContactList ClientController::contacts() const {
+ContactList ClientController::contacts(int type) const {
   std::vector<maidsafe::Contact> contact_list;
   const int n =
-      maidsafe::ClientController::getInstance()->ContactList(&contact_list, "");
+      maidsafe::ClientController::getInstance()->ContactList(
+                                    "", maidsafe::SortingMode(type),
+                                    &contact_list);
   if (n != 0) {
 #ifdef DEBUG
     qDebug() << "ClientController::contacts(): failed to get contacts. Err:"

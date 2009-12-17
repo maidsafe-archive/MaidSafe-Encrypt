@@ -51,6 +51,14 @@ int main(int argc, char *argv[]) {
   PerpetualData pd;
   pd.show();
 
+  // apply style sheet
+
+  QFile file(":/qss/defaultWithWhite1.qss");
+  file.open(QFile::ReadOnly);
+  QString styleSheet = QLatin1String(file.readAll());
+
+  qApp->setStyleSheet(styleSheet);
+
   // keep the application running in the tray when the window is closed
   app.setQuitOnLastWindowClosed(false);
 

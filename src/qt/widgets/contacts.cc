@@ -22,6 +22,9 @@
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QDebug>
+#include <QtGui>
+#include <QtDebug>
+#include <QStringList>
 
 //
 #include "maidsafe/client/contacts.h"
@@ -37,36 +40,59 @@ Contacts::Contacts(QWidget* parent)
     , init_(false) {
   ui_.setupUi(this);
   ui_.add->setAutoDefault(true);
-  ui_.clear->setAutoDefault(true);
-  ui_.delete_user->setAutoDefault(true);
-  ui_.view_profile->setAutoDefault(true);
-  ui_.send_message->setAutoDefault(true);
-  ui_.share_file->setAutoDefault(true);
-  ui_.listWidget->setSelectionMode(QAbstractItemView::MultiSelection);
+  ui_.listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  ui_.contactLineEdit->installEventFilter(this);
+  ui_.contactLineEdit->setText("Search Contacts");
+  sortType_ = 0;
 
-  connect(ui_.add, SIGNAL(clicked(bool)),
-          this, SLOT(onAddContactClicked()));
+  // to enable displaying of menu pop-up for Users
+
+  menu = new QMenu(this);
+
+  viewProfile = new QAction(tr("View Profile"), this);
+  sendMessage = new QAction(tr("Send Message"), this);
+  sendFile = new QAction(tr("Send File"), this);
+  deleteContact = new QAction(tr("Delete Contact"), this);
+
+  menu->addAction(viewProfile);
+  menu->addAction(sendMessage);
+  menu->addAction(sendFile);
+  menu->addAction(deleteContact);
+
+  ui_.listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+
+  // Signals/Slots
+
+  connect(viewProfile, SIGNAL(triggered()),
+          this,        SLOT(onViewProfileClicked()));
+
+  connect(sendMessage, SIGNAL(triggered()),
+          this,        SLOT(onSendMessageClicked()));
+
+  connect(sendFile, SIGNAL(triggered()),
+          this,        SLOT(onFileSendClicked()));
+
+  connect(deleteContact, SIGNAL(triggered()),
+          this,        SLOT(onDeleteUserClicked()));
+
+
+  connect(ui_.listWidget, SIGNAL(customContextMenuRequested(const QPoint &)),
+            this,         SLOT(customContentsMenu(const QPoint &)));
 
   // To enable the return event on the textbox
   connect(ui_.contactLineEdit,    SIGNAL(returnPressed()),
           this,                   SLOT(onAddContactClicked()));
 
-  connect(ui_.clear,  SIGNAL(clicked(bool)),
-          this,       SLOT(onClearSearchClicked()));
+  connect(ui_.contactLineEdit, SIGNAL(editingFinished()),
+          this,       SLOT(onContactsBoxLostFocus()));
+
+  connect(ui_.contactLineEdit, SIGNAL(textChanged(const QString &)),
+          this,       SLOT(onContactsBoxTextEdited(const QString &)));
 
   // buttons
-  connect(ui_.delete_user, SIGNAL(clicked(bool)),
-          this,            SLOT(onDeleteUserClicked()));
 
-  connect(ui_.view_profile, SIGNAL(clicked(bool)),
-          this,             SLOT(onViewProfileClicked()));
-
-  connect(ui_.send_message, SIGNAL(clicked(bool)),
-           this,             SLOT(onSendMessageClicked()));
-
-  connect(ui_.share_file, SIGNAL(clicked(bool)),
-          this,           SLOT(onFileSendClicked()));
-
+  connect(ui_.add, SIGNAL(clicked(bool)),
+          this, SLOT(onAddContactClicked()));
 
   connect(ClientController::instance(), SIGNAL(addedContact(const QString&)),
           this,                         SLOT(onAddedContact(const QString&)));
@@ -89,7 +115,8 @@ Contacts::Contacts(QWidget* parent)
 
 void Contacts::setActive(bool b) {
   if (b && !init_) {
-    ContactList contact_list = ClientController::instance()->contacts();
+    ContactList contact_list =
+                              ClientController::instance()->contacts(sortType_);
     foreach(Contact* contact, contact_list) {
       addContact(contact);
     }
@@ -126,14 +153,25 @@ void Contacts::onItemSelectionChanged() {
     doubles = true;
   }
 
-  ui_.delete_user->setEnabled(singles);
-  ui_.view_profile->setEnabled(singles);
-  ui_.send_message->setEnabled(doubles);
-  ui_.share_file->setEnabled(doubles);
+  deleteContact->setEnabled(singles);
+  viewProfile->setEnabled(singles);
+  sendMessage->setEnabled(doubles);
+  sendFile->setEnabled(doubles);
 }
 
 void Contacts::onAddContactClicked() {
-  const QString contact_name = ui_.contactLineEdit->text().trimmed();
+  bool ok;
+  QString text = QInputDialog::getText(this,
+                                       tr("Add Contact"),
+                                       tr("Please enter a user to add :"),
+                                       QLineEdit::Normal,
+                                       QString(),
+                                       &ok);
+  if (!ok || text.isEmpty()) {
+      return;
+  }
+
+  const QString contact_name = text.trimmed();
 
   if (contact_name == ClientController::instance()->publicUsername()) {
     QMessageBox::warning(this, tr("Recommendation"),
@@ -141,7 +179,7 @@ void Contacts::onAddContactClicked() {
     return;
   }
 
-  if (ui_.contactLineEdit->text() == "") {
+  if (contact_name == "") {
     QMessageBox::warning(this, tr("Problem!"),
                          tr("Please enter a valid username."));
     return;
@@ -410,11 +448,92 @@ void Contacts::onDeletedContact(const QString &name) {
   }
 }
 
+void Contacts::onContactsBoxLostFocus() {
+  if (ui_.contactLineEdit->text() == "") {
+        ui_.contactLineEdit->setText("Search Contacts");
+        QPalette pal;
+        pal.setColor(QPalette::Text, Qt::lightGray);
+        ui_.contactLineEdit->setPalette(pal);
+        reset();
+        setActive(true);
+  }
+}
+
+void Contacts::onContactsBoxTextEdited(const QString &value) {
+  qDebug() << "in search contacts";
+
+  const QString contact_name = ui_.contactLineEdit->text().trimmed();
+
+  if (contact_name != "") {
+    ContactList foundContacts_;
+
+    foreach(Contact* contact, contacts_) {
+      if (contact->publicName().startsWith(contact_name)) {
+          foundContacts_.push_back(contact);
+      }
+    }
+    if (foundContacts_.count() > 0) {
+      ui_.listWidget->clear();
+      foreach(Contact* contact, foundContacts_) {
+        QPixmap pixmap;
+          if (contact->presence() == Presence::INVALID) {
+            pixmap = QPixmap(":/icons/16/question");
+          } else {
+            pixmap = QPixmap(":/icons/16/tick");
+          }
+
+        QListWidgetItem* item = new QListWidgetItem;
+        item->setText(contact->publicName());
+        item->setIcon(pixmap);
+        ui_.listWidget->addItem(item);
+       }
+    } else {
+      ui_.listWidget->clear();
+      QString label = "No Contacts Match ";
+      label.append(contact_name);
+
+      QListWidgetItem* item = new QListWidgetItem;
+      item->setText(label);
+      ui_.listWidget->addItem(item);
+    }
+  } else {
+    reset();
+    setActive(true);
+  }
+}
+
+bool Contacts::eventFilter(QObject *obj, QEvent *event) {
+     if (obj == ui_.contactLineEdit) {
+         if (event->type() == QEvent::FocusIn) {
+             if (ui_.contactLineEdit->text() == "Search Contacts") {
+                ui_.contactLineEdit->clear();
+                QPalette pal;
+                pal.setColor(QPalette::Text, Qt::black);
+                ui_.contactLineEdit->setPalette(pal);
+             }
+             return true;
+         } else {
+             return false;
+         }
+     } else {
+         // pass the event on to the parent class
+         return Contacts::eventFilter(obj, event);
+     }
+}
+
+void Contacts::customContentsMenu(const QPoint &pos) {
+    QPoint globalPos = ui_.listWidget->mapToGlobal(pos);
+    QModelIndex t = ui_.listWidget->indexAt(pos);
+    if (ui_.listWidget->item(t.row()) != NULL) {
+        ui_.listWidget->item(t.row())->setSelected(true);
+        menu->exec(globalPos);
+    }
+}
+
 void Contacts::DoneAddingContact(int result, QString contact) {
 //  const QString contact_name = QString::fromStdString(contact);
   switch (result) {
     case 0: addContact(new Contact(contact));
-            ui_.contactLineEdit->setText(tr(""));
             break;
     case -221: QMessageBox::warning(this, tr("Problem!"),
                    tr("Error adding contact. Username doesn't exist."));

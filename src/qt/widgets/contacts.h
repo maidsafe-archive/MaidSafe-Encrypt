@@ -15,6 +15,10 @@
 #ifndef QT_WIDGETS_CONTACTS_H_
 #define QT_WIDGETS_CONTACTS_H_
 
+#include <QWidget>
+#include <QMenu>
+#include <QAction>
+
 // local
 #include "qt/widgets/panel.h"
 #include "qt/client/contact.h"
@@ -35,6 +39,8 @@ class Contacts : public Panel {
   virtual void setActive(bool);
   virtual void reset();
 
+  int sortType_;
+
  private:
   // Add a new entry in the listing of contacts
   void addContact(Contact*);
@@ -42,11 +48,24 @@ class Contacts : public Panel {
   bool init_;
   ContactList contacts_;
 
+
   QList<QListWidgetItem *> currentContact();
+
+  QMenu *menu;
+  QAction *viewProfile;
+  QAction *sendFile;
+  QAction *sendMessage;
+  QAction *deleteContact;
+
+  QMenu *menuContacts;
+  QAction *sortAlpha;
+  QAction *sortContacted;
+  QAction *sortRecent;
 
   private slots:
     void onAddContactClicked();
     void onClearSearchClicked();
+    void onContactsBoxLostFocus();
 
     void onItemDoubleClicked(QListWidgetItem*);
     void onItemSelectionChanged();
@@ -56,11 +75,16 @@ class Contacts : public Panel {
     void onSendMessageClicked();
     void onFileSendClicked();
 
+    void onContactsBoxTextEdited(const QString &value);
     void onAddedContact(const QString &name);
     void onConfirmedContact(const QString &name);
     void onDeletedContact(const QString &name);
-
+    void customContentsMenu(const QPoint &pos);
     void DoneAddingContact(int result, QString contact);
+
+    protected:
+    bool eventFilter(QObject *obj, QEvent *ev);
+
 };
 
 #endif  // QT_WIDGETS_CONTACTS_H_

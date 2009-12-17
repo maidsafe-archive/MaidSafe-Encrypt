@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>565</width>
-    <height>469</height>
+    <width>401</width>
+    <height>397</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -41,15 +41,24 @@
             <property name="text">
              <string>Offered space to the network</string>
             </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
              <widget class="QLCDNumber" name="lcdOffered">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="font">
                <font>
-                <pointsize>12</pointsize>
+                <pointsize>8</pointsize>
                </font>
               </property>
               <property name="smallDecimalPoint">
@@ -89,9 +98,15 @@
            <layout class="QHBoxLayout" name="horizontalLayout_3">
             <item>
              <widget class="QLCDNumber" name="lcdUsed">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="font">
                <font>
-                <pointsize>12</pointsize>
+                <pointsize>8</pointsize>
                </font>
               </property>
               <property name="smallDecimalPoint">
@@ -99,6 +114,9 @@
               </property>
               <property name="numDigits">
                <number>15</number>
+              </property>
+              <property name="mode">
+               <enum>QLCDNumber::Dec</enum>
               </property>
               <property name="segmentStyle">
                <enum>QLCDNumber::Flat</enum>
@@ -125,9 +143,15 @@
            <layout class="QHBoxLayout" name="horizontalLayout_4">
             <item>
              <widget class="QLCDNumber" name="lcdFree">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="font">
                <font>
-                <pointsize>12</pointsize>
+                <pointsize>8</pointsize>
                </font>
               </property>
               <property name="smallDecimalPoint">

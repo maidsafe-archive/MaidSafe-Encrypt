@@ -17,6 +17,7 @@
 
 // local
 #include "qt/widgets/panel.h"
+#include "qt/client/client_controller.h"
 
 // generated
 #include "ui_user_shares_panel.h"
@@ -39,11 +40,18 @@ class Shares : public Panel {
   virtual void setActive(bool b);
   virtual void reset();
 
+  int sortType_;
+
   private slots:
     void onCreateShareClicked();
+    void onSharesBoxLostFocus();
+    void onSharesBoxTextEdited(const QString &value);
     void onItemDoubleClicked(QListWidgetItem* item);
     void onAddedPrivateShare(const QString &name);
     void onCreateShareCompleted(bool b);
+
+  protected:
+    bool eventFilter(QObject *obj, QEvent *ev);
 
  private:
   // Initialize the display of a user's shares
@@ -55,6 +63,7 @@ class Shares : public Panel {
   Ui::SharesPage ui_;
   bool init_;
   QString shareInProcess_;
+  ShareList shares_;
 
  signals:
   void complete();

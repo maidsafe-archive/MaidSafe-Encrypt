@@ -121,7 +121,7 @@ void PerpetualData::createActions() {
   actions_[ MY_FILES ] = ui_.actionMy_Files;
   actions_[ PRIVATE_SHARES ] = ui_.actionPrivate_Shares;
   actions_[ GO_OFFLINE ] = ui_.actionOffline;
-  actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
+ // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
   actions_[ QUIT ]->setShortcut(Qt::ALT + Qt::Key_F4);
   actions_[ FULLSCREEN ]->setShortcut(Qt::Key_F11);
@@ -140,8 +140,8 @@ void PerpetualData::createActions() {
           this,                       SLOT(onPrivateShares()));
   connect(actions_[ GO_OFFLINE ], SIGNAL(toggled(bool)),
           this,                   SLOT(onGoOffline(bool)));
-  connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
-          this,                     SLOT(onSaveSession()));
+ // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
+ //         this,                     SLOT(onSaveSession()));
 }
 
 void PerpetualData::createMenus() {

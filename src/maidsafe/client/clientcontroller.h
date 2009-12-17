@@ -117,14 +117,21 @@ class ClientController {
                      const std::string &location);
 
   // Contact operations
-  int ContactList(std::vector<maidsafe::Contact> *c_list,
-                  const std::string &pub_name);
+  int ContactList(const std::string &pub_name,
+                  const SortingMode &sm,
+                  std::vector<maidsafe::Contact> *c_list);
   int AddContact(const std::string &public_name);
   int DeleteContact(const std::string &public_name);
 
   // Share operations
   int GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
+                   const SortingMode &sm,
                    const std::string &pub_name);
+
+  int GetSortedShareList(std::list<maidsafe::private_share> *ps_list,
+                   const SortingMode &sm,
+                   const std::string &pub_name);
+
   int CreateNewShare(const std::string &name,
                      const std::set<std::string> &admins,
                      const std::set<std::string> &readonlys);

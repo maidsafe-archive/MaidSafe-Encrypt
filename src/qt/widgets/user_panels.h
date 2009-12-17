@@ -70,8 +70,16 @@ class UserPanels : public QWidget {
     void unreadMessages(int);
 
   private slots:
-    // User has chosen a different panel
-    void onCurrentRowChanged(int i);
+
+    //menu bar pop-up on tabBar
+    void customContentsMenu(const QPoint &pos);
+    void onSortAlphaClicked();
+    void onSortContactedClicked();
+    void onSortRecentClicked();
+
+    void onSortShareAlphaClicked();
+    void onSortShareUsedClicked();
+    void onSortShareRecentClicked();
 
     // Notification from the Messages panel that a message was received
     void onMessageReceived();
@@ -82,8 +90,21 @@ class UserPanels : public QWidget {
     // 'My Files' button has been clicked
     void onMyFilesClicked();
 
+    void onCurrentChanged(int);
+
  private:
-  void activatePanel(int i, bool);
+
+  QMenu *menuContacts;
+  QAction *sortAlpha;
+  QAction *sortContacted;
+  QAction *sortRecent;
+
+  QMenu *menuShares;
+  QAction *sortShareAlpha;
+  QAction *sortShareUsed;
+  QAction *sortShareRecent;
+
+  void activatePanel(bool);
 
   Ui::UserPanels ui_;
 

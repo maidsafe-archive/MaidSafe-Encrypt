@@ -20,6 +20,7 @@
 #include <QDesktopServices>
 #include <QProcess>
 #include <QDebug>
+#include <QInputDialog>
 
 // local
 #include "qt/widgets/share_participants.h"
@@ -32,17 +33,27 @@ Shares::Shares(QWidget* parent)
     : Panel(parent), init_(false), shareInProcess_() {
   ui_.setupUi(this);
 
+  ui_.shareNameLineEdit->installEventFilter(this);
+
   connect(ui_.create, SIGNAL(clicked(bool)),
           this,       SLOT(onCreateShareClicked()));
+
   connect(ui_.shareNameLineEdit, SIGNAL(returnPressed()),
           this,                  SLOT(onCreateShareClicked()));
 
   connect(ui_.listWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
           this,           SLOT(onItemDoubleClicked(QListWidgetItem*)));
 
+  connect(ui_.shareNameLineEdit, SIGNAL(textChanged(const QString &)),
+          this,       SLOT(onSharesBoxTextEdited(const QString &)));
+
+  connect(ui_.shareNameLineEdit, SIGNAL(editingFinished()),
+          this,       SLOT(onSharesBoxLostFocus()));
+
   connect(ClientController::instance(),
           SIGNAL(addedPrivateShare(const QString&)),
           this, SLOT(onAddedPrivateShare(const QString&)));
+
   ui_.labelCreate->setVisible(false);
   ui_.progressBarCreate->setVisible(false);
 }
@@ -61,7 +72,8 @@ void Shares::reset() {
   ui_.labelCreate->setVisible(false);
   ui_.progressBarCreate->setVisible(false);
 
-  ui_.shareNameLineEdit->setText(tr(""));
+  //qDeleteAll(&shares_);
+  shares_.clear();
 
   init_ = false;
 }
@@ -79,8 +91,19 @@ void Shares::onCreateShareClicked() {
     return;
   }
 
+  bool ok;
+  QString text = QInputDialog::getText(this,
+                                       tr("Add Share"),
+                                       tr("Please enter a Share to add :"),
+                                       QLineEdit::Normal,
+                                       QString(),
+                                       &ok);
+  if (!ok || text.isEmpty()) {
+      return;
+  }
+
   // Check if share name isn't already in list
-  const QString share_name = ui_.shareNameLineEdit->text().trimmed();
+  const QString share_name = text.trimmed();
   QList<QListWidgetItem*> items = ui_.listWidget->findItems(share_name,
                                 Qt::MatchCaseSensitive);
   if (items.size() > 0) {
@@ -96,7 +119,7 @@ void Shares::onCreateShareClicked() {
     return;
   }
 
-  if (ui_.shareNameLineEdit->text().isEmpty()) {
+  if (share_name.isEmpty()) {
     QMessageBox::warning(this, tr("Problem!"),
                          tr("Please type a valid name for the share."));
     return;
@@ -144,7 +167,6 @@ void Shares::onCreateShareCompleted(bool b) {
   ui_.progressBarCreate->setVisible(false);
   if (b) {
     addShare(shareInProcess_);
-    ui_.shareNameLineEdit->clear();
   } else {
     QMessageBox::warning(this, tr("Problem!"),
                          tr("There was an issue creating this share."));
@@ -165,11 +187,11 @@ void Shares::init() {
 
   const QString username = ClientController::instance()->publicUsername();
   if (!username.isEmpty()) {
-    const ShareList shares = ClientController::instance()->shares();
+    const ShareList shares = ClientController::instance()->getSortedShares(sortType_);
     foreach(const Share& share, shares) {
       addShare(share.name());
+      shares_.push_back(share);
     }
-
     // only init if had public name
     init_ = true;
   }
@@ -192,5 +214,70 @@ void Shares::addShare(const QString& shareName) {
 void Shares::onAddedPrivateShare(const QString& name) {
   qDebug() << "Shares::onAddedPrivateShare()";
   addShare(name);
+}
+
+void Shares::onSharesBoxTextEdited(const QString &value) {
+  qDebug() << "in search shares";
+
+  const QString share_name = ui_.shareNameLineEdit->text().trimmed();
+
+  if (share_name != "") {
+    ShareList foundShares_;
+
+    foreach(const Share& share, shares_) {
+      if (share.name().startsWith(share_name)) {
+        foundShares_.push_back(share);
+      }
+    }
+    if (foundShares_.count() > 0) {
+      ui_.listWidget->clear();
+      foreach(const Share& share, foundShares_) {
+        QListWidgetItem* item = new QListWidgetItem;
+        item->setText(share.name());
+        ui_.listWidget->addItem(item);
+       }
+    } else {
+      ui_.listWidget->clear();
+      QString label = "No Contacts Match ";
+      label.append(share_name);
+
+      QListWidgetItem* item = new QListWidgetItem;
+      item->setText(label);
+      ui_.listWidget->addItem(item);
+    }
+  } else {
+    reset();
+    setActive(true);
+  }
+}
+
+void Shares::onSharesBoxLostFocus() {
+  if (ui_.shareNameLineEdit->text() == "") {
+        ui_.shareNameLineEdit->setText("Search Shares");
+        QPalette pal;
+        pal.setColor(QPalette::Text, Qt::lightGray);
+        ui_.shareNameLineEdit->setPalette(pal);
+        reset();
+        setActive(true);
+  }
+}
+
+bool Shares::eventFilter(QObject *obj, QEvent *event) {
+     if (obj == ui_.shareNameLineEdit) {
+         if (event->type() == QEvent::FocusIn) {
+             if (ui_.shareNameLineEdit->text() == "Search Shares") {
+                ui_.shareNameLineEdit->clear();
+                QPalette pal;
+                pal.setColor(QPalette::Text, Qt::black);
+                ui_.shareNameLineEdit->setPalette(pal);
+             }
+             return true;
+         } else {
+             return false;
+         }
+     } else {
+         // pass the event on to the parent class
+         return Shares::eventFilter(obj, event);
+     }
 }
 

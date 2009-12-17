@@ -58,12 +58,12 @@ class ClientController : public QObject {
 
   static ClientController* instance();
   void shutdown();
-  int Init();
+  bool Init();
 
   QString publicUsername() const;
 
   // Contacts
-  ContactList contacts() const;
+  ContactList contacts(int type = 0) const;
   QStringList contactsNames() const;
   int addContact(const QString& name);
   bool removeContact(const QString& name);
@@ -73,7 +73,8 @@ class ClientController : public QObject {
   bool createShare(const QString& shareName,
                    const QStringList& admin,
                    const QStringList& readOnly);
-  ShareList shares() const;
+  ShareList shares(int type = 0) const;
+  ShareList getSortedShares(int type = 0) const;
   QDir shareDirRoot(const QString& name) const;
   QDir myFilesDirRoot(const QString& name) const;
 
@@ -92,7 +93,6 @@ class ClientController : public QObject {
                      boost::uint32_t *port);
   bool IsLocalVaultOwned();
 
-  // Session
   int SaveSession();
 
  signals:
