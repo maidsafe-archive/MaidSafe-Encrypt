@@ -54,57 +54,45 @@ class MaidsafeService : public ::google::protobuf::Service {
                        const ::maidsafe::StorePrepRequest* request,
                        ::maidsafe::StorePrepResponse* response,
                        ::google::protobuf::Closure* done);
+  virtual void StoreIOU(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::StoreIOURequest* request,
+                       ::maidsafe::StoreIOUResponse* response,
+                       ::google::protobuf::Closure* done);
+  virtual void IOUDone(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::IOUDoneRequest* request,
+                       ::maidsafe::IOUDoneResponse* response,
+                       ::google::protobuf::Closure* done);
   virtual void StoreChunk(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::StoreChunkRequest* request,
-                       ::maidsafe::StoreChunkResponse* response,
+                       const ::maidsafe::StoreRequest* request,
+                       ::maidsafe::StoreResponse* response,
                        ::google::protobuf::Closure* done);
   virtual void StorePacket(::google::protobuf::RpcController* controller,
                        const ::maidsafe::StorePacketRequest* request,
                        ::maidsafe::StorePacketResponse* response,
                        ::google::protobuf::Closure* done);
-  virtual void AddToWatchList(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::AddToWatchListRequest* request,
-                       ::maidsafe::AddToWatchListResponse* response,
-                       ::google::protobuf::Closure* done);
-  virtual void RemoveFromWatchList(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::RemoveFromWatchListRequest* request,
-                       ::maidsafe::RemoveFromWatchListResponse* response,
-                       ::google::protobuf::Closure* done);
-  virtual void AddToReferenceList(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::AddToReferenceListRequest* request,
-                       ::maidsafe::AddToReferenceListResponse* response,
-                       ::google::protobuf::Closure* done);
-  virtual void RemoveFromReferenceList(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::RemoveFromReferenceListRequest* request,
-                       ::maidsafe::RemoveFromReferenceListResponse* response,
-                       ::google::protobuf::Closure* done);
-  virtual void AmendAccount(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::AmendAccountRequest* request,
-                       ::maidsafe::AmendAccountResponse* response,
-                       ::google::protobuf::Closure* done);
-  virtual void GetAccountStatus(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::GetAccountStatusRequest* request,
-                       ::maidsafe::GetAccountStatusResponse* response,
+  virtual void StoreChunkReference(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::StoreReferenceRequest* request,
+                       ::maidsafe::StoreReferenceResponse* response,
                        ::google::protobuf::Closure* done);
   virtual void CheckChunk(::google::protobuf::RpcController* controller,
                        const ::maidsafe::CheckChunkRequest* request,
                        ::maidsafe::CheckChunkResponse* response,
                        ::google::protobuf::Closure* done);
-  virtual void GetChunk(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::GetChunkRequest* request,
-                       ::maidsafe::GetChunkResponse* response,
+  virtual void Get(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::GetRequest* request,
+                       ::maidsafe::GetResponse* response,
                        ::google::protobuf::Closure* done);
   virtual void GetPacket(::google::protobuf::RpcController* controller,
                        const ::maidsafe::GetPacketRequest* request,
                        ::maidsafe::GetPacketResponse* response,
                        ::google::protobuf::Closure* done);
-  virtual void UpdateChunk(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::UpdateChunkRequest* request,
-                       ::maidsafe::UpdateChunkResponse* response,
+  virtual void Update(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::UpdateRequest* request,
+                       ::maidsafe::UpdateResponse* response,
                        ::google::protobuf::Closure* done);
-  virtual void DeleteChunk(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::DeleteChunkRequest* request,
-                       ::maidsafe::DeleteChunkResponse* response,
+  virtual void Delete(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::DeleteRequest* request,
+                       ::maidsafe::DeleteResponse* response,
                        ::google::protobuf::Closure* done);
   virtual void ValidityCheck(::google::protobuf::RpcController* controller,
                        const ::maidsafe::ValidityCheckRequest* request,
@@ -167,57 +155,45 @@ class MaidsafeService_Stub : public MaidsafeService {
                        const ::maidsafe::StorePrepRequest* request,
                        ::maidsafe::StorePrepResponse* response,
                        ::google::protobuf::Closure* done);
+  void StoreIOU(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::StoreIOURequest* request,
+                       ::maidsafe::StoreIOUResponse* response,
+                       ::google::protobuf::Closure* done);
+  void IOUDone(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::IOUDoneRequest* request,
+                       ::maidsafe::IOUDoneResponse* response,
+                       ::google::protobuf::Closure* done);
   void StoreChunk(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::StoreChunkRequest* request,
-                       ::maidsafe::StoreChunkResponse* response,
+                       const ::maidsafe::StoreRequest* request,
+                       ::maidsafe::StoreResponse* response,
                        ::google::protobuf::Closure* done);
   void StorePacket(::google::protobuf::RpcController* controller,
                        const ::maidsafe::StorePacketRequest* request,
                        ::maidsafe::StorePacketResponse* response,
                        ::google::protobuf::Closure* done);
-  void AddToWatchList(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::AddToWatchListRequest* request,
-                       ::maidsafe::AddToWatchListResponse* response,
-                       ::google::protobuf::Closure* done);
-  void RemoveFromWatchList(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::RemoveFromWatchListRequest* request,
-                       ::maidsafe::RemoveFromWatchListResponse* response,
-                       ::google::protobuf::Closure* done);
-  void AddToReferenceList(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::AddToReferenceListRequest* request,
-                       ::maidsafe::AddToReferenceListResponse* response,
-                       ::google::protobuf::Closure* done);
-  void RemoveFromReferenceList(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::RemoveFromReferenceListRequest* request,
-                       ::maidsafe::RemoveFromReferenceListResponse* response,
-                       ::google::protobuf::Closure* done);
-  void AmendAccount(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::AmendAccountRequest* request,
-                       ::maidsafe::AmendAccountResponse* response,
-                       ::google::protobuf::Closure* done);
-  void GetAccountStatus(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::GetAccountStatusRequest* request,
-                       ::maidsafe::GetAccountStatusResponse* response,
+  void StoreChunkReference(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::StoreReferenceRequest* request,
+                       ::maidsafe::StoreReferenceResponse* response,
                        ::google::protobuf::Closure* done);
   void CheckChunk(::google::protobuf::RpcController* controller,
                        const ::maidsafe::CheckChunkRequest* request,
                        ::maidsafe::CheckChunkResponse* response,
                        ::google::protobuf::Closure* done);
-  void GetChunk(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::GetChunkRequest* request,
-                       ::maidsafe::GetChunkResponse* response,
+  void Get(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::GetRequest* request,
+                       ::maidsafe::GetResponse* response,
                        ::google::protobuf::Closure* done);
   void GetPacket(::google::protobuf::RpcController* controller,
                        const ::maidsafe::GetPacketRequest* request,
                        ::maidsafe::GetPacketResponse* response,
                        ::google::protobuf::Closure* done);
-  void UpdateChunk(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::UpdateChunkRequest* request,
-                       ::maidsafe::UpdateChunkResponse* response,
+  void Update(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::UpdateRequest* request,
+                       ::maidsafe::UpdateResponse* response,
                        ::google::protobuf::Closure* done);
-  void DeleteChunk(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::DeleteChunkRequest* request,
-                       ::maidsafe::DeleteChunkResponse* response,
+  void Delete(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::DeleteRequest* request,
+                       ::maidsafe::DeleteResponse* response,
                        ::google::protobuf::Closure* done);
   void ValidityCheck(::google::protobuf::RpcController* controller,
                        const ::maidsafe::ValidityCheckRequest* request,

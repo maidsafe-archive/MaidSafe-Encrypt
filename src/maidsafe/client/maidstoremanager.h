@@ -170,20 +170,20 @@ class BPCallbackObj {
   std::list<ValidatedBufferPacketMessage> *messages_;
 };
 
-//  struct StoreIouResultHolder {
-//   public:
-//    StoreIouResultHolder()
-//        : store_iou_response(),
-//          store_iou_response_returned(false),
-//          controller(new rpcprotocol::Controller) {}
-//    StoreIOUResponse store_iou_response;
-//    bool store_iou_response_returned;
-//    boost::shared_ptr<rpcprotocol::Controller> controller;
-//   private:
-//    StoreIouResultHolder &operator=(const StoreIouResultHolder&);
-//    StoreIouResultHolder(const StoreIouResultHolder&);
-//  };
-//
+struct StoreIouResultHolder {
+ public:
+  StoreIouResultHolder()
+      : store_iou_response(),
+        store_iou_response_returned(false),
+        controller(new rpcprotocol::Controller) {}
+  StoreIOUResponse store_iou_response;
+  bool store_iou_response_returned;
+  boost::shared_ptr<rpcprotocol::Controller> controller;
+ private:
+  StoreIouResultHolder &operator=(const StoreIouResultHolder&);
+  StoreIouResultHolder(const StoreIouResultHolder&);
+};
+
 struct StoreData {
   // Default constructor
   StoreData() : non_hex_key_(""),

@@ -75,13 +75,13 @@ class KadCallback {
   boost::mutex mutex_;
 };
 
-struct AddRefResultHolder {
-  AddRefResultHolder()
-      : add_ref_response_(),
-        add_ref_response_returned_(false),
+struct StoreRefResultHolder {
+  StoreRefResultHolder()
+      : store_ref_response_(),
+        store_ref_response_returned_(false),
         controller_(new rpcprotocol::Controller) {}
-  maidsafe::AddReferenceResponse add_ref_response_;
-  bool add_ref_response_returned_;
+  maidsafe::StoreReferenceResponse store_ref_response_;
+  bool store_ref_response_returned_;
   boost::shared_ptr<rpcprotocol::Controller> controller_;
 };
 
@@ -294,16 +294,16 @@ class PDVault {
   // contact dropped.  The vector is ordered from closest to furthest.
   int FindKNodes(const std::string &kad_key,
                  std::vector<kad::Contact> *contacts);
-  // Add this vault's ID to a chunk reference packet
+  // Add this vault's ID to a chunk reference packet on a
   int SendToRefPacket(
       const kad::Contact &ref_holder,
       const IouReadyTuple &iou_ready_details,
-      boost::mutex *add_ref_mutex,
-      AddRefResultHolder *add_ref_result_holder);
-  void SendToRefPacketCallback(AddRefResultHolder *add_ref_result_holder,
-                               boost::mutex *add_ref_mutex);
-  int HandleAddRefResponse(const IouReadyTuple &iou_ready_details,
-      const AddRefResultHolder &add_ref_result_holder,
+      boost::mutex *store_ref_mutex,
+      StoreRefResultHolder *store_ref_result_holder);
+  void SendToRefPacketCallback(StoreRefResultHolder *store_ref_result_holder,
+                               boost::mutex *store_ref_mutex);
+  int HandleStoreRefResponse(const IouReadyTuple &iou_ready_details,
+      const StoreRefResultHolder &store_ref_result_holder,
       bool *got_valid_iou);
 
 

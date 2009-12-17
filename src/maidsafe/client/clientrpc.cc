@@ -85,6 +85,44 @@ void ClientRpcs::StorePacket(const kad::Contact &peer,
                       done);
 }
 
+void ClientRpcs::StoreIOU(const kad::Contact &peer,
+                          bool local,
+                          StoreIOURequest *store_iou_request,
+                          StoreIOUResponse *store_iou_response,
+                          rpcprotocol::Controller *controller,
+                          google::protobuf::Closure *done) {
+  std::string local_ip("");
+  boost::uint16_t local_port(0);
+  if (local) {
+    local_ip = peer.local_ip();
+    local_port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.StoreIOU(controller, store_iou_request, store_iou_response, done);
+}
+
+void ClientRpcs::IOUDone(const kad::Contact &peer,
+                         bool local,
+                         IOUDoneRequest *iou_done_request,
+                         IOUDoneResponse *iou_done_response,
+                         rpcprotocol::Controller *controller,
+                         google::protobuf::Closure *done) {
+  std::string local_ip("");
+  boost::uint16_t local_port(0);
+  if (local) {
+    local_ip = peer.local_ip();
+    local_port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.IOUDone(controller, iou_done_request, iou_done_response, done);
+}
+
 void ClientRpcs::CheckChunk(const kad::Contact &peer,
                             bool local,
                             CheckChunkRequest *check_chunk_request,
