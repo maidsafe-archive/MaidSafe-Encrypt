@@ -59,18 +59,6 @@ class ClientRpcs {
                            StorePacketResponse *store_packet_response,
                            rpcprotocol::Controller *controller,
                            google::protobuf::Closure *done);
-  virtual void StoreIOU(const kad::Contact &peer,
-                        bool local,
-                        StoreIOURequest *store_iou_request,
-                        StoreIOUResponse *store_iou_response,
-                        rpcprotocol::Controller *controller,
-                        google::protobuf::Closure *done);
-  void IOUDone(const kad::Contact &peer,
-               bool local,
-               IOUDoneRequest *iou_done_request,
-               IOUDoneResponse *iou_done_response,
-               rpcprotocol::Controller *controller,
-               google::protobuf::Closure *done);
   void CheckChunk(const kad::Contact &peer,
                   bool local,
                   CheckChunkRequest *check_chunk_request,

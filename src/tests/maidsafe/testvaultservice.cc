@@ -627,8 +627,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreIOU) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkReference) {
   rpcprotocol::Controller controller;
-  maidsafe::StoreReferenceRequest request;
-  maidsafe::StoreReferenceResponse response;
+  maidsafe::AddReferenceHolderRequest request;
+  maidsafe::AddReferenceHolderResponse response;
 
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);

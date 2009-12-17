@@ -44,8 +44,8 @@ class VaultRpcs {
   ~VaultRpcs() {}
   void StoreChunkReference(const kad::Contact &peer,
                            bool local,
-                           maidsafe::StoreReferenceRequest *store_ref_request,
-                           maidsafe::StoreReferenceResponse *response,
+                           maidsafe::AddReferenceHolderRequest *add_ref_request,
+                           maidsafe::AddReferenceHolderResponse *response,
                            rpcprotocol::Controller *controller,
                            google::protobuf::Closure *done);
 

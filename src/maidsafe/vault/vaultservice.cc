@@ -484,8 +484,8 @@ void VaultService::StoreIOU(google::protobuf::RpcController*,
 
 void VaultService::StoreChunkReference(
     google::protobuf::RpcController*,
-    const maidsafe::StoreReferenceRequest* request,
-    maidsafe::StoreReferenceResponse* response,
+    const maidsafe::AddReferenceHolderRequest* request,
+    maidsafe::AddReferenceHolderResponse* response,
     google::protobuf::Closure* done) {
 #ifdef DEBUG
 //  printf("In VaultService::StoreChunkReference (%i), Chunk name: %s, "

@@ -80,8 +80,8 @@ class VaultService : public maidsafe::MaidsafeService {
                         maidsafe::StoreIOUResponse* response,
                         google::protobuf::Closure* done);
   virtual void StoreChunkReference(google::protobuf::RpcController*,
-      const maidsafe::StoreReferenceRequest* request,
-      maidsafe::StoreReferenceResponse* response,
+      const maidsafe::AddReferenceHolderRequest* request,
+      maidsafe::AddReferenceHolderResponse* response,
       google::protobuf::Closure* done);
   virtual void Get(google::protobuf::RpcController* controller,
                    const maidsafe::GetRequest* request,

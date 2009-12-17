@@ -29,8 +29,8 @@ namespace maidsafe_vault {
 void VaultRpcs::StoreChunkReference(
     const kad::Contact &peer,
     bool local,
-    maidsafe::StoreReferenceRequest *store_ref_request,
-    maidsafe::StoreReferenceResponse *response,
+    maidsafe::AddReferenceHolderRequest *add_ref_request,
+    maidsafe::AddReferenceHolderResponse *response,
     rpcprotocol::Controller *controller,
     google::protobuf::Closure *done) {
   if (peer.node_id() == own_non_hex_id_) {
@@ -48,7 +48,7 @@ void VaultRpcs::StoreChunkReference(
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.StoreChunkReference(controller, store_ref_request, response, done);
+  service.StoreChunkReference(controller, add_ref_request, response, done);
 }
 
 
