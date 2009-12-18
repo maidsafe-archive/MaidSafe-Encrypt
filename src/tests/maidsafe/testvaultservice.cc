@@ -509,198 +509,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   }
 }
 
-/*TEST_F(VaultServicesTest, BEH_MAID_ServicesIOUDone) {
-  rpcprotocol::Controller controller;
-  maidsafe::IOUDoneRequest request;
-  maidsafe::IOUDoneResponse response;
-
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
-  CreateRSAKeys(&pub_key, &priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string content("This is a data chunk");
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                      &sig_req);
-
-  Callback cb_obj;
-
-  for (boost::uint32_t i = 0; i <= 2; ++i) {
-    switch (i) {
-      case 0:  // uninitialized request
-        break;
-      case 1:  // invalid request
-        request.set_chunkname(chunkname);
-        request.set_own_pmid(pmid);
-        request.set_public_key("fail");  // !
-        request.set_public_key_signature(sig_pub_key);
-        request.set_request_signature(sig_req);
-        break;
-      case 2:  // make PendingOperationsHandler::AdvanceStatus() fail
-        request.set_public_key(pub_key);
-        break;
-    }
-
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->IOUDone(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  // proper request
-  {
-    ASSERT_EQ(0, poh_.AddPendingOperation("pmid", chunkname, 1, "", "", 0, "",
-                                          STORE_DONE));
-
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->IOUDone(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-}
-
-TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreIOU) {
-  rpcprotocol::Controller controller;
-  maidsafe::StoreIOURequest request;
-  maidsafe::StoreIOUResponse response;
-
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
-  CreateRSAKeys(&pub_key, &priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string content("This is a data chunk");
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                      &sig_req);
-
-  Callback cb_obj;
-
-  for (boost::uint32_t i = 0; i <= 4; ++i) {
-    switch (i) {
-      case 0:  // uninitialized request
-        break;
-      case 1:  // invalid request
-        request.set_chunkname(chunkname);
-        request.set_data_size(content.size());
-        request.set_collector_pmid("pmid");
-        request.set_iou("iou");
-        request.set_own_pmid(pmid);
-        request.set_public_key("fail");  // !
-        request.set_public_key_signature(sig_pub_key);
-        request.set_request_signature(sig_req);
-        break;
-      case 2:  // invalid data size
-        request.set_public_key(pub_key);
-        request.set_data_size(0);
-        break;
-      case 3:  // no IOU
-        request.set_data_size(content.size());
-        request.set_iou("");
-        break;
-      case 4:  // make PendingOperationsHandler::AddPendingOperation() fail
-        request.set_iou("iou");
-        ASSERT_EQ(0, poh_.AddPendingOperation("pmid", chunkname, content.size(),
-                                              "iou", "", 0, "", IOU_RECEIVED));
-        break;
-    }
-
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->StoreIOU(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  poh_.ClearPendingOperations();
-
-  // proper request
-  {
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->StoreIOU(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-}
-*/
-TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkReference) {
-  rpcprotocol::Controller controller;
-  maidsafe::AddToReferenceListRequest request;
-  maidsafe::AddToReferenceListResponse response;
-
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
-  CreateRSAKeys(&pub_key, &priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string content("This is a data chunk");
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                      &sig_req);
-
-  Callback cb_obj;
-
-  for (boost::uint32_t i = 0; i <= 2; ++i) {
-    switch (i) {
-      case 0:  // uninitialized request
-        break;
-      case 1:  // invalid request
-        request.set_chunkname(chunkname);
-/*        request.set_pmid(pmid);
-        request.set_signed_pmid("signed pmid");
-        request.set_public_key("fail");  // !
-        request.set_public_key_signature(sig_pub_key);*/
-        request.set_request_signature(sig_req);
-        break;
-      case 2:  // make PendingOperationsHandler::GetSizeAndIOU() fail
-/*        request.set_public_key(pub_key);*/
-        break;
-      // TODO(Steve) make PendingOperationsHandler::AdvanceStatus() fail (?)
-      // TODO(Steve) make KNode::StoreValueLocal() fail (?)
-    }
-
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->StoreChunkReference(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  poh_.ClearPendingOperations();
-  ASSERT_EQ(0, poh_.AddPendingOperation(pmid, chunkname, content.size(),
-                                        "iou", "", 0, "", IOU_RECEIVED));
-
-  // proper request
-  {
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->StoreChunkReference(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    response.Clear();
-
-    kad::SignedValue signed_value;
-    signed_value.set_value(pmid);
-/*    signed_value.set_value_signature(request.signed_pmid());*/
-    std::string ser_signed_value = signed_value.SerializeAsString();
-
-    std::vector<std::string> values;
-    ASSERT_TRUE(knode_->FindValueLocal(chunkname, &values));
-    ASSERT_EQ(size_t(1), values.size());
-    ASSERT_EQ(ser_signed_value, values[0]);
-  }
-}
-
-TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheck) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
   rpcprotocol::Controller controller;
   maidsafe::GetChunkRequest request;
   maidsafe::GetChunkResponse response;
@@ -773,7 +582,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheck) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdateChunk) {
   rpcprotocol::Controller controller;
   maidsafe::UpdateChunkRequest request;
   maidsafe::UpdateChunkResponse response;
@@ -873,7 +682,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
   rpcprotocol::Controller controller;
   maidsafe::DeleteChunkRequest request;
   maidsafe::DeleteChunkResponse response;
