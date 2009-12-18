@@ -689,8 +689,8 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_TouchShare) {
   ASSERT_EQ(attributes[1], by_name.Msid()) << "Msid different.";
   ASSERT_EQ(attributes[2], by_name.MsidPubKey()) << "MsidPubKey different.";
   ASSERT_EQ(attributes[3], by_name.MsidPriKey()) << "MsidPriKey different.";
-  ASSERT_EQ(1, by_name.Rank()) << "Wrong rank.";
-  ASSERT_NE(0, by_name.LastViewed()) << "Wrong timestamp.";
+  ASSERT_EQ(boost::uint32_t(1), by_name.Rank()) << "Wrong rank.";
+  ASSERT_NE(boost::uint32_t(0), by_name.LastViewed()) << "Wrong timestamp.";
   boost::uint32_t last_view(by_name.LastViewed());
 
   boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -701,7 +701,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_TouchShare) {
   ASSERT_EQ(attributes[1], by_name.Msid()) << "Msid different.";
   ASSERT_EQ(attributes[2], by_name.MsidPubKey()) << "MsidPubKey different.";
   ASSERT_EQ(attributes[3], by_name.MsidPriKey()) << "MsidPriKey different.";
-  ASSERT_EQ(2, by_name.Rank()) << "Wrong rank.";
+  ASSERT_EQ(boost::uint32_t(2), by_name.Rank()) << "Wrong rank.";
   ASSERT_LT(last_view, by_name.LastViewed()) << "Wrong timestamp.";
 }
 

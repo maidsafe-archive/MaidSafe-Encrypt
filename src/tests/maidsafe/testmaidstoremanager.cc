@@ -238,7 +238,7 @@ class MockMsmKeyUnique : public MaidsafeStoreManager {
       const std::vector<std::string> &chunk_holders_ids,
       bool load_data,
       const std::string &public_key,
-      const std::string &signed_public_key,
+      const std::string &public_key_signature,
       std::string *data));
   MOCK_METHOD3(SendChunk, int(
       const StoreData &store_data,
@@ -437,8 +437,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   std::string recipient_id = crypto_.Hash("RecipientID", "",
       crypto::STRING_STRING, false);
   StorePrepRequest store_prep_request;
-  StoreRequest store_request;
-  IOUDoneRequest iou_done_request;
+  StoreChunkRequest store_chunk_request;
+/*  IOUDoneRequest iou_done_request;*/
   // Make chunk/packet names
   std::vector<std::string> names;
   for (int i = 100; i < 117; ++i) {
@@ -448,21 +448,21 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
 
   // Check bad data - ensure existing parameters in requests are cleared
   store_prep_request.set_chunkname(names.at(0));
-  store_request.set_chunkname(names.at(0));
-  iou_done_request.set_chunkname(names.at(0));
+  store_chunk_request.set_chunkname(names.at(0));
+/*  iou_done_request.set_chunkname(names.at(0));*/
   ASSERT_NE("", store_prep_request.chunkname());
-  ASSERT_NE("", store_request.chunkname());
-  ASSERT_NE("", iou_done_request.chunkname());
+  ASSERT_NE("", store_chunk_request.chunkname());
+/*  ASSERT_NE("", iou_done_request.chunkname());*/
   std::string key_id2, public_key2, public_key_signature2, private_key2;
   msm.GetChunkSignatureKeys(PRIVATE, "", &key_id2, &public_key2,
       &public_key_signature2, &private_key2);
   StoreData st_missing_name("", PRIVATE, "", key_id2, public_key2,
       public_key_signature2, private_key2);
   ASSERT_EQ(kChunkNotInChunkstore, msm.GetStoreRequests(st_missing_name,
-      recipient_id, &store_prep_request, &store_request, &iou_done_request));
+      recipient_id, &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
   ASSERT_EQ("", store_prep_request.chunkname());
-  ASSERT_EQ("", store_request.chunkname());
-  ASSERT_EQ("", iou_done_request.chunkname());
+  ASSERT_EQ("", store_chunk_request.chunkname());
+/*  ASSERT_EQ("", iou_done_request.chunkname());*/
 
   // Check PRIVATE_SHARE chunk
   std::string msid_name = crypto_.Hash("b", "", crypto::STRING_STRING, true);
@@ -489,7 +489,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       key_id3, public_key3, public_key_signature3, private_key3);
   client_chunkstore_->AddChunkToOutgoing(names.at(0), std::string("100"));
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_private_share, recipient_id,
-      &store_prep_request, &store_request, &iou_done_request));
+      &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
   std::string public_key_signature = crypto_.AsymSign(rsakp.public_key(), "",
       rsakp.private_key(), crypto::STRING_STRING);
   std::string request_signature = crypto_.AsymSign(crypto_.Hash(
@@ -498,24 +498,26 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       crypto::STRING_STRING);
 
   ASSERT_EQ(names.at(0), store_prep_request.chunkname());
-  ASSERT_EQ(size_t(3), store_prep_request.data_size());
+/*  ASSERT_EQ(size_t(3), store_prep_request.data_size());
   ASSERT_EQ(client_pmid_, store_prep_request.pmid());
   ASSERT_EQ(rsakp.public_key(), store_prep_request.public_key());
-  ASSERT_EQ(public_key_signature, store_prep_request.signed_public_key());
-  ASSERT_EQ(request_signature, store_prep_request.signed_request());
+  ASSERT_EQ(public_key_signature, store_prep_request.public_key_signature());
+  ASSERT_EQ(request_signature, store_prep_request.request_signature());
+*/
 
-  ASSERT_EQ(names.at(0), store_request.chunkname());
-  ASSERT_EQ("100", store_request.data());
-  ASSERT_EQ(client_pmid_, store_request.pmid());
-  ASSERT_EQ(rsakp.public_key(), store_request.public_key());
-  ASSERT_EQ(public_key_signature, store_request.signed_public_key());
-  ASSERT_EQ(request_signature, store_request.signed_request());
-  ASSERT_EQ(DATA, store_request.data_type());
+  ASSERT_EQ(names.at(0), store_chunk_request.chunkname());
+  ASSERT_EQ("100", store_chunk_request.data());
+  ASSERT_EQ(client_pmid_, store_chunk_request.pmid());
+  ASSERT_EQ(rsakp.public_key(), store_chunk_request.public_key());
+  ASSERT_EQ(public_key_signature, store_chunk_request.public_key_signature());
+  ASSERT_EQ(request_signature, store_chunk_request.request_signature());
+  ASSERT_EQ(DATA, store_chunk_request.data_type());
 
-  ASSERT_EQ(names.at(0), iou_done_request.chunkname());
+/*  ASSERT_EQ(names.at(0), iou_done_request.chunkname());
   ASSERT_EQ(rsakp.public_key(), iou_done_request.public_key());
-  ASSERT_EQ(public_key_signature, iou_done_request.signed_public_key());
-  ASSERT_EQ(request_signature, iou_done_request.signed_request());
+  ASSERT_EQ(public_key_signature, iou_done_request.public_key_signature());
+  ASSERT_EQ(request_signature, iou_done_request.request_signature());
+*/
 
   // Check PUBLIC_SHARE chunk
   std::string key_id4, public_key4, public_key_signature4, private_key4;
@@ -525,7 +527,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       public_key4, public_key_signature4, private_key4);
   client_chunkstore_->AddChunkToOutgoing(names.at(1), std::string("101"));
   ASSERT_EQ(kGetRequestSigError, msm.GetStoreRequests(st_chunk_public_share_bad,
-      recipient_id, &store_prep_request, &store_request, &iou_done_request));
+      recipient_id, &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
   rsakp.GenerateKeys(kRsaKeySize);
   std::string anmpid_pri = rsakp.private_key();
   std::string anmpid_pub = rsakp.public_key();
@@ -549,30 +551,32 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   StoreData st_chunk_public_share_good(names.at(1), PUBLIC_SHARE, "", key_id4,
       public_key4, public_key_signature4, private_key4);
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_public_share_good,
-      recipient_id, &store_prep_request, &store_request, &iou_done_request));
+      recipient_id, &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
   request_signature = crypto_.AsymSign(crypto_.Hash(
       mpid_pub_sig + names.at(1) + recipient_id, "", crypto::STRING_STRING,
       false), "", mpid_pri, crypto::STRING_STRING);
 
   ASSERT_EQ(names.at(1), store_prep_request.chunkname());
-  ASSERT_EQ(size_t(3), store_prep_request.data_size());
+/*  ASSERT_EQ(size_t(3), store_prep_request.data_size());
   ASSERT_EQ(client_pmid_, store_prep_request.pmid());
   ASSERT_EQ(mpid_pub, store_prep_request.public_key());
-  ASSERT_EQ(mpid_pub_sig, store_prep_request.signed_public_key());
-  ASSERT_EQ(request_signature, store_prep_request.signed_request());
+  ASSERT_EQ(mpid_pub_sig, store_prep_request.public_key_signature());
+  ASSERT_EQ(request_signature, store_prep_request.request_signature());
+*/
 
-  ASSERT_EQ(names.at(1), store_request.chunkname());
-  ASSERT_EQ("101", store_request.data());
-  ASSERT_EQ(client_pmid_, store_request.pmid());
-  ASSERT_EQ(mpid_pub, store_request.public_key());
-  ASSERT_EQ(mpid_pub_sig, store_request.signed_public_key());
-  ASSERT_EQ(request_signature, store_request.signed_request());
-  ASSERT_EQ(DATA, store_request.data_type());
+  ASSERT_EQ(names.at(1), store_chunk_request.chunkname());
+  ASSERT_EQ("101", store_chunk_request.data());
+  ASSERT_EQ(client_pmid_, store_chunk_request.pmid());
+  ASSERT_EQ(mpid_pub, store_chunk_request.public_key());
+  ASSERT_EQ(mpid_pub_sig, store_chunk_request.public_key_signature());
+  ASSERT_EQ(request_signature, store_chunk_request.request_signature());
+  ASSERT_EQ(DATA, store_chunk_request.data_type());
 
-  ASSERT_EQ(names.at(1), iou_done_request.chunkname());
+/*  ASSERT_EQ(names.at(1), iou_done_request.chunkname());
   ASSERT_EQ(mpid_pub, iou_done_request.public_key());
-  ASSERT_EQ(mpid_pub_sig, iou_done_request.signed_public_key());
-  ASSERT_EQ(request_signature, iou_done_request.signed_request());
+  ASSERT_EQ(mpid_pub_sig, iou_done_request.public_key_signature());
+  ASSERT_EQ(request_signature, iou_done_request.request_signature());
+*/
 
   // Check ANONYMOUS chunk
   std::string key_id5, public_key5, public_key_signature5, private_key5;
@@ -582,27 +586,29 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       public_key_signature5, private_key5);
   client_chunkstore_->AddChunkToOutgoing(names.at(2), std::string("102"));
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_anonymous, recipient_id,
-      &store_prep_request, &store_request, &iou_done_request));
+      &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
 
   ASSERT_EQ(names.at(2), store_prep_request.chunkname());
-  ASSERT_EQ(size_t(3), store_prep_request.data_size());
+/*  ASSERT_EQ(size_t(3), store_prep_request.data_size());
   ASSERT_EQ(client_pmid_, store_prep_request.pmid());
   ASSERT_EQ(" ", store_prep_request.public_key());
-  ASSERT_EQ(" ", store_prep_request.signed_public_key());
-  ASSERT_EQ(kAnonymousSignedRequest, store_prep_request.signed_request());
+  ASSERT_EQ(" ", store_prep_request.public_key_signature());
+  ASSERT_EQ(kAnonymousSignedRequest, store_prep_request.request_signature());
+*/
 
-  ASSERT_EQ(names.at(2), store_request.chunkname());
-  ASSERT_EQ("102", store_request.data());
-  ASSERT_EQ(client_pmid_, store_request.pmid());
-  ASSERT_EQ(" ", store_request.public_key());
-  ASSERT_EQ(" ", store_request.signed_public_key());
-  ASSERT_EQ(kAnonymousSignedRequest, store_request.signed_request());
-  ASSERT_EQ(PDDIR_NOTSIGNED, store_request.data_type());
+  ASSERT_EQ(names.at(2), store_chunk_request.chunkname());
+  ASSERT_EQ("102", store_chunk_request.data());
+  ASSERT_EQ(client_pmid_, store_chunk_request.pmid());
+  ASSERT_EQ(" ", store_chunk_request.public_key());
+  ASSERT_EQ(" ", store_chunk_request.public_key_signature());
+  ASSERT_EQ(kAnonymousSignedRequest, store_chunk_request.request_signature());
+  ASSERT_EQ(PDDIR_NOTSIGNED, store_chunk_request.data_type());
 
-  ASSERT_EQ(names.at(2), iou_done_request.chunkname());
+/*  ASSERT_EQ(names.at(2), iou_done_request.chunkname());
   ASSERT_EQ(" ", iou_done_request.public_key());
-  ASSERT_EQ(" ", iou_done_request.signed_public_key());
-  ASSERT_EQ(kAnonymousSignedRequest, iou_done_request.signed_request());
+  ASSERT_EQ(" ", iou_done_request.public_key_signature());
+  ASSERT_EQ(kAnonymousSignedRequest, iou_done_request.request_signature());
+*/
 
   // Check PRIVATE chunk
   std::string key_id6, public_key6, public_key_signature6, private_key6;
@@ -612,34 +618,34 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       public_key_signature6, private_key6);
   client_chunkstore_->AddChunkToOutgoing(names.at(3), std::string("103"));
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_private, recipient_id,
-      &store_prep_request, &store_request, &iou_done_request));
+      &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
   request_signature = crypto_.AsymSign(crypto_.Hash(
       client_pmid_public_signature_ + names.at(3) + recipient_id, "",
       crypto::STRING_STRING, false), "", client_pmid_keys_.private_key(),
       crypto::STRING_STRING);
 
   ASSERT_EQ(names.at(3), store_prep_request.chunkname());
-  ASSERT_EQ(size_t(3), store_prep_request.data_size());
+/*  ASSERT_EQ(size_t(3), store_prep_request.data_size());
   ASSERT_EQ(client_pmid_, store_prep_request.pmid());
   ASSERT_EQ(client_pmid_keys_.public_key(), store_prep_request.public_key());
   ASSERT_EQ(client_pmid_public_signature_,
-      store_prep_request.signed_public_key());
-  ASSERT_EQ(request_signature, store_prep_request.signed_request());
+      store_prep_request.public_key_signature());
+  ASSERT_EQ(request_signature, store_prep_request.request_signature());*/
 
-  ASSERT_EQ(names.at(3), store_request.chunkname());
-  ASSERT_EQ("103", store_request.data());
-  ASSERT_EQ(client_pmid_, store_request.pmid());
-  ASSERT_EQ(client_pmid_keys_.public_key(), store_request.public_key());
+  ASSERT_EQ(names.at(3), store_chunk_request.chunkname());
+  ASSERT_EQ("103", store_chunk_request.data());
+  ASSERT_EQ(client_pmid_, store_chunk_request.pmid());
+  ASSERT_EQ(client_pmid_keys_.public_key(), store_chunk_request.public_key());
   ASSERT_EQ(client_pmid_public_signature_,
-      store_request.signed_public_key());
-  ASSERT_EQ(request_signature, store_request.signed_request());
-  ASSERT_EQ(DATA, store_request.data_type());
+      store_chunk_request.public_key_signature());
+  ASSERT_EQ(request_signature, store_chunk_request.request_signature());
+  ASSERT_EQ(DATA, store_chunk_request.data_type());
 
-  ASSERT_EQ(names.at(3), iou_done_request.chunkname());
+/*  ASSERT_EQ(names.at(3), iou_done_request.chunkname());
   ASSERT_EQ(client_pmid_keys_.public_key(), iou_done_request.public_key());
   ASSERT_EQ(client_pmid_public_signature_,
-      iou_done_request.signed_public_key());
-  ASSERT_EQ(request_signature, iou_done_request.signed_request());
+      iou_done_request.public_key_signature());
+  ASSERT_EQ(request_signature, iou_done_request.request_signature());*/
 
 //  // Check MID packet
 //  StoreData st_packet_mid(names.at(4), "104", MID, PRIVATE, "");
@@ -676,12 +682,12 @@ class MockClientRpcs : public ClientRpcs {
   MockClientRpcs(transport::Transport *transport,
                  rpcprotocol::ChannelManager *channel_manager)
                      : ClientRpcs(transport, channel_manager) {}
-  MOCK_METHOD6(StoreIOU, void(const kad::Contact &peer,
+/*  MOCK_METHOD6(StoreIOU, void(const kad::Contact &peer,
                               bool local,
                               StoreIOURequest *store_iou_request,
                               StoreIOUResponse *store_iou_response,
                               rpcprotocol::Controller *controller,
-                              google::protobuf::Closure *done));
+                              google::protobuf::Closure *done));*/
   MOCK_METHOD6(GetPacket, void(const kad::Contact &peer,
                                bool local,
                                GetPacketRequest *get_request,
@@ -708,7 +714,7 @@ class MockMsmStoreIOUs : public MaidsafeStoreManager {
                                std::vector<kad::Contact> *contacts));
 };
 
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
+/*TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
   MockMsmStoreIOUs msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs>
       mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
@@ -729,7 +735,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
   boost::uint64_t chunk_size(4);
   StorePrepResponse store_prep_response;
   store_prep_response.set_result(kAck);
-  store_prep_response.set_pmid_id(recipient_id);
+  store_prep_response.set_pmid(recipient_id);
   maidsafe::IOUAuthority iou_authority;
   iou_authority.set_data_size(4);
   iou_authority.set_pmid(recipient_id);
@@ -747,7 +753,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
   for (int j = 0; j < kad::K; ++j) {
     StoreIOUResponse store_iou_response;
     store_iou_response.set_result(kAck);
-    store_iou_response.set_pmid_id(ref_holders.at(j).node_id());
+    store_iou_response.set_pmid(ref_holders.at(j).node_id());
     store_iou_responses.push_back(store_iou_response);
   }
   std::vector<StoreIOUResponse> failed_store_iou_responses;
@@ -760,21 +766,21 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
     ++m;
     if (m == kad::K)
       break;
-    sir.set_pmid_id(crypto_.Hash("Rubbish", "", crypto::STRING_STRING, false));
+    sir.set_pmid(crypto_.Hash("Rubbish", "", crypto::STRING_STRING, false));
     failed_store_iou_responses.push_back(sir);
     ++m;
     if (m == kad::K)
       break;
     sir.Clear();
     sir.set_result(kNack);
-    sir.set_pmid_id(ref_holders.at(m).node_id());
+    sir.set_pmid(ref_holders.at(m).node_id());
     failed_store_iou_responses.push_back(sir);
     ++m;
     if (m == kad::K)
       break;
     sir.Clear();
     sir.set_result(kBusy);
-    sir.set_pmid_id(ref_holders.at(m).node_id());
+    sir.set_pmid(ref_holders.at(m).node_id());
     failed_store_iou_responses.push_back(sir);
     ++m;
     if (m == kad::K)
@@ -820,9 +826,9 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
   ASSERT_TRUE(iou.SerializeToString(&serialised_iou));
   std::string public_key_signature = crypto_.AsymSign(rsakp.public_key(), "",
       rsakp.private_key(), crypto::STRING_STRING);
-  std::vector<std::string> signed_requests_private_share;
+  std::vector<std::string> request_signatures_private_share;
   for (int i = 0; i < kad::K; ++i) {
-    signed_requests_private_share.push_back(crypto_.AsymSign(crypto_.Hash(
+    request_signatures_private_share.push_back(crypto_.AsymSign(crypto_.Hash(
           public_key_signature + chunkname_private_share +
           ref_holders.at(i).node_id(), "", crypto::STRING_STRING, false),
           "", rsakp.private_key(), crypto::STRING_STRING));
@@ -850,8 +856,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                                          client_pmid_),
                        testing::Property(&StoreIOURequest::public_key,
                                          rsakp.public_key()),
-                       testing::Property(&StoreIOURequest::signed_request,
-                                         signed_requests_private_share.at(x))),
+                       testing::Property(&StoreIOURequest::request_signature,
+                                         request_signatures_private_share.at(x))),
         testing::_,
         testing::_,
         testing::_))
@@ -873,8 +879,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                                        client_pmid_),
                      testing::Property(&StoreIOURequest::public_key,
                                        rsakp.public_key()),
-                     testing::Property(&StoreIOURequest::signed_request,
-                                       signed_requests_private_share.at(
+                     testing::Property(&StoreIOURequest::request_signature,
+                                       request_signatures_private_share.at(
                                           msm.kKadStoreThreshold_ - 1))),
       testing::_,
       testing::_,
@@ -902,8 +908,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                                          client_pmid_),
                        testing::Property(&StoreIOURequest::public_key,
                                          rsakp.public_key()),
-                       testing::Property(&StoreIOURequest::signed_request,
-                                         signed_requests_private_share.at(y))),
+                       testing::Property(&StoreIOURequest::request_signature,
+                                         request_signatures_private_share.at(y))),
         testing::_,
         testing::_,
         testing::_))
@@ -962,9 +968,9 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
       client_pmid_keys_.private_key(), crypto::STRING_STRING));
   serialised_iou.clear();
   ASSERT_TRUE(iou.SerializeToString(&serialised_iou));
-  std::vector<std::string> signed_requests_public_share;
+  std::vector<std::string> request_signatures_public_share;
   for (int i = 0; i < kad::K; ++i) {
-    signed_requests_public_share.push_back(crypto_.AsymSign(crypto_.Hash(
+    request_signatures_public_share.push_back(crypto_.AsymSign(crypto_.Hash(
           mpid_pub_sig + chunkname_public_share + ref_holders.at(i).node_id(),
           "", crypto::STRING_STRING, false), "", mpid_pri,
           crypto::STRING_STRING));
@@ -990,8 +996,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                                          client_pmid_),
                        testing::Property(&StoreIOURequest::public_key,
                                          mpid_pub),
-                       testing::Property(&StoreIOURequest::signed_request,
-                                         signed_requests_public_share.at(x))),
+                       testing::Property(&StoreIOURequest::request_signature,
+                                         request_signatures_public_share.at(x))),
         testing::_,
         testing::_,
         testing::_))
@@ -1013,8 +1019,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                                        client_pmid_),
                      testing::Property(&StoreIOURequest::public_key,
                                        mpid_pub),
-                     testing::Property(&StoreIOURequest::signed_request,
-                                       signed_requests_public_share.at(
+                     testing::Property(&StoreIOURequest::request_signature,
+                                       request_signatures_public_share.at(
                                           msm.kKadStoreThreshold_ - 1))),
       testing::_,
       testing::_,
@@ -1042,8 +1048,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                                          client_pmid_),
                        testing::Property(&StoreIOURequest::public_key,
                                          mpid_pub),
-                       testing::Property(&StoreIOURequest::signed_request,
-                                         signed_requests_public_share.at(y))),
+                       testing::Property(&StoreIOURequest::request_signature,
+                                         request_signatures_public_share.at(y))),
         testing::_,
         testing::_,
         testing::_))
@@ -1104,7 +1110,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                        testing::Property(&StoreIOURequest::own_pmid,
                                          client_pmid_),
                        testing::Property(&StoreIOURequest::public_key, " "),
-                       testing::Property(&StoreIOURequest::signed_request,
+                       testing::Property(&StoreIOURequest::request_signature,
                                          kAnonymousSignedRequest)),
         testing::_,
         testing::_,
@@ -1126,7 +1132,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                      testing::Property(&StoreIOURequest::own_pmid,
                                        client_pmid_),
                      testing::Property(&StoreIOURequest::public_key, " "),
-                     testing::Property(&StoreIOURequest::signed_request,
+                     testing::Property(&StoreIOURequest::request_signature,
                                        kAnonymousSignedRequest)),
       testing::_,
       testing::_,
@@ -1153,7 +1159,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                        testing::Property(&StoreIOURequest::own_pmid,
                                          client_pmid_),
                        testing::Property(&StoreIOURequest::public_key, " "),
-                       testing::Property(&StoreIOURequest::signed_request,
+                       testing::Property(&StoreIOURequest::request_signature,
                                          kAnonymousSignedRequest)),
         testing::_,
         testing::_,
@@ -1194,9 +1200,9 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
       client_pmid_keys_.private_key(), crypto::STRING_STRING));
   serialised_iou.clear();
   ASSERT_TRUE(iou.SerializeToString(&serialised_iou));
-  std::vector<std::string> signed_requests_private;
+  std::vector<std::string> request_signatures_private;
   for (int i = 0; i < kad::K; ++i) {
-    signed_requests_private.push_back(crypto_.AsymSign(crypto_.Hash(
+    request_signatures_private.push_back(crypto_.AsymSign(crypto_.Hash(
           client_pmid_public_signature_ + chunkname_private +
           ref_holders.at(i).node_id(), "", crypto::STRING_STRING, false),
           "", client_pmid_keys_.private_key(), crypto::STRING_STRING));
@@ -1225,8 +1231,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                                          client_pmid_),
                        testing::Property(&StoreIOURequest::public_key,
                                          client_pmid_keys_.public_key()),
-                       testing::Property(&StoreIOURequest::signed_request,
-                                         signed_requests_private.at(x))),
+                       testing::Property(&StoreIOURequest::request_signature,
+                                         request_signatures_private.at(x))),
         testing::_,
         testing::_,
         testing::_))
@@ -1248,8 +1254,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                                        client_pmid_),
                      testing::Property(&StoreIOURequest::public_key,
                                        client_pmid_keys_.public_key()),
-                     testing::Property(&StoreIOURequest::signed_request,
-                                       signed_requests_private.at(
+                     testing::Property(&StoreIOURequest::request_signature,
+                                       request_signatures_private.at(
                                           msm.kKadStoreThreshold_ - 1))),
       testing::_,
       testing::_,
@@ -1277,8 +1283,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
                                          client_pmid_),
                        testing::Property(&StoreIOURequest::public_key,
                                          client_pmid_keys_.public_key()),
-                       testing::Property(&StoreIOURequest::signed_request,
-                                         signed_requests_private.at(y))),
+                       testing::Property(&StoreIOURequest::request_signature,
+                                         request_signatures_private.at(y))),
         testing::_,
         testing::_,
         testing::_))
@@ -1362,7 +1368,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
   ASSERT_EQ(kSuccess, msm.StoreIOUs(st_chunk_private, chunk_size,
       store_prep_response));
 }
-
+*/
 class MockMsmSendChunk : public MaidsafeStoreManager {
  public:
   explicit MockMsmSendChunk(boost::shared_ptr<ChunkStore> cstore)
@@ -1381,15 +1387,15 @@ class MockMsmSendChunk : public MaidsafeStoreManager {
       const kad::Contact &peer,
       bool local,
       boost::shared_ptr<boost::condition_variable> cond_variable,
-      StoreRequest *store_request));
+      StoreChunkRequest *store_chunk_request));
   MOCK_METHOD3(StoreIOUs, int(const StoreData &store_data,
                               const boost::uint64_t &chunk_size,
                               const StorePrepResponse &store_prep_response));
-  MOCK_METHOD4(SendIOUDone, int(
+/*  MOCK_METHOD4(SendIOUDone, int(
       const kad::Contact &peer,
       bool local,
       boost::shared_ptr<boost::condition_variable> cond_variable,
-      IOUDoneRequest *iou_done_request));
+      IOUDoneRequest *iou_done_request));*/
   MOCK_METHOD3(SendPacketToKad, void(const StoreData &store_data,
                                      int *return_value,
                                      GenericConditionData *generic_cond_data));
@@ -1426,9 +1432,9 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
       .Times(7).WillOnce(testing::Return(1)).WillRepeatedly(testing::Return(0));
   EXPECT_CALL(msm, StoreIOUs(testing::_, testing::_, testing::_))
       .Times(6).WillOnce(testing::Return(1)).WillRepeatedly(testing::Return(0));
-  EXPECT_CALL(msm, SendIOUDone(testing::_, testing::_, cond_variable,
+/*  EXPECT_CALL(msm, SendIOUDone(testing::_, testing::_, cond_variable,
       testing::_))
-      .Times(5).WillOnce(testing::Return(1)).WillRepeatedly(testing::Return(0));
+      .Times(5).WillOnce(testing::Return(1)).WillRepeatedly(testing::Return(0));*/
   ASSERT_EQ(kSuccess, msm.SendChunk(store_data, cond_variable, 4));
   boost::this_thread::sleep(boost::posix_time::seconds(10));
 }
@@ -1488,7 +1494,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AnalyseResults) {
     good_peers.push_back(kad::Contact(good_peernames[i], "192.192.1.1", 999+i));
     StorePacketResponse store_packet_response;
     store_packet_response.set_result(kAck);
-    store_packet_response.set_pmid_id(good_peernames[i]);
+    store_packet_response.set_pmid(good_peernames[i]);
     store_packet_response.set_checksum(good_checksum);
     boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(good_peers.at(i)));
     ch->store_packet_response = store_packet_response;
@@ -1528,7 +1534,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AnalyseResults) {
     bad_peers.push_back(kad::Contact(bad_peernames[i], "192.192.1.1", 999+i));
     StorePacketResponse store_packet_response;
     store_packet_response.set_result(kAck);
-    store_packet_response.set_pmid_id(bad_peernames[i]);
+    store_packet_response.set_pmid(bad_peernames[i]);
     store_packet_response.set_checksum(bad_checksum);
     boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(bad_peers.at(i)));
     ch->store_packet_response = store_packet_response;
@@ -1679,7 +1685,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreNewPacket) {
     peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
     StorePacketResponse store_packet_response;
     store_packet_response.set_result(kAck);
-    store_packet_response.set_pmid_id(peernames[i]);
+    store_packet_response.set_pmid(peernames[i]);
     store_packet_response.set_checksum(good_checksum);
     boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(peers.at(i)));
     ch->store_packet_response = store_packet_response;
@@ -1797,7 +1803,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreExistingPacket) {
     peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
     StorePacketResponse store_packet_response;
     store_packet_response.set_result(kAck);
-    store_packet_response.set_pmid_id(peernames[i]);
+    store_packet_response.set_pmid(peernames[i]);
     store_packet_response.set_checksum(good_checksum);
     boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(peers.at(i)));
     ch->store_packet_response = store_packet_response;
@@ -1923,7 +1929,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
     get_packet_response.set_result(kAck);
     GenericPacket *gp_add = get_packet_response.add_content();
     *gp_add = gp;
-    get_packet_response.set_pmid_id(peernames[i]);
+    get_packet_response.set_pmid(peernames[i]);
     get_packet_responses_all_good.push_back(get_packet_response);
   }
 
@@ -1992,7 +1998,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail) {
     get_packet_response.set_result(kNack);
     GenericPacket *gp_add = get_packet_response.add_content();
     *gp_add = gp;
-    get_packet_response.set_pmid_id(peernames[i]);
+    get_packet_response.set_pmid(peernames[i]);
     get_packet_responses_all_bad.push_back(get_packet_response);
   }
 
@@ -2045,7 +2051,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed) {
     get_packet_response.set_result(kNack);
     GenericPacket *gp_add = get_packet_response.add_content();
     *gp_add = gp;
-    get_packet_response.set_pmid_id(peernames[i]);
+    get_packet_response.set_pmid(peernames[i]);
     if (i == 3)
       get_packet_response.set_result(kAck);
     get_packet_responses_one_good.push_back(get_packet_response);

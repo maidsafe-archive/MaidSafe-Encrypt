@@ -71,7 +71,7 @@ class VaultServicesTest : public testing::Test {
                           fs::native),
           pmid_public_(),
           pmid_private_(),
-          signed_pmid_public_(),
+          pmid_public_signature_(),
           pmid_(),
           non_hex_pmid_(),
           transport_(),
@@ -88,9 +88,9 @@ class VaultServicesTest : public testing::Test {
         crypto::Crypto co;
         co.set_symm_algorithm(crypto::AES_256);
         co.set_hash_algorithm(crypto::SHA_512);
-        signed_pmid_public_ = co.AsymSign(pmid_public_, "", pmid_private_,
-                                          crypto::STRING_STRING);
-        pmid_ = co.Hash(pmid_public_ + signed_pmid_public_, "",
+        pmid_public_signature_ = co.AsymSign(pmid_public_, "", pmid_private_,
+                                             crypto::STRING_STRING);
+        pmid_ = co.Hash(pmid_public_ + pmid_public_signature_, "",
                         crypto::STRING_STRING, true);
         non_hex_pmid_ = base::DecodeFromHex(pmid_);
       }
@@ -108,8 +108,8 @@ class VaultServicesTest : public testing::Test {
       ASSERT_TRUE(vault_chunkstore_->Init());
 
       vault_service_ = new VaultService(pmid_public_, pmid_private_,
-                                        signed_pmid_public_, vault_chunkstore_,
-                                        knode_, &poh_);
+                                        pmid_public_signature_,
+                                        vault_chunkstore_, knode_, &poh_);
 
       svc_channel_ = new rpcprotocol::Channel(&channel_manager_, &transport_);
       svc_channel_->SetService(vault_service_);
@@ -137,7 +137,7 @@ class VaultServicesTest : public testing::Test {
     }
 
     fs::path chunkstore_dir_;
-    std::string pmid_public_, pmid_private_, signed_pmid_public_;
+    std::string pmid_public_, pmid_private_, pmid_public_signature_;
     std::string pmid_, non_hex_pmid_;
     transport::Transport transport_;
     rpcprotocol::ChannelManager channel_manager_;
@@ -237,35 +237,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesLocalStorage) {
   EXPECT_FALSE(vault_service_->LoadChunkLocal(chunkname, &test_content));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesRankAuthorityGenerator) {
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-
-  std::string rank_authority, test_rank_authority;
-  std::string signed_rank_authority, test_signed_rank_authority;
-  std::string content("This is a data chunk");
-  boost::uint64_t data_size = 20;
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  std::string pmid("abc");
-
-  maidsafe::RankAuthority ra;
-  ra.set_chunkname(chunkname);
-  ra.set_data_size(data_size);
-  ra.set_pmid(pmid);
-  rank_authority = ra.SerializeAsString();
-  signed_rank_authority = co.AsymSign(rank_authority, "", pmid_private_,
-                                      crypto::STRING_STRING);
-
-  vault_service_->RankAuthorityGenerator(chunkname, data_size, pmid,
-                                         &test_rank_authority,
-                                         &test_signed_rank_authority);
-  EXPECT_EQ(rank_authority, test_rank_authority);
-  EXPECT_EQ(signed_rank_authority, test_signed_rank_authority);
-}
-
 TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
-  rpcprotocol::Controller controller;
+/*  rpcprotocol::Controller controller;
   maidsafe::StorePrepRequest request;
   maidsafe::StorePrepResponse response;
 
@@ -285,10 +258,10 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
   {
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->StoreChunkPrep(&controller, &request, &response, done);
+    vault_service_->StorePrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
-    EXPECT_EQ(non_hex_pmid_, response.pmid_id());
+    EXPECT_EQ(non_hex_pmid_, response.pmid());
     response.Clear();
   }
 
@@ -296,8 +269,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
   request.set_data_size(kAvailableSpace + 1);
   request.set_pmid(pmid);
   request.set_public_key(pub_key);
-  request.set_signed_public_key(sig_pub_key);
-  request.set_signed_request(sig_req);
+  request.set_public_key_signature(sig_pub_key);
+  request.set_request_signature(sig_req);
 
   // too much data
   {
@@ -306,7 +279,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
-    EXPECT_EQ(non_hex_pmid_, response.pmid_id());
+    EXPECT_EQ(non_hex_pmid_, response.pmid());
     response.Clear();
   }
 
@@ -320,7 +293,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
-    EXPECT_EQ(non_hex_pmid_, response.pmid_id());
+    EXPECT_EQ(non_hex_pmid_, response.pmid());
     response.Clear();
   }
 
@@ -334,18 +307,18 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
-    EXPECT_EQ(non_hex_pmid_, response.pmid_id());
+    EXPECT_EQ(non_hex_pmid_, response.pmid());
     response.Clear();
   }
 
   request.set_data_size(content.size());
   std::string sig_req_to_self;
   CreateSignedRequest(pmid_public_, pmid_private_, chunkname, &pmid_,
-                      &signed_pmid_public_, &sig_req_to_self);
+                      &pmid_public_signature_, &sig_req_to_self);
   request.set_pmid(pmid_);
   request.set_public_key(pmid_public_);
-  request.set_signed_public_key(signed_pmid_public_);
-  request.set_signed_request(sig_req_to_self);
+  request.set_3(pmid_public_signature_);
+  request.set_request_signature(sig_req_to_self);
 
   // request to store ourself
   {
@@ -354,14 +327,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
-    EXPECT_EQ(non_hex_pmid_, response.pmid_id());
+    EXPECT_EQ(non_hex_pmid_, response.pmid());
     response.Clear();
   }
 
   request.set_pmid(pmid);
   request.set_public_key(pub_key);
-  request.set_signed_public_key(sig_pub_key);
-  request.set_signed_request(sig_req);
+  request.set_public_key_signature(sig_pub_key);
+  request.set_request_signature(sig_req);
 
   // proper request
   {
@@ -370,7 +343,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
     vault_service_->StoreChunkPrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    EXPECT_EQ(non_hex_pmid_, response.pmid_id());
+    EXPECT_EQ(non_hex_pmid_, response.pmid());
   }
 
   maidsafe::IOUAuthority iou_authority;
@@ -381,13 +354,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkPrep) {
   EXPECT_EQ(iou_authority_str, response.iou_authority());
   std::string signed_iou_authority(co.AsymSign(iou_authority_str, "",
       pmid_private_, crypto::STRING_STRING));
-  EXPECT_EQ(signed_iou_authority, response.signed_iou_authority());
+  EXPECT_EQ(signed_iou_authority, response.signed_iou_authority());*/
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
   rpcprotocol::Controller controller;
-  maidsafe::StoreRequest request;
-  maidsafe::StoreResponse response;
+  maidsafe::StoreChunkRequest request;
+  maidsafe::StoreChunkResponse response;
 
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
@@ -410,8 +383,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
         request.set_data(content);
         request.set_pmid(pmid);
         request.set_public_key("fail");  // !
-        request.set_signed_public_key(sig_pub_key);
-        request.set_signed_request(sig_req);
+        request.set_public_key_signature(sig_pub_key);
+        request.set_request_signature(sig_req);
         request.set_data_type(maidsafe::DATA);
         // request.set_offset(  );
         // request.set_chunklet_size(  );
@@ -488,8 +461,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
     request.set_chunkname(chunkname);
     request.set_data(content);
     request.set_pmid(pmid);
-    request.set_signed_public_key(sig_pub_key);
-    request.set_signed_request(sig_req);
+    request.set_public_key_signature(sig_pub_key);
+    request.set_request_signature(sig_req);
 
     EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunkname, content.size(), "",
                                           "", 0, pub_key, STORE_ACCEPTED));
@@ -503,7 +476,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesIOUDone) {
+/*TEST_F(VaultServicesTest, BEH_MAID_ServicesIOUDone) {
   rpcprotocol::Controller controller;
   maidsafe::IOUDoneRequest request;
   maidsafe::IOUDoneResponse response;
@@ -528,8 +501,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesIOUDone) {
         request.set_chunkname(chunkname);
         request.set_own_pmid(pmid);
         request.set_public_key("fail");  // !
-        request.set_signed_public_key(sig_pub_key);
-        request.set_signed_request(sig_req);
+        request.set_public_key_signature(sig_pub_key);
+        request.set_request_signature(sig_req);
         break;
       case 2:  // make PendingOperationsHandler::AdvanceStatus() fail
         request.set_public_key(pub_key);
@@ -586,8 +559,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreIOU) {
         request.set_iou("iou");
         request.set_own_pmid(pmid);
         request.set_public_key("fail");  // !
-        request.set_signed_public_key(sig_pub_key);
-        request.set_signed_request(sig_req);
+        request.set_public_key_signature(sig_pub_key);
+        request.set_request_signature(sig_req);
         break;
       case 2:  // invalid data size
         request.set_public_key(pub_key);
@@ -624,11 +597,11 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreIOU) {
     response.Clear();
   }
 }
-
+*/
 TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkReference) {
   rpcprotocol::Controller controller;
-  maidsafe::StoreReferenceRequest request;
-  maidsafe::StoreReferenceResponse response;
+  maidsafe::AddToReferenceListRequest request;
+  maidsafe::AddToReferenceListResponse response;
 
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
@@ -648,14 +621,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkReference) {
         break;
       case 1:  // invalid request
         request.set_chunkname(chunkname);
-        request.set_pmid(pmid);
+/*        request.set_pmid(pmid);
         request.set_signed_pmid("signed pmid");
         request.set_public_key("fail");  // !
-        request.set_signed_public_key(sig_pub_key);
-        request.set_signed_request(sig_req);
+        request.set_public_key_signature(sig_pub_key);*/
+        request.set_request_signature(sig_req);
         break;
       case 2:  // make PendingOperationsHandler::GetSizeAndIOU() fail
-        request.set_public_key(pub_key);
+/*        request.set_public_key(pub_key);*/
         break;
       // TODO(Steve) make PendingOperationsHandler::AdvanceStatus() fail (?)
       // TODO(Steve) make KNode::StoreValueLocal() fail (?)
@@ -684,7 +657,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkReference) {
 
     kad::SignedValue signed_value;
     signed_value.set_value(pmid);
-    signed_value.set_value_signature(request.signed_pmid());
+/*    signed_value.set_value_signature(request.signed_pmid());*/
     std::string ser_signed_value = signed_value.SerializeAsString();
 
     std::vector<std::string> values;
@@ -696,8 +669,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunkReference) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheck) {
   rpcprotocol::Controller controller;
-  maidsafe::GetRequest request;
-  maidsafe::GetResponse response;
+  maidsafe::GetChunkRequest request;
+  maidsafe::GetChunkResponse response;
   maidsafe::CheckChunkRequest check_request;
   maidsafe::CheckChunkResponse check_response;
 
@@ -721,7 +694,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheck) {
 
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->Get(&controller, &request, &response, done);
+    vault_service_->GetChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
@@ -759,7 +732,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheck) {
 
     google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->Get(&controller, &request, &response, done2);
+    vault_service_->GetChunk(&controller, &request, &response, done2);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     EXPECT_EQ(content, response.content());
@@ -769,8 +742,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheck) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
   rpcprotocol::Controller controller;
-  maidsafe::UpdateRequest request;
-  maidsafe::UpdateResponse response;
+  maidsafe::UpdateChunkRequest request;
+  maidsafe::UpdateChunkResponse response;
 
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
@@ -791,10 +764,10 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
       case 1:  // invalid request
         request.set_chunkname(chunkname);
         request.set_data(content);
-        request.set_pmid_id(pmid);
+        request.set_pmid(pmid);
         request.set_public_key("fail");  // !
-        request.set_signed_public_key(sig_pub_key);
-        request.set_signed_request(sig_req);
+        request.set_public_key_signature(sig_pub_key);
+        request.set_request_signature(sig_req);
         request.set_data_type(maidsafe::SYSTEM_PACKET);
         break;
       case 2:  // make LoadChunkLocal() fail
@@ -804,7 +777,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
 
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->Update(&controller, &request, &response, done);
+    vault_service_->UpdateChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
@@ -821,7 +794,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
     request.set_data_type(data_type[i]);
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->Update(&controller, &request, &response, done);
+    vault_service_->UpdateChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
@@ -851,16 +824,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
     CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
                         &sig_req);
     request.set_chunkname(chunkname);
-    request.set_pmid_id(pmid);
+    request.set_pmid(pmid);
     request.set_data(content);
-    request.set_signed_public_key(sig_pub_key);
-    request.set_signed_request(sig_req);
+    request.set_public_key_signature(sig_pub_key);
+    request.set_request_signature(sig_req);
 
     ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, prev_content));
 
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->Update(&controller, &request, &response, done);
+    vault_service_->UpdateChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
@@ -869,8 +842,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesUpdate) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
   rpcprotocol::Controller controller;
-  maidsafe::DeleteRequest request;
-  maidsafe::DeleteResponse response;
+  maidsafe::DeleteChunkRequest request;
+  maidsafe::DeleteChunkResponse response;
 
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
@@ -890,20 +863,20 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
         break;
       case 1:  // invalid request
         request.set_chunkname(chunkname);
-        request.set_pmid_id(pmid);
+/*        request.set_pmid(pmid);
         request.set_public_key("fail");  // !
-        request.set_signed_public_key(sig_pub_key);
-        request.set_signed_request(sig_req);
+        request.set_public_key_signature(sig_pub_key);*/
+        request.set_request_signature(sig_req);
         request.set_data_type(maidsafe::SYSTEM_PACKET);
         break;
       case 2:  // make LoadChunkLocal() fail
-        request.set_public_key(pub_key);
+/*        request.set_public_key(pub_key);*/
         break;
     }
 
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->Delete(&controller, &request, &response, done);
+    vault_service_->DeleteChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
@@ -919,7 +892,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
     request.set_data_type(data_type[i]);
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->Delete(&controller, &request, &response, done);
+    vault_service_->DeleteChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
@@ -945,16 +918,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDelete) {
     CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
                         &sig_req);
     request.set_chunkname(chunkname);
-    request.set_pmid_id(pmid);
-    request.set_signed_public_key(sig_pub_key);
-    request.set_signed_request(sig_req);
+/*    request.set_pmid(pmid);
+    request.set_public_key_signature(sig_pub_key);*/
+    request.set_request_signature(sig_req);
 
     ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, content));
     ASSERT_TRUE(vault_service_->HasChunkLocal(chunkname));
 
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->Delete(&controller, &request, &response, done);
+    vault_service_->DeleteChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     ASSERT_FALSE(vault_service_->HasChunkLocal(chunkname));
@@ -1121,7 +1094,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
-  VaultService service(pmid_public_, pmid_private_, signed_pmid_public_,
+  VaultService service(pmid_public_, pmid_private_, pmid_public_signature_,
     vault_chunkstore_, NULL, &poh_);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
@@ -1135,7 +1108,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(non_hex_pmid_, response.pmid_id());
   ASSERT_EQ(pmid_public_, response.public_key());
-  ASSERT_EQ(signed_pmid_public_, response.signed_public_key());
+  ASSERT_EQ(pmid_public_signature_, response.signed_public_key());
 
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
@@ -1187,7 +1160,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
-  VaultService service(pmid_public_, pmid_private_, signed_pmid_public_,
+  VaultService service(pmid_public_, pmid_private_, pmid_public_signature_,
     vault_chunkstore_, NULL, &poh_);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest create_request;
@@ -1262,7 +1235,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
   ASSERT_EQ(non_hex_pmid_, modify_response.pmid_id());
   ASSERT_EQ(pmid_public_, modify_response.public_key());
-  ASSERT_EQ(signed_pmid_public_, modify_response.signed_public_key());
+  ASSERT_EQ(pmid_public_signature_, modify_response.signed_public_key());
 
   // Wrong data: not a BufferPacketInfo inside the GP
   modify_request.Clear();
@@ -1284,7 +1257,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
   ASSERT_EQ(non_hex_pmid_, modify_response.pmid_id());
   ASSERT_EQ(pmid_public_, modify_response.public_key());
-  ASSERT_EQ(signed_pmid_public_, modify_response.signed_public_key());
+  ASSERT_EQ(pmid_public_signature_, modify_response.signed_public_key());
 
   // Wrong bufferpacket name
   modify_request.Clear();
@@ -1314,7 +1287,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
   ASSERT_EQ(non_hex_pmid_, modify_response.pmid_id());
   ASSERT_EQ(pmid_public_, modify_response.public_key());
-  ASSERT_EQ(signed_pmid_public_, modify_response.signed_public_key());
+  ASSERT_EQ(pmid_public_signature_, modify_response.signed_public_key());
 
   // Correct change
   modify_request.Clear();
@@ -1331,7 +1304,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   ASSERT_EQ(kAck, static_cast<int>(modify_response.result()));
   ASSERT_EQ(non_hex_pmid_, modify_response.pmid_id());
   ASSERT_EQ(pmid_public_, modify_response.public_key());
-  ASSERT_EQ(signed_pmid_public_, modify_response.signed_public_key());
+  ASSERT_EQ(pmid_public_signature_, modify_response.signed_public_key());
 
   ASSERT_TRUE(service.HasChunkLocal(bufferpacket_name));
   ASSERT_TRUE(service.LoadChunkLocal(bufferpacket_name, &test_content));
@@ -1346,7 +1319,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
-  VaultService service(pmid_public_, pmid_private_, signed_pmid_public_,
+  VaultService service(pmid_public_, pmid_private_, pmid_public_signature_,
     vault_chunkstore_, NULL, &poh_);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
@@ -1421,7 +1394,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
-  VaultService service(pmid_public_, pmid_private_, signed_pmid_public_,
+  VaultService service(pmid_public_, pmid_private_, pmid_public_signature_,
     vault_chunkstore_, NULL, &poh_);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
@@ -1613,7 +1586,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(0, response.content_size());
-  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(non_hex_pmid_, response.pmid());
 
   // Generate packet and signatures
   std::string pub_key, priv_key, key_id, sig_pub_key, sig_req;
@@ -1634,7 +1607,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(0, response.content_size());
-  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(non_hex_pmid_, response.pmid());
 
   request.set_public_key(pub_key);
   request.set_public_key_signature(sig_pub_key);
@@ -1646,7 +1619,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(0, response.content_size());
-  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(non_hex_pmid_, response.pmid());
 
   // single value
   maidsafe::GenericPacket injection_gp;
@@ -1661,7 +1634,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
   ASSERT_EQ(1, response.content_size());
-  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(non_hex_pmid_, response.pmid());
   ASSERT_EQ(injection_gp.data(), response.content(0).data());
   ASSERT_EQ(injection_gp.signature(), response.content(0).signature());
 
@@ -1684,7 +1657,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
   ASSERT_EQ(static_cast<int>(kNumTestPackets), response.content_size());
-  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(non_hex_pmid_, response.pmid());
   for (size_t i = 0; i < kNumTestPackets; ++i) {
     ASSERT_EQ(injection_gps.at(i).data(), response.content(i).data());
     ASSERT_EQ(injection_gps.at(i).signature(), response.content(i).signature());
@@ -1705,7 +1678,7 @@ struct StorePacketCallback {
 class TestStorePacket : public testing::Test {
  public:
   TestStorePacket() : dir_(""), pmid_public_(""), pmid_private_(""),
-    pmid_signed_public_(""), pmid_id_(""), co_()  {
+    pmid_signed_public_(""), pmid_(""), co_()  {
     co_.set_hash_algorithm(crypto::SHA_512);
   }
  protected:
@@ -1718,7 +1691,7 @@ class TestStorePacket : public testing::Test {
     pmid_private_ = kp.private_key();
     pmid_signed_public_ = co_.AsymSign(pmid_public_, "", pmid_private_,
       crypto::STRING_STRING);
-    pmid_id_ = co_.Hash(pmid_public_ + pmid_signed_public_, "",
+    pmid_ = co_.Hash(pmid_public_ + pmid_signed_public_, "",
       crypto::STRING_STRING, false);
   }
   virtual void TearDown() {
@@ -1730,7 +1703,7 @@ class TestStorePacket : public testing::Test {
     }
   }
   std::string dir_;
-  std::string pmid_public_, pmid_private_, pmid_signed_public_, pmid_id_;
+  std::string pmid_public_, pmid_private_, pmid_signed_public_, pmid_;
   crypto::Crypto co_;
 };
 
@@ -1749,7 +1722,7 @@ TEST_F(TestStorePacket, BEH_MAID_StoreSysPacket) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -1762,7 +1735,7 @@ TEST_F(TestStorePacket, BEH_MAID_StoreSysPacket) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -1788,7 +1761,7 @@ TEST_F(TestStorePacket, BEH_MAID_StoreSysPacket) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -1837,7 +1810,7 @@ TEST_F(TestStorePacket, BEH_MAID_OverWriteSystemPacket) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -1862,7 +1835,7 @@ TEST_F(TestStorePacket, BEH_MAID_OverWriteSystemPacket) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -1911,7 +1884,7 @@ TEST_F(TestStorePacket, BEH_MAID_AppendSystemPacket) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -1936,7 +1909,7 @@ TEST_F(TestStorePacket, BEH_MAID_AppendSystemPacket) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -1990,7 +1963,7 @@ TEST_F(TestStorePacket, BEH_MAID_IncorrectSignatures) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -2007,7 +1980,7 @@ TEST_F(TestStorePacket, BEH_MAID_IncorrectSignatures) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
   ASSERT_EQ(kPacketLoadNotFound, chunkstore.LoadPacket(packetname, &result));
@@ -2024,7 +1997,7 @@ TEST_F(TestStorePacket, BEH_MAID_IncorrectSignatures) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
   ASSERT_EQ(kPacketLoadNotFound, chunkstore.LoadPacket(packetname, &result));
@@ -2067,7 +2040,7 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidOverWrite) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -2107,7 +2080,7 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidOverWrite) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -2154,7 +2127,7 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidAppend) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -2184,7 +2157,7 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidAppend) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -2219,7 +2192,7 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidAppend) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -2257,7 +2230,7 @@ TEST_F(TestStorePacket, BEH_MAID_StorePDDIR_NOT_SIGNED) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -2277,7 +2250,7 @@ TEST_F(TestStorePacket, BEH_MAID_StorePDDIR_NOT_SIGNED) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
 
   delete done;
 }
@@ -2318,7 +2291,7 @@ TEST_F(TestStorePacket, BEH_MAID_StoreThenLoadSystemPacket) {
   while (!cb.is_called_back)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(pmid_id_, response.pmid_id());
+  ASSERT_EQ(pmid_, response.pmid());
   response.Clear();
   cb.Reset();
 
@@ -2345,7 +2318,7 @@ TEST_F(TestStorePacket, BEH_MAID_StoreThenLoadSystemPacket) {
   ASSERT_EQ(1, gp_resp.content_size());
   ASSERT_EQ(gp->data(), gp_resp.content(0).data());
   ASSERT_EQ(gp->signature(), gp_resp.content(0).signature());
-  ASSERT_EQ(pmid_id_, gp_resp.pmid_id());
+  ASSERT_EQ(pmid_, gp_resp.pmid());
 
   delete done;
 }

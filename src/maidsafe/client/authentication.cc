@@ -1127,7 +1127,7 @@ void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
       boost::any_cast<std::string>(params["name"]),
       boost::any_cast<std::string>(params["ser_packet"]), MSID, PRIVATE,
       "");
-  StoreResponse result_msg;
+  StoreChunkResponse result_msg;
   CreateMSIDResult local_result;
   std::string str_local_result;
   if (n != 0) {

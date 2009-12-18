@@ -3,27 +3,33 @@ import "maidsafe_service_messages.proto";
 package maidsafe;
 
 service MaidsafeService {
-  rpc StoreChunkPrep( StorePrepRequest ) returns ( StorePrepResponse );
-  rpc StoreIOU( StoreIOURequest ) returns ( StoreIOUResponse );
-  rpc IOUDone( IOUDoneRequest ) returns ( IOUDoneResponse );
-  rpc StoreChunk( StoreRequest ) returns ( StoreResponse );
-  rpc StorePacket( StorePacketRequest ) returns ( StorePacketResponse );
-  rpc StoreChunkReference( StoreReferenceRequest )
-      returns ( StoreReferenceResponse );
+  rpc StorePrep (StorePrepRequest) returns (StorePrepResponse);
+  rpc StoreChunk (StoreChunkRequest) returns (StoreChunkResponse);
+  rpc StorePacket (StorePacketRequest) returns (StorePacketResponse);
+  rpc AddToWatchList (AddToWatchListRequest) returns (AddToWatchListResponse);
+  rpc RemoveFromWatchList (RemoveFromWatchListRequest) returns
+      (RemoveFromWatchListResponse);
+  rpc AddToReferenceList (AddToReferenceListRequest) returns
+      (AddToReferenceListResponse);
+  rpc RemoveFromReferenceList (RemoveFromReferenceListRequest) returns
+      (RemoveFromReferenceListResponse);
+  rpc AmendAccount (AmendAccountRequest) returns (AmendAccountResponse);
+  rpc GetAccountStatus (GetAccountStatusRequest) returns
+      (GetAccountStatusResponse);
   // check if a chunk exists
-  rpc CheckChunk( CheckChunkRequest ) returns ( CheckChunkResponse );
-  rpc Get( GetRequest ) returns ( GetResponse );
-  rpc GetPacket( GetPacketRequest ) returns ( GetPacketResponse );
-  rpc Update( UpdateRequest ) returns ( UpdateResponse );
-  rpc Delete( DeleteRequest ) returns ( DeleteResponse );
-  rpc ValidityCheck( ValidityCheckRequest ) returns ( ValidityCheckResponse );
-  rpc SwapChunk( SwapChunkRequest ) returns ( SwapChunkResponse );
-  rpc VaultStatus( VaultStatusRequest ) returns ( VaultStatusResponse );
+  rpc CheckChunk (CheckChunkRequest) returns (CheckChunkResponse);
+  rpc GetChunk (GetChunkRequest) returns (GetChunkResponse);
+  rpc GetPacket (GetPacketRequest) returns (GetPacketResponse);
+  rpc UpdateChunk (UpdateChunkRequest) returns (UpdateChunkResponse);
+  rpc DeleteChunk (DeleteChunkRequest) returns (DeleteChunkResponse);
+  rpc ValidityCheck (ValidityCheckRequest) returns (ValidityCheckResponse);
+  rpc SwapChunk (SwapChunkRequest) returns (SwapChunkResponse);
+  rpc VaultStatus (VaultStatusRequest) returns (VaultStatusResponse);
   // BP services
-  rpc CreateBP( CreateBPRequest ) returns ( CreateBPResponse );
-  rpc ModifyBPInfo( ModifyBPInfoRequest ) returns ( ModifyBPInfoResponse );
-  rpc GetBPMessages( GetBPMessagesRequest ) returns ( GetBPMessagesResponse );
-  rpc AddBPMessage( AddBPMessageRequest ) returns ( AddBPMessageResponse );
+  rpc CreateBP (CreateBPRequest) returns (CreateBPResponse);
+  rpc ModifyBPInfo (ModifyBPInfoRequest) returns (ModifyBPInfoResponse);
+  rpc GetBPMessages (GetBPMessagesRequest) returns (GetBPMessagesResponse);
+  rpc AddBPMessage (AddBPMessageRequest) returns (AddBPMessageResponse);
 }
 
 service VaultRegistration {

@@ -53,40 +53,33 @@ class VaultService : public maidsafe::MaidsafeService {
  public:
   VaultService(const std::string &pmid_public,
                const std::string &pmid_private,
-               const std::string &signed_pmid_public,
+               const std::string &pmid_public_signature,
                VaultChunkStore *vault_chunkstore,
                kad::KNode *knode,
                PendingOperationsHandler *poh);
   ~VaultService() { }
 
-  virtual void StoreChunkPrep(google::protobuf::RpcController* controller,
-                              const maidsafe::StorePrepRequest* request,
-                              maidsafe::StorePrepResponse* response,
-                              google::protobuf::Closure* done);
+  virtual void StorePrep(google::protobuf::RpcController* controller,
+                         const maidsafe::StorePrepRequest* request,
+                         maidsafe::StorePrepResponse* response,
+                         google::protobuf::Closure* done);
   virtual void StoreChunk(google::protobuf::RpcController* controller,
-                          const maidsafe::StoreRequest* request,
-                          maidsafe::StoreResponse* response,
+                          const maidsafe::StoreChunkRequest* request,
+                          maidsafe::StoreChunkResponse* response,
                           google::protobuf::Closure* done);
   virtual void StorePacket(google::protobuf::RpcController* controller,
                           const maidsafe::StorePacketRequest* request,
                           maidsafe::StorePacketResponse* response,
                           google::protobuf::Closure* done);
-  virtual void IOUDone(google::protobuf::RpcController*,
-                       const maidsafe::IOUDoneRequest* request,
-                       maidsafe::IOUDoneResponse* response,
-                       google::protobuf::Closure* done);
-  virtual void StoreIOU(google::protobuf::RpcController* controller,
-                        const maidsafe::StoreIOURequest* request,
-                        maidsafe::StoreIOUResponse* response,
-                        google::protobuf::Closure* done);
-  virtual void StoreChunkReference(google::protobuf::RpcController*,
-      const maidsafe::StoreReferenceRequest* request,
-      maidsafe::StoreReferenceResponse* response,
+  virtual void StoreChunkReference(
+      google::protobuf::RpcController*,
+      const maidsafe::AddToReferenceListRequest* request,
+      maidsafe::AddToReferenceListResponse* response,
       google::protobuf::Closure* done);
-  virtual void Get(google::protobuf::RpcController* controller,
-                   const maidsafe::GetRequest* request,
-                   maidsafe::GetResponse* response,
-                   google::protobuf::Closure* done);
+  virtual void GetChunk(google::protobuf::RpcController* controller,
+                        const maidsafe::GetChunkRequest* request,
+                        maidsafe::GetChunkResponse* response,
+                        google::protobuf::Closure* done);
   virtual void GetPacket(google::protobuf::RpcController*,
                          const maidsafe::GetPacketRequest* request,
                          maidsafe::GetPacketResponse* response,
@@ -95,18 +88,18 @@ class VaultService : public maidsafe::MaidsafeService {
                           const maidsafe::CheckChunkRequest* request,
                           maidsafe::CheckChunkResponse* response,
                           google::protobuf::Closure* done);
-  virtual void Update(google::protobuf::RpcController* controller,
-                      const maidsafe::UpdateRequest* request,
-                      maidsafe::UpdateResponse* response,
-                      google::protobuf::Closure* done);
+  virtual void UpdateChunk(google::protobuf::RpcController* controller,
+                           const maidsafe::UpdateChunkRequest* request,
+                           maidsafe::UpdateChunkResponse* response,
+                           google::protobuf::Closure* done);
 //  virtual void GetMessages(google::protobuf::RpcController* controller,
 //                           const maidsafe::GetBPMessagesRequest* request,
 //                           maidsafe::GetBPMessagesResponse* response,
 //                           google::protobuf::Closure* done);
-  virtual void Delete(google::protobuf::RpcController* controller,
-                      const maidsafe::DeleteRequest* request,
-                      maidsafe::DeleteResponse* response,
-                      google::protobuf::Closure* done);
+  virtual void DeleteChunk(google::protobuf::RpcController* controller,
+                           const maidsafe::DeleteChunkRequest* request,
+                           maidsafe::DeleteChunkResponse* response,
+                           google::protobuf::Closure* done);
   virtual void ValidityCheck(google::protobuf::RpcController* controller,
                              const maidsafe::ValidityCheckRequest* request,
                              maidsafe::ValidityCheckResponse* response,
@@ -144,7 +137,6 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateDataChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesStorable);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesLocalStorage);
-  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesRankAuthorityGenerator);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetCheck);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesUpdate);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetMessages);
@@ -158,8 +150,8 @@ class VaultService : public maidsafe::MaidsafeService {
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
   bool ValidateSignedRequest(const std::string &public_key,
-                             const std::string &signed_public_key,
-                             const std::string &signed_request,
+                             const std::string &public_key_signature,
+                             const std::string &request_signature,
                              const std::string &key,
                              const std::string &pmid);
   bool ValidateSystemPacket(const std::string &ser_content,
@@ -184,12 +176,7 @@ class VaultService : public maidsafe::MaidsafeService {
   void StoreChunkReference(const std::string &non_hex_chunkname);
   void FindCloseNodesCallback(const std::string &result,
                               std::vector<std::string> *close_nodes);
-  void RankAuthorityGenerator(const std::string &chunkname,
-                              const boost::uint64_t &data_size,
-                              const std::string &pmid,
-                              std::string *rank_authority,
-                              std::string *signed_rank_authority);
-  std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
+  std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
   std::string non_hex_pmid_;
   VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;

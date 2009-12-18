@@ -170,20 +170,20 @@ class BPCallbackObj {
   std::list<ValidatedBufferPacketMessage> *messages_;
 };
 
-struct StoreIouResultHolder {
- public:
-  StoreIouResultHolder()
-      : store_iou_response(),
-        store_iou_response_returned(false),
-        controller(new rpcprotocol::Controller) {}
-  StoreIOUResponse store_iou_response;
-  bool store_iou_response_returned;
-  boost::shared_ptr<rpcprotocol::Controller> controller;
- private:
-  StoreIouResultHolder &operator=(const StoreIouResultHolder&);
-  StoreIouResultHolder(const StoreIouResultHolder&);
-};
-
+//  struct StoreIouResultHolder {
+//   public:
+//    StoreIouResultHolder()
+//        : store_iou_response(),
+//          store_iou_response_returned(false),
+//          controller(new rpcprotocol::Controller) {}
+//    StoreIOUResponse store_iou_response;
+//    bool store_iou_response_returned;
+//    boost::shared_ptr<rpcprotocol::Controller> controller;
+//   private:
+//    StoreIouResultHolder &operator=(const StoreIouResultHolder&);
+//    StoreIouResultHolder(const StoreIouResultHolder&);
+//  };
+//
 struct StoreData {
   // Default constructor
   StoreData() : non_hex_key_(""),
@@ -444,10 +444,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
     client_rpcs_ = mock_rpcs;
     mock_rpcs_ = true;
   }
-  void SimpleResult_Callback(const std::string &result,
-                             base::callback_func_type cb);
-  void DeleteChunk_Callback(const std::string &result,
-                            base::callback_func_type cb);
   void AddStorePacketTask(const StoreData &store_data,
                           bool is_mutable,
                           int *return_value,
@@ -467,8 +463,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   int GetStoreRequests(const StoreData &store_data,
                        const std::string &recipient_id,
                        StorePrepRequest *store_prep_request,
-                       StoreRequest *store_request,
-                       IOUDoneRequest *iou_done_request);
+                       StoreChunkRequest *store_chunk_request/*,
+                       IOUDoneRequest *iou_done_request*/);
   // Set up the request needed to perform the store packet RPCs.  If values
   // vector is not empty, we are sending an entire set of values for a
   // key (e.g. in case of failed existing holder), so append == false and we
@@ -511,7 +507,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const kad::Contact &peer,
       bool local,
       boost::shared_ptr<boost::condition_variable> cond_variable,
-      StoreRequest *store_request);
+      StoreChunkRequest *store_chunk_request);
   void SendContentCallback(GenericConditionData *send_cond_data);
   // Pass the IOU for the peer vault to the k chunk reference holders.
   virtual int StoreIOUs(const StoreData &store_data,
@@ -589,7 +585,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    std::string *serialised_get_messages_response,
                    boost::mutex *get_mutex);
   void GetChunkCallback(boost::mutex *mutex, bool *get_chunk_done);
-  // Passes the IOU to an individual reference holder.
+/*  // Passes the IOU to an individual reference holder.
   virtual int SendIouToRefHolder(
       const kad::Contact &ref_holder,
       StoreIOURequest store_iou_request,
@@ -607,7 +603,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       bool local,
       boost::shared_ptr<boost::condition_variable> cond_variable,
       IOUDoneRequest *iou_done_request);
-  void IOUDoneCallback(GenericConditionData *iou_done_cond_data);
+  void IOUDoneCallback(GenericConditionData *iou_done_cond_data);*/
   // Adds the packet to the priority store queue for uploading as a maidsafe
   // (i.e. mutable) packet.  If the packet already exists on the net, the
   // value is appended or overwritten depending on the boolean "append".
@@ -666,7 +662,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const std::vector<std::string> &chunk_holders_ids);
   void UpdateChunk(const boost::shared_ptr<ChunkHolder> chunk_holder,
                    const StoreData &store_data,
-                   UpdateResponse *update_resonse,
+                   UpdateChunkResponse *update_chunk_resonse,
                    boost::condition_variable *update_conditional);
   void UpdateChunkCallback(boost::condition_variable *cond,
                            boost::shared_ptr<rpcprotocol::Controller>);

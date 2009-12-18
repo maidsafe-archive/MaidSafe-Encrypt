@@ -320,14 +320,14 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
   bool got_valid_iou(false);
   int successful_count(0);
   int called_back_count(0);
-  std::vector<StoreRefResultHolder> results;
+  std::vector<AddRefResultHolder> results;
   for (boost::uint16_t i = 0; i < ref_holders.size(); ++i) {
-    StoreRefResultHolder store_ref_result_holder;
-    results.push_back(store_ref_result_holder);
+    AddRefResultHolder add_ref_result_holder;
+    results.push_back(add_ref_result_holder);
   }
-  boost::mutex store_ref_mutex;
+  boost::mutex add_ref_mutex;
   for (boost::uint16_t i = 0; i < ref_holders.size(); ++i) {
-    SendToRefPacket(ref_holders.at(i), iou_ready_details, &store_ref_mutex,
+    SendToRefPacket(ref_holders.at(i), iou_ready_details, &add_ref_mutex,
                     &results.at(i));
   }
 // TODO(Fraser#5#): 2009-08-15 - This loop logic needs tidied.
@@ -336,14 +336,14 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
   while (called_back_count < kad::K && time_count < timeout &&
          successful_count < kKadStoreThreshold_) {
     for (boost::uint16_t i = 0; i < results.size(); ++i) {
-      boost::mutex::scoped_lock loch(store_ref_mutex);
-      if (results.at(i).store_ref_response_returned_) {
+      boost::mutex::scoped_lock loch(add_ref_mutex);
+      if (results.at(i).add_ref_response_returned_) {
         ++called_back_count;
-        int n = HandleStoreRefResponse(iou_ready_details, results.at(i),
+        int n = HandleAddRefResponse(iou_ready_details, results.at(i),
                                        &got_valid_iou);
         if (n == 0)
           ++successful_count;
-        results.at(i).store_ref_response_returned_ = false;
+        results.at(i).add_ref_response_returned_ = false;
         break;
       }
     }
@@ -374,9 +374,9 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
 // TODO(Fraser#5#): 2009-08-12 - Increment our rank and clear pending op.
 }
 
-int PDVault::HandleStoreRefResponse(
+int PDVault::HandleAddRefResponse(
     const IouReadyTuple &iou_ready_details,
-    const StoreRefResultHolder &store_ref_result_holder,
+    const AddRefResultHolder &add_ref_result_holder,
     bool *got_valid_iou) {
   if (vault_status() != kVaultStarted) {
 #ifdef DEBUG
@@ -385,40 +385,40 @@ int PDVault::HandleStoreRefResponse(
     return kVaultOffline;
   }
 
-  maidsafe::StoreReferenceResponse srr =
-      store_ref_result_holder.store_ref_response_;
-  if (srr.result() == kNack) {
+  maidsafe::AddToReferenceListResponse arr =
+      add_ref_result_holder.add_ref_response_;
+  if (arr.result() == kNack) {
 #ifdef DEBUG
     printf("Response from rpc id %d came back failed (%d).\n",
-           store_ref_result_holder.controller_->req_id(), knode_.host_port());
+           add_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
     return -1;
   }
 
-  if (srr.pmid_id() != co_.Hash(srr.public_key() + srr.signed_public_key(),
+/*  if (arr.pmid() != co_.Hash(arr.public_key() + arr.signed_public_key(),
       "", crypto::STRING_STRING, false)) {
 #ifdef DEBUG
     printf("Someone on rpc id %d is trying to fake identity (%d).\n",
-           store_ref_result_holder.controller_->req_id(), knode_.host_port());
+           add_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
     return -1;
   }
 
   if (!*got_valid_iou) {
-    if (!co_.AsymCheckSig(srr.rank_authority(), srr.signed_rank_authority(),
-        srr.public_key(), crypto::STRING_STRING)) {
+    if (!co_.AsymCheckSig(arr.rank_authority(), arr.signed_rank_authority(),
+        arr.public_key(), crypto::STRING_STRING)) {
 #ifdef DEBUG
       printf("Rank authrty from rpc id %d didn't pass signature check (%d).\n",
-             store_ref_result_holder.controller_->req_id(), knode_.host_port());
+             add_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
       return -1;
     }
 
     maidsafe::RankAuthority ra;
-    if (!ra.ParseFromString(srr.rank_authority())) {
+    if (!ra.ParseFromString(arr.rank_authority())) {
 #ifdef DEBUG
       printf("Rank authority from rpc id %d didn't parse (%d).\n",
-             store_ref_result_holder.controller_->req_id(), knode_.host_port());
+             add_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
       return -1;
     }
@@ -426,7 +426,7 @@ int PDVault::HandleStoreRefResponse(
     if (ra.data_size() != iou_ready_details.get<2>()) {
 #ifdef DEBUG
       printf("Rank authority from rpc id %d has invalid size (%d).\n",
-             store_ref_result_holder.controller_->req_id(), knode_.host_port());
+             add_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
       return -1;
     }
@@ -434,16 +434,16 @@ int PDVault::HandleStoreRefResponse(
     if (ra.pmid() != non_hex_pmid_) {
 #ifdef DEBUG
       printf("Rank authority from rpc id %d is not for this vault (%d).\n",
-             store_ref_result_holder.controller_->req_id(), knode_.host_port());
+             add_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
       return -1;
     }
 
     maidsafe::IOU iou;
-    if (!iou.ParseFromString(srr.iou())) {
+    if (!iou.ParseFromString(arr.iou())) {
 #ifdef DEBUG
       printf("IOU from rpc id %d didn't parse (%d).\n",
-             store_ref_result_holder.controller_->req_id(), knode_.host_port());
+             add_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
       return -1;
     }
@@ -452,7 +452,7 @@ int PDVault::HandleStoreRefResponse(
         iou_ready_details.get<3>(), crypto::STRING_STRING)) {
 #ifdef DEBUG
       printf("IOU from rpc id %d didn't pass client signature check (%d).\n",
-             store_ref_result_holder.controller_->req_id(), knode_.host_port());
+             add_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
       return -1;
     }
@@ -461,7 +461,7 @@ int PDVault::HandleStoreRefResponse(
         iou.signed_iou_authority(), pmid_public_, crypto::STRING_STRING)) {
 #ifdef DEBUG
       printf("IOUAuthority from rpc id %d didn't pass vault signature check "
-             "(%d).\n", store_ref_result_holder.controller_->req_id(),
+             "(%d).\n", add_ref_result_holder.controller_->req_id(),
              knode_.host_port());
 #endif
       return -1;
@@ -471,7 +471,7 @@ int PDVault::HandleStoreRefResponse(
     if (!iou_authority.ParseFromString(iou.serialised_iou_authority())) {
 #ifdef DEBUG
       printf("IOUAuthority from rpc id %d didn't parse (%d).\n",
-             store_ref_result_holder.controller_->req_id(), knode_.host_port());
+             add_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
       return -1;
     }
@@ -479,7 +479,7 @@ int PDVault::HandleStoreRefResponse(
     if (iou_authority.data_size() != iou_ready_details.get<2>()) {
 #ifdef DEBUG
       printf("IOUAuthority from rpc id %d has invalid size (%d).\n",
-             store_ref_result_holder.controller_->req_id(), knode_.host_port());
+             add_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
       return -1;
     }
@@ -487,12 +487,12 @@ int PDVault::HandleStoreRefResponse(
     if (iou_authority.pmid() != non_hex_pmid_) {
 #ifdef DEBUG
       printf("IOUAuthority from rpc id %d is not from this vault (%d).\n",
-             store_ref_result_holder.controller_->req_id(), knode_.host_port());
+             add_ref_result_holder.controller_->req_id(), knode_.host_port());
 #endif
       return -1;
     }
     *got_valid_iou = true;
-  }
+  }*/
   return 0;
 }
 
@@ -550,8 +550,8 @@ int PDVault::FindKNodes(const std::string &kad_key,
 int PDVault::SendToRefPacket(
     const kad::Contact &ref_holder,
     const IouReadyTuple &iou_ready_details,
-    boost::mutex *store_ref_mutex,
-    StoreRefResultHolder *store_ref_result_holder) {
+    boost::mutex *add_ref_mutex,
+    AddRefResultHolder *add_ref_result_holder) {
   if (vault_status() != kVaultStarted) {
 #ifdef DEBUG
     printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
@@ -559,31 +559,31 @@ int PDVault::SendToRefPacket(
     return kVaultOffline;
   }
 
-  maidsafe::StoreReferenceRequest store_ref_request;
+  maidsafe::AddToReferenceListRequest add_ref_request;
   std::string chunk_name = iou_ready_details.get<1>();
   std::string signed_request =  GetSignedRequest(chunk_name,
                                                  ref_holder.node_id());
-  store_ref_request.set_chunkname(chunk_name);
-  store_ref_request.set_pmid(non_hex_pmid_);
-  store_ref_request.set_signed_pmid(signed_non_hex_pmid_);
-  store_ref_request.set_public_key(pmid_public_);
-  store_ref_request.set_signed_public_key(signed_pmid_public_);
-  store_ref_request.set_signed_request(signed_request);
+  add_ref_request.set_chunkname(chunk_name);
+/*  add_ref_request.set_pmid(non_hex_pmid_);
+  add_ref_request.set_signed_pmid(signed_non_hex_pmid_);
+  add_ref_request.set_public_key(pmid_public_);
+  add_ref_request.set_signed_public_key(signed_pmid_public_);
+  add_ref_request.set_signed_request(signed_request);*/
   bool local = (knode_.CheckContactLocalAddress(ref_holder.node_id(),
       ref_holder.local_ip(), ref_holder.local_port(), ref_holder.host_ip())
       == kad::LOCAL);
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &PDVault::SendToRefPacketCallback,
-      store_ref_result_holder, store_ref_mutex);
-  vault_rpcs_.StoreChunkReference(ref_holder, local, &store_ref_request,
-      &store_ref_result_holder->store_ref_response_,
-      store_ref_result_holder->controller_.get(), callback);
+      add_ref_result_holder, add_ref_mutex);
+  vault_rpcs_.StoreChunkReference(ref_holder, local, &add_ref_request,
+      &add_ref_result_holder->add_ref_response_,
+      add_ref_result_holder->controller_.get(), callback);
   return 0;
 }
 
 void PDVault::SendToRefPacketCallback(
-    StoreRefResultHolder *store_ref_result_holder,
-    boost::mutex *store_ref_mutex) {
+    AddRefResultHolder *add_ref_result_holder,
+    boost::mutex *add_ref_mutex) {
 #ifdef DEBUG
 //  printf("In PDVault::SendToRefPacketCallback.\n");
 #endif
@@ -593,9 +593,9 @@ void PDVault::SendToRefPacketCallback(
 #endif
     return;
   }
-  if (store_ref_mutex) {
-    boost::mutex::scoped_lock loch(*store_ref_mutex);
-    store_ref_result_holder->store_ref_response_returned_ = true;
+  if (add_ref_mutex) {
+    boost::mutex::scoped_lock loch(*add_ref_mutex);
+    add_ref_result_holder->add_ref_response_returned_ = true;
   }
 }
 
@@ -631,7 +631,7 @@ void PDVault::SyncVault(base::callback_func_type cb) {
       IterativeSyncVault(data);
     }
   } else {  // no chunks on this vault node
-    maidsafe::UpdateResponse local_result;
+    maidsafe::UpdateChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_result(kAck);
     local_result.SerializeToString(&local_result_str);
@@ -650,7 +650,7 @@ void PDVault::IterativeSyncVault(boost::shared_ptr<SyncVaultData> data) {
   if (data->chunk_names.empty() && data->active_updating == 0) {
     // no more chunks need to be updated, job done!
     printf("\nVault synchronised.\n");
-    maidsafe::UpdateResponse local_result;
+    maidsafe::UpdateChunkResponse local_result;
     std::string local_result_str("");
     if (static_cast<float>(data->num_updated_chunks) >=
         kMinSuccessfulPecentageOfUpdating*(data->num_chunks))
@@ -839,8 +839,8 @@ void PDVault::ValidityCheckCallback(
 
   if (!validity_check_response->IsInitialized())
     return;
-  if (!validity_check_response->has_pmid_id() &&
-      validity_check_response->pmid_id() !=
+  if (!validity_check_response->has_pmid() &&
+      validity_check_response->pmid() !=
           validity_check_args->chunk_holder_.node_id()) {
     if (validity_check_args->retry_remote) {
       validity_check_args->retry_remote = false;
@@ -897,8 +897,8 @@ void PDVault::IterativeSyncVault_SyncChunk(
     // chunk content is stale, synchronize the chunk
     boost::shared_ptr<SynchArgs>
         synch_args(new SynchArgs(chunk_name, remote, data));
-    boost::shared_ptr<maidsafe::GetResponse>
-        get_chunk_response(new maidsafe::GetResponse());
+    boost::shared_ptr<maidsafe::GetChunkResponse>
+        get_chunk_response(new maidsafe::GetChunkResponse());
     google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
         &PDVault::IterativeSyncVault_UpdateChunk, get_chunk_response,
         synch_args);
@@ -915,7 +915,7 @@ void PDVault::IterativeSyncVault_SyncChunk(
       port = synch_args->chunk_holder_.local_port();
     }
     rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-    vault_rpcs_.Get(synch_args->chunk_name_, ip, port,
+    vault_rpcs_.GetChunk(synch_args->chunk_name_, ip, port,
         synch_args->chunk_holder_.rendezvous_ip(),
         synch_args->chunk_holder_.rendezvous_port(), get_chunk_response.get(),
         controller, callback);
@@ -928,7 +928,7 @@ void PDVault::IterativeSyncVault_SyncChunk(
 }
 
 void PDVault::IterativeSyncVault_UpdateChunk(
-    boost::shared_ptr<maidsafe::GetResponse> get_chunk_response,
+    boost::shared_ptr<maidsafe::GetChunkResponse> get_chunk_response,
     boost::shared_ptr<SynchArgs> synch_args) {
   if (vault_status() != kVaultStarted) {
 #ifdef DEBUG
@@ -936,7 +936,7 @@ void PDVault::IterativeSyncVault_UpdateChunk(
 #endif
     return;
   }
-  maidsafe::GetResponse result_msg;
+  maidsafe::GetChunkResponse result_msg;
   if (!get_chunk_response->IsInitialized() ||
       get_chunk_response->result() == kNack) {
     // TODO(Haiyang): chunk deleted? shall we remove the chunk?!
@@ -1086,7 +1086,7 @@ void PDVault::FindChunkRefCallback(
       result_msg.result() == kad::kRpcResultFailure ||
       result_msg.values_size() == 0) {
     // no chunk references were found
-    maidsafe::GetResponse local_result;
+    maidsafe::GetChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
@@ -1115,7 +1115,7 @@ void PDVault::FindChunkRefCallback(
   }
   if (!correct_info) {
     // could not get contact info from the values retrieved
-    maidsafe::GetResponse local_result;
+    maidsafe::GetChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);
@@ -1169,8 +1169,8 @@ void PDVault::CheckChunkCallback(
     return;
   }
   if (check_chunk_response->IsInitialized() &&
-      check_chunk_response->has_pmid_id() &&
-      check_chunk_response->pmid_id() != get_args->chunk_holder_.node_id()) {
+      check_chunk_response->has_pmid() &&
+      check_chunk_response->pmid() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
@@ -1193,7 +1193,7 @@ void PDVault::CheckChunkCallback(
     if (get_args->data_->failed_holders >=
         get_args->data_->number_holders) {
       // the chunk references did not respond to the check
-      maidsafe::GetResponse local_result;
+      maidsafe::GetChunkResponse local_result;
       std::string local_result_str("");
       local_result.set_result(kNack);
       local_result.SerializeToString(&local_result_str);
@@ -1229,13 +1229,13 @@ void PDVault::CheckChunkCallback(
             get_args->chunk_holder_.rendezvous_port(),
             get_messages_response.get(), get_args->controller_.get(), callback);
       } else {
-       boost::shared_ptr<maidsafe::GetResponse>
-          get_response(new maidsafe::GetResponse());
+       boost::shared_ptr<maidsafe::GetChunkResponse>
+          get_chunk_response(new maidsafe::GetChunkResponse());
        google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-           &PDVault::GetChunkCallback, get_response, get_args);
-        vault_rpcs_.Get(get_args->data_->chunk_name, ip, port,
+           &PDVault::GetChunkCallback, get_chunk_response, get_args);
+        vault_rpcs_.GetChunk(get_args->data_->chunk_name, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
-            get_args->chunk_holder_.rendezvous_port(), get_response.get(),
+            get_args->chunk_holder_.rendezvous_port(), get_chunk_response.get(),
             get_args->controller_.get(), callback);
       }
     }
@@ -1304,7 +1304,7 @@ void PDVault::GetMessagesCallback(
 }
 
 void PDVault::GetChunkCallback(
-    boost::shared_ptr<maidsafe::GetResponse> get_response,
+    boost::shared_ptr<maidsafe::GetChunkResponse> get_chunk_response,
     boost::shared_ptr<GetArgs> get_args) {
   if (vault_status() != kVaultStarted) {
 #ifdef DEBUG
@@ -1314,32 +1314,32 @@ void PDVault::GetChunkCallback(
   }
   if (get_args->data_->is_callbacked)
     return;
-  if (get_response->IsInitialized() &&
-      get_response->has_pmid_id() &&
-      get_response->pmid_id() != get_args->chunk_holder_.node_id()) {
+  if (get_chunk_response->IsInitialized() &&
+      get_chunk_response->has_pmid() &&
+      get_chunk_response->pmid() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
-      boost::shared_ptr<maidsafe::GetResponse>
-          get_response(new maidsafe::GetResponse());
+      boost::shared_ptr<maidsafe::GetChunkResponse>
+          get_chunk_response(new maidsafe::GetChunkResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-          &PDVault::GetChunkCallback, get_response, get_args);
-      vault_rpcs_.Get(get_args->data_->chunk_name,
+          &PDVault::GetChunkCallback, get_chunk_response, get_args);
+      vault_rpcs_.GetChunk(get_args->data_->chunk_name,
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
-          get_args->chunk_holder_.rendezvous_port(), get_response.get(),
+          get_args->chunk_holder_.rendezvous_port(), get_chunk_response.get(),
           get_args->controller_.get(), callback);
       return;
     }
   }
-  if (!get_response->IsInitialized() ||
-      get_response->result() == kNack) {
+  if (!get_chunk_response->IsInitialized() ||
+      get_chunk_response->result() == kNack) {
     get_args->data_->failed_chunk_holders.push_back(get_args->chunk_holder_);
     RetryGetChunk(get_args->data_);
   } else {
     std::string result_str_("");
-    get_response->SerializeToString(&result_str_);
+    get_chunk_response->SerializeToString(&result_str_);
     get_args->data_->is_callbacked = true;
 // TODO(Fraser#5#): 2009-04-08 - Should save chunk to chunkstore now and this
 //                  vault to chunk ref
@@ -1380,7 +1380,7 @@ void PDVault::RetryGetChunk(boost::shared_ptr<struct LoadChunkData> data) {
     }
   }
   if (!send_request) {
-    maidsafe::GetResponse local_result;
+    maidsafe::GetChunkResponse local_result;
     std::string local_result_str("");
     local_result.set_result(kNack);
     local_result.SerializeToString(&local_result_str);

@@ -103,12 +103,6 @@ class PDClient {
                  client_rpcs_(client_rpcs) {}
 
   ~PDClient() {}
-  void DeleteChunk(const std::string &chunk_name,
-                   const std::string &public_key,
-                   const std::string &signed_public_key,
-                   const std::string &signed_request,
-                   const maidsafe::ValueType &data_type,
-                   base::callback_func_type cb);
   void OwnLocalVault(const std::string &priv_key, const std::string
       &pub_key, const std::string &signed_pub_key, const boost::uint32_t &port,
       const std::string &chunkstore_dir, const boost::uint64_t &space,
@@ -116,22 +110,6 @@ class PDClient {
   void IsLocalVaultOwned(boost::function<void(const VaultStatus&)> cb);
 
  private:
-  void DeleteChunk_IterativeCheckAlive(const std::string &result,
-                                       std::string non_hex_chunk_name,
-                                       std::string public_key,
-                                       std::string signed_public_key,
-                                       std::string signed_request,
-                                       maidsafe::ValueType data_type,
-                                       base::callback_func_type cb);
-  void DeleteChunk_CheckAliveCallback(const std::string &result,
-                                      int retry,
-                                      kad::Contact remote,
-                                      boost::shared_ptr<DeleteChunkData> data);
-  void DeleteChunk_IterativeDeleteChunk(
-      boost::shared_ptr<DeleteChunkData> data);
-  void DeleteChunk_DeleteChunkCallback(
-      const boost::shared_ptr<DeleteResponse> delete_response,
-      boost::shared_ptr<DeleteArgs> delete_args);
   void OwnVaultCallback(OwnVaultCallbackArgs  callback_args);
   void IsVaultOwnedCallback(IsVaultOwnedCallbackArgs  callback_args);
   PDClient(const PDClient&);
