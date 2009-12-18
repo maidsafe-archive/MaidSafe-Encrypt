@@ -260,14 +260,15 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
   pmid = co.Hash(pub_key + pub_key_sig, "", crypto::STRING_STRING, false);
 
   size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
-      priv_key, crypto::STRING_STRING);
+                         priv_key, crypto::STRING_STRING);
 
   req_sig = co.AsymSign(co.Hash(pub_key_sig + chunk_name + vault_pmid_, "",
-      crypto::STRING_STRING, false), "", priv_key, crypto::STRING_STRING);
+                        crypto::STRING_STRING, false), "", priv_key,
+                        crypto::STRING_STRING);
 
   Callback cb_obj;
 
-  for (int i = 0; i < 8; ++i) {
+  for (int i = 0; i <= 7; ++i) {
     switch (i) {
       case 0:  // empty request
         break;
@@ -310,7 +311,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
       case 6:  // zero size
         signed_size->set_data_size(0);
         signed_size->set_signature(co.AsymSign("0", "", priv_key,
-            crypto::STRING_STRING));
+                                   crypto::STRING_STRING));
         break;
       case 7:  // store to self
         signed_size->set_data_size(chunk_size);
@@ -380,37 +381,46 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   rpcprotocol::Controller controller;
   maidsafe::StoreChunkRequest request;
   maidsafe::StoreChunkResponse response;
 
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  std::string pub_key, priv_key, pmid, pub_key_sig, req_sig;
   CreateRSAKeys(&pub_key, &priv_key);
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string content("This is a data chunk");
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                      &sig_req);
+
+  std::string chunk_data("This is a data chunk");
+  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
+  boost::uint64_t chunk_size(chunk_data.size());
+
+  CreateSignedRequest(pub_key, priv_key, chunk_name, &pmid, &pub_key_sig,
+                      &req_sig);
 
   Callback cb_obj;
 
-  for (boost::uint32_t i = 0; i <= 1; ++i) {
+  for (int i = 0; i <= 2; ++i) {
     switch (i) {
       case 0:  // uninitialized request
         break;
-      case 1:  // invalid request
-        request.set_chunkname(chunkname);
-        request.set_data(content);
+      case 1:  // unsigned request
+        request.set_chunkname(chunk_name);
+        request.set_data(chunk_data);
         request.set_pmid(pmid);
-        request.set_public_key("fail");  // !
-        request.set_public_key_signature(sig_pub_key);
-        request.set_request_signature(sig_req);
+        request.set_public_key(pub_key);
+        request.set_public_key_signature(pub_key_sig);
+        request.set_request_signature("fail");
         request.set_data_type(maidsafe::DATA);
         // request.set_offset(  );
         // request.set_chunklet_size(  );
+        break;
+      case 2:  // invalid chunk name
+        request.set_chunkname("fail");
+        request.set_request_signature(co.AsymSign(co.Hash(pub_key_sig + "fail"
+            + vault_pmid_, "", crypto::STRING_STRING, false), "", priv_key,
+            crypto::STRING_STRING));
         break;
     }
 
@@ -422,7 +432,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
     response.Clear();
   }
 
-  request.set_public_key(pub_key);
+  request.set_chunkname(chunk_name);
+  request.set_request_signature(req_sig);
   request.set_data("abcdef");
 
   // TODO(anyone) add more data types
@@ -439,7 +450,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
     response.Clear();
   }
 
-  request.set_data(content);
+  request.set_data(chunk_data);
   request.set_data_type(maidsafe::DATA);
 
   // #1 make PendingOperationsHandler::FindOperation() fail
@@ -448,7 +459,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
   //    return overall success
   for (int i = 0; i < 3; ++i) {
     if (i > 0) {
-      EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunkname, content.size(), "",
+      EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunk_name, chunk_size, "",
                                             "", 0, pub_key, STORE_ACCEPTED));
     }
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
@@ -463,8 +474,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
     response.Clear();
   }
 
-  // TODO(Steve) make PendingOperationsHandler::AdvanceStatus() fail (?)
-
   // check success for all remaining data types
   for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
     if (data_type[i] == maidsafe::DATA) continue;
@@ -475,19 +484,20 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunks) {
       gp.set_data("Generic System Packet Data " + base::itos(i));
       gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
                                    crypto::STRING_STRING));
-      content = gp.SerializeAsString();
+      chunk_data = gp.SerializeAsString();
+      chunk_size = chunk_data.size();
     }
 
-    chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
-    CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                        &sig_req);
-    request.set_chunkname(chunkname);
-    request.set_data(content);
+    chunk_name = co.Hash(chunk_data, "", crypto::STRING_STRING, false);
+    CreateSignedRequest(pub_key, priv_key, chunk_name, &pmid, &pub_key_sig,
+                        &req_sig);
+    request.set_chunkname(chunk_name);
+    request.set_data(chunk_data);
     request.set_pmid(pmid);
-    request.set_public_key_signature(sig_pub_key);
-    request.set_request_signature(sig_req);
+    request.set_public_key_signature(pub_key_sig);
+    request.set_request_signature(req_sig);
 
-    EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunkname, content.size(), "",
+    EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunk_name, chunk_size, "",
                                           "", 0, pub_key, STORE_ACCEPTED));
 
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
