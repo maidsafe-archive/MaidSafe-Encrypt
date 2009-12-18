@@ -326,7 +326,7 @@ int ClientController::SerialiseDa() {
   printf("ClientController::SerialiseDa() - Finished with Contacts.\n");
 
   std::list<PrivateShare> ps_list;
-  ss_->GetFullShareList(&ps_list);
+  ss_->GetFullShareList(ALPHA, &ps_list);
   while (!ps_list.empty()) {
     PrivateShare this_ps = ps_list.front();
     Share *sh = data_atlas_.add_shares();
@@ -334,6 +334,8 @@ int ClientController::SerialiseDa() {
     sh->set_msid(this_ps.Msid());
     sh->set_msid_pub_key(this_ps.MsidPubKey());
     sh->set_msid_pri_key(this_ps.MsidPriKey());
+    sh->set_rank(this_ps.Rank());
+    sh->set_last_view(this_ps.LastViewed());
     std::list<ShareParticipants> this_sp_list = this_ps.Participants();
     while (!this_sp_list.empty()) {
       ShareParticipants this_sp = this_sp_list.front();
@@ -1125,8 +1127,9 @@ int ClientController::HandleReceivedShare(
   attributes.push_back(psn.public_key());
   attributes.push_back("");
 
+  std::vector<boost::uint32_t> share_stats(2, 0);
   if (!psn.has_private_key()) {
-    int n = ss_->AddPrivateShare(attributes, &participants);
+    int n = ss_->AddPrivateShare(attributes, share_stats, &participants);
     if (n != 0)
       return n;
   } else {
@@ -1185,7 +1188,7 @@ int ClientController::HandleReceivedShare(
       participants.push_back(sp);
     }
 
-    int n = ss_->AddPrivateShare(attributes, &participants);
+    int n = ss_->AddPrivateShare(attributes, share_stats, &participants);
     if (n != 0)
       return n;
   }
@@ -1522,7 +1525,13 @@ int ClientController::SendInstantMessage(const std::string &message,
 #endif
     return -999;
   }
-  return 0;
+
+  int res = 0;
+  for (size_t n = 0; n < contact_names.size(); ++n) {
+    res += ss_->SetLastContactRank(contact_names[n]);
+  }
+
+  return res;
 }
 
 int ClientController::GetInstantMessages(std::list<InstantMessage> *messages) {
@@ -1613,7 +1622,12 @@ int ClientController::SendInstantFile(std::string *filename,
     return -666666;
   }
 
-  return 0;
+  int res = 0;
+  for (size_t nn = 0; nn < contact_names.size(); ++nn) {
+    res += ss_->SetLastContactRank(contact_names[nn]);
+  }
+
+  return res;
 }
 
 ////////////////////////
@@ -1837,7 +1851,7 @@ int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
   }
   int n = 0;
   if (value.empty()) {
-    n = ss_->GetFullShareList(ps_list);
+    n = ss_->GetFullShareList(sm, ps_list);
   } else {
     PrivateShare ps;
     n = ss_->GetShareInfo(value, 0,  &ps);
@@ -1846,6 +1860,19 @@ int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
     ps_list->push_back(ps);
   }
   return n;
+}
+
+int ClientController::ShareList(const SortingMode &sm, const ShareFilter &sf,
+    std::list<std::string> *share_list) {
+  std::list<maidsafe::private_share> ps_list;
+  int n = ss_->GetShareList(&ps_list, sm, sf);
+  if (n != 0)
+    return n;
+  while (!ps_list.empty()) {
+    share_list->push_back(ps_list.front().name_);
+    ps_list.pop_front();
+  }
+  return 0;
 }
 
 int ClientController::GetSortedShareList(
@@ -1860,11 +1887,10 @@ int ClientController::GetSortedShareList(
   }
   int n = 0;
   if (value.empty()) {
-    n = ss_->GetShareList(ps_list, sm);
+    n = ss_->GetShareList(ps_list, sm, kAll);
   }
   return n;
 }
-
 
 int ClientController::CreateNewShare(const std::string &name,
                       const std::set<std::string> &admins,
@@ -1940,7 +1966,8 @@ int ClientController::CreateNewShare(const std::string &name,
     ro_recs.push_back(*it);
   }
 
-  int n = ss_->AddPrivateShare(attributes, &participants);
+  std::vector<boost::uint32_t> share_stats(2, 0);
+  int n = ss_->AddPrivateShare(attributes, share_stats, &participants);
   if (n != 0)
     return n;
 

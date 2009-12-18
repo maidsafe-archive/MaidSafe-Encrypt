@@ -32,6 +32,7 @@
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/member.hpp>
+#include <gtest/gtest_prod.h>
 
 #include <maidsafe/utils.h>
 #include <maidsafe/maidsafe-dht_config.h>
@@ -175,11 +176,15 @@ class PrivateShareHandler {
  private:
   private_share_set pss_;
   private_share_participant_set psps_;
-
+  void DecideInclusion(const private_share &ps,
+                       const ShareFilter &sf,
+                       std::list<maidsafe::private_share> *ps_list);
+  FRIEND_TEST(PrivateSharesTest, BEH_MAID_MI_DecideInclusion);
  public:
   PrivateShareHandler() : pss_(), psps_() { }
   // Multi Index
   int MI_AddPrivateShare(const std::vector<std::string> &attributes,
+                         const std::vector<boost::uint32_t> &share_stats,
                          std::list<ShareParticipants> *participants);
   int MI_DeletePrivateShare(const std::string &value, const int &field);
   int MI_AddContactsToPrivateShare(const std::string &value, const int &field,
@@ -191,8 +196,9 @@ class PrivateShareHandler {
   int MI_GetShareInfo(const std::string &value, const int &field,
                       PrivateShare *ps);
   int MI_GetShareList(std::list<maidsafe::private_share> *ps_list,
-                      const SortingMode &sm);
-  int MI_GetFullShareList(std::list<PrivateShare> *ps_list);
+                      const SortingMode &sm, const ShareFilter &sf);
+  int MI_GetFullShareList(const SortingMode &sm,
+                          std::list<PrivateShare> *ps_list);
   int MI_GetParticipantsList(const std::string &value, const int &field,
                              std::list<share_participant> *sp_list);
   void MI_ClearPrivateShares();

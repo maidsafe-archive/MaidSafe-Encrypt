@@ -48,6 +48,7 @@ void PrivateShare::Construct(const std::vector<std::string> &attributes,
 // Multi Index
 int PrivateShareHandler::MI_AddPrivateShare(
     const std::vector<std::string> &attributes,
+    const std::vector<boost::uint32_t> &share_stats,
     std::list<ShareParticipants> *participants) {
   if (attributes.size() != 4)
     return -2010;
@@ -57,6 +58,8 @@ int PrivateShareHandler::MI_AddPrivateShare(
     ro_participation = true;
 
   private_share ps(attributes[0], attributes[1], attributes[2], attributes[3]);
+  ps.rank_ = share_stats[0];
+  ps.last_view_ = share_stats[1];
   std::pair<private_share_set::iterator, bool> result = pss_.insert(ps);
   if (!result.second)
     return -2010;
@@ -273,7 +276,7 @@ int PrivateShareHandler::MI_GetShareInfo(const std::string &value,
 
 int PrivateShareHandler::MI_GetShareList(
     std::list<maidsafe::private_share> *ps_list,
-    const SortingMode &sm) {
+    const SortingMode &sm, const ShareFilter &sf) {
   ps_list->clear();
   switch (sm) {
     case ALPHA:
@@ -288,7 +291,8 @@ int PrivateShareHandler::MI_GetShareList(
                           (*it).msid_priv_key_);
           pr.rank_ = (*it).rank_;
           pr.last_view_ = (*it).last_view_;
-          ps_list->push_back(pr);
+          DecideInclusion(pr, sf, ps_list);
+//          ps_list->push_back(pr);
         }
       }
       break;
@@ -304,7 +308,8 @@ int PrivateShareHandler::MI_GetShareList(
                           (*it).msid_priv_key_);
           pr.rank_ = (*it).rank_;
           pr.last_view_ = (*it).last_view_;
-          ps_list->push_back(pr);
+          DecideInclusion(pr, sf, ps_list);
+//          ps_list->push_back(pr);
         }
       }
       break;
@@ -320,7 +325,8 @@ int PrivateShareHandler::MI_GetShareList(
                           (*it).msid_priv_key_);
           pr.rank_ = (*it).rank_;
           pr.last_view_ = (*it).last_view_;
-          ps_list->push_back(pr);
+          DecideInclusion(pr, sf, ps_list);
+//          ps_list->push_back(pr);
         }
         break;
       }
@@ -328,10 +334,11 @@ int PrivateShareHandler::MI_GetShareList(
   return 0;
 }
 
-int PrivateShareHandler::MI_GetFullShareList(std::list<PrivateShare> *ps_list) {
+int PrivateShareHandler::MI_GetFullShareList(const SortingMode &sm,
+                                             std::list<PrivateShare> *ps_list) {
   ps_list->clear();
   std::list<private_share> share_list;
-  MI_GetShareList(&share_list, ALPHA);
+  MI_GetShareList(&share_list, sm, kAll);
   while (!share_list.empty()) {
     PrivateShare ps;
     MI_GetShareInfo(share_list.front().msid_, 1, &ps);
@@ -380,5 +387,23 @@ void PrivateShareHandler::MI_ClearPrivateShares() {
   pss_.clear();
   psps_.clear();
 }
+
+void PrivateShareHandler::DecideInclusion(
+    const private_share &ps, const ShareFilter &sf,
+    std::list<maidsafe::private_share> *ps_list) {
+  bool ro(false);
+  if (ps.msid_priv_key_ == "")
+    ro = true;
+  switch (sf) {
+    case kAll: ps_list->push_back(ps);
+          break;
+    case kRo: if (ro)
+           ps_list->push_back(ps);
+         break;
+    case kAdmin: if (!ro)
+              ps_list->push_back(ps);
+  }
+}
+
 
 }  // namespace maidsafe

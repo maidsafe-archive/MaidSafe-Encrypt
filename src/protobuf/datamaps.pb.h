@@ -482,10 +482,24 @@ class Share : public ::google::protobuf::Message {
   inline void set_msid_pri_key(const void* value, size_t size);
   inline ::std::string* mutable_msid_pri_key();
   
-  // repeated .maidsafe.ShareParticipant participants = 5;
+  // required int32 rank = 5;
+  inline bool has_rank() const;
+  inline void clear_rank();
+  static const int kRankFieldNumber = 5;
+  inline ::google::protobuf::int32 rank() const;
+  inline void set_rank(::google::protobuf::int32 value);
+  
+  // required int32 last_view = 6;
+  inline bool has_last_view() const;
+  inline void clear_last_view();
+  static const int kLastViewFieldNumber = 6;
+  inline ::google::protobuf::int32 last_view() const;
+  inline void set_last_view(::google::protobuf::int32 value);
+  
+  // repeated .maidsafe.ShareParticipant participants = 7;
   inline int participants_size() const;
   inline void clear_participants();
-  static const int kParticipantsFieldNumber = 5;
+  static const int kParticipantsFieldNumber = 7;
   inline const ::google::protobuf::RepeatedPtrField< ::maidsafe::ShareParticipant >& participants() const;
   inline ::google::protobuf::RepeatedPtrField< ::maidsafe::ShareParticipant >* mutable_participants();
   inline const ::maidsafe::ShareParticipant& participants(int index) const;
@@ -504,11 +518,13 @@ class Share : public ::google::protobuf::Message {
   static const ::std::string _default_msid_pub_key_;
   ::std::string* msid_pri_key_;
   static const ::std::string _default_msid_pri_key_;
+  ::google::protobuf::int32 rank_;
+  ::google::protobuf::int32 last_view_;
   ::google::protobuf::RepeatedPtrField< ::maidsafe::ShareParticipant > participants_;
   friend void  protobuf_AddDesc_datamaps_2eproto();
   friend void protobuf_AssignDesc_datamaps_2eproto();
   friend void protobuf_ShutdownFile_datamaps_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -1980,7 +1996,39 @@ inline ::std::string* Share::mutable_msid_pri_key() {
   return msid_pri_key_;
 }
 
-// repeated .maidsafe.ShareParticipant participants = 5;
+// required int32 rank = 5;
+inline bool Share::has_rank() const {
+  return _has_bit(4);
+}
+inline void Share::clear_rank() {
+  rank_ = 0;
+  _clear_bit(4);
+}
+inline ::google::protobuf::int32 Share::rank() const {
+  return rank_;
+}
+inline void Share::set_rank(::google::protobuf::int32 value) {
+  _set_bit(4);
+  rank_ = value;
+}
+
+// required int32 last_view = 6;
+inline bool Share::has_last_view() const {
+  return _has_bit(5);
+}
+inline void Share::clear_last_view() {
+  last_view_ = 0;
+  _clear_bit(5);
+}
+inline ::google::protobuf::int32 Share::last_view() const {
+  return last_view_;
+}
+inline void Share::set_last_view(::google::protobuf::int32 value) {
+  _set_bit(5);
+  last_view_ = value;
+}
+
+// repeated .maidsafe.ShareParticipant participants = 7;
 inline int Share::participants_size() const {
   return participants_.size();
 }

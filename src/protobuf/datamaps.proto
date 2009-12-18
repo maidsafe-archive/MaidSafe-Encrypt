@@ -40,7 +40,9 @@ message Share {
   required bytes msid = 2;
   required bytes msid_pub_key = 3;
   optional bytes msid_pri_key = 4;
-  repeated ShareParticipant participants = 5;
+  required int32 rank = 5;
+  required int32 last_view = 6;
+  repeated ShareParticipant participants = 7;
 }
 
 message Key {

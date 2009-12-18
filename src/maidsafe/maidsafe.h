@@ -322,6 +322,7 @@ enum ValueType {
 };
 
 enum SortingMode { ALPHA, RANK, LAST };
+enum ShareFilter { kAll, kRo, kAdmin };
 
 }  // namespace maidsafe
 

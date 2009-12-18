@@ -479,8 +479,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   sp.public_key = "pub_key";
   sp.role = 'A';
   participants.push_back(sp);
+  std::vector<boost::uint32_t> share_stats(2, 0);
   ASSERT_EQ(kSuccess, SessionSingleton::getInstance()->
-      AddPrivateShare(attributes, &participants));
+      AddPrivateShare(attributes, share_stats, &participants));
   std::string key_id3, public_key3, public_key_signature3, private_key3;
   msm.GetChunkSignatureKeys(PRIVATE_SHARE, msid_name, &key_id3, &public_key3,
       &public_key_signature3, &private_key3);
@@ -795,8 +796,9 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
   sp.public_key = "pub_key";
   sp.role = 'A';
   participants.push_back(sp);
+  std::vector<boost::uint32_t> share_stats(2, 0);
   ASSERT_EQ(kSuccess, SessionSingleton::getInstance()->
-      AddPrivateShare(attributes, &participants));
+      AddPrivateShare(attributes, share_stats, &participants));
   std::string chunkname_private_share =
       crypto_.Hash("ccc0", "", crypto::STRING_STRING, false);
   std::string key_id1, public_key1, public_key_signature1, private_key1;

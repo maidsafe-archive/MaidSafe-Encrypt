@@ -266,15 +266,19 @@ int SessionSingleton::LoadShares(std::list<Share> *shares) {
       attributes.push_back(sh.msid_pri_key());
     else
       attributes.push_back("");
+    std::vector<boost::uint32_t> share_stats;
+    share_stats.push_back(sh.rank());
+    share_stats.push_back(sh.last_view());
     shares->pop_front();
-    a += AddPrivateShare(attributes, &sp);
+    a += AddPrivateShare(attributes, share_stats, &sp);
   }
   return a;
 }
 int SessionSingleton::AddPrivateShare(
     const std::vector<std::string> &attributes,
+    const std::vector<boost::uint32_t> &share_stats,
     std::list<ShareParticipants> *participants) {
-  return psh_.MI_AddPrivateShare(attributes, participants);
+  return psh_.MI_AddPrivateShare(attributes, share_stats, participants);
 }
 int SessionSingleton::DeletePrivateShare(const std::string &value,
     const int &field) {
@@ -287,6 +291,9 @@ int SessionSingleton::AddContactsToPrivateShare(const std::string &value,
 int SessionSingleton::DeleteContactsFromPrivateShare(const std::string &value,
     const int &field, std::list<std::string> *participants) {
   return psh_.MI_DeleteContactsFromPrivateShare(value, field, participants);
+}
+int SessionSingleton::TouchShare(const std::string &value, const int &field) {
+  return psh_.MI_TouchShare(value, field);
 }
 int SessionSingleton::GetShareInfo(const std::string &value, const int &field,
     PrivateShare *ps) {
@@ -307,11 +314,12 @@ int SessionSingleton::GetShareKeys(const std::string &msid,
 }
 int SessionSingleton::GetShareList(
     std::list<maidsafe::private_share> *ps_list,
-    const SortingMode &sm) {
-  return psh_.MI_GetShareList(ps_list, sm);
+    const SortingMode &sm, const ShareFilter &sf) {
+  return psh_.MI_GetShareList(ps_list, sm, sf);
 }
-int SessionSingleton::GetFullShareList(std::list<PrivateShare> *ps_list) {
-  return psh_.MI_GetFullShareList(ps_list);
+int SessionSingleton::GetFullShareList(const SortingMode &sm,
+                                       std::list<PrivateShare> *ps_list) {
+  return psh_.MI_GetFullShareList(sm, ps_list);
 }
 int SessionSingleton::GetParticipantsList(const std::string &value,
     const int &field, std::list<share_participant> *sp_list) {

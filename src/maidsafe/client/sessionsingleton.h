@@ -274,6 +274,7 @@ class SessionSingleton {
 
   int LoadShares(std::list<Share> *shares);
   int AddPrivateShare(const std::vector<std::string> &attributes,
+                      const std::vector<boost::uint32_t> &share_stats,
                       std::list<ShareParticipants> *participants);
   int DeletePrivateShare(const std::string &value, const int &field);
   int AddContactsToPrivateShare(const std::string &value, const int &field,
@@ -281,14 +282,16 @@ class SessionSingleton {
   int DeleteContactsFromPrivateShare(const std::string &value,
                                      const int &field,
                                      std::list<std::string> *participants);
+  int TouchShare(const std::string &value, const int &field);
   int GetShareInfo(const std::string &value, const int &field,
                    PrivateShare *ps);
   int GetShareKeys(const std::string &msid,
                    std::string *public_key,
                    std::string *private_key);
   int GetShareList(std::list<maidsafe::private_share> *ps_list,
-                   const SortingMode &sm);
-  int GetFullShareList(std::list<PrivateShare> *ps_list);
+                   const SortingMode &sm, const ShareFilter &sf);
+  int GetFullShareList(const SortingMode &sm,
+                       std::list<PrivateShare> *ps_list);
   int GetParticipantsList(const std::string &value, const int &field,
                           std::list<share_participant> *sp_list);
   void ClearPrivateShares();

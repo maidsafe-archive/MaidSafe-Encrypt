@@ -72,7 +72,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(0, ss_->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
   std::list<PrivateShare> ps_list;
-  ASSERT_EQ(0, ss_->GetFullShareList(&ps_list));
+  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, &ps_list));
   ASSERT_EQ(size_t(0), ps_list.size());
 
   // Modify session
@@ -106,7 +106,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   attributes.push_back("msid_pri_key");
   std::list<ShareParticipants> participants;
   participants.push_back(ShareParticipants("id", "id_pub_key", 'A'));
-  ASSERT_EQ(0, ss_->AddPrivateShare(attributes, &participants));
+  std::vector<boost::uint32_t> share_stats(2, 0);
+  ASSERT_EQ(0, ss_->AddPrivateShare(attributes, share_stats, &participants));
 
   // Verify modifications
   ASSERT_TRUE(ss_->DaModified());
@@ -150,7 +151,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ('C', list[0].confirmed_);
   ASSERT_EQ(0, list[0].rank_);
   ASSERT_NE(0, list[0].last_contact_);
-  ASSERT_EQ(0, ss_->GetFullShareList(&ps_list));
+  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, &ps_list));
   ASSERT_EQ(size_t(1), ps_list.size());
   ASSERT_EQ("name", ps_list.front().Name());
   ASSERT_EQ("msid", ps_list.front().Msid());
@@ -185,7 +186,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(size_t(0), keys.size());
   ASSERT_EQ(0, ss_->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
-  ASSERT_EQ(0, ss_->GetFullShareList(&ps_list));
+  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, &ps_list));
   ASSERT_EQ(size_t(0), ps_list.size());
 }
 
@@ -344,6 +345,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionContactsIO) {
 
 TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
   // Add shares to the session
+  std::vector<boost::uint32_t> share_stats(2, 2);
   for (int n = 0; n < 10; n++) {
     // Attributes
     std::vector<std::string> atts;
@@ -364,13 +366,13 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
     }
 
     // Add private share
-    ASSERT_EQ(0, ss_->AddPrivateShare(atts, &cp)) <<
+    ASSERT_EQ(0, ss_->AddPrivateShare(atts, share_stats, &cp)) <<
               "Failed to add share";
   }
 
   // Check shares are in session
   std::list<PrivateShare> ps_list;
-  ASSERT_EQ(0, ss_->GetFullShareList(&ps_list));
+  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, &ps_list));
   ASSERT_EQ(size_t(10), ps_list.size());
   std::list<PrivateShare> ps_list1 = ps_list;
 
@@ -383,6 +385,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
     sh->set_msid(this_ps.Msid());
     sh->set_msid_pub_key(this_ps.MsidPubKey());
     sh->set_msid_pri_key(this_ps.MsidPriKey());
+    sh->set_rank(this_ps.Rank());
+    sh->set_last_view(this_ps.LastViewed());
     std::list<ShareParticipants> this_sp_list = this_ps.Participants();
     while (!this_sp_list.empty()) {
       ShareParticipants this_sp = this_sp_list.front();
@@ -409,7 +413,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
 
   // Get values from session again
   std::list<PrivateShare> ps_list2;
-  ASSERT_EQ(0, ss_->GetFullShareList(&ps_list2));
+  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, &ps_list2));
   ASSERT_EQ(size_t(10), ps_list2.size());
 
   // Check the initial values against the seconda values
@@ -420,6 +424,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
     ASSERT_EQ(ps1.Msid(), ps2.Msid());
     ASSERT_EQ(ps1.MsidPubKey(), ps2.MsidPubKey());
     ASSERT_EQ(ps1.MsidPriKey(), ps2.MsidPriKey());
+    ASSERT_EQ(ps1.Rank(), ps2.Rank());
+    ASSERT_EQ(ps1.LastViewed(), ps2.LastViewed());
     std::list<ShareParticipants> sp_list1 = ps1.Participants();
     std::list<ShareParticipants> sp_list2 = ps2.Participants();
     ASSERT_EQ(sp_list1.size(), sp_list2.size());
