@@ -138,7 +138,6 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesStorable);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesLocalStorage);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk);
-  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesUpdateChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesDeleteChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidityCheck);
