@@ -937,7 +937,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->GetAccountStatus(&controller, &asreq, &asrsp, done);
     EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(0, asrsp.space_taken());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
   }
 
   // increase SpaceTaken
@@ -982,7 +982,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->GetAccountStatus(&controller, &asreq, &asrsp, done);
     EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(0, asrsp.space_taken());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
   }
 
   // decrease SpaceTaken again, should fail
@@ -1002,7 +1002,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->GetAccountStatus(&controller, &asreq, &asrsp, done);
     EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(0, asrsp.space_taken());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
   }
 }
 
@@ -1152,7 +1152,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->GetAccountStatus(&controller, &asreq, &asrsp, done);
     EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(0, asrsp.space_taken());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
   }
 
   // add to watch list as first
@@ -1369,7 +1369,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
                                        done);
       EXPECT_TRUE(asrsp.IsInitialized());
       if (i == 0 || i == 4)
-        EXPECT_EQ(0, asrsp.space_taken());
+        EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
       else
         EXPECT_EQ(chunk_size, asrsp.space_taken());
     }
