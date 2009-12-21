@@ -297,11 +297,12 @@ const int kCheckPartnerRefDelay(300);  // 5 minutes
 const std::string kValidityCheckClean("C");
 const std::string kValidityCheckDirty("D");
 const int kValidityCheckRetry(2);  // retries for validity check (timeouts)
-const int kMinChunkCopies(4);
+const boost::uint8_t kMinChunkCopies(4);
 const int kMaxPingRetries(2);  // max number of ping tries
 const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
 const int kMaxChunkStoreTries(2);  // max number of tries to store or update a
                                    // chunk
+const boost::uint8_t kMaxStoreFailures(10);  // max number of failed store tries
 const boost::uint32_t kSaveUpdatesTrigger(10);  // max no of dbs in save queue
                                                  // before running save queue
 const int kMinSuccessfulPecentageOfUpdating(0.9);

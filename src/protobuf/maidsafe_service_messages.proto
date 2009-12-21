@@ -37,8 +37,8 @@ message StorePrepRequest {
 
 message StorePrepResponse {
   required StoreContract store_contract = 1;
-  required bytes response_signature = 2;  // serialised store_contract signed with
-                                          // vault's PMID
+  required bytes response_signature = 2;  // serialised store_contract signed
+                                          // with vault's PMID
 }
 
 message StoreChunkRequest {
@@ -144,9 +144,8 @@ message AmendAccountRequest {
   required Amendment amendment_type = 1;
   required bytes signature = 2;  // whichever optional field below is provided
                                  // serialised & signed by message sender's PMID
-  optional StorePrepResponse store_prep_response = 3;
-  optional SignedSize signed_size = 4;
-  optional StoreContract store_contract = 5;
+  optional SignedSize signed_size = 3;
+  optional StoreContract store_contract = 4;
 }
 
 message AmendAccountResponse {
@@ -218,7 +217,7 @@ message UpdateChunkResponse {
 message DeleteChunkRequest {
   required bytes chunkname = 1;
   required SignedSize signed_size = 2;
-  required bytes request_signature = 3;  // signed by Watch List holder's PMID key
+  required bytes request_signature = 3;  // signed by Watch List holder's PMID
   required int32 data_type = 4;
 }
 

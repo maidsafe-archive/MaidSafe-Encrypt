@@ -33,7 +33,6 @@
 #include <map>
 
 #include "fs/filesystem.h"
-#include "maidsafe/chunkstore.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/privateshares.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -43,44 +42,27 @@
 // TODO(Fraser#5#): 2009-12-17 - Reconsider use of ValueType when sending
 //                               chunks/packets for storing.  If client chooses
 //                               type, there's little incentive to not set all
-//                               chunks as Anon avoiding paying for them.
+//                               chunks as Anon to avoiding paying for them.
 
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-StoreChunkTask::StoreChunkTask(const StoreData &store_data,
-                               IfExists if_exists,
-                               MaidsafeStoreManager *msm,
-                               const boost::uint16_t &task_id)
-                                   : store_data_(store_data),
-                                     if_exists_(if_exists),
-                                     msm_(msm),
-                                     task_id_(task_id) {}
-
 void StoreChunkTask::run() {
-  int p_int(-9999);
   printf("StoreChunkTask - chunk %s ENQUEUEDISED\n",
          HexSubstr(store_data_.non_hex_key_).c_str());
-  msm_->PreSendAnalysis(store_data_, if_exists_, &p_int);
-  if (msm_->SetResultToTask(task_id_, p_int))
-    printf("StoreChunkTask - chunk %s - result %i\n",
-           HexSubstr(store_data_.non_hex_key_).c_str(), p_int);
-  else
-    printf(" StoreChunkTask::run - Failed to modifiy result %u\n", task_id_);
+  msm_->PrepareToSendChunk(store_data_, if_exists_);
+  printf("StoreChunkTask end %s\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
 }
 
-StorePacketToVaultsTask::StorePacketToVaultsTask(
-    const StoreData &store_data,
-    MaidsafeStoreManager *msm,
-    int *return_value,
-    GenericConditionData *generic_cond_data,
-    const boost::uint16_t &task_id)
-        : store_data_(store_data),
-          msm_(msm),
-          return_value_(return_value),
-          generic_cond_data_(generic_cond_data),
-          task_id_(task_id) {}
+void SendChunkCopyTask::run() {
+  printf("SendChunkCopyTask - chunk %s ENQUEUEDISED\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
+  msm_->SendChunk(store_data_);
+  printf("SendChunkCopyTask end %s\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
+}
 
 void StorePacketToVaultsTask::run() {
   printf("StorePacketToVaultsTask start %s\n",
@@ -93,25 +75,9 @@ void StorePacketToVaultsTask::run() {
     *return_value_ = ret;
     generic_cond_data_->cond_variable->notify_all();
   }
-  if (msm_->SetResultToTask(task_id_, ret))
-    printf("StorePacketToVaultsTask end %s\n",
-           HexSubstr(store_data_.non_hex_key_).c_str());
-  else
-    printf("StorePacketToVaultsTask::run - Failed to modifiy result %u\n",
-           task_id_);
+  printf("StorePacketToVaultsTask end %s\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
 }
-
-StorePacketToKadTask::StorePacketToKadTask(
-    const StoreData &store_data,
-    MaidsafeStoreManager *msm,
-    int *return_value,
-    GenericConditionData *generic_cond_data,
-    const boost::uint16_t &task_id)
-        : store_data_(store_data),
-          msm_(msm),
-          return_value_(return_value),
-          generic_cond_data_(generic_cond_data),
-          task_id_(task_id) {}
 
 void StorePacketToKadTask::run() {
   printf("StorePacketToVaultsTask start %s\n",
@@ -120,12 +86,18 @@ void StorePacketToKadTask::run() {
   boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
   generic_cond_data_->cond_flag = true;
   generic_cond_data_->cond_variable->notify_all();
-  if (msm_->SetResultToTask(task_id_, *return_value_))
-    printf("StorePacketToVaultsTask end %s\n",
-           HexSubstr(store_data_.non_hex_key_).c_str());
+  if (return_value_ != NULL)
+    printf("StorePacketToKadTask end %s -- result: %i\n",
+           HexSubstr(store_data_.non_hex_key_).c_str(), *return_value_);
   else
-    printf(" StorePacketToKadTask::run - Failed to modifiy result %u\n",
-           task_id_);
+    printf("StorePacketToKadTask end %s\n",
+           HexSubstr(store_data_.non_hex_key_).c_str());
+}
+
+void AddToWatchListTask::run() {
+  printf("AddToWatchListTask start %s\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
+  msm_->AddToWatchList(store_data_, store_prep_response_);
 }
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
@@ -136,6 +108,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       client_rpcs_(new ClientRpcs(&transport_, &channel_manager_)),
       pdclient_(NULL),
       ss_(SessionSingleton::getInstance()),
+      tasks_handler_(),
       client_chunkstore_(cstore),
       chunk_thread_pool_(),
       packet_thread_pool_(),
@@ -143,9 +116,6 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       store_packet_mutex_(),
       get_chunk_conditional_(),
       mock_rpcs_(false),
-      tasks_mutex_(),
-      tasks_(),
-      task_id_(1),
       bprpcs_(new BufferPacketRpcsImpl(&transport_, &channel_manager_)),
       cbph_(bprpcs_, knode_) {
   knode_->SetAlternativeStore(client_chunkstore_.get());
@@ -208,8 +178,8 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
     maid_response.SerializeToString(&maid_result);
     cb(maid_result);
   }
-  chunk_thread_pool_.setMaxThreadCount(5);
-  packet_thread_pool_.setMaxThreadCount(1);
+  chunk_thread_pool_.setMaxThreadCount(20);
+  packet_thread_pool_.setMaxThreadCount(10);
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
 #endif
@@ -262,19 +232,33 @@ void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
 #endif
   std::string chunk_name = base::DecodeFromHex(hex_chunk_name);
   ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
-  if (chunk_type < 0) {
+  fs::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
+                                                       false));
+  if (chunk_type < 0 || chunk_path == fs::path("")) {
 #ifdef DEBUG
     printf("In MaidsafeStoreManager::StoreChunk (%i), didn't find chunk %s\n",
            knode_->host_port(), hex.c_str());
 #endif
     return;
   }
-  if (chunk_type & kOutgoing && ss_->ConnectionStatus() != 1) {
+  boost::uint64_t chunk_size(0);
+  try {
+    chunk_size = fs::file_size(chunk_path);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("MaidsafeStoreManager::StoreChunk (%i) - path: %s - %s\n",
+           knode_->host_port(), chunk_path.string().c_str(), e.what());
+#endif
+    return;
+  }
+  if (chunk_type & kOutgoing) {
     std::string key_id, public_key, public_key_signature, private_key;
     GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
         &public_key_signature, &private_key);
-    AddStoreChunkTask(StoreData(chunk_name, dir_type, msid, key_id, public_key,
-        public_key_signature, private_key), kStoreSuccess);
+    AddStoreChunkTask(StoreData(chunk_name, chunk_size, chunk_type, dir_type,
+        msid, key_id, public_key, public_key_signature, private_key),
+        kStoreSuccess);
   }
 }
 
@@ -334,20 +318,20 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
   // should yield the reference holders.
   for (int attempt = 0; attempt < kMaxChunkLoadRetries; ++attempt) {
     int find_result = (FindValue(chunk_name, false, &cache_holder,
-        &chunk_holders_ids, &needs_cache_copy_id));
+                                 &chunk_holders_ids, &needs_cache_copy_id));
     if ((find_result != kSuccess) && (attempt == kMaxChunkLoadRetries - 1)) {
 #ifdef DEBUG
-    printf("In MaidsafeStoreManager::LoadChunk (%i), failed in FindValue.\n",
-           knode_->host_port());
+      printf("In MaidsafeStoreManager::LoadChunk (%i), failed in FindValue.\n",
+             knode_->host_port());
 #endif
       return kLoadChunkFindValueFailure;
     } else {
 #ifdef DEBUG
-      printf("In MaidsafeStoreManager::LoadChunk (%i), FindValue yielded %i:\n"
-             "Cache holder: %s\tno of chunk holders: %i\n\n",
-             knode_->host_port(), find_result,
-             HexSubstr(cache_holder.node_id()).c_str(),
-             chunk_holders_ids.size());
+        printf("In MaidsafeStoreManager::LoadChunk (%i), FindValue yielded %i:"
+               "\nCache holder: %s\tno of chunk holders: %i\n\n",
+               knode_->host_port(), find_result,
+               HexSubstr(cache_holder.node_id()).c_str(),
+               chunk_holders_ids.size());
 #endif
       if (find_result == kSuccess)
         break;
@@ -382,7 +366,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
 
 int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
                                      std::string *result) {
-  *result = "";
+  result->clear();
   std::vector<std::string> results;
   int retrn = LoadPacket(hex_packet_name, &results);
   if (retrn != kSuccess)
@@ -396,8 +380,8 @@ int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
   results->clear();
 #ifdef DEBUG
   std::string hex(hex_packet_name.substr(0, 10) + "...");
-  printf("In MaidsafeStoreManager::LoadPacket (%i), packet_name = %s\n",
-         knode_->host_port(), hex.c_str());
+//  printf("In MaidsafeStoreManager::LoadPacket (%i), packet_name = %s\n",
+//         knode_->host_port(), hex.c_str());
 #endif
   std::string packet_name = base::DecodeFromHex(hex_packet_name);
   kad::ContactInfo cache_holder;
@@ -716,48 +700,40 @@ void MaidsafeStoreManager::AddStorePacketTask(
     bool is_mutable,
     int *return_value,
     GenericConditionData *generic_cond_data) {
-  boost::mutex::scoped_lock loch(tasks_mutex_);
-  tasks_.insert(std::pair<boost::uint16_t, boost::tuple<std::string, int> >(
-                task_id_, boost::tuple<std::string, int>
-                (HexSubstr(store_data.non_hex_key_), 7)));
   if (is_mutable) {
     // packet_thread_pool_ handles destruction of store_packet_task.
     StorePacketToVaultsTask *store_packet_task = new StorePacketToVaultsTask(
-        store_data, this, return_value, generic_cond_data, task_id_);
+        store_data, this, return_value, generic_cond_data);
     packet_thread_pool_.start(store_packet_task);
   } else {
     // packet_thread_pool_ handles destruction of store_packet_task.
     StorePacketToKadTask *store_packet_task = new StorePacketToKadTask(
-        store_data, this, return_value, generic_cond_data, task_id_);
+        store_data, this, return_value, generic_cond_data);
     packet_thread_pool_.start(store_packet_task);
   }
-  if (task_id_ < 65535)
-    ++task_id_;
-  else
-    task_id_ = 1;
 }
 
 void MaidsafeStoreManager::AddStoreChunkTask(const StoreData &store_data,
                                              IfExists if_exists) {
+  tasks_handler_.AddTask(store_data.non_hex_key_, kStoreChunk, store_data.size_,
+                         kMinChunkCopies, kMaxStoreFailures);
   // chunk_thread_pool_ handles destruction of store_chunk_task.
-  boost::mutex::scoped_lock loch(tasks_mutex_);
-  tasks_.insert(std::pair<boost::uint16_t, boost::tuple<std::string, int> >(
-                task_id_, boost::tuple<std::string, int>
-                (HexSubstr(store_data.non_hex_key_), 7)));
   StoreChunkTask *store_chunk_task = new StoreChunkTask(store_data, if_exists,
-                                                        this, task_id_);
+                                                        this);
   chunk_thread_pool_.start(store_chunk_task);
-  if (task_id_ < 65535)
-    ++task_id_;
-  else
-    task_id_ = 1;
 }
 
-void MaidsafeStoreManager::PreSendAnalysis(const StoreData &store_data,
-                                           IfExists if_exists,
-                                           int *return_value) {
+void MaidsafeStoreManager::AddSendChunkCopyTask(const StoreData &store_data) {
+  // chunk_thread_pool_ handles destruction of store_chunk_task.
+  SendChunkCopyTask *send_chunk_copy_task = new SendChunkCopyTask(store_data,
+                                                                  this);
+  chunk_thread_pool_.start(send_chunk_copy_task);
+}
+
+void MaidsafeStoreManager::PrepareToSendChunk(const StoreData &store_data,
+                                              IfExists if_exists) {
 #ifdef DEBUG
-//  printf("In MaidsafeStoreManager::PreSendAnalysis\n");
+//  printf("In MaidsafeStoreManager::PrepareToSendChunk\n");
 #endif
   // Find out if the chunk already exists on the network.
   std::string chunk_name = store_data.non_hex_key_;
@@ -774,10 +750,10 @@ void MaidsafeStoreManager::PreSendAnalysis(const StoreData &store_data,
   // If FindValue failed to complete the kad function then return.
   if (!exists && find_result != kFindValueFailure) {
 #ifdef DEBUG
-    printf("In MaidsafeStoreManager::PreSendAnalysis (%i), failed in "
+    printf("In MaidsafeStoreManager::PrepareToSendChunk (%i), failed in "
            "FindValue.\n", knode_->host_port());
 #endif
-    SetStoreReturnValue(kPreSendFindValueFailure, return_value);
+//    SetStoreReturnValue(kPreSendFindValueFailure, return_value);
     return;
   }
   bool data_cached = (cache_holder.has_node_id());
@@ -787,176 +763,209 @@ void MaidsafeStoreManager::PreSendAnalysis(const StoreData &store_data,
                                &data) == kSuccess);
   }
   // If the chunk does already exist on the network, determine what to do.
-  boost::shared_ptr<boost::condition_variable>
-      cond_variable(new boost::condition_variable);
   if (exists) {
     switch (if_exists) {
       case kStoreFailure:
-        SetStoreReturnValue(kPreSendChunkAlreadyExists, return_value);
+//        SetStoreReturnValue(kPreSendChunkAlreadyExists, return_value);
         return;
       case kStoreSuccess:
-        SetStoreReturnValue(kSuccess, return_value);
+        // TODO(Fraser#5#): 2009-12-21 - Add ourselves to the watchlist
+//        SetStoreReturnValue(kSuccess, return_value);
         return;
       case kOverwrite:
         if (data_cached) {
 #ifdef DEBUG
-          printf("In MaidsafeStoreManager::PreSendAnalysis (%i), can't "
+          printf("In MaidsafeStoreManager::PrepareToSendChunk (%i), can't "
                  "overwrite a cached value.\n", knode_->host_port());
 #endif
-          SetStoreReturnValue(kPreSendOverwriteCached, return_value);
+//          SetStoreReturnValue(kPreSendOverwriteCached, return_value);
         } else {
-          int res = UpdateChunkCopies(store_data, chunk_holders_ids);
-          SetStoreReturnValue(static_cast<ReturnCode>(res), return_value);
+          UpdateChunkCopies(store_data, chunk_holders_ids);
+//          SetStoreReturnValue(static_cast<ReturnCode>(res), return_value);
         }
         return;
       default:
 #ifdef DEBUG
-        printf("In MaidsafeStoreManager::PreSendAnalysis (%i), invalid "
+        printf("In MaidsafeStoreManager::PrepareToSendChunk (%i), invalid "
                "IfExists setting.\n", knode_->host_port());
 #endif
-        SetStoreReturnValue(kStoreManagerError, return_value);
+//        SetStoreReturnValue(kStoreManagerError, return_value);
         return;
     }
   } else {  // If the data doesn't already exist on the network, store it.
-//    int res(-1);
-//    if (return_value == NULL)
-    int res = SendChunk(store_data, cond_variable, kMinChunkCopies);
+    for (int i = 0; i < kMinChunkCopies; ++i) {
+      SendChunk(store_data);
+    }
 //    else
 //      res = SendPacket(store_data, kMinChunkCopies);
-    SetStoreReturnValue(static_cast<ReturnCode>(res), return_value);
   }
 }
 
-int MaidsafeStoreManager::SendChunk(
+TaskStatus MaidsafeStoreManager::AssessStoreTaskStatus(
     const StoreData &store_data,
-    boost::shared_ptr<boost::condition_variable> cond_variable,
-    int copies) {
+    StoreTask *task) {
+  if (!tasks_handler_.Task(store_data.non_hex_key_, kStoreChunk, task))
+    return kCompleted;
+  if (task->cancelled_)
+    return kCancelled;
+  if (task->started_)
+    return kStarted;
+  else
+    return kPending;
+}
+
+bool MaidsafeStoreManager::WaitForOnline(const std::string &data_name,
+                                         const StoreTaskType &task_type) {
+  while (ss_->ConnectionStatus() != 0) {  // offline
+    // Check whether task has been finished or cancelled
+    StoreTask task;
+    if (!tasks_handler_.Task(data_name, task_type, &task) || task.cancelled_)
+      return false;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  }
+  return true;
+}
+
+int MaidsafeStoreManager::SendChunk(const StoreData &store_data) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::SendChunk\n");
 #endif
-  if (copies <= 0)
-    return kStoreManagerError;
-  int duplicate_count = 0;
-  int failed_count = 0;
-  float largest_rtt = -1.0f;  // set to -1.0 so first store is to furthest peer
-  std::vector<kad::Contact> exclude;
-  base::PDRoutingTableHandler rt_handler;
-// TODO(Fraser#5#): 2009-08-10 - Account for online status in while loop also
-  while (duplicate_count < copies &&
-         failed_count < kMaxChunkStoreTries * kMinChunkCopies) {
-    StorePrepRequest store_prep_request;
-    StorePrepResponse store_prep_response;
-    StoreChunkRequest store_chunk_request;
-/*    IOUDoneRequest iou_done_request;*/
-    kad::Contact peer;
-    bool local(false);
-    float ideal_rtt =
-        largest_rtt * (1 - (static_cast<float>(duplicate_count)/copies));
-    if (GetStorePeer(ideal_rtt, exclude, &peer, &local) != kSuccess) {
-      ++failed_count;
-      continue;  // try another peer
-    } else {
-      exclude.push_back(peer);  // whether we succeed in storing or not, we'll
-    }                           // not be trying this peer again
+  StoreTask task;
+  // Assess whether to start the subtask or not
+  TaskStatus status = AssessStoreTaskStatus(store_data, &task);
+  if (status == kCompleted || status == kCancelled) {
 #ifdef DEBUG
-    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
-           "peer size: %i  --  1\n\n",
-           HexSubstr(store_data.non_hex_key_).c_str(),
-           HexSubstr(peer.node_id()).c_str(), duplicate_count,
-           exclude.size());
+    printf("In MSM::SendChunk (chunk %s): Task already completed.\n",
+           HexSubstr(store_data.non_hex_key_).c_str());
 #endif
-    if (duplicate_count == 0) {  // set largest_rtt from first peer
-// TODO(Fraser#5#): 2009-08-14 - Uncomment lines below
-//      base::PDRoutingTableTuple peer_details;
-//      if (rt_handler.GetTupleInfo(peer.node_id(), &peer_details) != 0)
-//        break;
-//      largest_rtt = peer_details.rtt();
-      largest_rtt = 1.0f;
-    }
-    if (GetStoreRequests(store_data, peer.node_id(), &store_prep_request,
-        &store_chunk_request/*, &iou_done_request*/) != kSuccess) {
-      ++failed_count;
-      continue;  // try another peer
-    }
-#ifdef DEBUG
-    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
-           "peer size: %i  --  2\n\n",
-           HexSubstr(store_data.non_hex_key_).c_str(),
-           HexSubstr(peer.node_id()).c_str(), duplicate_count,
-           exclude.size());
-#endif
-    if (SendPrep(peer, local, cond_variable, &store_prep_request,
-        &store_prep_response) != kSuccess) {
-      ++failed_count;
-      continue;  // try another peer
-    }
-#ifdef DEBUG
-    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
-           "peer size: %i  --  3\n\n",
-           HexSubstr(store_data.non_hex_key_).c_str(),
-           HexSubstr(peer.node_id()).c_str(), duplicate_count,
-           exclude.size());
-#endif
-    int failed_attempt_count = 0;
-    while (failed_attempt_count < kMaxChunkStoreTries) {
-      if (SendContent(peer, local, cond_variable, &store_chunk_request) ==
-          kSuccess) {
-        break;  // succeeded in storing to this peer
-      } else {
-        ++failed_attempt_count;
-      }
-    }
-#ifdef DEBUG
-    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
-           "peer size: %i  --  4\n\n",
-           HexSubstr(store_data.non_hex_key_).c_str(),
-           HexSubstr(peer.node_id()).c_str(), duplicate_count,
-           exclude.size());
-#endif
-    if (failed_attempt_count >= kMaxChunkStoreTries) {
-      if (!duplicate_count)  // if this is failed 1st copy, reset largest rtt
-        largest_rtt = -1.0f;
-      ++failed_count;
-      continue;
-    }
-#ifdef DEBUG
-    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
-           "peer size: %i  --  5\n\n",
-           HexSubstr(store_data.non_hex_key_).c_str(),
-           HexSubstr(peer.node_id()).c_str(), duplicate_count,
-           exclude.size());
-#endif
-// TODO(Fraser#5#): 2009-08-13 - Do we want to get the ref holders again if the
-//                               previous store was relatively fast?
-    if (StoreIOUs(store_data, store_prep_request.signed_size().data_size(),
-        store_prep_response) != kSuccess) {
-      if (!duplicate_count)  // if this is failed 1st copy, reset largest rtt
-        largest_rtt = -1.0f;
-      ++failed_count;
-      continue;
-    }
-#ifdef DEBUG
-    printf("Chunkname: %s Peer PMID: %s Dup count: %i  Exclude "
-           "peer size: %i  --  6\n\n",
-           HexSubstr(store_data.non_hex_key_).c_str(),
-           HexSubstr(peer.node_id()).c_str(), duplicate_count,
-           exclude.size());
-#endif
-/*    if (SendIOUDone(peer, local, cond_variable, &iou_done_request) ==
-        kSuccess) {*/
-      ++duplicate_count;
-/*    } else {
-      if (!duplicate_count)  // if this is failed 1st copy, reset largest rtt
-        largest_rtt = -1.0f;
-      ++failed_count;
-    }*/
+    return kStoreAlreadyCompleted;
   }
+  // Establish if this is the first SendChunk for the overall task
+  bool first(task.success_count_ == 0);
+  // Get peer
+// TODO(Fraser#5#): 2009-08-14 - Uncomment lines below
+//  if (first) {  // set largest_rtt from first peer
+//    base::PDRoutingTableHandler rt_handler;
+//    base::PDRoutingTableTuple peer_details;
+//    if (rt_handler.GetTupleInfo(peer.node_id(), &peer_details) != kSuccess) {
+//      set largest rtt via tasks_handler_.SetRtt
+//      largest_rtt = 1.0f;
+//    } else {
+//      set largest rtt via tasks_handler_.SetRtt
+//      largest_rtt = peer_details.rtt();
+//    }
+//  } else {
+//    float ideal_rtt = task.largest_rtt * (1 -
+//        (static_cast<float>(task.success_count_)/task.successes_required_));
+//  }
+  float ideal_rtt = 1.0f;
+  kad::Contact peer;
+  bool local(false);
+  int peer_result = GetStorePeer(ideal_rtt, task.exclude_peers_, &peer, &local);
+  // Start subtask
+  if (tasks_handler_.StartSubTask(store_data.non_hex_key_, kStoreChunk, peer) !=
+      kSuccess)
+    return kSendChunkFailure;
+  // If GetStorePeer failed, stop subtask to record failure
+  if (peer_result != kSuccess) {
+    tasks_handler_.StopSubTask(store_data.non_hex_key_, kStoreChunk, false);
 #ifdef DEBUG
-    printf("Chunkname: %s  Dup count: %i  --  7\n\n",
-           HexSubstr(store_data.non_hex_key_).c_str(), duplicate_count);
+    printf("In MSM::SendChunk (chunk %s): Error getting store peer.\n",
+           HexSubstr(store_data.non_hex_key_).c_str());
+#endif
+    return kGetStorePeerError;
+  }
+  // Form store requests
+  StorePrepRequest store_prep_request;
+  StorePrepResponse store_prep_response;
+  StoreChunkRequest store_chunk_request;
+  int result = GetStoreRequests(store_data, peer.node_id(), &store_prep_request,
+                                &store_chunk_request);
+  if (result != kSuccess) {
+    tasks_handler_.StopSubTask(store_data.non_hex_key_, kStoreChunk, false);
+#ifdef DEBUG
+    printf("In MSM::SendChunk (chunk %s): Error getting store requests.\n",
+           HexSubstr(store_data.non_hex_key_).c_str());
+#endif
+    return result;
+  }
+  // Check we're online
+  if (!WaitForOnline(store_data.non_hex_key_, kStoreChunk)) {
+    tasks_handler_.StopSubTask(store_data.non_hex_key_, kStoreChunk, false);
+#ifdef DEBUG
+    printf("In MSM::SendChunk (chunk %s): Offline before sending prep.\n",
+           HexSubstr(store_data.non_hex_key_).c_str());
+#endif
+    return kTaskCancelledOffline;
+  }
+  // Send prep
+  boost::shared_ptr<boost::condition_variable>
+      cond_variable(new boost::condition_variable);
+  result = SendPrep(peer, local, cond_variable, &store_prep_request,
+      &store_prep_response);
+  if (result != kSuccess) {
+    tasks_handler_.StopSubTask(store_data.non_hex_key_, kStoreChunk, false);
+#ifdef DEBUG
+    printf("In MSM::SendChunk (chunk %s): Error sending prep.\n",
+           HexSubstr(store_data.non_hex_key_).c_str());
+#endif
+    return result;
+  }
+  // Check task hasn't already been finished
+  status = AssessStoreTaskStatus(store_data, &task);
+  if (status == kCompleted || status == kCancelled) {
+#ifdef DEBUG
+    printf("In MSM::SendChunk (chunk %s): Task already completed.\n",
+           HexSubstr(store_data.non_hex_key_).c_str());
+#endif
+    return kStoreAlreadyCompleted;
+  }
+  // Send chunk content
+  int failed_attempt_count = 0;
+  while (failed_attempt_count < kMaxChunkStoreTries) {
+    // Check we're online
+    if (!WaitForOnline(store_data.non_hex_key_, kStoreChunk)) {
+      tasks_handler_.StopSubTask(store_data.non_hex_key_, kStoreChunk, false);
+  #ifdef DEBUG
+      printf("In MSM::SendChunk (chunk %s): Offline before sending content.\n",
+             HexSubstr(store_data.non_hex_key_).c_str());
+  #endif
+      return kTaskCancelledOffline;
+    }
+    result = SendContent(peer, local, cond_variable, &store_chunk_request);
+    if (result == kSuccess) {
+      break;  // succeeded in storing to this peer
+    } else {
+      ++failed_attempt_count;
+    }
+  }
+  if (failed_attempt_count >= kMaxChunkStoreTries) {
+    if (first) {  // if this is failed 1st copy, reset largest rtt
+//      set largest rtt via tasks_handler_.SetRtt
+//      largest_rtt = -1.0f;
+    }
+    tasks_handler_.StopSubTask(store_data.non_hex_key_, kStoreChunk, false);
+#ifdef DEBUG
+    printf("In MSM::SendChunk (chunk %s): Error sending content.\n",
+           HexSubstr(store_data.non_hex_key_).c_str());
+#endif
+    return result;
+  }
+  // Add ourself to the Watch List if this is the first chunk copy
+  if (first) {
+    // chunk_thread_pool_ handles destruction of store_chunk_task.
+    AddToWatchListTask *add_to_watch_list_task =
+        new AddToWatchListTask(store_data, store_prep_response, this);
+    chunk_thread_pool_.start(add_to_watch_list_task);
+  }
+  // Stop subtask - record success
+  tasks_handler_.StopSubTask(store_data.non_hex_key_, kStoreChunk, true);
+#ifdef DEBUG
+  printf("Chunkname: %s  Dup count: %i\n\n",
+         HexSubstr(store_data.non_hex_key_).c_str(), task.success_count_ + 1);
 #endif
 // TODO(Fraser#5#): 2009-08-14 - Check later that there are enough vaults
-// listed in ref packet to ensure upload ultimately successful.
+// listed in ref & watch lists to ensure upload ultimately successful.
   return kSuccess;
 }
 
@@ -964,24 +973,20 @@ int MaidsafeStoreManager::GetStoreRequests(
     const StoreData &store_data,
     const std::string &recipient_id,
     StorePrepRequest *store_prep_request,
-    StoreChunkRequest *store_chunk_request/*,
-    IOUDoneRequest *iou_done_request*/) {
+    StoreChunkRequest *store_chunk_request) {
   store_prep_request->Clear();
   store_chunk_request->Clear();
-/*  iou_done_request->Clear();*/
   ValueType data_type = DATA;
   if (store_data.dir_type_ == ANONYMOUS)
     data_type = PDDIR_NOTSIGNED;
-  ChunkType chunk_type =
-      client_chunkstore_->chunk_type(store_data.non_hex_key_);
+  ChunkType chunk_type = store_data.chunk_type_;
   fs::path chunk_path(client_chunkstore_->GetChunkPath(store_data.non_hex_key_,
                                                        chunk_type, false));
   if (chunk_path == fs::path(""))
     return kChunkNotInChunkstore;
+  boost::uint64_t chunk_size = store_data.size_;
   std::string chunk_content("");
-  uint64_t chunk_size(0);
   try {
-    chunk_size = fs::file_size(chunk_path);
     boost::scoped_ptr<char>
         temp(new char[static_cast<unsigned int>(chunk_size)]);
     fs::ifstream fstr;
@@ -1023,11 +1028,44 @@ int MaidsafeStoreManager::GetStoreRequests(
       store_data.public_key_signature_);
   store_chunk_request->set_request_signature(request_signature);
   store_chunk_request->set_data_type(data_type);
-/*  iou_done_request->set_chunkname(store_data.non_hex_key_);
-  iou_done_request->set_public_key(store_data.public_key_);
-  iou_done_request->set_own_pmid(non_hex_pmid);
-  iou_done_request->set_signed_public_key(store_data.public_key_signature_);
-  iou_done_request->set_signed_request(request_signature);*/
+  return kSuccess;
+}
+
+int MaidsafeStoreManager::GetWatchListRequest(
+    const StoreData &store_data,
+    const StorePrepResponse &store_prep_response,
+    const std::string &recipient_id,
+    AddToWatchListRequest *add_to_watch_list_request) {
+  add_to_watch_list_request->Clear();
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string watch_list_name = co.Hash(store_data.key_id_ + "WATCHLIST", "",
+      crypto::STRING_STRING, false);
+  std::string request_signature("");
+  GetRequestSignature(watch_list_name, store_data.dir_type_,
+      recipient_id, store_data.public_key_, store_data.public_key_signature_,
+      store_data.private_key_, &request_signature);
+  if (request_signature == "")
+    return kGetRequestSigError;
+  add_to_watch_list_request->set_watch_list_name(watch_list_name);
+  if (store_prep_response.has_store_contract()) {
+    StoreContract *mutable_store_contract =
+        add_to_watch_list_request->mutable_store_contract();
+    *mutable_store_contract = store_prep_response.store_contract();
+  } else {
+    SignedSize *mutable_signed_size =
+        add_to_watch_list_request->mutable_signed_size();
+    mutable_signed_size->set_data_size(store_data.size_);
+    mutable_signed_size->set_signature(co.AsymSign(
+        base::itos_ull(store_data.size_), "", store_data.private_key_,
+        crypto::STRING_STRING));
+    mutable_signed_size->set_pmid(store_data.key_id_);
+    mutable_signed_size->set_public_key(store_data.public_key_);
+    mutable_signed_size->set_public_key_signature(
+        store_data.public_key_signature_);
+  }
+  add_to_watch_list_request->set_request_signature(request_signature);
   return kSuccess;
 }
 
@@ -1224,78 +1262,49 @@ void MaidsafeStoreManager::SendContentCallback(
   send_cond_data->cond_variable->notify_all();
 }
 
-int MaidsafeStoreManager::StoreIOUs(
+void MaidsafeStoreManager::AddToWatchList(
     const StoreData &store_data,
-    const boost::uint64_t &chunk_size,
     const StorePrepResponse &store_prep_response) {
-/*  crypto::Crypto co;
+  // TODO(Fraser#5#): 2009-12-21 - Consider repeating this until success or
+  //                               some max. no. of failures.
+  // Set the Watch List name
+  crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  // Make up the IOU
-  IOU iou;
-  iou.set_serialised_iou_authority(store_prep_response.iou_authority());
-  iou.set_signed_iou_authority(store_prep_response.signed_iou_authority());
-  iou.set_signature(co.AsymSign(iou.signed_iou_authority(), "",
-                                ss_->PrivateKey(PMID), crypto::STRING_STRING));
-  std::string serialised_iou;
-  if (!iou.SerializeToString(&serialised_iou))
-    return kIOUsSerialiseError;
-  // Find the chunk reference holders
-  std::vector<kad::Contact> ref_holders;
-  if (FindKNodes(store_data.non_hex_key_, &ref_holders) != kSuccess) {
-    return kStoreIOUsFindNodesFailure;
+  std::string watch_list_name = co.Hash(store_data.key_id_ + "WATCHLIST", "",
+      crypto::STRING_STRING, false);
+  // Find the Watch List Holders
+  std::vector<kad::Contact> watch_list_holders;
+  if (FindKNodes(watch_list_name, &watch_list_holders) != kSuccess)
+    return;
+  // Send the requests
+  boost::mutex mutex;
+  std::vector<AddToWatchListRequest> add_to_watch_list_requests;
+  std::vector<AddToWatchListResponse> add_to_watch_list_responses;
+  for (boost::uint16_t i = 0; i < watch_list_holders.size(); ++i) {
+    AddToWatchListRequest add_to_watch_list_request;
+    if (GetWatchListRequest(store_data, store_prep_response,
+        watch_list_holders.at(i).node_id(), &add_to_watch_list_request) !=
+        kSuccess)
+      continue;
+    add_to_watch_list_requests.push_back(add_to_watch_list_request);
+    AddToWatchListResponse add_to_watch_list_response;
+    add_to_watch_list_responses.push_back(add_to_watch_list_response);
   }
-#ifdef DEBUG
-//  printf("Client list of ref holders (key - %s) : ",
-//         HexSubstr(store_data.non_hex_key_).c_str());
-//  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
-//    printf("%s  ", HexSubstr(ref_holders.at(h).node_id()).c_str());
-//  }
-//  printf("\n");
-#endif
-  // Check for (and remove if present) collector's details
-  for (std::vector<kad::Contact>::iterator it = ref_holders.begin();
-       it != ref_holders.end(); ++it) {
-    if ((*it).node_id() == store_prep_response.pmid()) {
-#ifdef DEBUG
-//    printf("In MSM: Vault %s listed as a ref holder to itself for chunk %s\n",
-//             HexSubstr((*it).node_id()).c_str(),
-//             HexSubstr(store_data.non_hex_key_).c_str());
-#endif
-      ref_holders.erase(it);
-      break;
-    }
+  boost::uint16_t rpcs_sent_count(add_to_watch_list_requests.size());
+  for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
+    google::protobuf::Closure* callback =
+        google::protobuf::NewCallback(&google::protobuf::DoNothing);
+    rpcprotocol::Controller controller;
+    client_rpcs_->AddToWatchList(watch_list_holders.at(i),
+        AddressIsLocal(watch_list_holders.at(i)),
+        &add_to_watch_list_requests.at(i), &add_to_watch_list_responses.at(i),
+        &controller, callback);
   }
-  StoreIOURequest store_iou_request;
-  store_iou_request.set_chunkname(store_data.non_hex_key_);
-  store_iou_request.set_data_size(chunk_size);
-  store_iou_request.set_collector_pmid(store_prep_response.pmid());
-  store_iou_request.set_iou(serialised_iou);
-  store_iou_request.set_own_pmid(base::DecodeFromHex(ss_->Id(PMID)));
-  store_iou_request.set_public_key(store_data.public_key_);
-  store_iou_request.set_signed_public_key(store_data.public_key_signature_);
-  std::vector< boost::shared_ptr<StoreIouResultHolder> > results;
-  for (boost::uint16_t i = 0; i < ref_holders.size(); ++i) {
-    boost::shared_ptr<StoreIouResultHolder>
-        store_iou_result_holder(new StoreIouResultHolder);
-    results.push_back(store_iou_result_holder);
-  }
-  boost::mutex store_iou_mutex;
-  // Send out the store IOU RPCs
-  std::set<std::string> ref_holder_ids;
-  for (boost::uint16_t i = 0; i < ref_holders.size(); ++i) {
-    std::string request_signature("");
-    GetRequestSignature(store_data, ref_holders.at(i).node_id(),
-                        &request_signature);
-    store_iou_request.set_signed_request(request_signature);
-    SendIouToRefHolder(ref_holders.at(i), store_iou_request, &store_iou_mutex,
-                       results.at(i));
-    ref_holder_ids.insert(ref_holders.at(i).node_id());
-  }
-  // Once we've got enough successful replies, cancel the remaining store IOU
-  // RPCs (they should still succeed, we just won't handle the reply)
   boost::uint16_t successful_count(0);
   boost::uint16_t failed_count(0);
+  // Once we've got enough successful replies, cancel the remaining store IOU
+  // RPCs (they should still succeed, we just won't handle the reply)
 //  while (successful_count < kKadStoreThreshold_ &&
 //         failed_count < kad::K - kKadStoreThreshold_ + 1 &&
 //         successful_count + failed_count < ref_holders.size()) {
@@ -1303,29 +1312,30 @@ int MaidsafeStoreManager::StoreIOUs(
 // callbacks trying to lock destructed mutex - figure out why.
   int timeout = 10000;  // milliseconds
   int timeout_count = 0;
-  while ((successful_count + failed_count < ref_holders.size()) &&
+  while ((successful_count + failed_count < rpcs_sent_count) &&
          (timeout_count < timeout)) {
-    for (boost::uint16_t i = 0; i < results.size(); ++i) {
-      boost::mutex::scoped_lock lock(store_iou_mutex);
-      if (results.at(i)->store_iou_response_returned) {
-        int n = HandleStoreIOUResponse(results.at(i), &ref_holder_ids);
-        if (n == kSuccess) {
+    successful_count = 0;
+    failed_count = 0;
+    for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
+      boost::mutex::scoped_lock lock(mutex);
+      if (add_to_watch_list_responses.at(i).IsInitialized()) {
+        if (add_to_watch_list_responses.at(i).result() == kAck) {
           ++successful_count;
         } else {
           ++failed_count;
         }
-        results.at(i)->store_iou_response_returned = false;
+      } else {
         break;
       }
     }
     timeout_count += 10;
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     if (timeout_count >= timeout)
-      printf("\n\n\n\n\n\n\nStoreIOUs TIMED OUT\n\n\n\n\n\n\n\n");
+      printf("\n\n\n\n\n\n\nAdd to Watch List TIMED OUT\n\n\n\n\n\n\n\n");
   }
-  if (successful_count < kKadStoreThreshold_)
-    return kStoreIOUsFailure;  // We've not received enough successful responses
-  // Cancel outstanding RPCs
+//  if (successful_count < kKadStoreThreshold_)
+//    retry?
+// Cancel outstanding RPCs
 // TODO(Fraser#5#): 2009-10-13 - Once preceding todo is resolved, reinstate
 // following code.  Bool store_iou_response_returned needs replaced with
 // three state flag, kPending, kReturned, kDone or similar.
@@ -1333,8 +1343,7 @@ int MaidsafeStoreManager::StoreIOUs(
 //    if (!results.at(j)->store_iou_response_returned)
 //      channel_manager_.
 //          DeletePendingRequest(results.at(j)->controller->req_id());
-//  }*/
-  return kSuccess;
+//  }
 }
 
 int MaidsafeStoreManager::FindKNodes(const std::string &kad_key,
@@ -2611,13 +2620,6 @@ void MaidsafeStoreManager::GetPacketCallback(GenericConditionData *cond_data,
   cond_data->cond_variable->notify_all();
 }
 
-void MaidsafeStoreManager::SetStoreReturnValue(ReturnCode rc, int *ret_value) {
-  if (ret_value != NULL) {
-    boost::lock_guard<boost::mutex> lock(store_packet_mutex_);
-    *ret_value = rc;
-  }
-}
-
 void MaidsafeStoreManager::PollVaultInfo(base::callback_func_type cb) {
   VaultCommunication vc;
   vc.set_chunkstore("YES");
@@ -2704,50 +2706,16 @@ void MaidsafeStoreManager::LocalVaultStatus(
 }
 
 bool MaidsafeStoreManager::NotDoneWithUploading() {
-  tasks_mutex_.lock();
   printf("MaidsafeStoreManager::NotDoneWithUploading %d -- %d -- %u\n",
          chunk_thread_pool_.activeThreadCount(),
          packet_thread_pool_.activeThreadCount(),
-         tasks_.size());
-  tasks_mutex_.unlock();
+         tasks_handler_.TasksCount());
   if (chunk_thread_pool_.activeThreadCount() == 0 &&
       packet_thread_pool_.activeThreadCount() == 0) {
-    ClearStoreResultMap();
     return false;
   } else {
-    boost::mutex::scoped_lock loch(tasks_mutex_);
-    std::map<boost::uint16_t, boost::tuple<std::string, int> >::iterator it;
-    int cnt(0);
-    for (it = tasks_.begin(); it != tasks_.end(); ++it)
-      if (it->second.get<1>() == 7) {
-        ++cnt;
-        printf("MSM::NotDoneWithUploading - chunk name %s\n",
-               it->second.get<0>().c_str());
-      }
-    printf("MaidsafeStoreManager::NotDoneWithUploading - %i  tasks pending\n",
-           cnt);
+    return true;
   }
-
-  return true;
-}
-
-bool MaidsafeStoreManager::SetResultToTask(const boost::uint16_t &task_id,
-                                           const int &result) {
-  boost::mutex::scoped_lock loch(tasks_mutex_);
-  std::map<boost::uint16_t, boost::tuple<std::string, int> >::iterator it;
-  it = tasks_.find(task_id);
-  if (it == tasks_.end()) {
-    printf("Didn't find the id %d\n", task_id);
-    return false;
-  }
-
-  it->second = boost::tuple<std::string, int>(it->second.get<0>(), result);
-  return true;
-}
-
-void MaidsafeStoreManager::ClearStoreResultMap() {
-  boost::mutex::scoped_lock loch(tasks_mutex_);
-  tasks_.clear();
 }
 
 }  // namespace maidsafe

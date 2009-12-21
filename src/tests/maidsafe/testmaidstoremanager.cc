@@ -265,7 +265,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   ASSERT_FALSE(msm.KeyUnique(hex_key, false));
 }
 
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PreSendAnalysis) {
+TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk) {
   MockMsmKeyUnique msm(client_chunkstore_);
   std::string non_hex_key = crypto_.Hash("A", "", crypto::STRING_STRING, false);
   std::string hex_key = base::EncodeToHex(non_hex_key);
@@ -281,12 +281,11 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PreSendAnalysis) {
   }
   std::string needs_cache_copy_id = crypto_.Hash("C", "", crypto::STRING_STRING,
                                                  false);
-  int return_value(10);
   std::string key_id1, public_key1, public_key_signature1, private_key1;
   msm.GetChunkSignatureKeys(PRIVATE, "", &key_id1, &public_key1,
       &public_key_signature1, &private_key1);
-  StoreData store_data(non_hex_key, PRIVATE, "", key_id1, public_key1,
-      public_key_signature1, private_key1);
+  StoreData store_data(non_hex_key, 10, (kHashable | kNormal), PRIVATE, "",
+      key_id1, public_key1, public_key_signature1, private_key1);
 
   // Set expectations
   EXPECT_CALL(msm, FindValue(non_hex_key, false, testing::_, testing::_,
@@ -330,24 +329,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PreSendAnalysis) {
           testing::SetArgumentPointee<4>(needs_cache_copy_id),
           testing::Return(kFindValueError)))  // Call 14
       .WillOnce(DoAll(testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kFindValueFailure)))  // Call 15
-      .WillOnce(DoAll(testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::Return(kFindValueFailure)))  // Call 16
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::Return(kFindValueFailure)))  // Call 17
-      .WillOnce(DoAll(testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kFindValueFailure)))  // Call 18
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kFindValueFailure)))  // Call 19
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::Return(kFindValueFailure)))  // Call 20
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kFindValueFailure)));  // Call 21
+          testing::Return(kFindValueFailure)));  // Call 15
   EXPECT_CALL(msm, FindAndLoadChunk(non_hex_key, testing::_, false, "", "",
       testing::_))
           .WillOnce(testing::Return(kLoadChunkFailure));  // Call 1
@@ -368,13 +350,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PreSendAnalysis) {
       kMinChunkCopies))
           .WillOnce(testing::Return(kSuccess))  // Call 1
           .WillOnce(testing::Return(-100))  // Call 4
-          .WillOnce(testing::Return(-101))  // Call 15
-          .WillOnce(testing::Return(-102))  // Call 16
-          .WillOnce(testing::Return(-103))  // Call 17
-          .WillOnce(testing::Return(-104))  // Call 18
-          .WillOnce(testing::Return(-105))  // Call 19
-          .WillOnce(testing::Return(-106))  // Call 20
-          .WillOnce(testing::Return(-107));  // Call 21
+          .WillOnce(testing::Return(-101));  // Call 15
   EXPECT_CALL(msm, UpdateChunkCopies(
       testing::AllOf(testing::Field(&StoreData::non_hex_key_, non_hex_key),
                      testing::Field(&StoreData::dir_type_, PRIVATE),
@@ -388,48 +364,21 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PreSendAnalysis) {
           .WillOnce(testing::Return(-99));  // Call 2
 
   // Run test calls
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 1
-  ASSERT_EQ(kSuccess, return_value);
-  msm.PreSendAnalysis(store_data, kOverwrite, &return_value);  // Call 2
-  ASSERT_EQ(-99, return_value);
-  msm.PreSendAnalysis(store_data, kStoreFailure, &return_value);  // Call 3
-  ASSERT_EQ(kPreSendChunkAlreadyExists, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 4
-  ASSERT_EQ(-100, return_value);
-  msm.PreSendAnalysis(store_data, kOverwrite, &return_value);  // Call 5
-  ASSERT_EQ(kPreSendOverwriteCached, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 6
-  ASSERT_EQ(kSuccess, return_value);
-  msm.PreSendAnalysis(store_data, static_cast<IfExists>(999), &return_value);
-  ASSERT_EQ(kStoreManagerError, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 8
-  ASSERT_EQ(kPreSendFindValueFailure, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 9
-  ASSERT_EQ(kPreSendFindValueFailure, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 10
-  ASSERT_EQ(kPreSendFindValueFailure, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 11
-  ASSERT_EQ(kPreSendFindValueFailure, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 12
-  ASSERT_EQ(kPreSendFindValueFailure, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 13
-  ASSERT_EQ(kPreSendFindValueFailure, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 14
-  ASSERT_EQ(kPreSendFindValueFailure, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 15
-  ASSERT_EQ(-101, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 16
-  ASSERT_EQ(-102, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 17
-  ASSERT_EQ(-103, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 18
-  ASSERT_EQ(-104, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 19
-  ASSERT_EQ(-105, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 20
-  ASSERT_EQ(-106, return_value);
-  msm.PreSendAnalysis(store_data, kStoreSuccess, &return_value);  // Call 21
-  ASSERT_EQ(-107, return_value);
+  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 1
+  msm.PrepareToSendChunk(store_data, kOverwrite);  // Call 2
+  msm.PrepareToSendChunk(store_data, kStoreFailure);  // Call 3
+  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 4
+  msm.PrepareToSendChunk(store_data, kOverwrite);  // Call 5
+  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 6
+  msm.PrepareToSendChunk(store_data, static_cast<IfExists>(999));
+  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 8
+  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 9
+  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 10
+  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 11
+  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 12
+  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 13
+  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 14
+  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 15
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
@@ -456,8 +405,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   std::string key_id2, public_key2, public_key_signature2, private_key2;
   msm.GetChunkSignatureKeys(PRIVATE, "", &key_id2, &public_key2,
       &public_key_signature2, &private_key2);
-  StoreData st_missing_name("", PRIVATE, "", key_id2, public_key2,
-      public_key_signature2, private_key2);
+  StoreData st_missing_name("", 10, (kHashable | kNormal), PRIVATE, "", key_id2,
+      public_key2, public_key_signature2, private_key2);
   ASSERT_EQ(kChunkNotInChunkstore, msm.GetStoreRequests(st_missing_name,
       recipient_id, &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
   ASSERT_EQ("", store_prep_request.chunkname());
@@ -485,8 +434,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   std::string key_id3, public_key3, public_key_signature3, private_key3;
   msm.GetChunkSignatureKeys(PRIVATE_SHARE, msid_name, &key_id3, &public_key3,
       &public_key_signature3, &private_key3);
-  StoreData st_chunk_private_share(names.at(0), PRIVATE_SHARE, msid_name,
-      key_id3, public_key3, public_key_signature3, private_key3);
+  StoreData st_chunk_private_share(names.at(0), 10, (kHashable | kNormal),
+      PRIVATE_SHARE, msid_name, key_id3, public_key3, public_key_signature3,
+      private_key3);
   client_chunkstore_->AddChunkToOutgoing(names.at(0), std::string("100"));
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_private_share, recipient_id,
       &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
@@ -523,8 +473,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   std::string key_id4, public_key4, public_key_signature4, private_key4;
   msm.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
       &public_key_signature4, &private_key4);
-  StoreData st_chunk_public_share_bad(names.at(1), PUBLIC_SHARE, "", key_id4,
-      public_key4, public_key_signature4, private_key4);
+  StoreData st_chunk_public_share_bad(names.at(1), 10, (kHashable | kNormal),
+      PUBLIC_SHARE, "", key_id4, public_key4, public_key_signature4,
+      private_key4);
   client_chunkstore_->AddChunkToOutgoing(names.at(1), std::string("101"));
   ASSERT_EQ(kGetRequestSigError, msm.GetStoreRequests(st_chunk_public_share_bad,
       recipient_id, &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
@@ -548,8 +499,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       mpid_pub_sig);
   msm.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
       &public_key_signature4, &private_key4);
-  StoreData st_chunk_public_share_good(names.at(1), PUBLIC_SHARE, "", key_id4,
-      public_key4, public_key_signature4, private_key4);
+  StoreData st_chunk_public_share_good(names.at(1), 10, (kHashable | kNormal),
+      PUBLIC_SHARE, "", key_id4, public_key4, public_key_signature4,
+      private_key4);
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_public_share_good,
       recipient_id, &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
   request_signature = crypto_.AsymSign(crypto_.Hash(
@@ -582,8 +534,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   std::string key_id5, public_key5, public_key_signature5, private_key5;
   msm.GetChunkSignatureKeys(ANONYMOUS, "", &key_id5, &public_key5,
       &public_key_signature5, &private_key5);
-  StoreData st_chunk_anonymous(names.at(2), ANONYMOUS, "", key_id5, public_key5,
-      public_key_signature5, private_key5);
+  StoreData st_chunk_anonymous(names.at(2), 10, (kHashable | kNormal),
+      ANONYMOUS, "", key_id5, public_key5, public_key_signature5, private_key5);
   client_chunkstore_->AddChunkToOutgoing(names.at(2), std::string("102"));
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_anonymous, recipient_id,
       &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
@@ -614,8 +566,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   std::string key_id6, public_key6, public_key_signature6, private_key6;
   msm.GetChunkSignatureKeys(PRIVATE, "", &key_id6, &public_key6,
       &public_key_signature6, &private_key6);
-  StoreData st_chunk_private(names.at(3), PRIVATE, "", key_id6, public_key6,
-      public_key_signature6, private_key6);
+  StoreData st_chunk_private(names.at(3), 10, (kHashable | kNormal), PRIVATE,
+      "", key_id6, public_key6, public_key_signature6, private_key6);
   client_chunkstore_->AddChunkToOutgoing(names.at(3), std::string("103"));
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_private, recipient_id,
       &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
@@ -1409,8 +1361,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
   std::string key_id, public_key, public_key_signature, private_key;
   msm.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
       &public_key_signature, &private_key);
-  StoreData store_data(chunkname, PRIVATE, "", key_id, public_key,
-      public_key_signature, private_key);
+  StoreData store_data(chunkname, 10, (kHashable | kNormal), PRIVATE, "",
+      key_id, public_key, public_key_signature, private_key);
   boost::shared_ptr<boost::condition_variable>
       cond_variable(new boost::condition_variable);
   std::string peername = crypto_.Hash("peer", "", crypto::STRING_STRING, false);
@@ -1434,8 +1386,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
       .Times(6).WillOnce(testing::Return(1)).WillRepeatedly(testing::Return(0));
 /*  EXPECT_CALL(msm, SendIOUDone(testing::_, testing::_, cond_variable,
       testing::_))
-      .Times(5).WillOnce(testing::Return(1)).WillRepeatedly(testing::Return(0));*/
-  ASSERT_EQ(kSuccess, msm.SendChunk(store_data, cond_variable, 4));
+      .Times(5).WillOnce(testing::Return(1)).WillRepeatedly(testing::Return(0));
+  ASSERT_EQ(kSuccess, msm.SendChunk(store_data, cond_variable, 4));*/
   boost::this_thread::sleep(boost::posix_time::seconds(10));
 }
 
@@ -1451,10 +1403,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePacket) {
   std::string key_id, public_key, public_key_signature, private_key;
   msm.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
       &public_key_signature, &private_key);
-  StoreData store_task_hashable(packetname_hashable, PRIVATE, "", key_id,
-      public_key, public_key_signature, private_key);
-  StoreData store_task_non_hashable(packetname_non_hashable, PRIVATE, "",
-      key_id, public_key, public_key_signature, private_key);
+  StoreData store_task_hashable(packetname_hashable, 10, (kHashable | kNormal),
+      PRIVATE, "", key_id, public_key, public_key_signature, private_key);
+  StoreData store_task_non_hashable(packetname_non_hashable, 10,
+      (kHashable | kNormal), PRIVATE, "", key_id, public_key,
+      public_key_signature, private_key);
   boost::shared_ptr<boost::condition_variable>
       cond_variable(new boost::condition_variable);
   std::string peername = crypto_.Hash("Peer", "", crypto::STRING_STRING, false);

@@ -2296,24 +2296,17 @@ class AmendAccountRequest : public ::google::protobuf::Message {
   inline void set_signature(const void* value, size_t size);
   inline ::std::string* mutable_signature();
   
-  // optional .maidsafe.StorePrepResponse store_prep_response = 3;
-  inline bool has_store_prep_response() const;
-  inline void clear_store_prep_response();
-  static const int kStorePrepResponseFieldNumber = 3;
-  inline const ::maidsafe::StorePrepResponse& store_prep_response() const;
-  inline ::maidsafe::StorePrepResponse* mutable_store_prep_response();
-  
-  // optional .maidsafe.SignedSize signed_size = 4;
+  // optional .maidsafe.SignedSize signed_size = 3;
   inline bool has_signed_size() const;
   inline void clear_signed_size();
-  static const int kSignedSizeFieldNumber = 4;
+  static const int kSignedSizeFieldNumber = 3;
   inline const ::maidsafe::SignedSize& signed_size() const;
   inline ::maidsafe::SignedSize* mutable_signed_size();
   
-  // optional .maidsafe.StoreContract store_contract = 5;
+  // optional .maidsafe.StoreContract store_contract = 4;
   inline bool has_store_contract() const;
   inline void clear_store_contract();
-  static const int kStoreContractFieldNumber = 5;
+  static const int kStoreContractFieldNumber = 4;
   inline const ::maidsafe::StoreContract& store_contract() const;
   inline ::maidsafe::StoreContract* mutable_store_contract();
   
@@ -2324,13 +2317,12 @@ class AmendAccountRequest : public ::google::protobuf::Message {
   int amendment_type_;
   ::std::string* signature_;
   static const ::std::string _default_signature_;
-  ::maidsafe::StorePrepResponse* store_prep_response_;
   ::maidsafe::SignedSize* signed_size_;
   ::maidsafe::StoreContract* store_contract_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -8471,53 +8463,36 @@ inline ::std::string* AmendAccountRequest::mutable_signature() {
   return signature_;
 }
 
-// optional .maidsafe.StorePrepResponse store_prep_response = 3;
-inline bool AmendAccountRequest::has_store_prep_response() const {
-  return _has_bit(2);
-}
-inline void AmendAccountRequest::clear_store_prep_response() {
-  if (store_prep_response_ != NULL) store_prep_response_->::maidsafe::StorePrepResponse::Clear();
-  _clear_bit(2);
-}
-inline const ::maidsafe::StorePrepResponse& AmendAccountRequest::store_prep_response() const {
-  return store_prep_response_ != NULL ? *store_prep_response_ : *default_instance_->store_prep_response_;
-}
-inline ::maidsafe::StorePrepResponse* AmendAccountRequest::mutable_store_prep_response() {
-  _set_bit(2);
-  if (store_prep_response_ == NULL) store_prep_response_ = new ::maidsafe::StorePrepResponse;
-  return store_prep_response_;
-}
-
-// optional .maidsafe.SignedSize signed_size = 4;
+// optional .maidsafe.SignedSize signed_size = 3;
 inline bool AmendAccountRequest::has_signed_size() const {
-  return _has_bit(3);
+  return _has_bit(2);
 }
 inline void AmendAccountRequest::clear_signed_size() {
   if (signed_size_ != NULL) signed_size_->::maidsafe::SignedSize::Clear();
-  _clear_bit(3);
+  _clear_bit(2);
 }
 inline const ::maidsafe::SignedSize& AmendAccountRequest::signed_size() const {
   return signed_size_ != NULL ? *signed_size_ : *default_instance_->signed_size_;
 }
 inline ::maidsafe::SignedSize* AmendAccountRequest::mutable_signed_size() {
-  _set_bit(3);
+  _set_bit(2);
   if (signed_size_ == NULL) signed_size_ = new ::maidsafe::SignedSize;
   return signed_size_;
 }
 
-// optional .maidsafe.StoreContract store_contract = 5;
+// optional .maidsafe.StoreContract store_contract = 4;
 inline bool AmendAccountRequest::has_store_contract() const {
-  return _has_bit(4);
+  return _has_bit(3);
 }
 inline void AmendAccountRequest::clear_store_contract() {
   if (store_contract_ != NULL) store_contract_->::maidsafe::StoreContract::Clear();
-  _clear_bit(4);
+  _clear_bit(3);
 }
 inline const ::maidsafe::StoreContract& AmendAccountRequest::store_contract() const {
   return store_contract_ != NULL ? *store_contract_ : *default_instance_->store_contract_;
 }
 inline ::maidsafe::StoreContract* AmendAccountRequest::mutable_store_contract() {
-  _set_bit(4);
+  _set_bit(3);
   if (store_contract_ == NULL) store_contract_ = new ::maidsafe::StoreContract;
   return store_contract_;
 }

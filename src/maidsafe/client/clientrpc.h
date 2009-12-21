@@ -59,6 +59,12 @@ class ClientRpcs {
                            StorePacketResponse *store_packet_response,
                            rpcprotocol::Controller *controller,
                            google::protobuf::Closure *done);
+  void AddToWatchList(const kad::Contact &peer,
+                      bool local,
+                      AddToWatchListRequest *add_to_watch_list_request,
+                      AddToWatchListResponse *add_to_watch_list_response,
+                      rpcprotocol::Controller *controller,
+                      google::protobuf::Closure *done);
   void CheckChunk(const kad::Contact &peer,
                   bool local,
                   CheckChunkRequest *check_chunk_request,

@@ -85,6 +85,27 @@ void ClientRpcs::StorePacket(const kad::Contact &peer,
                       done);
 }
 
+void ClientRpcs::AddToWatchList(
+    const kad::Contact &peer,
+    bool local,
+    AddToWatchListRequest *add_to_watch_list_request,
+    AddToWatchListResponse *add_to_watch_list_response,
+    rpcprotocol::Controller *controller,
+    google::protobuf::Closure *done) {
+  std::string local_ip("");
+  boost::uint16_t local_port(0);
+  if (local) {
+    local_ip = peer.local_ip();
+    local_port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.AddToWatchList(controller, add_to_watch_list_request,
+                         add_to_watch_list_response, done);
+}
+
 void ClientRpcs::CheckChunk(const kad::Contact &peer,
                             bool local,
                             CheckChunkRequest *check_chunk_request,
