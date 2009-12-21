@@ -587,32 +587,92 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
   maidsafe::DeleteChunkRequest request;
   maidsafe::DeleteChunkResponse response;
 
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  maidsafe::SignedSize *signed_size;
+
+  std::string pub_key, priv_key, pmid, pub_key_sig, req_sig, size_sig;
   CreateRSAKeys(&pub_key, &priv_key);
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string content("This is a data chunk"), prev_content("");
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                      &sig_req);
+
+  maidsafe::GenericPacket gp;
+  gp.set_data("Generic System Packet Data");
+  gp.set_signature(co.AsymSign(gp.data(), "", priv_key, crypto::STRING_STRING));
+
+  std::string chunk_data(gp.SerializeAsString());
+  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
+  boost::uint64_t chunk_size(chunk_data.size());
+
+  pub_key_sig = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
+  pmid = co.Hash(pub_key + pub_key_sig, "", crypto::STRING_STRING, false);
+
+  size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
+                         priv_key, crypto::STRING_STRING);
+
+  req_sig = co.AsymSign(co.Hash(pub_key_sig + chunk_name + vault_pmid_, "",
+                        crypto::STRING_STRING, false), "", priv_key,
+                        crypto::STRING_STRING);
 
   Callback cb_obj;
 
-  for (boost::uint32_t i = 0; i <= 2; ++i) {
+  // empty request
+  {
+    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+        (&cb_obj, &Callback::CallbackFunction);
+    vault_service_->DeleteChunk(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  ASSERT_TRUE(vault_service_->StoreChunkLocal(chunk_name, chunk_data));
+  ASSERT_TRUE(vault_service_->HasChunkLocal(chunk_name));
+
+  for (int i = 0; i <= 5; ++i) {
     switch (i) {
-      case 0:  // uninitialized request
-        break;
-      case 1:  // invalid request
-        request.set_chunkname(chunkname);
-/*        request.set_pmid(pmid);
-        request.set_public_key("fail");  // !
-        request.set_public_key_signature(sig_pub_key);*/
-        request.set_request_signature(sig_req);
+      case 0:  // unsigned request
+        signed_size = request.mutable_signed_size();
+        signed_size->set_data_size(chunk_size);
+        signed_size->set_signature(size_sig);
+        signed_size->set_pmid(pmid);
+        signed_size->set_public_key(pub_key);
+        signed_size->set_public_key_signature(pub_key_sig);
+        request.set_chunkname(chunk_name);
+        request.set_request_signature("fail");
         request.set_data_type(maidsafe::SYSTEM_PACKET);
         break;
-      case 2:  // make LoadChunkLocal() fail
-/*        request.set_public_key(pub_key);*/
+      case 1:  // empty signed_size
+        request.clear_signed_size();
+        request.set_request_signature(req_sig);
+        break;
+      case 2:  // unsigned signed_size
+        signed_size = request.mutable_signed_size();
+        signed_size->set_data_size(chunk_size);
+        signed_size->set_signature("fail");
+        signed_size->set_pmid(pmid);
+        signed_size->set_public_key(pub_key);
+        signed_size->set_public_key_signature(pub_key_sig);
+        break;
+      case 3:  // invalid chunk name
+        signed_size->set_signature(size_sig);
+        request.set_chunkname("fail");
+        request.set_request_signature(co.AsymSign(co.Hash(pub_key_sig + "fail"
+            + vault_pmid_, "", crypto::STRING_STRING, false), "", priv_key,
+            crypto::STRING_STRING));
+        break;
+      case 4:  // non-existing chunk
+        request.set_chunkname(co.Hash("abc", "", crypto::STRING_STRING, false));
+        request.set_request_signature(co.AsymSign(co.Hash(pub_key_sig +
+            request.chunkname() + vault_pmid_, "",
+            crypto::STRING_STRING, false), "", priv_key,
+            crypto::STRING_STRING));
+        break;
+      case 5:  // wrong size
+        request.set_chunkname(chunk_name);
+        request.set_request_signature(req_sig);
+        signed_size->set_data_size(0);
+        signed_size->set_signature(co.AsymSign("0", "", priv_key,
+                                   crypto::STRING_STRING));
         break;
     }
 
@@ -624,10 +684,27 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
     response.Clear();
   }
 
-  ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, "abcde"));
-
   // TODO(anyone) add more data types
   int data_type[] = {maidsafe::SYSTEM_PACKET, maidsafe::PDDIR_SIGNED};
+
+  chunk_data = "fail";
+  chunk_name = co.Hash(chunk_data, "", crypto::STRING_STRING, false);
+  chunk_size = chunk_data.size();
+
+  size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
+                         priv_key, crypto::STRING_STRING);
+  req_sig = co.AsymSign(co.Hash(pub_key_sig + chunk_name + vault_pmid_, "",
+                        crypto::STRING_STRING, false), "", priv_key,
+                        crypto::STRING_STRING);
+
+  signed_size = request.mutable_signed_size();
+  signed_size->set_data_size(chunk_size);
+  signed_size->set_signature(size_sig);
+  signed_size->set_pmid(pmid);
+  signed_size->set_public_key(pub_key);
+  signed_size->set_public_key_signature(pub_key_sig);
+  request.set_chunkname(chunk_name);
+  request.set_request_signature(req_sig);
 
   // invalid data for all data types
   for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
@@ -651,28 +728,34 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
         gp.set_data("Generic System Packet Data " + base::itos(i));
         gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
                                      crypto::STRING_STRING));
-        content = gp.SerializeAsString();
+        chunk_data = gp.SerializeAsString();
         break;
       }
     }
 
-    chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
-    CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                        &sig_req);
-    request.set_chunkname(chunkname);
-/*    request.set_pmid(pmid);
-    request.set_public_key_signature(sig_pub_key);*/
-    request.set_request_signature(sig_req);
+    chunk_name = co.Hash(chunk_data, "", crypto::STRING_STRING, false);
+    chunk_size = chunk_data.size();
 
-    ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, content));
-    ASSERT_TRUE(vault_service_->HasChunkLocal(chunkname));
+    size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
+                           priv_key, crypto::STRING_STRING);
+    req_sig = co.AsymSign(co.Hash(pub_key_sig + chunk_name + vault_pmid_, "",
+                          crypto::STRING_STRING, false), "", priv_key,
+                          crypto::STRING_STRING);
+
+    signed_size->set_data_size(chunk_size);
+    signed_size->set_signature(size_sig);
+    request.set_chunkname(chunk_name);
+    request.set_request_signature(req_sig);
+
+    ASSERT_TRUE(vault_service_->StoreChunkLocal(chunk_name, chunk_data));
+    ASSERT_TRUE(vault_service_->HasChunkLocal(chunk_name));
 
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->DeleteChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    ASSERT_FALSE(vault_service_->HasChunkLocal(chunkname));
+    ASSERT_FALSE(vault_service_->HasChunkLocal(chunk_name));
     response.Clear();
   }
 }
