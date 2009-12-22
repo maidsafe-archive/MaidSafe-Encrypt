@@ -188,7 +188,15 @@ enum ReturnCode {
   kPacketOverwriteFailure = -3510,
   kPacketDeleteNotFound = -3511,
   kPacketDeleteNotOwned = -3512,
-  kPacketLoadNotFound = -3513
+  kPacketLoadNotFound = -3513,
+
+  // Account Handler
+  kAccountNotFound = -4501,
+  kAccountExists = -4502,
+  kAccountDeleteFailed = -4503,
+  kAccountWrongAccountField = -4504,
+  kAccountEmptyAlert = -4505,
+  kAccountNotEnoughSpace = -4506
 
   // Vault Buffer Packet Handler
 };

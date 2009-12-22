@@ -22,7 +22,7 @@ message StoreContract {
     required uint32 result = 1;  // whether the vault will store the chunk
     required SignedSize size_signature = 2;
   }
-  required InnerContract inner_contract = 1; 
+  required InnerContract inner_contract = 1;
   required bytes signature = 2;  // Signature of serialised inner_contract
   required bytes pmid = 3;  // vault's PMID
   required bytes public_key = 4;
@@ -122,7 +122,7 @@ message RemoveFromReferenceListRequest {
   required bytes pmid = 3;  // vault's PMID
   required bytes public_key = 4;
   required bytes public_key_signature = 5;
-  required bytes request_signature = 6; 
+  required bytes request_signature = 6;
 }
 
 message RemoveFromReferenceListResponse {

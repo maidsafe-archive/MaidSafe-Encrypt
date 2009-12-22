@@ -25,6 +25,7 @@
 #ifndef MAIDSAFE_VAULT_VAULTSERVICE_H_
 #define MAIDSAFE_VAULT_VAULTSERVICE_H_
 
+#include <boost/compressed_pair.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <maidsafe/crypto.h>
@@ -35,6 +36,7 @@
 #include <vector>
 
 #include "maidsafe/maidsafe.h"
+#include "maidsafe/vault/accountrepository.h"
 #include "maidsafe/vault/pendingoperations.h"
 #include "protobuf/maidsafe_service.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
@@ -112,6 +114,10 @@ class VaultService : public maidsafe::MaidsafeService {
                            const maidsafe::VaultStatusRequest* request,
                            maidsafe::VaultStatusResponse* response,
                            google::protobuf::Closure* done);
+  virtual void AmendAccount(google::protobuf::RpcController* controller,
+                            const maidsafe::AmendAccountRequest* request,
+                            maidsafe::AmendAccountResponse* response,
+                            google::protobuf::Closure* done);
 
   // BP services
   virtual void CreateBP(google::protobuf::RpcController* controller,
@@ -148,6 +154,10 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetPacket);
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
+  void ExtractDataFromAmmendRequest(
+      const maidsafe::AmendAccountRequest* request,
+      std::vector<std::string> *data,
+      boost::uint64_t *account_delta);
   bool ValidateSignedRequest(const std::string &public_key,
                              const std::string &public_key_signature,
                              const std::string &request_signature,
@@ -180,6 +190,11 @@ class VaultService : public maidsafe::MaidsafeService {
   VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;
   PendingOperationsHandler *poh_;
+  typedef std::map<std::string,
+                   boost::compressed_pair<std::string, boost::uint64_t>
+                  > preps_received_map;
+  preps_received_map prm_;
+  AccountHandler ah_;
 };
 
 class RegistrationService : public maidsafe::VaultRegistration {
