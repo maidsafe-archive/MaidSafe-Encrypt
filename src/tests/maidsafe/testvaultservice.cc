@@ -157,7 +157,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest) {
   CreateRSAKeys(&pub_key, &priv_key);
 
   EXPECT_TRUE(vault_service_->ValidateSignedRequest("abc", "def",
-                                                    kAnonymousSignedRequest,
+                                                    kAnonymousRequestSignature,
                                                     key, ""));
 
   CreateSignedRequest(pub_key, priv_key, key, &pmid, &sig_pub_key, &sig_req);
@@ -359,7 +359,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
     EXPECT_TRUE(response.IsInitialized());
     store_contract = response.mutable_store_contract();
     inner_contract = store_contract->mutable_inner_contract();
-    signed_size = inner_contract->mutable_size_signature();
+    signed_size = inner_contract->mutable_signed_size();
     std::string inner_cont_sig = co.AsymSign(
         inner_contract->SerializeAsString(), "", vault_private_key_,
         crypto::STRING_STRING);
@@ -815,7 +815,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
       case 1:  // unsigned request
         store_contract = request.mutable_store_contract();
         inner_contract = store_contract->mutable_inner_contract();
-        signed_size = inner_contract->mutable_size_signature();
+        signed_size = inner_contract->mutable_signed_size();
         signed_size->set_data_size(chunk_size);
         signed_size->set_signature(size_sig);
         signed_size->set_pmid(client_pmid);
@@ -905,7 +905,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceTakenInc);
   store_contract = request.mutable_store_contract();
   inner_contract = store_contract->mutable_inner_contract();
-  signed_size = inner_contract->mutable_size_signature();
+  signed_size = inner_contract->mutable_signed_size();
   signed_size->set_data_size(chunk_size);
   signed_size->set_signature(size_sig);
   signed_size->set_pmid(client_pmid);
@@ -1056,7 +1056,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
       case 1:  // unsigned request
         store_contract = request.mutable_store_contract();
         inner_contract = store_contract->mutable_inner_contract();
-        signed_size = inner_contract->mutable_size_signature();
+        signed_size = inner_contract->mutable_signed_size();
         signed_size->set_data_size(chunk_size);
         signed_size->set_signature(size_sig);
         signed_size->set_pmid(client_pmid);
@@ -1123,7 +1123,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   request.clear_signed_size();
   store_contract = request.mutable_store_contract();
   inner_contract = store_contract->mutable_inner_contract();
-  signed_size = inner_contract->mutable_size_signature();
+  signed_size = inner_contract->mutable_signed_size();
   signed_size->set_data_size(chunk_size);
   signed_size->set_signature(size_sig);
   signed_size->set_pmid(client_pmid);
@@ -1223,7 +1223,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
 
       store_contract = add_request.mutable_store_contract();
       inner_contract = store_contract->mutable_inner_contract();
-      signed_size = inner_contract->mutable_size_signature();
+      signed_size = inner_contract->mutable_signed_size();
       signed_size->set_data_size(chunk_size);
       signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>
           (chunk_size), "", client_priv_key[i], crypto::STRING_STRING));
@@ -1297,7 +1297,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
     }
   }
 
-  rem_request.set_watchlist_name(watch_list_name);
+  rem_request.set_watch_list_name(watch_list_name);
 
   // invalid removal requests only for the first client
   for (int i = 0; i <= 3; ++i) {

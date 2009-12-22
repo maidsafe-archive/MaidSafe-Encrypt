@@ -56,24 +56,9 @@ int StoreTasksHandler::AddTask(const std::string &data_name,
                                const boost::uint64_t &data_size,
                                boost::uint8_t successes_required,
                                boost::uint8_t max_failures) {
-  boost::mutex::scoped_lock lock(mutex_);
-  if (data_name.empty() || data_size < 2 || successes_required == 0) {
-#ifdef DEBUG
-    printf("In StoreTasksHandler::AddTask1, parameter incorrect.\n");
-#endif
-    return kStoreTaskIncorrectParameter;
-  }
   StoreTask task(data_name, task_type, data_size, successes_required,
                  max_failures);
-  std::pair<StoreTaskSet::iterator, bool> p = tasks_.insert(task);
-  if (!p.second) {
-#ifdef DEBUG
-    printf("In StoreTasksHandler::AddTask1, already a task with these "
-           "paramenters.\n");
-#endif
-    return kStoreTaskAlreadyExists;
-  }
-  return kSuccess;
+  return DoAddTask(task);
 }
 
 int StoreTasksHandler::AddTask(const std::string &data_name,
@@ -82,23 +67,56 @@ int StoreTasksHandler::AddTask(const std::string &data_name,
                                boost::uint8_t successes_required,
                                boost::uint8_t max_failures,
                                const base::callback_func_type &callback) {
+  StoreTask task(data_name, task_type, data_size, successes_required,
+                 max_failures, callback);
+  return DoAddTask(task);
+}
+
+int StoreTasksHandler::DoAddTask(const StoreTask &task) {
   boost::mutex::scoped_lock lock(mutex_);
-  if (data_name.empty() || data_size < 2 || successes_required == 0) {
+  if (task.data_name_.empty() || task.data_size_ < 2 ||
+      task.successes_required_ == 0) {
 #ifdef DEBUG
-    printf("In StoreTasksHandler::AddTask2, parameter incorrect.\n");
+    printf("In StoreTasksHandler::DoAddTask, parameter incorrect.\n");
 #endif
     return kStoreTaskIncorrectParameter;
   }
-  StoreTask task(data_name, task_type, data_size, successes_required,
-                 max_failures, callback);
   std::pair<StoreTaskSet::iterator, bool> p = tasks_.insert(task);
-  if (!p.second) {
+  if (!p.second) {  // task exists - reset timestamp
 #ifdef DEBUG
-    printf("In StoreTasksHandler::AddTask2, already a task with these "
-           "paramenters.\n");
+    printf("In StoreTasksHandler::DoAddTask, already a task with these "
+           "parameters.\n");
 #endif
+    std::pair<StoreTaskSet::iterator, StoreTaskSet::iterator> it;
+    it = tasks_.equal_range(boost::make_tuple(task.data_name_,
+                                              task.task_type_));
+    if (it.first == it.second) {
+      return kStoreTaskHandlerError;
+    }
+    StoreTask existing_task = (*it.first);
+    existing_task.timestamp_ = base::get_epoch_time();
+    tasks_.replace(it.first, existing_task);
     return kStoreTaskAlreadyExists;
   }
+  return kSuccess;
+}
+
+int StoreTasksHandler::SetSuccessesRequired(const std::string &data_name,
+                                            const StoreTaskType &task_type,
+                                            boost::uint8_t successes_required) {
+  boost::mutex::scoped_lock lock(mutex_);
+  std::pair<StoreTaskSet::iterator, StoreTaskSet::iterator> it;
+  it = tasks_.equal_range(boost::make_tuple(data_name, task_type));
+  if (it.first == it.second) {
+#ifdef DEBUG
+    printf("In StoreTasksHandler::SetSuccessesRequired, task not found (%s)\n",
+           HexSubstr(data_name).c_str());
+#endif
+    return kStoreTaskNotFound;
+  }
+  StoreTask task = (*it.first);
+  task.successes_required_ = successes_required;
+  tasks_.replace(it.first, task);
   return kSuccess;
 }
 

@@ -215,7 +215,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
   StoreContract_InnerContract_descriptor_ = StoreContract_descriptor_->nested_type(0);
   static const int StoreContract_InnerContract_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreContract_InnerContract, result_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreContract_InnerContract, size_signature_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreContract_InnerContract, signed_size_),
   };
   StoreContract_InnerContract_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -378,7 +378,7 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       sizeof(AddToWatchListResponse));
   RemoveFromWatchListRequest_descriptor_ = file->message_type(10);
   static const int RemoveFromWatchListRequest_offsets_[3] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(RemoveFromWatchListRequest, watchlist_name_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(RemoveFromWatchListRequest, watch_list_name_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(RemoveFromWatchListRequest, signed_size_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(RemoveFromWatchListRequest, request_signature_),
   };
@@ -1294,149 +1294,149 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
     "afe\032\014packet.proto\"r\n\nSignedSize\022\021\n\tdata_"
     "size\030\001 \002(\004\022\021\n\tsignature\030\002 \002(\014\022\014\n\004pmid\030\003 "
     "\002(\014\022\022\n\npublic_key\030\004 \002(\014\022\034\n\024public_key_si"
-    "gnature\030\005 \002(\014\"\360\001\n\rStoreContract\022=\n\016inner"
+    "gnature\030\005 \002(\014\"\355\001\n\rStoreContract\022=\n\016inner"
     "_contract\030\001 \002(\0132%.maidsafe.StoreContract"
     ".InnerContract\022\021\n\tsignature\030\002 \002(\014\022\014\n\004pmi"
     "d\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\034\n\024public_ke"
-    "y_signature\030\005 \002(\014\032M\n\rInnerContract\022\016\n\006re"
-    "sult\030\001 \002(\r\022,\n\016size_signature\030\002 \002(\0132\024.mai"
-    "dsafe.SignedSize\"k\n\020StorePrepRequest\022\021\n\t"
-    "chunkname\030\001 \002(\014\022)\n\013signed_size\030\002 \002(\0132\024.m"
-    "aidsafe.SignedSize\022\031\n\021request_signature\030"
-    "\003 \002(\014\"`\n\021StorePrepResponse\022/\n\016store_cont"
-    "ract\030\001 \002(\0132\027.maidsafe.StoreContract\022\032\n\022r"
-    "esponse_signature\030\002 \002(\014\"\311\001\n\021StoreChunkRe"
-    "quest\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014"
-    "\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\034\n\024publ"
-    "ic_key_signature\030\005 \002(\014\022\031\n\021request_signat"
-    "ure\030\006 \002(\014\022\021\n\tdata_type\030\007 \002(\005\022\016\n\006offset\030\010"
-    " \001(\r\022\025\n\rchunklet_size\030\t \001(\r\"2\n\022StoreChun"
-    "kResponse\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \001(\014\""
-    "\326\001\n\022StorePacketRequest\022\022\n\npacketname\030\001 \002"
-    "(\014\022,\n\013signed_data\030\002 \003(\0132\027.maidsafe.Gener"
-    "icPacket\022\016\n\006key_id\030\003 \001(\014\022\022\n\npublic_key\030\004"
-    " \001(\014\022\034\n\024public_key_signature\030\005 \001(\014\022\031\n\021re"
-    "quest_signature\030\006 \001(\014\022\021\n\tdata_type\030\007 \002(\005"
-    "\022\016\n\006append\030\010 \002(\010\"\223\001\n\023StorePacketResponse"
-    "\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \001(\014\022\022\n\npublic"
-    "_key\030\003 \001(\014\022\034\n\024public_key_signature\030\004 \001(\014"
-    "\022\032\n\022response_signature\030\005 \001(\014\022\020\n\010checksum"
-    "\030\006 \001(\014\"\247\001\n\025AddToWatchListRequest\022\027\n\017watc"
-    "h_list_name\030\001 \002(\014\022)\n\013signed_size\030\002 \001(\0132\024"
-    ".maidsafe.SignedSize\022/\n\016store_contract\030\003"
-    " \001(\0132\027.maidsafe.StoreContract\022\031\n\021request"
-    "_signature\030\004 \002(\014\"6\n\026AddToWatchListRespon"
-    "se\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \001(\014\"z\n\032Remo"
-    "veFromWatchListRequest\022\026\n\016watchlist_name"
-    "\030\001 \002(\014\022)\n\013signed_size\030\002 \002(\0132\024.maidsafe.S"
-    "ignedSize\022\031\n\021request_signature\030\003 \002(\014\";\n\033"
-    "RemoveFromWatchListResponse\022\016\n\006result\030\001 "
-    "\002(\r\022\014\n\004pmid\030\002 \001(\014\"z\n\031AddToReferenceListR"
-    "equest\022\021\n\tchunkname\030\001 \002(\014\022/\n\016store_contr"
-    "act\030\002 \002(\0132\027.maidsafe.StoreContract\022\031\n\021re"
-    "quest_signature\030\003 \002(\014\":\n\032AddToReferenceL"
-    "istResponse\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \001("
-    "\014\"\271\001\n\036RemoveFromReferenceListRequest\022\021\n\t"
-    "chunkname\030\001 \002(\014\022)\n\013signed_size\030\002 \002(\0132\024.m"
-    "aidsafe.SignedSize\022\014\n\004pmid\030\003 \002(\014\022\022\n\npubl"
-    "ic_key\030\004 \002(\014\022\034\n\024public_key_signature\030\005 \002"
-    "(\014\022\031\n\021request_signature\030\006 \002(\014\"?\n\037RemoveF"
-    "romReferenceListResponse\022\016\n\006result\030\001 \002(\r"
-    "\022\014\n\004pmid\030\002 \001(\014\"\321\002\n\023AmendAccountRequest\022?"
-    "\n\016amendment_type\030\001 \002(\0162\'.maidsafe.AmendA"
-    "ccountRequest.Amendment\022\021\n\tsignature\030\002 \002"
-    "(\014\022)\n\013signed_size\030\003 \001(\0132\024.maidsafe.Signe"
-    "dSize\022/\n\016store_contract\030\004 \001(\0132\027.maidsafe"
-    ".StoreContract\"\211\001\n\tAmendment\022\021\n\rkSpaceOf"
-    "fered\020\000\022\022\n\016kSpaceGivenInc\020\001\022\022\n\016kSpaceGiv"
-    "enDec\020\002\022\022\n\016kSpaceTakenInc\020\003\022\022\n\016kSpaceTak"
-    "enDec\020\004\022\031\n\025kFailedStoreAgreement\020\005\"4\n\024Am"
-    "endAccountResponse\022\016\n\006result\030\001 \002(\r\022\014\n\004pm"
-    "id\030\002 \001(\014\"t\n\027GetAccountStatusRequest\022\014\n\004p"
-    "mid\030\001 \002(\014\022\022\n\npublic_key\030\002 \001(\014\022\034\n\024public_"
-    "key_signature\030\003 \001(\014\022\031\n\021request_signature"
-    "\030\004 \001(\014\"[\n\030GetAccountStatusResponse\022\025\n\rsp"
-    "ace_offered\030\001 \001(\004\022\023\n\013space_given\030\002 \001(\004\022\023"
-    "\n\013space_taken\030\003 \001(\004\"&\n\021CheckChunkRequest"
-    "\022\021\n\tchunkname\030\001 \002(\014\"2\n\022CheckChunkRespons"
-    "e\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \002(\014\"$\n\017GetCh"
-    "unkRequest\022\021\n\tchunkname\030\001 \002(\014\"A\n\020GetChun"
-    "kResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007content\030\002 \001"
-    "(\014\022\014\n\004pmid\030\003 \001(\014\"\203\001\n\020GetPacketRequest\022\022\n"
-    "\npacketname\030\001 \002(\014\022\016\n\006key_id\030\002 \001(\014\022\022\n\npub"
-    "lic_key\030\003 \001(\014\022\034\n\024public_key_signature\030\004 "
-    "\001(\014\022\031\n\021request_signature\030\005 \001(\014\"[\n\021GetPac"
-    "ketResponse\022\016\n\006result\030\001 \002(\r\022(\n\007content\030\002"
-    " \003(\0132\027.maidsafe.GenericPacket\022\014\n\004pmid\030\003 "
-    "\001(\014\"\243\001\n\022UpdateChunkRequest\022\021\n\tchunkname\030"
-    "\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npub"
-    "lic_key\030\004 \002(\014\022\034\n\024public_key_signature\030\005 "
-    "\002(\014\022\031\n\021request_signature\030\006 \002(\014\022\021\n\tdata_t"
-    "ype\030\007 \002(\005\"3\n\023UpdateChunkResponse\022\016\n\006resu"
-    "lt\030\001 \002(\r\022\014\n\004pmid\030\002 \001(\014\"\200\001\n\022DeleteChunkRe"
-    "quest\022\021\n\tchunkname\030\001 \002(\014\022)\n\013signed_size\030"
-    "\002 \002(\0132\024.maidsafe.SignedSize\022\031\n\021request_s"
-    "ignature\030\003 \002(\014\022\021\n\tdata_type\030\004 \002(\005\"3\n\023Del"
-    "eteChunkResponse\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid"
-    "\030\002 \001(\014\">\n\024ValidityCheckRequest\022\021\n\tchunkn"
-    "ame\030\001 \002(\014\022\023\n\013random_data\030\002 \002(\014\"K\n\025Validi"
-    "tyCheckResponse\022\016\n\006result\030\001 \002(\r\022\024\n\014hash_"
-    "content\030\002 \001(\014\022\014\n\004pmid\030\003 \002(\014\"v\n\020SwapChunk"
-    "Request\022\024\n\014request_type\030\001 \002(\005\022\022\n\nchunkna"
-    "me1\030\002 \002(\014\022\025\n\rchunkcontent1\030\003 \001(\014\022\r\n\005size"
-    "1\030\004 \001(\005\022\022\n\nchunkname2\030\005 \001(\014\"\273\001\n\021SwapChun"
-    "kResponse\022\024\n\014request_type\030\001 \002(\005\022\016\n\006resul"
-    "t\030\002 \002(\r\022\022\n\nchunkname1\030\003 \001(\014\022\025\n\rchunkcont"
-    "ent1\030\004 \001(\014\022\r\n\005size1\030\005 \001(\005\022\022\n\nchunkname2\030"
-    "\006 \001(\014\022\025\n\rchunkcontent2\030\007 \001(\014\022\r\n\005size2\030\010 "
-    "\001(\005\022\014\n\004pmid\030\t \002(\014\"\200\001\n\022VaultCommunication"
-    "\022\022\n\nchunkstore\030\001 \001(\014\022\025\n\roffered_space\030\002 "
-    "\001(\004\022\022\n\nfree_space\030\003 \001(\004\022\n\n\002ip\030\004 \001(\014\022\014\n\004p"
-    "ort\030\005 \001(\r\022\021\n\ttimestamp\030\006 \002(\r\"/\n\022VaultSta"
-    "tusRequest\022\031\n\021encrypted_request\030\001 \002(\014\"A\n"
-    "\023VaultStatusResponse\022\016\n\006result\030\001 \002(\r\022\032\n\022"
-    "encrypted_response\030\002 \001(\014\"\212\001\n\017OwnVaultReq"
-    "uest\022\022\n\npublic_key\030\001 \002(\014\022\023\n\013private_key\030"
-    "\002 \002(\014\022\031\n\021signed_public_key\030\003 \002(\014\022\026\n\016chun"
-    "kstore_dir\030\004 \002(\014\022\014\n\004port\030\005 \002(\r\022\r\n\005space\030"
-    "\006 \002(\004\"O\n\020OwnVaultResponse\022(\n\006result\030\001 \002("
-    "\0162\030.maidsafe.OwnVaultResult\022\021\n\tpmid_name"
-    "\030\002 \001(\014\"\020\n\016IsOwnedRequest\"8\n\017IsOwnedRespo"
-    "nse\022%\n\006status\030\001 \002(\0162\025.maidsafe.VaultStat"
-    "us\"\217\001\n\017CreateBPRequest\022\031\n\021bufferpacket_n"
-    "ame\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n"
-    "\npublic_key\030\004 \002(\014\022\031\n\021signed_public_key\030\005"
-    " \002(\014\022\026\n\016signed_request\030\006 \002(\014\"b\n\020CreateBP"
-    "Response\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001("
-    "\014\022\022\n\npublic_key\030\003 \001(\014\022\031\n\021signed_public_k"
-    "ey\030\004 \001(\014\"\223\001\n\023ModifyBPInfoRequest\022\031\n\021buff"
-    "erpacket_name\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmi"
-    "d\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\031\n\021signed_pu"
-    "blic_key\030\005 \002(\014\022\026\n\016signed_request\030\006 \002(\014\"f"
-    "\n\024ModifyBPInfoResponse\022\016\n\006result\030\001 \002(\r\022\017"
-    "\n\007pmid_id\030\002 \001(\014\022\022\n\npublic_key\030\003 \001(\014\022\031\n\021s"
-    "igned_public_key\030\004 \001(\014\"\206\001\n\024GetBPMessages"
-    "Request\022\031\n\021bufferpacket_name\030\001 \002(\014\022\022\n\npu"
-    "blic_key\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\031\n\021signed_p"
-    "ublic_key\030\004 \002(\014\022\026\n\016signed_request\030\005 \002(\014\""
-    "y\n\025GetBPMessagesResponse\022\016\n\006result\030\001 \002(\r"
-    "\022\020\n\010messages\030\002 \003(\014\022\017\n\007pmid_id\030\003 \001(\014\022\022\n\np"
-    "ublic_key\030\004 \001(\014\022\031\n\021signed_public_key\030\005 \001"
-    "(\014\"\223\001\n\023AddBPMessageRequest\022\031\n\021bufferpack"
-    "et_name\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002("
-    "\014\022\022\n\npublic_key\030\004 \002(\014\022\031\n\021signed_public_k"
-    "ey\030\005 \002(\014\022\026\n\016signed_request\030\006 \002(\014\"f\n\024AddB"
-    "PMessageResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid"
-    "_id\030\002 \001(\014\022\022\n\npublic_key\030\003 \001(\014\022\031\n\021signed_"
-    "public_key\030\004 \001(\014*\357\001\n\016OwnVaultResult\022\021\n\rO"
-    "WNED_SUCCESS\020\000\022\027\n\023VAULT_ALREADY_OWNED\020\001\022"
-    "\021\n\rVAULT_IS_DOWN\020\002\022\024\n\020INVALID_RSA_KEYS\020\003"
-    "\022\024\n\020NOT_ENOUGH_SPACE\020\004\022\026\n\022NO_SPACE_ALLOC"
-    "ATED\020\005\022\020\n\014INVALID_PORT\020\006\022\031\n\025FAILED_TO_ST"
-    "ART_VAULT\020\007\022\026\n\022INVALID_OWNREQUEST\020\010\022\025\n\021I"
-    "NVALID_PMID_NAME\020\t*I\n\013VaultStatus\022\r\n\tNOT"
-    "_OWNED\020\000\022\t\n\005OWNED\020\001\022\010\n\004DOWN\020\002\022\026\n\022ISOWNRP"
-    "C_CANCELLED\020\003", 5853);
+    "y_signature\030\005 \002(\014\032J\n\rInnerContract\022\016\n\006re"
+    "sult\030\001 \002(\r\022)\n\013signed_size\030\002 \002(\0132\024.maidsa"
+    "fe.SignedSize\"k\n\020StorePrepRequest\022\021\n\tchu"
+    "nkname\030\001 \002(\014\022)\n\013signed_size\030\002 \002(\0132\024.maid"
+    "safe.SignedSize\022\031\n\021request_signature\030\003 \002"
+    "(\014\"`\n\021StorePrepResponse\022/\n\016store_contrac"
+    "t\030\001 \002(\0132\027.maidsafe.StoreContract\022\032\n\022resp"
+    "onse_signature\030\002 \002(\014\"\311\001\n\021StoreChunkReque"
+    "st\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004p"
+    "mid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\034\n\024public_"
+    "key_signature\030\005 \002(\014\022\031\n\021request_signature"
+    "\030\006 \002(\014\022\021\n\tdata_type\030\007 \002(\005\022\016\n\006offset\030\010 \001("
+    "\r\022\025\n\rchunklet_size\030\t \001(\r\"2\n\022StoreChunkRe"
+    "sponse\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \001(\014\"\326\001\n"
+    "\022StorePacketRequest\022\022\n\npacketname\030\001 \002(\014\022"
+    ",\n\013signed_data\030\002 \003(\0132\027.maidsafe.GenericP"
+    "acket\022\016\n\006key_id\030\003 \001(\014\022\022\n\npublic_key\030\004 \001("
+    "\014\022\034\n\024public_key_signature\030\005 \001(\014\022\031\n\021reque"
+    "st_signature\030\006 \001(\014\022\021\n\tdata_type\030\007 \002(\005\022\016\n"
+    "\006append\030\010 \002(\010\"\223\001\n\023StorePacketResponse\022\016\n"
+    "\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \001(\014\022\022\n\npublic_ke"
+    "y\030\003 \001(\014\022\034\n\024public_key_signature\030\004 \001(\014\022\032\n"
+    "\022response_signature\030\005 \001(\014\022\020\n\010checksum\030\006 "
+    "\001(\014\"\247\001\n\025AddToWatchListRequest\022\027\n\017watch_l"
+    "ist_name\030\001 \002(\014\022)\n\013signed_size\030\002 \001(\0132\024.ma"
+    "idsafe.SignedSize\022/\n\016store_contract\030\003 \001("
+    "\0132\027.maidsafe.StoreContract\022\031\n\021request_si"
+    "gnature\030\004 \002(\014\"6\n\026AddToWatchListResponse\022"
+    "\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \001(\014\"{\n\032RemoveF"
+    "romWatchListRequest\022\027\n\017watch_list_name\030\001"
+    " \002(\014\022)\n\013signed_size\030\002 \002(\0132\024.maidsafe.Sig"
+    "nedSize\022\031\n\021request_signature\030\003 \002(\014\";\n\033Re"
+    "moveFromWatchListResponse\022\016\n\006result\030\001 \002("
+    "\r\022\014\n\004pmid\030\002 \001(\014\"z\n\031AddToReferenceListReq"
+    "uest\022\021\n\tchunkname\030\001 \002(\014\022/\n\016store_contrac"
+    "t\030\002 \002(\0132\027.maidsafe.StoreContract\022\031\n\021requ"
+    "est_signature\030\003 \002(\014\":\n\032AddToReferenceLis"
+    "tResponse\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \001(\014\""
+    "\271\001\n\036RemoveFromReferenceListRequest\022\021\n\tch"
+    "unkname\030\001 \002(\014\022)\n\013signed_size\030\002 \002(\0132\024.mai"
+    "dsafe.SignedSize\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic"
+    "_key\030\004 \002(\014\022\034\n\024public_key_signature\030\005 \002(\014"
+    "\022\031\n\021request_signature\030\006 \002(\014\"?\n\037RemoveFro"
+    "mReferenceListResponse\022\016\n\006result\030\001 \002(\r\022\014"
+    "\n\004pmid\030\002 \001(\014\"\321\002\n\023AmendAccountRequest\022?\n\016"
+    "amendment_type\030\001 \002(\0162\'.maidsafe.AmendAcc"
+    "ountRequest.Amendment\022\021\n\tsignature\030\002 \002(\014"
+    "\022)\n\013signed_size\030\003 \001(\0132\024.maidsafe.SignedS"
+    "ize\022/\n\016store_contract\030\004 \001(\0132\027.maidsafe.S"
+    "toreContract\"\211\001\n\tAmendment\022\021\n\rkSpaceOffe"
+    "red\020\000\022\022\n\016kSpaceGivenInc\020\001\022\022\n\016kSpaceGiven"
+    "Dec\020\002\022\022\n\016kSpaceTakenInc\020\003\022\022\n\016kSpaceTaken"
+    "Dec\020\004\022\031\n\025kFailedStoreAgreement\020\005\"4\n\024Amen"
+    "dAccountResponse\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid"
+    "\030\002 \001(\014\"t\n\027GetAccountStatusRequest\022\014\n\004pmi"
+    "d\030\001 \002(\014\022\022\n\npublic_key\030\002 \001(\014\022\034\n\024public_ke"
+    "y_signature\030\003 \001(\014\022\031\n\021request_signature\030\004"
+    " \001(\014\"[\n\030GetAccountStatusResponse\022\025\n\rspac"
+    "e_offered\030\001 \001(\004\022\023\n\013space_given\030\002 \001(\004\022\023\n\013"
+    "space_taken\030\003 \001(\004\"&\n\021CheckChunkRequest\022\021"
+    "\n\tchunkname\030\001 \002(\014\"2\n\022CheckChunkResponse\022"
+    "\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \002(\014\"$\n\017GetChun"
+    "kRequest\022\021\n\tchunkname\030\001 \002(\014\"A\n\020GetChunkR"
+    "esponse\022\016\n\006result\030\001 \002(\r\022\017\n\007content\030\002 \001(\014"
+    "\022\014\n\004pmid\030\003 \001(\014\"\203\001\n\020GetPacketRequest\022\022\n\np"
+    "acketname\030\001 \002(\014\022\016\n\006key_id\030\002 \001(\014\022\022\n\npubli"
+    "c_key\030\003 \001(\014\022\034\n\024public_key_signature\030\004 \001("
+    "\014\022\031\n\021request_signature\030\005 \001(\014\"[\n\021GetPacke"
+    "tResponse\022\016\n\006result\030\001 \002(\r\022(\n\007content\030\002 \003"
+    "(\0132\027.maidsafe.GenericPacket\022\014\n\004pmid\030\003 \001("
+    "\014\"\243\001\n\022UpdateChunkRequest\022\021\n\tchunkname\030\001 "
+    "\002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npubli"
+    "c_key\030\004 \002(\014\022\034\n\024public_key_signature\030\005 \002("
+    "\014\022\031\n\021request_signature\030\006 \002(\014\022\021\n\tdata_typ"
+    "e\030\007 \002(\005\"3\n\023UpdateChunkResponse\022\016\n\006result"
+    "\030\001 \002(\r\022\014\n\004pmid\030\002 \001(\014\"\200\001\n\022DeleteChunkRequ"
+    "est\022\021\n\tchunkname\030\001 \002(\014\022)\n\013signed_size\030\002 "
+    "\002(\0132\024.maidsafe.SignedSize\022\031\n\021request_sig"
+    "nature\030\003 \002(\014\022\021\n\tdata_type\030\004 \002(\005\"3\n\023Delet"
+    "eChunkResponse\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002"
+    " \001(\014\">\n\024ValidityCheckRequest\022\021\n\tchunknam"
+    "e\030\001 \002(\014\022\023\n\013random_data\030\002 \002(\014\"K\n\025Validity"
+    "CheckResponse\022\016\n\006result\030\001 \002(\r\022\024\n\014hash_co"
+    "ntent\030\002 \001(\014\022\014\n\004pmid\030\003 \002(\014\"v\n\020SwapChunkRe"
+    "quest\022\024\n\014request_type\030\001 \002(\005\022\022\n\nchunkname"
+    "1\030\002 \002(\014\022\025\n\rchunkcontent1\030\003 \001(\014\022\r\n\005size1\030"
+    "\004 \001(\005\022\022\n\nchunkname2\030\005 \001(\014\"\273\001\n\021SwapChunkR"
+    "esponse\022\024\n\014request_type\030\001 \002(\005\022\016\n\006result\030"
+    "\002 \002(\r\022\022\n\nchunkname1\030\003 \001(\014\022\025\n\rchunkconten"
+    "t1\030\004 \001(\014\022\r\n\005size1\030\005 \001(\005\022\022\n\nchunkname2\030\006 "
+    "\001(\014\022\025\n\rchunkcontent2\030\007 \001(\014\022\r\n\005size2\030\010 \001("
+    "\005\022\014\n\004pmid\030\t \002(\014\"\200\001\n\022VaultCommunication\022\022"
+    "\n\nchunkstore\030\001 \001(\014\022\025\n\roffered_space\030\002 \001("
+    "\004\022\022\n\nfree_space\030\003 \001(\004\022\n\n\002ip\030\004 \001(\014\022\014\n\004por"
+    "t\030\005 \001(\r\022\021\n\ttimestamp\030\006 \002(\r\"/\n\022VaultStatu"
+    "sRequest\022\031\n\021encrypted_request\030\001 \002(\014\"A\n\023V"
+    "aultStatusResponse\022\016\n\006result\030\001 \002(\r\022\032\n\022en"
+    "crypted_response\030\002 \001(\014\"\212\001\n\017OwnVaultReque"
+    "st\022\022\n\npublic_key\030\001 \002(\014\022\023\n\013private_key\030\002 "
+    "\002(\014\022\031\n\021signed_public_key\030\003 \002(\014\022\026\n\016chunks"
+    "tore_dir\030\004 \002(\014\022\014\n\004port\030\005 \002(\r\022\r\n\005space\030\006 "
+    "\002(\004\"O\n\020OwnVaultResponse\022(\n\006result\030\001 \002(\0162"
+    "\030.maidsafe.OwnVaultResult\022\021\n\tpmid_name\030\002"
+    " \001(\014\"\020\n\016IsOwnedRequest\"8\n\017IsOwnedRespons"
+    "e\022%\n\006status\030\001 \002(\0162\025.maidsafe.VaultStatus"
+    "\"\217\001\n\017CreateBPRequest\022\031\n\021bufferpacket_nam"
+    "e\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\np"
+    "ublic_key\030\004 \002(\014\022\031\n\021signed_public_key\030\005 \002"
+    "(\014\022\026\n\016signed_request\030\006 \002(\014\"b\n\020CreateBPRe"
+    "sponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022"
+    "\022\n\npublic_key\030\003 \001(\014\022\031\n\021signed_public_key"
+    "\030\004 \001(\014\"\223\001\n\023ModifyBPInfoRequest\022\031\n\021buffer"
+    "packet_name\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030"
+    "\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\031\n\021signed_publ"
+    "ic_key\030\005 \002(\014\022\026\n\016signed_request\030\006 \002(\014\"f\n\024"
+    "ModifyBPInfoResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007"
+    "pmid_id\030\002 \001(\014\022\022\n\npublic_key\030\003 \001(\014\022\031\n\021sig"
+    "ned_public_key\030\004 \001(\014\"\206\001\n\024GetBPMessagesRe"
+    "quest\022\031\n\021bufferpacket_name\030\001 \002(\014\022\022\n\npubl"
+    "ic_key\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\031\n\021signed_pub"
+    "lic_key\030\004 \002(\014\022\026\n\016signed_request\030\005 \002(\014\"y\n"
+    "\025GetBPMessagesResponse\022\016\n\006result\030\001 \002(\r\022\020"
+    "\n\010messages\030\002 \003(\014\022\017\n\007pmid_id\030\003 \001(\014\022\022\n\npub"
+    "lic_key\030\004 \001(\014\022\031\n\021signed_public_key\030\005 \001(\014"
+    "\"\223\001\n\023AddBPMessageRequest\022\031\n\021bufferpacket"
+    "_name\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022"
+    "\022\n\npublic_key\030\004 \002(\014\022\031\n\021signed_public_key"
+    "\030\005 \002(\014\022\026\n\016signed_request\030\006 \002(\014\"f\n\024AddBPM"
+    "essageResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_i"
+    "d\030\002 \001(\014\022\022\n\npublic_key\030\003 \001(\014\022\031\n\021signed_pu"
+    "blic_key\030\004 \001(\014*\357\001\n\016OwnVaultResult\022\021\n\rOWN"
+    "ED_SUCCESS\020\000\022\027\n\023VAULT_ALREADY_OWNED\020\001\022\021\n"
+    "\rVAULT_IS_DOWN\020\002\022\024\n\020INVALID_RSA_KEYS\020\003\022\024"
+    "\n\020NOT_ENOUGH_SPACE\020\004\022\026\n\022NO_SPACE_ALLOCAT"
+    "ED\020\005\022\020\n\014INVALID_PORT\020\006\022\031\n\025FAILED_TO_STAR"
+    "T_VAULT\020\007\022\026\n\022INVALID_OWNREQUEST\020\010\022\025\n\021INV"
+    "ALID_PMID_NAME\020\t*I\n\013VaultStatus\022\r\n\tNOT_O"
+    "WNED\020\000\022\t\n\005OWNED\020\001\022\010\n\004DOWN\020\002\022\026\n\022ISOWNRPC_"
+    "CANCELLED\020\003", 5851);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service_messages.proto", &protobuf_RegisterTypes);
   SignedSize::default_instance_ = new SignedSize();
@@ -1982,7 +1982,7 @@ const ::google::protobuf::Reflection* SignedSize::GetReflection() const {
 
 #ifndef _MSC_VER
 const int StoreContract_InnerContract::kResultFieldNumber;
-const int StoreContract_InnerContract::kSizeSignatureFieldNumber;
+const int StoreContract_InnerContract::kSignedSizeFieldNumber;
 #endif  // !_MSC_VER
 
 StoreContract_InnerContract::StoreContract_InnerContract()
@@ -1990,11 +1990,11 @@ StoreContract_InnerContract::StoreContract_InnerContract()
     _unknown_fields_(),
     _cached_size_(0),
     result_(0u),
-    size_signature_(NULL) {
+    signed_size_(NULL) {
   SharedCtor();
 }
 
-void StoreContract_InnerContract::InitAsDefaultInstance() {  size_signature_ = const_cast< ::maidsafe::SignedSize*>(&::maidsafe::SignedSize::default_instance());
+void StoreContract_InnerContract::InitAsDefaultInstance() {  signed_size_ = const_cast< ::maidsafe::SignedSize*>(&::maidsafe::SignedSize::default_instance());
 }
 
 StoreContract_InnerContract::StoreContract_InnerContract(const StoreContract_InnerContract& from)
@@ -2002,7 +2002,7 @@ StoreContract_InnerContract::StoreContract_InnerContract(const StoreContract_Inn
     _unknown_fields_(),
     _cached_size_(0),
     result_(0u),
-    size_signature_(NULL) {
+    signed_size_(NULL) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -2010,7 +2010,7 @@ StoreContract_InnerContract::StoreContract_InnerContract(const StoreContract_Inn
 void StoreContract_InnerContract::SharedCtor() {
   _cached_size_ = 0;
   result_ = 0u;
-  size_signature_ = NULL;
+  signed_size_ = NULL;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -2020,7 +2020,7 @@ StoreContract_InnerContract::~StoreContract_InnerContract() {
 
 void StoreContract_InnerContract::SharedDtor() {
   if (this != default_instance_) {
-    delete size_signature_;
+    delete signed_size_;
   }
 }
 
@@ -2043,7 +2043,7 @@ void StoreContract_InnerContract::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     result_ = 0u;
     if (_has_bit(1)) {
-      if (size_signature_ != NULL) size_signature_->::maidsafe::SignedSize::Clear();
+      if (signed_size_ != NULL) signed_size_->::maidsafe::SignedSize::Clear();
     }
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -2065,19 +2065,19 @@ bool StoreContract_InnerContract::MergePartialFromCodedStream(
         DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
               input, &result_));
         _set_bit(0);
-        if (input->ExpectTag(18)) goto parse_size_signature;
+        if (input->ExpectTag(18)) goto parse_signed_size;
         break;
       }
       
-      // required .maidsafe.SignedSize size_signature = 2;
+      // required .maidsafe.SignedSize signed_size = 2;
       case 2: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
-       parse_size_signature:
+       parse_signed_size:
         DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
-             input, mutable_size_signature()));
+             input, mutable_signed_size()));
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -2111,9 +2111,9 @@ void StoreContract_InnerContract::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
   }
   
-  // required .maidsafe.SignedSize size_signature = 2;
+  // required .maidsafe.SignedSize signed_size = 2;
   if (_has_bit(1)) {
-    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(2, this->size_signature(), output);
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(2, this->signed_size(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -2129,9 +2129,9 @@ void StoreContract_InnerContract::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
   }
   
-  // required .maidsafe.SignedSize size_signature = 2;
+  // required .maidsafe.SignedSize signed_size = 2;
   if (_has_bit(1)) {
-    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(2, this->size_signature(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(2, this->signed_size(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -2152,11 +2152,11 @@ int StoreContract_InnerContract::ByteSize() const {
           this->result());
     }
     
-    // required .maidsafe.SignedSize size_signature = 2;
-    if (has_size_signature()) {
+    // required .maidsafe.SignedSize signed_size = 2;
+    if (has_signed_size()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
-          this->size_signature());
+          this->signed_size());
     }
     
   }
@@ -2188,7 +2188,7 @@ void StoreContract_InnerContract::MergeFrom(const StoreContract_InnerContract& f
       set_result(from.result());
     }
     if (from._has_bit(1)) {
-      mutable_size_signature()->::maidsafe::SignedSize::MergeFrom(from.size_signature());
+      mutable_signed_size()->::maidsafe::SignedSize::MergeFrom(from.signed_size());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -2209,7 +2209,7 @@ void StoreContract_InnerContract::CopyFrom(const StoreContract_InnerContract& fr
 void StoreContract_InnerContract::Swap(StoreContract_InnerContract* other) {
   if (other != this) {
     std::swap(result_, other->result_);
-    std::swap(size_signature_, other->size_signature_);
+    std::swap(signed_size_, other->signed_size_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -2219,8 +2219,8 @@ void StoreContract_InnerContract::Swap(StoreContract_InnerContract* other) {
 bool StoreContract_InnerContract::IsInitialized() const {
   if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
   
-  if (has_size_signature()) {
-    if (!this->size_signature().IsInitialized()) return false;
+  if (has_signed_size()) {
+    if (!this->signed_size().IsInitialized()) return false;
   }
   return true;
 }
@@ -5576,10 +5576,10 @@ const ::google::protobuf::Reflection* AddToWatchListResponse::GetReflection() co
 
 // ===================================================================
 
-const ::std::string RemoveFromWatchListRequest::_default_watchlist_name_;
+const ::std::string RemoveFromWatchListRequest::_default_watch_list_name_;
 const ::std::string RemoveFromWatchListRequest::_default_request_signature_;
 #ifndef _MSC_VER
-const int RemoveFromWatchListRequest::kWatchlistNameFieldNumber;
+const int RemoveFromWatchListRequest::kWatchListNameFieldNumber;
 const int RemoveFromWatchListRequest::kSignedSizeFieldNumber;
 const int RemoveFromWatchListRequest::kRequestSignatureFieldNumber;
 #endif  // !_MSC_VER
@@ -5588,7 +5588,7 @@ RemoveFromWatchListRequest::RemoveFromWatchListRequest()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    watchlist_name_(const_cast< ::std::string*>(&_default_watchlist_name_)),
+    watch_list_name_(const_cast< ::std::string*>(&_default_watch_list_name_)),
     signed_size_(NULL),
     request_signature_(const_cast< ::std::string*>(&_default_request_signature_)) {
   SharedCtor();
@@ -5601,7 +5601,7 @@ RemoveFromWatchListRequest::RemoveFromWatchListRequest(const RemoveFromWatchList
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    watchlist_name_(const_cast< ::std::string*>(&_default_watchlist_name_)),
+    watch_list_name_(const_cast< ::std::string*>(&_default_watch_list_name_)),
     signed_size_(NULL),
     request_signature_(const_cast< ::std::string*>(&_default_request_signature_)) {
   SharedCtor();
@@ -5610,7 +5610,7 @@ RemoveFromWatchListRequest::RemoveFromWatchListRequest(const RemoveFromWatchList
 
 void RemoveFromWatchListRequest::SharedCtor() {
   _cached_size_ = 0;
-  watchlist_name_ = const_cast< ::std::string*>(&_default_watchlist_name_);
+  watch_list_name_ = const_cast< ::std::string*>(&_default_watch_list_name_);
   signed_size_ = NULL;
   request_signature_ = const_cast< ::std::string*>(&_default_request_signature_);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -5621,8 +5621,8 @@ RemoveFromWatchListRequest::~RemoveFromWatchListRequest() {
 }
 
 void RemoveFromWatchListRequest::SharedDtor() {
-  if (watchlist_name_ != &_default_watchlist_name_) {
-    delete watchlist_name_;
+  if (watch_list_name_ != &_default_watch_list_name_) {
+    delete watch_list_name_;
   }
   if (request_signature_ != &_default_request_signature_) {
     delete request_signature_;
@@ -5650,8 +5650,8 @@ RemoveFromWatchListRequest* RemoveFromWatchListRequest::New() const {
 void RemoveFromWatchListRequest::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (_has_bit(0)) {
-      if (watchlist_name_ != &_default_watchlist_name_) {
-        watchlist_name_->clear();
+      if (watch_list_name_ != &_default_watch_list_name_) {
+        watch_list_name_->clear();
       }
     }
     if (_has_bit(1)) {
@@ -5673,13 +5673,13 @@ bool RemoveFromWatchListRequest::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes watchlist_name = 1;
+      // required bytes watch_list_name = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_watchlist_name()));
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_watch_list_name()));
         if (input->ExpectTag(18)) goto parse_signed_size;
         break;
       }
@@ -5733,9 +5733,9 @@ void RemoveFromWatchListRequest::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes watchlist_name = 1;
+  // required bytes watch_list_name = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->watchlist_name(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->watch_list_name(), output);
   }
   
   // required .maidsafe.SignedSize signed_size = 2;
@@ -5756,9 +5756,9 @@ void RemoveFromWatchListRequest::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* RemoveFromWatchListRequest::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes watchlist_name = 1;
+  // required bytes watch_list_name = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->watchlist_name(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->watch_list_name(), target);
   }
   
   // required .maidsafe.SignedSize signed_size = 2;
@@ -5782,10 +5782,10 @@ int RemoveFromWatchListRequest::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes watchlist_name = 1;
-    if (has_watchlist_name()) {
+    // required bytes watch_list_name = 1;
+    if (has_watch_list_name()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->watchlist_name());
+        ::google::protobuf::internal::WireFormat::BytesSize(this->watch_list_name());
     }
     
     // required .maidsafe.SignedSize signed_size = 2;
@@ -5827,7 +5827,7 @@ void RemoveFromWatchListRequest::MergeFrom(const RemoveFromWatchListRequest& fro
   GOOGLE_CHECK_NE(&from, this);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from._has_bit(0)) {
-      set_watchlist_name(from.watchlist_name());
+      set_watch_list_name(from.watch_list_name());
     }
     if (from._has_bit(1)) {
       mutable_signed_size()->::maidsafe::SignedSize::MergeFrom(from.signed_size());
@@ -5853,7 +5853,7 @@ void RemoveFromWatchListRequest::CopyFrom(const RemoveFromWatchListRequest& from
 
 void RemoveFromWatchListRequest::Swap(RemoveFromWatchListRequest* other) {
   if (other != this) {
-    std::swap(watchlist_name_, other->watchlist_name_);
+    std::swap(watch_list_name_, other->watch_list_name_);
     std::swap(signed_size_, other->signed_size_);
     std::swap(request_signature_, other->request_signature_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);

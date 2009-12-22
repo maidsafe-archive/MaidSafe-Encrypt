@@ -74,7 +74,7 @@ enum MaidsafeRpcResult {
   kNack, kAck, kNotRemote, kNoSpace, kBusy
 };
 
-const std::string kAnonymousSignedRequest(128, 'f');
+const std::string kAnonymousRequestSignature(128, 'f');
 
 enum DbInitFlag {CONNECT, CREATE, DISCONNECT};
 

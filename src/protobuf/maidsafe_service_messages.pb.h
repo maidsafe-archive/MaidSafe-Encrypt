@@ -347,19 +347,19 @@ class StoreContract_InnerContract : public ::google::protobuf::Message {
   inline ::google::protobuf::uint32 result() const;
   inline void set_result(::google::protobuf::uint32 value);
   
-  // required .maidsafe.SignedSize size_signature = 2;
-  inline bool has_size_signature() const;
-  inline void clear_size_signature();
-  static const int kSizeSignatureFieldNumber = 2;
-  inline const ::maidsafe::SignedSize& size_signature() const;
-  inline ::maidsafe::SignedSize* mutable_size_signature();
+  // required .maidsafe.SignedSize signed_size = 2;
+  inline bool has_signed_size() const;
+  inline void clear_signed_size();
+  static const int kSignedSizeFieldNumber = 2;
+  inline const ::maidsafe::SignedSize& signed_size() const;
+  inline ::maidsafe::SignedSize* mutable_signed_size();
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   ::google::protobuf::uint32 result_;
-  ::maidsafe::SignedSize* size_signature_;
+  ::maidsafe::SignedSize* signed_size_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
@@ -1587,15 +1587,15 @@ class RemoveFromWatchListRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes watchlist_name = 1;
-  inline bool has_watchlist_name() const;
-  inline void clear_watchlist_name();
-  static const int kWatchlistNameFieldNumber = 1;
-  inline const ::std::string& watchlist_name() const;
-  inline void set_watchlist_name(const ::std::string& value);
-  inline void set_watchlist_name(const char* value);
-  inline void set_watchlist_name(const void* value, size_t size);
-  inline ::std::string* mutable_watchlist_name();
+  // required bytes watch_list_name = 1;
+  inline bool has_watch_list_name() const;
+  inline void clear_watch_list_name();
+  static const int kWatchListNameFieldNumber = 1;
+  inline const ::std::string& watch_list_name() const;
+  inline void set_watch_list_name(const ::std::string& value);
+  inline void set_watch_list_name(const char* value);
+  inline void set_watch_list_name(const void* value, size_t size);
+  inline ::std::string* mutable_watch_list_name();
   
   // required .maidsafe.SignedSize signed_size = 2;
   inline bool has_signed_size() const;
@@ -1618,8 +1618,8 @@ class RemoveFromWatchListRequest : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* watchlist_name_;
-  static const ::std::string _default_watchlist_name_;
+  ::std::string* watch_list_name_;
+  static const ::std::string _default_watch_list_name_;
   ::maidsafe::SignedSize* signed_size_;
   ::std::string* request_signature_;
   static const ::std::string _default_request_signature_;
@@ -6348,21 +6348,21 @@ inline void StoreContract_InnerContract::set_result(::google::protobuf::uint32 v
   result_ = value;
 }
 
-// required .maidsafe.SignedSize size_signature = 2;
-inline bool StoreContract_InnerContract::has_size_signature() const {
+// required .maidsafe.SignedSize signed_size = 2;
+inline bool StoreContract_InnerContract::has_signed_size() const {
   return _has_bit(1);
 }
-inline void StoreContract_InnerContract::clear_size_signature() {
-  if (size_signature_ != NULL) size_signature_->::maidsafe::SignedSize::Clear();
+inline void StoreContract_InnerContract::clear_signed_size() {
+  if (signed_size_ != NULL) signed_size_->::maidsafe::SignedSize::Clear();
   _clear_bit(1);
 }
-inline const ::maidsafe::SignedSize& StoreContract_InnerContract::size_signature() const {
-  return size_signature_ != NULL ? *size_signature_ : *default_instance_->size_signature_;
+inline const ::maidsafe::SignedSize& StoreContract_InnerContract::signed_size() const {
+  return signed_size_ != NULL ? *signed_size_ : *default_instance_->signed_size_;
 }
-inline ::maidsafe::SignedSize* StoreContract_InnerContract::mutable_size_signature() {
+inline ::maidsafe::SignedSize* StoreContract_InnerContract::mutable_signed_size() {
   _set_bit(1);
-  if (size_signature_ == NULL) size_signature_ = new ::maidsafe::SignedSize;
-  return size_signature_;
+  if (signed_size_ == NULL) signed_size_ = new ::maidsafe::SignedSize;
+  return signed_size_;
 }
 
 // -------------------------------------------------------------------
@@ -7777,46 +7777,46 @@ inline ::std::string* AddToWatchListResponse::mutable_pmid() {
 
 // RemoveFromWatchListRequest
 
-// required bytes watchlist_name = 1;
-inline bool RemoveFromWatchListRequest::has_watchlist_name() const {
+// required bytes watch_list_name = 1;
+inline bool RemoveFromWatchListRequest::has_watch_list_name() const {
   return _has_bit(0);
 }
-inline void RemoveFromWatchListRequest::clear_watchlist_name() {
-  if (watchlist_name_ != &_default_watchlist_name_) {
-    watchlist_name_->clear();
+inline void RemoveFromWatchListRequest::clear_watch_list_name() {
+  if (watch_list_name_ != &_default_watch_list_name_) {
+    watch_list_name_->clear();
   }
   _clear_bit(0);
 }
-inline const ::std::string& RemoveFromWatchListRequest::watchlist_name() const {
-  return *watchlist_name_;
+inline const ::std::string& RemoveFromWatchListRequest::watch_list_name() const {
+  return *watch_list_name_;
 }
-inline void RemoveFromWatchListRequest::set_watchlist_name(const ::std::string& value) {
+inline void RemoveFromWatchListRequest::set_watch_list_name(const ::std::string& value) {
   _set_bit(0);
-  if (watchlist_name_ == &_default_watchlist_name_) {
-    watchlist_name_ = new ::std::string;
+  if (watch_list_name_ == &_default_watch_list_name_) {
+    watch_list_name_ = new ::std::string;
   }
-  watchlist_name_->assign(value);
+  watch_list_name_->assign(value);
 }
-inline void RemoveFromWatchListRequest::set_watchlist_name(const char* value) {
+inline void RemoveFromWatchListRequest::set_watch_list_name(const char* value) {
   _set_bit(0);
-  if (watchlist_name_ == &_default_watchlist_name_) {
-    watchlist_name_ = new ::std::string;
+  if (watch_list_name_ == &_default_watch_list_name_) {
+    watch_list_name_ = new ::std::string;
   }
-  watchlist_name_->assign(value);
+  watch_list_name_->assign(value);
 }
-inline void RemoveFromWatchListRequest::set_watchlist_name(const void* value, size_t size) {
+inline void RemoveFromWatchListRequest::set_watch_list_name(const void* value, size_t size) {
   _set_bit(0);
-  if (watchlist_name_ == &_default_watchlist_name_) {
-    watchlist_name_ = new ::std::string;
+  if (watch_list_name_ == &_default_watch_list_name_) {
+    watch_list_name_ = new ::std::string;
   }
-  watchlist_name_->assign(reinterpret_cast<const char*>(value), size);
+  watch_list_name_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* RemoveFromWatchListRequest::mutable_watchlist_name() {
+inline ::std::string* RemoveFromWatchListRequest::mutable_watch_list_name() {
   _set_bit(0);
-  if (watchlist_name_ == &_default_watchlist_name_) {
-    watchlist_name_ = new ::std::string;
+  if (watch_list_name_ == &_default_watch_list_name_) {
+    watch_list_name_ = new ::std::string;
   }
-  return watchlist_name_;
+  return watch_list_name_;
 }
 
 // required .maidsafe.SignedSize signed_size = 2;

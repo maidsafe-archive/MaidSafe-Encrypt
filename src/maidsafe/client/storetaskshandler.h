@@ -159,15 +159,21 @@ class StoreTasksHandler {
               boost::uint8_t successes_required,
               boost::uint8_t max_failures,
               const base::callback_func_type &callback);
-  // Sets bool started_ to true and increments active_subtask_count_ by one.
+  // Set the task's successes_required_ field.
+  int SetSuccessesRequired(const std::string &data_name,
+                           const StoreTaskType &task_type,
+                           boost::uint8_t successes_required);
+  // Method to allow subtasks to update the parent task's progress.  Sets
+  // started_ to true, adds exclude_peer to exclude_peers_ and increments
+  // active_subtask_count_ by 1.
   int StartSubTask(const std::string &data_name,
                    const StoreTaskType &task_type,
                    const kad::Contact &exclude_peer);
-  // Method to allow subtasks to update the parent task's progress.  Adds
-  // exclude_peer to exclude_peers_.  Increments/decrements success_count_ or
-  // failures_count_ based on subtask_success.  Decrements active_subtask_count_
-  // Returns kStoreTaskNotFound, kStoreTaskNotFinished,
-  // kStoreTaskFinishedFail or kStoreTaskFinishedPass.
+  // Method to allow subtasks to update the parent task's progress.  Increments
+  // or decrements by 1 success_count_ or failures_count_ based on
+  // subtask_success.  Decrements active_subtask_count_ by 1.  Returns
+  // kStoreTaskNotFound, kStoreTaskNotFinished, kStoreTaskFinishedFail or
+  // kStoreTaskFinishedPass.
   int StopSubTask(const std::string &data_name,
                   const StoreTaskType &task_type,
                   bool subtask_success);
@@ -192,6 +198,7 @@ class StoreTasksHandler {
   FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskDelete);
   FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelOne);
   FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelAll);
+  int DoAddTask(const StoreTask &task);
   boost::mutex mutex_;
   StoreTaskSet tasks_;
 };

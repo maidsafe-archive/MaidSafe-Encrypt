@@ -154,6 +154,20 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskFindTask) {
   ASSERT_EQ(boost::uint8_t(2), find_task.max_failures_);
 }
 
+TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskSetSuccessesRequired) {
+  ASSERT_EQ(size_t(0), tasks_handler_.TasksCount());
+  // Add tasks
+  const int kTaskCount(100);
+  for (int i = 0; i < kTaskCount; ++i)
+    ASSERT_EQ(kSuccess,
+              tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 1, 1));
+  StoreTask find_task("Non empty", kStorePacket, 9, 4, 1);
+  ASSERT_TRUE(tasks_handler_.Task("9", kStoreChunk, &find_task));
+  ASSERT_EQ(boost::uint8_t(1), find_task.successes_required_);
+  ASSERT_EQ(kSuccess, tasks_handler_.SetSuccessesRequired("9", kStoreChunk, 9));
+  ASSERT_EQ(boost::uint8_t(1), find_task.successes_required_);
+}
+
 TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskStartSubTask) {
   ASSERT_EQ(size_t(0), tasks_handler_.TasksCount());
   // Add tasks

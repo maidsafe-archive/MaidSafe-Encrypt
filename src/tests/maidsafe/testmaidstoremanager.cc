@@ -408,7 +408,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   StoreData st_missing_name("", 10, (kHashable | kNormal), PRIVATE, "", key_id2,
       public_key2, public_key_signature2, private_key2);
   ASSERT_EQ(kChunkNotInChunkstore, msm.GetStoreRequests(st_missing_name,
-      recipient_id, &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
+      recipient_id, &store_prep_request, &store_chunk_request));
   ASSERT_EQ("", store_prep_request.chunkname());
   ASSERT_EQ("", store_chunk_request.chunkname());
 /*  ASSERT_EQ("", iou_done_request.chunkname());*/
@@ -478,7 +478,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       private_key4);
   client_chunkstore_->AddChunkToOutgoing(names.at(1), std::string("101"));
   ASSERT_EQ(kGetRequestSigError, msm.GetStoreRequests(st_chunk_public_share_bad,
-      recipient_id, &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
+      recipient_id, &store_prep_request, &store_chunk_request));
   rsakp.GenerateKeys(kRsaKeySize);
   std::string anmpid_pri = rsakp.private_key();
   std::string anmpid_pub = rsakp.public_key();
@@ -503,7 +503,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       PUBLIC_SHARE, "", key_id4, public_key4, public_key_signature4,
       private_key4);
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_public_share_good,
-      recipient_id, &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
+      recipient_id, &store_prep_request, &store_chunk_request));
   request_signature = crypto_.AsymSign(crypto_.Hash(
       mpid_pub_sig + names.at(1) + recipient_id, "", crypto::STRING_STRING,
       false), "", mpid_pri, crypto::STRING_STRING);
@@ -545,7 +545,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   ASSERT_EQ(client_pmid_, store_prep_request.pmid());
   ASSERT_EQ(" ", store_prep_request.public_key());
   ASSERT_EQ(" ", store_prep_request.public_key_signature());
-  ASSERT_EQ(kAnonymousSignedRequest, store_prep_request.request_signature());
+  ASSERT_EQ(kAnonymousRequestSignature, store_prep_request.request_signature());
 */
 
   ASSERT_EQ(names.at(2), store_chunk_request.chunkname());
@@ -553,13 +553,14 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   ASSERT_EQ(client_pmid_, store_chunk_request.pmid());
   ASSERT_EQ(" ", store_chunk_request.public_key());
   ASSERT_EQ(" ", store_chunk_request.public_key_signature());
-  ASSERT_EQ(kAnonymousSignedRequest, store_chunk_request.request_signature());
+  ASSERT_EQ(kAnonymousRequestSignature,
+            store_chunk_request.request_signature());
   ASSERT_EQ(PDDIR_NOTSIGNED, store_chunk_request.data_type());
 
 /*  ASSERT_EQ(names.at(2), iou_done_request.chunkname());
   ASSERT_EQ(" ", iou_done_request.public_key());
   ASSERT_EQ(" ", iou_done_request.public_key_signature());
-  ASSERT_EQ(kAnonymousSignedRequest, iou_done_request.request_signature());
+  ASSERT_EQ(kAnonymousRequestSignature, iou_done_request.request_signature());
 */
 
   // Check PRIVATE chunk
@@ -1063,7 +1064,7 @@ class MockMsmStoreIOUs : public MaidsafeStoreManager {
                                          client_pmid_),
                        testing::Property(&StoreIOURequest::public_key, " "),
                        testing::Property(&StoreIOURequest::request_signature,
-                                         kAnonymousSignedRequest)),
+                                         kAnonymousRequestSignature)),
         testing::_,
         testing::_,
         testing::_))
@@ -1085,7 +1086,7 @@ class MockMsmStoreIOUs : public MaidsafeStoreManager {
                                        client_pmid_),
                      testing::Property(&StoreIOURequest::public_key, " "),
                      testing::Property(&StoreIOURequest::request_signature,
-                                       kAnonymousSignedRequest)),
+                                       kAnonymousRequestSignature)),
       testing::_,
       testing::_,
       testing::_))
@@ -1112,7 +1113,7 @@ class MockMsmStoreIOUs : public MaidsafeStoreManager {
                                          client_pmid_),
                        testing::Property(&StoreIOURequest::public_key, " "),
                        testing::Property(&StoreIOURequest::request_signature,
-                                         kAnonymousSignedRequest)),
+                                         kAnonymousRequestSignature)),
         testing::_,
         testing::_,
         testing::_))

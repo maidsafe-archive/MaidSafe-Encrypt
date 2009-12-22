@@ -65,6 +65,25 @@ class ClientRpcs {
                       AddToWatchListResponse *add_to_watch_list_response,
                       rpcprotocol::Controller *controller,
                       google::protobuf::Closure *done);
+  void RemoveFromWatchList(
+      const kad::Contact &peer,
+      bool local,
+      RemoveFromWatchListRequest *remove_from_watch_list_request,
+      RemoveFromWatchListResponse *remove_from_watch_list_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done);
+  void AmendAccount(const kad::Contact &peer,
+                    bool local,
+                    AmendAccountRequest *amend_account_request,
+                    AmendAccountResponse *amend_account_response,
+                    rpcprotocol::Controller *controller,
+                    google::protobuf::Closure *done);
+  void GetAccountStatus(const kad::Contact &peer,
+                        bool local,
+                        GetAccountStatusRequest *get_account_status_request,
+                        GetAccountStatusResponse *get_account_status_response,
+                        rpcprotocol::Controller *controller,
+                        google::protobuf::Closure *done);
   void CheckChunk(const kad::Contact &peer,
                   bool local,
                   CheckChunkRequest *check_chunk_request,
@@ -87,12 +106,6 @@ class ClientRpcs {
                    bool local,
                    UpdateChunkRequest *update_chunk_request,
                    UpdateChunkResponse *update_chunk_response,
-                   rpcprotocol::Controller *controller,
-                   google::protobuf::Closure *done);
-  void DeleteChunk(const kad::Contact &peer,
-                   bool local,
-                   DeleteChunkRequest *delete_chunk_request,
-                   DeleteChunkResponse *delete_chunk_response,
                    rpcprotocol::Controller *controller,
                    google::protobuf::Closure *done);
   void IsVaultOwned(IsOwnedResponse *response,

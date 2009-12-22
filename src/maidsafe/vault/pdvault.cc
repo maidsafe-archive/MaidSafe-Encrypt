@@ -375,9 +375,9 @@ void PDVault::AddToRefPacket(const IouReadyTuple &iou_ready_details) {
 }
 
 int PDVault::HandleAddRefResponse(
-    const IouReadyTuple &iou_ready_details,
+    const IouReadyTuple &,
     const AddRefResultHolder &add_ref_result_holder,
-    bool *got_valid_iou) {
+    bool *) {
   if (vault_status() != kVaultStarted) {
 #ifdef DEBUG
     printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
@@ -564,18 +564,13 @@ int PDVault::SendToRefPacket(
   std::string signed_request =  GetSignedRequest(chunk_name,
                                                  ref_holder.node_id());
   add_ref_request.set_chunkname(chunk_name);
-/*  add_ref_request.set_pmid(non_hex_pmid_);
-  add_ref_request.set_signed_pmid(signed_non_hex_pmid_);
-  add_ref_request.set_public_key(pmid_public_);
-  add_ref_request.set_signed_public_key(signed_pmid_public_);
-  add_ref_request.set_signed_request(signed_request);*/
   bool local = (knode_.CheckContactLocalAddress(ref_holder.node_id(),
       ref_holder.local_ip(), ref_holder.local_port(), ref_holder.host_ip())
       == kad::LOCAL);
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &PDVault::SendToRefPacketCallback,
       add_ref_result_holder, add_ref_mutex);
-  vault_rpcs_.StoreChunkReference(ref_holder, local, &add_ref_request,
+  vault_rpcs_.AddToReferenceList(ref_holder, local, &add_ref_request,
       &add_ref_result_holder->add_ref_response_,
       add_ref_result_holder->controller_.get(), callback);
   return 0;
@@ -1223,7 +1218,7 @@ void PDVault::CheckChunkCallback(
         google::protobuf::Closure* callback =
             google::protobuf::NewCallback(this, &PDVault::GetMessagesCallback,
             get_messages_response, get_args);
-        vault_rpcs_.GetMessages(get_args->data_->chunk_name,
+        vault_rpcs_.GetBPMessages(get_args->data_->chunk_name,
             get_args->data_->pub_key, get_args->data_->sig_pub_key, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
             get_args->chunk_holder_.rendezvous_port(),
@@ -1280,7 +1275,7 @@ void PDVault::GetMessagesCallback(
           get_messages_response(new maidsafe::GetBPMessagesResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
           &PDVault::GetMessagesCallback, get_messages_response, get_args);
-      vault_rpcs_.GetMessages(get_args->data_->chunk_name,
+      vault_rpcs_.GetBPMessages(get_args->data_->chunk_name,
           get_args->data_->pub_key, get_args->data_->sig_pub_key,
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),

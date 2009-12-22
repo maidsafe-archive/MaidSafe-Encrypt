@@ -20,7 +20,7 @@ message SignedSize {
 message StoreContract {
   message InnerContract {
     required uint32 result = 1;  // whether the vault will store the chunk
-    required SignedSize size_signature = 2;
+    required SignedSize signed_size = 2;
   }
   required InnerContract inner_contract = 1;
   required bytes signature = 2;  // Signature of serialised inner_contract
@@ -93,7 +93,7 @@ message AddToWatchListResponse {
 }
 
 message RemoveFromWatchListRequest {
-  required bytes watchlist_name = 1;
+  required bytes watch_list_name = 1;
   required SignedSize signed_size = 2;
   required bytes request_signature = 3;  // Signed using client's PMID key (PMID
                                          // details included in signed_size)

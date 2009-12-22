@@ -1370,7 +1370,7 @@ bool VaultService::ValidateSignedRequest(
     const std::string &request_signature,
     const std::string &key,
     const std::string &signing_id) {
-  if (request_signature == kAnonymousSignedRequest)
+  if (request_signature == kAnonymousRequestSignature)
     return true;
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);

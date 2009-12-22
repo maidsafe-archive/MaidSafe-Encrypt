@@ -80,7 +80,7 @@ void StorePacketToVaultsTask::run() {
 }
 
 void StorePacketToKadTask::run() {
-  printf("StorePacketToVaultsTask start %s\n",
+  printf("StorePacketToKadTask start %s\n",
          HexSubstr(store_data_.non_hex_key_).c_str());
   msm_->SendPacketToKad(store_data_, return_value_, generic_cond_data_);
   boost::mutex::scoped_lock loch(generic_cond_data_->cond_mutex);
@@ -98,6 +98,14 @@ void AddToWatchListTask::run() {
   printf("AddToWatchListTask start %s\n",
          HexSubstr(store_data_.non_hex_key_).c_str());
   msm_->AddToWatchList(store_data_, store_prep_response_);
+}
+
+void DeleteChunkTask::run() {
+  printf("DeleteChunkTask - chunk %s ENQUEUEDISED\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
+  msm_->RemoveFromWatchList(store_data_);
+  printf("DeleteChunkTask end %s\n",
+         HexSubstr(store_data_.non_hex_key_).c_str());
 }
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
@@ -439,15 +447,75 @@ bool MaidsafeStoreManager::KeyUnique(const std::string &hex_key,
   return false;
 }
 
-int MaidsafeStoreManager::DeletePacket(const std::string &hex_key,
-                                       const std::string &signature,
-                                       const std::string &public_key,
-                                       const std::string &signed_public_key,
-                                       const ValueType &type,
-                                       base::callback_func_type cb) {
-/*  std::string key = base::DecodeFromHex(hex_key);
-  pdclient_->DeleteChunk(key, public_key, signed_public_key, signature, type,
-      boost::bind(&MaidsafeStoreManager::DeleteChunk_Callback, this, _1, cb));*/
+int MaidsafeStoreManager::DeleteChunk(const std::string &hex_chunk_name,
+                                      const boost::uint64_t &chunk_size,
+                                      DirType dir_type,
+                                      const std::string &msid) {
+#ifdef DEBUG
+  std::string hex(hex_chunk_name.substr(0, 10) + "...");
+//  printf("In MaidsafeStoreManager::DeleteChunk (%i), chunk_name = %s\n",
+//         knode_->host_port(), hex.c_str());
+#endif
+  std::string chunk_name = base::DecodeFromHex(hex_chunk_name);
+  ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
+    fs::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
+                                                         false));
+  boost::uint64_t size(chunk_size);
+  if (size < 2) {
+    if (chunk_type < 0 || chunk_path == fs::path("")) {
+#ifdef DEBUG
+      printf("In MSM::DeleteChunk (%i), didn't find chunk %s in local "
+             "chunkstore - can't delete without valid size.\n",
+             knode_->host_port(), hex.c_str());
+#endif
+      return kDeleteSizeError;
+    }
+    try {
+      size = fs::file_size(chunk_path);
+    }
+    catch(const std::exception &e) {
+  #ifdef DEBUG
+      printf("In MSM::DeleteChunk (%i), didn't find chunk %s in local "
+             "chunkstore - can't delete without valid size.\n%s\n",
+             knode_->host_port(), hex.c_str(), e.what());
+  #endif
+      return kDeleteSizeError;
+    }
+  }
+  ChunkType new_type(chunk_type);
+  if (chunk_type >= 0) {
+    // Move chunk to TempCache.
+    if (chunk_type & kNormal)
+      new_type = chunk_type ^ (kNormal | kTempCache);
+    else if (chunk_type & kOutgoing)
+      new_type = chunk_type ^ (kOutgoing | kTempCache);
+    else if (chunk_type & kCache)
+      new_type = chunk_type ^ (kCache | kTempCache);
+    if (!new_type < 0 &&
+        client_chunkstore_->ChangeChunkType(chunk_name, new_type) != kSuccess) {
+  #ifdef DEBUG
+      printf("In MSM::DeleteChunk, failed to change chunk type.\n");
+  #endif
+    }
+  }
+  std::string key_id, public_key, public_key_signature, private_key;
+  GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
+      &public_key_signature, &private_key);
+  tasks_handler_.AddTask(chunk_name, kDeleteChunk, size, 1, 1);
+  // chunk_thread_pool_ handles destruction of store_chunk_task.
+  DeleteChunkTask *delete_chunk_task = new DeleteChunkTask(StoreData(
+      chunk_name, size, new_type, dir_type, msid, key_id, public_key,
+      public_key_signature, private_key), this);
+  chunk_thread_pool_.start(delete_chunk_task);
+  return kSuccess;
+}
+
+int MaidsafeStoreManager::DeletePacket(const std::string &,
+                                       const std::string &,
+                                       const std::string &,
+                                       const std::string &,
+                                       const ValueType &,
+                                       base::callback_func_type) {
   return kSuccess;
 }
 
@@ -724,7 +792,7 @@ void MaidsafeStoreManager::AddStoreChunkTask(const StoreData &store_data,
 }
 
 void MaidsafeStoreManager::AddSendChunkCopyTask(const StoreData &store_data) {
-  // chunk_thread_pool_ handles destruction of store_chunk_task.
+  // chunk_thread_pool_ handles destruction of send_chunk_copy_task.
   SendChunkCopyTask *send_chunk_copy_task = new SendChunkCopyTask(store_data,
                                                                   this);
   chunk_thread_pool_.start(send_chunk_copy_task);
@@ -768,10 +836,14 @@ void MaidsafeStoreManager::PrepareToSendChunk(const StoreData &store_data,
       case kStoreFailure:
 //        SetStoreReturnValue(kPreSendChunkAlreadyExists, return_value);
         return;
-      case kStoreSuccess:
-        // TODO(Fraser#5#): 2009-12-21 - Add ourselves to the watchlist
-//        SetStoreReturnValue(kSuccess, return_value);
+      case kStoreSuccess: {
+        // Add ourselves to the Watch List
+        // chunk_thread_pool_ handles destruction of add_to_watch_list_task.
+        AddToWatchListTask *add_to_watch_list_task =
+            new AddToWatchListTask(store_data, this);
+        chunk_thread_pool_.start(add_to_watch_list_task);
         return;
+      }
       case kOverwrite:
         if (data_cached) {
 #ifdef DEBUG
@@ -801,11 +873,34 @@ void MaidsafeStoreManager::PrepareToSendChunk(const StoreData &store_data,
   }
 }
 
-TaskStatus MaidsafeStoreManager::AssessStoreTaskStatus(
-    const StoreData &store_data,
-    StoreTask *task) {
-  if (!tasks_handler_.Task(store_data.non_hex_key_, kStoreChunk, task))
+TaskStatus MaidsafeStoreManager::AssessTaskStatus(const StoreData &store_data,
+                                                  StoreTaskType task_type,
+                                                  StoreTask *task) {
+  if (!tasks_handler_.Task(store_data.non_hex_key_, task_type, task))
     return kCompleted;
+  // Check if there's a conflicting task and if there is, cancel the older one.
+  StoreTaskType conflicting_type;
+  bool potential_conflict(false);
+  StoreTask conflicting_task;
+  if (task_type == kStoreChunk) {
+    conflicting_type = kDeleteChunk;
+    potential_conflict = true;
+  } else if (task_type == kDeleteChunk) {
+    conflicting_type = kStoreChunk;
+    potential_conflict = true;
+  }
+  if (potential_conflict) {
+    if (tasks_handler_.Task(store_data.non_hex_key_, conflicting_type,
+                            &conflicting_task)) {
+      if (conflicting_task.timestamp_ < task->timestamp_) {
+        tasks_handler_.CancelTask(conflicting_task.data_name_,
+                                  conflicting_type);
+      } else {
+        tasks_handler_.CancelTask(task->data_name_, task_type);
+        return kCancelled;
+      }
+    }
+  }
   if (task->cancelled_)
     return kCancelled;
   if (task->started_)
@@ -832,13 +927,23 @@ int MaidsafeStoreManager::SendChunk(const StoreData &store_data) {
 #endif
   StoreTask task;
   // Assess whether to start the subtask or not
-  TaskStatus status = AssessStoreTaskStatus(store_data, &task);
-  if (status == kCompleted || status == kCancelled) {
+  TaskStatus status = AssessTaskStatus(store_data, kStoreChunk, &task);
+  if (status == kCompleted) {
 #ifdef DEBUG
     printf("In MSM::SendChunk (chunk %s): Task already completed.\n",
            HexSubstr(store_data.non_hex_key_).c_str());
 #endif
     return kStoreAlreadyCompleted;
+  }
+  if (status == kCancelled) {
+    if (task.active_subtask_count_ == 0) {
+#ifdef DEBUG
+      printf("In MSM::SendChunk (chunk %s): Task cancelled.\n",
+             HexSubstr(store_data.non_hex_key_).c_str());
+#endif
+      tasks_handler_.DeleteTask(store_data.non_hex_key_, kStoreChunk, "");
+    }
+    return kStoreCancelled;
   }
   // Establish if this is the first SendChunk for the overall task
   bool first(task.success_count_ == 0);
@@ -904,21 +1009,35 @@ int MaidsafeStoreManager::SendChunk(const StoreData &store_data) {
   result = SendPrep(peer, local, cond_variable, &store_prep_request,
       &store_prep_response);
   if (result != kSuccess) {
-    tasks_handler_.StopSubTask(store_data.non_hex_key_, kStoreChunk, false);
+    int overall_result =
+        tasks_handler_.StopSubTask(store_data.non_hex_key_, kStoreChunk, false);
 #ifdef DEBUG
     printf("In MSM::SendChunk (chunk %s): Error sending prep.\n",
            HexSubstr(store_data.non_hex_key_).c_str());
 #endif
+    if (overall_result == kStoreTaskFinishedPass ||
+        overall_result == kStoreTaskFinishedFail)
+      tasks_handler_.DeleteTask(store_data.non_hex_key_, kStoreChunk, "");
     return result;
   }
   // Check task hasn't already been finished
-  status = AssessStoreTaskStatus(store_data, &task);
-  if (status == kCompleted || status == kCancelled) {
+  status = AssessTaskStatus(store_data, kStoreChunk, &task);
+  if (status == kCompleted) {
 #ifdef DEBUG
     printf("In MSM::SendChunk (chunk %s): Task already completed.\n",
            HexSubstr(store_data.non_hex_key_).c_str());
 #endif
     return kStoreAlreadyCompleted;
+  }
+  if (status == kCancelled) {
+    if (task.active_subtask_count_ == 1) {
+#ifdef DEBUG
+      printf("In MSM::SendChunk (chunk %s): Task cancelled.\n",
+             HexSubstr(store_data.non_hex_key_).c_str());
+#endif
+      tasks_handler_.DeleteTask(store_data.non_hex_key_, kStoreChunk, "");
+    }
+    return kStoreCancelled;
   }
   // Send chunk content
   int failed_attempt_count = 0;
@@ -953,17 +1072,21 @@ int MaidsafeStoreManager::SendChunk(const StoreData &store_data) {
   }
   // Add ourself to the Watch List if this is the first chunk copy
   if (first) {
-    // chunk_thread_pool_ handles destruction of store_chunk_task.
+    // chunk_thread_pool_ handles destruction of add_to_watch_list_task.
     AddToWatchListTask *add_to_watch_list_task =
         new AddToWatchListTask(store_data, store_prep_response, this);
     chunk_thread_pool_.start(add_to_watch_list_task);
   }
   // Stop subtask - record success
-  tasks_handler_.StopSubTask(store_data.non_hex_key_, kStoreChunk, true);
+  int overall_result =
+      tasks_handler_.StopSubTask(store_data.non_hex_key_, kStoreChunk, true);
 #ifdef DEBUG
   printf("Chunkname: %s  Dup count: %i\n\n",
          HexSubstr(store_data.non_hex_key_).c_str(), task.success_count_ + 1);
 #endif
+  if (overall_result == kStoreTaskFinishedPass ||
+      overall_result == kStoreTaskFinishedFail)
+    tasks_handler_.DeleteTask(store_data.non_hex_key_, kStoreChunk, "");
 // TODO(Fraser#5#): 2009-08-14 - Check later that there are enough vaults
 // listed in ref & watch lists to ensure upload ultimately successful.
   return kSuccess;
@@ -1031,7 +1154,7 @@ int MaidsafeStoreManager::GetStoreRequests(
   return kSuccess;
 }
 
-int MaidsafeStoreManager::GetWatchListRequest(
+int MaidsafeStoreManager::GetAddToWatchListRequest(
     const StoreData &store_data,
     const StorePrepResponse &store_prep_response,
     const std::string &recipient_id,
@@ -1066,6 +1189,37 @@ int MaidsafeStoreManager::GetWatchListRequest(
         store_data.public_key_signature_);
   }
   add_to_watch_list_request->set_request_signature(request_signature);
+  return kSuccess;
+}
+
+int MaidsafeStoreManager::GetRemoveFromWatchListRequest(
+    const StoreData &store_data,
+    const std::string &recipient_id,
+    RemoveFromWatchListRequest *remove_from_watch_list_request) {
+  remove_from_watch_list_request->Clear();
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string watch_list_name = co.Hash(store_data.key_id_ + "WATCHLIST", "",
+      crypto::STRING_STRING, false);
+  std::string request_signature("");
+  GetRequestSignature(watch_list_name, store_data.dir_type_,
+      recipient_id, store_data.public_key_, store_data.public_key_signature_,
+      store_data.private_key_, &request_signature);
+  if (request_signature == "")
+    return kGetRequestSigError;
+  remove_from_watch_list_request->set_watch_list_name(watch_list_name);
+  SignedSize *mutable_signed_size =
+      remove_from_watch_list_request->mutable_signed_size();
+  mutable_signed_size->set_data_size(store_data.size_);
+  mutable_signed_size->set_signature(co.AsymSign(
+      base::itos_ull(store_data.size_), "", store_data.private_key_,
+      crypto::STRING_STRING));
+  mutable_signed_size->set_pmid(store_data.key_id_);
+  mutable_signed_size->set_public_key(store_data.public_key_);
+  mutable_signed_size->set_public_key_signature(
+      store_data.public_key_signature_);
+  remove_from_watch_list_request->set_request_signature(request_signature);
   return kSuccess;
 }
 
@@ -1129,7 +1283,7 @@ void MaidsafeStoreManager::GetRequestSignature(
     std::string *request_signature) {
   *request_signature = "";
   if (dir_type == ANONYMOUS) {
-    *request_signature = kAnonymousSignedRequest;
+    *request_signature = kAnonymousRequestSignature;
   } else if (public_key == "" ||
              public_key_signature == "" ||
              private_key == "") {
@@ -1283,7 +1437,7 @@ void MaidsafeStoreManager::AddToWatchList(
   std::vector<AddToWatchListResponse> add_to_watch_list_responses;
   for (boost::uint16_t i = 0; i < watch_list_holders.size(); ++i) {
     AddToWatchListRequest add_to_watch_list_request;
-    if (GetWatchListRequest(store_data, store_prep_response,
+    if (GetAddToWatchListRequest(store_data, store_prep_response,
         watch_list_holders.at(i).node_id(), &add_to_watch_list_request) !=
         kSuccess)
       continue;
@@ -1303,8 +1457,8 @@ void MaidsafeStoreManager::AddToWatchList(
   }
   boost::uint16_t successful_count(0);
   boost::uint16_t failed_count(0);
-  // Once we've got enough successful replies, cancel the remaining store IOU
-  // RPCs (they should still succeed, we just won't handle the reply)
+  // Once we've got enough successful replies, cancel the remaining RPCs (they
+  // should still succeed, we just won't handle the reply)
 //  while (successful_count < kKadStoreThreshold_ &&
 //         failed_count < kad::K - kKadStoreThreshold_ + 1 &&
 //         successful_count + failed_count < ref_holders.size()) {
@@ -1344,6 +1498,109 @@ void MaidsafeStoreManager::AddToWatchList(
 //      channel_manager_.
 //          DeletePendingRequest(results.at(j)->controller->req_id());
 //  }
+}
+
+void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
+  StoreTask task;
+  // Assess whether to start the subtask or not
+  TaskStatus status = AssessTaskStatus(store_data, kDeleteChunk, &task);
+  if (status == kCompleted) {
+#ifdef DEBUG
+    printf("In MSM::RemoveFromWatchList (chunk %s): Task already completed.\n",
+           HexSubstr(store_data.non_hex_key_).c_str());
+#endif
+    return;
+  }
+  if (status == kCancelled) {
+    if (task.active_subtask_count_ == 0) {
+#ifdef DEBUG
+      printf("In MSM::RemoveFromWatchList (chunk %s): Task cancelled.\n",
+             HexSubstr(store_data.non_hex_key_).c_str());
+#endif
+      tasks_handler_.DeleteTask(store_data.non_hex_key_, kDeleteChunk, "");
+    }
+    return;
+  }
+  // Set the Watch List name
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string watch_list_name = co.Hash(store_data.key_id_ + "WATCHLIST", "",
+      crypto::STRING_STRING, false);
+  // Find the Watch List Holders
+  std::vector<kad::Contact> watch_list_holders;
+  if (FindKNodes(watch_list_name, &watch_list_holders) != kSuccess) {
+    tasks_handler_.DeleteTask(store_data.non_hex_key_, kDeleteChunk, "");
+    return;
+  }
+  // Send the requests
+  boost::mutex mutex;
+  std::vector<RemoveFromWatchListRequest> remove_from_watch_list_requests;
+  std::vector<RemoveFromWatchListResponse> remove_from_watch_list_responses;
+  for (boost::uint16_t i = 0; i < watch_list_holders.size(); ++i) {
+    RemoveFromWatchListRequest remove_from_watch_list_request;
+    if (GetRemoveFromWatchListRequest(store_data,
+        watch_list_holders.at(i).node_id(), &remove_from_watch_list_request) !=
+        kSuccess)
+      continue;
+    remove_from_watch_list_requests.push_back(remove_from_watch_list_request);
+    RemoveFromWatchListResponse remove_from_watch_list_response;
+    remove_from_watch_list_responses.push_back(remove_from_watch_list_response);
+  }
+  boost::uint16_t rpcs_sent_count(remove_from_watch_list_requests.size());
+  for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
+    google::protobuf::Closure* callback =
+        google::protobuf::NewCallback(&google::protobuf::DoNothing);
+    rpcprotocol::Controller controller;
+    client_rpcs_->RemoveFromWatchList(watch_list_holders.at(i),
+        AddressIsLocal(watch_list_holders.at(i)),
+        &remove_from_watch_list_requests.at(i),
+        &remove_from_watch_list_responses.at(i), &controller, callback);
+  }
+  boost::uint16_t successful_count(0);
+  boost::uint16_t failed_count(0);
+  // Once we've got enough successful replies, cancel the remaining RPCs (they
+  // should still succeed, we just won't handle the reply)
+//  while (successful_count < kKadStoreThreshold_ &&
+//         failed_count < kad::K - kKadStoreThreshold_ + 1 &&
+//         successful_count + failed_count < ref_holders.size()) {
+// TODO(Fraser#5#): 2009-10-13 - Preceding lines cause segfault on Unix due to
+// callbacks trying to lock destructed mutex - figure out why.
+  int timeout = 10000;  // milliseconds
+  int timeout_count = 0;
+  while ((successful_count + failed_count < rpcs_sent_count) &&
+         (timeout_count < timeout)) {
+    successful_count = 0;
+    failed_count = 0;
+    for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
+      boost::mutex::scoped_lock lock(mutex);
+      if (remove_from_watch_list_responses.at(i).IsInitialized()) {
+        if (remove_from_watch_list_responses.at(i).result() == kAck) {
+          ++successful_count;
+        } else {
+          ++failed_count;
+        }
+      } else {
+        break;
+      }
+    }
+    timeout_count += 10;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    if (timeout_count >= timeout)
+      printf("\n\n\n\n\n\n\nDelete from Watch List TIMED OUT\n\n\n\n\n\n\n\n");
+  }
+//  if (successful_count < kKadStoreThreshold_)
+//    retry?
+// Cancel outstanding RPCs
+// TODO(Fraser#5#): 2009-10-13 - Once preceding todo is resolved, reinstate
+// following code.  Bool store_iou_response_returned needs replaced with
+// three state flag, kPending, kReturned, kDone or similar.
+//  for (boost::uint16_t j = 0; j < results.size(); ++j) {
+//    if (!results.at(j)->store_iou_response_returned)
+//      channel_manager_.
+//          DeletePendingRequest(results.at(j)->controller->req_id());
+//  }
+  tasks_handler_.DeleteTask(store_data.non_hex_key_, kDeleteChunk, "");
 }
 
 int MaidsafeStoreManager::FindKNodes(const std::string &kad_key,
@@ -1867,97 +2124,6 @@ void MaidsafeStoreManager::GetChunkCallback(boost::mutex *mutex,
   get_chunk_conditional_.notify_all();
 }
 
-/*int MaidsafeStoreManager::SendIouToRefHolder(
-    const kad::Contact &ref_holder,
-    StoreIOURequest store_iou_request,
-    boost::mutex *store_iou_mutex,
-    boost::shared_ptr<StoreIouResultHolder> store_iou_result_holder) {
-  bool local = AddressIsLocal(ref_holder);
-  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-      &MaidsafeStoreManager::SendIouToRefHolderCallback,
-      &store_iou_result_holder->store_iou_response_returned, store_iou_mutex);
-  client_rpcs_->StoreIOU(ref_holder, local, &store_iou_request,
-      &store_iou_result_holder->store_iou_response,
-      store_iou_result_holder->controller.get(), callback);
-#ifdef DEBUG
-//  printf("Ref Holder Vault (%i) req to store iou for vault id %s...\n",
-//      ref_holder.host_port(),
-//      HexSubstr(store_iou_request.collector_pmid()).c_str());
-#endif
-  return kSuccess;
-}
-
-void MaidsafeStoreManager::SendIouToRefHolderCallback(
-    bool *store_iou_response_returned,
-    boost::mutex *store_iou_mutex) {
-#ifdef DEBUG
-//  printf("In MaidsafeStoreManager::SendIouToRefHolderCallback.\n");
-#endif
-  boost::lock_guard<boost::mutex> lock(*store_iou_mutex);
-  *store_iou_response_returned = true;
-}
-
-int MaidsafeStoreManager::HandleStoreIOUResponse(
-    const boost::shared_ptr<StoreIouResultHolder> store_iou_result_holder,
-    std::set<std::string> *ref_holder_ids) {
-  maidsafe::StoreIOUResponse sir =
-      store_iou_result_holder->store_iou_response;
-  if (sir.result() != kAck) {
-#ifdef DEBUG
-    if (!mock_rpcs_) {
-      printf("In MSM, response from rpc id %d came back failed (%d).\n",
-             store_iou_result_holder->controller->req_id(),
-             knode_->host_port());
-    }
-#endif
-    return kStoreIOUFailure;
-  }
-  if (ref_holder_ids->find(sir.pmid()) == ref_holder_ids->end()) {
-#ifdef DEBUG
-    if (!mock_rpcs_) {
-      printf("In MSM, response on rpc id %d has fake identity (%d).\n",
-             store_iou_result_holder->controller->req_id(),
-             knode_->host_port());
-    }
-#endif
-    return kStoreIOUFailure;
-  }
-  return kSuccess;
-}
-
-int MaidsafeStoreManager::SendIOUDone(
-    const kad::Contact &peer,
-    bool local,
-    boost::shared_ptr<boost::condition_variable> cond_variable,
-    IOUDoneRequest *iou_done_request) {
-  IOUDoneResponse iou_done_response;
-  GenericConditionData iou_done_cond_data(cond_variable);
-  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-      &MaidsafeStoreManager::IOUDoneCallback, &iou_done_cond_data);
-  rpcprotocol::Controller controller;
-  client_rpcs_->IOUDone(peer, local, iou_done_request, &iou_done_response,
-      &controller, callback);
-  {
-    boost::mutex::scoped_lock lock(iou_done_cond_data.cond_mutex);
-    while (!iou_done_cond_data.cond_flag) {
-      iou_done_cond_data.cond_variable->wait(lock);
-    }
-    iou_done_cond_data.cond_flag = false;
-  }
-  return (iou_done_response.pmid() == peer.node_id() &&
-          iou_done_response.result() == kAck) ? kSuccess : kSendIOUDoneFailure;
-}
-
-void MaidsafeStoreManager::IOUDoneCallback(
-    GenericConditionData *iou_done_cond_data) {
-#ifdef DEBUG
-//  printf("In MaidsafeStoreManager::IOUDoneCallback.\n");
-#endif
-  boost::lock_guard<boost::mutex> lock(iou_done_cond_data->cond_mutex);
-  iou_done_cond_data->cond_flag = true;
-  iou_done_cond_data->cond_variable->notify_all();
-}
-*/
 int MaidsafeStoreManager::StorePacketToVaults(
     const std::string &hex_packet_name,
     const std::string &value,
