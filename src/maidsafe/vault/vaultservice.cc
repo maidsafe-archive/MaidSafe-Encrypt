@@ -80,7 +80,7 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
   response_sc->set_public_key_signature(pmid_public_signature_);
   maidsafe::StoreContract::InnerContract *response_ic =
       response_sc->mutable_inner_contract();
-  maidsafe::SignedSize *response_sz = response_ic->mutable_size_signature();
+  maidsafe::SignedSize *response_sz = response_ic->mutable_signed_size();
   *response_sz = request->signed_size();
 
   crypto::Crypto co;
@@ -1344,14 +1344,14 @@ void VaultService::ExtractDataFromAmmendRequest(
     if (!co.AsymCheckSig(ser_ic, sc.signature(), sc.public_key(),
         crypto::STRING_STRING))
       return;  // Contract was altered
-    std::string str_size = base::itos_ull(ic.size_signature().data_size());
-    if (!co.AsymCheckSig(str_size, ic.size_signature().signature(),
-        ic.size_signature().public_key(), crypto::STRING_STRING))
+    std::string str_size = base::itos_ull(ic.signed_size().data_size());
+    if (!co.AsymCheckSig(str_size, ic.signed_size().signature(),
+        ic.signed_size().public_key(), crypto::STRING_STRING))
       return;  // Contract was altered
     data->push_back(sc.pmid());
     data->push_back(sc.public_key());
     data->push_back(sc.public_key_signature());
-    *account_delta = ic.size_signature().data_size();
+    *account_delta = ic.signed_size().data_size();
   } else {
     std::string str_size = base::itos_ull(request->signed_size().data_size());
     if (!co.AsymCheckSig(str_size, request->signed_size().signature(),
