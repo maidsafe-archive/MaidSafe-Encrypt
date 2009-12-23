@@ -1424,7 +1424,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
       case 1:  // unsigned request
         store_contract = request.mutable_store_contract();
         inner_contract = store_contract->mutable_inner_contract();
-        signed_size = inner_contract->mutable_size_signature();
+        signed_size = inner_contract->mutable_signed_size();
         signed_size->set_data_size(chunk_size);
         signed_size->set_signature(size_sig);
         signed_size->set_pmid(client_pmid);
@@ -1578,7 +1578,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromReferenceList) {
 
   store_contract = add_request.mutable_store_contract();
   inner_contract = store_contract->mutable_inner_contract();
-  signed_size = inner_contract->mutable_size_signature();
+  signed_size = inner_contract->mutable_signed_size();
   signed_size->set_data_size(chunk_size);
   signed_size->set_signature(size_sig);
   signed_size->set_pmid(client_pmid);
