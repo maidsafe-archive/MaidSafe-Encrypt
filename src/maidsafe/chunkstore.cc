@@ -290,6 +290,13 @@ ChunkType ChunkStore::GetChunkType(const std::string &key,
 fs::path ChunkStore::GetChunkPath(const std::string &key,
                                   ChunkType type,
                                   bool create_path) {
+  if (key.size() != kKeySize) {
+#ifdef DEBUG
+    printf("In ChunkStore::GetChunkPath, %s has size %u, not %u\n",
+           HexSubstr(key).c_str(), key.size(), kKeySize);
+#endif
+    return fs::path("");
+  }
   path_map_iterator path_map_itr = path_map_.find(type);
   if (path_map_itr == path_map_.end()) {
 #ifdef DEBUG

@@ -511,18 +511,18 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                                  IfExists if_exists);
   virtual void AddSendChunkCopyTask(const StoreData &store_data);
   // Send AddToWatchList requests to each of the k Watch List holders.
-  void AddToWatchList(const StoreData &store_data,
-                      const StorePrepResponse &store_prep_response);
+  virtual void AddToWatchList(const StoreData &store_data,
+                              const StorePrepResponse &store_prep_response);
   // Send RemoveFromWatchList requests to each of the k Watch List holders.
   void RemoveFromWatchList(const StoreData &store_data);
   // Returns the current status of the task and sets *task to the task if found.
-  TaskStatus AssessTaskStatus(const StoreData &store_data,
-                              StoreTaskType task_type,
-                              StoreTask *task);
+  virtual TaskStatus AssessTaskStatus(const StoreData &store_data,
+                                      StoreTaskType task_type,
+                                      StoreTask *task);
   // Blocks until either we're online (returns true) or until task is cancelled
   // or finished (returns false)
-  bool WaitForOnline(const std::string &data_name,
-                     const StoreTaskType &task_type);
+  virtual bool WaitForOnline(const std::string &data_name,
+                             const StoreTaskType &task_type);
   // Set up the requests needed to perform the store RPCs.
   int GetStoreRequests(const StoreData &store_data,
                        const std::string &recipient_id,

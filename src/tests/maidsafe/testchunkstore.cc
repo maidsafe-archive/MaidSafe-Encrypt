@@ -407,6 +407,45 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreInit) {
   ASSERT_EQ(storedir.string(), chunkstore1->ChunkStoreDir());
 }
 
+TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreGetChunkPath) {
+  boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
+      storedir.string(), 1073741824, 0));
+  ASSERT_TRUE(chunkstore->Init());
+  test_chunkstore::WaitForInitialisation(chunkstore, 60000);
+  ASSERT_TRUE(chunkstore->is_initialised());
+  std::string test_chunk_name = cry_obj->Hash("test", "", crypto::STRING_STRING,
+                                              false);
+  fs::path test_chunk_path(storedir);
+  test_chunk_path /= "Hashable";
+  test_chunk_path /= "Normal";
+  test_chunk_path /= "e";
+  test_chunk_path /= "e";
+  test_chunk_path /= "2";
+  test_chunk_path /= base::EncodeToHex(test_chunk_name);
+  // Chunk name empty
+  ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath("",
+            (maidsafe::kHashable | maidsafe::kNormal), false));
+  ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath("",
+            (maidsafe::kHashable | maidsafe::kNormal), true));
+  // Chunk name not kKeySize in length
+  ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath("A",
+            (maidsafe::kHashable | maidsafe::kNormal), false));
+  ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath("A",
+            (maidsafe::kHashable | maidsafe::kNormal), true));
+  // Invalid chunk type
+  ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath(test_chunk_name, 3, false));
+  ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath(test_chunk_name, 3, true));
+  // Valid name, but chunk doesn't exist and create_path == false
+  ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath(test_chunk_name,
+            (maidsafe::kHashable | maidsafe::kNormal), false));
+  // All valid - if this fails, check permissions to create dir in /temp
+  ASSERT_EQ(test_chunk_path, chunkstore->GetChunkPath(test_chunk_name,
+            (maidsafe::kHashable | maidsafe::kNormal), true));
+  // OK now - chunk exists
+  ASSERT_EQ(test_chunk_path, chunkstore->GetChunkPath(test_chunk_name,
+            (maidsafe::kHashable | maidsafe::kNormal), false));
+}
+
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));

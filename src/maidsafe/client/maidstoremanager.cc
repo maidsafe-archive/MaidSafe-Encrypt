@@ -1016,8 +1016,10 @@ int MaidsafeStoreManager::SendChunk(const StoreData &store_data) {
            HexSubstr(store_data.non_hex_key_).c_str());
 #endif
     if (overall_result == kStoreTaskFinishedPass ||
-        overall_result == kStoreTaskFinishedFail)
+        overall_result == kStoreTaskFinishedFail) {
+          printf("Deleting task\n\n\n");
       tasks_handler_.DeleteTask(store_data.non_hex_key_, kStoreChunk, "");
+        }
     return result;
   }
   // Check task hasn't already been finished
@@ -1085,8 +1087,9 @@ int MaidsafeStoreManager::SendChunk(const StoreData &store_data) {
          HexSubstr(store_data.non_hex_key_).c_str(), task.success_count_ + 1);
 #endif
   if (overall_result == kStoreTaskFinishedPass ||
-      overall_result == kStoreTaskFinishedFail)
+      overall_result == kStoreTaskFinishedFail) {
     tasks_handler_.DeleteTask(store_data.non_hex_key_, kStoreChunk, "");
+      }
 // TODO(Fraser#5#): 2009-08-14 - Check later that there are enough vaults
 // listed in ref & watch lists to ensure upload ultimately successful.
   return kSuccess;
@@ -1134,15 +1137,22 @@ int MaidsafeStoreManager::GetStoreRequests(
   store_prep_request->set_chunkname(store_data.non_hex_key_);
   SignedSize *mutable_signed_size = store_prep_request->mutable_signed_size();
   mutable_signed_size->set_data_size(chunk_size);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(chunk_size), "",
-      store_data.private_key_, crypto::STRING_STRING));
   mutable_signed_size->set_pmid(non_hex_pmid);
-  mutable_signed_size->set_public_key(store_data.public_key_);
-  mutable_signed_size->set_public_key_signature(
-      store_data.public_key_signature_);
-  store_prep_request->set_request_signature(request_signature);
+  if (store_data.dir_type_ == ANONYMOUS) {
+    mutable_signed_size->set_signature(request_signature);
+    mutable_signed_size->set_public_key(" ");
+    mutable_signed_size->set_public_key_signature(" ");
+    store_prep_request->set_request_signature(request_signature);
+  } else {
+    crypto::Crypto co;
+    co.set_symm_algorithm(crypto::AES_256);
+    mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(chunk_size),
+        "", store_data.private_key_, crypto::STRING_STRING));
+    mutable_signed_size->set_public_key(store_data.public_key_);
+    mutable_signed_size->set_public_key_signature(
+        store_data.public_key_signature_);
+    store_prep_request->set_request_signature(request_signature);
+  }
   store_chunk_request->set_chunkname(store_data.non_hex_key_);
   store_chunk_request->set_data(chunk_content);
   store_chunk_request->set_pmid(non_hex_pmid);
@@ -1281,7 +1291,7 @@ void MaidsafeStoreManager::GetRequestSignature(
     const std::string &public_key_signature,
     const std::string &private_key,
     std::string *request_signature) {
-  *request_signature = "";
+  request_signature->clear();
   if (dir_type == ANONYMOUS) {
     *request_signature = kAnonymousRequestSignature;
   } else if (public_key == "" ||

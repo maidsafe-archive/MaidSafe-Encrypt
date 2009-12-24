@@ -209,6 +209,11 @@ class MaidStoreManagerTest : public testing::Test {
     client_chunkstore_ = boost::shared_ptr<ChunkStore>
         (new ChunkStore(client_chunkstore_dir_, 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
+    boost::uint64_t count(0);
+    while (count < 60000 && !client_chunkstore_->is_initialised()) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      count += 10;
+    }
   }
   virtual void TearDown() {}
 
@@ -240,13 +245,13 @@ class MockMsmKeyUnique : public MaidsafeStoreManager {
       const std::string &public_key,
       const std::string &public_key_signature,
       std::string *data));
-  MOCK_METHOD3(SendChunk, int(
-      const StoreData &store_data,
-      boost::shared_ptr<boost::condition_variable> cond_variable,
-      int copies));
+  MOCK_METHOD1(SendChunk, int(const StoreData &store_data));
   MOCK_METHOD2(UpdateChunkCopies, int(
       const StoreData &store_data,
       const std::vector<std::string> &chunk_holders_ids));
+  MOCK_METHOD2(AddToWatchList, void(
+      const StoreData &store_data,
+      const StorePrepResponse &store_prep_response));
 };
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
@@ -267,6 +272,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
 
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk) {
   MockMsmKeyUnique msm(client_chunkstore_);
+  ASSERT_TRUE(client_chunkstore_->is_initialised());
   std::string non_hex_key = crypto_.Hash("A", "", crypto::STRING_STRING, false);
   std::string hex_key = base::EncodeToHex(non_hex_key);
   // Set up data for calls to FindValue
@@ -345,11 +351,18 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk) {
                      testing::Field(&StoreData::private_key_,
                                     client_pmid_keys_.private_key()),
                      testing::Field(&StoreData::public_key_signature_,
-                                    client_pmid_public_signature_)),
-      testing::_,
-      kMinChunkCopies))
+                                    client_pmid_public_signature_))))
+          .WillOnce(testing::Return(kSuccess))  // Call 1
+          .WillOnce(testing::Return(kSuccess))  // Call 1
+          .WillOnce(testing::Return(kSuccess))  // Call 1
           .WillOnce(testing::Return(kSuccess))  // Call 1
           .WillOnce(testing::Return(-100))  // Call 4
+          .WillOnce(testing::Return(-100))  // Call 4
+          .WillOnce(testing::Return(-100))  // Call 4
+          .WillOnce(testing::Return(-100))  // Call 4
+          .WillOnce(testing::Return(-101))  // Call 15
+          .WillOnce(testing::Return(-101))  // Call 15
+          .WillOnce(testing::Return(-101))  // Call 15
           .WillOnce(testing::Return(-101));  // Call 15
   EXPECT_CALL(msm, UpdateChunkCopies(
       testing::AllOf(testing::Field(&StoreData::non_hex_key_, non_hex_key),
@@ -362,6 +375,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk) {
                                     client_pmid_public_signature_)),
       chunk_holders_ids))
           .WillOnce(testing::Return(-99));  // Call 2
+  EXPECT_CALL(msm, AddToWatchList(testing::_, testing::_)).Times(1);  // Call 9
 
   // Run test calls
   msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 1
@@ -379,6 +393,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk) {
   msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 13
   msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 14
   msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 15
+  // Allow time for AddToWatchList call
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
@@ -387,7 +403,6 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       crypto::STRING_STRING, false);
   StorePrepRequest store_prep_request;
   StoreChunkRequest store_chunk_request;
-/*  IOUDoneRequest iou_done_request;*/
   // Make chunk/packet names
   std::vector<std::string> names;
   for (int i = 100; i < 117; ++i) {
@@ -398,10 +413,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   // Check bad data - ensure existing parameters in requests are cleared
   store_prep_request.set_chunkname(names.at(0));
   store_chunk_request.set_chunkname(names.at(0));
-/*  iou_done_request.set_chunkname(names.at(0));*/
   ASSERT_NE("", store_prep_request.chunkname());
   ASSERT_NE("", store_chunk_request.chunkname());
-/*  ASSERT_NE("", iou_done_request.chunkname());*/
   std::string key_id2, public_key2, public_key_signature2, private_key2;
   msm.GetChunkSignatureKeys(PRIVATE, "", &key_id2, &public_key2,
       &public_key_signature2, &private_key2);
@@ -411,7 +424,6 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       recipient_id, &store_prep_request, &store_chunk_request));
   ASSERT_EQ("", store_prep_request.chunkname());
   ASSERT_EQ("", store_chunk_request.chunkname());
-/*  ASSERT_EQ("", iou_done_request.chunkname());*/
 
   // Check PRIVATE_SHARE chunk
   std::string msid_name = crypto_.Hash("b", "", crypto::STRING_STRING, true);
@@ -434,26 +446,30 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   std::string key_id3, public_key3, public_key_signature3, private_key3;
   msm.GetChunkSignatureKeys(PRIVATE_SHARE, msid_name, &key_id3, &public_key3,
       &public_key_signature3, &private_key3);
-  StoreData st_chunk_private_share(names.at(0), 10, (kHashable | kNormal),
+  StoreData st_chunk_private_share(names.at(0), 3, (kHashable | kOutgoing),
       PRIVATE_SHARE, msid_name, key_id3, public_key3, public_key_signature3,
       private_key3);
-  client_chunkstore_->AddChunkToOutgoing(names.at(0), std::string("100"));
+  ASSERT_EQ(kSuccess,
+      client_chunkstore_->AddChunkToOutgoing(names.at(0), std::string("100")));
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_private_share, recipient_id,
-      &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
+      &store_prep_request, &store_chunk_request));
   std::string public_key_signature = crypto_.AsymSign(rsakp.public_key(), "",
       rsakp.private_key(), crypto::STRING_STRING);
   std::string request_signature = crypto_.AsymSign(crypto_.Hash(
       public_key_signature + names.at(0) + recipient_id, "",
       crypto::STRING_STRING, false), "", rsakp.private_key(),
       crypto::STRING_STRING);
+  std::string size_signature = crypto_.AsymSign(base::itos_ull(3), "",
+      rsakp.private_key(), crypto::STRING_STRING);
 
   ASSERT_EQ(names.at(0), store_prep_request.chunkname());
-/*  ASSERT_EQ(size_t(3), store_prep_request.data_size());
-  ASSERT_EQ(client_pmid_, store_prep_request.pmid());
-  ASSERT_EQ(rsakp.public_key(), store_prep_request.public_key());
-  ASSERT_EQ(public_key_signature, store_prep_request.public_key_signature());
+  ASSERT_EQ(size_t(3), store_prep_request.signed_size().data_size());
+  ASSERT_EQ(client_pmid_, store_prep_request.signed_size().pmid());
+  ASSERT_EQ(rsakp.public_key(), store_prep_request.signed_size().public_key());
+  ASSERT_EQ(public_key_signature,
+      store_prep_request.signed_size().public_key_signature());
+  ASSERT_EQ(size_signature, store_prep_request.signed_size().signature());
   ASSERT_EQ(request_signature, store_prep_request.request_signature());
-*/
 
   ASSERT_EQ(names.at(0), store_chunk_request.chunkname());
   ASSERT_EQ("100", store_chunk_request.data());
@@ -463,17 +479,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   ASSERT_EQ(request_signature, store_chunk_request.request_signature());
   ASSERT_EQ(DATA, store_chunk_request.data_type());
 
-/*  ASSERT_EQ(names.at(0), iou_done_request.chunkname());
-  ASSERT_EQ(rsakp.public_key(), iou_done_request.public_key());
-  ASSERT_EQ(public_key_signature, iou_done_request.public_key_signature());
-  ASSERT_EQ(request_signature, iou_done_request.request_signature());
-*/
-
   // Check PUBLIC_SHARE chunk
   std::string key_id4, public_key4, public_key_signature4, private_key4;
   msm.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
       &public_key_signature4, &private_key4);
-  StoreData st_chunk_public_share_bad(names.at(1), 10, (kHashable | kNormal),
+  StoreData st_chunk_public_share_bad(names.at(1), 3, (kHashable | kOutgoing),
       PUBLIC_SHARE, "", key_id4, public_key4, public_key_signature4,
       private_key4);
   client_chunkstore_->AddChunkToOutgoing(names.at(1), std::string("101"));
@@ -499,7 +509,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       mpid_pub_sig);
   msm.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
       &public_key_signature4, &private_key4);
-  StoreData st_chunk_public_share_good(names.at(1), 10, (kHashable | kNormal),
+  StoreData st_chunk_public_share_good(names.at(1), 3, (kHashable | kOutgoing),
       PUBLIC_SHARE, "", key_id4, public_key4, public_key_signature4,
       private_key4);
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_public_share_good,
@@ -507,14 +517,17 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   request_signature = crypto_.AsymSign(crypto_.Hash(
       mpid_pub_sig + names.at(1) + recipient_id, "", crypto::STRING_STRING,
       false), "", mpid_pri, crypto::STRING_STRING);
+  size_signature = crypto_.AsymSign(base::itos_ull(3), "", mpid_pri,
+      crypto::STRING_STRING);
 
   ASSERT_EQ(names.at(1), store_prep_request.chunkname());
-/*  ASSERT_EQ(size_t(3), store_prep_request.data_size());
-  ASSERT_EQ(client_pmid_, store_prep_request.pmid());
-  ASSERT_EQ(mpid_pub, store_prep_request.public_key());
-  ASSERT_EQ(mpid_pub_sig, store_prep_request.public_key_signature());
+  ASSERT_EQ(size_t(3), store_prep_request.signed_size().data_size());
+  ASSERT_EQ(client_pmid_, store_prep_request.signed_size().pmid());
+  ASSERT_EQ(mpid_pub, store_prep_request.signed_size().public_key());
+  ASSERT_EQ(mpid_pub_sig,
+      store_prep_request.signed_size().public_key_signature());
+  ASSERT_EQ(size_signature, store_prep_request.signed_size().signature());
   ASSERT_EQ(request_signature, store_prep_request.request_signature());
-*/
 
   ASSERT_EQ(names.at(1), store_chunk_request.chunkname());
   ASSERT_EQ("101", store_chunk_request.data());
@@ -524,29 +537,24 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   ASSERT_EQ(request_signature, store_chunk_request.request_signature());
   ASSERT_EQ(DATA, store_chunk_request.data_type());
 
-/*  ASSERT_EQ(names.at(1), iou_done_request.chunkname());
-  ASSERT_EQ(mpid_pub, iou_done_request.public_key());
-  ASSERT_EQ(mpid_pub_sig, iou_done_request.public_key_signature());
-  ASSERT_EQ(request_signature, iou_done_request.request_signature());
-*/
-
   // Check ANONYMOUS chunk
   std::string key_id5, public_key5, public_key_signature5, private_key5;
   msm.GetChunkSignatureKeys(ANONYMOUS, "", &key_id5, &public_key5,
       &public_key_signature5, &private_key5);
-  StoreData st_chunk_anonymous(names.at(2), 10, (kHashable | kNormal),
+  StoreData st_chunk_anonymous(names.at(2), 3, (kHashable | kOutgoing),
       ANONYMOUS, "", key_id5, public_key5, public_key_signature5, private_key5);
   client_chunkstore_->AddChunkToOutgoing(names.at(2), std::string("102"));
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_anonymous, recipient_id,
       &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
 
   ASSERT_EQ(names.at(2), store_prep_request.chunkname());
-/*  ASSERT_EQ(size_t(3), store_prep_request.data_size());
-  ASSERT_EQ(client_pmid_, store_prep_request.pmid());
-  ASSERT_EQ(" ", store_prep_request.public_key());
-  ASSERT_EQ(" ", store_prep_request.public_key_signature());
+  ASSERT_EQ(size_t(3), store_prep_request.signed_size().data_size());
+  ASSERT_EQ(client_pmid_, store_prep_request.signed_size().pmid());
+  ASSERT_EQ(" ", store_prep_request.signed_size().public_key());
+  ASSERT_EQ(" ", store_prep_request.signed_size().public_key_signature());
+  ASSERT_EQ(kAnonymousRequestSignature,
+    store_prep_request.signed_size().signature());
   ASSERT_EQ(kAnonymousRequestSignature, store_prep_request.request_signature());
-*/
 
   ASSERT_EQ(names.at(2), store_chunk_request.chunkname());
   ASSERT_EQ("102", store_chunk_request.data());
@@ -557,33 +565,31 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
             store_chunk_request.request_signature());
   ASSERT_EQ(PDDIR_NOTSIGNED, store_chunk_request.data_type());
 
-/*  ASSERT_EQ(names.at(2), iou_done_request.chunkname());
-  ASSERT_EQ(" ", iou_done_request.public_key());
-  ASSERT_EQ(" ", iou_done_request.public_key_signature());
-  ASSERT_EQ(kAnonymousRequestSignature, iou_done_request.request_signature());
-*/
-
   // Check PRIVATE chunk
   std::string key_id6, public_key6, public_key_signature6, private_key6;
   msm.GetChunkSignatureKeys(PRIVATE, "", &key_id6, &public_key6,
       &public_key_signature6, &private_key6);
-  StoreData st_chunk_private(names.at(3), 10, (kHashable | kNormal), PRIVATE,
+  StoreData st_chunk_private(names.at(3), 3, (kHashable | kOutgoing), PRIVATE,
       "", key_id6, public_key6, public_key_signature6, private_key6);
   client_chunkstore_->AddChunkToOutgoing(names.at(3), std::string("103"));
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_private, recipient_id,
-      &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
+      &store_prep_request, &store_chunk_request));
   request_signature = crypto_.AsymSign(crypto_.Hash(
       client_pmid_public_signature_ + names.at(3) + recipient_id, "",
       crypto::STRING_STRING, false), "", client_pmid_keys_.private_key(),
       crypto::STRING_STRING);
+  size_signature = crypto_.AsymSign(base::itos_ull(3), "",
+      client_pmid_keys_.private_key(), crypto::STRING_STRING);
 
   ASSERT_EQ(names.at(3), store_prep_request.chunkname());
-/*  ASSERT_EQ(size_t(3), store_prep_request.data_size());
-  ASSERT_EQ(client_pmid_, store_prep_request.pmid());
-  ASSERT_EQ(client_pmid_keys_.public_key(), store_prep_request.public_key());
+  ASSERT_EQ(size_t(3), store_prep_request.signed_size().data_size());
+  ASSERT_EQ(client_pmid_, store_prep_request.signed_size().pmid());
+  ASSERT_EQ(client_pmid_keys_.public_key(),
+      store_prep_request.signed_size().public_key());
   ASSERT_EQ(client_pmid_public_signature_,
-      store_prep_request.public_key_signature());
-  ASSERT_EQ(request_signature, store_prep_request.request_signature());*/
+      store_prep_request.signed_size().public_key_signature());
+  ASSERT_EQ(size_signature, store_prep_request.signed_size().signature());
+  ASSERT_EQ(request_signature, store_prep_request.request_signature());
 
   ASSERT_EQ(names.at(3), store_chunk_request.chunkname());
   ASSERT_EQ("103", store_chunk_request.data());
@@ -593,12 +599,6 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       store_chunk_request.public_key_signature());
   ASSERT_EQ(request_signature, store_chunk_request.request_signature());
   ASSERT_EQ(DATA, store_chunk_request.data_type());
-
-/*  ASSERT_EQ(names.at(3), iou_done_request.chunkname());
-  ASSERT_EQ(client_pmid_keys_.public_key(), iou_done_request.public_key());
-  ASSERT_EQ(client_pmid_public_signature_,
-      iou_done_request.public_key_signature());
-  ASSERT_EQ(request_signature, iou_done_request.request_signature());*/
 
 //  // Check MID packet
 //  StoreData st_packet_mid(names.at(4), "104", MID, PRIVATE, "");
@@ -635,12 +635,6 @@ class MockClientRpcs : public ClientRpcs {
   MockClientRpcs(transport::Transport *transport,
                  rpcprotocol::ChannelManager *channel_manager)
                      : ClientRpcs(transport, channel_manager) {}
-/*  MOCK_METHOD6(StoreIOU, void(const kad::Contact &peer,
-                              bool local,
-                              StoreIOURequest *store_iou_request,
-                              StoreIOUResponse *store_iou_response,
-                              rpcprotocol::Controller *controller,
-                              google::protobuf::Closure *done));*/
   MOCK_METHOD6(GetPacket, void(const kad::Contact &peer,
                                bool local,
                                GetPacketRequest *get_request,
@@ -655,681 +649,19 @@ class MockClientRpcs : public ClientRpcs {
                                  google::protobuf::Closure *done));
 };
 
-class MockMsmStoreIOUs : public MaidsafeStoreManager {
- public:
-  explicit MockMsmStoreIOUs(boost::shared_ptr<ChunkStore> cstore)
-      : MaidsafeStoreManager(cstore) {}
-  ~MockMsmStoreIOUs() {
-    // Allow time for all RPCs to return as we can't cancel them
-    boost::this_thread::sleep(boost::posix_time::seconds(6));
-  }
-  MOCK_METHOD2(FindKNodes, int(const std::string &kad_key,
-                               std::vector<kad::Contact> *contacts));
-};
-
-/*TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs) {
-  MockMsmStoreIOUs msm(client_chunkstore_);
-  boost::shared_ptr<MockClientRpcs>
-      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
-  msm.SetMockRpcs(mock_rpcs);
-  std::string recipient_id = crypto_.Hash("RecipientID", "",
-      crypto::STRING_STRING, false);
-  // Set up k nodes as fake response to FindKNodes
-  std::vector<kad::Contact> ref_holders;
-  for (int i = 0; i < kad::K; ++i) {
-    std::string node_id(crypto_.Hash("Ref Holder " + base::itos(i), "",
-        crypto::STRING_STRING, false));
-    std::string host_ip("192.168.1." + base::itos(i));
-    boost::uint16_t host_port(5555 + i);
-    ref_holders.push_back(kad::Contact(node_id, host_ip, host_port));
-  }
-
-  // Set up StoreIOUs parameters common to all chunk types
-  boost::uint64_t chunk_size(4);
-  StorePrepResponse store_prep_response;
-  store_prep_response.set_result(kAck);
-  store_prep_response.set_pmid(recipient_id);
-  maidsafe::IOUAuthority iou_authority;
-  iou_authority.set_data_size(4);
-  iou_authority.set_pmid(recipient_id);
-  std::string iou_authority_str;
-  iou_authority.SerializeToString(&iou_authority_str);
-  store_prep_response.set_iou_authority(iou_authority_str);
-  crypto::RsaKeyPair rsakp;
-  rsakp.GenerateKeys(kRsaKeySize);
-  std::string signed_iou_authority_str = crypto_.AsymSign(
-      iou_authority_str, "", rsakp.private_key(), crypto::STRING_STRING);
-  store_prep_response.set_signed_iou_authority(signed_iou_authority_str);
-
-  // Set StoreIOUResponses
-  std::vector<StoreIOUResponse> store_iou_responses;
-  for (int j = 0; j < kad::K; ++j) {
-    StoreIOUResponse store_iou_response;
-    store_iou_response.set_result(kAck);
-    store_iou_response.set_pmid(ref_holders.at(j).node_id());
-    store_iou_responses.push_back(store_iou_response);
-  }
-  std::vector<StoreIOUResponse> failed_store_iou_responses;
-  StoreIOUResponse sir;
-  boost::uint16_t m(0);
-  while (true) {
-    sir.Clear();
-    sir.set_result(kAck);
-    failed_store_iou_responses.push_back(sir);
-    ++m;
-    if (m == kad::K)
-      break;
-    sir.set_pmid(crypto_.Hash("Rubbish", "", crypto::STRING_STRING, false));
-    failed_store_iou_responses.push_back(sir);
-    ++m;
-    if (m == kad::K)
-      break;
-    sir.Clear();
-    sir.set_result(kNack);
-    sir.set_pmid(ref_holders.at(m).node_id());
-    failed_store_iou_responses.push_back(sir);
-    ++m;
-    if (m == kad::K)
-      break;
-    sir.Clear();
-    sir.set_result(kBusy);
-    sir.set_pmid(ref_holders.at(m).node_id());
-    failed_store_iou_responses.push_back(sir);
-    ++m;
-    if (m == kad::K)
-      break;
-  }
-
-  // ********** PRIVATE_SHARE **********
-  // Set up StoreIOUs parameters for PRIVATE_SHARE chunk
-  std::string msid_name = crypto_.Hash("c", "", crypto::STRING_STRING, true);
-  rsakp.GenerateKeys(kRsaKeySize);
-  std::vector<std::string> attributes;
-  attributes.push_back("PrivateShare");
-  attributes.push_back(msid_name);
-  attributes.push_back(rsakp.public_key());
-  attributes.push_back(rsakp.private_key());
-  std::list<ShareParticipants> participants;
-  ShareParticipants sp;
-  sp.id = "spid";
-  sp.public_key = "pub_key";
-  sp.role = 'A';
-  participants.push_back(sp);
-  std::vector<boost::uint32_t> share_stats(2, 0);
-  ASSERT_EQ(kSuccess, SessionSingleton::getInstance()->
-      AddPrivateShare(attributes, share_stats, &participants));
-  std::string chunkname_private_share =
-      crypto_.Hash("ccc0", "", crypto::STRING_STRING, false);
-  std::string key_id1, public_key1, public_key_signature1, private_key1;
-  msm.GetChunkSignatureKeys(PRIVATE_SHARE, msid_name, &key_id1, &public_key1,
-      &public_key_signature1, &private_key1);
-  StoreData st_chunk_private_share(chunkname_private_share, PRIVATE_SHARE,
-      msid_name, key_id1, public_key1, public_key_signature1, private_key1);
-  client_chunkstore_->AddChunkToOutgoing(chunkname_private_share,
-      std::string("ccc0"));
-
-  // Create serialised IOU and signed requests to compare with generated ones
-  // for PRIVATE_SHARE chunk
-  IOU iou;
-  iou.set_serialised_iou_authority(iou_authority_str);
-  iou.set_signed_iou_authority(signed_iou_authority_str);
-  iou.set_signature(crypto_.AsymSign(iou.signed_iou_authority(), "",
-      client_pmid_keys_.private_key(), crypto::STRING_STRING));
-  std::string serialised_iou;
-  ASSERT_TRUE(iou.SerializeToString(&serialised_iou));
-  std::string public_key_signature = crypto_.AsymSign(rsakp.public_key(), "",
-      rsakp.private_key(), crypto::STRING_STRING);
-  std::vector<std::string> request_signatures_private_share;
-  for (int i = 0; i < kad::K; ++i) {
-    request_signatures_private_share.push_back(crypto_.AsymSign(crypto_.Hash(
-          public_key_signature + chunkname_private_share +
-          ref_holders.at(i).node_id(), "", crypto::STRING_STRING, false),
-          "", rsakp.private_key(), crypto::STRING_STRING));
-  }
-
-  // Set expectations for PRIVATE_SHARE chunk:
-  // FindKnodes fails the first twice and thereafter sets the reference holders
-  // to the vector created in the mock class above.
-  EXPECT_CALL(msm, FindKNodes(chunkname_private_share, testing::_))
-      .Times(5)
-      .WillOnce(testing::Return(1))
-      .WillOnce(testing::Return(-1))
-      .WillRepeatedly(DoAll(testing::SetArgumentPointee<1>(ref_holders),
-                            testing::Return(0)));
-  // For first kKadStoreThreshold_ - 1 StoreIOU RPCs, set result to kAck each
-  // time they are called.
-  for (int x = 0; x < msm.kKadStoreThreshold_ - 1; ++x) {
-    EXPECT_CALL(*mock_rpcs, StoreIOU(
-        ref_holders.at(x),
-        false,
-        testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                         recipient_id),
-                       testing::Property(&StoreIOURequest::iou, serialised_iou),
-                       testing::Property(&StoreIOURequest::own_pmid,
-                                         client_pmid_),
-                       testing::Property(&StoreIOURequest::public_key,
-                                         rsakp.public_key()),
-                       testing::Property(&StoreIOURequest::request_signature,
-                                         request_signatures_private_share.at(x))),
-        testing::_,
-        testing::_,
-        testing::_))
-            .Times(3)
-            .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
-                                      store_iou_responses.at(x)),
-                                  testing::WithArgs<5>(testing::Invoke(
-                  boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-  // For "kKadStoreThreshold_"th StoreIOU RPC, set result to kNack once and
-  // thereafter kAck.
-  EXPECT_CALL(*mock_rpcs, StoreIOU(
-      ref_holders.at(msm.kKadStoreThreshold_ - 1),
-      false,
-      testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                       recipient_id),
-                     testing::Property(&StoreIOURequest::iou, serialised_iou),
-                     testing::Property(&StoreIOURequest::own_pmid,
-                                       client_pmid_),
-                     testing::Property(&StoreIOURequest::public_key,
-                                       rsakp.public_key()),
-                     testing::Property(&StoreIOURequest::request_signature,
-                                       request_signatures_private_share.at(
-                                          msm.kKadStoreThreshold_ - 1))),
-      testing::_,
-      testing::_,
-      testing::_))
-          .Times(3)
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                              failed_store_iou_responses.at(
-                                  msm.kKadStoreThreshold_ - 1)),
-                          testing::WithArgs<5>(testing::Invoke(
-              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-          .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
-                                    store_iou_responses.at(
-                                        msm.kKadStoreThreshold_ - 1)),
-                                testing::WithArgs<5>(testing::Invoke(
-              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  // For remaining StoreIOU RPCs, set result to kNack twice and thereafter kAck.
-  for (int y = msm.kKadStoreThreshold_; y < kad::K; ++y) {
-    EXPECT_CALL(*mock_rpcs, StoreIOU(
-        ref_holders.at(y),
-        false,
-        testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                         recipient_id),
-                       testing::Property(&StoreIOURequest::iou, serialised_iou),
-                       testing::Property(&StoreIOURequest::own_pmid,
-                                         client_pmid_),
-                       testing::Property(&StoreIOURequest::public_key,
-                                         rsakp.public_key()),
-                       testing::Property(&StoreIOURequest::request_signature,
-                                         request_signatures_private_share.at(y))),
-        testing::_,
-        testing::_,
-        testing::_))
-            .Times(3)
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                failed_store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                failed_store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-
-  // ********** PUBLIC_SHARE **********
-  // Set up StoreIOUs parameters for PUBLIC_SHARE chunk
-  rsakp.GenerateKeys(kRsaKeySize);
-  std::string anmpid_pri = rsakp.private_key();
-  std::string anmpid_pub = rsakp.public_key();
-  std::string anmpid_pub_sig = crypto_.AsymSign(anmpid_pub, "", anmpid_pri,
-      crypto::STRING_STRING);
-  std::string anmpid_name = crypto_.Hash("Anmpid", "", crypto::STRING_STRING,
-      true);
-  SessionSingleton::getInstance()->AddKey(ANMPID, anmpid_name, anmpid_pri,
-      anmpid_pub, anmpid_pub_sig);
-  rsakp.GenerateKeys(kRsaKeySize);
-  std::string mpid_pri = rsakp.private_key();
-  std::string mpid_pub = rsakp.public_key();
-  std::string mpid_pub_sig = crypto_.AsymSign(mpid_pub, "",
-      anmpid_pri, crypto::STRING_STRING);
-  std::string mpid_name = crypto_.Hash("PublicName", "", crypto::STRING_STRING,
-      false);
-  std::string hex_mpid_name = base::EncodeToHex(mpid_name);
-  SessionSingleton::getInstance()->AddKey(MPID, hex_mpid_name, mpid_pri,
-      mpid_pub, mpid_pub_sig);
-  std::string chunkname_public_share =
-      crypto_.Hash("ccc1", "", crypto::STRING_STRING, false);
-  std::string key_id2, public_key2, public_key_signature2, private_key2;
-  msm.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id2, &public_key2,
-      &public_key_signature2, &private_key2);
-  StoreData st_chunk_public_share(chunkname_public_share, PUBLIC_SHARE, "",
-      key_id2, public_key2, public_key_signature2, private_key2);
-  client_chunkstore_->AddChunkToOutgoing(chunkname_public_share,
-      std::string("ccc1"));
-
-  // Create serialised IOU and signed requests to compare with generated ones
-  // for PUBLIC_SHARE chunk
-  iou.Clear();
-  iou.set_serialised_iou_authority(iou_authority_str);
-  iou.set_signed_iou_authority(signed_iou_authority_str);
-  iou.set_signature(crypto_.AsymSign(iou.signed_iou_authority(), "",
-      client_pmid_keys_.private_key(), crypto::STRING_STRING));
-  serialised_iou.clear();
-  ASSERT_TRUE(iou.SerializeToString(&serialised_iou));
-  std::vector<std::string> request_signatures_public_share;
-  for (int i = 0; i < kad::K; ++i) {
-    request_signatures_public_share.push_back(crypto_.AsymSign(crypto_.Hash(
-          mpid_pub_sig + chunkname_public_share + ref_holders.at(i).node_id(),
-          "", crypto::STRING_STRING, false), "", mpid_pri,
-          crypto::STRING_STRING));
-  }
-
-  // Set expectations for PUBLIC_SHARE chunk:
-  // FindKnodes sets the reference holders to the vector created in the mock
-  // class above.
-  EXPECT_CALL(msm, FindKNodes(chunkname_public_share, testing::_))
-      .Times(3)
-      .WillRepeatedly(DoAll(testing::SetArgumentPointee<1>(ref_holders),
-                            testing::Return(0)));
-  // For first kKadStoreThreshold_ - 1 StoreIOU RPCs, set result to kAck each
-  // time they are called.
-  for (int x = 0; x < msm.kKadStoreThreshold_ - 1; ++x) {
-    EXPECT_CALL(*mock_rpcs, StoreIOU(
-        ref_holders.at(x),
-        false,
-        testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                         recipient_id),
-                       testing::Property(&StoreIOURequest::iou, serialised_iou),
-                       testing::Property(&StoreIOURequest::own_pmid,
-                                         client_pmid_),
-                       testing::Property(&StoreIOURequest::public_key,
-                                         mpid_pub),
-                       testing::Property(&StoreIOURequest::request_signature,
-                                         request_signatures_public_share.at(x))),
-        testing::_,
-        testing::_,
-        testing::_))
-            .Times(3)
-            .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
-                                      store_iou_responses.at(x)),
-                                  testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-  // For "kKadStoreThreshold_"th StoreIOU RPC, set result to kNack once and
-  // thereafter kAck.
-  EXPECT_CALL(*mock_rpcs, StoreIOU(
-      ref_holders.at(msm.kKadStoreThreshold_ - 1),
-      false,
-      testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                       recipient_id),
-                     testing::Property(&StoreIOURequest::iou, serialised_iou),
-                     testing::Property(&StoreIOURequest::own_pmid,
-                                       client_pmid_),
-                     testing::Property(&StoreIOURequest::public_key,
-                                       mpid_pub),
-                     testing::Property(&StoreIOURequest::request_signature,
-                                       request_signatures_public_share.at(
-                                          msm.kKadStoreThreshold_ - 1))),
-      testing::_,
-      testing::_,
-      testing::_))
-          .Times(3)
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                              failed_store_iou_responses.at(
-                                  msm.kKadStoreThreshold_ - 1)),
-                          testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-          .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
-                                    store_iou_responses.at(
-                                        msm.kKadStoreThreshold_ - 1)),
-                                testing::WithArgs<5>(testing::Invoke(
-              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  // For remaining StoreIOU RPCs, set result to kNack twice and thereafter kAck.
-  for (int y = msm.kKadStoreThreshold_; y < kad::K; ++y) {
-    EXPECT_CALL(*mock_rpcs, StoreIOU(
-        ref_holders.at(y),
-        false,
-        testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                         recipient_id),
-                       testing::Property(&StoreIOURequest::iou, serialised_iou),
-                       testing::Property(&StoreIOURequest::own_pmid,
-                                         client_pmid_),
-                       testing::Property(&StoreIOURequest::public_key,
-                                         mpid_pub),
-                       testing::Property(&StoreIOURequest::request_signature,
-                                         request_signatures_public_share.at(y))),
-        testing::_,
-        testing::_,
-        testing::_))
-            .Times(3)
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                failed_store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                failed_store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-
-  // ********** ANONYMOUS **********
-  // Set up StoreIOUs parameters for ANONYMOUS chunk
-  std::string chunkname_anonymous =
-      crypto_.Hash("ccc2", "", crypto::STRING_STRING, false);
-  std::string key_id3, public_key3, public_key_signature3, private_key3;
-  msm.GetChunkSignatureKeys(ANONYMOUS, "", &key_id3, &public_key3,
-      &public_key_signature3, &private_key3);
-  StoreData st_chunk_anonymous(chunkname_anonymous, ANONYMOUS, "", key_id3,
-      public_key3, public_key_signature3, private_key3);
-  client_chunkstore_->AddChunkToOutgoing(chunkname_anonymous,
-      std::string("ccc2"));
-
-  // Create serialised IOU and signed requests to compare with generated ones
-  // for ANONYMOUS chunk
-  iou.Clear();
-  iou.set_serialised_iou_authority(iou_authority_str);
-  iou.set_signed_iou_authority(signed_iou_authority_str);
-  iou.set_signature(crypto_.AsymSign(iou.signed_iou_authority(), "",
-      client_pmid_keys_.private_key(), crypto::STRING_STRING));
-  serialised_iou.clear();
-  ASSERT_TRUE(iou.SerializeToString(&serialised_iou));
-
-  // Set expectations for ANONYMOUS chunk:
-  // FindKnodes sets the reference holders to the vector created in the mock
-  // class above.
-  EXPECT_CALL(msm, FindKNodes(chunkname_anonymous, testing::_))
-      .Times(3)
-      .WillRepeatedly(DoAll(testing::SetArgumentPointee<1>(ref_holders),
-                            testing::Return(0)));
-
-  // For first kKadStoreThreshold_ - 1 StoreIOU RPCs, set result to kAck each
-  // time they are called.
-  for (int x = 0; x < msm.kKadStoreThreshold_ - 1; ++x) {
-    EXPECT_CALL(*mock_rpcs, StoreIOU(
-        ref_holders.at(x),
-        false,
-        testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                         recipient_id),
-                       testing::Property(&StoreIOURequest::iou, serialised_iou),
-                       testing::Property(&StoreIOURequest::own_pmid,
-                                         client_pmid_),
-                       testing::Property(&StoreIOURequest::public_key, " "),
-                       testing::Property(&StoreIOURequest::request_signature,
-                                         kAnonymousRequestSignature)),
-        testing::_,
-        testing::_,
-        testing::_))
-            .Times(3)
-            .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
-                                      store_iou_responses.at(x)),
-                                  testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-  // For "kKadStoreThreshold_"th StoreIOU RPC, set result to kNack once and
-  // thereafter kAck.
-  EXPECT_CALL(*mock_rpcs, StoreIOU(
-      ref_holders.at(msm.kKadStoreThreshold_ - 1),
-      false,
-      testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                       recipient_id),
-                     testing::Property(&StoreIOURequest::iou, serialised_iou),
-                     testing::Property(&StoreIOURequest::own_pmid,
-                                       client_pmid_),
-                     testing::Property(&StoreIOURequest::public_key, " "),
-                     testing::Property(&StoreIOURequest::request_signature,
-                                       kAnonymousRequestSignature)),
-      testing::_,
-      testing::_,
-      testing::_))
-          .Times(3)
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                              failed_store_iou_responses.at(
-                                  msm.kKadStoreThreshold_ - 1)),
-                          testing::WithArgs<5>(testing::Invoke(
-              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-          .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
-                                    store_iou_responses.at(
-                                        msm.kKadStoreThreshold_ - 1)),
-                                testing::WithArgs<5>(testing::Invoke(
-              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  // For remaining StoreIOU RPCs, set result to kNack twice and thereafter kAck.
-  for (int y = msm.kKadStoreThreshold_; y < kad::K; ++y) {
-    EXPECT_CALL(*mock_rpcs, StoreIOU(
-        ref_holders.at(y),
-        false,
-        testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                         recipient_id),
-                       testing::Property(&StoreIOURequest::iou, serialised_iou),
-                       testing::Property(&StoreIOURequest::own_pmid,
-                                         client_pmid_),
-                       testing::Property(&StoreIOURequest::public_key, " "),
-                       testing::Property(&StoreIOURequest::request_signature,
-                                         kAnonymousRequestSignature)),
-        testing::_,
-        testing::_,
-        testing::_))
-            .Times(3)
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                failed_store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                failed_store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-
-  // ********** PRIVATE **********
-  // Set up StoreIOUs parameters for PRIVATE chunk
-  std::string chunkname_private =
-      crypto_.Hash("ccc3", "", crypto::STRING_STRING, false);
-  std::string key_id4, public_key4, public_key_signature4, private_key4;
-  msm.GetChunkSignatureKeys(PRIVATE, "", &key_id4, &public_key4,
-      &public_key_signature4, &private_key4);
-  StoreData st_chunk_private(chunkname_private, PRIVATE, "", key_id4,
-      public_key4, public_key_signature4, private_key4);
-  client_chunkstore_->AddChunkToOutgoing(chunkname_private,
-      std::string("ccc3"));
-
-  // Create serialised IOU and signed requests to compare with generated ones
-  // for PRIVATE chunk
-  iou.Clear();
-  iou.set_serialised_iou_authority(iou_authority_str);
-  iou.set_signed_iou_authority(signed_iou_authority_str);
-  iou.set_signature(crypto_.AsymSign(iou.signed_iou_authority(), "",
-      client_pmid_keys_.private_key(), crypto::STRING_STRING));
-  serialised_iou.clear();
-  ASSERT_TRUE(iou.SerializeToString(&serialised_iou));
-  std::vector<std::string> request_signatures_private;
-  for (int i = 0; i < kad::K; ++i) {
-    request_signatures_private.push_back(crypto_.AsymSign(crypto_.Hash(
-          client_pmid_public_signature_ + chunkname_private +
-          ref_holders.at(i).node_id(), "", crypto::STRING_STRING, false),
-          "", client_pmid_keys_.private_key(), crypto::STRING_STRING));
-  }
-
-  // Set expectations for PRIVATE chunk:
-  // FindKnodes sets the reference holders to the vector created in the mock
-  // class above.
-  EXPECT_CALL(msm, FindKNodes(chunkname_private, testing::_))
-      .Times(5)
-      .WillOnce(testing::Return(1))
-      .WillOnce(testing::Return(-1))
-      .WillRepeatedly(DoAll(testing::SetArgumentPointee<1>(ref_holders),
-                            testing::Return(0)));
-
-  // For first kKadStoreThreshold_ - 1 StoreIOU RPCs, set result to kAck each
-  // time they are called.
-  for (int x = 0; x < msm.kKadStoreThreshold_ - 1; ++x) {
-    EXPECT_CALL(*mock_rpcs, StoreIOU(
-        ref_holders.at(x),
-        false,
-        testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                         recipient_id),
-                       testing::Property(&StoreIOURequest::iou, serialised_iou),
-                       testing::Property(&StoreIOURequest::own_pmid,
-                                         client_pmid_),
-                       testing::Property(&StoreIOURequest::public_key,
-                                         client_pmid_keys_.public_key()),
-                       testing::Property(&StoreIOURequest::request_signature,
-                                         request_signatures_private.at(x))),
-        testing::_,
-        testing::_,
-        testing::_))
-            .Times(3)
-            .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
-                                      store_iou_responses.at(x)),
-                                  testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-  // For "kKadStoreThreshold_"th StoreIOU RPC, set result to kNack once and
-  // thereafter kAck.
-  EXPECT_CALL(*mock_rpcs, StoreIOU(
-      ref_holders.at(msm.kKadStoreThreshold_ - 1),
-      false,
-      testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                       recipient_id),
-                     testing::Property(&StoreIOURequest::iou, serialised_iou),
-                     testing::Property(&StoreIOURequest::own_pmid,
-                                       client_pmid_),
-                     testing::Property(&StoreIOURequest::public_key,
-                                       client_pmid_keys_.public_key()),
-                     testing::Property(&StoreIOURequest::request_signature,
-                                       request_signatures_private.at(
-                                          msm.kKadStoreThreshold_ - 1))),
-      testing::_,
-      testing::_,
-      testing::_))
-          .Times(3)
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                              failed_store_iou_responses.at(
-                                  msm.kKadStoreThreshold_ - 1)),
-                          testing::WithArgs<5>(testing::Invoke(
-              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-          .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(
-                                    store_iou_responses.at(
-                                        msm.kKadStoreThreshold_ - 1)),
-                                testing::WithArgs<5>(testing::Invoke(
-              boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  // For remaining StoreIOU RPCs, set result to kNack twice and thereafter kAck.
-  for (int y = msm.kKadStoreThreshold_; y < kad::K; ++y) {
-    EXPECT_CALL(*mock_rpcs, StoreIOU(
-        ref_holders.at(y),
-        false,
-        testing::AllOf(testing::Property(&StoreIOURequest::collector_pmid,
-                                         recipient_id),
-                       testing::Property(&StoreIOURequest::iou, serialised_iou),
-                       testing::Property(&StoreIOURequest::own_pmid,
-                                         client_pmid_),
-                       testing::Property(&StoreIOURequest::public_key,
-                                         client_pmid_keys_.public_key()),
-                       testing::Property(&StoreIOURequest::request_signature,
-                                         request_signatures_private.at(y))),
-        testing::_,
-        testing::_,
-        testing::_))
-            .Times(3)
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                failed_store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                failed_store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-                                store_iou_responses.at(y)),
-                            testing::WithArgs<5>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-
-  // Run test calls - sleeps allow all RPCs to return as we can't cancel them
-
-  // Fails due to FindKNodes return value of 1
-  ASSERT_EQ(kStoreIOUsFindNodesFailure, msm.StoreIOUs(st_chunk_private_share,
-      chunk_size, store_prep_response));
-  // Fails due to FindKNodes return value of -1
-  ASSERT_EQ(kStoreIOUsFindNodesFailure, msm.StoreIOUs(st_chunk_private_share,
-      chunk_size, store_prep_response));
-  // Fails due to insufficient successful StoreIOUs
-  ASSERT_EQ(kStoreIOUsFailure, msm.StoreIOUs(st_chunk_private_share, chunk_size,
-      store_prep_response));
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  // Just enough successful StoreIOUs return
-  ASSERT_EQ(kSuccess, msm.StoreIOUs(st_chunk_private_share, chunk_size,
-      store_prep_response));
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  // All StoreIOUs return success
-  ASSERT_EQ(kSuccess, msm.StoreIOUs(st_chunk_private_share, chunk_size,
-      store_prep_response));
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-
-  // Fails due to insufficient successful StoreIOUs
-  ASSERT_EQ(kStoreIOUsFailure, msm.StoreIOUs(st_chunk_public_share, chunk_size,
-      store_prep_response));
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  // Just enough successful StoreIOUs return
-  ASSERT_EQ(kSuccess, msm.StoreIOUs(st_chunk_public_share, chunk_size,
-      store_prep_response));
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  // All StoreIOUs return success
-  ASSERT_EQ(kSuccess, msm.StoreIOUs(st_chunk_public_share, chunk_size,
-      store_prep_response));
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-
-  // Fails due to insufficient successful StoreIOUs
-  ASSERT_EQ(kStoreIOUsFailure, msm.StoreIOUs(st_chunk_anonymous, chunk_size,
-      store_prep_response));
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  // Just enough successful StoreIOUs return
-  ASSERT_EQ(kSuccess, msm.StoreIOUs(st_chunk_anonymous, chunk_size,
-      store_prep_response));
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  // All StoreIOUs return success
-  ASSERT_EQ(kSuccess, msm.StoreIOUs(st_chunk_anonymous, chunk_size,
-      store_prep_response));
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-
-  // Fails due to FindKNodes return value of 1
-  ASSERT_EQ(kStoreIOUsFindNodesFailure, msm.StoreIOUs(st_chunk_private,
-      chunk_size, store_prep_response));
-  // Fails due to FindKNodes return value of -1
-  ASSERT_EQ(kStoreIOUsFindNodesFailure, msm.StoreIOUs(st_chunk_private,
-      chunk_size, store_prep_response));
-  // Fails due to insufficient successful StoreIOUs
-  ASSERT_EQ(kStoreIOUsFailure, msm.StoreIOUs(st_chunk_private, chunk_size,
-      store_prep_response));
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  // Just enough successful StoreIOUs return
-  ASSERT_EQ(kSuccess, msm.StoreIOUs(st_chunk_private, chunk_size,
-      store_prep_response));
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  // All StoreIOUs return success
-  ASSERT_EQ(kSuccess, msm.StoreIOUs(st_chunk_private, chunk_size,
-      store_prep_response));
-}
-*/
 class MockMsmSendChunk : public MaidsafeStoreManager {
  public:
   explicit MockMsmSendChunk(boost::shared_ptr<ChunkStore> cstore)
       : MaidsafeStoreManager(cstore) {}
+  MOCK_METHOD3(AssessTaskStatus, TaskStatus(const StoreData &store_data,
+                                            StoreTaskType task_type,
+                                            StoreTask *task));
   MOCK_METHOD4(GetStorePeer, int(const float &ideal_rtt,
                                  const std::vector<kad::Contact> &exclude,
                                  kad::Contact *new_peer,
                                  bool *local));
+  MOCK_METHOD2(WaitForOnline, bool(const std::string &data_name,
+                                   const StoreTaskType &task_type));
   MOCK_METHOD5(SendPrep, int(
       const kad::Contact &peer,
       bool local,
@@ -1341,14 +673,9 @@ class MockMsmSendChunk : public MaidsafeStoreManager {
       bool local,
       boost::shared_ptr<boost::condition_variable> cond_variable,
       StoreChunkRequest *store_chunk_request));
-  MOCK_METHOD3(StoreIOUs, int(const StoreData &store_data,
-                              const boost::uint64_t &chunk_size,
-                              const StorePrepResponse &store_prep_response));
-/*  MOCK_METHOD4(SendIOUDone, int(
-      const kad::Contact &peer,
-      bool local,
-      boost::shared_ptr<boost::condition_variable> cond_variable,
-      IOUDoneRequest *iou_done_request));*/
+  MOCK_METHOD2(AddToWatchList, void(
+      const StoreData &store_data,
+      const StorePrepResponse &store_prep_response));
   MOCK_METHOD3(SendPacketToKad, void(const StoreData &store_data,
                                      int *return_value,
                                      GenericConditionData *generic_cond_data));
@@ -1362,34 +689,115 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
   std::string key_id, public_key, public_key_signature, private_key;
   msm.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
       &public_key_signature, &private_key);
-  StoreData store_data(chunkname, 10, (kHashable | kNormal), PRIVATE, "",
+  StoreData store_data(chunkname, 3, (kHashable | kOutgoing), PRIVATE, "",
       key_id, public_key, public_key_signature, private_key);
-  boost::shared_ptr<boost::condition_variable>
-      cond_variable(new boost::condition_variable);
   std::string peername = crypto_.Hash("peer", "", crypto::STRING_STRING, false);
   kad::Contact peer(peername, "192.192.1.1", 9999);
-//  ON_CALL(msm, GetStorePeer(testing::_, testing::_, testing::_, testing::_))
-//      .WillByDefault(DoAll(testing::SetArgumentPointee<3>(true),
-//                           testing::Return(0)));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key_,
+      kStoreChunk, store_data.size_, kMinChunkCopies, kMaxStoreFailures));
+  StoreTask task(store_data.non_hex_key_, kStoreChunk, store_data.size_,
+      kMinChunkCopies, kMaxStoreFailures);  // For call 7
+  task.active_subtask_count_ = 1;  // For call 7
+  StoreTask task1(store_data.non_hex_key_, kStoreChunk, store_data.size_,
+      kMinChunkCopies, kMaxStoreFailures);  // For call 11
+  task1.success_count_ = 1;  // For call 11
+  StoreTask task2(store_data.non_hex_key_, kStoreChunk, store_data.size_,
+      kMinChunkCopies, kMaxStoreFailures);  // For call 12
+  task2.success_count_ = 2;  // For call 12
+  StoreTask task3(store_data.non_hex_key_, kStoreChunk, store_data.size_,
+      kMinChunkCopies, kMaxStoreFailures);  // For call 13
+  task3.success_count_ = 3;  // For call 13
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  EXPECT_CALL(msm, AssessTaskStatus(testing::_, kStoreChunk, testing::_))
+      .Times(21)
+      .WillOnce(testing::Return(kCompleted))  // Call 1
+      .WillOnce(testing::Return(kCancelled))  // Call 2
+      .WillOnce(testing::Return(kPending))  // Call 3
+      .WillOnce(testing::Return(kStarted))  // Call 4
+      .WillOnce(testing::Return(kStarted))  // Call 5
+      .WillOnce(testing::Return(kStarted))  // Call 6
+      .WillOnce(testing::Return(kCompleted))  // Call 6
+      .WillOnce(testing::Return(kStarted))  // Call 7
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task),
+          testing::Return(kCancelled)))  // Call 7
+      .WillOnce(testing::Return(kStarted))  // Call 8
+      .WillOnce(testing::Return(kStarted))  // Call 8
+      .WillOnce(testing::Return(kStarted))  // Call 9
+      .WillOnce(testing::Return(kStarted))  // Call 9
+      .WillOnce(testing::Return(kStarted))  // Call 10
+      .WillOnce(testing::Return(kStarted))  // Call 10
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task1),
+          testing::Return(kStarted)))  // Call 11
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task1),
+          testing::Return(kStarted)))  // Call 11
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task2),
+          testing::Return(kStarted)))  // Call 12
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task2),
+          testing::Return(kStarted)))  // Call 12
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task3),
+          testing::Return(kStarted)))  // Call 13
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task3),
+          testing::Return(kStarted)));  // Call 13
   EXPECT_CALL(msm, GetStorePeer(testing::_, testing::_, testing::_, testing::_))
-      .Times(10)
-      .WillOnce(testing::Return(1))
-      .WillOnce(testing::Return(-1))
+      .Times(11)
+      .WillOnce(testing::Return(kGetStorePeerError))  // Call 3
       .WillRepeatedly(DoAll(testing::SetArgumentPointee<2>(peer),
-                            testing::Return(0)));
-  EXPECT_CALL(msm, SendPrep(testing::_, testing::_, cond_variable, testing::_,
+                            testing::Return(kSuccess)));
+  EXPECT_CALL(msm, WaitForOnline(chunkname, kStoreChunk))
+      .Times(18)
+      .WillOnce(testing::Return(false))  // Call 4
+      .WillOnce(testing::Return(true))  // Call 5
+      .WillOnce(testing::Return(true))  // Call 6
+      .WillOnce(testing::Return(true))  // Call 7
+      .WillOnce(testing::Return(true))  // Call 8
+      .WillOnce(testing::Return(false))  // Call 8
+      .WillRepeatedly(testing::Return(true));
+  EXPECT_CALL(msm, SendPrep(testing::_, testing::_, testing::_, testing::_,
       testing::_))
-      .Times(8).WillOnce(testing::Return(1)).WillRepeatedly(testing::Return(0));
-  EXPECT_CALL(msm, SendContent(testing::_, testing::_, cond_variable,
-      testing::_))
-      .Times(7).WillOnce(testing::Return(1)).WillRepeatedly(testing::Return(0));
-  EXPECT_CALL(msm, StoreIOUs(testing::_, testing::_, testing::_))
-      .Times(6).WillOnce(testing::Return(1)).WillRepeatedly(testing::Return(0));
-/*  EXPECT_CALL(msm, SendIOUDone(testing::_, testing::_, cond_variable,
-      testing::_))
-      .Times(5).WillOnce(testing::Return(1)).WillRepeatedly(testing::Return(0));
-  ASSERT_EQ(kSuccess, msm.SendChunk(store_data, cond_variable, 4));*/
+      .Times(9)
+      .WillOnce(testing::Return(kSendPrepFailure))  // Call 5
+      .WillRepeatedly(testing::Return(kSuccess));
+  EXPECT_CALL(msm, SendContent(testing::_, testing::_, testing::_, testing::_))
+      .Times(7)
+      .WillOnce(testing::Return(kSendContentFailure))  // Call 9
+      .WillOnce(testing::Return(kSendContentFailure))  // Call 9
+      .WillOnce(testing::Return(kSendContentFailure))  // Call 10
+      .WillRepeatedly(testing::Return(kSuccess));
+  EXPECT_CALL(msm, AddToWatchList(testing::_, testing::_)).Times(1);  // Call 10
+
+  ASSERT_EQ(kStoreAlreadyCompleted, msm.SendChunk(store_data));  // Call 1
+  // The follwoing should cause the task to be removed
+  ASSERT_EQ(kStoreCancelled, msm.SendChunk(store_data));  // Call 2
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key_,
+      kStoreChunk, store_data.size_, kMinChunkCopies, kMaxStoreFailures));
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  ASSERT_EQ(kGetStorePeerError, msm.SendChunk(store_data));  // Call 3
+  ASSERT_EQ(kTaskCancelledOffline, msm.SendChunk(store_data));  // Call 4
+  ASSERT_EQ(kSendPrepFailure, msm.SendChunk(store_data));  // Call 5
+  // The following implies the task is deleted - so delete the task and restart
+  ASSERT_EQ(kStoreAlreadyCompleted, msm.SendChunk(store_data));  // Call 6
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.DeleteTask(store_data.non_hex_key_,
+      kStoreChunk, ""));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key_,
+      kStoreChunk, store_data.size_, kMinChunkCopies, kMaxStoreFailures));
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  // The following should cause the task to be removed
+  ASSERT_EQ(kStoreCancelled, msm.SendChunk(store_data));  // Call 7
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key_,
+      kStoreChunk, store_data.size_, kMinChunkCopies, kMaxStoreFailures));
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  ASSERT_EQ(kTaskCancelledOffline, msm.SendChunk(store_data));  // Call 8
+  ASSERT_EQ(kSendContentFailure, msm.SendChunk(store_data));  // Call 9
+  ASSERT_EQ(kSuccess, msm.SendChunk(store_data));  // Call 10
+  ASSERT_EQ(kSuccess, msm.SendChunk(store_data));  // Call 11
+  ASSERT_EQ(kSuccess, msm.SendChunk(store_data));  // Call 12
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  // The follwoing should cause the task to be removed
+  ASSERT_EQ(kSuccess, msm.SendChunk(store_data));  // Call 13
   boost::this_thread::sleep(boost::posix_time::seconds(10));
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePacket) {
@@ -1404,9 +812,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePacket) {
   std::string key_id, public_key, public_key_signature, private_key;
   msm.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
       &public_key_signature, &private_key);
-  StoreData store_task_hashable(packetname_hashable, 10, (kHashable | kNormal),
+  StoreData store_task_hashable(packetname_hashable, 8, (kHashable | kNormal),
       PRIVATE, "", key_id, public_key, public_key_signature, private_key);
-  StoreData store_task_non_hashable(packetname_non_hashable, 10,
+  StoreData store_task_non_hashable(packetname_non_hashable, 8,
       (kHashable | kNormal), PRIVATE, "", key_id, public_key,
       public_key_signature, private_key);
   boost::shared_ptr<boost::condition_variable>
