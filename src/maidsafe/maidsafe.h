@@ -305,13 +305,16 @@ const int kMaxChunkStoreTries(2);  // max number of tries to store or update a
 const boost::uint8_t kMaxStoreFailures(10);  // max number of failed store tries
 const boost::uint32_t kSaveUpdatesTrigger(10);  // max no of dbs in save queue
                                                  // before running save queue
-const int kMinSuccessfulPecentageOfUpdating(0.9);
+const double kMinSuccessfulPecentageOfUpdating(0.9);
 // max no of normal store worker threads running concurrently
 const size_t kMaxStoreThreads(5);
 // max no of priority store threads allowed over and above normal store threads
 const size_t kMaxPriorityStoreThreads(2);
 // port where the service to register a local vault is listening
 const boost::uint16_t kLocalPort = 5484;
+
+// additional PMIDs kept in watch lists
+const int kMaxReserveWatchListEntries = 8;
 
 namespace maidsafe {
 

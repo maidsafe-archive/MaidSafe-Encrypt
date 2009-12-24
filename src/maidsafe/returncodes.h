@@ -196,7 +196,11 @@ enum ReturnCode {
   kAccountDeleteFailed = -4503,
   kAccountWrongAccountField = -4504,
   kAccountEmptyAlert = -4505,
-  kAccountNotEnoughSpace = -4506
+  kAccountNotEnoughSpace = -4506,
+
+  // Watch List Handler
+  kWatchListInvalidChunkSize = -5501,
+  kWatchListInvalidName = -5502
 
   // Vault Buffer Packet Handler
 };
