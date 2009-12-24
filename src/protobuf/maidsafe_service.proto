@@ -14,8 +14,7 @@ service MaidsafeService {
   rpc RemoveFromReferenceList (RemoveFromReferenceListRequest) returns
       (RemoveFromReferenceListResponse);
   rpc AmendAccount (AmendAccountRequest) returns (AmendAccountResponse);
-  rpc GetAccountStatus (GetAccountStatusRequest) returns
-      (GetAccountStatusResponse);
+  rpc AccountStatus (AccountStatusRequest) returns (AccountStatusResponse);
   // check if a chunk exists
   rpc CheckChunk (CheckChunkRequest) returns (CheckChunkResponse);
   rpc GetChunk (GetChunkRequest) returns (GetChunkResponse);

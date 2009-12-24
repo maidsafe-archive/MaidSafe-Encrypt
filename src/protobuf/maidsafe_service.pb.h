@@ -82,9 +82,9 @@ class MaidsafeService : public ::google::protobuf::Service {
                        const ::maidsafe::AmendAccountRequest* request,
                        ::maidsafe::AmendAccountResponse* response,
                        ::google::protobuf::Closure* done);
-  virtual void GetAccountStatus(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::GetAccountStatusRequest* request,
-                       ::maidsafe::GetAccountStatusResponse* response,
+  virtual void AccountStatus(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::AccountStatusRequest* request,
+                       ::maidsafe::AccountStatusResponse* response,
                        ::google::protobuf::Closure* done);
   virtual void CheckChunk(::google::protobuf::RpcController* controller,
                        const ::maidsafe::CheckChunkRequest* request,
@@ -195,9 +195,9 @@ class MaidsafeService_Stub : public MaidsafeService {
                        const ::maidsafe::AmendAccountRequest* request,
                        ::maidsafe::AmendAccountResponse* response,
                        ::google::protobuf::Closure* done);
-  void GetAccountStatus(::google::protobuf::RpcController* controller,
-                       const ::maidsafe::GetAccountStatusRequest* request,
-                       ::maidsafe::GetAccountStatusResponse* response,
+  void AccountStatus(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::AccountStatusRequest* request,
+                       ::maidsafe::AccountStatusResponse* response,
                        ::google::protobuf::Closure* done);
   void CheckChunk(::google::protobuf::RpcController* controller,
                        const ::maidsafe::CheckChunkRequest* request,

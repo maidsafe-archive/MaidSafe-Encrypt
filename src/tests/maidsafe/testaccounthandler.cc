@@ -90,6 +90,12 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerModify) {
   ASSERT_EQ(amount, vault_space);
   ASSERT_EQ(boost::uint64_t(0), account_used);
 
+  ASSERT_EQ(kAccountNotEnoughSpace, ah.AmendAccount(pmid, 1, 1000, true));
+  ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
+  ASSERT_EQ(offer, offered);
+  ASSERT_EQ(amount, vault_space);
+  ASSERT_EQ(0, account_used);
+
   ASSERT_EQ(kAccountNotEnoughSpace, ah.AmendAccount(pmid, 2, 1501, true));
   ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
   ASSERT_EQ(offer, offered);

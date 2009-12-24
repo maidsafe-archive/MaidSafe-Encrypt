@@ -25,6 +25,7 @@
 #include <boost/lexical_cast.hpp>
 #include <gtest/gtest.h>
 #include <google/protobuf/descriptor.h>
+#include <maidsafe/crypto.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/vault/vaultchunkstore.h"
@@ -57,6 +58,10 @@ inline void CreateSignedRequest(const std::string &pub_key,
 }
 
 namespace maidsafe_vault {
+
+typedef std::map<std::string,
+                 boost::compressed_pair<std::string, boost::uint64_t>
+                > preps_received_map;
 
 class Callback {
  public:
@@ -174,6 +179,21 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest) {
                                                      "ghi", key, pmid));
 }
 
+TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateIdentity) {
+  std::string pub_key, priv_key, sig_pub_key;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  sig_pub_key = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
+  std::string pmid = co.Hash(pub_key + sig_pub_key, "", crypto::STRING_STRING,
+                     false);
+
+  ASSERT_FALSE(vault_service_->ValidateIdentity("", pub_key, sig_pub_key));
+  ASSERT_FALSE(vault_service_->ValidateIdentity(pmid, "", sig_pub_key));
+  ASSERT_FALSE(vault_service_->ValidateIdentity(pmid, pub_key, ""));
+  ASSERT_FALSE(vault_service_->ValidateIdentity("AAA", pub_key, sig_pub_key));
+  ASSERT_TRUE(vault_service_->ValidateIdentity(pmid, pub_key, sig_pub_key));
+}
+
 TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSystemPacket) {
   std::string pub_key, priv_key;
   CreateRSAKeys(&pub_key, &priv_key);
@@ -215,6 +235,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorable) {
   ASSERT_EQ(0, vault_service_->Storable(12345));
   ASSERT_EQ(0, vault_service_->Storable(kAvailableSpace));
   ASSERT_NE(0, vault_service_->Storable(kAvailableSpace + 1));
+  ASSERT_NE(0, vault_service_->Storable(0));
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesLocalStorage) {
@@ -268,7 +289,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 7; ++i) {
+  for (int i = 0; i < 8; ++i) {
+    printf("--- CASE #%i --- ", i);
     switch (i) {
       case 0:  // empty request
         break;
@@ -401,7 +423,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 2; ++i) {
+  for (int i = 0; i < 3; ++i) {
+    printf("--- CASE #%i --- ", i);
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -441,6 +464,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
 
   // invalid data for all data types
   for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
+    printf("--- CASE #%i --- ", i);
     request.set_data_type(data_type[i]);
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
@@ -455,12 +479,21 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
 
   // #1 make PendingOperationsHandler::FindOperation() fail
   // #2 actually store the chunk
-  // #3 try storing again, will make StoreChunkLocal() fail, but service wiil
+  // #3 try storing again, will make StoreChunkLocal() fail, but service will
   //    return overall success
   for (int i = 0; i < 3; ++i) {
+    printf("--- CASE #%i --- ", i);
     if (i > 0) {
-      EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunk_name, chunk_size, "",
-                                            "", 0, pub_key, STORE_ACCEPTED));
+      std::pair<std::string, boost::compressed_pair<std::string,
+                                                    boost::uint64_t> >
+          p(chunk_name, boost::compressed_pair<std::string,
+                                               boost::uint64_t>
+                                               (pmid, chunk_size));
+      std::pair<preps_received_map::iterator, bool> result =
+          vault_service_->prm_.insert(p);
+      EXPECT_TRUE(result.second);
+//      EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunk_name, chunk_size, "",
+//                                            "", 0, pub_key, STORE_ACCEPTED));
     }
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
@@ -471,12 +504,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
     } else {
       EXPECT_NE(kAck, static_cast<int>(response.result()));
     }
+    if (i == 1)
+      printf("\n");
     response.Clear();
   }
 
   // check success for all remaining data types
   for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
-    if (data_type[i] == maidsafe::DATA) continue;
+    printf("--- CASE #%i --- \n", i);
+    if (data_type[i] == maidsafe::DATA)
+      continue;
     request.set_data_type(data_type[i]);
 
     if (data_type[i] == maidsafe::PDDIR_SIGNED) {
@@ -497,8 +534,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
     request.set_public_key_signature(pub_key_sig);
     request.set_request_signature(req_sig);
 
-    EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunk_name, chunk_size, "",
-                                          "", 0, pub_key, STORE_ACCEPTED));
+    std::pair<std::string, boost::compressed_pair<std::string,
+                                                  boost::uint64_t> >
+        p(chunk_name, boost::compressed_pair<std::string,
+                                             boost::uint64_t>
+                                             (pmid, chunk_size));
+    std::pair<preps_received_map::iterator, bool> result =
+        vault_service_->prm_.insert(p);
+    EXPECT_TRUE(result.second);
+//    EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunk_name, chunk_size, "",
+//                                          "", 0, pub_key, STORE_ACCEPTED));
 
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
@@ -808,7 +853,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
 
   Callback cb_obj;
 
-  for (int i = 0; i <= 6; ++i) {
+  for (int i = 0; i < 7; ++i) {
+    printf("--- CASE #%i ---", i);
     switch (i) {
       case 0:  // empty request
         break;
@@ -902,6 +948,30 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // TODO(Steve) test SpaceOffered
   // TODO(Steve) test FailedStoreAgreement
 
+  // Create the account first
+  request.Clear();
+  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+                                    (&cb_obj, &Callback::CallbackFunction);
+  signed_size = request.mutable_signed_size();
+  signed_size->set_data_size(100);
+  std::string ser_size(base::itos_ull(signed_size->data_size()));
+  signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key,
+                             crypto::STRING_STRING));
+  signed_size->set_pmid(client_pmid);
+  signed_size->set_public_key(client_pub_key);
+  signed_size->set_public_key_signature(client_pub_key_sig);
+  request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+  request.set_pmid(client_pmid);
+  request.set_public_key(client_pub_key);
+  request.set_public_key_signature(client_pub_key_sig);
+  request.set_signature(co.AsymSign(signed_size->SerializeAsString(), "",
+                        client_priv_key, crypto::STRING_STRING));
+  request.clear_store_contract();
+  vault_service_->AmendAccount(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kAck, response.result());
+
+  request.Clear();
   request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceTakenInc);
   store_contract = request.mutable_store_contract();
   inner_contract = store_contract->mutable_inner_contract();
@@ -918,11 +988,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   store_contract->set_pmid(vlt_pmid);
   store_contract->set_public_key(vlt_pub_key);
   store_contract->set_public_key_signature(vlt_pub_key_sig);
-  request.set_signature(co.AsymSign(boost::lexical_cast<std::string>
-      (request.amendment_type()) + store_contract->SerializeAsString(), "",
-      wlh_priv_key, crypto::STRING_STRING));
+  request.set_pmid(wlh_pmid);
+  request.set_public_key(wlh_pub_key);
+  request.set_public_key_signature(wlh_pub_key_sig);
+  request.set_signature(co.AsymSign(store_contract->SerializeAsString(), "",
+                        wlh_priv_key, crypto::STRING_STRING));
 
-  maidsafe::GetAccountStatusRequest asreq;
+  maidsafe::AccountStatusRequest asreq;
   asreq.set_pmid(client_pmid);
   asreq.set_public_key(client_pub_key);
   asreq.set_public_key_signature(client_pub_key_sig);
@@ -932,77 +1004,166 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
 
   // current SpaceTaken should be 0
   {
-    maidsafe::GetAccountStatusResponse asrsp;
+    maidsafe::AccountStatusResponse asrsp;
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->GetAccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    ASSERT_TRUE(asrsp.IsInitialized());
+    ASSERT_EQ(kAck, asrsp.result());
+    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
+    printf("Passed getting status with 0 space taken.\n");
   }
 
   // increase SpaceTaken
   {
+    response.Clear();
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    response.Clear();
+    ASSERT_TRUE(response.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(response.result()));
+    printf("Passed incrementing space taken.\n");
   }
 
   // current SpaceTaken should be chunk_size
   {
-    maidsafe::GetAccountStatusResponse asrsp;
+    maidsafe::AccountStatusResponse asrsp;
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->GetAccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(chunk_size, asrsp.space_taken());
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    ASSERT_TRUE(asrsp.IsInitialized());
+    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(chunk_size, asrsp.space_taken());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
+    printf("Passed getting status with appropriate space taken.\n");
   }
 
   request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceTakenDec);
-  request.set_signature(co.AsymSign(boost::lexical_cast<std::string>
-      (request.amendment_type()) + store_contract->SerializeAsString(), "",
-      wlh_priv_key, crypto::STRING_STRING));
 
   // decrease SpaceTaken
   {
+    response.Clear();
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    response.Clear();
+    ASSERT_TRUE(response.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(response.result()));
+    printf("Passed decrementing space taken.\n");
   }
 
   // current SpaceTaken should be 0
   {
-    maidsafe::GetAccountStatusResponse asrsp;
+    maidsafe::AccountStatusResponse asrsp;
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->GetAccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    ASSERT_TRUE(asrsp.IsInitialized());
+    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
+    printf("Passed getting status with 0 space taken.\n");
   }
 
   // decrease SpaceTaken again, should fail
   {
+    response.Clear();
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
+    ASSERT_TRUE(response.IsInitialized());
+    ASSERT_EQ(kNack, static_cast<int>(response.result()));
+    printf("Correctly failed decrement.\n");
   }
 
   // current SpaceTaken should still be 0
   {
-    maidsafe::GetAccountStatusResponse asrsp;
+    maidsafe::AccountStatusResponse asrsp;
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->GetAccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    ASSERT_TRUE(asrsp.IsInitialized());
+    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
+    printf("Passed getting status with 0 space taken.\n");
+  }
+
+  request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+
+  // increase SpaceGiven
+  {
+    response.Clear();
+    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+        (&cb_obj, &Callback::CallbackFunction);
+    vault_service_->AmendAccount(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(response.result()));
+    printf("Correctly decremented space given.\n");
+  }
+
+  // current SpaceGiven should be chunk_size
+  {
+    maidsafe::AccountStatusResponse asrsp;
+    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+        (&cb_obj, &Callback::CallbackFunction);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    ASSERT_TRUE(asrsp.IsInitialized());
+    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    ASSERT_EQ(chunk_size, asrsp.space_given());
+    printf("Passed getting status with appropriate space taken.\n");
+  }
+
+  request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenDec);
+
+  // decrease SpaceGiven
+  {
+    response.Clear();
+    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+        (&cb_obj, &Callback::CallbackFunction);
+    vault_service_->AmendAccount(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(response.result()));
+    printf("Correctly decremented space given.\n");
+  }
+
+  // current SpaceGiven should still be 0
+  {
+    maidsafe::AccountStatusResponse asrsp;
+    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+        (&cb_obj, &Callback::CallbackFunction);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    ASSERT_TRUE(asrsp.IsInitialized());
+    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
+    printf("Passed getting status with 0 space given.\n");
+  }
+
+  // decrease SpaceGiven again, should fail
+  {
+    response.Clear();
+    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+        (&cb_obj, &Callback::CallbackFunction);
+    vault_service_->AmendAccount(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    ASSERT_EQ(kNack, static_cast<int>(response.result()));
+    printf("Correctly failed decrement of space given.\n");
+  }
+
+  // current SpaceGiven should still be 0
+  {
+    maidsafe::AccountStatusResponse asrsp;
+    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+        (&cb_obj, &Callback::CallbackFunction);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    ASSERT_TRUE(asrsp.IsInitialized());
+    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
+    printf("Passed getting status with 0 space given.\n");
   }
 }
 
@@ -1137,7 +1298,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   store_contract->set_public_key(vlt_pub_key);
   store_contract->set_public_key_signature(vlt_pub_key_sig);
 
-  maidsafe::GetAccountStatusRequest asreq;
+  maidsafe::AccountStatusRequest asreq;
   asreq.set_pmid(client_pmid);
   asreq.set_public_key(client_pub_key);
   asreq.set_public_key_signature(client_pub_key_sig);
@@ -1147,10 +1308,10 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
 
   // SpaceTaken should be 0
   {
-    maidsafe::GetAccountStatusResponse asrsp;
+    maidsafe::AccountStatusResponse asrsp;
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->GetAccountStatus(&controller, &asreq, &asrsp, done);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     EXPECT_TRUE(asrsp.IsInitialized());
     EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
   }
@@ -1167,10 +1328,10 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
 
   // SpaceTaken should be four times the chunk size
   {
-    maidsafe::GetAccountStatusResponse asrsp;
+    maidsafe::AccountStatusResponse asrsp;
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
-    vault_service_->GetAccountStatus(&controller, &asreq, &asrsp, done);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     EXPECT_TRUE(asrsp.IsInitialized());
     EXPECT_EQ(4 * chunk_size, asrsp.space_taken());
   }
@@ -1199,7 +1360,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
 
   std::string client_pub_key[5], client_priv_key[5], client_pmid[5],
               client_pub_key_sig[5];
-  maidsafe::GetAccountStatusRequest client_asreq[5];
+  maidsafe::AccountStatusRequest client_asreq[5];
 
   Callback cb_obj;
 
@@ -1273,22 +1434,22 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
 
     // check SpaceTaken for #i except #0
     if (i > 0) {
-      maidsafe::GetAccountStatusResponse asrsp;
+      maidsafe::AccountStatusResponse asrsp;
       google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
           (&cb_obj, &Callback::CallbackFunction);
-      vault_service_->GetAccountStatus(&controller, &client_asreq[i], &asrsp,
-                                       done);
+      vault_service_->AccountStatus(&controller, &client_asreq[i], &asrsp,
+                                    done);
       EXPECT_TRUE(asrsp.IsInitialized());
       EXPECT_EQ(chunk_size, asrsp.space_taken());
     }
 
     // check SpaceTaken for #0
     {
-      maidsafe::GetAccountStatusResponse asrsp;
+      maidsafe::AccountStatusResponse asrsp;
       google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
           (&cb_obj, &Callback::CallbackFunction);
-      vault_service_->GetAccountStatus(&controller, &client_asreq[0], &asrsp,
-                                       done);
+      vault_service_->AccountStatus(&controller, &client_asreq[0], &asrsp,
+                                    done);
       EXPECT_TRUE(asrsp.IsInitialized());
       if (i <= 3)
         EXPECT_EQ((4 - i) * chunk_size, asrsp.space_taken());
@@ -1362,11 +1523,11 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
 
     // check SpaceTaken for #i
     {
-      maidsafe::GetAccountStatusResponse asrsp;
+      maidsafe::AccountStatusResponse asrsp;
       google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
           (&cb_obj, &Callback::CallbackFunction);
-      vault_service_->GetAccountStatus(&controller, &client_asreq[i], &asrsp,
-                                       done);
+      vault_service_->AccountStatus(&controller, &client_asreq[i], &asrsp,
+                                    done);
       EXPECT_TRUE(asrsp.IsInitialized());
       if (i == 0 || i == 4)
         EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());

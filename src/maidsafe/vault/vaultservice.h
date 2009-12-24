@@ -118,6 +118,10 @@ class VaultService : public maidsafe::MaidsafeService {
                             const maidsafe::AmendAccountRequest* request,
                             maidsafe::AmendAccountResponse* response,
                             google::protobuf::Closure* done);
+  virtual void AccountStatus(google::protobuf::RpcController* controller,
+                             const maidsafe::AccountStatusRequest* request,
+                             maidsafe::AccountStatusResponse* response,
+                             google::protobuf::Closure* done);
 
   // BP services
   virtual void CreateBP(google::protobuf::RpcController* controller,
@@ -139,10 +143,12 @@ class VaultService : public maidsafe::MaidsafeService {
 
  private:
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateIdentity);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSystemPacket);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateDataChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesStorable);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesLocalStorage);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesStoreChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesDeleteChunk);
@@ -154,15 +160,17 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetPacket);
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
-  void ExtractDataFromAmmendRequest(
-      const maidsafe::AmendAccountRequest* request,
-      std::vector<std::string> *data,
-      boost::uint64_t *account_delta);
+  bool ValidateAmmendRequest(const maidsafe::AmendAccountRequest* request,
+                             boost::uint64_t *account_delta,
+                             std::string *pmid);
   bool ValidateSignedRequest(const std::string &public_key,
                              const std::string &public_key_signature,
                              const std::string &request_signature,
                              const std::string &key,
                              const std::string &pmid);
+  bool ValidateIdentity(const std::string &id,
+                        const std::string &public_key,
+                        const std::string &public_key_signature);
   bool ValidateSystemPacket(const std::string &ser_content,
                             const std::string &public_key);
   bool ValidateSystemPacket(const maidsafe::GenericPacket &gp,

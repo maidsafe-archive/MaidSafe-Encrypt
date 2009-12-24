@@ -53,7 +53,7 @@ void protobuf_AddDesc_maidsafe_5fservice_2eproto() {
   ::maidsafe::protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\026maidsafe_service.proto\022\010maidsafe\032\037maid"
-    "safe_service_messages.proto2\241\r\n\017Maidsafe"
+    "safe_service_messages.proto2\230\r\n\017Maidsafe"
     "Service\022D\n\tStorePrep\022\032.maidsafe.StorePre"
     "pRequest\032\033.maidsafe.StorePrepResponse\022G\n"
     "\nStoreChunk\022\033.maidsafe.StoreChunkRequest"
@@ -71,36 +71,35 @@ void protobuf_AddDesc_maidsafe_5fservice_2eproto() {
     "erenceListRequest\032).maidsafe.RemoveFromR"
     "eferenceListResponse\022M\n\014AmendAccount\022\035.m"
     "aidsafe.AmendAccountRequest\032\036.maidsafe.A"
-    "mendAccountResponse\022Y\n\020GetAccountStatus\022"
-    "!.maidsafe.GetAccountStatusRequest\032\".mai"
-    "dsafe.GetAccountStatusResponse\022G\n\nCheckC"
-    "hunk\022\033.maidsafe.CheckChunkRequest\032\034.maid"
-    "safe.CheckChunkResponse\022A\n\010GetChunk\022\031.ma"
-    "idsafe.GetChunkRequest\032\032.maidsafe.GetChu"
-    "nkResponse\022D\n\tGetPacket\022\032.maidsafe.GetPa"
-    "cketRequest\032\033.maidsafe.GetPacketResponse"
-    "\022J\n\013UpdateChunk\022\034.maidsafe.UpdateChunkRe"
-    "quest\032\035.maidsafe.UpdateChunkResponse\022J\n\013"
-    "DeleteChunk\022\034.maidsafe.DeleteChunkReques"
-    "t\032\035.maidsafe.DeleteChunkResponse\022P\n\rVali"
-    "dityCheck\022\036.maidsafe.ValidityCheckReques"
-    "t\032\037.maidsafe.ValidityCheckResponse\022D\n\tSw"
-    "apChunk\022\032.maidsafe.SwapChunkRequest\032\033.ma"
-    "idsafe.SwapChunkResponse\022J\n\013VaultStatus\022"
-    "\034.maidsafe.VaultStatusRequest\032\035.maidsafe"
-    ".VaultStatusResponse\022A\n\010CreateBP\022\031.maids"
-    "afe.CreateBPRequest\032\032.maidsafe.CreateBPR"
-    "esponse\022M\n\014ModifyBPInfo\022\035.maidsafe.Modif"
-    "yBPInfoRequest\032\036.maidsafe.ModifyBPInfoRe"
-    "sponse\022P\n\rGetBPMessages\022\036.maidsafe.GetBP"
-    "MessagesRequest\032\037.maidsafe.GetBPMessages"
-    "Response\022M\n\014AddBPMessage\022\035.maidsafe.AddB"
-    "PMessageRequest\032\036.maidsafe.AddBPMessageR"
-    "esponse2\233\001\n\021VaultRegistration\022A\n\010OwnVaul"
-    "t\022\031.maidsafe.OwnVaultRequest\032\032.maidsafe."
-    "OwnVaultResponse\022C\n\014IsVaultOwned\022\030.maids"
-    "afe.IsOwnedRequest\032\031.maidsafe.IsOwnedRes"
-    "ponse", 1925);
+    "mendAccountResponse\022P\n\rAccountStatus\022\036.m"
+    "aidsafe.AccountStatusRequest\032\037.maidsafe."
+    "AccountStatusResponse\022G\n\nCheckChunk\022\033.ma"
+    "idsafe.CheckChunkRequest\032\034.maidsafe.Chec"
+    "kChunkResponse\022A\n\010GetChunk\022\031.maidsafe.Ge"
+    "tChunkRequest\032\032.maidsafe.GetChunkRespons"
+    "e\022D\n\tGetPacket\022\032.maidsafe.GetPacketReque"
+    "st\032\033.maidsafe.GetPacketResponse\022J\n\013Updat"
+    "eChunk\022\034.maidsafe.UpdateChunkRequest\032\035.m"
+    "aidsafe.UpdateChunkResponse\022J\n\013DeleteChu"
+    "nk\022\034.maidsafe.DeleteChunkRequest\032\035.maids"
+    "afe.DeleteChunkResponse\022P\n\rValidityCheck"
+    "\022\036.maidsafe.ValidityCheckRequest\032\037.maids"
+    "afe.ValidityCheckResponse\022D\n\tSwapChunk\022\032"
+    ".maidsafe.SwapChunkRequest\032\033.maidsafe.Sw"
+    "apChunkResponse\022J\n\013VaultStatus\022\034.maidsaf"
+    "e.VaultStatusRequest\032\035.maidsafe.VaultSta"
+    "tusResponse\022A\n\010CreateBP\022\031.maidsafe.Creat"
+    "eBPRequest\032\032.maidsafe.CreateBPResponse\022M"
+    "\n\014ModifyBPInfo\022\035.maidsafe.ModifyBPInfoRe"
+    "quest\032\036.maidsafe.ModifyBPInfoResponse\022P\n"
+    "\rGetBPMessages\022\036.maidsafe.GetBPMessagesR"
+    "equest\032\037.maidsafe.GetBPMessagesResponse\022"
+    "M\n\014AddBPMessage\022\035.maidsafe.AddBPMessageR"
+    "equest\032\036.maidsafe.AddBPMessageResponse2\233"
+    "\001\n\021VaultRegistration\022A\n\010OwnVault\022\031.maids"
+    "afe.OwnVaultRequest\032\032.maidsafe.OwnVaultR"
+    "esponse\022C\n\014IsVaultOwned\022\030.maidsafe.IsOwn"
+    "edRequest\032\031.maidsafe.IsOwnedResponse", 1916);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_maidsafe_5fservice_2eproto);
@@ -192,11 +191,11 @@ void MaidsafeService::AmendAccount(::google::protobuf::RpcController* controller
   done->Run();
 }
 
-void MaidsafeService::GetAccountStatus(::google::protobuf::RpcController* controller,
-                         const ::maidsafe::GetAccountStatusRequest*,
-                         ::maidsafe::GetAccountStatusResponse*,
+void MaidsafeService::AccountStatus(::google::protobuf::RpcController* controller,
+                         const ::maidsafe::AccountStatusRequest*,
+                         ::maidsafe::AccountStatusResponse*,
                          ::google::protobuf::Closure* done) {
-  controller->SetFailed("Method GetAccountStatus() not implemented.");
+  controller->SetFailed("Method AccountStatus() not implemented.");
   done->Run();
 }
 
@@ -352,9 +351,9 @@ void MaidsafeService::CallMethod(const ::google::protobuf::MethodDescriptor* met
              done);
       break;
     case 8:
-      GetAccountStatus(controller,
-             ::google::protobuf::down_cast<const ::maidsafe::GetAccountStatusRequest*>(request),
-             ::google::protobuf::down_cast< ::maidsafe::GetAccountStatusResponse*>(response),
+      AccountStatus(controller,
+             ::google::protobuf::down_cast<const ::maidsafe::AccountStatusRequest*>(request),
+             ::google::protobuf::down_cast< ::maidsafe::AccountStatusResponse*>(response),
              done);
       break;
     case 9:
@@ -456,7 +455,7 @@ const ::google::protobuf::Message& MaidsafeService::GetRequestPrototype(
     case 7:
       return ::maidsafe::AmendAccountRequest::default_instance();
     case 8:
-      return ::maidsafe::GetAccountStatusRequest::default_instance();
+      return ::maidsafe::AccountStatusRequest::default_instance();
     case 9:
       return ::maidsafe::CheckChunkRequest::default_instance();
     case 10:
@@ -508,7 +507,7 @@ const ::google::protobuf::Message& MaidsafeService::GetResponsePrototype(
     case 7:
       return ::maidsafe::AmendAccountResponse::default_instance();
     case 8:
-      return ::maidsafe::GetAccountStatusResponse::default_instance();
+      return ::maidsafe::AccountStatusResponse::default_instance();
     case 9:
       return ::maidsafe::CheckChunkResponse::default_instance();
     case 10:
@@ -606,9 +605,9 @@ void MaidsafeService_Stub::AmendAccount(::google::protobuf::RpcController* contr
   channel_->CallMethod(descriptor()->method(7),
                        controller, request, response, done);
 }
-void MaidsafeService_Stub::GetAccountStatus(::google::protobuf::RpcController* controller,
-                              const ::maidsafe::GetAccountStatusRequest* request,
-                              ::maidsafe::GetAccountStatusResponse* response,
+void MaidsafeService_Stub::AccountStatus(::google::protobuf::RpcController* controller,
+                              const ::maidsafe::AccountStatusRequest* request,
+                              ::maidsafe::AccountStatusResponse* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(8),
                        controller, request, response, done);

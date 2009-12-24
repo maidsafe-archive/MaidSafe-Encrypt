@@ -144,8 +144,11 @@ message AmendAccountRequest {
   required Amendment amendment_type = 1;
   required bytes signature = 2;  // whichever optional field below is provided
                                  // serialised & signed by message sender's PMID
-  optional SignedSize signed_size = 3;
-  optional StoreContract store_contract = 4;
+  required bytes pmid = 3;  // vault's PMID
+  required bytes public_key = 4;
+  required bytes public_key_signature = 5;
+  optional SignedSize signed_size = 6;
+  optional StoreContract store_contract = 7;
 }
 
 message AmendAccountResponse {
@@ -153,17 +156,19 @@ message AmendAccountResponse {
   optional bytes pmid = 2;  // account holder's PMID
 }
 
-message GetAccountStatusRequest {
+message AccountStatusRequest {
   required bytes pmid = 1;
   optional bytes public_key = 2;
   optional bytes public_key_signature = 3;
   optional bytes request_signature = 4;
 }
 
-message GetAccountStatusResponse {
-  optional uint64 space_offered = 1;
-  optional uint64 space_given = 2;
-  optional uint64 space_taken = 3;
+message AccountStatusResponse {
+  required bytes pmid = 1;
+  required uint32 result = 2;
+  optional uint64 space_offered = 3;
+  optional uint64 space_given = 4;
+  optional uint64 space_taken = 5;
 }
 
 message CheckChunkRequest {
