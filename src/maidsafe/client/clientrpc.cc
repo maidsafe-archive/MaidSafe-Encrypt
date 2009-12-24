@@ -150,8 +150,8 @@ void ClientRpcs::AmendAccount(const kad::Contact &peer,
 void ClientRpcs::GetAccountStatus(
     const kad::Contact &peer,
     bool local,
-    GetAccountStatusRequest *get_account_status_request,
-    GetAccountStatusResponse *get_account_status_response,
+    AccountStatusRequest *get_account_status_request,
+    AccountStatusResponse *get_account_status_response,
     rpcprotocol::Controller *controller,
     google::protobuf::Closure *done) {
   std::string local_ip;
@@ -164,7 +164,7 @@ void ClientRpcs::GetAccountStatus(
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.GetAccountStatus(controller, get_account_status_request,
+  service.AccountStatus(controller, get_account_status_request,
                            get_account_status_response, done);
 }
 

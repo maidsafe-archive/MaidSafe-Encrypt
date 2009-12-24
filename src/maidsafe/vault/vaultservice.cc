@@ -80,7 +80,7 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
   response_sc->set_public_key_signature(pmid_public_signature_);
   maidsafe::StoreContract::InnerContract *response_ic =
       response_sc->mutable_inner_contract();
-  maidsafe::SignedSize *response_sz = response_ic->mutable_size_signature();
+  maidsafe::SignedSize *response_sz = response_ic->mutable_signed_size();
   const maidsafe::SignedSize &request_sz = request->signed_size();
   response_sz->set_data_size(request_sz.data_size());
   response_sz->set_pmid(request_sz.pmid());
@@ -1444,13 +1444,14 @@ bool VaultService::ValidateAmmendRequest(
       return false;
     if (ic.result() != kAck)
       return false;
-    sz = ic.size_signature();
+    sz = ic.signed_size();
   } else {
     sz = request->signed_size();
   }
-  if (request->amendment_type() == AmendAccountRequest::kSpaceOffered) {
+  if (request->amendment_type() ==
+      maidsafe::AmendAccountRequest::kSpaceOffered) {
     if (request->pmid() != sz.pmid() ||
-        request->public_key() != sz.public_key()) ||
+        request->public_key() != sz.public_key() ||
         request->public_key_signature() != sz.public_key_signature())
       return false;
   }

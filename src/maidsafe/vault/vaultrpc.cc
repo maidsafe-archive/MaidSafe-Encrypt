@@ -126,8 +126,8 @@ void VaultRpcs::AmendAccount(
 void VaultRpcs::GetAccountStatus(
     const kad::Contact &peer,
     bool local,
-    maidsafe::GetAccountStatusRequest *get_account_status_request,
-    maidsafe::GetAccountStatusResponse *get_account_status_response,
+    maidsafe::AccountStatusRequest *get_account_status_request,
+    maidsafe::AccountStatusResponse *get_account_status_response,
     rpcprotocol::Controller *controller,
     google::protobuf::Closure *done) {
   std::string local_ip;
@@ -140,7 +140,7 @@ void VaultRpcs::GetAccountStatus(
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.GetAccountStatus(controller, get_account_status_request,
+  service.AccountStatus(controller, get_account_status_request,
                            get_account_status_response, done);
 }
 

@@ -80,8 +80,8 @@ class VaultRpcs {
   void GetAccountStatus(
       const kad::Contact &peer,
       bool local,
-      maidsafe::GetAccountStatusRequest *get_account_status_request,
-      maidsafe::GetAccountStatusResponse *get_account_status_response,
+      maidsafe::AccountStatusRequest *get_account_status_request,
+      maidsafe::AccountStatusResponse *get_account_status_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done);
   void CheckChunk(const std::string &chunkname,
