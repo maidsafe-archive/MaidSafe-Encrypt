@@ -41,8 +41,10 @@ bool WatchListHandler::HasWatchers(const std::string &watch_list_name) {
 int WatchListHandler::AddToWatchList(const std::string &watch_list_name,
                                      const std::string &pmid,
                                      const boost::uint64_t &chunk_size,
-                                     std::string *creditor) {
+                                     std::string *creditor,
+                                     int *required_payments) {
   *creditor = "";
+  *required_payments = 0;
   boost::mutex::scoped_lock lock(watch_list_mutex_);
 
   WatchList &wl = watch_lists_[watch_list_name];
@@ -73,16 +75,18 @@ int WatchListHandler::AddToWatchList(const std::string &watch_list_name,
     // replace this pmid and pay them directly
     *creditor = it->pmid_;
     *it = entry;
+    *required_payments = 1;
   } else if (wl.entries_.size() < (kMinChunkCopies +
                                     kMaxReserveWatchListEntries)) {
     // add to watch list
     wl.entries_.push_back(entry);
+    *required_payments = 1;
     if (wl.entries_.size() == 1) {
       // we are first, so add 3 more deletable entries
       entry.can_delete_ = true;
-      wl.entries_.push_back(entry);
-      wl.entries_.push_back(entry);
-      wl.entries_.push_back(entry);
+      for (i = 0; i < kMinChunkCopies - 1; i++)
+        wl.entries_.push_back(entry);
+      *required_payments = kMinChunkCopies;
     }
   }
 
@@ -167,8 +171,8 @@ int WatchListHandler::RemoveFromWatchList(const std::string &watch_list_name,
     }
   } else {
     // recompense, even if not listed
-    creditors->push_back(pmid);
-    // TODO(anyone) huge problem here! (multiple removal requests by same pmid)
+    // creditors->push_back(pmid);
+    // big problem if multiple removal requests by same pmid!
   }
 
   return 0;

@@ -313,8 +313,8 @@ const size_t kMaxPriorityStoreThreads(2);
 // port where the service to register a local vault is listening
 const boost::uint16_t kLocalPort = 5484;
 
-// additional PMIDs kept in watch lists
-const int kMaxReserveWatchListEntries = 8;
+// additionally paying PMIDs kept in watch lists
+const int kMaxReserveWatchListEntries = 250;
 
 namespace maidsafe {
 

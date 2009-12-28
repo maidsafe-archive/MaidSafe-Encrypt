@@ -60,7 +60,8 @@ class WatchListHandler {
   int AddToWatchList(const std::string &watch_list_name,
                      const std::string &pmid,
                      const boost::uint64_t &chunk_size,
-                     std::string *creditor);
+                     std::string *creditor,
+                     int *required_payments);
   int RemoveFromWatchList(const std::string &watch_list_name,
                           const std::string &pmid,
                           const boost::uint64_t &chunk_size,
