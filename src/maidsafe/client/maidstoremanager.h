@@ -405,6 +405,20 @@ class DeleteChunkTask : public QRunnable {
   MaidsafeStoreManager *msm_;
 };
 
+class AmendAccountTask : public QRunnable {
+ public:
+  AmendAccountTask(const boost::uint64_t &space_offered,
+                   MaidsafeStoreManager *msm)
+      : space_offered_(space_offered),
+        msm_(msm) {}
+  void run();
+ private:
+  AmendAccountTask &operator=(const AmendAccountTask&);
+  AmendAccountTask(const AmendAccountTask&);
+  boost::uint64_t space_offered_;
+  MaidsafeStoreManager *msm_;
+};
+
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
@@ -445,7 +459,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    const std::string &signed_public_key,
                    const ValueType &type,
                    base::callback_func_type cb);
-
+  int CreateAccount(const boost::uint64_t &space_offered);
+  int SetSpaceOffered(const boost::uint64_t &space);
+  int GetAccountDetails(boost::uint64_t *space_offered,
+                        boost::uint64_t *space_given,
+                        boost::uint64_t *space_taken);
   // Buffer packet
   virtual int CreateBP();
   virtual int LoadBPMessages(std::list<ValidatedBufferPacketMessage> *messages);
@@ -481,6 +499,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   friend void StorePacketToKadTask::run();
   friend void AddToWatchListTask::run();
   friend void DeleteChunkTask::run();
+  friend void AmendAccountTask::run();
   friend size_t testpdvault::CheckStoredCopies(
       std::map<std::string, std::string> chunks,
       const int &timeout,
@@ -507,9 +526,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           bool is_mutable,
                           int *return_value,
                           GenericConditionData *generic_cond_data);
-  virtual void AddStoreChunkTask(const StoreData &store_data,
-                                 IfExists if_exists);
-  virtual void AddSendChunkCopyTask(const StoreData &store_data);
   // Send AddToWatchList requests to each of the k Watch List holders.
   virtual void AddToWatchList(const StoreData &store_data,
                               const StorePrepResponse &store_prep_response);
@@ -735,6 +751,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                          size_t *returned_rpc_count);
   void PollVaultInfoCallback(const VaultStatusResponse *response,
                              base::callback_func_type cb);
+  void AmendAccount(const boost::uint64_t &space_offered);
 
 //  void VaultContactInfoCallback(const std::string &ser_result,
 //                                base::callback_func_type cb);

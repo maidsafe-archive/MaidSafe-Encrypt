@@ -43,6 +43,9 @@
 
 namespace maidsafe_vault {
 
+typedef boost::function<int(const std::string&, const maidsafe::StoreContract&)>  // NOLINT (Fraser) - False positive
+    AddToRefListFunctionObject;
+
 struct IsOwnedPendingResponse {
   IsOwnedPendingResponse() : callback(NULL), args(NULL) {}
   google::protobuf::Closure* callback;
@@ -59,7 +62,7 @@ class VaultService : public maidsafe::MaidsafeService {
                VaultChunkStore *vault_chunkstore,
                kad::KNode *knode,
                PendingOperationsHandler *poh);
-  ~VaultService() { }
+  ~VaultService() {}
 
   virtual void StorePrep(google::protobuf::RpcController* controller,
                          const maidsafe::StorePrepRequest* request,
@@ -122,6 +125,13 @@ class VaultService : public maidsafe::MaidsafeService {
                              const maidsafe::AccountStatusRequest* request,
                              maidsafe::AccountStatusResponse* response,
                              google::protobuf::Closure* done);
+  void SetAddToRefListFunction(const AddToRefListFunctionObject &func) {
+    add_to_reference_list_ = func;
+  }
+  void ClearAddToRefListFunction() {
+    add_to_reference_list_ =
+        boost::bind(&VaultService::UninitialisedFunction, this, _1, _2);
+  }
 
   // BP services
   virtual void CreateBP(google::protobuf::RpcController* controller,
@@ -160,9 +170,11 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetPacket);
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
-  bool ValidateAmmendRequest(const maidsafe::AmendAccountRequest* request,
-                             boost::uint64_t *account_delta,
-                             std::string *pmid);
+  bool ValidateSignedSize(const maidsafe::SignedSize &sz);
+  bool ValidateStoreContract(const maidsafe::StoreContract &sc);
+  bool ValidateAmendRequest(const maidsafe::AmendAccountRequest* request,
+                            boost::uint64_t *account_delta,
+                            std::string *pmid);
   bool ValidateSignedRequest(const std::string &public_key,
                              const std::string &public_key_signature,
                              const std::string &request_signature,
@@ -190,19 +202,21 @@ class VaultService : public maidsafe::MaidsafeService {
   bool LoadPacketLocal(const std::string &packetname,
                        maidsafe::GetPacketResponse* response);
   bool DeleteChunkLocal(const std::string &chunkname);
-  void StoreChunkReference(const std::string &non_hex_chunkname);
   void FindCloseNodesCallback(const std::string &result,
                               std::vector<std::string> *close_nodes);
+  int UninitialisedFunction(const std::string &,
+                            const maidsafe::StoreContract &) {
+    return kVaultServiceUnitialisedFunction;
+  }
   std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
   std::string non_hex_pmid_;
   VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;
   PendingOperationsHandler *poh_;
-  typedef std::map<std::string,
-                   boost::compressed_pair<std::string, boost::uint64_t>
-                  > preps_received_map;
-  preps_received_map prm_;
+  typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
+  PrepsReceivedMap prm_;
   AccountHandler ah_;
+  AddToRefListFunctionObject add_to_reference_list_;
 };
 
 class RegistrationService : public maidsafe::VaultRegistration {

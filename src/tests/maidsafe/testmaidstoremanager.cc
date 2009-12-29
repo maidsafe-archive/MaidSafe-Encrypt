@@ -31,30 +31,6 @@
 
 namespace test_msm {
 
-class GeneralCallback {
- public:
-  GeneralCallback() : called_back_(false),
-                      callback_succeeded_(false),
-                      callback_mutex_() {}
-  void CallbackFunction(const std::string &result) {
-    maidsafe::GenericResponse result_msg;
-    if ((!result_msg.ParseFromString(result)) ||
-        (result_msg.result() != kAck)) {
-      boost::mutex::scoped_lock lock(callback_mutex_);
-      callback_succeeded_ = false;
-      called_back_ = true;
-    } else {
-      boost::mutex::scoped_lock lock(callback_mutex_);
-      callback_succeeded_ = true;
-      called_back_ = true;
-    }
-  }
- private:
-  bool called_back_;
-  bool callback_succeeded_;
-  boost::mutex callback_mutex_;
-};
-
 void DoneRun(const int &min_delay,
              const int &max_delay,
              google::protobuf::Closure* callback) {

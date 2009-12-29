@@ -78,12 +78,12 @@ class ClientRpcs {
                     AmendAccountResponse *amend_account_response,
                     rpcprotocol::Controller *controller,
                     google::protobuf::Closure *done);
-  void GetAccountStatus(const kad::Contact &peer,
-                        bool local,
-                        AccountStatusRequest *get_account_status_request,
-                        AccountStatusResponse *get_account_status_response,
-                        rpcprotocol::Controller *controller,
-                        google::protobuf::Closure *done);
+  void AccountStatus(const kad::Contact &peer,
+                     bool local,
+                     AccountStatusRequest *account_status_request,
+                     AccountStatusResponse *account_status_response,
+                     rpcprotocol::Controller *controller,
+                     google::protobuf::Closure *done);
   void CheckChunk(const kad::Contact &peer,
                   bool local,
                   CheckChunkRequest *check_chunk_request,

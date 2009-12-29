@@ -204,12 +204,18 @@ class PDVault;
 
 class AddToRefPacketTask : public QRunnable {
  public:
-  AddToRefPacketTask(const IouReadyTuple &iou_ready_details, PDVault *pdvault);
+  AddToRefPacketTask(const std::string &chunkname,
+                     const maidsafe::StoreContract &store_contract,
+                     PDVault *pdvault)
+      : chunkname_(chunkname),
+        store_contract_(store_contract),
+        pdvault_(pdvault) {}
   void run();
  private:
   AddToRefPacketTask &operator=(const AddToRefPacketTask&);
   AddToRefPacketTask(const AddToRefPacketTask&);
-  IouReadyTuple iou_ready_details_;
+  std::string chunkname_;
+  maidsafe::StoreContract store_contract_;
   PDVault *pdvault_;
 };
 
@@ -280,31 +286,28 @@ class PDVault {
   void UnRegisterMaidService();
   // This runs in a continuous loop until vault_status_ is not kVaultStarted.
   void PrunePendingOperations();
-  // This runs in a continuous loop until vault_status_ is not kVaultStarted
-  // and on receipt of an IOU_Ready messgage, it adds an AddToRefPacket task.
-  void CheckPendingIOUs();
+  // Adds this vault's ID to reference list for chunkname.
+  int AddToRefList(const std::string &chunkname,
+                   const maidsafe::StoreContract &store_contract);
   // Returns a signature for validation by recipient of RPC
   std::string GetSignedRequest(const std::string &non_hex_name,
                                const std::string &recipient_id);
   // Runs in a worker thread to add this vault's ID to a chunk reference packet
-  // and increment this vault's rank.
-  void AddToRefPacket(const IouReadyTuple &iou_ready_details);
+  void AddToRefPacket(const std::string &chunkname,
+                      const maidsafe::StoreContract &store_contract);
   // Finds k closest nodes to the kad_key.  If this vault's ID is closer than
   // any of the k returned by Kademlia, this ID is inserted and the furthest
   // contact dropped.  The vector is ordered from closest to furthest.
   int FindKNodes(const std::string &kad_key,
                  std::vector<kad::Contact> *contacts);
   // Add this vault's ID to a chunk reference packet
-  int SendToRefPacket(
-      const kad::Contact &ref_holder,
-      const IouReadyTuple &iou_ready_details,
-      boost::mutex *add_ref_mutex,
-      AddRefResultHolder *add_ref_result_holder);
+  int SendToRefPacket(const kad::Contact &ref_holder,
+                      const std::string &chunkname,
+                      const maidsafe::StoreContract &store_contract,
+                      boost::mutex *add_ref_mutex,
+                      AddRefResultHolder *add_ref_result_holder);
   void SendToRefPacketCallback(AddRefResultHolder *add_ref_result_holder,
                                boost::mutex *add_ref_mutex);
-  int HandleAddRefResponse(const IouReadyTuple &iou_ready_details,
-      const AddRefResultHolder &add_ref_result_holder,
-      bool *got_valid_iou);
 
 
 

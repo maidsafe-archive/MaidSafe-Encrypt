@@ -132,6 +132,7 @@ enum ReturnCode {
   kPacketUnknownType = -7034,
   kLoadPacketFailure = -7035,
   kStoreManagerException = -7036,
+  kFindAccountHoldersError = -7037,
 
   // Message Handler
 
@@ -166,6 +167,8 @@ enum ReturnCode {
   kGeneralError = maidsafe::kGeneralError,
 
   // Service
+  kVaultServiceError = -1501,
+  kVaultServiceUnitialisedFunction = -1502,
 
   // Vault
   kVaultOffline = -2501,

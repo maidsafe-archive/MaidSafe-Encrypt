@@ -147,11 +147,11 @@ void ClientRpcs::AmendAccount(const kad::Contact &peer,
                        amend_account_response, done);
 }
 
-void ClientRpcs::GetAccountStatus(
+void ClientRpcs::AccountStatus(
     const kad::Contact &peer,
     bool local,
-    AccountStatusRequest *get_account_status_request,
-    AccountStatusResponse *get_account_status_response,
+    AccountStatusRequest *account_status_request,
+    AccountStatusResponse *account_status_response,
     rpcprotocol::Controller *controller,
     google::protobuf::Closure *done) {
   std::string local_ip;
@@ -164,8 +164,8 @@ void ClientRpcs::GetAccountStatus(
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.AccountStatus(controller, get_account_status_request,
-                           get_account_status_response, done);
+  service.AccountStatus(controller, account_status_request,
+                        account_status_response, done);
 }
 
 void ClientRpcs::CheckChunk(const kad::Contact &peer,

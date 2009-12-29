@@ -38,7 +38,7 @@ class WatchListHandlerTest : public testing::Test {
 
 TEST_F(WatchListHandlerTest, BEH_VAULT_WatchListHandlerInit) {
   WatchListHandler wlh;
-  ASSERT_EQ(0, wlh.watch_lists_.size());
+  ASSERT_EQ(size_t(0), wlh.watch_lists_.size());
   ASSERT_FALSE(wlh.HasWatchers("some list name"));
 }
 
@@ -76,9 +76,9 @@ TEST_F(WatchListHandlerTest, BEH_VAULT_WatchListHandlerAddRemove) {
   ASSERT_EQ("", creditor);
   ASSERT_EQ(kMinChunkCopies, required_payments);
   ASSERT_TRUE(wlh.HasWatchers(watch_list_name));
-  ASSERT_EQ(1, wlh.watch_lists_.count(watch_list_name));
-  ASSERT_EQ(1, wlh.watch_lists_[watch_list_name].watcher_count_);
-  ASSERT_EQ(123, wlh.watch_lists_[watch_list_name].chunk_size_);
+  ASSERT_EQ(size_t(1), wlh.watch_lists_.count(watch_list_name));
+  ASSERT_EQ(size_t(1), wlh.watch_lists_[watch_list_name].watcher_count_);
+  ASSERT_EQ(size_t(123), wlh.watch_lists_[watch_list_name].chunk_size_);
   ASSERT_EQ(kMinChunkCopies, wlh.watch_lists_[watch_list_name].entries_.size());
 
   ASSERT_EQ(kWatchListInvalidChunkSize, wlh.AddToWatchList(watch_list_name,
@@ -89,19 +89,20 @@ TEST_F(WatchListHandlerTest, BEH_VAULT_WatchListHandlerAddRemove) {
   for (int i = 1; i < kNumClients; i++) {
     ASSERT_EQ(0, wlh.AddToWatchList(watch_list_name, client[i], 123,
                                     &creditor, &required_payments));
-    ASSERT_EQ(1, wlh.watch_lists_.count(watch_list_name));
-    ASSERT_EQ(i + 1, wlh.watch_lists_[watch_list_name].watcher_count_);
+    ASSERT_EQ(size_t(1), wlh.watch_lists_.count(watch_list_name));
+    ASSERT_EQ(size_t(i) + 1, wlh.watch_lists_[watch_list_name].watcher_count_);
     if (i < kMinChunkCopies) {
       ASSERT_EQ(kMinChunkCopies,
                 wlh.watch_lists_[watch_list_name].entries_.size());
       ASSERT_EQ(1, required_payments);
       ASSERT_EQ(client[0], creditor);
     } else if (i < kMinChunkCopies + kMaxReserveWatchListEntries) {
-      ASSERT_EQ(i + 1, wlh.watch_lists_[watch_list_name].entries_.size());
+      ASSERT_EQ(size_t(i) + 1,
+                wlh.watch_lists_[watch_list_name].entries_.size());
       ASSERT_EQ(1, required_payments);
       ASSERT_EQ("", creditor);
     } else {
-      ASSERT_EQ(kMinChunkCopies + kMaxReserveWatchListEntries,
+      ASSERT_EQ(kMinChunkCopies + size_t(kMaxReserveWatchListEntries),
                 wlh.watch_lists_[watch_list_name].entries_.size());
       ASSERT_EQ(0, required_payments);
       ASSERT_EQ("", creditor);
@@ -118,10 +119,12 @@ TEST_F(WatchListHandlerTest, BEH_VAULT_WatchListHandlerAddRemove) {
 
   ASSERT_EQ(0, wlh.RemoveFromWatchList(watch_list_name, client[0], 123,
                                        &creditors));
-  ASSERT_EQ(1, creditors.size());
+  ASSERT_EQ(size_t(1), creditors.size());
   ASSERT_EQ(client[0], creditors.front());
-  ASSERT_EQ(kNumClients - 1, wlh.watch_lists_[watch_list_name].watcher_count_);
-  ASSERT_EQ(kNumClients - 2, wlh.watch_lists_[watch_list_name].entries_.size());
+  ASSERT_EQ(size_t(kNumClients) - 1,
+            wlh.watch_lists_[watch_list_name].watcher_count_);
+  ASSERT_EQ(size_t(kNumClients) - 2,
+            wlh.watch_lists_[watch_list_name].entries_.size());
 
   for (int i = kNumClients - 1; i >= 1; i--) {
     creditors.clear();
@@ -129,22 +132,24 @@ TEST_F(WatchListHandlerTest, BEH_VAULT_WatchListHandlerAddRemove) {
                                          &creditors));
     if (i > kMinChunkCopies) {
       if (i == kNumClients - 1) {
-        ASSERT_EQ(i - 1, wlh.watch_lists_[watch_list_name].watcher_count_);
-        ASSERT_EQ(0, creditors.size());
+        ASSERT_EQ(size_t(i) - 1,
+                  wlh.watch_lists_[watch_list_name].watcher_count_);
+        ASSERT_EQ(size_t(0), creditors.size());
       } else {
-        ASSERT_EQ(i, wlh.watch_lists_[watch_list_name].watcher_count_);
-        ASSERT_EQ(1, creditors.size());
+        ASSERT_EQ(size_t(i), wlh.watch_lists_[watch_list_name].watcher_count_);
+        ASSERT_EQ(size_t(1), creditors.size());
         ASSERT_EQ(client[i], creditors.front());
       }
-      ASSERT_EQ(i - 1, wlh.watch_lists_[watch_list_name].entries_.size());
+      ASSERT_EQ(size_t(i) - 1,
+          wlh.watch_lists_[watch_list_name].entries_.size());
     } else if (i == 1) {  // last entry
-      ASSERT_EQ(4, creditors.size());
-      ASSERT_EQ(0, wlh.watch_lists_.count(watch_list_name));
+      ASSERT_EQ(size_t(4), creditors.size());
+      ASSERT_EQ(size_t(0), wlh.watch_lists_.count(watch_list_name));
     } else {
-      ASSERT_EQ(0, creditors.size());
+      ASSERT_EQ(size_t(0), creditors.size());
       ASSERT_EQ(kMinChunkCopies,
                 wlh.watch_lists_[watch_list_name].entries_.size());
-      ASSERT_EQ(i, wlh.watch_lists_[watch_list_name].watcher_count_);
+      ASSERT_EQ(size_t(i), wlh.watch_lists_[watch_list_name].watcher_count_);
     }
   }
 
@@ -170,13 +175,13 @@ TEST_F(WatchListHandlerTest, BEH_VAULT_WatchListHandlerFailsafe) {
                                   &required_payments));
   ASSERT_EQ(0, wlh.RemoveFromWatchList(watch_list_name, client2, 123,
                                        &creditors));
-  ASSERT_EQ(0, creditors.size());
-  ASSERT_EQ(1, wlh.watch_lists_[watch_list_name].watcher_count_);
+  ASSERT_EQ(size_t(0), creditors.size());
+  ASSERT_EQ(size_t(1), wlh.watch_lists_[watch_list_name].watcher_count_);
   ASSERT_EQ(kMinChunkCopies, wlh.watch_lists_[watch_list_name].entries_.size());
   ASSERT_EQ(0, wlh.RemoveFromWatchList(watch_list_name, client1, 123,
                                        &creditors));
-  ASSERT_EQ(0, creditors.size());
-  ASSERT_EQ(1, wlh.watch_lists_[watch_list_name].watcher_count_);
+  ASSERT_EQ(size_t(0), creditors.size());
+  ASSERT_EQ(size_t(1), wlh.watch_lists_[watch_list_name].watcher_count_);
   ASSERT_EQ(kMinChunkCopies, wlh.watch_lists_[watch_list_name].entries_.size());
 
   ASSERT_TRUE(wlh.HasWatchers(watch_list_name));

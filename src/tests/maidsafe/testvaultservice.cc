@@ -59,9 +59,7 @@ inline void CreateSignedRequest(const std::string &pub_key,
 
 namespace maidsafe_vault {
 
-typedef std::map<std::string,
-                 boost::compressed_pair<std::string, boost::uint64_t>
-                > preps_received_map;
+typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
 
 class Callback {
  public:
@@ -484,16 +482,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   for (int i = 0; i < 3; ++i) {
     printf("--- CASE #%i --- ", i);
     if (i > 0) {
-      std::pair<std::string, boost::compressed_pair<std::string,
-                                                    boost::uint64_t> >
-          p(chunk_name, boost::compressed_pair<std::string,
-                                               boost::uint64_t>
-                                               (pmid, chunk_size));
-      std::pair<preps_received_map::iterator, bool> result =
+      maidsafe::StoreContract store_contract;
+      std::pair<std::string, maidsafe::StoreContract>
+          p(chunk_name, store_contract);
+      std::pair<PrepsReceivedMap::iterator, bool> result =
           vault_service_->prm_.insert(p);
       EXPECT_TRUE(result.second);
-//      EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunk_name, chunk_size, "",
-//                                            "", 0, pub_key, STORE_ACCEPTED));
     }
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
@@ -534,16 +528,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
     request.set_public_key_signature(pub_key_sig);
     request.set_request_signature(req_sig);
 
-    std::pair<std::string, boost::compressed_pair<std::string,
-                                                  boost::uint64_t> >
-        p(chunk_name, boost::compressed_pair<std::string,
-                                             boost::uint64_t>
-                                             (pmid, chunk_size));
-    std::pair<preps_received_map::iterator, bool> result =
+    maidsafe::StoreContract store_contract;
+    std::pair<std::string, maidsafe::StoreContract>
+        p(chunk_name, store_contract);
+    std::pair<PrepsReceivedMap::iterator, bool> result =
         vault_service_->prm_.insert(p);
     EXPECT_TRUE(result.second);
-//    EXPECT_EQ(0, poh_.AddPendingOperation(pmid, chunk_name, chunk_size, "",
-//                                          "", 0, pub_key, STORE_ACCEPTED));
 
     google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
         (&cb_obj, &Callback::CallbackFunction);
@@ -764,6 +754,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
 
   // test success
   for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
+    printf("ROUND %u\n", i);
     request.set_data_type(data_type[i]);
 
     switch (data_type[i]) {
@@ -969,7 +960,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   request.clear_store_contract();
   vault_service_->AmendAccount(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
 
   request.Clear();
   request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceTakenInc);
@@ -1009,7 +1000,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         (&cb_obj, &Callback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(kAck, asrsp.result());
+    ASSERT_EQ(kAck, static_cast<int>(asrsp.result()));
     ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());

@@ -108,6 +108,10 @@ void DeleteChunkTask::run() {
          HexSubstr(store_data_.non_hex_key_).c_str());
 }
 
+void AmendAccountTask::run() {
+  msm_->AmendAccount(space_offered_);
+}
+
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
     : transport_(),
       channel_manager_(&transport_),
@@ -264,9 +268,13 @@ void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
     std::string key_id, public_key, public_key_signature, private_key;
     GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
         &public_key_signature, &private_key);
-    AddStoreChunkTask(StoreData(chunk_name, chunk_size, chunk_type, dir_type,
-        msid, key_id, public_key, public_key_signature, private_key),
-        kStoreSuccess);
+    tasks_handler_.AddTask(chunk_name, kStoreChunk, chunk_size,
+                           kMinChunkCopies, kMaxStoreFailures);
+    // chunk_thread_pool_ handles destruction of store_chunk_task.
+    StoreChunkTask *store_chunk_task = new StoreChunkTask(StoreData(chunk_name,
+        chunk_size, chunk_type, dir_type, msid, key_id, public_key,
+        public_key_signature, private_key), kStoreSuccess, this);
+    chunk_thread_pool_.start(store_chunk_task);
   }
 }
 
@@ -516,6 +524,126 @@ int MaidsafeStoreManager::DeletePacket(const std::string &,
                                        const std::string &,
                                        const ValueType &,
                                        base::callback_func_type) {
+  return kSuccess;
+}
+
+int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space_offered) {
+  return SetSpaceOffered(space_offered);
+}
+
+int MaidsafeStoreManager::SetSpaceOffered(const boost::uint64_t &space) {
+  // packet_thread_pool_ handles destruction of amend_account_task.
+  AmendAccountTask *amend_account_task = new AmendAccountTask(space, this);
+  packet_thread_pool_.start(amend_account_task);
+  return kSuccess;
+}
+
+int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
+                                            boost::uint64_t *space_given,
+                                            boost::uint64_t *space_taken) {
+  *space_offered = 0;
+  *space_given = 0;
+  *space_taken = 0;
+  // Set the account name
+  std::string non_hex_pmid = base::DecodeFromHex(ss_->Id(PMID));
+  std::string pmid_pub = ss_->PublicKey(PMID);
+  std::string pmid_pub_sig = ss_->SignedPublicKey(PMID);
+  std::string pmid_pri = ss_->PrivateKey(PMID);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string account_name = co.Hash(non_hex_pmid + "ACCOUNT", "",
+      crypto::STRING_STRING, false);
+  // Find the account holders
+  std::vector<kad::Contact> account_holders;
+  if (FindKNodes(account_name, &account_holders) != kSuccess)
+    return kFindAccountHoldersError;
+  // Create the request
+  boost::shared_ptr<boost::condition_variable>
+      cond_var(new boost::condition_variable);
+  GenericConditionData cond_data(cond_var);
+  AccountStatusRequest account_status_request;
+  account_status_request.set_pmid(non_hex_pmid);
+  account_status_request.set_public_key(pmid_pub);
+  account_status_request.set_public_key_signature(pmid_pub_sig);
+  std::vector<AccountStatusRequest> account_status_requests;
+  std::vector<AccountStatusResponse> account_status_responses;
+  for (boost::uint16_t i = 0; i < account_holders.size(); ++i) {
+    std::string request_signature = co.AsymSign(co.Hash(
+        pmid_pub_sig + account_name + account_holders.at(i).node_id(), "",
+        crypto::STRING_STRING, false), "", pmid_pri, crypto::STRING_STRING);
+    account_status_request.set_request_signature(request_signature);
+    AccountStatusResponse account_status_response;
+    account_status_requests.push_back(account_status_request);
+    account_status_responses.push_back(account_status_response);
+  }
+  // Send the requests
+  boost::uint16_t rpcs_sent_count(account_status_responses.size());
+  for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
+    google::protobuf::Closure* callback =
+        google::protobuf::NewCallback(&google::protobuf::DoNothing);
+    rpcprotocol::Controller controller;
+    client_rpcs_->AccountStatus(account_holders.at(i),
+        AddressIsLocal(account_holders.at(i)), &account_status_requests.at(i),
+        &account_status_responses.at(i), &controller, callback);
+  }
+  boost::uint16_t successful_count(0);
+  boost::uint16_t failed_count(0);
+  // Once we've got enough successful replies, cancel the remaining RPCs (they
+  // should still succeed, we just won't handle the reply)
+//  while (successful_count < kKadStoreThreshold_ &&
+//         failed_count < kad::K - kKadStoreThreshold_ + 1 &&
+//         successful_count + failed_count < ref_holders.size()) {
+// TODO(Fraser#5#): 2009-10-13 - Preceding lines cause segfault on Unix due to
+// callbacks trying to lock destructed mutex - figure out why.
+  int timeout = 10000;  // milliseconds
+  int timeout_count = 0;
+  while ((successful_count + failed_count < rpcs_sent_count) &&
+         (timeout_count < timeout)) {
+    successful_count = 0;
+    failed_count = 0;
+    for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
+      boost::mutex::scoped_lock lock(cond_data.cond_mutex);
+      if (account_status_responses.at(i).IsInitialized()) {
+        if (account_status_responses.at(i).result() == kAck) {
+          ++successful_count;
+          // If we've now got enough successes, populate account data
+          if (successful_count == kKadStoreThreshold_) {
+            if (account_status_responses.at(i).has_space_offered() &&
+                account_status_responses.at(i).space_given() &&
+                account_status_responses.at(i).space_taken()) {
+              *space_offered = account_status_responses.at(i).space_offered();
+              *space_given = account_status_responses.at(i).space_given();
+              *space_taken = account_status_responses.at(i).space_taken();
+            } else {  // Account data wasn't set correctly in response
+              account_status_responses.at(i).set_result(kNack);
+              --successful_count;
+              ++failed_count;
+            }
+          }
+        } else {
+          ++failed_count;
+        }
+      } else {
+        break;
+      }
+    }
+    timeout_count += 10;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    if (timeout_count >= timeout)
+      printf("\n\n\n\n\n\n\nAccount Status TIMED OUT\n\n\n\n\n\n\n\n");
+  }
+//  if (successful_count < kKadStoreThreshold_) {
+//    retry?
+// Cancel outstanding RPCs
+// TODO(Fraser#5#): 2009-10-13 - Once preceding todo is resolved, reinstate
+// following code.  Bool store_iou_response_returned needs replaced with
+// three state flag, kPending, kReturned, kDone or similar.
+//  for (boost::uint16_t j = 0; j < results.size(); ++j) {
+//    if (!results.at(j)->store_iou_response_returned)
+//      channel_manager_.
+//          DeletePendingRequest(results.at(j)->controller->req_id());
+//  }
   return kSuccess;
 }
 
@@ -781,23 +909,6 @@ void MaidsafeStoreManager::AddStorePacketTask(
   }
 }
 
-void MaidsafeStoreManager::AddStoreChunkTask(const StoreData &store_data,
-                                             IfExists if_exists) {
-  tasks_handler_.AddTask(store_data.non_hex_key_, kStoreChunk, store_data.size_,
-                         kMinChunkCopies, kMaxStoreFailures);
-  // chunk_thread_pool_ handles destruction of store_chunk_task.
-  StoreChunkTask *store_chunk_task = new StoreChunkTask(store_data, if_exists,
-                                                        this);
-  chunk_thread_pool_.start(store_chunk_task);
-}
-
-void MaidsafeStoreManager::AddSendChunkCopyTask(const StoreData &store_data) {
-  // chunk_thread_pool_ handles destruction of send_chunk_copy_task.
-  SendChunkCopyTask *send_chunk_copy_task = new SendChunkCopyTask(store_data,
-                                                                  this);
-  chunk_thread_pool_.start(send_chunk_copy_task);
-}
-
 void MaidsafeStoreManager::PrepareToSendChunk(const StoreData &store_data,
                                               IfExists if_exists) {
 #ifdef DEBUG
@@ -866,7 +977,10 @@ void MaidsafeStoreManager::PrepareToSendChunk(const StoreData &store_data,
     }
   } else {  // If the data doesn't already exist on the network, store it.
     for (int i = 0; i < kMinChunkCopies; ++i) {
-      SendChunk(store_data);
+      // chunk_thread_pool_ handles destruction of send_chunk_copy_task.
+      SendChunkCopyTask *send_chunk_copy_task =
+          new SendChunkCopyTask(store_data, this);
+      chunk_thread_pool_.start(send_chunk_copy_task);
     }
 //    else
 //      res = SendPacket(store_data, kMinChunkCopies);
@@ -2893,5 +3007,105 @@ bool MaidsafeStoreManager::NotDoneWithUploading() {
     return true;
   }
 }
+
+void MaidsafeStoreManager::AmendAccount(const boost::uint64_t &space_offered) {
+  // TODO(Fraser#5#): 2009-12-21 - Consider repeating this until success or
+  //                               some max. no. of failures.
+  // Set the account name
+  std::string non_hex_pmid = base::DecodeFromHex(ss_->Id(PMID));
+  std::string pmid_pub = ss_->PublicKey(PMID);
+  std::string pmid_pub_sig = ss_->SignedPublicKey(PMID);
+  std::string pmid_pri = ss_->PrivateKey(PMID);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string account_name = co.Hash(non_hex_pmid + "ACCOUNT", "",
+      crypto::STRING_STRING, false);
+  // Find the account holders
+  std::vector<kad::Contact> account_holders;
+  if (FindKNodes(account_name, &account_holders) != kSuccess)
+    return;
+  // Create the request
+  boost::shared_ptr<boost::condition_variable>
+      cond_var(new boost::condition_variable);
+  GenericConditionData cond_data(cond_var);
+  AmendAccountRequest amend_account_request;
+  amend_account_request.set_amendment_type(AmendAccountRequest::kSpaceOffered);
+  SignedSize *mutable_signed_size = amend_account_request.mutable_signed_size();
+  mutable_signed_size->set_data_size(space_offered);
+  mutable_signed_size->set_pmid(non_hex_pmid);
+  mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(space_offered),
+      "", pmid_pri, crypto::STRING_STRING));
+  mutable_signed_size->set_public_key(pmid_pub);
+  mutable_signed_size->set_public_key_signature(pmid_pub_sig);
+  std::string serialised_signed_size;
+  mutable_signed_size->SerializeToString(&serialised_signed_size);
+  std::string signature = co.AsymSign(serialised_signed_size, "", pmid_pri,
+                                      crypto::STRING_STRING);
+  amend_account_request.set_signature(signature);
+  amend_account_request.set_pmid(non_hex_pmid);
+  amend_account_request.set_public_key(pmid_pub);
+  amend_account_request.set_public_key_signature(pmid_pub_sig);
+  std::vector<AmendAccountResponse> amend_account_responses;
+  for (boost::uint16_t i = 0; i < account_holders.size(); ++i) {
+    AmendAccountResponse amend_account_response;
+    amend_account_responses.push_back(amend_account_response);
+  }
+  // Send the requests
+  boost::uint16_t rpcs_sent_count(amend_account_responses.size());
+  for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
+    google::protobuf::Closure* callback =
+        google::protobuf::NewCallback(&google::protobuf::DoNothing);
+    rpcprotocol::Controller controller;
+    client_rpcs_->AmendAccount(account_holders.at(i),
+        AddressIsLocal(account_holders.at(i)), &amend_account_request,
+        &amend_account_responses.at(i), &controller, callback);
+  }
+  boost::uint16_t successful_count(0);
+  boost::uint16_t failed_count(0);
+  // Once we've got enough successful replies, cancel the remaining RPCs (they
+  // should still succeed, we just won't handle the reply)
+//  while (successful_count < kKadStoreThreshold_ &&
+//         failed_count < kad::K - kKadStoreThreshold_ + 1 &&
+//         successful_count + failed_count < ref_holders.size()) {
+// TODO(Fraser#5#): 2009-10-13 - Preceding lines cause segfault on Unix due to
+// callbacks trying to lock destructed mutex - figure out why.
+  int timeout = 10000;  // milliseconds
+  int timeout_count = 0;
+  while ((successful_count + failed_count < rpcs_sent_count) &&
+         (timeout_count < timeout)) {
+    successful_count = 0;
+    failed_count = 0;
+    for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
+      boost::mutex::scoped_lock lock(cond_data.cond_mutex);
+      if (amend_account_responses.at(i).IsInitialized()) {
+        if (amend_account_responses.at(i).result() == kAck) {
+          ++successful_count;
+        } else {
+          ++failed_count;
+        }
+      } else {
+        break;
+      }
+    }
+    timeout_count += 10;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    if (timeout_count >= timeout)
+      printf("\n\n\n\n\n\n\nAmend Account TIMED OUT\n\n\n\n\n\n\n\n");
+  }
+//  if (successful_count < kKadStoreThreshold_)
+//    retry?
+// Cancel outstanding RPCs
+// TODO(Fraser#5#): 2009-10-13 - Once preceding todo is resolved, reinstate
+// following code.  Bool store_iou_response_returned needs replaced with
+// three state flag, kPending, kReturned, kDone or similar.
+//  for (boost::uint16_t j = 0; j < results.size(); ++j) {
+//    if (!results.at(j)->store_iou_response_returned)
+//      channel_manager_.
+//          DeletePendingRequest(results.at(j)->controller->req_id());
+//  }
+}
+
+
 
 }  // namespace maidsafe
