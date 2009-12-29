@@ -63,8 +63,12 @@ VaultService::VaultService(const std::string &pmid_public,
       vault_chunkstore_(vault_chunkstore),
       knode_(knode),
       poh_(poh),
-      add_to_reference_list_(
-          boost::bind(&VaultService::UninitialisedFunction, this, _1, _2)) {
+      add_to_reference_list_(boost::bind(
+          &VaultService::AddToRefListDoNothing, this, _1, _2)),
+      remove_from_reference_list_(boost::bind(
+          &VaultService::RemoveFromRefListDoNothing, this, _1, _2)) {
+//      amend_account_(
+//          boost::bind(&VaultService::AmendAccountDoNothing, this,    )) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co.Hash(pmid_public + pmid_public_signature_, "",
@@ -379,7 +383,7 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
   done->Run();
 }
 
-void VaultService::StoreChunkReference(
+void VaultService::AddToReferenceList(
     google::protobuf::RpcController*,
     const maidsafe::AddToReferenceListRequest* request,
     maidsafe::AddToReferenceListResponse* response,
@@ -444,6 +448,180 @@ void VaultService::StoreChunkReference(
   response->set_result(kAck);
   done->Run();
   // Amend sender's account
+
+
+
+}
+
+void VaultService::RemoveFromReferenceList(
+      google::protobuf::RpcController* controller,
+      const maidsafe::RemoveFromReferenceListRequest* request,
+      maidsafe::RemoveFromReferenceListResponse* response,
+      google::protobuf::Closure* done) {
+}
+
+void VaultService::AmendAccount(google::protobuf::RpcController*,
+                                const maidsafe::AmendAccountRequest* request,
+                                maidsafe::AmendAccountResponse* response,
+                                google::protobuf::Closure* done) {
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::AmendAccount (%i), request isn't initialized.\n",
+           knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  if (!request->has_store_contract() && !request->has_signed_size()) {
+#ifdef DEBUG
+    printf("In VaultService::AmendAccount (%i), no info to validate 1.\n",
+           knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  if (request->has_store_contract() && request->has_signed_size()) {
+#ifdef DEBUG
+    printf("In VaultService::AmendAccount (%i), no info to validate 2.\n",
+           knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  // Extract data from either of the
+  boost::uint64_t account_delta;
+  std::string pmid;
+  if (!ValidateAmendRequest(request, &account_delta, &pmid)) {
+#ifdef DEBUG
+    printf("In VaultService::AmendAccount (%i), problem with request.\n",
+           knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  if (ah_.HaveAccount(pmid) == kAccountNotFound) {
+    if (request->amendment_type() ==
+        maidsafe::AmendAccountRequest::kSpaceOffered) {
+      if (ah_.AddAccount(pmid, account_delta) != 0) {
+#ifdef DEBUG
+        printf("In VaultService::AmendAccount (%i), failed adding %s's account."
+               "\n", knode_->host_port(), HexSubstr(pmid).c_str());
+#endif
+        done->Run();
+        return;
+      }
+    }
+  } else {
+    bool increase(false);
+    int field(2);
+    if (request->amendment_type() ==
+        maidsafe::AmendAccountRequest::kSpaceOffered) {
+      if (ah_.AmendAccount(pmid, 1, account_delta, increase) != 0) {
+#ifdef DEBUG
+        printf("In VaultService::AmendAccount (%i), failed amending space"
+               " offered by %s.\n", knode_->host_port(),
+               HexSubstr(pmid).c_str());
+#endif
+        done->Run();
+        return;
+      }
+    } else {
+      if (request->amendment_type() ==
+          maidsafe::AmendAccountRequest::kSpaceGivenInc ||
+          request->amendment_type() ==
+          maidsafe::AmendAccountRequest::kSpaceTakenInc)
+        increase = true;
+      if (request->amendment_type() ==
+          maidsafe::AmendAccountRequest::kSpaceTakenDec ||
+          request->amendment_type() ==
+          maidsafe::AmendAccountRequest::kSpaceTakenInc)
+        field = 3;
+      if (ah_.AmendAccount(pmid, field, account_delta, increase) != 0) {
+#ifdef DEBUG
+        printf("In VaultService::AmendAccount (%i), failed amending %s's space"
+               ".\n", knode_->host_port(),  HexSubstr(pmid).c_str());
+#endif
+        done->Run();
+        return;
+      }
+    }
+  }
+
+  response->set_result(kAck);
+  done->Run();
+}
+
+void VaultService::AccountStatus(google::protobuf::RpcController*,
+                                 const maidsafe::AccountStatusRequest* request,
+                                 maidsafe::AccountStatusResponse* response,
+                                 google::protobuf::Closure* done) {
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::AccountStatus (%i), request is not initialized.\n",
+           knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  boost::uint64_t space_offered(0), space_given(0), space_taken(0);
+  int n = ah_.GetAccountInfo(request->pmid(), &space_offered, &space_given,
+                             &space_taken);
+  if (n != 0) {
+#ifdef DEBUG
+    printf("In VaultService::AccountStatus (%i), ", knode_->host_port());
+    printf("don't have the account for %s.\n",
+           HexSubstr(request->pmid()).c_str());
+#endif
+    done->Run();
+    return;
+  }
+
+  response->set_result(kAck);
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->pmid() + "ACCOUNT", request->pmid())) {
+#ifdef DEBUG
+    printf("In VaultService::AccountStatus (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
+#endif
+    // TODO(Team#5#): return info that we consider "public" from the account
+    done->Run();
+    return;
+  }
+
+  response->set_space_offered(space_offered);
+  response->set_space_given(space_given);
+  response->set_space_taken(space_taken);
+  done->Run();
+}
+
+void VaultService::CheckChunk(google::protobuf::RpcController*,
+                              const maidsafe::CheckChunkRequest* request,
+                              maidsafe::CheckChunkResponse* response,
+                              google::protobuf::Closure* done) {
+#ifdef DEBUG
+//  printf("In VaultService::CheckChunk (%i)\n", knode_->host_port());
+#endif
+  response->set_pmid(non_hex_pmid_);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+    return;
+  }
+  if (HasChunkLocal(request->chunkname()))
+    response->set_result(kAck);
+  else
+    response->set_result(kNack);
+  done->Run();
 }
 
 void VaultService::GetChunk(google::protobuf::RpcController*,
@@ -523,26 +701,6 @@ void VaultService::GetPacket(google::protobuf::RpcController*,
     response->clear_content();
     response->set_result(kNack);
   }
-  done->Run();
-}
-
-void VaultService::CheckChunk(google::protobuf::RpcController*,
-                              const maidsafe::CheckChunkRequest* request,
-                              maidsafe::CheckChunkResponse* response,
-                              google::protobuf::Closure* done) {
-#ifdef DEBUG
-//  printf("In VaultService::CheckChunk (%i)\n", knode_->host_port());
-#endif
-  response->set_pmid(non_hex_pmid_);
-  if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-  if (HasChunkLocal(request->chunkname()))
-    response->set_result(kAck);
-  else
-    response->set_result(kNack);
   done->Run();
 }
 
@@ -862,150 +1020,6 @@ void VaultService::VaultStatus(google::protobuf::RpcController*,
   response->set_encrypted_response(co.AsymEncrypt(serialised_vc, "",
             pmid_public_, crypto::STRING_STRING));
   response->set_result(kAck);
-  done->Run();
-}
-
-void VaultService::AmendAccount(google::protobuf::RpcController*,
-                                const maidsafe::AmendAccountRequest* request,
-                                maidsafe::AmendAccountResponse* response,
-                                google::protobuf::Closure* done) {
-  response->set_pmid(non_hex_pmid_);
-  response->set_result(kNack);
-  if (!request->IsInitialized()) {
-#ifdef DEBUG
-    printf("In VaultService::AmendAccount (%i), request isn't initialized.\n",
-           knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-
-  if (!request->has_store_contract() && !request->has_signed_size()) {
-#ifdef DEBUG
-    printf("In VaultService::AmendAccount (%i), no info to validate 1.\n",
-           knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-
-  if (request->has_store_contract() && request->has_signed_size()) {
-#ifdef DEBUG
-    printf("In VaultService::AmendAccount (%i), no info to validate 2.\n",
-           knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-
-  // Extract data from either of the
-  boost::uint64_t account_delta;
-  std::string pmid;
-  if (!ValidateAmendRequest(request, &account_delta, &pmid)) {
-#ifdef DEBUG
-    printf("In VaultService::AmendAccount (%i), problem with request.\n",
-           knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-
-  if (ah_.HaveAccount(pmid) == kAccountNotFound) {
-    if (request->amendment_type() ==
-        maidsafe::AmendAccountRequest::kSpaceOffered) {
-      if (ah_.AddAccount(pmid, account_delta) != 0) {
-#ifdef DEBUG
-        printf("In VaultService::AmendAccount (%i), failed adding %s's account."
-               "\n", knode_->host_port(), HexSubstr(pmid).c_str());
-#endif
-        done->Run();
-        return;
-      }
-    }
-  } else {
-    bool increase(false);
-    int field(2);
-    if (request->amendment_type() ==
-        maidsafe::AmendAccountRequest::kSpaceOffered) {
-      if (ah_.AmendAccount(pmid, 1, account_delta, increase) != 0) {
-#ifdef DEBUG
-        printf("In VaultService::AmendAccount (%i), failed amending space"
-               " offered by %s.\n", knode_->host_port(),
-               HexSubstr(pmid).c_str());
-#endif
-        done->Run();
-        return;
-      }
-    } else {
-      if (request->amendment_type() ==
-          maidsafe::AmendAccountRequest::kSpaceGivenInc ||
-          request->amendment_type() ==
-          maidsafe::AmendAccountRequest::kSpaceTakenInc)
-        increase = true;
-      if (request->amendment_type() ==
-          maidsafe::AmendAccountRequest::kSpaceTakenDec ||
-          request->amendment_type() ==
-          maidsafe::AmendAccountRequest::kSpaceTakenInc)
-        field = 3;
-      if (ah_.AmendAccount(pmid, field, account_delta, increase) != 0) {
-#ifdef DEBUG
-        printf("In VaultService::AmendAccount (%i), failed amending %s's space"
-               ".\n", knode_->host_port(),  HexSubstr(pmid).c_str());
-#endif
-        done->Run();
-        return;
-      }
-    }
-  }
-
-  response->set_result(kAck);
-  done->Run();
-}
-
-void VaultService::AccountStatus(google::protobuf::RpcController*,
-                                 const maidsafe::AccountStatusRequest* request,
-                                 maidsafe::AccountStatusResponse* response,
-                                 google::protobuf::Closure* done) {
-  response->set_pmid(non_hex_pmid_);
-  response->set_result(kNack);
-  if (!request->IsInitialized()) {
-#ifdef DEBUG
-    printf("In VaultService::AccountStatus (%i), request is not initialized.\n",
-           knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-
-  boost::uint64_t space_offered(0), space_given(0), space_taken(0);
-  int n = ah_.GetAccountInfo(request->pmid(), &space_offered, &space_given,
-                             &space_taken);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("In VaultService::AccountStatus (%i), ", knode_->host_port());
-    printf("don't have the account for %s.\n",
-           HexSubstr(request->pmid()).c_str());
-#endif
-    done->Run();
-    return;
-  }
-
-  response->set_result(kAck);
-  if (!ValidateSignedRequest(request->public_key(),
-      request->public_key_signature(), request->request_signature(),
-      request->pmid() + "ACCOUNT", request->pmid())) {
-#ifdef DEBUG
-    printf("In VaultService::AccountStatus (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
-#endif
-    // TODO(Team#5#): return info that we consider "public" from the account
-    done->Run();
-    return;
-  }
-
-  response->set_space_offered(space_offered);
-  response->set_space_given(space_given);
-  response->set_space_taken(space_taken);
   done->Run();
 }
 

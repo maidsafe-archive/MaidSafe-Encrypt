@@ -46,6 +46,11 @@ void AddToRefPacketTask::run() {
     pdvault_->AddToRefPacket(chunkname_, store_contract_);
 }
 
+void RemoveFromRefPacketTask::run() {
+  if (pdvault_->vault_status() == kVaultStarted)
+    pdvault_->RemoveFromRefPacket(chunkname_, signed_size_);
+}
+
 PDVault::PDVault(const std::string &pmid_public,
                  const std::string &pmid_private,
                  const std::string &signed_pmid_public,
@@ -190,7 +195,7 @@ int PDVault::Stop() {
     SetVaultStatus(kVaultStopped);
   transport_.Stop();
   channel_manager_.Stop();
-  vault_service_->ClearAddToRefListFunction();
+  vault_service_->ClearFunctors();
   return 0;
 }
 
@@ -241,6 +246,13 @@ void PDVault::PrunePendingOperations() {
   }
 }
 
+std::string PDVault::GetSignedRequest(const std::string &non_hex_name,
+                                      const std::string &recipient_id) {
+  return co_.AsymSign(co_.Hash(signed_pmid_public_ + non_hex_name +
+      recipient_id, "", crypto::STRING_STRING, false), "", pmid_private_,
+      crypto::STRING_STRING);
+}
+
 int PDVault::AddToRefList(const std::string &chunkname,
                           const maidsafe::StoreContract &store_contract) {
   // thread_pool_ handles destruction of task.
@@ -248,13 +260,6 @@ int PDVault::AddToRefList(const std::string &chunkname,
       this);
   thread_pool_.start(task);
   return kSuccess;
-}
-
-std::string PDVault::GetSignedRequest(const std::string &non_hex_name,
-                                      const std::string &recipient_id) {
-  return co_.AsymSign(co_.Hash(signed_pmid_public_ + non_hex_name +
-      recipient_id, "", crypto::STRING_STRING, false), "", pmid_private_,
-      crypto::STRING_STRING);
 }
 
 void PDVault::AddToRefPacket(const std::string &chunkname,
@@ -442,6 +447,106 @@ void PDVault::SendToRefPacketCallback(
     boost::mutex::scoped_lock loch(*add_ref_mutex);
     add_ref_result_holder->add_ref_response_returned_ = true;
   }
+}
+
+int PDVault::RemoveFromRefList(const std::string &chunkname,
+                               const maidsafe::SignedSize &signed_size) {
+  // thread_pool_ handles destruction of task.
+  RemoveFromRefPacketTask *task = new RemoveFromRefPacketTask(chunkname,
+      signed_size, this);
+  thread_pool_.start(task);
+  return kSuccess;
+}
+
+void PDVault::RemoveFromRefPacket(const std::string &chunkname,
+                                  const maidsafe::SignedSize &signed_size) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("Vault offline %s\n", pmid_.substr(0, 10).c_str());
+#endif
+    return;
+  }
+
+  // Find the chunk reference holders
+  std::vector<kad::Contact> ref_holders;
+  if ((FindKNodes(chunkname, &ref_holders) != 0) ||
+      (ref_holders.size() < kKadStoreThreshold_)) {
+    return;
+  }
+  for (std::vector<kad::Contact>::iterator it = ref_holders.begin();
+       it != ref_holders.end(); ++it) {
+    if ((*it).node_id() == knode_.node_id()) {
+#ifdef DEBUG
+//      printf("Vault %s listed as a ref holder to itself for chunk %s\n",
+//             HexSubstr((*it).node_id()).c_str(),
+//             HexSubstr(chunkname).c_str());
+#endif
+      ref_holders.erase(it);
+      break;
+    }
+  }
+#ifdef DEBUG
+//  for (boost::uint16_t h = 0; h < ref_holders.size(); ++h) {
+//    printf("After - Vault %s,  chunk %s,  ref holder %i: %s\n",
+//           HexSubstr(non_hex_pmid_).c_str(),
+//           HexSubstr(chunkname).c_str(), h,
+//           HexSubstr(ref_holders.at(h).node_id()).c_str());
+//  }
+#endif
+  int successful_count(0);
+  int called_back_count(0);
+//  std::vector<AddRefResultHolder> results;
+//  for (boost::uint16_t i = 0; i < ref_holders.size(); ++i) {
+//    AddRefResultHolder add_ref_result_holder;
+//    results.push_back(add_ref_result_holder);
+//  }
+//  boost::mutex add_ref_mutex;
+//  for (boost::uint16_t i = 0; i < ref_holders.size(); ++i) {
+//    SendToRefPacket(ref_holders.at(i), chunkname, store_contract,
+//                    &add_ref_mutex, &results.at(i));
+//  }
+//// TODO(Fraser#5#): 2009-08-15 - This loop logic needs tidied.
+//  int timeout = 60000;
+//  int time_count = 0;
+//  while (called_back_count < kad::K && time_count < timeout &&
+//         successful_count < kKadStoreThreshold_) {
+//    for (boost::uint16_t i = 0; i < results.size(); ++i) {
+//      boost::mutex::scoped_lock loch(add_ref_mutex);
+//      if (results.at(i).add_ref_response_returned_) {
+//        ++called_back_count;
+//        if (results.at(i).add_ref_response_.result() != kAck)
+//          ++successful_count;
+//        results.at(i).add_ref_response_returned_ = false;
+//        break;
+//      }
+//    }
+//    time_count += 10;
+//    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//  }
+//  for (boost::uint16_t j = 0; j < results.size(); ++j) {
+//    channel_manager_.DeletePendingRequest(
+//        results.at(j).controller_->req_id());
+//  }
+//  if (successful_count < kKadStoreThreshold_) {
+//#ifdef DEBUG
+//  printf("In PDVault::AddToRefPacket (%i) - failed to add ourself (%s) "
+//         "as ref holder for key %s\n", host_port(),
+//         HexSubstr(non_hex_pmid_).c_str(),
+//         HexSubstr(chunkname).c_str());
+//#endif
+//    return;  // We've not received enough successful responses or got valid IOU
+//  }
+//#ifdef DEBUG
+////  printf("In PDVault::AddToRefPacket (%i) - successfully added ourself (%s) "
+////         "as ref holder for key %s\n", host_port(),
+////         HexSubstr(non_hex_pmid_).c_str(),
+////         HexSubstr(chunkname).c_str());
+//#endif
+
+
+
+
+// TODO(Fraser#5#): 2009-12-29 - Amend Account Request (Space given dec)
 }
 
 

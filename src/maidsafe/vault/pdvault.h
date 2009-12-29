@@ -50,10 +50,6 @@ class Env;
 
 namespace maidsafe_vault {
 
-// Tuple of pmid, non-hex chunkname, chunksize, and pmid_publickey in that order
-typedef boost::tuple<std::string, std::string, boost::uint64_t,
-                     std::string> IouReadyTuple;
-
 enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
 
 class KadCallback {
@@ -219,6 +215,23 @@ class AddToRefPacketTask : public QRunnable {
   PDVault *pdvault_;
 };
 
+class RemoveFromRefPacketTask : public QRunnable {
+ public:
+  RemoveFromRefPacketTask(const std::string &chunkname,
+                          const maidsafe::SignedSize &signed_size,
+                          PDVault *pdvault)
+      : chunkname_(chunkname),
+        signed_size_(signed_size),
+        pdvault_(pdvault) {}
+  void run();
+ private:
+  RemoveFromRefPacketTask &operator=(const RemoveFromRefPacketTask&);
+  RemoveFromRefPacketTask(const RemoveFromRefPacketTask&);
+  std::string chunkname_;
+  maidsafe::SignedSize signed_size_;
+  PDVault *pdvault_;
+};
+
 class PDVault {
  public:
   PDVault(const std::string &pmid_public,
@@ -271,6 +284,7 @@ class PDVault {
   void SetKThreshold(const boost::uint16_t &kKadStoreThreshold);
   friend class localvaults::Env;
   friend void AddToRefPacketTask::run();
+  friend void RemoveFromRefPacketTask::run();
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
@@ -286,13 +300,13 @@ class PDVault {
   void UnRegisterMaidService();
   // This runs in a continuous loop until vault_status_ is not kVaultStarted.
   void PrunePendingOperations();
-  // Adds this vault's ID to reference list for chunkname.
-  int AddToRefList(const std::string &chunkname,
-                   const maidsafe::StoreContract &store_contract);
   // Returns a signature for validation by recipient of RPC
   std::string GetSignedRequest(const std::string &non_hex_name,
                                const std::string &recipient_id);
-  // Runs in a worker thread to add this vault's ID to a chunk reference packet
+  // Adds this vault's ID to reference list for chunkname.
+  int AddToRefList(const std::string &chunkname,
+                   const maidsafe::StoreContract &store_contract);
+  // Runs in a worker thread to add this vault's ID to a chunk reference packet.
   void AddToRefPacket(const std::string &chunkname,
                       const maidsafe::StoreContract &store_contract);
   // Finds k closest nodes to the kad_key.  If this vault's ID is closer than
@@ -300,7 +314,7 @@ class PDVault {
   // contact dropped.  The vector is ordered from closest to furthest.
   int FindKNodes(const std::string &kad_key,
                  std::vector<kad::Contact> *contacts);
-  // Add this vault's ID to a chunk reference packet
+  // Add this vault's ID to a chunk reference packet.
   int SendToRefPacket(const kad::Contact &ref_holder,
                       const std::string &chunkname,
                       const maidsafe::StoreContract &store_contract,
@@ -308,6 +322,13 @@ class PDVault {
                       AddRefResultHolder *add_ref_result_holder);
   void SendToRefPacketCallback(AddRefResultHolder *add_ref_result_holder,
                                boost::mutex *add_ref_mutex);
+  // Removes this vault's ID from reference list for chunkname.
+  int RemoveFromRefList(const std::string &chunkname,
+                        const maidsafe::SignedSize &signed_size);
+  // Runs in a worker thread to remove this vault's ID from a chunk ref packet.
+  void RemoveFromRefPacket(const std::string &chunkname,
+                           const maidsafe::SignedSize &signed_size);
+
 
 
 
