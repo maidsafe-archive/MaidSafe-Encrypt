@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram>
-<source><![CDATA[#![Delete Chunk]
+<source><![CDATA[#![Delete Chunk   ]
 client:client "Client"
 peer:vault "Peer Vault"
 watch:vault "Watch List Holders x16"

@@ -426,7 +426,6 @@ void VaultService::AddToReferenceList(
     done->Run();
     return;
   }
-
   // TODO(Fraser#5#): 2009-12-28 - Need to go to either client's account holders
   //                               or chunk watchlist to validate that original
   //                               signed_size in contract isn't faked by vault.
@@ -441,20 +440,31 @@ void VaultService::AddToReferenceList(
     printf("In VaultService::AddToReferenceList (%i), failed to store pmid to"
            "local ref packet.\n", knode_->host_port());
 #endif
-    response->set_result(kNack);
+    done->Run();
+    return;
+  }
+  // Amend sender's account
+  crypto::Crypto co;
+  maidsafe::SignedSize signed_size;
+  boost::uint64_t data_size =
+      store_contract.inner_contract().signed_size().data_size();
+  signed_size.set_data_size(data_size);
+  signed_size.set_signature(co.AsymSign(base::itos_ull(data_size), "",
+                                        pmid_private_, crypto::STRING_STRING));
+  signed_size.set_pmid(non_hex_pmid_);
+  signed_size.set_public_key(pmid_public_);
+  signed_size.set_public_key_signature(pmid_public_signature_);
+  if (amend_account_(maidsafe::AmendAccountRequest::kSpaceGivenInc, signed_size,
+      request->chunkname()) != kSuccess) {
+#ifdef DEBUG
+    printf("In VaultService::AddToReferenceList (%i), failed to amend sender's"
+           "account.\n", knode_->host_port());
+#endif
     done->Run();
     return;
   }
   response->set_result(kAck);
   done->Run();
-  // Amend sender's account
-  maidsafe::SignedSize signed_size;
-
-  amend_account_(maidsafe::AmendAccountRequest::kSpaceGivenInc, signed_size,
-                 request->chunkname());
-
-
-
 }
 
 void VaultService::RemoveFromReferenceList(
