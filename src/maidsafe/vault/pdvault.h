@@ -232,6 +232,26 @@ class RemoveFromRefPacketTask : public QRunnable {
   PDVault *pdvault_;
 };
 
+class AmendAccountTask : public QRunnable {
+ public:
+  AmendAccountTask(maidsafe::AmendAccountRequest::Amendment amendment_type,
+                   const maidsafe::SignedSize &signed_size,
+                   const std::string &chunkname,
+                   PDVault *pdvault)
+      : amendment_type_(amendment_type),
+        signed_size_(signed_size),
+        chunkname_(chunkname),
+        pdvault_(pdvault) {}
+  void run();
+ private:
+  AmendAccountTask &operator=(const AmendAccountTask&);
+  AmendAccountTask(const AmendAccountTask&);
+  maidsafe::AmendAccountRequest::Amendment amendment_type_;
+  maidsafe::SignedSize signed_size_;
+  std::string chunkname_;
+  PDVault *pdvault_;
+};
+
 class PDVault {
  public:
   PDVault(const std::string &pmid_public,
@@ -285,6 +305,7 @@ class PDVault {
   friend class localvaults::Env;
   friend void AddToRefPacketTask::run();
   friend void RemoveFromRefPacketTask::run();
+  friend void AmendAccountTask::run();
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
@@ -328,7 +349,14 @@ class PDVault {
   // Runs in a worker thread to remove this vault's ID from a chunk ref packet.
   void RemoveFromRefPacket(const std::string &chunkname,
                            const maidsafe::SignedSize &signed_size);
-
+  // Amend a peer's account after adding him to watch / ref list
+  int AmendAccount(maidsafe::AmendAccountRequest::Amendment amendment_type,
+                   const maidsafe::SignedSize &signed_size,
+                   const std::string &chunkname);
+  // Runs in a worker thread to amend a peer's account
+  void DoAmendAccount(maidsafe::AmendAccountRequest::Amendment amendment_type,
+                      const maidsafe::SignedSize &signed_size,
+                      const std::string &chunkname);
 
 
 

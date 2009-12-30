@@ -168,7 +168,7 @@ enum ReturnCode {
 
   // Service
   kVaultServiceError = -1501,
-  kVaultServiceUnitialisedFunction = -1502,
+  kVaultServiceUninitialisedFunction = -1502,
 
   // Vault
   kVaultOffline = -2501,

@@ -49,8 +49,9 @@ typedef boost::function<int(const std::string&, const maidsafe::StoreContract&)>
 typedef boost::function<int(const std::string&, const maidsafe::SignedSize&)>  // NOLINT (Fraser) - False positive
     RemoveFromRefListFunctor;
 
-//typedef boost::function<int(     )>  // NOLINT (Fraser) - False positive
-//    AmendAccountFunctor;
+typedef boost::function<int(maidsafe::AmendAccountRequest::Amendment,  // NOLINT (Fraser) - False positive
+                            const maidsafe::SignedSize&,
+                            const std::string&)> AmendAccountFunctor;
 
 struct IsOwnedPendingResponse {
   IsOwnedPendingResponse() : callback(NULL), args(NULL) {}
@@ -81,15 +82,15 @@ class VaultService : public maidsafe::MaidsafeService {
                            const maidsafe::StorePacketRequest* request,
                            maidsafe::StorePacketResponse* response,
                            google::protobuf::Closure* done);
-  virtual void AddToWatchList(google::protobuf::RpcController* controller,
-                              const maidsafe::AddToWatchListRequest* request,
-                              maidsafe::AddToWatchListResponse* response,
-                              google::protobuf::Closure* done);
-  virtual void RemoveFromWatchList(
-      google::protobuf::RpcController* controller,
-      const maidsafe::RemoveFromWatchListRequest* request,
-      maidsafe::RemoveFromWatchListResponse* response,
-      google::protobuf::Closure* done);
+//  virtual void AddToWatchList(google::protobuf::RpcController* controller,
+//                              const maidsafe::AddToWatchListRequest* request,
+//                              maidsafe::AddToWatchListResponse* response,
+//                              google::protobuf::Closure* done);
+//  virtual void RemoveFromWatchList(
+//      google::protobuf::RpcController* controller,
+//      const maidsafe::RemoveFromWatchListRequest* request,
+//      maidsafe::RemoveFromWatchListResponse* response,
+//      google::protobuf::Closure* done);
   virtual void AddToReferenceList(
       google::protobuf::RpcController* controller,
       const maidsafe::AddToReferenceListRequest* request,
@@ -162,16 +163,16 @@ class VaultService : public maidsafe::MaidsafeService {
   void SetRemoveFromRefListFunction(const RemoveFromRefListFunctor &func) {
     remove_from_reference_list_ = func;
   }
-//  void SetAmendAccountFunction(const AmendAccountFunctor &func) {
-//    amend_account_ = func;
-//  }
+  void SetAmendAccountFunction(const AmendAccountFunctor &func) {
+    amend_account_ = func;
+  }
   void ClearFunctors() {
     add_to_reference_list_ =
         boost::bind(&VaultService::AddToRefListDoNothing, this, _1, _2);
     remove_from_reference_list_ =
         boost::bind(&VaultService::RemoveFromRefListDoNothing, this, _1, _2);
-//    amend_account_ =
-//        boost::bind(&VaultService::AmendAccountDoNothing, this, );
+    amend_account_ =
+        boost::bind(&VaultService::AmendAccountDoNothing, this, _1, _2, _3);
   }
  private:
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest);
@@ -226,17 +227,19 @@ class VaultService : public maidsafe::MaidsafeService {
   bool DeleteChunkLocal(const std::string &chunkname);
   void FindCloseNodesCallback(const std::string &result,
                               std::vector<std::string> *close_nodes);
-  int AddToRefListDoNothing(const std::string &,
-                            const maidsafe::StoreContract &) {
-    return kVaultServiceUnitialisedFunction;
+  int AddToRefListDoNothing(const std::string&,
+                            const maidsafe::StoreContract&) {
+    return kVaultServiceUninitialisedFunction;
   }
-  int RemoveFromRefListDoNothing(const std::string &,
-                                 const maidsafe::SignedSize &) {
-    return kVaultServiceUnitialisedFunction;
+  int RemoveFromRefListDoNothing(const std::string&,
+                                 const maidsafe::SignedSize&) {
+    return kVaultServiceUninitialisedFunction;
   }
-//  int AmendAccountDoNothing(   ) {
-//    return kVaultServiceUnitialisedFunction;
-//  }
+  int AmendAccountDoNothing(maidsafe::AmendAccountRequest::Amendment,
+                            const maidsafe::SignedSize&,
+                            const std::string&) {
+    return kVaultServiceUninitialisedFunction;
+  }
   std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
   std::string non_hex_pmid_;
   VaultChunkStore *vault_chunkstore_;
@@ -247,7 +250,7 @@ class VaultService : public maidsafe::MaidsafeService {
   AccountHandler ah_;
   AddToRefListFunctor add_to_reference_list_;
   RemoveFromRefListFunctor remove_from_reference_list_;
-//  AmendAccountFunctor amend_account_;
+  AmendAccountFunctor amend_account_;
 };
 
 class RegistrationService : public maidsafe::VaultRegistration {

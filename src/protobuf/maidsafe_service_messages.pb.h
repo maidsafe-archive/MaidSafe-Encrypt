@@ -86,13 +86,12 @@ enum AmendAccountRequest_Amendment {
   AmendAccountRequest_Amendment_kSpaceGivenInc = 1,
   AmendAccountRequest_Amendment_kSpaceGivenDec = 2,
   AmendAccountRequest_Amendment_kSpaceTakenInc = 3,
-  AmendAccountRequest_Amendment_kSpaceTakenDec = 4,
-  AmendAccountRequest_Amendment_kFailedStoreAgreement = 5
+  AmendAccountRequest_Amendment_kSpaceTakenDec = 4
 };
 const ::google::protobuf::EnumDescriptor* AmendAccountRequest_Amendment_descriptor();
 bool AmendAccountRequest_Amendment_IsValid(int value);
 const AmendAccountRequest_Amendment AmendAccountRequest_Amendment_Amendment_MIN = AmendAccountRequest_Amendment_kSpaceOffered;
-const AmendAccountRequest_Amendment AmendAccountRequest_Amendment_Amendment_MAX = AmendAccountRequest_Amendment_kFailedStoreAgreement;
+const AmendAccountRequest_Amendment AmendAccountRequest_Amendment_Amendment_MAX = AmendAccountRequest_Amendment_kSpaceTakenDec;
 
 inline const ::std::string& AmendAccountRequest_Amendment_Name(AmendAccountRequest_Amendment value) {
   return ::google::protobuf::internal::NameOfEnum(
@@ -2257,7 +2256,6 @@ class AmendAccountRequest : public ::google::protobuf::Message {
   static const Amendment kSpaceGivenDec = AmendAccountRequest_Amendment_kSpaceGivenDec;
   static const Amendment kSpaceTakenInc = AmendAccountRequest_Amendment_kSpaceTakenInc;
   static const Amendment kSpaceTakenDec = AmendAccountRequest_Amendment_kSpaceTakenDec;
-  static const Amendment kFailedStoreAgreement = AmendAccountRequest_Amendment_kFailedStoreAgreement;
   static inline const ::google::protobuf::EnumDescriptor*
   Amendment_descriptor() {
     return AmendAccountRequest_Amendment_descriptor();
@@ -2286,79 +2284,47 @@ class AmendAccountRequest : public ::google::protobuf::Message {
   inline ::maidsafe::AmendAccountRequest_Amendment amendment_type() const;
   inline void set_amendment_type(::maidsafe::AmendAccountRequest_Amendment value);
   
-  // required bytes signature = 2;
-  inline bool has_signature() const;
-  inline void clear_signature();
-  static const int kSignatureFieldNumber = 2;
-  inline const ::std::string& signature() const;
-  inline void set_signature(const ::std::string& value);
-  inline void set_signature(const char* value);
-  inline void set_signature(const void* value, size_t size);
-  inline ::std::string* mutable_signature();
+  // required bytes account_pmid = 2;
+  inline bool has_account_pmid() const;
+  inline void clear_account_pmid();
+  static const int kAccountPmidFieldNumber = 2;
+  inline const ::std::string& account_pmid() const;
+  inline void set_account_pmid(const ::std::string& value);
+  inline void set_account_pmid(const char* value);
+  inline void set_account_pmid(const void* value, size_t size);
+  inline ::std::string* mutable_account_pmid();
   
-  // required bytes pmid = 3;
-  inline bool has_pmid() const;
-  inline void clear_pmid();
-  static const int kPmidFieldNumber = 3;
-  inline const ::std::string& pmid() const;
-  inline void set_pmid(const ::std::string& value);
-  inline void set_pmid(const char* value);
-  inline void set_pmid(const void* value, size_t size);
-  inline ::std::string* mutable_pmid();
-  
-  // required bytes public_key = 4;
-  inline bool has_public_key() const;
-  inline void clear_public_key();
-  static const int kPublicKeyFieldNumber = 4;
-  inline const ::std::string& public_key() const;
-  inline void set_public_key(const ::std::string& value);
-  inline void set_public_key(const char* value);
-  inline void set_public_key(const void* value, size_t size);
-  inline ::std::string* mutable_public_key();
-  
-  // required bytes public_key_signature = 5;
-  inline bool has_public_key_signature() const;
-  inline void clear_public_key_signature();
-  static const int kPublicKeySignatureFieldNumber = 5;
-  inline const ::std::string& public_key_signature() const;
-  inline void set_public_key_signature(const ::std::string& value);
-  inline void set_public_key_signature(const char* value);
-  inline void set_public_key_signature(const void* value, size_t size);
-  inline ::std::string* mutable_public_key_signature();
-  
-  // optional .maidsafe.SignedSize signed_size = 6;
+  // required .maidsafe.SignedSize signed_size = 3;
   inline bool has_signed_size() const;
   inline void clear_signed_size();
-  static const int kSignedSizeFieldNumber = 6;
+  static const int kSignedSizeFieldNumber = 3;
   inline const ::maidsafe::SignedSize& signed_size() const;
   inline ::maidsafe::SignedSize* mutable_signed_size();
   
-  // optional .maidsafe.StoreContract store_contract = 7;
-  inline bool has_store_contract() const;
-  inline void clear_store_contract();
-  static const int kStoreContractFieldNumber = 7;
-  inline const ::maidsafe::StoreContract& store_contract() const;
-  inline ::maidsafe::StoreContract* mutable_store_contract();
+  // optional bytes chunkname = 4;
+  inline bool has_chunkname() const;
+  inline void clear_chunkname();
+  static const int kChunknameFieldNumber = 4;
+  inline const ::std::string& chunkname() const;
+  inline void set_chunkname(const ::std::string& value);
+  inline void set_chunkname(const char* value);
+  inline void set_chunkname(const void* value, size_t size);
+  inline ::std::string* mutable_chunkname();
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   int amendment_type_;
-  ::std::string* signature_;
-  static const ::std::string _default_signature_;
-  ::std::string* pmid_;
-  static const ::std::string _default_pmid_;
-  ::std::string* public_key_;
-  static const ::std::string _default_public_key_;
-  ::std::string* public_key_signature_;
-  static const ::std::string _default_public_key_signature_;
+  ::std::string* account_pmid_;
+  static const ::std::string _default_account_pmid_;
   ::maidsafe::SignedSize* signed_size_;
-  ::maidsafe::StoreContract* store_contract_;
+  ::std::string* chunkname_;
+  static const ::std::string _default_chunkname_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -8477,206 +8443,105 @@ inline void AmendAccountRequest::set_amendment_type(::maidsafe::AmendAccountRequ
   amendment_type_ = value;
 }
 
-// required bytes signature = 2;
-inline bool AmendAccountRequest::has_signature() const {
+// required bytes account_pmid = 2;
+inline bool AmendAccountRequest::has_account_pmid() const {
   return _has_bit(1);
 }
-inline void AmendAccountRequest::clear_signature() {
-  if (signature_ != &_default_signature_) {
-    signature_->clear();
+inline void AmendAccountRequest::clear_account_pmid() {
+  if (account_pmid_ != &_default_account_pmid_) {
+    account_pmid_->clear();
   }
   _clear_bit(1);
 }
-inline const ::std::string& AmendAccountRequest::signature() const {
-  return *signature_;
+inline const ::std::string& AmendAccountRequest::account_pmid() const {
+  return *account_pmid_;
 }
-inline void AmendAccountRequest::set_signature(const ::std::string& value) {
+inline void AmendAccountRequest::set_account_pmid(const ::std::string& value) {
   _set_bit(1);
-  if (signature_ == &_default_signature_) {
-    signature_ = new ::std::string;
+  if (account_pmid_ == &_default_account_pmid_) {
+    account_pmid_ = new ::std::string;
   }
-  signature_->assign(value);
+  account_pmid_->assign(value);
 }
-inline void AmendAccountRequest::set_signature(const char* value) {
+inline void AmendAccountRequest::set_account_pmid(const char* value) {
   _set_bit(1);
-  if (signature_ == &_default_signature_) {
-    signature_ = new ::std::string;
+  if (account_pmid_ == &_default_account_pmid_) {
+    account_pmid_ = new ::std::string;
   }
-  signature_->assign(value);
+  account_pmid_->assign(value);
 }
-inline void AmendAccountRequest::set_signature(const void* value, size_t size) {
+inline void AmendAccountRequest::set_account_pmid(const void* value, size_t size) {
   _set_bit(1);
-  if (signature_ == &_default_signature_) {
-    signature_ = new ::std::string;
+  if (account_pmid_ == &_default_account_pmid_) {
+    account_pmid_ = new ::std::string;
   }
-  signature_->assign(reinterpret_cast<const char*>(value), size);
+  account_pmid_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* AmendAccountRequest::mutable_signature() {
+inline ::std::string* AmendAccountRequest::mutable_account_pmid() {
   _set_bit(1);
-  if (signature_ == &_default_signature_) {
-    signature_ = new ::std::string;
+  if (account_pmid_ == &_default_account_pmid_) {
+    account_pmid_ = new ::std::string;
   }
-  return signature_;
+  return account_pmid_;
 }
 
-// required bytes pmid = 3;
-inline bool AmendAccountRequest::has_pmid() const {
-  return _has_bit(2);
-}
-inline void AmendAccountRequest::clear_pmid() {
-  if (pmid_ != &_default_pmid_) {
-    pmid_->clear();
-  }
-  _clear_bit(2);
-}
-inline const ::std::string& AmendAccountRequest::pmid() const {
-  return *pmid_;
-}
-inline void AmendAccountRequest::set_pmid(const ::std::string& value) {
-  _set_bit(2);
-  if (pmid_ == &_default_pmid_) {
-    pmid_ = new ::std::string;
-  }
-  pmid_->assign(value);
-}
-inline void AmendAccountRequest::set_pmid(const char* value) {
-  _set_bit(2);
-  if (pmid_ == &_default_pmid_) {
-    pmid_ = new ::std::string;
-  }
-  pmid_->assign(value);
-}
-inline void AmendAccountRequest::set_pmid(const void* value, size_t size) {
-  _set_bit(2);
-  if (pmid_ == &_default_pmid_) {
-    pmid_ = new ::std::string;
-  }
-  pmid_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* AmendAccountRequest::mutable_pmid() {
-  _set_bit(2);
-  if (pmid_ == &_default_pmid_) {
-    pmid_ = new ::std::string;
-  }
-  return pmid_;
-}
-
-// required bytes public_key = 4;
-inline bool AmendAccountRequest::has_public_key() const {
-  return _has_bit(3);
-}
-inline void AmendAccountRequest::clear_public_key() {
-  if (public_key_ != &_default_public_key_) {
-    public_key_->clear();
-  }
-  _clear_bit(3);
-}
-inline const ::std::string& AmendAccountRequest::public_key() const {
-  return *public_key_;
-}
-inline void AmendAccountRequest::set_public_key(const ::std::string& value) {
-  _set_bit(3);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(value);
-}
-inline void AmendAccountRequest::set_public_key(const char* value) {
-  _set_bit(3);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(value);
-}
-inline void AmendAccountRequest::set_public_key(const void* value, size_t size) {
-  _set_bit(3);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* AmendAccountRequest::mutable_public_key() {
-  _set_bit(3);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  return public_key_;
-}
-
-// required bytes public_key_signature = 5;
-inline bool AmendAccountRequest::has_public_key_signature() const {
-  return _has_bit(4);
-}
-inline void AmendAccountRequest::clear_public_key_signature() {
-  if (public_key_signature_ != &_default_public_key_signature_) {
-    public_key_signature_->clear();
-  }
-  _clear_bit(4);
-}
-inline const ::std::string& AmendAccountRequest::public_key_signature() const {
-  return *public_key_signature_;
-}
-inline void AmendAccountRequest::set_public_key_signature(const ::std::string& value) {
-  _set_bit(4);
-  if (public_key_signature_ == &_default_public_key_signature_) {
-    public_key_signature_ = new ::std::string;
-  }
-  public_key_signature_->assign(value);
-}
-inline void AmendAccountRequest::set_public_key_signature(const char* value) {
-  _set_bit(4);
-  if (public_key_signature_ == &_default_public_key_signature_) {
-    public_key_signature_ = new ::std::string;
-  }
-  public_key_signature_->assign(value);
-}
-inline void AmendAccountRequest::set_public_key_signature(const void* value, size_t size) {
-  _set_bit(4);
-  if (public_key_signature_ == &_default_public_key_signature_) {
-    public_key_signature_ = new ::std::string;
-  }
-  public_key_signature_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* AmendAccountRequest::mutable_public_key_signature() {
-  _set_bit(4);
-  if (public_key_signature_ == &_default_public_key_signature_) {
-    public_key_signature_ = new ::std::string;
-  }
-  return public_key_signature_;
-}
-
-// optional .maidsafe.SignedSize signed_size = 6;
+// required .maidsafe.SignedSize signed_size = 3;
 inline bool AmendAccountRequest::has_signed_size() const {
-  return _has_bit(5);
+  return _has_bit(2);
 }
 inline void AmendAccountRequest::clear_signed_size() {
   if (signed_size_ != NULL) signed_size_->::maidsafe::SignedSize::Clear();
-  _clear_bit(5);
+  _clear_bit(2);
 }
 inline const ::maidsafe::SignedSize& AmendAccountRequest::signed_size() const {
   return signed_size_ != NULL ? *signed_size_ : *default_instance_->signed_size_;
 }
 inline ::maidsafe::SignedSize* AmendAccountRequest::mutable_signed_size() {
-  _set_bit(5);
+  _set_bit(2);
   if (signed_size_ == NULL) signed_size_ = new ::maidsafe::SignedSize;
   return signed_size_;
 }
 
-// optional .maidsafe.StoreContract store_contract = 7;
-inline bool AmendAccountRequest::has_store_contract() const {
-  return _has_bit(6);
+// optional bytes chunkname = 4;
+inline bool AmendAccountRequest::has_chunkname() const {
+  return _has_bit(3);
 }
-inline void AmendAccountRequest::clear_store_contract() {
-  if (store_contract_ != NULL) store_contract_->::maidsafe::StoreContract::Clear();
-  _clear_bit(6);
+inline void AmendAccountRequest::clear_chunkname() {
+  if (chunkname_ != &_default_chunkname_) {
+    chunkname_->clear();
+  }
+  _clear_bit(3);
 }
-inline const ::maidsafe::StoreContract& AmendAccountRequest::store_contract() const {
-  return store_contract_ != NULL ? *store_contract_ : *default_instance_->store_contract_;
+inline const ::std::string& AmendAccountRequest::chunkname() const {
+  return *chunkname_;
 }
-inline ::maidsafe::StoreContract* AmendAccountRequest::mutable_store_contract() {
-  _set_bit(6);
-  if (store_contract_ == NULL) store_contract_ = new ::maidsafe::StoreContract;
-  return store_contract_;
+inline void AmendAccountRequest::set_chunkname(const ::std::string& value) {
+  _set_bit(3);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(value);
+}
+inline void AmendAccountRequest::set_chunkname(const char* value) {
+  _set_bit(3);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(value);
+}
+inline void AmendAccountRequest::set_chunkname(const void* value, size_t size) {
+  _set_bit(3);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* AmendAccountRequest::mutable_chunkname() {
+  _set_bit(3);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  return chunkname_;
 }
 
 // -------------------------------------------------------------------

@@ -795,7 +795,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
     response.Clear();
   }
 }
-
+/*
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   rpcprotocol::Controller controller;
   maidsafe::AmendAccountRequest request;
@@ -1157,7 +1157,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     printf("Passed getting status with 0 space given.\n");
   }
 }
-
+*/
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   rpcprotocol::Controller controller;
   maidsafe::AddToWatchListRequest request;

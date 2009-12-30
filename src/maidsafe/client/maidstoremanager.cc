@@ -3038,14 +3038,7 @@ void MaidsafeStoreManager::AmendAccount(const boost::uint64_t &space_offered) {
       "", pmid_pri, crypto::STRING_STRING));
   mutable_signed_size->set_public_key(pmid_pub);
   mutable_signed_size->set_public_key_signature(pmid_pub_sig);
-  std::string serialised_signed_size;
-  mutable_signed_size->SerializeToString(&serialised_signed_size);
-  std::string signature = co.AsymSign(serialised_signed_size, "", pmid_pri,
-                                      crypto::STRING_STRING);
-  amend_account_request.set_signature(signature);
-  amend_account_request.set_pmid(non_hex_pmid);
-  amend_account_request.set_public_key(pmid_pub);
-  amend_account_request.set_public_key_signature(pmid_pub_sig);
+  amend_account_request.set_account_pmid(non_hex_pmid);
   std::vector<AmendAccountResponse> amend_account_responses;
   for (boost::uint16_t i = 0; i < account_holders.size(); ++i) {
     AmendAccountResponse amend_account_response;

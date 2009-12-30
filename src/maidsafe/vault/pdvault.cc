@@ -51,6 +51,11 @@ void RemoveFromRefPacketTask::run() {
     pdvault_->RemoveFromRefPacket(chunkname_, signed_size_);
 }
 
+void AmendAccountTask::run() {
+  if (pdvault_->vault_status() == kVaultStarted)
+    pdvault_->DoAmendAccount(amendment_type_, signed_size_, chunkname_);
+}
+
 PDVault::PDVault(const std::string &pmid_public,
                  const std::string &pmid_private,
                  const std::string &signed_pmid_public,
@@ -120,6 +125,10 @@ void PDVault::Start(bool first_node) {
     RegisterMaidService();
     vault_service_->SetAddToRefListFunction(boost::bind(&PDVault::AddToRefList,
         this, _1, _2));
+    vault_service_->SetRemoveFromRefListFunction(boost::bind(
+        &PDVault::RemoveFromRefList, this, _1, _2));
+    vault_service_->SetAmendAccountFunction(boost::bind(&PDVault::AmendAccount,
+        this, _1, _2, _3));
     boost::mutex kad_join_mutex;
     if (first_node) {
       boost::asio::ip::address local_ip;
@@ -549,7 +558,22 @@ void PDVault::RemoveFromRefPacket(const std::string &chunkname,
 // TODO(Fraser#5#): 2009-12-29 - Amend Account Request (Space given dec)
 }
 
+int PDVault::AmendAccount(
+    maidsafe::AmendAccountRequest::Amendment amendment_type,
+    const maidsafe::SignedSize &signed_size,
+    const std::string &chunkname) {
+  // thread_pool_ handles destruction of task.
+  AmendAccountTask *task = new AmendAccountTask(amendment_type, signed_size,
+      chunkname, this);
+  thread_pool_.start(task);
+  return kSuccess;
+}
 
+void PDVault::DoAmendAccount(
+    maidsafe::AmendAccountRequest::Amendment amendment_type,
+    const maidsafe::SignedSize &signed_size,
+    const std::string &chunkname) {
+}
 
 
 

@@ -138,17 +138,13 @@ message AmendAccountRequest {
     kSpaceTakenInc = 3;  // called when client uploads a chunk to net
     kSpaceTakenDec = 4;  // called when client deletes a chunk he's previously
                          // uploaded
-    kFailedStoreAgreement = 5;  // called if vault refuses to store despite
-                                // his account showing enough space
   }
   required Amendment amendment_type = 1;
-  required bytes signature = 2;  // whichever optional field below is provided
-                                 // serialised & signed by message sender's PMID
-  required bytes pmid = 3;  // vault's PMID
-  required bytes public_key = 4;
-  required bytes public_key_signature = 5;
-  optional SignedSize signed_size = 6;
-  optional StoreContract store_contract = 7;
+  required bytes account_pmid = 2;  // PMID of account to be amended
+  required SignedSize signed_size = 3;
+  optional bytes chunkname = 4;  // required if type is not kSpaceOffered to
+                                 // assert that sender is valid WatchList holder
+                                 // or ReferenceList holder
 }
 
 message AmendAccountResponse {

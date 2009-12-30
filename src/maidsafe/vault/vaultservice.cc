@@ -66,9 +66,9 @@ VaultService::VaultService(const std::string &pmid_public,
       add_to_reference_list_(boost::bind(
           &VaultService::AddToRefListDoNothing, this, _1, _2)),
       remove_from_reference_list_(boost::bind(
-          &VaultService::RemoveFromRefListDoNothing, this, _1, _2)) {
-//      amend_account_(
-//          boost::bind(&VaultService::AmendAccountDoNothing, this,    )) {
+          &VaultService::RemoveFromRefListDoNothing, this, _1, _2)),
+      amend_account_(boost::bind(
+          &VaultService::AmendAccountDoNothing, this, _1, _2, _3)) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co.Hash(pmid_public + pmid_public_signature_, "",
@@ -389,7 +389,7 @@ void VaultService::AddToReferenceList(
     maidsafe::AddToReferenceListResponse* response,
     google::protobuf::Closure* done) {
 #ifdef DEBUG
-//  printf("In VaultService::StoreChunkReference (%i), Chunk name: %s, "
+//  printf("In VaultService::AddToReferenceList (%i), Chunk name: %s, "
 //         "PMID: %s\n", knode_->host_port(),
 //         HexSubstr(request->chunkname()).c_str(),
 //         base::EncodeToHex(request->pmid()).substr(0, 10).c_str());
@@ -399,7 +399,7 @@ void VaultService::AddToReferenceList(
   // Check request is initialised
   if (!request->IsInitialized()) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunkReference (%i), "
+    printf("In VaultService::AddToReferenceList (%i), "
            "request isn't initialized.\n", knode_->host_port());
 #endif
     done->Run();
@@ -409,7 +409,7 @@ void VaultService::AddToReferenceList(
   // Validate contract
   if (!ValidateStoreContract(store_contract)) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunkReference (%i), "
+    printf("In VaultService::AddToReferenceList (%i), "
            "store_contract doesn't validate.\n", knode_->host_port());
 #endif
     done->Run();
@@ -420,7 +420,7 @@ void VaultService::AddToReferenceList(
       store_contract.public_key_signature(), request->request_signature(),
       request->chunkname(), store_contract.pmid())) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunkReference (%i), ", knode_->host_port());
+    printf("In VaultService::AddToReferenceList (%i), ", knode_->host_port());
     printf("failed to validate signed request.\n");
 #endif
     done->Run();
@@ -438,7 +438,7 @@ void VaultService::AddToReferenceList(
   if (!ser_ok ||
       !knode_->StoreValueLocal(request->chunkname(), ser_signed_value, 86400)) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunkReference (%i), failed to store pmid to"
+    printf("In VaultService::AddToReferenceList (%i), failed to store pmid to"
            "local ref packet.\n", knode_->host_port());
 #endif
     response->set_result(kNack);
@@ -448,16 +448,20 @@ void VaultService::AddToReferenceList(
   response->set_result(kAck);
   done->Run();
   // Amend sender's account
+  maidsafe::SignedSize signed_size;
+
+  amend_account_(maidsafe::AmendAccountRequest::kSpaceGivenInc, signed_size,
+                 request->chunkname());
 
 
 
 }
 
 void VaultService::RemoveFromReferenceList(
-      google::protobuf::RpcController* controller,
-      const maidsafe::RemoveFromReferenceListRequest* request,
-      maidsafe::RemoveFromReferenceListResponse* response,
-      google::protobuf::Closure* done) {
+    google::protobuf::RpcController*,
+    const maidsafe::RemoveFromReferenceListRequest* request,
+    maidsafe::RemoveFromReferenceListResponse* response,
+    google::protobuf::Closure* done) {
 }
 
 void VaultService::AmendAccount(google::protobuf::RpcController*,
@@ -466,34 +470,7 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
                                 google::protobuf::Closure* done) {
   response->set_pmid(non_hex_pmid_);
   response->set_result(kNack);
-  if (!request->IsInitialized()) {
-#ifdef DEBUG
-    printf("In VaultService::AmendAccount (%i), request isn't initialized.\n",
-           knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-
-  if (!request->has_store_contract() && !request->has_signed_size()) {
-#ifdef DEBUG
-    printf("In VaultService::AmendAccount (%i), no info to validate 1.\n",
-           knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-
-  if (request->has_store_contract() && request->has_signed_size()) {
-#ifdef DEBUG
-    printf("In VaultService::AmendAccount (%i), no info to validate 2.\n",
-           knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-
-  // Extract data from either of the
+  // Validate request and extract data
   boost::uint64_t account_delta;
   std::string pmid;
   if (!ValidateAmendRequest(request, &account_delta, &pmid)) {
@@ -1463,29 +1440,28 @@ bool VaultService::ValidateAmendRequest(
   pmid->clear();
   if (!request->IsInitialized())
     return false;
-  if (!ValidateIdentity(request->pmid(), request->public_key(),
-      request->public_key_signature()))
-    return false;
 
-  maidsafe::SignedSize sz;
-  if (request->has_store_contract()) {
-    if (!ValidateStoreContract(request->store_contract()))
-      return false;
-    sz = request->store_contract().inner_contract().signed_size();
-  } else {
-    sz = request->signed_size();
-  }
+  maidsafe::SignedSize sz = request->signed_size();
   if (request->amendment_type() ==
       maidsafe::AmendAccountRequest::kSpaceOffered) {
-    if (request->pmid() != sz.pmid() ||
-        request->public_key() != sz.public_key() ||
-        request->public_key_signature() != sz.public_key_signature())
+    if (request->account_pmid() != request->signed_size().pmid()) {
       return false;
+    }
+  } else {
+    if (!request->has_chunkname()) {
+      return false;
+    }
   }
-  if (!ValidateSignedSize(sz))
+
+  if (!ValidateSignedSize(request->signed_size()))
     return false;
-  *pmid = sz.pmid();
-  *account_delta = sz.data_size();
+
+  // TODO(Fraser#5#): 2009-12-29 - Validate that sender is a watch list holder
+  //                               if type is kSpaceTaken... or is a ref list
+  //                               holder if type is kSpaceGiven...
+
+  *pmid = request->account_pmid();
+  *account_delta = request->signed_size().data_size();
   return true;
 }
 
