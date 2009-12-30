@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram>
-<source><![CDATA[#![Store Existing Chunk]
+<source><![CDATA[#![Store Existing Chunk    ]
 client:client "Client"
 watch:vault "Watch List Holders x16"
 c_account:vault "Client A/C Holders x16"
 f_account:vault "First Storing Client A/C Holders x16"
 ref:vault "Reference List Holders x16"
+
+client:client. Check we have enough space in our account&
 
 client:Ack =ref. Kademlia FIND_VALUE
 *2 c_account
@@ -52,14 +54,14 @@ For each Watch List Holder...
 *4
 
 client:>watch. ADD_TO_WATCH_LIST_REQUEST
+watch:watch. Validate request.&
+watch:>client.Ack/Nack &
 [c:Condition IF Watchlist has < 4 current payers]
 (2)watch:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)&
-watch:>client.Ack/Nack &
 watch:Ack/Nack =f_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)&
 [/c]
 [c:Condition IF Watchlist has >= 4 current payers]
 (2)watch:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)&
-watch:>client.Ack/Nack &
 [/c]]]></source>
 <configuration>
 <property name="actorWidth" value="25"/>

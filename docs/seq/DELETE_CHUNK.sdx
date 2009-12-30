@@ -23,9 +23,6 @@ able to be deleted.
 watch:watch. Validate request.&
 watch:>client.Ack/Nack &
 
-[c:Condition IF Client's PMID is not in list]
-watch:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)&
-[/c]
 [c:Condition IF Client's PMID is in list]
 [c:Condition IF undeleted PMIDs in list == 1]
 [c:Loop Repeat for each PMID in list]

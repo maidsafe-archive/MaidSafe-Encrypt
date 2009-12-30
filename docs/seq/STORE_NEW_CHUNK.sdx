@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram>
-<source><![CDATA[#![Store New Chunk]
+<source><![CDATA[#![Store New Chunk   ]
 client:client "First Client"
 peer:vault "Peer Vault"
 watch:vault "Watch List Holders x16"
@@ -17,6 +17,8 @@ Watch List comprises:
   * chunk size
   * minimum rank required of chunk holders.
 +1
+
+client:client. Check we have enough space in our account&
 
 client:Nack =ref. Kademlia FIND_VALUE
 
@@ -53,9 +55,9 @@ For each Watch List Holder...
 
 client:>watch. ADD_TO_WATCH_LIST_REQUEST
 watch:watch. Validate request.&
+watch:watch. Create new Watch List.&
 watch:>client.Ack/Nack &
 (5)watch:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)&
-watch:watch. Create new Watch List.&
 [/c]
 peer:>client.Ack/Nack &
 
