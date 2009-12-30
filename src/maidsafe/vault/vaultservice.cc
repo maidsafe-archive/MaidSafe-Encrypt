@@ -68,7 +68,7 @@ VaultService::VaultService(const std::string &pmid_public,
       remove_from_reference_list_(boost::bind(
           &VaultService::RemoveFromRefListDoNothing, this, _1, _2)),
       amend_account_(boost::bind(
-          &VaultService::AmendAccountDoNothing, this, _1, _2, _3)) {
+          &VaultService::AmendAccountDoNothing, this, _1, _2, _3, _4)) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co.Hash(pmid_public + pmid_public_signature_, "",
@@ -383,6 +383,204 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
   done->Run();
 }
 
+void VaultService::AddToWatchList(
+    google::protobuf::RpcController*,
+    const maidsafe::AddToWatchListRequest* request,
+    maidsafe::AddToWatchListResponse* response,
+    google::protobuf::Closure* done) {
+
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
+
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+    printf("request is not initialized.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  if (!request->has_signed_size() != !request->has_store_contract()) {
+#ifdef DEBUG
+    printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+    printf("need either signed size or store contract to validate.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  if (request->watch_list_name().length() != kKeySize) {
+#ifdef DEBUG
+    printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+    printf("failed to validate watch list name.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  maidsafe::SignedSize sz;
+
+  if (request->has_store_contract()) {
+    if (!ValidateStoreContract(request->store_contract())) {
+#ifdef DEBUG
+      printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+      printf("failed to validate store contract.\n");
+#endif
+      done->Run();
+      return;
+    }
+    sz = request->store_contract().inner_contract().signed_size();
+  } else {
+    if (!ValidateSignedSize(request->signed_size())) {
+#ifdef DEBUG
+      printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+      printf("failed to validate signed size.\n");
+#endif
+      done->Run();
+      return;
+    }
+    sz = request->signed_size();
+  }
+
+  if (!ValidateSignedRequest(sz.public_key(),
+                             sz.public_key_signature(),
+                             request->request_signature(),
+                             request->watch_list_name(),
+                             sz.pmid())) {
+#ifdef DEBUG
+    printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  std::string creditor("");
+  bool payment_required(false);
+
+  wlh_.Lock();
+  bool wl_has_watchers = wlh_.HasWatchers(request->watch_list_name());
+
+  if (!wl_has_watchers) {  // new watchlist
+    wlh_.Unlock();
+    if (!request->has_store_contract()) {
+#ifdef DEBUG
+      printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+      printf("store contract missing for new watch list.\n");
+#endif
+      done->Run();
+      return;
+    }
+
+    response->set_result(kAck);
+    done->Run();
+
+    // TODO(Fraser#) this call needs to return the actual result
+    if (AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenInc,
+                           kMinChunkCopies * sz.data_size(),
+                           sz.pmid(),
+                           request->watch_list_name()) != kSuccess) {
+#ifdef DEBUG
+      printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+      printf("failed to amend account, not creating watch list.\n");
+#endif
+      return;
+    }
+
+    if (0 == wlh_.AddToWatchList(request->watch_list_name(), sz.pmid(),
+                                 sz.data_size(), &creditor, &payment_required)){
+      if (!creditor.empty()) {
+        // we replaced someone, recompense them and refund rest
+        AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
+                           sz.data_size(),
+                           creditor,
+                           request->watch_list_name());
+        AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
+                           (kMinChunkCopies - 1) * sz.data_size(),
+                           sz.pmid(),
+                           request->watch_list_name());
+      } else if (!payment_required) {
+        // lucky day, refund all payments
+        AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
+                           kMinChunkCopies * sz.data_size(),
+                           sz.pmid(),
+                           request->watch_list_name());
+      }
+    } else {
+#ifdef DEBUG
+      printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+      printf("failed to create watch list.\n");
+#endif
+      AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
+                         kMinChunkCopies * sz.data_size(),
+                         sz.pmid(),
+                         request->watch_list_name());
+    }
+  } else {  // existing watchlist
+    bool wl_add_success = (0 == wlh_.AddToWatchList(request->watch_list_name(),
+                                                    sz.pmid(), sz.data_size(),
+                                                    &creditor,
+                                                    &payment_required));
+    wlh_.Unlock();
+
+    if (!wl_add_success) {
+#ifdef DEBUG
+      printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+      printf("failed to add to watch list.\n");
+#endif
+      done->Run();
+      return;
+    }
+
+    response->set_result(kAck);
+    done->Run();
+
+    if (!payment_required)
+      return;
+
+    // TODO(Fraser#) this call needs to return the actual result
+    if (AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenInc,
+                           sz.data_size(), sz.pmid(),
+                           request->watch_list_name()) != kSuccess) {
+      if (!creditor.empty())
+        AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
+                           sz.data_size(), creditor,
+                           request->watch_list_name());
+    } else {
+#ifdef DEBUG
+      printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+      printf("failed to amend account, reverting watch list.\n");
+#endif
+      wlh_.RevertAddToWatchList(request->watch_list_name(), sz.pmid(),
+                                creditor);
+    }
+  }
+}
+
+void VaultService::RemoveFromWatchList(
+    google::protobuf::RpcController*,
+    const maidsafe::RemoveFromWatchListRequest* request,
+    maidsafe::RemoveFromWatchListResponse* response,
+    google::protobuf::Closure* done) {
+
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::RemoveFromWatchList (%i), ", knode_->host_port());
+    printf("request is not initialized.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  // TODO(Steve#) implement remove from watchlist
+
+  // response->set_result(kAck);
+  done->Run();
+}
+
 void VaultService::AddToReferenceList(
     google::protobuf::RpcController*,
     const maidsafe::AddToReferenceListRequest* request,
@@ -444,17 +642,9 @@ void VaultService::AddToReferenceList(
     return;
   }
   // Amend sender's account
-  crypto::Crypto co;
-  maidsafe::SignedSize signed_size;
-  boost::uint64_t data_size =
-      store_contract.inner_contract().signed_size().data_size();
-  signed_size.set_data_size(data_size);
-  signed_size.set_signature(co.AsymSign(base::itos_ull(data_size), "",
-                                        pmid_private_, crypto::STRING_STRING));
-  signed_size.set_pmid(non_hex_pmid_);
-  signed_size.set_public_key(pmid_public_);
-  signed_size.set_public_key_signature(pmid_public_signature_);
-  if (amend_account_(maidsafe::AmendAccountRequest::kSpaceGivenInc, signed_size,
+  if (AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceGivenInc,
+      store_contract.inner_contract().signed_size().data_size(),
+      store_contract.pmid(),
       request->chunkname()) != kSuccess) {
 #ifdef DEBUG
     printf("In VaultService::AddToReferenceList (%i), failed to amend sender's"
@@ -1009,7 +1199,6 @@ void VaultService::VaultStatus(google::protobuf::RpcController*,
   response->set_result(kAck);
   done->Run();
 }
-
 
 // BP Services
 void VaultService::CreateBP(google::protobuf::RpcController*,
@@ -1624,6 +1813,22 @@ void VaultService::FindCloseNodesCallback(const std::string &result,
   for (int i = 0; i < result_msg.closest_nodes_size(); ++i) {
     close_nodes->push_back(result_msg.closest_nodes(i));
   }
+}
+
+int VaultService::AmendRemoteAccount(
+    const maidsafe::AmendAccountRequest::Amendment &amendment,
+    const boost::uint64_t &size,
+    const std::string &account_pmid,
+    const std::string &chunkname) {
+  crypto::Crypto co;
+  maidsafe::SignedSize signed_size;
+  signed_size.set_data_size(size);
+  signed_size.set_signature(co.AsymSign(base::itos_ull(size), "",
+                                        pmid_private_, crypto::STRING_STRING));
+  signed_size.set_pmid(non_hex_pmid_);
+  signed_size.set_public_key(pmid_public_);
+  signed_size.set_public_key_signature(pmid_public_signature_);
+  return amend_account_(amendment, signed_size, account_pmid, chunkname);
 }
 
 RegistrationService::RegistrationService(boost::function< void(

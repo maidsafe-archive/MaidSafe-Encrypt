@@ -58,7 +58,7 @@ TEST_F(WatchListHandlerTest, BEH_VAULT_WatchListHandlerAddRemove) {
   const int kNumClients = kMinChunkCopies + kMaxReserveWatchListEntries + 1;
   std::string watch_list_name(co.Hash("wl", "", crypto::STRING_STRING, false));
   std::string client[kNumClients], creditor;
-  int required_payments = 0;
+  bool payment_required = false;
 
   for (int i = 0; i < kNumClients; i++) {
     client[i] = co.Hash("id" + boost::lexical_cast<std::string>(i), "",
@@ -68,13 +68,13 @@ TEST_F(WatchListHandlerTest, BEH_VAULT_WatchListHandlerAddRemove) {
   ASSERT_EQ(kWatchListInvalidChunkSize, wlh.AddToWatchList(watch_list_name,
                                                            client[0], 0,
                                                            &creditor,
-                                                           &required_payments));
+                                                           &payment_required));
   ASSERT_FALSE(wlh.HasWatchers(watch_list_name));
 
   ASSERT_EQ(0, wlh.AddToWatchList(watch_list_name, client[0], 123, &creditor,
-                                  &required_payments));
+                                  &payment_required));
   ASSERT_EQ("", creditor);
-  ASSERT_EQ(kMinChunkCopies, required_payments);
+  ASSERT_TRUE(payment_required);
   ASSERT_TRUE(wlh.HasWatchers(watch_list_name));
   ASSERT_EQ(size_t(1), wlh.watch_lists_.count(watch_list_name));
   ASSERT_EQ(size_t(1), wlh.watch_lists_[watch_list_name].watcher_count_);
@@ -84,27 +84,27 @@ TEST_F(WatchListHandlerTest, BEH_VAULT_WatchListHandlerAddRemove) {
   ASSERT_EQ(kWatchListInvalidChunkSize, wlh.AddToWatchList(watch_list_name,
                                                            client[1], 321,
                                                            &creditor,
-                                                           &required_payments));
+                                                           &payment_required));
 
   for (int i = 1; i < kNumClients; i++) {
     ASSERT_EQ(0, wlh.AddToWatchList(watch_list_name, client[i], 123,
-                                    &creditor, &required_payments));
+                                    &creditor, &payment_required));
     ASSERT_EQ(size_t(1), wlh.watch_lists_.count(watch_list_name));
     ASSERT_EQ(size_t(i) + 1, wlh.watch_lists_[watch_list_name].watcher_count_);
     if (i < kMinChunkCopies) {
       ASSERT_EQ(kMinChunkCopies,
                 wlh.watch_lists_[watch_list_name].entries_.size());
-      ASSERT_EQ(1, required_payments);
+      ASSERT_TRUE(payment_required);
       ASSERT_EQ(client[0], creditor);
     } else if (i < kMinChunkCopies + kMaxReserveWatchListEntries) {
       ASSERT_EQ(size_t(i) + 1,
                 wlh.watch_lists_[watch_list_name].entries_.size());
-      ASSERT_EQ(1, required_payments);
+      ASSERT_TRUE(payment_required);
       ASSERT_EQ("", creditor);
     } else {
       ASSERT_EQ(kMinChunkCopies + size_t(kMaxReserveWatchListEntries),
                 wlh.watch_lists_[watch_list_name].entries_.size());
-      ASSERT_EQ(0, required_payments);
+      ASSERT_FALSE(payment_required);
       ASSERT_EQ("", creditor);
     }
   }
@@ -169,10 +169,10 @@ TEST_F(WatchListHandlerTest, BEH_VAULT_WatchListHandlerFailsafe) {
 
   std::string creditor;
   std::list<std::string> creditors;
-  int required_payments = 0;
+  bool payment_required = false;
 
   ASSERT_EQ(0, wlh.AddToWatchList(watch_list_name, client1, 123, &creditor,
-                                  &required_payments));
+                                  &payment_required));
   ASSERT_EQ(0, wlh.RemoveFromWatchList(watch_list_name, client2, 123,
                                        &creditors));
   ASSERT_EQ(size_t(0), creditors.size());

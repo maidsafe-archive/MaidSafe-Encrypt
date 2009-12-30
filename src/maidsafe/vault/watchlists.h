@@ -48,7 +48,7 @@ struct WatchList {
   boost::uint64_t watcher_count_;
   boost::uint64_t watcher_checksum_;
   boost::uint64_t chunk_size_;
-  // TODO(anyone) minimum rank
+  // TODO(Team#) consider minimum rank
 };
 
 class WatchListHandler {
@@ -61,11 +61,16 @@ class WatchListHandler {
                      const std::string &pmid,
                      const boost::uint64_t &chunk_size,
                      std::string *creditor,
-                     int *required_payments);
+                     bool *payment_required);
   int RemoveFromWatchList(const std::string &watch_list_name,
                           const std::string &pmid,
                           const boost::uint64_t &chunk_size,
                           std::list<std::string> *creditors);
+  void RevertAddToWatchList(const std::string &watch_list_name,
+                            const std::string &pmid,
+                            const std::string &creditor);
+  void Lock();
+  void Unlock();
  private:
   FRIEND_TEST(WatchListHandlerTest, BEH_VAULT_WatchListHandlerInit);
   FRIEND_TEST(WatchListHandlerTest, BEH_VAULT_WatchListHandlerChecksum);

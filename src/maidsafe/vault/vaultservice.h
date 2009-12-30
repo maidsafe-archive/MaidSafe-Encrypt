@@ -37,6 +37,7 @@
 
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/accountrepository.h"
+#include "maidsafe/vault/watchlists.h"
 #include "maidsafe/vault/pendingoperations.h"
 #include "protobuf/maidsafe_service.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
@@ -51,6 +52,7 @@ typedef boost::function<int(const std::string&, const maidsafe::SignedSize&)>  /
 
 typedef boost::function<int(maidsafe::AmendAccountRequest::Amendment,  // NOLINT (Fraser) - False positive
                             const maidsafe::SignedSize&,
+                            const std::string&,
                             const std::string&)> AmendAccountFunctor;
 
 struct IsOwnedPendingResponse {
@@ -82,15 +84,15 @@ class VaultService : public maidsafe::MaidsafeService {
                            const maidsafe::StorePacketRequest* request,
                            maidsafe::StorePacketResponse* response,
                            google::protobuf::Closure* done);
-//  virtual void AddToWatchList(google::protobuf::RpcController* controller,
-//                              const maidsafe::AddToWatchListRequest* request,
-//                              maidsafe::AddToWatchListResponse* response,
-//                              google::protobuf::Closure* done);
-//  virtual void RemoveFromWatchList(
-//      google::protobuf::RpcController* controller,
-//      const maidsafe::RemoveFromWatchListRequest* request,
-//      maidsafe::RemoveFromWatchListResponse* response,
-//      google::protobuf::Closure* done);
+  virtual void AddToWatchList(google::protobuf::RpcController* controller,
+                              const maidsafe::AddToWatchListRequest* request,
+                              maidsafe::AddToWatchListResponse* response,
+                              google::protobuf::Closure* done);
+  virtual void RemoveFromWatchList(
+      google::protobuf::RpcController* controller,
+      const maidsafe::RemoveFromWatchListRequest* request,
+      maidsafe::RemoveFromWatchListResponse* response,
+      google::protobuf::Closure* done);
   virtual void AddToReferenceList(
       google::protobuf::RpcController* controller,
       const maidsafe::AddToReferenceListRequest* request,
@@ -172,7 +174,7 @@ class VaultService : public maidsafe::MaidsafeService {
     remove_from_reference_list_ =
         boost::bind(&VaultService::RemoveFromRefListDoNothing, this, _1, _2);
     amend_account_ =
-        boost::bind(&VaultService::AmendAccountDoNothing, this, _1, _2, _3);
+        boost::bind(&VaultService::AmendAccountDoNothing, this, _1, _2, _3, _4);
   }
  private:
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest);
@@ -227,17 +229,23 @@ class VaultService : public maidsafe::MaidsafeService {
   bool DeleteChunkLocal(const std::string &chunkname);
   void FindCloseNodesCallback(const std::string &result,
                               std::vector<std::string> *close_nodes);
+  int AmendRemoteAccount(
+      const maidsafe::AmendAccountRequest::Amendment &amendment,
+      const boost::uint64_t &size,
+      const std::string &account_pmid,
+      const std::string &chunkname);
+  int AmendAccountDoNothing(maidsafe::AmendAccountRequest::Amendment,
+                            const maidsafe::SignedSize&,
+                            const std::string&,
+                            const std::string&) {
+    return kVaultServiceUninitialisedFunction;
+  }
   int AddToRefListDoNothing(const std::string&,
                             const maidsafe::StoreContract&) {
     return kVaultServiceUninitialisedFunction;
   }
   int RemoveFromRefListDoNothing(const std::string&,
                                  const maidsafe::SignedSize&) {
-    return kVaultServiceUninitialisedFunction;
-  }
-  int AmendAccountDoNothing(maidsafe::AmendAccountRequest::Amendment,
-                            const maidsafe::SignedSize&,
-                            const std::string&) {
     return kVaultServiceUninitialisedFunction;
   }
   std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
@@ -248,6 +256,7 @@ class VaultService : public maidsafe::MaidsafeService {
   typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
   PrepsReceivedMap prm_;
   AccountHandler ah_;
+  WatchListHandler wlh_;
   AddToRefListFunctor add_to_reference_list_;
   RemoveFromRefListFunctor remove_from_reference_list_;
   AmendAccountFunctor amend_account_;

@@ -42,9 +42,9 @@ int WatchListHandler::AddToWatchList(const std::string &watch_list_name,
                                      const std::string &pmid,
                                      const boost::uint64_t &chunk_size,
                                      std::string *creditor,
-                                     int *required_payments) {
+                                     bool *payment_required) {
   *creditor = "";
-  *required_payments = 0;
+  *payment_required = false;
   boost::mutex::scoped_lock lock(watch_list_mutex_);
 
   WatchList &wl = watch_lists_[watch_list_name];
@@ -75,18 +75,17 @@ int WatchListHandler::AddToWatchList(const std::string &watch_list_name,
     // replace this pmid and pay them directly
     *creditor = it->pmid_;
     *it = entry;
-    *required_payments = 1;
+    *payment_required = true;
   } else if (wl.entries_.size() < (kMinChunkCopies +
-                                    kMaxReserveWatchListEntries)) {
+                                   kMaxReserveWatchListEntries)) {
     // add to watch list
     wl.entries_.push_back(entry);
-    *required_payments = 1;
+    *payment_required = true;
     if (wl.entries_.size() == 1) {
       // we are first, so add 3 more deletable entries
       entry.can_delete_ = true;
       for (i = 0; i < kMinChunkCopies - 1; i++)
         wl.entries_.push_back(entry);
-      *required_payments = kMinChunkCopies;
     }
   }
 
@@ -160,7 +159,7 @@ int WatchListHandler::RemoveFromWatchList(const std::string &watch_list_name,
             watch_lists_.erase(watch_list_name);
           } else {
             // watch list has been tampered with
-            // TODO(anyone) set timestamp and delete after a long time
+            // TODO(Team#) set timestamp and delete after a long time
           }
         }
       }
@@ -176,6 +175,20 @@ int WatchListHandler::RemoveFromWatchList(const std::string &watch_list_name,
   }
 
   return 0;
+}
+
+void WatchListHandler::RevertAddToWatchList(const std::string &watch_list_name,
+                                            const std::string &pmid,
+                                            const std::string &creditor) {
+  // TODO(Steve#) implement revert add to watch list
+}
+
+void WatchListHandler::Lock() {
+  // TODO(Steve#) lock watch_list_mutex_
+}
+
+void WatchListHandler::Unlock() {
+  // TODO(Steve#) unlock watch_list_mutex_
 }
 
 boost::uint64_t WatchListHandler::GetChecksum(const std::string &id) {

@@ -236,10 +236,12 @@ class AmendAccountTask : public QRunnable {
  public:
   AmendAccountTask(maidsafe::AmendAccountRequest::Amendment amendment_type,
                    const maidsafe::SignedSize &signed_size,
+                   const std::string &account_pmid,
                    const std::string &chunkname,
                    PDVault *pdvault)
       : amendment_type_(amendment_type),
         signed_size_(signed_size),
+        account_pmid_(account_pmid),
         chunkname_(chunkname),
         pdvault_(pdvault) {}
   void run();
@@ -248,7 +250,7 @@ class AmendAccountTask : public QRunnable {
   AmendAccountTask(const AmendAccountTask&);
   maidsafe::AmendAccountRequest::Amendment amendment_type_;
   maidsafe::SignedSize signed_size_;
-  std::string chunkname_;
+  std::string account_pmid_, chunkname_;
   PDVault *pdvault_;
 };
 
@@ -352,10 +354,12 @@ class PDVault {
   // Amend a peer's account after adding him to watch / ref list
   int AmendAccount(maidsafe::AmendAccountRequest::Amendment amendment_type,
                    const maidsafe::SignedSize &signed_size,
+                   const std::string &account_pmid,
                    const std::string &chunkname);
   // Runs in a worker thread to amend a peer's account
   void DoAmendAccount(maidsafe::AmendAccountRequest::Amendment amendment_type,
                       const maidsafe::SignedSize &signed_size,
+                      const std::string &account_pmid,
                       const std::string &chunkname);
 
 
