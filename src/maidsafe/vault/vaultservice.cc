@@ -459,11 +459,11 @@ void VaultService::AddToWatchList(
   std::string creditor("");
   bool payment_required(false);
 
-  wlh_.Lock();
-  bool wl_has_watchers = wlh_.HasWatchers(request->watch_list_name());
+  cih_.Lock();
+  bool wl_has_watchers = cih_.HasWatchers(request->watch_list_name());
 
   if (!wl_has_watchers) {  // new watchlist
-    wlh_.Unlock();
+    cih_.Unlock();
     if (!request->has_store_contract()) {
 #ifdef DEBUG
       printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
@@ -488,7 +488,7 @@ void VaultService::AddToWatchList(
       return;
     }
 
-    if (0 == wlh_.AddToWatchList(request->watch_list_name(), sz.pmid(),
+    if (0 == cih_.AddToWatchList(request->watch_list_name(), sz.pmid(),
                                  sz.data_size(), &creditor, &payment_required)){
       if (!creditor.empty()) {
         // we replaced someone, recompense them and refund rest
@@ -518,11 +518,11 @@ void VaultService::AddToWatchList(
                          request->watch_list_name());
     }
   } else {  // existing watchlist
-    bool wl_add_success = (0 == wlh_.AddToWatchList(request->watch_list_name(),
+    bool wl_add_success = (0 == cih_.AddToWatchList(request->watch_list_name(),
                                                     sz.pmid(), sz.data_size(),
                                                     &creditor,
                                                     &payment_required));
-    wlh_.Unlock();
+    cih_.Unlock();
 
     if (!wl_add_success) {
 #ifdef DEBUG
@@ -552,7 +552,7 @@ void VaultService::AddToWatchList(
       printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
       printf("failed to amend account, reverting watch list.\n");
 #endif
-      wlh_.RevertAddToWatchList(request->watch_list_name(), sz.pmid(),
+      cih_.RevertAddToWatchList(request->watch_list_name(), sz.pmid(),
                                 creditor);
     }
   }

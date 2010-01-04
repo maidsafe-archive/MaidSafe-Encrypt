@@ -3,7 +3,7 @@
 *
 * Copyright [2009] maidsafe.net limited
 *
-* Description:  Manages watchlists on a vault
+* Description:  Manages watch lists and reference lists on a vault
 * Version:      1.0
 * Created:      2009-12-22
 * Revision:     none
@@ -22,40 +22,40 @@
 * ============================================================================
 */
 
-#include "maidsafe/vault/watchlists.h"
+#include "maidsafe/vault/chunkinfohandler.h"
 
 namespace maidsafe_vault {
 
-bool WatchListHandler::HasWatchers(const std::string &watch_list_name) {
-  boost::mutex::scoped_lock lock(watch_list_mutex_);
-  if (watch_lists_.count(watch_list_name) == 0)
+bool ChunkInfoHandler::HasWatchers(const std::string &chunk_name) {
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (chunk_infos_.count(chunk_name) == 0)
     return false;
-  if (watch_lists_[watch_list_name].entries_.size() == 0)
+  if (chunk_infos_[chunk_name].watchers_.size() == 0)
     return false;
-  if (watch_lists_[watch_list_name].watcher_count_ == 0 &&
-      watch_lists_[watch_list_name].watcher_checksum_ == 0)
+  if (chunk_infos_[chunk_name].watcher_count_ == 0 &&
+      chunk_infos_[chunk_name].watcher_checksum_ == 0)
     return false;
   return true;
 }
 
-int WatchListHandler::AddToWatchList(const std::string &watch_list_name,
+int ChunkInfoHandler::AddToWatchList(const std::string &chunk_name,
                                      const std::string &pmid,
                                      const boost::uint64_t &chunk_size,
                                      std::string *creditor,
                                      bool *payment_required) {
   *creditor = "";
   *payment_required = false;
-  boost::mutex::scoped_lock lock(watch_list_mutex_);
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
 
-  WatchList &wl = watch_lists_[watch_list_name];
+  ChunkInfo &ci = chunk_infos_[chunk_name];
 
   // check chunk size
   if (chunk_size == 0) {
-    return kWatchListInvalidChunkSize;
-  } else if (wl.chunk_size_ == 0) {
-    wl.chunk_size_ = chunk_size;
-  } else if (wl.chunk_size_ != chunk_size) {
-    return kWatchListInvalidChunkSize;
+    return kChunkInfoInvalidSize;
+  } else if (ci.chunk_size_ == 0) {
+    ci.chunk_size_ = chunk_size;
+  } else if (ci.chunk_size_ != chunk_size) {
+    return kChunkInfoInvalidSize;
   }
 
   WatchListEntry entry;
@@ -65,98 +65,99 @@ int WatchListHandler::AddToWatchList(const std::string &watch_list_name,
   // find a replacable entry within the first 4
   std::list<WatchListEntry>::iterator it;
   int i = 1;
-  it = wl.entries_.begin();
-  while (it != wl.entries_.end() && !it->can_delete_ && i < kMinChunkCopies) {
+  it = ci.watchers_.begin();
+  while (it != ci.watchers_.end() && !it->can_delete_ && i < kMinChunkCopies) {
     it++;
     i++;
   }
 
-  if (it != wl.entries_.end() && it->can_delete_) {
+  if (it != ci.watchers_.end() && it->can_delete_) {
     // replace this pmid and pay them directly
     *creditor = it->pmid_;
     *it = entry;
     *payment_required = true;
-  } else if (wl.entries_.size() < (kMinChunkCopies +
-                                   kMaxReserveWatchListEntries)) {
+  } else if (ci.watchers_.size() < (kMinChunkCopies +
+                                    kMaxReserveWatchListEntries)) {
     // add to watch list
-    wl.entries_.push_back(entry);
+    ci.watchers_.push_back(entry);
     *payment_required = true;
-    if (wl.entries_.size() == 1) {
+    if (ci.watchers_.size() == 1) {
       // we are first, so add 3 more deletable entries
       entry.can_delete_ = true;
       for (i = 0; i < kMinChunkCopies - 1; i++)
-        wl.entries_.push_back(entry);
+        ci.watchers_.push_back(entry);
     }
   }
 
   // in all cases, add as watcher
-  wl.watcher_count_++;
-  wl.watcher_checksum_ += GetChecksum(pmid);
+  ci.watcher_count_++;
+  ci.watcher_checksum_ += GetChecksum(pmid);
 
   return 0;
 }
 
-int WatchListHandler::RemoveFromWatchList(const std::string &watch_list_name,
+int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
                                           const std::string &pmid,
                                           const boost::uint64_t &chunk_size,
                                           std::list<std::string> *creditors) {
-  boost::mutex::scoped_lock lock(watch_list_mutex_);
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
 
-  if (watch_lists_.count(watch_list_name) == 0)
-    return kWatchListInvalidName;
+  if (chunk_infos_.count(chunk_name) == 0)
+    return kChunkInfoInvalidName;
 
-  WatchList &wl = watch_lists_[watch_list_name];
+  ChunkInfo &ci = chunk_infos_[chunk_name];
 
-  if (wl.chunk_size_ != chunk_size)
-    return kWatchListInvalidChunkSize;
+  if (ci.chunk_size_ != chunk_size)
+    return kChunkInfoInvalidSize;
 
   // find the watcher and the first reserve
   std::list<WatchListEntry>::iterator it, watcher_it, reserve_it;
-  watcher_it = reserve_it = wl.entries_.end();
+  watcher_it = reserve_it = ci.watchers_.end();
   int i, watcher_index, remaining_entry_count = 0;
-  for (it = wl.entries_.begin(), i = 1; it != wl.entries_.end(); it++, i++) {
+  for (it = ci.watchers_.begin(), i = 1; it != ci.watchers_.end(); it++, i++) {
     if (!it->can_delete_) {
       remaining_entry_count++;
-      if (watcher_it == wl.entries_.end() && it->pmid_ == pmid) {
+      if (watcher_it == ci.watchers_.end() && it->pmid_ == pmid) {
         watcher_it = it;
         watcher_index = i;
-      } else if (reserve_it == wl.entries_.end() && i > kMinChunkCopies) {
+      } else if (reserve_it == ci.watchers_.end() && i > kMinChunkCopies) {
         reserve_it = it;
       }
     }
   }
 
   /*
-  if (remaining_entry_count >= wl.watcher_count_ &&
-      watcher_it == wl.entries_.end()) {
+  if (remaining_entry_count >= ci.watcher_count_ &&
+      watcher_it == ci.watchers_.end()) {
     // we've been tricked at some point, but for now do nothing about it
   }
   */
 
   // remove watcher
-  if (wl.watcher_count_ > boost::uint64_t(remaining_entry_count))
-    wl.watcher_count_--;
-  wl.watcher_checksum_ -= GetChecksum(pmid);
+  if (ci.watcher_count_ > boost::uint64_t(remaining_entry_count))
+    ci.watcher_count_--;
+  ci.watcher_checksum_ -= GetChecksum(pmid);
 
-  if (watcher_it != wl.entries_.end()) {
+  if (watcher_it != ci.watchers_.end()) {
     if (watcher_index <= kMinChunkCopies) {
       // we are one of the first four
-      if (reserve_it != wl.entries_.end()) {
+      if (reserve_it != ci.watchers_.end()) {
         // replace by reserve and recompense
         creditors->push_back(pmid);
         (*watcher_it) = (*reserve_it);
-        wl.entries_.erase(reserve_it);
+        ci.watchers_.erase(reserve_it);
       } else {
         // no reserve, flag deletable
         watcher_it->can_delete_ = true;
         if (remaining_entry_count == 1) {
-          if (wl.watcher_count_ == 1 && wl.watcher_checksum_ == 0) {
+          if (ci.watcher_count_ == 1 && ci.watcher_checksum_ == 0) {
             // no one is watching anymore, recompense everyone and implode
-            for (std::list<WatchListEntry>::iterator it = wl.entries_.begin();
-                 it != wl.entries_.end(); it++) {
+            for (std::list<WatchListEntry>::iterator it = ci.watchers_.begin();
+                 it != ci.watchers_.end(); it++) {
               creditors->push_back(it->pmid_);
             }
-            watch_lists_.erase(watch_list_name);
+            // TODO(Steve) properly delete references and chunks in vaults
+            chunk_infos_.erase(chunk_name);
           } else {
             // watch list has been tampered with
             // TODO(Team#) set timestamp and delete after a long time
@@ -166,7 +167,7 @@ int WatchListHandler::RemoveFromWatchList(const std::string &watch_list_name,
     } else {
       // just delete from the reserve
       creditors->push_back(pmid);
-      wl.entries_.erase(watcher_it);
+      ci.watchers_.erase(watcher_it);
     }
   } else {
     // recompense, even if not listed
@@ -177,21 +178,21 @@ int WatchListHandler::RemoveFromWatchList(const std::string &watch_list_name,
   return 0;
 }
 
-void WatchListHandler::RevertAddToWatchList(const std::string &watch_list_name,
+void ChunkInfoHandler::RevertAddToWatchList(const std::string &chunk_name,
                                             const std::string &pmid,
                                             const std::string &creditor) {
   // TODO(Steve#) implement revert add to watch list
 }
 
-void WatchListHandler::Lock() {
-  // TODO(Steve#) lock watch_list_mutex_
+void ChunkInfoHandler::Lock() {
+  // TODO(Steve#) lock chunk_info_mutex_
 }
 
-void WatchListHandler::Unlock() {
-  // TODO(Steve#) unlock watch_list_mutex_
+void ChunkInfoHandler::Unlock() {
+  // TODO(Steve#) unlock chunk_info_mutex_
 }
 
-boost::uint64_t WatchListHandler::GetChecksum(const std::string &id) {
+boost::uint64_t ChunkInfoHandler::GetChecksum(const std::string &id) {
   // return last 8 bytes of the ID as number
   return *reinterpret_cast<boost::uint64_t*>(
             const_cast<char*>(id.substr(kKeySize - 8).data()));

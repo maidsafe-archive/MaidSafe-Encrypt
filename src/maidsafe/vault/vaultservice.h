@@ -37,7 +37,7 @@
 
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/accountrepository.h"
-#include "maidsafe/vault/watchlists.h"
+#include "maidsafe/vault/chunkinfohandler.h"
 #include "maidsafe/vault/pendingoperations.h"
 #include "protobuf/maidsafe_service.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
@@ -256,7 +256,7 @@ class VaultService : public maidsafe::MaidsafeService {
   typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
   PrepsReceivedMap prm_;
   AccountHandler ah_;
-  WatchListHandler wlh_;
+  ChunkInfoHandler cih_;
   AddToRefListFunctor add_to_reference_list_;
   RemoveFromRefListFunctor remove_from_reference_list_;
   AmendAccountFunctor amend_account_;

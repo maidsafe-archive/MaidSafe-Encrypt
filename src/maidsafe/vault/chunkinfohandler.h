@@ -3,7 +3,7 @@
 *
 * Copyright [2009] maidsafe.net limited
 *
-* Description:  Manages watchlists on a vault
+* Description:  Manages watch lists and reference lists on a vault
 * Version:      1.0
 * Created:      2009-12-22
 * Revision:     none
@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_VAULT_WATCHLISTS_H_
-#define MAIDSAFE_VAULT_WATCHLISTS_H_
+#ifndef MAIDSAFE_VAULT_CHUNKINFOHANDLER_H_
+#define MAIDSAFE_VAULT_CHUNKINFOHANDLER_H_
 
 #include <gtest/gtest_prod.h>
 #include <maidsafe/maidsafe-dht.h>
@@ -41,46 +41,54 @@ struct WatchListEntry {
   bool can_delete_;
 };
 
-struct WatchList {
-  WatchList() : entries_(), watcher_count_(0), watcher_checksum_(0),
-                chunk_size_(0) {}
-  std::list<WatchListEntry> entries_;
+struct ReferenceListEntry {
+  std::string pmid_;
+  // time stamp
+  // rank?
+};
+
+struct ChunkInfo {
+  ChunkInfo() : watchers_(), references_(), watcher_count_(0),
+                watcher_checksum_(0), chunk_size_(0) {}
+  std::list<WatchListEntry> watchers_;
+  std::list<ReferenceListEntry> references_;
   boost::uint64_t watcher_count_;
   boost::uint64_t watcher_checksum_;
   boost::uint64_t chunk_size_;
-  // TODO(Team#) consider minimum rank
+  // TODO(Team#) stats?
 };
 
-class WatchListHandler {
+class ChunkInfoHandler {
  public:
-  WatchListHandler() : watch_lists_(), watch_list_mutex_() {}
-  ~WatchListHandler() {}
+  ChunkInfoHandler() : chunk_infos_(), chunk_info_mutex_() {}
+  ~ChunkInfoHandler() {}
 
-  bool HasWatchers(const std::string &watch_list_name);
-  int AddToWatchList(const std::string &watch_list_name,
+  bool HasWatchers(const std::string &chunk_name);
+  int AddToWatchList(const std::string &chunk_name,
                      const std::string &pmid,
                      const boost::uint64_t &chunk_size,
                      std::string *creditor,
                      bool *payment_required);
-  int RemoveFromWatchList(const std::string &watch_list_name,
+  int RemoveFromWatchList(const std::string &chunk_name,
                           const std::string &pmid,
                           const boost::uint64_t &chunk_size,
                           std::list<std::string> *creditors);
-  void RevertAddToWatchList(const std::string &watch_list_name,
+  void RevertAddToWatchList(const std::string &chunk_name,
                             const std::string &pmid,
                             const std::string &creditor);
+  // TODO(Steve#) ref list methods
   void Lock();
   void Unlock();
  private:
-  FRIEND_TEST(WatchListHandlerTest, BEH_VAULT_WatchListHandlerInit);
-  FRIEND_TEST(WatchListHandlerTest, BEH_VAULT_WatchListHandlerChecksum);
-  FRIEND_TEST(WatchListHandlerTest, BEH_VAULT_WatchListHandlerAddRemove);
-  FRIEND_TEST(WatchListHandlerTest, BEH_VAULT_WatchListHandlerFailsafe);
+  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerInit);
+  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum);
+  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerWlAddRemove);
+  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerWlFailsafe);
   boost::uint64_t GetChecksum(const std::string &id);
-  std::map<std::string, WatchList> watch_lists_;
-  boost::mutex watch_list_mutex_;
+  std::map<std::string, ChunkInfo> chunk_infos_;
+  boost::mutex chunk_info_mutex_;
 };
 
 }  // namespace maidsafe_vault
 
-#endif  // MAIDSAFE_VAULT_WATCHLISTS_H_
+#endif  // MAIDSAFE_VAULT_CHUNKINFOHANDLER_H_

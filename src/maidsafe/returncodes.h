@@ -201,9 +201,9 @@ enum ReturnCode {
   kAccountEmptyAlert = -4505,
   kAccountNotEnoughSpace = -4506,
 
-  // Watch List Handler
-  kWatchListInvalidChunkSize = -5501,
-  kWatchListInvalidName = -5502
+  // Chunk Info Handler
+  kChunkInfoInvalidSize = -5501,
+  kChunkInfoInvalidName = -5502
 
   // Vault Buffer Packet Handler
 };
