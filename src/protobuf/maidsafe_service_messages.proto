@@ -79,24 +79,24 @@ message StorePacketResponse {
 }
 
 message AddToWatchListRequest {
-  required bytes watch_list_name = 1;
-  optional SignedSize signed_size = 2;
-  optional StoreContract store_contract = 3;
+  required bytes chunkname = 1;
+  required SignedSize signed_size = 2;
   required bytes request_signature = 4;  // Signed using client's PMID key (PMID
-                                         // details included in one of optional
-                                         // fields above)
+                                         // details included in signed_size
 }
 
 message AddToWatchListResponse {
   required uint32 result = 1;
   optional bytes pmid = 2;  // watchlist holder's PMID
+  optional uint32 upload_count = 3;
 }
 
 message RemoveFromWatchListRequest {
-  required bytes watch_list_name = 1;
-  required SignedSize signed_size = 2;
-  required bytes request_signature = 3;  // Signed using client's PMID key (PMID
-                                         // details included in signed_size)
+  required bytes chunkname = 1;
+  required bytes pmid = 2;  // client's PMID
+  required bytes public_key = 3;
+  required bytes public_key_signature = 4;
+  required bytes request_signature = 5;
 }
 
 message RemoveFromWatchListResponse {
@@ -118,11 +118,10 @@ message AddToReferenceListResponse {
 
 message RemoveFromReferenceListRequest {
   required bytes chunkname = 1;
-  required SignedSize signed_size = 2;  // signed by WatchList holder's PMID key
-  required bytes pmid = 3;  // vault's PMID
-  required bytes public_key = 4;
-  required bytes public_key_signature = 5;
-  required bytes request_signature = 6;
+  required bytes pmid = 2;  // vault's PMID
+  required bytes public_key = 3;
+  required bytes public_key_signature = 4;
+  required bytes request_signature = 5;
 }
 
 message RemoveFromReferenceListResponse {

@@ -2,15 +2,11 @@
 <diagram>
 <source><![CDATA[#![Store Existing Chunk    ]
 client:client "Client"
-watch:vault "Watch List Holders x16"
+info:vault "Chunk Info Holders x16"
 c_account:vault "Client A/C Holders x16"
 f_account:vault "First Storing Client A/C Holders x16"
-ref:vault "Reference List Holders x16"
 
-client:client. Check we have enough space in our account&
-
-client:Ack =ref. Kademlia FIND_VALUE
-*2 c_account
+*1 c_account
 
 Watch List comprises:
   * list of PMIDs of current 4 paying clients
@@ -20,48 +16,48 @@ Watch List comprises:
   * chunk size
   * minimum rank required of chunk holders.
 
-   First client pays 4 times and is held as a repeated
-entry.  As second, third and fourth payers are added,
-they each replace an instance of the first and
-effectively recompense the first payer.  This list
-remains unchanged until one of them deletes himself.
-  Reserve watchers list is a FIFO queue who pay
-maidsafe initially, but once a current payer deletes
-himself are used to replace him and so effectively
-take over paying the storing vault.
-   If no replacement watchers are available when a
-current payer deletes himself, he is not recompensed
-until the count and checksum are exactly zero, at
-which time all 4 get repaid.
-*2
-client:client. Check rank if exists.&
-*1 client
-TODO: If >= 5 nodes listed as chunk holders,
-remove lowest rank vault and send him a
-CACHE_CHUNK message.
+   First client pays 4 times and is held as a repeated entry.  As
+second, third and fourth payers are added, they each replace an
+instance of the first and effectively recompense the first payer.
+This list remains unchanged until one of them deletes himself.
+  Reserve watchers list is a FIFO queue who pay maidsafe initially,
+but once a current payer deletes himself are used to replace him and
+so effectively take over paying the storing vault.
+   If no replacement watchers are available when a current payer
+deletes himself, he is not recompensed until the count and checksum
+are exactly zero, at which time all 4 get repaid.
 *1
+client:client. Check we have enough space in our account&
 
-*3 client
+client:Nack =info. Kademlia FIND_VALUE &
+
+*2 client
+For each Chunk Info Holder...
+*2
+
+client:>info. ADD_TO_WATCH_LIST_REQUEST
+*3 info
 TODO: If chunk exists at lower rank,
 we must promote which will be store
 and delete lower ranked chunks.
 *3
-
-client:client. Wait till online.&
+info:info. Validate request.&
+info:info. Add Client's PMID to Watch List&
+info:>client.Ack (Store x copies) / Nack &
 
 *4 client
-For each Watch List Holder...
+Upload x copies as per
+"Store New Chunk" diagram
 *4
 
-client:>watch. ADD_TO_WATCH_LIST_REQUEST
-watch:watch. Validate request.&
-watch:>client.Ack/Nack &
-[c:Condition IF Watchlist has < 4 current payers]
-(2)watch:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)&
-watch:Ack/Nack =f_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)&
+[c:Condition IF payment is required]
+(1)info:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)&
+[c:Condition IF account amendment fails]
+info:info. Revert addition of Client's PMID to Watch List&
 [/c]
-[c:Condition IF Watchlist has >= 4 current payers]
-(2)watch:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)&
+[c:Condition IF this client replaces an existing payer]
+info:Ack/Nack =f_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)&
+[/c]
 [/c]]]></source>
 <configuration>
 <property name="actorWidth" value="25"/>

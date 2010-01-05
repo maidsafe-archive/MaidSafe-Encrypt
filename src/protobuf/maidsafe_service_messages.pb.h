@@ -1368,29 +1368,22 @@ class AddToWatchListRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes watch_list_name = 1;
-  inline bool has_watch_list_name() const;
-  inline void clear_watch_list_name();
-  static const int kWatchListNameFieldNumber = 1;
-  inline const ::std::string& watch_list_name() const;
-  inline void set_watch_list_name(const ::std::string& value);
-  inline void set_watch_list_name(const char* value);
-  inline void set_watch_list_name(const void* value, size_t size);
-  inline ::std::string* mutable_watch_list_name();
+  // required bytes chunkname = 1;
+  inline bool has_chunkname() const;
+  inline void clear_chunkname();
+  static const int kChunknameFieldNumber = 1;
+  inline const ::std::string& chunkname() const;
+  inline void set_chunkname(const ::std::string& value);
+  inline void set_chunkname(const char* value);
+  inline void set_chunkname(const void* value, size_t size);
+  inline ::std::string* mutable_chunkname();
   
-  // optional .maidsafe.SignedSize signed_size = 2;
+  // required .maidsafe.SignedSize signed_size = 2;
   inline bool has_signed_size() const;
   inline void clear_signed_size();
   static const int kSignedSizeFieldNumber = 2;
   inline const ::maidsafe::SignedSize& signed_size() const;
   inline ::maidsafe::SignedSize* mutable_signed_size();
-  
-  // optional .maidsafe.StoreContract store_contract = 3;
-  inline bool has_store_contract() const;
-  inline void clear_store_contract();
-  static const int kStoreContractFieldNumber = 3;
-  inline const ::maidsafe::StoreContract& store_contract() const;
-  inline ::maidsafe::StoreContract* mutable_store_contract();
   
   // required bytes request_signature = 4;
   inline bool has_request_signature() const;
@@ -1406,16 +1399,15 @@ class AddToWatchListRequest : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* watch_list_name_;
-  static const ::std::string _default_watch_list_name_;
+  ::std::string* chunkname_;
+  static const ::std::string _default_chunkname_;
   ::maidsafe::SignedSize* signed_size_;
-  ::maidsafe::StoreContract* store_contract_;
   ::std::string* request_signature_;
   static const ::std::string _default_request_signature_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -1504,6 +1496,13 @@ class AddToWatchListResponse : public ::google::protobuf::Message {
   inline void set_pmid(const void* value, size_t size);
   inline ::std::string* mutable_pmid();
   
+  // optional uint32 upload_count = 3;
+  inline bool has_upload_count() const;
+  inline void clear_upload_count();
+  static const int kUploadCountFieldNumber = 3;
+  inline ::google::protobuf::uint32 upload_count() const;
+  inline void set_upload_count(::google::protobuf::uint32 value);
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -1511,10 +1510,11 @@ class AddToWatchListResponse : public ::google::protobuf::Message {
   ::google::protobuf::uint32 result_;
   ::std::string* pmid_;
   static const ::std::string _default_pmid_;
+  ::google::protobuf::uint32 upload_count_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -1586,27 +1586,50 @@ class RemoveFromWatchListRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes watch_list_name = 1;
-  inline bool has_watch_list_name() const;
-  inline void clear_watch_list_name();
-  static const int kWatchListNameFieldNumber = 1;
-  inline const ::std::string& watch_list_name() const;
-  inline void set_watch_list_name(const ::std::string& value);
-  inline void set_watch_list_name(const char* value);
-  inline void set_watch_list_name(const void* value, size_t size);
-  inline ::std::string* mutable_watch_list_name();
+  // required bytes chunkname = 1;
+  inline bool has_chunkname() const;
+  inline void clear_chunkname();
+  static const int kChunknameFieldNumber = 1;
+  inline const ::std::string& chunkname() const;
+  inline void set_chunkname(const ::std::string& value);
+  inline void set_chunkname(const char* value);
+  inline void set_chunkname(const void* value, size_t size);
+  inline ::std::string* mutable_chunkname();
   
-  // required .maidsafe.SignedSize signed_size = 2;
-  inline bool has_signed_size() const;
-  inline void clear_signed_size();
-  static const int kSignedSizeFieldNumber = 2;
-  inline const ::maidsafe::SignedSize& signed_size() const;
-  inline ::maidsafe::SignedSize* mutable_signed_size();
+  // required bytes pmid = 2;
+  inline bool has_pmid() const;
+  inline void clear_pmid();
+  static const int kPmidFieldNumber = 2;
+  inline const ::std::string& pmid() const;
+  inline void set_pmid(const ::std::string& value);
+  inline void set_pmid(const char* value);
+  inline void set_pmid(const void* value, size_t size);
+  inline ::std::string* mutable_pmid();
   
-  // required bytes request_signature = 3;
+  // required bytes public_key = 3;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 3;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // required bytes public_key_signature = 4;
+  inline bool has_public_key_signature() const;
+  inline void clear_public_key_signature();
+  static const int kPublicKeySignatureFieldNumber = 4;
+  inline const ::std::string& public_key_signature() const;
+  inline void set_public_key_signature(const ::std::string& value);
+  inline void set_public_key_signature(const char* value);
+  inline void set_public_key_signature(const void* value, size_t size);
+  inline ::std::string* mutable_public_key_signature();
+  
+  // required bytes request_signature = 5;
   inline bool has_request_signature() const;
   inline void clear_request_signature();
-  static const int kRequestSignatureFieldNumber = 3;
+  static const int kRequestSignatureFieldNumber = 5;
   inline const ::std::string& request_signature() const;
   inline void set_request_signature(const ::std::string& value);
   inline void set_request_signature(const char* value);
@@ -1617,15 +1640,20 @@ class RemoveFromWatchListRequest : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* watch_list_name_;
-  static const ::std::string _default_watch_list_name_;
-  ::maidsafe::SignedSize* signed_size_;
+  ::std::string* chunkname_;
+  static const ::std::string _default_chunkname_;
+  ::std::string* pmid_;
+  static const ::std::string _default_pmid_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* public_key_signature_;
+  static const ::std::string _default_public_key_signature_;
   ::std::string* request_signature_;
   static const ::std::string _default_request_signature_;
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -2016,47 +2044,40 @@ class RemoveFromReferenceListRequest : public ::google::protobuf::Message {
   inline void set_chunkname(const void* value, size_t size);
   inline ::std::string* mutable_chunkname();
   
-  // required .maidsafe.SignedSize signed_size = 2;
-  inline bool has_signed_size() const;
-  inline void clear_signed_size();
-  static const int kSignedSizeFieldNumber = 2;
-  inline const ::maidsafe::SignedSize& signed_size() const;
-  inline ::maidsafe::SignedSize* mutable_signed_size();
-  
-  // required bytes pmid = 3;
+  // required bytes pmid = 2;
   inline bool has_pmid() const;
   inline void clear_pmid();
-  static const int kPmidFieldNumber = 3;
+  static const int kPmidFieldNumber = 2;
   inline const ::std::string& pmid() const;
   inline void set_pmid(const ::std::string& value);
   inline void set_pmid(const char* value);
   inline void set_pmid(const void* value, size_t size);
   inline ::std::string* mutable_pmid();
   
-  // required bytes public_key = 4;
+  // required bytes public_key = 3;
   inline bool has_public_key() const;
   inline void clear_public_key();
-  static const int kPublicKeyFieldNumber = 4;
+  static const int kPublicKeyFieldNumber = 3;
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
   inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // required bytes public_key_signature = 5;
+  // required bytes public_key_signature = 4;
   inline bool has_public_key_signature() const;
   inline void clear_public_key_signature();
-  static const int kPublicKeySignatureFieldNumber = 5;
+  static const int kPublicKeySignatureFieldNumber = 4;
   inline const ::std::string& public_key_signature() const;
   inline void set_public_key_signature(const ::std::string& value);
   inline void set_public_key_signature(const char* value);
   inline void set_public_key_signature(const void* value, size_t size);
   inline ::std::string* mutable_public_key_signature();
   
-  // required bytes request_signature = 6;
+  // required bytes request_signature = 5;
   inline bool has_request_signature() const;
   inline void clear_request_signature();
-  static const int kRequestSignatureFieldNumber = 6;
+  static const int kRequestSignatureFieldNumber = 5;
   inline const ::std::string& request_signature() const;
   inline void set_request_signature(const ::std::string& value);
   inline void set_request_signature(const char* value);
@@ -2069,7 +2090,6 @@ class RemoveFromReferenceListRequest : public ::google::protobuf::Message {
   
   ::std::string* chunkname_;
   static const ::std::string _default_chunkname_;
-  ::maidsafe::SignedSize* signed_size_;
   ::std::string* pmid_;
   static const ::std::string _default_pmid_;
   ::std::string* public_key_;
@@ -2081,7 +2101,7 @@ class RemoveFromReferenceListRequest : public ::google::protobuf::Message {
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -7615,49 +7635,49 @@ inline ::std::string* StorePacketResponse::mutable_checksum() {
 
 // AddToWatchListRequest
 
-// required bytes watch_list_name = 1;
-inline bool AddToWatchListRequest::has_watch_list_name() const {
+// required bytes chunkname = 1;
+inline bool AddToWatchListRequest::has_chunkname() const {
   return _has_bit(0);
 }
-inline void AddToWatchListRequest::clear_watch_list_name() {
-  if (watch_list_name_ != &_default_watch_list_name_) {
-    watch_list_name_->clear();
+inline void AddToWatchListRequest::clear_chunkname() {
+  if (chunkname_ != &_default_chunkname_) {
+    chunkname_->clear();
   }
   _clear_bit(0);
 }
-inline const ::std::string& AddToWatchListRequest::watch_list_name() const {
-  return *watch_list_name_;
+inline const ::std::string& AddToWatchListRequest::chunkname() const {
+  return *chunkname_;
 }
-inline void AddToWatchListRequest::set_watch_list_name(const ::std::string& value) {
+inline void AddToWatchListRequest::set_chunkname(const ::std::string& value) {
   _set_bit(0);
-  if (watch_list_name_ == &_default_watch_list_name_) {
-    watch_list_name_ = new ::std::string;
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
   }
-  watch_list_name_->assign(value);
+  chunkname_->assign(value);
 }
-inline void AddToWatchListRequest::set_watch_list_name(const char* value) {
+inline void AddToWatchListRequest::set_chunkname(const char* value) {
   _set_bit(0);
-  if (watch_list_name_ == &_default_watch_list_name_) {
-    watch_list_name_ = new ::std::string;
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
   }
-  watch_list_name_->assign(value);
+  chunkname_->assign(value);
 }
-inline void AddToWatchListRequest::set_watch_list_name(const void* value, size_t size) {
+inline void AddToWatchListRequest::set_chunkname(const void* value, size_t size) {
   _set_bit(0);
-  if (watch_list_name_ == &_default_watch_list_name_) {
-    watch_list_name_ = new ::std::string;
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
   }
-  watch_list_name_->assign(reinterpret_cast<const char*>(value), size);
+  chunkname_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* AddToWatchListRequest::mutable_watch_list_name() {
+inline ::std::string* AddToWatchListRequest::mutable_chunkname() {
   _set_bit(0);
-  if (watch_list_name_ == &_default_watch_list_name_) {
-    watch_list_name_ = new ::std::string;
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
   }
-  return watch_list_name_;
+  return chunkname_;
 }
 
-// optional .maidsafe.SignedSize signed_size = 2;
+// required .maidsafe.SignedSize signed_size = 2;
 inline bool AddToWatchListRequest::has_signed_size() const {
   return _has_bit(1);
 }
@@ -7674,59 +7694,42 @@ inline ::maidsafe::SignedSize* AddToWatchListRequest::mutable_signed_size() {
   return signed_size_;
 }
 
-// optional .maidsafe.StoreContract store_contract = 3;
-inline bool AddToWatchListRequest::has_store_contract() const {
-  return _has_bit(2);
-}
-inline void AddToWatchListRequest::clear_store_contract() {
-  if (store_contract_ != NULL) store_contract_->::maidsafe::StoreContract::Clear();
-  _clear_bit(2);
-}
-inline const ::maidsafe::StoreContract& AddToWatchListRequest::store_contract() const {
-  return store_contract_ != NULL ? *store_contract_ : *default_instance_->store_contract_;
-}
-inline ::maidsafe::StoreContract* AddToWatchListRequest::mutable_store_contract() {
-  _set_bit(2);
-  if (store_contract_ == NULL) store_contract_ = new ::maidsafe::StoreContract;
-  return store_contract_;
-}
-
 // required bytes request_signature = 4;
 inline bool AddToWatchListRequest::has_request_signature() const {
-  return _has_bit(3);
+  return _has_bit(2);
 }
 inline void AddToWatchListRequest::clear_request_signature() {
   if (request_signature_ != &_default_request_signature_) {
     request_signature_->clear();
   }
-  _clear_bit(3);
+  _clear_bit(2);
 }
 inline const ::std::string& AddToWatchListRequest::request_signature() const {
   return *request_signature_;
 }
 inline void AddToWatchListRequest::set_request_signature(const ::std::string& value) {
-  _set_bit(3);
+  _set_bit(2);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(value);
 }
 inline void AddToWatchListRequest::set_request_signature(const char* value) {
-  _set_bit(3);
+  _set_bit(2);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(value);
 }
 inline void AddToWatchListRequest::set_request_signature(const void* value, size_t size) {
-  _set_bit(3);
+  _set_bit(2);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* AddToWatchListRequest::mutable_request_signature() {
-  _set_bit(3);
+  _set_bit(2);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
@@ -7795,105 +7798,230 @@ inline ::std::string* AddToWatchListResponse::mutable_pmid() {
   return pmid_;
 }
 
+// optional uint32 upload_count = 3;
+inline bool AddToWatchListResponse::has_upload_count() const {
+  return _has_bit(2);
+}
+inline void AddToWatchListResponse::clear_upload_count() {
+  upload_count_ = 0u;
+  _clear_bit(2);
+}
+inline ::google::protobuf::uint32 AddToWatchListResponse::upload_count() const {
+  return upload_count_;
+}
+inline void AddToWatchListResponse::set_upload_count(::google::protobuf::uint32 value) {
+  _set_bit(2);
+  upload_count_ = value;
+}
+
 // -------------------------------------------------------------------
 
 // RemoveFromWatchListRequest
 
-// required bytes watch_list_name = 1;
-inline bool RemoveFromWatchListRequest::has_watch_list_name() const {
+// required bytes chunkname = 1;
+inline bool RemoveFromWatchListRequest::has_chunkname() const {
   return _has_bit(0);
 }
-inline void RemoveFromWatchListRequest::clear_watch_list_name() {
-  if (watch_list_name_ != &_default_watch_list_name_) {
-    watch_list_name_->clear();
+inline void RemoveFromWatchListRequest::clear_chunkname() {
+  if (chunkname_ != &_default_chunkname_) {
+    chunkname_->clear();
   }
   _clear_bit(0);
 }
-inline const ::std::string& RemoveFromWatchListRequest::watch_list_name() const {
-  return *watch_list_name_;
+inline const ::std::string& RemoveFromWatchListRequest::chunkname() const {
+  return *chunkname_;
 }
-inline void RemoveFromWatchListRequest::set_watch_list_name(const ::std::string& value) {
+inline void RemoveFromWatchListRequest::set_chunkname(const ::std::string& value) {
   _set_bit(0);
-  if (watch_list_name_ == &_default_watch_list_name_) {
-    watch_list_name_ = new ::std::string;
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
   }
-  watch_list_name_->assign(value);
+  chunkname_->assign(value);
 }
-inline void RemoveFromWatchListRequest::set_watch_list_name(const char* value) {
+inline void RemoveFromWatchListRequest::set_chunkname(const char* value) {
   _set_bit(0);
-  if (watch_list_name_ == &_default_watch_list_name_) {
-    watch_list_name_ = new ::std::string;
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
   }
-  watch_list_name_->assign(value);
+  chunkname_->assign(value);
 }
-inline void RemoveFromWatchListRequest::set_watch_list_name(const void* value, size_t size) {
+inline void RemoveFromWatchListRequest::set_chunkname(const void* value, size_t size) {
   _set_bit(0);
-  if (watch_list_name_ == &_default_watch_list_name_) {
-    watch_list_name_ = new ::std::string;
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
   }
-  watch_list_name_->assign(reinterpret_cast<const char*>(value), size);
+  chunkname_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* RemoveFromWatchListRequest::mutable_watch_list_name() {
+inline ::std::string* RemoveFromWatchListRequest::mutable_chunkname() {
   _set_bit(0);
-  if (watch_list_name_ == &_default_watch_list_name_) {
-    watch_list_name_ = new ::std::string;
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
   }
-  return watch_list_name_;
+  return chunkname_;
 }
 
-// required .maidsafe.SignedSize signed_size = 2;
-inline bool RemoveFromWatchListRequest::has_signed_size() const {
+// required bytes pmid = 2;
+inline bool RemoveFromWatchListRequest::has_pmid() const {
   return _has_bit(1);
 }
-inline void RemoveFromWatchListRequest::clear_signed_size() {
-  if (signed_size_ != NULL) signed_size_->::maidsafe::SignedSize::Clear();
+inline void RemoveFromWatchListRequest::clear_pmid() {
+  if (pmid_ != &_default_pmid_) {
+    pmid_->clear();
+  }
   _clear_bit(1);
 }
-inline const ::maidsafe::SignedSize& RemoveFromWatchListRequest::signed_size() const {
-  return signed_size_ != NULL ? *signed_size_ : *default_instance_->signed_size_;
+inline const ::std::string& RemoveFromWatchListRequest::pmid() const {
+  return *pmid_;
 }
-inline ::maidsafe::SignedSize* RemoveFromWatchListRequest::mutable_signed_size() {
+inline void RemoveFromWatchListRequest::set_pmid(const ::std::string& value) {
   _set_bit(1);
-  if (signed_size_ == NULL) signed_size_ = new ::maidsafe::SignedSize;
-  return signed_size_;
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void RemoveFromWatchListRequest::set_pmid(const char* value) {
+  _set_bit(1);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void RemoveFromWatchListRequest::set_pmid(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* RemoveFromWatchListRequest::mutable_pmid() {
+  _set_bit(1);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  return pmid_;
 }
 
-// required bytes request_signature = 3;
-inline bool RemoveFromWatchListRequest::has_request_signature() const {
+// required bytes public_key = 3;
+inline bool RemoveFromWatchListRequest::has_public_key() const {
   return _has_bit(2);
+}
+inline void RemoveFromWatchListRequest::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& RemoveFromWatchListRequest::public_key() const {
+  return *public_key_;
+}
+inline void RemoveFromWatchListRequest::set_public_key(const ::std::string& value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void RemoveFromWatchListRequest::set_public_key(const char* value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void RemoveFromWatchListRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* RemoveFromWatchListRequest::mutable_public_key() {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// required bytes public_key_signature = 4;
+inline bool RemoveFromWatchListRequest::has_public_key_signature() const {
+  return _has_bit(3);
+}
+inline void RemoveFromWatchListRequest::clear_public_key_signature() {
+  if (public_key_signature_ != &_default_public_key_signature_) {
+    public_key_signature_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& RemoveFromWatchListRequest::public_key_signature() const {
+  return *public_key_signature_;
+}
+inline void RemoveFromWatchListRequest::set_public_key_signature(const ::std::string& value) {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(value);
+}
+inline void RemoveFromWatchListRequest::set_public_key_signature(const char* value) {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(value);
+}
+inline void RemoveFromWatchListRequest::set_public_key_signature(const void* value, size_t size) {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* RemoveFromWatchListRequest::mutable_public_key_signature() {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  return public_key_signature_;
+}
+
+// required bytes request_signature = 5;
+inline bool RemoveFromWatchListRequest::has_request_signature() const {
+  return _has_bit(4);
 }
 inline void RemoveFromWatchListRequest::clear_request_signature() {
   if (request_signature_ != &_default_request_signature_) {
     request_signature_->clear();
   }
-  _clear_bit(2);
+  _clear_bit(4);
 }
 inline const ::std::string& RemoveFromWatchListRequest::request_signature() const {
   return *request_signature_;
 }
 inline void RemoveFromWatchListRequest::set_request_signature(const ::std::string& value) {
-  _set_bit(2);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(value);
 }
 inline void RemoveFromWatchListRequest::set_request_signature(const char* value) {
-  _set_bit(2);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(value);
 }
 inline void RemoveFromWatchListRequest::set_request_signature(const void* value, size_t size) {
-  _set_bit(2);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* RemoveFromWatchListRequest::mutable_request_signature() {
-  _set_bit(2);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
@@ -8175,185 +8303,168 @@ inline ::std::string* RemoveFromReferenceListRequest::mutable_chunkname() {
   return chunkname_;
 }
 
-// required .maidsafe.SignedSize signed_size = 2;
-inline bool RemoveFromReferenceListRequest::has_signed_size() const {
-  return _has_bit(1);
-}
-inline void RemoveFromReferenceListRequest::clear_signed_size() {
-  if (signed_size_ != NULL) signed_size_->::maidsafe::SignedSize::Clear();
-  _clear_bit(1);
-}
-inline const ::maidsafe::SignedSize& RemoveFromReferenceListRequest::signed_size() const {
-  return signed_size_ != NULL ? *signed_size_ : *default_instance_->signed_size_;
-}
-inline ::maidsafe::SignedSize* RemoveFromReferenceListRequest::mutable_signed_size() {
-  _set_bit(1);
-  if (signed_size_ == NULL) signed_size_ = new ::maidsafe::SignedSize;
-  return signed_size_;
-}
-
-// required bytes pmid = 3;
+// required bytes pmid = 2;
 inline bool RemoveFromReferenceListRequest::has_pmid() const {
-  return _has_bit(2);
+  return _has_bit(1);
 }
 inline void RemoveFromReferenceListRequest::clear_pmid() {
   if (pmid_ != &_default_pmid_) {
     pmid_->clear();
   }
-  _clear_bit(2);
+  _clear_bit(1);
 }
 inline const ::std::string& RemoveFromReferenceListRequest::pmid() const {
   return *pmid_;
 }
 inline void RemoveFromReferenceListRequest::set_pmid(const ::std::string& value) {
-  _set_bit(2);
+  _set_bit(1);
   if (pmid_ == &_default_pmid_) {
     pmid_ = new ::std::string;
   }
   pmid_->assign(value);
 }
 inline void RemoveFromReferenceListRequest::set_pmid(const char* value) {
-  _set_bit(2);
+  _set_bit(1);
   if (pmid_ == &_default_pmid_) {
     pmid_ = new ::std::string;
   }
   pmid_->assign(value);
 }
 inline void RemoveFromReferenceListRequest::set_pmid(const void* value, size_t size) {
-  _set_bit(2);
+  _set_bit(1);
   if (pmid_ == &_default_pmid_) {
     pmid_ = new ::std::string;
   }
   pmid_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* RemoveFromReferenceListRequest::mutable_pmid() {
-  _set_bit(2);
+  _set_bit(1);
   if (pmid_ == &_default_pmid_) {
     pmid_ = new ::std::string;
   }
   return pmid_;
 }
 
-// required bytes public_key = 4;
+// required bytes public_key = 3;
 inline bool RemoveFromReferenceListRequest::has_public_key() const {
-  return _has_bit(3);
+  return _has_bit(2);
 }
 inline void RemoveFromReferenceListRequest::clear_public_key() {
   if (public_key_ != &_default_public_key_) {
     public_key_->clear();
   }
-  _clear_bit(3);
+  _clear_bit(2);
 }
 inline const ::std::string& RemoveFromReferenceListRequest::public_key() const {
   return *public_key_;
 }
 inline void RemoveFromReferenceListRequest::set_public_key(const ::std::string& value) {
-  _set_bit(3);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void RemoveFromReferenceListRequest::set_public_key(const char* value) {
-  _set_bit(3);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void RemoveFromReferenceListRequest::set_public_key(const void* value, size_t size) {
-  _set_bit(3);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* RemoveFromReferenceListRequest::mutable_public_key() {
-  _set_bit(3);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   return public_key_;
 }
 
-// required bytes public_key_signature = 5;
+// required bytes public_key_signature = 4;
 inline bool RemoveFromReferenceListRequest::has_public_key_signature() const {
-  return _has_bit(4);
+  return _has_bit(3);
 }
 inline void RemoveFromReferenceListRequest::clear_public_key_signature() {
   if (public_key_signature_ != &_default_public_key_signature_) {
     public_key_signature_->clear();
   }
-  _clear_bit(4);
+  _clear_bit(3);
 }
 inline const ::std::string& RemoveFromReferenceListRequest::public_key_signature() const {
   return *public_key_signature_;
 }
 inline void RemoveFromReferenceListRequest::set_public_key_signature(const ::std::string& value) {
-  _set_bit(4);
+  _set_bit(3);
   if (public_key_signature_ == &_default_public_key_signature_) {
     public_key_signature_ = new ::std::string;
   }
   public_key_signature_->assign(value);
 }
 inline void RemoveFromReferenceListRequest::set_public_key_signature(const char* value) {
-  _set_bit(4);
+  _set_bit(3);
   if (public_key_signature_ == &_default_public_key_signature_) {
     public_key_signature_ = new ::std::string;
   }
   public_key_signature_->assign(value);
 }
 inline void RemoveFromReferenceListRequest::set_public_key_signature(const void* value, size_t size) {
-  _set_bit(4);
+  _set_bit(3);
   if (public_key_signature_ == &_default_public_key_signature_) {
     public_key_signature_ = new ::std::string;
   }
   public_key_signature_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* RemoveFromReferenceListRequest::mutable_public_key_signature() {
-  _set_bit(4);
+  _set_bit(3);
   if (public_key_signature_ == &_default_public_key_signature_) {
     public_key_signature_ = new ::std::string;
   }
   return public_key_signature_;
 }
 
-// required bytes request_signature = 6;
+// required bytes request_signature = 5;
 inline bool RemoveFromReferenceListRequest::has_request_signature() const {
-  return _has_bit(5);
+  return _has_bit(4);
 }
 inline void RemoveFromReferenceListRequest::clear_request_signature() {
   if (request_signature_ != &_default_request_signature_) {
     request_signature_->clear();
   }
-  _clear_bit(5);
+  _clear_bit(4);
 }
 inline const ::std::string& RemoveFromReferenceListRequest::request_signature() const {
   return *request_signature_;
 }
 inline void RemoveFromReferenceListRequest::set_request_signature(const ::std::string& value) {
-  _set_bit(5);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(value);
 }
 inline void RemoveFromReferenceListRequest::set_request_signature(const char* value) {
-  _set_bit(5);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(value);
 }
 inline void RemoveFromReferenceListRequest::set_request_signature(const void* value, size_t size) {
-  _set_bit(5);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* RemoveFromReferenceListRequest::mutable_request_signature() {
-  _set_bit(5);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }

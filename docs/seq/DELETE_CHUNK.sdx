@@ -3,36 +3,35 @@
 <source><![CDATA[#![Delete Chunk   ]
 client:client "Client"
 peer:vault "Peer Vault"
-watch:vault "Watch List Holders x16"
+info:vault "Chunk Info Holders x16"
 c_account:vault "Client A/C Holders x16"
 v_account:vault "Vault A/C Holders x16"
-ref:vault "Reference List Holders x16"
 
 client:client. Wait till online.&
 
 *1 client
-For each Watch List Holder...
+For each Chunk Info Holder...
 *1
 
-client:>watch. REMOVE_FROM_WATCH_LIST_REQUEST
+client:>info. REMOVE_FROM_WATCH_LIST_REQUEST
 *2 client
 If this is First Storing Client, flag list as
 able to be deleted.
 *2
 
-watch:watch. Validate request.&
-watch:>client.Ack/Nack &
+info:info. Validate request.&
+info:>client.Ack/Nack &
 
 [c:Condition IF Client's PMID is in list]
 [c:Condition IF undeleted PMIDs in list == 1]
 [c:Loop Repeat for each PMID in list]
-watch:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)&
+info:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)&
 [/c]
 [c:Loop Repeat for each chunk holder]
-watch:Ack/Nack =peer. DELETE_CHUNK_REQUEST
-peer:Ack/Nack =ref. REMOVE_FROM_REFERENCE_LIST_REQUEST
-(3)ref:Ack/Nack =v_account. AMEND_ACCOUNT_REQUEST (Space Given Dec)&
+info:Ack/Nack =peer. DELETE_CHUNK_REQUEST
+info:Ack/Nack =v_account. AMEND_ACCOUNT_REQUEST (Space Given Dec)&
 [/c]
+info:info. Mark Watch List as "Deleted"
 [/c]
 [/c]]]></source>
 <configuration>
