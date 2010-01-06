@@ -200,6 +200,8 @@ enum ReturnCode {
   kAccountWrongAccountField = -4504,
   kAccountEmptyAlert = -4505,
   kAccountNotEnoughSpace = -4506,
+  kAmendAccountTypeError = -4507,
+  kAmendAccountCountError = -4508,
 
   // Chunk Info Handler
   kChunkInfoInvalidSize = -5501,

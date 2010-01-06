@@ -71,7 +71,7 @@ struct bufferpacket_messages {
 //  };
 
 enum MaidsafeRpcResult {
-  kNack, kAck, kNotRemote, kNoSpace, kBusy
+  kNack, kAck, kNotRemote, kBusy
 };
 
 const std::string kAnonymousRequestSignature(128, 'f');
@@ -293,12 +293,14 @@ const int kValidityCheckMaxTime(86400);  // 24 hours
 const int kValidityCheckInterval(120);  // 2 minutes
 // delay to check partner references
 const int kCheckPartnerRefDelay(300);  // 5 minutes
-// ValidityCheck Status
-const std::string kValidityCheckClean("C");
-const std::string kValidityCheckDirty("D");
+// timeout for account amendment transactions in seconds
+const boost::uint32_t kAccountAmendmentTimeout(120);
+// max. no. of account amendments
+const size_t kMaxAccountAmendments(1000);
+// max. no. of repeated account amendments (i.e. for same chunk to same PMID)
+const size_t kMaxRepeatedAccountAmendments(10);
 const int kValidityCheckRetry(2);  // retries for validity check (timeouts)
 const boost::uint8_t kMinChunkCopies(4);
-const int kMaxPingRetries(2);  // max number of ping tries
 const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
 const int kMaxChunkStoreTries(2);  // max number of tries to store or update a
                                    // chunk
@@ -306,10 +308,10 @@ const boost::uint8_t kMaxStoreFailures(10);  // max number of failed store tries
 const boost::uint32_t kSaveUpdatesTrigger(10);  // max no of dbs in save queue
                                                  // before running save queue
 const double kMinSuccessfulPecentageOfUpdating(0.9);
-// max no of normal store worker threads running concurrently
-const size_t kMaxStoreThreads(5);
-// max no of priority store threads allowed over and above normal store threads
-const size_t kMaxPriorityStoreThreads(2);
+// max. no. of threads in chunk_thread_pool_ (in MaidsafeStoreManager)
+const int kChunkMaxThreadCount(20);
+// max. no. of threads in packet_thread_pool_ (in MaidsafeStoreManager)
+const int kPacketMaxThreadCount(10);
 // port where the service to register a local vault is listening
 const boost::uint16_t kLocalPort = 5484;
 

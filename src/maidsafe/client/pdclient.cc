@@ -40,7 +40,7 @@ void PDClient::OwnLocalVault(const std::string &priv_key,
   cb_args.response = new OwnVaultResponse;
   rpcprotocol::Channel channel(channel_manager_, transport_, "127.0.0.1",
       kLocalPort, "", 0, "", 0);
-  google::protobuf::Closure* done = google::protobuf::NewCallback<PDClient,
+  google::protobuf::Closure *done = google::protobuf::NewCallback<PDClient,
       OwnVaultCallbackArgs>(this, &PDClient::OwnVaultCallback,
       cb_args);
   client_rpcs_->OwnVault(priv_key, pub_key, signed_pub_key, port,

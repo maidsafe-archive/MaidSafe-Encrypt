@@ -190,8 +190,8 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
     maid_response.SerializeToString(&maid_result);
     cb(maid_result);
   }
-  chunk_thread_pool_.setMaxThreadCount(20);
-  packet_thread_pool_.setMaxThreadCount(10);
+  chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount);
+  packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount);
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
 #endif
@@ -1295,24 +1295,24 @@ int MaidsafeStoreManager::GetAddToWatchListRequest(
       store_data.private_key_, &request_signature);
   if (request_signature == "")
     return kGetRequestSigError;
-  add_to_watch_list_request->set_watch_list_name(watch_list_name);
-  if (store_prep_response.has_store_contract()) {
-    StoreContract *mutable_store_contract =
-        add_to_watch_list_request->mutable_store_contract();
-    *mutable_store_contract = store_prep_response.store_contract();
-  } else {
-    SignedSize *mutable_signed_size =
-        add_to_watch_list_request->mutable_signed_size();
-    mutable_signed_size->set_data_size(store_data.size_);
-    mutable_signed_size->set_signature(co.AsymSign(
-        base::itos_ull(store_data.size_), "", store_data.private_key_,
-        crypto::STRING_STRING));
-    mutable_signed_size->set_pmid(store_data.key_id_);
-    mutable_signed_size->set_public_key(store_data.public_key_);
-    mutable_signed_size->set_public_key_signature(
-        store_data.public_key_signature_);
-  }
-  add_to_watch_list_request->set_request_signature(request_signature);
+//  add_to_watch_list_request->set_watch_list_name(watch_list_name);
+//  if (store_prep_response.has_store_contract()) {
+//    StoreContract *mutable_store_contract =
+//        add_to_watch_list_request->mutable_store_contract();
+//    *mutable_store_contract = store_prep_response.store_contract();
+//  } else {
+//    SignedSize *mutable_signed_size =
+//        add_to_watch_list_request->mutable_signed_size();
+//    mutable_signed_size->set_data_size(store_data.size_);
+//    mutable_signed_size->set_signature(co.AsymSign(
+//        base::itos_ull(store_data.size_), "", store_data.private_key_,
+//        crypto::STRING_STRING));
+//    mutable_signed_size->set_pmid(store_data.key_id_);
+//    mutable_signed_size->set_public_key(store_data.public_key_);
+//    mutable_signed_size->set_public_key_signature(
+//        store_data.public_key_signature_);
+//  }
+//  add_to_watch_list_request->set_request_signature(request_signature);
   return kSuccess;
 }
 
@@ -1332,18 +1332,18 @@ int MaidsafeStoreManager::GetRemoveFromWatchListRequest(
       store_data.private_key_, &request_signature);
   if (request_signature == "")
     return kGetRequestSigError;
-  remove_from_watch_list_request->set_watch_list_name(watch_list_name);
-  SignedSize *mutable_signed_size =
-      remove_from_watch_list_request->mutable_signed_size();
-  mutable_signed_size->set_data_size(store_data.size_);
-  mutable_signed_size->set_signature(co.AsymSign(
-      base::itos_ull(store_data.size_), "", store_data.private_key_,
-      crypto::STRING_STRING));
-  mutable_signed_size->set_pmid(store_data.key_id_);
-  mutable_signed_size->set_public_key(store_data.public_key_);
-  mutable_signed_size->set_public_key_signature(
-      store_data.public_key_signature_);
-  remove_from_watch_list_request->set_request_signature(request_signature);
+//  remove_from_watch_list_request->set_watch_list_name(watch_list_name);
+//  SignedSize *mutable_signed_size =
+//      remove_from_watch_list_request->mutable_signed_size();
+//  mutable_signed_size->set_data_size(store_data.size_);
+//  mutable_signed_size->set_signature(co.AsymSign(
+//      base::itos_ull(store_data.size_), "", store_data.private_key_,
+//      crypto::STRING_STRING));
+//  mutable_signed_size->set_pmid(store_data.key_id_);
+//  mutable_signed_size->set_public_key(store_data.public_key_);
+//  mutable_signed_size->set_public_key_signature(
+//      store_data.public_key_signature_);
+//  remove_from_watch_list_request->set_request_signature(request_signature);
   return kSuccess;
 }
 

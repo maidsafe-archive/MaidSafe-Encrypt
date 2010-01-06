@@ -73,92 +73,92 @@ class VaultService : public maidsafe::MaidsafeService {
                PendingOperationsHandler *poh);
   ~VaultService() {}
   virtual void StorePrep(google::protobuf::RpcController* controller,
-                         const maidsafe::StorePrepRequest* request,
-                         maidsafe::StorePrepResponse* response,
-                         google::protobuf::Closure* done);
+                         const maidsafe::StorePrepRequest *request,
+                         maidsafe::StorePrepResponse *response,
+                         google::protobuf::Closure *done);
   virtual void StoreChunk(google::protobuf::RpcController* controller,
-                          const maidsafe::StoreChunkRequest* request,
-                          maidsafe::StoreChunkResponse* response,
-                          google::protobuf::Closure* done);
+                          const maidsafe::StoreChunkRequest *request,
+                          maidsafe::StoreChunkResponse *response,
+                          google::protobuf::Closure *done);
   virtual void StorePacket(google::protobuf::RpcController* controller,
-                           const maidsafe::StorePacketRequest* request,
-                           maidsafe::StorePacketResponse* response,
-                           google::protobuf::Closure* done);
+                           const maidsafe::StorePacketRequest *request,
+                           maidsafe::StorePacketResponse *response,
+                           google::protobuf::Closure *done);
   virtual void AddToWatchList(google::protobuf::RpcController* controller,
-                              const maidsafe::AddToWatchListRequest* request,
-                              maidsafe::AddToWatchListResponse* response,
-                              google::protobuf::Closure* done);
+                              const maidsafe::AddToWatchListRequest *request,
+                              maidsafe::AddToWatchListResponse *response,
+                              google::protobuf::Closure *done);
   virtual void RemoveFromWatchList(
       google::protobuf::RpcController* controller,
-      const maidsafe::RemoveFromWatchListRequest* request,
-      maidsafe::RemoveFromWatchListResponse* response,
-      google::protobuf::Closure* done);
+      const maidsafe::RemoveFromWatchListRequest *request,
+      maidsafe::RemoveFromWatchListResponse *response,
+      google::protobuf::Closure *done);
   virtual void AddToReferenceList(
       google::protobuf::RpcController* controller,
-      const maidsafe::AddToReferenceListRequest* request,
-      maidsafe::AddToReferenceListResponse* response,
-      google::protobuf::Closure* done);
+      const maidsafe::AddToReferenceListRequest *request,
+      maidsafe::AddToReferenceListResponse *response,
+      google::protobuf::Closure *done);
   virtual void RemoveFromReferenceList(
       google::protobuf::RpcController* controller,
-      const maidsafe::RemoveFromReferenceListRequest* request,
-      maidsafe::RemoveFromReferenceListResponse* response,
-      google::protobuf::Closure* done);
+      const maidsafe::RemoveFromReferenceListRequest *request,
+      maidsafe::RemoveFromReferenceListResponse *response,
+      google::protobuf::Closure *done);
   virtual void AmendAccount(google::protobuf::RpcController* controller,
-                            const maidsafe::AmendAccountRequest* request,
-                            maidsafe::AmendAccountResponse* response,
-                            google::protobuf::Closure* done);
+                            const maidsafe::AmendAccountRequest *request,
+                            maidsafe::AmendAccountResponse *response,
+                            google::protobuf::Closure *done);
   virtual void AccountStatus(google::protobuf::RpcController* controller,
-                             const maidsafe::AccountStatusRequest* request,
-                             maidsafe::AccountStatusResponse* response,
-                             google::protobuf::Closure* done);
+                             const maidsafe::AccountStatusRequest *request,
+                             maidsafe::AccountStatusResponse *response,
+                             google::protobuf::Closure *done);
   virtual void CheckChunk(google::protobuf::RpcController* controller,
-                          const maidsafe::CheckChunkRequest* request,
-                          maidsafe::CheckChunkResponse* response,
-                          google::protobuf::Closure* done);
+                          const maidsafe::CheckChunkRequest *request,
+                          maidsafe::CheckChunkResponse *response,
+                          google::protobuf::Closure *done);
   virtual void GetChunk(google::protobuf::RpcController* controller,
-                        const maidsafe::GetChunkRequest* request,
-                        maidsafe::GetChunkResponse* response,
-                        google::protobuf::Closure* done);
+                        const maidsafe::GetChunkRequest *request,
+                        maidsafe::GetChunkResponse *response,
+                        google::protobuf::Closure *done);
   virtual void GetPacket(google::protobuf::RpcController* controller,
-                         const maidsafe::GetPacketRequest* request,
-                         maidsafe::GetPacketResponse* response,
-                         google::protobuf::Closure* done);
+                         const maidsafe::GetPacketRequest *request,
+                         maidsafe::GetPacketResponse *response,
+                         google::protobuf::Closure *done);
   virtual void UpdateChunk(google::protobuf::RpcController* controller,
-                           const maidsafe::UpdateChunkRequest* request,
-                           maidsafe::UpdateChunkResponse* response,
-                           google::protobuf::Closure* done);
+                           const maidsafe::UpdateChunkRequest *request,
+                           maidsafe::UpdateChunkResponse *response,
+                           google::protobuf::Closure *done);
   virtual void DeleteChunk(google::protobuf::RpcController* controller,
-                           const maidsafe::DeleteChunkRequest* request,
-                           maidsafe::DeleteChunkResponse* response,
-                           google::protobuf::Closure* done);
+                           const maidsafe::DeleteChunkRequest *request,
+                           maidsafe::DeleteChunkResponse *response,
+                           google::protobuf::Closure *done);
   virtual void ValidityCheck(google::protobuf::RpcController* controller,
-                             const maidsafe::ValidityCheckRequest* request,
-                             maidsafe::ValidityCheckResponse* response,
-                             google::protobuf::Closure* done);
+                             const maidsafe::ValidityCheckRequest *request,
+                             maidsafe::ValidityCheckResponse *response,
+                             google::protobuf::Closure *done);
   virtual void SwapChunk(google::protobuf::RpcController* controller,
-                         const maidsafe::SwapChunkRequest* request,
-                         maidsafe::SwapChunkResponse* response,
-                         google::protobuf::Closure* done);
+                         const maidsafe::SwapChunkRequest *request,
+                         maidsafe::SwapChunkResponse *response,
+                         google::protobuf::Closure *done);
   virtual void VaultStatus(google::protobuf::RpcController* controller,
-                           const maidsafe::VaultStatusRequest* request,
-                           maidsafe::VaultStatusResponse* response,
-                           google::protobuf::Closure* done);
+                           const maidsafe::VaultStatusRequest *request,
+                           maidsafe::VaultStatusResponse *response,
+                           google::protobuf::Closure *done);
   virtual void CreateBP(google::protobuf::RpcController* controller,
-                        const maidsafe::CreateBPRequest* request,
-                        maidsafe::CreateBPResponse* response,
-                        google::protobuf::Closure* done);
+                        const maidsafe::CreateBPRequest *request,
+                        maidsafe::CreateBPResponse *response,
+                        google::protobuf::Closure *done);
   virtual void ModifyBPInfo(google::protobuf::RpcController* controller,
-                            const maidsafe::ModifyBPInfoRequest* request,
-                            maidsafe::ModifyBPInfoResponse* response,
-                            google::protobuf::Closure* done);
+                            const maidsafe::ModifyBPInfoRequest *request,
+                            maidsafe::ModifyBPInfoResponse *response,
+                            google::protobuf::Closure *done);
   virtual void GetBPMessages(google::protobuf::RpcController* controller,
-                             const maidsafe::GetBPMessagesRequest* request,
-                             maidsafe::GetBPMessagesResponse* response,
-                             google::protobuf::Closure* done);
+                             const maidsafe::GetBPMessagesRequest *request,
+                             maidsafe::GetBPMessagesResponse *response,
+                             google::protobuf::Closure *done);
   virtual void AddBPMessage(google::protobuf::RpcController* controller,
-                            const maidsafe::AddBPMessageRequest* request,
-                            maidsafe::AddBPMessageResponse* response,
-                            google::protobuf::Closure* done);
+                            const maidsafe::AddBPMessageRequest *request,
+                            maidsafe::AddBPMessageResponse *response,
+                            google::protobuf::Closure *done);
   void SetAddToRefListFunction(const AddToRefListFunctor &func) {
     add_to_reference_list_ = func;
   }
@@ -197,7 +197,7 @@ class VaultService : public maidsafe::MaidsafeService {
   VaultService &operator=(const VaultService&);
   bool ValidateSignedSize(const maidsafe::SignedSize &sz);
   bool ValidateStoreContract(const maidsafe::StoreContract &sc);
-  bool ValidateAmendRequest(const maidsafe::AmendAccountRequest* request,
+  bool ValidateAmendRequest(const maidsafe::AmendAccountRequest *request,
                             boost::uint64_t *account_delta,
                             std::string *pmid);
   bool ValidateSignedRequest(const std::string &public_key,
@@ -225,7 +225,7 @@ class VaultService : public maidsafe::MaidsafeService {
                         const std::string &content);
   bool LoadChunkLocal(const std::string &chunkname, std::string *content);
   bool LoadPacketLocal(const std::string &packetname,
-                       maidsafe::GetPacketResponse* response);
+                       maidsafe::GetPacketResponse *response);
   bool DeleteChunkLocal(const std::string &chunkname);
   void FindCloseNodesCallback(const std::string &result,
                               std::vector<std::string> *close_nodes);
@@ -256,6 +256,7 @@ class VaultService : public maidsafe::MaidsafeService {
   typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
   PrepsReceivedMap prm_;
   AccountHandler ah_;
+  AccountAmendmentHandler aah_;
   ChunkInfoHandler cih_;
   AddToRefListFunctor add_to_reference_list_;
   RemoveFromRefListFunctor remove_from_reference_list_;
@@ -267,11 +268,11 @@ class RegistrationService : public maidsafe::VaultRegistration {
   RegistrationService(boost::function<void(const maidsafe::VaultConfig&)>
       notifier);
   virtual void OwnVault(google::protobuf::RpcController* controller,
-      const maidsafe::OwnVaultRequest* request,
-      maidsafe::OwnVaultResponse* response, google::protobuf::Closure* done);
+      const maidsafe::OwnVaultRequest *request,
+      maidsafe::OwnVaultResponse *response, google::protobuf::Closure *done);
   virtual void IsVaultOwned(google::protobuf::RpcController* controller,
-      const maidsafe::IsOwnedRequest* request,
-      maidsafe::IsOwnedResponse* response, google::protobuf::Closure* done);
+      const maidsafe::IsOwnedRequest *request,
+      maidsafe::IsOwnedResponse *response, google::protobuf::Closure *done);
   void ReplyOwnVaultRequest(const bool &fail_to_start);
   inline void set_status(const maidsafe::VaultStatus &status) {
       status_ = status;

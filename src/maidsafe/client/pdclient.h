@@ -72,7 +72,7 @@ struct OwnVaultCallbackArgs {
       : cb(ovca.cb), response(ovca.response), ctrl(ovca.ctrl) {
   }
   boost::function<void(const OwnVaultResult&, const std::string&)> cb;
-  OwnVaultResponse* response;
+  OwnVaultResponse *response;
   rpcprotocol::Controller *ctrl;
 };
 
@@ -87,7 +87,7 @@ struct IsVaultOwnedCallbackArgs {
       : cb(ivoca.cb), response(ivoca.response), ctrl(ivoca.ctrl) {
   }
   boost::function<void(const VaultStatus&)> cb;
-  IsOwnedResponse* response;
+  IsOwnedResponse *response;
   rpcprotocol::Controller *ctrl;
 };
 

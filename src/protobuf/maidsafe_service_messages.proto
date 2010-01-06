@@ -11,7 +11,7 @@ package maidsafe;
 message SignedSize {
   required uint64 data_size = 1;
   required bytes signature = 2;  // data_size (as a string) signed
-  required bytes pmid = 3;  // client's or Watch List holder's PMID (for Store
+  required bytes pmid = 3;  // client's or Chunk Info holder's PMID (for Store
                             // Chunk or DeleteChunk respectively)
   required bytes public_key = 4;
   required bytes public_key_signature = 5;
@@ -87,7 +87,7 @@ message AddToWatchListRequest {
 
 message AddToWatchListResponse {
   required uint32 result = 1;
-  optional bytes pmid = 2;  // watchlist holder's PMID
+  optional bytes pmid = 2;  // Chunk Info holder's PMID
   optional uint32 upload_count = 3;
 }
 
@@ -101,7 +101,7 @@ message RemoveFromWatchListRequest {
 
 message RemoveFromWatchListResponse {
   required uint32 result = 1;
-  optional bytes pmid = 2;  // watchlist holder's PMID
+  optional bytes pmid = 2;  // Chunk Info holder's PMID
 }
 
 message AddToReferenceListRequest {
@@ -142,8 +142,7 @@ message AmendAccountRequest {
   required bytes account_pmid = 2;  // PMID of account to be amended
   required SignedSize signed_size = 3;
   optional bytes chunkname = 4;  // required if type is not kSpaceOffered to
-                                 // assert that sender is valid WatchList holder
-                                 // or ReferenceList holder
+                                 // assert that sender is valid ChunkInfo holder
 }
 
 message AmendAccountResponse {
@@ -217,7 +216,7 @@ message UpdateChunkResponse {
 message DeleteChunkRequest {
   required bytes chunkname = 1;
   required SignedSize signed_size = 2;
-  required bytes request_signature = 3;  // signed by Watch List holder's PMID
+  required bytes request_signature = 3;  // signed by Chunk Info holder's PMID
   required int32 data_type = 4;
 }
 
