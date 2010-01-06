@@ -405,6 +405,9 @@ void VaultService::AddToWatchList(
     return;
   }
 
+  // TODO(Steve#) update add to watchlist
+  done->Run();
+
 //  if (!request->has_signed_size() != !request->has_store_contract()) {
 //#ifdef DEBUG
 //    printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
@@ -607,58 +610,62 @@ void VaultService::AddToReferenceList(
     done->Run();
     return;
   }
-  maidsafe::StoreContract store_contract = request->store_contract();
-  // Validate contract
-  if (!ValidateStoreContract(store_contract)) {
-#ifdef DEBUG
-    printf("In VaultService::AddToReferenceList (%i), "
-           "store_contract doesn't validate.\n", knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-  // Validate request
-  if (!ValidateSignedRequest(store_contract.public_key(),
-      store_contract.public_key_signature(), request->request_signature(),
-      request->chunkname(), store_contract.pmid())) {
-#ifdef DEBUG
-    printf("In VaultService::AddToReferenceList (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
-#endif
-    done->Run();
-    return;
-  }
-  // TODO(Fraser#5#): 2009-12-28 - Need to go to either client's account holders
-  //                               or chunk watchlist to validate that original
-  //                               signed_size in contract isn't faked by vault.
-  kad::SignedValue signed_value;
-  signed_value.set_value(store_contract.pmid());
-  signed_value.set_value_signature(store_contract.public_key_signature());
-  std::string ser_signed_value;
-  bool ser_ok = signed_value.SerializeToString(&ser_signed_value);
-  if (!ser_ok ||
-      !knode_->StoreValueLocal(request->chunkname(), ser_signed_value, 86400)) {
-#ifdef DEBUG
-    printf("In VaultService::AddToReferenceList (%i), failed to store pmid to"
-           "local ref packet.\n", knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-  // Amend sender's account
-  if (AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceGivenInc,
-      store_contract.inner_contract().signed_size().data_size(),
-      store_contract.pmid(),
-      request->chunkname()) != kSuccess) {
-#ifdef DEBUG
-    printf("In VaultService::AddToReferenceList (%i), failed to amend sender's"
-           "account.\n", knode_->host_port());
-#endif
-    done->Run();
-    return;
-  }
-  response->set_result(kAck);
+
+  // TODO(Fraser#) update add to reference list
   done->Run();
+
+//  maidsafe::StoreContract store_contract = request->store_contract();
+//  // Validate contract
+//  if (!ValidateStoreContract(store_contract)) {
+//#ifdef DEBUG
+//    printf("In VaultService::AddToReferenceList (%i), "
+//           "store_contract doesn't validate.\n", knode_->host_port());
+//#endif
+//    done->Run();
+//    return;
+//  }
+//  // Validate request
+//  if (!ValidateSignedRequest(store_contract.public_key(),
+//      store_contract.public_key_signature(), request->request_signature(),
+//      request->chunkname(), store_contract.pmid())) {
+//#ifdef DEBUG
+//    printf("In VaultService::AddToReferenceList (%i), ", knode_->host_port());
+//    printf("failed to validate signed request.\n");
+//#endif
+//    done->Run();
+//    return;
+//  }
+//  // TODO(Fraser#5#): 2009-12-28 - Need to go to either client's account holders
+//  //                               or chunk watchlist to validate that original
+//  //                               signed_size in contract isn't faked by vault.
+//  kad::SignedValue signed_value;
+//  signed_value.set_value(store_contract.pmid());
+//  signed_value.set_value_signature(store_contract.public_key_signature());
+//  std::string ser_signed_value;
+//  bool ser_ok = signed_value.SerializeToString(&ser_signed_value);
+//  if (!ser_ok ||
+//      !knode_->StoreValueLocal(request->chunkname(), ser_signed_value, 86400)) {
+//#ifdef DEBUG
+//    printf("In VaultService::AddToReferenceList (%i), failed to store pmid to"
+//           "local ref packet.\n", knode_->host_port());
+//#endif
+//    done->Run();
+//    return;
+//  }
+//  // Amend sender's account
+//  if (AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceGivenInc,
+//      store_contract.inner_contract().signed_size().data_size(),
+//      store_contract.pmid(),
+//      request->chunkname()) != kSuccess) {
+//#ifdef DEBUG
+//    printf("In VaultService::AddToReferenceList (%i), failed to amend sender's"
+//           "account.\n", knode_->host_port());
+//#endif
+//    done->Run();
+//    return;
+//  }
+//  response->set_result(kAck);
+//  done->Run();
 }
 
 void VaultService::RemoveFromReferenceList(
@@ -666,6 +673,20 @@ void VaultService::RemoveFromReferenceList(
     const maidsafe::RemoveFromReferenceListRequest *request,
     maidsafe::RemoveFromReferenceListResponse *response,
     google::protobuf::Closure *done) {
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
+  // Check request is initialised
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::RemoveFromReferenceList (%i), "
+           "request isn't initialized.\n", knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  // TODO(Fraser#) implement remove from reference list
+  done->Run();
 }
 
 void VaultService::AmendAccount(google::protobuf::RpcController*,
