@@ -27,46 +27,51 @@ For each Chunk Info Holder...
 
 client:>info. ADD_TO_WATCH_LIST_REQUEST
 info:info. Validate request.&
-info:>c_account. ACCOUNT_STATUS_REQUEST
+(3)info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)
 info:info. Prepare to create new Watch List.&
 info:>client.Ack (Store x copies) / Nack &
 
 [c:Loop Loop until x copies uploaded   ]
 
-client:client. Wait till online.&
-
-*3 client
-Select peer vault - use rank, stated
-space available and RTT to decide.
-*3
-
-client:Ack/Nack in Signed Contract =peer. STORE_PREP_REQUEST&
-
-*4 client
-Validate signed response & signed contract.  If Nack or failed validation,
-send signed Nack with contract to Peer Vault Account Holders & restart store loop.
-*4
-
-*5 info
+*3 info
 As this is the first time the chunk has
 been stored, client must pay 4x for it.
 So this message requests 4x original
 space be deducted from client's account.
+*3
+
+*4 c_account
+Check 16 requests are from
+valid Chunk Info Holders by
+doing a Kademlia FIND_NODES
+and checking sender is in
+list of near nodes to value.
+*4
+
+client:client. Wait till online.&
+
+*5 client
+Select peer vault - use rank, stated
+space available and RTT to decide.
 *5
 
+client:Ack/Nack in Signed Contract =peer. STORE_PREP_REQUEST&
+
+*6 client
+Validate signed response & signed contract.  If Nack or failed validation,
+send signed Nack with contract to Peer Vault Account Holders & restart store loop.
+*6
+
 client:>peer. STORE_CHUNK_REQUEST
+peer:>client.Ack/Nack &
 
 peer:>info. ADD_TO_REFERENCE_LIST_REQUEST
-c_account:>info. Ack/Nack
+(4)c_account:>info. Ack/Nack
 info:info. Finalise creation of new Watch List.&
 info:>peer. Ack/Nack &
 
-(5)info:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)&
-
-info:Ack/Nack =v_account. AMEND_ACCOUNT_REQUEST (Space Given Inc)&
-
-peer:>client.Ack/Nack &
-
+info:>v_account. AMEND_ACCOUNT_REQUEST (Space Given Inc)
+(4)v_account:>info.Ack/Nack &
 [/c]]]></source>
 <configuration>
 <property name="actorWidth" value="25"/>

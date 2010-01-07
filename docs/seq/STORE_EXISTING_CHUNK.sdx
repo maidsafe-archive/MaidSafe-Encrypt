@@ -16,16 +16,12 @@ Watch List comprises:
   * chunk size
   * minimum rank required of chunk holders.
 
-   First client pays 4 times and is held as a repeated entry.  As
-second, third and fourth payers are added, they each replace an
-instance of the first and effectively recompense the first payer.
-This list remains unchanged until one of them deletes himself.
-  Reserve watchers list is a FIFO queue who pay maidsafe initially,
-but once a current payer deletes himself are used to replace him and
-so effectively take over paying the storing vault.
-   If no replacement watchers are available when a current payer
-deletes himself, he is not recompensed until the count and checksum
-are exactly zero, at which time all 4 get repaid.
+   First client pays 4 times and is held as a repeated entry.  As second, third and fourth payers are added, they each replace an
+instance of the first and effectively recompense the first payer.  This list remains unchanged until one of them deletes himself.
+  Reserve watchers list is a FIFO queue who pay maidsafe initially, but once a current payer deletes himself are used to replace
+him and so effectively take over paying the storing vault.
+   If no replacement watchers are available when a current payer deletes himself, he is not recompensed until the count and
+checksum are exactly zero, at which time all 4 get repaid.
 *1
 client:client. Check we have enough space in our account&
 
@@ -51,12 +47,26 @@ Upload x copies as per
 *4
 
 [c:Condition IF payment is required]
-(1)info:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)&
+*5 c_account
+Check 16 requests are from valid Chunk Info Holders by doing a
+Kademlia FIND_NODES and checking sender is in list of near nodes to value.
+*5
+
+(1)info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)
+(5)c_account:>info.Ack/Nack &
 [c:Condition IF account amendment fails]
 info:info. Revert addition of Client's PMID to Watch List&
 [/c]
 [c:Condition IF this client replaces an existing payer]
-info:Ack/Nack =f_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)&
+info:>f_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)
+(5)f_account:>info.Ack/Nack &
+[/c]
+[/c]
+[c:Condition IF payment is not required]
+info:>c_account. ACCOUNT_STATUS_REQUEST
+(5)c_account:>info.Ack/Nack &
+[c:Condition IF client can't pay]
+info:info. Revert addition of Client's PMID to Watch List&
 [/c]
 [/c]]]></source>
 <configuration>

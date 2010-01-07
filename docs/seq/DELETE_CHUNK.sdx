@@ -19,17 +19,27 @@ If this is First Storing Client, flag list as
 able to be deleted.
 *2
 
+*3 c_account
+Check 16 requests are from
+valid Chunk Info Holders by
+doing a Kademlia FIND_NODES
+and checking sender is in
+list of near nodes to value.
+*3
+
 info:info. Validate request.&
 info:>client.Ack/Nack &
 
 [c:Condition IF Client's PMID is in list]
 [c:Condition IF undeleted PMIDs in list == 1]
 [c:Loop Repeat for each PMID in list]
-info:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)&
+info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)
+(3)c_account:>info.Ack/Nack &
 [/c]
 [c:Loop Repeat for each chunk holder]
 info:Ack/Nack =peer. DELETE_CHUNK_REQUEST
-info:Ack/Nack =v_account. AMEND_ACCOUNT_REQUEST (Space Given Dec)&
+info:>v_account. AMEND_ACCOUNT_REQUEST (Space Given Dec)
+(3)v_account:>info.Ack/Nack &
 [/c]
 info:info. Mark Watch List as "Deleted"
 [/c]
