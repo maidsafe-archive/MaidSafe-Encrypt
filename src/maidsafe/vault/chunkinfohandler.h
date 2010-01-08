@@ -85,11 +85,13 @@ class ChunkInfoHandler {
                             int *refunds);
   void ResetAddToWatchList(const std::string &chunk_name,
                            const std::string &pmid,
-                           const ResetReason &reason);
+                           const ResetReason &reason,
+                           std::list<std::string> *creditors,
+                           std::list<std::string> *references);
   int RemoveFromWatchList(const std::string &chunk_name,
                           const std::string &pmid,
-                          const boost::uint64_t &chunk_size,
-                          std::list<std::string> *creditors);
+                          std::list<std::string> *creditors,
+                          std::list<std::string> *references);
   int AddToReferenceList(const std::string &chunk_name,
                          const std::string &pmid,
                          const boost::uint64_t &chunk_size);
@@ -101,10 +103,15 @@ class ChunkInfoHandler {
  private:
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerInit);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum);
-  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerWlAddRemove);
+  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd);
+  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRefund);
+  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove);
+  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerReset);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerFailsafe);
   bool HasWatchers(const std::string &chunk_name);
   int ActiveReferences(const std::string &chunk_name);
+  void ClearReferenceList(const std::string &chunk_name,
+                          std::list<std::string> *references);
   boost::uint64_t GetChecksum(const std::string &id);
   std::map<std::string, ChunkInfo> chunk_infos_;
   boost::mutex chunk_info_mutex_;

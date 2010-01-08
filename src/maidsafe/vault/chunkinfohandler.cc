@@ -23,6 +23,7 @@
 */
 
 #include "maidsafe/vault/chunkinfohandler.h"
+#include <algorithm>
 
 namespace maidsafe_vault {
 
@@ -93,6 +94,8 @@ bool ChunkInfoHandler::TryCommitToWatchList(const std::string &chunk_name,
   *creditor = "";
   *refunds = 0;
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (chunk_infos_.count(chunk_name) == 0)
+    return false;
 
   ChunkInfo &ci = chunk_infos_[chunk_name];
 
@@ -155,7 +158,9 @@ bool ChunkInfoHandler::TryCommitToWatchList(const std::string &chunk_name,
 
 void ChunkInfoHandler::ResetAddToWatchList(const std::string &chunk_name,
                                            const std::string &pmid,
-                                           const ResetReason &reason) {
+                                           const ResetReason &reason,
+                                           std::list<std::string> *creditors,
+                                           std::list<std::string> *references) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
   if (chunk_infos_.count(chunk_name) == 0)
     return;
@@ -172,92 +177,94 @@ void ChunkInfoHandler::ResetAddToWatchList(const std::string &chunk_name,
 
   if (wait_it != ci.waiting_list_.end())
     ci.waiting_list_.erase(wait_it);
+
+  if (HasWatchers(chunk_name))
+    return;
+
+  // no one is watching anymore, recompense everyone and implode
+  for (std::list<WatchListEntry>::iterator
+       it = ci.watch_list_.begin();
+       it != ci.watch_list_.end(); it++) {
+    creditors->push_back(it->pmid_);
+  }
+  ClearReferenceList(chunk_name, references);
 }
 
 int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
                                           const std::string &pmid,
-                                          const boost::uint64_t &chunk_size,
-                                          std::list<std::string> *creditors) {
-  // TODO(Steve#) update RemoveFromWatchList
-  return kGeneralError;
+                                          std::list<std::string> *creditors,
+                                          std::list<std::string> *references) {
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
 
-//  boost::mutex::scoped_lock lock(chunk_info_mutex_);
-//
-//  if (!HasWatchers(chunk_name))
-//    return kChunkInfoInvalidName;
-//
-//  ChunkInfo &ci = chunk_infos_[chunk_name];
-//
-//  if (ci.chunk_size_ != chunk_size)
-//    return kChunkInfoInvalidSize;
-//
-//  // find the watcher and the first reserve
-//  std::list<WatchListEntry>::iterator it, watcher_it, reserve_it;
-//  watcher_it = reserve_it = ci.watch_list_.end();
-//  int i, watcher_index, remaining_entry_count = 0;
-//  for (it = ci.watch_list_.begin(), i = 1; it != ci.watch_list_.end(); it++, i++) {
-//    if (!it->can_delete_) {
-//      remaining_entry_count++;
-//      if (watcher_it == ci.watch_list_.end() && it->pmid_ == pmid) {
-//        watcher_it = it;
-//        watcher_index = i;
-//      } else if (reserve_it == ci.watch_list_.end() && i > kMinChunkCopies) {
-//        reserve_it = it;
-//      }
-//    }
-//  }
-//
-//  /*
-//  if (remaining_entry_count >= ci.watcher_count_ &&
-//      watcher_it == ci.watch_list_.end()) {
-//    // we've been tricked at some point, but for now do nothing about it
-//  }
-//  */
-//
-//  // remove watcher
-//  if (ci.watcher_count_ > boost::uint64_t(remaining_entry_count))
-//    ci.watcher_count_--;
-//  ci.watcher_checksum_ -= GetChecksum(pmid);
-//
-//  if (watcher_it != ci.watch_list_.end()) {
-//    if (watcher_index <= kMinChunkCopies) {
-//      // we are one of the first four
-//      if (reserve_it != ci.watch_list_.end()) {
-//        // replace by reserve and recompense
-//        creditors->push_back(pmid);
-//        (*watcher_it) = (*reserve_it);
-//        ci.watch_list_.erase(reserve_it);
-//      } else {
-//        // no reserve, flag deletable
-//        watcher_it->can_delete_ = true;
-//        if (remaining_entry_count == 1) {
-//          if (ci.watcher_count_ == 1 && ci.watcher_checksum_ == 0) {
-//            // no one is watching anymore, recompense everyone and implode
-//            for (std::list<WatchListEntry>::iterator
-//                 it = ci.watch_list_.begin();
-//                 it != ci.watch_list_.end(); it++) {
-//              creditors->push_back(it->pmid_);
-//            }
-//            // TODO(Steve) properly delete references and chunks in vaults
-//            chunk_infos_.erase(chunk_name);
-//          } else {
-//            // watch list has been tampered with
-//            // TODO(Team#) set timestamp and delete after a long time
-//          }
-//        }
-//      }
-//    } else {
-//      // just delete from the reserve
-//      creditors->push_back(pmid);
-//      ci.watch_list_.erase(watcher_it);
-//    }
-//  } else {
-//    // recompense, even if not listed
-//    // creditors->push_back(pmid);
-//    // big problem if multiple removal requests by same pmid!
-//  }
-//
-//  return 0;
+  if (!HasWatchers(chunk_name))
+    return kChunkInfoInvalidName;
+
+  ChunkInfo &ci = chunk_infos_[chunk_name];
+
+  // find the watcher and the first reserve
+  std::list<WatchListEntry>::iterator it, watch_it, reserve_it;
+  watch_it = reserve_it = ci.watch_list_.end();
+  int i, watcher_index, remaining_entry_count = 0;
+  for (it = ci.watch_list_.begin(), i = 1; it != ci.watch_list_.end();
+       it++, i++) {
+    if (!it->can_delete_) {
+      remaining_entry_count++;
+      if (watch_it == ci.watch_list_.end() && it->pmid_ == pmid) {
+        watch_it = it;
+        watcher_index = i;
+      } else if (reserve_it == ci.watch_list_.end() && i > kMinChunkCopies) {
+        reserve_it = it;
+      }
+    }
+  }
+
+  /*
+  if (remaining_entry_count >= ci.watcher_count_ &&
+      watch_it == ci.watch_list_.end()) {
+    // we've been tricked at some point, but for now do nothing about it
+  }
+  */
+
+  // remove watcher
+  if (ci.watcher_count_ > boost::uint64_t(remaining_entry_count))
+    ci.watcher_count_--;
+  ci.watcher_checksum_ -= GetChecksum(pmid);
+
+  if (watch_it != ci.watch_list_.end()) {
+    if (watcher_index <= kMinChunkCopies) {
+      // we are one of the first four
+      if (reserve_it != ci.watch_list_.end()) {
+        // replace by reserve and recompense
+        creditors->push_back(pmid);
+        (*watch_it) = (*reserve_it);
+        ci.watch_list_.erase(reserve_it);
+      } else {
+        // no reserve, flag deletable
+        watch_it->can_delete_ = true;
+        if (remaining_entry_count == 1) {
+          ci.watcher_count_ = 0;
+          if (!HasWatchers(chunk_name)) {
+            // no one is watching anymore, recompense everyone and implode
+            for (std::list<WatchListEntry>::iterator
+                 it = ci.watch_list_.begin();
+                 it != ci.watch_list_.end(); it++) {
+              creditors->push_back(it->pmid_);
+            }
+            ClearReferenceList(chunk_name, references);
+          } else {
+            // watch list has been tampered with
+            // TODO(Team#) set timestamp and delete after a long time
+          }
+        }
+      }
+    } else {
+      // just delete from the reserve
+      creditors->push_back(pmid);
+      ci.watch_list_.erase(watch_it);
+    }
+  }  // don't recompense if not listed
+
+  return 0;
 }
 
 int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
@@ -272,19 +279,46 @@ int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
   if (ci.chunk_size_ != chunk_size)
     return kChunkInfoInvalidSize;
 
-  ReferenceListEntry entry;
-  entry.pmid_ = pmid;
+  // find existing entry
+  std::list<ReferenceListEntry>::iterator it = ci.reference_list_.begin();
+  while (it != ci.reference_list_.end() && it->pmid_ != pmid) {
+    it++;
+  }
 
-  ci.reference_list_.push_back(entry);
+  if (it != ci.reference_list_.end()) {
+    // TODO(Steve#) update time stamp
+  } else {
+    ReferenceListEntry entry;
+    entry.pmid_ = pmid;
+    ci.reference_list_.push_back(entry);
+  }
 
   return 0;
 }
 
 int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
                                               const std::string &pmid) {
-  // TODO(Steve#) implement RemoveFromReferenceList
-  return kGeneralError;
-  // boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (chunk_infos_.count(chunk_name) == 0)
+    return kChunkInfoInvalidName;
+
+  ChunkInfo &ci = chunk_infos_[chunk_name];
+
+  if (ci.reference_list_.size() == 1 && HasWatchers(chunk_name))
+    return kChunkInfoCannotDelete;
+
+  // find existing entry
+  std::list<ReferenceListEntry>::iterator it = ci.reference_list_.begin();
+  while (it != ci.reference_list_.end() && it->pmid_ != pmid) {
+    it++;
+  }
+
+  if (it == ci.reference_list_.end())
+    return kChunkInfoCannotDelete;
+
+  ci.reference_list_.erase(it);
+
+  return 0;
 }
 
 void ChunkInfoHandler::SetStoringDone(const std::string &chunk_name) {
@@ -322,19 +356,16 @@ void ChunkInfoHandler::SetPaymentsDone(const std::string &chunk_name,
 }
 
 void ChunkInfoHandler::PruneWaitingLists() {
-  // TODO(Steve#) remove old entries from queue
+  // TODO(Steve#) remove old entries from waiting list
   // boost::mutex::scoped_lock lock(chunk_info_mutex_);
 }
 
 bool ChunkInfoHandler::HasWatchers(const std::string &chunk_name) {
   if (chunk_infos_.count(chunk_name) == 0)
     return false;
-  if (chunk_infos_[chunk_name].watch_list_.size() == 0 &&
-      chunk_infos_[chunk_name].waiting_list_.size() == 0 &&
-      chunk_infos_[chunk_name].watcher_count_ == 0 &&
-      chunk_infos_[chunk_name].watcher_checksum_ == 0)
-    return false;
-  return true;
+  ChunkInfo &ci = chunk_infos_[chunk_name];
+  return /* ci.watch_list_.size() != 0 || */ ci.waiting_list_.size() != 0 ||
+         ci.watcher_count_ != 0 || ci.watcher_checksum_ != 0;
 }
 
 int ChunkInfoHandler::ActiveReferences(const std::string &chunk_name) {
@@ -342,6 +373,21 @@ int ChunkInfoHandler::ActiveReferences(const std::string &chunk_name) {
   if (chunk_infos_.count(chunk_name) == 0)
     return 0;
   return chunk_infos_[chunk_name].reference_list_.size();
+}
+
+void ChunkInfoHandler::ClearReferenceList(const std::string &chunk_name,
+                                          std::list<std::string> *references) {
+  if (chunk_infos_.count(chunk_name) == 0)
+    return;
+
+  ChunkInfo &ci = chunk_infos_[chunk_name];
+  for (std::list<ReferenceListEntry>::iterator it = ci.reference_list_.begin();
+       it != ci.reference_list_.end(); it++) {
+    references->push_back(it->pmid_);
+  }
+
+  // delete whole chunk info
+  chunk_infos_.erase(chunk_name);
 }
 
 boost::uint64_t ChunkInfoHandler::GetChecksum(const std::string &id) {

@@ -205,7 +205,8 @@ enum ReturnCode {
 
   // Chunk Info Handler
   kChunkInfoInvalidSize = -5501,
-  kChunkInfoInvalidName = -5502
+  kChunkInfoInvalidName = -5502,
+  kChunkInfoCannotDelete = -5503
 
   // Vault Buffer Packet Handler
 };
