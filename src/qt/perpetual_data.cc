@@ -18,6 +18,7 @@
 #include <QDebug>
 #include <QMessageBox>
 #include <QProcess>
+#include <QList>
 
 // core
 #include "maidsafe/client/sessionsingleton.h"
@@ -489,6 +490,20 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
     QString message = tr("'%1' said: %2").arg(sender).arg(detail);
 
     SystemTrayIcon::instance()->showMessage(title, message);
+
+    QList<QString> messageList = userPanels_->getConvList();
+
+    if (!messageList.contains(sender)){
+      PersonalMessages* mess_ = new PersonalMessages(sender);
+
+      QFile file(":/qss/defaultWithWhite1.qss");
+      file.open(QFile::ReadOnly);
+      QString styleSheet = QLatin1String(file.readAll());
+
+      mess_->setStyleSheet(styleSheet);
+      mess_->setMessage(tr("'%1' said: %2").arg(sender).arg(detail));
+      mess_->show();
+    }
   }
 }
 

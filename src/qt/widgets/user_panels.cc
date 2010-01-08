@@ -19,6 +19,7 @@
 #include <QLabel>
 #include <QValidator>
 #include <QPixmap>
+#include <QList>
 
 
 // local
@@ -26,6 +27,7 @@
 #include "qt/widgets/messages.h"
 #include "qt/widgets/shares.h"
 #include "qt/widgets/contacts.h"
+#include "qt/widgets/personal_messages.h"
 #include "qt/widgets/vault_info.h"
 #include "qt/widgets/public_username.h"
 #include "qt/client/client_controller.h"
@@ -42,6 +44,7 @@ UserPanels::UserPanels(QWidget* parent)
     , panel_(-1) {
   ui_.setupUi(this);
 
+  openConvList_.append("1");
 
   QPixmap contactIcon_ = QPixmap(":/icons/32/contacts");
   QPixmap shareIcon_ = QPixmap(":/icons/32/shares");
@@ -128,7 +131,7 @@ UserPanels::UserPanels(QWidget* parent)
           this,        SLOT(onSortShareAlphaClicked()));
 
   connect(sortShareUsed, SIGNAL(triggered()),
-          this,        SLOT(onSortShareContactedClicked()));
+          this,        SLOT(onSortShareUsedClicked()));
 
   connect(sortShareRecent, SIGNAL(triggered()),
           this,        SLOT(onSortShareRecentClicked()));
@@ -257,6 +260,19 @@ void UserPanels::customContentsMenu(const QPoint &pos) {
    // QPoint globalPos = ui_.tabWidget_2->mapToGlobal(pos);
    // menuContacts->exec(globalPos);
    // }
+}
+
+void UserPanels::addConvToList(QString name){
+  //if(name != "")
+    //openConvList_.append("test");
+}
+
+QList<QString> UserPanels::getConvList(){
+  return openConvList_;
+}
+
+void UserPanels::setConvList(QList<QString> theList){
+  openConvList_ = theList;
 }
 
 void UserPanels::onSortAlphaClicked() {

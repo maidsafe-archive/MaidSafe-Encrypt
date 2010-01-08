@@ -22,9 +22,14 @@
 // local
 #include "qt/widgets/panel.h"
 #include "qt/client/contact.h"
+#include "qt/widgets/personal_messages.h"
+
 
 // generated
 #include "ui_user_contacts_panel.h"
+
+class PersonalMessages;
+class UserPanels;
 
 // Custom widget that displays contacts
 /*!
@@ -47,7 +52,9 @@ class Contacts : public Panel {
   Ui::ContactsPage ui_;
   bool init_;
   ContactList contacts_;
+  UserPanels* userPanels_;
 
+  PersonalMessages* messages_;
 
   QList<QListWidgetItem *> currentContact();
 

@@ -335,10 +335,11 @@ int PrivateShareHandler::MI_GetShareList(
 }
 
 int PrivateShareHandler::MI_GetFullShareList(const SortingMode &sm,
+                                              const ShareFilter &sf,
                                              std::list<PrivateShare> *ps_list) {
   ps_list->clear();
   std::list<private_share> share_list;
-  MI_GetShareList(&share_list, sm, kAll);
+  MI_GetShareList(&share_list, sm, sf);
   while (!share_list.empty()) {
     PrivateShare ps;
     MI_GetShareInfo(share_list.front().msid_, 1, &ps);

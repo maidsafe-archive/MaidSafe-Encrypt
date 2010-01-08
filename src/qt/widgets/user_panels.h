@@ -17,6 +17,7 @@
 
 // qt
 #include <QWidget>
+#include <QString>
 
 // std
 #include <string>
@@ -30,6 +31,7 @@ class Shares;
 class Contacts;
 class VaultInfo;
 class PublicUsername;
+class PersonalMessages;
 
 // Main User Panel for Perpetual Data
 /*!
@@ -57,6 +59,12 @@ class UserPanels : public QWidget {
  public:
   explicit UserPanels(QWidget* parent = 0);
   virtual ~UserPanels();
+
+  QList<QString> openConvList_;
+
+  void addConvToList(QString name);
+  QList<QString> getConvList();
+  void setConvList(QList<QString> theList);
 
   // Enable disable user panels
   /*!
@@ -117,6 +125,7 @@ class UserPanels : public QWidget {
 
   // track the active panel
   int panel_;
+
 };
 
 #endif  // QT_WIDGETS_USER_PANELS_H_

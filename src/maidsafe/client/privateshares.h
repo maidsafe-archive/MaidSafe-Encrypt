@@ -197,7 +197,7 @@ class PrivateShareHandler {
                       PrivateShare *ps);
   int MI_GetShareList(std::list<maidsafe::private_share> *ps_list,
                       const SortingMode &sm, const ShareFilter &sf);
-  int MI_GetFullShareList(const SortingMode &sm,
+  int MI_GetFullShareList(const SortingMode &sm, const ShareFilter &sf,
                           std::list<PrivateShare> *ps_list);
   int MI_GetParticipantsList(const std::string &value, const int &field,
                              std::list<share_participant> *sp_list);

@@ -324,8 +324,9 @@ int SessionSingleton::GetShareList(
   return psh_.MI_GetShareList(ps_list, sm, sf);
 }
 int SessionSingleton::GetFullShareList(const SortingMode &sm,
+                                       const ShareFilter &sf,
                                        std::list<PrivateShare> *ps_list) {
-  return psh_.MI_GetFullShareList(sm, ps_list);
+  return psh_.MI_GetFullShareList(sm, sf, ps_list);
 }
 int SessionSingleton::GetParticipantsList(const std::string &value,
     const int &field, std::list<share_participant> *sp_list) {

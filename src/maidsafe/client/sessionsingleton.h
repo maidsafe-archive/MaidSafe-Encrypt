@@ -290,8 +290,8 @@ class SessionSingleton {
                    std::string *private_key);
   int GetShareList(std::list<maidsafe::private_share> *ps_list,
                    const SortingMode &sm, const ShareFilter &sf);
-  int GetFullShareList(const SortingMode &sm,
-                       std::list<PrivateShare> *ps_list);
+  int GetFullShareList(const SortingMode &sm, const ShareFilter &sf,
+                        std::list<PrivateShare> *ps_list);
   int GetParticipantsList(const std::string &value, const int &field,
                           std::list<share_participant> *sp_list);
   void ClearPrivateShares();

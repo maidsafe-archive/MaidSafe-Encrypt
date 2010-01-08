@@ -35,6 +35,9 @@ Shares::Shares(QWidget* parent)
 
   ui_.shareNameLineEdit->installEventFilter(this);
 
+  sortType_ = 0;
+  filterType_ = 0;
+
   connect(ui_.create, SIGNAL(clicked(bool)),
           this,       SLOT(onCreateShareClicked()));
 
@@ -49,6 +52,9 @@ Shares::Shares(QWidget* parent)
 
   connect(ui_.shareNameLineEdit, SIGNAL(editingFinished()),
           this,       SLOT(onSharesBoxLostFocus()));
+
+  connect(ui_.sharesFilter, SIGNAL(activated(int)),
+          this,       SLOT(onShareFilterChanged(int)));
 
   connect(ClientController::instance(),
           SIGNAL(addedPrivateShare(const QString&)),
@@ -187,7 +193,8 @@ void Shares::init() {
 
   const QString username = ClientController::instance()->publicUsername();
   if (!username.isEmpty()) {
-    const ShareList shares = ClientController::instance()->getSortedShares(sortType_);
+    const ShareList shares = ClientController::instance()->shares(sortType_,
+                                                                  filterType_);
     foreach(const Share& share, shares) {
       addShare(share.name());
       shares_.push_back(share);
@@ -281,3 +288,8 @@ bool Shares::eventFilter(QObject *obj, QEvent *event) {
      }
 }
 
+void Shares::onShareFilterChanged(int index){
+  filterType_ = index;
+  reset();
+  setActive(true);
+}

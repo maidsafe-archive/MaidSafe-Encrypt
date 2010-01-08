@@ -72,7 +72,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(0, ss_->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
   std::list<PrivateShare> ps_list;
-  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, &ps_list));
+  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, kAll, &ps_list));
   ASSERT_EQ(size_t(0), ps_list.size());
 
   // Modify session
@@ -151,7 +151,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ('C', list[0].confirmed_);
   ASSERT_EQ(0, list[0].rank_);
   ASSERT_NE(0, list[0].last_contact_);
-  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, &ps_list));
+  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, kAll, &ps_list));
   ASSERT_EQ(size_t(1), ps_list.size());
   ASSERT_EQ("name", ps_list.front().Name());
   ASSERT_EQ("msid", ps_list.front().Msid());
@@ -186,7 +186,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(size_t(0), keys.size());
   ASSERT_EQ(0, ss_->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
-  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, &ps_list));
+  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, kAll, &ps_list));
   ASSERT_EQ(size_t(0), ps_list.size());
 }
 
@@ -372,7 +372,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
 
   // Check shares are in session
   std::list<PrivateShare> ps_list;
-  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, &ps_list));
+  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, kAll, &ps_list));
   ASSERT_EQ(size_t(10), ps_list.size());
   std::list<PrivateShare> ps_list1 = ps_list;
 
@@ -413,7 +413,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
 
   // Get values from session again
   std::list<PrivateShare> ps_list2;
-  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, &ps_list2));
+  ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, kAll, &ps_list2));
   ASSERT_EQ(size_t(10), ps_list2.size());
 
   // Check the initial values against the seconda values

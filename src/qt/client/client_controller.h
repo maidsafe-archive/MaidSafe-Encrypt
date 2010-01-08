@@ -73,8 +73,8 @@ class ClientController : public QObject {
   bool createShare(const QString& shareName,
                    const QStringList& admin,
                    const QStringList& readOnly);
-  ShareList shares(int type = 0) const;
-  ShareList getSortedShares(int type = 0) const;
+  ShareList shares(int type = 0, int filterType = 0) const;
+  std::list<std::string> getShareList(int type = 0, int filterType = 0) const;
   QDir shareDirRoot(const QString& name) const;
   QDir myFilesDirRoot(const QString& name) const;
 

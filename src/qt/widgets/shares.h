@@ -41,6 +41,7 @@ class Shares : public Panel {
   virtual void reset();
 
   int sortType_;
+  int filterType_;
 
   private slots:
     void onCreateShareClicked();
@@ -49,6 +50,7 @@ class Shares : public Panel {
     void onItemDoubleClicked(QListWidgetItem* item);
     void onAddedPrivateShare(const QString &name);
     void onCreateShareCompleted(bool b);
+    void onShareFilterChanged(int index);
 
   protected:
     bool eventFilter(QObject *obj, QEvent *ev);

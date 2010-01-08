@@ -112,34 +112,38 @@ bool ClientController::createShare(const QString& shareName,
   return false;
 }
 
-ShareList ClientController::getSortedShares(int type) const {
-  ShareList rv;
-  std::list<maidsafe::private_share> ps_list;
+std::list<std::string> ClientController::getShareList(int type, int filterType) const {
+
+  std::list<std::string> share_list;
 
   const int n =
-        maidsafe::ClientController::getInstance()->GetSortedShareList(&ps_list,
-                                          maidsafe::SortingMode(type), "");
- if (n == 0) {
-    while (!ps_list.empty()) {
-      maidsafe::private_share ps = ps_list.front();
-      ps_list.pop_front();
+        maidsafe::ClientController::getInstance()->ShareList(
+        maidsafe::SortingMode(type), maidsafe::ShareFilter(filterType),
+        &share_list);
 
-      QString shareName = QString::fromStdString(ps.name_);
-      Share share(shareName);
+/* if (n == 0) {
+    while (!share_list->empty()) {
+      std::string shareName = share_list.front();
+      share_list->pop_front();
+
+      QString shareN = shareName;
+
+      Share share(shareN);
 
       rv.push_back(share);
     }
- }
+ }*/
 
-  return rv;
+  return share_list;
 }
 
-ShareList ClientController::shares(int type) const {
+ShareList ClientController::shares(int type, int filterType) const {
   ShareList rv;
   std::list<maidsafe::PrivateShare> ps_list;
   const int n =
           maidsafe::ClientController::getInstance()->GetShareList(&ps_list,
-                                          maidsafe::SortingMode(type), "");
+                                          maidsafe::SortingMode(type),
+                                          maidsafe::ShareFilter(filterType),"");
   qDebug() << ps_list.size();
   if (n == 0) {
     while (!ps_list.empty()) {

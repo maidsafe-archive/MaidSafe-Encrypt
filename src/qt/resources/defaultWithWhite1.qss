@@ -1,7 +1,3 @@
-.QWidget {
-   background-color: white;
-}
-
 QMainWindow::separator {
      background: #B2B2B2;
      width: 4px; /* when vertical */

@@ -20,6 +20,7 @@
 
 // local
 #include "qt/client/client_controller.h"
+#include "qt/widgets/personal_messages.h"
 
 // generated
 #include "ui_pd.h"
@@ -30,6 +31,7 @@ class CreateUser;
 class UserPanels;
 class MountThread;
 class Progress;
+class PersonalMessages;
 
 // Main Window for Perpetual Data
 /*!

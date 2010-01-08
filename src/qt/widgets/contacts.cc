@@ -33,6 +33,7 @@
 // local
 #include "qt/client/add_contact_thread.h"
 #include "qt/client/client_controller.h"
+#include "qt/widgets/user_panels.h"
 
 
 Contacts::Contacts(QWidget* parent)
@@ -142,6 +143,7 @@ void Contacts::onItemDoubleClicked(QListWidgetItem* item) {
   qDebug() << "Contacts::onItemDoubleClicked:" << item->text();
 
   onSendMessageClicked();
+
 }
 
 void Contacts::onItemSelectionChanged() {
@@ -297,14 +299,46 @@ void Contacts::onSendMessageClicked() {
     conts.push_back(contacts.front()->text());
   }
 
-  bool ok;
+ /*( bool ok;
   QString text = QInputDialog::getText(this,
                                        tr("Messsage entry"),
                                        tr("Please enter a quick message:"),
                                        QLineEdit::Normal,
                                        QString(),
-                                       &ok);
-  if (!ok || text.isEmpty()) {
+                                       &ok);*/
+  QList<QString> theList;
+
+  foreach (QWidget *widget, QApplication::allWidgets()){
+    UserPanels *userPnl = qobject_cast<UserPanels*>(widget);
+    if (userPnl){
+      userPanels_ = userPnl;
+      theList = userPanels_->getConvList();
+    }
+  }
+
+  foreach(QString contact, conts) {
+    if (!theList.contains(contact)){
+      PersonalMessages* mess_ = new PersonalMessages(contact);
+
+      QFile file(":/qss/defaultWithWhite1.qss");
+      file.open(QFile::ReadOnly);
+      QString styleSheet = QLatin1String(file.readAll());
+
+      mess_->setStyleSheet(styleSheet);
+      mess_->show();
+    } else {
+    foreach (QWidget *widget, QApplication::allWidgets()){
+      PersonalMessages *mess = qobject_cast<PersonalMessages*>(widget);
+      if (mess){
+        //TODO get mainwindows location and offset before restoring
+        if (mess->getName() == contact)
+          mess->showNormal();
+      }
+    }
+  }
+}
+
+  /*if (!ok || text.isEmpty()) {
       return;
   }
 
@@ -313,7 +347,7 @@ void Contacts::onSendMessageClicked() {
   } else {
     const QString msg = tr("Error sending message.");
     QMessageBox::warning(this, tr("Error"), msg);
-  }
+  }*/
 }
 
 void Contacts::onFileSendClicked() {

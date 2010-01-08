@@ -326,7 +326,7 @@ int ClientController::SerialiseDa() {
   printf("ClientController::SerialiseDa() - Finished with Contacts.\n");
 
   std::list<PrivateShare> ps_list;
-  ss_->GetFullShareList(ALPHA, &ps_list);
+  ss_->GetFullShareList(ALPHA, kAll, &ps_list);
   while (!ps_list.empty()) {
     PrivateShare this_ps = ps_list.front();
     Share *sh = data_atlas_.add_shares();
@@ -1842,6 +1842,7 @@ std::string ClientController::GenerateBPInfo() {
 
 int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
                                    const SortingMode &sm,
+                                   const ShareFilter &sf,
                                    const std::string &value) {
   if (!intialised_) {
 #ifdef DEBUG
@@ -1851,7 +1852,7 @@ int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
   }
   int n = 0;
   if (value.empty()) {
-    n = ss_->GetFullShareList(sm, ps_list);
+    n = ss_->GetFullShareList(sm, sf, ps_list);
   } else {
     PrivateShare ps;
     n = ss_->GetShareInfo(value, 0,  &ps);

@@ -126,6 +126,7 @@ class ClientController {
   // Share operations
   int GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
                    const SortingMode &sm,
+                   const ShareFilter &sf,
                    const std::string &pub_name);
   int ShareList(const SortingMode &sm, const ShareFilter &sf,
                 std::list<std::string> *share_list);

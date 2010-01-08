@@ -85,7 +85,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {
 
   // Test full share list to be empty
   std::list<maidsafe::PrivateShare> full_share_list;
-  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, &full_share_list)) <<
+  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
             "Failed getting full list";
   ASSERT_EQ(size_t(0), full_share_list.size()) <<
             "Share container not empty on creation.";
@@ -304,7 +304,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
 
   // Test full share list
   std::list<maidsafe::PrivateShare> full_share_list;
-  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, &full_share_list)) <<
+  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
             "Failed getting full list";
   ASSERT_EQ(size_t(10), full_share_list.size()) <<
             "Failed to get all share elements.";
@@ -399,7 +399,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
 
   // Test full share list
   std::list<maidsafe::PrivateShare> full_share_list;
-  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, &full_share_list)) <<
+  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
             "Failed getting full list";
   ASSERT_EQ(size_t(10), full_share_list.size()) <<
             "Share container not empty on creation.";
@@ -410,7 +410,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
             "Failed to delete.";
 
   // Full share list
-  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, &full_share_list)) <<
+  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
             "Failed getting full list";
   ASSERT_EQ(size_t(9), full_share_list.size()) <<
             "Share container not empty on creation.";
@@ -437,7 +437,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
             "Failed to delete.";
 
   // Full share list
-  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, &full_share_list)) <<
+  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
             "Failed getting full list";
   ASSERT_EQ(size_t(8), full_share_list.size()) <<
             "Share container not empty on creation.";
