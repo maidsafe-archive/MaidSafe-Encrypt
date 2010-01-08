@@ -30,6 +30,11 @@ namespace maidsafe {
 SessionSingleton* SessionSingleton::single = 0;
 boost::mutex ss_mutex;
 
+SessionSingleton::SessionSingleton()
+    : ud_(), ka_(), ch_(), psh_(), conversations_() {
+  ResetSession();
+}
+
 SessionSingleton *SessionSingleton::getInstance() {
   if (single == 0) {
     boost::mutex::scoped_lock lock(ss_mutex);
@@ -65,6 +70,7 @@ bool SessionSingleton::ResetSession() {
   ka_.ClearKeyRing();
   ch_.ClearContacts();
   psh_.MI_ClearPrivateShares();
+  conversations_.clear();
   return true;
 }
 
@@ -74,7 +80,7 @@ bool SessionSingleton::ResetSession() {
 
 int SessionSingleton::LoadKeys(std::list<Key> *keys) {
   if (keys->empty())
-    return -1900;
+    return kLoadKeysFailure;
 
   int n = 0;
   while (!keys->empty()) {
@@ -235,7 +241,7 @@ int SessionSingleton::GetPublicUsernameList(std::vector<std::string> *list) {
   list->clear();
   std::vector<mi_contact> mic_list;
   if (ch_.GetContactList(&mic_list, 0) != 0)
-    return -666;
+    return kContactListFailure;
   for (size_t n = 0; n < mic_list.size(); ++n)
     list->push_back(mic_list[n].pub_name_);
   return 0;
@@ -327,6 +333,52 @@ int SessionSingleton::GetParticipantsList(const std::string &value,
 }
 void SessionSingleton::ClearPrivateShares() {
   return psh_.MI_ClearPrivateShares();
+}
+
+///////////////////////////////
+//// Conversation Handling ////
+///////////////////////////////
+
+int SessionSingleton::ConversationList(std::list<std::string> *conversations) {
+  conversations->clear();
+  *conversations = std::list<std::string>(conversations_.begin(),
+                                          conversations_.end());
+  return 0;
+}
+int SessionSingleton::AddConversation(const std::string &id) {
+  if (id.empty())
+    return kEmptyConversationId;
+
+  std::pair<std::set<std::string>::iterator, bool> ret;
+  ret = conversations_.insert(id);
+
+  if (!ret.second)
+    return kExistingConversation;
+
+  return 0;
+}
+int SessionSingleton::RemoveConversation(const std::string &id) {
+  if (id.empty())
+    return kEmptyConversationId;
+
+  size_t t = conversations_.erase(id);
+  if (t == 0)
+    return kNonExistentConversation;
+
+  return 0;
+}
+int SessionSingleton::ConversationExits(const std::string &id) {
+  if (id.empty())
+    return kEmptyConversationId;
+
+  std::set<std::string>::iterator it = conversations_.find(id);
+  if (it == conversations_.end())
+    return kNonExistentConversation;
+
+  return 0;
+}
+void SessionSingleton::ClearConversations() {
+  conversations_.clear();
 }
 
 }  // namespace maidsafe

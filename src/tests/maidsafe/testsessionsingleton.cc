@@ -469,4 +469,56 @@ TEST_F(SessionSingletonTest, BEH_MAID_ContactPublicKey) {
               ss_->GetContactPublicKey("pub_name_" + base::itos(a)));
 }
 
+TEST_F(SessionSingletonTest, BEH_MAID_Conversations) {
+  std::list<std::string> conv;
+  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(size_t(0), conv.size());
+  conv.push_back("a");
+  ASSERT_EQ(size_t(1), conv.size());
+  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(size_t(0), conv.size());
+  ASSERT_EQ(kNonExistentConversation, ss_->ConversationExits("a"));
+  ASSERT_EQ(kNonExistentConversation, ss_->RemoveConversation("a"));
+
+  ASSERT_EQ(0, ss_->AddConversation("a"));
+  ASSERT_EQ(0, ss_->ConversationExits("a"));
+  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(size_t(1), conv.size());
+  ASSERT_EQ("a", conv.front());
+  ASSERT_EQ(kExistingConversation, ss_->AddConversation("a"));
+  ASSERT_EQ(0, ss_->RemoveConversation("a"));
+  ASSERT_EQ(kNonExistentConversation, ss_->ConversationExits("a"));
+  ASSERT_EQ(kNonExistentConversation, ss_->RemoveConversation("a"));
+  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(size_t(0), conv.size());
+
+  for (int n = 0; n < 10; ++n)
+    ASSERT_EQ(0, ss_->AddConversation(base::itos(n)));
+  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(size_t(10), conv.size());
+
+  std::string remove = base::itos(base::random_32bit_uinteger() % 10);
+  ASSERT_EQ(0, ss_->RemoveConversation(remove));
+  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(size_t(9), conv.size());
+  std::list<std::string>::iterator it;
+  for (it = conv.begin(); it != conv.end(); ++it) {
+    int a = base::stoi(*it);
+    ASSERT_TRUE(a > -1 && a < 10);
+    ASSERT_EQ(0, ss_->RemoveConversation(*it));
+  }
+  for (int y = 0; y < 10; ++y)
+    ASSERT_EQ(kNonExistentConversation, ss_->ConversationExits(base::itos(y)));
+
+  for (int e = 0; e < 10; ++e)
+    ASSERT_EQ(0, ss_->AddConversation(base::itos(e)));
+  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(size_t(10), conv.size());
+  ss_->ClearConversations();
+  for (int l = 0; l < 10; ++l)
+    ASSERT_EQ(kNonExistentConversation, ss_->ConversationExits(base::itos(l)));
+  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(size_t(0), conv.size());
+}
+
 }  // namespace maidsafe
