@@ -140,6 +140,11 @@ enum ReturnCode {
   // Self Encryption Handler
 
   // Session
+  kEmptyConversationId = -10001,
+  kNonExistentConversation = -10002,
+  kExistingConversation = -10003,
+  kLoadKeysFailure = -10004,
+  kContactListFailure = -10005,
 };
 
 }  // namespace maidsafe

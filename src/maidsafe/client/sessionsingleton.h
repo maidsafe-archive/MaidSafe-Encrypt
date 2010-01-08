@@ -296,17 +296,29 @@ class SessionSingleton {
                           std::list<share_participant> *sp_list);
   void ClearPrivateShares();
 
+  ///////////////////////////////
+  //// Conversation Handling ////
+  ///////////////////////////////
+
+  int ConversationList(std::list<std::string> *conversations);
+  int AddConversation(const std::string &id);
+  int RemoveConversation(const std::string &id);
+  int ConversationExits(const std::string &id);
+  void ClearConversations();
+
  private:
   SessionSingleton &operator=(const SessionSingleton&);
   SessionSingleton(const SessionSingleton&);
   static SessionSingleton *single;
+  SessionSingleton();
   ~SessionSingleton() {}
   UserDetails ud_;
   KeyAtlas ka_;
   ContactsHandler ch_;
   PrivateShareHandler psh_;
-  SessionSingleton() : ud_(), ka_(), ch_(), psh_() { ResetSession(); }
+  std::set<std::string> conversations_;
 };
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
