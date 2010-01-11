@@ -391,8 +391,12 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
         "",
         pmid_private_,
         crypto::STRING_STRING);
-    knode_->StoreValue(request->packetname(), sig_value, pmid_public_,
-                       pmid_public_signature_, request_signature, 86400,
+    kad::SignedRequest sr;
+    sr.set_signer_id(non_hex_pmid_);
+    sr.set_public_key(pmid_public_);
+    sr.set_signed_public_key(pmid_public_signature_);
+    sr.set_signed_request(request_signature);
+    knode_->StoreValue(request->packetname(), sig_value, sr, 86400,
                        &vsvc_dummy_callback);
   }
 
@@ -1297,8 +1301,13 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     std::string request_signature = co.AsymSign(co.Hash(pmid_public_ +
       pmid_public_signature_ + request->bufferpacket_name(), "",
       crypto::STRING_STRING, true), "", pmid_private_, crypto::STRING_STRING);
-    knode_->StoreValue(request->bufferpacket_name(), sig_value, pmid_public_,
-      pmid_public_signature_, request_signature, 86400,  &vsvc_dummy_callback);
+    kad::SignedRequest sr;
+    sr.set_signer_id(non_hex_pmid_);
+    sr.set_public_key(pmid_public_);
+    sr.set_signed_public_key(pmid_public_signature_);
+    sr.set_signed_request(request_signature);
+    knode_->StoreValue(request->bufferpacket_name(), sig_value, sr, 86400,
+                       &vsvc_dummy_callback);
   }
   response->set_result(kAck);
   done->Run();
