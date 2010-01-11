@@ -1670,15 +1670,15 @@ bool VaultService::ValidateAmendRequest(
     const maidsafe::AmendAccountRequest *request,
     boost::uint64_t *account_delta,
     std::string *pmid) {
-  account_delta = 0;
+  *account_delta = 0;
   pmid->clear();
   if (!request->IsInitialized())
     return false;
 
-  maidsafe::SignedSize sz = request->signed_size();
+  const maidsafe::SignedSize &sz = request->signed_size();
   if (request->amendment_type() ==
       maidsafe::AmendAccountRequest::kSpaceOffered) {
-    if (request->account_pmid() != request->signed_size().pmid()) {
+    if (request->account_pmid() != sz.pmid()) {
       return false;
     }
   } else {
@@ -1687,11 +1687,11 @@ bool VaultService::ValidateAmendRequest(
     }
   }
 
-  if (!ValidateSignedSize(request->signed_size()))
+  if (!ValidateSignedSize(sz))
     return false;
 
   *pmid = request->account_pmid();
-  *account_delta = request->signed_size().data_size();
+  *account_delta = sz.data_size();
   return true;
 }
 
