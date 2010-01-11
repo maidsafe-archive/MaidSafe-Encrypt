@@ -75,7 +75,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
                                          &required_references,
                                          &required_payments));
 
-  ASSERT_EQ(std::ceil(kMinChunkCopies / 2.0), required_references);
+  ASSERT_FLOAT_EQ(std::ceil(kMinChunkCopies / 2.0), required_references);
   ASSERT_EQ(kMinChunkCopies, required_payments);
 
   ASSERT_TRUE(cih.HasWatchers(chunk_name));
@@ -105,7 +105,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
                                          &required_references,
                                          &required_payments));
 
-  ASSERT_EQ(std::ceil(.5 * kMinChunkCopies), required_references);
+  ASSERT_FLOAT_EQ(std::ceil(.5 * kMinChunkCopies), required_references);
   ASSERT_EQ(1, required_payments);
 
   cih.SetPaymentsDone(chunk_name, client[1]);
@@ -118,7 +118,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
                                                           321));
 
   cih.SetStoringDone(chunk_name);
-  ASSERT_EQ(size_t(0), cih.ActiveReferences(chunk_name));
+  ASSERT_EQ(0, cih.ActiveReferences(chunk_name));
   for (int i = 0; i < required_references; i++) {
     ASSERT_EQ(0, cih.AddToReferenceList(chunk_name, "rf" + base::itos(i), 123));
   }
@@ -133,20 +133,20 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
   ASSERT_EQ(size_t(1), cih.chunk_infos_.count(chunk_name));
   ASSERT_EQ(size_t(0), cih.chunk_infos_[chunk_name].waiting_list_.size());
   ASSERT_EQ(kMinChunkCopies, cih.chunk_infos_[chunk_name].watch_list_.size());
-  ASSERT_EQ(required_references,
+  ASSERT_EQ(size_t(required_references),
             cih.chunk_infos_[chunk_name].reference_list_.size());
   ASSERT_EQ(size_t(2), cih.chunk_infos_[chunk_name].watcher_count_);
   ASSERT_EQ(size_t(123), cih.chunk_infos_[chunk_name].chunk_size_);
 
   ASSERT_EQ(0, cih.AddToReferenceList(chunk_name, "rf0", 123));
-  ASSERT_EQ(required_references,
+  ASSERT_EQ(size_t(required_references),
             cih.chunk_infos_[chunk_name].reference_list_.size());
 
   for (int i = 2; i < kNumClients - 2; i++) {
     ASSERT_EQ(0, cih.PrepareAddToWatchList(chunk_name, client[i], 123,
                                            &required_references,
                                            &required_payments));
-    ASSERT_EQ(std::ceil(.25 * kMinChunkCopies), required_references);
+    ASSERT_FLOAT_EQ(std::ceil(.25 * kMinChunkCopies), required_references);
     ASSERT_EQ(1, required_payments);
 
     cih.SetStoringDone(chunk_name);
@@ -158,14 +158,14 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
     ASSERT_EQ(0, refunds);
     ASSERT_EQ(size_t(0), cih.chunk_infos_[chunk_name].waiting_list_.size());
 
-    ASSERT_EQ(i + 1, cih.chunk_infos_[chunk_name].watcher_count_);
+    ASSERT_EQ(size_t(i) + 1, cih.chunk_infos_[chunk_name].watcher_count_);
     if (i < kMinChunkCopies) {
       ASSERT_EQ(client[0], creditor);
       ASSERT_EQ(kMinChunkCopies,
                 cih.chunk_infos_[chunk_name].watch_list_.size());
     } else {
       ASSERT_EQ("", creditor);
-      ASSERT_EQ(i + 1, cih.chunk_infos_[chunk_name].watch_list_.size());
+      ASSERT_EQ(size_t(i) + 1, cih.chunk_infos_[chunk_name].watch_list_.size());
     }
   }
 
@@ -191,8 +191,9 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
   ASSERT_EQ(1, refunds);
 
   ASSERT_EQ(size_t(0), cih.chunk_infos_[chunk_name].waiting_list_.size());
-  ASSERT_EQ(kNumClients - 1, cih.chunk_infos_[chunk_name].watch_list_.size());
-  ASSERT_EQ(kNumClients, cih.chunk_infos_[chunk_name].watcher_count_);
+  ASSERT_EQ(size_t(kNumClients) - 1,
+            cih.chunk_infos_[chunk_name].watch_list_.size());
+  ASSERT_EQ(size_t(kNumClients), cih.chunk_infos_[chunk_name].watcher_count_);
 }
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRefund) {
@@ -231,7 +232,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRefund) {
   ASSERT_EQ(size_t(1), cih.chunk_infos_.count(chunk_name));
   ASSERT_EQ(size_t(0), cih.chunk_infos_[chunk_name].waiting_list_.size());
   ASSERT_EQ(kMinChunkCopies, cih.chunk_infos_[chunk_name].watch_list_.size());
-  ASSERT_EQ(2, cih.chunk_infos_[chunk_name].watcher_count_);
+  ASSERT_EQ(size_t(2), cih.chunk_infos_[chunk_name].watcher_count_);
 }
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove) {
@@ -305,8 +306,9 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove) {
                                          &refunds));
   }
 
-  ASSERT_EQ(kNumClients, cih.chunk_infos_[chunk_name].watcher_count_);
-  ASSERT_EQ(kNumClients - 1, cih.chunk_infos_[chunk_name].watch_list_.size());
+  ASSERT_EQ(size_t(kNumClients), cih.chunk_infos_[chunk_name].watcher_count_);
+  ASSERT_EQ(size_t(kNumClients) - 1,
+            cih.chunk_infos_[chunk_name].watch_list_.size());
 
   ASSERT_EQ(0, cih.AddToReferenceList(chunk_name, "rf0", 123));
   ASSERT_EQ(0, cih.AddToReferenceList(chunk_name, "rf1", 123));
@@ -363,7 +365,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove) {
                                                                 "rf0",
                                                                 &chunk_size));
   ASSERT_EQ(123, chunk_size);
-  ASSERT_EQ(1, cih.chunk_infos_[chunk_name].reference_list_.size());
+  ASSERT_EQ(size_t(1), cih.chunk_infos_[chunk_name].reference_list_.size());
   ASSERT_EQ(1, cih.ActiveReferences(chunk_name));
 
   ASSERT_EQ(0, cih.RemoveFromWatchList(chunk_name, client[1], &chunk_size,
