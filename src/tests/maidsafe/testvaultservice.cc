@@ -23,14 +23,16 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
-#include <gtest/gtest.h>
 #include <google/protobuf/descriptor.h>
+#include <gtest/gtest.h>
 #include <maidsafe/crypto.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include "fs/filesystem.h"
-#include "maidsafe/vault/vaultservice.h"
-#include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultbufferpackethandler.h"
+#include "maidsafe/vault/vaultchunkstore.h"
+#include "maidsafe/vault/vaultrpc.h"
+#include "maidsafe/vault/vaultservice.h"
+#include "maidsafe/vault/vaultservicelogic.h"
 
 namespace fs = boost::filesystem;
 
@@ -62,7 +64,7 @@ namespace maidsafe_vault {
 
 typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
 
-class Callback {
+class TestCallback {
  public:
   void CallbackFunction() {}
 };
@@ -81,6 +83,8 @@ class VaultServicesTest : public testing::Test {
           channel_manager_(&transport_),
           knode_(),
           vault_chunkstore_(),
+          vault_rpcs_(&transport_, &channel_manager_),
+          vault_service_logic_(&vault_rpcs_, knode_),
           vault_service_(),
           svc_channel_(),
           poh_() {}
@@ -113,7 +117,8 @@ class VaultServicesTest : public testing::Test {
 
       vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                         vault_public_key_signature_,
-                                        vault_chunkstore_, knode_, &poh_);
+                                        vault_chunkstore_, knode_, &poh_,
+                                        &vault_service_logic_);
 
       svc_channel_ = new rpcprotocol::Channel(&channel_manager_, &transport_);
       svc_channel_->SetService(vault_service_);
@@ -147,6 +152,8 @@ class VaultServicesTest : public testing::Test {
     rpcprotocol::ChannelManager channel_manager_;
     kad::KNode *knode_;
     VaultChunkStore *vault_chunkstore_;
+    VaultRpcs vault_rpcs_;
+    VaultServiceLogic vault_service_logic_;
     VaultService *vault_service_;
     rpcprotocol::Channel *svc_channel_;
     PendingOperationsHandler poh_;
@@ -286,7 +293,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
                         crypto::STRING_STRING, false), "", priv_key,
                         crypto::STRING_STRING);
 
-  Callback cb_obj;
+  TestCallback cb_obj;
 
   for (int i = 0; i < 8; ++i) {
     printf("--- CASE #%i --- ", i);
@@ -349,8 +356,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
         break;
     }
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->StorePrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     store_contract = response.mutable_store_contract();
@@ -374,8 +381,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
 
   // proper request
   {
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->StorePrep(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     store_contract = response.mutable_store_contract();
@@ -420,7 +427,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   CreateSignedRequest(pub_key, priv_key, chunk_name, &pmid, &pub_key_sig,
                       &req_sig);
 
-  Callback cb_obj;
+  TestCallback cb_obj;
 
   for (int i = 0; i < 3; ++i) {
     printf("--- CASE #%i --- ", i);
@@ -446,8 +453,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
         break;
     }
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->StoreChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -465,8 +472,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
     printf("--- CASE #%i --- ", i);
     request.set_data_type(data_type[i]);
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->StoreChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -490,8 +497,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
           vault_service_->prm_.insert(p);
       EXPECT_TRUE(result.second);
     }
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->StoreChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     if (i > 0) {
@@ -536,8 +543,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
         vault_service_->prm_.insert(p);
     EXPECT_TRUE(result.second);
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->StoreChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
@@ -558,7 +565,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
   std::string content("This is a data chunk");
   std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
 
-  Callback cb_obj;
+  TestCallback cb_obj;
 
   // test Get()'s error handling
   for (boost::uint32_t i = 0; i <= 1; ++i) {
@@ -570,8 +577,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
         break;
     }
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->GetChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -587,8 +594,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
         check_request.set_chunkname(chunkname);
         break;
     }
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->CheckChunk(&controller, &check_request, &check_response,
                                done);
     EXPECT_TRUE(check_response.IsInitialized());
@@ -600,16 +607,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
   {
     ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, content));
 
-    google::protobuf::Closure *done1 = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done1 = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->CheckChunk(&controller, &check_request, &check_response,
                                done1);
     EXPECT_TRUE(check_response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(check_response.result()));
     response.Clear();
 
-    google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done2 = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->GetChunk(&controller, &request, &response, done2);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
@@ -649,12 +656,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
                         crypto::STRING_STRING, false), "", priv_key,
                         crypto::STRING_STRING);
 
-  Callback cb_obj;
+  TestCallback cb_obj;
 
   // empty request
   {
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->DeleteChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -712,8 +719,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
         break;
     }
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->DeleteChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -745,8 +752,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
   // invalid data for all data types
   for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
     request.set_data_type(data_type[i]);
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->DeleteChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -787,8 +794,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
     ASSERT_TRUE(vault_service_->StoreChunkLocal(chunk_name, chunk_data));
     ASSERT_TRUE(vault_service_->HasChunkLocal(chunk_name));
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->DeleteChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
@@ -843,7 +850,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
                          client_priv_key, crypto::STRING_STRING);
 
-  Callback cb_obj;
+  TestCallback cb_obj;
 
   for (int i = 0; i < 7; ++i) {
     printf("--- CASE #%i ---", i);
@@ -927,8 +934,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         break;
     }
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -942,8 +949,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
 
   // Create the account first
   request.Clear();
-  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-                                    (&cb_obj, &Callback::CallbackFunction);
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+                                    (&cb_obj, &TestCallback::CallbackFunction);
   signed_size = request.mutable_signed_size();
   signed_size->set_data_size(100);
   std::string ser_size(base::itos_ull(signed_size->data_size()));
@@ -991,14 +998,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   asreq.set_public_key(client_pub_key);
   asreq.set_public_key_signature(client_pub_key_sig);
   asreq.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig +
-      client_pmid + "ACCOUNT" + vault_pmid_, "", crypto::STRING_STRING, false),
+      client_pmid + kAccount + vault_pmid_, "", crypto::STRING_STRING, false),
       "", client_priv_key, crypto::STRING_STRING));
 
   // current SpaceTaken should be 0
   {
     maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
     ASSERT_EQ(kAck, static_cast<int>(asrsp.result()));
@@ -1011,8 +1018,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // increase SpaceTaken
   {
     response.Clear();
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
     ASSERT_EQ(kAck, static_cast<int>(response.result()));
@@ -1022,8 +1029,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // current SpaceTaken should be chunk_size
   {
     maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
     ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
@@ -1037,8 +1044,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // decrease SpaceTaken
   {
     response.Clear();
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
     ASSERT_EQ(kAck, static_cast<int>(response.result()));
@@ -1048,8 +1055,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // current SpaceTaken should be 0
   {
     maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
     ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
@@ -1061,8 +1068,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // decrease SpaceTaken again, should fail
   {
     response.Clear();
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
     ASSERT_EQ(kNack, static_cast<int>(response.result()));
@@ -1072,8 +1079,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // current SpaceTaken should still be 0
   {
     maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
     ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
@@ -1087,8 +1094,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // increase SpaceGiven
   {
     response.Clear();
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
     ASSERT_EQ(kAck, static_cast<int>(response.result()));
@@ -1098,8 +1105,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // current SpaceGiven should be chunk_size
   {
     maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
     ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
@@ -1113,8 +1120,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // decrease SpaceGiven
   {
     response.Clear();
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
     ASSERT_EQ(kAck, static_cast<int>(response.result()));
@@ -1124,8 +1131,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // current SpaceGiven should still be 0
   {
     maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
     ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
@@ -1137,8 +1144,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // decrease SpaceGiven again, should fail
   {
     response.Clear();
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
     ASSERT_EQ(kNack, static_cast<int>(response.result()));
@@ -1148,8 +1155,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // current SpaceGiven should still be 0
   {
     maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
     ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
@@ -1200,7 +1207,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
                          client_priv_key, crypto::STRING_STRING);
 
-  Callback cb_obj;
+  TestCallback cb_obj;
 
 //  for (int i = 0; i <= 6; ++i) {
 //    switch (i) {
@@ -1265,8 +1272,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
 //        break;
 //    }
 //
-//    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//        (&cb_obj, &Callback::CallbackFunction);
+//    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//        (&cb_obj, &TestCallback::CallbackFunction);
 //    vault_service_->AddToWatchList(&controller, &request, &response, done);
 //    EXPECT_TRUE(response.IsInitialized());
 //    EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -1295,14 +1302,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
 //  asreq.set_public_key(client_pub_key);
 //  asreq.set_public_key_signature(client_pub_key_sig);
 //  asreq.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig +
-//      client_pmid + "ACCOUNT" + vault_pmid_, "", crypto::STRING_STRING, false),
+//      client_pmid + kAccount + vault_pmid_, "", crypto::STRING_STRING, false),
 //      "", client_priv_key, crypto::STRING_STRING));
 //
 //  // SpaceTaken should be 0
 //  {
 //    maidsafe::AccountStatusResponse asrsp;
-//    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//        (&cb_obj, &Callback::CallbackFunction);
+//    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//        (&cb_obj, &TestCallback::CallbackFunction);
 //    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
 //    EXPECT_TRUE(asrsp.IsInitialized());
 //    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
@@ -1310,8 +1317,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
 //
 //  // add to watch list as first
 //  {
-//    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//        (&cb_obj, &Callback::CallbackFunction);
+//    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//        (&cb_obj, &TestCallback::CallbackFunction);
 //    vault_service_->AddToWatchList(&controller, &request, &response, done);
 //    EXPECT_TRUE(response.IsInitialized());
 //    EXPECT_EQ(kAck, static_cast<int>(response.result()));
@@ -1321,8 +1328,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
 //  // SpaceTaken should be four times the chunk size
 //  {
 //    maidsafe::AccountStatusResponse asrsp;
-//    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//        (&cb_obj, &Callback::CallbackFunction);
+//    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//        (&cb_obj, &TestCallback::CallbackFunction);
 //    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
 //    EXPECT_TRUE(asrsp.IsInitialized());
 //    EXPECT_EQ(4 * chunk_size, asrsp.space_taken());
@@ -1354,7 +1361,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
 //              client_pub_key_sig[5];
 //  maidsafe::AccountStatusRequest client_asreq[5];
 //
-//  Callback cb_obj;
+//  TestCallback cb_obj;
 //
 //  // initialise 5 clients and add them to the Watch List
 //  for (int i = 0; i < 5; ++i) {
@@ -1409,14 +1416,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
 //    client_asreq[i].set_public_key(client_pub_key[i]);
 //    client_asreq[i].set_public_key_signature(client_pub_key_sig[i]);
 //    client_asreq[i].set_request_signature(co.AsymSign(co.Hash(
-//        client_pub_key_sig[i] + client_pmid[i] + "ACCOUNT" + vault_pmid_, "",
+//        client_pub_key_sig[i] + client_pmid[i] + kAccount + vault_pmid_, "",
 //        crypto::STRING_STRING, false), "", client_priv_key[i],
 //        crypto::STRING_STRING));
 //
 //    // add #i to Watch List
 //    {
-//      google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//          (&cb_obj, &Callback::CallbackFunction);
+//      google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//          (&cb_obj, &TestCallback::CallbackFunction);
 //      vault_service_->AddToWatchList(&controller, &add_request, &add_response,
 //                                     done);
 //      EXPECT_TRUE(add_response.IsInitialized());
@@ -1427,8 +1434,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
 //    // check SpaceTaken for #i except #0
 //    if (i > 0) {
 //      maidsafe::AccountStatusResponse asrsp;
-//      google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//          (&cb_obj, &Callback::CallbackFunction);
+//      google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//          (&cb_obj, &TestCallback::CallbackFunction);
 //      vault_service_->AccountStatus(&controller, &client_asreq[i], &asrsp,
 //                                    done);
 //      EXPECT_TRUE(asrsp.IsInitialized());
@@ -1438,8 +1445,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
 //    // check SpaceTaken for #0
 //    {
 //      maidsafe::AccountStatusResponse asrsp;
-//      google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//          (&cb_obj, &Callback::CallbackFunction);
+//      google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//          (&cb_obj, &TestCallback::CallbackFunction);
 //      vault_service_->AccountStatus(&controller, &client_asreq[0], &asrsp,
 //                                    done);
 //      EXPECT_TRUE(asrsp.IsInitialized());
@@ -1481,8 +1488,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
 //        break;
 //    }
 //
-//    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//        (&cb_obj, &Callback::CallbackFunction);
+//    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//        (&cb_obj, &TestCallback::CallbackFunction);
 //    vault_service_->RemoveFromWatchList(&controller, &rem_request,
 //                                        &rem_response, done);
 //    EXPECT_TRUE(rem_response.IsInitialized());
@@ -1504,8 +1511,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
 //
 //    // remove #i from Watch List
 //    {
-//      google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//          (&cb_obj, &Callback::CallbackFunction);
+//      google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//          (&cb_obj, &TestCallback::CallbackFunction);
 //      vault_service_->RemoveFromWatchList(&controller, &rem_request,
 //                                          &rem_response, done);
 //      EXPECT_TRUE(rem_response.IsInitialized());
@@ -1516,8 +1523,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
 //    // check SpaceTaken for #i
 //    {
 //      maidsafe::AccountStatusResponse asrsp;
-//      google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//          (&cb_obj, &Callback::CallbackFunction);
+//      google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//          (&cb_obj, &TestCallback::CallbackFunction);
 //      vault_service_->AccountStatus(&controller, &client_asreq[i], &asrsp,
 //                                    done);
 //      EXPECT_TRUE(asrsp.IsInitialized());
@@ -1568,7 +1575,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
                          client_priv_key, crypto::STRING_STRING);
 
-  Callback cb_obj;
+  TestCallback cb_obj;
 
   for (int i = 0; i < 7; ++i) {
     switch (i) {
@@ -1634,8 +1641,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
         break;
     }
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AddToReferenceList(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -1648,18 +1655,18 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
       "", vlt_priv_key, crypto::STRING_STRING));
 
   maidsafe::AccountStatusRequest asreq;
-  asreq.set_pmid(vlt_pmid);
+  asreq.set_account_pmid(vlt_pmid);
   asreq.set_public_key(vlt_pub_key);
   asreq.set_public_key_signature(vlt_pub_key_sig);
   asreq.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-      vlt_pmid + "ACCOUNT" + vault_pmid_, "", crypto::STRING_STRING, false),
+      vlt_pmid + kAccount + vault_pmid_, "", crypto::STRING_STRING, false),
       "", vlt_priv_key, crypto::STRING_STRING));
 
   // SpaceGiven should be 0
   {
     maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     EXPECT_TRUE(asrsp.IsInitialized());
     EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
@@ -1667,8 +1674,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
 
   // add to ref list
   {
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AddToReferenceList(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
@@ -1678,8 +1685,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   // SpaceGiven should be the chunk size
   {
     maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     EXPECT_TRUE(asrsp.IsInitialized());
     EXPECT_EQ(chunk_size, asrsp.space_given());
@@ -1727,7 +1734,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromReferenceList) {
 //  size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
 //                         client_priv_key, crypto::STRING_STRING);
 //
-//  Callback cb_obj;
+//  TestCallback cb_obj;
 //
 //  store_contract = add_request.mutable_store_contract();
 //  inner_contract = store_contract->mutable_inner_contract();
@@ -1751,8 +1758,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromReferenceList) {
 //
 //  // add to ref list first
 //  {
-//    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//        (&cb_obj, &Callback::CallbackFunction);
+//    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//        (&cb_obj, &TestCallback::CallbackFunction);
 //    vault_service_->AddToReferenceList(&controller, &add_request, &add_response,
 //                                       done);
 //    EXPECT_TRUE(add_response.IsInitialized());
@@ -1809,8 +1816,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromReferenceList) {
 //        break;
 //    }
 //
-//    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//        (&cb_obj, &Callback::CallbackFunction);
+//    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//        (&cb_obj, &TestCallback::CallbackFunction);
 //    vault_service_->RemoveFromReferenceList(&controller, &rem_request,
 //                                            &rem_response, done);
 //    EXPECT_TRUE(rem_response.IsInitialized());
@@ -1828,14 +1835,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromReferenceList) {
 //  asreq.set_public_key(vlt_pub_key);
 //  asreq.set_public_key_signature(vlt_pub_key_sig);
 //  asreq.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-//      vlt_pmid + "ACCOUNT" + vault_pmid_, "", crypto::STRING_STRING, false),
+//      vlt_pmid + kAccount + vault_pmid_, "", crypto::STRING_STRING, false),
 //      "", vlt_priv_key, crypto::STRING_STRING));
 //
 //  // SpaceGiven should be the chunk size
 //  {
 //    maidsafe::AccountStatusResponse asrsp;
-//    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//        (&cb_obj, &Callback::CallbackFunction);
+//    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//        (&cb_obj, &TestCallback::CallbackFunction);
 //    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
 //    EXPECT_TRUE(asrsp.IsInitialized());
 //    EXPECT_EQ(chunk_size, asrsp.space_given());
@@ -1843,8 +1850,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromReferenceList) {
 //
 //  // remove from ref list
 //  {
-//    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//        (&cb_obj, &Callback::CallbackFunction);
+//    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//        (&cb_obj, &TestCallback::CallbackFunction);
 //    vault_service_->RemoveFromReferenceList(&controller, &rem_request,
 //        &rem_response, done);
 //    EXPECT_TRUE(rem_response.IsInitialized());
@@ -1855,8 +1862,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromReferenceList) {
 //  // SpaceGiven should be 0
 //  {
 //    maidsafe::AccountStatusResponse asrsp;
-//    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-//        (&cb_obj, &Callback::CallbackFunction);
+//    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+//        (&cb_obj, &TestCallback::CallbackFunction);
 //    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
 //    EXPECT_TRUE(asrsp.IsInitialized());
 //    EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
@@ -1881,7 +1888,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
   CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
                       &sig_req);
 
-  Callback cb_obj;
+  TestCallback cb_obj;
 
   for (boost::uint32_t i = 0; i <= 1; ++i) {
     switch (i) {
@@ -1893,8 +1900,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
         break;
     }
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->ValidityCheck(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -1905,8 +1912,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
 
   // test success
   {
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->ValidityCheck(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
@@ -1930,7 +1937,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
   CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
                       &sig_req);
 
-  Callback cb_obj;
+  TestCallback cb_obj;
 
   for (boost::uint32_t i = 0; i <= 2; ++i) {
     switch (i) {
@@ -1949,8 +1956,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
       // ...
     }
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->SwapChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -1975,7 +1982,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
   CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
                       &sig_req);
 
-  Callback cb_obj;
+  TestCallback cb_obj;
 
   for (boost::uint32_t i = 0; i <= 1; ++i) {
     switch (i) {
@@ -1986,8 +1993,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
         break;
     }
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->VaultStatus(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
@@ -2003,8 +2010,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
                                          crypto::STRING_STRING);
     request.set_encrypted_request(enc_req);
 
-    google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-        (&cb_obj, &Callback::CallbackFunction);
+    google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->VaultStatus(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
@@ -2023,15 +2030,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_);
+      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_,
+      &vault_service_logic_);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
 
   // Not initialised
-  Callback cb_obj;
-  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-    (&cb_obj, &Callback::CallbackFunction);
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+    (&cb_obj, &TestCallback::CallbackFunction);
   service.CreateBP(&controller, &request, &response, done);
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(vault_pmid_, response.pmid_id());
@@ -2072,8 +2080,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   request.set_signed_public_key(sig_pub_key);
   request.set_signed_request(sig_req);
 
-  done = google::protobuf::NewCallback<Callback>
-         (&cb_obj, &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   service.CreateBP(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
@@ -2089,15 +2097,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_);
+      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_,
+      &vault_service_logic_);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest create_request;
   maidsafe::CreateBPResponse create_response;
 
   // Not initialised
-  Callback cb_obj;
-  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-    (&cb_obj, &Callback::CallbackFunction);
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+    (&cb_obj, &TestCallback::CallbackFunction);
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
   crypto::Crypto co;
@@ -2133,8 +2142,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   create_request.set_signed_public_key(sig_pub_key);
   create_request.set_signed_request(sig_req);
 
-  done = google::protobuf::NewCallback<Callback> (&cb_obj,
-    &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
+    &TestCallback::CallbackFunction);
   service.CreateBP(&controller, &create_request, &create_response,
     done);
   ASSERT_TRUE(create_response.IsInitialized());
@@ -2157,8 +2166,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   modify_request.set_public_key(pub_key);
   modify_request.set_signed_public_key(sig_pub_key);
   modify_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<Callback> (&cb_obj,
-    &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
+    &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
   ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
   ASSERT_EQ(vault_pmid_, modify_response.pmid_id());
@@ -2179,8 +2188,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   modify_request.set_public_key(pub_key);
   modify_request.set_signed_public_key(sig_pub_key);
   modify_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<Callback> (&cb_obj,
-    &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
+    &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
   ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
   ASSERT_EQ(vault_pmid_, modify_response.pmid_id());
@@ -2209,8 +2218,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   modify_request.set_signed_request(co.AsymSign(co.Hash(pub_key + sig_pub_key +
     modify_request.bufferpacket_name(), "", crypto::STRING_STRING, false), "",
     priv_key, crypto::STRING_STRING));
-  done = google::protobuf::NewCallback<Callback> (&cb_obj,
-    &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
+    &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
   ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
   ASSERT_EQ(vault_pmid_, modify_response.pmid_id());
@@ -2226,8 +2235,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   modify_request.set_public_key(pub_key);
   modify_request.set_signed_public_key(sig_pub_key);
   modify_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<Callback> (&cb_obj,
-    &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
+    &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
   ASSERT_EQ(kAck, static_cast<int>(modify_response.result()));
   ASSERT_EQ(vault_pmid_, modify_response.pmid_id());
@@ -2248,15 +2257,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_);
+      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_,
+      &vault_service_logic_);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
 
   // Not initialised
-  Callback cb_obj;
-  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-    (&cb_obj, &Callback::CallbackFunction);
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+    (&cb_obj, &TestCallback::CallbackFunction);
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
   crypto::Crypto co;
@@ -2311,8 +2321,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
   get_msg_request.set_public_key(pub_key);
   get_msg_request.set_signed_public_key(sig_pub_key);
   get_msg_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<Callback> (&cb_obj,
-    &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
+    &TestCallback::CallbackFunction);
   service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
   ASSERT_TRUE(get_msg_response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
@@ -2323,15 +2333,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_);
+      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_,
+      &vault_service_logic_);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
 
   // Not initialised
-  Callback cb_obj;
-  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-    (&cb_obj, &Callback::CallbackFunction);
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+    (&cb_obj, &TestCallback::CallbackFunction);
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
   crypto::Crypto co;
@@ -2386,8 +2397,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   get_msg_request.set_public_key(pub_key);
   get_msg_request.set_signed_public_key(sig_pub_key);
   get_msg_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<Callback> (&cb_obj,
-    &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
+    &TestCallback::CallbackFunction);
   service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
   ASSERT_TRUE(get_msg_response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
@@ -2411,8 +2422,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   add_msg_request.set_public_key(newuser_pub_key);
   add_msg_request.set_signed_public_key(newuser_sig_pub_key);
   add_msg_request.set_signed_request(newuser_sig_req);
-  done = google::protobuf::NewCallback<Callback> (&cb_obj,
-    &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
+    &TestCallback::CallbackFunction);
   service.AddBPMessage(&controller, &add_msg_request, &add_msg_response, done);
   ASSERT_TRUE(add_msg_response.IsInitialized());
   ASSERT_EQ(kNack, static_cast<int>(add_msg_response.result()));
@@ -2450,8 +2461,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   add_msg_request.set_public_key(newuser_pub_key);
   add_msg_request.set_signed_public_key(newuser_sig_pub_key);
   add_msg_request.set_signed_request(newuser_sig_req);
-  done = google::protobuf::NewCallback<Callback> (&cb_obj,
-    &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
+    &TestCallback::CallbackFunction);
   service.AddBPMessage(&controller, &add_msg_request, &add_msg_response, done);
   ASSERT_TRUE(add_msg_response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(add_msg_response.result()));
@@ -2466,8 +2477,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   get_msg_request.set_public_key(pub_key);
   get_msg_request.set_signed_public_key(sig_pub_key);
   get_msg_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<Callback> (&cb_obj,
-    &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
+    &TestCallback::CallbackFunction);
   service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
   ASSERT_TRUE(get_msg_response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
@@ -2489,8 +2500,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   get_msg_request.set_public_key(pub_key);
   get_msg_request.set_signed_public_key(sig_pub_key);
   get_msg_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<Callback> (&cb_obj,
-    &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
+    &TestCallback::CallbackFunction);
   service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
   ASSERT_TRUE(get_msg_response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
@@ -2507,9 +2518,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
   random_gp->set_data("petting the one-eyed snake");
 
   // Not initialised
-  Callback cb_obj;
-  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-                                    (&cb_obj, &Callback::CallbackFunction);
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+                                    (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->GetPacket(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
@@ -2529,8 +2540,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
                       &sig_req);
 
   request.set_key_id(key_id);
-  done = google::protobuf::NewCallback<Callback>
-         (&cb_obj, &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->GetPacket(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
@@ -2541,8 +2552,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
   request.set_public_key_signature(sig_pub_key);
   request.set_request_signature(sig_req);
   request.set_packetname(packetname);
-  done = google::protobuf::NewCallback<Callback>
-         (&cb_obj, &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->GetPacket(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
@@ -2556,8 +2567,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
                              crypto::STRING_STRING));
   ASSERT_EQ(kSuccess, vault_service_->vault_chunkstore_->StorePacket(packetname,
             injection_gp));
-  done = google::protobuf::NewCallback<Callback>
-         (&cb_obj, &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->GetPacket(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
@@ -2579,8 +2590,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
   // as single value has already been stored then overwrite with multiple values
   ASSERT_EQ(kSuccess, vault_service_->vault_chunkstore_->OverwritePacket(
             packetname, injection_gps, pub_key));
-  done = google::protobuf::NewCallback<Callback>
-         (&cb_obj, &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->GetPacket(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
@@ -2594,7 +2605,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
 
 struct StorePacketCallback {
   StorePacketCallback() : is_called_back(false) {}
-  void Callback() {
+  void TestCallback() {
     is_called_back = true;
   }
   void Reset() {
@@ -2640,13 +2651,13 @@ TEST_F(TestStorePacket, BEH_MAID_StoreSysPacket) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
   ASSERT_TRUE(chunkstore.Init());
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, &chunkstore, NULL, NULL);
+      vault_public_key_signature_, &chunkstore, NULL, NULL, NULL);
   rpcprotocol::Controller ctrl;
   StorePacketCallback cb;
   maidsafe::StorePacketRequest request;
   maidsafe::StorePacketResponse response;
   google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
-      StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+      StorePacketCallback> (&cb, &StorePacketCallback::TestCallback);
   service.StorePacket(&ctrl, &request, &response, done);
   while (!cb.is_called_back)
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -2707,13 +2718,13 @@ TEST_F(TestStorePacket, BEH_MAID_OverWriteSystemPacket) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
   ASSERT_TRUE(chunkstore.Init());
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, &chunkstore, NULL, NULL);
+      vault_public_key_signature_, &chunkstore, NULL, NULL, NULL);
   rpcprotocol::Controller ctrl;
   StorePacketCallback cb;
   maidsafe::StorePacketRequest request;
   maidsafe::StorePacketResponse response;
   google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
-      StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+      StorePacketCallback> (&cb, &StorePacketCallback::TestCallback);
 
   std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
   request.set_packetname(packetname);
@@ -2781,13 +2792,13 @@ TEST_F(TestStorePacket, BEH_MAID_AppendSystemPacket) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
   ASSERT_TRUE(chunkstore.Init());
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, &chunkstore, NULL, NULL);
+      vault_public_key_signature_, &chunkstore, NULL, NULL, NULL);
   rpcprotocol::Controller ctrl;
   StorePacketCallback cb;
   maidsafe::StorePacketRequest request;
   maidsafe::StorePacketResponse response;
   google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
-      StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+      StorePacketCallback> (&cb, &StorePacketCallback::TestCallback);
 
   std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
   request.set_packetname(packetname);
@@ -2857,13 +2868,13 @@ TEST_F(TestStorePacket, BEH_MAID_IncorrectSignatures) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
   ASSERT_TRUE(chunkstore.Init());
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, &chunkstore, NULL, NULL);
+      vault_public_key_signature_, &chunkstore, NULL, NULL, NULL);
   rpcprotocol::Controller ctrl;
   StorePacketCallback cb;
   maidsafe::StorePacketRequest request;
   maidsafe::StorePacketResponse response;
   google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
-      StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+      StorePacketCallback> (&cb, &StorePacketCallback::TestCallback);
 
   std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
   request.set_packetname(packetname);
@@ -2937,13 +2948,13 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidOverWrite) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
   ASSERT_TRUE(chunkstore.Init());
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, &chunkstore, NULL, NULL);
+      vault_public_key_signature_, &chunkstore, NULL, NULL, NULL);
   rpcprotocol::Controller ctrl;
   StorePacketCallback cb;
   maidsafe::StorePacketRequest request;
   maidsafe::StorePacketResponse response;
   google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
-      StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+      StorePacketCallback> (&cb, &StorePacketCallback::TestCallback);
 
   std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
   request.set_packetname(packetname);
@@ -3024,13 +3035,13 @@ TEST_F(TestStorePacket, BEH_MAID_InvalidAppend) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
   ASSERT_TRUE(chunkstore.Init());
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, &chunkstore, NULL, NULL);
+      vault_public_key_signature_, &chunkstore, NULL, NULL, NULL);
   rpcprotocol::Controller ctrl;
   StorePacketCallback cb;
   maidsafe::StorePacketRequest request;
   maidsafe::StorePacketResponse response;
   google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
-      StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+      StorePacketCallback> (&cb, &StorePacketCallback::TestCallback);
 
   std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
   request.set_packetname(packetname);
@@ -3137,13 +3148,13 @@ TEST_F(TestStorePacket, BEH_MAID_StorePDDIR_NOT_SIGNED) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
   ASSERT_TRUE(chunkstore.Init());
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, &chunkstore, NULL, NULL);
+      vault_public_key_signature_, &chunkstore, NULL, NULL, NULL);
   rpcprotocol::Controller ctrl;
   StorePacketCallback cb;
   maidsafe::StorePacketRequest request;
   maidsafe::StorePacketResponse response;
   google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
-      StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+      StorePacketCallback> (&cb, &StorePacketCallback::TestCallback);
 
   std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
   request.set_packetname(packetname);
@@ -3188,13 +3199,13 @@ TEST_F(TestStorePacket, BEH_MAID_StoreThenLoadSystemPacket) {
   VaultChunkStore chunkstore(dir_, 10000, 0);
   ASSERT_TRUE(chunkstore.Init());
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, &chunkstore, NULL, NULL);
+      vault_public_key_signature_, &chunkstore, NULL, NULL, NULL);
   rpcprotocol::Controller ctrl;
   StorePacketCallback cb;
   maidsafe::StorePacketRequest request;
   maidsafe::StorePacketResponse response;
   google::protobuf::Closure *done = google::protobuf::NewPermanentCallback<
-      StorePacketCallback> (&cb, &StorePacketCallback::Callback);
+      StorePacketCallback> (&cb, &StorePacketCallback::TestCallback);
 
   std::string packetname(co_.Hash("packet1", "", crypto::STRING_STRING, false));
   request.set_packetname(packetname);

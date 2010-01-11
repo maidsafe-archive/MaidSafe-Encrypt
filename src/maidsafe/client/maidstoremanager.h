@@ -28,7 +28,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <gtest/gtest.h>
+#include <gtest/gtest_prod.h>
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht_config.h>
 #include <QThreadPool>

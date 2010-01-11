@@ -32,7 +32,7 @@
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultbufferpackethandler.h"
-#include "maidsafe/crypto.h"
+#include "maidsafe/vault/vaultservicelogic.h"
 
 namespace maidsafe_vault {
 
@@ -49,12 +49,31 @@ void vsvc_dummy_callback(const std::string &result) {
 #endif
 }
 
+void AddToRefListTask::run() {
+  int result = vault_service_logic_->AddToRemoteRefList(chunkname_,
+                                                        store_contract_);
+#ifdef DEBUG
+  if (result != kSuccess)
+    printf("AddToRemoteRefList returned result %i for chunk (%s).\n",
+           result, HexSubstr(chunkname_).c_str());
+#endif
+}
+
+//  void RemoveFromRefListTask::run() {
+//    vault_service_logic_->RemoveFromRefPacket(chunkname_, signed_size_);
+//  }
+
+void AmendRemoteAccountTask::run() {
+  vault_service_logic_->AmendRemoteAccount(amend_account_request_, callback_);
+}
+
 VaultService::VaultService(const std::string &pmid_public,
                            const std::string &pmid_private,
                            const std::string &pmid_public_signature,
                            VaultChunkStore *vault_chunkstore,
                            kad::KNode *knode,
-                           PendingOperationsHandler *poh)
+                           PendingOperationsHandler *poh,
+                           VaultServiceLogic *vault_service_logic)
     : pmid_public_(pmid_public),
       pmid_private_(pmid_private),
       pmid_public_signature_(pmid_public_signature),
@@ -63,21 +82,18 @@ VaultService::VaultService(const std::string &pmid_public,
       vault_chunkstore_(vault_chunkstore),
       knode_(knode),
       poh_(poh),
+      vault_service_logic_(vault_service_logic),
       prm_(),
       ah_(),
       aah_(&ah_),
       cih_(),
-      add_to_reference_list_(boost::bind(
-          &VaultService::AddToRefListDoNothing, this, _1, _2)),
-      remove_from_reference_list_(boost::bind(
-          &VaultService::RemoveFromRefListDoNothing, this, _1, _2)),
-      amend_account_(boost::bind(
-          &VaultService::AmendAccountDoNothing, this, _1, _2, _3, _4)) {
+      thread_pool_() {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co.Hash(pmid_public + pmid_public_signature_, "",
                   crypto::STRING_STRING, true);
   non_hex_pmid_ = base::DecodeFromHex(pmid_);
+  thread_pool_.setMaxThreadCount(5);
 }
 
 void VaultService::StorePrep(google::protobuf::RpcController*,
@@ -276,14 +292,10 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     return;
   }
 
-  if (!add_to_reference_list_(request->chunkname(), it->second)) {
-#ifdef DEBUG
-    printf("In VaultService::StoreChunk (%i), ", knode_->host_port());
-    printf("failed to add ourself to ref list.\n");
-#endif
-    done->Run();
-    return;
-  }
+  // thread_pool_ handles destruction of task.
+  AddToRefListTask *task = new AddToRefListTask(request->chunkname(),
+      it->second, vault_service_logic_);
+  thread_pool_.start(task);
 
   prm_.erase(request->chunkname());
   response->set_result(kAck);
@@ -720,11 +732,9 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
       }
     }
   } else {
-    bool increase(false);
-    int field(2);
     if (request->amendment_type() ==
         maidsafe::AmendAccountRequest::kSpaceOffered) {
-      if (ah_.AmendAccount(pmid, 1, account_delta, increase) == 0) {
+      if (ah_.AmendAccount(pmid, 1, account_delta, false) == 0) {
         response->set_result(kAck);
         done->Run();
         return;
@@ -766,13 +776,13 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
   }
 
   boost::uint64_t space_offered(0), space_given(0), space_taken(0);
-  int n = ah_.GetAccountInfo(request->pmid(), &space_offered, &space_given,
-                             &space_taken);
+  int n = ah_.GetAccountInfo(request->account_pmid(), &space_offered,
+                             &space_given, &space_taken);
   if (n != 0) {
 #ifdef DEBUG
     printf("In VaultService::AccountStatus (%i), ", knode_->host_port());
     printf("don't have the account for %s.\n",
-           HexSubstr(request->pmid()).c_str());
+           HexSubstr(request->account_pmid()).c_str());
 #endif
     done->Run();
     return;
@@ -781,7 +791,7 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
   response->set_result(kAck);
   if (!ValidateSignedRequest(request->public_key(),
       request->public_key_signature(), request->request_signature(),
-      request->pmid() + "ACCOUNT", request->pmid())) {
+      request->account_pmid() + kAccount, request->account_pmid())) {
 #ifdef DEBUG
     printf("In VaultService::AccountStatus (%i), ", knode_->host_port());
     printf("failed to validate signed request.\n");
@@ -1827,29 +1837,50 @@ void VaultService::FindCloseNodesCallback(const std::string &result,
   }
 }
 
-int VaultService::AmendRemoteAccount(
-    const maidsafe::AmendAccountRequest::Amendment &amendment,
+void VaultService::AmendRemoteAccount(
+    const maidsafe::AmendAccountRequest::Amendment &amendment_type,
     const boost::uint64_t &size,
     const std::string &account_pmid,
     const std::string &chunkname) {
-  crypto::Crypto co;
-  maidsafe::SignedSize signed_size;
-  signed_size.set_data_size(size);
-  signed_size.set_signature(co.AsymSign(base::itos_ull(size), "",
-                                        pmid_private_, crypto::STRING_STRING));
-  signed_size.set_pmid(non_hex_pmid_);
-  signed_size.set_public_key(pmid_public_);
-  signed_size.set_public_key_signature(pmid_public_signature_);
-  return amend_account_(amendment, signed_size, account_pmid, chunkname);
+  AmendRemoteAccount(amendment_type, size, account_pmid, chunkname,
+      boost::bind(&VaultService::DiscardResult, this, _1));
 }
 
-RegistrationService::RegistrationService(boost::function< void(
-      const maidsafe::VaultConfig&) > notifier) : notifier_(notifier),
-        status_(maidsafe::NOT_OWNED), pending_response_() {}
+void VaultService::AmendRemoteAccount(
+    const maidsafe::AmendAccountRequest::Amendment &amendment_type,
+    const boost::uint64_t &size,
+    const std::string &account_pmid,
+    const std::string &chunkname,
+    const Callback &callback) {
+  crypto::Crypto co;
+  maidsafe::AmendAccountRequest amend_account_request;
+  amend_account_request.set_amendment_type(amendment_type);
+  amend_account_request.set_account_pmid(account_pmid);
+  maidsafe::SignedSize *mutable_signed_size =
+      amend_account_request.mutable_signed_size();
+  mutable_signed_size->set_data_size(size);
+  mutable_signed_size->set_pmid(non_hex_pmid_);
+  mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(size), "",
+                                     pmid_private_, crypto::STRING_STRING));
+  mutable_signed_size->set_public_key(pmid_public_);
+  mutable_signed_size->set_public_key_signature(pmid_public_signature_);
+  amend_account_request.set_chunkname(chunkname);
+  // thread_pool_ handles destruction of task.
+  AmendRemoteAccountTask *task = new AmendRemoteAccountTask(
+      amend_account_request, callback, vault_service_logic_);
+  thread_pool_.start(task);
+}
 
-void RegistrationService::OwnVault(google::protobuf::RpcController* ,
-      const maidsafe::OwnVaultRequest *request,
-      maidsafe::OwnVaultResponse *response, google::protobuf::Closure *done) {
+RegistrationService::RegistrationService(
+    boost::function< void(const maidsafe::VaultConfig&) > notifier)
+        : notifier_(notifier),
+          status_(maidsafe::NOT_OWNED),
+          pending_response_() {}
+
+void RegistrationService::OwnVault(google::protobuf::RpcController*,
+                                   const maidsafe::OwnVaultRequest *request,
+                                   maidsafe::OwnVaultResponse *response,
+                                   google::protobuf::Closure *done) {
   if (!request->IsInitialized()) {
     response->set_result(maidsafe::INVALID_OWNREQUEST);
     done->Run();
@@ -1922,8 +1953,9 @@ void RegistrationService::OwnVault(google::protobuf::RpcController* ,
 }
 
 void RegistrationService::IsVaultOwned(google::protobuf::RpcController*,
-      const maidsafe::IsOwnedRequest*, maidsafe::IsOwnedResponse *response,
-      google::protobuf::Closure *done) {
+                                       const maidsafe::IsOwnedRequest*,
+                                       maidsafe::IsOwnedResponse *response,
+                                       google::protobuf::Closure *done) {
   response->set_status(status_);
   done->Run();
 }

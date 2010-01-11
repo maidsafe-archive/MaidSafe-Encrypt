@@ -41,7 +41,6 @@ info:Ack/Nack =peer. DELETE_CHUNK_REQUEST
 info:>v_account. AMEND_ACCOUNT_REQUEST (Space Given Dec)
 (3)v_account:>info.Ack/Nack &
 [/c]
-info:info. Mark Watch List as "Deleted"
 [/c]
 [/c]]]></source>
 <configuration>

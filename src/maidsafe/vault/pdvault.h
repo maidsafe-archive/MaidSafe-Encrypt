@@ -41,6 +41,7 @@
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
+#include "maidsafe/vault/vaultservicelogic.h"
 
 // This forward declaration is to allow gtest environment to be declared as a
 // friend class
@@ -51,35 +52,6 @@ class Env;
 namespace maidsafe_vault {
 
 enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
-
-class KadCallback {
- public:
-  KadCallback() : response_(""), mutex_() {}
-  ~KadCallback() {}
-  void SetResponse(const std::string &response) {
-    boost::mutex::scoped_lock lock(mutex_);
-    response_ = response;
-  }
-  std::string response() {
-    boost::mutex::scoped_lock lock(mutex_);
-    return response_;
-  }
- private:
-  KadCallback(const KadCallback&);
-  KadCallback& operator=(const KadCallback&);
-  std::string response_;
-  boost::mutex mutex_;
-};
-
-struct AddRefResultHolder {
-  AddRefResultHolder()
-      : add_ref_response_(),
-        add_ref_response_returned_(false),
-        controller_(new rpcprotocol::Controller) {}
-  maidsafe::AddToReferenceListResponse add_ref_response_;
-  bool add_ref_response_returned_;
-  boost::shared_ptr<rpcprotocol::Controller> controller_;
-};
 
 struct SyncVaultData {
   SyncVaultData() : chunk_names(), num_updated_chunks(0), num_chunks(0),
@@ -198,62 +170,6 @@ struct SwapChunkArgs {
 
 class PDVault;
 
-class AddToRefPacketTask : public QRunnable {
- public:
-  AddToRefPacketTask(const std::string &chunkname,
-                     const maidsafe::StoreContract &store_contract,
-                     PDVault *pdvault)
-      : chunkname_(chunkname),
-        store_contract_(store_contract),
-        pdvault_(pdvault) {}
-  void run();
- private:
-  AddToRefPacketTask &operator=(const AddToRefPacketTask&);
-  AddToRefPacketTask(const AddToRefPacketTask&);
-  std::string chunkname_;
-  maidsafe::StoreContract store_contract_;
-  PDVault *pdvault_;
-};
-
-class RemoveFromRefPacketTask : public QRunnable {
- public:
-  RemoveFromRefPacketTask(const std::string &chunkname,
-                          const maidsafe::SignedSize &signed_size,
-                          PDVault *pdvault)
-      : chunkname_(chunkname),
-        signed_size_(signed_size),
-        pdvault_(pdvault) {}
-  void run();
- private:
-  RemoveFromRefPacketTask &operator=(const RemoveFromRefPacketTask&);
-  RemoveFromRefPacketTask(const RemoveFromRefPacketTask&);
-  std::string chunkname_;
-  maidsafe::SignedSize signed_size_;
-  PDVault *pdvault_;
-};
-
-class AmendAccountTask : public QRunnable {
- public:
-  AmendAccountTask(maidsafe::AmendAccountRequest::Amendment amendment_type,
-                   const maidsafe::SignedSize &signed_size,
-                   const std::string &account_pmid,
-                   const std::string &chunkname,
-                   PDVault *pdvault)
-      : amendment_type_(amendment_type),
-        signed_size_(signed_size),
-        account_pmid_(account_pmid),
-        chunkname_(chunkname),
-        pdvault_(pdvault) {}
-  void run();
- private:
-  AmendAccountTask &operator=(const AmendAccountTask&);
-  AmendAccountTask(const AmendAccountTask&);
-  maidsafe::AmendAccountRequest::Amendment amendment_type_;
-  maidsafe::SignedSize signed_size_;
-  std::string account_pmid_, chunkname_;
-  PDVault *pdvault_;
-};
-
 class PDVault {
  public:
   PDVault(const std::string &pmid_public,
@@ -303,11 +219,8 @@ class PDVault {
                  const boost::uint16_t &rendezvous_port,
                  base::callback_func_type cb);
   void StopRvPing() { transport_.StopPingRendezvous(); }
-  void SetKThreshold(const boost::uint16_t &kKadStoreThreshold);
+  void SetKThreshold(const boost::uint16_t &threshold);
   friend class localvaults::Env;
-  friend void AddToRefPacketTask::run();
-  friend void RemoveFromRefPacketTask::run();
-  friend void AmendAccountTask::run();
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
@@ -323,28 +236,6 @@ class PDVault {
   void UnRegisterMaidService();
   // This runs in a continuous loop until vault_status_ is not kVaultStarted.
   void PrunePendingOperations();
-  // Returns a signature for validation by recipient of RPC
-  std::string GetSignedRequest(const std::string &non_hex_name,
-                               const std::string &recipient_id);
-  // Adds this vault's ID to reference list for chunkname.
-  int AddToRefList(const std::string &chunkname,
-                   const maidsafe::StoreContract &store_contract);
-  // Runs in a worker thread to add this vault's ID to a chunk reference packet.
-  void AddToRefPacket(const std::string &chunkname,
-                      const maidsafe::StoreContract &store_contract);
-  // Finds k closest nodes to the kad_key.  If this vault's ID is closer than
-  // any of the k returned by Kademlia, this ID is inserted and the furthest
-  // contact dropped.  The vector is ordered from closest to furthest.
-  int FindKNodes(const std::string &kad_key,
-                 std::vector<kad::Contact> *contacts);
-  // Add this vault's ID to a chunk reference packet.
-  int SendToRefPacket(const kad::Contact &ref_holder,
-                      const std::string &chunkname,
-                      const maidsafe::StoreContract &store_contract,
-                      boost::mutex *add_ref_mutex,
-                      AddRefResultHolder *add_ref_result_holder);
-  void SendToRefPacketCallback(AddRefResultHolder *add_ref_result_holder,
-                               boost::mutex *add_ref_mutex);
   // Removes this vault's ID from reference list for chunkname.
   int RemoveFromRefList(const std::string &chunkname,
                         const maidsafe::SignedSize &signed_size);
@@ -415,6 +306,7 @@ class PDVault {
   VaultRpcs vault_rpcs_;
   VaultChunkStore vault_chunkstore_;
   boost::shared_ptr<VaultService> vault_service_;
+  VaultServiceLogic vault_service_logic_;
   bool kad_joined_;
   VaultStatus vault_status_;
   boost::mutex vault_status_mutex_;
@@ -427,7 +319,6 @@ class PDVault {
   PendingOperationsHandler poh_;
   QThreadPool thread_pool_;
   boost::thread pending_ious_thread_, prune_pending_ops_thread_;
-  boost::uint16_t kKadStoreThreshold_;
 };
 
 }  // namespace maidsafe_vault

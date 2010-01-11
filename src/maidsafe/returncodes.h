@@ -165,13 +165,25 @@ enum ReturnCode {
   // General
   kSuccess = maidsafe::kSuccess,
   kGeneralError = maidsafe::kGeneralError,
+  kVaultOffline = -501,
 
   // Service
   kVaultServiceError = -1501,
   kVaultServiceUninitialisedFunction = -1502,
+  kVaultServiceFindNodesError = -1503,
+  kVaultServiceFindNodesFailure = -1504,
+  kVaultServiceFindNodesTooFew = -1505,
+  kAddToRefResponseUninitialised = -1506,
+  kAddToRefResponseFailed = -1507,
+  kAddToRefResponseError = -1508,
+  kAmendAccountResponseUninitialised = -1509,
+  kAmendAccountResponseFailed = -1510,
+  kAmendAccountResponseError = -1511,
+  kAccountStatusResponseUninitialised = -1512,
+  kAccountStatusResponseFailed = -1513,
+  kAccountStatusResponseError = -1514,
 
   // Vault
-  kVaultOffline = -2501,
 
   // Vault Chunkstore
   kChunkstoreError = maidsafe::kChunkstoreError,

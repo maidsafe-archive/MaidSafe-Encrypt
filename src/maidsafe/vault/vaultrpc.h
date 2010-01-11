@@ -41,7 +41,7 @@ class VaultRpcs {
                 : transport_(transport),
                   channel_manager_(channel_manager),
                   own_non_hex_id_("") {}
-  ~VaultRpcs() {}
+  virtual ~VaultRpcs() {}
   void StoreChunk(const std::string &chunkname,
                   const std::string &data,
                   const std::string &public_key,
@@ -55,7 +55,7 @@ class VaultRpcs {
                   maidsafe::StoreChunkResponse *response,
                   rpcprotocol::Controller *controller,
                   google::protobuf::Closure *done);
-  void AddToReferenceList(
+  virtual void AddToReferenceList(
       const kad::Contact &peer,
       bool local,
       maidsafe::AddToReferenceListRequest *add_to_reference_list_request,
@@ -71,13 +71,14 @@ class VaultRpcs {
           *remove_from_reference_list_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done);
-  void AmendAccount(const kad::Contact &peer,
-                    bool local,
-                    maidsafe::AmendAccountRequest *amend_account_request,
-                    maidsafe::AmendAccountResponse *amend_account_response,
-                    rpcprotocol::Controller *controller,
-                    google::protobuf::Closure *done);
-  void GetAccountStatus(
+  virtual void AmendAccount(
+      const kad::Contact &peer,
+      bool local,
+      maidsafe::AmendAccountRequest *amend_account_request,
+      maidsafe::AmendAccountResponse *amend_account_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done);
+  virtual void AccountStatus(
       const kad::Contact &peer,
       bool local,
       maidsafe::AccountStatusRequest *get_account_status_request,

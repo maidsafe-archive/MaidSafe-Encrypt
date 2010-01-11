@@ -552,7 +552,7 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string account_name = co.Hash(non_hex_pmid + "ACCOUNT", "",
+  std::string account_name = co.Hash(non_hex_pmid + kAccount, "",
       crypto::STRING_STRING, false);
   // Find the account holders
   std::vector<kad::Contact> account_holders;
@@ -563,7 +563,7 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
       cond_var(new boost::condition_variable);
   GenericConditionData cond_data(cond_var);
   AccountStatusRequest account_status_request;
-  account_status_request.set_pmid(non_hex_pmid);
+  account_status_request.set_account_pmid(non_hex_pmid);
   account_status_request.set_public_key(pmid_pub);
   account_status_request.set_public_key_signature(pmid_pub_sig);
   std::vector<AccountStatusRequest> account_status_requests;
@@ -3019,7 +3019,7 @@ void MaidsafeStoreManager::AmendAccount(const boost::uint64_t &space_offered) {
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string account_name = co.Hash(non_hex_pmid + "ACCOUNT", "",
+  std::string account_name = co.Hash(non_hex_pmid + kAccount, "",
       crypto::STRING_STRING, false);
   // Find the account holders
   std::vector<kad::Contact> account_holders;

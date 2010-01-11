@@ -26,10 +26,12 @@
 #define MAIDSAFE_VAULT_VAULTSERVICE_H_
 
 #include <boost/compressed_pair.hpp>
+#include <boost/thread/condition_variable.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <maidsafe/crypto.h>
 #include <maidsafe/utils.h>
+#include <QThreadPool>
 
 #include <map>
 #include <string>
@@ -44,21 +46,66 @@
 
 namespace maidsafe_vault {
 
-typedef boost::function<int(const std::string&, const maidsafe::StoreContract&)>  // NOLINT (Fraser) - False positive
-    AddToRefListFunctor;
+typedef boost::function<void (const int&)> Callback;
 
-typedef boost::function<int(const std::string&, const maidsafe::SignedSize&)>  // NOLINT (Fraser) - False positive
-    RemoveFromRefListFunctor;
-
-typedef boost::function<int(maidsafe::AmendAccountRequest::Amendment,  // NOLINT (Fraser) - False positive
-                            const maidsafe::SignedSize&,
-                            const std::string&,
-                            const std::string&)> AmendAccountFunctor;
+class VaultServiceLogic;
 
 struct IsOwnedPendingResponse {
   IsOwnedPendingResponse() : callback(NULL), args(NULL) {}
   google::protobuf::Closure* callback;
   maidsafe::OwnVaultResponse* args;
+};
+
+class AddToRefListTask : public QRunnable {
+ public:
+  AddToRefListTask(const std::string &chunkname,
+                   const maidsafe::StoreContract &store_contract,
+                   VaultServiceLogic *vault_service_logic)
+      : chunkname_(chunkname),
+        store_contract_(store_contract),
+        vault_service_logic_(vault_service_logic) {}
+  void run();
+ private:
+  AddToRefListTask &operator=(const AddToRefListTask&);
+  AddToRefListTask(const AddToRefListTask&);
+  std::string chunkname_;
+  maidsafe::StoreContract store_contract_;
+  VaultServiceLogic *vault_service_logic_;
+};
+
+//  class RemoveFromRefListTask : public QRunnable {
+//   public:
+//    RemoveFromRefListTask(const std::string &chunkname,
+//                            const maidsafe::SignedSize &signed_size,
+//                            VaultServiceLogic *vault_service_logic)
+//        : chunkname_(chunkname),
+//          signed_size_(signed_size),
+//          vault_service_logic_(vault_service_logic) {}
+//    void run();
+//   private:
+//    RemoveFromRefListTask &operator=(const RemoveFromRefListTask&);
+//    RemoveFromRefListTask(const RemoveFromRefListTask&);
+//    std::string chunkname_;
+//    maidsafe::SignedSize signed_size_;
+//    VaultServiceLogic *vault_service_logic_;
+//  };
+
+class AmendRemoteAccountTask : public QRunnable {
+ public:
+  AmendRemoteAccountTask(
+      const maidsafe::AmendAccountRequest &amend_account_request,
+      Callback callback,
+      VaultServiceLogic *vault_service_logic)
+          : amend_account_request_(amend_account_request),
+            callback_(callback),
+            vault_service_logic_(vault_service_logic) {}
+  void run();
+ private:
+  AmendRemoteAccountTask &operator=(const AmendRemoteAccountTask&);
+  AmendRemoteAccountTask(const AmendRemoteAccountTask&);
+  maidsafe::AmendAccountRequest amend_account_request_;
+  Callback callback_;
+  VaultServiceLogic *vault_service_logic_;
 };
 
 class VaultChunkStore;
@@ -70,7 +117,8 @@ class VaultService : public maidsafe::MaidsafeService {
                const std::string &pmid_public_signature,
                VaultChunkStore *vault_chunkstore,
                kad::KNode *knode,
-               PendingOperationsHandler *poh);
+               PendingOperationsHandler *poh,
+               VaultServiceLogic *vault_service_logic);
   ~VaultService() {}
   virtual void StorePrep(google::protobuf::RpcController* controller,
                          const maidsafe::StorePrepRequest *request,
@@ -159,23 +207,6 @@ class VaultService : public maidsafe::MaidsafeService {
                             const maidsafe::AddBPMessageRequest *request,
                             maidsafe::AddBPMessageResponse *response,
                             google::protobuf::Closure *done);
-  void SetAddToRefListFunction(const AddToRefListFunctor &func) {
-    add_to_reference_list_ = func;
-  }
-  void SetRemoveFromRefListFunction(const RemoveFromRefListFunctor &func) {
-    remove_from_reference_list_ = func;
-  }
-  void SetAmendAccountFunction(const AmendAccountFunctor &func) {
-    amend_account_ = func;
-  }
-  void ClearFunctors() {
-    add_to_reference_list_ =
-        boost::bind(&VaultService::AddToRefListDoNothing, this, _1, _2);
-    remove_from_reference_list_ =
-        boost::bind(&VaultService::RemoveFromRefListDoNothing, this, _1, _2);
-    amend_account_ =
-        boost::bind(&VaultService::AmendAccountDoNothing, this, _1, _2, _3, _4);
-  }
  private:
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateIdentity);
@@ -195,6 +226,7 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetPacket);
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
+  void DiscardResult(const int&) {}
   bool ValidateSignedSize(const maidsafe::SignedSize &sz);
   bool ValidateStoreContract(const maidsafe::StoreContract &sc);
   bool ValidateAmendRequest(const maidsafe::AmendAccountRequest *request,
@@ -229,40 +261,33 @@ class VaultService : public maidsafe::MaidsafeService {
   bool DeleteChunkLocal(const std::string &chunkname);
   void FindCloseNodesCallback(const std::string &result,
                               std::vector<std::string> *close_nodes);
-  void FinalisePayment(const std::string &chunk_name, const std::string &pmid,
-                       const int &chunk_size, const bool &can_store);
-  int AmendRemoteAccount(
-      const maidsafe::AmendAccountRequest::Amendment &amendment,
+  // This method returns immediately after the task is added to the thread pool.
+  // The result of the amendment is discarded.
+  void AmendRemoteAccount(
+      const maidsafe::AmendAccountRequest::Amendment &amendment_type,
       const boost::uint64_t &size,
       const std::string &account_pmid,
       const std::string &chunkname);
-  int AmendAccountDoNothing(maidsafe::AmendAccountRequest::Amendment,
-                            const maidsafe::SignedSize&,
-                            const std::string&,
-                            const std::string&) {
-    return kVaultServiceUninitialisedFunction;
-  }
-  int AddToRefListDoNothing(const std::string&,
-                            const maidsafe::StoreContract&) {
-    return kVaultServiceUninitialisedFunction;
-  }
-  int RemoveFromRefListDoNothing(const std::string&,
-                                 const maidsafe::SignedSize&) {
-    return kVaultServiceUninitialisedFunction;
-  }
+  // This method returns immediately after the task is added to the thread pool.
+  // The result of the amendment is called back.
+  void AmendRemoteAccount(
+      const maidsafe::AmendAccountRequest::Amendment &amendment_type,
+      const boost::uint64_t &size,
+      const std::string &account_pmid,
+      const std::string &chunkname,
+      const Callback &callback);
   std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
   std::string non_hex_pmid_;
   VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;
   PendingOperationsHandler *poh_;
+  VaultServiceLogic *vault_service_logic_;
   typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
   PrepsReceivedMap prm_;
   AccountHandler ah_;
   AccountAmendmentHandler aah_;
   ChunkInfoHandler cih_;
-  AddToRefListFunctor add_to_reference_list_;
-  RemoveFromRefListFunctor remove_from_reference_list_;
-  AmendAccountFunctor amend_account_;
+  QThreadPool thread_pool_;
 };
 
 class RegistrationService : public maidsafe::VaultRegistration {

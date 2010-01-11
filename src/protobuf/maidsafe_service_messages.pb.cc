@@ -515,8 +515,9 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(AmendAccountResponse));
   AccountStatusRequest_descriptor_ = file->message_type(18);
-  static const int AccountStatusRequest_offsets_[4] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusRequest, pmid_),
+  static const int AccountStatusRequest_offsets_[5] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusRequest, account_pmid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusRequest, space_requested_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusRequest, public_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusRequest, public_key_signature_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusRequest, request_signature_),
@@ -534,8 +535,8 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       sizeof(AccountStatusRequest));
   AccountStatusResponse_descriptor_ = file->message_type(19);
   static const int AccountStatusResponse_offsets_[5] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusResponse, pmid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusResponse, result_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusResponse, pmid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusResponse, space_offered_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusResponse, space_given_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(AccountStatusResponse, space_taken_),
@@ -1352,91 +1353,92 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
     "kSpaceGivenInc\020\001\022\022\n\016kSpaceGivenDec\020\002\022\022\n\016"
     "kSpaceTakenInc\020\003\022\022\n\016kSpaceTakenDec\020\004\"4\n\024"
     "AmendAccountResponse\022\016\n\006result\030\001 \002(\r\022\014\n\004"
-    "pmid\030\002 \001(\014\"q\n\024AccountStatusRequest\022\014\n\004pm"
-    "id\030\001 \002(\014\022\022\n\npublic_key\030\002 \001(\014\022\034\n\024public_k"
-    "ey_signature\030\003 \001(\014\022\031\n\021request_signature\030"
-    "\004 \001(\014\"v\n\025AccountStatusResponse\022\014\n\004pmid\030\001"
-    " \002(\014\022\016\n\006result\030\002 \002(\r\022\025\n\rspace_offered\030\003 "
-    "\001(\004\022\023\n\013space_given\030\004 \001(\004\022\023\n\013space_taken\030"
-    "\005 \001(\004\"&\n\021CheckChunkRequest\022\021\n\tchunkname\030"
-    "\001 \002(\014\"2\n\022CheckChunkResponse\022\016\n\006result\030\001 "
-    "\002(\r\022\014\n\004pmid\030\002 \002(\014\"$\n\017GetChunkRequest\022\021\n\t"
-    "chunkname\030\001 \002(\014\"A\n\020GetChunkResponse\022\016\n\006r"
-    "esult\030\001 \002(\r\022\017\n\007content\030\002 \001(\014\022\014\n\004pmid\030\003 \001"
-    "(\014\"\203\001\n\020GetPacketRequest\022\022\n\npacketname\030\001 "
-    "\002(\014\022\016\n\006key_id\030\002 \001(\014\022\022\n\npublic_key\030\003 \001(\014\022"
-    "\034\n\024public_key_signature\030\004 \001(\014\022\031\n\021request"
-    "_signature\030\005 \001(\014\"[\n\021GetPacketResponse\022\016\n"
-    "\006result\030\001 \002(\r\022(\n\007content\030\002 \003(\0132\027.maidsaf"
-    "e.GenericPacket\022\014\n\004pmid\030\003 \001(\014\"\243\001\n\022Update"
-    "ChunkRequest\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004data\030"
-    "\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022"
-    "\034\n\024public_key_signature\030\005 \002(\014\022\031\n\021request"
-    "_signature\030\006 \002(\014\022\021\n\tdata_type\030\007 \002(\005\"3\n\023U"
-    "pdateChunkResponse\022\016\n\006result\030\001 \002(\r\022\014\n\004pm"
-    "id\030\002 \001(\014\"\200\001\n\022DeleteChunkRequest\022\021\n\tchunk"
-    "name\030\001 \002(\014\022)\n\013signed_size\030\002 \002(\0132\024.maidsa"
-    "fe.SignedSize\022\031\n\021request_signature\030\003 \002(\014"
-    "\022\021\n\tdata_type\030\004 \002(\005\"3\n\023DeleteChunkRespon"
-    "se\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \001(\014\">\n\024Vali"
-    "dityCheckRequest\022\021\n\tchunkname\030\001 \002(\014\022\023\n\013r"
-    "andom_data\030\002 \002(\014\"K\n\025ValidityCheckRespons"
-    "e\022\016\n\006result\030\001 \002(\r\022\024\n\014hash_content\030\002 \001(\014\022"
-    "\014\n\004pmid\030\003 \002(\014\"v\n\020SwapChunkRequest\022\024\n\014req"
-    "uest_type\030\001 \002(\005\022\022\n\nchunkname1\030\002 \002(\014\022\025\n\rc"
-    "hunkcontent1\030\003 \001(\014\022\r\n\005size1\030\004 \001(\005\022\022\n\nchu"
-    "nkname2\030\005 \001(\014\"\273\001\n\021SwapChunkResponse\022\024\n\014r"
-    "equest_type\030\001 \002(\005\022\016\n\006result\030\002 \002(\r\022\022\n\nchu"
-    "nkname1\030\003 \001(\014\022\025\n\rchunkcontent1\030\004 \001(\014\022\r\n\005"
-    "size1\030\005 \001(\005\022\022\n\nchunkname2\030\006 \001(\014\022\025\n\rchunk"
-    "content2\030\007 \001(\014\022\r\n\005size2\030\010 \001(\005\022\014\n\004pmid\030\t "
-    "\002(\014\"\200\001\n\022VaultCommunication\022\022\n\nchunkstore"
-    "\030\001 \001(\014\022\025\n\roffered_space\030\002 \001(\004\022\022\n\nfree_sp"
-    "ace\030\003 \001(\004\022\n\n\002ip\030\004 \001(\014\022\014\n\004port\030\005 \001(\r\022\021\n\tt"
-    "imestamp\030\006 \002(\r\"/\n\022VaultStatusRequest\022\031\n\021"
-    "encrypted_request\030\001 \002(\014\"A\n\023VaultStatusRe"
-    "sponse\022\016\n\006result\030\001 \002(\r\022\032\n\022encrypted_resp"
-    "onse\030\002 \001(\014\"\212\001\n\017OwnVaultRequest\022\022\n\npublic"
-    "_key\030\001 \002(\014\022\023\n\013private_key\030\002 \002(\014\022\031\n\021signe"
-    "d_public_key\030\003 \002(\014\022\026\n\016chunkstore_dir\030\004 \002"
-    "(\014\022\014\n\004port\030\005 \002(\r\022\r\n\005space\030\006 \002(\004\"O\n\020OwnVa"
-    "ultResponse\022(\n\006result\030\001 \002(\0162\030.maidsafe.O"
-    "wnVaultResult\022\021\n\tpmid_name\030\002 \001(\014\"\020\n\016IsOw"
-    "nedRequest\"8\n\017IsOwnedResponse\022%\n\006status\030"
-    "\001 \002(\0162\025.maidsafe.VaultStatus\"\217\001\n\017CreateB"
-    "PRequest\022\031\n\021bufferpacket_name\030\001 \002(\014\022\014\n\004d"
-    "ata\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 "
-    "\002(\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026\n\016signed"
-    "_request\030\006 \002(\014\"b\n\020CreateBPResponse\022\016\n\006re"
-    "sult\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npublic_ke"
-    "y\030\003 \001(\014\022\031\n\021signed_public_key\030\004 \001(\014\"\223\001\n\023M"
-    "odifyBPInfoRequest\022\031\n\021bufferpacket_name\030"
-    "\001 \002(\014\022\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npub"
-    "lic_key\030\004 \002(\014\022\031\n\021signed_public_key\030\005 \002(\014"
-    "\022\026\n\016signed_request\030\006 \002(\014\"f\n\024ModifyBPInfo"
-    "Response\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001("
-    "\014\022\022\n\npublic_key\030\003 \001(\014\022\031\n\021signed_public_k"
-    "ey\030\004 \001(\014\"\206\001\n\024GetBPMessagesRequest\022\031\n\021buf"
-    "ferpacket_name\030\001 \002(\014\022\022\n\npublic_key\030\002 \002(\014"
-    "\022\014\n\004pmid\030\003 \002(\014\022\031\n\021signed_public_key\030\004 \002("
-    "\014\022\026\n\016signed_request\030\005 \002(\014\"y\n\025GetBPMessag"
-    "esResponse\022\016\n\006result\030\001 \002(\r\022\020\n\010messages\030\002"
-    " \003(\014\022\017\n\007pmid_id\030\003 \001(\014\022\022\n\npublic_key\030\004 \001("
-    "\014\022\031\n\021signed_public_key\030\005 \001(\014\"\223\001\n\023AddBPMe"
-    "ssageRequest\022\031\n\021bufferpacket_name\030\001 \002(\014\022"
+    "pmid\030\002 \001(\014\"\222\001\n\024AccountStatusRequest\022\024\n\014a"
+    "ccount_pmid\030\001 \002(\014\022\027\n\017space_requested\030\002 \001"
+    "(\004\022\022\n\npublic_key\030\003 \001(\014\022\034\n\024public_key_sig"
+    "nature\030\004 \001(\014\022\031\n\021request_signature\030\005 \001(\014\""
+    "v\n\025AccountStatusResponse\022\016\n\006result\030\001 \002(\r"
+    "\022\014\n\004pmid\030\002 \002(\014\022\025\n\rspace_offered\030\003 \001(\004\022\023\n"
+    "\013space_given\030\004 \001(\004\022\023\n\013space_taken\030\005 \001(\004\""
+    "&\n\021CheckChunkRequest\022\021\n\tchunkname\030\001 \002(\014\""
+    "2\n\022CheckChunkResponse\022\016\n\006result\030\001 \002(\r\022\014\n"
+    "\004pmid\030\002 \002(\014\"$\n\017GetChunkRequest\022\021\n\tchunkn"
+    "ame\030\001 \002(\014\"A\n\020GetChunkResponse\022\016\n\006result\030"
+    "\001 \002(\r\022\017\n\007content\030\002 \001(\014\022\014\n\004pmid\030\003 \001(\014\"\203\001\n"
+    "\020GetPacketRequest\022\022\n\npacketname\030\001 \002(\014\022\016\n"
+    "\006key_id\030\002 \001(\014\022\022\n\npublic_key\030\003 \001(\014\022\034\n\024pub"
+    "lic_key_signature\030\004 \001(\014\022\031\n\021request_signa"
+    "ture\030\005 \001(\014\"[\n\021GetPacketResponse\022\016\n\006resul"
+    "t\030\001 \002(\r\022(\n\007content\030\002 \003(\0132\027.maidsafe.Gene"
+    "ricPacket\022\014\n\004pmid\030\003 \001(\014\"\243\001\n\022UpdateChunkR"
+    "equest\022\021\n\tchunkname\030\001 \002(\014\022\014\n\004data\030\002 \002(\014\022"
+    "\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\034\n\024pub"
+    "lic_key_signature\030\005 \002(\014\022\031\n\021request_signa"
+    "ture\030\006 \002(\014\022\021\n\tdata_type\030\007 \002(\005\"3\n\023UpdateC"
+    "hunkResponse\022\016\n\006result\030\001 \002(\r\022\014\n\004pmid\030\002 \001"
+    "(\014\"\200\001\n\022DeleteChunkRequest\022\021\n\tchunkname\030\001"
+    " \002(\014\022)\n\013signed_size\030\002 \002(\0132\024.maidsafe.Sig"
+    "nedSize\022\031\n\021request_signature\030\003 \002(\014\022\021\n\tda"
+    "ta_type\030\004 \002(\005\"3\n\023DeleteChunkResponse\022\016\n\006"
+    "result\030\001 \002(\r\022\014\n\004pmid\030\002 \001(\014\">\n\024ValidityCh"
+    "eckRequest\022\021\n\tchunkname\030\001 \002(\014\022\023\n\013random_"
+    "data\030\002 \002(\014\"K\n\025ValidityCheckResponse\022\016\n\006r"
+    "esult\030\001 \002(\r\022\024\n\014hash_content\030\002 \001(\014\022\014\n\004pmi"
+    "d\030\003 \002(\014\"v\n\020SwapChunkRequest\022\024\n\014request_t"
+    "ype\030\001 \002(\005\022\022\n\nchunkname1\030\002 \002(\014\022\025\n\rchunkco"
+    "ntent1\030\003 \001(\014\022\r\n\005size1\030\004 \001(\005\022\022\n\nchunkname"
+    "2\030\005 \001(\014\"\273\001\n\021SwapChunkResponse\022\024\n\014request"
+    "_type\030\001 \002(\005\022\016\n\006result\030\002 \002(\r\022\022\n\nchunkname"
+    "1\030\003 \001(\014\022\025\n\rchunkcontent1\030\004 \001(\014\022\r\n\005size1\030"
+    "\005 \001(\005\022\022\n\nchunkname2\030\006 \001(\014\022\025\n\rchunkconten"
+    "t2\030\007 \001(\014\022\r\n\005size2\030\010 \001(\005\022\014\n\004pmid\030\t \002(\014\"\200\001"
+    "\n\022VaultCommunication\022\022\n\nchunkstore\030\001 \001(\014"
+    "\022\025\n\roffered_space\030\002 \001(\004\022\022\n\nfree_space\030\003 "
+    "\001(\004\022\n\n\002ip\030\004 \001(\014\022\014\n\004port\030\005 \001(\r\022\021\n\ttimesta"
+    "mp\030\006 \002(\r\"/\n\022VaultStatusRequest\022\031\n\021encryp"
+    "ted_request\030\001 \002(\014\"A\n\023VaultStatusResponse"
+    "\022\016\n\006result\030\001 \002(\r\022\032\n\022encrypted_response\030\002"
+    " \001(\014\"\212\001\n\017OwnVaultRequest\022\022\n\npublic_key\030\001"
+    " \002(\014\022\023\n\013private_key\030\002 \002(\014\022\031\n\021signed_publ"
+    "ic_key\030\003 \002(\014\022\026\n\016chunkstore_dir\030\004 \002(\014\022\014\n\004"
+    "port\030\005 \002(\r\022\r\n\005space\030\006 \002(\004\"O\n\020OwnVaultRes"
+    "ponse\022(\n\006result\030\001 \002(\0162\030.maidsafe.OwnVaul"
+    "tResult\022\021\n\tpmid_name\030\002 \001(\014\"\020\n\016IsOwnedReq"
+    "uest\"8\n\017IsOwnedResponse\022%\n\006status\030\001 \002(\0162"
+    "\025.maidsafe.VaultStatus\"\217\001\n\017CreateBPReque"
+    "st\022\031\n\021bufferpacket_name\030\001 \002(\014\022\014\n\004data\030\002 "
+    "\002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\031\n"
+    "\021signed_public_key\030\005 \002(\014\022\026\n\016signed_reque"
+    "st\030\006 \002(\014\"b\n\020CreateBPResponse\022\016\n\006result\030\001"
+    " \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npublic_key\030\003 \001("
+    "\014\022\031\n\021signed_public_key\030\004 \001(\014\"\223\001\n\023ModifyB"
+    "PInfoRequest\022\031\n\021bufferpacket_name\030\001 \002(\014\022"
     "\014\n\004data\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_ke"
     "y\030\004 \002(\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026\n\016si"
-    "gned_request\030\006 \002(\014\"f\n\024AddBPMessageRespon"
+    "gned_request\030\006 \002(\014\"f\n\024ModifyBPInfoRespon"
     "se\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\np"
     "ublic_key\030\003 \001(\014\022\031\n\021signed_public_key\030\004 \001"
-    "(\014*\357\001\n\016OwnVaultResult\022\021\n\rOWNED_SUCCESS\020\000"
-    "\022\027\n\023VAULT_ALREADY_OWNED\020\001\022\021\n\rVAULT_IS_DO"
-    "WN\020\002\022\024\n\020INVALID_RSA_KEYS\020\003\022\024\n\020NOT_ENOUGH"
-    "_SPACE\020\004\022\026\n\022NO_SPACE_ALLOCATED\020\005\022\020\n\014INVA"
-    "LID_PORT\020\006\022\031\n\025FAILED_TO_START_VAULT\020\007\022\026\n"
-    "\022INVALID_OWNREQUEST\020\010\022\025\n\021INVALID_PMID_NA"
-    "ME\020\t*I\n\013VaultStatus\022\r\n\tNOT_OWNED\020\000\022\t\n\005OW"
-    "NED\020\001\022\010\n\004DOWN\020\002\022\026\n\022ISOWNRPC_CANCELLED\020\003", 5759);
+    "(\014\"\206\001\n\024GetBPMessagesRequest\022\031\n\021bufferpac"
+    "ket_name\030\001 \002(\014\022\022\n\npublic_key\030\002 \002(\014\022\014\n\004pm"
+    "id\030\003 \002(\014\022\031\n\021signed_public_key\030\004 \002(\014\022\026\n\016s"
+    "igned_request\030\005 \002(\014\"y\n\025GetBPMessagesResp"
+    "onse\022\016\n\006result\030\001 \002(\r\022\020\n\010messages\030\002 \003(\014\022\017"
+    "\n\007pmid_id\030\003 \001(\014\022\022\n\npublic_key\030\004 \001(\014\022\031\n\021s"
+    "igned_public_key\030\005 \001(\014\"\223\001\n\023AddBPMessageR"
+    "equest\022\031\n\021bufferpacket_name\030\001 \002(\014\022\014\n\004dat"
+    "a\030\002 \002(\014\022\014\n\004pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002("
+    "\014\022\031\n\021signed_public_key\030\005 \002(\014\022\026\n\016signed_r"
+    "equest\030\006 \002(\014\"f\n\024AddBPMessageResponse\022\016\n\006"
+    "result\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npublic_"
+    "key\030\003 \001(\014\022\031\n\021signed_public_key\030\004 \001(\014*\357\001\n"
+    "\016OwnVaultResult\022\021\n\rOWNED_SUCCESS\020\000\022\027\n\023VA"
+    "ULT_ALREADY_OWNED\020\001\022\021\n\rVAULT_IS_DOWN\020\002\022\024"
+    "\n\020INVALID_RSA_KEYS\020\003\022\024\n\020NOT_ENOUGH_SPACE"
+    "\020\004\022\026\n\022NO_SPACE_ALLOCATED\020\005\022\020\n\014INVALID_PO"
+    "RT\020\006\022\031\n\025FAILED_TO_START_VAULT\020\007\022\026\n\022INVAL"
+    "ID_OWNREQUEST\020\010\022\025\n\021INVALID_PMID_NAME\020\t*I"
+    "\n\013VaultStatus\022\r\n\tNOT_OWNED\020\000\022\t\n\005OWNED\020\001\022"
+    "\010\n\004DOWN\020\002\022\026\n\022ISOWNRPC_CANCELLED\020\003", 5793);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service_messages.proto", &protobuf_RegisterTypes);
   SignedSize::default_instance_ = new SignedSize();
@@ -8070,12 +8072,13 @@ const ::google::protobuf::Reflection* AmendAccountResponse::GetReflection() cons
 
 // ===================================================================
 
-const ::std::string AccountStatusRequest::_default_pmid_;
+const ::std::string AccountStatusRequest::_default_account_pmid_;
 const ::std::string AccountStatusRequest::_default_public_key_;
 const ::std::string AccountStatusRequest::_default_public_key_signature_;
 const ::std::string AccountStatusRequest::_default_request_signature_;
 #ifndef _MSC_VER
-const int AccountStatusRequest::kPmidFieldNumber;
+const int AccountStatusRequest::kAccountPmidFieldNumber;
+const int AccountStatusRequest::kSpaceRequestedFieldNumber;
 const int AccountStatusRequest::kPublicKeyFieldNumber;
 const int AccountStatusRequest::kPublicKeySignatureFieldNumber;
 const int AccountStatusRequest::kRequestSignatureFieldNumber;
@@ -8085,7 +8088,8 @@ AccountStatusRequest::AccountStatusRequest()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    pmid_(const_cast< ::std::string*>(&_default_pmid_)),
+    account_pmid_(const_cast< ::std::string*>(&_default_account_pmid_)),
+    space_requested_(GOOGLE_ULONGLONG(0)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
     public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)),
     request_signature_(const_cast< ::std::string*>(&_default_request_signature_)) {
@@ -8098,7 +8102,8 @@ AccountStatusRequest::AccountStatusRequest(const AccountStatusRequest& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    pmid_(const_cast< ::std::string*>(&_default_pmid_)),
+    account_pmid_(const_cast< ::std::string*>(&_default_account_pmid_)),
+    space_requested_(GOOGLE_ULONGLONG(0)),
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
     public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)),
     request_signature_(const_cast< ::std::string*>(&_default_request_signature_)) {
@@ -8108,7 +8113,8 @@ AccountStatusRequest::AccountStatusRequest(const AccountStatusRequest& from)
 
 void AccountStatusRequest::SharedCtor() {
   _cached_size_ = 0;
-  pmid_ = const_cast< ::std::string*>(&_default_pmid_);
+  account_pmid_ = const_cast< ::std::string*>(&_default_account_pmid_);
+  space_requested_ = GOOGLE_ULONGLONG(0);
   public_key_ = const_cast< ::std::string*>(&_default_public_key_);
   public_key_signature_ = const_cast< ::std::string*>(&_default_public_key_signature_);
   request_signature_ = const_cast< ::std::string*>(&_default_request_signature_);
@@ -8120,8 +8126,8 @@ AccountStatusRequest::~AccountStatusRequest() {
 }
 
 void AccountStatusRequest::SharedDtor() {
-  if (pmid_ != &_default_pmid_) {
-    delete pmid_;
+  if (account_pmid_ != &_default_account_pmid_) {
+    delete account_pmid_;
   }
   if (public_key_ != &_default_public_key_) {
     delete public_key_;
@@ -8154,21 +8160,22 @@ AccountStatusRequest* AccountStatusRequest::New() const {
 void AccountStatusRequest::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (_has_bit(0)) {
-      if (pmid_ != &_default_pmid_) {
-        pmid_->clear();
+      if (account_pmid_ != &_default_account_pmid_) {
+        account_pmid_->clear();
       }
     }
-    if (_has_bit(1)) {
+    space_requested_ = GOOGLE_ULONGLONG(0);
+    if (_has_bit(2)) {
       if (public_key_ != &_default_public_key_) {
         public_key_->clear();
       }
     }
-    if (_has_bit(2)) {
+    if (_has_bit(3)) {
       if (public_key_signature_ != &_default_public_key_signature_) {
         public_key_signature_->clear();
       }
     }
-    if (_has_bit(3)) {
+    if (_has_bit(4)) {
       if (request_signature_ != &_default_request_signature_) {
         request_signature_->clear();
       }
@@ -8184,43 +8191,57 @@ bool AccountStatusRequest::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes pmid = 1;
+      // required bytes account_pmid = 1;
       case 1: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pmid()));
-        if (input->ExpectTag(18)) goto parse_public_key;
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_account_pmid()));
+        if (input->ExpectTag(16)) goto parse_space_requested;
         break;
       }
       
-      // optional bytes public_key = 2;
+      // optional uint64 space_requested = 2;
       case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_space_requested:
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt64(
+              input, &space_requested_));
+        _set_bit(1);
+        if (input->ExpectTag(26)) goto parse_public_key;
+        break;
+      }
+      
+      // optional bytes public_key = 3;
+      case 3: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
        parse_public_key:
         DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key()));
-        if (input->ExpectTag(26)) goto parse_public_key_signature;
+        if (input->ExpectTag(34)) goto parse_public_key_signature;
         break;
       }
       
-      // optional bytes public_key_signature = 3;
-      case 3: {
+      // optional bytes public_key_signature = 4;
+      case 4: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
        parse_public_key_signature:
         DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key_signature()));
-        if (input->ExpectTag(34)) goto parse_request_signature;
+        if (input->ExpectTag(42)) goto parse_request_signature;
         break;
       }
       
-      // optional bytes request_signature = 4;
-      case 4: {
+      // optional bytes request_signature = 5;
+      case 5: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
@@ -8255,24 +8276,29 @@ void AccountStatusRequest::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes pmid = 1;
+  // required bytes account_pmid = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->pmid(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->account_pmid(), output);
   }
   
-  // optional bytes public_key = 2;
+  // optional uint64 space_requested = 2;
   if (_has_bit(1)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->public_key(), output);
+    ::google::protobuf::internal::WireFormat::WriteUInt64(2, this->space_requested(), output);
   }
   
-  // optional bytes public_key_signature = 3;
+  // optional bytes public_key = 3;
   if (_has_bit(2)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->public_key_signature(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->public_key(), output);
   }
   
-  // optional bytes request_signature = 4;
+  // optional bytes public_key_signature = 4;
   if (_has_bit(3)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->request_signature(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->public_key_signature(), output);
+  }
+  
+  // optional bytes request_signature = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->request_signature(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -8283,24 +8309,29 @@ void AccountStatusRequest::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* AccountStatusRequest::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes pmid = 1;
+  // required bytes account_pmid = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->pmid(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->account_pmid(), target);
   }
   
-  // optional bytes public_key = 2;
+  // optional uint64 space_requested = 2;
   if (_has_bit(1)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->public_key(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteUInt64ToArray(2, this->space_requested(), target);
   }
   
-  // optional bytes public_key_signature = 3;
+  // optional bytes public_key = 3;
   if (_has_bit(2)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->public_key_signature(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->public_key(), target);
   }
   
-  // optional bytes request_signature = 4;
+  // optional bytes public_key_signature = 4;
   if (_has_bit(3)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->request_signature(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->public_key_signature(), target);
+  }
+  
+  // optional bytes request_signature = 5;
+  if (_has_bit(4)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->request_signature(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -8314,25 +8345,32 @@ int AccountStatusRequest::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes pmid = 1;
-    if (has_pmid()) {
+    // required bytes account_pmid = 1;
+    if (has_account_pmid()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->pmid());
+        ::google::protobuf::internal::WireFormat::BytesSize(this->account_pmid());
     }
     
-    // optional bytes public_key = 2;
+    // optional uint64 space_requested = 2;
+    if (has_space_requested()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::UInt64Size(
+          this->space_requested());
+    }
+    
+    // optional bytes public_key = 3;
     if (has_public_key()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->public_key());
     }
     
-    // optional bytes public_key_signature = 3;
+    // optional bytes public_key_signature = 4;
     if (has_public_key_signature()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->public_key_signature());
     }
     
-    // optional bytes request_signature = 4;
+    // optional bytes request_signature = 5;
     if (has_request_signature()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->request_signature());
@@ -8364,15 +8402,18 @@ void AccountStatusRequest::MergeFrom(const AccountStatusRequest& from) {
   GOOGLE_CHECK_NE(&from, this);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from._has_bit(0)) {
-      set_pmid(from.pmid());
+      set_account_pmid(from.account_pmid());
     }
     if (from._has_bit(1)) {
-      set_public_key(from.public_key());
+      set_space_requested(from.space_requested());
     }
     if (from._has_bit(2)) {
-      set_public_key_signature(from.public_key_signature());
+      set_public_key(from.public_key());
     }
     if (from._has_bit(3)) {
+      set_public_key_signature(from.public_key_signature());
+    }
+    if (from._has_bit(4)) {
       set_request_signature(from.request_signature());
     }
   }
@@ -8393,7 +8434,8 @@ void AccountStatusRequest::CopyFrom(const AccountStatusRequest& from) {
 
 void AccountStatusRequest::Swap(AccountStatusRequest* other) {
   if (other != this) {
-    std::swap(pmid_, other->pmid_);
+    std::swap(account_pmid_, other->account_pmid_);
+    std::swap(space_requested_, other->space_requested_);
     std::swap(public_key_, other->public_key_);
     std::swap(public_key_signature_, other->public_key_signature_);
     std::swap(request_signature_, other->request_signature_);
@@ -8422,8 +8464,8 @@ const ::google::protobuf::Reflection* AccountStatusRequest::GetReflection() cons
 
 const ::std::string AccountStatusResponse::_default_pmid_;
 #ifndef _MSC_VER
-const int AccountStatusResponse::kPmidFieldNumber;
 const int AccountStatusResponse::kResultFieldNumber;
+const int AccountStatusResponse::kPmidFieldNumber;
 const int AccountStatusResponse::kSpaceOfferedFieldNumber;
 const int AccountStatusResponse::kSpaceGivenFieldNumber;
 const int AccountStatusResponse::kSpaceTakenFieldNumber;
@@ -8433,8 +8475,8 @@ AccountStatusResponse::AccountStatusResponse()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    pmid_(const_cast< ::std::string*>(&_default_pmid_)),
     result_(0u),
+    pmid_(const_cast< ::std::string*>(&_default_pmid_)),
     space_offered_(GOOGLE_ULONGLONG(0)),
     space_given_(GOOGLE_ULONGLONG(0)),
     space_taken_(GOOGLE_ULONGLONG(0)) {
@@ -8447,8 +8489,8 @@ AccountStatusResponse::AccountStatusResponse(const AccountStatusResponse& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    pmid_(const_cast< ::std::string*>(&_default_pmid_)),
     result_(0u),
+    pmid_(const_cast< ::std::string*>(&_default_pmid_)),
     space_offered_(GOOGLE_ULONGLONG(0)),
     space_given_(GOOGLE_ULONGLONG(0)),
     space_taken_(GOOGLE_ULONGLONG(0)) {
@@ -8458,8 +8500,8 @@ AccountStatusResponse::AccountStatusResponse(const AccountStatusResponse& from)
 
 void AccountStatusResponse::SharedCtor() {
   _cached_size_ = 0;
-  pmid_ = const_cast< ::std::string*>(&_default_pmid_);
   result_ = 0u;
+  pmid_ = const_cast< ::std::string*>(&_default_pmid_);
   space_offered_ = GOOGLE_ULONGLONG(0);
   space_given_ = GOOGLE_ULONGLONG(0);
   space_taken_ = GOOGLE_ULONGLONG(0);
@@ -8495,12 +8537,12 @@ AccountStatusResponse* AccountStatusResponse::New() const {
 
 void AccountStatusResponse::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
+    result_ = 0u;
+    if (_has_bit(1)) {
       if (pmid_ != &_default_pmid_) {
         pmid_->clear();
       }
     }
-    result_ = 0u;
     space_offered_ = GOOGLE_ULONGLONG(0);
     space_given_ = GOOGLE_ULONGLONG(0);
     space_taken_ = GOOGLE_ULONGLONG(0);
@@ -8515,27 +8557,27 @@ bool AccountStatusResponse::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   while ((tag = input->ReadTag()) != 0) {
     switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes pmid = 1;
+      // required uint32 result = 1;
       case 1: {
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
-          goto handle_uninterpreted;
-        }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pmid()));
-        if (input->ExpectTag(16)) goto parse_result;
-        break;
-      }
-      
-      // required uint32 result = 2;
-      case 2: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
           goto handle_uninterpreted;
         }
-       parse_result:
         DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
               input, &result_));
-        _set_bit(1);
+        _set_bit(0);
+        if (input->ExpectTag(18)) goto parse_pmid;
+        break;
+      }
+      
+      // required bytes pmid = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_pmid:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pmid()));
         if (input->ExpectTag(24)) goto parse_space_offered;
         break;
       }
@@ -8606,14 +8648,14 @@ void AccountStatusResponse::SerializeWithCachedSizes(
     return;
   }
   
-  // required bytes pmid = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->pmid(), output);
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
   }
   
-  // required uint32 result = 2;
+  // required bytes pmid = 2;
   if (_has_bit(1)) {
-    ::google::protobuf::internal::WireFormat::WriteUInt32(2, this->result(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->pmid(), output);
   }
   
   // optional uint64 space_offered = 3;
@@ -8639,14 +8681,14 @@ void AccountStatusResponse::SerializeWithCachedSizes(
 
 ::google::protobuf::uint8* AccountStatusResponse::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // required bytes pmid = 1;
+  // required uint32 result = 1;
   if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->pmid(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
   }
   
-  // required uint32 result = 2;
+  // required bytes pmid = 2;
   if (_has_bit(1)) {
-    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(2, this->result(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->pmid(), target);
   }
   
   // optional uint64 space_offered = 3;
@@ -8675,17 +8717,17 @@ int AccountStatusResponse::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes pmid = 1;
-    if (has_pmid()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->pmid());
-    }
-    
-    // required uint32 result = 2;
+    // required uint32 result = 1;
     if (has_result()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::UInt32Size(
           this->result());
+    }
+    
+    // required bytes pmid = 2;
+    if (has_pmid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->pmid());
     }
     
     // optional uint64 space_offered = 3;
@@ -8735,10 +8777,10 @@ void AccountStatusResponse::MergeFrom(const AccountStatusResponse& from) {
   GOOGLE_CHECK_NE(&from, this);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from._has_bit(0)) {
-      set_pmid(from.pmid());
+      set_result(from.result());
     }
     if (from._has_bit(1)) {
-      set_result(from.result());
+      set_pmid(from.pmid());
     }
     if (from._has_bit(2)) {
       set_space_offered(from.space_offered());
@@ -8767,8 +8809,8 @@ void AccountStatusResponse::CopyFrom(const AccountStatusResponse& from) {
 
 void AccountStatusResponse::Swap(AccountStatusResponse* other) {
   if (other != this) {
-    std::swap(pmid_, other->pmid_);
     std::swap(result_, other->result_);
+    std::swap(pmid_, other->pmid_);
     std::swap(space_offered_, other->space_offered_);
     std::swap(space_given_, other->space_given_);
     std::swap(space_taken_, other->space_taken_);

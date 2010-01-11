@@ -111,6 +111,8 @@ const std::string kSharesSubdir[kSharesSubdirSize][2] = {
 //  }
 };
 
+const std::string kAccount("ACCOUNT");
+
 // const std::string default_dir_[] = {
 //   "/Documents",
 //   "/Backup",
@@ -314,9 +316,10 @@ const int kChunkMaxThreadCount(20);
 const int kPacketMaxThreadCount(10);
 // port where the service to register a local vault is listening
 const boost::uint16_t kLocalPort = 5484;
-
 // additionally paying PMIDs kept in watch lists
 const int kMaxReserveWatchListEntries = 250;
+// min. no. of identical responses from group of k nodes to accept result
+const int kKadTrustThreshold(3);
 
 namespace maidsafe {
 

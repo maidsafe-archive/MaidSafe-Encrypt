@@ -123,11 +123,11 @@ void VaultRpcs::AmendAccount(
                        amend_account_response, done);
 }
 
-void VaultRpcs::GetAccountStatus(
+void VaultRpcs::AccountStatus(
     const kad::Contact &peer,
     bool local,
-    maidsafe::AccountStatusRequest *get_account_status_request,
-    maidsafe::AccountStatusResponse *get_account_status_response,
+    maidsafe::AccountStatusRequest *account_status_request,
+    maidsafe::AccountStatusResponse *account_status_response,
     rpcprotocol::Controller *controller,
     google::protobuf::Closure *done) {
   std::string local_ip;
@@ -140,8 +140,8 @@ void VaultRpcs::GetAccountStatus(
       peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
       peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.AccountStatus(controller, get_account_status_request,
-                           get_account_status_response, done);
+  service.AccountStatus(controller, account_status_request,
+                        account_status_response, done);
 }
 
 void VaultRpcs::CheckChunk(const std::string &chunkname,

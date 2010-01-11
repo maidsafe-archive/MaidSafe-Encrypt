@@ -2515,40 +2515,47 @@ class AccountStatusRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes pmid = 1;
-  inline bool has_pmid() const;
-  inline void clear_pmid();
-  static const int kPmidFieldNumber = 1;
-  inline const ::std::string& pmid() const;
-  inline void set_pmid(const ::std::string& value);
-  inline void set_pmid(const char* value);
-  inline void set_pmid(const void* value, size_t size);
-  inline ::std::string* mutable_pmid();
+  // required bytes account_pmid = 1;
+  inline bool has_account_pmid() const;
+  inline void clear_account_pmid();
+  static const int kAccountPmidFieldNumber = 1;
+  inline const ::std::string& account_pmid() const;
+  inline void set_account_pmid(const ::std::string& value);
+  inline void set_account_pmid(const char* value);
+  inline void set_account_pmid(const void* value, size_t size);
+  inline ::std::string* mutable_account_pmid();
   
-  // optional bytes public_key = 2;
+  // optional uint64 space_requested = 2;
+  inline bool has_space_requested() const;
+  inline void clear_space_requested();
+  static const int kSpaceRequestedFieldNumber = 2;
+  inline ::google::protobuf::uint64 space_requested() const;
+  inline void set_space_requested(::google::protobuf::uint64 value);
+  
+  // optional bytes public_key = 3;
   inline bool has_public_key() const;
   inline void clear_public_key();
-  static const int kPublicKeyFieldNumber = 2;
+  static const int kPublicKeyFieldNumber = 3;
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
   inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // optional bytes public_key_signature = 3;
+  // optional bytes public_key_signature = 4;
   inline bool has_public_key_signature() const;
   inline void clear_public_key_signature();
-  static const int kPublicKeySignatureFieldNumber = 3;
+  static const int kPublicKeySignatureFieldNumber = 4;
   inline const ::std::string& public_key_signature() const;
   inline void set_public_key_signature(const ::std::string& value);
   inline void set_public_key_signature(const char* value);
   inline void set_public_key_signature(const void* value, size_t size);
   inline ::std::string* mutable_public_key_signature();
   
-  // optional bytes request_signature = 4;
+  // optional bytes request_signature = 5;
   inline bool has_request_signature() const;
   inline void clear_request_signature();
-  static const int kRequestSignatureFieldNumber = 4;
+  static const int kRequestSignatureFieldNumber = 5;
   inline const ::std::string& request_signature() const;
   inline void set_request_signature(const ::std::string& value);
   inline void set_request_signature(const char* value);
@@ -2559,8 +2566,9 @@ class AccountStatusRequest : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
-  ::std::string* pmid_;
-  static const ::std::string _default_pmid_;
+  ::std::string* account_pmid_;
+  static const ::std::string _default_account_pmid_;
+  ::google::protobuf::uint64 space_requested_;
   ::std::string* public_key_;
   static const ::std::string _default_public_key_;
   ::std::string* public_key_signature_;
@@ -2570,7 +2578,7 @@ class AccountStatusRequest : public ::google::protobuf::Message {
   friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -2642,22 +2650,22 @@ class AccountStatusResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required bytes pmid = 1;
+  // required uint32 result = 1;
+  inline bool has_result() const;
+  inline void clear_result();
+  static const int kResultFieldNumber = 1;
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
+  
+  // required bytes pmid = 2;
   inline bool has_pmid() const;
   inline void clear_pmid();
-  static const int kPmidFieldNumber = 1;
+  static const int kPmidFieldNumber = 2;
   inline const ::std::string& pmid() const;
   inline void set_pmid(const ::std::string& value);
   inline void set_pmid(const char* value);
   inline void set_pmid(const void* value, size_t size);
   inline ::std::string* mutable_pmid();
-  
-  // required uint32 result = 2;
-  inline bool has_result() const;
-  inline void clear_result();
-  static const int kResultFieldNumber = 2;
-  inline ::google::protobuf::uint32 result() const;
-  inline void set_result(::google::protobuf::uint32 value);
   
   // optional uint64 space_offered = 3;
   inline bool has_space_offered() const;
@@ -2684,9 +2692,9 @@ class AccountStatusResponse : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
+  ::google::protobuf::uint32 result_;
   ::std::string* pmid_;
   static const ::std::string _default_pmid_;
-  ::google::protobuf::uint32 result_;
   ::google::protobuf::uint64 space_offered_;
   ::google::protobuf::uint64 space_given_;
   ::google::protobuf::uint64 space_taken_;
@@ -8721,168 +8729,184 @@ inline ::std::string* AmendAccountResponse::mutable_pmid() {
 
 // AccountStatusRequest
 
-// required bytes pmid = 1;
-inline bool AccountStatusRequest::has_pmid() const {
+// required bytes account_pmid = 1;
+inline bool AccountStatusRequest::has_account_pmid() const {
   return _has_bit(0);
 }
-inline void AccountStatusRequest::clear_pmid() {
-  if (pmid_ != &_default_pmid_) {
-    pmid_->clear();
+inline void AccountStatusRequest::clear_account_pmid() {
+  if (account_pmid_ != &_default_account_pmid_) {
+    account_pmid_->clear();
   }
   _clear_bit(0);
 }
-inline const ::std::string& AccountStatusRequest::pmid() const {
-  return *pmid_;
+inline const ::std::string& AccountStatusRequest::account_pmid() const {
+  return *account_pmid_;
 }
-inline void AccountStatusRequest::set_pmid(const ::std::string& value) {
+inline void AccountStatusRequest::set_account_pmid(const ::std::string& value) {
   _set_bit(0);
-  if (pmid_ == &_default_pmid_) {
-    pmid_ = new ::std::string;
+  if (account_pmid_ == &_default_account_pmid_) {
+    account_pmid_ = new ::std::string;
   }
-  pmid_->assign(value);
+  account_pmid_->assign(value);
 }
-inline void AccountStatusRequest::set_pmid(const char* value) {
+inline void AccountStatusRequest::set_account_pmid(const char* value) {
   _set_bit(0);
-  if (pmid_ == &_default_pmid_) {
-    pmid_ = new ::std::string;
+  if (account_pmid_ == &_default_account_pmid_) {
+    account_pmid_ = new ::std::string;
   }
-  pmid_->assign(value);
+  account_pmid_->assign(value);
 }
-inline void AccountStatusRequest::set_pmid(const void* value, size_t size) {
+inline void AccountStatusRequest::set_account_pmid(const void* value, size_t size) {
   _set_bit(0);
-  if (pmid_ == &_default_pmid_) {
-    pmid_ = new ::std::string;
+  if (account_pmid_ == &_default_account_pmid_) {
+    account_pmid_ = new ::std::string;
   }
-  pmid_->assign(reinterpret_cast<const char*>(value), size);
+  account_pmid_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* AccountStatusRequest::mutable_pmid() {
+inline ::std::string* AccountStatusRequest::mutable_account_pmid() {
   _set_bit(0);
-  if (pmid_ == &_default_pmid_) {
-    pmid_ = new ::std::string;
+  if (account_pmid_ == &_default_account_pmid_) {
+    account_pmid_ = new ::std::string;
   }
-  return pmid_;
+  return account_pmid_;
 }
 
-// optional bytes public_key = 2;
-inline bool AccountStatusRequest::has_public_key() const {
+// optional uint64 space_requested = 2;
+inline bool AccountStatusRequest::has_space_requested() const {
   return _has_bit(1);
+}
+inline void AccountStatusRequest::clear_space_requested() {
+  space_requested_ = GOOGLE_ULONGLONG(0);
+  _clear_bit(1);
+}
+inline ::google::protobuf::uint64 AccountStatusRequest::space_requested() const {
+  return space_requested_;
+}
+inline void AccountStatusRequest::set_space_requested(::google::protobuf::uint64 value) {
+  _set_bit(1);
+  space_requested_ = value;
+}
+
+// optional bytes public_key = 3;
+inline bool AccountStatusRequest::has_public_key() const {
+  return _has_bit(2);
 }
 inline void AccountStatusRequest::clear_public_key() {
   if (public_key_ != &_default_public_key_) {
     public_key_->clear();
   }
-  _clear_bit(1);
+  _clear_bit(2);
 }
 inline const ::std::string& AccountStatusRequest::public_key() const {
   return *public_key_;
 }
 inline void AccountStatusRequest::set_public_key(const ::std::string& value) {
-  _set_bit(1);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void AccountStatusRequest::set_public_key(const char* value) {
-  _set_bit(1);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void AccountStatusRequest::set_public_key(const void* value, size_t size) {
-  _set_bit(1);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* AccountStatusRequest::mutable_public_key() {
-  _set_bit(1);
+  _set_bit(2);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   return public_key_;
 }
 
-// optional bytes public_key_signature = 3;
+// optional bytes public_key_signature = 4;
 inline bool AccountStatusRequest::has_public_key_signature() const {
-  return _has_bit(2);
+  return _has_bit(3);
 }
 inline void AccountStatusRequest::clear_public_key_signature() {
   if (public_key_signature_ != &_default_public_key_signature_) {
     public_key_signature_->clear();
   }
-  _clear_bit(2);
+  _clear_bit(3);
 }
 inline const ::std::string& AccountStatusRequest::public_key_signature() const {
   return *public_key_signature_;
 }
 inline void AccountStatusRequest::set_public_key_signature(const ::std::string& value) {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_signature_ == &_default_public_key_signature_) {
     public_key_signature_ = new ::std::string;
   }
   public_key_signature_->assign(value);
 }
 inline void AccountStatusRequest::set_public_key_signature(const char* value) {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_signature_ == &_default_public_key_signature_) {
     public_key_signature_ = new ::std::string;
   }
   public_key_signature_->assign(value);
 }
 inline void AccountStatusRequest::set_public_key_signature(const void* value, size_t size) {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_signature_ == &_default_public_key_signature_) {
     public_key_signature_ = new ::std::string;
   }
   public_key_signature_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* AccountStatusRequest::mutable_public_key_signature() {
-  _set_bit(2);
+  _set_bit(3);
   if (public_key_signature_ == &_default_public_key_signature_) {
     public_key_signature_ = new ::std::string;
   }
   return public_key_signature_;
 }
 
-// optional bytes request_signature = 4;
+// optional bytes request_signature = 5;
 inline bool AccountStatusRequest::has_request_signature() const {
-  return _has_bit(3);
+  return _has_bit(4);
 }
 inline void AccountStatusRequest::clear_request_signature() {
   if (request_signature_ != &_default_request_signature_) {
     request_signature_->clear();
   }
-  _clear_bit(3);
+  _clear_bit(4);
 }
 inline const ::std::string& AccountStatusRequest::request_signature() const {
   return *request_signature_;
 }
 inline void AccountStatusRequest::set_request_signature(const ::std::string& value) {
-  _set_bit(3);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(value);
 }
 inline void AccountStatusRequest::set_request_signature(const char* value) {
-  _set_bit(3);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(value);
 }
 inline void AccountStatusRequest::set_request_signature(const void* value, size_t size) {
-  _set_bit(3);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
   request_signature_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* AccountStatusRequest::mutable_request_signature() {
-  _set_bit(3);
+  _set_bit(4);
   if (request_signature_ == &_default_request_signature_) {
     request_signature_ = new ::std::string;
   }
@@ -8893,62 +8917,62 @@ inline ::std::string* AccountStatusRequest::mutable_request_signature() {
 
 // AccountStatusResponse
 
-// required bytes pmid = 1;
-inline bool AccountStatusResponse::has_pmid() const {
+// required uint32 result = 1;
+inline bool AccountStatusResponse::has_result() const {
   return _has_bit(0);
+}
+inline void AccountStatusResponse::clear_result() {
+  result_ = 0u;
+  _clear_bit(0);
+}
+inline ::google::protobuf::uint32 AccountStatusResponse::result() const {
+  return result_;
+}
+inline void AccountStatusResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
+}
+
+// required bytes pmid = 2;
+inline bool AccountStatusResponse::has_pmid() const {
+  return _has_bit(1);
 }
 inline void AccountStatusResponse::clear_pmid() {
   if (pmid_ != &_default_pmid_) {
     pmid_->clear();
   }
-  _clear_bit(0);
+  _clear_bit(1);
 }
 inline const ::std::string& AccountStatusResponse::pmid() const {
   return *pmid_;
 }
 inline void AccountStatusResponse::set_pmid(const ::std::string& value) {
-  _set_bit(0);
+  _set_bit(1);
   if (pmid_ == &_default_pmid_) {
     pmid_ = new ::std::string;
   }
   pmid_->assign(value);
 }
 inline void AccountStatusResponse::set_pmid(const char* value) {
-  _set_bit(0);
+  _set_bit(1);
   if (pmid_ == &_default_pmid_) {
     pmid_ = new ::std::string;
   }
   pmid_->assign(value);
 }
 inline void AccountStatusResponse::set_pmid(const void* value, size_t size) {
-  _set_bit(0);
+  _set_bit(1);
   if (pmid_ == &_default_pmid_) {
     pmid_ = new ::std::string;
   }
   pmid_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* AccountStatusResponse::mutable_pmid() {
-  _set_bit(0);
+  _set_bit(1);
   if (pmid_ == &_default_pmid_) {
     pmid_ = new ::std::string;
   }
   return pmid_;
-}
-
-// required uint32 result = 2;
-inline bool AccountStatusResponse::has_result() const {
-  return _has_bit(1);
-}
-inline void AccountStatusResponse::clear_result() {
-  result_ = 0u;
-  _clear_bit(1);
-}
-inline ::google::protobuf::uint32 AccountStatusResponse::result() const {
-  return result_;
-}
-inline void AccountStatusResponse::set_result(::google::protobuf::uint32 value) {
-  _set_bit(1);
-  result_ = value;
 }
 
 // optional uint64 space_offered = 3;
