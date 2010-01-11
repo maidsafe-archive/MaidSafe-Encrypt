@@ -90,13 +90,15 @@ class ChunkInfoHandler {
                            std::list<std::string> *references);
   int RemoveFromWatchList(const std::string &chunk_name,
                           const std::string &pmid,
+                          int *chunk_size,
                           std::list<std::string> *creditors,
                           std::list<std::string> *references);
   int AddToReferenceList(const std::string &chunk_name,
                          const std::string &pmid,
                          const boost::uint64_t &chunk_size);
   int RemoveFromReferenceList(const std::string &chunk_name,
-                              const std::string &pmid);
+                              const std::string &pmid,
+                              int *chunk_size);
   void SetStoringDone(const std::string &chunk_name);
   void SetPaymentsDone(const std::string &chunk_name, const std::string &pmid);
   void PruneWaitingLists();

@@ -192,6 +192,7 @@ void ChunkInfoHandler::ResetAddToWatchList(const std::string &chunk_name,
 
 int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
                                           const std::string &pmid,
+                                          int *chunk_size,
                                           std::list<std::string> *creditors,
                                           std::list<std::string> *references) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
@@ -200,6 +201,7 @@ int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
     return kChunkInfoInvalidName;
 
   ChunkInfo &ci = chunk_infos_[chunk_name];
+  *chunk_size = ci.chunk_size_;
 
   // find the watcher and the first reserve
   std::list<WatchListEntry>::iterator it, watch_it, reserve_it;
@@ -297,12 +299,14 @@ int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
 }
 
 int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
-                                              const std::string &pmid) {
+                                              const std::string &pmid,
+                                              int *chunk_size) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
   if (chunk_infos_.count(chunk_name) == 0)
     return kChunkInfoInvalidName;
 
   ChunkInfo &ci = chunk_infos_[chunk_name];
+  *chunk_size = ci.chunk_size_;
 
   if (ci.reference_list_.size() == 1 && HasWatchers(chunk_name))
     return kChunkInfoCannotDelete;

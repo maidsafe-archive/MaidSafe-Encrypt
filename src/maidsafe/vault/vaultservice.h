@@ -229,6 +229,8 @@ class VaultService : public maidsafe::MaidsafeService {
   bool DeleteChunkLocal(const std::string &chunkname);
   void FindCloseNodesCallback(const std::string &result,
                               std::vector<std::string> *close_nodes);
+  void FinalisePayment(const std::string &chunk_name, const std::string &pmid,
+                       const int &chunk_size, const bool &can_store);
   int AmendRemoteAccount(
       const maidsafe::AmendAccountRequest::Amendment &amendment,
       const boost::uint64_t &size,
