@@ -39,7 +39,7 @@ class MaidsafeValidator : public base::SignatureValidator {
    * pmid - pmid not encoded
    * Default Ctor, use base class set_id method to set pmid
    */
-  MaidsafeValidator(const std::string &pmid)
+  explicit MaidsafeValidator(const std::string &pmid)
     : base::SignatureValidator(pmid) {}
   MaidsafeValidator()
     : base::SignatureValidator() {}
@@ -71,5 +71,5 @@ class MaidsafeValidator : public base::SignatureValidator {
                              std::string *request_signature);
 };
 
-}  // maidsafe_vault
-#endif  // MAIDSAFE__MAIDSAFEVALIDATOR_H_
+}  // namespace maidsafe
+#endif  // MAIDSAFE_MAIDSAFEVALIDATOR_H_

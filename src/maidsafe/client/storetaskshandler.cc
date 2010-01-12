@@ -23,6 +23,7 @@
 */
 
 #include "maidsafe/client/storetaskshandler.h"
+#include <utility>
 #include "maidsafe/maidsafe.h"
 
 namespace maidsafe {

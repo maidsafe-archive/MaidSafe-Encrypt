@@ -29,19 +29,19 @@
 
 class TestMSValidator : public testing::Test {
  public:
-  TestMSValidator() : co(), rsa_keys(), other_keys(), signed_public_key(""),
+  TestMSValidator() : co(), rsa_keys(), other_keys(), signed_public_key(),
                       validator() {}
  protected:
-   void SetUp() {
-     rsa_keys.GenerateKeys(4096);
-     signed_public_key = co.AsymSign(rsa_keys.public_key(), "",
-       rsa_keys.private_key(), crypto::STRING_STRING);
-     other_keys.GenerateKeys(4096);
-   }
-   crypto::Crypto co;
-   crypto::RsaKeyPair rsa_keys, other_keys;
-   std::string signed_public_key;
-   maidsafe::MaidsafeValidator validator;
+  void SetUp() {
+    rsa_keys.GenerateKeys(4096);
+    signed_public_key = co.AsymSign(rsa_keys.public_key(), "",
+     rsa_keys.private_key(), crypto::STRING_STRING);
+    other_keys.GenerateKeys(4096);
+  }
+  crypto::Crypto co;
+  crypto::RsaKeyPair rsa_keys, other_keys;
+  std::string signed_public_key;
+  maidsafe::MaidsafeValidator validator;
 };
 
 TEST_F(TestMSValidator, BEH_MAID_TestValidateSignerID) {

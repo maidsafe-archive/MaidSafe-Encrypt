@@ -29,6 +29,8 @@
 #include <boost/filesystem.hpp>
 #include <maidsafe/kademlia_service_messages.pb.h>
 
+#include <list>
+
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/maidsafevalidator.h"
 #include "maidsafe/vault/vaultchunkstore.h"

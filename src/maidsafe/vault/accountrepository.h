@@ -134,12 +134,14 @@ typedef mi::multi_index_container<
   AccountAmendment,
   mi::indexed_by<
     mi::ordered_non_unique<mi::identity<AccountAmendment> >,
-    mi::ordered_non_unique<mi::composite_key<
-      AccountAmendment,
-      BOOST_MULTI_INDEX_MEMBER(AccountAmendment, std::string, pmid_),
-      BOOST_MULTI_INDEX_MEMBER(AccountAmendment, int, field_),
-      BOOST_MULTI_INDEX_MEMBER(AccountAmendment, boost::uint64_t, offer_),
-      BOOST_MULTI_INDEX_MEMBER(AccountAmendment, bool, increase_) >
+    mi::ordered_non_unique<
+      mi::composite_key<
+        AccountAmendment,
+        BOOST_MULTI_INDEX_MEMBER(AccountAmendment, std::string, pmid_),
+        BOOST_MULTI_INDEX_MEMBER(AccountAmendment, int, field_),
+        BOOST_MULTI_INDEX_MEMBER(AccountAmendment, boost::uint64_t, offer_),
+        BOOST_MULTI_INDEX_MEMBER(AccountAmendment, bool, increase_)
+      >
     >
   >
 > AccountAmendmentSet;

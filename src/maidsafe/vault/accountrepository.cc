@@ -197,9 +197,11 @@ int AccountAmendmentHandler::ProcessRequest(
 //    while not found
 //      for each matching amendment
 //        "assess amendment" (checks for overall success/failure and if so
-//           sets all pending responses & calls all pending done runs & deletes all these
-//           & returns found_but_not_yet_decided, not_found, found_and_overall_success, found_and_overall_failure)
-//    after while, if still not found, add new amendment, start knode find nodes as below
+//           sets all pending responses & calls all pending done runs & deletes
+//           all these & returns found_but_not_yet_decided, not_found,
+//           found_and_overall_success, found_and_overall_failure)
+//    after while, if still not found, add new amendment,
+//      start knode find nodes as below
   } else {
 //    add new amendment
 //    start knode findnodes

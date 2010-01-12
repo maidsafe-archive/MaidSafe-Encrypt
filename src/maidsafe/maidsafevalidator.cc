@@ -28,9 +28,9 @@
 #include "maidsafe/maidsafevalidator.h"
 
 #include <maidsafe/maidsafe-dht_config.h>
+#include <string>
 #include "maidsafe/returncodes.h"
 
-#include <string>
 
 namespace maidsafe {
 

@@ -13,6 +13,7 @@
  */
 #include "maidsafe/client/privateshares.h"
 #include <boost/filesystem.hpp>
+#include <utility>
 
 namespace fs = boost::filesystem;
 
