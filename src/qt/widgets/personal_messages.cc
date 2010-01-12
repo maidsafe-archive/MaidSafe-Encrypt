@@ -110,7 +110,8 @@ void PersonalMessages::reset() {
 void PersonalMessages::onMessageReceived(ClientController::MessageType,
                                  const QDateTime& time,
                                  const QString& sender,
-                                 const QString& message) {
+                                 const QString& message,
+                                 const QString& conversation) {
   if (sender == name_){
 
   ui_.message_window->append(tr("'%1' said: %2").arg(sender).arg(message));
@@ -146,7 +147,7 @@ void PersonalMessages::onSendMessageClicked(){
 
     QString text = ui_.message_text_edit->toPlainText();
 
-    if (ClientController::instance()->sendInstantMessage(text, conts)) {
+    if (ClientController::instance()->sendInstantMessage(text, conts, tr(""))) {
       ui_.message_window->append(tr("You said: %1").arg(text));
     } else {
       const QString msg = tr("Error sending message.");

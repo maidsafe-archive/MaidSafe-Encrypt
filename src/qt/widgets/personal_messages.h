@@ -49,7 +49,8 @@ class PersonalMessages : public QMainWindow {
     void onMessageReceived(ClientController::MessageType,
                            const QDateTime& time,
                            const QString& sender,
-                           const QString& message);
+                           const QString& message,
+                           const QString& conversation);
 
     void onSendMessageClicked();
 

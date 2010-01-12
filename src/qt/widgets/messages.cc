@@ -68,10 +68,12 @@ Messages::Messages(QWidget* parent)
           SIGNAL(messageReceived(ClientController::MessageType,
                                  const QDateTime&,
                                  const QString&,
+                                 const QString&,
                                  const QString&)),
           this,
           SLOT(onMessageReceived(ClientController::MessageType,
                                  const QDateTime&,
+                                 const QString&,
                                  const QString&,
                                  const QString&)));
 }
@@ -122,7 +124,8 @@ int Messages::totalMessages() const {
 void Messages::onMessageReceived(ClientController::MessageType,
                                  const QDateTime& time,
                                  const QString& sender,
-                                 const QString& message) {
+                                 const QString& message,
+                                 const QString& conversation) {
   if (!active_) {
     ++unread_;
   }
@@ -130,14 +133,15 @@ void Messages::onMessageReceived(ClientController::MessageType,
   qDebug() << "Messages::onMessageReceived:" << sender << message
            << "Unread:" << unread_;
 
-  addMessage(time, sender, message);
+  addMessage(time, sender, message, conversation);
 
   emit messageReceived();
 }
 
 void Messages::addMessage(const QDateTime& time,
                           const QString& sender,
-                          const QString& message) {
+                          const QString& message,
+                          const QString& conversation) {
   Message msg;
   msg.time = time;
   msg.from = sender;

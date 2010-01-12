@@ -1000,7 +1000,7 @@ void PDVault::IterativePublishChunkRef(
     std::string chunk_name = data->chunk_names.front();
     data->chunk_names.pop_front();
     std::string non_hex_chunk_name = base::DecodeFromHex(chunk_name);
-    std::string signed_request_ = co_.AsymSign(
+    std::string signed_request = co_.AsymSign(
         co_.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
                 "",
                 crypto::STRING_STRING,
@@ -1012,11 +1012,14 @@ void PDVault::IterativePublishChunkRef(
     signed_value.set_value(pmid_);
     signed_value.set_value_signature(co_.AsymSign(pmid_, "", pmid_private_,
         crypto::STRING_STRING));
+    kad::SignedRequest sr;
+    sr.set_signer_id(non_hex_pmid_);
+    sr.set_public_key(pmid_public_);
+    sr.set_signed_public_key(signed_pmid_public_);
+    sr.set_signed_request(signed_request);
     knode_.StoreValue(chunk_name,
                       signed_value,
-                      pmid_public_,
-                      signed_pmid_public_,
-                      signed_request_,
+                      sr,
                       86400,
                       boost::bind(&PDVault::IterativePublishChunkRef_Next,
                                   this,
@@ -1499,11 +1502,14 @@ void PDVault::SwapChunkAcceptChunk(
   signed_value.set_value(pmid_);
   signed_value.set_value_signature(co_.AsymSign(pmid_, "", pmid_private_,
       crypto::STRING_STRING));
+  kad::SignedRequest sr;
+  sr.set_signer_id(non_hex_pmid_);
+  sr.set_public_key(pmid_public_);
+  sr.set_signed_public_key(signed_pmid_public_);
+  sr.set_signed_request(signed_request);
   knode_.StoreValue(swap_chunk_args->chunkname_,
                     signed_value,
-                    pmid_public_,
-                    signed_pmid_public_,
-                    signed_request,
+                    sr,
                     86400,
                     &pdv_dummy_callback);
   maidsafe::SwapChunkResponse local_result;

@@ -99,6 +99,7 @@ message InstantMessage {
   optional ContactNotification contact_notification = 4;
   optional InstantFileNotification instantfile_notification = 5;
   optional PrivateShareNotification privateshare_notification = 6;
+  optional bytes conversation = 7;
 }
 
 message StoreMessagesResult {

@@ -2392,9 +2392,13 @@ void MaidsafeStoreManager::SendPacketToKad(
       crypto::STRING_STRING, true), "", store_data.private_key_,
       crypto::STRING_STRING);
   CallbackObj kad_cb_obj;
-  knode_->StoreValue(store_data.non_hex_key_, signed_value,
-      store_data.public_key_, store_data.public_key_signature_, signed_request,
-      3600*24*365, boost::bind(&CallbackObj::CallbackFunc, &kad_cb_obj, _1));
+  kad::SignedRequest sr;
+  sr.set_signer_id(store_data.key_id_);
+  sr.set_public_key(store_data.public_key_);
+  sr.set_signed_public_key(store_data.public_key_signature_);
+  sr.set_signed_request(signed_request);
+  knode_->StoreValue(store_data.non_hex_key_, signed_value, sr, 3600*24*365,
+                     boost::bind(&CallbackObj::CallbackFunc, &kad_cb_obj, _1));
   kad_cb_obj.WaitForCallback();
   if (kad_cb_obj.result() == "") {
 #ifdef DEBUG

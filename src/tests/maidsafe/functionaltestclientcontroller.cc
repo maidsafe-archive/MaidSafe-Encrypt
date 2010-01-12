@@ -699,7 +699,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   std::string text_msg("The arctic trails have their secret tales");
   std::vector<std::string> contact_names;
   contact_names.push_back(public_username);
-  ASSERT_EQ(0, cc_->SendInstantMessage(text_msg, contact_names));
+  ASSERT_EQ(0, cc_->SendInstantMessage(text_msg, contact_names, ""));
   printf("Public Username 1 sent txt message  to Public Username.\n");
 
   boost::this_thread::sleep(boost::posix_time::seconds(6));

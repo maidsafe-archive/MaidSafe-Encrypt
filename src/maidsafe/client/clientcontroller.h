@@ -110,9 +110,12 @@ class ClientController {
     const std::string &sender);
   int GetInstantMessages(std::list<InstantMessage> *messages);
   int SendInstantMessage(const std::string &message,
-                         const std::vector<std::string> &contact_names);
-  int SendInstantFile(std::string *filename, const std::string &msg,
-                      const std::vector<std::string> &contact_names);
+                         const std::vector<std::string> &contact_names,
+                         const std::string &conversation);
+  int SendInstantFile(std::string *filename,
+                      const std::string &msg,
+                      const std::vector<std::string> &contact_names,
+                      const std::string &conversation);
   int AddInstantFile(const InstantFileNotification &ifm,
                      const std::string &location);
 

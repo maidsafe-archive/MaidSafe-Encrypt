@@ -1340,6 +1340,16 @@ class InstantMessage : public ::google::protobuf::Message {
   inline const ::maidsafe::PrivateShareNotification& privateshare_notification() const;
   inline ::maidsafe::PrivateShareNotification* mutable_privateshare_notification();
   
+  // optional bytes conversation = 7;
+  inline bool has_conversation() const;
+  inline void clear_conversation();
+  static const int kConversationFieldNumber = 7;
+  inline const ::std::string& conversation() const;
+  inline void set_conversation(const ::std::string& value);
+  inline void set_conversation(const char* value);
+  inline void set_conversation(const void* value, size_t size);
+  inline ::std::string* mutable_conversation();
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -1352,10 +1362,12 @@ class InstantMessage : public ::google::protobuf::Message {
   ::maidsafe::ContactNotification* contact_notification_;
   ::maidsafe::InstantFileNotification* instantfile_notification_;
   ::maidsafe::PrivateShareNotification* privateshare_notification_;
+  ::std::string* conversation_;
+  static const ::std::string _default_conversation_;
   friend void  protobuf_AddDesc_packet_2eproto();
   friend void protobuf_AssignDesc_packet_2eproto();
   friend void protobuf_ShutdownFile_packet_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -3138,6 +3150,48 @@ inline ::maidsafe::PrivateShareNotification* InstantMessage::mutable_privateshar
   _set_bit(5);
   if (privateshare_notification_ == NULL) privateshare_notification_ = new ::maidsafe::PrivateShareNotification;
   return privateshare_notification_;
+}
+
+// optional bytes conversation = 7;
+inline bool InstantMessage::has_conversation() const {
+  return _has_bit(6);
+}
+inline void InstantMessage::clear_conversation() {
+  if (conversation_ != &_default_conversation_) {
+    conversation_->clear();
+  }
+  _clear_bit(6);
+}
+inline const ::std::string& InstantMessage::conversation() const {
+  return *conversation_;
+}
+inline void InstantMessage::set_conversation(const ::std::string& value) {
+  _set_bit(6);
+  if (conversation_ == &_default_conversation_) {
+    conversation_ = new ::std::string;
+  }
+  conversation_->assign(value);
+}
+inline void InstantMessage::set_conversation(const char* value) {
+  _set_bit(6);
+  if (conversation_ == &_default_conversation_) {
+    conversation_ = new ::std::string;
+  }
+  conversation_->assign(value);
+}
+inline void InstantMessage::set_conversation(const void* value, size_t size) {
+  _set_bit(6);
+  if (conversation_ == &_default_conversation_) {
+    conversation_ = new ::std::string;
+  }
+  conversation_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* InstantMessage::mutable_conversation() {
+  _set_bit(6);
+  if (conversation_ == &_default_conversation_) {
+    conversation_ = new ::std::string;
+  }
+  return conversation_;
 }
 
 // -------------------------------------------------------------------

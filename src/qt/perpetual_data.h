@@ -98,7 +98,8 @@ class PerpetualData : public QMainWindow {
     void onMessageReceived(ClientController::MessageType,
                            const QDateTime& time,
                            const QString& sender,
-                           const QString& message);
+                           const QString& message,
+                           const QString& conversation);
 
     void onShareReceived(const QString&, const QString&);
     void onFileReceived(const QString&, const QString&);
