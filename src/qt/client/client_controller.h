@@ -53,7 +53,8 @@ class ClientController : public QObject {
       FILE,               // Someone has sent a file
       CONTACT_REQUEST,    // Someone has requested to add us
       CONTACT_RESPONSE,   // Someone has responed to our request
-      CONTACT_DELETE      // Someone has deleted us from their list
+      CONTACT_DELETE,     // Someone has deleted us from their list
+      INVITE              // To invite someone to a conversation
   };
 
   static ClientController* instance();
@@ -82,10 +83,13 @@ class ClientController : public QObject {
   // Messaging
   void StartCheckingMessages();
   void StopCheckingMessages();
-  bool sendInstantMessage(const QString& txt, const QList<QString>& to);
+  bool sendInstantMessage(const QString& txt,
+                          const QList<QString>& to,
+                          const QString& conversation);
   bool sendInstantFile(const QString& filePath,
                        const QString& txt,
-                       const QList<QString>& to);
+                       const QList<QString>& to,
+                       const QString& conversation);
 
   // Vault info
   bool PollVaultInfo(QString *chunkstore, boost::uint64_t *offered_space,
@@ -99,7 +103,8 @@ class ClientController : public QObject {
   void messageReceived(ClientController::MessageType type,
                        const QDateTime& time,
                        const QString& from,
-                       const QString& msg);
+                       const QString& msg,
+                       const QString& conversation);
   void addedContact(const QString& name);
   void confirmedContact(const QString& name);
   void deletedContact(const QString& name);

@@ -314,7 +314,8 @@ bool ClientController::removeContact(const QString& name) {
 
 
 bool ClientController::sendInstantMessage(const QString& txt,
-                                          const QList<QString> &to) {
+                                          const QList<QString> &to,
+                                          const QString& conversation) {
   qDebug() << "ClientController::sendInstantMessage: " << txt;
 
   std::vector<std::string> contacts;
@@ -322,7 +323,8 @@ bool ClientController::sendInstantMessage(const QString& txt,
     contacts.push_back(c.toStdString());
   }
   const int n = maidsafe::ClientController::getInstance()->
-                SendInstantMessage(txt.toStdString(), contacts);
+                SendInstantMessage(txt.toStdString(), contacts,
+                conversation.toStdString());
 
   qDebug() << "ClientController::sendInstantMessage res: " << n;
   return (n == 0);
@@ -330,7 +332,8 @@ bool ClientController::sendInstantMessage(const QString& txt,
 
 bool ClientController::sendInstantFile(const QString& filePath,
                                        const QString& txt,
-                                       const QList<QString>& to) {
+                                       const QList<QString>& to,
+                                       const QString& conversation) {
   qDebug() << "ClientController::sendInstantFile: " << filePath
            << " -- " << txt;
 
@@ -351,7 +354,8 @@ bool ClientController::sendInstantFile(const QString& filePath,
     contacts.push_back(c.toStdString());
   }
   const int n = maidsafe::ClientController::getInstance()->
-                SendInstantFile(&rel_filename, txt.toStdString(), contacts);
+                SendInstantFile(&rel_filename, txt.toStdString(), contacts,
+                conversation.toStdString());
   qDebug() << "ClientController::sendInstantFile res: " << n;
 
   return (n == 0);
@@ -503,8 +507,9 @@ int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
   }
   const QString message = QString::fromStdString(im.message());
   const QString sender = QString::fromStdString(im.sender());
+  const QString conversation = QString::fromStdString(im.conversation());
 
-  emit messageReceived(type, time, sender, message);
+  emit messageReceived(type, time, sender, message, conversation);
 
   return n;
 }

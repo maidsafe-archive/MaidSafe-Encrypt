@@ -418,7 +418,8 @@ void Contacts::onFileSendClicked() {
       return;
   }
 
-  if (ClientController::instance()->sendInstantFile(filename, text, conts)) {
+  if (ClientController::instance()->sendInstantFile(filename, text, conts,
+      tr(""))) {
     QMessageBox::information(this, tr("File Sent"),
                              tr("Success sending file: %1").arg(filename));
   } else {

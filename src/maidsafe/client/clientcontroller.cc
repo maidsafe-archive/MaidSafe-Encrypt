@@ -1497,7 +1497,8 @@ int ClientController::HandleAddContactResponse(
 }
 
 int ClientController::SendInstantMessage(const std::string &message,
-    const std::vector<std::string> &contact_names) {
+    const std::vector<std::string> &contact_names,
+    const std::string &conversation) {
   if (!intialised_) {
 #ifdef DEBUG
     printf("CC::SendInstantMessage - Not initialised.\n");
@@ -1516,6 +1517,7 @@ int ClientController::SendInstantMessage(const std::string &message,
   im.set_sender(ss_->PublicUsername());
   im.set_message(message);
   im.set_date(base::get_epoch_time());
+  im.set_conversation(conversation);
   im.SerializeToString(&ser_im);
 
   if (sm_->AddBPMessage(contact_names, ser_im, INSTANT_MSG) != kSuccess) {
@@ -1547,7 +1549,8 @@ int ClientController::GetInstantMessages(std::list<InstantMessage> *messages) {
 }
 
 int ClientController::SendInstantFile(std::string *filename,
-    const std::string &msg, const std::vector<std::string> &contact_names) {
+    const std::string &msg, const std::vector<std::string> &contact_names,
+    const std::string &conversation) {
   if (!intialised_) {
 #ifdef DEBUG
     printf("CC::SendInstantFile - Not initialised.\n");
@@ -1600,6 +1603,7 @@ int ClientController::SendInstantFile(std::string *filename,
   ifm->set_filename(p_filename.filename());
   im.set_sender(SessionSingleton::getInstance()->PublicUsername());
   im.set_date(base::get_epoch_time());
+  im.set_conversation(conversation);
   std::string message;
   if (msg.empty()) {
     message = "\"";

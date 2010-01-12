@@ -235,8 +235,12 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
                                  signed_pmid_public_ + request->packetname(),
                                  "", crypto::STRING_STRING, true), "",
                                  pmid_private_, crypto::STRING_STRING);
-    knode_->StoreValue(request->packetname(), sig_value, pmid_public_,
-                       signed_pmid_public_, signed_request, 86400,
+    kad::SignedRequest sr;
+    sr.set_signer_id(non_hex_pmid_);
+    sr.set_public_key(pmid_public_);
+    sr.set_signed_public_key(signed_pmid_public_);
+    sr.set_signed_request(signed_request);
+    knode_->StoreValue(request->packetname(), sig_value, sr, 86400,
                        &vsvc_dummy_callback);
   }
 
@@ -1081,8 +1085,13 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     std::string signed_request = co.AsymSign(co.Hash(pmid_public_ +
       signed_pmid_public_ + request->bufferpacket_name(), "",
       crypto::STRING_STRING, true), "", pmid_private_, crypto::STRING_STRING);
-    knode_->StoreValue(request->bufferpacket_name(), sig_value, pmid_public_,
-      signed_pmid_public_, signed_request, 86400,  &vsvc_dummy_callback);
+    kad::SignedRequest sr;
+    sr.set_signer_id(non_hex_pmid_);
+    sr.set_public_key(pmid_public_);
+    sr.set_signed_public_key(signed_pmid_public_);
+    sr.set_signed_request(signed_request);
+    knode_->StoreValue(request->bufferpacket_name(), sig_value, sr, 86400,
+                       &vsvc_dummy_callback);
   }
   response->set_result(kAck);
   done->Run();
@@ -1541,11 +1550,14 @@ void VaultService::StoreChunkReference(const std::string &non_hex_chunkname) {
   signed_value.set_value(contact_info);
   signed_value.set_value_signature(co.AsymSign(contact_info, "", pmid_private_,
                                                crypto::STRING_STRING));
+  kad::SignedRequest sr;
+  sr.set_signer_id(non_hex_pmid_);
+  sr.set_public_key(pmid_public_);
+  sr.set_signed_public_key(signed_pmid_public_);
+  sr.set_signed_request(signed_request);
   knode_->StoreValue(non_hex_chunkname,
                      signed_value,
-                     pmid_public_,
-                     signed_pmid_public_,
-                     signed_request,
+                     sr,
                      86400,
                      &vsvc_dummy_callback);
   return;

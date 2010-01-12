@@ -68,12 +68,14 @@ class Messages : public Panel {
     void onMessageReceived(ClientController::MessageType,
                            const QDateTime& time,
                            const QString& sender,
-                           const QString& message);
+                           const QString& message,
+                           const QString& conversation);
 
  private:
   void addMessage(const QDateTime& time,
                   const QString& sender,
-                  const QString& message);
+                  const QString& message,
+                  const QString& conversation);
 
   void updateHtml();
 

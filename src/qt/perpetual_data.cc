@@ -89,10 +89,12 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
           SIGNAL(messageReceived(ClientController::MessageType,
                                     const QDateTime&,
                                     const QString&,
+                                    const QString&,
                                     const QString&)),
           this,
           SLOT(onMessageReceived(ClientController::MessageType,
                                     const QDateTime&,
+                                    const QString&,
                                     const QString&,
                                     const QString&)));
 
@@ -484,7 +486,8 @@ void PerpetualData::onApplicationActionTriggered() {
 void PerpetualData::onMessageReceived(ClientController::MessageType type,
                                       const QDateTime& time,
                                       const QString& sender,
-                                      const QString& detail) {
+                                      const QString& detail,
+                                      const QString& conversation) {
   if (type == ClientController::TEXT) {
 
     std::list<std::string> theList;

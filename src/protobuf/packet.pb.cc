@@ -224,13 +224,14 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(PrivateShareNotification));
   InstantMessage_descriptor_ = file->message_type(9);
-  static const int InstantMessage_offsets_[6] = {
+  static const int InstantMessage_offsets_[7] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, sender_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, message_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, date_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, contact_notification_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, instantfile_notification_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, privateshare_notification_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, conversation_),
   };
   InstantMessage_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -379,24 +380,25 @@ void protobuf_AddDesc_packet_2eproto() {
     "ShareNotification\022\014\n\004name\030\001 \002(\014\022\014\n\004msid\030"
     "\002 \002(\014\022\022\n\npublic_key\030\003 \002(\014\022\023\n\013private_key"
     "\030\004 \001(\014\022\016\n\006admins\030\005 \003(\014\022\021\n\treadonlys\030\006 \003("
-    "\014\022\022\n\ndir_db_key\030\007 \002(\014\"\210\002\n\016InstantMessage"
+    "\014\022\022\n\ndir_db_key\030\007 \002(\014\"\236\002\n\016InstantMessage"
     "\022\016\n\006sender\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\014\n\004dat"
     "e\030\003 \002(\005\022;\n\024contact_notification\030\004 \001(\0132\035."
     "maidsafe.ContactNotification\022C\n\030instantf"
     "ile_notification\030\005 \001(\0132!.maidsafe.Instan"
     "tFileNotification\022E\n\031privateshare_notifi"
     "cation\030\006 \001(\0132\".maidsafe.PrivateShareNoti"
-    "fication\"J\n\023StoreMessagesResult\022\016\n\006resul"
-    "t\030\001 \002(\r\022\023\n\013stored_msgs\030\002 \002(\005\022\016\n\006failed\030\003"
-    " \003(\014\"Y\n\020CreateMSIDResult\022\016\n\006result\030\001 \002(\r"
-    "\022\014\n\004name\030\002 \001(\014\022\023\n\013private_key\030\003 \001(\014\022\022\n\np"
-    "ublic_key\030\004 \001(\014*F\n\013MessageType\022\024\n\020ADD_CO"
-    "NTACT_RQST\020\001\022\017\n\013INSTANT_MSG\020\002\022\020\n\014STATUS_"
-    "CHECK\020\003*\275\001\n\nPacketType\022\007\n\003MID\020\000\022\010\n\004SMID\020"
-    "\001\022\010\n\004TMID\020\002\022\010\n\004MPID\020\003\022\010\n\004PMID\020\004\022\010\n\004MAID\020"
-    "\005\022\t\n\005ANMID\020\006\022\n\n\006ANSMID\020\007\022\n\n\006ANTMID\020\010\022\n\n\006"
-    "ANMPID\020\t\022\010\n\004MSID\020\n\022\n\n\006PD_DIR\020\013\022\n\n\006BUFFER"
-    "\020\014\022\017\n\013BUFFER_INFO\020\r\022\022\n\016BUFFER_MESSAGE\020\016", 1719);
+    "fication\022\024\n\014conversation\030\007 \001(\014\"J\n\023StoreM"
+    "essagesResult\022\016\n\006result\030\001 \002(\r\022\023\n\013stored_"
+    "msgs\030\002 \002(\005\022\016\n\006failed\030\003 \003(\014\"Y\n\020CreateMSID"
+    "Result\022\016\n\006result\030\001 \002(\r\022\014\n\004name\030\002 \001(\014\022\023\n\013"
+    "private_key\030\003 \001(\014\022\022\n\npublic_key\030\004 \001(\014*F\n"
+    "\013MessageType\022\024\n\020ADD_CONTACT_RQST\020\001\022\017\n\013IN"
+    "STANT_MSG\020\002\022\020\n\014STATUS_CHECK\020\003*\275\001\n\nPacket"
+    "Type\022\007\n\003MID\020\000\022\010\n\004SMID\020\001\022\010\n\004TMID\020\002\022\010\n\004MPI"
+    "D\020\003\022\010\n\004PMID\020\004\022\010\n\004MAID\020\005\022\t\n\005ANMID\020\006\022\n\n\006AN"
+    "SMID\020\007\022\n\n\006ANTMID\020\010\022\n\n\006ANMPID\020\t\022\010\n\004MSID\020\n"
+    "\022\n\n\006PD_DIR\020\013\022\n\n\006BUFFER\020\014\022\017\n\013BUFFER_INFO\020"
+    "\r\022\022\n\016BUFFER_MESSAGE\020\016", 1741);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "packet.proto", &protobuf_RegisterTypes);
   GenericPacket::default_instance_ = new GenericPacket();
@@ -3645,6 +3647,7 @@ const ::google::protobuf::Reflection* PrivateShareNotification::GetReflection() 
 
 const ::std::string InstantMessage::_default_sender_;
 const ::std::string InstantMessage::_default_message_;
+const ::std::string InstantMessage::_default_conversation_;
 #ifndef _MSC_VER
 const int InstantMessage::kSenderFieldNumber;
 const int InstantMessage::kMessageFieldNumber;
@@ -3652,6 +3655,7 @@ const int InstantMessage::kDateFieldNumber;
 const int InstantMessage::kContactNotificationFieldNumber;
 const int InstantMessage::kInstantfileNotificationFieldNumber;
 const int InstantMessage::kPrivateshareNotificationFieldNumber;
+const int InstantMessage::kConversationFieldNumber;
 #endif  // !_MSC_VER
 
 InstantMessage::InstantMessage()
@@ -3663,7 +3667,8 @@ InstantMessage::InstantMessage()
     date_(0),
     contact_notification_(NULL),
     instantfile_notification_(NULL),
-    privateshare_notification_(NULL) {
+    privateshare_notification_(NULL),
+    conversation_(const_cast< ::std::string*>(&_default_conversation_)) {
   SharedCtor();
 }
 
@@ -3681,7 +3686,8 @@ InstantMessage::InstantMessage(const InstantMessage& from)
     date_(0),
     contact_notification_(NULL),
     instantfile_notification_(NULL),
-    privateshare_notification_(NULL) {
+    privateshare_notification_(NULL),
+    conversation_(const_cast< ::std::string*>(&_default_conversation_)) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -3694,6 +3700,7 @@ void InstantMessage::SharedCtor() {
   contact_notification_ = NULL;
   instantfile_notification_ = NULL;
   privateshare_notification_ = NULL;
+  conversation_ = const_cast< ::std::string*>(&_default_conversation_);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -3707,6 +3714,9 @@ void InstantMessage::SharedDtor() {
   }
   if (message_ != &_default_message_) {
     delete message_;
+  }
+  if (conversation_ != &_default_conversation_) {
+    delete conversation_;
   }
   if (this != default_instance_) {
     delete contact_notification_;
@@ -3751,6 +3761,11 @@ void InstantMessage::Clear() {
     }
     if (_has_bit(5)) {
       if (privateshare_notification_ != NULL) privateshare_notification_->::maidsafe::PrivateShareNotification::Clear();
+    }
+    if (_has_bit(6)) {
+      if (conversation_ != &_default_conversation_) {
+        conversation_->clear();
+      }
     }
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -3835,6 +3850,18 @@ bool InstantMessage::MergePartialFromCodedStream(
        parse_privateshare_notification:
         DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
              input, mutable_privateshare_notification()));
+        if (input->ExpectTag(58)) goto parse_conversation;
+        break;
+      }
+      
+      // optional bytes conversation = 7;
+      case 7: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_conversation:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_conversation()));
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -3893,6 +3920,11 @@ void InstantMessage::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(6, this->privateshare_notification(), output);
   }
   
+  // optional bytes conversation = 7;
+  if (_has_bit(6)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(7, this->conversation(), output);
+  }
+  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -3929,6 +3961,11 @@ void InstantMessage::SerializeWithCachedSizes(
   // optional .maidsafe.PrivateShareNotification privateshare_notification = 6;
   if (_has_bit(5)) {
     target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(6, this->privateshare_notification(), target);
+  }
+  
+  // optional bytes conversation = 7;
+  if (_has_bit(6)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(7, this->conversation(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -3982,6 +4019,12 @@ int InstantMessage::ByteSize() const {
           this->privateshare_notification());
     }
     
+    // optional bytes conversation = 7;
+    if (has_conversation()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->conversation());
+    }
+    
   }
   if (!unknown_fields().empty()) {
     total_size +=
@@ -4025,6 +4068,9 @@ void InstantMessage::MergeFrom(const InstantMessage& from) {
     if (from._has_bit(5)) {
       mutable_privateshare_notification()->::maidsafe::PrivateShareNotification::MergeFrom(from.privateshare_notification());
     }
+    if (from._has_bit(6)) {
+      set_conversation(from.conversation());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -4049,6 +4095,7 @@ void InstantMessage::Swap(InstantMessage* other) {
     std::swap(contact_notification_, other->contact_notification_);
     std::swap(instantfile_notification_, other->instantfile_notification_);
     std::swap(privateshare_notification_, other->privateshare_notification_);
+    std::swap(conversation_, other->conversation_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
