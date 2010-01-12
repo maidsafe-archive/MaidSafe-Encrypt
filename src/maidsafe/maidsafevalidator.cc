@@ -38,8 +38,10 @@ bool MaidsafeValidator::ValidateSignerId(const std::string &signer_id,
                                          const std::string &public_key,
                                          const std::string &signed_public_key) {
   crypto::Crypto co;
-  if (signer_id != "" && signer_id != co.Hash(public_key +
-      signed_public_key, "", crypto::STRING_STRING, false))
+  if (signer_id.empty() || public_key.empty() || signed_public_key.empty())
+    return false;
+  if (signer_id != co.Hash(public_key + signed_public_key, "",
+      crypto::STRING_STRING, false))
     return false;
   return true;
 }

@@ -1708,7 +1708,7 @@ bool VaultService::ValidateSignedRequest(
   if (request_signature == kAnonymousRequestSignature)
     return true;
 
-  maidsafe::MaidsafeValidator msv;
+  maidsafe::MaidsafeValidator msv(non_hex_pmid_);
   if (!msv.ValidateSignerId(signing_id, public_key, public_key_signature))
     return false;
   if (!msv.ValidateRequest(request_signature, public_key, public_key_signature,
