@@ -306,18 +306,17 @@ void Contacts::onSendMessageClicked() {
                                        QLineEdit::Normal,
                                        QString(),
                                        &ok);*/
-  QList<QString> theList;
 
-  foreach (QWidget *widget, QApplication::allWidgets()){
-    UserPanels *userPnl = qobject_cast<UserPanels*>(widget);
-    if (userPnl){
-      userPanels_ = userPnl;
-      theList = userPanels_->getConvList();
+    std::list<std::string> theList;
+    maidsafe::SessionSingleton::getInstance()->ConversationList(&theList);
+
+    QList<QString> messageList;
+    foreach(std::string theConv ,theList){
+        messageList.append(QString::fromStdString(theConv));
     }
-  }
 
   foreach(QString contact, conts) {
-    if (!theList.contains(contact)){
+    if (!messageList.contains(contact)){
       PersonalMessages* mess_ = new PersonalMessages(contact);
 
       QFile file(":/qss/defaultWithWhite1.qss");

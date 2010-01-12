@@ -486,12 +486,14 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
                                       const QString& sender,
                                       const QString& detail) {
   if (type == ClientController::TEXT) {
-    QString title = tr("Message received");
-    QString message = tr("'%1' said: %2").arg(sender).arg(detail);
 
-    SystemTrayIcon::instance()->showMessage(title, message);
+    std::list<std::string> theList;
+    maidsafe::SessionSingleton::getInstance()->ConversationList(&theList);
 
-    QList<QString> messageList = userPanels_->getConvList();
+    QList<QString> messageList;
+    foreach(std::string theConv ,theList){
+        messageList.append(QString::fromStdString(theConv));
+    }
 
     if (!messageList.contains(sender)){
       PersonalMessages* mess_ = new PersonalMessages(sender);

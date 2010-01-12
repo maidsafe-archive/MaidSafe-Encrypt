@@ -12,6 +12,7 @@
  *      Author: Stephen Alexander
  */
 
+#include "maidsafe/client/sessionsingleton.h"
 
 #include "qt/widgets/personal_messages.h"
 
@@ -47,16 +48,9 @@ PersonalMessages::PersonalMessages(QString name)
     ui_.setupUi(this);
 
     name_ = name;
+    ui_.username_lbl->setText(name_);
 
-    foreach (QWidget *widget, QApplication::allWidgets()){
-      UserPanels *userPnl = qobject_cast<UserPanels*>(widget);
-      if (userPnl){
-        userPanels_ = userPnl;
-        QList<QString> theList = userPanels_->getConvList();
-        theList.append(name);
-        userPanels_->setConvList(theList);
-      }
-    }
+    maidsafe::SessionSingleton::getInstance()->AddConversation(name.toStdString());
 
     this->setWindowTitle(this->windowTitle() + " " + name);
 
@@ -75,7 +69,9 @@ PersonalMessages::PersonalMessages(QString name)
           this,                SLOT(onSendMessageClicked()));
 }
 
-PersonalMessages::~PersonalMessages() { }
+PersonalMessages::~PersonalMessages() {
+  maidsafe::SessionSingleton::getInstance()->RemoveConversation(name_.toStdString());
+  }
 
 void PersonalMessages::setActive(bool b) {
   if (b && !init_) {
