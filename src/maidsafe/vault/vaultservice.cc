@@ -1875,9 +1875,10 @@ void VaultService::AmendRemoteAccount(
   mutable_signed_size->set_public_key_signature(pmid_public_signature_);
   amend_account_request.set_chunkname(chunkname);
   // thread_pool_ handles destruction of task.
-  AmendRemoteAccountTask *task = new AmendRemoteAccountTask(
-      amend_account_request, callback, vault_service_logic_);
-  thread_pool_.start(task);
+  // TODO(Fraser#) add amendment task to list
+//  AmendRemoteAccountTask *task = new AmendRemoteAccountTask(
+//      amend_account_request, callback, vault_service_logic_);
+//  thread_pool_.start(task);
 }
 
 RegistrationService::RegistrationService(
