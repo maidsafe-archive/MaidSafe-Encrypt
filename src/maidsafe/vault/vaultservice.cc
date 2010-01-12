@@ -726,31 +726,31 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
   if (ah_.HaveAccount(pmid) == kAccountNotFound) {
     if (request->amendment_type() ==
         maidsafe::AmendAccountRequest::kSpaceOffered) {
-      if (ah_.AddAccount(pmid, account_delta) != 0) {
+      if (ah_.AddAccount(pmid, account_delta) == 0) {
+        response->set_result(kAck);
+      } else {
 #ifdef DEBUG
         printf("In VaultService::AmendAccount (%i), failed adding %s's account."
                "\n", knode_->host_port(), HexSubstr(pmid).c_str());
 #endif
-        done->Run();
-        return;
       }
     }
+    done->Run();
+    return;
   } else {
     if (request->amendment_type() ==
         maidsafe::AmendAccountRequest::kSpaceOffered) {
       if (ah_.AmendAccount(pmid, 1, account_delta, false) == 0) {
         response->set_result(kAck);
-        done->Run();
-        return;
       } else {
 #ifdef DEBUG
         printf("In VaultService::AmendAccount (%i), failed amending space"
                " offered by %s.\n", knode_->host_port(),
                HexSubstr(pmid).c_str());
 #endif
-        done->Run();
-        return;
       }
+      done->Run();
+      return;
     } else {
       // aah_->ProcessRequest() calls done->Run();
       int result = aah_.ProcessRequest(request, response, done);
