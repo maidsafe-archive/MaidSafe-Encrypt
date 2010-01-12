@@ -293,9 +293,10 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
   }
 
   // thread_pool_ handles destruction of task.
-  AddToRefListTask *task = new AddToRefListTask(request->chunkname(),
-      it->second, vault_service_logic_);
-  thread_pool_.start(task);
+  // TODO(Fraser#) add ref list task to list
+//  AddToRefListTask *task = new AddToRefListTask(request->chunkname(),
+//      it->second, vault_service_logic_);
+//  thread_pool_.start(task);
 
   prm_.erase(request->chunkname());
   response->set_result(kAck);
