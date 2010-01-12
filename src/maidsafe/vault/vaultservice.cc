@@ -30,6 +30,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 
 #include "maidsafe/maidsafe.h"
+#include "maidsafe/maidsafevalidator.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultbufferpackethandler.h"
 #include "maidsafe/vault/vaultservicelogic.h"
@@ -1704,52 +1705,22 @@ bool VaultService::ValidateSignedRequest(
     const std::string &signing_id) {
   if (request_signature == kAnonymousRequestSignature)
     return true;
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  if (signing_id.empty() || signing_id != co.Hash(public_key +
-      public_key_signature, "", crypto::STRING_STRING, false)) {
-#ifdef DEBUG
-    if (signing_id.empty())
-      printf("VaultService::ValidateSignedRequest - Empty id\n");
-    else
-      printf("VaultService::ValidateSignedRequest - Wrong id\n");
-    printf("VaultService::ValidateSignedRequest: Didn't validate signing_id %s"
-           "\n", HexSubstr(signing_id).c_str());
-#endif
+
+  maidsafe::MaidsafeValidator msv;
+  if (!msv.ValidateSignerId(signing_id, public_key, public_key_signature))
     return false;
-  }
-  if (co.AsymCheckSig(co.Hash(public_key_signature + key +
-      non_hex_pmid_, "", crypto::STRING_STRING, false), request_signature,
-      public_key, crypto::STRING_STRING))
-    return true;
-// TODO(Fraser#5#): 2009-08-25 - Remove this second check once all requests are
-//                               signed the first way (above).
-  return co.AsymCheckSig(co.Hash(public_key + public_key_signature +
-    key, "", crypto::STRING_STRING, false), request_signature, public_key,
-    crypto::STRING_STRING);
+  if (!msv.ValidateRequest(request_signature, public_key, public_key_signature,
+      key))
+    return false;
+  return true;
 }
 
 bool VaultService::ValidateIdentity(const std::string &id,
                                     const std::string &public_key,
                                     const std::string &public_key_signature) {
-  crypto::Crypto co;
-  if (id.empty() || public_key.empty() || public_key_signature.empty()) {
-#ifdef DEBUG
-    printf("In VaultService::ValidateIdentity (%i), ", knode_->host_port());
-    printf("one of the parameters is empty.\n");
-#endif
+  maidsafe::MaidsafeValidator msv;
+  if (!msv.ValidateSignerId(id, public_key, public_key_signature))
     return false;
-  }
-
-  if (id != co.Hash(public_key + public_key_signature, "",
-      crypto::STRING_STRING, false)) {
-#ifdef DEBUG
-    printf("In VaultService::ValidateIdentity (%i), ", knode_->host_port());
-    printf("id failed validation.\n");
-#endif
-    return false;
-  }
 
   return true;
 }
@@ -1982,4 +1953,5 @@ void RegistrationService::ReplyOwnVaultRequest(const bool &fail_to_start) {
   pending_response_.callback = NULL;
   pending_response_.args = NULL;
 }
+
 }  // namespace maidsafe_vault

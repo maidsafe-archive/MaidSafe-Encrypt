@@ -581,8 +581,8 @@ ADD_LIBRARY(PDpbmsgslib STATIC ${M_PROTOBUF_DIR})
 ###################################################################################################
 # Builds                                                                                          #
 ###################################################################################################
-TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTmaidsafe PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest gmock ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTpdvault PDmsclientlib PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTbph PDfslib PDmsclientlib PDmsvaultlib PDmaidsafelib PDpbmsgslib ${QT_LIBRARIES} gtest ${SYS_LIB})

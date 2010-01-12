@@ -22,13 +22,15 @@
  * ============================================================================
  */
 
-#ifndef MAIDSAFE_VAULT_MAIDSAFEVALIDATOR_H_
-#define MAIDSAFE_VAULT_MAIDSAFEVALIDATOR_H_
+#ifndef MAIDSAFE_MAIDSAFEVALIDATOR_H_
+#define MAIDSAFE_MAIDSAFEVALIDATOR_H_
 
-#include <string>
 #include <maidsafe/validationinterface.h>
 
-namespace maidsafe_vault {
+#include <list>
+#include <string>
+
+namespace maidsafe {
 
 class MaidsafeValidator : public base::SignatureValidator {
  public:
@@ -36,7 +38,7 @@ class MaidsafeValidator : public base::SignatureValidator {
    * Ctor
    * pmid - pmid not encoded
    * Default Ctor, use base class set_id method to set pmid
-   */ 
+   */
   MaidsafeValidator(const std::string &pmid)
     : base::SignatureValidator(pmid) {}
   MaidsafeValidator()
@@ -46,17 +48,28 @@ class MaidsafeValidator : public base::SignatureValidator {
    *   ID = H(public_key + signed_public_key)
    */
   bool ValidateSignerId(const std::string &signer_id,
-    const std::string &public_key, const std::string &signed_public_key);
+                        const std::string &public_key,
+                        const std::string &signed_public_key);
   /**
    * Validates the request signed with private key that corresponds
    * to public_key
-   * The request is in the form  H(signed_public_key + key + rec_id) 
+   * The request is in the form  H(signed_public_key + key + rec_id)
    * or H(public_key + signed_public_key + key)
    */
   bool ValidateRequest(const std::string &signed_request,
-      const std::string &public_key, const std::string &signed_public_key,
-      const std::string &key);
+                       const std::string &public_key,
+                       const std::string &signed_public_key,
+                       const std::string &key);
+
+  /**
+  * Method to create a request signature by hasshing and then signing the
+  * concatenated parameters passed in the list of strings with the provided
+  * private key.
+  */
+  int CreateRequestSignature(const std::string &private_key,
+                             const std::list<std::string> &parameters,
+                             std::string *request_signature);
 };
 
 }  // maidsafe_vault
-#endif  // MAIDSAFE_VAULT_MAIDSAFEVALIDATOR_H_
+#endif  // MAIDSAFE__MAIDSAFEVALIDATOR_H_

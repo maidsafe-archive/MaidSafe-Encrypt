@@ -22,17 +22,21 @@
  * ============================================================================
  */
 
-#ifndef TESTS_VALIDATIONIMPL_H_
-#define TESTS_VALIDATIONIMPL_H_
+#ifndef MAIDSAFE_VALIDATIONIMPL_H_
+#define MAIDSAFE_VALIDATIONIMPL_H_
+
+#include "maidsafe/maidsafevalidator.h"
+
+#include <maidsafe/maidsafe-dht_config.h>
+#include "maidsafe/returncodes.h"
 
 #include <string>
-#include "maidsafe/vault/maidsafevalidator.h"
-#include <maidsafe/maidsafe-dht_config.h>
 
-namespace maidsafe_vault {
+namespace maidsafe {
 
 bool MaidsafeValidator::ValidateSignerId(const std::string &signer_id,
-      const std::string &public_key, const std::string &signed_public_key) {
+                                         const std::string &public_key,
+                                         const std::string &signed_public_key) {
   crypto::Crypto co;
   if (signer_id != "" && signer_id != co.Hash(public_key +
       signed_public_key, "", crypto::STRING_STRING, false))
@@ -40,9 +44,10 @@ bool MaidsafeValidator::ValidateSignerId(const std::string &signer_id,
   return true;
 }
 
-bool  MaidsafeValidator::ValidateRequest(const std::string &signed_request,
-      const std::string &public_key, const std::string &signed_public_key,
-      const std::string &key) {
+bool MaidsafeValidator::ValidateRequest(const std::string &signed_request,
+                                        const std::string &public_key,
+                                        const std::string &signed_public_key,
+                                        const std::string &key) {
   crypto::Crypto co;
   if (co.AsymCheckSig(co.Hash(signed_public_key + key + id(), "",
       crypto::STRING_STRING, false), signed_request, public_key,
@@ -51,8 +56,29 @@ bool  MaidsafeValidator::ValidateRequest(const std::string &signed_request,
 
   return co.AsymCheckSig(co.Hash(public_key + signed_public_key +
     key, "", crypto::STRING_STRING, false), signed_request, public_key,
-    crypto::STRING_STRING);  
+    crypto::STRING_STRING);
+}
+
+int MaidsafeValidator::CreateRequestSignature(const std::string &private_key,
+    const std::list<std::string> &parameters, std::string *request_signature) {
+  if (private_key.empty())
+    return kValidatorNoPrivateKey;
+  if (parameters.size() == 0)
+    return kValidatorNoParameters;
+
+  std::string concatenation;
+  std::list<std::string>::const_iterator it;
+  for (it = parameters.begin(); it != parameters.end(); ++it)
+    concatenation += *it;
+
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string request;
+  request = co.Hash(concatenation, "", crypto::STRING_STRING, false);
+  *request_signature = co.AsymSign(request, "", private_key,
+                       crypto::STRING_STRING);
+  return 0;
 }
 
 }  // namespace base
-#endif  // TESTS_VALIDATIONIMPL_H_
+#endif  // MAIDSAFE_VALIDATIONIMPL_H_

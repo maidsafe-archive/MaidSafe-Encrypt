@@ -154,7 +154,11 @@ enum ReturnCode {
   kStoreTaskNotFound = -12004,
   kStoreTaskNotFinished = -12005,
   kStoreTaskFinishedFail = -12006,
-  kStoreTaskFinishedPass = 0  // intentionally 0
+  kStoreTaskFinishedPass = 0,  // intentionally 0
+
+  // Validator
+  kValidatorNoParameters = -13001,
+  kValidatorNoPrivateKey = -13002
 };
 
 }  // namespace maidsafe
