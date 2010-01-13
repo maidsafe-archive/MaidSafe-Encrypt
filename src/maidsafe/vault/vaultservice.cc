@@ -479,9 +479,15 @@ void VaultService::AddToWatchList(
     // amend account for watcher
     AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenInc,
                        required_payments * sz.data_size(), sz.pmid(),
-                       request->chunkname());
+                       request->chunkname(),
+                       boost::bind(&VaultService::FinalisePayment, this,
+                                   request->chunkname(), sz.pmid(),
+                                   sz.data_size(), _1));
   } else {
-    // TODO(Steve#) verify storing permission
+    // verify storing permission
+    FinalisePayment(request->chunkname(), sz.pmid(), sz.data_size(),
+                    RemoteVaultAbleToStore(sz.data_size(), sz.pmid(),
+                                           request->chunkname()));
   }
 }
 
@@ -758,11 +764,13 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     } else {
       // aah_->ProcessRequest() calls done->Run();
       int result = aah_.ProcessRequest(request, response, done);
+      if (result != 0) {
 #ifdef DEBUG
-      printf("In VaultService::AmendAccount (%i), failed amending account"
-             " of %s - error %i\n", knode_->host_port(),
-             HexSubstr(pmid).c_str(), result);
+        printf("In VaultService::AmendAccount (%i), failed amending account"
+               " of %s - error %i\n", knode_->host_port(),
+               HexSubstr(pmid).c_str(), result);
 #endif
+      }
       return;
     }
   }
@@ -796,23 +804,29 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
     return;
   }
 
-  response->set_result(kAck);
-  if (!ValidateSignedRequest(request->public_key(),
-      request->public_key_signature(), request->request_signature(),
-      request->account_pmid() + kAccount, request->account_pmid())) {
-#ifdef DEBUG
-    printf("In VaultService::AccountStatus (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
-#endif
-    // TODO(Team#5#): return info that we consider "public" from the account
+  if (request->has_space_requested()) {
+    if (space_taken + request->space_requested() <= space_offered)
+      response->set_result(kAck);
     done->Run();
-    return;
-  }
+  } else {
+    response->set_result(kAck);
+    if (!ValidateSignedRequest(request->public_key(),
+        request->public_key_signature(), request->request_signature(),
+        request->account_pmid() + kAccount, request->account_pmid())) {
+  #ifdef DEBUG
+      printf("In VaultService::AccountStatus (%i), ", knode_->host_port());
+      printf("failed to validate signed request.\n");
+  #endif
+      // TODO(Team#5#): return info that we consider "public" from the account
+      done->Run();
+      return;
+    }
 
-  response->set_space_offered(space_offered);
-  response->set_space_given(space_given);
-  response->set_space_taken(space_taken);
-  done->Run();
+    response->set_space_offered(space_offered);
+    response->set_space_given(space_given);
+    response->set_space_taken(space_taken);
+    done->Run();
+  }
 }
 
 void VaultService::CheckChunk(google::protobuf::RpcController*,
@@ -1853,6 +1867,15 @@ void VaultService::AmendRemoteAccount(
 //  AmendRemoteAccountTask *task = new AmendRemoteAccountTask(
 //      amend_account_request, callback, vault_service_logic_);
 //  thread_pool_.start(task);
+}
+
+int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
+                                          const std::string &account_pmid,
+                                          const std::string &chunkname) {
+  maidsafe::AccountStatusRequest as_req;
+  as_req.set_account_pmid(account_pmid);
+  as_req.set_space_requested(size);
+  return vault_service_logic_->RemoteVaultAbleToStore(as_req);
 }
 
 RegistrationService::RegistrationService(

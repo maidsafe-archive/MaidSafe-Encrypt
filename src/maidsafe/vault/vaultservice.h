@@ -280,6 +280,9 @@ class VaultService : public maidsafe::MaidsafeService {
       const std::string &account_pmid,
       const std::string &chunkname,
       const Callback &callback);
+  int RemoteVaultAbleToStore(const boost::uint64_t &size,
+                             const std::string &account_pmid,
+                             const std::string &chunkname);
   std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
   std::string non_hex_pmid_;
   VaultChunkStore *vault_chunkstore_;

@@ -824,29 +824,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
-  ASSERT_TRUE(false) << "-- NOT IMPLEMENTED --";
-  /*
   rpcprotocol::Controller controller;
   maidsafe::AmendAccountRequest request;
   maidsafe::AmendAccountResponse response;
 
   maidsafe::SignedSize *signed_size;
-  maidsafe::StoreContract *store_contract;
-  maidsafe::StoreContract::InnerContract *inner_contract;
-
-  // client = node requesting to store a chunk
-  // wlh = Watch List Holder for the chunk
-  // vlt = Vault storing the chunk
-  // vault_service_ = this vault, i.e. the client's Account Holder
 
   std::string client_pub_key, client_priv_key, client_pmid, client_pub_key_sig;
-  std::string wlh_pub_key, wlh_priv_key, wlh_pmid, wlh_pub_key_sig;
-  std::string vlt_pub_key, vlt_priv_key, vlt_pmid, vlt_pub_key_sig;
   std::string size_sig;
 
   CreateRSAKeys(&client_pub_key, &client_priv_key);
-  CreateRSAKeys(&wlh_pub_key, &wlh_priv_key);
-  CreateRSAKeys(&vlt_pub_key, &vlt_priv_key);
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
@@ -855,14 +842,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
                                    crypto::STRING_STRING);
   client_pmid = co.Hash(client_pub_key + client_pub_key_sig, "",
                         crypto::STRING_STRING, false);
-  wlh_pub_key_sig = co.AsymSign(wlh_pub_key, "", wlh_priv_key,
-                                crypto::STRING_STRING);
-  wlh_pmid = co.Hash(wlh_pub_key + wlh_pub_key_sig, "", crypto::STRING_STRING,
-                     false);
-  vlt_pub_key_sig = co.AsymSign(vlt_pub_key, "", vlt_priv_key,
-                                crypto::STRING_STRING);
-  vlt_pmid = co.Hash(vlt_pub_key + vlt_pub_key_sig, "", crypto::STRING_STRING,
-                     false);
 
   std::string chunk_data("This is a data chunk");
   std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
@@ -873,85 +852,32 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
 
   TestCallback cb_obj;
 
-  for (int i = 0; i < 7; ++i) {
-    printf("--- CASE #%i --- ", i);
+  for (int i = 0; i <= 3; ++i) {
+    printf("--- CASE #%i ---\n", i);
     switch (i) {
       case 0:  // empty request
         break;
-      case 1:  // unsigned request
-        store_contract = request.mutable_store_contract();
-        inner_contract = store_contract->mutable_inner_contract();
-        signed_size = inner_contract->mutable_signed_size();
+      case 1:  // unsigned size
+        request.set_amendment_type(
+            maidsafe::AmendAccountRequest::kSpaceGivenInc);
+        request.set_account_pmid(client_pmid);
+        request.set_chunkname(chunk_name);
+        signed_size = request.mutable_signed_size();
         signed_size->set_data_size(chunk_size);
-        signed_size->set_signature(size_sig);
+        signed_size->set_signature("fail");
         signed_size->set_pmid(client_pmid);
         signed_size->set_public_key(client_pub_key);
         signed_size->set_public_key_signature(client_pub_key_sig);
-        inner_contract->set_result(kAck);
-        store_contract->set_signature(co.AsymSign(
-            inner_contract->SerializeAsString(), "", vlt_priv_key,
-            crypto::STRING_STRING));
-        store_contract->set_pmid(vlt_pmid);
-        store_contract->set_public_key(vlt_pub_key);
-        store_contract->set_public_key_signature(vlt_pub_key_sig);
-        request.set_amendment_type(
-            maidsafe::AmendAccountRequest::kSpaceTakenInc);
-        request.set_signature("fail");
         break;
-      case 2:  // unsigned contract
-        store_contract->set_signature("fail");
-        request.set_signature(co.AsymSign(boost::lexical_cast<std::string>
-            (request.amendment_type()) + store_contract->SerializeAsString(),
-            "", wlh_priv_key, crypto::STRING_STRING));
-        break;
-      case 3:  // unsigned size
-        signed_size->set_signature("fail");
-        store_contract->set_signature(co.AsymSign(
-            inner_contract->SerializeAsString(), "", vlt_priv_key,
-            crypto::STRING_STRING));
-        request.set_signature(co.AsymSign(boost::lexical_cast<std::string>
-            (request.amendment_type()) + store_contract->SerializeAsString(),
-            "", wlh_priv_key, crypto::STRING_STRING));
-        break;
-      case 4:  // zero size
+      case 2:  // zero size
         signed_size->set_data_size(0);
         signed_size->set_signature(co.AsymSign("0", "", client_priv_key,
                                    crypto::STRING_STRING));
-        store_contract->set_signature(co.AsymSign(
-            inner_contract->SerializeAsString(), "", vlt_priv_key,
-            crypto::STRING_STRING));
-        request.set_signature(co.AsymSign(boost::lexical_cast<std::string>
-            (request.amendment_type()) + store_contract->SerializeAsString(),
-            "", wlh_priv_key, crypto::STRING_STRING));
         break;
-      case 5:  // rejected contract
+      case 3:  // missing chunk name
         signed_size->set_data_size(chunk_size);
         signed_size->set_signature(size_sig);
-        inner_contract->set_result(kNack);
-        store_contract->set_signature(co.AsymSign(
-            inner_contract->SerializeAsString(), "", vlt_priv_key,
-            crypto::STRING_STRING));
-        request.set_signature(co.AsymSign(boost::lexical_cast<std::string>
-            (request.amendment_type()) + store_contract->SerializeAsString(),
-            "", wlh_priv_key, crypto::STRING_STRING));
-        break;
-      case 6:  // amend own account
-        signed_size->set_data_size(chunk_size);
-        signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>
-            (chunk_size), "", wlh_priv_key, crypto::STRING_STRING));
-        signed_size->set_pmid(wlh_pmid);
-        signed_size->set_public_key(wlh_pub_key);
-        signed_size->set_public_key_signature(wlh_pub_key_sig);
-        inner_contract->set_result(kAck);
-        store_contract->set_signature(co.AsymSign(
-            inner_contract->SerializeAsString(), "", vlt_priv_key,
-            crypto::STRING_STRING));
-        store_contract->set_pmid(vlt_pmid);
-        store_contract->set_public_key(vlt_pub_key);
-        store_contract->set_public_key_signature(vlt_pub_key_sig);
-        request.set_signature(co.AsymSign(boost::lexical_cast<std::string>
-            (request.amendment_type()) + store_contract->SerializeAsString(),
-            "", wlh_priv_key, crypto::STRING_STRING));
+        request.clear_chunkname();
         break;
     }
 
@@ -964,59 +890,50 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     response.Clear();
   }
 
-  // TODO(Steve) test SpaceGiven amendments
-  // TODO(Steve) test amendments with only the SignedSize
-  // TODO(Steve) test SpaceOffered
-  // TODO(Steve) test FailedStoreAgreement
+  boost::uint64_t space_offered = chunk_size * 3 / 2;
 
-  // Create the account first
   request.Clear();
-  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
-                                    (&cb_obj, &TestCallback::CallbackFunction);
   signed_size = request.mutable_signed_size();
-  signed_size->set_data_size(100);
-  std::string ser_size(base::itos_ull(signed_size->data_size()));
-  signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key,
-                             crypto::STRING_STRING));
+  signed_size->set_data_size(space_offered);
+  signed_size->set_signature(co.AsymSign(base::itos_ull(space_offered), "",
+                             client_priv_key, crypto::STRING_STRING));
   signed_size->set_pmid(client_pmid);
   signed_size->set_public_key(client_pub_key);
   signed_size->set_public_key_signature(client_pub_key_sig);
   request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
-  request.set_pmid(client_pmid);
-  request.set_public_key(client_pub_key);
-  request.set_public_key_signature(client_pub_key_sig);
-  request.set_signature(co.AsymSign(signed_size->SerializeAsString(), "",
-                        client_priv_key, crypto::STRING_STRING));
-  request.clear_store_contract();
-  vault_service_->AmendAccount(&controller, &request, &response, done);
-  ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(response.result()));
+  request.set_account_pmid(client_pmid);
+  request.set_chunkname(chunk_name);
 
-  request.Clear();
-  request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceTakenInc);
-  store_contract = request.mutable_store_contract();
-  inner_contract = store_contract->mutable_inner_contract();
-  signed_size = inner_contract->mutable_signed_size();
+  // Create the account first
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
+    vault_service_->AmendAccount(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
   signed_size->set_data_size(chunk_size);
   signed_size->set_signature(size_sig);
-  signed_size->set_pmid(client_pmid);
-  signed_size->set_public_key(client_pub_key);
-  signed_size->set_public_key_signature(client_pub_key_sig);
-  inner_contract->set_result(kAck);
-  store_contract->set_signature(co.AsymSign(
-      inner_contract->SerializeAsString(), "", vlt_priv_key,
-      crypto::STRING_STRING));
-  store_contract->set_pmid(vlt_pmid);
-  store_contract->set_public_key(vlt_pub_key);
-  store_contract->set_public_key_signature(vlt_pub_key_sig);
-  request.set_pmid(wlh_pmid);
-  request.set_public_key(wlh_pub_key);
-  request.set_public_key_signature(wlh_pub_key_sig);
-  request.set_signature(co.AsymSign(store_contract->SerializeAsString(), "",
-                        wlh_priv_key, crypto::STRING_STRING));
 
   maidsafe::AccountStatusRequest asreq;
-  asreq.set_pmid(client_pmid);
+  asreq.set_account_pmid(client_pmid);
+  asreq.set_space_requested(chunk_size);
+
+  // should have enough space to store chunk
+  {
+    maidsafe::AccountStatusResponse asrsp;
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    ASSERT_TRUE(asrsp.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(asrsp.result()));
+  }
+
+  asreq.clear_space_requested();
   asreq.set_public_key(client_pub_key);
   asreq.set_public_key_signature(client_pub_key_sig);
   asreq.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig +
@@ -1032,11 +949,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
     ASSERT_EQ(kAck, static_cast<int>(asrsp.result()));
-    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(space_offered, asrsp.space_offered());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
     printf("Passed getting status with 0 space taken.\n");
   }
+
+  request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceTakenInc);
 
   // increase SpaceTaken
   {
@@ -1058,12 +977,26 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(space_offered, asrsp.space_offered());
     ASSERT_EQ(chunk_size, asrsp.space_taken());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
     printf("Passed getting status with appropriate space taken.\n");
   }
 
+  asreq.set_space_requested(chunk_size);
+
+  // shouldn't have enough space to store chunk
+  {
+    maidsafe::AccountStatusResponse asrsp;
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    ASSERT_TRUE(asrsp.IsInitialized());
+    ASSERT_NE(kAck, static_cast<int>(asrsp.result()));
+  }
+
+  asreq.clear_space_requested();
   request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceTakenDec);
 
   // decrease SpaceTaken
@@ -1086,7 +1019,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(space_offered, asrsp.space_offered());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
     printf("Passed getting status with 0 space taken.\n");
@@ -1112,7 +1045,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(space_offered, asrsp.space_offered());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
     printf("Passed getting status with 0 space taken.\n");
@@ -1140,10 +1073,10 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(space_offered, asrsp.space_offered());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
     ASSERT_EQ(chunk_size, asrsp.space_given());
-    printf("Passed getting status with appropriate space taken.\n");
+    printf("Passed getting status with appropriate space given.\n");
   }
 
   request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenDec);
@@ -1168,7 +1101,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(space_offered, asrsp.space_offered());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
     printf("Passed getting status with 0 space given.\n");
@@ -1194,12 +1127,11 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(boost::uint64_t(100), asrsp.space_offered());
+    ASSERT_EQ(space_offered, asrsp.space_offered());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
     ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
     printf("Passed getting status with 0 space given.\n");
   }
-  */
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
