@@ -318,6 +318,10 @@ const int kPacketMaxThreadCount(10);
 const boost::uint16_t kLocalPort = 5484;
 // additionally paying PMIDs kept in watch lists
 const int kMaxReserveWatchListEntries = 250;
+// time a watcher is kept in the ChunkInfoHandler's waiting list
+const int kChunkInfoWatcherPendingTimeout = 86400;  // 24 hours
+// time until a chunk holder is not considered active anymore
+const int kChunkInfoRefActiveTimeout = 86400; // 24 hours
 // min. no. of identical responses from group of k nodes to accept result
 const int kKadTrustThreshold(3);
 

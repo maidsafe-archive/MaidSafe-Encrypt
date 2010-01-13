@@ -52,6 +52,7 @@ int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
   entry.storing_done_ = false;
   entry.payments_done_ = false;
   entry.requested_payments_ = 0;
+  entry.creation_time_ = base::get_epoch_time();
 
   // only request uploads if not already waiting
   std::list<WaitingListEntry>::iterator it = ci.waiting_list_.begin();
@@ -168,10 +169,10 @@ void ChunkInfoHandler::ResetAddToWatchList(const std::string &chunk_name,
 
   // find first matching waiting list entry
   std::list<WaitingListEntry>::iterator wait_it = ci.waiting_list_.begin();
-  while (wait_it != ci.waiting_list_.end() && (
-         wait_it->pmid_ != pmid ||
-         (wait_it->payments_done_ && reason == kReasonPaymentFailed) ||
-         (wait_it->storing_done_ && reason == kReasonStoringFailed))) {
+  while (wait_it != ci.waiting_list_.end() && !(wait_it->pmid_ == pmid && (
+         (reason == kReasonPaymentFailed && !wait_it->payments_done_) ||
+         (reason == kReasonStoringFailed && !wait_it->storing_done_) ||
+         reason == kReasonStale))) {
     wait_it++;
   }
 
@@ -288,10 +289,11 @@ int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
   }
 
   if (it != ci.reference_list_.end()) {
-    // TODO(Steve#) update time stamp
+    it->last_seen_ = base::get_epoch_time();
   } else {
     ReferenceListEntry entry;
     entry.pmid_ = pmid;
+    entry.last_seen_ = base::get_epoch_time();
     ci.reference_list_.push_back(entry);
   }
 
@@ -359,9 +361,20 @@ void ChunkInfoHandler::SetPaymentsDone(const std::string &chunk_name,
     wait_it->payments_done_ = true;
 }
 
-void ChunkInfoHandler::PruneWaitingLists() {
-  // TODO(Steve#) remove old entries from waiting list
-  // boost::mutex::scoped_lock lock(chunk_info_mutex_);
+void ChunkInfoHandler::GetStaleWaitingListEntries(
+    std::list< std::pair<std::string, std::string> > *entries) {
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  boost::uint32_t now = base::get_epoch_time();
+  for (std::map<std::string, ChunkInfo>::iterator ci_it = chunk_infos_.begin();
+       ci_it != chunk_infos_.end(); ci_it++) {
+    for (std::list<WaitingListEntry>::iterator wait_it =
+         ci_it->second.waiting_list_.begin();
+         wait_it != ci_it->second.waiting_list_.end(); wait_it++) {
+      if (wait_it->creation_time_ + kChunkInfoWatcherPendingTimeout < now)
+        entries->push_back(std::pair<std::string, std::string>(ci_it->first,
+                                                               wait_it->pmid_));
+    }
+  }
 }
 
 bool ChunkInfoHandler::HasWatchers(const std::string &chunk_name) {
@@ -373,10 +386,19 @@ bool ChunkInfoHandler::HasWatchers(const std::string &chunk_name) {
 }
 
 int ChunkInfoHandler::ActiveReferences(const std::string &chunk_name) {
-  // TODO(Steve#) count active references based on time stamp
   if (chunk_infos_.count(chunk_name) == 0)
     return 0;
-  return chunk_infos_[chunk_name].reference_list_.size();
+  ChunkInfo &ci = chunk_infos_[chunk_name];
+  int n = 0;
+  boost::uint32_t now = base::get_epoch_time();
+
+  for (std::list<ReferenceListEntry>::iterator it = ci.reference_list_.begin();
+       it != ci.reference_list_.end(); it++) {
+    if (it->last_seen_ + kChunkInfoRefActiveTimeout >= now)
+      n++;
+  }
+  return n;
+  // TODO(Steve#) add method to update time stamp externally (validity check)
 }
 
 void ChunkInfoHandler::ClearReferenceList(const std::string &chunk_name,

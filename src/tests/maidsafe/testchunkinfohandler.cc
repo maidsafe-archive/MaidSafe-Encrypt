@@ -497,4 +497,29 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerFailsafe) {
   ASSERT_TRUE(cih.HasWatchers(chunk_name));
 }
 
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPruning) {
+  ChunkInfoHandler cih;
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  std::string chunk_name(co.Hash("chunk", "", crypto::STRING_STRING, false));
+  std::string client(co.Hash("client", "", crypto::STRING_STRING, false));
+  std::list< std::pair<std::string, std::string> > entries;
+  int required_references, required_payments;
+
+  cih.GetStaleWaitingListEntries(&entries);
+  ASSERT_EQ(size_t(0), entries.size());
+  ASSERT_EQ(0, cih.PrepareAddToWatchList(chunk_name, client, 123,
+                                         &required_references,
+                                         &required_payments));
+  cih.GetStaleWaitingListEntries(&entries);
+  ASSERT_EQ(size_t(0), entries.size());
+  cih.chunk_infos_[chunk_name].waiting_list_.front().creation_time_ -=
+      (kChunkInfoWatcherPendingTimeout + 1);
+  cih.GetStaleWaitingListEntries(&entries);
+  ASSERT_EQ(size_t(1), entries.size());
+  ASSERT_EQ(chunk_name, entries.front().first);
+  ASSERT_EQ(client, entries.front().second);
+}
+
 }  // namespace maidsafe_vault

@@ -36,7 +36,7 @@
 
 namespace maidsafe_vault {
 
-enum ResetReason {kReasonStoringFailed, kReasonPaymentFailed};
+enum ResetReason {kReasonStoringFailed, kReasonPaymentFailed, kReasonStale};
 
 struct WatchListEntry {
   std::string pmid_;
@@ -45,13 +45,13 @@ struct WatchListEntry {
 
 struct ReferenceListEntry {
   std::string pmid_;
-  // time stamp
-  // rank?
+  boost::uint32_t last_seen_;
+  // TODO(Team#) ranked chunk holders?
 };
 
 struct WaitingListEntry {
   std::string pmid_;
-  // time stamp
+  boost::uint32_t creation_time_;
   bool storing_done_;
   bool payments_done_;
   int requested_payments_;
@@ -101,7 +101,8 @@ class ChunkInfoHandler {
                               int *chunk_size);
   void SetStoringDone(const std::string &chunk_name);
   void SetPaymentsDone(const std::string &chunk_name, const std::string &pmid);
-  void PruneWaitingLists();
+  void GetStaleWaitingListEntries(std::list< std::pair<std::string,
+                                                       std::string> > *entries);
  private:
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerInit);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum);
@@ -110,6 +111,7 @@ class ChunkInfoHandler {
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerReset);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerFailsafe);
+  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPruning);
   bool HasWatchers(const std::string &chunk_name);
   int ActiveReferences(const std::string &chunk_name);
   void ClearReferenceList(const std::string &chunk_name,
