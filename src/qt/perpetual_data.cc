@@ -19,6 +19,7 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QList>
+#include <QFileDialog>
 
 // core
 #include "maidsafe/client/sessionsingleton.h"
@@ -103,8 +104,8 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
           this, SLOT(onShareReceived(const QString&, const QString&)));
 
   connect(ClientController::instance(),
-                SIGNAL(fileReceived(const QString&, const QString&)),
-          this, SLOT(onFileReceived(const QString&, const QString&)));
+                SIGNAL(fileReceived(const maidsafe::InstantMessage&)),
+          this, SLOT(onFileReceived(const maidsafe::InstantMessage&)));
 
   connect(ClientController::instance(),
                 SIGNAL(connectionStatusChanged(int)),
@@ -509,6 +510,10 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
       mess_->setMessage(tr("'%1' said: %2").arg(sender).arg(detail));
       mess_->show();
     }
+
+  } else if (type == ClientController::INVITE){
+      //TODO :: Handle Invite
+
   }
 }
 
@@ -521,13 +526,59 @@ void PerpetualData::onShareReceived(const QString& from,
   SystemTrayIcon::instance()->showMessage(title, message);
 }
 
-void PerpetualData::onFileReceived(const QString& from,
-                                   const QString& file_name) {
-  QString title = tr("File received");
-  QString message = tr("'%1' has shared the file '%2' with you")
-                    .arg(from).arg(file_name);
+void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
 
-  SystemTrayIcon::instance()->showMessage(title, message);
+  printf("in onFilerecieved");
+
+  //maidsafe::InstantFileNotification ifn = im.instantfile_notification();
+
+  QMessageBox msgBox;
+  msgBox.setText(QString::fromStdString(im.sender()) + " is sending you: ");
+             //   + QString::fromStdString(ifn.filename()));
+  msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Cancel);
+  msgBox.setDefaultButton(QMessageBox::Save);
+  int ret = msgBox.exec();
+
+  int n;
+  QString directory;
+  file_system::FileSystem fs;
+  QString root;
+
+  switch (ret) {
+    case QMessageBox::Save:
+    //Save
+    root = QString("%1:\\My Files").
+         arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+
+    directory = QFileDialog::getSaveFileName(this,
+                      tr("Save File"), root);
+
+    printf("Dir chosen: %s" ,directory.toStdString().c_str());
+
+    n = maidsafe::ClientController::getInstance()->
+                    AddInstantFile(im.instantfile_notification(),
+                    directory.toStdString());
+
+    printf("Res : %i", n);
+
+    if (n == 0) {
+        maidsafe::InstantFileNotification ifn = im.instantfile_notification();
+
+    }
+    break;
+    case QMessageBox::Cancel:
+    //Cancel
+    break;
+    default:
+    //Default
+    break;
+  }
+
+  //QString title = tr("File received");
+  //QString message = tr("'%1' has shared the file '%2' with you")
+                  //  .arg(from).arg(file_name);
+
+  //SystemTrayIcon::instance()->showMessage(title, message);
 }
 
 void PerpetualData::onUnreadMessagesChanged(int count) {

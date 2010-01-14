@@ -95,8 +95,8 @@ Contacts::Contacts(QWidget* parent)
   connect(ui_.add, SIGNAL(clicked(bool)),
           this, SLOT(onAddContactClicked()));
 
-  connect(ClientController::instance(), SIGNAL(addedContact(const QString&)),
-          this,                         SLOT(onAddedContact(const QString&)));
+  connect(ClientController::instance(), SIGNAL(addedContact(const QString&, const maidsafe::InstantMessage&)),
+          this,                         SLOT(onAddedContact(const QString&, const maidsafe::InstantMessage&)));
 
   connect(ClientController::instance(),
           SIGNAL(confirmedContact(const QString&)),
@@ -443,23 +443,57 @@ QList<QListWidgetItem *> Contacts::currentContact() {
   return names;
 }
 
-void Contacts::onAddedContact(const QString &name) {
+void Contacts::onAddedContact(const QString &name, const maidsafe::InstantMessage& im) {
+  int n = 0;
+
+  maidsafe::ContactNotification cn = im.contact_notification();
+  maidsafe::ContactInfo ci;
+  if (cn.has_contact())
+   ci = cn.contact();
+
   qDebug() << "Contacts::onAddedContact()";
-  QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
+
+  QMessageBox msgBox;
+  msgBox.setText("Accept contact request from " + name);
+  msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+  msgBox.setDefaultButton(QMessageBox::Yes);
+  int ret = msgBox.exec();
+
+  switch (ret) {
+    case QMessageBox::Yes:
+      // yes was clicked
+      n = maidsafe::ClientController::getInstance()->
+                                     HandleAddContactRequest(ci, name.toStdString());
+        if (n == 0) {
+            QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
                                   Qt::MatchCaseSensitive);
-  if (items.size() == 1) {  // Contact had changed confirmed status only
-    onConfirmedContact(name);
-  } else {  // Contact wasn't present
-    Contact *c = new Contact(name);
-    c->setPresence(Presence::AVAILABLE);
-    addContact(c);
-  }
+            if (items.size() == 1) {  // Contact had changed confirmed status only
+              onConfirmedContact(name);
+            } else {  // Contact wasn't present
+              Contact *c = new Contact(name);
+              c->setPresence(Presence::AVAILABLE);
+              addContact(c);
+            }
+        }
+        break;
+    case QMessageBox::No:
+       // No was clicked
+       break;
+    default:
+       // should never be reached
+       break;
+ }
+
 }
 
 void Contacts::onConfirmedContact(const QString &name) {
   qDebug() << "Contacts::onConfirmedContact()";
   QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
                                   Qt::MatchCaseSensitive);
+
+QMessageBox msgBox;
+ msgBox.setText("The contact has been confirmed.");
+ msgBox.exec();
 
   foreach(QListWidgetItem* item, items) {
     if (item->text() == name) {

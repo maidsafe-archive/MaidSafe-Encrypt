@@ -105,7 +105,7 @@ class ClientController : public QObject {
                        const QString& from,
                        const QString& msg,
                        const QString& conversation);
-  void addedContact(const QString& name);
+  void addedContact(const QString& name, const maidsafe::InstantMessage& im);
   void confirmedContact(const QString& name);
   void deletedContact(const QString& name);
   void addedPrivateShare(const QString& name);
@@ -117,8 +117,7 @@ class ClientController : public QObject {
                      const QString& share_name);
   void shareChanged(const QString& from,
                     const QString& share_name);
-  void fileReceived(const QString& from,
-                    const QString& file_name);
+  void fileReceived(const maidsafe::InstantMessage& im);
   void connectionStatusChanged(int status);
   void systemMessage(const QString& message);
 

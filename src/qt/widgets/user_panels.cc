@@ -44,36 +44,11 @@ UserPanels::UserPanels(QWidget* parent)
     , panel_(-1) {
   ui_.setupUi(this);
 
-  openConvList_.append("1");
-
-  QPixmap contactIcon_ = QPixmap(":/icons/32/contacts");
-  QPixmap shareIcon_ = QPixmap(":/icons/32/shares");
-  QPixmap messagesIcon_ = QPixmap(":/icons/32/messages");
-  QPixmap vaultInfoIcon_ = QPixmap(":/icons/32/settings");
-
-  ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
-  ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
-  ui_.tabWidget_2->addTab(messages_ = new Messages, messagesIcon_, "");
-  ui_.tabWidget_2->addTab(vaultinfo_ = new VaultInfo, vaultInfoIcon_, "");
-
   ui_.tabWidget_2->setContextMenuPolicy(Qt::CustomContextMenu);
 
   public_username_ = new PublicUsername;
 
-  /*ui_.stackedWidget->addWidget(contacts_ = new Contacts);
-  ui_.stackedWidget->addWidget(shares_   = new Shares);
-  ui_.stackedWidget->addWidget(messages_ = new Messages);
-  ui_.stackedWidget->addWidget(vaultinfo_ = new VaultInfo);
-  ui_.stackedWidget->addWidget(new QLabel("settings"));
-  ui_.stackedWidget->addWidget(new QLabel("activities"));
-  ui_.stackedWidget->addWidget(new QLabel("help"));
-  ui_.stackedWidget->addWidget(public_username_ = new PublicUsername);*/
   ui_.my_files_button->setAutoDefault(true);
-
-  Q_ASSERT(messages_);
-  Q_ASSERT(shares_);
-  Q_ASSERT(contacts_);
-  Q_ASSERT(vaultinfo_);
 
   connect(messages_, SIGNAL(messageReceived()),
           this,      SLOT(onMessageReceived()));
@@ -145,8 +120,22 @@ void UserPanels::onMessageReceived() {
 
 void UserPanels::onPublicUsernameChosen() {
   if (ui_.tabWidget_2->currentWidget() == public_username_) {
-    ui_.tabWidget_2->removeTab(4);
+    ui_.tabWidget_2->removeTab(0);
   }
+
+  if (ui_.tabWidget_2->count() > 2){
+    } else {
+    QPixmap contactIcon_ = QPixmap(":/icons/32/contacts");
+    QPixmap shareIcon_ = QPixmap(":/icons/32/shares");
+    QPixmap messagesIcon_ = QPixmap(":/icons/32/messages");
+    QPixmap vaultInfoIcon_ = QPixmap(":/icons/32/settings");
+
+    ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
+    ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
+    ui_.tabWidget_2->addTab(messages_ = new Messages, messagesIcon_, "");
+    ui_.tabWidget_2->addTab(vaultinfo_ = new VaultInfo, vaultInfoIcon_, "");
+    }
+
   ui_.tabWidget_2->setEnabled(true);
   ui_.tabWidget_2->setCurrentWidget(contacts_);
   activatePanel(true);
@@ -192,10 +181,11 @@ void UserPanels::setActive(bool active) {
 
     qDebug() << "UserPanels::setActive - public name:" << username;
 
-    if(ui_.tabWidget_2->count() > 4)
+    if (ui_.tabWidget_2->count() < 3)
         ui_.tabWidget_2->removeTab(0);
 
     if (username.isEmpty()) {
+      ui_.tabWidget_2->clear();
       ui_.tabWidget_2->setEnabled(true);
 //      ui_.listWidget->item(0)->setFlags(Qt::NoItemFlags);
 //      ui_.listWidget->item(1)->setFlags(Qt::NoItemFlags);

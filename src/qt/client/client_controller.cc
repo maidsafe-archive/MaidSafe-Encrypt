@@ -440,12 +440,10 @@ int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
       case 0:
             {
               qDebug() << "HANDLING AddContactRequest";
-              n = maidsafe::ClientController::getInstance()->
-                                      HandleAddContactRequest(ci, im.sender());
-              if (n == 0) {
-                emit addedContact(QString::fromStdString(im.sender()));
+
+                emit addedContact(QString::fromStdString(im.sender()), im);
                 type = CONTACT_REQUEST;
-              }
+
               break;
             }
       // ADD RESPONSE - a user has responded to our add request
@@ -477,17 +475,9 @@ int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
             }
     }
   } else if (im.has_instantfile_notification()) {
-    n = maidsafe::ClientController::getInstance()->
-                        AddInstantFile(im.instantfile_notification(), "");
 
-    if (n == 0) {
-      maidsafe::InstantFileNotification ifn = im.instantfile_notification();
-
-      emit fileReceived(QString::fromStdString(im.sender()),
-                      QString::fromStdString(ifn.filename()));
-
+      emit fileReceived(im);
       type = FILE;
-    }
   } else if (im.has_privateshare_notification()) {
     // we have added a new private share
     // \TODO what about someone else adding us to one og their shares?

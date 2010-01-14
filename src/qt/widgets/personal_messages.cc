@@ -26,18 +26,20 @@ PersonalMessages::PersonalMessages(QWidget* parent)
     :active_(false), init_(false) {
     ui_.setupUi(this);
 
-    name_ = "";
+    convName_ = "";
 
-    connect(ClientController::instance(),
+  connect(ClientController::instance(),
           SIGNAL(messageReceived(ClientController::MessageType,
-                                 const QDateTime&,
-                                 const QString&,
-                                 const QString&)),
+                                    const QDateTime&,
+                                    const QString&,
+                                    const QString&,
+                                    const QString&)),
           this,
           SLOT(onMessageReceived(ClientController::MessageType,
-                                 const QDateTime&,
-                                 const QString&,
-                                 const QString&)));
+                                    const QDateTime&,
+                                    const QString&,
+                                    const QString&,
+                                    const QString&)));
 
         connect(ui_.send_message_btn, SIGNAL(clicked(bool)),
           this,                SLOT(onSendMessageClicked()));
@@ -47,30 +49,37 @@ PersonalMessages::PersonalMessages(QString name)
     :active_(false), init_(false) {
     ui_.setupUi(this);
 
-    name_ = name;
-    ui_.username_lbl->setText(name_);
+    //const QString pu = ClientController::instance()->publicUsername();
+    convName_ = name;
 
-    maidsafe::SessionSingleton::getInstance()->AddConversation(name.toStdString());
+    ui_.partListWidget->addItem(name);
+
+    maidsafe::SessionSingleton::getInstance()->AddConversation(convName_.toStdString());
 
     this->setWindowTitle(this->windowTitle() + " " + name);
 
-    connect(ClientController::instance(),
+  connect(ClientController::instance(),
           SIGNAL(messageReceived(ClientController::MessageType,
-                                 const QDateTime&,
-                                 const QString&,
-                                 const QString&)),
+                                    const QDateTime&,
+                                    const QString&,
+                                    const QString&,
+                                    const QString&)),
           this,
           SLOT(onMessageReceived(ClientController::MessageType,
-                                 const QDateTime&,
-                                 const QString&,
-                                 const QString&)));
+                                    const QDateTime&,
+                                    const QString&,
+                                    const QString&,
+                                    const QString&)));
 
         connect(ui_.send_message_btn, SIGNAL(clicked(bool)),
           this,                SLOT(onSendMessageClicked()));
+
+          connect(ui_.actionInvite, SIGNAL(triggered()),
+          this,               SLOT(onInvite()));
 }
 
 PersonalMessages::~PersonalMessages() {
-  maidsafe::SessionSingleton::getInstance()->RemoveConversation(name_.toStdString());
+  maidsafe::SessionSingleton::getInstance()->RemoveConversation(convName_.toStdString());
   }
 
 void PersonalMessages::setActive(bool b) {
@@ -89,18 +98,7 @@ void PersonalMessages::setActive(bool b) {
 void PersonalMessages::reset() {
   messages_.clear();
 
-  // debug...
-//  QTime start = QTime::currentTime();
-//  addMessage(start, "adam", "hello");
-//  addMessage(start.addSecs(10), "eve", "hello");
-//  addMessage(start.addSecs(15), "adam", "is i > j if j < k and i < j?");
-//  addMessage(start.addSecs(20), "eve",
-//                                  "don't ask me, ask http://www.google.com");
-//  addMessage(start.addSecs(25), "adam",
-//                                "just send the answer to adam@maidsafe.net");
-
   init_ = false;
-
 }
 
 void PersonalMessages::onMessageReceived(ClientController::MessageType,
@@ -108,11 +106,9 @@ void PersonalMessages::onMessageReceived(ClientController::MessageType,
                                  const QString& sender,
                                  const QString& message,
                                  const QString& conversation) {
-  if (sender == name_){
+  if (sender == convName_){
 
   ui_.message_window->append(tr("'%1' said: %2").arg(sender).arg(message));
-
-  //emit messageReceived();
   }
 }
 
@@ -123,12 +119,12 @@ void PersonalMessages::sendMessage(const QDateTime& time,
  }
 
  void PersonalMessages::setName(QString name){
-   name_ = name;
-   ui_.username_lbl->setText(name_);
+   /*convName_ = name;
+   ui_.username_lbl->setText(name_);*/
  }
 
 QString PersonalMessages::getName(){
-  return name_;
+  return convName_;
  }
 
 void PersonalMessages::setMessage(QString mess){
@@ -136,20 +132,23 @@ void PersonalMessages::setMessage(QString mess){
  }
 
 void PersonalMessages::onSendMessageClicked(){
-  if (name_ != "" && ui_.message_text_edit->toPlainText() != ""){
+  if (convName_ != "" && ui_.message_text_edit->toPlainText() != ""){
+
 
     QList<QString> conts;
-    conts.push_back(name_);
+    conts.push_back(convName_);
 
     QString text = ui_.message_text_edit->toPlainText();
 
-    if (ClientController::instance()->sendInstantMessage(text, conts, tr(""))) {
+    if (ClientController::instance()->sendInstantMessage(text, conts, convName_)) {
       ui_.message_window->append(tr("You said: %1").arg(text));
     } else {
       const QString msg = tr("Error sending message.");
       QMessageBox::warning(this, tr("Error"), msg);
     }
-
   }
+}
+
+void PersonalMessages::onSendInvite(){
 }
 

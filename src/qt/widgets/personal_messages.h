@@ -54,6 +54,8 @@ class PersonalMessages : public QMainWindow {
 
     void onSendMessageClicked();
 
+    void onSendInvite();
+
 private:
   void sendMessage(const QDateTime& time,
                   const QString& sender,
@@ -63,7 +65,7 @@ private:
   Ui::PersonalMessagePage ui_;
   bool active_;
   bool init_;
-  QString name_;
+  QString convName_;
   UserPanels* userPanels_;
 
   // Hold basic message info

@@ -249,7 +249,7 @@ int ContactsHandler::SetLastContactRank(const std::string &pub_name) {
   mic.rank_++;
   mic.last_contact_ = base::get_epoch_time();
   cs_.replace(it, mic);
-  return mic.last_contact_;
+  return 0;
 }
 
 int ContactsHandler::GetContactInfo(const std::string &pub_name,

@@ -1306,6 +1306,13 @@ int ClientController::AddInstantFile(
   DirType dir_type;
   std::string msid("");
   int n = GetDb(path_add_element, &dir_type, &msid);
+  if (n != 0) {
+#ifdef DEBUG
+    printf("MAS - Riata en GetDb - %s\n", path_add_element.c_str());
+#endif
+    return -8888888;
+  }
+
   n = dah_->AddElement(path_add_element,
     ser_mdm, ifm.ser_dm(), dir_key, false);
   if (n != 0) {

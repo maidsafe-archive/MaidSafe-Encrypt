@@ -83,7 +83,7 @@ class Contacts : public Panel {
     void onFileSendClicked();
 
     void onContactsBoxTextEdited(const QString &value);
-    void onAddedContact(const QString &name);
+    void onAddedContact(const QString &name, const maidsafe::InstantMessage& im);
     void onConfirmedContact(const QString &name);
     void onDeletedContact(const QString &name);
     void customContentsMenu(const QPoint &pos);
