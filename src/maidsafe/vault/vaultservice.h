@@ -263,6 +263,7 @@ class VaultService : public maidsafe::MaidsafeService {
   bool LoadPacketLocal(const std::string &packetname,
                        maidsafe::GetPacketResponse *response);
   bool DeleteChunkLocal(const std::string &chunkname);
+  boost::uint64_t GetChunkSizeLocal(const std::string &chunkname);
   void FindCloseNodesCallback(const std::string &result,
                               std::vector<std::string> *close_nodes);
   // This method returns immediately after the task is added to the thread pool.
