@@ -1,14 +1,14 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
+* Copyright [2010] maidsafe.net limited
 *
 * Description:  Manages watch lists and reference lists on a vault
 * Version:      1.0
 * Created:      2009-12-22
 * Revision:     none
 * Compiler:     gcc
-* Author:       Team maidsafe.net
+* Author:       Steve Muecklisch
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
@@ -39,33 +39,33 @@ namespace maidsafe_vault {
 enum ResetReason {kReasonStoringFailed, kReasonPaymentFailed, kReasonStale};
 
 struct WatchListEntry {
-  std::string pmid_;
-  bool can_delete_;
+  std::string pmid;
+  bool can_delete;
 };
 
 struct ReferenceListEntry {
-  std::string pmid_;
-  boost::uint32_t last_seen_;
+  std::string pmid;
+  boost::uint32_t last_seen;
   // TODO(Team#) ranked chunk holders?
 };
 
 struct WaitingListEntry {
-  std::string pmid_;
-  boost::uint32_t creation_time_;
-  bool storing_done_;
-  bool payments_done_;
-  int requested_payments_;
+  std::string pmid;
+  boost::uint32_t creation_time;
+  bool storing_done;
+  bool payments_done;
+  int requested_payments;
 };
 
 struct ChunkInfo {
-  ChunkInfo() : waiting_list_(), watch_list_(), reference_list_(),
-                watcher_count_(0), watcher_checksum_(0), chunk_size_(0) {}
-  std::list<WaitingListEntry> waiting_list_;
-  std::list<WatchListEntry> watch_list_;
-  std::list<ReferenceListEntry> reference_list_;
-  boost::uint64_t watcher_count_;
-  boost::uint64_t watcher_checksum_;
-  boost::uint64_t chunk_size_;
+  ChunkInfo() : waiting_list(), watch_list(), reference_list(),
+                watcher_count(0), watcher_checksum(0), chunk_size(0) {}
+  std::list<WaitingListEntry> waiting_list;
+  std::list<WatchListEntry> watch_list;
+  std::list<ReferenceListEntry> reference_list;
+  boost::uint64_t watcher_count;
+  boost::uint64_t watcher_checksum;
+  boost::uint64_t chunk_size;
   // TODO(Team#) stats?
 };
 
