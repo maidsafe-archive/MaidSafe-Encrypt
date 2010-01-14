@@ -371,6 +371,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreInit) {
   ASSERT_NE(size_t(0), chunk_names.size());
   chunkstore->GetAllChunks(&chunk_names);
   ASSERT_EQ(size_t(0), chunk_names.size());
+  ASSERT_EQ(0, chunkstore->GetChunkSize(h_name.at(0)));
   ASSERT_EQ(kChunkstoreUninitialised,
             chunkstore->HashCheckChunk(h_name.at(0)));
   failed_keys.push_back("key");
@@ -477,6 +478,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
   ASSERT_NE(found.filename(), "");
   boost::uint64_t chunk_size = fs::file_size(found);
   ASSERT_EQ(h_size.at(test_chunk), chunk_size);
+  ASSERT_EQ(chunk_size, chunkstore->GetChunkSize(h_name.at(test_chunk)));
   boost::scoped_ptr<char> temp1(new char[chunk_size]);
   fs::ifstream fstr1;
   fstr1.open(found, std::ios_base::binary);
@@ -550,6 +552,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
   ASSERT_NE(found.filename(), "");
   chunk_size = fs::file_size(found);
   ASSERT_EQ(nh_size.at(test_chunk), chunk_size);
+  ASSERT_EQ(chunk_size, chunkstore->GetChunkSize(nh_name.at(test_chunk)));
   boost::scoped_ptr<char> temp2(new char[chunk_size]);
   fs::ifstream fstr2;
   fstr2.open(found, std::ios_base::binary);
@@ -609,6 +612,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
   ASSERT_NE(found.filename(), "");
   boost::uint64_t chunk_size = fs::file_size(found);
   ASSERT_EQ(h_size.at(test_chunk), chunk_size);
+  ASSERT_EQ(chunk_size, chunkstore->GetChunkSize(h_name.at(test_chunk)));
   boost::scoped_ptr<char> temp1(new char[chunk_size]);
   fs::ifstream fstr1;
   fstr1.open(found, std::ios_base::binary);
@@ -643,6 +647,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
   ASSERT_NE(found.filename(), "");
   chunk_size = fs::file_size(found);
   ASSERT_EQ(nh_size.at(test_chunk), chunk_size);
+  ASSERT_EQ(chunk_size, chunkstore->GetChunkSize(nh_name.at(test_chunk)));
   boost::scoped_ptr<char> temp2(new char[chunk_size]);
   fs::ifstream fstr2;
   fstr2.open(found, std::ios_base::binary);
@@ -851,20 +856,26 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreUpdateChunk) {
   ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, true, 3, 32000, &h_size,
                                           &h_value, &h_name));
   ASSERT_NE(h_value.at(0), h_value.at(1));
+  ASSERT_EQ(0, chunkstore->GetChunkSize(h_name.at(0)));
   ASSERT_EQ(0, chunkstore->Store(h_name.at(0), h_value.at(0)));
+  ASSERT_EQ(h_size.at(0), chunkstore->GetChunkSize(h_name.at(0)));
   ASSERT_EQ(0, chunkstore->UpdateChunk(h_name.at(0), h_value.at(1)));
   std::string rec_value("Value");
   ASSERT_EQ(0, chunkstore->Load(h_name.at(0), &rec_value));
   ASSERT_EQ(h_value.at(1), rec_value);
+  ASSERT_EQ(h_size.at(1), chunkstore->GetChunkSize(h_name.at(0)));
   // check using non-hashable chunk
   ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, true, 3, 32000, &nh_size,
                                           &nh_value, &nh_name));
   ASSERT_NE(nh_value.at(0), nh_value.at(1));
+  ASSERT_EQ(0, chunkstore->GetChunkSize(nh_name.at(0)));
   ASSERT_EQ(0, chunkstore->Store(nh_name.at(0), nh_value.at(0)));
+  ASSERT_EQ(nh_size.at(0), chunkstore->GetChunkSize(nh_name.at(0)));
   ASSERT_EQ(0, chunkstore->UpdateChunk(nh_name.at(0), nh_value.at(1)));
   rec_value = "Value";
   ASSERT_EQ(0, chunkstore->Load(nh_name.at(0), &rec_value));
   ASSERT_EQ(nh_value.at(1), rec_value);
+  ASSERT_EQ(nh_size.at(1), chunkstore->GetChunkSize(nh_name.at(0)));
   // check using non-existent chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
