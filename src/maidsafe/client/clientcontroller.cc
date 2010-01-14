@@ -1289,9 +1289,7 @@ int ClientController::AddInstantFile(
   mdm.set_creation_time(base::get_epoch_time());
   mdm.set_last_modified(base::get_epoch_time());
   mdm.set_last_access(base::get_epoch_time());
-  std::string ser_mdm;
-  mdm.SerializeToString(&ser_mdm);
-  std::string dir_key("");
+  std::string dir_key;
 
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   fs::path path_with_filename;
@@ -1301,10 +1299,13 @@ int ClientController::AddInstantFile(
   } else {
     // TODO(Dan#5#): 2009-06-25 - Make sure location is the correct path
     path_with_filename = fs::path(base::TidyPath(location));
+    mdm.set_display_name(path_with_filename.filename());
   }
+  std::string ser_mdm;
+  mdm.SerializeToString(&ser_mdm);
   std::string path_add_element(path_with_filename.string());
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   int n = GetDb(path_add_element, &dir_type, &msid);
   if (n != 0) {
 #ifdef DEBUG
@@ -1313,8 +1314,7 @@ int ClientController::AddInstantFile(
     return -8888888;
   }
 
-  n = dah_->AddElement(path_add_element,
-    ser_mdm, ifm.ser_dm(), dir_key, false);
+  n = dah_->AddElement(path_add_element, ser_mdm, ifm.ser_dm(), dir_key, false);
   if (n != 0) {
 #ifdef DEBUG
     printf("Riata en AddElement\n");

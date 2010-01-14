@@ -541,31 +541,36 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
 
   int n;
   QString directory;
-  file_system::FileSystem fs;
+  file_system::FileSystem fsys;
   QString root;
 
   switch (ret) {
-    case QMessageBox::Save:
+    case QMessageBox::Save: {
     //Save
-    root = QString("%1:\\My Files").
-         arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+#ifdef __WIN32__
+      root = QString("%1:\\My Files").
+             arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+#else
+      root = QString::fromStdString(fsys.MaidsafeFuseDir() + "/My Files");
+#endif
 
-    directory = QFileDialog::getSaveFileName(this,
-                      tr("Save File"), root);
+      directory = QFileDialog::getSaveFileName(this,
+                        tr("Save File"), root);
 
-    printf("Dir chosen: %s" ,directory.toStdString().c_str());
+      printf("Dir chosen: %s\n" ,directory.toStdString().c_str());
 
-    n = maidsafe::ClientController::getInstance()->
-                    AddInstantFile(im.instantfile_notification(),
-                    directory.toStdString());
+      std::string s = fsys.MakeRelativeMSPath(directory.toStdString());
+      n = maidsafe::ClientController::getInstance()->
+          AddInstantFile(im.instantfile_notification(), s);
 
-    printf("Res : %i", n);
+      printf("Res : %i", n);
 
-    if (n == 0) {
-        maidsafe::InstantFileNotification ifn = im.instantfile_notification();
+      if (n == 0) {
+          maidsafe::InstantFileNotification ifn = im.instantfile_notification();
 
+      }
+      break;
     }
-    break;
     case QMessageBox::Cancel:
     //Cancel
     break;
