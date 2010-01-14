@@ -512,8 +512,7 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
     }
 
   } else if (type == ClientController::INVITE){
-      //TODO :: Handle Invite
-
+      // TODO(Team#5#): 2010-01-13 - handle Invite
   }
 }
 
@@ -547,11 +546,21 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
   switch (ret) {
     case QMessageBox::Save:
     //Save
+    #ifdef __WIN32__
     root = QString("%1:\\My Files").
          arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
 
     directory = QFileDialog::getSaveFileName(this,
                       tr("Save File"), root);
+    #else
+    file_system::FileSystem fs;
+    root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+    directory = QFileDialog::getSaveFileName(
+                                this,
+                                "Save File As : ",
+                                root,
+                                tr("Any file (*)"));
+    #endif
 
     printf("Dir chosen: %s" ,directory.toStdString().c_str());
 
