@@ -134,7 +134,6 @@ void PersonalMessages::setMessage(QString mess){
 void PersonalMessages::onSendMessageClicked(){
   if (convName_ != "" && ui_.message_text_edit->toPlainText() != ""){
 
-
     QList<QString> conts;
     conts.push_back(convName_);
 
@@ -146,6 +145,7 @@ void PersonalMessages::onSendMessageClicked(){
       const QString msg = tr("Error sending message.");
       QMessageBox::warning(this, tr("Error"), msg);
     }
+    ui_.message_text_edit->clear();
   }
 }
 
