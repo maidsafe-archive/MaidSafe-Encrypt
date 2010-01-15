@@ -3,7 +3,7 @@
 *
 * Copyright [2009] maidsafe.net limited
 *
-* Description:  Class for manipulating pending store requests
+* Description:  Class for handling accounts
 * Version:      1.0
 * Created:      30/07/2009 18:17:35 PM
 * Revision:     none
@@ -149,80 +149,6 @@ int AccountHandler::AddAlerts(const std::string &pmid,
   accounts_.replace(it, row);
 
   return kSuccess;
-}
-
-int AccountAmendmentHandler::ProcessRequest(
-    const maidsafe::AmendAccountRequest *request,
-    maidsafe::AmendAccountResponse *response,
-    google::protobuf::Closure *done) {
-  // Assume that response->pmid() has already been set and that
-  // request->signed_size() validates
-  response->set_result(kNack);
-  // Check we're below limits for amendments and repetitions
-  bool increase(false);
-  int field(2);
-  if (request->amendment_type() ==
-      maidsafe::AmendAccountRequest::kSpaceGivenInc ||
-      request->amendment_type() ==
-      maidsafe::AmendAccountRequest::kSpaceTakenInc)
-    increase = true;
-  if (request->amendment_type() ==
-      maidsafe::AmendAccountRequest::kSpaceTakenDec ||
-      request->amendment_type() ==
-      maidsafe::AmendAccountRequest::kSpaceTakenInc)
-    field = 3;
-  // Check that we've got valid amendment type
-  if (!increase && field == 2 && request->amendment_type() !=
-      maidsafe::AmendAccountRequest::kSpaceGivenDec) {
-    done->Run();
-    return kAmendAccountTypeError;
-  }
-  // Check amendment set size is not too large
-  std::string pmid(request->account_pmid());
-  boost::uint64_t data_size(request->signed_size().data_size());
-  size_t total_count(0), repeated_count(0);
-  {
-    boost::mutex::scoped_lock lock(amendment_mutex_);
-    total_count = amendments_.size();
-    repeated_count = amendments_.get<1>().count(boost::make_tuple(pmid, field,
-        data_size, increase));
-  }
-  if (total_count >= kMaxAccountAmendments ||
-      repeated_count >= kMaxRepeatedAccountAmendments) {
-    done->Run();
-    return kAmendAccountCountError;
-  }
-  // If amendment has already been added assess request, else add new amendment
-  if (repeated_count != 0) {
-//    while not found
-//      for each matching amendment
-//        "assess amendment" (checks for overall success/failure and if so
-//           sets all pending responses & calls all pending done runs & deletes
-//           all these & returns found_but_not_yet_decided, not_found,
-//           found_and_overall_success, found_and_overall_failure)
-//    after while, if still not found, add new amendment,
-//      start knode find nodes as below
-  } else {
-//    add new amendment
-//    start knode findnodes
-//    calls back to function which "assess amendment"
-  }
-
-
-
-
-  int result = account_handler_->AmendAccount(pmid, field, data_size, increase);
-  if (result != kSuccess) {
-    done->Run();
-    return result;
-  } else {
-    response->set_result(kAck);
-    done->Run();
-    return kSuccess;
-  }
-}
-
-void AccountAmendmentHandler::CleanUp() {
 }
 
 }  // namespace maidsafe_vault

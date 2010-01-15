@@ -1,7 +1,7 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
+* Copyright [2010] maidsafe.net limited
 *
 * Description:  This class implements lengthy methods to be used by VaultService
 * Version:      1.0
@@ -48,15 +48,18 @@ VaultServiceLogic::VaultServiceLogic(
       &VaultServiceLogic::SetOnlineStatus, this, _1));
 }
 
-void VaultServiceLogic::Init(const std::string &non_hex_pmid,
+bool VaultServiceLogic::Init(const std::string &non_hex_pmid,
                              const std::string &pmid_public_signature,
                              const std::string &pmid_private) {
+  if (knode_ == NULL)
+    return false;
   non_hex_pmid_ = non_hex_pmid;
   pmid_public_signature_ = pmid_public_signature;
   pmid_private_ = pmid_private;
   kad::Contact our_details(knode_->contact_info());
   our_details_ = our_details;
   SetOnlineStatus(true);
+  return true;
 }
 
 bool VaultServiceLogic::online() {
@@ -215,6 +218,12 @@ int VaultServiceLogic::FindKNodes(const std::string &kad_key,
   while (result == kVaultServiceError)
     cv.wait(lock);
   return result;
+}
+
+void VaultServiceLogic::FindCloseNodes(
+    const std::string &kad_key,
+    const base::callback_func_type &callback) {
+  knode_->FindCloseNodes(kad_key, callback);
 }
 
 void VaultServiceLogic::HandleFindKNodesResponse(
@@ -508,12 +517,6 @@ std::string VaultServiceLogic::GetSignedRequest(
   return co.AsymSign(co.Hash(pmid_public_signature_ + non_hex_name +
       recipient_id, "", crypto::STRING_STRING, false), "", pmid_private_,
       crypto::STRING_STRING);
-}
-
-void VaultServiceLogic::FindCloseNodes(
-    const std::string &kad_key,
-    const base::callback_func_type &callback) {
-  knode_->FindCloseNodes(kad_key, callback);
 }
 
 bool VaultServiceLogic::AddressIsLocal(const kad::Contact &peer) {

@@ -1,7 +1,7 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
+* Copyright [2010] maidsafe.net limited
 *
 * Description:  This class implements lengthy methods to be used by VaultService
 * Version:      1.0
@@ -150,9 +150,9 @@ class VaultServiceLogic {
   VaultServiceLogic(VaultRpcs *vault_rpcs,
                     kad::KNode *knode);
   virtual ~VaultServiceLogic() {}
-  virtual void Init(const std::string &non_hex_pmid,
-                    const std::string &pmid_public_signature,
-                    const std::string &pmid_private);
+  bool Init(const std::string &non_hex_pmid,
+            const std::string &pmid_public_signature,
+            const std::string &pmid_private);
   bool online();
   void SetOnlineStatus(bool online);
   void SetKThreshold(const boost::uint16_t &threshold);
@@ -160,6 +160,18 @@ class VaultServiceLogic {
   // AddToReferenceListRequest to add this vault's ID to ref list for chunkname.
   int AddToRemoteRefList(const std::string &chunkname,
                          const maidsafe::StoreContract &store_contract);
+  // Blocking call to Kademlia FindCloseNodes
+  int FindKNodes(const std::string &kad_key,
+                 std::vector<kad::Contact> *contacts);
+  // Wrapper for knode method - virtual to allow mock testing
+  virtual void FindCloseNodes(const std::string &kad_key,
+                              const base::callback_func_type &callback);
+  void HandleFindKNodesResponse(const std::string &response,
+                                const std::string &kad_key,
+                                std::vector<kad::Contact> *contacts,
+                                boost::mutex *mutex,
+                                boost::condition_variable *cv,
+                                int *result);
   // Amend account of PMID requesting to be added to Watch List or Ref List.
   void AmendRemoteAccount(const maidsafe::AmendAccountRequest &request,
                           const Callback &callback);
@@ -173,20 +185,14 @@ class VaultServiceLogic {
   FRIEND_TEST(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList);
   FRIEND_TEST(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount);
   FRIEND_TEST(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
 
   // Method called by each AddToReferenceList response in AddToRemoteRefList.
   // index indicates the position in data's internal vectors of the respondent.
   void AddToRemoteRefListCallback(boost::uint16_t index,
                                   boost::shared_ptr<AddRefCallbackData> data);
-  // Blocking call to Kademlia FindCloseNodes
-  int FindKNodes(const std::string &kad_key,
-                 std::vector<kad::Contact> *contacts);
-  void HandleFindKNodesResponse(const std::string &response,
-                                const std::string &kad_key,
-                                std::vector<kad::Contact> *contacts,
-                                boost::mutex *mutex,
-                                boost::condition_variable *cv,
-                                int *result);
   // First callback method in AmendRemoteAccount operation.  Called once by
   // knode_->FindKNodes (when finding account holders details)
   void AmendRemoteAccountStageTwo(
@@ -205,9 +211,7 @@ class VaultServiceLogic {
   // Returns a signature for validation by recipient of RPC
   std::string GetSignedRequest(const std::string &non_hex_name,
                                const std::string &recipient_id);
-  // Wrapper for knode method to allow mock testing
-  virtual void FindCloseNodes(const std::string &kad_key,
-                              const base::callback_func_type &callback);
+  // Wrapper for knode method - virtual to allow mock testing
   virtual bool AddressIsLocal(const kad::Contact &peer);
   VaultRpcs *vault_rpcs_;
   kad::KNode *knode_;

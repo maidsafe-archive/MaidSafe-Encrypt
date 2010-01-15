@@ -88,7 +88,7 @@ VaultService::VaultService(const std::string &pmid_public,
       vault_service_logic_(vault_service_logic),
       prm_(),
       ah_(),
-      aah_(&ah_),
+      aah_(&ah_, vault_service_logic_),
       cih_(),
       thread_pool_() {
   crypto::Crypto co;

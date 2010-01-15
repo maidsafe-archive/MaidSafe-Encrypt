@@ -108,8 +108,6 @@ void PDVault::Start(bool first_node) {
     success = (channel_manager_.Start() == 0);
   if (success) {
     RegisterMaidService();
-    vault_service_logic_.Init(non_hex_pmid_, signed_pmid_public_,
-                              pmid_private_);
     boost::mutex kad_join_mutex;
     if (first_node) {
       boost::asio::ip::address local_ip;
@@ -134,7 +132,8 @@ void PDVault::Start(bool first_node) {
     // Set port, so that if vault is restarted before it is destroyed, it
     // re-uses port (unless this port has become unavailable).
     port_ = knode_.host_port();
-    if (kad_joined_)
+    if (kad_joined_ && vault_service_logic_.Init(non_hex_pmid_,
+        signed_pmid_public_, pmid_private_))
       SetVaultStatus(kVaultStarted);
     // Start repeating pruning worker thread
     prune_pending_ops_thread_ =

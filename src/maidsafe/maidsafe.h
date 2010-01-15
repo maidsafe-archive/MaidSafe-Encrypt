@@ -51,7 +51,7 @@ const boost::uint32_t kKeySize = 64;
 // const crypto::hashtype kHashSize(crypto::SHA_512);
 
 struct Key_Type {
-  Key_Type() : package_type(), id(""), private_key(""), public_key("") {}
+  Key_Type() : package_type(), id(), private_key(), public_key() {}
   maidsafe::PacketType package_type;
   std::string id;
   std::string private_key;
@@ -59,7 +59,7 @@ struct Key_Type {
 };
 
 struct bufferpacket_messages {
-  bufferpacket_messages() : index(""), message(""), sender(""), type() {}
+  bufferpacket_messages() : index(), message(), sender(), type() {}
   std::string index;
   std::string message;
   std::string sender;
@@ -74,7 +74,7 @@ enum MaidsafeRpcResult {
   kNack, kAck, kNotRemote, kBusy
 };
 
-const std::string kAnonymousRequestSignature(128, 'f');
+const std::string kAnonymousRequestSignature(2 * kKeySize, 'f');
 
 enum DbInitFlag {CONNECT, CREATE, DISCONNECT};
 
@@ -295,8 +295,8 @@ const int kValidityCheckMaxTime(86400);  // 24 hours
 const int kValidityCheckInterval(120);  // 2 minutes
 // delay to check partner references
 const int kCheckPartnerRefDelay(300);  // 5 minutes
-// timeout for account amendment transactions in seconds
-const boost::uint32_t kAccountAmendmentTimeout(120);
+// timeout for account amendment transactions in milliseconds
+const boost::uint64_t kAccountAmendmentTimeout(120000);
 // max. no. of account amendments
 const size_t kMaxAccountAmendments(1000);
 // max. no. of repeated account amendments (i.e. for same chunk to same PMID)
@@ -322,7 +322,7 @@ const int kMaxReserveWatchListEntries = 250;
 const int kChunkInfoWatcherPendingTimeout = 86400;  // 24 hours
 // time until a chunk holder is not considered active anymore
 const int kChunkInfoRefActiveTimeout = 86400; // 24 hours
-// min. no. of identical responses from group of k nodes to accept result
+// min. no. of majority of responses from group of k nodes to accept result
 const int kKadTrustThreshold(3);
 
 namespace maidsafe {

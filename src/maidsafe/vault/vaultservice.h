@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "maidsafe/maidsafe.h"
+#include "maidsafe/vault/accountamendmenthandler.h"
 #include "maidsafe/vault/accountrepository.h"
 #include "maidsafe/vault/chunkinfohandler.h"
 #include "maidsafe/vault/pendingoperations.h"

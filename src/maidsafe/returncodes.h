@@ -209,7 +209,7 @@ enum ReturnCode {
   kPacketDeleteNotOwned = -3512,
   kPacketLoadNotFound = -3513,
 
-  // Account Handler
+  // Account Handler & Account Amendment Handler
   kAccountNotFound = -4501,
   kAccountExists = -4502,
   kAccountDeleteFailed = -4503,
@@ -218,6 +218,11 @@ enum ReturnCode {
   kAccountNotEnoughSpace = -4506,
   kAmendAccountTypeError = -4507,
   kAmendAccountCountError = -4508,
+  kAccountAmendmentError = -4509,
+  kAccountAmendmentPending = -4510,
+  kAccountAmendmentNotFound = -4511,
+  kAccountAmendmentUpdated = -4512,
+  kAccountAmendmentFinished = -4513,
 
   // Chunk Info Handler
   kChunkInfoInvalidSize = -5501,

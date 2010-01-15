@@ -203,8 +203,8 @@ void VaultRpcs::UpdateChunk(const std::string &chunkname,
 }
 
 void VaultRpcs::DeleteChunk(const std::string &chunkname,
-                            const std::string &public_key,
-                            const std::string &public_key_signature,
+                            const std::string &,
+                            const std::string &,
                             const std::string &request_signature,
                             const maidsafe::ValueType &data_type,
                             const std::string &remote_ip,

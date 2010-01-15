@@ -1,7 +1,7 @@
 /*
  * ============================================================================
  *
- * Copyright [2009] maidsafe.net limited
+ * Copyright [2010] maidsafe.net limited
  *
  * Description:  Implementation of signature and signer id validation
  * Version:      1.0
