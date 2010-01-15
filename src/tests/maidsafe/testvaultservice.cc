@@ -673,15 +673,23 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
 
   TestCallback cb_obj;
 
+  // empty request
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->DeleteChunk(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
   ASSERT_TRUE(vault_service_->StoreChunkLocal(chunk_name, chunk_data));
   ASSERT_TRUE(vault_service_->HasChunkLocal(chunk_name));
 
-  for (int i = 0; i <= 4; ++i) {
-    printf("--- CASE #%i --- ", i);
+  for (int i = 0; i <= 5; ++i) {
     switch (i) {
-      case 0:  // empty request
-        break;
-      case 1:  // unsigned request
+      case 0:  // unsigned request
         signed_size = request.mutable_signed_size();
         signed_size->set_data_size(chunk_size);
         signed_size->set_signature(size_sig);
@@ -692,22 +700,38 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
         request.set_request_signature("fail");
         request.set_data_type(maidsafe::SYSTEM_PACKET);
         break;
-      case 2:  // unsigned signed_size
+      case 1:  // empty signed_size
+        request.clear_signed_size();
         request.set_request_signature(req_sig);
-        signed_size->set_signature("fail");
         break;
-      case 3:  // wrong size
-        signed_size->set_data_size(123);
-        signed_size->set_signature(co.AsymSign("123", "", priv_key,
-                                               crypto::STRING_STRING));
-        break;
-      case 4:  // invalid chunk name
+      case 2:  // unsigned signed_size
+        signed_size = request.mutable_signed_size();
         signed_size->set_data_size(chunk_size);
+        signed_size->set_signature("fail");
+        signed_size->set_pmid(pmid);
+        signed_size->set_public_key(pub_key);
+        signed_size->set_public_key_signature(pub_key_sig);
+        break;
+      case 3:  // invalid chunk name
         signed_size->set_signature(size_sig);
         request.set_chunkname("fail");
         request.set_request_signature(co.AsymSign(co.Hash(pub_key_sig + "fail"
             + vault_pmid_, "", crypto::STRING_STRING, false), "", priv_key,
             crypto::STRING_STRING));
+        break;
+      case 4:  // non-existing chunk
+        request.set_chunkname(co.Hash("abc", "", crypto::STRING_STRING, false));
+        request.set_request_signature(co.AsymSign(co.Hash(pub_key_sig +
+            request.chunkname() + vault_pmid_, "",
+            crypto::STRING_STRING, false), "", priv_key,
+            crypto::STRING_STRING));
+        break;
+      case 5:  // wrong size
+        request.set_chunkname(chunk_name);
+        request.set_request_signature(req_sig);
+        signed_size->set_data_size(0);
+        signed_size->set_signature(co.AsymSign("0", "", priv_key,
+                                   crypto::STRING_STRING));
         break;
     }
 
@@ -720,38 +744,83 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
     response.Clear();
   }
 
-  request.set_chunkname(co.Hash("abc", "", crypto::STRING_STRING, false));
-  request.set_request_signature(co.AsymSign(co.Hash(pub_key_sig +
-      request.chunkname() + vault_pmid_, "",
-      crypto::STRING_STRING, false), "", priv_key,
-      crypto::STRING_STRING));
+  // TODO(anyone) add more data types
+  int data_type[] = {maidsafe::SYSTEM_PACKET, maidsafe::PDDIR_SIGNED};
 
-  // test success for non-existing chunk
-  {
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->DeleteChunk(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
+  chunk_data = "fail";
+  chunk_name = co.Hash(chunk_data, "", crypto::STRING_STRING, false);
+  chunk_size = chunk_data.size();
 
+  size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
+                         priv_key, crypto::STRING_STRING);
+  req_sig = co.AsymSign(co.Hash(pub_key_sig + chunk_name + vault_pmid_, "",
+                        crypto::STRING_STRING, false), "", priv_key,
+                        crypto::STRING_STRING);
+
+  signed_size = request.mutable_signed_size();
+  signed_size->set_data_size(chunk_size);
+  signed_size->set_signature(size_sig);
+  signed_size->set_pmid(pmid);
+  signed_size->set_public_key(pub_key);
+  signed_size->set_public_key_signature(pub_key_sig);
   request.set_chunkname(chunk_name);
   request.set_request_signature(req_sig);
 
-  // test success for existing chunk
-  {
+  // invalid data for all data types
+  for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
+    request.set_data_type(data_type[i]);
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->DeleteChunk(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  // test success
+  for (size_t i = 0; i < sizeof(data_type)/sizeof(data_type[0]); ++i) {
+    printf("ROUND %u\n", i);
+    request.set_data_type(data_type[i]);
+
+    switch (data_type[i]) {
+      case maidsafe::SYSTEM_PACKET:
+      case maidsafe::PDDIR_SIGNED: {
+        maidsafe::GenericPacket gp;
+        gp.set_data("Generic System Packet Data " + base::itos(i));
+        gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
+                                     crypto::STRING_STRING));
+        chunk_data = gp.SerializeAsString();
+        break;
+      }
+    }
+
+    chunk_name = co.Hash(chunk_data, "", crypto::STRING_STRING, false);
+    chunk_size = chunk_data.size();
+
+    size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
+                           priv_key, crypto::STRING_STRING);
+    req_sig = co.AsymSign(co.Hash(pub_key_sig + chunk_name + vault_pmid_, "",
+                          crypto::STRING_STRING, false), "", priv_key,
+                          crypto::STRING_STRING);
+
+    signed_size->set_data_size(chunk_size);
+    signed_size->set_signature(size_sig);
+    request.set_chunkname(chunk_name);
+    request.set_request_signature(req_sig);
+
+    ASSERT_TRUE(vault_service_->StoreChunkLocal(chunk_name, chunk_data));
+    ASSERT_TRUE(vault_service_->HasChunkLocal(chunk_name));
+
     google::protobuf::Closure *done =
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->DeleteChunk(&controller, &request, &response, done);
     EXPECT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
+    ASSERT_FALSE(vault_service_->HasChunkLocal(chunk_name));
     response.Clear();
   }
-
-  ASSERT_FALSE(vault_service_->HasChunkLocal(chunk_name));
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {

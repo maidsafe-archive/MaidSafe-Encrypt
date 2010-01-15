@@ -1040,66 +1040,64 @@ void VaultService::DeleteChunk(google::protobuf::RpcController*,
     return;
   }
 
-  const maidsafe::SignedSize &sz = request->signed_size();
+  const maidsafe::SignedSize &request_sz = request->signed_size();
 
-  if (!ValidateSignedSize(sz)) {
+  if (!ValidateSignedRequest(request_sz.public_key(),
+      request_sz.public_key_signature(), request->request_signature(),
+      request->chunkname(), request_sz.pmid())) {
 #ifdef DEBUG
     printf("In VaultService::DeleteChunk (%i), ", knode_->host_port());
-    printf("failed to validate signed size.\n");
+    printf("request does not validate.\n");
 #endif
     done->Run();
     return;
   }
-
-  if (request->chunkname().length() != kKeySize) {
-#ifdef DEBUG
-    printf("In VaultService::DeleteChunk (%i), ", knode_->host_port());
-    printf("failed to validate chunk name.\n");
-#endif
-    done->Run();
-    return;
-  }
-
-  if (!ValidateSignedRequest(sz.public_key(),
-                             sz.public_key_signature(),
-                             request->request_signature(),
-                             request->chunkname(),
-                             sz.pmid())) {
-#ifdef DEBUG
-    printf("In VaultService::DeleteChunk (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
-#endif
-    done->Run();
-    return;
-  }
-
-  if (!HasChunkLocal(request->chunkname())) {
-    response->set_result(kAck);
-    done->Run();
-    return;
-  }
-
-  if (sz.data_size() != GetChunkSizeLocal(request->chunkname())) {
-#ifdef DEBUG
-    printf("In VaultService::DeleteChunk (%i), ", knode_->host_port());
-    printf("invalid chunk size.\n");
-#endif
-    done->Run();
-    return;
-  }
-
-  // TODO(Steve#) check request comes from ChunkInfo holder
 
   if (!DeleteChunkLocal(request->chunkname())) {
 #ifdef DEBUG
     printf("In VaultService::DeleteChunk (%i), ", knode_->host_port());
-    printf("failed to delete chunk.\n");
+    printf("chunk deletion failed.\n");
 #endif
     done->Run();
     return;
   }
+/*   std::string content;
+  if (!LoadChunkLocal(request->chunkname(), &content)) {
+    response->set_result(kNack);
+    done->Run();
+    return;
+  }
+  bool can_delete = false;
 
-  response->set_result(kAck);
+  // TODO(david/jose): define how to delete chunk references of signed
+  // chunks and then just check the signature and delete it
+  maidsafe::VaultBufferPacketHandler vbph;
+  switch (request->data_type()) {
+    case maidsafe::SYSTEM_PACKET: if (ValidateSystemPacket(content,
+                                         request->public_key()))
+                                    can_delete = true;
+                                  break;
+    case maidsafe::PDDIR_SIGNED: if (ValidateSystemPacket(content,
+                                         request->public_key()))
+                                   can_delete = true;
+                                 break;
+    default: break;
+  }
+  if (can_delete) {
+    if (request->data_type() != maidsafe::BUFFER_PACKET_MESSAGE) {
+      if (DeleteChunkLocal(request->chunkname()))
+        response->set_result(kAck);
+      else
+        response->set_result(kNack);
+    } else {
+      if (UpdateChunkLocal(request->chunkname(), content))
+        response->set_result(kAck);
+      else
+        response->set_result(kNack);
+    }
+  } else {
+    response->set_result(kNack);
+  }*/
   done->Run();
 }
 
@@ -1823,10 +1821,6 @@ bool VaultService::LoadPacketLocal(const std::string &packetname,
 
 bool VaultService::DeleteChunkLocal(const std::string &chunkname) {
   return (vault_chunkstore_->DeleteChunk(chunkname) == kSuccess);
-}
-
-boost::uint64_t VaultService::GetChunkSizeLocal(const std::string &chunkname) {
-  return vault_chunkstore_->GetChunkSize(chunkname);
 }
 
 void VaultService::FindCloseNodesCallback(const std::string &result,
