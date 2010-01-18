@@ -29,6 +29,31 @@
 
 namespace mock_vsl {
 
+void KGroup::MakeAmendAccountRequests(
+    const maidsafe::AmendAccountRequest::Amendment &type,
+    const std::string &account_pmid,
+    const boost::uint64_t &data_size,
+    const std::string &chunkname,
+    std::vector<maidsafe::AmendAccountRequest> *requests) {
+  if (requests == NULL)
+    return;
+  requests->clear();
+  maidsafe::AmendAccountRequest request;
+  request.set_amendment_type(type);
+  request.set_account_pmid(account_pmid);
+  request.set_chunkname(chunkname);
+  maidsafe::SignedSize *signed_size = request.mutable_signed_size();
+  for (size_t i = 0; i < members_.size(); ++i) {
+    signed_size->set_data_size(data_size);
+    signed_size->set_signature(co_.AsymSign(base::itos_ull(data_size), "",
+        members_.at(i).pmid_private, crypto::STRING_STRING));
+    signed_size->set_pmid(members_.at(i).pmid);
+    signed_size->set_public_key(members_.at(i).pmid_public);
+    signed_size->set_public_key_signature(members_.at(i).pmid_public_signature);
+    requests->push_back(request);
+  }
+}
+
 void CopyResult(const int &response,
                 boost::mutex *mutex,
                 boost::condition_variable *cv,

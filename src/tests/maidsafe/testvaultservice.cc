@@ -33,6 +33,7 @@
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/vault/vaultservicelogic.h"
+#include "tests/maidsafe/mockvaultservicelogic.h"
 
 namespace fs = boost::filesystem;
 
@@ -115,12 +116,12 @@ class VaultServicesTest : public testing::Test {
                                               kAvailableSpace, 0);
       ASSERT_TRUE(vault_chunkstore_->Init());
 
+      vault_service_logic_ = new VaultServiceLogic(&vault_rpcs_, knode_);
       vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                         vault_public_key_signature_,
                                         vault_chunkstore_, knode_, &poh_,
                                         vault_service_logic_);
 
-      vault_service_logic_ = new VaultServiceLogic(&vault_rpcs_, knode_);
       vault_service_logic_->Init(vault_pmid_, vault_public_key_signature_,
                                  vault_private_key_);
 
@@ -166,6 +167,28 @@ class VaultServicesTest : public testing::Test {
   private:
     VaultServicesTest(const VaultServicesTest&);
     VaultServicesTest& operator=(const VaultServicesTest&);
+};
+
+class MockVaultServicesTest : public VaultServicesTest {
+ protected:
+  MockVaultServicesTest()
+      : mock_vault_service_logic_(NULL, NULL),
+        k_group_() {}
+  void StartUp() {
+    // Initialise mock_vault_service_logic
+    mock_vault_service_logic_.non_hex_pmid_ = vault_pmid_;
+    mock_vault_service_logic_.pmid_public_signature_ =
+        vault_public_key_signature_;
+    mock_vault_service_logic_.pmid_private_ = vault_private_key_;
+    kad::Contact our_details(knode_->contact_info());
+    mock_vault_service_logic_.our_details_ = our_details;
+    mock_vault_service_logic_.SetOnlineStatus(true);
+  }
+  MockVsl mock_vault_service_logic_;
+  mock_vsl::KGroup k_group_;
+ private:
+  MockVaultServicesTest(const MockVaultServicesTest&);
+  MockVaultServicesTest &operator=(const MockVaultServicesTest&);
 };
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest) {
@@ -754,7 +777,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
   ASSERT_FALSE(vault_service_->HasChunkLocal(chunk_name));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
+TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
+  std::string vault_pmid(vault_pmid_);
+  delete vault_service_;
+  vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+                                    vault_public_key_signature_,
+                                    vault_chunkstore_, knode_, &poh_,
+                                    &mock_vault_service_logic_);
+
   rpcprotocol::Controller controller;
   maidsafe::AmendAccountRequest request;
   maidsafe::AmendAccountResponse response;
@@ -773,6 +803,19 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
                                    crypto::STRING_STRING);
   client_pmid = co.Hash(client_pub_key + client_pub_key_sig, "",
                         crypto::STRING_STRING, false);
+  std::string client_account_name = co.Hash(client_pmid + kAccount, "",
+                                            crypto::STRING_STRING, false);
+                           printf("client_pub_key_sig - %s\n", HexSubstr(client_pub_key_sig).c_str());
+                           printf("client_pmid - %s\n", HexSubstr(client_pmid).c_str());
+                           printf("vault_pmid_ - %s\n", HexSubstr(vault_pmid_).c_str());
+                           printf("kAccount - %s\n", kAccount.c_str());
+
+  EXPECT_CALL(mock_vault_service_logic_,
+              FindCloseNodes(client_account_name, testing::_))
+      .Times(testing::AtLeast(6))
+      .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&mock_vsl::RunCallback,
+          k_group_.serialised_find_nodes_response(), _1))));
 
   std::string chunk_data("This is a data chunk");
   std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
@@ -782,44 +825,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
                          client_priv_key, crypto::STRING_STRING);
 
   TestCallback cb_obj;
-
-  for (int i = 0; i <= 3; ++i) {
-    printf("--- CASE #%i ---\n", i);
-    switch (i) {
-      case 0:  // empty request
-        break;
-      case 1:  // unsigned size
-        request.set_amendment_type(
-            maidsafe::AmendAccountRequest::kSpaceGivenInc);
-        request.set_account_pmid(client_pmid);
-        request.set_chunkname(chunk_name);
-        signed_size = request.mutable_signed_size();
-        signed_size->set_data_size(chunk_size);
-        signed_size->set_signature("fail");
-        signed_size->set_pmid(client_pmid);
-        signed_size->set_public_key(client_pub_key);
-        signed_size->set_public_key_signature(client_pub_key_sig);
-        break;
-      case 2:  // zero size
-        signed_size->set_data_size(0);
-        signed_size->set_signature(co.AsymSign("0", "", client_priv_key,
-                                   crypto::STRING_STRING));
-        break;
-      case 3:  // missing chunk name
-        signed_size->set_data_size(chunk_size);
-        signed_size->set_signature(size_sig);
-        request.clear_chunkname();
-        break;
-    }
-
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AmendAccount(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
 
   boost::uint64_t space_offered = chunk_size * 3 / 2;
 
@@ -836,14 +841,74 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   request.set_chunkname(chunk_name);
 
   // Create the account first
+  google::protobuf::Closure *done =
+      google::protobuf::NewCallback<TestCallback>
+      (&cb_obj, &TestCallback::CallbackFunction);
   {
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>
-        (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
     ASSERT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
+  }
+
+  // Create an amendment awaiting a single further request to succeed
+  std::vector<maidsafe::AmendAccountRequest> requests;
+  std::vector<maidsafe::AmendAccountResponse> responses;
+  std::vector<google::protobuf::Closure*> callbacks;
+  int success_count(0);
+
+  for (int i = 0; i <= 3; ++i) {
+    printf("--- CASE #%i ---\n", i);
+    k_group_.MakeAmendAccountRequests(
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, client_pmid, chunk_size,
+      chunk_name, &requests);
+    switch (i) {
+      case 0:  // empty request
+        for (int i = 0; i < kad::K; ++i)
+          requests.at(i).Clear();
+        break;
+      case 1:  // unsigned size
+        for (int i = 0; i < kad::K; ++i) {
+          signed_size = requests.at(i).mutable_signed_size();
+          signed_size->set_signature("fail");
+        }
+        break;
+      case 2:  // zero size
+        for (int i = 0; i < kad::K; ++i) {
+          signed_size = requests.at(i).mutable_signed_size();
+          signed_size->set_data_size(0);
+          signed_size->set_signature(co.AsymSign(base::itos_ull(0), "",
+                                     client_priv_key, crypto::STRING_STRING));
+        }
+        break;
+      case 3:  // missing chunk name
+        for (int i = 0; i < kad::K; ++i) {
+          requests.at(i).clear_chunkname();
+        }
+        break;
+    }
+
+    for (int i = 0; i < kad::K; ++i) {
+      maidsafe::AmendAccountResponse response;
+      responses.push_back(response);
+      google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
+          &TestCallback::CallbackFunction);
+      callbacks.push_back(done);
+    }
+    for (int i = 0; i < kad::K; ++i) {
+      vault_service_->AmendAccount(&controller, &requests.at(i),
+          &responses.at(i), callbacks.at(i));
+    }
+    success_count = 0;
+    for (int i = 0; i < kad::K; ++i) {
+      ASSERT_TRUE(responses.at(i).IsInitialized());
+      if (static_cast<int>(responses.at(i).result()) == kAck)
+        ++success_count;
+    }
+    ASSERT_EQ(success_count, 0);
+    responses.clear();
+    callbacks.clear();
+    vault_service_->aah_.amendments_.clear();
   }
 
   signed_size->set_data_size(chunk_size);
@@ -867,8 +932,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   asreq.clear_space_requested();
   asreq.set_public_key(client_pub_key);
   asreq.set_public_key_signature(client_pub_key_sig);
+                                                                   printf("kAccount - %s\n", kAccount.c_str());
+                                                                   printf("vault_pmid - %s\n", HexSubstr(vault_pmid).c_str());
+                                                                   printf("client_pmid - %s\n", HexSubstr(client_pmid).c_str());
+                                                                   printf("client_pub_key_sig - %s\n", HexSubstr(client_pub_key_sig).c_str());
   asreq.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig +
-      client_pmid + kAccount + vault_pmid_, "", crypto::STRING_STRING, false),
+      client_pmid + kAccount + vault_pmid, "", crypto::STRING_STRING, false),
       "", client_priv_key, crypto::STRING_STRING));
 
   // current SpaceTaken should be 0
@@ -886,19 +955,31 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     printf("Passed getting status with 0 space taken.\n");
   }
 
-  request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceTakenInc);
-
   // increase SpaceTaken
-  {
-    response.Clear();
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+  k_group_.MakeAmendAccountRequests(
+    maidsafe::AmendAccountRequest::kSpaceTakenInc, client_pmid, chunk_size,
+    chunk_name, &requests);
+  responses.clear();
+  callbacks.clear();
+  for (int i = 0; i < kad::K; ++i) {
+    maidsafe::AmendAccountResponse response;
+    responses.push_back(response);
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
-    vault_service_->AmendAccount(&controller, &request, &response, done);
-    ASSERT_TRUE(response.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(response.result()));
-    printf("Passed incrementing space taken.\n");
+    callbacks.push_back(done);
   }
+  for (int i = 0; i < kad::K; ++i) {
+    vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
+        callbacks.at(i));
+  }
+  success_count = 0;
+  for (int i = 0; i < kad::K; ++i) {
+    ASSERT_TRUE(responses.at(i).IsInitialized());
+    if (static_cast<int>(responses.at(i).result()) == kAck)
+      ++success_count;
+  }
+  ASSERT_GE(success_count, kad::K - 1);
+  printf("Passed incrementing space taken.\n");
 
   // current SpaceTaken should be chunk_size
   {
@@ -928,19 +1009,32 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   }
 
   asreq.clear_space_requested();
-  request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceTakenDec);
 
   // decrease SpaceTaken
-  {
-    response.Clear();
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+  k_group_.MakeAmendAccountRequests(
+    maidsafe::AmendAccountRequest::kSpaceTakenDec, client_pmid, chunk_size,
+    chunk_name, &requests);
+  responses.clear();
+  callbacks.clear();
+  for (int i = 0; i < kad::K; ++i) {
+    maidsafe::AmendAccountResponse response;
+    responses.push_back(response);
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
-    vault_service_->AmendAccount(&controller, &request, &response, done);
-    ASSERT_TRUE(response.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(response.result()));
-    printf("Passed decrementing space taken.\n");
+    callbacks.push_back(done);
   }
+  for (int i = 0; i < kad::K; ++i) {
+    vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
+        callbacks.at(i));
+  }
+  success_count = 0;
+  for (int i = 0; i < kad::K; ++i) {
+    ASSERT_TRUE(responses.at(i).IsInitialized());
+    if (static_cast<int>(responses.at(i).result()) == kAck)
+      ++success_count;
+  }
+  ASSERT_GE(success_count, kad::K - 1);
+  printf("Passed decrementing space taken.\n");
 
   // current SpaceTaken should be 0
   {
@@ -957,16 +1051,27 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   }
 
   // decrease SpaceTaken again, should fail
-  {
-    response.Clear();
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+  responses.clear();
+  callbacks.clear();
+  for (int i = 0; i < kad::K; ++i) {
+    maidsafe::AmendAccountResponse response;
+    responses.push_back(response);
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
-    vault_service_->AmendAccount(&controller, &request, &response, done);
-    ASSERT_TRUE(response.IsInitialized());
-    ASSERT_EQ(kNack, static_cast<int>(response.result()));
-    printf("Correctly failed decrement.\n");
+    callbacks.push_back(done);
   }
+  for (int i = 0; i < kad::K; ++i) {
+    vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
+        callbacks.at(i));
+  }
+  success_count = 0;
+  for (int i = 0; i < kad::K; ++i) {
+    ASSERT_TRUE(responses.at(i).IsInitialized());
+    if (static_cast<int>(responses.at(i).result()) == kAck)
+      ++success_count;
+  }
+  ASSERT_EQ(0, success_count);
+  printf("Correctly failed to decrement space taken.\n");
 
   // current SpaceTaken should still be 0
   {
@@ -982,19 +1087,31 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     printf("Passed getting status with 0 space taken.\n");
   }
 
-  request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
-
   // increase SpaceGiven
-  {
-    response.Clear();
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+  k_group_.MakeAmendAccountRequests(
+    maidsafe::AmendAccountRequest::kSpaceGivenInc, client_pmid, chunk_size,
+    chunk_name, &requests);
+  responses.clear();
+  callbacks.clear();
+  for (int i = 0; i < kad::K; ++i) {
+    maidsafe::AmendAccountResponse response;
+    responses.push_back(response);
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
-    vault_service_->AmendAccount(&controller, &request, &response, done);
-    ASSERT_TRUE(response.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(response.result()));
-    printf("Correctly decremented space given.\n");
+    callbacks.push_back(done);
   }
+  for (int i = 0; i < kad::K; ++i) {
+    vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
+        callbacks.at(i));
+  }
+  success_count = 0;
+  for (int i = 0; i < kad::K; ++i) {
+    ASSERT_TRUE(responses.at(i).IsInitialized());
+    if (static_cast<int>(responses.at(i).result()) == kAck)
+      ++success_count;
+  }
+  ASSERT_GE(success_count, kad::K - 1);
+  printf("Correctly incremented space given.\n");
 
   // current SpaceGiven should be chunk_size
   {
@@ -1010,19 +1127,31 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     printf("Passed getting status with appropriate space given.\n");
   }
 
-  request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenDec);
-
   // decrease SpaceGiven
-  {
-    response.Clear();
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+  k_group_.MakeAmendAccountRequests(
+    maidsafe::AmendAccountRequest::kSpaceGivenDec, client_pmid, chunk_size,
+    chunk_name, &requests);
+  responses.clear();
+  callbacks.clear();
+  for (int i = 0; i < kad::K; ++i) {
+    maidsafe::AmendAccountResponse response;
+    responses.push_back(response);
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
-    vault_service_->AmendAccount(&controller, &request, &response, done);
-    ASSERT_TRUE(response.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(response.result()));
-    printf("Correctly decremented space given.\n");
+    callbacks.push_back(done);
   }
+  for (int i = 0; i < kad::K; ++i) {
+    vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
+        callbacks.at(i));
+  }
+  success_count = 0;
+  for (int i = 0; i < kad::K; ++i) {
+    ASSERT_TRUE(responses.at(i).IsInitialized());
+    if (static_cast<int>(responses.at(i).result()) == kAck)
+      ++success_count;
+  }
+  ASSERT_GE(success_count, kad::K - 1);
+  printf("Correctly decremented space given.\n");
 
   // current SpaceGiven should still be 0
   {
@@ -1039,16 +1168,30 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   }
 
   // decrease SpaceGiven again, should fail
-  {
-    response.Clear();
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+  k_group_.MakeAmendAccountRequests(
+    maidsafe::AmendAccountRequest::kSpaceGivenDec, client_pmid, chunk_size,
+    chunk_name, &requests);
+  responses.clear();
+  callbacks.clear();
+  for (int i = 0; i < kad::K; ++i) {
+    maidsafe::AmendAccountResponse response;
+    responses.push_back(response);
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
-    vault_service_->AmendAccount(&controller, &request, &response, done);
-    ASSERT_TRUE(response.IsInitialized());
-    ASSERT_EQ(kNack, static_cast<int>(response.result()));
-    printf("Correctly failed decrement of space given.\n");
+    callbacks.push_back(done);
   }
+  for (int i = 0; i < kad::K; ++i) {
+    vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
+        callbacks.at(i));
+  }
+  success_count = 0;
+  for (int i = 0; i < kad::K; ++i) {
+    ASSERT_TRUE(responses.at(i).IsInitialized());
+    if (static_cast<int>(responses.at(i).result()) == kAck)
+      ++success_count;
+  }
+  ASSERT_EQ(0, success_count);
+  printf("Correctly failed to decrement space given.\n");
 
   // current SpaceGiven should still be 0
   {
@@ -1065,7 +1208,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
+TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToWatchList) {
+  delete vault_service_;
+  vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+                                    vault_public_key_signature_,
+                                    vault_chunkstore_, knode_, &poh_,
+                                    &mock_vault_service_logic_);
+
   rpcprotocol::Controller controller;
   maidsafe::AddToWatchListRequest request;
   maidsafe::AddToWatchListResponse response;
@@ -1093,6 +1242,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   vlt_pmid = co.Hash(vlt_pub_key + vlt_pub_key_sig, "", crypto::STRING_STRING,
                      false);
 
+  std::string client_account_name = co.Hash(client_pmid + kAccount, "",
+                                            crypto::STRING_STRING, false);
+
+  EXPECT_CALL(mock_vault_service_logic_,
+              FindCloseNodes(client_account_name, testing::_))
+      .Times(testing::AtLeast(6))
+      .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&mock_vsl::RunCallback,
+          k_group_.serialised_find_nodes_response(), _1))));
+
   std::string chunk_data("This is a data chunk");
   std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
   boost::uint64_t chunk_size(chunk_data.size());
@@ -1100,9 +1259,49 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
                          client_priv_key, crypto::STRING_STRING);
 
+  TestCallback cb_obj;
+
+  boost::uint64_t space_offered = chunk_size * 3 / 2;
+
   maidsafe::SignedSize *signed_size;
 
-  TestCallback cb_obj;
+  maidsafe::AmendAccountRequest amend_req;
+  maidsafe::AmendAccountResponse amend_resp;
+  signed_size = amend_req.mutable_signed_size();
+  signed_size->set_data_size(space_offered);
+  signed_size->set_signature(co.AsymSign(base::itos_ull(space_offered), "",
+                             client_priv_key, crypto::STRING_STRING));
+  signed_size->set_pmid(client_pmid);
+  signed_size->set_public_key(client_pub_key);
+  signed_size->set_public_key_signature(client_pub_key_sig);
+  amend_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+  amend_req.set_account_pmid(client_pmid);
+  amend_req.set_chunkname(chunk_name);
+  google::protobuf::Closure *done =
+      google::protobuf::NewCallback<TestCallback>(&cb_obj,
+      &TestCallback::CallbackFunction);
+
+  // Create the account first
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
+    vault_service_->AmendAccount(&controller, &amend_req, &amend_resp, done);
+    ASSERT_TRUE(amend_resp.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(amend_resp.result()));
+    amend_resp.Clear();
+  }
+
+  // Add an amendment struct awaiting a single further request to succeed
+  AccountAmendment amendment(client_pmid, 2, chunk_size, true,
+      PendingAmending(&amend_req, &amend_resp, done));
+  amendment.success_count = vault_service_->aah_.kKadStoreThreshold_ - 1;
+  {
+    boost::mutex::scoped_lock lock(vault_service_->aah_.amendment_mutex_);
+    std::pair<AccountAmendmentSet::iterator, bool> p =
+        vault_service_->aah_.amendments_.insert(amendment);
+    ASSERT_TRUE(p.second);
+  }
 
   for (int i = 0; i <= 3; ++i) {
     switch (i) {
@@ -1235,7 +1434,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
+TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
+  delete vault_service_;
+  vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+                                    vault_public_key_signature_,
+                                    vault_chunkstore_, knode_, &poh_,
+                                    &mock_vault_service_logic_);
+
   rpcprotocol::Controller controller;
   maidsafe::AddToWatchListRequest add_request;
   maidsafe::AddToWatchListResponse add_response;
@@ -1457,7 +1662,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
+TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToReferenceList) {
+  delete vault_service_;
+  vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+                                    vault_public_key_signature_,
+                                    vault_chunkstore_, knode_, &poh_,
+                                    &mock_vault_service_logic_);
+
   rpcprotocol::Controller controller;
   maidsafe::AddToReferenceListRequest request;
   maidsafe::AddToReferenceListResponse response;
@@ -1682,7 +1893,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesRemoveFromReferenceList) {
+TEST_F(MockVaultServicesTest, FUNC_MAID_DISABLED_ServicesRemoveFromReferenceList) {  // NOLINT(Fraser) - will be fixed once "DISABLED_" is removed.
+  delete vault_service_;
+  vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+                                    vault_public_key_signature_,
+                                    vault_chunkstore_, knode_, &poh_,
+                                    &mock_vault_service_logic_);
+
   ASSERT_TRUE(false) << "-- NOT IMPLEMENTED --";
   /*
   rpcprotocol::Controller controller;

@@ -91,9 +91,11 @@ struct AmendRemoteAccountOpData {
   };
   AmendRemoteAccountOpData(maidsafe::AmendAccountRequest req,
                            std::string name,
+                           int found_local_res,
                            Callback cb)
       : request(req),
         account_name(name),
+        found_local_result(found_local_res),
         callback(cb),
         mutex(),
         contacts(),
@@ -103,6 +105,7 @@ struct AmendRemoteAccountOpData {
         callback_done(false) {}
   maidsafe::AmendAccountRequest request;
   std::string account_name;  // non-hex version
+  int found_local_result;
   Callback callback;
   boost::mutex mutex;
   std::vector<kad::Contact> contacts;
@@ -174,6 +177,7 @@ class VaultServiceLogic {
                                 int *result);
   // Amend account of PMID requesting to be added to Watch List or Ref List.
   void AmendRemoteAccount(const maidsafe::AmendAccountRequest &request,
+                          const int &found_local_result,
                           const Callback &callback);
   // Blocking call which looks up account holders and sends each an
   // AccountStatusRequest to establish if the account owner has space to store
@@ -188,6 +192,8 @@ class VaultServiceLogic {
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
+  friend class MockVaultServicesTest;
 
   // Method called by each AddToReferenceList response in AddToRemoteRefList.
   // index indicates the position in data's internal vectors of the respondent.

@@ -49,17 +49,77 @@ enum FindNodesResponseType {
   kTooFewContacts,
   kGood
 };
+
+class KGroup {
+ public:
+  struct Member {
+    Member(const std::string &pmid_in,
+           const std::string &pmid_private_in,
+           const std::string &pmid_public_in,
+           const std::string &pmid_public_signature_in)
+        : pmid(pmid_in),
+          pmid_private(pmid_private_in),
+          pmid_public(pmid_public_in),
+          pmid_public_signature(pmid_public_signature_in) {}
+    Member() : pmid(), pmid_private(), pmid_public(), pmid_public_signature() {
+      crypto::RsaKeyPair kp;
+      kp.GenerateKeys(4096);
+      pmid_private = kp.private_key();
+      pmid_public = kp.public_key();
+      crypto::Crypto co;
+      co.set_symm_algorithm(crypto::AES_256);
+      co.set_hash_algorithm(crypto::SHA_512);
+      pmid_public_signature = co.AsymSign(pmid_public, "", pmid_private,
+                                          crypto::STRING_STRING);
+      pmid = co.Hash(pmid_public + pmid_public_signature, "",
+                     crypto::STRING_STRING, false);
+    }
+    std::string pmid, pmid_private, pmid_public, pmid_public_signature;
+  };
+  KGroup() : co_(), members_(), serialised_find_nodes_response_() {
+    co_.set_symm_algorithm(crypto::AES_256);
+    co_.set_hash_algorithm(crypto::SHA_512);
+    kad::FindResponse find_response;
+    find_response.set_result(kad::kRpcResultSuccess);
+    for (int i = 0; i < kad::K; ++i) {
+      Member member;
+      members_.push_back(member);
+      kad::Contact node(member.pmid, "192.168.1.1", 5000 + i);
+      node.SerialiseToString(&serialised_find_nodes_response_);
+      find_response.add_closest_nodes(serialised_find_nodes_response_);
+    }
+    find_response.SerializeToString(&serialised_find_nodes_response_);
+  }
+  std::string serialised_find_nodes_response() {
+    return serialised_find_nodes_response_;
+  }
+  void MakeAmendAccountRequests(
+      const maidsafe::AmendAccountRequest::Amendment &type,
+      const std::string &account_pmid,
+      const boost::uint64_t &data_size,
+      const std::string &chunkname,
+      std::vector<maidsafe::AmendAccountRequest> *requests);
+ private:
+  crypto::Crypto co_;
+  std::vector<Member> members_;
+  std::string serialised_find_nodes_response_;
+};
+
 void CopyResult(const int &response,
                 boost::mutex *mutex,
                 boost::condition_variable *cv,
                 int *result);
+
 std::string MakeFindNodesResponse(const FindNodesResponseType &type,
                                   std::vector<std::string> *pmids);
+
 void RunCallback(const std::string &find_nodes_response,
                  const base::callback_func_type &callback);
+
 void DoneRun(const int &min_delay,
              const int &max_delay,
              google::protobuf::Closure* callback);
+
 void ThreadedDoneRun(const int &min_delay,
                      const int &max_delay,
                      google::protobuf::Closure* callback);

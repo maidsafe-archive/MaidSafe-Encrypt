@@ -235,7 +235,7 @@ void VaultServiceLogic::HandleFindKNodesResponse(
     int *result) {
   if (contacts == NULL || mutex == NULL || cv == NULL || result == NULL) {
 #ifdef DEBUG
-    printf("In VSL::HandleFindKNodesResponse, (%s) NULL pointers passed.\n",
+    printf("In VSL::HandleFindKNodesResponse, (%s) NULL pointer(s) passed.\n",
            HexSubstr(non_hex_pmid_).c_str());
 #endif
     return;
@@ -275,6 +275,7 @@ void VaultServiceLogic::HandleFindKNodesResponse(
 
 void VaultServiceLogic::AmendRemoteAccount(
     const maidsafe::AmendAccountRequest &request,
+    const int &found_local_result,
     const Callback &callback) {
   if (!online()) {
 #ifdef DEBUG
@@ -288,8 +289,8 @@ void VaultServiceLogic::AmendRemoteAccount(
   co.set_hash_algorithm(crypto::SHA_512);
   std::string account_name(co.Hash(request.account_pmid() + kAccount, "",
       crypto::STRING_STRING, false));
-  boost::shared_ptr<AmendRemoteAccountOpData>
-      data(new AmendRemoteAccountOpData(request, account_name, callback));
+  boost::shared_ptr<AmendRemoteAccountOpData> data(new AmendRemoteAccountOpData(
+      request, account_name, found_local_result, callback));
   FindCloseNodes(account_name, boost::bind(
       &VaultServiceLogic::AmendRemoteAccountStageTwo, this, data, _1));
 }
@@ -323,7 +324,12 @@ void VaultServiceLogic::AmendRemoteAccountStageTwo(
   for (std::vector<kad::Contact>::iterator it = data->contacts.begin();
        it != data->contacts.end(); ++it) {
     if ((*it).node_id() == our_details_.node_id()) {
-      // TODO(Fraser#5#): 2010-01-11 - Query own account handler to get result.
+      // We've already tried to amend the account if we happen to hold it in
+      // VaultService::AmendRemoteAccount function.
+      if (data->found_local_result == kSuccess)
+        ++data->success_count;
+      else
+        ++data->failure_count;
 #ifdef DEBUG
 //      printf("Vault %s listed as an account holder for PMID %s\n",
 //             HexSubstr((*it).node_id()).c_str(),
@@ -431,7 +437,8 @@ int VaultServiceLogic::RemoteVaultAbleToStore(
   for (std::vector<kad::Contact>::iterator it = data->contacts.begin();
        it != data->contacts.end(); ++it) {
     if ((*it).node_id() == our_details_.node_id()) {
-      // TODO(Fraser#5#): 2010-01-11 - Query own account handler to get result.
+      // TODO(Fraser#5#): 2010-01-11 - Query own account handler to get result
+      // in VaultService::RemoteVaultAbleToStore and pass result through to here
 #ifdef DEBUG
 //      printf("Vault %s listed as an account holder for PMID %s\n",
 //             HexSubstr((*it).node_id()).c_str(),

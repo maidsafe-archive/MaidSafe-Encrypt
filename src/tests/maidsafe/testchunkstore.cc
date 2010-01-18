@@ -371,7 +371,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreInit) {
   ASSERT_NE(size_t(0), chunk_names.size());
   chunkstore->GetAllChunks(&chunk_names);
   ASSERT_EQ(size_t(0), chunk_names.size());
-  ASSERT_EQ(0, chunkstore->GetChunkSize(h_name.at(0)));
+  ASSERT_EQ(size_t(0), chunkstore->GetChunkSize(h_name.at(0)));
   ASSERT_EQ(kChunkstoreUninitialised,
             chunkstore->HashCheckChunk(h_name.at(0)));
   failed_keys.push_back("key");
@@ -856,7 +856,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreUpdateChunk) {
   ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, true, 3, 32000, &h_size,
                                           &h_value, &h_name));
   ASSERT_NE(h_value.at(0), h_value.at(1));
-  ASSERT_EQ(0, chunkstore->GetChunkSize(h_name.at(0)));
+  ASSERT_EQ(size_t(0), chunkstore->GetChunkSize(h_name.at(0)));
   ASSERT_EQ(0, chunkstore->Store(h_name.at(0), h_value.at(0)));
   ASSERT_EQ(h_size.at(0), chunkstore->GetChunkSize(h_name.at(0)));
   ASSERT_EQ(0, chunkstore->UpdateChunk(h_name.at(0), h_value.at(1)));
@@ -868,7 +868,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreUpdateChunk) {
   ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, true, 3, 32000, &nh_size,
                                           &nh_value, &nh_name));
   ASSERT_NE(nh_value.at(0), nh_value.at(1));
-  ASSERT_EQ(0, chunkstore->GetChunkSize(nh_name.at(0)));
+  ASSERT_EQ(size_t(0), chunkstore->GetChunkSize(nh_name.at(0)));
   ASSERT_EQ(0, chunkstore->Store(nh_name.at(0), nh_value.at(0)));
   ASSERT_EQ(nh_size.at(0), chunkstore->GetChunkSize(nh_name.at(0)));
   ASSERT_EQ(0, chunkstore->UpdateChunk(nh_name.at(0), nh_value.at(1)));

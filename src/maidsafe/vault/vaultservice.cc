@@ -67,7 +67,8 @@ void AddToRefListTask::run() {
 //  }
 
 void AmendRemoteAccountTask::run() {
-  vault_service_logic_->AmendRemoteAccount(amend_account_request_, callback_);
+  vault_service_logic_->AmendRemoteAccount(amend_account_request_,
+      found_local_result_, callback_);
 }
 
 VaultService::VaultService(const std::string &pmid_public,
@@ -249,7 +250,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
 //  printf("In VaultService::StoreChunk (%i), Chunk name: %s\n",
 //         knode_->host_port(), HexSubstr(request->chunkname()).c_str());
 #endif
-  // TODO(Fraser#5#): 2009-12-28 - if this fails more thanm kMinStoreRetries for
+  // TODO(Fraser#5#): 2009-12-28 - if this fails more than kMinStoreRetries for
   //                               same chunkname & peer, delete from prm_?
   response->set_pmid(non_hex_pmid_);
   response->set_result(kNack);
@@ -1653,15 +1654,21 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
 //////// END OF SERVICES ////////
 
 bool VaultService::ValidateSignedSize(const maidsafe::SignedSize &sz) {
-  if (!sz.IsInitialized())
+  if (!sz.IsInitialized()) {
+                                                                printf("Here 5\n");
     return false;
-  if (!ValidateIdentity(sz.pmid(), sz.public_key(), sz.public_key_signature()))
+  }
+  if (!ValidateIdentity(sz.pmid(), sz.public_key(), sz.public_key_signature()))  {
+                                                                printf("Here 7\n");
     return false;
+  }
   crypto::Crypto co;
   std::string str_size = base::itos_ull(sz.data_size());
   if (!co.AsymCheckSig(str_size, sz.signature(), sz.public_key(),
-      crypto::STRING_STRING))
+      crypto::STRING_STRING)) {
+                                                                printf("Here 6\n");
     return false;
+      }
   return true;
 }
 
@@ -1692,23 +1699,29 @@ bool VaultService::ValidateAmendRequest(
     std::string *pmid) {
   *account_delta = 0;
   pmid->clear();
-  if (!request->IsInitialized())
+  if (!request->IsInitialized()) {
+                                                                printf("Here 1\n");
     return false;
+  }
 
   const maidsafe::SignedSize &sz = request->signed_size();
   if (request->amendment_type() ==
       maidsafe::AmendAccountRequest::kSpaceOffered) {
     if (request->account_pmid() != sz.pmid()) {
+                                                                printf("Here 2\n");
       return false;
     }
   } else {
     if (!request->has_chunkname()) {
+                                                                printf("Here 3\n");
       return false;
     }
   }
 
-  if (!ValidateSignedSize(sz))
+  if (!ValidateSignedSize(sz)) {
+                                                                printf("Here 4\n");
     return false;
+  }
 
   *pmid = request->account_pmid();
   *account_delta = sz.data_size();
@@ -1855,6 +1868,24 @@ void VaultService::AmendRemoteAccount(
     const std::string &account_pmid,
     const std::string &chunkname,
     const Callback &callback) {
+  // Check if we happen to hold the account - if so, modify as required
+  int found_local_result = ah_.HaveAccount(account_pmid);
+  if (found_local_result != kAccountNotFound) {
+    bool increase(false);
+    int field(2);
+    if (amendment_type == maidsafe::AmendAccountRequest::kSpaceGivenInc ||
+        amendment_type == maidsafe::AmendAccountRequest::kSpaceTakenInc)
+      increase = true;
+    if (amendment_type == maidsafe::AmendAccountRequest::kSpaceTakenDec ||
+        amendment_type == maidsafe::AmendAccountRequest::kSpaceTakenInc)
+      field = 3;
+    // Check that we've got valid amendment type
+    if (increase || field != 2 || amendment_type ==
+        maidsafe::AmendAccountRequest::kSpaceGivenDec) {
+      found_local_result =
+          ah_.AmendAccount(account_pmid, field, size, increase);
+    }
+  }
   crypto::Crypto co;
   maidsafe::AmendAccountRequest amend_account_request;
   amend_account_request.set_amendment_type(amendment_type);
@@ -1869,15 +1900,15 @@ void VaultService::AmendRemoteAccount(
   mutable_signed_size->set_public_key_signature(pmid_public_signature_);
   amend_account_request.set_chunkname(chunkname);
   // thread_pool_ handles destruction of task.
-  // TODO(Fraser#) add amendment task to list
-//  AmendRemoteAccountTask *task = new AmendRemoteAccountTask(
-//      amend_account_request, callback, vault_service_logic_);
-//  thread_pool_.start(task);
+  AmendRemoteAccountTask *task =
+      new AmendRemoteAccountTask(amend_account_request, found_local_result,
+      callback, vault_service_logic_);
+  thread_pool_.start(task);
 }
 
 int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
-                                          const std::string &account_pmid,
-                                          const std::string &chunkname) {
+                                         const std::string &account_pmid,
+                                         const std::string &chunkname) {
   maidsafe::AccountStatusRequest as_req;
   as_req.set_account_pmid(account_pmid);
   as_req.set_space_requested(size);

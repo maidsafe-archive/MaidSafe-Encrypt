@@ -95,9 +95,11 @@ class AmendRemoteAccountTask : public QRunnable {
  public:
   AmendRemoteAccountTask(
       const maidsafe::AmendAccountRequest &amend_account_request,
+      const int &found_local_result,
       Callback callback,
       VaultServiceLogic *vault_service_logic)
           : amend_account_request_(amend_account_request),
+            found_local_result_(found_local_result),
             callback_(callback),
             vault_service_logic_(vault_service_logic) {}
   void run();
@@ -105,6 +107,7 @@ class AmendRemoteAccountTask : public QRunnable {
   AmendRemoteAccountTask &operator=(const AmendRemoteAccountTask&);
   AmendRemoteAccountTask(const AmendRemoteAccountTask&);
   maidsafe::AmendAccountRequest amend_account_request_;
+  int found_local_result_;
   Callback callback_;
   VaultServiceLogic *vault_service_logic_;
 };
@@ -219,10 +222,11 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesDeleteChunk);
-  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddToWatchList);
-  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList);
-  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddToReferenceList);
-  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesRemoveFromReferenceList);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAddToWatchList);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAddToReferenceList);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromReferenceList);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidityCheck);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesCreateBP);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo);
