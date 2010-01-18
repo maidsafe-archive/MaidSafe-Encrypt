@@ -1654,21 +1654,15 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
 //////// END OF SERVICES ////////
 
 bool VaultService::ValidateSignedSize(const maidsafe::SignedSize &sz) {
-  if (!sz.IsInitialized()) {
-                                                                printf("Here 5\n");
+  if (!sz.IsInitialized())
     return false;
-  }
-  if (!ValidateIdentity(sz.pmid(), sz.public_key(), sz.public_key_signature()))  {
-                                                                printf("Here 7\n");
+  if (!ValidateIdentity(sz.pmid(), sz.public_key(), sz.public_key_signature()))
     return false;
-  }
   crypto::Crypto co;
   std::string str_size = base::itos_ull(sz.data_size());
   if (!co.AsymCheckSig(str_size, sz.signature(), sz.public_key(),
-      crypto::STRING_STRING)) {
-                                                                printf("Here 6\n");
+      crypto::STRING_STRING))
     return false;
-      }
   return true;
 }
 
@@ -1699,27 +1693,20 @@ bool VaultService::ValidateAmendRequest(
     std::string *pmid) {
   *account_delta = 0;
   pmid->clear();
-  if (!request->IsInitialized()) {
-                                                                printf("Here 1\n");
+  if (!request->IsInitialized())
     return false;
-  }
 
   const maidsafe::SignedSize &sz = request->signed_size();
   if (request->amendment_type() ==
       maidsafe::AmendAccountRequest::kSpaceOffered) {
-    if (request->account_pmid() != sz.pmid()) {
-                                                                printf("Here 2\n");
+    if (request->account_pmid() != sz.pmid())
       return false;
-    }
   } else {
-    if (!request->has_chunkname()) {
-                                                                printf("Here 3\n");
+    if (!request->has_chunkname())
       return false;
-    }
   }
 
   if (!ValidateSignedSize(sz)) {
-                                                                printf("Here 4\n");
     return false;
   }
 
@@ -1752,7 +1739,6 @@ bool VaultService::ValidateIdentity(const std::string &id,
   maidsafe::MaidsafeValidator msv;
   if (!msv.ValidateSignerId(id, public_key, public_key_signature))
     return false;
-
   return true;
 }
 
@@ -1789,9 +1775,8 @@ int VaultService::Storable(const boost::uint64_t &data_size) {
 bool VaultService::ModifyBufferPacketInfo(const std::string &new_info,
                                           const std::string &pub_key,
                                           std::string *updated_bp) {
-  if (!ValidateSystemPacket(new_info, pub_key)) {
+  if (!ValidateSystemPacket(new_info, pub_key))
     return false;
-  }
   maidsafe::VaultBufferPacketHandler vbph;
   return vbph.ChangeOwnerInfo(new_info, updated_bp, pub_key);
 }

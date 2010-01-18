@@ -778,7 +778,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
 }
 
 TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
-  std::string vault_pmid(vault_pmid_);
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
@@ -788,8 +787,6 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   rpcprotocol::Controller controller;
   maidsafe::AmendAccountRequest request;
   maidsafe::AmendAccountResponse response;
-
-  maidsafe::SignedSize *signed_size;
 
   std::string client_pub_key, client_priv_key, client_pmid, client_pub_key_sig;
   std::string size_sig;
@@ -805,10 +802,6 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
                         crypto::STRING_STRING, false);
   std::string client_account_name = co.Hash(client_pmid + kAccount, "",
                                             crypto::STRING_STRING, false);
-                           printf("client_pub_key_sig - %s\n", HexSubstr(client_pub_key_sig).c_str());
-                           printf("client_pmid - %s\n", HexSubstr(client_pmid).c_str());
-                           printf("vault_pmid_ - %s\n", HexSubstr(vault_pmid_).c_str());
-                           printf("kAccount - %s\n", kAccount.c_str());
 
   EXPECT_CALL(mock_vault_service_logic_,
               FindCloseNodes(client_account_name, testing::_))
@@ -829,13 +822,15 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   boost::uint64_t space_offered = chunk_size * 3 / 2;
 
   request.Clear();
-  signed_size = request.mutable_signed_size();
-  signed_size->set_data_size(space_offered);
-  signed_size->set_signature(co.AsymSign(base::itos_ull(space_offered), "",
-                             client_priv_key, crypto::STRING_STRING));
-  signed_size->set_pmid(client_pmid);
-  signed_size->set_public_key(client_pub_key);
-  signed_size->set_public_key_signature(client_pub_key_sig);
+  {
+    maidsafe::SignedSize *signed_size = request.mutable_signed_size();
+    signed_size->set_data_size(space_offered);
+    signed_size->set_signature(co.AsymSign(base::itos_ull(space_offered), "",
+                               client_priv_key, crypto::STRING_STRING));
+    signed_size->set_pmid(client_pmid);
+    signed_size->set_public_key(client_pub_key);
+    signed_size->set_public_key_signature(client_pub_key_sig);
+  }
   request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
   request.set_account_pmid(client_pmid);
   request.set_chunkname(chunk_name);
@@ -859,6 +854,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
 
   for (int i = 0; i <= 3; ++i) {
     printf("--- CASE #%i ---\n", i);
+    maidsafe::SignedSize *signed_size;
     k_group_.MakeAmendAccountRequests(
       maidsafe::AmendAccountRequest::kSpaceGivenInc, client_pmid, chunk_size,
       chunk_name, &requests);
@@ -896,6 +892,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
       callbacks.push_back(done);
     }
     for (int i = 0; i < kad::K; ++i) {
+      printf("REQ %02d/%02d - ", i+1, kad::K);
       vault_service_->AmendAccount(&controller, &requests.at(i),
           &responses.at(i), callbacks.at(i));
     }
@@ -910,9 +907,6 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
     callbacks.clear();
     vault_service_->aah_.amendments_.clear();
   }
-
-  signed_size->set_data_size(chunk_size);
-  signed_size->set_signature(size_sig);
 
   maidsafe::AccountStatusRequest asreq;
   asreq.set_account_pmid(client_pmid);
@@ -932,12 +926,8 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   asreq.clear_space_requested();
   asreq.set_public_key(client_pub_key);
   asreq.set_public_key_signature(client_pub_key_sig);
-                                                                   printf("kAccount - %s\n", kAccount.c_str());
-                                                                   printf("vault_pmid - %s\n", HexSubstr(vault_pmid).c_str());
-                                                                   printf("client_pmid - %s\n", HexSubstr(client_pmid).c_str());
-                                                                   printf("client_pub_key_sig - %s\n", HexSubstr(client_pub_key_sig).c_str());
   asreq.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig +
-      client_pmid + kAccount + vault_pmid, "", crypto::STRING_STRING, false),
+      client_pmid + kAccount + vault_pmid_, "", crypto::STRING_STRING, false),
       "", client_priv_key, crypto::STRING_STRING));
 
   // current SpaceTaken should be 0
