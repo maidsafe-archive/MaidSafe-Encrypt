@@ -172,9 +172,9 @@ class VaultServicesTest : public testing::Test {
 class MockVaultServicesTest : public VaultServicesTest {
  protected:
   MockVaultServicesTest()
-      : mock_vault_service_logic_(NULL, NULL),
-        k_group_() {}
-  void StartUp() {
+      : mock_vault_service_logic_(NULL, NULL) {}
+  void SetUp() {
+    VaultServicesTest::SetUp();
     // Initialise mock_vault_service_logic
     mock_vault_service_logic_.non_hex_pmid_ = vault_pmid_;
     mock_vault_service_logic_.pmid_public_signature_ =
@@ -185,7 +185,6 @@ class MockVaultServicesTest : public VaultServicesTest {
     mock_vault_service_logic_.SetOnlineStatus(true);
   }
   MockVsl mock_vault_service_logic_;
-  mock_vsl::KGroup k_group_;
  private:
   MockVaultServicesTest(const MockVaultServicesTest&);
   MockVaultServicesTest &operator=(const MockVaultServicesTest&);
@@ -788,6 +787,8 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   maidsafe::AmendAccountRequest request;
   maidsafe::AmendAccountResponse response;
 
+  mock_vsl::KGroup k_group;
+
   std::string client_pub_key, client_priv_key, client_pmid, client_pub_key_sig;
   std::string size_sig;
 
@@ -808,7 +809,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
       .Times(testing::AtLeast(6))
       .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_vsl::RunCallback,
-          k_group_.serialised_find_nodes_response(), _1))));
+          k_group.serialised_find_nodes_response(), _1))));
 
   std::string chunk_data("This is a data chunk");
   std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
@@ -855,7 +856,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   for (int i = 0; i <= 3; ++i) {
     printf("--- CASE #%i ---\n", i);
     maidsafe::SignedSize *signed_size;
-    k_group_.MakeAmendAccountRequests(
+    k_group.MakeAmendAccountRequests(
       maidsafe::AmendAccountRequest::kSpaceGivenInc, client_pmid, chunk_size,
       chunk_name, &requests);
     switch (i) {
@@ -946,7 +947,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   }
 
   // increase SpaceTaken
-  k_group_.MakeAmendAccountRequests(
+  k_group.MakeAmendAccountRequests(
     maidsafe::AmendAccountRequest::kSpaceTakenInc, client_pmid, chunk_size,
     chunk_name, &requests);
   responses.clear();
@@ -1001,7 +1002,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   asreq.clear_space_requested();
 
   // decrease SpaceTaken
-  k_group_.MakeAmendAccountRequests(
+  k_group.MakeAmendAccountRequests(
     maidsafe::AmendAccountRequest::kSpaceTakenDec, client_pmid, chunk_size,
     chunk_name, &requests);
   responses.clear();
@@ -1078,7 +1079,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   }
 
   // increase SpaceGiven
-  k_group_.MakeAmendAccountRequests(
+  k_group.MakeAmendAccountRequests(
     maidsafe::AmendAccountRequest::kSpaceGivenInc, client_pmid, chunk_size,
     chunk_name, &requests);
   responses.clear();
@@ -1118,7 +1119,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   }
 
   // decrease SpaceGiven
-  k_group_.MakeAmendAccountRequests(
+  k_group.MakeAmendAccountRequests(
     maidsafe::AmendAccountRequest::kSpaceGivenDec, client_pmid, chunk_size,
     chunk_name, &requests);
   responses.clear();
@@ -1158,7 +1159,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   }
 
   // decrease SpaceGiven again, should fail
-  k_group_.MakeAmendAccountRequests(
+  k_group.MakeAmendAccountRequests(
     maidsafe::AmendAccountRequest::kSpaceGivenDec, client_pmid, chunk_size,
     chunk_name, &requests);
   responses.clear();
@@ -1237,10 +1238,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToWatchList) {
 
   EXPECT_CALL(mock_vault_service_logic_,
               FindCloseNodes(client_account_name, testing::_))
-      .Times(testing::AtLeast(6))
-      .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback,
-          k_group_.serialised_find_nodes_response(), _1))));
+      .Times(testing::AtLeast(2));
 
   std::string chunk_data("This is a data chunk");
   std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
@@ -1280,17 +1278,6 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToWatchList) {
     ASSERT_TRUE(amend_resp.IsInitialized());
     ASSERT_EQ(kAck, static_cast<int>(amend_resp.result()));
     amend_resp.Clear();
-  }
-
-  // Add an amendment struct awaiting a single further request to succeed
-  AccountAmendment amendment(client_pmid, 2, chunk_size, true,
-      PendingAmending(&amend_req, &amend_resp, done));
-  amendment.success_count = vault_service_->aah_.kKadStoreThreshold_ - 1;
-  {
-    boost::mutex::scoped_lock lock(vault_service_->aah_.amendment_mutex_);
-    std::pair<AccountAmendmentSet::iterator, bool> p =
-        vault_service_->aah_.amendments_.insert(amendment);
-    ASSERT_TRUE(p.second);
   }
 
   for (int i = 0; i <= 3; ++i) {
@@ -1442,6 +1429,10 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
 
+  EXPECT_CALL(mock_vault_service_logic_,
+              FindCloseNodes(testing::_, testing::_))
+      .Times(testing::AtLeast(kMinChunkCopies + 1));
+
   std::string chunk_data("This is a data chunk");
   std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
   boost::uint64_t chunk_size(chunk_data.size());
@@ -1457,6 +1448,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
 
   // initialise 5 clients and add them to the Watch List
   for (int i = 0; i < kMinChunkCopies + 1; ++i) {
+    printf("initialising client %d of %d...\n", i + 1, kMinChunkCopies + 1);
     CreateRSAKeys(&client_pub_key[i], &client_priv_key[i]);
     client_pub_key_sig[i] = co.AsymSign(client_pub_key[i], "",
                                         client_priv_key[i],
@@ -1690,6 +1682,13 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToReferenceList) {
   vlt_pmid = co.Hash(vlt_pub_key + vlt_pub_key_sig, "", crypto::STRING_STRING,
                      false);
 
+  std::string client_account_name = co.Hash(client_pmid + kAccount, "",
+                                            crypto::STRING_STRING, false);
+
+  EXPECT_CALL(mock_vault_service_logic_,
+              FindCloseNodes(client_account_name, testing::_))
+      .Times(testing::AtLeast(2));
+
   std::string chunk_data("This is a data chunk");
   std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
   boost::uint64_t chunk_size(chunk_data.size());
@@ -1883,7 +1882,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToReferenceList) {
   }
 }
 
-TEST_F(MockVaultServicesTest, FUNC_MAID_DISABLED_ServicesRemoveFromReferenceList) {  // NOLINT(Fraser) - will be fixed once "DISABLED_" is removed.
+TEST_F(MockVaultServicesTest, DISABLED_FUNC_MAID_ServicesRemoveFromReferenceList) {  // NOLINT(Fraser) - will be fixed once "DISABLED_" is removed.
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
