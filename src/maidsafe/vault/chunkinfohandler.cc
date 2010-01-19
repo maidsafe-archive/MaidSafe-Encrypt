@@ -57,11 +57,12 @@ int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
   // only request uploads if not already waiting
   std::list<WaitingListEntry>::iterator it = ci.waiting_list.begin();
   while (it->pmid != pmid && it != ci.waiting_list.end()) {
-    it++;
+    ++it;
   }
   if (it == ci.waiting_list.end()) {
     *required_references = std::max(0, static_cast<int>
         (std::ceil(.5 * (kMinChunkCopies - ActiveReferences(chunk_name)))));
+        printf("In CIH - required_references %i\tActiveReferences - %i\n", *required_references, ActiveReferences(chunk_name));
   } else {
     entry.storing_done = true;
   }
@@ -69,10 +70,11 @@ int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
   // count occupied slots in watch list
   int n = 0;
   for (std::list<WatchListEntry>::iterator it = ci.watch_list.begin();
-       it != ci.watch_list.end(); it++) {
+       it != ci.watch_list.end(); ++it) {
     if (!it->can_delete)
-      n++;
+      ++n;
   }
+   printf("In CIH - occupied slots  - %i\twatch list size - %u\twaiting list size - %u\n", n, ci.watch_list.size(), ci.waiting_list.size());
 
   if (n == 0)
     entry.requested_payments = kMinChunkCopies;

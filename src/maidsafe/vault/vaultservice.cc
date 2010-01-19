@@ -471,6 +471,7 @@ void VaultService::AddToWatchList(
     done->Run();
     return;
   }
+  printf("Signed size = %u\trequired_references = %i\trequired_payments = %i\n", sz.data_size(), required_references, required_payments);
 
   response->set_upload_count(required_references);
   response->set_result(kAck);

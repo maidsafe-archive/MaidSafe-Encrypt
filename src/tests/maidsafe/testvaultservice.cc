@@ -323,7 +323,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
   TestCallback cb_obj;
 
   for (int i = 0; i < 8; ++i) {
-    printf("--- CASE #%i --- ", i);
+    printf("--- CASE #%i --- \n", i);
     switch (i) {
       case 0:  // empty request
         break;
@@ -459,7 +459,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   TestCallback cb_obj;
 
   for (int i = 0; i < 3; ++i) {
-    printf("--- CASE #%i --- ", i);
+    printf("--- CASE #%i --- \n", i);
     switch (i) {
       case 0:  // uninitialized request
         break;
@@ -699,7 +699,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
   ASSERT_TRUE(vault_service_->HasChunkLocal(chunk_name));
 
   for (int i = 0; i <= 4; ++i) {
-    printf("--- CASE #%i --- ", i);
+    printf("--- CASE #%i --- \n", i);
     switch (i) {
       case 0:  // empty request
         break;
@@ -1265,9 +1265,6 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToWatchList) {
   amend_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
   amend_req.set_account_pmid(client_pmid);
   amend_req.set_chunkname(chunk_name);
-  google::protobuf::Closure *done =
-      google::protobuf::NewCallback<TestCallback>(&cb_obj,
-      &TestCallback::CallbackFunction);
 
   // Create the account first
   {
@@ -1437,6 +1434,10 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
   std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
   boost::uint64_t chunk_size(chunk_data.size());
 
+//                        printf("vlt_pmid - %s\n", HexSubstr(vlt_pmid).c_str());
+//                        printf("vault_account_name - %s\n", HexSubstr(vault_account_name).c_str());
+                        printf("chunk_name - %s\n\n\n", HexSubstr(chunk_name).c_str());
+
   std::string client_pub_key[kMinChunkCopies + 1];
   std::string client_priv_key[kMinChunkCopies + 1];
   std::string client_pmid[kMinChunkCopies + 1];
@@ -1448,7 +1449,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
 
   // initialise 5 clients and add them to the Watch List
   for (int i = 0; i < kMinChunkCopies + 1; ++i) {
-    printf("initialising client %d of %d...\n", i + 1, kMinChunkCopies + 1);
+    printf("\ninitialising client %d of %d...\n", i + 1, kMinChunkCopies + 1);
     CreateRSAKeys(&client_pub_key[i], &client_priv_key[i]);
     client_pub_key_sig[i] = co.AsymSign(client_pub_key[i], "",
                                         client_priv_key[i],
@@ -1456,6 +1457,8 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
     client_pmid[i] = co.Hash(client_pub_key[i] + client_pub_key_sig[i], "",
                              crypto::STRING_STRING, false);
 
+                        printf("client_pmid %i - %s\n", i, HexSubstr(client_pmid[i]).c_str());
+//                        printf("client_account_name - %s\n", HexSubstr(client_account_name).c_str());
     signed_size = add_request.mutable_signed_size();
     signed_size->set_data_size(chunk_size);
     signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>
@@ -1542,8 +1545,8 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
     // wait for amendments by the chunk info holder
     vault_service_->thread_pool_.waitForDone();
 
-    // fake uploaded chunk for #i
-    {
+    // fake uploaded chunk for #0
+    if (i == 0) {
       maidsafe::AddToReferenceListResponse add_ref_response;
       google::protobuf::Closure *done =
           google::protobuf::NewCallback<TestCallback>(&cb_obj,
@@ -1684,10 +1687,15 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToReferenceList) {
 
   std::string client_account_name = co.Hash(client_pmid + kAccount, "",
                                             crypto::STRING_STRING, false);
+  std::string vault_account_name = co.Hash(vlt_pmid + kAccount, "",
+                                            crypto::STRING_STRING, false);
 
   EXPECT_CALL(mock_vault_service_logic_,
               FindCloseNodes(client_account_name, testing::_))
-      .Times(testing::AtLeast(2));
+      .Times(testing::AtLeast(1));
+  EXPECT_CALL(mock_vault_service_logic_,
+              FindCloseNodes(vault_account_name, testing::_))
+      .Times(testing::AtLeast(1));
 
   std::string chunk_data("This is a data chunk");
   std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
@@ -1699,7 +1707,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToReferenceList) {
   TestCallback cb_obj;
 
   for (int i = 0; i <= 7; ++i) {
-    printf("--- CASE #%i --- ", i);
+    printf("\n--- CASE #%i --- \n", i);
     switch (i) {
       case 0:  // empty request
         break;
@@ -1814,6 +1822,28 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToReferenceList) {
     signed_size->set_public_key_signature(client_pub_key_sig);
     aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
     aa_req.set_account_pmid(client_pmid);
+    vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
+    ASSERT_TRUE(aa_rsp.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
+  }
+
+  // create vault's account
+  {
+    maidsafe::AmendAccountRequest aa_req;
+    maidsafe::AmendAccountResponse aa_rsp;
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    signed_size = aa_req.mutable_signed_size();
+    signed_size->set_data_size(chunk_size * kMinChunkCopies);
+    std::string ser_size(base::itos_ull(signed_size->data_size()));
+    signed_size->set_signature(co.AsymSign(ser_size, "", vlt_priv_key,
+                               crypto::STRING_STRING));
+    signed_size->set_pmid(vlt_pmid);
+    signed_size->set_public_key(vlt_pub_key);
+    signed_size->set_public_key_signature(vlt_pub_key_sig);
+    aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+    aa_req.set_account_pmid(vlt_pmid);
     vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
     ASSERT_TRUE(aa_rsp.IsInitialized());
     ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
