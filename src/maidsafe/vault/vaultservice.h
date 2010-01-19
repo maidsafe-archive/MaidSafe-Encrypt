@@ -57,35 +57,35 @@ struct IsOwnedPendingResponse {
   maidsafe::OwnVaultResponse* args;
 };
 
-class AddToRefListTask : public QRunnable {
+class AddToRemoteRefListTask : public QRunnable {
  public:
-  AddToRefListTask(const std::string &chunkname,
-                   const maidsafe::StoreContract &store_contract,
-                   VaultServiceLogic *vault_service_logic)
+  AddToRemoteRefListTask(const std::string &chunkname,
+                         const maidsafe::StoreContract &store_contract,
+                         VaultServiceLogic *vault_service_logic)
       : chunkname_(chunkname),
         store_contract_(store_contract),
         vault_service_logic_(vault_service_logic) {}
   void run();
  private:
-  AddToRefListTask &operator=(const AddToRefListTask&);
-  AddToRefListTask(const AddToRefListTask&);
+  AddToRemoteRefListTask &operator=(const AddToRemoteRefListTask&);
+  AddToRemoteRefListTask(const AddToRemoteRefListTask&);
   std::string chunkname_;
   maidsafe::StoreContract store_contract_;
   VaultServiceLogic *vault_service_logic_;
 };
 
-//  class RemoveFromRefListTask : public QRunnable {
+//  class RemoveFromRemoteRefListTask : public QRunnable {
 //   public:
-//    RemoveFromRefListTask(const std::string &chunkname,
-//                            const maidsafe::SignedSize &signed_size,
-//                            VaultServiceLogic *vault_service_logic)
+//    RemoveFromRemoteRefListTask(const std::string &chunkname,
+//                                const maidsafe::SignedSize &signed_size,
+//                                VaultServiceLogic *vault_service_logic)
 //        : chunkname_(chunkname),
 //          signed_size_(signed_size),
 //          vault_service_logic_(vault_service_logic) {}
 //    void run();
 //   private:
-//    RemoveFromRefListTask &operator=(const RemoveFromRefListTask&);
-//    RemoveFromRefListTask(const RemoveFromRefListTask&);
+// RemoveFromRemoteRefListTask &operator=(const RemoveFromRemoteRefListTask&);
+//    RemoveFromRemoteRefListTask(const RemoveFromRemoteRefListTask&);
 //    std::string chunkname_;
 //    maidsafe::SignedSize signed_size_;
 //    VaultServiceLogic *vault_service_logic_;

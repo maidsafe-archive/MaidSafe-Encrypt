@@ -52,18 +52,18 @@ void vsvc_dummy_callback(const std::string &result) {
 #endif
 }
 
-void AddToRefListTask::run() {
+void AddToRemoteRefListTask::run() {
   int result = vault_service_logic_->AddToRemoteRefList(chunkname_,
                                                         store_contract_);
 #ifdef DEBUG
   if (result != kSuccess)
-    printf("AddToRemoteRefList returned result %i for chunk (%s).\n",
+    printf("AddToRemoteRefListTask returned result %i for chunk (%s).\n",
            result, HexSubstr(chunkname_).c_str());
 #endif
 }
 
-//  void RemoveFromRefListTask::run() {
-//    vault_service_logic_->RemoveFromRefPacket(chunkname_, signed_size_);
+//  void RemoveFromRemoteRefListTask::run() {
+//    vault_service_logic_->RemoveFromRemoteRefPacket(chunkname_, signed_size_);
 //  }
 
 void AmendRemoteAccountTask::run() {
@@ -298,9 +298,9 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
 
   // thread_pool_ handles destruction of task.
   // TODO(Fraser#) add ref list task to list
-//  AddToRefListTask *task = new AddToRefListTask(request->chunkname(),
-//      it->second, vault_service_logic_);
-//  thread_pool_.start(task);
+  AddToRemoteRefListTask *task = new AddToRemoteRefListTask(
+      request->chunkname(), it->second, vault_service_logic_);
+  thread_pool_.start(task);
 
   prm_.erase(request->chunkname());
   response->set_result(kAck);
