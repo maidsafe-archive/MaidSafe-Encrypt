@@ -161,8 +161,8 @@ class VaultServiceLogic {
   void SetKThreshold(const boost::uint16_t &threshold);
   // Blocking call which looks up Chunk Info holders and sends each an
   // AddToReferenceListRequest to add this vault's ID to ref list for chunkname.
-  int AddToRemoteRefList(const std::string &chunkname,
-                         const maidsafe::StoreContract &store_contract);
+  virtual int AddToRemoteRefList(const std::string &chunkname,
+                                 const maidsafe::StoreContract &store_contract);
   // Blocking call to Kademlia FindCloseNodes
   int FindKNodes(const std::string &kad_key,
                  std::vector<kad::Contact> *contacts);

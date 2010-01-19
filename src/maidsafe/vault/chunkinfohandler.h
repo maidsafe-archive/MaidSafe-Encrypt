@@ -112,6 +112,7 @@ class ChunkInfoHandler {
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerReset);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerFailsafe);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPruning);
+  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk);
   bool HasWatchers(const std::string &chunk_name);
   int ActiveReferences(const std::string &chunk_name);
   void ClearReferenceList(const std::string &chunk_name,

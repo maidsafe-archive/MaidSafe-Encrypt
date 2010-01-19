@@ -168,6 +168,9 @@ class MockVsl : public VaultServiceLogic {
   MOCK_METHOD2(FindCloseNodes, void(const std::string &kad_key,
                                     const base::callback_func_type &callback));
   MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
+  MOCK_METHOD2(AddToRemoteRefList,
+               int(const std::string &chunkname,
+                   const maidsafe::StoreContract &store_contract));
   MOCK_METHOD3(AmendRemoteAccount,
                void(const maidsafe::AmendAccountRequest &request,
                     const int &found_local_result,

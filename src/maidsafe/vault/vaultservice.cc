@@ -132,46 +132,35 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
   if (!request->IsInitialized()) {
 #ifdef DEBUG
     printf("In VaultService::StorePrep (%i), ", knode_->host_port());
-    printf("request not initialised.\n");
+    printf("request is not initialized.\n");
 #endif
     done->Run();
     return;
   }
 
-  std::string str_size_data = base::itos_ull(request_sz.data_size());
-  if (!co.AsymCheckSig(str_size_data, request_sz.signature(),
-      request_sz.public_key(), crypto::STRING_STRING)) {
+  if (request->chunkname().length() != kKeySize) {
 #ifdef DEBUG
     printf("In VaultService::StorePrep (%i), ", knode_->host_port());
-    printf("failed to validate data size signature.\n");
+    printf("failed to validate chunk name.\n");
 #endif
     done->Run();
     return;
   }
 
-  if (request->chunkname() == "" || request->chunkname().length() != kKeySize) {
+  if (!ValidateSignedSize(request_sz)) {
 #ifdef DEBUG
     printf("In VaultService::StorePrep (%i), ", knode_->host_port());
-    printf("failed to validate chunkname.\n");
+    printf("failed to validate signed size.\n");
 #endif
     done->Run();
     return;
   }
+
   PrepsReceivedMap::iterator it = prm_.find(request->chunkname());
   if (it != prm_.end()) {
 #ifdef DEBUG
     printf("In VaultService::StorePrep (%i), ", knode_->host_port());
-    printf("chunkname was in map.\n");
-#endif
-    done->Run();
-    return;
-  }
-
-  if (!ValidateIdentity(request_sz.pmid(), request_sz.public_key(),
-      request_sz.public_key_signature())) {
-#ifdef DEBUG
-    printf("In VaultService::StorePrep (%i), ", knode_->host_port());
-    printf("failed to validate id from request SignedSize.\n");
+    printf("chunk name was in map.\n");
 #endif
     done->Run();
     return;
@@ -201,8 +190,7 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
 
   // TODO(Team#5#): check peer's available space
 
-  boost::uint64_t data_size = request_sz.data_size();
-  if (Storable(data_size) != 0) {
+  if (Storable(request_sz.data_size()) != 0) {
 #ifdef DEBUG
     printf("In VaultService::StorePrep (%i), no space.\n",
            knode_->host_port());
@@ -263,16 +251,6 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     return;
   }
 
-  PrepsReceivedMap::iterator it = prm_.find(request->chunkname());
-  if (it == prm_.end()) {
-#ifdef DEBUG
-    printf("In VaultService::StoreChunk (%i), ", knode_->host_port());
-    printf("chunkname wasn't in map - no prep.\n");
-#endif
-    done->Run();
-    return;
-  }
-
   if (!ValidateSignedRequest(request->public_key(),
        request->public_key_signature(), request->request_signature(),
        request->chunkname(), request->pmid())) {
@@ -284,8 +262,17 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     return;
   }
 
+  PrepsReceivedMap::iterator it = prm_.find(request->chunkname());
+  if (it == prm_.end()) {
+#ifdef DEBUG
+    printf("In VaultService::StoreChunk (%i), ", knode_->host_port());
+    printf("chunkname wasn't in map - no prep.\n");
+#endif
+    done->Run();
+    return;
+  }
+
   // TODO(Team#5#): Decide on which types of data should come through here
-  bool valid_data(false);
 
   if (!StoreChunkLocal(request->chunkname(), request->data())) {
 #ifdef DEBUG
@@ -296,12 +283,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     return;
   }
 
-  // thread_pool_ handles destruction of task.
-  // TODO(Fraser#) add ref list task to list
-  AddToRemoteRefListTask *task = new AddToRemoteRefListTask(
-      request->chunkname(), it->second, vault_service_logic_);
-  thread_pool_.start(task);
-
+  AddToRemoteRefList(request->chunkname(), it->second);
   prm_.erase(request->chunkname());
   response->set_result(kAck);
   done->Run();
@@ -647,11 +629,8 @@ void VaultService::AddToReferenceList(
     return;
   }
 
-  int chunk_size = store_contract.inner_contract().signed_size().data_size();
-  std::string client_pmid(store_contract.inner_contract().signed_size().pmid());
-
   if (0 != cih_.AddToReferenceList(request->chunkname(), store_contract.pmid(),
-                                   chunk_size)) {
+                   store_contract.inner_contract().signed_size().data_size())) {
 #ifdef DEBUG
     printf("In VaultService::AddToReferenceList (%i), ", knode_->host_port());
     printf("failed to add to reference list.\n");
@@ -663,43 +642,48 @@ void VaultService::AddToReferenceList(
   response->set_result(kAck);
   done->Run();
 
+  DoneAddToReferenceList(store_contract, request->chunkname());
+}
+
+void VaultService::DoneAddToReferenceList(
+    const maidsafe::StoreContract &store_contract,
+    const std::string &chunk_name) {
+  int chunk_size(store_contract.inner_contract().signed_size().data_size());
+  std::string client_pmid(store_contract.inner_contract().signed_size().pmid());
+
   kad::SignedValue signed_value;
   signed_value.set_value(store_contract.pmid());
   signed_value.set_value_signature(store_contract.public_key_signature());
-  if (!knode_->StoreValueLocal(request->chunkname(),
-                               signed_value.SerializeAsString(), 86400)) {
+  if (!knode_->StoreValueLocal(chunk_name, signed_value.SerializeAsString(),
+                               86400)) {
 #ifdef DEBUG
-    printf("In VaultService::AddToReferenceList (%i), ", knode_->host_port());
+    printf("In VS::DoneAddToReferenceList (%i), ", knode_->host_port());
     printf("failed to store pmid to local ref packet.\n");
 #endif
-    done->Run();
     return;
   }
 
   // amend account for chunk holder (= sender)
   AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceGivenInc,
-                     chunk_size, store_contract.pmid(), request->chunkname());
+                     chunk_size, store_contract.pmid(), chunk_name);
 
-  cih_.SetStoringDone(request->chunkname(), client_pmid);
+  cih_.SetStoringDone(chunk_name, client_pmid);
   std::string creditor;
   int refunds;
-  if (cih_.TryCommitToWatchList(request->chunkname(), client_pmid, &creditor,
-                                &refunds)) {
+  if (cih_.TryCommitToWatchList(chunk_name, client_pmid, &creditor, &refunds)) {
     if (refunds > 0) {
       // amend account for watcher, in case he wasn't first after all
       AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
-                         refunds * chunk_size,
-                         store_contract.inner_contract().signed_size().pmid(),
-                         request->chunkname());
+                         refunds * chunk_size, client_pmid, chunk_name);
     }
     if (!creditor.empty()) {
       // amend account for replaced entry
       AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
-                         chunk_size, creditor, request->chunkname());
+                         chunk_size, creditor, chunk_name);
     }
   } else {
 #ifdef DEBUG
-    printf("In VaultService::AddToReferenceList (%i), ", knode_->host_port());
+    printf("In VS::DoneAddToReferenceList (%i), ", knode_->host_port());
     printf("couldn't commit to watch list yet.\n");
 #endif
   }
@@ -1897,7 +1881,21 @@ void VaultService::AmendRemoteAccount(
   // thread_pool_ handles destruction of task.
   AmendRemoteAccountTask *task =
       new AmendRemoteAccountTask(amend_account_request, found_local_result,
-      callback, vault_service_logic_);
+                                 callback, vault_service_logic_);
+  thread_pool_.start(task);
+}
+
+void VaultService::AddToRemoteRefList(const std::string &chunkname,
+                                      const maidsafe::StoreContract &contract) {
+  // try adding to local ref list (fails if no chunk info or watchers)
+  if (0 == cih_.AddToReferenceList(chunkname, contract.pmid(),
+                         contract.inner_contract().signed_size().data_size())) {
+    DoneAddToReferenceList(contract, chunkname);
+  }
+
+  // thread_pool_ handles destruction of task.
+  AddToRemoteRefListTask *task =
+      new AddToRemoteRefListTask(chunkname, contract, vault_service_logic_);
   thread_pool_.start(task);
 }
 

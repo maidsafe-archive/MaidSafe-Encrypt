@@ -218,7 +218,7 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateDataChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesStorable);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesLocalStorage);
-  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesStoreChunk);
+  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesDeleteChunk);
@@ -271,6 +271,12 @@ class VaultService : public maidsafe::MaidsafeService {
   boost::uint64_t GetChunkSizeLocal(const std::string &chunkname);
   void FindCloseNodesCallback(const std::string &result,
                               std::vector<std::string> *close_nodes);
+  void FinalisePayment(const std::string &chunk_name,
+                       const std::string &pmid,
+                       const int &chunk_size,
+                       const int &permission_result);
+  void DoneAddToReferenceList(const maidsafe::StoreContract &store_contract,
+                              const std::string &chunk_name);
   // This method returns immediately after the task is added to the thread pool.
   // The result of the amendment is discarded.
   void AmendRemoteAccount(
@@ -286,6 +292,8 @@ class VaultService : public maidsafe::MaidsafeService {
       const std::string &account_pmid,
       const std::string &chunkname,
       const Callback &callback);
+  void AddToRemoteRefList(const std::string &chunkname,
+                          const maidsafe::StoreContract &contract);
   int RemoteVaultAbleToStore(const boost::uint64_t &size,
                              const std::string &account_pmid);
   std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
