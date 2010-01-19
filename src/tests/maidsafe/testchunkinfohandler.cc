@@ -61,7 +61,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
   std::string client[kNumClients], creditor;
   int required_references, required_payments, refunds;
 
-  for (int i = 0; i < kNumClients; i++) {
+  for (int i = 0; i < kNumClients; ++i) {
     client[i] = co.Hash("id" + boost::lexical_cast<std::string>(i), "",
                         crypto::STRING_STRING, false);
   }
@@ -86,7 +86,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
   ASSERT_EQ(size_t(0), cih.chunk_infos_[chunk_name].watcher_count);
   ASSERT_EQ(size_t(123), cih.chunk_infos_[chunk_name].chunk_size);
 
-  cih.SetStoringDone(chunk_name);
+  cih.SetStoringDone(chunk_name, client[0]);
   cih.SetPaymentsDone(chunk_name, client[0]);
   ASSERT_TRUE(cih.TryCommitToWatchList(chunk_name, client[0], &creditor,
                                        &refunds));
@@ -117,9 +117,9 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
   ASSERT_EQ(kChunkInfoInvalidSize, cih.AddToReferenceList(chunk_name, "ref",
                                                           321));
 
-  cih.SetStoringDone(chunk_name);
+  cih.SetStoringDone(chunk_name, client[1]);
   ASSERT_EQ(0, cih.ActiveReferences(chunk_name));
-  for (int i = 0; i < required_references; i++) {
+  for (int i = 0; i < required_references; ++i) {
     ASSERT_EQ(0, cih.AddToReferenceList(chunk_name, "rf" + base::itos(i), 123));
   }
   ASSERT_EQ(required_references, cih.ActiveReferences(chunk_name));
@@ -142,14 +142,14 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
   ASSERT_EQ(size_t(required_references),
             cih.chunk_infos_[chunk_name].reference_list.size());
 
-  for (int i = 2; i < kNumClients - 2; i++) {
+  for (int i = 2; i < kNumClients - 2; ++i) {
     ASSERT_EQ(0, cih.PrepareAddToWatchList(chunk_name, client[i], 123,
                                            &required_references,
                                            &required_payments));
     ASSERT_FLOAT_EQ(std::ceil(.25 * kMinChunkCopies), required_references);
     ASSERT_EQ(1, required_payments);
 
-    cih.SetStoringDone(chunk_name);
+    cih.SetStoringDone(chunk_name, client[i]);
     cih.SetPaymentsDone(chunk_name, client[i]);
 
     ASSERT_TRUE(cih.TryCommitToWatchList(chunk_name, client[i], &creditor,
@@ -178,9 +178,9 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
                                          &required_payments));
   ASSERT_EQ(1, required_payments);
 
-  cih.SetStoringDone(chunk_name);
-  cih.SetStoringDone(chunk_name);
+  cih.SetStoringDone(chunk_name, client[kNumClients - 2]);
   cih.SetPaymentsDone(chunk_name, client[kNumClients - 2]);
+  cih.SetStoringDone(chunk_name, client[kNumClients - 1]);
   cih.SetPaymentsDone(chunk_name, client[kNumClients - 1]);
 
   ASSERT_TRUE(cih.TryCommitToWatchList(chunk_name, client[kNumClients - 2],
@@ -217,9 +217,9 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRefund) {
                                          &required_payments));
   ASSERT_EQ(kMinChunkCopies, required_payments);
 
-  cih.SetStoringDone(chunk_name);
-  cih.SetStoringDone(chunk_name);
+  cih.SetStoringDone(chunk_name, client[0]);
   cih.SetPaymentsDone(chunk_name, client[0]);
+  cih.SetStoringDone(chunk_name, client[1]);
   cih.SetPaymentsDone(chunk_name, client[1]);
 
   ASSERT_TRUE(cih.TryCommitToWatchList(chunk_name, client[0], &creditor,
@@ -246,7 +246,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove) {
   std::list<std::string> creditors, references;
   int required_references, required_payments, refunds, chunk_size;
 
-  for (int i = 0; i < kNumClients; i++) {
+  for (int i = 0; i < kNumClients; ++i) {
     client[i] = co.Hash("id" + boost::lexical_cast<std::string>(i), "",
                         crypto::STRING_STRING, false);
   }
@@ -256,7 +256,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove) {
                                          &required_references,
                                          &required_payments));
   ASSERT_EQ(size_t(1), cih.chunk_infos_.count(chunk_name));
-  cih.SetStoringDone(chunk_name);
+  cih.SetStoringDone(chunk_name, client[0]);
   cih.SetPaymentsDone(chunk_name, client[0]);
   ASSERT_TRUE(cih.TryCommitToWatchList(chunk_name, client[0], &creditor,
                                        &refunds));
@@ -294,12 +294,12 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove) {
   ASSERT_EQ(size_t(2), references.size());
   ASSERT_EQ(size_t(0), cih.chunk_infos_.count(chunk_name));
 
-  for (int i = 0; i < kNumClients; i++) {
+  for (int i = 0; i < kNumClients; ++i) {
     ASSERT_EQ(0, cih.PrepareAddToWatchList(chunk_name, client[i], 123,
                                            &required_references,
                                            &required_payments));
     if (required_references > 0)
-      cih.SetStoringDone(chunk_name);
+      cih.SetStoringDone(chunk_name, client[i]);
     if (required_payments > 0)
       cih.SetPaymentsDone(chunk_name, client[i]);
     ASSERT_TRUE(cih.TryCommitToWatchList(chunk_name, client[i], &creditor,
@@ -326,7 +326,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove) {
   ASSERT_EQ(size_t(kNumClients) - 2,
             cih.chunk_infos_[chunk_name].watch_list.size());
 
-  for (int i = kNumClients - 1; i >= 2; i--) {
+  for (int i = kNumClients - 1; i >= 2; --i) {
     creditors.clear();
     ASSERT_EQ(0, cih.RemoveFromWatchList(chunk_name, client[i], &chunk_size,
                                          &creditors, &references));
@@ -433,8 +433,8 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerReset) {
   ASSERT_EQ(size_t(0), creditors.size());
   ASSERT_EQ(size_t(0), references.size());
 
-  cih.SetStoringDone(chunk_name);
-  cih.SetStoringDone(chunk_name);
+  cih.SetStoringDone(chunk_name, client[0]);
+  cih.SetStoringDone(chunk_name, client[1]);
   cih.ResetAddToWatchList(chunk_name, client[1], kReasonStoringFailed,
                           &creditors, &references);
   ASSERT_EQ(size_t(2), cih.chunk_infos_[chunk_name].waiting_list.size());
@@ -476,7 +476,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerFailsafe) {
   ASSERT_EQ(0, cih.PrepareAddToWatchList(chunk_name, client1, 123,
                                          &required_references,
                                          &required_payments));
-  cih.SetStoringDone(chunk_name);
+  cih.SetStoringDone(chunk_name, client1);
   cih.SetPaymentsDone(chunk_name, client1);
   ASSERT_TRUE(cih.TryCommitToWatchList(chunk_name, client1, &creditor,
                                        &refunds));

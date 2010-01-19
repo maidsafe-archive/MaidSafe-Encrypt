@@ -101,6 +101,11 @@ void RunCallback(const std::string &find_nodes_response,
   callback(find_nodes_response);
 };
 
+void RunVaultCallback(const int &result,
+                      const maidsafe_vault::Callback &callback) {
+  callback(result);
+}
+
 void DoneRun(const int &min_delay,
              const int &max_delay,
              google::protobuf::Closure* callback) {

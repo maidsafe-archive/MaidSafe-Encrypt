@@ -99,7 +99,7 @@ class ChunkInfoHandler {
   int RemoveFromReferenceList(const std::string &chunk_name,
                               const std::string &pmid,
                               int *chunk_size);
-  void SetStoringDone(const std::string &chunk_name);
+  void SetStoringDone(const std::string &chunk_name, const std::string &pmid);
   void SetPaymentsDone(const std::string &chunk_name, const std::string &pmid);
   void GetStaleWaitingListEntries(std::list< std::pair<std::string,
                                                        std::string> > *entries);

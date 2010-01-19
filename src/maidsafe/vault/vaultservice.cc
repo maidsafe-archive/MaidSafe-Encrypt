@@ -471,7 +471,6 @@ void VaultService::AddToWatchList(
     done->Run();
     return;
   }
-  printf("Signed size = %u\trequired_references = %i\trequired_payments = %i\n", sz.data_size(), required_references, required_payments);
 
   response->set_upload_count(required_references);
   response->set_result(kAck);
@@ -488,16 +487,15 @@ void VaultService::AddToWatchList(
   } else {
     // verify storing permission
     FinalisePayment(request->chunkname(), sz.pmid(), sz.data_size(),
-                    RemoteVaultAbleToStore(sz.data_size(), sz.pmid(),
-                                           request->chunkname()));
+                    RemoteVaultAbleToStore(sz.data_size(), sz.pmid()));
   }
 }
 
 void VaultService::FinalisePayment(const std::string &chunk_name,
                                    const std::string &pmid,
                                    const int &chunk_size,
-                                   const bool &can_store) {
-  if (!can_store) {
+                                   const int &permission_result) {
+  if (permission_result != kSuccess) {
 #ifdef DEBUG
     printf("In VaultService::FinalisePayment (%i), ", knode_->host_port());
     printf("failed to obtain storing permission.\n");
@@ -506,14 +504,14 @@ void VaultService::FinalisePayment(const std::string &chunk_name,
     cih_.ResetAddToWatchList(chunk_name, pmid, kReasonPaymentFailed, &creditors,
                              &references);
     for (std::list<std::string>::iterator it = creditors.begin();
-         it != creditors.end(); it++) {
+         it != creditors.end(); ++it) {
       // amend account for remaining entry
       AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
                          chunk_size, *it, chunk_name);
     }
 
     for (std::list<std::string>::iterator it = references.begin();
-         it != references.end(); it++) {
+         it != references.end(); ++it) {
       // TODO(Steve#) delete remote chunk
       // amend account for former chunk holder
       AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceGivenDec,
@@ -537,6 +535,11 @@ void VaultService::FinalisePayment(const std::string &chunk_name,
       AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
                          chunk_size, creditor, chunk_name);
     }
+  } else {
+#ifdef DEBUG
+    printf("In VaultService::FinalisePayment (%i), ", knode_->host_port());
+    printf("couldn't commit to watch list yet.\n");
+#endif
   }
 }
 
@@ -585,14 +588,14 @@ void VaultService::RemoveFromWatchList(
   done->Run();
 
   for (std::list<std::string>::iterator it = creditors.begin();
-       it != creditors.end(); it++) {
+       it != creditors.end(); ++it) {
     // amend account for remaining entry
     AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
                        chunk_size, *it, request->chunkname());
   }
 
   for (std::list<std::string>::iterator it = references.begin();
-       it != references.end(); it++) {
+       it != references.end(); ++it) {
     // TODO(Steve#) delete remote chunk
     // amend account for former chunk holder
     AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceGivenDec,
@@ -645,6 +648,7 @@ void VaultService::AddToReferenceList(
   }
 
   int chunk_size = store_contract.inner_contract().signed_size().data_size();
+  std::string client_pmid(store_contract.inner_contract().signed_size().pmid());
 
   if (0 != cih_.AddToReferenceList(request->chunkname(), store_contract.pmid(),
                                    chunk_size)) {
@@ -676,11 +680,11 @@ void VaultService::AddToReferenceList(
   AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceGivenInc,
                      chunk_size, store_contract.pmid(), request->chunkname());
 
-  cih_.SetStoringDone(request->chunkname());
+  cih_.SetStoringDone(request->chunkname(), client_pmid);
   std::string creditor;
   int refunds;
-  if (cih_.TryCommitToWatchList(request->chunkname(), store_contract.pmid(),
-                                &creditor, &refunds)) {
+  if (cih_.TryCommitToWatchList(request->chunkname(), client_pmid, &creditor,
+                                &refunds)) {
     if (refunds > 0) {
       // amend account for watcher, in case he wasn't first after all
       AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
@@ -693,6 +697,11 @@ void VaultService::AddToReferenceList(
       AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
                          chunk_size, creditor, request->chunkname());
     }
+  } else {
+#ifdef DEBUG
+    printf("In VaultService::AddToReferenceList (%i), ", knode_->host_port());
+    printf("couldn't commit to watch list yet.\n");
+#endif
   }
 }
 
@@ -1539,7 +1548,7 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
 #endif
     return;
   }
-  for (int i = 0; i < static_cast<int>(msgs.size()); i++)
+  for (int i = 0; i < static_cast<int>(msgs.size()); ++i)
     response->add_messages(msgs[i]);
 
   if (!UpdateChunkLocal(request->bufferpacket_name(), ser_bp)) {
@@ -1893,8 +1902,7 @@ void VaultService::AmendRemoteAccount(
 }
 
 int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
-                                         const std::string &account_pmid,
-                                         const std::string &chunkname) {
+                                         const std::string &account_pmid) {
   maidsafe::AccountStatusRequest as_req;
   as_req.set_account_pmid(account_pmid);
   as_req.set_space_requested(size);

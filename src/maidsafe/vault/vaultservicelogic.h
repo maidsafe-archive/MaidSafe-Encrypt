@@ -176,9 +176,9 @@ class VaultServiceLogic {
                                 boost::condition_variable *cv,
                                 int *result);
   // Amend account of PMID requesting to be added to Watch List or Ref List.
-  void AmendRemoteAccount(const maidsafe::AmendAccountRequest &request,
-                          const int &found_local_result,
-                          const Callback &callback);
+  virtual void AmendRemoteAccount(const maidsafe::AmendAccountRequest &request,
+                                  const int &found_local_result,
+                                  const Callback &callback);
   // Blocking call which looks up account holders and sends each an
   // AccountStatusRequest to establish if the account owner has space to store
   int RemoteVaultAbleToStore(maidsafe::AccountStatusRequest request);

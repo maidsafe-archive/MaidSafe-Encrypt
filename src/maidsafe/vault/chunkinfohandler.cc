@@ -62,7 +62,6 @@ int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
   if (it == ci.waiting_list.end()) {
     *required_references = std::max(0, static_cast<int>
         (std::ceil(.5 * (kMinChunkCopies - ActiveReferences(chunk_name)))));
-        printf("In CIH - required_references %i\tActiveReferences - %i\n", *required_references, ActiveReferences(chunk_name));
   } else {
     entry.storing_done = true;
   }
@@ -74,7 +73,6 @@ int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
     if (!it->can_delete)
       ++n;
   }
-   printf("In CIH - occupied slots  - %i\twatch list size - %u\twaiting list size - %u\n", n, ci.watch_list.size(), ci.waiting_list.size());
 
   if (n == 0)
     entry.requested_payments = kMinChunkCopies;
@@ -106,7 +104,7 @@ bool ChunkInfoHandler::TryCommitToWatchList(const std::string &chunk_name,
   std::list<WaitingListEntry>::iterator wait_it = ci.waiting_list.begin();
   while (wait_it != ci.waiting_list.end() && !(wait_it->pmid == pmid &&
          wait_it->storing_done && wait_it->payments_done)) {
-    wait_it++;
+    ++wait_it;
   }
 
   if (wait_it == ci.waiting_list.end())
@@ -122,8 +120,8 @@ bool ChunkInfoHandler::TryCommitToWatchList(const std::string &chunk_name,
   watch_it = ci.watch_list.begin();
   while (watch_it != ci.watch_list.end() && !watch_it->can_delete &&
          i < kMinChunkCopies) {
-    watch_it++;
-    i++;
+    ++watch_it;
+    ++i;
   }
 
   if (wait_it->requested_payments > 0) {
@@ -141,7 +139,7 @@ bool ChunkInfoHandler::TryCommitToWatchList(const std::string &chunk_name,
         // we are first, so add 3 more deletable entries
         entry.can_delete = true;
         required_payments = kMinChunkCopies;
-        for (i = 0; i < kMinChunkCopies - 1; i++)
+        for (i = 0; i < kMinChunkCopies - 1; ++i)
           ci.watch_list.push_back(entry);
       } else {
         required_payments = 1;
@@ -151,7 +149,7 @@ bool ChunkInfoHandler::TryCommitToWatchList(const std::string &chunk_name,
   }
 
   // in any case, add as watcher
-  ci.watcher_count++;
+  ++ci.watcher_count;
   ci.watcher_checksum += GetChecksum(pmid);
 
   ci.waiting_list.erase(wait_it);
@@ -175,7 +173,7 @@ void ChunkInfoHandler::ResetAddToWatchList(const std::string &chunk_name,
          (reason == kReasonPaymentFailed && !wait_it->payments_done) ||
          (reason == kReasonStoringFailed && !wait_it->storing_done) ||
          reason == kReasonStale))) {
-    wait_it++;
+    ++wait_it;
   }
 
   if (wait_it != ci.waiting_list.end())
@@ -187,7 +185,7 @@ void ChunkInfoHandler::ResetAddToWatchList(const std::string &chunk_name,
   // no one is watching anymore, recompense everyone and implode
   for (std::list<WatchListEntry>::iterator
        it = ci.watch_list.begin();
-       it != ci.watch_list.end(); it++) {
+       it != ci.watch_list.end(); ++it) {
     creditors->push_back(it->pmid);
   }
   ClearReferenceList(chunk_name, references);
@@ -211,9 +209,9 @@ int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
   watch_it = reserve_it = ci.watch_list.end();
   int i, watcher_index, remaining_entry_count = 0;
   for (it = ci.watch_list.begin(), i = 1; it != ci.watch_list.end();
-       it++, i++) {
+       ++it, ++i) {
     if (!it->can_delete) {
-      remaining_entry_count++;
+      ++remaining_entry_count;
       if (watch_it == ci.watch_list.end() && it->pmid == pmid) {
         watch_it = it;
         watcher_index = i;
@@ -232,7 +230,7 @@ int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
 
   // remove watcher
   if (ci.watcher_count > boost::uint64_t(remaining_entry_count))
-    ci.watcher_count--;
+    --ci.watcher_count;
   ci.watcher_checksum -= GetChecksum(pmid);
 
   if (watch_it != ci.watch_list.end()) {
@@ -252,7 +250,7 @@ int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
             // no one is watching anymore, recompense everyone and implode
             for (std::list<WatchListEntry>::iterator
                  it = ci.watch_list.begin();
-                 it != ci.watch_list.end(); it++) {
+                 it != ci.watch_list.end(); ++it) {
               creditors->push_back(it->pmid);
             }
             ClearReferenceList(chunk_name, references);
@@ -287,7 +285,7 @@ int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
   // find existing entry
   std::list<ReferenceListEntry>::iterator it = ci.reference_list.begin();
   while (it != ci.reference_list.end() && it->pmid != pmid) {
-    it++;
+    ++it;
   }
 
   if (it != ci.reference_list.end()) {
@@ -318,7 +316,7 @@ int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
   // find existing entry
   std::list<ReferenceListEntry>::iterator it = ci.reference_list.begin();
   while (it != ci.reference_list.end() && it->pmid != pmid) {
-    it++;
+    ++it;
   }
 
   if (it == ci.reference_list.end())
@@ -329,7 +327,8 @@ int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
   return 0;
 }
 
-void ChunkInfoHandler::SetStoringDone(const std::string &chunk_name) {
+void ChunkInfoHandler::SetStoringDone(const std::string &chunk_name,
+                                      const std::string &pmid) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
   if (chunk_infos_.count(chunk_name) == 0)
     return;
@@ -337,8 +336,9 @@ void ChunkInfoHandler::SetStoringDone(const std::string &chunk_name) {
 
   // find first matching waiting list entry
   std::list<WaitingListEntry>::iterator wait_it = ci.waiting_list.begin();
-  while (wait_it != ci.waiting_list.end() && wait_it->storing_done) {
-    wait_it++;
+  while (wait_it != ci.waiting_list.end() && !(wait_it->pmid == pmid &&
+         !wait_it->storing_done)) {
+    ++wait_it;
   }
 
   if (wait_it != ci.waiting_list.end())
@@ -356,7 +356,7 @@ void ChunkInfoHandler::SetPaymentsDone(const std::string &chunk_name,
   std::list<WaitingListEntry>::iterator wait_it = ci.waiting_list.begin();
   while (wait_it != ci.waiting_list.end() && !(wait_it->pmid == pmid &&
          !wait_it->payments_done)) {
-    wait_it++;
+    ++wait_it;
   }
 
   if (wait_it != ci.waiting_list.end())
@@ -368,10 +368,10 @@ void ChunkInfoHandler::GetStaleWaitingListEntries(
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
   boost::uint32_t now = base::get_epoch_time();
   for (std::map<std::string, ChunkInfo>::iterator ci_it = chunk_infos_.begin();
-       ci_it != chunk_infos_.end(); ci_it++) {
+       ci_it != chunk_infos_.end(); ++ci_it) {
     for (std::list<WaitingListEntry>::iterator wait_it =
          ci_it->second.waiting_list.begin();
-         wait_it != ci_it->second.waiting_list.end(); wait_it++) {
+         wait_it != ci_it->second.waiting_list.end(); ++wait_it) {
       if (wait_it->creation_time + kChunkInfoWatcherPendingTimeout < now)
         entries->push_back(std::pair<std::string, std::string>(ci_it->first,
                                                                wait_it->pmid));
@@ -395,9 +395,9 @@ int ChunkInfoHandler::ActiveReferences(const std::string &chunk_name) {
   boost::uint32_t now = base::get_epoch_time();
 
   for (std::list<ReferenceListEntry>::iterator it = ci.reference_list.begin();
-       it != ci.reference_list.end(); it++) {
+       it != ci.reference_list.end(); ++it) {
     if (it->last_seen + kChunkInfoRefActiveTimeout >= now)
-      n++;
+      ++n;
   }
   return n;
   // TODO(Steve#) add method to update time stamp externally (validity check)
@@ -410,7 +410,7 @@ void ChunkInfoHandler::ClearReferenceList(const std::string &chunk_name,
 
   ChunkInfo &ci = chunk_infos_[chunk_name];
   for (std::list<ReferenceListEntry>::iterator it = ci.reference_list.begin();
-       it != ci.reference_list.end(); it++) {
+       it != ci.reference_list.end(); ++it) {
     references->push_back(it->pmid);
   }
 

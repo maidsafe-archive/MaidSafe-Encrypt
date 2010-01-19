@@ -116,6 +116,9 @@ std::string MakeFindNodesResponse(const FindNodesResponseType &type,
 void RunCallback(const std::string &find_nodes_response,
                  const base::callback_func_type &callback);
 
+void RunVaultCallback(const int &result,
+                      const maidsafe_vault::Callback &callback);
+
 void DoneRun(const int &min_delay,
              const int &max_delay,
              google::protobuf::Closure* callback);
@@ -165,6 +168,10 @@ class MockVsl : public VaultServiceLogic {
   MOCK_METHOD2(FindCloseNodes, void(const std::string &kad_key,
                                     const base::callback_func_type &callback));
   MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
+  MOCK_METHOD3(AmendRemoteAccount,
+               void(const maidsafe::AmendAccountRequest &request,
+                    const int &found_local_result,
+                    const Callback &callback));
 };
 
 class MockVaultServiceLogicTest : public testing::Test {
