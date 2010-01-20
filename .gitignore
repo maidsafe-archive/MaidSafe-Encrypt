@@ -2,3 +2,5 @@
 *~
 build/*
 desktop.ini
+src/protobuf/*.pb.h
+src/protobuf/*.pb.cc
