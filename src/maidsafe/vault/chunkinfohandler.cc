@@ -207,9 +207,8 @@ int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
   // find the watcher and the first reserve
   std::list<WatchListEntry>::iterator it, watch_it, reserve_it;
   watch_it = reserve_it = ci.watch_list.end();
-  int i, watcher_index, remaining_entry_count = 0;
-  for (it = ci.watch_list.begin(), i = 1; it != ci.watch_list.end();
-       ++it, ++i) {
+  int i = 1, watcher_index = 0, remaining_entry_count = 0;
+  for (it = ci.watch_list.begin(); it != ci.watch_list.end(); ++it, ++i) {
     if (!it->can_delete) {
       ++remaining_entry_count;
       if (watch_it == ci.watch_list.end() && it->pmid == pmid) {

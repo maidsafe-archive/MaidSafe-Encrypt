@@ -190,8 +190,8 @@ void AccountAmendmentHandler::CreateNewAmendment(
     const AccountAmendment &amendment) {
   {
     boost::mutex::scoped_lock lock(amendment_mutex_);
-    std::pair<AccountAmendmentSet::iterator, bool> p =
-        amendments_.insert(amendment);
+    std::pair<AmendmentsByTimestamp::iterator, bool> p =
+        amendments_.get<by_timestamp>().insert(amendment);
     if (!p.second) {  // amendment exists
 #ifdef DEBUG
       printf("In AAH::CreateNewAmendment, already a pending amendment with "
@@ -229,7 +229,7 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
     // Update multi-index
     amendments_.get<by_timestamp>().replace(it, modified_amendment);
     // Assess probable (enqueued) requests
-    while (modified_amendment.probable_pendings.size()) {
+    while (!modified_amendment.probable_pendings.empty()) {
       if (AssessAmendment(amendment.pmid, amendment.field, amendment.offer,
           amendment.increase, modified_amendment.probable_pendings.front(),
           &modified_amendment) == kAccountAmendmentNotFound) {
@@ -242,7 +242,7 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
     amendments_.get<by_timestamp>().replace(it, modified_amendment);
   } else {
     // Set responses and run callbacks
-    while (modified_amendment.probable_pendings.size()) {
+    while (!modified_amendment.probable_pendings.empty()) {
       modified_amendment.probable_pendings.front().response->set_result(kNack);
       modified_amendment.probable_pendings.front().done->Run();
       modified_amendment.probable_pendings.pop_front();
@@ -258,12 +258,12 @@ int AccountAmendmentHandler::CleanUp() {
   while (it != amendments_.get<by_timestamp>().end() &&
          (*it).expiry_time < base::get_epoch_milliseconds()) {
     AccountAmendment amendment = *it;
-    while (amendment.probable_pendings.size()) {
+    while (!amendment.probable_pendings.empty()) {
       amendment.probable_pendings.front().response->set_result(kNack);
       amendment.probable_pendings.front().done->Run();
       amendment.probable_pendings.pop_front();
     }
-    while (amendment.pendings.size()) {
+    while (!amendment.pendings.empty()) {
       amendment.pendings.front().response->set_result(kNack);
       amendment.pendings.front().done->Run();
       amendment.pendings.pop_front();

@@ -54,6 +54,7 @@ PDVault::PDVault(const std::string &pmid_public,
     : port_(port),
       transport_(),
       channel_manager_(&transport_),
+      validator_(),
       knode_(&channel_manager_, &transport_, kad::VAULT, pmid_private,
           pmid_public, port_forwarded, use_upnp),
       vault_rpcs_(&transport_, &channel_manager_),
@@ -85,7 +86,9 @@ PDVault::PDVault(const std::string &pmid_public,
   non_hex_pmid_ = base::DecodeFromHex(pmid_);
   signed_non_hex_pmid_ = co_.AsymSign(non_hex_pmid_, "", pmid_private_,
                                       crypto::STRING_STRING);
+  validator_.set_id(non_hex_pmid_);
   knode_.SetAlternativeStore(&vault_chunkstore_);
+  knode_.set_signature_validator(&validator_);
   vault_rpcs_.SetOwnId(non_hex_pmid_);
   thread_pool_.setMaxThreadCount(5);
   poh_.SetPmid(non_hex_pmid_);

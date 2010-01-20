@@ -265,6 +265,7 @@ ENDIF(GTEST_LIBRARY)
 ###################################################################################################
 FUNCTION(GENERATE_PROTO_FILES PROTO_FILE CACHE_NAME)
   FILE(STRINGS ${SOURCE_DIR}/${PROTO_FILE} PROTO_STRING)
+  UNSET(NEW_${ARGV1} CACHE)
   SET(NEW_${ARGV1} ${PROTO_STRING} CACHE STRING "Google Protocol Buffers - new file contents for ${ARGV1}")
   IF((${FORCE_PROTOC_COMPILE}) OR (NOT "${NEW_${ARGV1}}" STREQUAL "${${ARGV1}}"))
     GET_FILENAME_COMPONENT(PROTO_FILE_ROOT ${SOURCE_DIR}/${PROTO_FILE} PATH)

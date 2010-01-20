@@ -34,10 +34,11 @@
 #include <maidsafe/utils.h>
 #include <QThreadPool>
 
-#include <string>
 #include <list>
+#include <string>
 #include <vector>
 
+#include "maidsafe/maidsafevalidator.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
@@ -167,8 +168,6 @@ struct SwapChunkArgs {
   boost::uint16_t rendezvous_port_;
   base::callback_func_type cb_;
 };
-
-class PDVault;
 
 class PDVault {
  public:
@@ -302,6 +301,7 @@ class PDVault {
   boost::uint16_t port_;
   transport::Transport transport_;
   rpcprotocol::ChannelManager channel_manager_;
+  maidsafe::MaidsafeValidator validator_;
   kad::KNode knode_;
   VaultRpcs vault_rpcs_;
   VaultChunkStore vault_chunkstore_;

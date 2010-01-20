@@ -288,7 +288,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
 
     // Participants
     cp.clear();
-    for (int a = 0; a < n + 1; a++) {
+    for (int a = 0; a <= n; a++) {
       maidsafe::ShareParticipants sps;
       sps.id = "PUB_NAME_" + base::itos(n) + "_" + base::itos(a);
       sps.public_key = "PUB_NAME_PUB_KEY_" + base::itos(n) +
@@ -383,7 +383,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
 
     // Participants
     cp.clear();
-    for (int a = 0; a < n + 1; a++) {
+    for (int a = 0; a <= n; a++) {
       maidsafe::ShareParticipants sps;
       sps.id = "PUB_NAME_" + base::itos(n) + "_" + base::itos(a);
       sps.public_key = "PUB_NAME_PUB_KEY_" + base::itos(n) +

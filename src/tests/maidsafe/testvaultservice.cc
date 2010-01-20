@@ -187,7 +187,7 @@ class MockVaultServicesTest : public VaultServicesTest {
     mock_vault_service_logic_.our_details_ = our_details;
     mock_vault_service_logic_.SetOnlineStatus(true);
   }
-  MockVsl mock_vault_service_logic_;
+  MockVslServiceTest mock_vault_service_logic_;
  private:
   MockVaultServicesTest(const MockVaultServicesTest&);
   MockVaultServicesTest &operator=(const MockVaultServicesTest&);
@@ -299,9 +299,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
   maidsafe::StorePrepRequest request;
   maidsafe::StorePrepResponse response;
 
-  maidsafe::SignedSize *signed_size;
-  maidsafe::StoreContract *store_contract;
-  maidsafe::StoreContract::InnerContract *inner_contract;
+  maidsafe::SignedSize *signed_size = NULL;
+  maidsafe::StoreContract *store_contract = NULL;
+  maidsafe::StoreContract::InnerContract *inner_contract = NULL;
 
   std::string pub_key, priv_key, pmid, pub_key_sig, req_sig, size_sig;
   CreateRSAKeys(&pub_key, &priv_key);
@@ -660,7 +660,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
   maidsafe::DeleteChunkRequest request;
   maidsafe::DeleteChunkResponse response;
 
-  maidsafe::SignedSize *signed_size;
+  maidsafe::SignedSize *signed_size = NULL;
 
   std::string pub_key, priv_key, pmid, pub_key_sig, req_sig, size_sig;
   CreateRSAKeys(&pub_key, &priv_key);
@@ -770,11 +770,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
 }
 
 TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
+  MockVsl mock_vault_service_logic(NULL, NULL);
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_, &poh_,
-                                    &mock_vault_service_logic_);
+                                    &mock_vault_service_logic);
 
   rpcprotocol::Controller controller;
   maidsafe::AmendAccountRequest request;
@@ -797,7 +798,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   std::string client_account_name = co.Hash(client_pmid + kAccount, "",
                                             crypto::STRING_STRING, false);
 
-  EXPECT_CALL(mock_vault_service_logic_,
+  EXPECT_CALL(mock_vault_service_logic,
               FindCloseNodes(client_account_name, testing::_))
       .Times(testing::AtLeast(6))
       .WillRepeatedly(testing::WithArg<1>(testing::Invoke(
@@ -1647,9 +1648,9 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToReferenceList) {
   maidsafe::AddToReferenceListRequest request;
   maidsafe::AddToReferenceListResponse response;
 
-  maidsafe::SignedSize *signed_size;
-  maidsafe::StoreContract *store_contract;
-  maidsafe::StoreContract::InnerContract *inner_contract;
+  maidsafe::SignedSize *signed_size = NULL;
+  maidsafe::StoreContract *store_contract = NULL;
+  maidsafe::StoreContract::InnerContract *inner_contract = NULL;
 
   // client = node requesting to store a chunk
   // vlt = Vault storing the chunk

@@ -107,7 +107,7 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_FindKNodes) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   // Setup
   MockVaultRpcs mock_rpcs(NULL, NULL);
-  MockVsl vsl(&mock_rpcs, NULL);
+  MockVslAddToRefTest vsl(&mock_rpcs, NULL);
   vsl.non_hex_pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;

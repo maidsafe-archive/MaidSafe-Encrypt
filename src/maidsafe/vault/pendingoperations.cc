@@ -83,7 +83,8 @@ int PendingOperationsHandler::AdvanceStatus(const std::string &pmid,
 #endif
     return -1493;
   }
-  std::pair<pending_operation_set::iterator, pending_operation_set::iterator> p;
+  std::pair<pending_operation_set::iterator, pending_operation_set::iterator>
+      p(pending_ops_.end(), pending_ops_.end());
   switch (status) {
     case STORE_ACCEPTED:
       break;

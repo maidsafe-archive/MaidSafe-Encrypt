@@ -998,7 +998,7 @@ bool ClientController::GetMessages() {
 #endif
     return false;
   }
-  if (valid_messages.size() == size_t(0)) {
+  if (valid_messages.empty()) {
     // TODO(Team#5#): return code for no messages
     return true;
   }
