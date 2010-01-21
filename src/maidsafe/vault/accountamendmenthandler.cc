@@ -22,8 +22,11 @@
 * ============================================================================
 */
 
-#include "maidsafe/vault/accountrepository.h"
 #include "maidsafe/vault/accountamendmenthandler.h"
+
+#include <vector>
+
+#include "maidsafe/vault/accountrepository.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 
 namespace maidsafe_vault {
