@@ -21,6 +21,9 @@
 #include <QList>
 #include <QFileDialog>
 
+#include <list>
+#include <string>
+
 // core
 #include "maidsafe/client/sessionsingleton.h"
 
@@ -125,7 +128,7 @@ void PerpetualData::createActions() {
   actions_[ MY_FILES ] = ui_.actionMy_Files;
   actions_[ PRIVATE_SHARES ] = ui_.actionPrivate_Shares;
   actions_[ GO_OFFLINE ] = ui_.actionOffline;
- // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
+  // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
   actions_[ QUIT ]->setShortcut(Qt::ALT + Qt::Key_F4);
   actions_[ FULLSCREEN ]->setShortcut(Qt::Key_F11);
@@ -144,8 +147,8 @@ void PerpetualData::createActions() {
           this,                       SLOT(onPrivateShares()));
   connect(actions_[ GO_OFFLINE ], SIGNAL(toggled(bool)),
           this,                   SLOT(onGoOffline(bool)));
- // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
- //         this,                     SLOT(onSaveSession()));
+  // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
+  //         this,                     SLOT(onSaveSession()));
 }
 
 void PerpetualData::createMenus() {
@@ -490,16 +493,15 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
                                       const QString& detail,
                                       const QString& conversation) {
   if (type == ClientController::TEXT) {
-
     std::list<std::string> theList;
     maidsafe::SessionSingleton::getInstance()->ConversationList(&theList);
 
     QList<QString> messageList;
-    foreach(std::string theConv ,theList){
+    foreach(std::string theConv, theList) {
         messageList.append(QString::fromStdString(theConv));
     }
 
-    if (!messageList.contains(sender)){
+    if (!messageList.contains(sender)) {
       PersonalMessages* mess_ = new PersonalMessages(sender);
 
       QFile file(":/qss/defaultWithWhite1.qss");
@@ -510,9 +512,8 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
       mess_->setMessage(tr("'%1' said: %2").arg(sender).arg(detail));
       mess_->show();
     }
-
-  } else if (type == ClientController::INVITE){
-      // TODO(Team#5#): 2010-01-13 - handle Invite
+  } else if (type == ClientController::INVITE) {
+    // TODO(Team#5#): 2010-01-13 - handle Invite
   }
 }
 
@@ -526,7 +527,6 @@ void PerpetualData::onShareReceived(const QString& from,
 }
 
 void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
-
   printf("in onFilerecieved");
 
   maidsafe::InstantFileNotification ifn = im.instantfile_notification();
@@ -545,7 +545,7 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
 
   switch (ret) {
     case QMessageBox::Save: {
-    //Save
+      // Save
 #ifdef __WIN32__
       root = QString("%1:\\My Files").
              arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
@@ -553,8 +553,7 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
       root = QString::fromStdString(fsys.MaidsafeFuseDir() + "/My Files");
 #endif
 
-      directory = QFileDialog::getSaveFileName(this,
-                        tr("Save File"), root);
+      directory = QFileDialog::getSaveFileName(this, tr("Save File"), root);
 
       printf("Dir chosen: %s\n", directory.toStdString().c_str());
 
@@ -577,14 +576,13 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
 
         SystemTrayIcon::instance()->showMessage(title, message);
       }
-    break;
+      break;
     }
     case QMessageBox::Cancel:
-    //Cancel
+      // Cancel
     break;
     default:
-    //Default
-    break;
+      // Default
   }
 }
 

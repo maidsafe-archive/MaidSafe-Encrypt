@@ -370,11 +370,13 @@ void Login::UserExists_Callback(bool b) {
 }
 
 void Login::UserValidated(bool b) {
-  if (b)
+  if (b) {
     emit existingUser();
-  else
+  } else {
     QMessageBox::warning(this, tr("Error!"),
                          tr("Please verify your credentials."));
+    reset();
+  }
 }
 
 bool Login::event(QEvent* event) {

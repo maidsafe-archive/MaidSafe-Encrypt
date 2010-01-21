@@ -112,8 +112,8 @@ bool ClientController::createShare(const QString& shareName,
   return false;
 }
 
-std::list<std::string> ClientController::getShareList(int type, int filterType) const {
-
+std::list<std::string> ClientController::getShareList(int type,
+                                                      int filterType) const {
   std::list<std::string> share_list;
 
   const int n =
@@ -140,10 +140,9 @@ std::list<std::string> ClientController::getShareList(int type, int filterType) 
 ShareList ClientController::shares(int type, int filterType) const {
   ShareList rv;
   std::list<maidsafe::PrivateShare> ps_list;
-  const int n =
-          maidsafe::ClientController::getInstance()->GetShareList(&ps_list,
-                                          maidsafe::SortingMode(type),
-                                          maidsafe::ShareFilter(filterType),"");
+  const int n = maidsafe::ClientController::getInstance()->GetShareList(
+                &ps_list, maidsafe::SortingMode(type),
+                maidsafe::ShareFilter(filterType), "");
   qDebug() << ps_list.size();
   if (n == 0) {
     while (!ps_list.empty()) {
@@ -441,8 +440,8 @@ int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
             {
               qDebug() << "HANDLING AddContactRequest";
 
-                emit addedContact(QString::fromStdString(im.sender()), im);
-                type = CONTACT_REQUEST;
+              emit addedContact(QString::fromStdString(im.sender()), im);
+              type = CONTACT_REQUEST;
 
               break;
             }
@@ -475,9 +474,8 @@ int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
             }
     }
   } else if (im.has_instantfile_notification()) {
-
-      emit fileReceived(im);
-      type = FILE;
+    emit fileReceived(im);
+    type = FILE;
   } else if (im.has_privateshare_notification()) {
     // we have added a new private share
     // \TODO what about someone else adding us to one og their shares?

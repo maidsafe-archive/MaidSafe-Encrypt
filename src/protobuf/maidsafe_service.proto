@@ -24,6 +24,7 @@ service MaidsafeService {
   rpc ModifyBPInfo( ModifyBPInfoRequest ) returns ( ModifyBPInfoResponse );
   rpc GetBPMessages( GetBPMessagesRequest ) returns ( GetBPMessagesResponse );
   rpc AddBPMessage( AddBPMessageRequest ) returns ( AddBPMessageResponse );
+  rpc ContactInfo( ContactInfoRequest ) returns ( ContactInfoResponse );
 }
 
 service VaultRegistration {

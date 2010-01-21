@@ -145,6 +145,10 @@ enum ReturnCode {
   kExistingConversation = -10003,
   kLoadKeysFailure = -10004,
   kContactListFailure = -10005,
+
+  // Validator
+  kValidatorNoParameters = -13001,
+  kValidatorNoPrivateKey = -13002
 };
 
 }  // namespace maidsafe

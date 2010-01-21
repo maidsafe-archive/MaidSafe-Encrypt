@@ -141,6 +141,7 @@ class VaultRpcs {
   rpcprotocol::ChannelManager *channel_manager_;
   std::string own_non_hex_id_;
 };
+
 }  // namespace maidsafe_vault
 
 #endif  // MAIDSAFE_VAULT_VAULTRPC_H_

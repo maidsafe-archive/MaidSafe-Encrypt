@@ -79,7 +79,7 @@ class UserPanels : public QWidget {
 
   private slots:
 
-    //menu bar pop-up on tabBar
+    // menu bar pop-up on tabBar
     void customContentsMenu(const QPoint &pos);
     void onSortAlphaClicked();
     void onSortContactedClicked();
@@ -98,7 +98,7 @@ class UserPanels : public QWidget {
     // 'My Files' button has been clicked
     void onMyFilesClicked();
 
-    void onCurrentChanged(int);
+    void onCurrentChanged(int i);
 
  private:
 
@@ -112,7 +112,7 @@ class UserPanels : public QWidget {
   QAction *sortShareUsed;
   QAction *sortShareRecent;
 
-  void activatePanel(bool);
+  void activatePanel(bool b);
 
   Ui::UserPanels ui_;
 
@@ -125,7 +125,6 @@ class UserPanels : public QWidget {
 
   // track the active panel
   int panel_;
-
 };
 
 #endif  // QT_WIDGETS_USER_PANELS_H_

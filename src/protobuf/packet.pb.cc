@@ -11,6 +11,9 @@ namespace maidsafe {
 
 namespace {
 
+const ::google::protobuf::Descriptor* EndPoint_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  EndPoint_reflection_ = NULL;
 const ::google::protobuf::Descriptor* GenericPacket_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   GenericPacket_reflection_ = NULL;
@@ -59,7 +62,23 @@ void protobuf_AssignDesc_packet_2eproto() {
     ::google::protobuf::DescriptorPool::generated_pool()->FindFileByName(
       "packet.proto");
   GOOGLE_CHECK(file != NULL);
-  GenericPacket_descriptor_ = file->message_type(0);
+  EndPoint_descriptor_ = file->message_type(0);
+  static const int EndPoint_offsets_[2] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(EndPoint, ip_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(EndPoint, port_),
+  };
+  EndPoint_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      EndPoint_descriptor_,
+      EndPoint::default_instance_,
+      EndPoint_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(EndPoint, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(EndPoint, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(EndPoint));
+  GenericPacket_descriptor_ = file->message_type(1);
   static const int GenericPacket_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GenericPacket, data_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GenericPacket, signature_),
@@ -75,12 +94,13 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(GenericPacket));
-  BufferPacketInfo_descriptor_ = file->message_type(1);
-  static const int BufferPacketInfo_offsets_[4] = {
+  BufferPacketInfo_descriptor_ = file->message_type(2);
+  static const int BufferPacketInfo_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketInfo, owner_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketInfo, ownerpublickey_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketInfo, users_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketInfo, online_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketInfo, ep_),
   };
   BufferPacketInfo_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -93,7 +113,7 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(BufferPacketInfo));
-  BufferPacketMessage_descriptor_ = file->message_type(2);
+  BufferPacketMessage_descriptor_ = file->message_type(3);
   static const int BufferPacketMessage_offsets_[6] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketMessage, sender_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacketMessage, sender_public_key_),
@@ -113,7 +133,7 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(BufferPacketMessage));
-  BufferPacket_descriptor_ = file->message_type(3);
+  BufferPacket_descriptor_ = file->message_type(4);
   static const int BufferPacket_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacket, owner_info_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BufferPacket, messages_),
@@ -129,7 +149,7 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(BufferPacket));
-  ValidatedBufferPacketMessage_descriptor_ = file->message_type(4);
+  ValidatedBufferPacketMessage_descriptor_ = file->message_type(5);
   static const int ValidatedBufferPacketMessage_offsets_[5] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ValidatedBufferPacketMessage, sender_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ValidatedBufferPacketMessage, message_),
@@ -148,7 +168,7 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(ValidatedBufferPacketMessage));
-  ContactInfo_descriptor_ = file->message_type(5);
+  ContactInfo_descriptor_ = file->message_type(6);
   static const int ContactInfo_offsets_[7] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfo, name_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfo, birthday_),
@@ -169,7 +189,7 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(ContactInfo));
-  ContactNotification_descriptor_ = file->message_type(6);
+  ContactNotification_descriptor_ = file->message_type(7);
   static const int ContactNotification_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactNotification, action_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactNotification, contact_),
@@ -185,7 +205,7 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(ContactNotification));
-  InstantFileNotification_descriptor_ = file->message_type(7);
+  InstantFileNotification_descriptor_ = file->message_type(8);
   static const int InstantFileNotification_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileNotification, ser_mdm_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantFileNotification, ser_dm_),
@@ -202,7 +222,7 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(InstantFileNotification));
-  PrivateShareNotification_descriptor_ = file->message_type(8);
+  PrivateShareNotification_descriptor_ = file->message_type(9);
   static const int PrivateShareNotification_offsets_[7] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PrivateShareNotification, name_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PrivateShareNotification, msid_),
@@ -223,7 +243,7 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(PrivateShareNotification));
-  InstantMessage_descriptor_ = file->message_type(9);
+  InstantMessage_descriptor_ = file->message_type(10);
   static const int InstantMessage_offsets_[7] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, sender_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(InstantMessage, message_),
@@ -244,7 +264,7 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(InstantMessage));
-  StoreMessagesResult_descriptor_ = file->message_type(10);
+  StoreMessagesResult_descriptor_ = file->message_type(11);
   static const int StoreMessagesResult_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreMessagesResult, stored_msgs_),
@@ -261,7 +281,7 @@ void protobuf_AssignDesc_packet_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(StoreMessagesResult));
-  CreateMSIDResult_descriptor_ = file->message_type(11);
+  CreateMSIDResult_descriptor_ = file->message_type(12);
   static const int CreateMSIDResult_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(CreateMSIDResult, name_),
@@ -294,6 +314,8 @@ inline void protobuf_AssignDescriptorsOnce() {
 void protobuf_RegisterTypes() {
   protobuf_AssignDescriptorsOnce();
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    EndPoint_descriptor_, &EndPoint::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     GenericPacket_descriptor_, &GenericPacket::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     BufferPacketInfo_descriptor_, &BufferPacketInfo::default_instance());
@@ -322,6 +344,8 @@ void protobuf_RegisterTypes() {
 }  // namespace
 
 void protobuf_ShutdownFile_packet_2eproto() {
+  delete EndPoint::default_instance_;
+  delete EndPoint_reflection_;
   delete GenericPacket::default_instance_;
   delete GenericPacket_reflection_;
   delete BufferPacketInfo::default_instance_;
@@ -355,52 +379,55 @@ void protobuf_AddDesc_packet_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\014packet.proto\022\010maidsafe\"0\n\rGenericPacke"
-    "t\022\014\n\004data\030\001 \002(\014\022\021\n\tsignature\030\002 \002(\014\"X\n\020Bu"
-    "fferPacketInfo\022\r\n\005owner\030\001 \002(\014\022\026\n\016ownerPu"
-    "blicKey\030\002 \002(\014\022\r\n\005users\030\003 \003(\014\022\016\n\006online\030\004"
-    " \001(\005\"\247\001\n\023BufferPacketMessage\022\021\n\tsender_i"
-    "d\030\001 \002(\014\022\031\n\021sender_public_key\030\002 \001(\014\022\022\n\nRS"
-    "Aenc_key\030\003 \002(\014\022\026\n\016AESenc_message\030\004 \002(\014\022#"
-    "\n\004type\030\005 \002(\0162\025.maidsafe.MessageType\022\021\n\tt"
-    "imestamp\030\006 \001(\r\"f\n\014BufferPacket\022+\n\nowner_"
-    "info\030\001 \003(\0132\027.maidsafe.GenericPacket\022)\n\010m"
-    "essages\030\002 \003(\0132\027.maidsafe.GenericPacket\"\206"
-    "\001\n\034ValidatedBufferPacketMessage\022\016\n\006sende"
-    "r\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\r\n\005index\030\003 \002(\014\022"
-    "#\n\004type\030\004 \002(\0162\025.maidsafe.MessageType\022\021\n\t"
-    "timestamp\030\005 \001(\r\"\205\001\n\013ContactInfo\022\014\n\004name\030"
-    "\001 \001(\014\022\020\n\010birthday\030\002 \001(\014\022\025\n\roffice_number"
-    "\030\003 \001(\014\022\016\n\006gender\030\004 \001(\014\022\017\n\007country\030\005 \001(\005\022"
-    "\014\n\004city\030\006 \001(\014\022\020\n\010language\030\007 \001(\005\"M\n\023Conta"
-    "ctNotification\022\016\n\006action\030\001 \002(\005\022&\n\007contac"
-    "t\030\002 \001(\0132\025.maidsafe.ContactInfo\"L\n\027Instan"
-    "tFileNotification\022\017\n\007ser_mdm\030\001 \002(\014\022\016\n\006se"
-    "r_dm\030\002 \002(\014\022\020\n\010filename\030\003 \002(\014\"\226\001\n\030Private"
-    "ShareNotification\022\014\n\004name\030\001 \002(\014\022\014\n\004msid\030"
-    "\002 \002(\014\022\022\n\npublic_key\030\003 \002(\014\022\023\n\013private_key"
-    "\030\004 \001(\014\022\016\n\006admins\030\005 \003(\014\022\021\n\treadonlys\030\006 \003("
-    "\014\022\022\n\ndir_db_key\030\007 \002(\014\"\236\002\n\016InstantMessage"
-    "\022\016\n\006sender\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\014\n\004dat"
-    "e\030\003 \002(\005\022;\n\024contact_notification\030\004 \001(\0132\035."
-    "maidsafe.ContactNotification\022C\n\030instantf"
-    "ile_notification\030\005 \001(\0132!.maidsafe.Instan"
-    "tFileNotification\022E\n\031privateshare_notifi"
-    "cation\030\006 \001(\0132\".maidsafe.PrivateShareNoti"
-    "fication\022\024\n\014conversation\030\007 \001(\014\"J\n\023StoreM"
-    "essagesResult\022\016\n\006result\030\001 \002(\r\022\023\n\013stored_"
-    "msgs\030\002 \002(\005\022\016\n\006failed\030\003 \003(\014\"Y\n\020CreateMSID"
-    "Result\022\016\n\006result\030\001 \002(\r\022\014\n\004name\030\002 \001(\014\022\023\n\013"
-    "private_key\030\003 \001(\014\022\022\n\npublic_key\030\004 \001(\014*F\n"
-    "\013MessageType\022\024\n\020ADD_CONTACT_RQST\020\001\022\017\n\013IN"
-    "STANT_MSG\020\002\022\020\n\014STATUS_CHECK\020\003*\275\001\n\nPacket"
-    "Type\022\007\n\003MID\020\000\022\010\n\004SMID\020\001\022\010\n\004TMID\020\002\022\010\n\004MPI"
-    "D\020\003\022\010\n\004PMID\020\004\022\010\n\004MAID\020\005\022\t\n\005ANMID\020\006\022\n\n\006AN"
-    "SMID\020\007\022\n\n\006ANTMID\020\010\022\n\n\006ANMPID\020\t\022\010\n\004MSID\020\n"
-    "\022\n\n\006PD_DIR\020\013\022\n\n\006BUFFER\020\014\022\017\n\013BUFFER_INFO\020"
-    "\r\022\022\n\016BUFFER_MESSAGE\020\016", 1741);
+    "\n\014packet.proto\022\010maidsafe\"$\n\010EndPoint\022\n\n\002"
+    "ip\030\001 \002(\014\022\014\n\004port\030\002 \002(\r\"0\n\rGenericPacket\022"
+    "\014\n\004data\030\001 \002(\014\022\021\n\tsignature\030\002 \002(\014\"x\n\020Buff"
+    "erPacketInfo\022\r\n\005owner\030\001 \002(\014\022\026\n\016ownerPubl"
+    "icKey\030\002 \002(\014\022\r\n\005users\030\003 \003(\014\022\016\n\006online\030\004 \001"
+    "(\005\022\036\n\002ep\030\005 \001(\0132\022.maidsafe.EndPoint\"\247\001\n\023B"
+    "ufferPacketMessage\022\021\n\tsender_id\030\001 \002(\014\022\031\n"
+    "\021sender_public_key\030\002 \001(\014\022\022\n\nRSAenc_key\030\003"
+    " \002(\014\022\026\n\016AESenc_message\030\004 \002(\014\022#\n\004type\030\005 \002"
+    "(\0162\025.maidsafe.MessageType\022\021\n\ttimestamp\030\006"
+    " \001(\r\"f\n\014BufferPacket\022+\n\nowner_info\030\001 \003(\013"
+    "2\027.maidsafe.GenericPacket\022)\n\010messages\030\002 "
+    "\003(\0132\027.maidsafe.GenericPacket\"\206\001\n\034Validat"
+    "edBufferPacketMessage\022\016\n\006sender\030\001 \002(\014\022\017\n"
+    "\007message\030\002 \002(\014\022\r\n\005index\030\003 \002(\014\022#\n\004type\030\004 "
+    "\002(\0162\025.maidsafe.MessageType\022\021\n\ttimestamp\030"
+    "\005 \001(\r\"\205\001\n\013ContactInfo\022\014\n\004name\030\001 \001(\014\022\020\n\010b"
+    "irthday\030\002 \001(\014\022\025\n\roffice_number\030\003 \001(\014\022\016\n\006"
+    "gender\030\004 \001(\014\022\017\n\007country\030\005 \001(\005\022\014\n\004city\030\006 "
+    "\001(\014\022\020\n\010language\030\007 \001(\005\"M\n\023ContactNotifica"
+    "tion\022\016\n\006action\030\001 \002(\005\022&\n\007contact\030\002 \001(\0132\025."
+    "maidsafe.ContactInfo\"L\n\027InstantFileNotif"
+    "ication\022\017\n\007ser_mdm\030\001 \002(\014\022\016\n\006ser_dm\030\002 \002(\014"
+    "\022\020\n\010filename\030\003 \002(\014\"\226\001\n\030PrivateShareNotif"
+    "ication\022\014\n\004name\030\001 \002(\014\022\014\n\004msid\030\002 \002(\014\022\022\n\np"
+    "ublic_key\030\003 \002(\014\022\023\n\013private_key\030\004 \001(\014\022\016\n\006"
+    "admins\030\005 \003(\014\022\021\n\treadonlys\030\006 \003(\014\022\022\n\ndir_d"
+    "b_key\030\007 \002(\014\"\236\002\n\016InstantMessage\022\016\n\006sender"
+    "\030\001 \002(\014\022\017\n\007message\030\002 \002(\014\022\014\n\004date\030\003 \002(\005\022;\n"
+    "\024contact_notification\030\004 \001(\0132\035.maidsafe.C"
+    "ontactNotification\022C\n\030instantfile_notifi"
+    "cation\030\005 \001(\0132!.maidsafe.InstantFileNotif"
+    "ication\022E\n\031privateshare_notification\030\006 \001"
+    "(\0132\".maidsafe.PrivateShareNotification\022\024"
+    "\n\014conversation\030\007 \001(\014\"J\n\023StoreMessagesRes"
+    "ult\022\016\n\006result\030\001 \002(\r\022\023\n\013stored_msgs\030\002 \002(\005"
+    "\022\016\n\006failed\030\003 \003(\014\"Y\n\020CreateMSIDResult\022\016\n\006"
+    "result\030\001 \002(\r\022\014\n\004name\030\002 \001(\014\022\023\n\013private_ke"
+    "y\030\003 \001(\014\022\022\n\npublic_key\030\004 \001(\014*F\n\013MessageTy"
+    "pe\022\024\n\020ADD_CONTACT_RQST\020\001\022\017\n\013INSTANT_MSG\020"
+    "\002\022\020\n\014STATUS_CHECK\020\003*\275\001\n\nPacketType\022\007\n\003MI"
+    "D\020\000\022\010\n\004SMID\020\001\022\010\n\004TMID\020\002\022\010\n\004MPID\020\003\022\010\n\004PMI"
+    "D\020\004\022\010\n\004MAID\020\005\022\t\n\005ANMID\020\006\022\n\n\006ANSMID\020\007\022\n\n\006"
+    "ANTMID\020\010\022\n\n\006ANMPID\020\t\022\010\n\004MSID\020\n\022\n\n\006PD_DIR"
+    "\020\013\022\n\n\006BUFFER\020\014\022\017\n\013BUFFER_INFO\020\r\022\022\n\016BUFFE"
+    "R_MESSAGE\020\016", 1811);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "packet.proto", &protobuf_RegisterTypes);
+  EndPoint::default_instance_ = new EndPoint();
   GenericPacket::default_instance_ = new GenericPacket();
   BufferPacketInfo::default_instance_ = new BufferPacketInfo();
   BufferPacketMessage::default_instance_ = new BufferPacketMessage();
@@ -413,6 +440,7 @@ void protobuf_AddDesc_packet_2eproto() {
   InstantMessage::default_instance_ = new InstantMessage();
   StoreMessagesResult::default_instance_ = new StoreMessagesResult();
   CreateMSIDResult::default_instance_ = new CreateMSIDResult();
+  EndPoint::default_instance_->InitAsDefaultInstance();
   GenericPacket::default_instance_->InitAsDefaultInstance();
   BufferPacketInfo::default_instance_->InitAsDefaultInstance();
   BufferPacketMessage::default_instance_->InitAsDefaultInstance();
@@ -477,6 +505,261 @@ bool PacketType_IsValid(int value) {
   }
 }
 
+
+// ===================================================================
+
+const ::std::string EndPoint::_default_ip_;
+#ifndef _MSC_VER
+const int EndPoint::kIpFieldNumber;
+const int EndPoint::kPortFieldNumber;
+#endif  // !_MSC_VER
+
+EndPoint::EndPoint()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    ip_(const_cast< ::std::string*>(&_default_ip_)),
+    port_(0u) {
+  SharedCtor();
+}
+
+void EndPoint::InitAsDefaultInstance() {}
+
+EndPoint::EndPoint(const EndPoint& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    ip_(const_cast< ::std::string*>(&_default_ip_)),
+    port_(0u) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void EndPoint::SharedCtor() {
+  _cached_size_ = 0;
+  ip_ = const_cast< ::std::string*>(&_default_ip_);
+  port_ = 0u;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+EndPoint::~EndPoint() {
+  SharedDtor();
+}
+
+void EndPoint::SharedDtor() {
+  if (ip_ != &_default_ip_) {
+    delete ip_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* EndPoint::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return EndPoint_descriptor_;
+}
+
+const EndPoint& EndPoint::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_packet_2eproto();  return *default_instance_;
+}
+
+EndPoint* EndPoint::default_instance_ = NULL;
+
+EndPoint* EndPoint::New() const {
+  return new EndPoint;
+}
+
+void EndPoint::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (_has_bit(0)) {
+      if (ip_ != &_default_ip_) {
+        ip_->clear();
+      }
+    }
+    port_ = 0u;
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool EndPoint::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required bytes ip = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_ip()));
+        if (input->ExpectTag(16)) goto parse_port;
+        break;
+      }
+      
+      // required uint32 port = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_port:
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &port_));
+        _set_bit(1);
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void EndPoint::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    EndPoint::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required bytes ip = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->ip(), output);
+  }
+  
+  // required uint32 port = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormat::WriteUInt32(2, this->port(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* EndPoint::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required bytes ip = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->ip(), target);
+  }
+  
+  // required uint32 port = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(2, this->port(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int EndPoint::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required bytes ip = 1;
+    if (has_ip()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->ip());
+    }
+    
+    // required uint32 port = 2;
+    if (has_port()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->port());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void EndPoint::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const EndPoint* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const EndPoint*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void EndPoint::MergeFrom(const EndPoint& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_ip(from.ip());
+    }
+    if (from._has_bit(1)) {
+      set_port(from.port());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void EndPoint::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void EndPoint::CopyFrom(const EndPoint& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void EndPoint::Swap(EndPoint* other) {
+  if (other != this) {
+    std::swap(ip_, other->ip_);
+    std::swap(port_, other->port_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool EndPoint::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
+  
+  return true;
+}
+
+const ::google::protobuf::Descriptor* EndPoint::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* EndPoint::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return EndPoint_reflection_;
+}
 
 // ===================================================================
 
@@ -747,6 +1030,7 @@ const int BufferPacketInfo::kOwnerFieldNumber;
 const int BufferPacketInfo::kOwnerPublicKeyFieldNumber;
 const int BufferPacketInfo::kUsersFieldNumber;
 const int BufferPacketInfo::kOnlineFieldNumber;
+const int BufferPacketInfo::kEpFieldNumber;
 #endif  // !_MSC_VER
 
 BufferPacketInfo::BufferPacketInfo()
@@ -756,11 +1040,13 @@ BufferPacketInfo::BufferPacketInfo()
     owner_(const_cast< ::std::string*>(&_default_owner_)),
     ownerpublickey_(const_cast< ::std::string*>(&_default_ownerpublickey_)),
     users_(),
-    online_(0) {
+    online_(0),
+    ep_(NULL) {
   SharedCtor();
 }
 
-void BufferPacketInfo::InitAsDefaultInstance() {}
+void BufferPacketInfo::InitAsDefaultInstance() {  ep_ = const_cast< ::maidsafe::EndPoint*>(&::maidsafe::EndPoint::default_instance());
+}
 
 BufferPacketInfo::BufferPacketInfo(const BufferPacketInfo& from)
   : ::google::protobuf::Message(),
@@ -769,7 +1055,8 @@ BufferPacketInfo::BufferPacketInfo(const BufferPacketInfo& from)
     owner_(const_cast< ::std::string*>(&_default_owner_)),
     ownerpublickey_(const_cast< ::std::string*>(&_default_ownerpublickey_)),
     users_(),
-    online_(0) {
+    online_(0),
+    ep_(NULL) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -779,6 +1066,7 @@ void BufferPacketInfo::SharedCtor() {
   owner_ = const_cast< ::std::string*>(&_default_owner_);
   ownerpublickey_ = const_cast< ::std::string*>(&_default_ownerpublickey_);
   online_ = 0;
+  ep_ = NULL;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -794,6 +1082,7 @@ void BufferPacketInfo::SharedDtor() {
     delete ownerpublickey_;
   }
   if (this != default_instance_) {
+    delete ep_;
   }
 }
 
@@ -825,6 +1114,9 @@ void BufferPacketInfo::Clear() {
       }
     }
     online_ = 0;
+    if (_has_bit(4)) {
+      if (ep_ != NULL) ep_->::maidsafe::EndPoint::Clear();
+    }
   }
   users_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -884,6 +1176,19 @@ bool BufferPacketInfo::MergePartialFromCodedStream(
         DO_(::google::protobuf::internal::WireFormat::ReadInt32(
               input, &online_));
         _set_bit(3);
+        if (input->ExpectTag(42)) goto parse_ep;
+        break;
+      }
+      
+      // optional .maidsafe.EndPoint ep = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_ep:
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, mutable_ep()));
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -932,6 +1237,11 @@ void BufferPacketInfo::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteInt32(4, this->online(), output);
   }
   
+  // optional .maidsafe.EndPoint ep = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(5, this->ep(), output);
+  }
+  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -958,6 +1268,11 @@ void BufferPacketInfo::SerializeWithCachedSizes(
   // optional int32 online = 4;
   if (_has_bit(3)) {
     target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(4, this->online(), target);
+  }
+  
+  // optional .maidsafe.EndPoint ep = 5;
+  if (_has_bit(4)) {
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(5, this->ep(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -988,6 +1303,13 @@ int BufferPacketInfo::ByteSize() const {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::Int32Size(
           this->online());
+    }
+    
+    // optional .maidsafe.EndPoint ep = 5;
+    if (has_ep()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+          this->ep());
     }
     
   }
@@ -1032,6 +1354,9 @@ void BufferPacketInfo::MergeFrom(const BufferPacketInfo& from) {
     if (from._has_bit(3)) {
       set_online(from.online());
     }
+    if (from._has_bit(4)) {
+      mutable_ep()->::maidsafe::EndPoint::MergeFrom(from.ep());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -1054,6 +1379,7 @@ void BufferPacketInfo::Swap(BufferPacketInfo* other) {
     std::swap(ownerpublickey_, other->ownerpublickey_);
     users_.Swap(&other->users_);
     std::swap(online_, other->online_);
+    std::swap(ep_, other->ep_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -1063,6 +1389,9 @@ void BufferPacketInfo::Swap(BufferPacketInfo* other) {
 bool BufferPacketInfo::IsInitialized() const {
   if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
   
+  if (has_ep()) {
+    if (!this->ep().IsInitialized()) return false;
+  }
   return true;
 }
 

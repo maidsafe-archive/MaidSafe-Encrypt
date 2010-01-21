@@ -29,6 +29,7 @@ void  protobuf_AddDesc_packet_2eproto();
 void protobuf_AssignDesc_packet_2eproto();
 void protobuf_ShutdownFile_packet_2eproto();
 
+class EndPoint;
 class GenericPacket;
 class BufferPacketInfo;
 class BufferPacketMessage;
@@ -93,6 +94,105 @@ inline bool PacketType_Parse(
     PacketType_descriptor(), name, value);
 }
 // ===================================================================
+
+class EndPoint : public ::google::protobuf::Message {
+ public:
+  EndPoint();
+  virtual ~EndPoint();
+  
+  EndPoint(const EndPoint& from);
+  
+  inline EndPoint& operator=(const EndPoint& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const EndPoint& default_instance();
+  void Swap(EndPoint* other);
+  
+  // implements Message ----------------------------------------------
+  
+  EndPoint* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const EndPoint& from);
+  void MergeFrom(const EndPoint& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes ip = 1;
+  inline bool has_ip() const;
+  inline void clear_ip();
+  static const int kIpFieldNumber = 1;
+  inline const ::std::string& ip() const;
+  inline void set_ip(const ::std::string& value);
+  inline void set_ip(const char* value);
+  inline void set_ip(const void* value, size_t size);
+  inline ::std::string* mutable_ip();
+  
+  // required uint32 port = 2;
+  inline bool has_port() const;
+  inline void clear_port();
+  static const int kPortFieldNumber = 2;
+  inline ::google::protobuf::uint32 port() const;
+  inline void set_port(::google::protobuf::uint32 value);
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* ip_;
+  static const ::std::string _default_ip_;
+  ::google::protobuf::uint32 port_;
+  friend void  protobuf_AddDesc_packet_2eproto();
+  friend void protobuf_AssignDesc_packet_2eproto();
+  friend void protobuf_ShutdownFile_packet_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static EndPoint* default_instance_;
+};
+// -------------------------------------------------------------------
 
 class GenericPacket : public ::google::protobuf::Message {
  public:
@@ -294,6 +394,13 @@ class BufferPacketInfo : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 online() const;
   inline void set_online(::google::protobuf::int32 value);
   
+  // optional .maidsafe.EndPoint ep = 5;
+  inline bool has_ep() const;
+  inline void clear_ep();
+  static const int kEpFieldNumber = 5;
+  inline const ::maidsafe::EndPoint& ep() const;
+  inline ::maidsafe::EndPoint* mutable_ep();
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -304,10 +411,11 @@ class BufferPacketInfo : public ::google::protobuf::Message {
   static const ::std::string _default_ownerpublickey_;
   ::google::protobuf::RepeatedPtrField< ::std::string> users_;
   ::google::protobuf::int32 online_;
+  ::maidsafe::EndPoint* ep_;
   friend void  protobuf_AddDesc_packet_2eproto();
   friend void protobuf_AssignDesc_packet_2eproto();
   friend void protobuf_ShutdownFile_packet_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -1626,6 +1734,68 @@ class CreateMSIDResult : public ::google::protobuf::Message {
 
 // ===================================================================
 
+// EndPoint
+
+// required bytes ip = 1;
+inline bool EndPoint::has_ip() const {
+  return _has_bit(0);
+}
+inline void EndPoint::clear_ip() {
+  if (ip_ != &_default_ip_) {
+    ip_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& EndPoint::ip() const {
+  return *ip_;
+}
+inline void EndPoint::set_ip(const ::std::string& value) {
+  _set_bit(0);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(value);
+}
+inline void EndPoint::set_ip(const char* value) {
+  _set_bit(0);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(value);
+}
+inline void EndPoint::set_ip(const void* value, size_t size) {
+  _set_bit(0);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* EndPoint::mutable_ip() {
+  _set_bit(0);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  return ip_;
+}
+
+// required uint32 port = 2;
+inline bool EndPoint::has_port() const {
+  return _has_bit(1);
+}
+inline void EndPoint::clear_port() {
+  port_ = 0u;
+  _clear_bit(1);
+}
+inline ::google::protobuf::uint32 EndPoint::port() const {
+  return port_;
+}
+inline void EndPoint::set_port(::google::protobuf::uint32 value) {
+  _set_bit(1);
+  port_ = value;
+}
+
+// -------------------------------------------------------------------
+
 // GenericPacket
 
 // required bytes data = 1;
@@ -1858,6 +2028,23 @@ inline ::google::protobuf::int32 BufferPacketInfo::online() const {
 inline void BufferPacketInfo::set_online(::google::protobuf::int32 value) {
   _set_bit(3);
   online_ = value;
+}
+
+// optional .maidsafe.EndPoint ep = 5;
+inline bool BufferPacketInfo::has_ep() const {
+  return _has_bit(4);
+}
+inline void BufferPacketInfo::clear_ep() {
+  if (ep_ != NULL) ep_->::maidsafe::EndPoint::Clear();
+  _clear_bit(4);
+}
+inline const ::maidsafe::EndPoint& BufferPacketInfo::ep() const {
+  return ep_ != NULL ? *ep_ : *default_instance_->ep_;
+}
+inline ::maidsafe::EndPoint* BufferPacketInfo::mutable_ep() {
+  _set_bit(4);
+  if (ep_ == NULL) ep_ = new ::maidsafe::EndPoint;
+  return ep_;
 }
 
 // -------------------------------------------------------------------

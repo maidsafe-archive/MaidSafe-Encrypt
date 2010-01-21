@@ -26,6 +26,9 @@
 #include <QtDebug>
 #include <QStringList>
 
+#include <list>
+#include <string>
+
 //
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/clientcontroller.h"
@@ -77,8 +80,8 @@ Contacts::Contacts(QWidget* parent)
           this,        SLOT(onDeleteUserClicked()));
 
 
-  connect(ui_.listWidget, SIGNAL(customContextMenuRequested(const QPoint &)),
-            this,         SLOT(customContentsMenu(const QPoint &)));
+  connect(ui_.listWidget, SIGNAL(customContextMenuRequested(const QPoint&)),
+            this,         SLOT(customContentsMenu(const QPoint&)));
 
   // To enable the return event on the textbox
   connect(ui_.contactLineEdit,    SIGNAL(returnPressed()),
@@ -87,16 +90,20 @@ Contacts::Contacts(QWidget* parent)
   connect(ui_.contactLineEdit, SIGNAL(editingFinished()),
           this,       SLOT(onContactsBoxLostFocus()));
 
-  connect(ui_.contactLineEdit, SIGNAL(textChanged(const QString &)),
-          this,       SLOT(onContactsBoxTextEdited(const QString &)));
+  connect(ui_.contactLineEdit, SIGNAL(textChanged(const QString&)),
+          this,       SLOT(onContactsBoxTextEdited(const QString&)));
 
   // buttons
 
   connect(ui_.add, SIGNAL(clicked(bool)),
           this, SLOT(onAddContactClicked()));
 
-  connect(ClientController::instance(), SIGNAL(addedContact(const QString&, const maidsafe::InstantMessage&)),
-          this,                         SLOT(onAddedContact(const QString&, const maidsafe::InstantMessage&)));
+  connect(ClientController::instance(),
+          SIGNAL(addedContact(const QString&,
+                              const maidsafe::InstantMessage&)),
+          this,
+          SLOT(onAddedContact(const QString&,
+                              const maidsafe::InstantMessage&)));
 
   connect(ClientController::instance(),
           SIGNAL(confirmedContact(const QString&)),
@@ -143,7 +150,6 @@ void Contacts::onItemDoubleClicked(QListWidgetItem* item) {
   qDebug() << "Contacts::onItemDoubleClicked:" << item->text();
 
   onSendMessageClicked();
-
 }
 
 void Contacts::onItemSelectionChanged() {
@@ -311,12 +317,12 @@ void Contacts::onSendMessageClicked() {
     maidsafe::SessionSingleton::getInstance()->ConversationList(&theList);
 
     QList<QString> messageList;
-    foreach(std::string theConv ,theList){
+    foreach(std::string theConv, theList) {
         messageList.append(QString::fromStdString(theConv));
     }
 
   foreach(QString contact, conts) {
-    if (!messageList.contains(contact)){
+    if (!messageList.contains(contact)) {
       PersonalMessages* mess_ = new PersonalMessages(contact);
 
       QFile file(":/qss/defaultWithWhite1.qss");
@@ -326,10 +332,10 @@ void Contacts::onSendMessageClicked() {
       mess_->setStyleSheet(styleSheet);
       mess_->show();
     } else {
-    foreach (QWidget *widget, QApplication::allWidgets()){
+    foreach(QWidget *widget, QApplication::allWidgets()) {
       PersonalMessages *mess = qobject_cast<PersonalMessages*>(widget);
-      if (mess){
-        //TODO get mainwindows location and offset before restoring
+      if (mess) {
+        // TODO(Team): get mainwindows location and offset before restoring
         if (mess->getName() == contact)
           mess->showNormal();
       }
@@ -443,13 +449,14 @@ QList<QListWidgetItem *> Contacts::currentContact() {
   return names;
 }
 
-void Contacts::onAddedContact(const QString &name, const maidsafe::InstantMessage& im) {
+void Contacts::onAddedContact(const QString &name,
+                              const maidsafe::InstantMessage& im) {
   int n = 0;
 
   maidsafe::ContactNotification cn = im.contact_notification();
   maidsafe::ContactInfo ci;
   if (cn.has_contact())
-   ci = cn.contact();
+    ci = cn.contact();
 
   qDebug() << "Contacts::onAddedContact()";
 
@@ -463,27 +470,26 @@ void Contacts::onAddedContact(const QString &name, const maidsafe::InstantMessag
     case QMessageBox::Yes:
       // yes was clicked
       n = maidsafe::ClientController::getInstance()->
-                                     HandleAddContactRequest(ci, name.toStdString());
-        if (n == 0) {
-            QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
-                                  Qt::MatchCaseSensitive);
-            if (items.size() == 1) {  // Contact had changed confirmed status only
-              onConfirmedContact(name);
-            } else {  // Contact wasn't present
-              Contact *c = new Contact(name);
-              c->setPresence(Presence::AVAILABLE);
-              addContact(c);
-            }
-        }
-        break;
+          HandleAddContactRequest(ci, name.toStdString());
+      if (n == 0) {
+          QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
+                                Qt::MatchCaseSensitive);
+          if (items.size() == 1) {  // Contact had changed confirmed status only
+            onConfirmedContact(name);
+          } else {  // Contact wasn't present
+            Contact *c = new Contact(name);
+            c->setPresence(Presence::AVAILABLE);
+            addContact(c);
+          }
+      }
+      break;
     case QMessageBox::No:
        // No was clicked
        break;
     default:
        // should never be reached
        break;
- }
-
+  }
 }
 
 void Contacts::onConfirmedContact(const QString &name) {
@@ -492,8 +498,8 @@ void Contacts::onConfirmedContact(const QString &name) {
                                   Qt::MatchCaseSensitive);
 
 QMessageBox msgBox;
- msgBox.setText("The contact has been confirmed.");
- msgBox.exec();
+  msgBox.setText("The contact has been confirmed.");
+  msgBox.exec();
 
   foreach(QListWidgetItem* item, items) {
     if (item->text() == name) {

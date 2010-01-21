@@ -74,6 +74,8 @@ class GetBPMessagesRequest;
 class GetBPMessagesResponse;
 class AddBPMessageRequest;
 class AddBPMessageResponse;
+class ContactInfoRequest;
+class ContactInfoResponse;
 
 enum OwnVaultResult {
   OWNED_SUCCESS = 0,
@@ -5623,6 +5625,296 @@ class AddBPMessageResponse : public ::google::protobuf::Message {
   
   void InitAsDefaultInstance();
   static AddBPMessageResponse* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class ContactInfoRequest : public ::google::protobuf::Message {
+ public:
+  ContactInfoRequest();
+  virtual ~ContactInfoRequest();
+  
+  ContactInfoRequest(const ContactInfoRequest& from);
+  
+  inline ContactInfoRequest& operator=(const ContactInfoRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ContactInfoRequest& default_instance();
+  void Swap(ContactInfoRequest* other);
+  
+  // implements Message ----------------------------------------------
+  
+  ContactInfoRequest* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const ContactInfoRequest& from);
+  void MergeFrom(const ContactInfoRequest& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes bufferpacket_name = 1;
+  inline bool has_bufferpacket_name() const;
+  inline void clear_bufferpacket_name();
+  static const int kBufferpacketNameFieldNumber = 1;
+  inline const ::std::string& bufferpacket_name() const;
+  inline void set_bufferpacket_name(const ::std::string& value);
+  inline void set_bufferpacket_name(const char* value);
+  inline void set_bufferpacket_name(const void* value, size_t size);
+  inline ::std::string* mutable_bufferpacket_name();
+  
+  // required bytes id = 2;
+  inline bool has_id() const;
+  inline void clear_id();
+  static const int kIdFieldNumber = 2;
+  inline const ::std::string& id() const;
+  inline void set_id(const ::std::string& value);
+  inline void set_id(const char* value);
+  inline void set_id(const void* value, size_t size);
+  inline ::std::string* mutable_id();
+  
+  // required bytes pmid = 3;
+  inline bool has_pmid() const;
+  inline void clear_pmid();
+  static const int kPmidFieldNumber = 3;
+  inline const ::std::string& pmid() const;
+  inline void set_pmid(const ::std::string& value);
+  inline void set_pmid(const char* value);
+  inline void set_pmid(const void* value, size_t size);
+  inline ::std::string* mutable_pmid();
+  
+  // required bytes public_key = 4;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 4;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // required bytes public_key_signature = 5;
+  inline bool has_public_key_signature() const;
+  inline void clear_public_key_signature();
+  static const int kPublicKeySignatureFieldNumber = 5;
+  inline const ::std::string& public_key_signature() const;
+  inline void set_public_key_signature(const ::std::string& value);
+  inline void set_public_key_signature(const char* value);
+  inline void set_public_key_signature(const void* value, size_t size);
+  inline ::std::string* mutable_public_key_signature();
+  
+  // required bytes request_signature = 6;
+  inline bool has_request_signature() const;
+  inline void clear_request_signature();
+  static const int kRequestSignatureFieldNumber = 6;
+  inline const ::std::string& request_signature() const;
+  inline void set_request_signature(const ::std::string& value);
+  inline void set_request_signature(const char* value);
+  inline void set_request_signature(const void* value, size_t size);
+  inline ::std::string* mutable_request_signature();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* bufferpacket_name_;
+  static const ::std::string _default_bufferpacket_name_;
+  ::std::string* id_;
+  static const ::std::string _default_id_;
+  ::std::string* pmid_;
+  static const ::std::string _default_pmid_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* public_key_signature_;
+  static const ::std::string _default_public_key_signature_;
+  ::std::string* request_signature_;
+  static const ::std::string _default_request_signature_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static ContactInfoRequest* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class ContactInfoResponse : public ::google::protobuf::Message {
+ public:
+  ContactInfoResponse();
+  virtual ~ContactInfoResponse();
+  
+  ContactInfoResponse(const ContactInfoResponse& from);
+  
+  inline ContactInfoResponse& operator=(const ContactInfoResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const ContactInfoResponse& default_instance();
+  void Swap(ContactInfoResponse* other);
+  
+  // implements Message ----------------------------------------------
+  
+  ContactInfoResponse* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const ContactInfoResponse& from);
+  void MergeFrom(const ContactInfoResponse& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required uint32 result = 1;
+  inline bool has_result() const;
+  inline void clear_result();
+  static const int kResultFieldNumber = 1;
+  inline ::google::protobuf::uint32 result() const;
+  inline void set_result(::google::protobuf::uint32 value);
+  
+  // optional bytes pmid_id = 2;
+  inline bool has_pmid_id() const;
+  inline void clear_pmid_id();
+  static const int kPmidIdFieldNumber = 2;
+  inline const ::std::string& pmid_id() const;
+  inline void set_pmid_id(const ::std::string& value);
+  inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
+  inline ::std::string* mutable_pmid_id();
+  
+  // optional bytes public_key = 3;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 3;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // optional bytes public_key_signature = 4;
+  inline bool has_public_key_signature() const;
+  inline void clear_public_key_signature();
+  static const int kPublicKeySignatureFieldNumber = 4;
+  inline const ::std::string& public_key_signature() const;
+  inline void set_public_key_signature(const ::std::string& value);
+  inline void set_public_key_signature(const char* value);
+  inline void set_public_key_signature(const void* value, size_t size);
+  inline ::std::string* mutable_public_key_signature();
+  
+  // optional .maidsafe.EndPoint ep = 5;
+  inline bool has_ep() const;
+  inline void clear_ep();
+  static const int kEpFieldNumber = 5;
+  inline const ::maidsafe::EndPoint& ep() const;
+  inline ::maidsafe::EndPoint* mutable_ep();
+  
+  // optional uint32 status = 6;
+  inline bool has_status() const;
+  inline void clear_status();
+  static const int kStatusFieldNumber = 6;
+  inline ::google::protobuf::uint32 status() const;
+  inline void set_status(::google::protobuf::uint32 value);
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::google::protobuf::uint32 result_;
+  ::std::string* pmid_id_;
+  static const ::std::string _default_pmid_id_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* public_key_signature_;
+  static const ::std::string _default_public_key_signature_;
+  ::maidsafe::EndPoint* ep_;
+  ::google::protobuf::uint32 status_;
+  friend void  protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static ContactInfoResponse* default_instance_;
 };
 // ===================================================================
 
@@ -12342,6 +12634,441 @@ inline ::std::string* AddBPMessageResponse::mutable_signed_public_key() {
     signed_public_key_ = new ::std::string;
   }
   return signed_public_key_;
+}
+
+// -------------------------------------------------------------------
+
+// ContactInfoRequest
+
+// required bytes bufferpacket_name = 1;
+inline bool ContactInfoRequest::has_bufferpacket_name() const {
+  return _has_bit(0);
+}
+inline void ContactInfoRequest::clear_bufferpacket_name() {
+  if (bufferpacket_name_ != &_default_bufferpacket_name_) {
+    bufferpacket_name_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& ContactInfoRequest::bufferpacket_name() const {
+  return *bufferpacket_name_;
+}
+inline void ContactInfoRequest::set_bufferpacket_name(const ::std::string& value) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(value);
+}
+inline void ContactInfoRequest::set_bufferpacket_name(const char* value) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(value);
+}
+inline void ContactInfoRequest::set_bufferpacket_name(const void* value, size_t size) {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  bufferpacket_name_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ContactInfoRequest::mutable_bufferpacket_name() {
+  _set_bit(0);
+  if (bufferpacket_name_ == &_default_bufferpacket_name_) {
+    bufferpacket_name_ = new ::std::string;
+  }
+  return bufferpacket_name_;
+}
+
+// required bytes id = 2;
+inline bool ContactInfoRequest::has_id() const {
+  return _has_bit(1);
+}
+inline void ContactInfoRequest::clear_id() {
+  if (id_ != &_default_id_) {
+    id_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& ContactInfoRequest::id() const {
+  return *id_;
+}
+inline void ContactInfoRequest::set_id(const ::std::string& value) {
+  _set_bit(1);
+  if (id_ == &_default_id_) {
+    id_ = new ::std::string;
+  }
+  id_->assign(value);
+}
+inline void ContactInfoRequest::set_id(const char* value) {
+  _set_bit(1);
+  if (id_ == &_default_id_) {
+    id_ = new ::std::string;
+  }
+  id_->assign(value);
+}
+inline void ContactInfoRequest::set_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (id_ == &_default_id_) {
+    id_ = new ::std::string;
+  }
+  id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ContactInfoRequest::mutable_id() {
+  _set_bit(1);
+  if (id_ == &_default_id_) {
+    id_ = new ::std::string;
+  }
+  return id_;
+}
+
+// required bytes pmid = 3;
+inline bool ContactInfoRequest::has_pmid() const {
+  return _has_bit(2);
+}
+inline void ContactInfoRequest::clear_pmid() {
+  if (pmid_ != &_default_pmid_) {
+    pmid_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& ContactInfoRequest::pmid() const {
+  return *pmid_;
+}
+inline void ContactInfoRequest::set_pmid(const ::std::string& value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void ContactInfoRequest::set_pmid(const char* value) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(value);
+}
+inline void ContactInfoRequest::set_pmid(const void* value, size_t size) {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  pmid_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ContactInfoRequest::mutable_pmid() {
+  _set_bit(2);
+  if (pmid_ == &_default_pmid_) {
+    pmid_ = new ::std::string;
+  }
+  return pmid_;
+}
+
+// required bytes public_key = 4;
+inline bool ContactInfoRequest::has_public_key() const {
+  return _has_bit(3);
+}
+inline void ContactInfoRequest::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& ContactInfoRequest::public_key() const {
+  return *public_key_;
+}
+inline void ContactInfoRequest::set_public_key(const ::std::string& value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void ContactInfoRequest::set_public_key(const char* value) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void ContactInfoRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ContactInfoRequest::mutable_public_key() {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// required bytes public_key_signature = 5;
+inline bool ContactInfoRequest::has_public_key_signature() const {
+  return _has_bit(4);
+}
+inline void ContactInfoRequest::clear_public_key_signature() {
+  if (public_key_signature_ != &_default_public_key_signature_) {
+    public_key_signature_->clear();
+  }
+  _clear_bit(4);
+}
+inline const ::std::string& ContactInfoRequest::public_key_signature() const {
+  return *public_key_signature_;
+}
+inline void ContactInfoRequest::set_public_key_signature(const ::std::string& value) {
+  _set_bit(4);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(value);
+}
+inline void ContactInfoRequest::set_public_key_signature(const char* value) {
+  _set_bit(4);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(value);
+}
+inline void ContactInfoRequest::set_public_key_signature(const void* value, size_t size) {
+  _set_bit(4);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ContactInfoRequest::mutable_public_key_signature() {
+  _set_bit(4);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  return public_key_signature_;
+}
+
+// required bytes request_signature = 6;
+inline bool ContactInfoRequest::has_request_signature() const {
+  return _has_bit(5);
+}
+inline void ContactInfoRequest::clear_request_signature() {
+  if (request_signature_ != &_default_request_signature_) {
+    request_signature_->clear();
+  }
+  _clear_bit(5);
+}
+inline const ::std::string& ContactInfoRequest::request_signature() const {
+  return *request_signature_;
+}
+inline void ContactInfoRequest::set_request_signature(const ::std::string& value) {
+  _set_bit(5);
+  if (request_signature_ == &_default_request_signature_) {
+    request_signature_ = new ::std::string;
+  }
+  request_signature_->assign(value);
+}
+inline void ContactInfoRequest::set_request_signature(const char* value) {
+  _set_bit(5);
+  if (request_signature_ == &_default_request_signature_) {
+    request_signature_ = new ::std::string;
+  }
+  request_signature_->assign(value);
+}
+inline void ContactInfoRequest::set_request_signature(const void* value, size_t size) {
+  _set_bit(5);
+  if (request_signature_ == &_default_request_signature_) {
+    request_signature_ = new ::std::string;
+  }
+  request_signature_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ContactInfoRequest::mutable_request_signature() {
+  _set_bit(5);
+  if (request_signature_ == &_default_request_signature_) {
+    request_signature_ = new ::std::string;
+  }
+  return request_signature_;
+}
+
+// -------------------------------------------------------------------
+
+// ContactInfoResponse
+
+// required uint32 result = 1;
+inline bool ContactInfoResponse::has_result() const {
+  return _has_bit(0);
+}
+inline void ContactInfoResponse::clear_result() {
+  result_ = 0u;
+  _clear_bit(0);
+}
+inline ::google::protobuf::uint32 ContactInfoResponse::result() const {
+  return result_;
+}
+inline void ContactInfoResponse::set_result(::google::protobuf::uint32 value) {
+  _set_bit(0);
+  result_ = value;
+}
+
+// optional bytes pmid_id = 2;
+inline bool ContactInfoResponse::has_pmid_id() const {
+  return _has_bit(1);
+}
+inline void ContactInfoResponse::clear_pmid_id() {
+  if (pmid_id_ != &_default_pmid_id_) {
+    pmid_id_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& ContactInfoResponse::pmid_id() const {
+  return *pmid_id_;
+}
+inline void ContactInfoResponse::set_pmid_id(const ::std::string& value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void ContactInfoResponse::set_pmid_id(const char* value) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(value);
+}
+inline void ContactInfoResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ContactInfoResponse::mutable_pmid_id() {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  return pmid_id_;
+}
+
+// optional bytes public_key = 3;
+inline bool ContactInfoResponse::has_public_key() const {
+  return _has_bit(2);
+}
+inline void ContactInfoResponse::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& ContactInfoResponse::public_key() const {
+  return *public_key_;
+}
+inline void ContactInfoResponse::set_public_key(const ::std::string& value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void ContactInfoResponse::set_public_key(const char* value) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void ContactInfoResponse::set_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ContactInfoResponse::mutable_public_key() {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// optional bytes public_key_signature = 4;
+inline bool ContactInfoResponse::has_public_key_signature() const {
+  return _has_bit(3);
+}
+inline void ContactInfoResponse::clear_public_key_signature() {
+  if (public_key_signature_ != &_default_public_key_signature_) {
+    public_key_signature_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& ContactInfoResponse::public_key_signature() const {
+  return *public_key_signature_;
+}
+inline void ContactInfoResponse::set_public_key_signature(const ::std::string& value) {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(value);
+}
+inline void ContactInfoResponse::set_public_key_signature(const char* value) {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(value);
+}
+inline void ContactInfoResponse::set_public_key_signature(const void* value, size_t size) {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  public_key_signature_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ContactInfoResponse::mutable_public_key_signature() {
+  _set_bit(3);
+  if (public_key_signature_ == &_default_public_key_signature_) {
+    public_key_signature_ = new ::std::string;
+  }
+  return public_key_signature_;
+}
+
+// optional .maidsafe.EndPoint ep = 5;
+inline bool ContactInfoResponse::has_ep() const {
+  return _has_bit(4);
+}
+inline void ContactInfoResponse::clear_ep() {
+  if (ep_ != NULL) ep_->::maidsafe::EndPoint::Clear();
+  _clear_bit(4);
+}
+inline const ::maidsafe::EndPoint& ContactInfoResponse::ep() const {
+  return ep_ != NULL ? *ep_ : *default_instance_->ep_;
+}
+inline ::maidsafe::EndPoint* ContactInfoResponse::mutable_ep() {
+  _set_bit(4);
+  if (ep_ == NULL) ep_ = new ::maidsafe::EndPoint;
+  return ep_;
+}
+
+// optional uint32 status = 6;
+inline bool ContactInfoResponse::has_status() const {
+  return _has_bit(5);
+}
+inline void ContactInfoResponse::clear_status() {
+  status_ = 0u;
+  _clear_bit(5);
+}
+inline ::google::protobuf::uint32 ContactInfoResponse::status() const {
+  return status_;
+}
+inline void ContactInfoResponse::set_status(::google::protobuf::uint32 value) {
+  _set_bit(5);
+  status_ = value;
 }
 
 

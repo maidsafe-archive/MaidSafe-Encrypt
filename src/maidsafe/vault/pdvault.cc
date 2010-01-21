@@ -99,6 +99,8 @@ PDVault::PDVault(const std::string &pmid_public,
   vault_rpcs_.SetOwnId(non_hex_pmid_);
   thread_pool_.setMaxThreadCount(5);
   poh_.SetPmid(non_hex_pmid_);
+  msv_.set_id(pmid_);
+  knode_.set_signature_validator(&msv_);
 }
 
 PDVault::~PDVault() {

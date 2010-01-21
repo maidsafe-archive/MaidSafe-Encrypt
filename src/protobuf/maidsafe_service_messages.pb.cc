@@ -143,6 +143,12 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* AddBPMessageResponse_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   AddBPMessageResponse_reflection_ = NULL;
+const ::google::protobuf::Descriptor* ContactInfoRequest_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  ContactInfoRequest_reflection_ = NULL;
+const ::google::protobuf::Descriptor* ContactInfoResponse_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  ContactInfoResponse_reflection_ = NULL;
 const ::google::protobuf::EnumDescriptor* OwnVaultResult_descriptor_ = NULL;
 const ::google::protobuf::EnumDescriptor* VaultStatus_descriptor_ = NULL;
 
@@ -954,6 +960,46 @@ void protobuf_AssignDesc_maidsafe_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(AddBPMessageResponse));
+  ContactInfoRequest_descriptor_ = file->message_type(44);
+  static const int ContactInfoRequest_offsets_[6] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoRequest, bufferpacket_name_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoRequest, id_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoRequest, pmid_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoRequest, public_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoRequest, public_key_signature_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoRequest, request_signature_),
+  };
+  ContactInfoRequest_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      ContactInfoRequest_descriptor_,
+      ContactInfoRequest::default_instance_,
+      ContactInfoRequest_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoRequest, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoRequest, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(ContactInfoRequest));
+  ContactInfoResponse_descriptor_ = file->message_type(45);
+  static const int ContactInfoResponse_offsets_[6] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoResponse, result_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoResponse, pmid_id_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoResponse, public_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoResponse, public_key_signature_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoResponse, ep_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoResponse, status_),
+  };
+  ContactInfoResponse_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      ContactInfoResponse_descriptor_,
+      ContactInfoResponse::default_instance_,
+      ContactInfoResponse_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoResponse, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ContactInfoResponse, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(ContactInfoResponse));
   OwnVaultResult_descriptor_ = file->enum_type(0);
   VaultStatus_descriptor_ = file->enum_type(1);
 }
@@ -1056,6 +1102,10 @@ void protobuf_RegisterTypes() {
     AddBPMessageRequest_descriptor_, &AddBPMessageRequest::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     AddBPMessageResponse_descriptor_, &AddBPMessageResponse::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    ContactInfoRequest_descriptor_, &ContactInfoRequest::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    ContactInfoResponse_descriptor_, &ContactInfoResponse::default_instance());
 }
 
 }  // namespace
@@ -1149,6 +1199,10 @@ void protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto() {
   delete AddBPMessageRequest_reflection_;
   delete AddBPMessageResponse::default_instance_;
   delete AddBPMessageResponse_reflection_;
+  delete ContactInfoRequest::default_instance_;
+  delete ContactInfoRequest_reflection_;
+  delete ContactInfoResponse::default_instance_;
+  delete ContactInfoResponse_reflection_;
 }
 
 void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
@@ -1277,15 +1331,22 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
     "\030\005 \002(\014\022\026\n\016signed_request\030\006 \002(\014\"f\n\024AddBPM"
     "essageResponse\022\016\n\006result\030\001 \002(\r\022\017\n\007pmid_i"
     "d\030\002 \001(\014\022\022\n\npublic_key\030\003 \001(\014\022\031\n\021signed_pu"
-    "blic_key\030\004 \001(\014*\357\001\n\016OwnVaultResult\022\021\n\rOWN"
-    "ED_SUCCESS\020\000\022\027\n\023VAULT_ALREADY_OWNED\020\001\022\021\n"
-    "\rVAULT_IS_DOWN\020\002\022\024\n\020INVALID_RSA_KEYS\020\003\022\024"
-    "\n\020NOT_ENOUGH_SPACE\020\004\022\026\n\022NO_SPACE_ALLOCAT"
-    "ED\020\005\022\020\n\014INVALID_PORT\020\006\022\031\n\025FAILED_TO_STAR"
-    "T_VAULT\020\007\022\026\n\022INVALID_OWNREQUEST\020\010\022\025\n\021INV"
-    "ALID_PMID_NAME\020\t*I\n\013VaultStatus\022\r\n\tNOT_O"
-    "WNED\020\000\022\t\n\005OWNED\020\001\022\010\n\004DOWN\020\002\022\026\n\022ISOWNRPC_"
-    "CANCELLED\020\003", 5051);
+    "blic_key\030\004 \001(\014\"\226\001\n\022ContactInfoRequest\022\031\n"
+    "\021bufferpacket_name\030\001 \002(\014\022\n\n\002id\030\002 \002(\014\022\014\n\004"
+    "pmid\030\003 \002(\014\022\022\n\npublic_key\030\004 \002(\014\022\034\n\024public"
+    "_key_signature\030\005 \002(\014\022\031\n\021request_signatur"
+    "e\030\006 \002(\014\"\230\001\n\023ContactInfoResponse\022\016\n\006resul"
+    "t\030\001 \002(\r\022\017\n\007pmid_id\030\002 \001(\014\022\022\n\npublic_key\030\003"
+    " \001(\014\022\034\n\024public_key_signature\030\004 \001(\014\022\036\n\002ep"
+    "\030\005 \001(\0132\022.maidsafe.EndPoint\022\016\n\006status\030\006 \001"
+    "(\r*\357\001\n\016OwnVaultResult\022\021\n\rOWNED_SUCCESS\020\000"
+    "\022\027\n\023VAULT_ALREADY_OWNED\020\001\022\021\n\rVAULT_IS_DO"
+    "WN\020\002\022\024\n\020INVALID_RSA_KEYS\020\003\022\024\n\020NOT_ENOUGH"
+    "_SPACE\020\004\022\026\n\022NO_SPACE_ALLOCATED\020\005\022\020\n\014INVA"
+    "LID_PORT\020\006\022\031\n\025FAILED_TO_START_VAULT\020\007\022\026\n"
+    "\022INVALID_OWNREQUEST\020\010\022\025\n\021INVALID_PMID_NA"
+    "ME\020\t*I\n\013VaultStatus\022\r\n\tNOT_OWNED\020\000\022\t\n\005OW"
+    "NED\020\001\022\010\n\004DOWN\020\002\022\026\n\022ISOWNRPC_CANCELLED\020\003", 5359);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service_messages.proto", &protobuf_RegisterTypes);
   IOUAuthority::default_instance_ = new IOUAuthority();
@@ -1332,6 +1393,8 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
   GetBPMessagesResponse::default_instance_ = new GetBPMessagesResponse();
   AddBPMessageRequest::default_instance_ = new AddBPMessageRequest();
   AddBPMessageResponse::default_instance_ = new AddBPMessageResponse();
+  ContactInfoRequest::default_instance_ = new ContactInfoRequest();
+  ContactInfoResponse::default_instance_ = new ContactInfoResponse();
   IOUAuthority::default_instance_->InitAsDefaultInstance();
   IOU::default_instance_->InitAsDefaultInstance();
   StorePrepRequest::default_instance_->InitAsDefaultInstance();
@@ -1376,6 +1439,8 @@ void protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto() {
   GetBPMessagesResponse::default_instance_->InitAsDefaultInstance();
   AddBPMessageRequest::default_instance_->InitAsDefaultInstance();
   AddBPMessageResponse::default_instance_->InitAsDefaultInstance();
+  ContactInfoRequest::default_instance_->InitAsDefaultInstance();
+  ContactInfoResponse::default_instance_->InitAsDefaultInstance();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_maidsafe_5fservice_5fmessages_2eproto);
 }
 
@@ -16908,6 +16973,877 @@ const ::google::protobuf::Descriptor* AddBPMessageResponse::GetDescriptor() cons
 const ::google::protobuf::Reflection* AddBPMessageResponse::GetReflection() const {
   protobuf_AssignDescriptorsOnce();
   return AddBPMessageResponse_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string ContactInfoRequest::_default_bufferpacket_name_;
+const ::std::string ContactInfoRequest::_default_id_;
+const ::std::string ContactInfoRequest::_default_pmid_;
+const ::std::string ContactInfoRequest::_default_public_key_;
+const ::std::string ContactInfoRequest::_default_public_key_signature_;
+const ::std::string ContactInfoRequest::_default_request_signature_;
+#ifndef _MSC_VER
+const int ContactInfoRequest::kBufferpacketNameFieldNumber;
+const int ContactInfoRequest::kIdFieldNumber;
+const int ContactInfoRequest::kPmidFieldNumber;
+const int ContactInfoRequest::kPublicKeyFieldNumber;
+const int ContactInfoRequest::kPublicKeySignatureFieldNumber;
+const int ContactInfoRequest::kRequestSignatureFieldNumber;
+#endif  // !_MSC_VER
+
+ContactInfoRequest::ContactInfoRequest()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    bufferpacket_name_(const_cast< ::std::string*>(&_default_bufferpacket_name_)),
+    id_(const_cast< ::std::string*>(&_default_id_)),
+    pmid_(const_cast< ::std::string*>(&_default_pmid_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)),
+    request_signature_(const_cast< ::std::string*>(&_default_request_signature_)) {
+  SharedCtor();
+}
+
+void ContactInfoRequest::InitAsDefaultInstance() {}
+
+ContactInfoRequest::ContactInfoRequest(const ContactInfoRequest& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    bufferpacket_name_(const_cast< ::std::string*>(&_default_bufferpacket_name_)),
+    id_(const_cast< ::std::string*>(&_default_id_)),
+    pmid_(const_cast< ::std::string*>(&_default_pmid_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)),
+    request_signature_(const_cast< ::std::string*>(&_default_request_signature_)) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void ContactInfoRequest::SharedCtor() {
+  _cached_size_ = 0;
+  bufferpacket_name_ = const_cast< ::std::string*>(&_default_bufferpacket_name_);
+  id_ = const_cast< ::std::string*>(&_default_id_);
+  pmid_ = const_cast< ::std::string*>(&_default_pmid_);
+  public_key_ = const_cast< ::std::string*>(&_default_public_key_);
+  public_key_signature_ = const_cast< ::std::string*>(&_default_public_key_signature_);
+  request_signature_ = const_cast< ::std::string*>(&_default_request_signature_);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+ContactInfoRequest::~ContactInfoRequest() {
+  SharedDtor();
+}
+
+void ContactInfoRequest::SharedDtor() {
+  if (bufferpacket_name_ != &_default_bufferpacket_name_) {
+    delete bufferpacket_name_;
+  }
+  if (id_ != &_default_id_) {
+    delete id_;
+  }
+  if (pmid_ != &_default_pmid_) {
+    delete pmid_;
+  }
+  if (public_key_ != &_default_public_key_) {
+    delete public_key_;
+  }
+  if (public_key_signature_ != &_default_public_key_signature_) {
+    delete public_key_signature_;
+  }
+  if (request_signature_ != &_default_request_signature_) {
+    delete request_signature_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* ContactInfoRequest::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return ContactInfoRequest_descriptor_;
+}
+
+const ContactInfoRequest& ContactInfoRequest::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();  return *default_instance_;
+}
+
+ContactInfoRequest* ContactInfoRequest::default_instance_ = NULL;
+
+ContactInfoRequest* ContactInfoRequest::New() const {
+  return new ContactInfoRequest;
+}
+
+void ContactInfoRequest::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (_has_bit(0)) {
+      if (bufferpacket_name_ != &_default_bufferpacket_name_) {
+        bufferpacket_name_->clear();
+      }
+    }
+    if (_has_bit(1)) {
+      if (id_ != &_default_id_) {
+        id_->clear();
+      }
+    }
+    if (_has_bit(2)) {
+      if (pmid_ != &_default_pmid_) {
+        pmid_->clear();
+      }
+    }
+    if (_has_bit(3)) {
+      if (public_key_ != &_default_public_key_) {
+        public_key_->clear();
+      }
+    }
+    if (_has_bit(4)) {
+      if (public_key_signature_ != &_default_public_key_signature_) {
+        public_key_signature_->clear();
+      }
+    }
+    if (_has_bit(5)) {
+      if (request_signature_ != &_default_request_signature_) {
+        request_signature_->clear();
+      }
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool ContactInfoRequest::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required bytes bufferpacket_name = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_bufferpacket_name()));
+        if (input->ExpectTag(18)) goto parse_id;
+        break;
+      }
+      
+      // required bytes id = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_id:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_id()));
+        if (input->ExpectTag(26)) goto parse_pmid;
+        break;
+      }
+      
+      // required bytes pmid = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_pmid:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pmid()));
+        if (input->ExpectTag(34)) goto parse_public_key;
+        break;
+      }
+      
+      // required bytes public_key = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_public_key:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key()));
+        if (input->ExpectTag(42)) goto parse_public_key_signature;
+        break;
+      }
+      
+      // required bytes public_key_signature = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_public_key_signature:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key_signature()));
+        if (input->ExpectTag(50)) goto parse_request_signature;
+        break;
+      }
+      
+      // required bytes request_signature = 6;
+      case 6: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_request_signature:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_request_signature()));
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void ContactInfoRequest::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    ContactInfoRequest::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required bytes bufferpacket_name = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->bufferpacket_name(), output);
+  }
+  
+  // required bytes id = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->id(), output);
+  }
+  
+  // required bytes pmid = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->pmid(), output);
+  }
+  
+  // required bytes public_key = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->public_key(), output);
+  }
+  
+  // required bytes public_key_signature = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->public_key_signature(), output);
+  }
+  
+  // required bytes request_signature = 6;
+  if (_has_bit(5)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(6, this->request_signature(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* ContactInfoRequest::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required bytes bufferpacket_name = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->bufferpacket_name(), target);
+  }
+  
+  // required bytes id = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->id(), target);
+  }
+  
+  // required bytes pmid = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->pmid(), target);
+  }
+  
+  // required bytes public_key = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->public_key(), target);
+  }
+  
+  // required bytes public_key_signature = 5;
+  if (_has_bit(4)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->public_key_signature(), target);
+  }
+  
+  // required bytes request_signature = 6;
+  if (_has_bit(5)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(6, this->request_signature(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int ContactInfoRequest::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required bytes bufferpacket_name = 1;
+    if (has_bufferpacket_name()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->bufferpacket_name());
+    }
+    
+    // required bytes id = 2;
+    if (has_id()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->id());
+    }
+    
+    // required bytes pmid = 3;
+    if (has_pmid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->pmid());
+    }
+    
+    // required bytes public_key = 4;
+    if (has_public_key()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_key());
+    }
+    
+    // required bytes public_key_signature = 5;
+    if (has_public_key_signature()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_key_signature());
+    }
+    
+    // required bytes request_signature = 6;
+    if (has_request_signature()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->request_signature());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void ContactInfoRequest::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const ContactInfoRequest* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const ContactInfoRequest*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void ContactInfoRequest::MergeFrom(const ContactInfoRequest& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_bufferpacket_name(from.bufferpacket_name());
+    }
+    if (from._has_bit(1)) {
+      set_id(from.id());
+    }
+    if (from._has_bit(2)) {
+      set_pmid(from.pmid());
+    }
+    if (from._has_bit(3)) {
+      set_public_key(from.public_key());
+    }
+    if (from._has_bit(4)) {
+      set_public_key_signature(from.public_key_signature());
+    }
+    if (from._has_bit(5)) {
+      set_request_signature(from.request_signature());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void ContactInfoRequest::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void ContactInfoRequest::CopyFrom(const ContactInfoRequest& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void ContactInfoRequest::Swap(ContactInfoRequest* other) {
+  if (other != this) {
+    std::swap(bufferpacket_name_, other->bufferpacket_name_);
+    std::swap(id_, other->id_);
+    std::swap(pmid_, other->pmid_);
+    std::swap(public_key_, other->public_key_);
+    std::swap(public_key_signature_, other->public_key_signature_);
+    std::swap(request_signature_, other->request_signature_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool ContactInfoRequest::IsInitialized() const {
+  if ((_has_bits_[0] & 0x0000003f) != 0x0000003f) return false;
+  
+  return true;
+}
+
+const ::google::protobuf::Descriptor* ContactInfoRequest::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* ContactInfoRequest::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return ContactInfoRequest_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string ContactInfoResponse::_default_pmid_id_;
+const ::std::string ContactInfoResponse::_default_public_key_;
+const ::std::string ContactInfoResponse::_default_public_key_signature_;
+#ifndef _MSC_VER
+const int ContactInfoResponse::kResultFieldNumber;
+const int ContactInfoResponse::kPmidIdFieldNumber;
+const int ContactInfoResponse::kPublicKeyFieldNumber;
+const int ContactInfoResponse::kPublicKeySignatureFieldNumber;
+const int ContactInfoResponse::kEpFieldNumber;
+const int ContactInfoResponse::kStatusFieldNumber;
+#endif  // !_MSC_VER
+
+ContactInfoResponse::ContactInfoResponse()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    result_(0u),
+    pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)),
+    ep_(NULL),
+    status_(0u) {
+  SharedCtor();
+}
+
+void ContactInfoResponse::InitAsDefaultInstance() {  ep_ = const_cast< ::maidsafe::EndPoint*>(&::maidsafe::EndPoint::default_instance());
+}
+
+ContactInfoResponse::ContactInfoResponse(const ContactInfoResponse& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    result_(0u),
+    pmid_id_(const_cast< ::std::string*>(&_default_pmid_id_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    public_key_signature_(const_cast< ::std::string*>(&_default_public_key_signature_)),
+    ep_(NULL),
+    status_(0u) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void ContactInfoResponse::SharedCtor() {
+  _cached_size_ = 0;
+  result_ = 0u;
+  pmid_id_ = const_cast< ::std::string*>(&_default_pmid_id_);
+  public_key_ = const_cast< ::std::string*>(&_default_public_key_);
+  public_key_signature_ = const_cast< ::std::string*>(&_default_public_key_signature_);
+  ep_ = NULL;
+  status_ = 0u;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+ContactInfoResponse::~ContactInfoResponse() {
+  SharedDtor();
+}
+
+void ContactInfoResponse::SharedDtor() {
+  if (pmid_id_ != &_default_pmid_id_) {
+    delete pmid_id_;
+  }
+  if (public_key_ != &_default_public_key_) {
+    delete public_key_;
+  }
+  if (public_key_signature_ != &_default_public_key_signature_) {
+    delete public_key_signature_;
+  }
+  if (this != default_instance_) {
+    delete ep_;
+  }
+}
+
+const ::google::protobuf::Descriptor* ContactInfoResponse::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return ContactInfoResponse_descriptor_;
+}
+
+const ContactInfoResponse& ContactInfoResponse::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();  return *default_instance_;
+}
+
+ContactInfoResponse* ContactInfoResponse::default_instance_ = NULL;
+
+ContactInfoResponse* ContactInfoResponse::New() const {
+  return new ContactInfoResponse;
+}
+
+void ContactInfoResponse::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    result_ = 0u;
+    if (_has_bit(1)) {
+      if (pmid_id_ != &_default_pmid_id_) {
+        pmid_id_->clear();
+      }
+    }
+    if (_has_bit(2)) {
+      if (public_key_ != &_default_public_key_) {
+        public_key_->clear();
+      }
+    }
+    if (_has_bit(3)) {
+      if (public_key_signature_ != &_default_public_key_signature_) {
+        public_key_signature_->clear();
+      }
+    }
+    if (_has_bit(4)) {
+      if (ep_ != NULL) ep_->::maidsafe::EndPoint::Clear();
+    }
+    status_ = 0u;
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool ContactInfoResponse::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required uint32 result = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &result_));
+        _set_bit(0);
+        if (input->ExpectTag(18)) goto parse_pmid_id;
+        break;
+      }
+      
+      // optional bytes pmid_id = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_pmid_id:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pmid_id()));
+        if (input->ExpectTag(26)) goto parse_public_key;
+        break;
+      }
+      
+      // optional bytes public_key = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_public_key:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key()));
+        if (input->ExpectTag(34)) goto parse_public_key_signature;
+        break;
+      }
+      
+      // optional bytes public_key_signature = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_public_key_signature:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key_signature()));
+        if (input->ExpectTag(42)) goto parse_ep;
+        break;
+      }
+      
+      // optional .maidsafe.EndPoint ep = 5;
+      case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_ep:
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, mutable_ep()));
+        if (input->ExpectTag(48)) goto parse_status;
+        break;
+      }
+      
+      // optional uint32 status = 6;
+      case 6: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_status:
+        DO_(::google::protobuf::internal::WireFormat::ReadUInt32(
+              input, &status_));
+        _set_bit(5);
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void ContactInfoResponse::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    ContactInfoResponse::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required uint32 result = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteUInt32(1, this->result(), output);
+  }
+  
+  // optional bytes pmid_id = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->pmid_id(), output);
+  }
+  
+  // optional bytes public_key = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->public_key(), output);
+  }
+  
+  // optional bytes public_key_signature = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->public_key_signature(), output);
+  }
+  
+  // optional .maidsafe.EndPoint ep = 5;
+  if (_has_bit(4)) {
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(5, this->ep(), output);
+  }
+  
+  // optional uint32 status = 6;
+  if (_has_bit(5)) {
+    ::google::protobuf::internal::WireFormat::WriteUInt32(6, this->status(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* ContactInfoResponse::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required uint32 result = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(1, this->result(), target);
+  }
+  
+  // optional bytes pmid_id = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->pmid_id(), target);
+  }
+  
+  // optional bytes public_key = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->public_key(), target);
+  }
+  
+  // optional bytes public_key_signature = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->public_key_signature(), target);
+  }
+  
+  // optional .maidsafe.EndPoint ep = 5;
+  if (_has_bit(4)) {
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(5, this->ep(), target);
+  }
+  
+  // optional uint32 status = 6;
+  if (_has_bit(5)) {
+    target = ::google::protobuf::internal::WireFormat::WriteUInt32ToArray(6, this->status(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int ContactInfoResponse::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required uint32 result = 1;
+    if (has_result()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->result());
+    }
+    
+    // optional bytes pmid_id = 2;
+    if (has_pmid_id()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->pmid_id());
+    }
+    
+    // optional bytes public_key = 3;
+    if (has_public_key()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_key());
+    }
+    
+    // optional bytes public_key_signature = 4;
+    if (has_public_key_signature()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_key_signature());
+    }
+    
+    // optional .maidsafe.EndPoint ep = 5;
+    if (has_ep()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+          this->ep());
+    }
+    
+    // optional uint32 status = 6;
+    if (has_status()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::UInt32Size(
+          this->status());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void ContactInfoResponse::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const ContactInfoResponse* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const ContactInfoResponse*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void ContactInfoResponse::MergeFrom(const ContactInfoResponse& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_result(from.result());
+    }
+    if (from._has_bit(1)) {
+      set_pmid_id(from.pmid_id());
+    }
+    if (from._has_bit(2)) {
+      set_public_key(from.public_key());
+    }
+    if (from._has_bit(3)) {
+      set_public_key_signature(from.public_key_signature());
+    }
+    if (from._has_bit(4)) {
+      mutable_ep()->::maidsafe::EndPoint::MergeFrom(from.ep());
+    }
+    if (from._has_bit(5)) {
+      set_status(from.status());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void ContactInfoResponse::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void ContactInfoResponse::CopyFrom(const ContactInfoResponse& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void ContactInfoResponse::Swap(ContactInfoResponse* other) {
+  if (other != this) {
+    std::swap(result_, other->result_);
+    std::swap(pmid_id_, other->pmid_id_);
+    std::swap(public_key_, other->public_key_);
+    std::swap(public_key_signature_, other->public_key_signature_);
+    std::swap(ep_, other->ep_);
+    std::swap(status_, other->status_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool ContactInfoResponse::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
+  
+  if (has_ep()) {
+    if (!this->ep().IsInitialized()) return false;
+  }
+  return true;
+}
+
+const ::google::protobuf::Descriptor* ContactInfoResponse::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* ContactInfoResponse::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return ContactInfoResponse_reflection_;
 }
 
 }  // namespace maidsafe

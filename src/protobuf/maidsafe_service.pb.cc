@@ -53,7 +53,7 @@ void protobuf_AddDesc_maidsafe_5fservice_2eproto() {
   ::maidsafe::protobuf_AddDesc_maidsafe_5fservice_5fmessages_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\026maidsafe_service.proto\022\010maidsafe\032\037maid"
-    "safe_service_messages.proto2\230\n\n\017Maidsafe"
+    "safe_service_messages.proto2\344\n\n\017Maidsafe"
     "Service\022I\n\016StoreChunkPrep\022\032.maidsafe.Sto"
     "rePrepRequest\032\033.maidsafe.StorePrepRespon"
     "se\022A\n\010StoreIOU\022\031.maidsafe.StoreIOUReques"
@@ -86,11 +86,13 @@ void protobuf_AddDesc_maidsafe_5fservice_2eproto() {
     "e.GetBPMessagesRequest\032\037.maidsafe.GetBPM"
     "essagesResponse\022M\n\014AddBPMessage\022\035.maidsa"
     "fe.AddBPMessageRequest\032\036.maidsafe.AddBPM"
-    "essageResponse2\233\001\n\021VaultRegistration\022A\n\010"
-    "OwnVault\022\031.maidsafe.OwnVaultRequest\032\032.ma"
-    "idsafe.OwnVaultResponse\022C\n\014IsVaultOwned\022"
-    "\030.maidsafe.IsOwnedRequest\032\031.maidsafe.IsO"
-    "wnedResponse", 1532);
+    "essageResponse\022J\n\013ContactInfo\022\034.maidsafe"
+    ".ContactInfoRequest\032\035.maidsafe.ContactIn"
+    "foResponse2\233\001\n\021VaultRegistration\022A\n\010OwnV"
+    "ault\022\031.maidsafe.OwnVaultRequest\032\032.maidsa"
+    "fe.OwnVaultResponse\022C\n\014IsVaultOwned\022\030.ma"
+    "idsafe.IsOwnedRequest\032\031.maidsafe.IsOwned"
+    "Response", 1608);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "maidsafe_service.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_maidsafe_5fservice_2eproto);
@@ -262,6 +264,14 @@ void MaidsafeService::AddBPMessage(::google::protobuf::RpcController* controller
   done->Run();
 }
 
+void MaidsafeService::ContactInfo(::google::protobuf::RpcController* controller,
+                         const ::maidsafe::ContactInfoRequest*,
+                         ::maidsafe::ContactInfoResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method ContactInfo() not implemented.");
+  done->Run();
+}
+
 void MaidsafeService::CallMethod(const ::google::protobuf::MethodDescriptor* method,
                              ::google::protobuf::RpcController* controller,
                              const ::google::protobuf::Message* request,
@@ -377,6 +387,12 @@ void MaidsafeService::CallMethod(const ::google::protobuf::MethodDescriptor* met
              ::google::protobuf::down_cast< ::maidsafe::AddBPMessageResponse*>(response),
              done);
       break;
+    case 18:
+      ContactInfo(controller,
+             ::google::protobuf::down_cast<const ::maidsafe::ContactInfoRequest*>(request),
+             ::google::protobuf::down_cast< ::maidsafe::ContactInfoResponse*>(response),
+             done);
+      break;
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       break;
@@ -423,6 +439,8 @@ const ::google::protobuf::Message& MaidsafeService::GetRequestPrototype(
       return ::maidsafe::GetBPMessagesRequest::default_instance();
     case 17:
       return ::maidsafe::AddBPMessageRequest::default_instance();
+    case 18:
+      return ::maidsafe::ContactInfoRequest::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
@@ -469,6 +487,8 @@ const ::google::protobuf::Message& MaidsafeService::GetResponsePrototype(
       return ::maidsafe::GetBPMessagesResponse::default_instance();
     case 17:
       return ::maidsafe::AddBPMessageResponse::default_instance();
+    case 18:
+      return ::maidsafe::ContactInfoResponse::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
@@ -610,6 +630,13 @@ void MaidsafeService_Stub::AddBPMessage(::google::protobuf::RpcController* contr
                               ::maidsafe::AddBPMessageResponse* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(17),
+                       controller, request, response, done);
+}
+void MaidsafeService_Stub::ContactInfo(::google::protobuf::RpcController* controller,
+                              const ::maidsafe::ContactInfoRequest* request,
+                              ::maidsafe::ContactInfoResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(18),
                        controller, request, response, done);
 }
 // ===================================================================

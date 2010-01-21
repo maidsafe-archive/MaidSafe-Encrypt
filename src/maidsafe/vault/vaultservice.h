@@ -137,6 +137,10 @@ class VaultService : public maidsafe::MaidsafeService {
                             const maidsafe::AddBPMessageRequest* request,
                             maidsafe::AddBPMessageResponse* response,
                             google::protobuf::Closure* done);
+  virtual void ContactInfo(google::protobuf::RpcController* controller,
+                           const maidsafe::ContactInfoRequest* request,
+                           maidsafe::ContactInfoResponse* response,
+                           google::protobuf::Closure* done);
 
  private:
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest);

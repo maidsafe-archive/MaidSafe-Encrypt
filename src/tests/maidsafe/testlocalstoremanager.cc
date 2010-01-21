@@ -36,14 +36,28 @@ namespace fs = boost::filesystem;
 
 class FakeCallback {
  public:
-  FakeCallback() : result_("") {}
+  explicit FakeCallback(boost::mutex *m)
+    : result_(""), result(maidsafe::kGeneralError), mutex(m) {}
   void CallbackFunc(const std::string &res) {
     result_ = res;
   }
+  void ContactInfo_CB(const maidsafe::ReturnCode &res,
+                      const maidsafe::EndPoint &ep,
+                      const boost::uint32_t &st) {
+    boost::mutex::scoped_lock loch(*mutex);
+    result = res;
+    end_point = ep;
+    status = st;
+  }
   void Reset() {
     result_ = "";
+    result = maidsafe::kGeneralError;
   }
   std::string result_;
+  maidsafe::ReturnCode result;
+  maidsafe::EndPoint end_point;
+  boost::uint32_t status;
+  boost::mutex *mutex;
 };
 
 void wait_for_result_lsm(const FakeCallback &cb, boost::mutex *mutex) {
@@ -58,16 +72,28 @@ void wait_for_result_lsm(const FakeCallback &cb, boost::mutex *mutex) {
   }
 };
 
+void wait_for_result_lsm2(const FakeCallback &fcb, boost::mutex *mutex) {
+  while (true) {
+    {
+      boost::mutex::scoped_lock guard(*mutex);
+      if (fcb.result != maidsafe::kGeneralError) {
+        return;
+      }
+    }
+    boost::this_thread::sleep(boost::posix_time::milliseconds(5));
+  }
+};
+
 class LocalStoreManagerTest : public testing::Test {
  public:
   LocalStoreManagerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
                                            "/maidsafe_TestStoreManager"),
-                            cb(),
                             client_chunkstore_(),
                             storemanager(),
                             crypto_obj(),
                             rsa_obj(),
                             mutex_(),
+                            cb(mutex_),
                             ss_(maidsafe::SessionSingleton::getInstance()) {}
   ~LocalStoreManagerTest() {
     try {
@@ -144,12 +170,12 @@ class LocalStoreManagerTest : public testing::Test {
   }
 
   std::string test_root_dir_;
-  FakeCallback cb;
   boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore_;
   maidsafe::LocalStoreManager *storemanager;
   crypto::Crypto crypto_obj;
   crypto::RsaKeyPair rsa_obj;
   boost::mutex *mutex_;
+  FakeCallback cb;
   maidsafe::SessionSingleton *ss_;
 
  private:
@@ -489,3 +515,63 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   ASSERT_NE("", messages.front().index());
   ASSERT_EQ(maidsafe::INSTANT_MSG, messages.front().type());
 }
+
+TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
+  std::string bufferpacketname = crypto_obj.Hash(ss_->Id(maidsafe::MPID) +
+                                 ss_->PublicKey(maidsafe::MPID), "",
+                                 crypto::STRING_STRING, true);
+  ASSERT_TRUE(storemanager->KeyUnique(bufferpacketname, false));
+  ASSERT_EQ(0, storemanager->CreateBP());
+  ASSERT_FALSE(storemanager->KeyUnique(bufferpacketname, false));
+  maidsafe::BufferPacketInfo buffer_packet_info;
+  buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
+  buffer_packet_info.set_ownerpublickey(ss_->PublicKey(maidsafe::MPID));
+  buffer_packet_info.set_online(5);
+  buffer_packet_info.add_users(crypto_obj.Hash("Juanito", "",
+                               crypto::STRING_STRING, false));
+  maidsafe::EndPoint *ep = buffer_packet_info.mutable_ep();
+  ep->set_ip("127.0.0.1");
+  ep->set_port(12700);
+  std::string ser_info;
+  buffer_packet_info.SerializeToString(&ser_info);
+  ASSERT_EQ(0, storemanager->ModifyBPInfo(ser_info));
+
+  std::string me_pubusername = ss_->Id(maidsafe::MPID);
+  std::string me_pubkey = ss_->PublicKey(maidsafe::MPID);
+  std::string me_privkey = ss_->PrivateKey(maidsafe::MPID);
+  std::string me_sigpubkey = crypto_obj.AsymSign(me_pubkey, "",
+                             me_privkey, crypto::STRING_STRING);
+
+  ASSERT_EQ(0, ss_->AddContact(me_pubusername, me_pubkey, "", "", "", 'U', 1, 2,
+            "", 'C', 0, 0));
+  FakeCallback fcb(mutex_);
+  storemanager->ContactInfo(me_pubusername, "Juanito Banana",
+                boost::bind(&FakeCallback::ContactInfo_CB, &fcb, _1, _2, _3));
+  wait_for_result_lsm2(fcb, mutex_);
+  ASSERT_EQ(maidsafe::kGetBPInfoError, fcb.result);
+
+  // Create the user "Juanito", add to session, then the message and send it
+  ss_->ResetSession();
+  crypto::RsaKeyPair rsa_kp;
+  rsa_kp.GenerateKeys(4096);
+  std::string private_key = rsa_kp.private_key();
+  std::string public_key = rsa_kp.public_key();
+  std::string signed_public_key = crypto_obj.AsymSign(public_key, "",
+                                  private_key, crypto::STRING_STRING);
+  ss_->AddKey(maidsafe::MPID, "Juanito", private_key, public_key,
+              signed_public_key);
+  ASSERT_EQ(0, ss_->AddContact(me_pubusername, me_pubkey, "", "", "", 'U', 1, 2,
+            "", 'C', 0, 0));
+
+  FakeCallback fcb1(mutex_);
+  storemanager->ContactInfo(me_pubusername, ss_->Id(maidsafe::MPID),
+                boost::bind(&FakeCallback::ContactInfo_CB, &fcb1, _1, _2, _3));
+  wait_for_result_lsm2(fcb1, mutex_);
+  ASSERT_EQ(maidsafe::kSuccess, fcb1.result);
+  ASSERT_EQ(ep->ip(), fcb1.end_point.ip());
+  ASSERT_EQ(ep->port(), fcb1.end_point.port());
+  ASSERT_EQ(buffer_packet_info.online(), fcb1.status);
+
+  ss_->ResetSession();
+}
+

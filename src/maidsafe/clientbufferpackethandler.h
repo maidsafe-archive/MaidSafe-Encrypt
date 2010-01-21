@@ -35,14 +35,17 @@
 
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/bufferpacketrpc.h"
+#include "protobuf/packet.pb.h"
 
 namespace maidsafe {
 
 typedef boost::function<void(const ReturnCode&)> bp_operations_cb;
 typedef boost::function<void(const ReturnCode&,
   const std::list<ValidatedBufferPacketMessage>&)> bp_getmessages_cb;
+typedef boost::function<void(const ReturnCode&, const EndPoint&,
+  const boost::uint32_t&)> bp_getcontactinfo_cb;
 
-enum BpOpType {MODIFY_INFO, ADD_MESSAGE, GET_MESSAGES};
+enum BpOpType {MODIFY_INFO, ADD_MESSAGE, GET_MESSAGES, GET_INFO};
 
 struct CreateBPData {
   CreateBPData() : request(), exclude_ctcs(), successful_stores(0),
@@ -61,12 +64,14 @@ struct ChangeBPData {
   ModifyBPInfoRequest modify_request;
   AddBPMessageRequest add_msg_request;
   GetBPMessagesRequest get_msgs_request;
+  ContactInfoRequest contactinfo_request;
   std::vector<std::string> holder_ids;
   boost::uint16_t successful_ops, idx;
   bool is_calledback;
   BpOpType type;
   bp_operations_cb cb;
   bp_getmessages_cb cb_getmsgs;
+  bp_getcontactinfo_cb cb_getinfo;
   std::string private_key;
 };
 
@@ -83,6 +88,7 @@ struct ModifyBPCallbackData {
   ModifyBPInfoResponse *modify_response;
   AddBPMessageResponse *add_msg_response;
   GetBPMessagesResponse *get_msgs_response;
+  ContactInfoResponse *contactinfo_response;
   kad::Contact ctc;
   boost::shared_ptr<ChangeBPData> data;
 };
@@ -105,6 +111,9 @@ class ClientBufferPacketHandler {
   void AddMessage(const BPInputParameters &args,
     const std::string &recver_public_key, const std::string &receiver_id,
     const std::string &message, const MessageType &m_type, bp_operations_cb cb);
+  void ContactInfo(const BPInputParameters &args,
+                   const std::string &public_username,
+                   bp_getcontactinfo_cb cicb);
  private:
   void IterativeStore(boost::shared_ptr<CreateBPData> data);
   void CreateBPCallback(const CreateBPResponse* resp,

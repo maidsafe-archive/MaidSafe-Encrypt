@@ -38,6 +38,7 @@
 #include <list>
 #include <vector>
 
+#include "maidsafe/maidsafevalidator.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
@@ -372,6 +373,7 @@ class PDVault {
   QThreadPool thread_pool_;
   boost::thread pending_ious_thread_, prune_pending_ops_thread_;
   boost::uint16_t kKadStoreThreshold_;
+  maidsafe::MaidsafeValidator msv_;
 };
 
 }  // namespace maidsafe_vault

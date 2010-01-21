@@ -38,6 +38,9 @@
 
 namespace maidsafe {
 
+typedef boost::function<void(const ReturnCode&, const EndPoint&,
+  const boost::uint32_t&)> ContactInfoNotifier;
+
 class StoreManagerInterface {
  public:
   virtual ~StoreManagerInterface() {}

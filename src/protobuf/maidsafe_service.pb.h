@@ -122,6 +122,10 @@ class MaidsafeService : public ::google::protobuf::Service {
                        const ::maidsafe::AddBPMessageRequest* request,
                        ::maidsafe::AddBPMessageResponse* response,
                        ::google::protobuf::Closure* done);
+  virtual void ContactInfo(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::ContactInfoRequest* request,
+                       ::maidsafe::ContactInfoResponse* response,
+                       ::google::protobuf::Closure* done);
   
   // implements Service ----------------------------------------------
   
@@ -222,6 +226,10 @@ class MaidsafeService_Stub : public MaidsafeService {
   void AddBPMessage(::google::protobuf::RpcController* controller,
                        const ::maidsafe::AddBPMessageRequest* request,
                        ::maidsafe::AddBPMessageResponse* response,
+                       ::google::protobuf::Closure* done);
+  void ContactInfo(::google::protobuf::RpcController* controller,
+                       const ::maidsafe::ContactInfoRequest* request,
+                       ::maidsafe::ContactInfoResponse* response,
                        ::google::protobuf::Closure* done);
  private:
   ::google::protobuf::RpcChannel* channel_;

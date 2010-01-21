@@ -855,7 +855,6 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_ShareFilter) {
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(10), share_list.size()) <<
             "Wrong number back on ALL.";
-
 }
 
 }  // namespace maidsafe

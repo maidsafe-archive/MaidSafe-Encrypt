@@ -766,47 +766,6 @@ void VaultService::Update(google::protobuf::RpcController*,
   return;
 }
 
-//  void VaultService::GetMessages(google::protobuf::RpcController*,
-//                                const maidsafe::GetBPMessagesRequest* request,
-//                                 maidsafe::GetBPMessagesResponse* response,
-//                                 google::protobuf::Closure* done) {
-//    response->set_pmid_id(non_hex_pmid_);
-//    if (!request->IsInitialized()) {
-//      response->set_result(kNack);
-//      done->Run();
-//      return;
-//    }
-//    crypto::Crypto co;
-//    co.set_symm_algorithm(crypto::AES_256);
-//    co.set_hash_algorithm(crypto::SHA_512);
-//    if (!co.AsymCheckSig(request->public_key(), request->signed_public_key(),
-//        request->public_key(), crypto::STRING_STRING)) {
-//      response->set_result(kNack);
-//      done->Run();
-//      return;
-//    }
-//    std::string content;
-//    if (LoadChunkLocal(request->buffer_packet_name(), &content)) {
-//      maidsafe::VaultBufferPacketHandler vbph;
-//      if (!vbph.ValidateOwnerSignature(request->public_key(), content)) {
-//        response->set_result(kNack);
-//        done->Run();
-//        return;
-//      }
-//      std::vector<std::string> msgs;
-//      if (!vbph.GetMessages(content, &msgs)) {
-//        response->set_result(kNack);
-//      } else {
-//        for (int i = 0; i < static_cast<int>(msgs.size()); i++)
-//          response->add_messages(msgs[i]);
-//        response->set_result(kAck);
-//      }
-//    } else {
-//      response->set_result(kNack);
-//    }
-//    done->Run();
-//  }
-
 void VaultService::Delete(google::protobuf::RpcController*,
                           const maidsafe::DeleteRequest* request,
                           maidsafe::DeleteResponse* response,
@@ -1411,6 +1370,64 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
   }
 
   response->set_result(kAck);
+  done->Run();
+}
+
+void VaultService::ContactInfo(google::protobuf::RpcController*,
+                               const maidsafe::ContactInfoRequest* request,
+                               maidsafe::ContactInfoResponse* response,
+                               google::protobuf::Closure* done) {
+  response->set_pmid_id(non_hex_pmid_);
+  response->set_public_key(pmid_public_);
+  response->set_public_key_signature(signed_pmid_public_);
+  response->set_result(kAck);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo(%i), request is not initialized.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->bufferpacket_name(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo(%i), request does not validate.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+
+  std::string ser_bp;
+  if (!LoadChunkLocal(request->bufferpacket_name(), &ser_bp)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo (%i), ", knode_->host_port());
+    printf("failed to load the local chunk where the BP is held.\n");
+#endif
+    return;
+  }
+
+  maidsafe::EndPoint *ep = response->mutable_ep();
+  boost::uint16_t status;
+  maidsafe::VaultBufferPacketHandler vbph;
+  if (!vbph.ContactInfo(ser_bp, request->id(), ep, &status)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo (%i), ", knode_->host_port());
+    printf("failed in the VBPH.\n");
+#endif
+    return;
+  }
+
+  response->set_status(status);
   done->Run();
 }
 

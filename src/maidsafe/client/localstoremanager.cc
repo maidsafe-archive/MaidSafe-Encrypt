@@ -345,6 +345,9 @@ int LocalStoreManager::CreateBP() {
   buffer_packet_info.set_owner(ss_->Id(MPID));
   buffer_packet_info.set_ownerpublickey(ss_->PublicKey(MPID));
   buffer_packet_info.set_online(1);
+  EndPoint *ep = buffer_packet_info.mutable_ep();
+  ep->set_ip("127.0.0.1");
+  ep->set_port(12700);
   ser_owner_info->set_data(buffer_packet_info.SerializeAsString());
   crypto::Crypto co;
   ser_owner_info->set_signature(co.AsymSign(ser_owner_info->data(), "",
@@ -477,6 +480,35 @@ int LocalStoreManager::AddBPMessage(const std::vector<std::string> &receivers,
   return fails;
 }
 
+void LocalStoreManager::ContactInfo(const std::string &public_username,
+                                    const std::string &me,
+                                    ContactInfoNotifier cin) {
+  std::string rec_pub_key(ss_->GetContactPublicKey(public_username));
+  std::string bufferpacketname(BufferPacketName(public_username, rec_pub_key));
+  std::string bp_in_chunk;
+  EndPoint ep;
+  boost::uint16_t status(1);
+  if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
+    boost::thread thr(cin, kGetBPInfoError, ep, status);
+#ifdef DEBUG
+    printf("LocalStoreManager::ContactInfo - Failed to find BP chunk(%s).\n",
+           bufferpacketname.substr(0, 10).c_str());
+#endif
+    return;
+  }
+
+  if (!vbph_.ContactInfo(bp_in_chunk, me, &ep, &status)) {
+    boost::thread thr(cin, kGetBPInfoError, ep, status);
+#ifdef DEBUG
+    printf("LocalStoreManager::ContactInfo - Failed(%i) to get info (%s).\n",
+           kGetBPInfoError, public_username.c_str());
+#endif
+    return;
+  }
+
+  boost::thread thr(cin, kSuccess, ep, status);
+}
+
 int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
                                         std::string *data) {
   fs::path file_path(local_sm_dir_ + "/StoreChunks");
@@ -533,7 +565,8 @@ std::string LocalStoreManager::BufferPacketName() {
 }
 
 std::string LocalStoreManager::BufferPacketName(
-    const std::string &publicusername, const std::string &public_key) {
+    const std::string &publicusername,
+    const std::string &public_key) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   return co.Hash(publicusername + public_key, "", crypto::STRING_STRING, true);
