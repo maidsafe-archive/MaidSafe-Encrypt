@@ -108,20 +108,15 @@ class ClientRpcs {
                    UpdateChunkResponse *update_chunk_response,
                    rpcprotocol::Controller *controller,
                    google::protobuf::Closure *done);
-  void IsVaultOwned(IsOwnedResponse *response,
-                    rpcprotocol::Controller *controller,
-                    rpcprotocol::Channel *channel,
-                    google::protobuf::Closure *done);
-  void OwnVault(const std::string &priv_key,
-                const std::string &pub_key,
-                const std::string &signed_pub_key,
-                const boost::uint32_t &port,
-                const std::string &chunkstore_dir,
-                const boost::uint64_t &space,
-                OwnVaultResponse *response,
-                rpcprotocol::Controller *controller,
-                rpcprotocol::Channel *channel,
-                google::protobuf::Closure *done);
+  void LocalVaultOwned(LocalVaultOwnedResponse *response,
+                       rpcprotocol::Controller *controller,
+                       rpcprotocol::Channel *channel,
+                       google::protobuf::Closure *done);
+  void SetLocalVaultOwned(SetLocalVaultOwnedRequest *request,
+                          SetLocalVaultOwnedResponse *response,
+                          rpcprotocol::Controller *controller,
+                          rpcprotocol::Channel *channel,
+                          google::protobuf::Closure *done);
   void PollVaultInfo(const std::string &enc_ser_request,
                      VaultStatusResponse *response,
                      rpcprotocol::Controller *controller,

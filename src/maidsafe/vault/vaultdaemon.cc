@@ -75,11 +75,11 @@ void VaultDaemon::TakeOwnership() {
     if (ReadConfigInfo()) {
       StopNotOwnedVault();
       if (!StartOwnedVault()) {
-        registration_service_->ReplyOwnVaultRequest(true);
+        registration_service_->ReplySetLocalVaultOwnedRequest(true);
         StartNotOwnedVault();
       } else {
         registration_service_->set_status(maidsafe::OWNED);
-        registration_service_->ReplyOwnVaultRequest(false);
+        registration_service_->ReplySetLocalVaultOwnedRequest(false);
         is_owned_ = true;
       }
     } else {

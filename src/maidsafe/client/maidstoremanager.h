@@ -43,7 +43,7 @@
 #include "maidsafe/bufferpacketrpc.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/clientbufferpackethandler.h"
-#include "maidsafe/client/pdclient.h"
+#include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/storemanager.h"
 #include "maidsafe/client/storetaskshandler.h"
 
@@ -419,6 +419,43 @@ class AmendAccountTask : public QRunnable {
   MaidsafeStoreManager *msm_;
 };
 
+struct SetLocalVaultOwnedCallbackArgs {
+ public:
+  explicit SetLocalVaultOwnedCallbackArgs(SetLocalVaultOwnedFunctor functor)
+      : cb(functor),
+        response(new SetLocalVaultOwnedResponse),
+        ctrl(new rpcprotocol::Controller) {}
+  SetLocalVaultOwnedFunctor cb;
+  SetLocalVaultOwnedResponse *response;
+  rpcprotocol::Controller *ctrl;
+  ~SetLocalVaultOwnedCallbackArgs() {
+    delete response;
+    delete ctrl;
+  }
+ private:
+  SetLocalVaultOwnedCallbackArgs(const SetLocalVaultOwnedCallbackArgs&);
+  SetLocalVaultOwnedCallbackArgs &operator=(
+      const SetLocalVaultOwnedCallbackArgs&);
+};
+
+struct LocalVaultOwnedCallbackArgs {
+ public:
+  explicit LocalVaultOwnedCallbackArgs(LocalVaultOwnedFunctor functor)
+      : cb(functor),
+        response(new LocalVaultOwnedResponse),
+        ctrl(new rpcprotocol::Controller) {}
+  ~LocalVaultOwnedCallbackArgs() {
+    delete response;
+    delete ctrl;
+  }
+  LocalVaultOwnedFunctor cb;
+  LocalVaultOwnedResponse *response;
+  rpcprotocol::Controller *ctrl;
+ private:
+  LocalVaultOwnedCallbackArgs(const LocalVaultOwnedCallbackArgs&);
+  LocalVaultOwnedCallbackArgs &operator=(const LocalVaultOwnedCallbackArgs&);
+};
+
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
@@ -475,11 +512,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Vault
   void PollVaultInfo(base::callback_func_type cb);
   void VaultContactInfo(base::callback_func_type cb);
-  void OwnLocalVault(const std::string &priv_key, const std::string &pub_key,
-      const std::string &signed_pub_key, const boost::uint32_t &port,
-      const std::string &chunkstore_dir, const boost::uint64_t &space,
-      boost::function<void(const OwnVaultResult&, const std::string&)> cb);
-  void LocalVaultStatus(boost::function<void(const VaultStatus&)> cb);
+  void SetLocalVaultOwned(const std::string &priv_key,
+                          const std::string &pub_key,
+                          const std::string &signed_pub_key,
+                          const boost::uint32_t &port,
+                          const std::string &chunkstore_dir,
+                          const boost::uint64_t &space,
+                          const SetLocalVaultOwnedFunctor &functor);
+  void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
   static void GetChunkSignatureKeys(DirType dir_type,
                                     const std::string &msid,
                                     std::string *key_id,
@@ -504,6 +544,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       std::map<std::string, std::string> chunks,
       const int &timeout,
       boost::shared_ptr<MaidsafeStoreManager> sm);
+  friend class MsmSetLocalVaultOwnedTest;
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
@@ -755,11 +796,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
 
 //  void VaultContactInfoCallback(const std::string &ser_result,
 //                                base::callback_func_type cb);
+  void SetLocalVaultOwnedCallback(
+      boost::shared_ptr<SetLocalVaultOwnedCallbackArgs> callback_args);
+  void LocalVaultOwnedCallback(
+      boost::shared_ptr<LocalVaultOwnedCallbackArgs> callback_args);
   transport::Transport transport_;
   rpcprotocol::ChannelManager channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<ClientRpcs> client_rpcs_;
-  PDClient *pdclient_;
   SessionSingleton *ss_;
   StoreTasksHandler tasks_handler_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
