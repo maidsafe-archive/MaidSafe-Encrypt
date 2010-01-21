@@ -75,7 +75,7 @@ PersonalMessages::PersonalMessages(QString name)
           this,                 SLOT(onSendMessageClicked()));
 
   connect(ui_.actionInvite, SIGNAL(triggered()),
-          ts,               SLOT(onInvite()));
+          this,             SLOT(onInvite()));
 }
 
 PersonalMessages::~PersonalMessages() {

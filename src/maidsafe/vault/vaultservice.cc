@@ -1651,7 +1651,7 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
                                google::protobuf::Closure* done) {
   response->set_pmid_id(non_hex_pmid_);
   response->set_public_key(pmid_public_);
-  response->set_public_key_signature(signed_pmid_public_);
+  response->set_public_key_signature(pmid_public_signature_);
   response->set_result(kAck);
   if (!request->IsInitialized()) {
     response->set_result(kNack);

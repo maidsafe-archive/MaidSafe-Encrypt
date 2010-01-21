@@ -580,9 +580,10 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
     }
     case QMessageBox::Cancel:
       // Cancel
-    break;
+      break;
     default:
       // Default
+      break;
   }
 }
 

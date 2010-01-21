@@ -2826,8 +2826,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
-  VaultService service(pmid_public_, pmid_private_, signed_pmid_public_,
-    vault_chunkstore_, NULL, &poh_);
+  VaultService service(vault_public_key_, vault_private_key_,
+                       vault_public_key_signature_, vault_chunkstore_,
+                       NULL, &poh_, vault_service_logic_);
   rpcprotocol::Controller create_controller;
   maidsafe::CreateBPRequest create_request;
   maidsafe::CreateBPResponse create_response;
@@ -2869,9 +2870,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
   create_request.set_signed_public_key(sig_pub_key);
   create_request.set_signed_request(sig_req);
 
-  Callback cb_obj;
-  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
-                                    (&cb_obj, &Callback::CallbackFunction);
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+                                    (&cb_obj, &TestCallback::CallbackFunction);
   service.CreateBP(&create_controller, &create_request, &create_response, done);
   ASSERT_TRUE(create_response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(create_response.result()));
@@ -2883,12 +2884,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
   maidsafe::ContactInfoRequest request;
   maidsafe::ContactInfoResponse response;
 
-  done = google::protobuf::NewCallback<Callback>
-         (&cb_obj, &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->ContactInfo(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
 
   // Creation of newuser's credentials
   std::string newuser_pub_key, newuser_priv_key, newuser_pmid,
@@ -2904,38 +2905,38 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
   request.set_public_key_signature(newuser_sig_pub_key);
   request.set_request_signature(newuser_sig_req);
 
-  done = google::protobuf::NewCallback<Callback>
-         (&cb_obj, &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->ContactInfo(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
 
   request.set_bufferpacket_name(bufferpacket_name);
   request.set_public_key_signature("chingon");
-  done = google::protobuf::NewCallback<Callback>
-         (&cb_obj, &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->ContactInfo(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
 
   request.set_public_key_signature(newuser_sig_pub_key);
   request.set_request_signature("chingon");
-  done = google::protobuf::NewCallback<Callback>
-         (&cb_obj, &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->ContactInfo(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
 
   request.set_request_signature(newuser_sig_req);
-  done = google::protobuf::NewCallback<Callback>
-         (&cb_obj, &Callback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->ContactInfo(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(non_hex_pmid_, response.pmid_id());
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
   ASSERT_EQ(ep->ip(), response.ep().ip());
   ASSERT_EQ(ep->port(), response.ep().port());
 }

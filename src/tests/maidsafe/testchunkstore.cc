@@ -20,6 +20,7 @@
 #include "fs/filesystem.h"
 #include "maidsafe/returncodes.h"
 #include "maidsafe/vault/vaultchunkstore.h"
+#include "protobuf/packet.pb.h"
 
 namespace test_chunkstore {
 

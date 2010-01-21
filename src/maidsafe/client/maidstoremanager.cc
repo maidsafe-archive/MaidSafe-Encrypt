@@ -1280,7 +1280,7 @@ int MaidsafeStoreManager::GetStoreRequests(
 
 int MaidsafeStoreManager::GetAddToWatchListRequest(
     const StoreData &store_data,
-    const StorePrepResponse &store_prep_response,
+    const StorePrepResponse &,
     const std::string &recipient_id,
     AddToWatchListRequest *add_to_watch_list_request) {
   add_to_watch_list_request->Clear();
