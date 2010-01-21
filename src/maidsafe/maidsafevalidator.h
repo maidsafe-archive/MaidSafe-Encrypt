@@ -62,7 +62,7 @@ class MaidsafeValidator : public base::SignatureValidator {
                        const std::string &key);
 
   /**
-  * Method to create a request signature by hasshing and then signing the
+  * Method to create a request signature by hashing and then signing the
   * concatenated parameters passed in the list of strings with the provided
   * private key.
   */

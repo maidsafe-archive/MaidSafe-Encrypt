@@ -1,47 +1,46 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram>
-<source><![CDATA[#![Delete Chunk]
+<source><![CDATA[#![Delete Chunk   ]
 client:client "Client"
 peer:vault "Peer Vault"
-watch:vault "Watchlist Holders x16"
+info:vault "Chunk Info Holders x16"
 c_account:vault "Client A/C Holders x16"
 v_account:vault "Vault A/C Holders x16"
-m_account:vault "maidsafe A/C Holders x lots"
-ref:vault "Reference Holders x16"
 
 client:client. Wait till online.&
 
 *1 client
-Find the Watchlist Holders' details and
-establish "kad pal" for each.  Then for each...
+For each Chunk Info Holder...
 *1
 
-client:>watch. REMOVE_FROM_WATCHLIST_REQUEST
+client:>info. REMOVE_FROM_WATCH_LIST_REQUEST
 *2 client
 If this is First Storing Client, flag list as
 able to be deleted.
 *2
 
-*3 m_account
-Watchlist holders have already taken all
-space previously given to maidsafe, so
-there's no need to do any more than amend
-the 4 vaults' accounts here.
+*3 c_account
+Check 16 requests are from
+valid Chunk Info Holders by
+doing a Kademlia FIND_NODES
+and checking sender is in
+list of near nodes to value.
 *3
 
-[c:Condition IF Client's PMID is not in list]
-watch:>client.Ack/Nack &
-[/c]
+info:info. Validate request.&
+info:>client.Ack/Nack &
+
 [c:Condition IF Client's PMID is in list]
-watch:Ack/Nack =c_account. AMEND_ACCOUNT_REQUEST (Space Given)&
-watch:>client.Ack/Nack &
-watch:Ack/Nack =m_account. AMEND_ACCOUNT_REQUEST (Space Taken)&
+[c:Condition IF undeleted PMIDs in list == 1]
+[c:Loop Repeat for each PMID in list]
+info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)
+(3)c_account:>info.Ack/Nack &
 [/c]
-[c:Condition IF Watchlist is now empty && First Storing Client has called Delete, delete chunk]
-[c: Repeat for each chunk holder]
-watch:Ack/Nack =peer. DELETE_REQUEST (Space Taken)
-peer:Ack/Nack =ref. DELETE_REFERENCE_REQUEST
-(3)ref:Ack/Nack =v_account. AMEND_ACCOUNT_REQUEST (Space Given)&
+[c:Loop Repeat for each chunk holder]
+info:Ack/Nack =peer. DELETE_CHUNK_REQUEST
+info:>v_account. AMEND_ACCOUNT_REQUEST (Space Given Dec)
+(3)v_account:>info.Ack/Nack &
+[/c]
 [/c]
 [/c]]]></source>
 <configuration>

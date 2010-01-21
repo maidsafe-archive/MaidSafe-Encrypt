@@ -288,7 +288,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
 
     // Participants
     cp.clear();
-    for (int a = 0; a < n + 1; a++) {
+    for (int a = 0; a <= n; a++) {
       maidsafe::ShareParticipants sps;
       sps.id = "PUB_NAME_" + base::itos(n) + "_" + base::itos(a);
       sps.public_key = "PUB_NAME_PUB_KEY_" + base::itos(n) +
@@ -383,7 +383,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
 
     // Participants
     cp.clear();
-    for (int a = 0; a < n + 1; a++) {
+    for (int a = 0; a <= n; a++) {
       maidsafe::ShareParticipants sps;
       sps.id = "PUB_NAME_" + base::itos(n) + "_" + base::itos(a);
       sps.public_key = "PUB_NAME_PUB_KEY_" + base::itos(n) +
@@ -689,8 +689,8 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_TouchShare) {
   ASSERT_EQ(attributes[1], by_name.Msid()) << "Msid different.";
   ASSERT_EQ(attributes[2], by_name.MsidPubKey()) << "MsidPubKey different.";
   ASSERT_EQ(attributes[3], by_name.MsidPriKey()) << "MsidPriKey different.";
-  ASSERT_EQ(1, by_name.Rank()) << "Wrong rank.";
-  ASSERT_NE(0, by_name.LastViewed()) << "Wrong timestamp.";
+  ASSERT_EQ(boost::uint32_t(1), by_name.Rank()) << "Wrong rank.";
+  ASSERT_NE(boost::uint32_t(0), by_name.LastViewed()) << "Wrong timestamp.";
   boost::uint32_t last_view(by_name.LastViewed());
 
   boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -701,7 +701,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_TouchShare) {
   ASSERT_EQ(attributes[1], by_name.Msid()) << "Msid different.";
   ASSERT_EQ(attributes[2], by_name.MsidPubKey()) << "MsidPubKey different.";
   ASSERT_EQ(attributes[3], by_name.MsidPriKey()) << "MsidPriKey different.";
-  ASSERT_EQ(2, by_name.Rank()) << "Wrong rank.";
+  ASSERT_EQ(boost::uint32_t(2), by_name.Rank()) << "Wrong rank.";
   ASSERT_LT(last_view, by_name.LastViewed()) << "Wrong timestamp.";
 }
 

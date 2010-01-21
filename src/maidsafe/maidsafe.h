@@ -51,7 +51,7 @@ const boost::uint32_t kKeySize = 64;
 // const crypto::hashtype kHashSize(crypto::SHA_512);
 
 struct Key_Type {
-  Key_Type() : package_type(), id(""), private_key(""), public_key("") {}
+  Key_Type() : package_type(), id(), private_key(), public_key() {}
   maidsafe::PacketType package_type;
   std::string id;
   std::string private_key;
@@ -59,7 +59,7 @@ struct Key_Type {
 };
 
 struct bufferpacket_messages {
-  bufferpacket_messages() : index(""), message(""), sender(""), type() {}
+  bufferpacket_messages() : index(), message(), sender(), type() {}
   std::string index;
   std::string message;
   std::string sender;
@@ -71,10 +71,10 @@ struct bufferpacket_messages {
 //  };
 
 enum MaidsafeRpcResult {
-  kNack, kAck, kNotRemote, kNoSpace, kBusy
+  kNack, kAck, kNotRemote, kBusy
 };
 
-const std::string kAnonymousSignedRequest(128, 'f');
+const std::string kAnonymousRequestSignature(2 * kKeySize, 'f');
 
 enum DbInitFlag {CONNECT, CREATE, DISCONNECT};
 
@@ -110,6 +110,8 @@ const std::string kSharesSubdir[kSharesSubdirSize][2] = {
 //    "d631d3c0aff42f7660e"
 //  }
 };
+
+const std::string kAccount("ACCOUNT");
 
 // const std::string default_dir_[] = {
 //   "/Documents",
@@ -293,24 +295,35 @@ const int kValidityCheckMaxTime(86400);  // 24 hours
 const int kValidityCheckInterval(120);  // 2 minutes
 // delay to check partner references
 const int kCheckPartnerRefDelay(300);  // 5 minutes
-// ValidityCheck Status
-const std::string kValidityCheckClean("C");
-const std::string kValidityCheckDirty("D");
+// timeout for account amendment transactions in milliseconds
+const boost::uint64_t kAccountAmendmentTimeout(120000);
+// max. no. of account amendments
+const size_t kMaxAccountAmendments(1000);
+// max. no. of repeated account amendments (i.e. for same chunk to same PMID)
+const size_t kMaxRepeatedAccountAmendments(10);
 const int kValidityCheckRetry(2);  // retries for validity check (timeouts)
-const int kMinChunkCopies(4);
-const int kMaxPingRetries(2);  // max number of ping tries
+const boost::uint8_t kMinChunkCopies(4);
 const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
 const int kMaxChunkStoreTries(2);  // max number of tries to store or update a
                                    // chunk
+const boost::uint8_t kMaxStoreFailures(10);  // max number of failed store tries
 const boost::uint32_t kSaveUpdatesTrigger(10);  // max no of dbs in save queue
                                                  // before running save queue
-const int kMinSuccessfulPecentageOfUpdating(0.9);
-// max no of normal store worker threads running concurrently
-const size_t kMaxStoreThreads(5);
-// max no of priority store threads allowed over and above normal store threads
-const size_t kMaxPriorityStoreThreads(2);
+const double kMinSuccessfulPecentageOfUpdating(0.9);
+// max. no. of threads in chunk_thread_pool_ (in MaidsafeStoreManager)
+const int kChunkMaxThreadCount(20);
+// max. no. of threads in packet_thread_pool_ (in MaidsafeStoreManager)
+const int kPacketMaxThreadCount(10);
 // port where the service to register a local vault is listening
 const boost::uint16_t kLocalPort = 5484;
+// additionally paying PMIDs kept in watch lists
+const int kMaxReserveWatchListEntries = 250;
+// time a watcher is kept in the ChunkInfoHandler's waiting list
+const int kChunkInfoWatcherPendingTimeout = 86400;  // 24 hours
+// time until a chunk holder is not considered active anymore
+const int kChunkInfoRefActiveTimeout = 86400;  // 24 hours
+// min. no. of majority of responses from group of k nodes to accept result
+const int kKadTrustThreshold(3);
 
 namespace maidsafe {
 

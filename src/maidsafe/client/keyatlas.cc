@@ -50,7 +50,7 @@ int KeyAtlas::AddKey(const int &packet_type,
                      const std::string &private_key,
                      const std::string &public_key,
                      const std::string &signed_public_key) {
-  key_atlas_set::iterator  it = key_ring_.find(packet_type);
+  KeyAtlasSet::iterator  it = key_ring_.find(packet_type);
   if (it != key_ring_.end())
     key_ring_.erase(packet_type);
   std::string signed_pub_key = signed_public_key;
@@ -72,7 +72,7 @@ std::string KeyAtlas::SearchKeyring(const int &packet_type,
 #endif
     return result;
   }
-  key_atlas_set::iterator it = key_ring_.find(packet_type);
+  KeyAtlasSet::iterator it = key_ring_.find(packet_type);
   if (it == key_ring_.end()) {
 #ifdef DEBUG
     printf("Key type(%d) not present in keyring\n", packet_type);
@@ -105,7 +105,7 @@ std::string KeyAtlas::SignedPublicKey(const int &packet_type) {
 }
 
 int KeyAtlas::RemoveKey(const int &packet_type) {
-  key_atlas_set::iterator it = key_ring_.find(packet_type);
+  KeyAtlasSet::iterator it = key_ring_.find(packet_type);
   if (it == key_ring_.end()) {
 #ifdef DEBUG
     printf("Key type(%d) not present in keyring.\n", packet_type);
@@ -118,7 +118,7 @@ int KeyAtlas::RemoveKey(const int &packet_type) {
 
 void KeyAtlas::GetKeyRing(std::list<KeyAtlasRow> *keyring) {
   keyring->clear();
-  key_atlas_set::iterator it;
+  KeyAtlasSet::iterator it;
   for (it = key_ring_.begin(); it != key_ring_.end(); it++) {
     KeyAtlasRow kar((*it).type_, (*it).id_, (*it).private_key_,
                     (*it).public_key_, (*it).signed_public_key_);

@@ -151,9 +151,10 @@ void ChunkStore::FindFiles(const fs::path &root_dir_path,
       } else  {
         ++(*filecount);
         non_hex_name = base::DecodeFromHex(itr->path().filename());
-        if (fs::file_size(itr->path()) >= 2) {
+        boost::uint64_t size = fs::file_size(itr->path());
+        if (size >= 2) {
           ChunkInfo chunk(non_hex_name,
-              boost::posix_time::microsec_clock::local_time(), type);
+              boost::posix_time::microsec_clock::local_time(), type, size);
           {
             boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
             chunkstore_set_.insert(chunk);
@@ -290,6 +291,13 @@ ChunkType ChunkStore::GetChunkType(const std::string &key,
 fs::path ChunkStore::GetChunkPath(const std::string &key,
                                   ChunkType type,
                                   bool create_path) {
+  if (key.size() != kKeySize) {
+#ifdef DEBUG
+    printf("In ChunkStore::GetChunkPath, %s has size %u, not %u\n",
+           HexSubstr(key).c_str(), key.size(), kKeySize);
+#endif
+    return fs::path("");
+  }
   path_map_iterator path_map_itr = path_map_.find(type);
   if (path_map_itr == path_map_.end()) {
 #ifdef DEBUG
@@ -325,6 +333,16 @@ fs::path ChunkStore::GetChunkPath(const std::string &key,
 //  printf("Chunk path: %s\n\n", chunk_path.string().c_str());
 #endif
   return chunk_path;
+}
+
+boost::uint64_t ChunkStore::GetChunkSize(const std::string &key) {
+  int valid = InitialOperationVerification(key);
+  if (valid != kSuccess)
+    return 0;
+  boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
+  chunk_set_by_non_hex_name::iterator itr =
+      chunkstore_set_.get<non_hex_name>().find(key);
+  return itr != chunkstore_set_.end() ? itr->size_ : 0;
 }
 
 int ChunkStore::Store(const std::string &key, const std::string &value) {
@@ -420,11 +438,11 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
     if (type & kHashable) {
       lastcheckedtime = boost::posix_time::microsec_clock::local_time();
     }
-    ChunkInfo chunk(key, lastcheckedtime, type);
+    ChunkInfo chunk(key, lastcheckedtime, type, chunk_size);
     {
       boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
       chunkstore_set_.insert(chunk);
-      IncrementUsedSpace(value.size());
+      IncrementUsedSpace(chunk_size);
     }
     return kSuccess;
   }
@@ -444,17 +462,18 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
     if (fs::exists(chunk_path))
       fs::remove_all(chunk_path);
     fs::copy_file(input_file, chunk_path);
+    boost::uint64_t chunk_size(fs::file_size(chunk_path));
     // If the chunk is hashable then set last checked time to now, otherwise
     // set it to max allowable time.
     boost::posix_time::ptime lastcheckedtime(boost::posix_time::max_date_time);
     if (type & kHashable) {
       lastcheckedtime = boost::posix_time::microsec_clock::local_time();
     }
-    ChunkInfo chunk(key, lastcheckedtime, type);
+    ChunkInfo chunk(key, lastcheckedtime, type, chunk_size);
     {
       boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
       chunkstore_set_.insert(chunk);
-      IncrementUsedSpace(fs::file_size(chunk_path));
+      IncrementUsedSpace(chunk_size);
     }
     return kSuccess;
   }
@@ -485,9 +504,12 @@ int ChunkStore::DeleteChunkFunction(const std::string &key,
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
     chunk_set_by_non_hex_name::iterator itr =
         chunkstore_set_.get<non_hex_name>().find(key);
-    if (itr != chunkstore_set_.end())  // i.e. we have the chunk's details
+    if (itr != chunkstore_set_.end()) {  // i.e. we have the chunk's details
+      DecrementUsedSpace(itr->size_);
       chunkstore_set_.erase(itr);
-    DecrementUsedSpace(fs::file_size(chunk_path));
+    } else {
+      DecrementUsedSpace(fs::file_size(chunk_path));
+    }
   }
   // Doesn't matter if we don't actually remove chunk file.
   try {
@@ -499,6 +521,7 @@ int ChunkStore::DeleteChunkFunction(const std::string &key,
            chunk_path.string().c_str(), e.what());
 #endif
   }
+  /*
   bool result(false);
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
@@ -507,11 +530,12 @@ int ChunkStore::DeleteChunkFunction(const std::string &key,
     result = (itr == chunkstore_set_.end());
   }
   return result ? kSuccess : kChunkstoreFailedDelete;
+  */
+  return kSuccess;
 }
 
 int ChunkStore::Clear() {
   // Delete the directory
-  printf("About to delete dir %s\n", kChunkstorePath_.string().c_str());
   try {
     if (fs::exists(kChunkstorePath_)) {
       fs::remove_all(kChunkstorePath_);
@@ -541,13 +565,21 @@ int ChunkStore::Load(const std::string &key, std::string *value) {
   try {
     if (!fs::exists(chunk_path)) {
 #ifdef DEBUG
-      printf("ChunkStore::Load - path: %s doesn't exist.\n",
+      printf("ChunkStore::Load - file %s doesn't exist.\n",
              chunk_path.string().c_str());
 #endif
       DeleteChunkFunction(key, chunk_path);
       return kChunkFileDoesntExist;
     }
     chunk_size = fs::file_size(chunk_path);
+    if (chunk_size != GetChunkSize(key)) {
+#ifdef DEBUG
+      printf("ChunkStore::Load - file %s has wrong size.\n",
+             chunk_path.string().c_str());
+#endif
+      // TODO(Team#) enqueue chunk file for checking/repairing/deleting
+      return kHashCheckFailure;
+    }
     boost::scoped_array<char> temp(new char[chunk_size]);
     fs::ifstream fstr;
     fstr.open(chunk_path, std::ios_base::binary);
@@ -581,11 +613,8 @@ int ChunkStore::HashCheckChunk(const std::string &key) {
 
 int ChunkStore::HashCheckChunk(const std::string &key,
                                const fs::path &chunk_path) {
-  crypto::Crypto crypto;
-  crypto.set_hash_algorithm(crypto::SHA_512);
-  std::string file_hash = crypto.Hash(chunk_path.string(), "",
-                                      crypto::FILE_STRING, false);
   std::string non_hex_filename("");
+  boost::uint64_t chunk_size(0);
   boost::posix_time::ptime now(boost::posix_time::microsec_clock::local_time());
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
@@ -594,9 +623,18 @@ int ChunkStore::HashCheckChunk(const std::string &key,
     chunk_set_by_non_hex_name::iterator itr = non_hex_name_index.find(key);
     if (itr == chunkstore_set_.end())
       return kChunkstoreError;
-    non_hex_filename = (*itr).non_hex_name_;
+    non_hex_filename = itr->non_hex_name_;
+    chunk_size = itr->size_;
     non_hex_name_index.modify(itr, change_last_checked(now));
   }
+
+  if (chunk_size != fs::file_size(chunk_path))
+    return kHashCheckFailure;
+
+  crypto::Crypto crypto;
+  crypto.set_hash_algorithm(crypto::SHA_512);
+  std::string file_hash = crypto.Hash(chunk_path.string(), "",
+                                      crypto::FILE_STRING, false);
   return file_hash == non_hex_filename ? kSuccess : kHashCheckFailure;
 }
 
