@@ -242,7 +242,10 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
   bpi.set_owner(testuser);
   bpi.set_ownerpublickey(public_key);
   bpi.set_online(1);
-  bpi.add_users("newuser");
+  bpi.add_users(cry_obj.Hash("newuser", "", crypto::STRING_STRING, false));
+  maidsafe::EndPoint *ep = bpi.mutable_ep();
+  ep->set_ip("132.248.59.1");
+  ep->set_port(12345);
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();
   std::string ser_bpi;
@@ -255,34 +258,13 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
   std::string ser_bp;
   bp.SerializeToString(&ser_bp);
 
-  // Create the message
-  crypto::RsaKeyPair rsakp;
-  rsakp.GenerateKeys(4096);
-  maidsafe::GenericPacket gp_msg;
-  maidsafe::BufferPacketMessage bp_msg;
-  bp_msg.set_sender_id("newuser");
-  std::string enc_key = cry_obj.AsymEncrypt("key", "", public_key,
-    crypto::STRING_STRING);
-  bp_msg.set_rsaenc_key(enc_key);
-  std::string enc_msg = cry_obj.SymmEncrypt("STATUS_CHECK", "",
-                        crypto::STRING_STRING, "key");
-  bp_msg.set_aesenc_message(enc_msg);
-  bp_msg.set_type(maidsafe::STATUS_CHECK);
-  bp_msg.set_sender_public_key(rsakp.public_key());
-  std::string ser_bp_msg;
-  bp_msg.SerializeToString(&ser_bp_msg);
-  gp_msg.set_data(ser_bp_msg);
-  gp_msg.set_signature(cry_obj.AsymSign(ser_bp_msg, "", rsakp.private_key(),
-                       crypto::STRING_STRING));
-  std::string ser_msg;
-  gp_msg.SerializeToString(&ser_msg);
-
-  // Create the signed public key
-  std::string sig_public_key = cry_obj.AsymSign(rsakp.public_key(), "",
-                               rsakp.private_key(),
-                               crypto::STRING_STRING);
-  // Testing the results
-  int status = -1;
-  ASSERT_TRUE(vbph.CheckStatus(ser_bp, ser_msg, sig_public_key, &status));
-  ASSERT_EQ(1, bpi.online());
+  // Get the info
+  maidsafe::EndPoint end_point;
+  boost::uint16_t status;
+  ASSERT_FALSE(vbph.ContactInfo("", "newuser", &end_point, &status));
+  ASSERT_FALSE(vbph.ContactInfo(ser_bp, "non-authorised", &end_point, &status));
+  ASSERT_TRUE(vbph.ContactInfo(ser_bp, "newuser", &end_point, &status));
+  ASSERT_EQ(ep->ip(), end_point.ip());
+  ASSERT_EQ(ep->port(), end_point.port());
+  ASSERT_EQ(bpi.online(), status);
 }

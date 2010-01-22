@@ -143,12 +143,16 @@ class ClientController {
                      const std::set<std::string> &readonlys);
 
   // Vault operations
-  bool PollVaultInfo(std::string *chunkstore, boost::uint64_t *offered_space,
-                     boost::uint64_t *free_space, std::string *ip,
+  bool PollVaultInfo(std::string *chunkstore,
+                     boost::uint64_t *offered_space,
+                     boost::uint64_t *free_space,
+                     std::string *ip,
                      boost::uint32_t *port);
   bool VaultContactInfo();
-  OwnVaultResult OwnLocalVault(const boost::uint32_t &port, const
-      boost::uint64_t &space, const std::string &chunkstore_dir) const;
+  OwnLocalVaultResult SetLocalVaultOwned(
+      const boost::uint32_t &port,
+      const boost::uint64_t &space,
+      const std::string &chunkstore_dir) const;
   bool IsLocalVaultOwned();
 
 
@@ -224,11 +228,14 @@ class ClientController {
   DirType GetDirType(const std::string &path_);
   int PathDistinction(const std::string &path, std::string *msid);
   void ClearStaleMessages();
-  void OwnLocalVault_Callback(const OwnVaultResult &result, const
-      std::string &pmid_name, bool *callback_arrived, OwnVaultResult *res);
-  VaultStatus LocalVaultStatus() const;
-  void LocalVaultStatus_Callback(const VaultStatus &result,
-      bool *callback_arrived, VaultStatus *res);
+  void SetLocalVaultOwnedCallback(const OwnLocalVaultResult &result,
+                                  const std::string &pmid_name,
+                                  bool *callback_arrived,
+                                  OwnLocalVaultResult *res);
+  VaultStatus LocalVaultOwned() const;
+  void LocalVaultOwnedCallback(const VaultStatus &result,
+                               bool *callback_arrived,
+                               VaultStatus *res);
   std::string GenerateBPInfo();
 
   // Variables

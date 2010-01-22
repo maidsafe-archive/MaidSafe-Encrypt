@@ -345,6 +345,9 @@ int LocalStoreManager::CreateBP() {
   buffer_packet_info.set_owner(ss_->Id(MPID));
   buffer_packet_info.set_ownerpublickey(ss_->PublicKey(MPID));
   buffer_packet_info.set_online(1);
+  EndPoint *ep = buffer_packet_info.mutable_ep();
+  ep->set_ip("127.0.0.1");
+  ep->set_port(12700);
   ser_owner_info->set_data(buffer_packet_info.SerializeAsString());
   crypto::Crypto co;
   ser_owner_info->set_signature(co.AsymSign(ser_owner_info->data(), "",
@@ -354,7 +357,7 @@ int LocalStoreManager::CreateBP() {
 }
 
 int LocalStoreManager::LoadBPMessages(
-    std::list<maidsafe::ValidatedBufferPacketMessage> *messages) {
+    std::list<ValidatedBufferPacketMessage> *messages) {
   if (ss_->Id(MPID) == "")
     return -666;
 
@@ -477,6 +480,35 @@ int LocalStoreManager::AddBPMessage(const std::vector<std::string> &receivers,
   return fails;
 }
 
+void LocalStoreManager::ContactInfo(const std::string &public_username,
+                                    const std::string &me,
+                                    ContactInfoNotifier cin) {
+  std::string rec_pub_key(ss_->GetContactPublicKey(public_username));
+  std::string bufferpacketname(BufferPacketName(public_username, rec_pub_key));
+  std::string bp_in_chunk;
+  EndPoint ep;
+  boost::uint16_t status(1);
+  if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
+    boost::thread thr(cin, kGetBPInfoError, ep, status);
+#ifdef DEBUG
+    printf("LocalStoreManager::ContactInfo - Failed to find BP chunk(%s).\n",
+           bufferpacketname.substr(0, 10).c_str());
+#endif
+    return;
+  }
+
+  if (!vbph_.ContactInfo(bp_in_chunk, me, &ep, &status)) {
+    boost::thread thr(cin, kGetBPInfoError, ep, status);
+#ifdef DEBUG
+    printf("LocalStoreManager::ContactInfo - Failed(%i) to get info (%s).\n",
+           kGetBPInfoError, public_username.c_str());
+#endif
+    return;
+  }
+
+  boost::thread thr(cin, kSuccess, ep, status);
+}
+
 int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
                                         std::string *data) {
   fs::path file_path(local_sm_dir_ + "/StoreChunks");
@@ -533,7 +565,8 @@ std::string LocalStoreManager::BufferPacketName() {
 }
 
 std::string LocalStoreManager::BufferPacketName(
-    const std::string &publicusername, const std::string &public_key) {
+    const std::string &publicusername,
+    const std::string &public_key) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   return co.Hash(publicusername + public_key, "", crypto::STRING_STRING, true);
@@ -597,20 +630,23 @@ void LocalStoreManager::VaultContactInfo(base::callback_func_type cb) {
   boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
 }
 
-void LocalStoreManager::OwnLocalVault(const std::string &,
-      const std::string &pub_key, const std::string &signed_pub_key,
-      const boost::uint32_t &, const std::string &, const boost::uint64_t &,
-      boost::function<void(const OwnVaultResult&, const std::string&)> cb) {
+void LocalStoreManager::SetLocalVaultOwned(
+    const std::string &,
+    const std::string &pub_key,
+    const std::string &signed_pub_key,
+    const boost::uint32_t &,
+    const std::string &,
+    const boost::uint64_t &,
+    const SetLocalVaultOwnedFunctor &functor) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string pmid_name = co.Hash(pub_key + signed_pub_key, "",
                           crypto::STRING_STRING, false);
-  boost::thread thr(cb, maidsafe::OWNED_SUCCESS, pmid_name);
+  boost::thread thr(functor, OWNED_SUCCESS, pmid_name);
 }
 
-void LocalStoreManager::LocalVaultStatus(boost::function< void(
-      const VaultStatus&) > cb) {
-  boost::thread thr(cb, maidsafe::NOT_OWNED);
+void LocalStoreManager::LocalVaultOwned(const LocalVaultOwnedFunctor &functor) {
+  boost::thread thr(functor, NOT_OWNED);
 }
 
 bool LocalStoreManager::NotDoneWithUploading() { return false; }

@@ -12,7 +12,6 @@
  *      Author: Haiyang, Jose
  */
 /*#include <maidsafe/utils.h>
-#include "maidsafe/client/pdclient.h"
 #include <maidsafe/crypto.h>
 #include "base/calllatertimer.h"
 #include <exception>

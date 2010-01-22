@@ -25,8 +25,8 @@ ClientBufferPacketHandler::ClientBufferPacketHandler(
   crypto_obj_.set_symm_algorithm(crypto::AES_256);
 }
 
-void ClientBufferPacketHandler::CreateBufferPacket(const BPInputParameters
-    &args, bp_operations_cb cb) {
+void ClientBufferPacketHandler::CreateBufferPacket(
+    const BPInputParameters &args, bp_operations_cb cb) {
   BufferPacket buffer_packet;
   GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
   BufferPacketInfo buffer_packet_info;
@@ -55,8 +55,8 @@ void ClientBufferPacketHandler::CreateBufferPacket(const BPInputParameters
   IterativeStore(data);
 }
 
-void ClientBufferPacketHandler::IterativeStore(boost::shared_ptr<CreateBPData>
-    data) {
+void ClientBufferPacketHandler::IterativeStore(
+    boost::shared_ptr<CreateBPData> data) {
   if (data->is_calledback)
     return;
 
@@ -126,13 +126,16 @@ void ClientBufferPacketHandler::CreateBPCallback(const CreateBPResponse *resp,
 }
 
 void ClientBufferPacketHandler::ModifyOwnerInfo(const BPInputParameters &args,
-  const int &status, const std::vector<std::string> &users,
-  bp_operations_cb cb) {
+    const int &status, const std::vector<std::string> &users,
+    bp_operations_cb cb) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(args.sign_id);
   buffer_packet_info.set_ownerpublickey(args.public_key);
   buffer_packet_info.set_online(status);
+  EndPoint *ep = buffer_packet_info.mutable_ep();
+  ep->set_ip(knode_->host_ip());
+  ep->set_port(knode_->host_port());
   for (unsigned int i = 0; i < users.size(); ++i)
     buffer_packet_info.add_users(users.at(i));
 
@@ -209,7 +212,7 @@ void ClientBufferPacketHandler::AddMessage(const BPInputParameters &args,
 }
 
 void ClientBufferPacketHandler::GetMessages(const BPInputParameters &args,
-  bp_getmessages_cb cb) {
+    bp_getmessages_cb cb) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   data->get_msgs_request.set_bufferpacket_name(crypto_obj_.Hash(args.sign_id +
     args.public_key, "", crypto::STRING_STRING, false));
@@ -230,8 +233,33 @@ void ClientBufferPacketHandler::GetMessages(const BPInputParameters &args,
     this, _1, data), data);
 }
 
+void ClientBufferPacketHandler::ContactInfo(const BPInputParameters &args,
+    const std::string &public_username, bp_getcontactinfo_cb cicb) {
+  boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
+  data->contactinfo_request.set_bufferpacket_name(
+      crypto_obj_.Hash(args.sign_id + args.public_key, "",
+      crypto::STRING_STRING,
+      false));
+  data->contactinfo_request.set_public_key(args.public_key);
+  data->contactinfo_request.set_id(public_username);
+  data->contactinfo_request.set_pmid(args.sign_id);
+  data->contactinfo_request.set_public_key_signature(crypto_obj_.AsymSign(
+      args.public_key, "", args.private_key, crypto::STRING_STRING));
+  data->contactinfo_request.set_request_signature(crypto_obj_.AsymSign(
+      crypto_obj_.Hash(args.public_key +
+      data->contactinfo_request.public_key_signature() +
+      data->contactinfo_request.bufferpacket_name(), "", crypto::STRING_STRING,
+      false), "", args.private_key, crypto::STRING_STRING));
+
+  data->cb_getinfo = cicb;
+  data->type = GET_INFO;
+  data->private_key = args.private_key;
+  FindReferences(boost::bind(&ClientBufferPacketHandler::FindReferences_CB,
+    this, _1, data), data);
+}
+
 void ClientBufferPacketHandler::FindReferences(base::callback_func_type cb,
-  boost::shared_ptr<ChangeBPData> data) {
+    boost::shared_ptr<ChangeBPData> data) {
   switch (data->type) {
     case ADD_MESSAGE: knode_->FindValue(
       data->add_msg_request.bufferpacket_name(), false, cb);
@@ -242,27 +270,38 @@ void ClientBufferPacketHandler::FindReferences(base::callback_func_type cb,
     case MODIFY_INFO: knode_->FindValue(
       data->modify_request.bufferpacket_name(), false, cb);
       break;
+    case GET_INFO: knode_->FindValue(
+      data->contactinfo_request.bufferpacket_name(), false, cb);
+      break;
   }
 }
 
 void ClientBufferPacketHandler::FindRemoteContact(base::callback_func_type cb,
-  boost::shared_ptr<ChangeBPData> data, const int &idx) {
+    boost::shared_ptr<ChangeBPData> data, const int &idx) {
   knode_->FindNode(data->holder_ids[idx], cb, false);
 }
 
 void ClientBufferPacketHandler::FindReferences_CB(const std::string &result,
-  boost::shared_ptr<ChangeBPData> data) {
+    boost::shared_ptr<ChangeBPData> data) {
   kad::FindResponse rslt;
-  if (!rslt.ParseFromString(result) || rslt.result() !=
-    kad::kRpcResultSuccess) {
+  if (!rslt.ParseFromString(result) ||
+      rslt.result() != kad::kRpcResultSuccess) {
     switch (data->type) {
       case MODIFY_INFO: data->cb(kModifyBPError);
                         break;
       case ADD_MESSAGE: data->cb(kBPAddMessageError);
                         break;
-      case GET_MESSAGES: std::list<ValidatedBufferPacketMessage> msgs;
+      case GET_MESSAGES: {
+                         std::list<ValidatedBufferPacketMessage> msgs;
                          data->cb_getmsgs(kBPMessagesRetrievalError, msgs);
                          break;
+                         }
+      case GET_INFO: {
+                     EndPoint ep;
+                     boost::uint32_t status(0);
+                     data->cb_getinfo(kGetBPInfoError, ep, status);
+                     break;
+                     }
     }
     return;
   }
@@ -290,27 +329,39 @@ void ClientBufferPacketHandler::FindRemoteContact_CB(const std::string &result,
     cb_data.ctrl = new rpcprotocol::Controller;
     cb_data.ctc = ctc;
 
-    if (cb_data.data->type == MODIFY_INFO) {
-      cb_data.modify_response = new ModifyBPInfoResponse;
-      google::protobuf::Closure *done = google::protobuf::NewCallback <
-        ClientBufferPacketHandler, ModifyBPCallbackData > (this,
-        &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
-      rpcs_->ModifyBPInfo(ctc, local, &data->modify_request,
-        cb_data.modify_response, cb_data.ctrl, done);
-    } else if (cb_data.data->type == ADD_MESSAGE) {
-      cb_data.add_msg_response = new AddBPMessageResponse;
-      google::protobuf::Closure *done = google::protobuf::NewCallback <
-        ClientBufferPacketHandler, ModifyBPCallbackData > (this,
-        &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
-      rpcs_->AddBPMessage(ctc, local, &data->add_msg_request,
-        cb_data.add_msg_response, cb_data.ctrl, done);
-    } else {
-      cb_data.get_msgs_response = new GetBPMessagesResponse;
-      google::protobuf::Closure *done = google::protobuf::NewCallback <
-        ClientBufferPacketHandler, ModifyBPCallbackData > (this,
-        &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
-      rpcs_->GetBPMessages(ctc, local, &data->get_msgs_request,
-        cb_data.get_msgs_response, cb_data.ctrl, done);
+    switch (cb_data.data->type) {
+      case MODIFY_INFO: {
+        cb_data.modify_response = new ModifyBPInfoResponse;
+        google::protobuf::Closure *done = google::protobuf::NewCallback <
+          ClientBufferPacketHandler, ModifyBPCallbackData > (this,
+          &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
+        rpcs_->ModifyBPInfo(ctc, local, &data->modify_request,
+          cb_data.modify_response, cb_data.ctrl, done);
+      }
+      case ADD_MESSAGE: {
+        cb_data.add_msg_response = new AddBPMessageResponse;
+        google::protobuf::Closure *done = google::protobuf::NewCallback <
+          ClientBufferPacketHandler, ModifyBPCallbackData > (this,
+          &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
+        rpcs_->AddBPMessage(ctc, local, &data->add_msg_request,
+          cb_data.add_msg_response, cb_data.ctrl, done);
+      }
+      case GET_MESSAGES: {
+        cb_data.get_msgs_response = new GetBPMessagesResponse;
+        google::protobuf::Closure *done = google::protobuf::NewCallback <
+          ClientBufferPacketHandler, ModifyBPCallbackData > (this,
+          &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
+        rpcs_->GetBPMessages(ctc, local, &data->get_msgs_request,
+          cb_data.get_msgs_response, cb_data.ctrl, done);
+      }
+      case GET_INFO: {
+        cb_data.contactinfo_response = new ContactInfoResponse;
+        google::protobuf::Closure *done = google::protobuf::NewCallback <
+          ClientBufferPacketHandler, ModifyBPCallbackData > (this,
+          &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
+        rpcs_->ContactInfo(ctc, local, &data->contactinfo_request,
+          cb_data.contactinfo_response, cb_data.ctrl, done);
+      }
     }
   }
 }
@@ -326,6 +377,8 @@ void ClientBufferPacketHandler::IterativeFindContacts(
                           break;
         case GET_MESSAGES: delete data.get_msgs_response;
                            break;
+        case GET_INFO: delete data.contactinfo_response;
+                       break;
       }
       delete data.ctrl;
     }
@@ -361,6 +414,23 @@ void ClientBufferPacketHandler::IterativeFindContacts(
                              return;
                            }
                            break;
+        case GET_INFO: if (data.contactinfo_response->IsInitialized() &&
+                           data.contactinfo_response->result() == kAck &&
+                           data.contactinfo_response->pmid_id() ==
+                              data.ctc.node_id()) {
+                         EndPoint ep;
+                         ep.set_ip("");
+                         ep.set_port(0);
+                         boost::uint32_t status(0);
+                         if (data.contactinfo_response->has_ep() &&
+                             data.contactinfo_response->has_status()) {
+                           ep = data.contactinfo_response->ep();
+                           status = data.contactinfo_response->status();
+                         }
+                         data.data->cb_getinfo(kSuccess, ep, status);
+                         return;
+                       }
+                       break;
       }
     }
     delete data.ctrl;
@@ -377,10 +447,18 @@ void ClientBufferPacketHandler::IterativeFindContacts(
                           break;
         case ADD_MESSAGE: data.data->cb(kBPAddMessageError);
                            break;
-        case GET_MESSAGES: std::list<ValidatedBufferPacketMessage> msgs;
+        case GET_MESSAGES: {
+                           std::list<ValidatedBufferPacketMessage> msgs;
                            data.data->cb_getmsgs(kBPMessagesRetrievalError,
                              msgs);
                            break;
+                           }
+        case GET_INFO: {
+                       EndPoint ep;
+                       data.data->cb_getinfo(kGetBPInfoError,
+                         ep, 0);
+                       break;
+                       }
       }
     }
     return;

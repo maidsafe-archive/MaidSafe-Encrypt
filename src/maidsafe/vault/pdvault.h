@@ -319,6 +319,8 @@ class PDVault {
   PendingOperationsHandler poh_;
   QThreadPool thread_pool_;
   boost::thread pending_ious_thread_, prune_pending_ops_thread_;
+//  boost::uint16_t kKadStoreThreshold_;
+  maidsafe::MaidsafeValidator msv_;
 };
 
 }  // namespace maidsafe_vault

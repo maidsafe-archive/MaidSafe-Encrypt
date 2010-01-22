@@ -35,7 +35,6 @@
 #include <vector>
 #include <fstream>  // NOLINT (Fraser) - for protobuf config file
 
-#include "maidsafe/client/pdclient.h"
 #include "maidsafe/client/systempackets.h"
 #include "maidsafe/vault/pdvault.h"
 #include "protobuf/maidsafe_messages.pb.h"

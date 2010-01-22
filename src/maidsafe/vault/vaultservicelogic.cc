@@ -508,7 +508,7 @@ void VaultServiceLogic::AccountStatusCallback(
     ++data->success_count;
   else
     ++data->failure_count;
-  if (data->success_count >= kKadTrustThreshold ||
+  if (data->success_count - data->failure_count >= kKadTrustThreshold ||
       data->failure_count > data->data_holders.size() - kKadTrustThreshold) {
     data->result = result;
     data->callback_done = true;

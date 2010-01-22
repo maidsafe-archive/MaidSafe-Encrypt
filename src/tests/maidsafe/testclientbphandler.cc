@@ -113,6 +113,24 @@ void BPAddMsgCallbackFailed(const kad::Contact &peer,
   done->Run();
 }
 
+void ContactInfoCallbackSucceed(const kad::Contact &peer,
+  maidsafe::ContactInfoResponse *response, google::protobuf::Closure *done) {
+  response->set_result(kAck);
+  response->set_pmid_id(peer.node_id());
+  response->set_status(3);
+  maidsafe::EndPoint *ep = response->mutable_ep();
+  ep->set_ip("132.248.59.1");
+  ep->set_port(48591);
+  done->Run();
+}
+
+void ContactInfoCallbackFailed(const kad::Contact &peer,
+  maidsafe::ContactInfoResponse *response, google::protobuf::Closure *done) {
+  response->set_result(kNack);
+  response->set_pmid_id(peer.node_id());
+  done->Run();
+}
+
 class KadCB {
  public:
   KadCB() : result("") {}
@@ -131,14 +149,22 @@ class KadCB {
 
 class BPCallback {
  public:
-  BPCallback() : result(maidsafe::kGeneralError) {}
+  BPCallback()
+      : result(maidsafe::kGeneralError), msgs(), end_point(), status(0) {}
   void BPOperation_CB(const maidsafe::ReturnCode &res) {
     result = res;
   }
   void BPGetMsgs_CB(const maidsafe::ReturnCode &res,
-    const std::list<maidsafe::ValidatedBufferPacketMessage> &rec_msgs) {
+      const std::list<maidsafe::ValidatedBufferPacketMessage> &rec_msgs) {
     result = res;
     msgs = rec_msgs;
+  }
+  void ContactInfo_CB(const maidsafe::ReturnCode &res,
+                      const maidsafe::EndPoint &ep,
+                      const boost::uint32_t &st) {
+    result = res;
+    end_point = ep;
+    status = st;
   }
   void Reset() {
     result = maidsafe::kGeneralError;
@@ -146,6 +172,8 @@ class BPCallback {
   }
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
+  maidsafe::EndPoint end_point;
+  boost::uint32_t status;
 };
 
 class GetMsgsHelper {
@@ -199,6 +227,9 @@ class MockBPRpcs : public maidsafe::BufferPacketRpcs {
     rpcprotocol::Controller*, google::protobuf::Closure*));
   MOCK_METHOD6(AddBPMessage, void(const kad::Contact&, bool,
     const maidsafe::AddBPMessageRequest*, maidsafe::AddBPMessageResponse*,
+    rpcprotocol::Controller*, google::protobuf::Closure*));
+  MOCK_METHOD6(ContactInfo, void(const kad::Contact&, bool,
+    const maidsafe::ContactInfoRequest*, maidsafe::ContactInfoResponse*,
     rpcprotocol::Controller*, google::protobuf::Closure*));
 };
 
@@ -907,3 +938,212 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailGetBPMessagesRpc) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
 }
+
+TEST_F(TestClientBP, BEH_MAID_ContactInfo) {
+  MockBPH cbph(BPMock, knode_);
+  crypto::RsaKeyPair keys;
+  keys.GenerateKeys(4096);
+
+  BPCallback cb;
+
+  EXPECT_CALL(cbph, FindReferences(_, _))
+    .Times(1)
+    .WillOnce(WithArgs<0>(Invoke(FindReferencesCBSucceed)));
+
+  EXPECT_CALL(cbph, FindRemoteContact(_, _, _))
+//    .Times(maidsafe::ClientBufferPacketHandler::kParallelFindCtcs)
+// TODO(Team#5#): coordinate with the number of parallel contacts finds
+    .Times(1)
+    .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
+
+  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _))
+    .Times(1)
+    .WillRepeatedly(WithArgs<0, 3, 5>(Invoke(ContactInfoCallbackSucceed)));
+
+  std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
+    keys.private_key(), crypto::STRING_STRING);
+  maidsafe::BPInputParameters bpip = {cryp.Hash(keys.public_key() +
+    signed_pub_key, "", crypto::STRING_STRING, false), keys.public_key(),
+    keys.private_key()};
+
+  // creating info of querier
+  keys.ClearKeys();
+  keys.GenerateKeys(4096);
+  signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
+                   crypto::STRING_STRING);
+  std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
+                        crypto::STRING_STRING, false);
+
+  cbph.ContactInfo(bpip, "el nalga derecha",
+                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
+  while (cb.result == -1)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ(maidsafe::kSuccess, cb.result);
+  ASSERT_EQ(3, cb.status);
+  ASSERT_EQ("132.248.59.1", cb.end_point.ip());
+  ASSERT_EQ(48591, cb.end_point.port());
+}
+
+TEST_F(TestClientBP, BEH_MAID_ContactInfoNoReferences) {
+  MockBPH cbph(BPMock, knode_);
+  crypto::RsaKeyPair keys;
+  keys.GenerateKeys(4096);
+
+  BPCallback cb;
+
+  EXPECT_CALL(cbph, FindReferences(_, _))
+    .Times(1)
+    .WillOnce(WithArgs<0>(Invoke(FindReferencesCBFailed)));
+
+  EXPECT_CALL(cbph, FindRemoteContact(_, _, _))
+    .Times(0);
+
+  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _))
+    .Times(0);
+
+  std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
+    keys.private_key(), crypto::STRING_STRING);
+  maidsafe::BPInputParameters bpip = {cryp.Hash(keys.public_key() +
+    signed_pub_key, "", crypto::STRING_STRING, false), keys.public_key(),
+    keys.private_key()};
+
+  // creating info of querier
+  keys.ClearKeys();
+  keys.GenerateKeys(4096);
+  signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
+    crypto::STRING_STRING);
+  std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
+    crypto::STRING_STRING, false);
+
+  cbph.ContactInfo(bpip, "el nalga derecha",
+                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
+  while (cb.result == -1)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ(maidsafe::kGetBPInfoError, cb.result);
+}
+
+TEST_F(TestClientBP, FUNC_MAID_ContactInfoFailAllFindContacts) {
+  MockBPH cbph(BPMock, knode_);
+  crypto::RsaKeyPair keys;
+  keys.GenerateKeys(4096);
+
+  BPCallback cb;
+
+  EXPECT_CALL(cbph, FindReferences(_, _))
+    .Times(1)
+    .WillOnce(WithArgs<0>(Invoke(FindReferencesCBSucceed)));
+
+  EXPECT_CALL(cbph, FindRemoteContact(_, _, _))
+    .Times(kMinChunkCopies)
+    .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)));
+
+  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _))
+    .Times(0);
+
+  std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
+    keys.private_key(), crypto::STRING_STRING);
+  maidsafe::BPInputParameters bpip = {cryp.Hash(keys.public_key() +
+    signed_pub_key, "", crypto::STRING_STRING, false), keys.public_key(),
+    keys.private_key()};
+
+  // creating info of querier
+  keys.ClearKeys();
+  keys.GenerateKeys(4096);
+  signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
+    crypto::STRING_STRING);
+  std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
+    crypto::STRING_STRING, false);
+
+  cbph.ContactInfo(bpip, "el nalga derecha",
+                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
+  while (cb.result == -1)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ(maidsafe::kGetBPInfoError, cb.result);
+}
+
+TEST_F(TestClientBP, FUNC_MAID_ContactInfoOneFindContacts) {
+  MockBPH cbph(BPMock, knode_);
+  crypto::RsaKeyPair keys;
+  keys.GenerateKeys(4096);
+
+  BPCallback cb;
+
+  EXPECT_CALL(cbph, FindReferences(_, _))
+    .Times(1)
+    .WillOnce(WithArgs<0>(Invoke(FindReferencesCBSucceed)));
+
+  EXPECT_CALL(cbph, FindRemoteContact(_, _, _))
+    .Times(kMinChunkCopies)
+    .WillOnce(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)))
+    .WillOnce(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)))
+    .WillOnce(WithArgs<0>(Invoke(FindRemoteCtcCBFailed)))
+    .WillOnce(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
+
+  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _))
+    .Times(1)
+    .WillOnce(WithArgs<0, 3, 5>(Invoke(ContactInfoCallbackSucceed)));
+
+  std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
+    keys.private_key(), crypto::STRING_STRING);
+  maidsafe::BPInputParameters bpip = {cryp.Hash(keys.public_key() +
+    signed_pub_key, "", crypto::STRING_STRING, false), keys.public_key(),
+    keys.private_key()};
+
+  // creating info of querier
+  keys.ClearKeys();
+  keys.GenerateKeys(4096);
+  signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
+    crypto::STRING_STRING);
+  std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
+    crypto::STRING_STRING, false);
+
+  cbph.ContactInfo(bpip, "el nalga derecha",
+                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
+  while (cb.result == -1)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ(maidsafe::kSuccess, cb.result);
+  ASSERT_EQ(3, cb.status);
+  ASSERT_EQ("132.248.59.1", cb.end_point.ip());
+  ASSERT_EQ(48591, cb.end_point.port());
+}
+
+TEST_F(TestClientBP, BEH_MAID_ContactInfoFailAddMessageRpc) {
+  MockBPH cbph(BPMock, knode_);
+  crypto::RsaKeyPair keys;
+  keys.GenerateKeys(4096);
+
+  BPCallback cb;
+
+  EXPECT_CALL(cbph, FindReferences(_, _))
+    .Times(1)
+    .WillOnce(WithArgs<0>(Invoke(FindReferencesCBSucceed)));
+
+  EXPECT_CALL(cbph, FindRemoteContact(_, _, _))
+    .Times(kMinChunkCopies)
+    .WillRepeatedly(WithArgs<0>(Invoke(FindRemoteCtcCBSucceed)));
+
+  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _))
+    .Times(kMinChunkCopies)
+    .WillRepeatedly(WithArgs<0, 3, 5>(Invoke(ContactInfoCallbackFailed)));
+
+  std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
+    keys.private_key(), crypto::STRING_STRING);
+  maidsafe::BPInputParameters bpip = {cryp.Hash(keys.public_key() +
+    signed_pub_key, "", crypto::STRING_STRING, false), keys.public_key(),
+    keys.private_key()};
+
+  // creating info of querier
+  keys.ClearKeys();
+  keys.GenerateKeys(4096);
+  signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
+    crypto::STRING_STRING);
+  std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
+    crypto::STRING_STRING, false);
+
+  cbph.ContactInfo(bpip, "el nalga derecha",
+                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
+  while (cb.result == -1)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ(maidsafe::kGetBPInfoError, cb.result);
+}
+

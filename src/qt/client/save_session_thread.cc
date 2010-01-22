@@ -1,4 +1,3 @@
-
 /*
  * copyright maidsafe.net limited 2009
  * The following source code is property of maidsafe.net limited and

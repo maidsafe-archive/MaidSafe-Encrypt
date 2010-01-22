@@ -134,11 +134,9 @@ enum ReturnCode {
   kStoreManagerException = -7036,
   kFindAccountHoldersError = -7037,
 
-  // Message Handler
+  // Message Handler (-8000)
 
-  // Private Share Handler
-
-  // Self Encryption Handler
+  // Private Share Handler (-9000)
 
   // Session
   kEmptyConversationId = -10001,
@@ -146,6 +144,8 @@ enum ReturnCode {
   kExistingConversation = -10003,
   kLoadKeysFailure = -10004,
   kContactListFailure = -10005,
+
+  // Self Encryption Handler (-11000)
 
   // Store Task Handler
   kStoreTaskHandlerError = -12001,
