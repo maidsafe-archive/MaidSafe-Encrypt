@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "maidsafe/maidsafe.h"
+#include "protobuf/packet.pb.h"
 
 namespace maidsafe {
 
@@ -54,6 +55,10 @@ class VaultBufferPacketHandler {
                   const std::string &ser_message,
                   const std::string &signed_public_key,
                   std::string *updated_bp);
+  bool ContactInfo(const std::string &current_bp,
+                   const std::string &public_username,
+                   EndPoint *ep,
+                   boost::uint16_t *status);
 
 
   bool CheckMsgStructure(const std::string &ser_message,

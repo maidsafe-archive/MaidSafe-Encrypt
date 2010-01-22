@@ -512,6 +512,16 @@ SET(SYS_LIB ${MAIDSAFE_DHT_LIBRARY} ${SYS_LIB} ${Boost_LIBRARIES} ${PROTOBUF_LIB
 INCLUDE_DIRECTORIES(${SOURCE_DIR} ${INCLUDE_DIR} ${GTEST_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${MAIDSAFE_DHT_INCLUDE_DIR} ${CMAKE_BINARY_DIR})
 LINK_DIRECTORIES(${PD_BINARY_DIR})
 
+
+
+
+#MESSAGE("\${Boost_INCLUDE_DIRS} - ${Boost_INCLUDE_DIRS}")
+#SET_PROPERTY(DIRECTORY ${Boost_INCLUDE_DIRS} PROPERTY CMAKE_CXX_FLAGS "-Werror")
+#SET_SOURCE_FILES_PROPERTIES(${Boost_INCLUDE_DIRS} PROPERTIES CMAKE_CXX_FLAGS "-Werror")
+
+
+
+
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
@@ -647,6 +657,10 @@ ELSEIF(WIN32)
     SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS -w)
   ENDIF(MSVC)
 ENDIF(APPLE)
+
+
+SET_PROPERTY(DIRECTORY ${Boost_INCLUDE_DIRS} PROPERTY CMAKE_CXX_FLAGS "-Werror")
+
 
 ###################################################################################################
 # Tests                                                                                           #

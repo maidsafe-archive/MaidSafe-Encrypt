@@ -329,24 +329,26 @@ TEST_F(ContactsTest, BEH_MAID_LastContact_Rank_Contacts) {
             "MI - List came back empty after addition.";
 
   pub_name = msc.PublicName();
-  int time = sch_->SetLastContactRank(msc.PublicName());
   maidsafe::mi_contact mic;
-  ASSERT_LT(0, time) << "Problem modifying contact";
+  ASSERT_EQ(0, sch_->SetLastContactRank(msc.PublicName())) <<
+            "Problem modifying contact";
   ASSERT_EQ(0, sch_->GetContactInfo(msc.PublicName(), &mic)) <<
             "MI - Problem getting the contact";
   ASSERT_EQ(msc.PublicName(), mic.pub_name_) <<
             "MI - Public name not the same";
-  ASSERT_EQ(time, mic.last_contact_) <<
+  ASSERT_LT(0, mic.last_contact_) <<
             "Last contact did not update";
+  boost::uint32_t time = mic.last_contact_;
   ASSERT_EQ(1, mic.rank_) << "Rank did not update";
 
-  time = sch_->SetLastContactRank(msc.PublicName());
-  ASSERT_LT(0, time) << "Problem modifying contact";
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  ASSERT_EQ(0, sch_->SetLastContactRank(msc.PublicName())) <<
+            "Problem modifying contact";
   ASSERT_EQ(0, sch_->GetContactInfo(msc.PublicName(), &mic)) <<
             "MI - Problem getting the contact";
   ASSERT_EQ(msc.PublicName(), mic.pub_name_) <<
             "MI - Public name not the same";
-  ASSERT_EQ(time, mic.last_contact_) <<
+  ASSERT_LT(time, mic.last_contact_) <<
             "Last contact did not update";
   ASSERT_EQ(2, mic.rank_) << "Rank did not update";
 }

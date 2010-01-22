@@ -52,6 +52,10 @@ class BufferPacketRpcs {
     const AddBPMessageRequest *add_message_request,
     AddBPMessageResponse *add_message_response,
     rpcprotocol::Controller *controller, google::protobuf::Closure *done) = 0;
+  virtual void ContactInfo(const kad::Contact &peer, bool local,
+    const ContactInfoRequest *contactinfo_request,
+    ContactInfoResponse *contactinfo_response,
+    rpcprotocol::Controller *controller, google::protobuf::Closure *done) = 0;
 };
 
 class BufferPacketRpcsImpl : public BufferPacketRpcs {
@@ -74,6 +78,10 @@ class BufferPacketRpcsImpl : public BufferPacketRpcs {
   void AddBPMessage(const kad::Contact &peer, bool local,
     const AddBPMessageRequest *add_message_request,
     AddBPMessageResponse *add_message_response,
+    rpcprotocol::Controller *controller, google::protobuf::Closure *done);
+  void ContactInfo(const kad::Contact &peer, bool local,
+    const ContactInfoRequest *contactinfo_request,
+    ContactInfoResponse *contactinfo_response,
     rpcprotocol::Controller *controller, google::protobuf::Closure *done);
  private:
   BufferPacketRpcsImpl(const BufferPacketRpcsImpl&);

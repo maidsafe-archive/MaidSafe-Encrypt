@@ -208,9 +208,14 @@ class VaultService : public maidsafe::MaidsafeService {
                              maidsafe::GetBPMessagesResponse *response,
                              google::protobuf::Closure *done);
   virtual void AddBPMessage(google::protobuf::RpcController* controller,
-                            const maidsafe::AddBPMessageRequest *request,
-                            maidsafe::AddBPMessageResponse *response,
-                            google::protobuf::Closure *done);
+                            const maidsafe::AddBPMessageRequest* request,
+                            maidsafe::AddBPMessageResponse* response,
+                            google::protobuf::Closure* done);
+  virtual void ContactInfo(google::protobuf::RpcController* controller,
+                           const maidsafe::ContactInfoRequest* request,
+                           maidsafe::ContactInfoResponse* response,
+                           google::protobuf::Closure* done);
+
  private:
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateIdentity);
@@ -336,6 +341,7 @@ class RegistrationService : public maidsafe::VaultRegistration {
   maidsafe::VaultStatus status_;
   IsOwnedPendingResponse pending_response_;
 };
+
 }  // namespace maidsafe_vault
 
 #endif  // MAIDSAFE_VAULT_VAULTSERVICE_H_

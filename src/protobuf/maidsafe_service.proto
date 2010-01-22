@@ -25,10 +25,11 @@ service MaidsafeService {
   rpc SwapChunk (SwapChunkRequest) returns (SwapChunkResponse);
   rpc VaultStatus (VaultStatusRequest) returns (VaultStatusResponse);
   // BP services
-  rpc CreateBP (CreateBPRequest) returns (CreateBPResponse);
-  rpc ModifyBPInfo (ModifyBPInfoRequest) returns (ModifyBPInfoResponse);
-  rpc GetBPMessages (GetBPMessagesRequest) returns (GetBPMessagesResponse);
-  rpc AddBPMessage (AddBPMessageRequest) returns (AddBPMessageResponse);
+  rpc CreateBP( CreateBPRequest ) returns ( CreateBPResponse );
+  rpc ModifyBPInfo( ModifyBPInfoRequest ) returns ( ModifyBPInfoResponse );
+  rpc GetBPMessages( GetBPMessagesRequest ) returns ( GetBPMessagesResponse );
+  rpc AddBPMessage( AddBPMessageRequest ) returns ( AddBPMessageResponse );
+  rpc ContactInfo( ContactInfoRequest ) returns ( ContactInfoResponse );
 }
 
 service VaultRegistration {

@@ -43,6 +43,9 @@ typedef boost::function<void(const OwnLocalVaultResult&, const std::string&)>
 
 typedef boost::function<void(const VaultStatus&)> LocalVaultOwnedFunctor;
 
+typedef boost::function<void(const ReturnCode&, const EndPoint&,
+  const boost::uint32_t&)> ContactInfoNotifier;
+
 class StoreManagerInterface {
  public:
   virtual ~StoreManagerInterface() {}

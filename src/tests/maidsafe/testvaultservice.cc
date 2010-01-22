@@ -2825,6 +2825,122 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetPacket) {
   }
 }
 
+TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
+  VaultService service(vault_public_key_, vault_private_key_,
+                       vault_public_key_signature_, vault_chunkstore_,
+                       NULL, &poh_, vault_service_logic_);
+  rpcprotocol::Controller create_controller;
+  maidsafe::CreateBPRequest create_request;
+  maidsafe::CreateBPResponse create_response;
+
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  maidsafe::BufferPacketInfo bpi;
+  bpi.set_owner("Dan");
+  bpi.set_ownerpublickey(pub_key);
+  bpi.set_online(1);
+  bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
+  maidsafe::EndPoint *ep = bpi.mutable_ep();
+  ep->set_ip("132.248.59.1");
+  ep->set_port(13224);
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  info->set_data(ser_bpi);
+  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
+    crypto::STRING_STRING));
+  std::string ser_gp;
+  info->SerializeToString(&ser_gp);
+  std::string ser_bp;
+  bp.SerializeToString(&ser_bp);
+
+  std::string bufferpacket_name(co.Hash("DanBUFFER", "", crypto::STRING_STRING,
+                                false));
+  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
+    &sig_req);
+  create_request.set_bufferpacket_name(bufferpacket_name);
+  create_request.set_data(ser_bp);
+  create_request.set_pmid(pmid);
+  create_request.set_public_key(pub_key);
+  create_request.set_signed_public_key(sig_pub_key);
+  create_request.set_signed_request(sig_req);
+
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+                                    (&cb_obj, &TestCallback::CallbackFunction);
+  service.CreateBP(&create_controller, &create_request, &create_response, done);
+  ASSERT_TRUE(create_response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(create_response.result()));
+  ASSERT_EQ(create_response.pmid_id(), co.Hash(create_response.public_key() +
+            create_response.signed_public_key(), "", crypto::STRING_STRING,
+            false));
+
+  rpcprotocol::Controller controller;
+  maidsafe::ContactInfoRequest request;
+  maidsafe::ContactInfoResponse response;
+
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->ContactInfo(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
+
+  // Creation of newuser's credentials
+  std::string newuser_pub_key, newuser_priv_key, newuser_pmid,
+    newuser_sig_pub_key, newuser_sig_req;
+  CreateRSAKeys(&newuser_pub_key, &newuser_priv_key);
+  CreateSignedRequest(newuser_pub_key, newuser_priv_key, bufferpacket_name,
+    &newuser_pmid, &newuser_sig_pub_key, &newuser_sig_req);
+
+  request.set_bufferpacket_name("chingon");
+  request.set_id("newuser");
+  request.set_pmid(newuser_pmid);
+  request.set_public_key(newuser_pub_key);
+  request.set_public_key_signature(newuser_sig_pub_key);
+  request.set_request_signature(newuser_sig_req);
+
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->ContactInfo(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
+
+  request.set_bufferpacket_name(bufferpacket_name);
+  request.set_public_key_signature("chingon");
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->ContactInfo(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
+
+  request.set_public_key_signature(newuser_sig_pub_key);
+  request.set_request_signature("chingon");
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->ContactInfo(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
+
+  request.set_request_signature(newuser_sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->ContactInfo(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
+  ASSERT_EQ(ep->ip(), response.ep().ip());
+  ASSERT_EQ(ep->port(), response.ep().port());
+}
+
 struct StorePacketCallback {
   StorePacketCallback() : is_called_back(false) {}
   void TestCallback() {

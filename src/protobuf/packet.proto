@@ -25,6 +25,11 @@ enum PacketType {
   BUFFER_MESSAGE = 14;
 }
 
+message EndPoint {
+  required bytes ip = 1;
+  required uint32 port = 2;
+}
+
 // BP General Message Structure
 message GenericPacket {
   required bytes data = 1;
@@ -36,6 +41,7 @@ message BufferPacketInfo {
   required bytes ownerPublicKey = 2;
   repeated bytes users = 3;
   optional int32 online = 4;
+  optional EndPoint ep = 5;
 }
 
 message BufferPacketMessage {

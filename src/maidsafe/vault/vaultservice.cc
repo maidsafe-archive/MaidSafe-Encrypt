@@ -1645,6 +1645,64 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
   done->Run();
 }
 
+void VaultService::ContactInfo(google::protobuf::RpcController*,
+                               const maidsafe::ContactInfoRequest* request,
+                               maidsafe::ContactInfoResponse* response,
+                               google::protobuf::Closure* done) {
+  response->set_pmid_id(non_hex_pmid_);
+  response->set_public_key(pmid_public_);
+  response->set_public_key_signature(pmid_public_signature_);
+  response->set_result(kAck);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo(%i), request is not initialized.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->bufferpacket_name(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo(%i), request does not validate.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+
+  std::string ser_bp;
+  if (!LoadChunkLocal(request->bufferpacket_name(), &ser_bp)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo (%i), ", knode_->host_port());
+    printf("failed to load the local chunk where the BP is held.\n");
+#endif
+    return;
+  }
+
+  maidsafe::EndPoint *ep = response->mutable_ep();
+  boost::uint16_t status;
+  maidsafe::VaultBufferPacketHandler vbph;
+  if (!vbph.ContactInfo(ser_bp, request->id(), ep, &status)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo (%i), ", knode_->host_port());
+    printf("failed in the VBPH.\n");
+#endif
+    return;
+  }
+
+  response->set_status(status);
+  done->Run();
+}
+
 //////// END OF SERVICES ////////
 
 bool VaultService::ValidateSignedSize(const maidsafe::SignedSize &sz) {
