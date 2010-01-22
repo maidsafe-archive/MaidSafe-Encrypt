@@ -163,6 +163,7 @@ ENDIF()
 ###################################################################################################
 # QT library search                                                                               #
 ###################################################################################################
+UNSET(QMAKE_EXE CACHE)
 UNSET(QT_LIBRARIES CACHE)
 UNSET(QT_LIBRARY_DIR CACHE)
 UNSET(QT_MOC_EXECUTABLE CACHE)
@@ -177,6 +178,24 @@ ELSE()
   ELSE()
     SET(QT_ROOT_DIR "/usr/local/Trolltech/Qt-4.5.3" CACHE INTERNAL "Path to Qt root directory" FORCE)
   ENDIF(WIN32)
+ENDIF()
+FIND_PROGRAM(QMAKE_EXE NAMES qmake qmake4 qmake-qt4 PATHS ${QT_ROOT_DIR}/bin)
+IF(NOT QMAKE_EXE)
+  SET(ERROR_MESSAGE "\nCould not find Qt.  NO QMAKE EXECUTABLE ")
+  IF(WIN32)
+    SET(ERROR_MESSAGE "${ERROR_MESSAGE}(Tried to find qmake.exe in ${QT_ROOT_DIR}\\bin)")
+  ELSE()
+    SET(ERROR_MESSAGE "${ERROR_MESSAGE}(Tried to find qmake in ${QT_ROOT_DIR}/bin)")
+  ENDIF()
+  SET(ERROR_MESSAGE "${ERROR_MESSAGE}\nYou can download Qt at http://qt.nokia.com/downloads\n")
+  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Qt is already installed, run:\n")
+  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DQT_ROOT_PATH=<Path to Qt root directory>")
+  IF(WIN32)
+    SET(ERROR_MESSAGE "${ERROR_MESSAGE}\n(such that qmake.exe is in \"<Path to Qt root directory>\\bin\").")
+  ELSE()
+    SET(ERROR_MESSAGE "${ERROR_MESSAGE}\n(such that qmake is in \"<Path to Qt root directory>/bin\").")
+  ENDIF()
+  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
 ENDIF()
 IF(QT_LIBRARY_PATH)
   SET(QT_LIBRARY_PATH ${QT_LIBRARY_PATH} CACHE INTERNAL "Path to Qt library directory" FORCE)
@@ -493,6 +512,16 @@ SET(SYS_LIB ${MAIDSAFE_DHT_LIBRARY} ${SYS_LIB} ${Boost_LIBRARIES} ${PROTOBUF_LIB
 INCLUDE_DIRECTORIES(${SOURCE_DIR} ${INCLUDE_DIR} ${GTEST_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${MAIDSAFE_DHT_INCLUDE_DIR} ${CMAKE_BINARY_DIR})
 LINK_DIRECTORIES(${PD_BINARY_DIR})
 
+
+
+
+#MESSAGE("\${Boost_INCLUDE_DIRS} - ${Boost_INCLUDE_DIRS}")
+#SET_PROPERTY(DIRECTORY ${Boost_INCLUDE_DIRS} PROPERTY CMAKE_CXX_FLAGS "-Werror")
+#SET_SOURCE_FILES_PROPERTIES(${Boost_INCLUDE_DIRS} PROPERTIES CMAKE_CXX_FLAGS "-Werror")
+
+
+
+
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
@@ -628,6 +657,10 @@ ELSEIF(WIN32)
     SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS -w)
   ENDIF(MSVC)
 ENDIF(APPLE)
+
+
+SET_PROPERTY(DIRECTORY ${Boost_INCLUDE_DIRS} PROPERTY CMAKE_CXX_FLAGS "-Werror")
+
 
 ###################################################################################################
 # Tests                                                                                           #
