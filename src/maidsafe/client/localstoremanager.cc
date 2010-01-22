@@ -357,7 +357,7 @@ int LocalStoreManager::CreateBP() {
 }
 
 int LocalStoreManager::LoadBPMessages(
-    std::list<maidsafe::ValidatedBufferPacketMessage> *messages) {
+    std::list<ValidatedBufferPacketMessage> *messages) {
   if (ss_->Id(MPID) == "")
     return -666;
 
@@ -630,20 +630,23 @@ void LocalStoreManager::VaultContactInfo(base::callback_func_type cb) {
   boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
 }
 
-void LocalStoreManager::OwnLocalVault(const std::string &,
-      const std::string &pub_key, const std::string &signed_pub_key,
-      const boost::uint32_t &, const std::string &, const boost::uint64_t &,
-      boost::function<void(const OwnVaultResult&, const std::string&)> cb) {
+void LocalStoreManager::SetLocalVaultOwned(
+    const std::string &,
+    const std::string &pub_key,
+    const std::string &signed_pub_key,
+    const boost::uint32_t &,
+    const std::string &,
+    const boost::uint64_t &,
+    const SetLocalVaultOwnedFunctor &functor) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string pmid_name = co.Hash(pub_key + signed_pub_key, "",
                           crypto::STRING_STRING, false);
-  boost::thread thr(cb, maidsafe::OWNED_SUCCESS, pmid_name);
+  boost::thread thr(functor, OWNED_SUCCESS, pmid_name);
 }
 
-void LocalStoreManager::LocalVaultStatus(boost::function< void(
-      const VaultStatus&) > cb) {
-  boost::thread thr(cb, maidsafe::NOT_OWNED);
+void LocalStoreManager::LocalVaultOwned(const LocalVaultOwnedFunctor &functor) {
+  boost::thread thr(functor, NOT_OWNED);
 }
 
 bool LocalStoreManager::NotDoneWithUploading() { return false; }

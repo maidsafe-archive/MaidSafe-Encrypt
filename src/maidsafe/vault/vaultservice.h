@@ -54,7 +54,7 @@ class VaultServiceLogic;
 struct IsOwnedPendingResponse {
   IsOwnedPendingResponse() : callback(NULL), args(NULL) {}
   google::protobuf::Closure* callback;
-  maidsafe::OwnVaultResponse* args;
+  maidsafe::SetLocalVaultOwnedResponse* args;
 };
 
 class AddToRemoteRefListTask : public QRunnable {
@@ -317,20 +317,26 @@ class VaultService : public maidsafe::MaidsafeService {
 
 class RegistrationService : public maidsafe::VaultRegistration {
  public:
-  RegistrationService(boost::function<void(const maidsafe::VaultConfig&)>
-      notifier);
-  virtual void OwnVault(google::protobuf::RpcController* controller,
-      const maidsafe::OwnVaultRequest *request,
-      maidsafe::OwnVaultResponse *response, google::protobuf::Closure *done);
-  virtual void IsVaultOwned(google::protobuf::RpcController* controller,
-      const maidsafe::IsOwnedRequest *request,
-      maidsafe::IsOwnedResponse *response, google::protobuf::Closure *done);
-  void ReplyOwnVaultRequest(const bool &fail_to_start);
+  RegistrationService(
+      boost::function<void(const maidsafe::VaultConfig&)> notifier);
+  virtual void SetLocalVaultOwned(
+      google::protobuf::RpcController* controller,
+      const maidsafe::SetLocalVaultOwnedRequest *request,
+      maidsafe::SetLocalVaultOwnedResponse *response,
+      google::protobuf::Closure *done);
+  virtual void LocalVaultOwned(
+      google::protobuf::RpcController* controller,
+      const maidsafe::LocalVaultOwnedRequest *request,
+      maidsafe::LocalVaultOwnedResponse *response,
+      google::protobuf::Closure *done);
+  void ReplySetLocalVaultOwnedRequest(const bool &fail_to_start);
   inline void set_status(const maidsafe::VaultStatus &status) {
       status_ = status;
   }
   inline maidsafe::VaultStatus status() { return status_; }
  private:
+  RegistrationService(const RegistrationService&);
+  RegistrationService &operator=(const RegistrationService&);
   boost::function<void(const maidsafe::VaultConfig&)> notifier_;
   maidsafe::VaultStatus status_;
   IsOwnedPendingResponse pending_response_;

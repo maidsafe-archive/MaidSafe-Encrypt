@@ -1971,10 +1971,11 @@ RegistrationService::RegistrationService(
           status_(maidsafe::NOT_OWNED),
           pending_response_() {}
 
-void RegistrationService::OwnVault(google::protobuf::RpcController*,
-                                   const maidsafe::OwnVaultRequest *request,
-                                   maidsafe::OwnVaultResponse *response,
-                                   google::protobuf::Closure *done) {
+void RegistrationService::SetLocalVaultOwned(
+    google::protobuf::RpcController*,
+    const maidsafe::SetLocalVaultOwnedRequest *request,
+    maidsafe::SetLocalVaultOwnedResponse *response,
+    google::protobuf::Closure *done) {
   if (!request->IsInitialized()) {
     response->set_result(maidsafe::INVALID_OWNREQUEST);
     done->Run();
@@ -2046,15 +2047,17 @@ void RegistrationService::OwnVault(google::protobuf::RpcController*,
   done->Run();
 }
 
-void RegistrationService::IsVaultOwned(google::protobuf::RpcController*,
-                                       const maidsafe::IsOwnedRequest*,
-                                       maidsafe::IsOwnedResponse *response,
-                                       google::protobuf::Closure *done) {
+void RegistrationService::LocalVaultOwned(
+    google::protobuf::RpcController*,
+    const maidsafe::LocalVaultOwnedRequest*,
+    maidsafe::LocalVaultOwnedResponse *response,
+    google::protobuf::Closure *done) {
   response->set_status(status_);
   done->Run();
 }
 
-void RegistrationService::ReplyOwnVaultRequest(const bool &fail_to_start) {
+void RegistrationService::ReplySetLocalVaultOwnedRequest(
+    const bool &fail_to_start) {
   if (pending_response_.callback == NULL || pending_response_.args == NULL)
     return;
   if (fail_to_start) {

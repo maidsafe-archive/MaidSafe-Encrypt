@@ -40,7 +40,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerInit) {
   ChunkInfoHandler cih;
   ASSERT_EQ(size_t(0), cih.chunk_infos_.size());
   ASSERT_FALSE(cih.HasWatchers("some chunk name"));
-  ASSERT_EQ(size_t(0), cih.ActiveReferences("some chunk name"));
+  ASSERT_EQ(0, cih.ActiveReferences("some chunk name"));
 }
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum) {

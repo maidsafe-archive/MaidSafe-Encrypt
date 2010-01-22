@@ -118,7 +118,6 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       knode_(new kad::KNode(&channel_manager_, &transport_, kad::CLIENT, "", "",
           false, false)),
       client_rpcs_(new ClientRpcs(&transport_, &channel_manager_)),
-      pdclient_(NULL),
       ss_(SessionSingleton::getInstance()),
       tasks_handler_(),
       client_chunkstore_(cstore),
@@ -195,8 +194,6 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
 #endif
-  pdclient_ = new PDClient(&transport_, &channel_manager_, knode_,
-      client_rpcs_);
 }
 
 void MaidsafeStoreManager::Close(base::callback_func_type cb, bool) {
@@ -1289,11 +1286,11 @@ int MaidsafeStoreManager::GetAddToWatchListRequest(
   co.set_hash_algorithm(crypto::SHA_512);
   std::string watch_list_name = co.Hash(store_data.key_id_ + "WATCHLIST", "",
       crypto::STRING_STRING, false);
-  std::string request_signature("");
+  std::string request_signature;
   GetRequestSignature(watch_list_name, store_data.dir_type_,
       recipient_id, store_data.public_key_, store_data.public_key_signature_,
       store_data.private_key_, &request_signature);
-  if (request_signature == "")
+  if (request_signature.empty())
     return kGetRequestSigError;
 //  add_to_watch_list_request->set_watch_list_name(watch_list_name);
 //  if (store_prep_response.has_store_contract()) {
@@ -2114,8 +2111,8 @@ int MaidsafeStoreManager::FindAndLoadChunk(
     for (int m = 0; m < holder_count; ++m) {
       if (chunk_holders.at(m)->status == kContactable) {
         if (chunk_holders.at(m)->controller.get() != NULL) {
-          channel_manager_.CancelPendingRequest(
-              chunk_holders.at(m)->controller->req_id());
+          channel_manager_.DeletePendingRequest(chunk_holders.at(m)->
+              controller->req_id());
         }
       }
     }
@@ -2878,7 +2875,7 @@ int MaidsafeStoreManager::LoadPacketFromVaults(
 //    printf("Deleting the potential RPCs. %u\n", get_packet_responses.size());
     for (size_t i = 0; i < packet_holders.size(); ++i) {
       if (packet_holders.at(i)->controller)
-        channel_manager_.CancelPendingRequest(packet_holders.at(i)->
+        channel_manager_.DeletePendingRequest(packet_holders.at(i)->
                                               controller->req_id());
     }
   }
@@ -2886,7 +2883,7 @@ int MaidsafeStoreManager::LoadPacketFromVaults(
   for (size_t i = 0; i < packet_holders.size(); ++i) {
     if (packet_holders.at(i)->controller)
       channel_manager_.
-          CancelPendingRequest(packet_holders.at(i)->controller->req_id());
+          DeletePendingRequest(packet_holders.at(i)->controller->req_id());
   }
 #endif
   result->clear();
@@ -2938,7 +2935,8 @@ void MaidsafeStoreManager::PollVaultInfo(base::callback_func_type cb) {
 }
 
 void MaidsafeStoreManager::PollVaultInfoCallback(
-    const VaultStatusResponse *response, base::callback_func_type cb) {
+    const VaultStatusResponse *response,
+    base::callback_func_type cb) {
   std::string result;
   if (!response->IsInitialized()) {
     cb("FAIL");
@@ -2974,25 +2972,75 @@ void MaidsafeStoreManager::VaultContactInfo(base::callback_func_type cb) {
   knode_->FindNode(ss_->Id(PMID), cb, false);
 }
 
-void MaidsafeStoreManager::OwnLocalVault(
+void MaidsafeStoreManager::SetLocalVaultOwned(
     const std::string &priv_key,
     const std::string &pub_key,
     const std::string &signed_pub_key,
     const boost::uint32_t &port,
     const std::string &chunkstore_dir,
     const boost::uint64_t &space,
-    boost::function<void(const OwnVaultResult&, const std::string&)> cb) {
-  if (pdclient_ == NULL)
-    return;
-  pdclient_->OwnLocalVault(priv_key, pub_key, signed_pub_key, port,
-      chunkstore_dir, space, cb);
+    const SetLocalVaultOwnedFunctor &functor) {
+  boost::shared_ptr<SetLocalVaultOwnedCallbackArgs>
+      cb_args(new SetLocalVaultOwnedCallbackArgs(functor));
+  // 20 seconds, since the rpc is replied after the vault has
+  // started successfully
+  cb_args->ctrl->set_timeout(20);
+  SetLocalVaultOwnedRequest request;
+  request.set_private_key(priv_key);
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(signed_pub_key);
+  request.set_port(port);
+  request.set_chunkstore_dir(chunkstore_dir);
+  request.set_space(space);
+  rpcprotocol::Channel channel(&channel_manager_, &transport_, "127.0.0.1",
+      kLocalPort, "", 0, "", 0);
+  google::protobuf::Closure *done = google::protobuf::NewCallback(this,
+      &MaidsafeStoreManager::SetLocalVaultOwnedCallback, cb_args);
+  client_rpcs_->SetLocalVaultOwned(&request, cb_args->response, cb_args->ctrl,
+      &channel, done);
 }
 
-void MaidsafeStoreManager::LocalVaultStatus(
-    boost::function<void(const VaultStatus&)> cb) {
-  if (pdclient_ == NULL)
+void MaidsafeStoreManager::SetLocalVaultOwnedCallback(
+    boost::shared_ptr<SetLocalVaultOwnedCallbackArgs> callback_args) {
+  if (callback_args->ctrl->Failed() ||
+      !callback_args->response->IsInitialized()) {
+    if (callback_args->ctrl->ErrorText() == rpcprotocol::kTimeOut)
+      callback_args->cb(VAULT_IS_DOWN, "");
+    else
+      callback_args->cb(INVALID_OWNREQUEST, "");
     return;
-  pdclient_->IsLocalVaultOwned(cb);
+  }
+  std::string pmid_name;
+  if (callback_args->response->has_pmid_name())
+    pmid_name = callback_args->response->pmid_name();
+  OwnLocalVaultResult result = callback_args->response->result();
+  callback_args->cb(result, pmid_name);
+}
+
+void MaidsafeStoreManager::LocalVaultOwned(
+    const LocalVaultOwnedFunctor &functor) {
+  boost::shared_ptr<LocalVaultOwnedCallbackArgs>
+      cb_args(new LocalVaultOwnedCallbackArgs(functor));
+  rpcprotocol::Channel channel(&channel_manager_, &transport_, "127.0.0.1",
+      kLocalPort, "", 0, "", 0);
+  google::protobuf::Closure *done = google::protobuf::NewCallback(this,
+      &MaidsafeStoreManager::LocalVaultOwnedCallback, cb_args);
+  client_rpcs_->LocalVaultOwned(cb_args->response, cb_args->ctrl, &channel,
+      done);
+}
+
+void MaidsafeStoreManager::LocalVaultOwnedCallback(
+    boost::shared_ptr<LocalVaultOwnedCallbackArgs> callback_args) {
+  if (callback_args->ctrl->Failed() ||
+      !callback_args->response->IsInitialized()) {
+    if (callback_args->ctrl->ErrorText() == rpcprotocol::kTimeOut)
+      callback_args->cb(DOWN);
+    else
+      callback_args->cb(ISOWNRPC_CANCELLED);
+    return;
+  }
+  VaultStatus result = callback_args->response->status();
+  callback_args->cb(result);
 }
 
 bool MaidsafeStoreManager::NotDoneWithUploading() {

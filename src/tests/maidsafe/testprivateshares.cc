@@ -175,8 +175,8 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
   ASSERT_EQ(attributes[1], by_name.Msid()) << "Msid different.";
   ASSERT_EQ(attributes[2], by_name.MsidPubKey()) << "MsidPubKey different.";
   ASSERT_EQ(attributes[3], by_name.MsidPriKey()) << "MsidPriKey different.";
-  ASSERT_EQ(0, by_name.Rank()) << "Rank different.";
-  ASSERT_EQ(0, by_name.LastViewed()) << "Last view different.";
+  ASSERT_EQ(boost::uint32_t(0), by_name.Rank()) << "Rank different.";
+  ASSERT_EQ(boost::uint32_t(0), by_name.LastViewed()) << "Last view different.";
   ASSERT_EQ(participants.size(), by_name.Participants().size()) <<
             "Participant lists different in size.";
   maidsafe::PrivateShare by_msid;
@@ -186,8 +186,8 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
   ASSERT_EQ(attributes[1], by_msid.Msid()) << "Msid different.";
   ASSERT_EQ(attributes[2], by_msid.MsidPubKey()) << "MsidPubKey different.";
   ASSERT_EQ(attributes[3], by_msid.MsidPriKey()) << "MsidPriKey different.";
-  ASSERT_EQ(0, by_name.Rank()) << "Rank different.";
-  ASSERT_EQ(0, by_name.LastViewed()) << "Last view different.";
+  ASSERT_EQ(boost::uint32_t(0), by_name.Rank()) << "Rank different.";
+  ASSERT_EQ(boost::uint32_t(0), by_name.LastViewed()) << "Last view different.";
   ASSERT_EQ(participants.size(), by_msid.Participants().size()) <<
             "Participant lists different in size.";
 
@@ -202,8 +202,9 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
             "MsidPubKey different.";
   ASSERT_EQ(attributes[3], share_list.front().msid_priv_key_) <<
             "MsidPriKey different.";
-  ASSERT_EQ(0, share_list.front().rank_) << "Rank different.";
-  ASSERT_EQ(0, share_list.front().last_view_) << "Last view different.";
+  ASSERT_EQ(boost::uint32_t(0), share_list.front().rank_) << "Rank different.";
+  ASSERT_EQ(boost::uint32_t(0), share_list.front().last_view_) <<
+            "Last view different.";
 
   // Check Participants with share name
   std::list<maidsafe::share_participant> sp_list;
@@ -738,7 +739,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_ListByRank) {
 
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, RANK,
             kAll)) << "Failed getting list.";
-  ASSERT_EQ(10, share_list.size());
+  ASSERT_EQ(size_t(10), share_list.size());
 
   maidsafe::private_share past;
   while (!share_list.empty()) {
@@ -779,7 +780,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_ListByLastViewed) {
 
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, LAST,
             kAll)) << "Failed getting list.";
-  ASSERT_EQ(10, share_list.size());
+  ASSERT_EQ(size_t(10), share_list.size());
 
   maidsafe::private_share past;
   while (!share_list.empty()) {
@@ -798,22 +799,22 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DecideInclusion) {
   std::list<maidsafe::private_share> share_list;
 
   psh_->DecideInclusion(ps, maidsafe::kRo, &share_list);
-  ASSERT_EQ(1, share_list.size());
+  ASSERT_EQ(size_t(1), share_list.size());
   ps.msid_priv_key_ = "DD";
   psh_->DecideInclusion(ps, maidsafe::kRo, &share_list);
-  ASSERT_EQ(1, share_list.size());
+  ASSERT_EQ(size_t(1), share_list.size());
 
   psh_->DecideInclusion(ps, maidsafe::kAdmin, &share_list);
-  ASSERT_EQ(2, share_list.size());
+  ASSERT_EQ(size_t(2), share_list.size());
   ps.msid_priv_key_ = "";
   psh_->DecideInclusion(ps, maidsafe::kAdmin, &share_list);
-  ASSERT_EQ(2, share_list.size());
+  ASSERT_EQ(size_t(2), share_list.size());
 
   psh_->DecideInclusion(ps, maidsafe::kAll, &share_list);
-  ASSERT_EQ(3, share_list.size());
+  ASSERT_EQ(size_t(3), share_list.size());
   ps.msid_priv_key_ = "DD";
   psh_->DecideInclusion(ps, maidsafe::kAll, &share_list);
-  ASSERT_EQ(4, share_list.size());
+  ASSERT_EQ(size_t(4), share_list.size());
 }
 
 TEST_F(PrivateSharesTest, BEH_MAID_MI_ShareFilter) {
