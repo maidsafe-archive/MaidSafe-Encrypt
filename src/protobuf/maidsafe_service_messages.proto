@@ -199,21 +199,6 @@ message GetPacketResponse {
   optional bytes pmid = 3;
 }
 
-message UpdateChunkRequest {
-  required bytes chunkname = 1;
-  required bytes data = 2;
-  required bytes pmid = 3;  // vault's PMID
-  required bytes public_key = 4;
-  required bytes public_key_signature = 5;
-  required bytes request_signature = 6;
-  required int32 data_type = 7;
-}
-
-message UpdateChunkResponse {
-  required uint32 result = 1;
-  optional bytes pmid = 2;
-}
-
 message DeleteChunkRequest {
   required bytes chunkname = 1;
   required SignedSize signed_size = 2;

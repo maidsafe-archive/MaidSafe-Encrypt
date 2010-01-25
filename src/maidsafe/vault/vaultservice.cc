@@ -924,99 +924,6 @@ void VaultService::GetPacket(google::protobuf::RpcController*,
   done->Run();
 }
 
-void VaultService::UpdateChunk(google::protobuf::RpcController*,
-                               const maidsafe::UpdateChunkRequest *request,
-                               maidsafe::UpdateChunkResponse *response,
-                               google::protobuf::Closure *done) {
-#ifdef DEBUG
-//    printf("Pub key: %s.\n", request->public_key().c_str());
-//  printf("In VaultService::UpdateChunk (%i), Data Type: %i\n",
-//         knode_->host_port(), request->data_type());
-#endif
-  response->set_pmid(non_hex_pmid_);
-  if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-  if (!ValidateSignedRequest(request->public_key(),
-       request->public_key_signature(), request->request_signature(),
-       request->chunkname(), request->pmid())) {
-#ifdef DEBUG
-    printf("In VaultService::Update (%i), request didn't validate.\n",
-           knode_->host_port());
-#endif
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-  bool valid_data = false;
-  std::string current_content;
-  if (!LoadChunkLocal(request->chunkname(), &current_content)) {
-#ifdef DEBUG
-    printf("In VaultService::Update (%i), don't have chunk to update.\n",
-           knode_->host_port());
-#endif
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-
-  maidsafe::GenericPacket gp;
-  std::string updated_value;
-  maidsafe::VaultBufferPacketHandler vbph;
-  switch (request->data_type()) {
-    case maidsafe::SYSTEM_PACKET: if ((ValidateSystemPacket(request->data(),
-                                         request->public_key())) &&
-                                      (ValidateSystemPacket(current_content,
-                                         request->public_key()))) {
-                                   updated_value = request->data();
-                                   valid_data = true;
-                                  }
-                                 break;
-    case maidsafe::PDDIR_SIGNED: if (ValidateSystemPacket(request->data(),
-                                      request->public_key())) {
-                                   if (ValidateSystemPacket(current_content,
-                                        request->public_key())) {
-                                      updated_value = request->data();
-                                      valid_data = true;
-                                   }
-                                 }
-                                 break;
-    // TODO(David/Fraser#5#): check the validity of a pddir not signed DB
-    case maidsafe::PDDIR_NOTSIGNED: if (!gp.ParseFromString(current_content)) {
-                                      valid_data = true;
-                                      updated_value = request->data();
-                                    }
-                                    break;
-    default: break;  // No specific check for data
-  }
-
-  if (valid_data) {
-  std::string key = request->chunkname();
-    if (!UpdateChunkLocal(key, updated_value)) {
-#ifdef DEBUG
-      printf("In VaultService::Update (%i), failed local chunk update.\n",
-             knode_->host_port());
-#endif
-      response->set_result(kNack);
-      done->Run();
-      return;
-    }
-  } else {
-#ifdef DEBUG
-    printf("In VaultService::Update (%i), data isn't valid.\n",
-           knode_->host_port());
-#endif
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-  response->set_result(kAck);
-  done->Run();
-  return;
-}
-
 void VaultService::DeleteChunk(google::protobuf::RpcController*,
                                const maidsafe::DeleteChunkRequest *request,
                                maidsafe::DeleteChunkResponse *response,
@@ -1441,7 +1348,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     return;
   }
 
-  if (!UpdateChunkLocal(request->bufferpacket_name(), ser_bp)) {
+  if (!UpdateBPChunkLocal(request->bufferpacket_name(), ser_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1535,7 +1442,7 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
   for (int i = 0; i < static_cast<int>(msgs.size()); ++i)
     response->add_messages(msgs[i]);
 
-  if (!UpdateChunkLocal(request->bufferpacket_name(), ser_bp)) {
+  if (!UpdateBPChunkLocal(request->bufferpacket_name(), ser_bp)) {
     response->clear_messages();
     response->set_result(kNack);
     done->Run();
@@ -1629,7 +1536,7 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     return;
   }
 
-  if (!UpdateChunkLocal(request->bufferpacket_name(), updated_bp)) {
+  if (!UpdateBPChunkLocal(request->bufferpacket_name(), updated_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1845,9 +1752,9 @@ bool VaultService::StoreChunkLocal(const std::string &chunkname,
   return (result == kSuccess || result == kInvalidChunkType);
 }
 
-bool VaultService::UpdateChunkLocal(const std::string &chunkname,
-                                    const std::string &content) {
-  return (vault_chunkstore_->UpdateChunk(chunkname, content) == kSuccess);
+bool VaultService::UpdateBPChunkLocal(const std::string &bufferpacket_name,
+                                      const std::string &content) {
+  return vault_chunkstore_->UpdateChunk(bufferpacket_name, content) == kSuccess;
 }
 
 bool VaultService::LoadChunkLocal(const std::string &chunkname,

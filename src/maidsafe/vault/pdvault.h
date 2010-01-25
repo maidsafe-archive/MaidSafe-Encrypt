@@ -203,13 +203,15 @@ class PDVault {
 
 
 
-  void SyncVault(base::callback_func_type cb);
-  void RepublishChunkRef(base::callback_func_type cb);
+  void SyncVault(base::callback_func_type cb) {}
+  void RepublishChunkRef(base::callback_func_type cb) {}
+/*
   void ValidityCheck(const std::string &chunk_name,
                      const std::string &random_data,
                      const kad::Contact &remote,
                      int attempt,
                      base::callback_func_type cb);
+*/
   void GetChunk(const std::string &chunk_name, base::callback_func_type cb);
   void SwapChunk(const std::string &chunk_name,
                  const std::string &remote_ip,
@@ -253,7 +255,7 @@ class PDVault {
                       const std::string &chunkname);
 
 
-
+/*
   void IterativeSyncVault(boost::shared_ptr<SyncVaultData> data);
   void SyncVault_FindAlivePartner(
       const std::string& result,
@@ -277,6 +279,7 @@ class PDVault {
       boost::shared_ptr<RepublishChunkRefData> data);
   void IterativePublishChunkRef_Next(const std::string &result,
       boost::shared_ptr<RepublishChunkRefData> data);
+*/
   void CheckChunk(boost::shared_ptr<GetArgs> get_args);
   void CheckChunkCallback(boost::shared_ptr<maidsafe::CheckChunkResponse>
       check_chunk_response, boost::shared_ptr<GetArgs> get_args);

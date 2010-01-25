@@ -226,26 +226,6 @@ void ClientRpcs::GetPacket(const kad::Contact &peer,
   service.GetPacket(controller, get_request, get_response, done);
 }
 
-void ClientRpcs::UpdateChunk(const kad::Contact &peer,
-                             bool local,
-                             UpdateChunkRequest *update_chunk_request,
-                             UpdateChunkResponse *update_chunk_response,
-                             rpcprotocol::Controller *controller,
-                             google::protobuf::Closure *done) {
-  std::string local_ip;
-  boost::uint16_t local_port(0);
-  if (local) {
-    local_ip = peer.local_ip();
-    local_port = peer.local_port();
-  }
-  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
-      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
-      peer.rendezvous_port());
-  maidsafe::MaidsafeService::Stub service(&channel);
-  service.UpdateChunk(controller, update_chunk_request, update_chunk_response,
-                      done);
-}
-
 void ClientRpcs::LocalVaultOwned(LocalVaultOwnedResponse *response,
                                  rpcprotocol::Controller *controller,
                                  rpcprotocol::Channel *channel,

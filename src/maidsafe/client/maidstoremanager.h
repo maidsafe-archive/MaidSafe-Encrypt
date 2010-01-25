@@ -61,8 +61,6 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
 
 namespace maidsafe {
 
-enum IfExists { kStoreFailure, kStoreSuccess, kOverwrite, kAppend };
-
 enum ChunkHolderStatus {
   kUnknown,
   kContactable,
@@ -302,17 +300,14 @@ class SessionSingleton;
 class StoreChunkTask : public QRunnable {
  public:
   StoreChunkTask(const StoreData &store_data,
-                 IfExists if_exists,
                  MaidsafeStoreManager *msm)
       : store_data_(store_data),
-        if_exists_(if_exists),
         msm_(msm) {}
   void run();
  private:
   StoreChunkTask &operator=(const StoreChunkTask&);
   StoreChunkTask(const StoreChunkTask&);
   StoreData store_data_;
-  IfExists if_exists_;
   MaidsafeStoreManager *msm_;
 };
 
@@ -548,7 +543,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
-  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_PrepareToSendChunk);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
@@ -647,8 +642,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const AddToWatchListResponse &add_to_watch_list_response,
       boost::mutex *mutex);
   // Assess and select a store method for an individual chunk.
-  virtual void PrepareToSendChunk(const StoreData &store_data,
-                                  IfExists if_exists);
+  virtual void PrepareToSendChunk(const StoreData &store_data);
   // Store a single copy of an individual chunk onto the network.
   virtual int SendChunk(const StoreData &store_data);
   // Blocking call to Kademlia Find Nodes.
@@ -769,18 +763,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual void SendPacketToKad(const StoreData &store_data,
                                int *return_value,
                                GenericConditionData *generic_cond_data);
-  // Updates all available copies of a chunk on the network.  The shared pointer
-  // to the RPC controller is passed to UpdateChunkCallback purely to avoid a
-  // premature destruct being called on the controller.
-  virtual int UpdateChunkCopies(
-      const StoreData &store_data,
-      const std::vector<std::string> &chunk_holders_ids);
-  void UpdateChunk(const boost::shared_ptr<ChunkHolder> chunk_holder,
-                   const StoreData &store_data,
-                   UpdateChunkResponse *update_chunk_resonse,
-                   boost::condition_variable *update_conditional);
-  void UpdateChunkCallback(boost::condition_variable *cond,
-                           boost::shared_ptr<rpcprotocol::Controller>);
   int LoadPacketFromVaults(const std::string &packet_name,
                            const std::vector<std::string> &packet_holder_ids,
                            std::vector<std::string> *result);

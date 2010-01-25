@@ -175,10 +175,6 @@ class VaultService : public maidsafe::MaidsafeService {
                          const maidsafe::GetPacketRequest *request,
                          maidsafe::GetPacketResponse *response,
                          google::protobuf::Closure *done);
-  virtual void UpdateChunk(google::protobuf::RpcController* controller,
-                           const maidsafe::UpdateChunkRequest *request,
-                           maidsafe::UpdateChunkResponse *response,
-                           google::protobuf::Closure *done);
   virtual void DeleteChunk(google::protobuf::RpcController* controller,
                            const maidsafe::DeleteChunkRequest *request,
                            maidsafe::DeleteChunkResponse *response,
@@ -267,8 +263,8 @@ class VaultService : public maidsafe::MaidsafeService {
   bool HasChunkLocal(const std::string &chunkname);
   bool StoreChunkLocal(const std::string &chunkname,
                        const std::string &content);
-  bool UpdateChunkLocal(const std::string &chunkname,
-                        const std::string &content);
+  bool UpdateBPChunkLocal(const std::string &bufferpacket_name,
+                          const std::string &content);
   bool LoadChunkLocal(const std::string &chunkname, std::string *content);
   bool LoadPacketLocal(const std::string &packetname,
                        maidsafe::GetPacketResponse *response);

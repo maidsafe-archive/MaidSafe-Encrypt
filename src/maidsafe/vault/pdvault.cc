@@ -239,7 +239,7 @@ void PDVault::PrunePendingOperations() {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
 }
-
+/*
 void PDVault::SyncVault(base::callback_func_type cb) {
   // Process of updating vault:
   // 1. Get the list of all chunk names
@@ -679,7 +679,7 @@ void PDVault::IterativePublishChunkRef_Next(
       ++data->num_republished_chunks;
   IterativePublishChunkRef(data);
 }
-
+*/
 void PDVault::GetChunk(const std::string &chunk_name,
                        base::callback_func_type cb) {
   if (vault_status() != kVaultStarted) {

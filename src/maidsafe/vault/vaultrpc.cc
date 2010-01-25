@@ -176,32 +176,6 @@ void VaultRpcs::GetChunk(const std::string &chunkname,
   service.GetChunk(controller, &args, response, done);
 }
 
-void VaultRpcs::UpdateChunk(const std::string &chunkname,
-                            const std::string &data,
-                            const std::string &public_key,
-                            const std::string &public_key_signature,
-                            const std::string &request_signature,
-                            const maidsafe::ValueType &data_type,
-                            const std::string &remote_ip,
-                            const boost::uint16_t &remote_port,
-                            const std::string &rendezvous_ip,
-                            const boost::uint16_t &rendezvous_port,
-                            maidsafe::UpdateChunkResponse *response,
-                            rpcprotocol::Controller *controller,
-                            google::protobuf::Closure *done) {
-  maidsafe::UpdateChunkRequest args;
-  args.set_chunkname(chunkname);
-  args.set_data(data);
-  args.set_public_key(public_key);
-  args.set_public_key_signature(public_key_signature);
-  args.set_request_signature(request_signature);
-  args.set_data_type(data_type);
-  rpcprotocol::Channel channel(channel_manager_, transport_, remote_ip,
-      remote_port, "", 0, rendezvous_ip, rendezvous_port);
-  maidsafe::MaidsafeService::Stub service(&channel);
-  service.UpdateChunk(controller, &args, response, done);
-}
-
 void VaultRpcs::DeleteChunk(const std::string &chunkname,
                             const std::string &,
                             const std::string &,

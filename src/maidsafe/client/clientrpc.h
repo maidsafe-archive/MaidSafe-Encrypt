@@ -102,12 +102,6 @@ class ClientRpcs {
                          GetPacketResponse *get_response,
                          rpcprotocol::Controller *controller,
                          google::protobuf::Closure *done);
-  void UpdateChunk(const kad::Contact &peer,
-                   bool local,
-                   UpdateChunkRequest *update_chunk_request,
-                   UpdateChunkResponse *update_chunk_response,
-                   rpcprotocol::Controller *controller,
-                   google::protobuf::Closure *done);
   void LocalVaultOwned(LocalVaultOwnedResponse *response,
                        rpcprotocol::Controller *controller,
                        rpcprotocol::Channel *channel,

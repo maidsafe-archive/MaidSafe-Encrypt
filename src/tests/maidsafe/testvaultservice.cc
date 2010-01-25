@@ -286,7 +286,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesLocalStorage) {
   EXPECT_TRUE(vault_service_->LoadChunkLocal(chunkname, &test_content));
   EXPECT_EQ(content, test_content);
   EXPECT_FALSE(vault_service_->LoadChunkLocal(chunkname + "X", &test_content));
-  EXPECT_TRUE(vault_service_->UpdateChunkLocal(chunkname, new_content));
   EXPECT_TRUE(vault_service_->LoadChunkLocal(chunkname, &test_content));
   EXPECT_EQ(new_content, test_content);
   EXPECT_TRUE(vault_service_->DeleteChunkLocal(chunkname));

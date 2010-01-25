@@ -19,7 +19,6 @@ service MaidsafeService {
   rpc CheckChunk (CheckChunkRequest) returns (CheckChunkResponse);
   rpc GetChunk (GetChunkRequest) returns (GetChunkResponse);
   rpc GetPacket (GetPacketRequest) returns (GetPacketResponse);
-  rpc UpdateChunk (UpdateChunkRequest) returns (UpdateChunkResponse);
   rpc DeleteChunk (DeleteChunkRequest) returns (DeleteChunkResponse);
   rpc ValidityCheck (ValidityCheckRequest) returns (ValidityCheckResponse);
   rpc SwapChunk (SwapChunkRequest) returns (SwapChunkResponse);

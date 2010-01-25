@@ -220,9 +220,6 @@ class MockMsmKeyUnique : public MaidsafeStoreManager {
       bool load_data,
       std::string *data));
   MOCK_METHOD1(SendChunk, int(const StoreData &store_data));
-  MOCK_METHOD2(UpdateChunkCopies, int(
-      const StoreData &store_data,
-      const std::vector<std::string> &chunk_holders_ids));
   MOCK_METHOD2(AddToWatchList, void(
       const StoreData &store_data,
       const StorePrepResponse &store_prep_response));
@@ -244,7 +241,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   ASSERT_FALSE(msm.KeyUnique(hex_key, false));
 }
 
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk) {
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_PrepareToSendChunk) {
   MockMsmKeyUnique msm(client_chunkstore_);
   ASSERT_TRUE(client_chunkstore_->is_initialised());
   std::string non_hex_key = crypto_.Hash("A", "", crypto::STRING_STRING, false);
@@ -255,6 +252,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk) {
   cache_holder.set_ip("192.168.3.3");
   cache_holder.set_port(8888);
   std::vector<std::string> chunk_holders_ids;
+  StorePrepResponse empty_store_prep_response;
   for (int i = 0; i < 10; ++i) {
     chunk_holders_ids.push_back(crypto_.Hash(base::itos(i * i), "",
                                 crypto::STRING_STRING, false));
@@ -270,52 +268,29 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk) {
   // Set expectations
   EXPECT_CALL(msm, FindValue(non_hex_key, false, testing::_, testing::_,
       testing::_))
-      .WillOnce(DoAll(testing::SetArgumentPointee<4>(needs_cache_copy_id),
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
           testing::Return(kSuccess)))  // Call 1
       .WillOnce(DoAll(testing::SetArgumentPointee<3>(chunk_holders_ids),
           testing::Return(kSuccess)))  // Call 2
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
+      .WillOnce(DoAll(testing::SetArgumentPointee<3>(chunk_holders_ids),
           testing::Return(kSuccess)))  // Call 3
-      .WillOnce(DoAll(testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kSuccess)))  // Call 4
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kSuccess)))  // Call 5
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::Return(kSuccess)))  // Call 6
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kSuccess)))  // Call 7
-      .WillOnce(DoAll(testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kFindValueError)))  // Call 8
-      .WillOnce(DoAll(testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::Return(kFindValueError)))  // Call 9
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::Return(kFindValueError)))  // Call 10
-      .WillOnce(DoAll(testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kFindValueError)))  // Call 11
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kFindValueError)))  // Call 12
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::Return(kFindValueError)))  // Call 13
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kFindValueError)))  // Call 14
-      .WillOnce(DoAll(testing::SetArgumentPointee<4>(needs_cache_copy_id),
-          testing::Return(kFindValueFailure)));  // Call 15
-  EXPECT_CALL(msm, FindAndLoadChunk(non_hex_key, testing::_, false, testing::_))
-      .WillOnce(testing::Return(kLoadChunkFailure));  // Call 1
+      .WillOnce(testing::Return(kFindValueFailure))  // Call 4
+      .WillOnce(testing::Return(kFindValueError));  // Call 5
+  EXPECT_CALL(msm, AddToWatchList(
+      testing::AllOf(testing::Field(&StoreData::non_hex_key_, non_hex_key),
+                     testing::Field(&StoreData::dir_type_, PRIVATE),
+                     testing::Field(&StoreData::public_key_,
+                                    client_pmid_keys_.public_key()),
+                     testing::Field(&StoreData::private_key_,
+                                    client_pmid_keys_.private_key()),
+                     testing::Field(&StoreData::public_key_signature_,
+                                    client_pmid_public_signature_)),
+      testing::_))
+          .Times(2);  // Calls 1 & 2
   EXPECT_CALL(msm, FindAndLoadChunk(non_hex_key, chunk_holders_ids, false,
       testing::_))
           .WillOnce(testing::Return(kSuccess))  // Call 2
-          .WillOnce(testing::Return(kLoadedChunkEmpty));  // Call 4
+          .WillOnce(testing::Return(kLoadedChunkEmpty));  // Call 3
   EXPECT_CALL(msm, SendChunk(
       testing::AllOf(testing::Field(&StoreData::non_hex_key_, non_hex_key),
                      testing::Field(&StoreData::dir_type_, PRIVATE),
@@ -325,47 +300,12 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk) {
                                     client_pmid_keys_.private_key()),
                      testing::Field(&StoreData::public_key_signature_,
                                     client_pmid_public_signature_))))
-          .WillOnce(testing::Return(kSuccess))  // Call 1
-          .WillOnce(testing::Return(kSuccess))  // Call 1
-          .WillOnce(testing::Return(kSuccess))  // Call 1
-          .WillOnce(testing::Return(kSuccess))  // Call 1
-          .WillOnce(testing::Return(-100))  // Call 4
-          .WillOnce(testing::Return(-100))  // Call 4
-          .WillOnce(testing::Return(-100))  // Call 4
-          .WillOnce(testing::Return(-100))  // Call 4
-          .WillOnce(testing::Return(-101))  // Call 15
-          .WillOnce(testing::Return(-101))  // Call 15
-          .WillOnce(testing::Return(-101))  // Call 15
-          .WillOnce(testing::Return(-101));  // Call 15
-  EXPECT_CALL(msm, UpdateChunkCopies(
-      testing::AllOf(testing::Field(&StoreData::non_hex_key_, non_hex_key),
-                     testing::Field(&StoreData::dir_type_, PRIVATE),
-                     testing::Field(&StoreData::public_key_,
-                                    client_pmid_keys_.public_key()),
-                     testing::Field(&StoreData::private_key_,
-                                    client_pmid_keys_.private_key()),
-                     testing::Field(&StoreData::public_key_signature_,
-                                    client_pmid_public_signature_)),
-      chunk_holders_ids))
-          .WillOnce(testing::Return(-99));  // Call 2
-  EXPECT_CALL(msm, AddToWatchList(testing::_, testing::_)).Times(1);  // Call 9
+          .Times(2 * kMinChunkCopies);  // Call 3 (x 4) & Call 4 (x 4)
 
   // Run test calls
-  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 1
-  msm.PrepareToSendChunk(store_data, kOverwrite);  // Call 2
-  msm.PrepareToSendChunk(store_data, kStoreFailure);  // Call 3
-  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 4
-  msm.PrepareToSendChunk(store_data, kOverwrite);  // Call 5
-  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 6
-  msm.PrepareToSendChunk(store_data, static_cast<IfExists>(999));
-  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 8
-  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 9
-  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 10
-  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 11
-  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 12
-  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 13
-  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 14
-  msm.PrepareToSendChunk(store_data, kStoreSuccess);  // Call 15
+  for (int i = 0; i < 5; ++i) {
+    msm.PrepareToSendChunk(store_data);
+  }
   // Allow time for AddToWatchList call
   boost::this_thread::sleep(boost::posix_time::seconds(1));
 }

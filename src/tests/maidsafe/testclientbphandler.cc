@@ -939,7 +939,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailGetBPMessagesRpc) {
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
 }
 
-TEST_F(TestClientBP, BEH_MAID_ContactInfo) {
+TEST_F(TestClientBP, BEH_MAID_ContactInfoBasic) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
