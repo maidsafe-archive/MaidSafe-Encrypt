@@ -570,7 +570,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
   ASSERT_EQ(maidsafe::kSuccess, fcb1.result);
   ASSERT_EQ(ep->ip(), fcb1.end_point.ip());
   ASSERT_EQ(ep->port(), fcb1.end_point.port());
-  ASSERT_EQ(buffer_packet_info.online(), fcb1.status);
+  ASSERT_EQ(static_cast<boost::uint32_t>(buffer_packet_info.online()),
+            fcb1.status);
 
   ss_->ResetSession();
 }

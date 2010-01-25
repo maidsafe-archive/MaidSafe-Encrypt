@@ -700,15 +700,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                         int *available_chunk_holder_index);
   // Given a vector of vault ids, this gets the contact info for each and if
   // load_data is true, attempts to load the data once the first contact info
-  // is received.  If public_key and signed_public_key are not empty, then it
-  // is assumed we are loading a buffer packet (the bool load_data has no effect
-  // in this case) and the GetMessages RPC is used.
+  // is received.
   virtual int FindAndLoadChunk(
       const std::string &chunk_name,
       const std::vector<std::string> &chunk_holders_ids,
       bool load_data,
-      const std::string &public_key,
-      const std::string &signed_public_key,
       std::string *data);
   // Get a chunk's content from a specific peer.
   int GetChunk(const std::string &chunk_name,

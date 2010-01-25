@@ -979,9 +979,9 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfo) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  ASSERT_EQ(3, cb.status);
+  ASSERT_EQ(boost::uint32_t(3), cb.status);
   ASSERT_EQ("132.248.59.1", cb.end_point.ip());
-  ASSERT_EQ(48591, cb.end_point.port());
+  ASSERT_EQ(boost::uint32_t(48591), cb.end_point.port());
 }
 
 TEST_F(TestClientBP, BEH_MAID_ContactInfoNoReferences) {
@@ -1102,9 +1102,9 @@ TEST_F(TestClientBP, FUNC_MAID_ContactInfoOneFindContacts) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  ASSERT_EQ(3, cb.status);
+  ASSERT_EQ(boost::uint32_t(3), cb.status);
   ASSERT_EQ("132.248.59.1", cb.end_point.ip());
-  ASSERT_EQ(48591, cb.end_point.port());
+  ASSERT_EQ(boost::uint32_t(48591), cb.end_point.port());
 }
 
 TEST_F(TestClientBP, BEH_MAID_ContactInfoFailAddMessageRpc) {

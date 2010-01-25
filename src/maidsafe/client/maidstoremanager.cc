@@ -362,8 +362,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
     //   CacheChunk(*data, needs_cache_copy_id);
     return get_result;
   } else {
-    int result = FindAndLoadChunk(chunk_name, chunk_holders_ids, true, "", "",
-                                  data);
+    int result = FindAndLoadChunk(chunk_name, chunk_holders_ids, true, data);
 #ifdef DEBUG
     printf("In MaidsafeStoreManager::LoadChunk (%i), FindAndLoadChunk: %d.\n",
            knode_->host_port(), result);
@@ -762,7 +761,6 @@ void MaidsafeStoreManager::GetPacketSignatureKeys(PacketType packet_type,
   }
 }
 
-// Buffer packet
 int MaidsafeStoreManager::CreateBP() {
   BPInputParameters bi_input_params = {ss_->Id(MPID), ss_->PublicKey(MPID),
                                        ss_->PrivateKey(MPID)};
@@ -879,8 +877,10 @@ int MaidsafeStoreManager::AddBPMessage(
   ReturnCode result(kSuccess);
   for (size_t i = 0; i < receivers.size(); ++i) {
     if (results.at(i) != kSuccess) {
+#ifdef DEBUG
       printf("In MSM::AddBPMessage, failed to AddMessage - result %u is %i\n",
              i, results.at(i));
+#endif
       result = results.at(i);
       break;
     }
@@ -935,8 +935,8 @@ void MaidsafeStoreManager::PrepareToSendChunk(const StoreData &store_data,
   bool data_cached = (cache_holder.has_node_id());
   std::string data;
   if (exists && !data_cached) {
-    exists = (FindAndLoadChunk(chunk_name, chunk_holders_ids, false, "", "",
-                               &data) == kSuccess);
+    exists = (FindAndLoadChunk(chunk_name, chunk_holders_ids, false, &data)
+              == kSuccess);
   }
   // If the chunk does already exist on the network, determine what to do.
   if (exists) {
@@ -1997,10 +1997,7 @@ int MaidsafeStoreManager::FindAndLoadChunk(
     const std::string &chunk_name,
     const std::vector<std::string> &chunk_holders_ids,
     bool load_data,
-    const std::string &public_key,
-    const std::string &signed_public_key,
     std::string *data) {
-  bool get_messages = (public_key != "") && (signed_public_key != "");
   boost::shared_ptr<boost::condition_variable>
       cond_variable(new boost::condition_variable);
   boost::shared_ptr<GenericConditionData>
@@ -2014,7 +2011,7 @@ int MaidsafeStoreManager::FindAndLoadChunk(
   // If we need to load the data, iterate through all holders until the data has
   // been loaded, otherwise we can return after only one holder has confirmed
   // they have the data.
-  if (load_data || get_messages) {
+  if (load_data) {
     // Chunk holders responding to CheckChunk RPCs (from
     // FindAvailableChunkHolders below) amend available_chunk_holder_index.  If
     // they don't have the chunk, they decrement it by 1.  If they do, and
@@ -2067,11 +2064,7 @@ int MaidsafeStoreManager::FindAndLoadChunk(
           boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
           chunk_holders.at(index)->status = kAwaitingChunk;
         }
-        if (get_messages)
-          GetMessages(chunk_name, chunk_holders.at(index), public_key,
-                      signed_public_key, data, &get_mutex);
-        else
-          GetChunk(chunk_name, chunk_holders.at(index), data, &get_mutex);
+        GetChunk(chunk_name, chunk_holders.at(index), data, &get_mutex);
       } else {  // Iterate through chunk_holders to get another non-failed one.
         for (size_t k = 0; k < chunk_holders.size(); ++k) {
           if (chunk_holders.at(k)->status == kHasChunk) {
@@ -2176,63 +2169,6 @@ int MaidsafeStoreManager::GetChunk(const std::string &chunk_name,
     chunk_holder->status = kDone;
   }
   return kSuccess;
-}
-
-void MaidsafeStoreManager::GetMessages(
-    const std::string &buffer_packet_name,
-    boost::shared_ptr<ChunkHolder> chunk_holder,
-    const std::string &public_key,
-    const std::string &signed_public_key,
-    std::string *serialised_get_messages_response,
-    boost::mutex *get_mutex) {
-// TODO(Fraser#5#): 2009-11-07 - Remove this method
-  GetBPMessagesRequest get_messages_request;
-  get_messages_request.set_bufferpacket_name(buffer_packet_name);
-  get_messages_request.set_public_key(public_key);
-  get_messages_request.set_signed_public_key(signed_public_key);
-  GetBPMessagesResponse get_messages_response;
-  bool get_messages_done(false);
-  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-      &MaidsafeStoreManager::GetChunkCallback, get_mutex, &get_messages_done);
-  rpcprotocol::Controller controller;
-  bprpcs_->GetBPMessages(chunk_holder->chunk_holder_contact,
-      chunk_holder->local, &get_messages_request, &get_messages_response,
-      &controller, callback);
-  {
-    boost::mutex::scoped_lock lock(*get_mutex);
-    while (!get_messages_done) {
-      get_chunk_conditional_.wait(lock);
-    }
-  }
-  if (get_messages_response.result() == kNack) {
-#ifdef DEBUG
-    printf("In MSM, response from GetMessages came back failed (%d).\n",
-           knode_->host_port());
-#endif
-    {  // NOLINT (Fraser)
-      boost::mutex::scoped_lock lock(*(chunk_holder->mutex));
-      chunk_holder->status = kFailedHolder;
-    }
-    return;
-  }
-  if (chunk_holder->chunk_holder_contact.node_id() !=
-      get_messages_response.pmid_id()) {
-#ifdef DEBUG
-    printf("In MSM, response from GetMessages came back from wrong node (%d)\n",
-           knode_->host_port());
-#endif
-    {  // NOLINT (Fraser)
-      boost::mutex::scoped_lock lock(*(chunk_holder->mutex));
-      chunk_holder->status = kFailedHolder;
-    }
-    return;
-  }
-  get_messages_response.SerializeToString(serialised_get_messages_response);
-  {
-    boost::mutex::scoped_lock lock(*(chunk_holder->mutex));
-    chunk_holder->status = kDone;
-  }
-  return;
 }
 
 void MaidsafeStoreManager::GetChunkCallback(boost::mutex *mutex,

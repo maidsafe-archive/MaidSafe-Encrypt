@@ -214,12 +214,10 @@ class MockMsmKeyUnique : public MaidsafeStoreManager {
                               kad::ContactInfo *cache_holder,
                               std::vector<std::string> *chunk_holders_ids,
                               std::string *needs_cache_copy_id));
-  MOCK_METHOD6(FindAndLoadChunk, int(
+  MOCK_METHOD4(FindAndLoadChunk, int(
       const std::string &chunk_name,
       const std::vector<std::string> &chunk_holders_ids,
       bool load_data,
-      const std::string &public_key,
-      const std::string &public_key_signature,
       std::string *data));
   MOCK_METHOD1(SendChunk, int(const StoreData &store_data));
   MOCK_METHOD2(UpdateChunkCopies, int(
@@ -312,11 +310,10 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk) {
           testing::Return(kFindValueError)))  // Call 14
       .WillOnce(DoAll(testing::SetArgumentPointee<4>(needs_cache_copy_id),
           testing::Return(kFindValueFailure)));  // Call 15
-  EXPECT_CALL(msm, FindAndLoadChunk(non_hex_key, testing::_, false, "", "",
+  EXPECT_CALL(msm, FindAndLoadChunk(non_hex_key, testing::_, false, testing::_))
+      .WillOnce(testing::Return(kLoadChunkFailure));  // Call 1
+  EXPECT_CALL(msm, FindAndLoadChunk(non_hex_key, chunk_holders_ids, false,
       testing::_))
-          .WillOnce(testing::Return(kLoadChunkFailure));  // Call 1
-  EXPECT_CALL(msm, FindAndLoadChunk(non_hex_key, chunk_holders_ids, false, "",
-      "", testing::_))
           .WillOnce(testing::Return(kSuccess))  // Call 2
           .WillOnce(testing::Return(kLoadedChunkEmpty));  // Call 4
   EXPECT_CALL(msm, SendChunk(

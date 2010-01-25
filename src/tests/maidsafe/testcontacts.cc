@@ -348,7 +348,7 @@ TEST_F(ContactsTest, BEH_MAID_LastContact_Rank_Contacts) {
             "MI - Problem getting the contact";
   ASSERT_EQ(msc.PublicName(), mic.pub_name_) <<
             "MI - Public name not the same";
-  ASSERT_LT(time, mic.last_contact_) <<
+  ASSERT_LT(time, static_cast<boost::uint32_t>(mic.last_contact_)) <<
             "Last contact did not update";
   ASSERT_EQ(2, mic.rank_) << "Rank did not update";
 }
