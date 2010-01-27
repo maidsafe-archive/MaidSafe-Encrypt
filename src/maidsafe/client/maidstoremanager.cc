@@ -2321,7 +2321,23 @@ void MaidsafeStoreManager::SendPacketCallback(
 void MaidsafeStoreManager::OverwritePacket(
     boost::shared_ptr<StoreData> store_data,
     const std::vector<std::string> &values) {
-
+  boost::mutex delete_mutex;
+  boost::condition_variable delete_cond_var;
+  int delete_result(kGeneralError);
+  boost::shared_ptr<DeletePacketData> delete_data(new DeletePacketData(
+      store_data, values, &delete_mutex, &delete_cond_var, &delete_result));
+  while (delete_result == kGeneralError) {
+    boost::mutex::scoped_lock lock(delete_mutex);
+    delete_cond_var.wait(lock);
+  }
+  if (delete_result == kSuccess) {
+    SendPacket(store_data);
+    return;
+  } else {
+    boost::mutex::scoped_lock lock(*store_data->mutex);
+    *store_data->result = delete_result;
+    store_data->cond_var->notify_one();
+  }
 }
 
 void MaidsafeStoreManager::DeletePacketFromNet(

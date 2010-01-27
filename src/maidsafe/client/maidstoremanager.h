@@ -284,6 +284,27 @@ struct DeletePacketData {
                          result(res),
                          returned_count(0),
                          notified(false) {}
+  // This ctor effectively allows us to use a StoreData struct for deleting
+  // a packet during an OverwritePacket operation
+  DeletePacketData(boost::shared_ptr<StoreData> store_data,
+                   const std::vector<std::string> &vals,
+                   boost::mutex *mut,
+                   boost::condition_variable *cv,
+                   int *res)
+                       : non_hex_packet_name(store_data->non_hex_key),
+                         values(vals),
+                         msid(store_data->msid),
+                         key_id(store_data->key_id),
+                         public_key(store_data->public_key),
+                         public_key_signature(store_data->public_key_signature),
+                         private_key(store_data->private_key),
+                         system_packet_type(store_data->system_packet_type),
+                         dir_type(store_data->dir_type),
+                         mutex(mut),
+                         cond_var(cv),
+                         result(res),
+                         returned_count(0),
+                         notified(false) {}
   std::string non_hex_packet_name;
   std::vector<std::string> values;
   std::string msid, key_id, public_key, public_key_signature, private_key;
