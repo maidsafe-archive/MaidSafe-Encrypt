@@ -34,17 +34,14 @@
 
 namespace maidsafe {
 
-class AuthCallbackResult {
- public:
-  AuthCallbackResult();
-  void CallbackFunc(const std::string &res);
-  void Reset();
-  std::string result;
-};
-
 class Authentication {
  public:
-  Authentication();
+  Authentication() : ud_(),
+                     mutex_(),
+                     crypto_(),
+                     storemanager_(),
+                     ss_(),
+                     tmid_content_() {}
   void Init(boost::shared_ptr<StoreManagerInterface> smgr);
   int GetUserInfo(const std::string &username, const std::string &pin);
   int GetUserData(const std::string &password, std::string &ser_da);
@@ -89,9 +86,15 @@ class Authentication {
   bool GetSmid(const std::string &smid_name,
                const std::string &pin,
                int *rid);
-  void WaitForResult(const AuthCallbackResult &cb);
   void GetUserTmid(bool smid);
-
+  int StorePacket(const std::string &hex_packet_name,
+                  const std::string &value,
+                  const PacketType &type,
+                  const IfPacketExists &if_exists);
+  // Unneccessary, but more efficient/faster to pass packet's value here
+  int DeletePacket(const std::string &hex_packet_name,
+                   const std::string &value,
+                   const PacketType &type);
   UserDetails ud_;
   boost::mutex mutex_;
   crypto::Crypto crypto_;

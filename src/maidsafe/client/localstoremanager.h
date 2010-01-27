@@ -62,18 +62,41 @@ class LocalStoreManager : public StoreManagerInterface {
 
   // Packets
   virtual int LoadPacket(const std::string &hex_key, std::string *result);
-  virtual int StorePacket(const std::string &hex_packet_name,
-                          const std::string &value,
-                          PacketType system_packet_type,
-                          DirType dir_type,
-                          const std::string &msid,
-                          IfPacketExists if_packet_exists);
-  virtual int DeletePacket(const std::string &hex_key,
-                           const std::string &signature,
-                           const std::string &public_key,
-                           const std::string &signed_public_key,
-                           const ValueType &type,
-                           base::callback_func_type cb);
+  virtual void StorePacket(const std::string &hex_packet_name,
+                           const std::string &value,
+                           PacketType system_packet_type,
+                           DirType dir_type,
+                           const std::string &msid,
+                           IfPacketExists if_packet_exists,
+                           boost::mutex *mutex,
+                           boost::condition_variable *cond_var,
+                           int *result);
+  // Deletes a single k,v pair
+  virtual void DeletePacket(const std::string &hex_packet_name,
+                            const std::string &value,
+                            PacketType system_packet_type,
+                            DirType dir_type,
+                            const std::string &msid,
+                            boost::mutex *mutex,
+                            boost::condition_variable *cond_var,
+                            int *result);
+  // Deletes all values for the specified key where values are currently unknown
+  virtual void DeletePacket(const std::string &hex_packet_name,
+                            PacketType system_packet_type,
+                            DirType dir_type,
+                            const std::string &msid,
+                            boost::mutex *mutex,
+                            boost::condition_variable *cond_var,
+                            int *result);
+  // Deletes all values for the specified key
+  virtual void DeletePacket(const std::string &hex_packet_name,
+                            const std::vector<std::string> values,
+                            PacketType system_packet_type,
+                            DirType dir_type,
+                            const std::string &msid,
+                            boost::mutex *mutex,
+                            boost::condition_variable *cond_var,
+                            int *result);
 
   // Buffer packet
   virtual int CreateBP();

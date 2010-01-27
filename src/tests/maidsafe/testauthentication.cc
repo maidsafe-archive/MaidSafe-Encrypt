@@ -560,12 +560,19 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   params["username"] = username;
   params["PIN"] = pin;
   std::string mid_name = midPacket->PacketName(&params);
-  ASSERT_EQ(0, sm->StorePacket(mid_name, "rubish data with same mid name",
-      MID, maidsafe::PRIVATE, "", kStoreFailure));
-
+  int result(kGeneralError);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  sm->StorePacket(mid_name, "rubish data with same mid name", MID,
+      PRIVATE, "", kDoNothingReturnFailure, &mutex, &cond_var, &result);
+  while (result == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex);
+    cond_var.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, result);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(sm);
-  int result = authentication->GetUserInfo(username, pin);
+  result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kInvalidUsernameOrPin, result);
 }
 

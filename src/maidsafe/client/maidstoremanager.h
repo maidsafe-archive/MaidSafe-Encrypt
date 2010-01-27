@@ -175,70 +175,126 @@ class BPCallbackObj {
 
 struct StoreData {
   // Default constructor
-  StoreData() : non_hex_key_(""),
-                value_(""),
-                size_(0),
-                msid_(""),
-                key_id_(""),
-                public_key_(""),
-                public_key_signature_(""),
-                private_key_(""),
-                chunk_type_(kHashable | kNormal),
-                system_packet_type_(MID),
-                dir_type_(PRIVATE),
-                if_packet_exists_(kStoreFailure) {}
+  StoreData() : non_hex_key(),
+                value(),
+                size(0),
+                msid(),
+                key_id(),
+                public_key(),
+                public_key_signature(),
+                private_key(),
+                chunk_type(kHashable | kNormal),
+                system_packet_type(MID),
+                dir_type(PRIVATE),
+                if_packet_exists(kDoNothingReturnFailure),
+                mutex(NULL),
+                cond_var(NULL),
+                result(NULL) {}
   // Store chunk constructor
   StoreData(const std::string &non_hex_chunk_name,
-            const boost::uint64_t &size,
-            ChunkType chunk_type,
-            DirType dir_type,
-            const std::string &msid,
-            const std::string &key_id,
-            const std::string &public_key,
-            const std::string &public_key_signature,
-            const std::string &private_key)
-                : non_hex_key_(non_hex_chunk_name),
-                  value_(""),
-                  size_(size),
-                  msid_(msid),
-                  key_id_(key_id),
-                  public_key_(public_key),
-                  public_key_signature_(public_key_signature),
-                  private_key_(private_key),
-                  chunk_type_(chunk_type),
-                  system_packet_type_(MID),
-                  dir_type_(dir_type),
-                  if_packet_exists_(kStoreFailure) {}
+            const boost::uint64_t &chunk_size,
+            ChunkType ch_type,
+            DirType directory_type,
+            const std::string &ms_id,
+            const std::string &key,
+            const std::string &pub_key,
+            const std::string &pub_key_signature,
+            const std::string &priv_key)
+                : non_hex_key(non_hex_chunk_name),
+                  value(),
+                  size(chunk_size),
+                  msid(ms_id),
+                  key_id(key),
+                  public_key(pub_key),
+                  public_key_signature(pub_key_signature),
+                  private_key(priv_key),
+                  chunk_type(ch_type),
+                  system_packet_type(MID),
+                  dir_type(directory_type),
+                  if_packet_exists(kDoNothingReturnFailure),
+                  mutex(NULL),
+                  cond_var(NULL),
+                  result(NULL) {}
   // Store packet constructor
   StoreData(const std::string &non_hex_packet_name,
-            const std::string &value,
-            PacketType system_packet_type,
-            DirType dir_type,
-            const std::string &msid,
-            const std::string &key_id,
-            const std::string &public_key,
-            const std::string &public_key_signature,
-            const std::string &private_key,
-            IfPacketExists if_packet_exists)
-                : non_hex_key_(non_hex_packet_name),
-                  value_(value),
-                  size_(0),
-                  msid_(msid),
-                  key_id_(key_id),
-                  public_key_(public_key),
-                  public_key_signature_(public_key_signature),
-                  private_key_(private_key),
-                  chunk_type_(kHashable | kNormal),
-                  system_packet_type_(system_packet_type),
-                  dir_type_(dir_type),
-                  if_packet_exists_(if_packet_exists) {}
-  std::string non_hex_key_, value_;
-  boost::uint64_t size_;
-  std::string msid_, key_id_, public_key_, public_key_signature_, private_key_;
-  ChunkType chunk_type_;
-  PacketType system_packet_type_;
-  DirType dir_type_;
-  IfPacketExists if_packet_exists_;
+            const std::string &packet_value,
+            PacketType sys_packet_type,
+            DirType directory_type,
+            const std::string &ms_id,
+            const std::string &key,
+            const std::string &pub_key,
+            const std::string &pub_key_signature,
+            const std::string &priv_key,
+            IfPacketExists if_exists,
+            boost::mutex *mut,
+            boost::condition_variable *cv,
+            int *res)
+                : non_hex_key(non_hex_packet_name),
+                  value(packet_value),
+                  size(0),
+                  msid(ms_id),
+                  key_id(key),
+                  public_key(pub_key),
+                  public_key_signature(pub_key_signature),
+                  private_key(priv_key),
+                  chunk_type(kHashable | kNormal),
+                  system_packet_type(sys_packet_type),
+                  dir_type(directory_type),
+                  if_packet_exists(if_exists),
+                  mutex(mut),
+                  cond_var(cv),
+                  result(res) {}
+  std::string non_hex_key, value;
+  boost::uint64_t size;
+  std::string msid, key_id, public_key, public_key_signature, private_key;
+  ChunkType chunk_type;
+  PacketType system_packet_type;
+  DirType dir_type;
+  IfPacketExists if_packet_exists;
+  boost::mutex *mutex;
+  boost::condition_variable *cond_var;
+  int *result;
+};
+
+struct DeletePacketData {
+ public:
+  DeletePacketData(const std::string &non_hex_name,
+                   const std::vector<std::string> &packet_values,
+                   PacketType sys_packet_type,
+                   DirType directory_type,
+                   const std::string &ms_id,
+                   const std::string &key,
+                   const std::string &pub_key,
+                   const std::string &pub_key_signature,
+                   const std::string &priv_key,
+                   boost::mutex *mut,
+                   boost::condition_variable *cv,
+                   int *res)
+                       : non_hex_packet_name(non_hex_name),
+                         values(packet_values),
+                         msid(ms_id),
+                         key_id(key),
+                         public_key(pub_key),
+                         public_key_signature(pub_key_signature),
+                         private_key(priv_key),
+                         system_packet_type(sys_packet_type),
+                         dir_type(directory_type),
+                         mutex(mut),
+                         cond_var(cv),
+                         result(res),
+                         returned_count(0),
+                         notified(false) {}
+  std::string non_hex_packet_name;
+  std::vector<std::string> values;
+  std::string msid, key_id, public_key, public_key_signature, private_key;
+  PacketType system_packet_type;
+  DirType dir_type;
+  boost::mutex *mutex;
+  boost::condition_variable *cond_var;
+  int *result;
+  size_t returned_count;
+  bool notified;
+ private:
 };
 
 struct GenericConditionData {
@@ -324,22 +380,16 @@ class SendChunkCopyTask : public QRunnable {
 
 class StorePacketTask : public QRunnable {
  public:
-  StorePacketTask(const StoreData &store_data,
-                  MaidsafeStoreManager *msm,
-                  int *return_value,
-                  GenericConditionData *generic_cond_data)
+  StorePacketTask(boost::shared_ptr<StoreData> store_data,
+                  MaidsafeStoreManager *msm)
       : store_data_(store_data),
-        msm_(msm),
-        return_value_(return_value),
-        generic_cond_data_(generic_cond_data) {}
+        msm_(msm) {}
   void run();
  private:
   StorePacketTask &operator=(const StorePacketTask&);
   StorePacketTask(const StorePacketTask&);
-  StoreData store_data_;
+  boost::shared_ptr<StoreData> store_data_;
   MaidsafeStoreManager *msm_;
-  int *return_value_;
-  GenericConditionData *generic_cond_data_;
 };
 
 class AddToWatchListTask : public QRunnable {
@@ -373,6 +423,20 @@ class DeleteChunkTask : public QRunnable {
   DeleteChunkTask &operator=(const DeleteChunkTask&);
   DeleteChunkTask(const DeleteChunkTask&);
   StoreData store_data_;
+  MaidsafeStoreManager *msm_;
+};
+
+class DeletePacketTask : public QRunnable {
+ public:
+  DeletePacketTask(boost::shared_ptr<DeletePacketData> delete_data,
+                   MaidsafeStoreManager *msm)
+      : delete_data_(delete_data),
+        msm_(msm) {}
+  void run();
+ private:
+  DeletePacketTask &operator=(const DeletePacketTask&);
+  DeletePacketTask(const DeletePacketTask&);
+  boost::shared_ptr<DeletePacketData> delete_data_;
   MaidsafeStoreManager *msm_;
 };
 
@@ -444,16 +508,17 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                   DirType dir_type,
                   const std::string &msid);
   // Adds the packet to the priority store queue for uploading as a Kademlia
-  // key, value.  If the packet already exists on the net, ...
-  // Subsequent loading of the key, values does not
-  // necessarily return the values in the chronological order of storing.  The
-  // function blocks until the entire store operation has completed.
-  int StorePacket(const std::string &hex_packet_name,
-                  const std::string &value,
-                  PacketType system_packet_type,
-                  DirType dir_type,
-                  const std::string &msid,
-                  IfPacketExists if_packet_exists);
+  // key, value.  If the pointers are not NULL, the function calls notify_one
+  // on cond_var after the kad function calls back.
+  void StorePacket(const std::string &hex_packet_name,
+                   const std::string &value,
+                   PacketType system_packet_type,
+                   DirType dir_type,
+                   const std::string &msid,
+                   IfPacketExists if_packet_exists,
+                   boost::mutex *mutex,
+                   boost::condition_variable *cond_var,
+                   int *result);
   int LoadChunk(const std::string &hex_chunk_name, std::string *data);
   // Loads the most recently stored value under the packet name
   int LoadPacket(const std::string &hex_packet_name, std::string *result);
@@ -464,12 +529,32 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                   const boost::uint64_t &chunk_size,
                   DirType dir_type,
                   const std::string &msid);
-  int DeletePacket(const std::string &hex_key,
-                   const std::string &signature,
-                   const std::string &public_key,
-                   const std::string &signed_public_key,
-                   const ValueType &type,
-                   base::callback_func_type cb);
+  // Deletes a single k,v pair
+  void DeletePacket(const std::string &hex_packet_name,
+                    const std::string &value,
+                    PacketType system_packet_type,
+                    DirType dir_type,
+                    const std::string &msid,
+                    boost::mutex *mutex,
+                    boost::condition_variable *cond_var,
+                    int *result);
+  // Deletes all values for the specified key where values are currently unknown
+  void DeletePacket(const std::string &hex_packet_name,
+                    PacketType system_packet_type,
+                    DirType dir_type,
+                    const std::string &msid,
+                    boost::mutex *mutex,
+                    boost::condition_variable *cond_var,
+                    int *result);
+  // Deletes all values for the specified key
+  void DeletePacket(const std::string &hex_packet_name,
+                    const std::vector<std::string> values,
+                    PacketType system_packet_type,
+                    DirType dir_type,
+                    const std::string &msid,
+                    boost::mutex *mutex,
+                    boost::condition_variable *cond_var,
+                    int *result);
   int CreateAccount(const boost::uint64_t &space_offered);
   int SetSpaceOffered(const boost::uint64_t &space);
   int GetAccountDetails(boost::uint64_t *space_offered,
@@ -512,6 +597,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   friend void StorePacketTask::run();
   friend void AddToWatchListTask::run();
   friend void DeleteChunkTask::run();
+  friend void DeletePacketTask::run();
   friend void AmendAccountTask::run();
   friend size_t testpdvault::CheckStoredCopies(
       std::map<std::string, std::string> chunks,
@@ -613,14 +699,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                          std::vector<kad::Contact> *contacts);
   // Blocking call to Kademlia Find Value.  If the maidsafe value is cached,
   // this may yield serialised contact details for a cache copy holder.
-  // Otherwise it should yield the reference holders.  It also yields the
-  // details of the last kad node to not return the value during the lookup.
-  // If check_local is true, it also checks local chunkstore first.  The values
-  // (ie chunk_holders_ids) are loaded in reverse order.
+  // Otherwise it should yield the values (which may represent chunk holders'
+  // IDs).  It also yields the details of the last kad node to not return the
+  // value during the lookup.  If check_local is true, it also checks the local
+  // chunkstore first.  The values are loaded in reverse order.
   virtual int FindValue(const std::string &kad_key,
                         bool check_local,
                         kad::ContactInfo *cache_holder,
-                        std::vector<std::string> *chunk_holders_ids,
+                        std::vector<std::string> *values,
                         std::string *needs_cache_copy_id);
   // Populates a vector of chunk holders.  Those that are contactable have
   // non-empty contact details and those that have the chunk have their variable
@@ -686,10 +772,18 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const std::vector<std::string> &packet_holder_ids,
       std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
       boost::shared_ptr<GenericConditionData> find_cond_data);
+  // Assess prior existence of packet on net and handle storing if required.
+  virtual void SendPacketPrep(boost::shared_ptr<StoreData> store_data);
   // Store an individual packet to the network as a kademlia value.
-  virtual void SendPacket(const StoreData &store_data,
-                          int *return_value,
-                          GenericConditionData *generic_cond_data);
+  virtual void SendPacket(boost::shared_ptr<StoreData> store_data);
+  void SendPacketCallback(const std::string &ser_kad_store_result,
+                          boost::shared_ptr<StoreData> store_data);
+  void OverwritePacket(boost::shared_ptr<StoreData> store_data,
+                       const std::vector<std::string> &values);
+  void DeletePacketFromNet(boost::shared_ptr<DeletePacketData> delete_data);
+  void DeletePacketCallback(const std::string &ser_kad_delete_result,
+                            boost::shared_ptr<DeletePacketData> delete_data);
+  void DoNothingCallback(const std::string&) {}
   void PollVaultInfoCallback(const VaultStatusResponse *response,
                              base::callback_func_type cb);
   void AmendAccount(const boost::uint64_t &space_offered);

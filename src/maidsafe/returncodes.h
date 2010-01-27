@@ -32,6 +32,7 @@ enum ReturnCode {
   kSuccess = 0,
   kGeneralError = -1,
   kIncorrectKeySize = -2,
+  kUndefined = -3,
 
   // Authentication
   kAuthenticationError = -1001,
@@ -125,14 +126,19 @@ enum ReturnCode {
   kSendPacketFailure = -7027,
   kSendPacketFindValueFailure = -7028,
   kSendPacketCached = -7029,
-  kSendPacketParseError = -7030,
-  kUpdateChunksFailure = -7031,
-  kCommonChecksumUndecided = -7032,
-  kCommonChecksumMajority = -7033,
-  kPacketUnknownType = -7034,
-  kLoadPacketFailure = -7035,
-  kStoreManagerException = -7036,
-  kFindAccountHoldersError = -7037,
+  kSendPacketAlreadyExists = -7030,
+  kSendPacketUnknownExistsType = -7031,
+  kSendPacketParseError = -7032,
+  kDeletePacketFindValueFailure = -7033,
+  kDeletePacketError = -7034,
+  kDeletePacketParseError = -7035,
+  kDeletePacketFailure = -7036,
+  kCommonChecksumUndecided = -7037,
+  kCommonChecksumMajority = -7038,
+  kPacketUnknownType = -7039,
+  kLoadPacketFailure = -7040,
+  kStoreManagerException = -7041,
+  kFindAccountHoldersError = -7042,
 
   // Message Handler (-8000)
 

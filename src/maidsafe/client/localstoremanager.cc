@@ -170,7 +170,7 @@ bool LocalStoreManager::KeyUnique(const std::string &hex_key, bool) {
   }
   return result;
 }
-
+/*
 int LocalStoreManager::DeletePacket(const std::string &hex_key,
                                     const std::string &signature,
                                     const std::string &public_key,
@@ -281,21 +281,62 @@ int LocalStoreManager::DeletePacket(const std::string &hex_key,
   }
 }
 
-int LocalStoreManager::StorePacket(const std::string &hex_packet_name,
-                                   const std::string &value,
-                                   PacketType,
-                                   DirType,
-                                   const std::string&,
-                                   IfPacketExists if_packet_exists) {
-  StorePacket_InsertToDb(hex_packet_name, value);
-  return -111111111;
+*/
+void LocalStoreManager::DeletePacket(const std::string &hex_packet_name,
+                                     const std::string &value,
+                                     PacketType system_packet_type,
+                                     DirType dir_type,
+                                     const std::string &msid,
+                                     boost::mutex *mutex,
+                                     boost::condition_variable *cond_var,
+                                     int *result) {
+}
+
+void LocalStoreManager::DeletePacket(const std::string &hex_packet_name,
+                                     PacketType system_packet_type,
+                                     DirType dir_type,
+                                     const std::string &msid,
+                                     boost::mutex *mutex,
+                                     boost::condition_variable *cond_var,
+                                     int *result) {
+}
+
+void LocalStoreManager::DeletePacket(const std::string &hex_packet_name,
+                                     const std::vector<std::string> values,
+                                     PacketType system_packet_type,
+                                     DirType dir_type,
+                                     const std::string &msid,
+                                     boost::mutex *mutex,
+                                     boost::condition_variable *cond_var,
+                                     int *result) {
+}
+
+
+void LocalStoreManager::StorePacket(const std::string &hex_packet_name,
+                                    const std::string &value,
+                                    PacketType,
+                                    DirType,
+                                    const std::string&,
+                                    IfPacketExists if_packet_exists,
+                                    boost::mutex *mutex,
+                                    boost::condition_variable *cond_var,
+                                    int *result) {
+  int res = StorePacket_InsertToDb(hex_packet_name, value);
+  if (mutex != NULL && cond_var != NULL && result != NULL) {
+    boost::mutex::scoped_lock lock(*mutex);
+    *result = res;
+    // TODO(Fraser#5#): 2010-01-26 - Fix logic to match MSM - actions variy
+    //                               depending on if_packet_exists value.
+    *result = -11111111;
+    cond_var->notify_one();
+  }
 }
 
 int LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,
                                               const std::string &value) {
   try {
-    if (hex_key == "") {
-      return -1;
+    if (hex_key.length() != 2 * kKeySize) {
+      return kIncorrectKeySize;
     }
     std::string s = "select value from network where key='" + hex_key + "';";
     std::string enc_value;

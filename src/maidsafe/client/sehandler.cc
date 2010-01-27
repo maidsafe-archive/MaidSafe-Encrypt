@@ -525,11 +525,21 @@ int SEHandler::EncryptDb(const std::string &dir_path,
     pd_dir_type = PDDIR_NOTSIGNED;
   else
     pd_dir_type = PDDIR_SIGNED;
-  return storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kAppend);
+
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  int result(kGeneralError);
+  storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kAppend, &mutex,
+                       &cond_var, &result);
+  while (result == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex);
+    cond_var.wait(lock);
+  }
+  return result;
 #ifdef DEBUG
 //   printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());
 #endif
-  return 0;
+//  return 0;
 //  } else {
 #ifdef DEBUG
 //    printf("SEHandler::EncryptDb dir_path(%s) failed.\n", dir_path.c_str());

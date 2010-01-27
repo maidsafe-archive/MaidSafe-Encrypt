@@ -194,13 +194,22 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
   ASSERT_TRUE(storemanager->KeyUnique(gp_name, false));
   std::string gp_content;
   gp.SerializeToString(&gp_content);
-  ASSERT_EQ(0, storemanager->StorePacket(gp_name, gp_content,
-      maidsafe::BUFFER, maidsafe::PRIVATE, "", maidsafe::kStoreFailure));
+  int result(maidsafe::kGeneralError);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  storemanager->StorePacket(gp_name, gp_content, maidsafe::BUFFER,
+      maidsafe::PRIVATE, "", maidsafe::kDoNothingReturnFailure, &mutex,
+      &cond_var, &result);
+  while (result == maidsafe::kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex);
+    cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kSuccess, result);
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
-  std::string result;
-  storemanager->LoadPacket(gp_name, &result);
+  std::string res;
+  storemanager->LoadPacket(gp_name, &res);
   maidsafe::GenericPacket gp_res;
-  ASSERT_TRUE(gp_res.ParseFromString(result));
+  ASSERT_TRUE(gp_res.ParseFromString(res));
   ASSERT_EQ(gp.data(), gp_res.data());
   ASSERT_EQ(gp.signature(), gp_res.signature());
 }
@@ -223,18 +232,29 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
       rsa_obj.public_key() + signed_public_key + non_hex_gp_name, "",
       crypto::STRING_STRING, false),
       "", rsa_obj.private_key(), crypto::STRING_STRING);
-  ASSERT_EQ(0, storemanager->StorePacket(gp_name, gp_content,
-      maidsafe::BUFFER, maidsafe::PRIVATE, "", maidsafe::kStoreFailure));
+  int result(maidsafe::kGeneralError);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  storemanager->StorePacket(gp_name, gp_content, maidsafe::BUFFER,
+      maidsafe::PRIVATE, "", maidsafe::kDoNothingReturnFailure, &mutex,
+      &cond_var, &result);
+  while (result == maidsafe::kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex);
+    cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kSuccess, result);
 
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
-  storemanager->DeletePacket(gp_name, signed_request, rsa_obj.public_key(),
-                             signed_public_key, maidsafe::SYSTEM_PACKET,
-                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
-  wait_for_result_lsm(cb, mutex_);
-  maidsafe::DeleteChunkResponse del_res;
-  ASSERT_TRUE(del_res.ParseFromString(cb.result_));
-  ASSERT_EQ(kAck, static_cast<int>(del_res.result()));
-  cb.Reset();
+
+  result = maidsafe::kGeneralError;
+  storemanager->DeletePacket(gp_name, gp_content, maidsafe::BUFFER,
+      maidsafe::PRIVATE, "", &mutex, &cond_var, &result);
+  while (result == maidsafe::kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex);
+    cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kSuccess, result);
+
   ASSERT_TRUE(storemanager->KeyUnique(gp_name, false));
 }
 
@@ -253,12 +273,22 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   std::string signed_public_key = crypto_obj.AsymSign(public_key, "",
                                   private_key, crypto::STRING_STRING);
 
-  ASSERT_EQ(0, storemanager->StorePacket(gp_name, gp_content,
-      maidsafe::BUFFER, maidsafe::PRIVATE, "", maidsafe::kStoreFailure));
+  int result(maidsafe::kGeneralError);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  storemanager->StorePacket(gp_name, gp_content, maidsafe::BUFFER,
+      maidsafe::PRIVATE, "", maidsafe::kDoNothingReturnFailure, &mutex,
+      &cond_var, &result);
+  while (result == maidsafe::kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex);
+    cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kSuccess, result);
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
 
   // Creating new public/private keys
-  rsa_obj.GenerateKeys(4096);
+  // TODO(Fraser#5#): 2010-01-27 - Replicate sending delete not as pwner
+/*  rsa_obj.GenerateKeys(4096);
 
   signed_public_key = crypto_obj.AsymSign(public_key, "", rsa_obj.private_key(),
                       crypto::STRING_STRING);
@@ -290,7 +320,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   ASSERT_EQ(kNack, static_cast<int>(del_res.result()));
   cb.Reset();
   del_res.Clear();
-  ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
+  ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));*/
 }
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {

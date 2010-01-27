@@ -662,7 +662,7 @@ TEST_F(PDVaultTest, FUNC_MAID_GetMissingChunk) {
     }
   }
 }
-
+/*
 TEST_F(PDVaultTest, FUNC_MAID_StoreSystemPacket) {
   std::map<std::string, std::string> packets;
   const boost::uint32_t kNumOfTestPackets(29);
@@ -838,6 +838,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreLoadPacketAsChunk) {
   ASSERT_EQ(ser_gp, values[0]);
   ASSERT_EQ(gps[names_for_packets.size() - 1], values[1]);
 }
+*/
 
 /*
 TEST_F(PDVaultTest, FUNC_MAID_UpdatePDDirNotSigned) {

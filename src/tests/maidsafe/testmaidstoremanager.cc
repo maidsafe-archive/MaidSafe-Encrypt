@@ -277,13 +277,13 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_PrepareToSendChunk) {
       .WillOnce(testing::Return(kFindValueFailure))  // Call 4
       .WillOnce(testing::Return(kFindValueError));  // Call 5
   EXPECT_CALL(msm, AddToWatchList(
-      testing::AllOf(testing::Field(&StoreData::non_hex_key_, non_hex_key),
-                     testing::Field(&StoreData::dir_type_, PRIVATE),
-                     testing::Field(&StoreData::public_key_,
+      testing::AllOf(testing::Field(&StoreData::non_hex_key, non_hex_key),
+                     testing::Field(&StoreData::dir_type, PRIVATE),
+                     testing::Field(&StoreData::public_key,
                                     client_pmid_keys_.public_key()),
-                     testing::Field(&StoreData::private_key_,
+                     testing::Field(&StoreData::private_key,
                                     client_pmid_keys_.private_key()),
-                     testing::Field(&StoreData::public_key_signature_,
+                     testing::Field(&StoreData::public_key_signature,
                                     client_pmid_public_signature_)),
       testing::_))
           .Times(2);  // Calls 1 & 2
@@ -292,13 +292,13 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_PrepareToSendChunk) {
           .WillOnce(testing::Return(kSuccess))  // Call 2
           .WillOnce(testing::Return(kLoadedChunkEmpty));  // Call 3
   EXPECT_CALL(msm, SendChunk(
-      testing::AllOf(testing::Field(&StoreData::non_hex_key_, non_hex_key),
-                     testing::Field(&StoreData::dir_type_, PRIVATE),
-                     testing::Field(&StoreData::public_key_,
+      testing::AllOf(testing::Field(&StoreData::non_hex_key, non_hex_key),
+                     testing::Field(&StoreData::dir_type, PRIVATE),
+                     testing::Field(&StoreData::public_key,
                                     client_pmid_keys_.public_key()),
-                     testing::Field(&StoreData::private_key_,
+                     testing::Field(&StoreData::private_key,
                                     client_pmid_keys_.private_key()),
-                     testing::Field(&StoreData::public_key_signature_,
+                     testing::Field(&StoreData::public_key_signature,
                                     client_pmid_public_signature_))))
           .Times(2 * kMinChunkCopies);  // Call 3 (x 4) & Call 4 (x 4)
 
@@ -587,18 +587,18 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
       key_id, public_key, public_key_signature, private_key);
   std::string peername = crypto_.Hash("peer", "", crypto::STRING_STRING, false);
   kad::Contact peer(peername, "192.192.1.1", 9999);
-  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key_,
-      kStoreChunk, store_data.size_, kMinChunkCopies, kMaxStoreFailures));
-  StoreTask task(store_data.non_hex_key_, kStoreChunk, store_data.size_,
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key,
+      kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
+  StoreTask task(store_data.non_hex_key, kStoreChunk, store_data.size,
       kMinChunkCopies, kMaxStoreFailures);  // For call 7
   task.active_subtask_count_ = 1;  // For call 7
-  StoreTask task1(store_data.non_hex_key_, kStoreChunk, store_data.size_,
+  StoreTask task1(store_data.non_hex_key, kStoreChunk, store_data.size,
       kMinChunkCopies, kMaxStoreFailures);  // For call 11
   task1.success_count_ = 1;  // For call 11
-  StoreTask task2(store_data.non_hex_key_, kStoreChunk, store_data.size_,
+  StoreTask task2(store_data.non_hex_key, kStoreChunk, store_data.size,
       kMinChunkCopies, kMaxStoreFailures);  // For call 12
   task2.success_count_ = 2;  // For call 12
-  StoreTask task3(store_data.non_hex_key_, kStoreChunk, store_data.size_,
+  StoreTask task3(store_data.non_hex_key, kStoreChunk, store_data.size,
       kMinChunkCopies, kMaxStoreFailures);  // For call 13
   task3.success_count_ = 3;  // For call 13
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
@@ -663,24 +663,24 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
   // The follwoing should cause the task to be removed
   ASSERT_EQ(kStoreCancelled, msm.SendChunk(store_data));  // Call 2
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
-  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key_,
-      kStoreChunk, store_data.size_, kMinChunkCopies, kMaxStoreFailures));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key,
+      kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
   ASSERT_EQ(kGetStorePeerError, msm.SendChunk(store_data));  // Call 3
   ASSERT_EQ(kTaskCancelledOffline, msm.SendChunk(store_data));  // Call 4
   ASSERT_EQ(kSendPrepFailure, msm.SendChunk(store_data));  // Call 5
   // The following implies the task is deleted - so delete the task and restart
   ASSERT_EQ(kStoreAlreadyCompleted, msm.SendChunk(store_data));  // Call 6
-  ASSERT_EQ(kSuccess, msm.tasks_handler_.DeleteTask(store_data.non_hex_key_,
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.DeleteTask(store_data.non_hex_key,
       kStoreChunk, ""));
-  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key_,
-      kStoreChunk, store_data.size_, kMinChunkCopies, kMaxStoreFailures));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key,
+      kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
   // The following should cause the task to be removed
   ASSERT_EQ(kStoreCancelled, msm.SendChunk(store_data));  // Call 7
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
-  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key_,
-      kStoreChunk, store_data.size_, kMinChunkCopies, kMaxStoreFailures));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key,
+      kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
   ASSERT_EQ(kTaskCancelledOffline, msm.SendChunk(store_data));  // Call 8
   ASSERT_EQ(kSendContentFailure, msm.SendChunk(store_data));  // Call 9
@@ -693,7 +693,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 }
-
+/*
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePacket) {
   MockMsmSendChunk msm(client_chunkstore_);
   std::string packetname_hashable = crypto_.Hash("Hashable", "",
@@ -721,12 +721,12 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePacket) {
       .WillRepeatedly(testing::WithArgs<1, 2>(testing::Invoke(
            boost::bind(&test_msm::ConditionNotifyNoFlag, 0, _1, _2))));
   ASSERT_EQ(-1, msm.StorePacket(hex_packetname_hashable,
-            "Hashable", MPID, PRIVATE, "", kStoreFailure));
+            "Hashable", MPID, PRIVATE, "", kDoNothingReturnFailure));
   ASSERT_EQ(kSuccess, msm.StorePacket(hex_packetname_hashable, "Hashable",
-            ANMID, PRIVATE, "", kStoreFailure));
+            ANMID, PRIVATE, "", kDoNothingReturnFailure));
   ASSERT_EQ(kPacketUnknownType, msm.StorePacket(
             hex_packetname_non_hashable, "eee", BUFFER_INFO, PRIVATE, "",
-            kStoreFailure));
+            kDoNothingReturnFailure));
 }
 
 class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
@@ -746,12 +746,8 @@ class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
                                  const std::vector<kad::Contact> &exclude,
                                  kad::Contact *new_peer,
                                  bool *local));
-  MOCK_METHOD3(AssessPacketStoreResults, int(
-      std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
-      std::vector< boost::shared_ptr<ChunkHolder> > *failed_packet_holders,
-      std::string *common_checksum));
 };
-/*
+
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreNewPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
   crypto::RsaKeyPair anmid_keys;
