@@ -865,7 +865,8 @@ int MaidsafeStoreManager::AddBPMessage(
   }
   // Add the message to each receiver's bp
   for (size_t i = 0; i < receivers.size(); ++i) {
-    cbph_.AddMessage(bi_input_params, ss_->GetContactPublicKey(receivers.at(i)),
+    cbph_.AddMessage(bi_input_params, ss_->PublicUsername(),
+        ss_->GetContactPublicKey(receivers.at(i)),
         receivers.at(i), message, type, boost::bind(
         &BPCallbackObj::BPOperationCallback, &bp_callback_objs.at(i), _1));
   }

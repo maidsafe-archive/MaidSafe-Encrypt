@@ -77,7 +77,8 @@ PDVault::PDVault(const std::string &pmid_public,
       poh_(),
       thread_pool_(),
       pending_ious_thread_(),
-      prune_pending_ops_thread_() {
+      prune_pending_ops_thread_(),
+      msv_() {
   vault_chunkstore_.Init();
   co_.set_symm_algorithm(crypto::AES_256);
   co_.set_hash_algorithm(crypto::SHA_512);
@@ -92,7 +93,7 @@ PDVault::PDVault(const std::string &pmid_public,
   vault_rpcs_.SetOwnId(non_hex_pmid_);
   thread_pool_.setMaxThreadCount(5);
   poh_.SetPmid(non_hex_pmid_);
-  msv_.set_id(pmid_);
+  msv_.set_id(non_hex_pmid_);
   knode_.set_signature_validator(&msv_);
 }
 

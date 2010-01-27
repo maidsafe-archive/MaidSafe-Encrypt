@@ -580,7 +580,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessage) {
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
-  cbph.AddMessage(bpip, keys.public_key(), recv_id, "Hello World",
+  cbph.AddMessage(bpip, "", keys.public_key(), recv_id, "Hello World",
     maidsafe::ADD_CONTACT_RQST,
     boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
@@ -619,7 +619,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgNoReferences) {
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
-  cbph.AddMessage(bpip, keys.public_key(), recv_id, "Hello World",
+  cbph.AddMessage(bpip, "", keys.public_key(), recv_id, "Hello World",
     maidsafe::ADD_CONTACT_RQST,
     boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
@@ -659,7 +659,7 @@ TEST_F(TestClientBP, FUNC_MAID_AddMsgFailAllFindContacts) {
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
-  cbph.AddMessage(bpip, keys.public_key(), recv_id, "Hello World",
+  cbph.AddMessage(bpip, "", keys.public_key(), recv_id, "Hello World",
     maidsafe::ADD_CONTACT_RQST,
     boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
@@ -702,7 +702,7 @@ TEST_F(TestClientBP, FUNC_MAID_AddMsgFailOneFindContacts) {
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
-  cbph.AddMessage(bpip, keys.public_key(), recv_id, "Hello World",
+  cbph.AddMessage(bpip, "", keys.public_key(), recv_id, "Hello World",
     maidsafe::ADD_CONTACT_RQST,
     boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
@@ -743,7 +743,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgFailAddMessageRpc) {
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
-  cbph.AddMessage(bpip, keys.public_key(), recv_id, "Hello World",
+  cbph.AddMessage(bpip, "", keys.public_key(), recv_id, "Hello World",
     maidsafe::ADD_CONTACT_RQST,
     boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
@@ -974,7 +974,7 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfo) {
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
                         crypto::STRING_STRING, false);
 
-  cbph.ContactInfo(bpip, "el nalga derecha",
+  cbph.ContactInfo(bpip, "el nalga derecha", "", "",
                    boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1015,7 +1015,7 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoNoReferences) {
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
-  cbph.ContactInfo(bpip, "el nalga derecha",
+  cbph.ContactInfo(bpip, "el nalga derecha", "", "",
                    boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1054,7 +1054,7 @@ TEST_F(TestClientBP, FUNC_MAID_ContactInfoFailAllFindContacts) {
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
-  cbph.ContactInfo(bpip, "el nalga derecha",
+  cbph.ContactInfo(bpip, "el nalga derecha", "", "",
                    boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1097,7 +1097,7 @@ TEST_F(TestClientBP, FUNC_MAID_ContactInfoOneFindContacts) {
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
-  cbph.ContactInfo(bpip, "el nalga derecha",
+  cbph.ContactInfo(bpip, "el nalga derecha", "", "",
                    boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1140,7 +1140,7 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoFailAddMessageRpc) {
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
-  cbph.ContactInfo(bpip, "el nalga derecha",
+  cbph.ContactInfo(bpip, "el nalga derecha", "", "",
                    boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));

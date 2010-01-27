@@ -94,9 +94,9 @@ VaultService::VaultService(const std::string &pmid_public,
       thread_pool_() {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  pmid_ = co.Hash(pmid_public + pmid_public_signature_, "",
-                  crypto::STRING_STRING, true);
-  non_hex_pmid_ = base::DecodeFromHex(pmid_);
+  non_hex_pmid_ = co.Hash(pmid_public_ + pmid_public_signature_, "",
+                  crypto::STRING_STRING, false);
+  pmid_ = base::EncodeToHex(pmid_);
   thread_pool_.setMaxThreadCount(5);
 }
 
@@ -1315,7 +1315,7 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     // TTL set to 24 hrs
     std::string request_signature = co.AsymSign(co.Hash(pmid_public_ +
       pmid_public_signature_ + request->bufferpacket_name(), "",
-      crypto::STRING_STRING, true), "", pmid_private_, crypto::STRING_STRING);
+      crypto::STRING_STRING, false), "", pmid_private_, crypto::STRING_STRING);
     kad::SignedRequest sr;
     sr.set_signer_id(non_hex_pmid_);
     sr.set_public_key(pmid_public_);
@@ -1469,9 +1469,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL)
-      printf("In VaultService::GetBPMessages(%i),request is not initialized.\n",
-           knode_->host_port());
+    printf("In VaultService::GetBPMessages(%i),request is not initialized.\n",
+         knode_->host_port());
 #endif
     return;
   }
@@ -1483,10 +1482,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to validate signed public key.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to validate signed public key.\n");
 #endif
     return;
   }
@@ -1498,10 +1495,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to validate signed request.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
 #endif
     return;
   }
@@ -1511,10 +1506,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to load the local chunk where the BP is held.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to load the local chunk where the BP is held.\n");
 #endif
     return;
   }
@@ -1525,10 +1518,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to extract the messages.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to extract the messages.\n");
 #endif
     return;
   }
@@ -1540,10 +1531,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to update the local chunk store.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to update the local chunk store.\n");
 #endif
     return;
   }
@@ -1566,37 +1555,19 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
 #ifdef DEBUG
     if (knode_ != NULL)
       printf("In VaultService::AddBPMessage(%i), request is not initialized.\n",
+             knode_->host_port());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->signed_public_key(), request->signed_request(),
+      request->bufferpacket_name(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::AddBPMessage(%i), request/id doesn't validate.\n",
            knode_->host_port());
-#endif
-    return;
-  }
-
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  if (!co.AsymCheckSig(request->public_key(), request->signed_public_key(),
-      request->public_key(), crypto::STRING_STRING)) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
-      printf("failed to validate signed public key.\n");
-    }
-#endif
-    return;
-  }
-
-  if (!co.AsymCheckSig(co.Hash(request->public_key() +
-      request->signed_public_key() + request->bufferpacket_name(), "",
-      crypto::STRING_STRING, false), request->signed_request(),
-      request->public_key(), crypto::STRING_STRING)) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
-      printf("failed to validate signed request.\n");
-    }
 #endif
     return;
   }
@@ -1641,7 +1612,6 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     return;
   }
 
-  response->set_result(kAck);
   done->Run();
 }
 
@@ -1669,7 +1639,7 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::ContactInfo(%i), request does not validate.\n",
+    printf("In VaultService::ContactInfo(%i), request/id does not validate.\n",
            knode_->host_port());
 #endif
     return;

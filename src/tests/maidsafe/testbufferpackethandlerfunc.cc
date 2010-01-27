@@ -68,12 +68,21 @@ class BPCallback {
     result = res;
     msgs = rec_msgs;
   }
+  void ContactInfo_CB(const maidsafe::ReturnCode &res,
+                      const maidsafe::EndPoint &ep,
+                      const boost::uint32_t &st) {
+    result = res;
+    end_point = ep;
+    status = st;
+  }
   void Reset() {
     result = maidsafe::kGeneralError;
     msgs.clear();
   }
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
+  maidsafe::EndPoint end_point;
+  boost::uint32_t status;
 };
 
 class CBPHandlerTest : public testing::Test {
@@ -91,7 +100,7 @@ class CBPHandlerTest : public testing::Test {
   virtual void SetUp() {
     trans = new transport::Transport;
     ch_man = new rpcprotocol::ChannelManager(trans);
-    knode.reset(new kad::KNode(ch_man, trans, kad::VAULT, keys.private_key(),
+    knode.reset(new kad::KNode(ch_man, trans, kad::CLIENT, keys.private_key(),
       keys.public_key(), false, false));
     bp_rpcs.reset(new maidsafe::BufferPacketRpcsImpl(trans, ch_man));
     cbph = new maidsafe::ClientBufferPacketHandler(bp_rpcs, knode);
@@ -151,44 +160,59 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
   std::string owner_pubkey(keys.public_key()),
-    owner_privkey(keys.private_key());
+              owner_privkey(keys.private_key());
   BPCallback cb;
   std::string signed_pub_key = cryp.AsymSign(owner_pubkey, "",
-    owner_privkey, crypto::STRING_STRING);
+                               owner_privkey, crypto::STRING_STRING);
   maidsafe::BPInputParameters bpip = {cryp.Hash("publicname", "",
-    crypto::STRING_STRING, false), owner_pubkey, owner_privkey};
+                                      crypto::STRING_STRING, false),
+                                      owner_pubkey, owner_privkey};
 
   std::vector<std::string> users;
   cbph->ModifyOwnerInfo(bpip, 0, users, boost::bind(
-    &BPCallback::BPOperation_CB, &cb, _1));
+                        &BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
+  printf("Step 1\n");
 
   cb.Reset();
   cbph->CreateBufferPacket(bpip, boost::bind(&BPCallback::BPOperation_CB,
-    &cb, _1));
+                           &cb, _1));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   keys.ClearKeys();
   keys.GenerateKeys(4096);
-
+  printf("Step 2\n");
 
   std::string sender_id("user1");
-  maidsafe::BPInputParameters bpip1 = {sender_id, keys.public_key(),
-    keys.private_key()};
+  std::string sender_pmid = cryp.Hash(keys.public_key() + cryp.AsymSign(
+                            keys.public_key(), "", keys.private_key(),
+                            crypto::STRING_STRING), "",
+                            crypto::STRING_STRING, false);
+  maidsafe::BPInputParameters bpip1 = {sender_pmid, keys.public_key(),
+                                       keys.private_key()};
   std::string recv_id = cryp.Hash("publicname", "", crypto::STRING_STRING,
-    false);
+                        false);
 
   cb.Reset();
-  cbph->AddMessage(bpip1, owner_pubkey, recv_id, "Hello World",
-    maidsafe::INSTANT_MSG,
-    boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
+  cbph->AddMessage(bpip1, sender_id, owner_pubkey, recv_id, "Hello World",
+                   maidsafe::INSTANT_MSG, boost::bind(
+                   &BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPAddMessageError, cb.result);
+  printf("Step 3a\n");
+
+  cb.Reset();
+  cbph->ContactInfo(bpip1, sender_id, "publicname", owner_pubkey, boost::bind(
+                    &BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
+  while (cb.result == -1)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ(maidsafe::kGetBPInfoError, cb.result);
+  printf("Step 3b\n");
 
   cb.Reset();
   cbph->GetMessages(bpip, boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2));
@@ -196,24 +220,38 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
   ASSERT_TRUE(cb.msgs.empty());
+  printf("Step 4\n");
 
   users.push_back(cryp.Hash(sender_id, "", crypto::STRING_STRING, false));
   cb.Reset();
 
-  cbph->ModifyOwnerInfo(bpip, 0, users, boost::bind(
-    &BPCallback::BPOperation_CB, &cb, _1));
+  cbph->ModifyOwnerInfo(bpip, 5, users, boost::bind(
+                        &BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
+  printf("Step 5\n");
 
   cb.Reset();
 
-  cbph->AddMessage(bpip1, owner_pubkey, recv_id, "Hello World",
-    maidsafe::INSTANT_MSG,
-    boost::bind(&BPCallback::BPOperation_CB, &cb, _1));
+  cbph->AddMessage(bpip1, sender_id, owner_pubkey, recv_id, "Hello World",
+                   maidsafe::INSTANT_MSG, boost::bind(
+                   &BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
+  printf("Step 6a\n");
+
+  cb.Reset();
+  cbph->ContactInfo(bpip1, sender_id, recv_id, owner_pubkey, boost::bind(
+                    &BPCallback::ContactInfo_CB, &cb, _1, _2, _3));
+  while (cb.result == -1)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ(maidsafe::kSuccess, cb.result);
+  ASSERT_EQ(5, cb.status);
+  ASSERT_EQ(knode->host_ip(), cb.end_point.ip());
+  ASSERT_EQ(knode->host_port(), cb.end_point.port());
+  printf("Step 6b\n");
 
   cb.Reset();
   cbph->GetMessages(bpip, boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2));
@@ -223,6 +261,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   ASSERT_EQ(size_t(1), cb.msgs.size());
   ASSERT_EQ("Hello World", cb.msgs.front().message());
   ASSERT_EQ(sender_id, cb.msgs.front().sender());
+  printf("Step 7\n");
 
   // Request BPs not belonging to the sender
   bpip1.sign_id = bpip.sign_id;
@@ -232,13 +271,15 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
+  printf("Step 8\n");
 
   cb.Reset();
   cbph->ModifyOwnerInfo(bpip1, 0, users, boost::bind(
-    &BPCallback::BPOperation_CB, &cb, _1));
+                        &BPCallback::BPOperation_CB, &cb, _1));
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
+  printf("Step 9\n");
 }
 
 int main(int argc, char **argv) {

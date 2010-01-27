@@ -82,8 +82,10 @@ struct CreateBPCallbackData {
 };
 
 struct ModifyBPCallbackData {
-  ModifyBPCallbackData() : ctrl(NULL), modify_response(NULL),
-    add_msg_response(NULL), get_msgs_response(NULL), ctc(), data() {}
+  ModifyBPCallbackData()
+    : ctrl(NULL), modify_response(NULL),
+      add_msg_response(NULL), get_msgs_response(NULL),
+      contactinfo_response(NULL), ctc(), data() {}
   rpcprotocol::Controller *ctrl;
   ModifyBPInfoResponse *modify_response;
   AddBPMessageResponse *add_msg_response;
@@ -108,11 +110,13 @@ class ClientBufferPacketHandler {
   void ModifyOwnerInfo(const BPInputParameters &args, const int &status,
     const std::vector<std::string> &users, bp_operations_cb cb);
   void GetMessages(const BPInputParameters &args, bp_getmessages_cb cb);
-  void AddMessage(const BPInputParameters &args,
+  void AddMessage(const BPInputParameters &args, const std::string &my_pu,
     const std::string &recver_public_key, const std::string &receiver_id,
     const std::string &message, const MessageType &m_type, bp_operations_cb cb);
-  void ContactInfo(const BPInputParameters &args,
-                   const std::string &public_username,
+  void ContactInfo(const BPInputParameters &my_signing_credentials,
+                   const std::string &my_pu,
+                   const std::string &recs_pu,
+                   const std::string &recs_pk,
                    bp_getcontactinfo_cb cicb);
  private:
   void IterativeStore(boost::shared_ptr<CreateBPData> data);
