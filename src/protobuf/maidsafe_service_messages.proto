@@ -277,7 +277,7 @@ message VaultStatusResponse {
                                           // VaultCommunication
 }
 
-enum OwnVaultResult {
+enum OwnLocalVaultResult {
   OWNED_SUCCESS = 0;
   VAULT_ALREADY_OWNED = 1;
   VAULT_IS_DOWN = 2;
@@ -290,7 +290,7 @@ enum OwnVaultResult {
   INVALID_PMID_NAME = 9;
 }
 
-message OwnVaultRequest {
+message SetLocalVaultOwnedRequest {
   required bytes public_key = 1;
   required bytes private_key = 2;
   required bytes signed_public_key = 3;
@@ -299,8 +299,8 @@ message OwnVaultRequest {
   required uint64 space = 6;
 }
 
-message OwnVaultResponse {
-  required OwnVaultResult result = 1;
+message SetLocalVaultOwnedResponse {
+  required OwnLocalVaultResult result = 1;
   optional bytes pmid_name = 2;
 }
 
@@ -311,9 +311,9 @@ enum VaultStatus {
   ISOWNRPC_CANCELLED = 3;
 }
 
-message IsOwnedRequest {}
+message LocalVaultOwnedRequest {}
 
-message IsOwnedResponse {
+message LocalVaultOwnedResponse {
   required VaultStatus status = 1;
 }
 

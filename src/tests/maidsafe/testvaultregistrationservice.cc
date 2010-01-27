@@ -81,7 +81,7 @@ class OwnershipSenderHandler {
     result_ = maidsafe::INVALID_OWNREQUEST;
     remote_vault_status_ = maidsafe::NOT_OWNED;
   }
-  void Callback(const maidsafe::OwnVaultResponse *response,
+  void Callback(const maidsafe::SetLocalVaultOwnedResponse *response,
       rpcprotocol::Controller *ctrl) {
     callback_arrived_ = true;
     if ((ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kTimeOut) ||
@@ -94,7 +94,7 @@ class OwnershipSenderHandler {
     if (response->has_pmid_name())
       pmid_name_ = response->pmid_name();
   }
-  void Callback1(const maidsafe::IsOwnedResponse *response,
+  void Callback1(const maidsafe::LocalVaultOwnedResponse *response,
     rpcprotocol::Controller *ctrl) {
     callback_arrived_ = true;
     if ((ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kTimeOut) ||
@@ -104,14 +104,14 @@ class OwnershipSenderHandler {
     remote_vault_status_ = response->status();
   }
   std::string pmid_name() const { return pmid_name_; }
-  maidsafe::OwnVaultResult result() const { return result_; }
+  maidsafe::OwnLocalVaultResult result() const { return result_; }
   bool callback_arrived() const { return callback_arrived_; }
   maidsafe::VaultStatus remote_vault_status() const {
     return remote_vault_status_;
   }
  private:
   bool callback_arrived_;
-  maidsafe::OwnVaultResult result_;
+  maidsafe::OwnLocalVaultResult result_;
   std::string pmid_name_;
   maidsafe::VaultStatus remote_vault_status_;
 };
@@ -162,7 +162,7 @@ class VaultRegistrationTest : public testing::Test {
   boost::shared_ptr<maidsafe_vault::RegistrationService> service;
 };
 
-TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectOwnVault) {
+TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectSetLocalVaultOwned) {
   ASSERT_EQ(maidsafe::NOT_OWNED, service->status());
   crypto::Crypto cobj;
   crypto::RsaKeyPair keypair;
@@ -177,7 +177,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectOwnVault) {
   rpcprotocol::Channel out_channel(&client, &client_transport_, "127.0.0.1",
       server_transport_.listening_port(), "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice(&out_channel);
-  maidsafe::OwnVaultRequest request;
+  maidsafe::SetLocalVaultOwnedRequest request;
   request.set_private_key(keypair.private_key());
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key(cobj.AsymSign(keypair.public_key(), "",
@@ -185,16 +185,16 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectOwnVault) {
   request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
-  maidsafe::OwnVaultResponse response;
+  maidsafe::SetLocalVaultOwnedResponse response;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done1);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done1);
   while (!handler.received_rpc())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   service->set_status(maidsafe::OWNED);
-  service->ReplyOwnVaultRequest(false);
+  service->ReplySetLocalVaultOwnedRequest(false);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::OWNED_SUCCESS, senderhandler.result());
@@ -219,14 +219,14 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectOwnVault) {
   service->set_status(maidsafe::NOT_OWNED);
 
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done2);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done2);
   while (!handler.received_rpc())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   service->set_status(maidsafe::OWNED);
-  service->ReplyOwnVaultRequest(false);
+  service->ReplySetLocalVaultOwnedRequest(false);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::OWNED_SUCCESS, senderhandler.result());
@@ -251,19 +251,19 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   rpcprotocol::Channel out_channel(&client, &client_transport_, "127.0.0.1",
       server_transport_.listening_port(), "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice(&out_channel);
-  maidsafe::OwnVaultRequest request;
+  maidsafe::SetLocalVaultOwnedRequest request;
   request.set_private_key(keypair.private_key());
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key("invalidsignedpublickey");
   request.set_port(server_transport_.listening_port()+1);
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
-  maidsafe::OwnVaultResponse response;
+  maidsafe::SetLocalVaultOwnedResponse response;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done1);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done1);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::INVALID_RSA_KEYS, senderhandler.result());
@@ -287,10 +287,10 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done2);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done2);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::INVALID_RSA_KEYS, senderhandler.result());
@@ -314,10 +314,10 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done3);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done3);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::INVALID_RSA_KEYS, senderhandler.result());
@@ -346,10 +346,10 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done4);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done4);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::INVALID_RSA_KEYS, senderhandler.result());
@@ -373,10 +373,10 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done5 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done5);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done5);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::INVALID_RSA_KEYS, senderhandler.result());
@@ -400,10 +400,10 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done6 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done6);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done6);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::INVALID_RSA_KEYS, senderhandler.result());
@@ -429,10 +429,10 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done7 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done7);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done7);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::INVALID_PORT, senderhandler.result());
@@ -458,10 +458,10 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(0);
   google::protobuf::Closure *done8 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done8);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done8);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::NO_SPACE_ALLOCATED, senderhandler.result());
@@ -489,10 +489,10 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(info.available + 10);
   google::protobuf::Closure *done9 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done9);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done9);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::NOT_ENOUGH_SPACE, senderhandler.result());
@@ -518,10 +518,10 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done10 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done10);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done10);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::VAULT_ALREADY_OWNED, senderhandler.result());
@@ -547,32 +547,32 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_chunkstore_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done11 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done11);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done11);
   while (!handler.received_rpc())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  service->ReplyOwnVaultRequest(true);
+  service->ReplySetLocalVaultOwnedRequest(true);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::FAILED_TO_START_VAULT, senderhandler.result());
   ASSERT_EQ(std::string(""), senderhandler.pmid_name());
 }
 
-TEST_F(VaultRegistrationTest, FUNC_MAID_IsOwnedRpc) {
+TEST_F(VaultRegistrationTest, FUNC_MAID_LocalVaultOwnedRpc) {
   rpcprotocol::Controller ctrl;
   rpcprotocol::Channel out_channel(&client, &client_transport_, "127.0.0.1",
       server_transport_.listening_port(), "", 0, "", 0);
-  maidsafe::IsOwnedRequest request;
-  maidsafe::IsOwnedResponse response;
+  maidsafe::LocalVaultOwnedRequest request;
+  maidsafe::LocalVaultOwnedResponse response;
   OwnershipSenderHandler senderhandler;
   maidsafe::VaultRegistration::Stub stubservice(&out_channel);
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::IsOwnedResponse*,
+      OwnershipSenderHandler, const maidsafe::LocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback1, &response, &ctrl);
-  stubservice.IsVaultOwned(&ctrl, &request, &response, done1);
+  stubservice.LocalVaultOwned(&ctrl, &request, &response, done1);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::NOT_OWNED, senderhandler.remote_vault_status());
@@ -581,10 +581,10 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_IsOwnedRpc) {
   senderhandler.Reset();
   service->set_status(maidsafe::OWNED);
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::IsOwnedResponse*,
+      OwnershipSenderHandler, const maidsafe::LocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback1, &response, &ctrl);
-  stubservice.IsVaultOwned(&ctrl, &request, &response, done3);
+  stubservice.LocalVaultOwned(&ctrl, &request, &response, done3);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::OWNED, senderhandler.remote_vault_status());
@@ -596,10 +596,10 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_IsOwnedRpc) {
       server_transport_.listening_port()+1, "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice2(&out_channel2);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::IsOwnedResponse*,
+      OwnershipSenderHandler, const maidsafe::LocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback1, &response, &ctrl);
-  stubservice2.IsVaultOwned(&ctrl, &request, &response, done2);
+  stubservice2.LocalVaultOwned(&ctrl, &request, &response, done2);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::NOT_OWNED, senderhandler.remote_vault_status());
@@ -656,7 +656,7 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
   rpcprotocol::Channel out_channel(&client, &client_transport, "127.0.0.1",
       kLocalPort, "", 0, "", 0);
   maidsafe::VaultRegistration::Stub stubservice(&out_channel);
-  maidsafe::OwnVaultRequest request;
+  maidsafe::SetLocalVaultOwnedRequest request;
   request.set_private_key(keypair.private_key());
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key(cobj.AsymSign(keypair.public_key(), "",
@@ -664,12 +664,12 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
   request.set_port(0);
   request.set_chunkstore_dir("ChunkStore");
   request.set_space(1000);
-  maidsafe::OwnVaultResponse response;
+  maidsafe::SetLocalVaultOwnedResponse response;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done1);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done1);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::OWNED_SUCCESS, senderhandler.result());
@@ -679,10 +679,10 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
   senderhandler.Reset();
   ctrl.Reset();
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::OwnVaultResponse*,
+      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
-  stubservice.OwnVault(&ctrl, &request, &response, done2);
+  stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done2);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::VAULT_ALREADY_OWNED, senderhandler.result());
@@ -691,13 +691,13 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
   response.Clear();
   senderhandler.Reset();
   ctrl.Reset();
-  maidsafe::IsOwnedRequest req;
-  maidsafe::IsOwnedResponse resp;
+  maidsafe::LocalVaultOwnedRequest req;
+  maidsafe::LocalVaultOwnedResponse resp;
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::IsOwnedResponse*,
+      OwnershipSenderHandler, const maidsafe::LocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback1, &resp, &ctrl);
-  stubservice.IsVaultOwned(&ctrl, &req, &resp, done3);
+  stubservice.LocalVaultOwned(&ctrl, &req, &resp, done3);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::OWNED, senderhandler.remote_vault_status());

@@ -33,6 +33,7 @@ service MaidsafeService {
 }
 
 service VaultRegistration {
-  rpc OwnVault(OwnVaultRequest) returns (OwnVaultResponse);
-  rpc IsVaultOwned(IsOwnedRequest) returns (IsOwnedResponse);
+  rpc SetLocalVaultOwned(SetLocalVaultOwnedRequest) returns
+      (SetLocalVaultOwnedResponse);
+  rpc LocalVaultOwned(LocalVaultOwnedRequest) returns (LocalVaultOwnedResponse);
 }
