@@ -561,7 +561,7 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   params["PIN"] = pin;
   std::string mid_name = midPacket->PacketName(&params);
   ASSERT_EQ(0, sm->StorePacket(mid_name, "rubish data with same mid name",
-      MID, maidsafe::PRIVATE, ""));
+      MID, maidsafe::PRIVATE, "", kStoreFailure));
 
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(sm);

@@ -525,7 +525,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
     pd_dir_type = PDDIR_NOTSIGNED;
   else
     pd_dir_type = PDDIR_SIGNED;
-  return storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid);
+  return storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kAppend);
 #ifdef DEBUG
 //   printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());
 #endif

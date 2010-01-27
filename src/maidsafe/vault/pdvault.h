@@ -203,8 +203,8 @@ class PDVault {
 
 
 
-  void SyncVault(base::callback_func_type cb) {}
-  void RepublishChunkRef(base::callback_func_type cb) {}
+  void SyncVault(base::callback_func_type) {}
+  void RepublishChunkRef(base::callback_func_type) {}
 /*
   void ValidityCheck(const std::string &chunk_name,
                      const std::string &random_data,

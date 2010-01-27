@@ -289,107 +289,6 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
   done->Run();
 }
 
-void VaultService::StorePacket(google::protobuf::RpcController*,
-                               const maidsafe::StorePacketRequest *request,
-                               maidsafe::StorePacketResponse *response,
-                               google::protobuf::Closure *done) {
-  response->set_pmid(non_hex_pmid_);
-  if (!request->IsInitialized() || request->signed_data_size() == 0) {
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-
-  // Check Type of data
-  if (request->data_type() != maidsafe::PDDIR_NOTSIGNED) {
-    // Checking request has public key, signed public key and signed
-    // request
-    if (!request->has_public_key_signature()
-        || !request->has_request_signature() || !request->has_public_key()
-        || !request->has_key_id()) {
-      response->set_result(kNack);
-      done->Run();
-      return;
-    }
-
-    // Checking signature is valid
-    if (!ValidateSignedRequest(request->public_key(),
-        request->public_key_signature(), request->request_signature(),
-        request->packetname(), request->key_id())) {
-      response->set_result(kNack);
-      done->Run();
-      return;
-    }
-
-    // Validating data is signed by the same person
-    for (int i = 0; i < request->signed_data_size(); ++i) {
-      if (!ValidateSystemPacket(request->signed_data(i),
-          request->public_key())) {
-        response->set_result(kNack);
-        done->Run();
-        return;
-      }
-    }
-
-    // Now we can store :)
-    int store_result = -1;
-    if (vault_chunkstore_->HasPacket(request->packetname())) {
-      if (request->append()) {
-        // Append Packet
-        if (request->signed_data_size() == 1)
-          store_result = vault_chunkstore_->AppendToPacket(
-                         request->packetname(), request->signed_data(0),
-                         request->public_key());
-      } else {
-        // Overwrite Packet
-        std::vector<maidsafe::GenericPacket> values;
-        for (int i = 0; i < request->signed_data_size(); ++i)
-          values.push_back(request->signed_data(i));
-        store_result = vault_chunkstore_->OverwritePacket(
-                       request->packetname(), values, request->public_key());
-      }
-      if (store_result == kSuccess)
-        response->set_result(kAck);
-      else
-        response->set_result(kNack);
-      done->Run();
-      return;
-    }
-  }
-  // Store Packet
-  if (vault_chunkstore_->StorePacket(request->packetname(),
-      request->signed_data(0)) == kSuccess)
-    response->set_result(kAck);
-  else
-    response->set_result(kNack);
-
-  // Storing chunk reference
-  if (response->result() == kAck && knode_ != NULL) {
-    kad::SignedValue sig_value;
-    sig_value.set_value(non_hex_pmid_);
-    crypto::Crypto co;
-    co.set_hash_algorithm(crypto::SHA_512);
-    sig_value.set_value_signature(co.AsymSign(non_hex_pmid_, "", pmid_private_,
-      crypto::STRING_STRING));
-    // TTL set to 24 hrs
-    std::string request_signature = co.AsymSign(
-        co.Hash(pmid_public_ + pmid_public_signature_ + request->packetname(),
-                "", crypto::STRING_STRING, true),
-        "",
-        pmid_private_,
-        crypto::STRING_STRING);
-    kad::SignedRequest sr;
-    sr.set_signer_id(non_hex_pmid_);
-    sr.set_public_key(pmid_public_);
-    sr.set_signed_public_key(pmid_public_signature_);
-    sr.set_signed_request(request_signature);
-    knode_->StoreValue(request->packetname(), sig_value, sr, 86400,
-                       &vsvc_dummy_callback);
-  }
-
-  done->Run();
-}
-
 void VaultService::AddToWatchList(
     google::protobuf::RpcController*,
     const maidsafe::AddToWatchListRequest *request,
@@ -870,55 +769,6 @@ void VaultService::GetChunk(google::protobuf::RpcController*,
     printf("In VaultService::Get (%i), couldn't find chunk locally.\n",
            knode_->host_port());
 #endif
-    response->set_result(kNack);
-  }
-  done->Run();
-}
-
-void VaultService::GetPacket(google::protobuf::RpcController*,
-                             const maidsafe::GetPacketRequest *request,
-                             maidsafe::GetPacketResponse *response,
-                             google::protobuf::Closure *done) {
-  response->Clear();
-#ifdef DEBUG
-//  if (knode_ != NULL)
-//    printf("In VaultService::GetPacket (%i)\n", knode_->host_port());
-#endif
-  response->set_pmid(non_hex_pmid_);
-  if (!request->IsInitialized()) {
-#ifdef DEBUG
-    if (knode_ != NULL)
-      printf("In VaultService::GetPacket (%i), request isn't initialised.\n",
-             knode_->host_port());
-#endif
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-
-  if (request->has_key_id()) {
-    if (!ValidateSignedRequest(request->public_key(),
-         request->public_key_signature(), request->request_signature(),
-         request->packetname(), request->key_id())) {
-      response->set_result(kNack);
-      done->Run();
-  #ifdef DEBUG
-      if (knode_ != NULL) {
-        printf("In VaultService::GetPacket (%i), ", knode_->host_port());
-        printf("failed to validate signed request.\n");
-      }
-  #endif
-      return;
-    }
-  }
-
-  if (!LoadPacketLocal(request->packetname(), response)) {
-#ifdef DEBUG
-    if (knode_ != NULL)
-      printf("In VaultService::GetPacket (%i), couldn't find chunk locally.\n",
-             knode_->host_port());
-#endif
-    response->clear_content();
     response->set_result(kNack);
   }
   done->Run();
@@ -1706,11 +1556,6 @@ bool VaultService::ValidateSystemPacket(const std::string &ser_content,
   maidsafe::GenericPacket gp;
   if (!gp.ParseFromString(ser_content))
     return false;
-  return ValidateSystemPacket(gp, public_key);
-}
-
-bool VaultService::ValidateSystemPacket(const maidsafe::GenericPacket &gp,
-      const std::string &public_key) {
   crypto::Crypto co;
   return co.AsymCheckSig(gp.data(), gp.signature(), public_key,
     crypto::STRING_STRING);
@@ -1760,22 +1605,6 @@ bool VaultService::UpdateBPChunkLocal(const std::string &bufferpacket_name,
 bool VaultService::LoadChunkLocal(const std::string &chunkname,
                                   std::string *content) {
   return (vault_chunkstore_->Load(chunkname, content) == kSuccess);
-}
-
-bool VaultService::LoadPacketLocal(const std::string &packetname,
-                                   maidsafe::GetPacketResponse *response) {
-  response->set_result(kNack);
-  std::vector<maidsafe::GenericPacket> gps;
-  if (vault_chunkstore_->LoadPacket(packetname, &gps) != kSuccess) {
-    response->set_result(kNack);
-    return false;
-  }
-  response->set_result(kAck);
-  for (size_t i = 0; i < gps.size(); ++i) {
-    maidsafe::GenericPacket *gp = response->add_content();
-    *gp = gps.at(i);
-  }
-  return true;
 }
 
 bool VaultService::DeleteChunkLocal(const std::string &chunkname) {

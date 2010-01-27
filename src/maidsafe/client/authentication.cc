@@ -154,7 +154,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   int n = storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
       boost::any_cast<std::string>(mid_result["ser_packet"]), MID, PRIVATE,
-      "");
+      "", kStoreFailure);
   if (n != kSuccess) {
     printf("Fucked in MID store: %i\n", n);
     return kAuthenticationError;
@@ -169,7 +169,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(smid_result["name"]),
       boost::any_cast<std::string>(smid_result["ser_packet"]), SMID,
-      PRIVATE, "") != kSuccess) {
+      PRIVATE, "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -191,7 +191,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
 
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(pmid_result["name"]), ser_packet, PMID,
-      PRIVATE, "") != 0) {
+      PRIVATE, "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -229,7 +229,7 @@ int Authentication::CreateTmidPacket(const std::string &username,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
-      PRIVATE, "") != kSuccess) {
+      PRIVATE, "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -275,7 +275,7 @@ int Authentication::SaveSession(std::string ser_da,
     if (storemanager_->StorePacket(
         boost::any_cast<std::string>(result["name"]),
         boost::any_cast<std::string>(result["ser_packet"]), SMID, PRIVATE,
-        "") != kSuccess) {
+        "", kStoreFailure) != kSuccess) {
       return kAuthenticationError;
     }
 
@@ -312,14 +312,14 @@ int Authentication::SaveSession(std::string ser_da,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmidresult["name"]),
       boost::any_cast<std::string>(tmidresult["ser_packet"]), TMID,
-      PRIVATE, "") != 0) {
+      PRIVATE, "", kStoreFailure) != 0) {
     return kAuthenticationError;
   }
 
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
       boost::any_cast<std::string>(mid_result["ser_packet"]), MID, PRIVATE,
-      "") != 0) {
+      "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -490,7 +490,7 @@ int Authentication::CreatePublicName(std::string public_username,
               "");
   if (storemanager_->StorePacket(boost::any_cast<std::string>(params["name"]),
       boost::any_cast<std::string>(params["ser_packet"]), ANMPID, PRIVATE,
-      "") != 0) {
+      "", kStoreFailure) != kSuccess) {
     printf("Authentication::CreatePublicName - Buggered in ANMPID\n");
     delete mpidPacket;
     delete sigPacket;
@@ -511,7 +511,7 @@ int Authentication::CreatePublicName(std::string public_username,
 
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mpid_result["name"]), ser_packet, MPID,
-      PRIVATE, "") != 0) {
+      PRIVATE, "", kStoreFailure) != kSuccess) {
     printf("Authentication::CreatePublicName - Buggered in MPID\n");
     delete mpidPacket;
     delete sigPacket;
@@ -574,7 +574,7 @@ int Authentication::ChangeUsername(std::string ser_da,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
       boost::any_cast<std::string>(mid_result["ser_packet"]), MID, PRIVATE,
-      "") != 0) {
+      "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
   //  Creating and storing new SMID packet with new username and old MID Rid
@@ -585,7 +585,7 @@ int Authentication::ChangeUsername(std::string ser_da,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(smid_result["name"]),
       boost::any_cast<std::string>(smid_result["ser_packet"]), SMID,
-      PRIVATE, "") != 0) {
+      PRIVATE, "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
   //  Creating new TMID-->MID with new MID Rid
@@ -599,7 +599,7 @@ int Authentication::ChangeUsername(std::string ser_da,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
-      PRIVATE, "") != 0) {
+      PRIVATE, "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
   //  Creating new TMID-->SMID with old MID Rid and pointing to old DA
@@ -628,7 +628,7 @@ int Authentication::ChangeUsername(std::string ser_da,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
-      PRIVATE, "") != 0) {
+      PRIVATE, "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
   user_params["username"] = ss_->Username();
@@ -736,7 +736,7 @@ int Authentication::ChangePin(std::string ser_da,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(mid_result["name"]),
       boost::any_cast<std::string>(mid_result["ser_packet"]), MID, PRIVATE,
-      "") != 0) {
+      "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -748,7 +748,7 @@ int Authentication::ChangePin(std::string ser_da,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(smid_result["name"]),
       boost::any_cast<std::string>(smid_result["ser_packet"]), SMID,
-      PRIVATE, "") != 0) {
+      PRIVATE, "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -763,7 +763,7 @@ int Authentication::ChangePin(std::string ser_da,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
-      PRIVATE, "") != 0) {
+      PRIVATE, "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -793,7 +793,7 @@ int Authentication::ChangePin(std::string ser_da,
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["ser_packet"]), TMID,
-      PRIVATE, "") != 0) {
+      PRIVATE, "", kStoreFailure) != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -902,8 +902,8 @@ std::string Authentication::createSignaturePackets(const PacketType &type_da,
 
   if (storemanager_->StorePacket(
       boost::any_cast<std::string>(params["name"]),
-      boost::any_cast<std::string>(params["ser_packet"]), type_da, PRIVATE, "")
-      != 0) {
+      boost::any_cast<std::string>(params["ser_packet"]), type_da, PRIVATE, "",
+      kStoreFailure) != kSuccess) {
     return "";
   }
 
@@ -1126,7 +1126,7 @@ void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
   int n = storemanager_->StorePacket(
       boost::any_cast<std::string>(params["name"]),
       boost::any_cast<std::string>(params["ser_packet"]), MSID, PRIVATE,
-      "");
+      "", kStoreFailure);
   StoreChunkResponse result_msg;
   CreateMSIDResult local_result;
   std::string str_local_result;

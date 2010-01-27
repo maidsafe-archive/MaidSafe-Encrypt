@@ -66,7 +66,8 @@ class LocalStoreManager : public StoreManagerInterface {
                           const std::string &value,
                           PacketType system_packet_type,
                           DirType dir_type,
-                          const std::string &msid);
+                          const std::string &msid,
+                          IfPacketExists if_packet_exists);
   virtual int DeletePacket(const std::string &hex_key,
                            const std::string &signature,
                            const std::string &public_key,

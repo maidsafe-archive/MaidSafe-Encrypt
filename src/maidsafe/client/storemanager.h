@@ -38,6 +38,8 @@
 
 namespace maidsafe {
 
+enum IfPacketExists { kStoreFailure, kStoreSuccess, kOverwrite, kAppend };
+
 typedef boost::function<void(const OwnLocalVaultResult&, const std::string&)>
     SetLocalVaultOwnedFunctor;
 
@@ -68,7 +70,8 @@ class StoreManagerInterface {
                           const std::string &value,
                           PacketType system_packet_type,
                           DirType dir_type,
-                          const std::string &msid)=0;
+                          const std::string &msid,
+                          IfPacketExists if_packet_exists)=0;
   virtual int DeletePacket(const std::string &hex_key,
                            const std::string &signature,
                            const std::string &public_key,

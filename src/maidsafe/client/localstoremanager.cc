@@ -283,9 +283,12 @@ int LocalStoreManager::DeletePacket(const std::string &hex_key,
 
 int LocalStoreManager::StorePacket(const std::string &hex_packet_name,
                                    const std::string &value,
-                                   PacketType, DirType, const std::string&) {
+                                   PacketType,
+                                   DirType,
+                                   const std::string&,
+                                   IfPacketExists if_packet_exists) {
   StorePacket_InsertToDb(hex_packet_name, value);
-  return 0;
+  return -111111111;
 }
 
 int LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,

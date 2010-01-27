@@ -132,10 +132,6 @@ class VaultService : public maidsafe::MaidsafeService {
                           const maidsafe::StoreChunkRequest *request,
                           maidsafe::StoreChunkResponse *response,
                           google::protobuf::Closure *done);
-  virtual void StorePacket(google::protobuf::RpcController* controller,
-                           const maidsafe::StorePacketRequest *request,
-                           maidsafe::StorePacketResponse *response,
-                           google::protobuf::Closure *done);
   virtual void AddToWatchList(google::protobuf::RpcController* controller,
                               const maidsafe::AddToWatchListRequest *request,
                               maidsafe::AddToWatchListResponse *response,
@@ -171,10 +167,6 @@ class VaultService : public maidsafe::MaidsafeService {
                         const maidsafe::GetChunkRequest *request,
                         maidsafe::GetChunkResponse *response,
                         google::protobuf::Closure *done);
-  virtual void GetPacket(google::protobuf::RpcController* controller,
-                         const maidsafe::GetPacketRequest *request,
-                         maidsafe::GetPacketResponse *response,
-                         google::protobuf::Closure *done);
   virtual void DeleteChunk(google::protobuf::RpcController* controller,
                            const maidsafe::DeleteChunkRequest *request,
                            maidsafe::DeleteChunkResponse *response,
@@ -252,8 +244,6 @@ class VaultService : public maidsafe::MaidsafeService {
                         const std::string &public_key_signature);
   bool ValidateSystemPacket(const std::string &ser_content,
                             const std::string &public_key);
-  bool ValidateSystemPacket(const maidsafe::GenericPacket &gp,
-                            const std::string &public_key);
   bool ValidateDataChunk(const std::string &chunkname,
                          const std::string &content);
   int Storable(const boost::uint64_t &data_size);
@@ -266,8 +256,6 @@ class VaultService : public maidsafe::MaidsafeService {
   bool UpdateBPChunkLocal(const std::string &bufferpacket_name,
                           const std::string &content);
   bool LoadChunkLocal(const std::string &chunkname, std::string *content);
-  bool LoadPacketLocal(const std::string &packetname,
-                       maidsafe::GetPacketResponse *response);
   bool DeleteChunkLocal(const std::string &chunkname);
   boost::uint64_t GetChunkSizeLocal(const std::string &chunkname);
   void FindCloseNodesCallback(const std::string &result,

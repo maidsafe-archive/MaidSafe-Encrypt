@@ -53,12 +53,6 @@ class ClientRpcs {
                   StoreChunkResponse *store_chunk_response,
                   rpcprotocol::Controller *controller,
                   google::protobuf::Closure *done);
-  virtual void StorePacket(const kad::Contact &peer,
-                           bool local,
-                           StorePacketRequest *store_packet_request,
-                           StorePacketResponse *store_packet_response,
-                           rpcprotocol::Controller *controller,
-                           google::protobuf::Closure *done);
   void AddToWatchList(const kad::Contact &peer,
                       bool local,
                       AddToWatchListRequest *add_to_watch_list_request,
@@ -96,12 +90,6 @@ class ClientRpcs {
                 GetChunkResponse *get_chunk_response,
                 rpcprotocol::Controller *controller,
                 google::protobuf::Closure *done);
-  virtual void GetPacket(const kad::Contact &peer,
-                         bool local,
-                         GetPacketRequest *get_request,
-                         GetPacketResponse *get_response,
-                         rpcprotocol::Controller *controller,
-                         google::protobuf::Closure *done);
   void LocalVaultOwned(LocalVaultOwnedResponse *response,
                        rpcprotocol::Controller *controller,
                        rpcprotocol::Channel *channel,

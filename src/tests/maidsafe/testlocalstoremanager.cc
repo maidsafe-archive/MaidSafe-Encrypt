@@ -195,7 +195,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
   std::string gp_content;
   gp.SerializeToString(&gp_content);
   ASSERT_EQ(0, storemanager->StorePacket(gp_name, gp_content,
-      maidsafe::BUFFER, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER, maidsafe::PRIVATE, "", maidsafe::kStoreFailure));
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
   std::string result;
   storemanager->LoadPacket(gp_name, &result);
@@ -224,7 +224,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
       crypto::STRING_STRING, false),
       "", rsa_obj.private_key(), crypto::STRING_STRING);
   ASSERT_EQ(0, storemanager->StorePacket(gp_name, gp_content,
-      maidsafe::BUFFER, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER, maidsafe::PRIVATE, "", maidsafe::kStoreFailure));
 
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
   storemanager->DeletePacket(gp_name, signed_request, rsa_obj.public_key(),
@@ -254,7 +254,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
                                   private_key, crypto::STRING_STRING);
 
   ASSERT_EQ(0, storemanager->StorePacket(gp_name, gp_content,
-      maidsafe::BUFFER, maidsafe::PRIVATE, ""));
+      maidsafe::BUFFER, maidsafe::PRIVATE, "", maidsafe::kStoreFailure));
   ASSERT_FALSE(storemanager->KeyUnique(gp_name, false));
 
   // Creating new public/private keys

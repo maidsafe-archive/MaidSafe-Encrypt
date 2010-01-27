@@ -58,26 +58,6 @@ message StoreChunkResponse {
   optional bytes pmid = 2;  // vault's PMID
 }
 
-message StorePacketRequest {
-  required bytes packetname = 1;
-  repeated GenericPacket signed_data = 2;
-  optional bytes key_id = 3;  // ID of e.g. ANMID, ANTMID, ...
-  optional bytes public_key = 4;
-  optional bytes public_key_signature = 5;
-  optional bytes request_signature = 6;
-  required int32 data_type = 7;
-  required bool append = 8;
-}
-
-message StorePacketResponse {
-  required uint32 result = 1;
-  optional bytes pmid = 2;  // vault's PMID
-  optional bytes public_key = 3;
-  optional bytes public_key_signature = 4;
-  optional bytes response_signature = 5;
-  optional bytes checksum = 6;
-}
-
 message AddToWatchListRequest {
   required bytes chunkname = 1;
   required SignedSize signed_size = 2;
@@ -182,20 +162,6 @@ message GetChunkRequest {
 message GetChunkResponse {
   required uint32 result = 1;
   optional bytes content = 2;
-  optional bytes pmid = 3;
-}
-
-message GetPacketRequest {
-  required bytes packetname = 1;
-  optional bytes key_id = 2;  // ID of e.g. ANMID, ANTMID, ...
-  optional bytes public_key = 3;
-  optional bytes public_key_signature = 4;
-  optional bytes request_signature = 5;
-}
-
-message GetPacketResponse {
-  required uint32 result = 1;
-  repeated GenericPacket content = 2;
   optional bytes pmid = 3;
 }
 
