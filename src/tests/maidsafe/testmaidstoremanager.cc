@@ -133,6 +133,16 @@ void PacketOpCallback(const int &store_manager_result,
   cond_var->notify_one();
 }
 
+void RunDeletePacketCallbacks(
+    std::list< boost::function < void(boost::shared_ptr<
+        maidsafe::DeletePacketData>) > > functors,
+    boost::shared_ptr<maidsafe::DeletePacketData> delete_data) {
+  while (functors.size()) {
+    functors.front()(delete_data);
+    functors.pop_front();
+  }
+}
+
 }  // namespace test_msm
 
 namespace maidsafe {
@@ -247,10 +257,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   std::string hex_key = base::EncodeToHex(non_hex_key);
   EXPECT_CALL(msm, FindValue(non_hex_key, true, testing::_, testing::_,
       testing::_)).WillOnce(testing::Return(1))
-      .WillOnce(testing::Return(0));
+      .WillOnce(testing::Return(kSuccess));
   EXPECT_CALL(msm, FindValue(non_hex_key, false, testing::_, testing::_,
       testing::_)).WillOnce(testing::Return(1))
-      .WillOnce(testing::Return(0));
+      .WillOnce(testing::Return(kSuccess));
   ASSERT_TRUE(msm.KeyUnique(hex_key, true));
   ASSERT_TRUE(msm.KeyUnique(hex_key, false));
   ASSERT_FALSE(msm.KeyUnique(hex_key, true));
@@ -741,22 +751,22 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
           .Times(6)
           .WillOnce(testing::Return(-1))  // Call 3
           .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-                          testing::Return(0)))  // Call 4
+                          testing::Return(kSuccess)))  // Call 4
           .WillRepeatedly(testing::Return(kFindValueFailure));
 
   EXPECT_CALL(msm, SendPacket(testing::_))
       .WillOnce(testing::WithArgs<0>(testing::Invoke(
-           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-           ser_kad_store_response_empty, _1))))  // Call 5
+          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
+          ser_kad_store_response_empty, _1))))  // Call 5
       .WillOnce(testing::WithArgs<0>(testing::Invoke(
-           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-           ser_kad_store_response_cant_parse, _1))))  // Call 6
+          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
+          ser_kad_store_response_cant_parse, _1))))  // Call 6
       .WillOnce(testing::WithArgs<0>(testing::Invoke(
-           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-           ser_kad_store_response_fail, _1))))  // Call 7
+          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
+          ser_kad_store_response_fail, _1))))  // Call 7
       .WillOnce(testing::WithArgs<0>(testing::Invoke(
-           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-           ser_kad_store_response_good, _1))));  // Call 8
+          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
+          ser_kad_store_response_good, _1))));  // Call 8
 
   // Call 1 - Check with bad packet name length
   packet_op_result_ = kGeneralError;
@@ -867,11 +877,13 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   ASSERT_EQ(anmid_pri, private_key);
   std::string packet_value = base::RandomString(200);
 
-  // Set up test requirements
+  // Set up store response
   std::string ser_kad_store_response_good;
   kad::StoreResponse store_response;
   store_response.set_result(kad::kRpcResultSuccess);
   store_response.SerializeToString(&ser_kad_store_response_good);
+
+  // Set up serialised Kademlia delete responses
   std::string ser_kad_delete_response_cant_parse("Rubbish");
   std::string ser_kad_delete_response_empty;
   std::string ser_kad_delete_response_good, ser_kad_delete_response_fail;
@@ -880,8 +892,37 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   delete_response.SerializeToString(&ser_kad_delete_response_good);
   delete_response.set_result("Fail");
   delete_response.SerializeToString(&ser_kad_delete_response_fail);
+
+  // Set up lists of DeletePacketCallbacks using serialised Kad delete responses
+  const size_t kExistingValueCount(5);
+  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
+      functors_kad_good;
+  for (size_t i = 0; i < kExistingValueCount - 1; ++i) {
+    functors_kad_good.push_back(boost::bind(
+        &MaidsafeStoreManager::DeletePacketCallback, &msm,
+        ser_kad_delete_response_good, _1));
+  }
+  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
+      functors_kad_empty(functors_kad_good),
+      functors_kad_cant_parse(functors_kad_good),
+      functors_kad_fail(functors_kad_good);
+  functors_kad_empty.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_empty, _1));
+  functors_kad_cant_parse.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_cant_parse, _1));
+  functors_kad_fail.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_fail, _1));
+  functors_kad_good.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_good, _1));
+
+  // Set up vector of existing values
   std::vector<std::string> existing_values;
-  existing_values.push_back("ExistingValue");
+  for (size_t i = 0; i < kExistingValueCount; ++i)
+    existing_values.push_back("ExistingValue" + base::itos(i));
 
   // Set up expectations
   EXPECT_CALL(msm, FindValue(packet_name, true, testing::_, testing::_,
@@ -893,22 +934,18 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   EXPECT_CALL(msm, SendPacket(testing::_))
       .Times(2)
       .WillRepeatedly(testing::WithArgs<0>(testing::Invoke(
-           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-           ser_kad_store_response_good, _1))));  // Calls 3 & 8
+          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
+          ser_kad_store_response_good, _1))));  // Calls 3 & 8
 
-  EXPECT_CALL(msm, DeletePacketFromNet(testing::_))
-      .WillOnce(testing::WithArgs<0>(testing::Invoke(
-           boost::bind(&MaidsafeStoreManager::DeletePacketCallback, &msm,
-           ser_kad_delete_response_empty, _1))))  // Call 5
-      .WillOnce(testing::WithArgs<0>(testing::Invoke(
-           boost::bind(&MaidsafeStoreManager::DeletePacketCallback, &msm,
-           ser_kad_delete_response_cant_parse, _1))))  // Call 6
-      .WillOnce(testing::WithArgs<0>(testing::Invoke(
-           boost::bind(&MaidsafeStoreManager::DeletePacketCallback, &msm,
-           ser_kad_delete_response_fail, _1))))  // Call 7
-      .WillOnce(testing::WithArgs<0>(testing::Invoke(
-           boost::bind(&MaidsafeStoreManager::DeletePacketCallback, &msm,
-           ser_kad_delete_response_good, _1))));  // Call 8
+  EXPECT_CALL(msm, DeletePacketFromNet(testing::_))  // Calls 5 to 8 inclusive
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_empty, _1))))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_cant_parse, _1))))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_fail, _1))))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_good, _1))));
 
   // Call 1 - If exists kDoNothingReturnFailure
   packet_op_result_ = kGeneralError;
@@ -991,6 +1028,106 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   ASSERT_EQ(kSuccess, packet_op_result_);
 }
 
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
+  MockMsmStoreLoadPacket msm(client_chunkstore_);
+
+  // Set up test requirements
+  std::vector<std::string> packet_names, hex_packet_names;
+  const size_t kTestCount(6);
+  packet_names.push_back("InvalidName");
+  hex_packet_names.push_back("InvalidName");
+  for (size_t i = 1; i < kTestCount; ++i) {
+    packet_names.push_back(crypto_.Hash(base::RandomString(100), "",
+                                        crypto::STRING_STRING, false));
+    hex_packet_names.push_back(base::EncodeToHex(packet_names.at(i)));
+  }
+  std::vector<std::string> values, returned_values;
+  const size_t kValueCount(5);
+  for (size_t i = 0; i < kValueCount; ++i)
+    values.push_back("Value" + base::itos(i));
+  kad::ContactInfo cache_holder;
+  cache_holder.set_node_id("a");
+
+  // Set up expectations
+  EXPECT_CALL(msm, FindValue(packet_names.at(1), false, testing::_, testing::_,
+      testing::_))
+          .Times(kMaxChunkLoadRetries)
+          .WillRepeatedly(testing::Return(-1));  // Call 2
+
+  EXPECT_CALL(msm, FindValue(packet_names.at(2), false, testing::_, testing::_,
+      testing::_))
+          .Times(kMaxChunkLoadRetries)
+          .WillRepeatedly(testing::Return(kSuccess));  // Call 3
+
+  EXPECT_CALL(msm, FindValue(packet_names.at(3), false, testing::_, testing::_,
+      testing::_))
+          .Times(kMaxChunkLoadRetries)
+          .WillRepeatedly(DoAll(testing::SetArgumentPointee<2>(cache_holder),
+                                testing::Return(kSuccess)));  // Call 4
+
+  EXPECT_CALL(msm, FindValue(packet_names.at(4), false, testing::_, testing::_,
+      testing::_))  // Call 5
+          .WillOnce(testing::Return(-1))
+          .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
+                          testing::Return(kSuccess)))
+          .WillOnce(DoAll(testing::SetArgumentPointee<3>(values),
+                          testing::Return(kSuccess)));
+
+  EXPECT_CALL(msm, FindValue(packet_names.at(5), false, testing::_, testing::_,
+      testing::_))  // Call 6
+          .WillOnce(DoAll(testing::SetArgumentPointee<3>(values),
+                          testing::Return(kSuccess)));
+
+  // Call 1 - Check with bad packet name length
+  size_t test_number(0);
+  returned_values.push_back("Val");
+  ASSERT_EQ(size_t(1), returned_values.size());
+  ASSERT_EQ(kIncorrectKeySize,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_values));
+  ASSERT_EQ(size_t(0), returned_values.size());
+
+  // Call 2 - FindValue fails
+  ++test_number;
+  returned_values.push_back("Val");
+  ASSERT_EQ(size_t(1), returned_values.size());
+  ASSERT_EQ(kFindValueFailure,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_values));
+  ASSERT_EQ(size_t(0), returned_values.size());
+
+  // Call 3 - FindValue claims success but doesn't populate value vector
+  ++test_number;
+  returned_values.push_back("Val");
+  ASSERT_EQ(size_t(1), returned_values.size());
+  ASSERT_EQ(kFindValueFailure,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_values));
+  ASSERT_EQ(size_t(0), returned_values.size());
+
+  // Call 4 - FindValue yields a cached copy
+  ++test_number;
+  returned_values.push_back("Val");
+  ASSERT_EQ(size_t(1), returned_values.size());
+  ASSERT_EQ(kFindValueFailure,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_values));
+  ASSERT_EQ(size_t(0), returned_values.size());
+
+  // Call 5 - Success
+  ++test_number;
+  returned_values.push_back("Val");
+  ASSERT_EQ(size_t(1), returned_values.size());
+  ASSERT_EQ(kSuccess,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_values));
+  ASSERT_EQ(size_t(kValueCount), returned_values.size());
+  for (size_t i = 0; i < kValueCount; ++i)
+    ASSERT_EQ(values.at(i), returned_values.at(i));
+
+  // Call 6 - Single value success
+  ++test_number;
+  std::string returned_value("Fud");
+  ASSERT_EQ(kSuccess,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_value));
+  ASSERT_EQ(values.at(0), returned_value);
+}
+
 /*
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
@@ -1028,9 +1165,9 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
           .WillOnce(testing::Return(kSuccess))  // Call 2
           .WillOnce(testing::Return(kSuccess))  // Call 2
           .WillOnce(DoAll(testing::SetArgumentPointee<3>(find_value_results),
-                          testing::Return(0)))  // Call 2
+                          testing::Return(kSuccess)))  // Call 2
           .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(peernames),
-                                testing::Return(0)));  // Call 3
+                                testing::Return(kSuccess)));  // Call 3
   EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
       .Times(1)
       .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
@@ -1089,7 +1226,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail) {
       testing::_))
           .Times(1)
           .WillOnce(DoAll(testing::SetArgumentPointee<3>(peernames),
-                          testing::Return(0)));
+                          testing::Return(kSuccess)));
   EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
       .Times(1)
       .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
@@ -1141,7 +1278,7 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed) {
       testing::_))
           .Times(1)
           .WillOnce(DoAll(testing::SetArgumentPointee<3>(peernames),
-                          testing::Return(0)));
+                          testing::Return(kSuccess)));
   EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
       .Times(1)
       .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(

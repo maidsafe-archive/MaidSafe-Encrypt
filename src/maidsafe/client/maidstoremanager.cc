@@ -388,10 +388,15 @@ int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
 //  printf("In MaidsafeStoreManager::LoadPacket (%i), packet_name = %s\n",
 //         knode_->host_port(), hex.c_str());
 #endif
+  if (hex_packet_name.length() != 2 * kKeySize)
+    return kIncorrectKeySize;
+
   std::string packet_name = base::DecodeFromHex(hex_packet_name);
   kad::ContactInfo cache_holder;
   std::string needs_cache_copy_id;
   for (int attempt = 0; attempt < kMaxChunkLoadRetries; ++attempt) {
+    cache_holder.Clear();
+    results->clear();
     int res = FindValue(packet_name, false, &cache_holder, results,
         &needs_cache_copy_id);
     if (res != kSuccess || results->empty() || cache_holder.has_node_id()) {
