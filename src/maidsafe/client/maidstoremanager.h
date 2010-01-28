@@ -187,9 +187,7 @@ struct StoreData {
                 system_packet_type(MID),
                 dir_type(PRIVATE),
                 if_packet_exists(kDoNothingReturnFailure),
-                mutex(NULL),
-                cond_var(NULL),
-                result(NULL) {}
+                callback() {}
   // Store chunk constructor
   StoreData(const std::string &non_hex_chunk_name,
             const boost::uint64_t &chunk_size,
@@ -212,9 +210,7 @@ struct StoreData {
                   system_packet_type(MID),
                   dir_type(directory_type),
                   if_packet_exists(kDoNothingReturnFailure),
-                  mutex(NULL),
-                  cond_var(NULL),
-                  result(NULL) {}
+                  callback() {}
   // Store packet constructor
   StoreData(const std::string &non_hex_packet_name,
             const std::string &packet_value,
@@ -226,9 +222,7 @@ struct StoreData {
             const std::string &pub_key_signature,
             const std::string &priv_key,
             IfPacketExists if_exists,
-            boost::mutex *mut,
-            boost::condition_variable *cv,
-            int *res)
+            VoidFuncOneInt cb)
                 : non_hex_key(non_hex_packet_name),
                   value(packet_value),
                   size(0),
@@ -241,9 +235,7 @@ struct StoreData {
                   system_packet_type(sys_packet_type),
                   dir_type(directory_type),
                   if_packet_exists(if_exists),
-                  mutex(mut),
-                  cond_var(cv),
-                  result(res) {}
+                  callback(cb) {}
   std::string non_hex_key, value;
   boost::uint64_t size;
   std::string msid, key_id, public_key, public_key_signature, private_key;
@@ -251,9 +243,7 @@ struct StoreData {
   PacketType system_packet_type;
   DirType dir_type;
   IfPacketExists if_packet_exists;
-  boost::mutex *mutex;
-  boost::condition_variable *cond_var;
-  int *result;
+  VoidFuncOneInt callback;
 };
 
 struct DeletePacketData {
@@ -521,18 +511,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void StoreChunk(const std::string &hex_chunk_name,
                   DirType dir_type,
                   const std::string &msid);
-  // Adds the packet to the priority store queue for uploading as a Kademlia
-  // key, value.  If the pointers are not NULL, the function calls notify_one
-  // on cond_var after the kad function calls back.
+  // Adds the packet to the priority store queue for uploading as a Kad k,v pair
   void StorePacket(const std::string &hex_packet_name,
                    const std::string &value,
                    PacketType system_packet_type,
                    DirType dir_type,
                    const std::string &msid,
                    IfPacketExists if_packet_exists,
-                   boost::mutex *mutex,
-                   boost::condition_variable *cond_var,
-                   int *result);
+                   const VoidFuncOneInt &cb);
   int LoadChunk(const std::string &hex_chunk_name, std::string *data);
   // Loads the most recently stored value under the packet name
   int LoadPacket(const std::string &hex_packet_name, std::string *result);

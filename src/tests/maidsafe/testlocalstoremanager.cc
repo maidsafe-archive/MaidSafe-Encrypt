@@ -86,10 +86,10 @@ void wait_for_result_lsm2(const FakeCallback &fcb, boost::mutex *mutex) {
   }
 };
 
-void DeletePacketCallback(const int &delete_result,
-                          boost::mutex *mutex,
-                          boost::condition_variable *cond_var,
-                          int *result) {
+void PacketOpCallback(const int &delete_result,
+                      boost::mutex *mutex,
+                      boost::condition_variable *cond_var,
+                      int *result) {
   boost::mutex::scoped_lock lock(*mutex);
   *result = delete_result;
   cond_var->notify_one();
@@ -212,8 +212,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
   boost::mutex mutex;
   boost::condition_variable cond_var;
   storemanager->StorePacket(gp_name, gp_content, maidsafe::BUFFER,
-      maidsafe::PRIVATE, "", maidsafe::kDoNothingReturnFailure, &mutex,
-      &cond_var, &result);
+      maidsafe::PRIVATE, "", maidsafe::kDoNothingReturnFailure, boost::bind(
+      &test_lsm::PacketOpCallback, _1, &mutex, &cond_var, &result));
   while (result == maidsafe::kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);
@@ -250,8 +250,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
   boost::mutex mutex;
   boost::condition_variable cond_var;
   storemanager->StorePacket(gp_name, gp_content, maidsafe::BUFFER,
-      maidsafe::PRIVATE, "", maidsafe::kDoNothingReturnFailure, &mutex,
-      &cond_var, &result);
+      maidsafe::PRIVATE, "", maidsafe::kDoNothingReturnFailure, boost::bind(
+      &test_lsm::PacketOpCallback, _1, &mutex, &cond_var, &result));
   while (result == maidsafe::kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);
@@ -262,7 +262,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
 
   result = maidsafe::kGeneralError;
   storemanager->DeletePacket(gp_name, gp_content, maidsafe::BUFFER,
-      maidsafe::PRIVATE, "", boost::bind(&test_lsm::DeletePacketCallback, _1,
+      maidsafe::PRIVATE, "", boost::bind(&test_lsm::PacketOpCallback, _1,
       &mutex, &cond_var, &result));
   while (result == maidsafe::kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
@@ -292,8 +292,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   boost::mutex mutex;
   boost::condition_variable cond_var;
   storemanager->StorePacket(gp_name, gp_content, maidsafe::BUFFER,
-      maidsafe::PRIVATE, "", maidsafe::kDoNothingReturnFailure, &mutex,
-      &cond_var, &result);
+      maidsafe::PRIVATE, "", maidsafe::kDoNothingReturnFailure, boost::bind(
+      &test_lsm::PacketOpCallback, _1, &mutex, &cond_var, &result));
   while (result == maidsafe::kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);

@@ -95,10 +95,10 @@ class Authentication {
   int DeletePacket(const std::string &hex_packet_name,
                    const std::string &value,
                    const PacketType &type);
-  void DeletePacketCallback(const int &delete_result,
-                            boost::mutex *mutex,
-                            boost::condition_variable *cond_var,
-                            int *result);
+  void PacketOpCallback(const int &store_manager_result,
+                        boost::mutex *mutex,
+                        boost::condition_variable *cond_var,
+                        int *op_result);
   UserDetails ud_;
   boost::mutex mutex_;
   crypto::Crypto crypto_;

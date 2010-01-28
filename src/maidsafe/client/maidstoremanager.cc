@@ -258,9 +258,7 @@ void MaidsafeStoreManager::StorePacket(const std::string &hex_packet_name,
                                        DirType dir_type,
                                        const std::string &msid,
                                        IfPacketExists if_packet_exists,
-                                       boost::mutex *mutex,
-                                       boost::condition_variable *cond_var,
-                                       int *result) {
+                                       const VoidFuncOneInt &cb) {
   int prep = kSuccess;
   if (hex_packet_name.length() != 2 * kKeySize) {
     prep = kIncorrectKeySize;
@@ -284,8 +282,7 @@ void MaidsafeStoreManager::StorePacket(const std::string &hex_packet_name,
       case ANMPID: {
         boost::shared_ptr<StoreData> store_data(new StoreData(packet_name,
             value, system_packet_type, dir_type, msid, key_id, public_key,
-            public_key_signature, private_key, if_packet_exists, mutex,
-            cond_var, result));
+            public_key_signature, private_key, if_packet_exists, cb));
         // packet_thread_pool_ handles destruction of store_packet_task.
         StorePacketTask *store_packet_task =
             new StorePacketTask(store_data, this);
@@ -299,11 +296,8 @@ void MaidsafeStoreManager::StorePacket(const std::string &hex_packet_name,
         prep = kPacketUnknownType;
     }
   }
-  if (mutex != NULL && cond_var != NULL && result != NULL && prep != kSuccess) {
-    boost::mutex::scoped_lock lock(*mutex);
-    *result = prep;
-    cond_var->notify_one();
-  }
+  if (prep != kSuccess)
+    cb(prep);
 }
 
 int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
@@ -2209,14 +2203,11 @@ void MaidsafeStoreManager::SendPacketPrep(
         break;
     }
   }
-  if (to_return != kUndefined && store_data->mutex != NULL &&
-      store_data->cond_var != NULL && store_data->result != NULL) {
+  if (to_return != kUndefined) {
 #ifdef DEBUG
     printf("In MSM::SendPacketPrep, fail - %i.\n", to_return);
 #endif
-    boost::mutex::scoped_lock lock(*store_data->mutex);
-    *store_data->result = kSendPacketError;
-    store_data->cond_var->notify_one();
+    store_data->callback(kSendPacketError);
   }
 }
 
@@ -2237,31 +2228,19 @@ void MaidsafeStoreManager::SendPacket(boost::shared_ptr<StoreData> store_data) {
   sr.set_public_key(store_data->public_key);
   sr.set_signed_public_key(store_data->public_key_signature);
   sr.set_signed_request(signed_request);
-  base::callback_func_type cb;
-  if (store_data->mutex == NULL ||
-      store_data->cond_var == NULL ||
-      store_data->result == NULL)
-    cb = boost::bind(&MaidsafeStoreManager::DoNothingCallback, this, _1);
-  else
-    cb = boost::bind(&MaidsafeStoreManager::SendPacketCallback, this, _1,
-        store_data);
+  base::callback_func_type cb = boost::bind(
+      &MaidsafeStoreManager::SendPacketCallback, this, _1, store_data);
   knode_->StoreValue(store_data->non_hex_key, signed_value, sr, 31556926, cb);
 }
 
 void MaidsafeStoreManager::SendPacketCallback(
     const std::string &ser_kad_store_result,
     boost::shared_ptr<StoreData> store_data) {
-  if (store_data->mutex == NULL ||
-      store_data->cond_var == NULL ||
-      store_data->result == NULL)
-    return;
   if (ser_kad_store_result.empty()) {
 #ifdef DEBUG
     printf("In MSM::SendPacketCallback, fail - timeout.\n");
 #endif
-    boost::mutex::scoped_lock lock(*store_data->mutex);
-    *store_data->result = kSendPacketError;
-    store_data->cond_var->notify_one();
+    store_data->callback(kSendPacketError);
     return;
   }
   kad::StoreResponse store_response;
@@ -2269,23 +2248,17 @@ void MaidsafeStoreManager::SendPacketCallback(
 #ifdef DEBUG
     printf("In MSM::SendPacketCallback, can't parse result.\n");
 #endif
-    boost::mutex::scoped_lock lock(*store_data->mutex);
-    *store_data->result = kSendPacketParseError;
-    store_data->cond_var->notify_one();
+    store_data->callback(kSendPacketParseError);
     return;
   }
   if (store_response.result() != kad::kRpcResultSuccess) {
 #ifdef DEBUG
     printf("In MSM::SendPacketCallback, Kademlia operation failed.\n");
 #endif
-    boost::mutex::scoped_lock lock(*store_data->mutex);
-    *store_data->result = kSendPacketFailure;
-    store_data->cond_var->notify_one();
+    store_data->callback(kSendPacketFailure);
     return;
   }
-  boost::mutex::scoped_lock lock(*store_data->mutex);
-  *store_data->result = kSuccess;
-  store_data->cond_var->notify_one();
+  store_data->callback(kSuccess);
 }
 
 void MaidsafeStoreManager::OverwritePacket(
@@ -2300,14 +2273,10 @@ void MaidsafeStoreManager::OverwritePacket(
 void MaidsafeStoreManager::OverwritePacketStageTwo(
     boost::shared_ptr<StoreData> store_data,
     const int &delete_result) {
-  if (delete_result == kSuccess) {
+  if (delete_result == kSuccess)
     SendPacket(store_data);
-    return;
-  } else {
-    boost::mutex::scoped_lock lock(*store_data->mutex);
-    *store_data->result = delete_result;
-    store_data->cond_var->notify_one();
-  }
+  else
+    store_data->callback(delete_result);
 }
 
 void MaidsafeStoreManager::DeletePacketFromNet(

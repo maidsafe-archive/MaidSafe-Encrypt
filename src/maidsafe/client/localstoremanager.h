@@ -68,9 +68,7 @@ class LocalStoreManager : public StoreManagerInterface {
                            DirType dir_type,
                            const std::string &msid,
                            IfPacketExists if_packet_exists,
-                           boost::mutex *mutex,
-                           boost::condition_variable *cond_var,
-                           int *result);
+                           const VoidFuncOneInt &cb);
   // Deletes a single k,v pair
   virtual void DeletePacket(const std::string &hex_packet_name,
                             const std::string &value,
