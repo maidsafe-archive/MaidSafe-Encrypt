@@ -1128,173 +1128,224 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
   ASSERT_EQ(values.at(0), returned_value);
 }
 
-/*
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
-  std::string original_packet_content("original_packet_content");
-  GenericPacket gp;
-  gp.set_data(original_packet_content);
-  gp.set_signature("Sig");
-  std::string packet_content("F");
-  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
-  std::string hex_packetname = base::EncodeToHex(packetname);
-  std::vector<std::string> find_value_results;
-  find_value_results.push_back(original_packet_content);
-  std::vector<std::string> peernames;
-  std::vector<kad::Contact> peers;
-  std::vector<GetPacketResponse> get_packet_responses_all_good;
-  for (int i = 0; i < 2; ++i) {
-    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
-        crypto::STRING_STRING, false));
-    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
-    GetPacketResponse get_packet_response;
-    get_packet_response.set_result(kAck);
-    GenericPacket *gp_add = get_packet_response.add_content();
-    *gp_add = gp;
-    get_packet_response.set_pmid(peernames[i]);
-    get_packet_responses_all_good.push_back(get_packet_response);
+
+  // Add keys to Session
+  crypto::RsaKeyPair anmid_keys;
+  anmid_keys.GenerateKeys(kRsaKeySize);
+  std::string anmid_pri = anmid_keys.private_key();
+  std::string anmid_pub = anmid_keys.public_key();
+  std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",
+      anmid_pri, crypto::STRING_STRING);
+  std::string anmid_name = crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
+      crypto::STRING_STRING, true);
+  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
+      anmid_pub, anmid_pub_key_signature);
+
+  // Set up packet for deletion
+  std::string packet_name = crypto_.Hash(base::RandomString(100), "",
+                                         crypto::STRING_STRING, false);
+  std::string hex_packet_name = base::EncodeToHex(packet_name);
+  std::string key_id, public_key, public_key_signature, private_key;
+  msm.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
+      &public_key_signature, &private_key);
+  ASSERT_EQ(anmid_name, key_id);
+  ASSERT_EQ(anmid_pub, public_key);
+  ASSERT_EQ(anmid_pub_key_signature, public_key_signature);
+  ASSERT_EQ(anmid_pri, private_key);
+  const size_t kValueCount(5);
+  std::vector<std::string> packet_values, single_value;
+  for (size_t i = 0; i < kValueCount; ++i)
+    packet_values.push_back("Value" + base::itos(i));
+  single_value.push_back("Value");
+
+  // Set up serialised Kademlia delete responses
+  std::string ser_kad_delete_response_cant_parse("Rubbish");
+  std::string ser_kad_delete_response_empty;
+  std::string ser_kad_delete_response_good, ser_kad_delete_response_fail;
+  kad::DeleteResponse delete_response;
+  delete_response.set_result(kad::kRpcResultSuccess);
+  delete_response.SerializeToString(&ser_kad_delete_response_good);
+  delete_response.set_result("Fail");
+  delete_response.SerializeToString(&ser_kad_delete_response_fail);
+
+  // Set up lists of DeletePacketCallbacks using serialised Kad delete responses
+  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
+      functors_kad_good;
+  for (size_t i = 0; i < kValueCount - 1; ++i) {
+    functors_kad_good.push_back(boost::bind(
+        &MaidsafeStoreManager::DeletePacketCallback, &msm,
+        ser_kad_delete_response_good, _1));
   }
+  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
+      functors_kad_empty(functors_kad_good),
+      functors_kad_cant_parse(functors_kad_good),
+      functors_kad_fail(functors_kad_good);
+  functors_kad_empty.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_empty, _1));
+  functors_kad_cant_parse.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_cant_parse, _1));
+  functors_kad_fail.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_fail, _1));
+  functors_kad_good.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_good, _1));
 
-
-  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
+  // Set up expectations
+  EXPECT_CALL(msm, FindValue(packet_name, false, testing::_, testing::_,
       testing::_))
-          .Times(7)
-          .WillOnce(testing::Return(-1))  // Call 1
-          .WillOnce(testing::Return(-1))  // Call 1
-          .WillOnce(testing::Return(-1))  // Call 1
-          .WillOnce(testing::Return(kSuccess))  // Call 2
-          .WillOnce(testing::Return(kSuccess))  // Call 2
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(find_value_results),
-                          testing::Return(kSuccess)))  // Call 2
-          .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(peernames),
-                                testing::Return(kSuccess)));  // Call 3
-  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
-      .Times(1)
-      .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedGetHolderContactCallbacks,
-                peers, 0, 1950, 2000, _1, _2))));  // Call 3
-  for (int i = 0; i < 2; ++i) {
-//    EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
-//        testing::_, testing::_, testing::_))
-//            .Times(1)  // Call 3
-//            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-//                                      get_packet_responses_all_good.at(i)),
-//                                  testing::WithArgs<5>(testing::Invoke(
-//                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
+          .Times(5)
+          .WillOnce(DoAll(testing::SetArgumentPointee<3>(single_value),
+                          testing::Return(kSuccess)))  // Call 9
+          .WillOnce(testing::Return(kFindNodesFailure))  // Call 10
+          .WillOnce(testing::Return(-1))  // Call 11
+          .WillOnce(testing::Return(kSuccess))  // Call 12
+          .WillOnce(DoAll(testing::SetArgumentPointee<3>(packet_values),
+                          testing::Return(kSuccess)));  // Call 13
+
+  EXPECT_CALL(msm, DeletePacketFromNet(testing::_))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_empty, _1))))  // 3
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_cant_parse, _1))))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_fail, _1))))  // 5
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_good, _1))))  // 6
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &MaidsafeStoreManager::DeletePacketCallback, &msm,
+          ser_kad_delete_response_fail, _1))))  // Call 7
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &MaidsafeStoreManager::DeletePacketCallback, &msm,
+          ser_kad_delete_response_good, _1))))  // Call 8
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_good, _1))))  // 9
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_good, _1))));  // 13
+
+  // Call 1 - Check with bad packet name length
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket("InvalidName", packet_values, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
   }
+  ASSERT_EQ(kIncorrectKeySize, packet_op_result_);
 
-  // Call 1
-  ASSERT_EQ(kFindValueFailure, msm.LoadPacket(hex_packetname, &packet_content));
+  // Call 2 - Invalid PacketType
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, packet_values, static_cast<PacketType>(-1),
+                   PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kPacketUnknownType, packet_op_result_);
 
-  // Call 2
-  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));
-  ASSERT_EQ(original_packet_content, packet_content);
+  // Call 3 - Multiple value request - DeleteResponse empty
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, packet_values, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketError, packet_op_result_);
 
-  // Call 3
-  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));
-  ASSERT_EQ(original_packet_content, packet_content);
+  // Call 4 - Multiple value request - DeleteResponse doesn't parse
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, packet_values, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketParseError, packet_op_result_);
+
+  // Call 5 - Multiple value request - DeleteResponse fails
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, packet_values, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketFailure, packet_op_result_);
+
+  // Call 6 - Multiple value request - DeleteResponse passes
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, packet_values, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+
+  // Call 7 - Single value request - DeleteResponse fails
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, single_value.at(0), MID, PRIVATE, "",
+                   functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketFailure, packet_op_result_);
+
+  // Call 8 - Single value request - DeleteResponse success
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, single_value.at(0), MID, PRIVATE, "",
+                   functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+
+  // Call 9 - Single value empty request - DeleteResponse success
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, "", MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+
+  // Call 10 - No values - Packet already deleted from net
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+
+  // Call 11 - No values - FindValue returns failure
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketFindValueFailure, packet_op_result_);
+
+  // Call 12 - No values - FindValue returns success but doesn't populate values
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketFindValueFailure, packet_op_result_);
+
+  // Call 13 - No values - FindValue succeeds
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
 }
 
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail) {
-  MockMsmStoreLoadPacket msm(client_chunkstore_);
-  std::string original_packet_content("original_packet_content");
-  GenericPacket gp;
-  gp.set_data(original_packet_content);
-  gp.set_signature("Sig");
-  std::string packet_content("F");
-  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
-  std::string hex_packetname = base::EncodeToHex(packetname);
-  std::vector<std::string> find_value_results;
-  find_value_results.push_back(original_packet_content);
-  std::vector<std::string> peernames;
-  std::vector<kad::Contact> peers;
-  std::vector<GetPacketResponse> get_packet_responses_all_bad;
-  for (int i = 0; i < 4; ++i) {
-    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
-        crypto::STRING_STRING, false));
-    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
-    GetPacketResponse get_packet_response;
-    get_packet_response.set_result(kNack);
-    GenericPacket *gp_add = get_packet_response.add_content();
-    *gp_add = gp;
-    get_packet_response.set_pmid(peernames[i]);
-    get_packet_responses_all_bad.push_back(get_packet_response);
-  }
-
-
-  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
-      testing::_))
-          .Times(1)
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(peernames),
-                          testing::Return(kSuccess)));
-  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
-      .Times(1)
-      .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedGetHolderContactCallbacks,
-                peers, 0, 1950, 2000, _1, _2))));
-  for (int i = 0; i < 4; ++i) {
-//    EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
-//        testing::_, testing::_, testing::_))
-//            .Times(1)
-//            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-//                            get_packet_responses_all_bad.at(i)),
-//                            testing::WithArgs<5>(testing::Invoke(
-//                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-  ASSERT_EQ(kLoadPacketFailure,
-            msm.LoadPacket(hex_packetname, &packet_content));
-}
-
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed) {
-  MockMsmStoreLoadPacket msm(client_chunkstore_);
-  std::string original_packet_content("original_packet_content");
-  GenericPacket gp;
-  gp.set_data(original_packet_content);
-  gp.set_signature("Sig");
-  std::string packet_content("F");
-  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
-  std::string hex_packetname = base::EncodeToHex(packetname);
-  std::vector<std::string> find_value_results;
-  find_value_results.push_back(original_packet_content);
-  std::vector<std::string> peernames;
-  std::vector<kad::Contact> peers;
-  std::vector<GetPacketResponse> get_packet_responses_one_good;
-  for (int i = 0; i < 4; ++i) {
-    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
-        crypto::STRING_STRING, false));
-    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
-    GetPacketResponse get_packet_response;
-    get_packet_response.set_result(kNack);
-    GenericPacket *gp_add = get_packet_response.add_content();
-    *gp_add = gp;
-    get_packet_response.set_pmid(peernames[i]);
-    if (i == 3)
-      get_packet_response.set_result(kAck);
-    get_packet_responses_one_good.push_back(get_packet_response);
-  }
-
-
-  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
-      testing::_))
-          .Times(1)
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(peernames),
-                          testing::Return(kSuccess)));
-  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
-      .Times(1)
-      .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedGetHolderContactCallbacks,
-                peers, 0, 1950, 2000, _1, _2))));
-  for (int i = 0; i < 4; ++i) {
-//    EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
-//        testing::_, testing::_, testing::_))
-//            .Times(1)
-//            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-//                            get_packet_responses_one_good.at(i)),
-//                            testing::WithArgs<5>(testing::Invoke(
-//                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));
-  ASSERT_EQ(original_packet_content, packet_content);
-}
-*/
 }  // namespace maidsafe

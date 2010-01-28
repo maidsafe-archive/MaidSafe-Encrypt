@@ -509,12 +509,12 @@ void MaidsafeStoreManager::DeletePacket(const std::string &hex_packet_name,
                                         const std::string &msid,
                                         const VoidFuncOneInt &cb) {
   if (value.empty()) {
+    DeletePacket(hex_packet_name, system_packet_type, dir_type, msid, cb);
+  } else {
     std::vector<std::string> values;
     values.push_back(value);
     DeletePacket(hex_packet_name, values, system_packet_type, dir_type, msid,
                  cb);
-  } else {
-    DeletePacket(hex_packet_name, system_packet_type, dir_type, msid, cb);
   }
 }
 
@@ -532,7 +532,7 @@ void MaidsafeStoreManager::DeletePacket(const std::string &hex_packet_name,
   if (res == kFindNodesFailure) {  // packet doesn't exist on net
     cb(kSuccess);
     return;
-  } else if (res != kSuccess) {
+  } else if (res != kSuccess || !values.size()) {
     cb(kDeletePacketFindValueFailure);
     return;
   } else {
