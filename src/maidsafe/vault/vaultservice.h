@@ -47,8 +47,6 @@
 
 namespace maidsafe_vault {
 
-typedef boost::function<void (const int&)> Callback;
-
 class VaultServiceLogic;
 
 struct IsOwnedPendingResponse {
@@ -96,7 +94,7 @@ class AmendRemoteAccountTask : public QRunnable {
   AmendRemoteAccountTask(
       const maidsafe::AmendAccountRequest &amend_account_request,
       const int &found_local_result,
-      Callback callback,
+      VoidFuncOneInt callback,
       VaultServiceLogic *vault_service_logic)
           : amend_account_request_(amend_account_request),
             found_local_result_(found_local_result),
@@ -108,7 +106,7 @@ class AmendRemoteAccountTask : public QRunnable {
   AmendRemoteAccountTask(const AmendRemoteAccountTask&);
   maidsafe::AmendAccountRequest amend_account_request_;
   int found_local_result_;
-  Callback callback_;
+  VoidFuncOneInt callback_;
   VaultServiceLogic *vault_service_logic_;
 };
 
@@ -280,7 +278,7 @@ class VaultService : public maidsafe::MaidsafeService {
       const boost::uint64_t &size,
       const std::string &account_pmid,
       const std::string &chunkname,
-      const Callback &callback);
+      const VoidFuncOneInt &callback);
   void AddToRemoteRefList(const std::string &chunkname,
                           const maidsafe::StoreContract &contract);
   int RemoteVaultAbleToStore(const boost::uint64_t &size,

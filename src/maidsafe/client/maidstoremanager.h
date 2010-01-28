@@ -267,9 +267,7 @@ struct DeletePacketData {
                    const std::string &pub_key,
                    const std::string &pub_key_signature,
                    const std::string &priv_key,
-                   boost::mutex *mut,
-                   boost::condition_variable *cv,
-                   int *res)
+                   VoidFuncOneInt cb)
                        : non_hex_packet_name(non_hex_name),
                          values(packet_values),
                          msid(ms_id),
@@ -279,18 +277,15 @@ struct DeletePacketData {
                          private_key(priv_key),
                          system_packet_type(sys_packet_type),
                          dir_type(directory_type),
-                         mutex(mut),
-                         cond_var(cv),
-                         result(res),
+                         callback(cb),
+                         mutex(),
                          returned_count(0),
-                         notified(false) {}
+                         called_back(false) {}
   // This ctor effectively allows us to use a StoreData struct for deleting
   // a packet during an OverwritePacket operation
   DeletePacketData(boost::shared_ptr<StoreData> store_data,
                    const std::vector<std::string> &vals,
-                   boost::mutex *mut,
-                   boost::condition_variable *cv,
-                   int *res)
+                   VoidFuncOneInt cb)
                        : non_hex_packet_name(store_data->non_hex_key),
                          values(vals),
                          msid(store_data->msid),
@@ -300,21 +295,19 @@ struct DeletePacketData {
                          private_key(store_data->private_key),
                          system_packet_type(store_data->system_packet_type),
                          dir_type(store_data->dir_type),
-                         mutex(mut),
-                         cond_var(cv),
-                         result(res),
+                         callback(cb),
+                         mutex(),
                          returned_count(0),
-                         notified(false) {}
+                         called_back(false) {}
   std::string non_hex_packet_name;
   std::vector<std::string> values;
   std::string msid, key_id, public_key, public_key_signature, private_key;
   PacketType system_packet_type;
   DirType dir_type;
-  boost::mutex *mutex;
-  boost::condition_variable *cond_var;
-  int *result;
+  VoidFuncOneInt callback;
+  boost::mutex mutex;
   size_t returned_count;
-  bool notified;
+  bool called_back;
  private:
 };
 
@@ -556,26 +549,20 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                     PacketType system_packet_type,
                     DirType dir_type,
                     const std::string &msid,
-                    boost::mutex *mutex,
-                    boost::condition_variable *cond_var,
-                    int *result);
+                    const VoidFuncOneInt &cb);
   // Deletes all values for the specified key where values are currently unknown
   void DeletePacket(const std::string &hex_packet_name,
                     PacketType system_packet_type,
                     DirType dir_type,
                     const std::string &msid,
-                    boost::mutex *mutex,
-                    boost::condition_variable *cond_var,
-                    int *result);
+                    const VoidFuncOneInt &cb);
   // Deletes all values for the specified key
   void DeletePacket(const std::string &hex_packet_name,
                     const std::vector<std::string> values,
                     PacketType system_packet_type,
                     DirType dir_type,
                     const std::string &msid,
-                    boost::mutex *mutex,
-                    boost::condition_variable *cond_var,
-                    int *result);
+                    const VoidFuncOneInt &cb);
   int CreateAccount(const boost::uint64_t &space_offered);
   int SetSpaceOffered(const boost::uint64_t &space);
   int GetAccountDetails(boost::uint64_t *space_offered,
@@ -801,6 +788,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           boost::shared_ptr<StoreData> store_data);
   void OverwritePacket(boost::shared_ptr<StoreData> store_data,
                        const std::vector<std::string> &values);
+  void OverwritePacketStageTwo(boost::shared_ptr<StoreData> store_data,
+                               const int &delete_result);
   void DeletePacketFromNet(boost::shared_ptr<DeletePacketData> delete_data);
   void DeletePacketCallback(const std::string &ser_kad_delete_result,
                             boost::shared_ptr<DeletePacketData> delete_data);

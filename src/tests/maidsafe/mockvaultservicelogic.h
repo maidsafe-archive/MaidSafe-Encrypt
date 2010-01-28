@@ -43,6 +43,8 @@
 
 namespace mock_vsl {
 
+typedef boost::function<void (const int&)> VoidFuncOneInt;
+
 enum FindNodesResponseType {
   kFailParse,
   kResultFail,
@@ -117,7 +119,7 @@ void RunCallback(const std::string &find_nodes_response,
                  const base::callback_func_type &callback);
 
 void RunVaultCallback(const int &result,
-                      const maidsafe_vault::Callback &callback);
+                      const mock_vsl::VoidFuncOneInt &callback);
 
 void DoneRun(const int &min_delay,
              const int &max_delay,
@@ -131,7 +133,7 @@ void ThreadedDoneRun(const int &min_delay,
 
 namespace maidsafe_vault {
 
-typedef boost::function<void (const int&)> Callback;
+typedef boost::function<void (const int&)> VoidFuncOneInt;
 
 class MockVaultRpcs : public VaultRpcs {
  public:
@@ -182,7 +184,7 @@ class MockVslAddToRefTest : public VaultServiceLogic {
   MOCK_METHOD3(AmendRemoteAccount,
                void(const maidsafe::AmendAccountRequest &request,
                     const int &found_local_result,
-                    const Callback &callback));
+                    const VoidFuncOneInt &callback));
 };
 
 class MockVslServiceTest : public VaultServiceLogic {
@@ -196,7 +198,7 @@ class MockVslServiceTest : public VaultServiceLogic {
   MOCK_METHOD3(AmendRemoteAccount,
                void(const maidsafe::AmendAccountRequest &request,
                     const int &found_local_result,
-                    const Callback &callback));
+                    const VoidFuncOneInt &callback));
 };
 
 class MockVaultServiceLogicTest : public testing::Test {

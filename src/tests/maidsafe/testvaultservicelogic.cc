@@ -39,7 +39,8 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   boost::mutex mutex;
   boost::condition_variable cv;
   int result(kGeneralError);
-  Callback cb = boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
+  VoidFuncOneInt cb =
+      boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
   vsl.AmendRemoteAccount(aar, kSuccess, cb);
   {
     boost::mutex::scoped_lock lock(mutex);
@@ -290,7 +291,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   boost::mutex mutex;
   boost::condition_variable cv;
   int result(kGeneralError);
-  Callback cb = boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
+  VoidFuncOneInt cb =
+      boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
 
   // Expectations
   EXPECT_CALL(vsl, FindCloseNodes(account_name, testing::_))

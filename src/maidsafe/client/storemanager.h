@@ -87,26 +87,20 @@ class StoreManagerInterface {
                             PacketType system_packet_type,
                             DirType dir_type,
                             const std::string &msid,
-                            boost::mutex *mutex,
-                            boost::condition_variable *cond_var,
-                            int *result)=0;
+                            const VoidFuncOneInt &cb)=0;
   // Deletes all values for the specified key where values are currently unknown
   virtual void DeletePacket(const std::string &hex_packet_name,
                             PacketType system_packet_type,
                             DirType dir_type,
                             const std::string &msid,
-                            boost::mutex *mutex,
-                            boost::condition_variable *cond_var,
-                            int *result)=0;
+                            const VoidFuncOneInt &cb)=0;
   // Deletes all values for the specified key
   virtual void DeletePacket(const std::string &hex_packet_name,
                             const std::vector<std::string> values,
                             PacketType system_packet_type,
                             DirType dir_type,
                             const std::string &msid,
-                            boost::mutex *mutex,
-                            boost::condition_variable *cond_var,
-                            int *result)=0;
+                            const VoidFuncOneInt &cb)=0;
 
   // Buffer packet
   virtual int CreateBP()=0;

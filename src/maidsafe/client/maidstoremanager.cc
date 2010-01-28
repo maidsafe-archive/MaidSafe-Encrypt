@@ -397,12 +397,10 @@ int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
   std::string packet_name = base::DecodeFromHex(hex_packet_name);
   kad::ContactInfo cache_holder;
   std::string needs_cache_copy_id;
-  // If this blocking Kad call to FindValue yields multiple values, they are
-  // packet holder IDs.  If there is just one, it should be the actual value.
   for (int attempt = 0; attempt < kMaxChunkLoadRetries; ++attempt) {
     int res = FindValue(packet_name, false, &cache_holder, results,
         &needs_cache_copy_id);
-    if (res != kSuccess || results->empty()) {
+    if (res != kSuccess || results->empty() || cache_holder.has_node_id()) {
       if (attempt == kMaxChunkLoadRetries - 1) {
 #ifdef DEBUG
         printf("In MaidsafeStoreManager::LoadPacket (%i), failed FindValue\n",
@@ -414,18 +412,10 @@ int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
         continue;
       }
     } else {
-      break;
+      return kSuccess;
     }
   }
-  // If only one value returned, it should be the packet value
-//  if (results->size() == 1) {
-//    return kSuccess;
-//  } else if (results->size() > 1) {
-//    std::vector<std::string> packet_holder_ids(*results);
-//    return LoadPacketFromVaults(packet_name, packet_holder_ids, results);
-//  } else {
-    return kFindValueFailure;
-//  }
+  return kFindValueFailure;
 }
 
 bool MaidsafeStoreManager::KeyUnique(const std::string &hex_key,
@@ -518,17 +508,14 @@ void MaidsafeStoreManager::DeletePacket(const std::string &hex_packet_name,
                                         PacketType system_packet_type,
                                         DirType dir_type,
                                         const std::string &msid,
-                                        boost::mutex *mutex,
-                                        boost::condition_variable *cond_var,
-                                        int *result) {
+                                        const VoidFuncOneInt &cb) {
   if (value.empty()) {
     std::vector<std::string> values;
     values.push_back(value);
     DeletePacket(hex_packet_name, values, system_packet_type, dir_type, msid,
-                 mutex, cond_var, result);
+                 cb);
   } else {
-    DeletePacket(hex_packet_name, system_packet_type, dir_type, msid, mutex,
-                 cond_var, result);
+    DeletePacket(hex_packet_name, system_packet_type, dir_type, msid, cb);
   }
 }
 
@@ -536,33 +523,22 @@ void MaidsafeStoreManager::DeletePacket(const std::string &hex_packet_name,
                                         PacketType system_packet_type,
                                         DirType dir_type,
                                         const std::string &msid,
-                                        boost::mutex *mutex,
-                                        boost::condition_variable *cond_var,
-                                        int *result) {
+                                        const VoidFuncOneInt &cb) {
   std::string packet_name = base::DecodeFromHex(hex_packet_name);
   kad::ContactInfo cache_holder;
   std::vector<std::string> values;
   std::string needs_cache_copy_id;
   int res = FindValue(packet_name, false, &cache_holder, &values,
                       &needs_cache_copy_id);
-  bool good_pointers = (mutex != NULL && cond_var != NULL && result != NULL);
   if (res == kFindNodesFailure) {  // packet doesn't exist on net
-    if (good_pointers) {
-      boost::mutex::scoped_lock lock(*mutex);
-      *result = kSuccess;
-      cond_var->notify_one();
-    }
+    cb(kSuccess);
     return;
   } else if (res != kSuccess) {
-    if (good_pointers) {
-      boost::mutex::scoped_lock lock(*mutex);
-      *result = kDeletePacketFindValueFailure;
-      cond_var->notify_one();
-    }
+    cb(kDeletePacketFindValueFailure);
     return;
   } else {
     DeletePacket(hex_packet_name, values, system_packet_type, dir_type, msid,
-                 mutex, cond_var, result);
+                 cb);
   }
 }
 
@@ -571,9 +547,7 @@ void MaidsafeStoreManager::DeletePacket(const std::string &hex_packet_name,
                                         PacketType system_packet_type,
                                         DirType dir_type,
                                         const std::string &msid,
-                                        boost::mutex *mutex,
-                                        boost::condition_variable *cond_var,
-                                        int *result) {
+                                        const VoidFuncOneInt &cb) {
   int prep = kSuccess;
   if (hex_packet_name.length() != 2 * kKeySize) {
     prep = kIncorrectKeySize;
@@ -597,8 +571,7 @@ void MaidsafeStoreManager::DeletePacket(const std::string &hex_packet_name,
       case ANMPID: {
         boost::shared_ptr<DeletePacketData> delete_data(new DeletePacketData(
             packet_name, values, system_packet_type, dir_type, msid, key_id,
-            public_key, public_key_signature, private_key, mutex, cond_var,
-            result));
+            public_key, public_key_signature, private_key, cb));
         // packet_thread_pool_ handles destruction of delete_packet_task.
         DeletePacketTask *delete_packet_task =
             new DeletePacketTask(delete_data, this);
@@ -612,11 +585,8 @@ void MaidsafeStoreManager::DeletePacket(const std::string &hex_packet_name,
         prep = kPacketUnknownType;
     }
   }
-  if (mutex != NULL && cond_var != NULL && result != NULL && prep != kSuccess) {
-    boost::mutex::scoped_lock lock(*mutex);
-    *result = prep;
-    cond_var->notify_one();
-  }
+  if (prep != kSuccess)
+    cb(prep);
 }
 
 int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space_offered) {
@@ -2321,15 +2291,15 @@ void MaidsafeStoreManager::SendPacketCallback(
 void MaidsafeStoreManager::OverwritePacket(
     boost::shared_ptr<StoreData> store_data,
     const std::vector<std::string> &values) {
-  boost::mutex delete_mutex;
-  boost::condition_variable delete_cond_var;
-  int delete_result(kGeneralError);
   boost::shared_ptr<DeletePacketData> delete_data(new DeletePacketData(
-      store_data, values, &delete_mutex, &delete_cond_var, &delete_result));
-  while (delete_result == kGeneralError) {
-    boost::mutex::scoped_lock lock(delete_mutex);
-    delete_cond_var.wait(lock);
-  }
+      store_data, values, boost::bind(
+      &MaidsafeStoreManager::OverwritePacketStageTwo, this, store_data, _1)));
+  DeletePacketFromNet(delete_data);
+}
+
+void MaidsafeStoreManager::OverwritePacketStageTwo(
+    boost::shared_ptr<StoreData> store_data,
+    const int &delete_result) {
   if (delete_result == kSuccess) {
     SendPacket(store_data);
     return;
@@ -2345,15 +2315,9 @@ void MaidsafeStoreManager::DeletePacketFromNet(
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  base::callback_func_type cb;
-  if (delete_data->mutex == NULL ||
-      delete_data->cond_var == NULL ||
-      delete_data->result == NULL)
-    cb = boost::bind(&MaidsafeStoreManager::DoNothingCallback, this, _1);
-  else
-    cb = boost::bind(&MaidsafeStoreManager::DeletePacketCallback, this, _1,
-        delete_data);
-  boost::mutex::scoped_lock lock(*delete_data->mutex);
+  base::callback_func_type cb = boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, this, _1, delete_data);
+  boost::mutex::scoped_lock lock(delete_data->mutex);
   for (size_t i = 0; i < delete_data->values.size(); ++i) {
     kad::SignedValue signed_value;
     signed_value.set_value(delete_data->values.at(i));
@@ -2375,19 +2339,15 @@ void MaidsafeStoreManager::DeletePacketFromNet(
 void MaidsafeStoreManager::DeletePacketCallback(
     const std::string &ser_kad_delete_result,
     boost::shared_ptr<DeletePacketData> delete_data) {
-  if (delete_data->mutex == NULL || delete_data->cond_var == NULL ||
-      delete_data->result == NULL || delete_data->notified) {
-    delete_data->notified = true;
+  if (delete_data->called_back)
     return;
-  }
   if (ser_kad_delete_result.empty()) {
 #ifdef DEBUG
     printf("In MSM::DeletePacketCallback, fail - timeout.\n");
 #endif
-    boost::mutex::scoped_lock lock(*delete_data->mutex);
-    *delete_data->result = kDeletePacketError;
-    delete_data->cond_var->notify_one();
-    delete_data->notified = true;
+    boost::mutex::scoped_lock lock(delete_data->mutex);
+    delete_data->callback(kDeletePacketError);
+    delete_data->called_back = true;
     return;
   }
   kad::DeleteResponse delete_response;
@@ -2395,28 +2355,25 @@ void MaidsafeStoreManager::DeletePacketCallback(
 #ifdef DEBUG
     printf("In MSM::DeletePacketCallback, can't parse result.\n");
 #endif
-    boost::mutex::scoped_lock lock(*delete_data->mutex);
-    *delete_data->result = kDeletePacketParseError;
-    delete_data->cond_var->notify_one();
-    delete_data->notified = true;
+    boost::mutex::scoped_lock lock(delete_data->mutex);
+    delete_data->callback(kDeletePacketParseError);
+    delete_data->called_back = true;
     return;
   }
   if (delete_response.result() != kad::kRpcResultSuccess) {
 #ifdef DEBUG
     printf("In MSM::DeletePacketCallback, Kademlia operation failed.\n");
 #endif
-    boost::mutex::scoped_lock lock(*delete_data->mutex);
-    *delete_data->result = kDeletePacketFailure;
-    delete_data->cond_var->notify_one();
-    delete_data->notified = true;
+    boost::mutex::scoped_lock lock(delete_data->mutex);
+    delete_data->callback(kDeletePacketFailure);
+    delete_data->called_back = true;
     return;
   }
-  boost::mutex::scoped_lock lock(*delete_data->mutex);
+  boost::mutex::scoped_lock lock(delete_data->mutex);
   ++delete_data->returned_count;
   if (delete_data->returned_count >= delete_data->values.size()) {
-    *delete_data->result = kSuccess;
-    delete_data->cond_var->notify_one();
-    delete_data->notified = true;
+    delete_data->callback(kSuccess);
+    delete_data->called_back = true;
   }
 }
 

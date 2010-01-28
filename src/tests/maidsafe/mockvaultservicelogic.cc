@@ -102,7 +102,7 @@ void RunCallback(const std::string &find_nodes_response,
 };
 
 void RunVaultCallback(const int &result,
-                      const maidsafe_vault::Callback &callback) {
+                      const maidsafe_vault::VoidFuncOneInt &callback) {
   callback(result);
 }
 

@@ -276,7 +276,7 @@ void VaultServiceLogic::HandleFindKNodesResponse(
 void VaultServiceLogic::AmendRemoteAccount(
     const maidsafe::AmendAccountRequest &request,
     const int &found_local_result,
-    const Callback &callback) {
+    const VoidFuncOneInt &callback) {
   if (!online()) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccount, offline %s\n",

@@ -1640,7 +1640,7 @@ void VaultService::AmendRemoteAccount(
     const boost::uint64_t &size,
     const std::string &account_pmid,
     const std::string &chunkname,
-    const Callback &callback) {
+    const VoidFuncOneInt &callback) {
   // Check if we happen to hold the account - if so, modify as required
   int found_local_result = ah_.HaveAccount(account_pmid);
   if (found_local_result != kAccountNotFound) {

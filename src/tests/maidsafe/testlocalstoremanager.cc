@@ -34,6 +34,8 @@
 
 namespace fs = boost::filesystem;
 
+namespace test_lsm {
+
 class FakeCallback {
  public:
   explicit FakeCallback(boost::mutex *m)
@@ -84,6 +86,17 @@ void wait_for_result_lsm2(const FakeCallback &fcb, boost::mutex *mutex) {
   }
 };
 
+void DeletePacketCallback(const int &delete_result,
+                          boost::mutex *mutex,
+                          boost::condition_variable *cond_var,
+                          int *result) {
+  boost::mutex::scoped_lock lock(*mutex);
+  *result = delete_result;
+  cond_var->notify_one();
+};
+
+}  // namespace test_lsm
+
 class LocalStoreManagerTest : public testing::Test {
  public:
   LocalStoreManagerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
@@ -130,7 +143,8 @@ class LocalStoreManagerTest : public testing::Test {
     }
     storemanager = new maidsafe::LocalStoreManager(client_chunkstore_);
     // storemanager = new LocalStoreManager();
-    storemanager->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
+    storemanager->Init(0, boost::bind(&test_lsm::FakeCallback::CallbackFunc,
+                                      &cb, _1));
     wait_for_result_lsm(cb, mutex_);
     maidsafe::GenericResponse res;
     ASSERT_TRUE(res.ParseFromString(cb.result_));
@@ -151,8 +165,8 @@ class LocalStoreManagerTest : public testing::Test {
   void TearDown() {
     ss_->ResetSession();
     cb.Reset();
-    storemanager->Close(boost::bind(&FakeCallback::CallbackFunc, &cb, _1),
-                        true);
+    storemanager->Close(boost::bind(&test_lsm::FakeCallback::CallbackFunc,
+                                    &cb, _1), true);
     wait_for_result_lsm(cb, mutex_);
     maidsafe::GenericResponse res;
     ASSERT_TRUE(res.ParseFromString(cb.result_));
@@ -175,7 +189,7 @@ class LocalStoreManagerTest : public testing::Test {
   crypto::Crypto crypto_obj;
   crypto::RsaKeyPair rsa_obj;
   boost::mutex *mutex_;
-  FakeCallback cb;
+  test_lsm::FakeCallback cb;
   maidsafe::SessionSingleton *ss_;
 
  private:
@@ -248,7 +262,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
 
   result = maidsafe::kGeneralError;
   storemanager->DeletePacket(gp_name, gp_content, maidsafe::BUFFER,
-      maidsafe::PRIVATE, "", &mutex, &cond_var, &result);
+      maidsafe::PRIVATE, "", boost::bind(&test_lsm::DeletePacketCallback, _1,
+      &mutex, &cond_var, &result));
   while (result == maidsafe::kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);
@@ -574,9 +589,9 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
 
   ASSERT_EQ(0, ss_->AddContact(me_pubusername, me_pubkey, "", "", "", 'U', 1, 2,
             "", 'C', 0, 0));
-  FakeCallback fcb(mutex_);
+  test_lsm::FakeCallback fcb(mutex_);
   storemanager->ContactInfo(me_pubusername, "Juanito Banana",
-                boost::bind(&FakeCallback::ContactInfo_CB, &fcb, _1, _2, _3));
+      boost::bind(&test_lsm::FakeCallback::ContactInfo_CB, &fcb, _1, _2, _3));
   wait_for_result_lsm2(fcb, mutex_);
   ASSERT_EQ(maidsafe::kGetBPInfoError, fcb.result);
 
@@ -593,9 +608,9 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
   ASSERT_EQ(0, ss_->AddContact(me_pubusername, me_pubkey, "", "", "", 'U', 1, 2,
             "", 'C', 0, 0));
 
-  FakeCallback fcb1(mutex_);
+  test_lsm::FakeCallback fcb1(mutex_);
   storemanager->ContactInfo(me_pubusername, ss_->Id(maidsafe::MPID),
-                boost::bind(&FakeCallback::ContactInfo_CB, &fcb1, _1, _2, _3));
+      boost::bind(&test_lsm::FakeCallback::ContactInfo_CB, &fcb1, _1, _2, _3));
   wait_for_result_lsm2(fcb1, mutex_);
   ASSERT_EQ(maidsafe::kSuccess, fcb1.result);
   ASSERT_EQ(ep->ip(), fcb1.end_point.ip());

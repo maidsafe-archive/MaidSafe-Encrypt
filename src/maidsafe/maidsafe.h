@@ -50,6 +50,8 @@ const boost::uint32_t kMinRegularFileSize = 512;
 const boost::uint32_t kKeySize = 64;
 // const crypto::hashtype kHashSize(crypto::SHA_512);
 
+typedef boost::function<void (const int&)> VoidFuncOneInt;
+
 struct Key_Type {
   Key_Type() : package_type(), id(), private_key(), public_key() {}
   maidsafe::PacketType package_type;

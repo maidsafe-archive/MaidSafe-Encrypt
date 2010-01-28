@@ -917,16 +917,28 @@ int Authentication::StorePacket(const std::string &hex_packet_name,
 int Authentication::DeletePacket(const std::string &hex_packet_name,
                                  const std::string &value,
                                  const PacketType &type) {
+// TODO(Fraser#5#): 2010-01-28 - Use callbacks properly to allow several deletes
+//                               to happen concurrently.
   boost::mutex mutex;
   boost::condition_variable cond_var;
   int result(kGeneralError);
-  storemanager_->DeletePacket(hex_packet_name, value, type, PRIVATE, "",
-      &mutex, &cond_var, &result);
+  VoidFuncOneInt func = boost::bind(&Authentication::DeletePacketCallback, this,
+                                    _1, &mutex, &cond_var, &result);
+  storemanager_->DeletePacket(hex_packet_name, value, type, PRIVATE, "", func);
   while (result == kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);
   }
   return result;
+}
+
+void Authentication::DeletePacketCallback(const int &delete_result,
+                                          boost::mutex *mutex,
+                                          boost::condition_variable *cond_var,
+                                          int *result) {
+  boost::mutex::scoped_lock lock(*mutex);
+  *result = delete_result;
+  cond_var->notify_one();
 }
 
 }  // namespace maidsafe

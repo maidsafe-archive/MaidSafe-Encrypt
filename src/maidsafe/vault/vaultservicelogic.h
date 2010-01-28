@@ -43,8 +43,6 @@ class Contact;
 
 namespace maidsafe_vault {
 
-typedef boost::function<void (const int&)> Callback;
-
 class VaultRpcs;
 
 // This is used to hold the data required to perform a Kad lookup to get a
@@ -67,7 +65,7 @@ struct AddRefCallbackData {
         failure_count(0),
         callback_done(false),
         result(kVaultServiceError) {}
-  Callback callback;
+  VoidFuncOneInt callback;
   boost::mutex mutex;
   boost::condition_variable cv;
   std::vector<kad::Contact> contacts;
@@ -92,7 +90,7 @@ struct AmendRemoteAccountOpData {
   AmendRemoteAccountOpData(maidsafe::AmendAccountRequest req,
                            std::string name,
                            int found_local_res,
-                           Callback cb)
+                           VoidFuncOneInt cb)
       : request(req),
         account_name(name),
         found_local_result(found_local_res),
@@ -106,7 +104,7 @@ struct AmendRemoteAccountOpData {
   maidsafe::AmendAccountRequest request;
   std::string account_name;  // non-hex version
   int found_local_result;
-  Callback callback;
+  VoidFuncOneInt callback;
   boost::mutex mutex;
   std::vector<kad::Contact> contacts;
   std::vector<AmendRemoteAccountOpHolder> data_holders;
@@ -137,7 +135,7 @@ struct AccountStatusCallbackData {
         callback_done(false),
         result(kVaultServiceError) {}
   std::string account_name;  // non-hex version
-  Callback callback;
+  VoidFuncOneInt callback;
   boost::mutex mutex;
   boost::condition_variable cv;
   std::vector<kad::Contact> contacts;
@@ -178,7 +176,7 @@ class VaultServiceLogic {
   // Amend account of PMID requesting to be added to Watch List or Ref List.
   virtual void AmendRemoteAccount(const maidsafe::AmendAccountRequest &request,
                                   const int &found_local_result,
-                                  const Callback &callback);
+                                  const VoidFuncOneInt &callback);
   // Blocking call which looks up account holders and sends each an
   // AccountStatusRequest to establish if the account owner has space to store
   int RemoteVaultAbleToStore(maidsafe::AccountStatusRequest request);
