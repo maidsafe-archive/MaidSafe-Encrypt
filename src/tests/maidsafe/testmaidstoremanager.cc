@@ -608,17 +608,19 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
 
 class MockClientRpcs : public ClientRpcs {
  public:
-  MockClientRpcs(transport::Transport *transport,
+  MockClientRpcs(transport::TransportHandler *transport_handler,
                  rpcprotocol::ChannelManager *channel_manager)
-                     : ClientRpcs(transport, channel_manager) {}
-  MOCK_METHOD6(GetPacket, void(const kad::Contact &peer,
+                     : ClientRpcs(transport_handler, channel_manager) {}
+  MOCK_METHOD7(GetPacket, void(const kad::Contact &peer,
                                bool local,
+                               const boost::int16_t &transport_id,
                                GetPacketRequest *get_request,
                                GetPacketResponse *get_response,
                                rpcprotocol::Controller *controller,
                                google::protobuf::Closure *done));
-  MOCK_METHOD6(StorePacket, void(const kad::Contact &peer,
+  MOCK_METHOD7(StorePacket, void(const kad::Contact &peer,
                                  bool local,
+                                 const boost::int16_t &transport_id,
                                  StorePacketRequest *store_packet_request,
                                  StorePacketResponse *store_packet_response,
                                  rpcprotocol::Controller *controller,
@@ -992,7 +994,8 @@ class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreNewPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs>
-      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
+      mock_rpcs(new MockClientRpcs(&msm.transport_handler_,
+                                   &msm.channel_manager_));
   msm.SetMockRpcs(mock_rpcs);
   crypto::RsaKeyPair anmid_keys;
   anmid_keys.GenerateKeys(kRsaKeySize);
@@ -1076,15 +1079,15 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreNewPacket) {
 
   for (int i = 0; i < 4; ++i) {
     EXPECT_CALL(*mock_rpcs, StorePacket(packet_holders[i]->chunk_holder_contact,
-        testing::_, testing::_, testing::_, testing::_, testing::_))
+        testing::_, testing::_, testing::_, testing::_, testing::_, testing::_))
             .Times(2)  // Call 3 then 4
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+            .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                       packet_holders[i]->store_packet_response),
-                            testing::WithArgs<5>(testing::Invoke(
+                            testing::WithArgs<6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+            .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                       packet_holders[i]->store_packet_response),
-                            testing::WithArgs<5>(testing::Invoke(
+                            testing::WithArgs<6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
 
@@ -1108,7 +1111,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreNewPacket) {
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreExistingPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs>
-      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
+      mock_rpcs(new MockClientRpcs(&msm.transport_handler_,
+                                   &msm.channel_manager_));
   msm.SetMockRpcs(mock_rpcs);
   crypto::RsaKeyPair anmid_keys;
   anmid_keys.GenerateKeys(kRsaKeySize);
@@ -1208,15 +1212,15 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreExistingPacket) {
 
   for (int i = 0; i < 4; ++i) {
     EXPECT_CALL(*mock_rpcs, StorePacket(packet_holders[i]->chunk_holder_contact,
-        testing::_, testing::_, testing::_, testing::_, testing::_))
+        testing::_, testing::_, testing::_, testing::_, testing::_, testing::_))
             .Times(2)  // Call 1
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+            .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                       packet_holders[i]->store_packet_response),
-                            testing::WithArgs<5>(testing::Invoke(
+                            testing::WithArgs<6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+            .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                       packet_holders[i]->store_packet_response),
-                            testing::WithArgs<5>(testing::Invoke(
+                            testing::WithArgs<6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
 
@@ -1245,7 +1249,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreExistingPacket) {
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs>
-      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
+      mock_rpcs(new MockClientRpcs(&msm.transport_handler_,
+                                   &msm.channel_manager_));
   msm.SetMockRpcs(mock_rpcs);
   std::string original_packet_content("original_packet_content");
   GenericPacket gp;
@@ -1291,11 +1296,11 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
                 peers, 0, 1950, 2000, _1, _2))));  // Call 3
   for (int i = 0; i < 2; ++i) {
     EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
-        testing::_, testing::_, testing::_))
+        testing::_, testing::_, testing::_, testing::_))
             .Times(1)  // Call 3
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+            .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                       get_packet_responses_all_good.at(i)),
-                                  testing::WithArgs<5>(testing::Invoke(
+                                  testing::WithArgs<6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
 
@@ -1314,7 +1319,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs>
-      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
+      mock_rpcs(new MockClientRpcs(&msm.transport_handler_,
+                                   &msm.channel_manager_));
   msm.SetMockRpcs(mock_rpcs);
   std::string original_packet_content("original_packet_content");
   GenericPacket gp;
@@ -1353,11 +1359,11 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail) {
                 peers, 0, 1950, 2000, _1, _2))));
   for (int i = 0; i < 4; ++i) {
     EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
-        testing::_, testing::_, testing::_))
+        testing::_, testing::_, testing::_, testing::_))
             .Times(1)
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+            .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                             get_packet_responses_all_bad.at(i)),
-                            testing::WithArgs<5>(testing::Invoke(
+                            testing::WithArgs<6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
   ASSERT_EQ(kLoadPacketFailure,
@@ -1367,7 +1373,8 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail) {
 TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs>
-      mock_rpcs(new MockClientRpcs(&msm.transport_, &msm.channel_manager_));
+      mock_rpcs(new MockClientRpcs(&msm.transport_handler_,
+                                   &msm.channel_manager_));
   msm.SetMockRpcs(mock_rpcs);
   std::string original_packet_content("original_packet_content");
   GenericPacket gp;
@@ -1408,11 +1415,11 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed) {
                 peers, 0, 1950, 2000, _1, _2))));
   for (int i = 0; i < 4; ++i) {
     EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
-        testing::_, testing::_, testing::_))
+        testing::_, testing::_, testing::_, testing::_))
             .Times(1)
-            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+            .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                             get_packet_responses_one_good.at(i)),
-                            testing::WithArgs<5>(testing::Invoke(
+                            testing::WithArgs<6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
   }
   ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));

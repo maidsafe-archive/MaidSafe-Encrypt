@@ -26,7 +26,8 @@ ClientBufferPacketHandler::ClientBufferPacketHandler(
 }
 
 void ClientBufferPacketHandler::CreateBufferPacket(
-    const BPInputParameters &args, bp_operations_cb cb) {
+    const BPInputParameters &args, bp_operations_cb cb,
+    const boost::int16_t &transport_id) {
   BufferPacket buffer_packet;
   GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
   BufferPacketInfo buffer_packet_info;
@@ -52,11 +53,11 @@ void ClientBufferPacketHandler::CreateBufferPacket(
       data->request.bufferpacket_name(), "", crypto::STRING_STRING, false), "",
       args.private_key, crypto::STRING_STRING));
 
-  IterativeStore(data);
+  IterativeStore(data, transport_id);
 }
 
 void ClientBufferPacketHandler::IterativeStore(
-    boost::shared_ptr<CreateBPData> data) {
+    boost::shared_ptr<CreateBPData> data, const boost::int16_t &transport_id) {
   if (data->is_calledback)
     return;
 
@@ -90,13 +91,14 @@ void ClientBufferPacketHandler::IterativeStore(
     cb_data.ctrl = new rpcprotocol::Controller;
     cb_data.ctc = *it;
     cb_data.data = data;
+    cb_data.transport_id = transport_id;
     CreateBPResponse *resp = new CreateBPResponse;
     google::protobuf::Closure *done = google::protobuf::NewCallback <
       ClientBufferPacketHandler, const CreateBPResponse*, CreateBPCallbackData >
       (this, &ClientBufferPacketHandler::CreateBPCallback, resp, cb_data);
     data->exclude_ctcs.push_back(cb_data.ctc);
-    rpcs_->CreateBP(cb_data.ctc, local, &data->request, resp, cb_data.ctrl,
-      done);
+    rpcs_->CreateBP(cb_data.ctc, local, transport_id, &data->request, resp,
+                    cb_data.ctrl, done);
     ++it;
   }
 }
@@ -106,14 +108,14 @@ void ClientBufferPacketHandler::CreateBPCallback(const CreateBPResponse *resp,
   if (cb_data.data->is_calledback) {
     delete resp;
     delete cb_data.ctrl;
-    IterativeStore(cb_data.data);
+    IterativeStore(cb_data.data, cb_data.transport_id);
     return;
   }
 
   if (!resp->IsInitialized() || cb_data.ctrl->Failed()) {
     delete resp;
     delete cb_data.ctrl;
-    IterativeStore(cb_data.data);
+    IterativeStore(cb_data.data, cb_data.transport_id);
     return;
   }
 
@@ -122,12 +124,12 @@ void ClientBufferPacketHandler::CreateBPCallback(const CreateBPResponse *resp,
 
   delete resp;
   delete cb_data.ctrl;
-  IterativeStore(cb_data.data);
+  IterativeStore(cb_data.data, cb_data.transport_id);
 }
 
 void ClientBufferPacketHandler::ModifyOwnerInfo(const BPInputParameters &args,
     const int &status, const std::vector<std::string> &users,
-    bp_operations_cb cb) {
+    bp_operations_cb cb, const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(args.sign_id);
@@ -160,13 +162,14 @@ void ClientBufferPacketHandler::ModifyOwnerInfo(const BPInputParameters &args,
   data->cb = cb;
   data->type = MODIFY_INFO;
   FindReferences(boost::bind(&ClientBufferPacketHandler::FindReferences_CB,
-    this, _1, data), data);
+    this, _1, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::AddMessage(const BPInputParameters &args,
     const std::string &my_pu, const std::string &recver_public_key,
     const std::string &receiver_id, const std::string &message,
-    const MessageType &m_type, bp_operations_cb cb) {
+    const MessageType &m_type, bp_operations_cb cb,
+    const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
 
   BufferPacketMessage bpmsg;
@@ -208,11 +211,11 @@ void ClientBufferPacketHandler::AddMessage(const BPInputParameters &args,
   data->cb = cb;
   data->type = ADD_MESSAGE;
   FindReferences(boost::bind(&ClientBufferPacketHandler::FindReferences_CB,
-                 this, _1, data), data);
+    this, _1, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::GetMessages(const BPInputParameters &args,
-    bp_getmessages_cb cb) {
+    bp_getmessages_cb cb, const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   data->get_msgs_request.set_bufferpacket_name(crypto_obj_.Hash(args.sign_id +
     args.public_key, "", crypto::STRING_STRING, false));
@@ -230,7 +233,7 @@ void ClientBufferPacketHandler::GetMessages(const BPInputParameters &args,
   data->type = GET_MESSAGES;
   data->private_key = args.private_key;
   FindReferences(boost::bind(&ClientBufferPacketHandler::FindReferences_CB,
-    this, _1, data), data);
+    this, _1, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::ContactInfo(
@@ -238,7 +241,8 @@ void ClientBufferPacketHandler::ContactInfo(
     const std::string &my_pu,
     const std::string &recs_pu,
     const std::string &recs_pk,
-    bp_getcontactinfo_cb cicb) {
+    bp_getcontactinfo_cb cicb,
+    const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   data->contactinfo_request.set_bufferpacket_name(
       crypto_obj_.Hash(recs_pu + recs_pk, "", crypto::STRING_STRING, false));
@@ -258,7 +262,7 @@ void ClientBufferPacketHandler::ContactInfo(
   data->type = GET_INFO;
   data->private_key = my_signing_credentials.private_key;
   FindReferences(boost::bind(&ClientBufferPacketHandler::FindReferences_CB,
-    this, _1, data), data);
+    this, _1, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::FindReferences(base::callback_func_type cb,
@@ -285,7 +289,7 @@ void ClientBufferPacketHandler::FindRemoteContact(base::callback_func_type cb,
 }
 
 void ClientBufferPacketHandler::FindReferences_CB(const std::string &result,
-    boost::shared_ptr<ChangeBPData> data) {
+    boost::shared_ptr<ChangeBPData> data, const boost::int16_t &transport_id) {
   kad::FindResponse rslt;
   if (!rslt.ParseFromString(result) ||
       rslt.result() != kad::kRpcResultSuccess) {
@@ -313,15 +317,17 @@ void ClientBufferPacketHandler::FindReferences_CB(const std::string &result,
 
   ModifyBPCallbackData cb_data;
   cb_data.data = data;
+  cb_data.transport_id = transport_id;
   IterativeFindContacts(cb_data);
 }
 
 void ClientBufferPacketHandler::FindRemoteContact_CB(const std::string &result,
-    boost::shared_ptr<ChangeBPData> data) {
+    boost::shared_ptr<ChangeBPData> data, const boost::int16_t &transport_id) {
   kad::FindNodeResult rslt;
   kad::Contact ctc;
   ModifyBPCallbackData cb_data;
   cb_data.data = data;
+  cb_data.transport_id = transport_id;
   if (!rslt.ParseFromString(result) ||
       rslt.result() != kad::kRpcResultSuccess ||
       !ctc.ParseFromString(rslt.contact())) {
@@ -337,38 +343,34 @@ void ClientBufferPacketHandler::FindRemoteContact_CB(const std::string &result,
       case MODIFY_INFO: {
         cb_data.modify_response = new ModifyBPInfoResponse;
         google::protobuf::Closure *done = google::protobuf::NewCallback <
-            ClientBufferPacketHandler, ModifyBPCallbackData > (this,
-            &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
-        rpcs_->ModifyBPInfo(ctc, local, &data->modify_request,
-            cb_data.modify_response, cb_data.ctrl, done);
-        break;
+          ClientBufferPacketHandler, ModifyBPCallbackData > (this,
+          &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
+        rpcs_->ModifyBPInfo(ctc, local, transport_id, &data->modify_request,
+          cb_data.modify_response, cb_data.ctrl, done);
       }
       case ADD_MESSAGE: {
         cb_data.add_msg_response = new AddBPMessageResponse;
         google::protobuf::Closure *done = google::protobuf::NewCallback <
-            ClientBufferPacketHandler, ModifyBPCallbackData > (this,
-            &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
-        rpcs_->AddBPMessage(ctc, local, &data->add_msg_request,
-            cb_data.add_msg_response, cb_data.ctrl, done);
-        break;
+          ClientBufferPacketHandler, ModifyBPCallbackData > (this,
+          &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
+        rpcs_->AddBPMessage(ctc, local, transport_id, &data->add_msg_request,
+          cb_data.add_msg_response, cb_data.ctrl, done);
       }
       case GET_MESSAGES: {
         cb_data.get_msgs_response = new GetBPMessagesResponse;
         google::protobuf::Closure *done = google::protobuf::NewCallback <
-            ClientBufferPacketHandler, ModifyBPCallbackData > (this,
-            &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
-        rpcs_->GetBPMessages(ctc, local, &data->get_msgs_request,
-            cb_data.get_msgs_response, cb_data.ctrl, done);
-        break;
+          ClientBufferPacketHandler, ModifyBPCallbackData > (this,
+          &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
+        rpcs_->GetBPMessages(ctc, local, transport_id, &data->get_msgs_request,
+          cb_data.get_msgs_response, cb_data.ctrl, done);
       }
       case GET_INFO: {
         cb_data.contactinfo_response = new ContactInfoResponse;
         google::protobuf::Closure *done = google::protobuf::NewCallback <
-            ClientBufferPacketHandler, ModifyBPCallbackData > (this,
-            &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
-        rpcs_->ContactInfo(ctc, local, &data->contactinfo_request,
-            cb_data.contactinfo_response, cb_data.ctrl, done);
-        break;
+          ClientBufferPacketHandler, ModifyBPCallbackData > (this,
+          &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
+        rpcs_->ContactInfo(ctc, local, transport_id, &data->contactinfo_request,
+          cb_data.contactinfo_response, cb_data.ctrl, done);
       }
     }
   }
@@ -480,8 +482,8 @@ void ClientBufferPacketHandler::IterativeFindContacts(
     const int curr_idx(data.data->idx);
     ++data.data->idx;
     FindRemoteContact(boost::bind(
-      &ClientBufferPacketHandler::FindRemoteContact_CB, this, _1, data.data),
-      data.data, curr_idx);
+      &ClientBufferPacketHandler::FindRemoteContact_CB, this, _1, data.data,
+      data.transport_id), data.data, curr_idx);
     --remaining;
   }
 }

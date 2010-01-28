@@ -28,6 +28,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <maidsafe/kademlia_service_messages.pb.h>
+#include <maidsafe/transportudt.h>
 
 #include <list>
 
@@ -54,7 +55,8 @@ void vsvc_dummy_callback(const std::string &result) {
 
 void AddToRemoteRefListTask::run() {
   int result = vault_service_logic_->AddToRemoteRefList(chunkname_,
-                                                        store_contract_);
+                                                        store_contract_,
+                                                        transport_id_);
 #ifdef DEBUG
   if (result != kSuccess)
     printf("AddToRemoteRefListTask returned result %i for chunk (%s).\n",
@@ -68,7 +70,7 @@ void AddToRemoteRefListTask::run() {
 
 void AmendRemoteAccountTask::run() {
   vault_service_logic_->AmendRemoteAccount(amend_account_request_,
-      found_local_result_, callback_);
+      found_local_result_, callback_, transport_id_);
 }
 
 VaultService::VaultService(const std::string &pmid_public,
@@ -77,7 +79,8 @@ VaultService::VaultService(const std::string &pmid_public,
                            VaultChunkStore *vault_chunkstore,
                            kad::KNode *knode,
                            PendingOperationsHandler *poh,
-                           VaultServiceLogic *vault_service_logic)
+                           VaultServiceLogic *vault_service_logic,
+                           const boost::int16_t &transport_id)
     : pmid_public_(pmid_public),
       pmid_private_(pmid_private),
       pmid_public_signature_(pmid_public_signature),
@@ -87,6 +90,7 @@ VaultService::VaultService(const std::string &pmid_public,
       knode_(knode),
       poh_(poh),
       vault_service_logic_(vault_service_logic),
+      transport_id_(transport_id),
       prm_(),
       ah_(),
       aah_(&ah_, vault_service_logic_),
@@ -1909,7 +1913,7 @@ void VaultService::AmendRemoteAccount(
   // thread_pool_ handles destruction of task.
   AmendRemoteAccountTask *task =
       new AmendRemoteAccountTask(amend_account_request, found_local_result,
-                                 callback, vault_service_logic_);
+                                 callback, vault_service_logic_, transport_id_);
   thread_pool_.start(task);
 }
 
@@ -1923,7 +1927,8 @@ void VaultService::AddToRemoteRefList(const std::string &chunkname,
 
   // thread_pool_ handles destruction of task.
   AddToRemoteRefListTask *task =
-      new AddToRemoteRefListTask(chunkname, contract, vault_service_logic_);
+      new AddToRemoteRefListTask(chunkname, contract, vault_service_logic_,
+                                 transport_id_);
   thread_pool_.start(task);
 }
 
@@ -1932,7 +1937,7 @@ int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
   maidsafe::AccountStatusRequest as_req;
   as_req.set_account_pmid(account_pmid);
   as_req.set_space_requested(size);
-  return vault_service_logic_->RemoteVaultAbleToStore(as_req);
+  return vault_service_logic_->RemoteVaultAbleToStore(as_req, transport_id_);
 }
 
 RegistrationService::RegistrationService(
@@ -1987,7 +1992,7 @@ void RegistrationService::SetLocalVaultOwned(
     if (cobj.AsymCheckSig(request->public_key(), signed_key,
         request->public_key(), crypto::STRING_STRING)) {
       // checking if port is available
-      transport::Transport test_tranport;
+      transport::TransportUDT test_tranport;
       if (request->port() == 0 || test_tranport.IsPortAvailable(
           request->port())) {
         response->set_result(maidsafe::OWNED_SUCCESS);

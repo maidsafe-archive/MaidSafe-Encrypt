@@ -61,10 +61,12 @@ class AddToRemoteRefListTask : public QRunnable {
  public:
   AddToRemoteRefListTask(const std::string &chunkname,
                          const maidsafe::StoreContract &store_contract,
-                         VaultServiceLogic *vault_service_logic)
+                         VaultServiceLogic *vault_service_logic,
+                         const boost::int16_t &transport_id)
       : chunkname_(chunkname),
         store_contract_(store_contract),
-        vault_service_logic_(vault_service_logic) {}
+        vault_service_logic_(vault_service_logic),
+        transport_id_(transport_id) {}
   void run();
  private:
   AddToRemoteRefListTask &operator=(const AddToRemoteRefListTask&);
@@ -72,6 +74,7 @@ class AddToRemoteRefListTask : public QRunnable {
   std::string chunkname_;
   maidsafe::StoreContract store_contract_;
   VaultServiceLogic *vault_service_logic_;
+  boost::int16_t transport_id_;
 };
 
 //  class RemoveFromRemoteRefListTask : public QRunnable {
@@ -97,11 +100,13 @@ class AmendRemoteAccountTask : public QRunnable {
       const maidsafe::AmendAccountRequest &amend_account_request,
       const int &found_local_result,
       Callback callback,
-      VaultServiceLogic *vault_service_logic)
+      VaultServiceLogic *vault_service_logic,
+      const boost::int16_t &transport_id)
           : amend_account_request_(amend_account_request),
             found_local_result_(found_local_result),
             callback_(callback),
-            vault_service_logic_(vault_service_logic) {}
+            vault_service_logic_(vault_service_logic),
+            transport_id_(transport_id) {}
   void run();
  private:
   AmendRemoteAccountTask &operator=(const AmendRemoteAccountTask&);
@@ -110,6 +115,7 @@ class AmendRemoteAccountTask : public QRunnable {
   int found_local_result_;
   Callback callback_;
   VaultServiceLogic *vault_service_logic_;
+  boost::int16_t transport_id_;
 };
 
 class VaultChunkStore;
@@ -122,7 +128,8 @@ class VaultService : public maidsafe::MaidsafeService {
                VaultChunkStore *vault_chunkstore,
                kad::KNode *knode,
                PendingOperationsHandler *poh,
-               VaultServiceLogic *vault_service_logic);
+               VaultServiceLogic *vault_service_logic,
+               const boost::int16_t &transport_id);
   ~VaultService() {}
   virtual void StorePrep(google::protobuf::RpcController* controller,
                          const maidsafe::StorePrepRequest *request,
@@ -307,6 +314,7 @@ class VaultService : public maidsafe::MaidsafeService {
   kad::KNode *knode_;
   PendingOperationsHandler *poh_;
   VaultServiceLogic *vault_service_logic_;
+  boost::int16_t transport_id_;
   typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
   PrepsReceivedMap prm_;
   AccountHandler ah_;
