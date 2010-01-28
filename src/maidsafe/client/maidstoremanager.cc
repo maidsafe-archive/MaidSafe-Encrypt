@@ -290,7 +290,7 @@ void MaidsafeStoreManager::StorePacket(const std::string &hex_packet_name,
         return;
       }
       case PD_DIR:
-        StorePdDirToVaults(hex_packet_name, value, dir_type, msid);
+//        StorePdDirToVaults(hex_packet_name, value, dir_type, msid);
         return;
       default:
         prep = kPacketUnknownType;
@@ -2128,6 +2128,7 @@ void MaidsafeStoreManager::GetChunkCallback(boost::mutex *mutex,
   get_chunk_conditional_.notify_all();
 }
 
+/*
 int MaidsafeStoreManager::StorePdDirToVaults(const std::string &hex_packet_name,
                                              const std::string &value,
                                              DirType dir_type,
@@ -2148,6 +2149,7 @@ int MaidsafeStoreManager::StorePdDirToVaults(const std::string &hex_packet_name,
 //      NULL);
 //  return kSuccess;
 }
+*/
 
 void MaidsafeStoreManager::FindCloseNodes(
     const std::vector<std::string> &packet_holder_ids,
@@ -2175,7 +2177,7 @@ void MaidsafeStoreManager::SendPacketPrep(
                                &values, &needs_cache_copy_id));
   if (cache_holder.has_node_id())
     to_return = kSendPacketCached;
-  bool exists = (find_result == kSuccess);
+  bool exists = (find_result == kSuccess && values.size());
   // If FindValue failed to complete the kad function then return.
   if (to_return == kUndefined && !exists && find_result != kFindValueFailure) {
 #ifdef DEBUG
@@ -2185,29 +2187,33 @@ void MaidsafeStoreManager::SendPacketPrep(
     to_return = kSendPacketFindValueFailure;
   }
   if (to_return == kUndefined) {
-    switch (store_data->if_packet_exists) {
-      case kDoNothingReturnFailure:
-        to_return = kSendPacketAlreadyExists;
-        break;
-      case kDoNothingReturnSuccess:
-        to_return = kSuccess;
-        break;
-      case kOverwrite:
-        OverwritePacket(store_data, values);
-        break;
-      case kAppend:
-        SendPacket(store_data);
-        break;
-      default:
-        to_return = kSendPacketUnknownExistsType;
-        break;
+    if (exists) {
+      switch (store_data->if_packet_exists) {
+        case kDoNothingReturnFailure:
+          to_return = kSendPacketAlreadyExists;
+          break;
+        case kDoNothingReturnSuccess:
+          to_return = kSuccess;
+          break;
+        case kOverwrite:
+          OverwritePacket(store_data, values);
+          break;
+        case kAppend:
+          SendPacket(store_data);
+          break;
+        default:
+          to_return = kSendPacketUnknownExistsType;
+          break;
+      }
+    } else {
+      SendPacket(store_data);
     }
   }
   if (to_return != kUndefined) {
 #ifdef DEBUG
-    printf("In MSM::SendPacketPrep, fail - %i.\n", to_return);
+    printf("In MSM::SendPacketPrep, fail: %i.\n", to_return);
 #endif
-    store_data->callback(kSendPacketError);
+    store_data->callback(to_return);
   }
 }
 

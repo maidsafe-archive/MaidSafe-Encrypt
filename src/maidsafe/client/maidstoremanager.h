@@ -605,8 +605,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
-  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreNewPacket);
-  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreExistingPacket);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed);
@@ -756,12 +756,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    std::string *serialised_get_messages_response,
                    boost::mutex *get_mutex);
   void GetChunkCallback(boost::mutex *mutex, bool *get_chunk_done);
-  // Non-blocking specialised version of the StorePacketToVaults method used to
+/*  // Non-blocking specialised version of the StorePacketToVaults method used to
   // store encrypted PD dirs only.
   int StorePdDirToVaults(const std::string &hex_packet_name,
                          const std::string &value,
                          DirType dir_type,
                          const std::string &msid);
+*/
   virtual void FindCloseNodes(
       const std::vector<std::string> &packet_holder_ids,
       std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
@@ -776,7 +777,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                        const std::vector<std::string> &values);
   void OverwritePacketStageTwo(boost::shared_ptr<StoreData> store_data,
                                const int &delete_result);
-  void DeletePacketFromNet(boost::shared_ptr<DeletePacketData> delete_data);
+  virtual void DeletePacketFromNet(
+      boost::shared_ptr<DeletePacketData> delete_data);
   void DeletePacketCallback(const std::string &ser_kad_delete_result,
                             boost::shared_ptr<DeletePacketData> delete_data);
   void DoNothingCallback(const std::string&) {}
