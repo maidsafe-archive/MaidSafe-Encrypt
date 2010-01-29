@@ -20,6 +20,7 @@
 *
 * ============================================================================
 */
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <maidsafe/contact_info.pb.h>
@@ -28,7 +29,8 @@
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "protobuf/maidsafe_messages.pb.h"
+#include "maidsafe/vault/vaultchunkstore.h"
+#include "maidsafe/vault/vaultservice.h"
 
 namespace test_msm {
 
@@ -538,6 +540,118 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       store_chunk_request.public_key_signature());
   ASSERT_EQ(request_signature, store_chunk_request.request_signature());
   ASSERT_EQ(DATA, store_chunk_request.data_type());
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
+  MaidsafeStoreManager msm(client_chunkstore_);
+  // Make peer keys
+  crypto::RsaKeyPair peer_pmid_keys;
+  peer_pmid_keys.GenerateKeys(kRsaKeySize);
+  std::string peer_pmid_pri = peer_pmid_keys.private_key();
+  std::string peer_pmid_pub = peer_pmid_keys.public_key();
+  std::string peer_pmid_pub_signature = crypto_.AsymSign(peer_pmid_pub, "",
+      peer_pmid_pri, crypto::STRING_STRING);
+  std::string peer_pmid = crypto_.Hash(peer_pmid_pub + peer_pmid_pub_signature,
+      "", crypto::STRING_STRING, false);
+  // Make request
+  StorePrepRequest store_prep_request;
+  StoreChunkRequest store_chunk_request;
+  std::string chunk_value(base::RandomString(163));
+  std::string chunk_name(crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
+      false));
+  StoreData store_data(chunk_name, chunk_value.size(), (kHashable | kOutgoing),
+      PRIVATE, "", client_pmid_, client_pmid_keys_.public_key(),
+      client_pmid_public_signature_, client_pmid_keys_.private_key());
+  client_chunkstore_->AddChunkToOutgoing(chunk_name, chunk_value);
+  ASSERT_EQ(kSuccess, msm.GetStoreRequests(store_data, peer_pmid,
+      &store_prep_request, &store_chunk_request));
+  // Make proper response
+  maidsafe_vault::VaultChunkStore
+      vault_chunkstore(test_root_dir_ + "/VaultChunkstore", 999999, 0);
+  maidsafe_vault::VaultService vault_service(peer_pmid_pub, peer_pmid_pri,
+      peer_pmid_pub_signature, &vault_chunkstore, NULL, NULL, NULL);
+  StorePrepResponse good_store_prep_response;
+  google::protobuf::Closure *done =
+      google::protobuf::NewCallback(&google::protobuf::DoNothing);
+  vault_service.StorePrep(NULL, &store_prep_request,
+                          &good_store_prep_response, done);
+
+  // Uninitialised StorePrepResponse
+  StorePrepResponse store_prep_response;
+  ASSERT_EQ(kSendPrepResponseUninitialised, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // Uninitialised StoreContract
+  store_prep_response = good_store_prep_response;
+  store_prep_response.clear_store_contract();
+  ASSERT_EQ(kSendPrepResponseUninitialised, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // Uninitialised InnerContract
+  store_prep_response = good_store_prep_response;
+  StoreContract *mutable_store_contract =
+      store_prep_response.mutable_store_contract();
+  mutable_store_contract->clear_inner_contract();
+  ASSERT_EQ(kSendPrepResponseUninitialised, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // Wrong PMID
+  store_prep_response = good_store_prep_response;
+  mutable_store_contract = store_prep_response.mutable_store_contract();
+  mutable_store_contract->set_pmid(client_pmid_);
+  ASSERT_EQ(kSendPrepPeerError, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // Altered SignedSize
+  store_prep_response = good_store_prep_response;
+  mutable_store_contract = store_prep_response.mutable_store_contract();
+  StoreContract::InnerContract *mutable_inner_contract =
+      mutable_store_contract->mutable_inner_contract();
+  SignedSize *mutable_signed_size =
+      mutable_inner_contract->mutable_signed_size();
+  mutable_signed_size->set_data_size(chunk_value.size() - 1);
+  ASSERT_EQ(kSendPrepSignedSizeAltered, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // Returned kNack
+  store_prep_response = good_store_prep_response;
+  mutable_store_contract = store_prep_response.mutable_store_contract();
+  mutable_inner_contract = mutable_store_contract->mutable_inner_contract();
+  mutable_inner_contract->set_result(kNack);
+  ASSERT_EQ(kSendPrepFailure, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // PMID doesn't validate
+  store_prep_response = good_store_prep_response;
+  mutable_store_contract = store_prep_response.mutable_store_contract();
+  std::string wrong_pmid = crypto_.Hash(base::RandomString(100), "",
+      crypto::STRING_STRING, false);
+  mutable_store_contract->set_pmid(wrong_pmid);
+  ASSERT_EQ(kSendPrepInvalidId, msm.ValidatePrepResponse(wrong_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // PMID didn't sign StoreContract correctly
+  store_prep_response = good_store_prep_response;
+  store_prep_response.set_response_signature(crypto_.AsymSign(
+      base::RandomString(100), "", peer_pmid_pri, crypto::STRING_STRING));
+  ASSERT_EQ(kSendPrepInvalidResponseSignature, msm.ValidatePrepResponse(
+      peer_pmid, store_prep_request.signed_size(), &store_prep_response));
+
+  // PMID didn't sign InnerContract correctly
+  store_prep_response = good_store_prep_response;
+  mutable_store_contract = store_prep_response.mutable_store_contract();
+  mutable_store_contract->set_signature(crypto_.AsymSign(base::RandomString(99),
+      "", peer_pmid_pri, crypto::STRING_STRING));
+  std::string ser_bad_contract;
+  mutable_store_contract->SerializeToString(&ser_bad_contract);
+  store_prep_response.set_response_signature(crypto_.AsymSign(ser_bad_contract,
+      "", peer_pmid_pri, crypto::STRING_STRING));
+  ASSERT_EQ(kSendPrepInvalidContractSignature, msm.ValidatePrepResponse(
+      peer_pmid, store_prep_request.signed_size(), &store_prep_response));
+
+  // All OK
+  ASSERT_EQ(kSuccess, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &good_store_prep_response));
 }
 
 class MockMsmSendChunk : public MaidsafeStoreManager {

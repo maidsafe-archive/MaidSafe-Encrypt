@@ -1412,10 +1412,52 @@ int MaidsafeStoreManager::SendPrep(
     }
     send_prep_cond_data.cond_flag = false;
   }
-  // TODO(Fraser#5#): 2009-12-18 - Validate contract in store_prep_response
-  return (store_prep_response->store_contract().pmid() == peer.node_id() &&
-          store_prep_response->store_contract().inner_contract().result() ==
-          kAck) ? kSuccess : kSendPrepFailure;
+  return ValidatePrepResponse(peer.node_id(), store_prep_request->signed_size(),
+                              store_prep_response);
+}
+
+int MaidsafeStoreManager::ValidatePrepResponse(
+    const std::string &peer_node_id,
+    const SignedSize &request_signed_size,
+    StorePrepResponse *const store_prep_response) {
+  // Check response is initialised and from correct peer
+  if (!store_prep_response->IsInitialized())
+    return kSendPrepResponseUninitialised;
+  StoreContract store_contract = store_prep_response->store_contract();
+  if (!store_contract.IsInitialized())
+    return kSendPrepResponseUninitialised;
+  StoreContract::InnerContract inner_contract = store_contract.inner_contract();
+  if (!inner_contract.IsInitialized())
+    return kSendPrepResponseUninitialised;
+  if (store_contract.pmid() != peer_node_id)
+    return kSendPrepPeerError;
+  // Check original SignedSize is unaltered
+  std::string ser_req_signed_size, ser_resp_signed_size;
+  request_signed_size.SerializeToString(&ser_req_signed_size);
+  inner_contract.signed_size().SerializeToString(&ser_resp_signed_size);
+  if (ser_req_signed_size != ser_resp_signed_size)
+    return kSendPrepSignedSizeAltered;
+  // Check response is kAck & peer PMID validates
+  if (inner_contract.result() != kAck)
+    return kSendPrepFailure;
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  if (store_contract.pmid() != co.Hash(store_contract.public_key() +
+      store_contract.public_key_signature(), "", crypto::STRING_STRING, false))
+    return kSendPrepInvalidId;
+  // Check peer correctly signed StoreContract and InnerContract
+  std::string ser_store_contract, ser_inner_contract;
+  store_contract.SerializeToString(&ser_store_contract);
+  inner_contract.SerializeToString(&ser_inner_contract);
+  if (!co.AsymCheckSig(ser_store_contract,
+                       store_prep_response->response_signature(),
+                       store_contract.public_key(),
+                       crypto::STRING_STRING))
+    return kSendPrepInvalidResponseSignature;
+  if (!co.AsymCheckSig(ser_inner_contract, store_contract.signature(),
+                       store_contract.public_key(), crypto::STRING_STRING))
+    return kSendPrepInvalidContractSignature;
+  return kSuccess;
 }
 
 void MaidsafeStoreManager::SendPrepCallback(

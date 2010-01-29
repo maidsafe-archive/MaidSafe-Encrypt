@@ -603,7 +603,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   MaidsafeStoreManager(const MaidsafeStoreManager&);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_PrepareToSendChunk);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
-  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket);
@@ -668,6 +668,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       boost::shared_ptr<boost::condition_variable> cond_variable,
       StorePrepRequest *store_prep_request,
       StorePrepResponse *store_prep_response);
+  int ValidatePrepResponse(const std::string &peer_node_id,
+                           const SignedSize &request_signed_size,
+                           StorePrepResponse *const store_prep_response);
   void SendPrepCallback(GenericConditionData *send_prep_cond_data);
   // Send the actual data content to the peer.
   virtual int SendContent(
