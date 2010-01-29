@@ -90,13 +90,11 @@ struct AmendRemoteAccountOpData {
   AmendRemoteAccountOpData(maidsafe::AmendAccountRequest req,
                            std::string name,
                            int found_local_res,
-                           VoidFuncOneInt cb,
-                           boost::int16_t trans_id)
+                           VoidFuncOneInt cb)
       : request(req),
         account_name(name),
         found_local_result(found_local_res),
         callback(cb),
-        transport_id(trans_id),
         mutex(),
         contacts(),
         data_holders(),
@@ -107,7 +105,6 @@ struct AmendRemoteAccountOpData {
   std::string account_name;  // non-hex version
   int found_local_result;
   VoidFuncOneInt callback;
-  boost::int16_t transport_id;
   boost::mutex mutex;
   std::vector<kad::Contact> contacts;
   std::vector<AmendRemoteAccountOpHolder> data_holders;
@@ -163,8 +160,7 @@ class VaultServiceLogic {
   // Blocking call which looks up Chunk Info holders and sends each an
   // AddToReferenceListRequest to add this vault's ID to ref list for chunkname.
   virtual int AddToRemoteRefList(const std::string &chunkname,
-                                 const maidsafe::StoreContract &store_contract,
-                                 const boost::int16_t &transport_id);
+                                 const maidsafe::StoreContract &store_contract);
   // Blocking call to Kademlia FindCloseNodes
   int FindKNodes(const std::string &kad_key,
                  std::vector<kad::Contact> *contacts);
@@ -180,12 +176,10 @@ class VaultServiceLogic {
   // Amend account of PMID requesting to be added to Watch List or Ref List.
   virtual void AmendRemoteAccount(const maidsafe::AmendAccountRequest &request,
                                   const int &found_local_result,
-                                  const VoidFuncOneInt &callback,
-                                  const boost::int16_t &transport_id);
+                                  const VoidFuncOneInt &callback);
   // Blocking call which looks up account holders and sends each an
   // AccountStatusRequest to establish if the account owner has space to store
-  int RemoteVaultAbleToStore(maidsafe::AccountStatusRequest request,
-                             const boost::int16_t &transport_id);
+  int RemoteVaultAbleToStore(maidsafe::AccountStatusRequest request);
  private:
   VaultServiceLogic(const VaultServiceLogic&);
   VaultServiceLogic &operator=(const VaultServiceLogic&);

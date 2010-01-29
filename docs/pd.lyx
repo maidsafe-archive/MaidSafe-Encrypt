@@ -1,4 +1,4 @@
-#LyX 1.6.4 created this file. For more info see http://www.lyx.org/
+#LyX 1.6.2 created this file. For more info see http://www.lyx.org/
 \lyxformat 345
 \begin_document
 \begin_header
@@ -939,31 +939,6 @@ System Building Blocks
 \end_layout
 
 \begin_layout Subsection
-Buffer Packet
-\end_layout
-
-\begin_layout Standard
-To enable faster moving values than a standard kademlia key could update
- or keep in synchronisation a special kademlia type is created called a
- buffer packet.
- This is a system where a key can accept many short TTL values and the recipient
-s of these values read them on and confirm there new by the hash of the
- value being checked for uniqueness.
- This requires the TTL on the data to be at least 20% shorter than the remembere
-d hashes list the recipient has to create and monitor.
- As an indicative step a TTL of 180seconds is recommended with a remembered
- list time of 50seconds to ensure consistency.
- This allows what would seem like faster reads on the network than is currently
- possible.
- Here kademlia delete is not used but rather TTL and data expiration is
- used.
-\end_layout
-
-\begin_layout Standard
-XXXXXXXXXXX expand and finalise this 
-\end_layout
-
-\begin_layout Subsection
 Generic BUFFER Packet
 \begin_inset CommandInset label
 LatexCommand label
@@ -1066,278 +1041,17 @@ A special entry in the buffer packet
  synchronous encryption is decided to be a better option here.
 \end_layout
 
-\begin_layout Subsection
-Chunk Info Holder (CIH)
-\end_layout
-
-\begin_layout Standard
-The CIH contains 2 peices of logic, the watchlist and the reference packet.
- 
-\end_layout
-
 \begin_layout Subsubsection
-Watchlist
+Watch List
 \end_layout
 
 \begin_layout Standard
-The watch list is a list of 4 ID's that are all self signed and works as
- follows:
-\end_layout
-
-\begin_layout Itemize
-A client requests the network store a chunk by selecting 4 nodes form his
- routing table with the appropriate rank
-\end_layout
-
-\begin_layout Standard
-The ID's are the PMID ID's and are not linked to the user ID or public ID
- and are only used to save data and request delete of data chunks.
+The watch list is a special type of buffer packet.
+ The watch list is a list of 50 ID's that are all self signed.
+ The ID's are the MAID ID's and are not linked to the user ID or public
+ ID and are only used to save data and request delete of data chunks.
  This list may eventually be encompassed in the rank packet described later.
  
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\begin_inset Caption
-
-\begin_layout Plain Layout
-\begin_inset Graphics
-	filename seq/Watch_List_Add.png
-	scale 30
-	clip
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\begin_inset Caption
-
-\begin_layout Plain Layout
-\begin_inset Graphics
-	filename seq/Watch_List_Remove.png
-	scale 30
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsubsection
-Chunk References
-\begin_inset CommandInset label
-LatexCommand label
-name "sub:Chunk-References"
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-As a vault stores a chunk it updates the chunk reference packet with a message
- signed by it's PMID.
- This packet takes the form 
-\end_layout
-
-\begin_layout Standard
-\begin_inset Tabular
-<lyxtabular version="3" rows="4" columns="1">
-<features>
-<column alignment="center" valignment="top" width="0">
-<row>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-Chunk Name (Key)
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $PMID1-NAME_{[PMID]}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $PMID2-NAME_{[PMID]}$
-\end_inset
-
- 
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-....
-\end_layout
-
-\end_inset
-</cell>
-</row>
-</lyxtabular>
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The key holder is the k closest nodes to the key as standard in Kadmelia
- networks.
- It has to know this is a chunk reference packet and follows these rules.
-\end_layout
-
-\begin_layout Enumerate
-Allow deletion of a value by the signing authority of the value (in this
- case the value is a PMID (512 bit hash)) and the signature is the PMID
- signed by the PMID private key.
- The deletion instruction would have to be signed by the PMID private key.
- This can be thought of as self deletion, i.e.
- it is the PMID deleting itself from the reference.
-\end_layout
-
-\begin_layout Enumerate
-Allow deletion of a value on lost chunk - by the request of any of the other
- chunk holders signed by their PMID.
- In this case the holder will confirm with the 'to be deleted' PMID that
- the vault has in fact lost the chunk (or stopped storing it), this is done
- via a RPC.
- If the deletion request is valid the reference is removed and the existing
- chunk holder messaged (to their buffer packet - or direct) that there is
- a lost chunk
-\begin_inset Foot
-status collapsed
-
-\begin_layout Plain Layout
-It should be noted here, this is a case where a signed data bit can be deleted,
- by someone who is not the signatory.
- This is only allowed by reference holders and confirmed by every reference
- holder.
- i.e.
- when an update is done here then the reference holder republishes the value
- to the K closest nodes immediately.
- This republish MUST contain the signed deletion instruction in the case
- of point 1 or it must contain the deletion request in point 2, in this
- case each holder confirms again the deletion is in fact true, otherwise
- republish again.
- Republish does not mean any node updates the rank this is only done once
- by the original reference holder.
-\end_layout
-
-\end_inset
-
-.
- 
-\end_layout
-
-\begin_layout Enumerate
-For both 1 & 2 above the deleted PMID rank packet (see
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sub:Rank-Packets-(or"
-
-\end_inset
-
-) is decremented by a value of the number of kilobytes of the chunk.
-\end_layout
-
-\begin_layout Enumerate
-In the case of a PMID being added to this reference then the PMID add reference
- message is stored in the cache directory.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption
-
-\begin_layout Plain Layout
-\begin_inset Graphics
-	filename seq/Reference_List_Add.pdf
-	scale 30
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Subsection
@@ -3724,6 +3438,150 @@ The vault then moves the lost chunks to it's cache directory
 \end_layout
 
 \begin_layout Subsection
+Chunk References
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Chunk-References"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+As a vault stores a chunk it updates the chunk reference packet with a message
+ signed by it's PMID.
+ This packet takes the form 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="1">
+<features>
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Chunk Name (Key)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $PMID1-NAME_{[PMID]}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $PMID2-NAME_{[PMID]}$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+....
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The key holder is the k closest nodes to the key as standard in Kadmelia
+ networks.
+ It has to know this is a chunk reference packet and follows these rules.
+\end_layout
+
+\begin_layout Enumerate
+Allow deletion of a value by the signing authority of the value (in this
+ case the value is a PMID (512 bit hash)) and the signature is the PMID
+ signed by the PMID private key.
+ The deletion instruction would have to be signed by the PMID private key.
+ This can be thought of as self deletion, i.e.
+ it is the PMID deleting itself from the reference.
+\end_layout
+
+\begin_layout Enumerate
+Allow deletion of a value on lost chunk - by the request of any of the other
+ chunk holders signed by their PMID.
+ In this case the holder will confirm with the 'to be deleted' PMID that
+ the vault has in fact lost the chunk (or stopped storing it), this is done
+ via a RPC.
+ If the deletion request is valid the reference is removed and the existing
+ chunk holder messaged (to their buffer packet - or direct) that there is
+ a lost chunk
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+It should be noted here, this is a case where a signed data bit can be deleted,
+ by someone who is not the signatory.
+ This is only allowed by reference holders and confirmed by every reference
+ holder.
+ i.e.
+ when an update is done here then the reference holder republishes the value
+ to the K closest nodes immediately.
+ This republish MUST contain the signed deletion instruction in the case
+ of point 1 or it must contain the deletion request in point 2, in this
+ case each holder confirms again the deletion is in fact true, otherwise
+ republish again.
+ Republish does not mean any node updates the rank this is only done once
+ by the original reference holder.
+\end_layout
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Enumerate
+For both 1 & 2 above the deleted PMID rank packet (see
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Rank-Packets-(or"
+
+\end_inset
+
+) is decremented by a value of the number of kilobytes of the chunk.
+\end_layout
+
+\begin_layout Enumerate
+In the case of a PMID being added to this reference then the PMID add reference
+ message is stored in the cache directory.
+\end_layout
+
+\begin_layout Subsection
 Rank 
 \begin_inset CommandInset label
 LatexCommand label
@@ -3960,7 +3818,7 @@ ed and saved into routing tables.
  A FIND_RANK RPC will allow the kademlia network to be queried for all nodes
  close to the RANK packet and the average of the returned values is considered
  that nodes rank.
- This RPC may be performed prior to a STORE_DATA RPC to ensure the rank
+ This RPC will be performed prior to a STORE_DATA RPC to ensure the rank
  is correct and up to date, when required.
 \end_layout
 
@@ -3986,9 +3844,9 @@ To store a bit of data - we want to find nodes to store this on - so what
 
 \begin_layout Standard
 \begin_inset Graphics
-	filename seq/STORE_NEW_CHUNK.pdf
+	filename seq/STORE_CHUNK.png
 	lyxscale 45
-	scale 30
+	scale 20
 
 \end_inset
 

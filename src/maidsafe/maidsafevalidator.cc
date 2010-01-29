@@ -39,16 +39,12 @@ bool MaidsafeValidator::ValidateSignerId(const std::string &signer_id,
                                          const std::string &signed_public_key) {
   crypto::Crypto co;
   if (signer_id.empty() || public_key.empty() || signed_public_key.empty()) {
-#ifdef DEBUG
     printf("111111111111111111111\n");
-#endif
     return false;
   }
   if (signer_id != co.Hash(public_key + signed_public_key, "",
       crypto::STRING_STRING, false)) {
-#ifdef DEBUG
     printf("22222222222222222222222\n");
-#endif
     return false;
   }
   return true;
@@ -68,9 +64,7 @@ bool MaidsafeValidator::ValidateRequest(const std::string &signed_request,
       key, "", crypto::STRING_STRING, false), signed_request, public_key,
       crypto::STRING_STRING))
     return true;
-#ifdef DEBUG
   printf("3333333333333333333333\n");
-#endif
   return false;
 }
 

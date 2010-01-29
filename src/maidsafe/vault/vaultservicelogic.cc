@@ -78,8 +78,7 @@ void VaultServiceLogic::SetKThreshold(const boost::uint16_t &threshold) {
 
 int VaultServiceLogic::AddToRemoteRefList(
     const std::string &chunkname,
-    const maidsafe::StoreContract &store_contract,
-    const boost::int16_t &transport_id) {
+    const maidsafe::StoreContract &store_contract) {
 // printf("1. Vault %s - contacts size: %u\n", HexSubstr(non_hex_pmid_).c_str(),
 //         (*base::PDRoutingTable::getInstance())[base::itos(port_)]->size());
   if (!online()) {
@@ -144,7 +143,6 @@ int VaultServiceLogic::AddToRemoteRefList(
         &VaultServiceLogic::AddToRemoteRefListCallback, j, data);
     vault_rpcs_->AddToReferenceList(data->contacts.at(j),
                                     AddressIsLocal(data->contacts.at(j)),
-                                    transport_id,
                                     &request,
                                     &data->data_holders.at(j).response,
                                     data->data_holders.at(j).controller.get(),
@@ -278,8 +276,7 @@ void VaultServiceLogic::HandleFindKNodesResponse(
 void VaultServiceLogic::AmendRemoteAccount(
     const maidsafe::AmendAccountRequest &request,
     const int &found_local_result,
-    const VoidFuncOneInt &callback,
-    const boost::int16_t &transport_id) {
+    const VoidFuncOneInt &callback) {
   if (!online()) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccount, offline %s\n",
@@ -293,7 +290,7 @@ void VaultServiceLogic::AmendRemoteAccount(
   std::string account_name(co.Hash(request.account_pmid() + kAccount, "",
       crypto::STRING_STRING, false));
   boost::shared_ptr<AmendRemoteAccountOpData> data(new AmendRemoteAccountOpData(
-      request, account_name, found_local_result, callback, transport_id));
+      request, account_name, found_local_result, callback));
   FindCloseNodes(account_name, boost::bind(
       &VaultServiceLogic::AmendRemoteAccountStageTwo, this, data, _1));
 }
@@ -354,7 +351,6 @@ void VaultServiceLogic::AmendRemoteAccountStageTwo(
         &VaultServiceLogic::AmendRemoteAccountStageThree, j, data);
     vault_rpcs_->AmendAccount(data->contacts.at(j),
                               AddressIsLocal(data->contacts.at(j)),
-                              data->transport_id,
                               &data->request,
                               &data->data_holders.at(j).response,
                               data->data_holders.at(j).controller.get(),
@@ -408,8 +404,7 @@ void VaultServiceLogic::AmendRemoteAccountStageThree(
 }
 
 int VaultServiceLogic::RemoteVaultAbleToStore(
-    maidsafe::AccountStatusRequest request,
-    const boost::int16_t &transport_id) {
+    maidsafe::AccountStatusRequest request) {
   if (!online()) {
 #ifdef DEBUG
     printf("In VSL::RemoteVaultAbleToStore, offline %s\n",
@@ -465,7 +460,6 @@ int VaultServiceLogic::RemoteVaultAbleToStore(
         &VaultServiceLogic::AccountStatusCallback, j, data);
     vault_rpcs_->AccountStatus(data->contacts.at(j),
                                AddressIsLocal(data->contacts.at(j)),
-                               transport_id,
                                &request,
                                &data->data_holders.at(j).response,
                                data->data_holders.at(j).controller.get(),

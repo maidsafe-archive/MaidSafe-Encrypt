@@ -36,7 +36,7 @@ namespace maidsafe_vault {
 
 VaultDaemon::~VaultDaemon() {
   if (registration_service_ != NULL) {
-    // local_transport_.Stop();
+    local_transport_.Stop();
     local_ch_manager_->ClearChannels();
     delete registration_service_;
     delete registration_channel_;
@@ -150,61 +150,58 @@ void VaultDaemon::ValidityCheck() {
 }
 
 bool VaultDaemon::StartVault() {
-  return false;
-//  std::string init = "VaultDaemon starting  ";
-//  boost::posix_time::ptime now =
-//      boost::posix_time::second_clock::local_time();
-//  init += boost::posix_time::to_simple_string(now);
-//  WriteToLog(init);
-//  if (0 != SetPaths()) {
-//    WriteToLog("Failed to set path to config file - can't start vault.\n");
-//    return false;
-//  }
-//  bool started_registration_service = true;
-//  // No Config file, starting a not owned vault
-//  local_ch_manager_ = new rpcprotocol::ChannelManager(&local_transport_);
-//  if (!local_ch_manager_->RegisterNotifiersToTransport()) {
-//    delete local_ch_manager_;
-//    started_registration_service = false;
-//  } else {
-//    registration_channel_ = new rpcprotocol::Channel(local_ch_manager_,
-//        &local_transport_);
-//    registration_service_ = new maidsafe_vault::RegistrationService(
-//        boost::bind(&VaultDaemon::RegistrationNotification, this, _1));
-//    registration_channel_->SetService(registration_service_);
-//    local_ch_manager_->RegisterChannel(
-//        registration_service_->GetDescriptor()->name(),
-//        registration_channel_);
-//    if (0 != local_transport_.StartLocal(kLocalPort)) {
-//      local_ch_manager_->ClearChannels();
-//      delete registration_service_;
-//      delete registration_channel_;
-//      delete local_ch_manager_;
-//      registration_service_ = NULL;
-//      registration_channel_ = NULL;
-//      local_ch_manager_ = NULL;
-//      started_registration_service = false;
-//    }
-//  }
-//  if (!ReadConfigInfo()) {
-//    if (!started_registration_service) {
-//      WriteToLog("Failed to start registration service");
-//      return false;
-//    }
-//    if (!StartNotOwnedVault())
-//      return false;
-//    else
-//      TakeOwnership();
-//  } else {
-//    if (!StartOwnedVault()) {
-//      return false;
-//    } else {
-//      if (registration_service_ != NULL)
-//        registration_service_->set_status(maidsafe::OWNED);
-//      is_owned_ = true;
-//    }
-//  }
-//  return true;
+  std::string init = "VaultDaemon starting  ";
+  boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+  init += boost::posix_time::to_simple_string(now);
+  WriteToLog(init);
+  if (0 != SetPaths()) {
+    WriteToLog("Failed to set path to config file - can't start vault.\n");
+    return false;
+  }
+  bool started_registration_service = true;
+  // No Config file, starting a not owned vault
+  local_ch_manager_ = new rpcprotocol::ChannelManager(&local_transport_);
+  if (!local_ch_manager_->RegisterNotifiersToTransport()) {
+    delete local_ch_manager_;
+    started_registration_service = false;
+  } else {
+    registration_channel_ = new rpcprotocol::Channel(local_ch_manager_,
+        &local_transport_);
+    registration_service_ = new maidsafe_vault::RegistrationService(boost::bind(
+        &VaultDaemon::RegistrationNotification, this, _1));
+    registration_channel_->SetService(registration_service_);
+    local_ch_manager_->RegisterChannel(
+        registration_service_->GetDescriptor()->name(), registration_channel_);
+    if (0 != local_transport_.StartLocal(kLocalPort)) {
+      local_ch_manager_->ClearChannels();
+      delete registration_service_;
+      delete registration_channel_;
+      delete local_ch_manager_;
+      registration_service_ = NULL;
+      registration_channel_ = NULL;
+      local_ch_manager_ = NULL;
+      started_registration_service = false;
+    }
+  }
+  if (!ReadConfigInfo()) {
+    if (!started_registration_service) {
+      WriteToLog("Failed to start registration service");
+      return false;
+    }
+    if (!StartNotOwnedVault())
+      return false;
+    else
+      TakeOwnership();
+  } else {
+    if (!StartOwnedVault()) {
+      return false;
+    } else {
+      if (registration_service_ != NULL)
+        registration_service_->set_status(maidsafe::OWNED);
+      is_owned_ = true;
+    }
+  }
+  return true;
 }
 
 bool VaultDaemon::ReadConfigInfo() {

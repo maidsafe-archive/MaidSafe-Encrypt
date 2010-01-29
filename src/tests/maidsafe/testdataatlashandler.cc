@@ -43,7 +43,6 @@
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
-namespace test_dah {
 
 class FakeCallback {
  public:
@@ -68,19 +67,18 @@ void wait_for_result_seh_(const FakeCallback &cb, boost::mutex *mutex) {
   }
 };
 
-}
-
 namespace maidsafe {
 
 namespace fs = boost::filesystem;
 
 class DataAtlasHandlerTest : public testing::Test {
- protected:
+ public:
   DataAtlasHandlerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
                                           "/maidsafe_TestDAH"),
                            sm(),
                            cb() { }
   ~DataAtlasHandlerTest() { }
+ protected:
   void SetUp() {
     try {
       if (fs::exists(test_root_dir_))
@@ -105,9 +103,9 @@ class DataAtlasHandlerTest : public testing::Test {
     boost::shared_ptr<LocalStoreManager>
         sm(new LocalStoreManager(client_chunkstore_));
     // sm = sm_;
-    sm->Init(0, boost::bind(&test_dah::FakeCallback::CallbackFunc, &cb, _1));
+    sm->Init(0, boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
     boost::mutex mutex;
-    test_dah::wait_for_result_seh_(cb, &mutex);
+    wait_for_result_seh_(cb, &mutex);
     GenericResponse res;
     if ((!res.ParseFromString(cb.result)) ||
         (res.result() == kNack)) {
@@ -138,7 +136,7 @@ class DataAtlasHandlerTest : public testing::Test {
     if (dah->Init(true))
       FAIL();
 
-    // set up default dirs
+    //  set up default dirs
     for (int i = 0; i < kRootSubdirSize; i++) {
       MetaDataMap mdm;
       std::string ser_mdm, key;
@@ -178,7 +176,7 @@ class DataAtlasHandlerTest : public testing::Test {
   }
   std::string test_root_dir_;
   boost::shared_ptr<LocalStoreManager> sm;
-  test_dah::FakeCallback cb;
+  FakeCallback cb;
  private:
   explicit DataAtlasHandlerTest(const maidsafe::DataAtlasHandlerTest&);
   DataAtlasHandlerTest &operator=(const maidsafe::DataAtlasHandlerTest&);

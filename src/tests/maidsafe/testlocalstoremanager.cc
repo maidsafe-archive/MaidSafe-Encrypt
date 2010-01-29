@@ -315,8 +315,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
 
   storemanager->DeletePacket(gp_name, signed_request, rsa_obj.public_key(),
                              signed_public_key, maidsafe::SYSTEM_PACKET,
-                             boost::bind(&test_lsm::FakeCallback::CallbackFunc,
-                                         &cb, _1));
+                             boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   maidsafe::DeleteChunkResponse del_res;
   ASSERT_TRUE(del_res.ParseFromString(cb.result_));
@@ -330,7 +329,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
 
   storemanager->DeletePacket(gp_name, signed_request, rsa_obj.public_key(),
                 signed_public_key, maidsafe::SYSTEM_PACKET,
-                boost::bind(&test_lsm::FakeCallback::CallbackFunc, &cb, _1));
+                boost::bind(&FakeCallback::CallbackFunc, &cb, _1));
   wait_for_result_lsm(cb, mutex_);
   ASSERT_TRUE(del_res.ParseFromString(cb.result_));
   ASSERT_EQ(kNack, static_cast<int>(del_res.result()));

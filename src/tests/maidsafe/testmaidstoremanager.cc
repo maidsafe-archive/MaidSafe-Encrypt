@@ -569,7 +569,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
   maidsafe_vault::VaultChunkStore
       vault_chunkstore(test_root_dir_ + "/VaultChunkstore", 999999, 0);
   maidsafe_vault::VaultService vault_service(peer_pmid_pub, peer_pmid_pri,
-      peer_pmid_pub_signature, &vault_chunkstore, NULL, NULL, NULL, 0);
+      peer_pmid_pub_signature, &vault_chunkstore, NULL, NULL, NULL);
   StorePrepResponse good_store_prep_response;
   google::protobuf::Closure *done =
       google::protobuf::NewCallback(&google::protobuf::DoNothing);

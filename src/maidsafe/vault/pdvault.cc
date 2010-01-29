@@ -52,13 +52,12 @@ PDVault::PDVault(const std::string &pmid_public,
                  const boost::uint64_t &available_space,
                  const boost::uint64_t &used_space)
     : port_(port),
-      udt_transport_(),
-      transport_handler_(),
-      channel_manager_(&transport_handler_),
+      transport_(),
+      channel_manager_(&transport_),
       validator_(),
-      knode_(&channel_manager_, &transport_handler_, kad::VAULT, pmid_private,
-             pmid_public, port_forwarded, use_upnp),
-      vault_rpcs_(&transport_handler_, &channel_manager_),
+      knode_(&channel_manager_, &transport_, kad::VAULT, pmid_private,
+          pmid_public, port_forwarded, use_upnp),
+      vault_rpcs_(&transport_, &channel_manager_),
       vault_chunkstore_(chunkstore_dir, available_space, used_space),
       vault_service_(),
       vault_service_logic_(&vault_rpcs_, &knode_),
@@ -77,10 +76,8 @@ PDVault::PDVault(const std::string &pmid_public,
       kad_config_file_(kad_config_file),
       poh_(),
       thread_pool_(),
+      pending_ious_thread_(),
       prune_pending_ops_thread_() {
-  boost::int16_t trans_id;
-  transport_handler_.Register(&udt_transport_, &trans_id);
-  knode_.SetTransID(trans_id);
   vault_chunkstore_.Init();
   co_.set_symm_algorithm(crypto::AES_256);
   co_.set_hash_algorithm(crypto::SHA_512);
@@ -95,6 +92,8 @@ PDVault::PDVault(const std::string &pmid_public,
   vault_rpcs_.SetOwnId(non_hex_pmid_);
   thread_pool_.setMaxThreadCount(5);
   poh_.SetPmid(non_hex_pmid_);
+  msv_.set_id(pmid_);
+  knode_.set_signature_validator(&msv_);
 }
 
 PDVault::~PDVault() {
@@ -106,10 +105,10 @@ void PDVault::Start(bool first_node) {
     return;
   bool success = channel_manager_.RegisterNotifiersToTransport();
   if (success)
-    success = transport_handler_.RegisterOnServerDown(boost::bind(
+    success = transport_.RegisterOnServerDown(boost::bind(
         &kad::KNode::HandleDeadRendezvousServer, &knode_, _1));
   if (success)
-    success = (transport_handler_.Start(port_, udt_transport_.GetID()) == 0);
+    success = (transport_.Start(port_) == 0);
   if (success)
     success = (channel_manager_.Start() == 0);
   if (success) {
@@ -119,7 +118,7 @@ void PDVault::Start(bool first_node) {
       boost::asio::ip::address local_ip;
       base::get_local_address(&local_ip);
       knode_.Join(pmid_, kad_config_file_, local_ip.to_string(),
-          transport_handler_.listening_port(udt_transport_.GetID()),
+          transport_.listening_port(),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     } else {
       knode_.Join(pmid_, kad_config_file_,
@@ -144,6 +143,8 @@ void PDVault::Start(bool first_node) {
     // Start repeating pruning worker thread
     prune_pending_ops_thread_ =
         boost::thread(&PDVault::PrunePendingOperations, this);
+//    // Start repeating pending IOU worker thread
+//    pending_ious_thread_ = boost::thread(&PDVault::CheckPendingIOUs, this);
   }
 }
 
@@ -178,6 +179,7 @@ int PDVault::Stop() {
   SetVaultStatus(kVaultStopping);
 //  thread_pool_.waitForDone();
   prune_pending_ops_thread_.join();
+  pending_ious_thread_.join();
   UnRegisterMaidService();
   knode_.Leave();
   kad_joined_ = knode_.is_joined();
@@ -185,13 +187,13 @@ int PDVault::Stop() {
     SetVaultStatus(kVaultStarted);
   else
     SetVaultStatus(kVaultStopped);
-  transport_handler_.StopAll();
+  transport_.Stop();
   channel_manager_.Stop();
   return 0;
 }
 
 void PDVault::CleanUp() {
-  transport::TransportUDT::CleanUp();
+  transport::CleanUp();
 }
 
 void PDVault::RegisterMaidService() {
@@ -202,10 +204,9 @@ void PDVault::RegisterMaidService() {
                      &vault_chunkstore_,
                      &knode_,
                      &poh_,
-                     &vault_service_logic_,
-                     udt_transport_.GetID()));
+                     &vault_service_logic_));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
-      new rpcprotocol::Channel(&channel_manager_, &transport_handler_));
+      new rpcprotocol::Channel(&channel_manager_, &transport_));
   svc_channel_->SetService(vault_service_.get());
   channel_manager_.RegisterChannel(
     vault_service_->GetDescriptor()->name(), svc_channel_.get());
@@ -458,8 +459,7 @@ void PDVault::ValidityCheck(const std::string &chunk_name,
       validity_check_args->random_data_, ip, port,
       validity_check_args->chunk_holder_.rendezvous_ip(),
       validity_check_args->chunk_holder_.rendezvous_port(),
-      udt_transport_.GetID(), validity_check_response.get(), controller,
-      callback);
+      validity_check_response.get(), controller, callback);
 }
 
 void PDVault::ValidityCheckCallback(
@@ -492,8 +492,7 @@ void PDVault::ValidityCheckCallback(
           validity_check_args->chunk_holder_.host_port(),
           validity_check_args->chunk_holder_.rendezvous_ip(),
           validity_check_args->chunk_holder_.rendezvous_port(),
-          udt_transport_.GetID(), validity_check_response.get(), controller,
-          callback);
+          validity_check_response.get(), controller, callback);
       return;
     }
   }
@@ -554,8 +553,8 @@ void PDVault::IterativeSyncVault_SyncChunk(
     rpcprotocol::Controller *controller = new rpcprotocol::Controller;
     vault_rpcs_.GetChunk(synch_args->chunk_name_, ip, port,
         synch_args->chunk_holder_.rendezvous_ip(),
-        synch_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
-        get_chunk_response.get(), controller, callback);
+        synch_args->chunk_holder_.rendezvous_port(), get_chunk_response.get(),
+        controller, callback);
   } else {
     // chunk is consistent with the partner, move on to the next updating
     --data->active_updating;
@@ -787,8 +786,8 @@ void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
   }
   vault_rpcs_.CheckChunk(get_args->data_->chunk_name, ip, port,
       get_args->chunk_holder_.rendezvous_ip(),
-      get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
-      check_chunk_response.get(), get_args->controller_.get(), callback);
+      get_args->chunk_holder_.rendezvous_port(), check_chunk_response.get(),
+      get_args->controller_.get(), callback);
 }
 
 void PDVault::CheckChunkCallback(
@@ -820,8 +819,7 @@ void PDVault::CheckChunkCallback(
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
           get_args->chunk_holder_.rendezvous_port(),
-          udt_transport_.GetID(), check_chunk_response.get(),
-          get_args->controller_.get(), callback);
+          check_chunk_response.get(), get_args->controller_.get(), callback);
       return;
     }
   }
@@ -864,7 +862,7 @@ void PDVault::CheckChunkCallback(
         vault_rpcs_.GetBPMessages(get_args->data_->chunk_name,
             get_args->data_->pub_key, get_args->data_->sig_pub_key, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
-            get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+            get_args->chunk_holder_.rendezvous_port(),
             get_messages_response.get(), get_args->controller_.get(), callback);
       } else {
        boost::shared_ptr<maidsafe::GetChunkResponse>
@@ -873,8 +871,8 @@ void PDVault::CheckChunkCallback(
            &PDVault::GetChunkCallback, get_chunk_response, get_args);
         vault_rpcs_.GetChunk(get_args->data_->chunk_name, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
-            get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
-            get_chunk_response.get(), get_args->controller_.get(), callback);
+            get_args->chunk_holder_.rendezvous_port(), get_chunk_response.get(),
+            get_args->controller_.get(), callback);
       }
     }
   }
@@ -923,7 +921,7 @@ void PDVault::GetMessagesCallback(
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
-          get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+          get_args->chunk_holder_.rendezvous_port(),
           get_messages_response.get(), get_args->controller_.get(), callback);
       return;
     }
@@ -966,8 +964,8 @@ void PDVault::GetChunkCallback(
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
-          get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
-          get_chunk_response.get(), get_args->controller_.get(), callback);
+          get_args->chunk_holder_.rendezvous_port(), get_chunk_response.get(),
+          get_args->controller_.get(), callback);
       return;
     }
   }
@@ -1058,8 +1056,8 @@ void PDVault::SwapChunk(const std::string &chunk_name,
   }
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   vault_rpcs_.SwapChunk(0, chunk_name, "", chunkcontent1.size(), remote_ip,
-      remote_port, rendezvous_ip, rendezvous_port, udt_transport_.GetID(),
-      swap_chunk_response.get(), controller, callback);
+      remote_port, rendezvous_ip, rendezvous_port, swap_chunk_response.get(),
+      controller, callback);
 }
 
 void PDVault::SwapChunkSendChunk(
@@ -1097,8 +1095,8 @@ void PDVault::SwapChunkSendChunk(
   vault_rpcs_.SwapChunk(1, swap_chunk_args->chunkname_, chunkcontent1,
       chunkcontent1.size(), swap_chunk_args->remote_ip_,
       swap_chunk_args->remote_port_, swap_chunk_args->rendezvous_ip_,
-      swap_chunk_args->rendezvous_port_, udt_transport_.GetID(),
-      swap_chunk_response.get(), controller, callback);
+      swap_chunk_args->rendezvous_port_, swap_chunk_response.get(), controller,
+      callback);
 }
 
 void PDVault::SwapChunkAcceptChunk(

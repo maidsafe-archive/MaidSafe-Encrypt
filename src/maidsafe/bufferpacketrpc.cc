@@ -26,28 +26,23 @@
 
 namespace maidsafe {
 
-void BufferPacketRpcsImpl::CreateBP(const kad::Contact &peer, const bool &local,
-                                    const boost::int16_t &transport_id,
-                                    const CreateBPRequest *create_request,
-                                    CreateBPResponse *create_response,
-                                    rpcprotocol::Controller *controller,
-                                    google::protobuf::Closure *done) {
+void BufferPacketRpcsImpl::CreateBP(const kad::Contact &peer, bool local,
+    const CreateBPRequest *create_request, CreateBPResponse *create_response,
+    rpcprotocol::Controller *controller, google::protobuf::Closure *done) {
   std::string local_ip;
   boost::uint16_t local_port(0);
   if (local) {
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
-                               transport_id, peer.host_ip(),
-                               peer.host_port(), local_ip, local_port,
-                               peer.rendezvous_ip(), peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.CreateBP(controller, create_request, create_response, done);
 }
 
-void BufferPacketRpcsImpl::ModifyBPInfo(const kad::Contact &peer,
-    const bool &local, const boost::int16_t &transport_id,
+void BufferPacketRpcsImpl::ModifyBPInfo(const kad::Contact &peer, bool local,
     const ModifyBPInfoRequest *modify_request,
     ModifyBPInfoResponse *modify_response, rpcprotocol::Controller *controller,
     google::protobuf::Closure *done) {
@@ -57,15 +52,14 @@ void BufferPacketRpcsImpl::ModifyBPInfo(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
-      transport_id, peer.host_ip(), peer.host_port(), local_ip, local_port,
-      peer.rendezvous_ip(), peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.ModifyBPInfo(controller, modify_request, modify_response, done);
 }
 
-void BufferPacketRpcsImpl::GetBPMessages(const kad::Contact &peer,
-    const bool &local, const boost::int16_t &transport_id,
+void BufferPacketRpcsImpl::GetBPMessages(const kad::Contact &peer, bool local,
     const GetBPMessagesRequest *get_messages_request,
     GetBPMessagesResponse *get_messages_response,
     rpcprotocol::Controller *controller, google::protobuf::Closure *done) {
@@ -75,16 +69,15 @@ void BufferPacketRpcsImpl::GetBPMessages(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
-      transport_id, peer.host_ip(), peer.host_port(), local_ip, local_port,
-      peer.rendezvous_ip(), peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.GetBPMessages(controller, get_messages_request, get_messages_response,
                         done);
 }
 
-void BufferPacketRpcsImpl::AddBPMessage(const kad::Contact &peer,
-    const bool &local, const boost::int16_t &transport_id,
+void BufferPacketRpcsImpl::AddBPMessage(const kad::Contact &peer, bool local,
     const AddBPMessageRequest *add_message_request,
     AddBPMessageResponse *add_message_response,
     rpcprotocol::Controller *controller, google::protobuf::Closure *done) {
@@ -94,16 +87,15 @@ void BufferPacketRpcsImpl::AddBPMessage(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
-      transport_id, peer.host_ip(), peer.host_port(), local_ip, local_port,
-      peer.rendezvous_ip(), peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.AddBPMessage(controller, add_message_request, add_message_response,
                        done);
 }
 
-void BufferPacketRpcsImpl::ContactInfo(const kad::Contact &peer,
-    const bool &local, const boost::int16_t &transport_id,
+void BufferPacketRpcsImpl::ContactInfo(const kad::Contact &peer, bool local,
     const ContactInfoRequest *contactinfo_request,
     ContactInfoResponse *contactinfo_response,
     rpcprotocol::Controller *controller, google::protobuf::Closure *done) {
@@ -113,9 +105,9 @@ void BufferPacketRpcsImpl::ContactInfo(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
-      transport_id, peer.host_ip(), peer.host_port(), local_ip, local_port,
-      peer.rendezvous_ip(), peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
+      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
+      peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.ContactInfo(controller, contactinfo_request, contactinfo_response,
                       done);

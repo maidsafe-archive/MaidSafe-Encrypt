@@ -278,7 +278,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
     }
     if (!flag) {
 #ifdef DEBUG
-      printf("unauthorised user %s\n", HexSubstr(hashed_sender_id).c_str());
+      printf("unauthorised user %s\n", hashed_sender_id.c_str());
 #endif
       return false;
     }

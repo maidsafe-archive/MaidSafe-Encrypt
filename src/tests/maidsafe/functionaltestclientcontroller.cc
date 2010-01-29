@@ -53,6 +53,26 @@ static const int kNetworkSize_ = 17;
 static const int kTestK_ = 16;
 static bool initialised_ = false;
 
+class FakeCallback {
+ public:
+  FakeCallback() : result_("") {}
+  void CallbackFunc(const std::string &result) {
+    result_ = result;
+  }
+  void Wait(int duration) {
+    boost::posix_time::milliseconds timeout(duration);
+    boost::posix_time::milliseconds count(0);
+    boost::posix_time::milliseconds increment(10);
+    while (result_ == "" && count < timeout) {
+      count += increment;
+      boost::this_thread::sleep(increment);
+    }
+  }
+  std::string result() { return result_; }
+ private:
+  std::string result_;
+};
+
 }  // namespace cc_test
 
 namespace maidsafe {
@@ -69,7 +89,7 @@ class FunctionalClientControllerTest : public testing::Test {
         vcp_() {}
 
   static void TearDownTestCase() {
-    // transport::TransportUDT::CleanUp();
+    transport::CleanUp();
   }
 
   void SetUp() {
