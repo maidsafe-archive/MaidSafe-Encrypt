@@ -113,7 +113,7 @@ class AuthenticationTest : public testing::Test {
     storemanager->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
                                       &cb, _1));
     boost::mutex mutex;
-    wait_for_result_ta(cb, &mutex);
+    test_auth::wait_for_result_ta(cb, &mutex);
     GenericResponse res;
     if ((!res.ParseFromString(cb.result)) ||
         (res.result() == kNack)) {
@@ -605,7 +605,7 @@ TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
   authentication->CreateMSIDPacket(boost::bind(
       &test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::mutex mutex;
-  wait_for_result_ta(cb, &mutex);
+  test_auth::wait_for_result_ta(cb, &mutex);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   CreateMSIDResult msid_result;
   ASSERT_TRUE(msid_result.ParseFromString(cb.result));

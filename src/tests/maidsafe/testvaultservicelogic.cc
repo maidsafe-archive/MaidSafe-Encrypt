@@ -33,7 +33,7 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   VaultServiceLogic vsl(&mock_rpcs, NULL);
 
   maidsafe::StoreContract sc;
-  ASSERT_EQ(kVaultOffline, vsl.AddToRemoteRefList("x", sc));
+  ASSERT_EQ(kVaultOffline, vsl.AddToRemoteRefList("x", sc, 0));
 
   maidsafe::AmendAccountRequest aar;
   boost::mutex mutex;
@@ -41,7 +41,7 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   int result(kGeneralError);
   VoidFuncOneInt cb =
       boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
-  vsl.AmendRemoteAccount(aar, kSuccess, cb);
+  vsl.AmendRemoteAccount(aar, kSuccess, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -51,7 +51,7 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   ASSERT_EQ(kVaultOffline, result);
 
   maidsafe::AccountStatusRequest asr;
-  ASSERT_EQ(kVaultOffline, vsl.RemoteVaultAbleToStore(asr));
+  ASSERT_EQ(kVaultOffline, vsl.RemoteVaultAbleToStore(asr, 0));
 }
 
 TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_FindKNodes) {
@@ -180,63 +180,63 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   }
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
-      EXPECT_CALL(mock_rpcs, AddToReferenceList(good_contacts_.at(i), true,
+      EXPECT_CALL(mock_rpcs, AddToReferenceList(good_contacts_.at(i), true, 0,
           testing::_, testing::_, testing::_, testing::_))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses.at(i)),  // Call 4
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     bad_pmid_responses.at(i)),  // Call 6
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     too_few_ack_responses.at(i)),  // Call 7
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     fail_initialise_responses.at(i)),  // Call 8
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))));
   }
   for (size_t i = 0; i < good_contacts_.size() - 1; ++i) {
-      EXPECT_CALL(mock_rpcs, AddToReferenceList(good_contacts_.at(i), false,
+      EXPECT_CALL(mock_rpcs, AddToReferenceList(good_contacts_.at(i), false, 0,
           testing::_, testing::_, testing::_, testing::_))  // Call 5
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses_less_one.at(i)),
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))));
   }
 
   // Call 1 - FindKNodes fails (NULL pointer)
   ASSERT_EQ(kVaultServiceFindNodesError,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
 
   // Call 2 - FindKNodes returns kNack
   ASSERT_EQ(kVaultServiceFindNodesFailure,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
 
   // Call 3 - FindKnodes only returns 1 node
   ASSERT_EQ(kVaultServiceFindNodesTooFew,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
 
   // Call 4 - All OK
-  ASSERT_EQ(kSuccess, vsl.AddToRemoteRefList(far_chunkname, store_contract));
+  ASSERT_EQ(kSuccess, vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
 
   // Call 5 - All OK - we're close to chunkname, so we replace contact 16
-  ASSERT_EQ(kSuccess, vsl.AddToRemoteRefList(pmid_, store_contract));
+  ASSERT_EQ(kSuccess, vsl.AddToRemoteRefList(pmid_, store_contract, 0));
 
   // Call 6 - Five responses have incorrect PMID
   ASSERT_EQ(kAddToRefResponseError,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
 
   // Call 7 - Five responses return kNack
   ASSERT_EQ(kAddToRefResponseFailed,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
 
   // Call 8 - Five responses don't have result set
   ASSERT_EQ(kAddToRefResponseUninitialised,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
 }
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
@@ -331,36 +331,36 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   }
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
-      EXPECT_CALL(mock_rpcs, AmendAccount(good_contacts_.at(i), true,
+      EXPECT_CALL(mock_rpcs, AmendAccount(good_contacts_.at(i), true, 0,
           testing::_, testing::_, testing::_, testing::_))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses.at(i)),  // Call 4
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     bad_pmid_responses.at(i)),  // Call 6
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     too_few_ack_responses.at(i)),  // Call 7
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     fail_initialise_responses.at(i)),  // Call 8
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))));
   }
   for (size_t i = 0; i < good_contacts_.size() - 1; ++i) {
-      EXPECT_CALL(mock_rpcs, AmendAccount(good_contacts_.at(i), false,
+      EXPECT_CALL(mock_rpcs, AmendAccount(good_contacts_.at(i), false, 0,
           testing::_, testing::_, testing::_, testing::_))  // Call 5
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses_less_one.at(i)),
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))));
   }
 
   // Call 1 - FindKNodes fails (NULL pointer)
-  vsl.AmendRemoteAccount(request, kSuccess, cb);
+  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -371,7 +371,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 2 - FindKNodes returns kNack
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb);
+  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -382,7 +382,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 3 - FindKnodes only returns 1 node
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb);
+  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -393,7 +393,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 4 - All OK
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb);
+  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -404,7 +404,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 5 - All OK - we're close to chunkname, so we replace contact 16
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb);
+  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -415,7 +415,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 6 - Five responses have incorrect PMID
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb);
+  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -426,7 +426,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 7 - Five responses return kNack
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb);
+  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -437,7 +437,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 8 - Five responses don't have result set
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb);
+  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -523,58 +523,63 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   }
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
-      EXPECT_CALL(mock_rpcs, AccountStatus(good_contacts_.at(i), true,
+      EXPECT_CALL(mock_rpcs, AccountStatus(good_contacts_.at(i), true, 0,
           testing::_, testing::_, testing::_, testing::_))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses.at(i)),  // Call 4
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     bad_pmid_responses.at(i)),  // Call 6
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     too_few_ack_responses.at(i)),  // Call 7
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))))
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     fail_initialise_responses.at(i)),  // Call 8
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))));
   }
   for (size_t i = 0; i < good_contacts_.size() - 1; ++i) {
-      EXPECT_CALL(mock_rpcs, AccountStatus(good_contacts_.at(i), false,
+      EXPECT_CALL(mock_rpcs, AccountStatus(good_contacts_.at(i), false, 0,
           testing::_, testing::_, testing::_, testing::_))  // Call 5
-              .WillOnce(DoAll(testing::SetArgumentPointee<3>(
+              .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses_less_one.at(i)),
-                              testing::WithArgs<5>(testing::Invoke(
+                              testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))));
   }
 
   // Call 1 - FindKNodes fails (NULL pointer)
-  ASSERT_EQ(kVaultServiceFindNodesError, vsl.RemoteVaultAbleToStore(request));
+  ASSERT_EQ(kVaultServiceFindNodesError,
+            vsl.RemoteVaultAbleToStore(request, 0));
 
   // Call 2 - FindKNodes returns kNack
-  ASSERT_EQ(kVaultServiceFindNodesFailure, vsl.RemoteVaultAbleToStore(request));
+  ASSERT_EQ(kVaultServiceFindNodesFailure,
+            vsl.RemoteVaultAbleToStore(request, 0));
 
   // Call 3 - FindKnodes only returns 1 node
-  ASSERT_EQ(kVaultServiceFindNodesTooFew, vsl.RemoteVaultAbleToStore(request));
+  ASSERT_EQ(kVaultServiceFindNodesTooFew,
+            vsl.RemoteVaultAbleToStore(request, 0));
 
   // Call 4 - All OK
-  ASSERT_EQ(kSuccess, vsl.RemoteVaultAbleToStore(request));
+  ASSERT_EQ(kSuccess, vsl.RemoteVaultAbleToStore(request, 0));
 
   // Call 5 - All OK - FindKNodes only returns 15 nodes, so we're contact 16
-  ASSERT_EQ(kSuccess, vsl.RemoteVaultAbleToStore(request));
+  ASSERT_EQ(kSuccess, vsl.RemoteVaultAbleToStore(request, 0));
 
   // Call 6 - Fourteen responses have incorrect PMID
-  ASSERT_EQ(kAccountStatusResponseError, vsl.RemoteVaultAbleToStore(request));
+  ASSERT_EQ(kAccountStatusResponseError,
+            vsl.RemoteVaultAbleToStore(request, 0));
 
   // Call 7 - Fourteen responses return kNack
-  ASSERT_EQ(kAccountStatusResponseFailed, vsl.RemoteVaultAbleToStore(request));
+  ASSERT_EQ(kAccountStatusResponseFailed,
+            vsl.RemoteVaultAbleToStore(request, 0));
 
   // Call 8 - Fourteen responses don't have result set
   ASSERT_EQ(kAccountStatusResponseUninitialised,
-            vsl.RemoteVaultAbleToStore(request));
+            vsl.RemoteVaultAbleToStore(request, 0));
 }
 
 }  // namespace maidsafe_vault
