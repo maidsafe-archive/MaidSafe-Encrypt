@@ -25,13 +25,11 @@ checksum are exactly zero, at which time all 4 get repaid.
 *1
 client:client. Check we have enough space in our account&
 
-client:Nack =info. Kademlia FIND_VALUE &
-
 *2 client
 For each Chunk Info Holder...
 *2
 
-client:>info. ADD_TO_WATCH_LIST_REQUEST
+(2)client:>info. ADD_TO_WATCH_LIST_REQUEST
 *3 info
 TODO: If chunk exists at lower rank,
 we must promote which will be store
