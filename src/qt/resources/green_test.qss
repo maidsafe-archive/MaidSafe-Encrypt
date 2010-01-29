@@ -9,7 +9,7 @@ QMainWindow::separator {
  } 
  
   QMainWindow {
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 lightblue);
+    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #99FF66, stop: 1 white);
     font: bold;
   }
   

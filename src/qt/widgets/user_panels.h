@@ -25,7 +25,6 @@
 // generated
 #include "ui_user_panels.h"
 
-
 class Messages;
 class Shares;
 class Contacts;
@@ -119,7 +118,7 @@ class UserPanels : public QWidget {
   Messages* messages_;
   Shares* shares_;
   Contacts* contacts_;
-  VaultInfo* vaultinfo_;
+  //VaultInfo* vaultinfo_;
 
   PublicUsername* public_username_;
 

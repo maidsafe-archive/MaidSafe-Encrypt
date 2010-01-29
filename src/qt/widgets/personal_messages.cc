@@ -16,8 +16,13 @@
 
 #include "qt/widgets/personal_messages.h"
 
+// boost
+#include <boost/progress.hpp>
+
 #include <QMessageBox>
 #include <QList>
+#include <QFileDialog>
+#include <QInputDialog>
 
 #include "qt/client/client_controller.h"
 #include "qt/widgets/user_panels.h"
@@ -76,6 +81,10 @@ PersonalMessages::PersonalMessages(QString name)
 
           connect(ui_.actionInvite, SIGNAL(triggered()),
           this,               SLOT(onInvite()));
+
+        connect(ui_.actionSend_File, SIGNAL(triggered()),
+          this,               SLOT(onSendFile()));
+
 }
 
 PersonalMessages::~PersonalMessages() {
@@ -150,5 +159,76 @@ void PersonalMessages::onSendMessageClicked(){
 }
 
 void PersonalMessages::onSendInvite(){
+}
+
+void PersonalMessages::onSendFile(){
+  QList<QString> conts;
+  conts.push_back(convName_);
+
+  // choose a file
+  // starting directory should be the maidafe one.
+  // TODO(Team#5#): 2009-07-28 - restrict file dialog to maidsafe directories
+  //Possible to do by using Directory Entered Signal
+  QString root;
+#ifdef DEBUG
+  printf("PersonalMessages::onFileSendClicked: opening the \"conversation\".\n");
+  boost::progress_timer t;
+#endif
+
+#ifdef __WIN32__
+  root = QString("%1:\\My Files").
+         arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+  QFileDialog *qfd = new QFileDialog(this,
+                     tr("File to share..."),
+                     root, tr("Any file (*)"));
+  int result = qfd->exec();
+  if (result == QDialog::Rejected) {
+    return;
+  }
+  QStringList fileNames = qfd->selectedFiles();
+#else
+  file_system::FileSystem fs;
+  root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+  QStringList fileNames = QFileDialog::getOpenFileNames(
+                                this,
+                                "Select one to send",
+                                root,
+                                tr("Any file (*)"));
+#endif
+
+#ifdef DEBUG
+  printf("PersonalMessages::onFileSendClicked: time - %f.\n", t.elapsed());
+#endif
+  if (fileNames.isEmpty()) {
+#ifdef DEBUG
+    printf("PersonalMessages::onFileSendClicked: no file selected.\n");
+#endif
+    return;
+  }
+
+  const QString filename = fileNames.at(0);
+
+  // accompanying message
+  bool ok;
+  QString text = QInputDialog::getText(this,
+                                       tr("Messsage entry"),
+                                       tr("Please Enter a message if you "
+                                          "wish to accompany the file(s)"),
+                                       QLineEdit::Normal,
+                                       QString(),
+                                       &ok);
+  if (!ok) {
+      return;
+  }
+
+  if (ClientController::instance()->sendInstantFile(filename, text, conts,
+      tr(""))) {
+    QMessageBox::information(this, tr("File Sent"),
+                             tr("Success sending file: %1").arg(filename));
+  } else {
+    const QString msg = tr("There was an error sending the file: %1")
+                       .arg(filename);
+    QMessageBox::warning(this, tr("File Not Sent"), msg);
+  }
 }
 

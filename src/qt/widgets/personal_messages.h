@@ -56,6 +56,8 @@ class PersonalMessages : public QMainWindow {
 
     void onSendInvite();
 
+    void onSendFile();
+
 private:
   void sendMessage(const QDateTime& time,
                   const QString& sender,

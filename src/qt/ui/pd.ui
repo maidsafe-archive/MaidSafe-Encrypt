@@ -81,8 +81,18 @@
     <property name="title">
      <string>File</string>
     </property>
+    <widget class="QMenu" name="menuStatus">
+     <property name="title">
+      <string>Status</string>
+     </property>
+     <addaction name="actionAvailable"/>
+     <addaction name="actionAway"/>
+     <addaction name="actionBusy"/>
+     <addaction name="actionOffline_2"/>
+    </widget>
     <addaction name="actionLogout"/>
     <addaction name="actionQuit"/>
+    <addaction name="menuStatus"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -108,6 +118,7 @@
     </property>
     <addaction name="actionAbout"/>
     <addaction name="actionManual"/>
+    <addaction name="actionSettings"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -179,6 +190,43 @@
    </property>
    <property name="text">
     <string>Go Offline</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionAvailable">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Online</string>
+   </property>
+  </action>
+  <action name="actionAway">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Away</string>
+   </property>
+  </action>
+  <action name="actionBusy">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Busy</string>
+   </property>
+  </action>
+  <action name="actionOffline_2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Offline</string>
    </property>
   </action>
  </widget>
