@@ -26,6 +26,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
+#include <maidsafe/transportudt.h>
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/vault/vaultservice.h"
@@ -113,9 +114,10 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
         service_(),
         port_(0),
         server_transport_(),
-        server_(&server_transport_),
+        server_transport_handler_(),
+        server_(&server_transport_handler_),
         service_channel_(new rpcprotocol::Channel(&server_,
-                                                  &server_transport_)),
+                                                  &server_transport_handler_)),
         cb_(boost::bind(
             &test_vault_reg::ResultHandler::SetLocalVaultOwnedCallback,
             &resulthandler_, _1, _2)),
@@ -123,7 +125,7 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
             &test_vault_reg::ResultHandler::IsOwnCallback,
             &resulthandler_, _1)) {}
   ~MsmSetLocalVaultOwnedTest() {
-    transport::CleanUp();
+    transport::TransportUDT::CleanUp();
   }
   void SetUp() {
     try {
@@ -133,27 +135,31 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
+    boost::int16_t server_transport_id;
+    ASSERT_EQ(0, server_transport_handler_.Register(&server_transport_,
+                                                    &server_transport_id));
     ASSERT_TRUE(msm_.channel_manager_.RegisterNotifiersToTransport());
-    ASSERT_TRUE(msm_.transport_.RegisterOnServerDown(boost::bind(
+    ASSERT_TRUE(msm_.transport_handler_.RegisterOnServerDown(boost::bind(
         &test_vault_reg::HandleDeadServer, _1, _2, _3)));
-    ASSERT_EQ(0, msm_.transport_.Start(0));
+    ASSERT_EQ(0, msm_.transport_handler_.Start(0, msm_.udt_transport_.GetID()));
     ASSERT_EQ(0, msm_.channel_manager_.Start());
     ASSERT_TRUE(server_.RegisterNotifiersToTransport());
-    ASSERT_TRUE(server_transport_.RegisterOnServerDown(boost::bind(
+    ASSERT_TRUE(server_transport_handler_.RegisterOnServerDown(boost::bind(
         &test_vault_reg::HandleDeadServer, _1, _2, _3)));
-    ASSERT_EQ(0, server_transport_.StartLocal(kLocalPort));
+    ASSERT_EQ(0, server_transport_handler_.StartLocal(kLocalPort,
+        server_transport_id));
     ASSERT_EQ(0, server_.Start());
     service_channel_->SetService(service_.pservice());
     server_.RegisterChannel(service_.pservice()->GetDescriptor()->name(),
         service_channel_.get());
-    port_ = msm_.transport_.listening_port();
+    port_ = msm_.transport_handler_.listening_port(msm_.udt_transport_.GetID());
   }
   void TearDown() {
     resulthandler_.Reset();
     service_.Reset();
-    server_transport_.Stop();
+    server_transport_handler_.StopAll();
     server_.ClearChannels();
-    msm_.transport_.Stop();
+    msm_.transport_handler_.StopAll();
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
@@ -168,7 +174,8 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
   test_vault_reg::ResultHandler resulthandler_;
   test_vault_reg::RegistrationServiceHolder service_;
   boost::uint16_t port_;
-  transport::Transport server_transport_;
+  transport::TransportUDT server_transport_;
+  transport::TransportHandler server_transport_handler_;
   rpcprotocol::ChannelManager server_;
   boost::shared_ptr<rpcprotocol::Channel> service_channel_;
   boost::function<void(const maidsafe::OwnLocalVaultResult&,
@@ -303,7 +310,7 @@ TEST_F(MsmSetLocalVaultOwnedTest, FUNC_MAID_InvalidSetLocalVaultOwned) {
 
   resulthandler_.Reset();
   service_.Reset();
-  server_transport_.Stop();
+  server_transport_handler_.StopAll();
   server_.Stop();
   msm_.LocalVaultOwned(cb1_);
   while (!resulthandler_.callback_arrived())

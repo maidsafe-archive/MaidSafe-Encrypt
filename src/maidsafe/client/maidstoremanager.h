@@ -31,6 +31,7 @@
 #include <gtest/gtest_prod.h>
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht_config.h>
+#include <maidsafe/transportudt.h>
 #include <QThreadPool>
 
 #include <list>
@@ -507,7 +508,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void Init(int port, base::callback_func_type cb);
   void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
-  void StopRvPing() { transport_.StopPingRendezvous(); }
+  void StopRvPing() { transport_handler_.StopPingRendezvous(); }
   bool KeyUnique(const std::string &hex_key, bool check_local);
   bool NotDoneWithUploading();
   // Adds the chunk to the store queue.  It must already be in the chunkstore.
@@ -801,7 +802,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       boost::shared_ptr<SetLocalVaultOwnedCallbackArgs> callback_args);
   void LocalVaultOwnedCallback(
       boost::shared_ptr<LocalVaultOwnedCallbackArgs> callback_args);
-  transport::Transport transport_;
+  transport::TransportUDT udt_transport_;
+  transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<ClientRpcs> client_rpcs_;

@@ -28,6 +28,7 @@ namespace maidsafe {
 
 void ClientRpcs::StorePrep(const kad::Contact &peer,
                            bool local,
+                           const boost::int16_t &transport_id,
                            StorePrepRequest *store_prep_request,
                            StorePrepResponse *store_prep_response,
                            rpcprotocol::Controller *controller,
@@ -38,15 +39,17 @@ void ClientRpcs::StorePrep(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
-      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
-      peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.StorePrep(controller, store_prep_request, store_prep_response, done);
 }
 
 void ClientRpcs::StoreChunk(const kad::Contact &peer,
                             bool local,
+                            const boost::int16_t &transport_id,
                             StoreChunkRequest *store_chunk_request,
                             StoreChunkResponse *store_chunk_response,
                             rpcprotocol::Controller *controller,
@@ -57,9 +60,10 @@ void ClientRpcs::StoreChunk(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
-      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
-      peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.StoreChunk(controller, store_chunk_request, store_chunk_response,
                      done);
@@ -68,6 +72,7 @@ void ClientRpcs::StoreChunk(const kad::Contact &peer,
 void ClientRpcs::AddToWatchList(
     const kad::Contact &peer,
     bool local,
+    const boost::int16_t &transport_id,
     AddToWatchListRequest *add_to_watch_list_request,
     AddToWatchListResponse *add_to_watch_list_response,
     rpcprotocol::Controller *controller,
@@ -78,9 +83,10 @@ void ClientRpcs::AddToWatchList(
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
-      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
-      peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.AddToWatchList(controller, add_to_watch_list_request,
                          add_to_watch_list_response, done);
@@ -89,6 +95,7 @@ void ClientRpcs::AddToWatchList(
 void ClientRpcs::RemoveFromWatchList(
     const kad::Contact &peer,
     bool local,
+    const boost::int16_t &transport_id,
     RemoveFromWatchListRequest *remove_from_watch_list_request,
     RemoveFromWatchListResponse *remove_from_watch_list_response,
     rpcprotocol::Controller *controller,
@@ -99,9 +106,10 @@ void ClientRpcs::RemoveFromWatchList(
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
-      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
-      peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.RemoveFromWatchList(controller, remove_from_watch_list_request,
                               remove_from_watch_list_response, done);
@@ -109,6 +117,7 @@ void ClientRpcs::RemoveFromWatchList(
 
 void ClientRpcs::AmendAccount(const kad::Contact &peer,
                               bool local,
+                              const boost::int16_t &transport_id,
                               AmendAccountRequest *amend_account_request,
                               AmendAccountResponse *amend_account_response,
                               rpcprotocol::Controller *controller,
@@ -119,9 +128,10 @@ void ClientRpcs::AmendAccount(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
-      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
-      peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.AmendAccount(controller, amend_account_request,
                        amend_account_response, done);
@@ -130,6 +140,7 @@ void ClientRpcs::AmendAccount(const kad::Contact &peer,
 void ClientRpcs::AccountStatus(
     const kad::Contact &peer,
     bool local,
+    const boost::int16_t &transport_id,
     AccountStatusRequest *account_status_request,
     AccountStatusResponse *account_status_response,
     rpcprotocol::Controller *controller,
@@ -140,9 +151,10 @@ void ClientRpcs::AccountStatus(
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
-      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
-      peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.AccountStatus(controller, account_status_request,
                         account_status_response, done);
@@ -150,6 +162,7 @@ void ClientRpcs::AccountStatus(
 
 void ClientRpcs::CheckChunk(const kad::Contact &peer,
                             bool local,
+                            const boost::int16_t &transport_id,
                             CheckChunkRequest *check_chunk_request,
                             CheckChunkResponse *check_chunk_response,
                             rpcprotocol::Controller *controller,
@@ -160,9 +173,10 @@ void ClientRpcs::CheckChunk(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
-      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
-      peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.CheckChunk(controller, check_chunk_request, check_chunk_response,
                      done);
@@ -170,6 +184,7 @@ void ClientRpcs::CheckChunk(const kad::Contact &peer,
 
 void ClientRpcs::GetChunk(const kad::Contact &peer,
                           bool local,
+                          const boost::int16_t &transport_id,
                           GetChunkRequest *get_chunk_request,
                           GetChunkResponse *get_chunk_response,
                           rpcprotocol::Controller *controller,
@@ -180,9 +195,10 @@ void ClientRpcs::GetChunk(const kad::Contact &peer,
     local_ip = peer.local_ip();
     local_port = peer.local_port();
   }
-  rpcprotocol::Channel channel(channel_manager_, transport_, peer.host_ip(),
-      peer.host_port(), local_ip, local_port, peer.rendezvous_ip(),
-      peer.rendezvous_port());
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
   service.GetChunk(controller, get_chunk_request, get_chunk_response, done);
 }

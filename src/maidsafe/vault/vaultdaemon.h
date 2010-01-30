@@ -51,7 +51,7 @@ class VaultDaemon {
                                    port_(port),
                                    vault_available_space_(0),
                                    used_space_(0),
-                                   local_transport_(),
+                                   // local_transport_(),
                                    local_ch_manager_(NULL),
                                    registration_channel_(NULL),
                                    registration_service_(NULL),
@@ -90,7 +90,7 @@ class VaultDaemon {
   std::string chunkstore_dir_;
   boost::uint16_t port_;
   boost::uint64_t vault_available_space_, used_space_;
-  transport::Transport local_transport_;
+  // transport::Transport local_transport_;
   rpcprotocol::ChannelManager *local_ch_manager_;
   rpcprotocol::Channel *registration_channel_;
   RegistrationService *registration_service_;
