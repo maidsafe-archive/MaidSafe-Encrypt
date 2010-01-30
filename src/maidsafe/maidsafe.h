@@ -309,6 +309,10 @@ const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
 const int kMaxChunkStoreTries(2);  // max number of tries to store or update a
                                    // chunk
 const boost::uint8_t kMaxStoreFailures(10);  // max number of failed store tries
+// TODO(Fraser#5#): 2010-01-29 - Move the kMaxSmallChunkSize to be set and held
+//                               by session depending on connection speed, etc.
+// max size (bytes) of a chunk deemed "small"
+const boost::uint64_t kMaxSmallChunkSize(666666);
 const boost::uint32_t kSaveUpdatesTrigger(10);  // max no of dbs in save queue
                                                  // before running save queue
 const double kMinSuccessfulPecentageOfUpdating(0.9);

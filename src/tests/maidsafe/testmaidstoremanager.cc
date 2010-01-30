@@ -268,7 +268,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   ASSERT_FALSE(msm.KeyUnique(hex_key, true));
   ASSERT_FALSE(msm.KeyUnique(hex_key, false));
 }
-
+/*
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_PrepareToSendChunk) {
   MockMsmKeyUnique msm(client_chunkstore_);
   ASSERT_TRUE(client_chunkstore_->is_initialised());
@@ -337,7 +337,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_PrepareToSendChunk) {
   // Allow time for AddToWatchList call
   boost::this_thread::sleep(boost::posix_time::seconds(1));
 }
-
+*/
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   MaidsafeStoreManager msm(client_chunkstore_);
   std::string recipient_id = crypto_.Hash("RecipientID", "",

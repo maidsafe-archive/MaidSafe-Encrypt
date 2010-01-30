@@ -48,12 +48,18 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-void StoreChunkTask::run() {
-  printf("StoreChunkTask - chunk %s ENQUEUEDISED\n",
+//void StoreChunkTask::run() {
+//  printf("StoreChunkTask - chunk %s ENQUEUEDISED\n",
+//         HexSubstr(store_data_.non_hex_key).c_str());
+//  msm_->PrepareToSendChunk(store_data_);
+//  printf("StoreChunkTask end %s\n",
+//         HexSubstr(store_data_.non_hex_key).c_str());
+//}
+
+void AddToWatchListTask::run() {
+  printf("AddToWatchListTask start %s\n",
          HexSubstr(store_data_.non_hex_key).c_str());
-  msm_->PrepareToSendChunk(store_data_);
-  printf("StoreChunkTask end %s\n",
-         HexSubstr(store_data_.non_hex_key).c_str());
+  msm_->AddToWatchList(store_data_);
 }
 
 void SendChunkCopyTask::run() {
@@ -66,12 +72,6 @@ void SendChunkCopyTask::run() {
 
 void StorePacketTask::run() {
   msm_->SendPacketPrep(store_data_);
-}
-
-void AddToWatchListTask::run() {
-  printf("AddToWatchListTask start %s\n",
-         HexSubstr(store_data_.non_hex_key).c_str());
-  msm_->AddToWatchList(store_data_, store_prep_response_);
 }
 
 void DeleteChunkTask::run() {
@@ -238,17 +238,17 @@ void MaidsafeStoreManager::StoreChunk(const std::string &hex_chunk_name,
 #endif
     return;
   }
+  // TODO(Fraser#5#): 2010-01-29 - Check we've got enough space in our account
+  //                               to allow storing.
   if (chunk_type & kOutgoing) {
     std::string key_id, public_key, public_key_signature, private_key;
     GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
         &public_key_signature, &private_key);
-    tasks_handler_.AddTask(chunk_name, kStoreChunk, chunk_size,
-                           kMinChunkCopies, kMaxStoreFailures);
-    // chunk_thread_pool_ handles destruction of store_chunk_task.
-    StoreChunkTask *store_chunk_task = new StoreChunkTask(StoreData(chunk_name,
-        chunk_size, chunk_type, dir_type, msid, key_id, public_key,
-        public_key_signature, private_key), this);
-    chunk_thread_pool_.start(store_chunk_task);
+    // chunk_thread_pool_ handles destruction of add_to_watch_list_task.
+    AddToWatchListTask *add_to_watch_list_task = new AddToWatchListTask(
+        StoreData(chunk_name, chunk_size, chunk_type, dir_type, msid, key_id,
+        public_key, public_key_signature, private_key), this);
+    chunk_thread_pool_.start(add_to_watch_list_task);
   }
 }
 
@@ -801,6 +801,21 @@ void MaidsafeStoreManager::GetPacketSignatureKeys(PacketType packet_type,
       *public_key_sig = ss->SignedPublicKey(ANMPID);
       *private_key = ss->PrivateKey(ANMPID);
       break;
+      // TODO(Fraser#5#): 2010-01-29 - Uncomment below once auth.cc fixed (MAID
+      //                               should be signed by ANMAID, not self)
+//    case MAID:
+//    case ANMAID:
+//      *key_id = ss->Id(ANMAID);
+//      *public_key = ss->PublicKey(ANMAID);
+//      *public_key_sig = ss->SignedPublicKey(ANMAID);
+//      *private_key = ss->PrivateKey(ANMAID);
+//      break;
+//    case PMID:
+//      *key_id = ss->Id(MAID);
+//      *public_key = ss->PublicKey(MAID);
+//      *public_key_sig = ss->SignedPublicKey(MAID);
+//      *private_key = ss->PrivateKey(MAID);
+//      break;
     case PMID:
     case MAID:
       *key_id = ss->Id(MAID);
@@ -953,49 +968,210 @@ int MaidsafeStoreManager::AddBPMessage(
   return result;
 }
 
-void MaidsafeStoreManager::PrepareToSendChunk(const StoreData &store_data) {
+//void MaidsafeStoreManager::PrepareToSendChunk(const StoreData &store_data) {
+//#ifdef DEBUG
+////  printf("In MaidsafeStoreManager::PrepareToSendChunk\n");
+//#endif
+//
+//  // Find out if the chunk already exists on the network.
+//  std::string chunk_name = store_data.non_hex_key;
+//  kad::ContactInfo cache_holder;
+//  std::vector<std::string> chunk_holders_ids;
+//  std::string needs_cache_copy_id;
+//  // If the maidsafe value is cached, this blocking Kad call to FindValue may
+//  // yield serialised contact details for a cache copy holder.  Otherwise it
+//  // should yield the reference holders.  If it yields the reference holders,
+//  // check that at least one currently has the chunk.
+//  int find_result = FindValue(chunk_name, false, &cache_holder,
+//      &chunk_holders_ids, &needs_cache_copy_id);
+//  bool exists = (find_result == kSuccess);
+//  // If FindValue failed to complete the kad function then return.
+//  if (!exists && find_result != kFindValueFailure) {
+//#ifdef DEBUG
+//    printf("In MaidsafeStoreManager::PrepareToSendChunk (%i), failed in "
+//           "FindValue.\n", knode_->host_port());
+//#endif
+//    return;
+//  }
+//  bool data_cached = (cache_holder.has_node_id());
+//  std::string data;
+//  if (exists && !data_cached) {
+//    exists = (FindAndLoadChunk(chunk_name, chunk_holders_ids, false, &data)
+//              == kSuccess);
+//  }
+//  if (exists) {
+//    // chunk_thread_pool_ handles destruction of add_to_watch_list_task.
+//    AddToWatchListTask *add_to_watch_list_task =
+//        new AddToWatchListTask(store_data, this);
+//    chunk_thread_pool_.start(add_to_watch_list_task);
+//  } else {
+//    for (int i = 0; i < kMinChunkCopies; ++i) {
+//      // chunk_thread_pool_ handles destruction of send_chunk_copy_task.
+//      SendChunkCopyTask *send_chunk_copy_task =
+//          new SendChunkCopyTask(store_data, this);
+//      chunk_thread_pool_.start(send_chunk_copy_task);
+//    }
+//  }
+//}
+//
+
+void MaidsafeStoreManager::AddToWatchList(const StoreData &store_data) {
+  // TODO(Fraser#5#): 2009-12-21 - Consider repeating this until success or
+  //                               some max. no. of failures.
+
+  // Find the Chunk Info holders
+  boost::shared_ptr<AddToWatchListData>
+      data(new AddToWatchListData(store_data));
+  int result = FindKNodes(store_data.non_hex_key, &data->contacts);
+  if (result != kSuccess) {
 #ifdef DEBUG
-//  printf("In MaidsafeStoreManager::PrepareToSendChunk\n");
-#endif
-  // Find out if the chunk already exists on the network.
-  std::string chunk_name = store_data.non_hex_key;
-  kad::ContactInfo cache_holder;
-  std::vector<std::string> chunk_holders_ids;
-  std::string needs_cache_copy_id;
-  // If the maidsafe value is cached, this blocking Kad call to FindValue may
-  // yield serialised contact details for a cache copy holder.  Otherwise it
-  // should yield the reference holders.  If it yields the reference holders,
-  // check that at least one currently has the chunk.
-  int find_result = FindValue(chunk_name, false, &cache_holder,
-      &chunk_holders_ids, &needs_cache_copy_id);
-  bool exists = (find_result == kSuccess);
-  // If FindValue failed to complete the kad function then return.
-  if (!exists && find_result != kFindValueFailure) {
-#ifdef DEBUG
-    printf("In MaidsafeStoreManager::PrepareToSendChunk (%i), failed in "
-           "FindValue.\n", knode_->host_port());
+    printf("In MSM::AddToWatchList, Kad lookup failed -- error %i\n", result);
 #endif
     return;
   }
-  bool data_cached = (cache_holder.has_node_id());
-  std::string data;
-  if (exists && !data_cached) {
-    exists = (FindAndLoadChunk(chunk_name, chunk_holders_ids, false, &data)
-              == kSuccess);
+  if (data->contacts.size() < kKadStoreThreshold_) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchList, Kad lookup failed to find %u nodes; "
+           "found %u nodes.\n", kKadStoreThreshold_, data->contacts.size());
+#endif
+    return;
   }
-  if (exists) {
-    // chunk_thread_pool_ handles destruction of add_to_watch_list_task.
-    AddToWatchListTask *add_to_watch_list_task =
-        new AddToWatchListTask(store_data, this);
-    chunk_thread_pool_.start(add_to_watch_list_task);
-  } else {
-    for (int i = 0; i < kMinChunkCopies; ++i) {
-      // chunk_thread_pool_ handles destruction of send_chunk_copy_task.
-      SendChunkCopyTask *send_chunk_copy_task =
-          new SendChunkCopyTask(store_data, this);
-      chunk_thread_pool_.start(send_chunk_copy_task);
+
+  // Set up holders for forthcoming RPCs
+  std::vector<AddToWatchListRequest> add_to_watch_list_requests;
+  if (GetAddToWatchListRequests(store_data, data->contacts,
+      &add_to_watch_list_requests) != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchList, failed to generate requests.\n");
+#endif
+    return;
+  }
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
+    AddToWatchListData::AddToWatchDataHolder holder(
+        data->contacts.at(i).node_id());
+    data->data_holders.push_back(holder);
+  }
+
+  // Send RPCs
+  for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &MaidsafeStoreManager::AddToWatchListCallback, j, data);
+    client_rpcs_->AddToWatchList(data->contacts.at(j),
+        AddressIsLocal(data->contacts.at(j)),
+        &add_to_watch_list_requests.at(j), &data->data_holders.at(j).response,
+        data->data_holders.at(j).controller.get(), callback);
+  }
+}
+
+void MaidsafeStoreManager::AddToWatchListCallback(
+    boost::uint16_t index,
+    boost::shared_ptr<AddToWatchListData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  if (data->consensus_upload_copies >= 0)
+    // Consensus has already been achieved and acted upon
+    return;
+  ++data->returned_count;
+  AddToWatchListData::AddToWatchDataHolder &holder =
+      data->data_holders.at(index);
+  bool success(true);
+  if (!holder.response.IsInitialized()) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListCallback, response %u is uninitialised.\n",
+           index);
+#endif
+    success = false;
+  }
+  if (success && holder.response.result() != kAck) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListCallback, response %u has result %i.\n",
+           index, holder.response.result());
+#endif
+    success = false;
+  }
+  if (success && holder.response.pmid() != holder.node_id) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListCallback, response %u from %s has pmid %s.\n",
+           index, HexSubstr(holder.node_id).c_str(),
+           HexSubstr(holder.response.pmid()).c_str());
+#endif
+    success = false;
+    // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
+  }
+  if (success && holder.response.upload_count() > kMinChunkCopies) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListCallback, response %u from %s has "
+           "upload_count of %u.\n", index, HexSubstr(holder.node_id).c_str(),
+           holder.response.upload_count());
+#endif
+    success = false;
+    // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
+  }
+
+  if (success)
+    data->required_upload_copies.insert(holder.response.upload_count());
+  int result = AssessUploadCounts(data);
+  if (result == kSuccess) {
+    if (data->consensus_upload_copies > 0) {
+      tasks_handler_.AddTask(data->store_data.non_hex_key, kStoreChunk,
+          data->store_data.size, data->consensus_upload_copies,
+          kMaxStoreFailures);
+      for (int i = 0; i < data->consensus_upload_copies; ++i) {
+        // chunk_thread_pool_ handles destruction of send_chunk_copy_task.
+        SendChunkCopyTask *send_chunk_copy_task =
+            new SendChunkCopyTask(data->store_data, this);
+        chunk_thread_pool_.start(send_chunk_copy_task);
+      }
     }
   }
+  // TODO(Fraser#5#): 2010-01-29 - If result != kSuccess send alert?
+}
+
+int MaidsafeStoreManager::AssessUploadCounts(
+    boost::shared_ptr<AddToWatchListData> data) {
+  int discrete_opinions(0);
+  std::multiset<int>::iterator it;
+  // data->mutex should already be locked, but just in case...
+  boost::mutex::scoped_try_lock lock(data->mutex);
+  if (data->returned_count < kKadStoreThreshold_)
+    return kUploadCopiesPendingConsensus;
+  // Get most common upload_copies figure
+  for (it = data->required_upload_copies.begin();
+      it != data->required_upload_copies.end(); ++it) {
+    if (data->required_upload_copies.count(*it) >
+        static_cast<size_t>(data->consensus_upload_copies)) {
+      data->consensus_upload_copies = data->required_upload_copies.count(*it);
+      ++discrete_opinions;
+    }
+  }
+  // If more than two discrete opinions, return error and set copies to zero.
+  if (discrete_opinions > 2) {
+    data->consensus_upload_copies = 0;
+    return kUploadCopiesFailedConsensus;
+  }
+  // If no more results due, try to get consensus.
+  if (data->returned_count >= data->data_holders.size()) {
+    if (discrete_opinions == 2) {
+      --it;
+      int max_copies(*it);
+      it = data->required_upload_copies.begin();
+      int min_copies(*it);
+      // If max_copies is the most common figure, go with this.  Otherwise...
+      if (data->consensus_upload_copies != max_copies) {
+        if (data->store_data.size > kMaxSmallChunkSize && min_copies > 0)
+          data->consensus_upload_copies = min_copies;
+      }
+      // If not enough for consensus, return error and set copies to zero.
+      if (data->required_upload_copies.count(data->consensus_upload_copies) <
+          static_cast<size_t>(kad::K - kKadStoreThreshold_)) {
+        data->consensus_upload_copies = 0;
+        return kUploadCopiesFailedConsensus;
+      }
+    } else if (discrete_opinions == 0) {
+      data->consensus_upload_copies = 0;
+      return kUploadCopiesFailedConsensus;
+    }  // Otherwise, at least kKadStoreThreshold_ agree, so enough for consensus
+  }
+  return kSuccess;
 }
 
 TaskStatus MaidsafeStoreManager::AssessTaskStatus(const StoreData &store_data,
@@ -1197,13 +1373,6 @@ int MaidsafeStoreManager::SendChunk(const StoreData &store_data) {
 #endif
     return result;
   }
-  // Add ourself to the Watch List if this is the first chunk copy
-  if (first) {
-    // chunk_thread_pool_ handles destruction of add_to_watch_list_task.
-    AddToWatchListTask *add_to_watch_list_task =
-        new AddToWatchListTask(store_data, store_prep_response, this);
-    chunk_thread_pool_.start(add_to_watch_list_task);
-  }
   // Stop subtask - record success
   int overall_result =
       tasks_handler_.StopSubTask(store_data.non_hex_key, kStoreChunk, true);
@@ -1214,7 +1383,7 @@ int MaidsafeStoreManager::SendChunk(const StoreData &store_data) {
   if (overall_result == kStoreTaskFinishedPass ||
       overall_result == kStoreTaskFinishedFail) {
     tasks_handler_.DeleteTask(store_data.non_hex_key, kStoreChunk, "");
-      }
+  }
 // TODO(Fraser#5#): 2009-08-14 - Check later that there are enough vaults
 // listed in ref & watch lists to ensure upload ultimately successful.
   return kSuccess;
@@ -1289,41 +1458,37 @@ int MaidsafeStoreManager::GetStoreRequests(
   return kSuccess;
 }
 
-int MaidsafeStoreManager::GetAddToWatchListRequest(
+int MaidsafeStoreManager::GetAddToWatchListRequests(
     const StoreData &store_data,
-    const StorePrepResponse &,
-    const std::string &recipient_id,
-    AddToWatchListRequest *add_to_watch_list_request) {
-  add_to_watch_list_request->Clear();
+    const std::vector<kad::Contact> &recipients,
+    std::vector<AddToWatchListRequest> *add_to_watch_list_requests) {
+  add_to_watch_list_requests->clear();
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string watch_list_name = co.Hash(store_data.key_id + "WATCHLIST", "",
-      crypto::STRING_STRING, false);
-  std::string request_signature;
-  GetRequestSignature(watch_list_name, store_data.dir_type,
-      recipient_id, store_data.public_key, store_data.public_key_signature,
-      store_data.private_key, &request_signature);
-  if (request_signature.empty())
-    return kGetRequestSigError;
-//  add_to_watch_list_request->set_watch_list_name(watch_list_name);
-//  if (store_prep_response.has_store_contract()) {
-//    StoreContract *mutable_store_contract =
-//        add_to_watch_list_request->mutable_store_contract();
-//    *mutable_store_contract = store_prep_response.store_contract();
-//  } else {
-//    SignedSize *mutable_signed_size =
-//        add_to_watch_list_request->mutable_signed_size();
-//    mutable_signed_size->set_data_size(store_data.size);
-//    mutable_signed_size->set_signature(co.AsymSign(
-//        base::itos_ull(store_data.size), "", store_data.private_key,
-//        crypto::STRING_STRING));
-//    mutable_signed_size->set_pmid(store_data.key_id);
-//    mutable_signed_size->set_public_key(store_data.public_key);
-//    mutable_signed_size->set_public_key_signature(
-//        store_data.public_key_signature);
-//  }
-//  add_to_watch_list_request->set_request_signature(request_signature);
+  AddToWatchListRequest request;
+  request.set_chunkname(store_data.non_hex_key);
+  SignedSize *mutable_signed_size = request.mutable_signed_size();
+  mutable_signed_size->set_data_size(store_data.size);
+  mutable_signed_size->set_signature(co.AsymSign(
+      base::itos_ull(store_data.size), "", store_data.private_key,
+      crypto::STRING_STRING));
+  mutable_signed_size->set_pmid(store_data.key_id);
+  mutable_signed_size->set_public_key(store_data.public_key);
+  mutable_signed_size->set_public_key_signature(
+      store_data.public_key_signature);
+  for (size_t i = 0; i < recipients.size(); ++i) {
+    std::string signature;
+    GetRequestSignature(store_data.non_hex_key, store_data.dir_type,
+        recipients.at(i).node_id(), store_data.public_key,
+        store_data.public_key_signature, store_data.private_key, &signature);
+    if (signature.empty()) {
+      add_to_watch_list_requests->clear();
+      return kGetRequestSigError;
+    }
+    request.set_request_signature(signature);
+    add_to_watch_list_requests->push_back(request);
+  }
   return kSuccess;
 }
 
@@ -1531,90 +1696,6 @@ void MaidsafeStoreManager::SendContentCallback(
   send_cond_data->cond_variable->notify_all();
 }
 
-void MaidsafeStoreManager::AddToWatchList(
-    const StoreData &store_data,
-    const StorePrepResponse &store_prep_response) {
-  // TODO(Fraser#5#): 2009-12-21 - Consider repeating this until success or
-  //                               some max. no. of failures.
-  // Set the Watch List name
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string watch_list_name = co.Hash(store_data.key_id + "WATCHLIST", "",
-      crypto::STRING_STRING, false);
-  // Find the Watch List Holders
-  std::vector<kad::Contact> watch_list_holders;
-  if (FindKNodes(watch_list_name, &watch_list_holders) != kSuccess)
-    return;
-  // Send the requests
-  boost::mutex mutex;
-  std::vector<AddToWatchListRequest> add_to_watch_list_requests;
-  std::vector<AddToWatchListResponse> add_to_watch_list_responses;
-  for (boost::uint16_t i = 0; i < watch_list_holders.size(); ++i) {
-    AddToWatchListRequest add_to_watch_list_request;
-    if (GetAddToWatchListRequest(store_data, store_prep_response,
-        watch_list_holders.at(i).node_id(), &add_to_watch_list_request) !=
-        kSuccess)
-      continue;
-    add_to_watch_list_requests.push_back(add_to_watch_list_request);
-    AddToWatchListResponse add_to_watch_list_response;
-    add_to_watch_list_responses.push_back(add_to_watch_list_response);
-  }
-  boost::uint16_t rpcs_sent_count(add_to_watch_list_requests.size());
-  for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
-    google::protobuf::Closure* callback =
-        google::protobuf::NewCallback(&google::protobuf::DoNothing);
-    rpcprotocol::Controller controller;
-    client_rpcs_->AddToWatchList(watch_list_holders.at(i),
-        AddressIsLocal(watch_list_holders.at(i)),
-        &add_to_watch_list_requests.at(i), &add_to_watch_list_responses.at(i),
-        &controller, callback);
-  }
-  boost::uint16_t successful_count(0);
-  boost::uint16_t failed_count(0);
-  // Once we've got enough successful replies, cancel the remaining RPCs (they
-  // should still succeed, we just won't handle the reply)
-//  while (successful_count < kKadStoreThreshold_ &&
-//         failed_count < kad::K - kKadStoreThreshold_ + 1 &&
-//         successful_count + failed_count < ref_holders.size()) {
-// TODO(Fraser#5#): 2009-10-13 - Preceding lines cause segfault on Unix due to
-// callbacks trying to lock destructed mutex - figure out why.
-  int timeout = 10000;  // milliseconds
-  int timeout_count = 0;
-  while ((successful_count + failed_count < rpcs_sent_count) &&
-         (timeout_count < timeout)) {
-    successful_count = 0;
-    failed_count = 0;
-    for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
-      boost::mutex::scoped_lock lock(mutex);
-      if (add_to_watch_list_responses.at(i).IsInitialized()) {
-        if (add_to_watch_list_responses.at(i).result() == kAck) {
-          ++successful_count;
-        } else {
-          ++failed_count;
-        }
-      } else {
-        break;
-      }
-    }
-    timeout_count += 10;
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-    if (timeout_count >= timeout)
-      printf("\n\n\n\n\n\n\nAdd to Watch List TIMED OUT\n\n\n\n\n\n\n\n");
-  }
-//  if (successful_count < kKadStoreThreshold_)
-//    retry?
-// Cancel outstanding RPCs
-// TODO(Fraser#5#): 2009-10-13 - Once preceding todo is resolved, reinstate
-// following code.  Bool store_iou_response_returned needs replaced with
-// three state flag, kPending, kReturned, kDone or similar.
-//  for (boost::uint16_t j = 0; j < results.size(); ++j) {
-//    if (!results.at(j)->store_iou_response_returned)
-//      channel_manager_.
-//          DeletePendingRequest(results.at(j)->controller->req_id());
-//  }
-}
-
 void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
   StoreTask task;
   // Assess whether to start the subtask or not
@@ -1642,7 +1723,7 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
   co.set_hash_algorithm(crypto::SHA_512);
   std::string watch_list_name = co.Hash(store_data.key_id + "WATCHLIST", "",
       crypto::STRING_STRING, false);
-  // Find the Watch List Holders
+  // Find the Chunk Info Holders
   std::vector<kad::Contact> watch_list_holders;
   if (FindKNodes(watch_list_name, &watch_list_holders) != kSuccess) {
     tasks_handler_.DeleteTask(store_data.non_hex_key, kDeleteChunk, "");
@@ -2638,7 +2719,5 @@ void MaidsafeStoreManager::AmendAccount(const boost::uint64_t &space_offered) {
 //          DeletePendingRequest(results.at(j)->controller->req_id());
 //  }
 }
-
-
 
 }  // namespace maidsafe

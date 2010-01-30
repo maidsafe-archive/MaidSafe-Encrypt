@@ -145,6 +145,8 @@ enum ReturnCode {
   kLoadPacketFailure = -7046,
   kStoreManagerException = -7047,
   kFindAccountHoldersError = -7048,
+  kUploadCopiesPendingConsensus = -7049,
+  kUploadCopiesFailedConsensus = -7050,
 
   // Message Handler (-8000)
 

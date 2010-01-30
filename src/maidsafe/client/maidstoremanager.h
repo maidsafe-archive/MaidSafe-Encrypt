@@ -35,7 +35,6 @@
 
 #include <list>
 #include <map>
-#include <queue>
 #include <set>
 #include <string>
 #include <vector>
@@ -301,6 +300,34 @@ struct DeletePacketData {
  private:
 };
 
+// This is used to hold the data required to perform a Kad lookup to get a
+// group of Chunk Info holders, send each an AddToWatchListRequest and
+// assess the responses.
+struct AddToWatchListData {
+  struct AddToWatchDataHolder {
+    explicit AddToWatchDataHolder(const std::string &id)
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
+    std::string node_id;
+    maidsafe::AddToWatchListResponse response;
+    boost::shared_ptr<rpcprotocol::Controller> controller;
+  };
+  explicit AddToWatchListData(const StoreData &sd)
+      : store_data(sd),
+        mutex(),
+        contacts(),
+        data_holders(),
+        returned_count(0),
+        required_upload_copies(),
+        consensus_upload_copies(-1) {}
+  StoreData store_data;
+  boost::mutex mutex;
+  std::vector<kad::Contact> contacts;
+  std::vector<AddToWatchDataHolder> data_holders;
+  boost::uint16_t returned_count;
+  std::multiset<int> required_upload_copies;
+  int consensus_upload_copies;
+};
+
 struct GenericConditionData {
  public:
   explicit GenericConditionData(boost::shared_ptr<boost::condition_variable> cv)
@@ -354,16 +381,15 @@ struct ChunkHolder {
 class ChunkStore;
 class SessionSingleton;
 
-class StoreChunkTask : public QRunnable {
+class AddToWatchListTask : public QRunnable {
  public:
-  StoreChunkTask(const StoreData &store_data,
-                 MaidsafeStoreManager *msm)
+  AddToWatchListTask(const StoreData &store_data, MaidsafeStoreManager *msm)
       : store_data_(store_data),
         msm_(msm) {}
   void run();
  private:
-  StoreChunkTask &operator=(const StoreChunkTask&);
-  StoreChunkTask(const StoreChunkTask&);
+  AddToWatchListTask &operator=(const AddToWatchListTask&);
+  AddToWatchListTask(const AddToWatchListTask&);
   StoreData store_data_;
   MaidsafeStoreManager *msm_;
 };
@@ -393,27 +419,6 @@ class StorePacketTask : public QRunnable {
   StorePacketTask &operator=(const StorePacketTask&);
   StorePacketTask(const StorePacketTask&);
   boost::shared_ptr<StoreData> store_data_;
-  MaidsafeStoreManager *msm_;
-};
-
-class AddToWatchListTask : public QRunnable {
- public:
-  AddToWatchListTask(const StoreData &store_data,
-                     const StorePrepResponse &store_prep_response,
-                     MaidsafeStoreManager *msm)
-      : store_data_(store_data),
-        store_prep_response_(store_prep_response),
-        msm_(msm) {}
-  AddToWatchListTask(const StoreData &store_data, MaidsafeStoreManager *msm)
-      : store_data_(store_data),
-        store_prep_response_(),
-        msm_(msm) {}
-  void run();
- private:
-  AddToWatchListTask &operator=(const AddToWatchListTask&);
-  AddToWatchListTask(const AddToWatchListTask&);
-  StoreData store_data_;
-  StorePrepResponse store_prep_response_;
   MaidsafeStoreManager *msm_;
 };
 
@@ -586,10 +591,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                                      std::string *public_key,
                                      std::string *public_key_sig,
                                      std::string *private_key);
-  friend void StoreChunkTask::run();
+  friend void AddToWatchListTask::run();
   friend void SendChunkCopyTask::run();
   friend void StorePacketTask::run();
-  friend void AddToWatchListTask::run();
   friend void DeleteChunkTask::run();
   friend void DeletePacketTask::run();
   friend void AmendAccountTask::run();
@@ -612,10 +616,17 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           bool is_mutable,
                           int *return_value,
                           GenericConditionData *generic_cond_data);
-  // Send AddToWatchList requests to each of the k Watch List holders.
-  virtual void AddToWatchList(const StoreData &store_data,
-                              const StorePrepResponse &store_prep_response);
-  // Send RemoveFromWatchList requests to each of the k Watch List holders.
+  // Sends AddToWatchList requests to each of the k Chunk Info holders.
+  virtual void AddToWatchList(const StoreData &store_data);
+  // Assesses each AddToWatchListResponse and if consensus of required chunk
+  // upload copies is achieved, begins new SendChunkCopyTask(s) if required.
+  void AddToWatchListCallback(boost::uint16_t index,
+                              boost::shared_ptr<AddToWatchListData> data);
+  // Assesses AddToWatchListResponses for consensus of required chunk upload
+  // copies.  Returns < 0 if no consensus.  data->mutex should already be locked
+  // by method calling this one for duration of this function.
+  int AssessUploadCounts(boost::shared_ptr<AddToWatchListData> data);
+  // Send RemoveFromWatchList requests to each of the k Chunk Info holders.
   void RemoveFromWatchList(const StoreData &store_data);
   // Returns the current status of the task and sets *task to the task if found.
   virtual TaskStatus AssessTaskStatus(const StoreData &store_data,
@@ -630,17 +641,22 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                        const std::string &recipient_id,
                        StorePrepRequest *store_prep_request,
                        StoreChunkRequest *store_chunk_request);
-  // Set up the request needed to perform the AddToWatchList RPC.
-  int GetAddToWatchListRequest(
+  // Set up the requests needed to perform the AddToWatchList RPCs.
+  int GetAddToWatchListRequests(
       const StoreData &store_data,
-      const StorePrepResponse &store_prep_response,
-      const std::string &recipient_id,
-      AddToWatchListRequest *add_to_watch_list_request);
+      const std::vector<kad::Contact> &recipients,
+      std::vector<AddToWatchListRequest> *add_to_watch_list_requests);
   // Set up the request needed to perform the RemoveFromWatchList RPC.
   int GetRemoveFromWatchListRequest(
       const StoreData &store_data,
       const std::string &recipient_id,
       RemoveFromWatchListRequest *remove_from_watch_list_request);
+                                                              //  // Send AddToWatchList request to a single Chunk Info Holder
+                                                              //  void SendAddToWatchListRequest(
+                                                              //      const kad::Contact &watch_list_holder,
+                                                              //      const AddToWatchListRequest &add_to_watch_list_request,
+                                                              //      const AddToWatchListResponse &add_to_watch_list_response,
+                                                              //      boost::mutex *mutex);
   // Get the request signature for a chunk / packet.
   void GetRequestSignature(const std::string &non_hex_name,
                            const DirType dir_type,
@@ -679,14 +695,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       boost::shared_ptr<boost::condition_variable> cond_variable,
       StoreChunkRequest *store_chunk_request);
   void SendContentCallback(GenericConditionData *send_cond_data);
-  // Send AddToWatchList request to a single Watch List Holder
-  void SendAddToWatchListRequest(
-      const kad::Contact &watch_list_holder,
-      const AddToWatchListRequest &add_to_watch_list_request,
-      const AddToWatchListResponse &add_to_watch_list_response,
-      boost::mutex *mutex);
-  // Assess and select a store method for an individual chunk.
-  virtual void PrepareToSendChunk(const StoreData &store_data);
   // Store a single copy of an individual chunk onto the network.
   virtual int SendChunk(const StoreData &store_data);
   // Blocking call to Kademlia Find Nodes.
