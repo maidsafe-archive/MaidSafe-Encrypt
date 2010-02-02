@@ -258,7 +258,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  ASSERT_EQ(5, cb.status);
+  ASSERT_EQ(boost::uint32_t(5), cb.status);
   ASSERT_EQ(knode->host_ip(), cb.end_point.ip());
   ASSERT_EQ(knode->host_port(), cb.end_point.port());
   printf("Step 6b\n");

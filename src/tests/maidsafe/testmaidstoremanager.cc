@@ -270,7 +270,7 @@ class MockMsmKeyUnique : public MaidsafeStoreManager {
                               std::string *needs_cache_copy_id));
   MOCK_METHOD2(FindKNodes, int(const std::string &kad_key,
                                std::vector<kad::Contact> *contacts));
-  MOCK_METHOD1(SendChunk, int(const StoreData &store_data));
+  MOCK_METHOD1(SendChunkPrep, int(const StoreData &store_data));
 };
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
@@ -448,7 +448,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
                 chunk_info_holders.at(i).node_id(), 3, _1, _2))));  // Call 9
   }
 
-  EXPECT_CALL(msm, SendChunk(
+  EXPECT_CALL(msm, SendChunkPrep(
       testing::AllOf(testing::Field(&StoreData::non_hex_key, chunk_name),
                      testing::Field(&StoreData::dir_type, PRIVATE))))
           .Times(7)  // Calls 8 (4 times) & 9 (3 times)
@@ -1270,39 +1270,38 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
       .WillOnce(testing::Return(kSendContentFailure))  // Call 9
       .WillOnce(testing::Return(kSendContentFailure))  // Call 10
       .WillRepeatedly(testing::Return(kSuccess));
-  EXPECT_CALL(msm, AddToWatchList(testing::_, testing::_)).Times(1);  // Call 10
 
-  ASSERT_EQ(kStoreAlreadyCompleted, msm.SendChunk(store_data));  // Call 1
+  ASSERT_EQ(kStoreAlreadyCompleted, msm.SendChunkPrep(store_data));  // Call 1
   // The follwoing should cause the task to be removed
-  ASSERT_EQ(kStoreCancelled, msm.SendChunk(store_data));  // Call 2
+  ASSERT_EQ(kStoreCancelled, msm.SendChunkPrep(store_data));  // Call 2
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
   ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key,
       kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
-  ASSERT_EQ(kGetStorePeerError, msm.SendChunk(store_data));  // Call 3
-  ASSERT_EQ(kTaskCancelledOffline, msm.SendChunk(store_data));  // Call 4
-  ASSERT_EQ(kSendPrepFailure, msm.SendChunk(store_data));  // Call 5
+  ASSERT_EQ(kGetStorePeerError, msm.SendChunkPrep(store_data));  // Call 3
+  ASSERT_EQ(kTaskCancelledOffline, msm.SendChunkPrep(store_data));  // Call 4
+  ASSERT_EQ(kSendPrepFailure, msm.SendChunkPrep(store_data));  // Call 5
   // The following implies the task is deleted - so delete the task and restart
-  ASSERT_EQ(kStoreAlreadyCompleted, msm.SendChunk(store_data));  // Call 6
+  ASSERT_EQ(kStoreAlreadyCompleted, msm.SendChunkPrep(store_data));  // Call 6
   ASSERT_EQ(kSuccess, msm.tasks_handler_.DeleteTask(store_data.non_hex_key,
       kStoreChunk, ""));
   ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key,
       kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
   // The following should cause the task to be removed
-  ASSERT_EQ(kStoreCancelled, msm.SendChunk(store_data));  // Call 7
+  ASSERT_EQ(kStoreCancelled, msm.SendChunkPrep(store_data));  // Call 7
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
   ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key,
       kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
-  ASSERT_EQ(kTaskCancelledOffline, msm.SendChunk(store_data));  // Call 8
-  ASSERT_EQ(kSendContentFailure, msm.SendChunk(store_data));  // Call 9
-  ASSERT_EQ(kSuccess, msm.SendChunk(store_data));  // Call 10
-  ASSERT_EQ(kSuccess, msm.SendChunk(store_data));  // Call 11
-  ASSERT_EQ(kSuccess, msm.SendChunk(store_data));  // Call 12
+  ASSERT_EQ(kTaskCancelledOffline, msm.SendChunkPrep(store_data));  // Call 8
+  ASSERT_EQ(kSendContentFailure, msm.SendChunkPrep(store_data));  // Call 9
+  ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));  // Call 10
+  ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));  // Call 11
+  ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));  // Call 12
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
   // The follwoing should cause the task to be removed
-  ASSERT_EQ(kSuccess, msm.SendChunk(store_data));  // Call 13
+  ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));  // Call 13
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 }
