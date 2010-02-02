@@ -529,8 +529,9 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   boost::mutex mutex;
   boost::condition_variable cond_var;
   int result(kGeneralError);
-  storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kAppend, &mutex,
-                       &cond_var, &result);
+  VoidFuncOneInt func = boost::bind(&SEHandler::PacketOpCallback, this, _1,
+                                    &mutex, &cond_var, &result);
+  storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kAppend, func);
   while (result == kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);
@@ -832,17 +833,6 @@ void SEHandler::StoreChunks(const DataMap &dm,
     storem_->StoreChunk(dm.encrypted_chunk_name(i), dir_type, msid);
 }
 
-//  void SEHandler::WaitForResult(const CallbackResult &cb) {
-//    while (true) {
-//      {
-//        boost::recursive_mutex::scoped_lock gaurd(mutex_);
-//        if (cb.result != "")
-//          return;
-//      }
-//      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-//    }
-//  }
-
 int SEHandler::RemoveKeyFromUptodateDms(const std::string &key) {
   std::map<std::string, std::string>::iterator it;
   it = uptodate_datamaps_.find(key);
@@ -853,14 +843,13 @@ int SEHandler::RemoveKeyFromUptodateDms(const std::string &key) {
   return 0;
 }
 
-CallbackResult::CallbackResult() : result("") {}
-
-void CallbackResult::CallbackFunc(const std::string &res) {
-  result = res;
-}
-
-void CallbackResult::Reset() {
-  result = "";
+void SEHandler::PacketOpCallback(const int &store_manager_result,
+                                 boost::mutex *mutex,
+                                 boost::condition_variable *cond_var,
+                                 int *op_result) {
+  boost::mutex::scoped_lock lock(*mutex);
+  *op_result = store_manager_result;
+  cond_var->notify_one();
 }
 
 }  // namespace maidsafe

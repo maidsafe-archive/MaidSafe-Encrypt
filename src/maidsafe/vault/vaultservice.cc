@@ -28,6 +28,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <maidsafe/kademlia_service_messages.pb.h>
+#include <maidsafe/transportudt.h>
 
 #include <list>
 
@@ -61,7 +62,8 @@ void int_dummy_callback(const int &result) {
 
 void AddToRemoteRefListTask::run() {
   int result = vault_service_logic_->AddToRemoteRefList(chunkname_,
-                                                        store_contract_);
+                                                        store_contract_,
+                                                        transport_id_);
 #ifdef DEBUG
   if (result != kSuccess)
     printf("AddToRemoteRefListTask returned result %i for chunk (%s).\n",
@@ -75,13 +77,13 @@ void AddToRemoteRefListTask::run() {
 
 void AmendRemoteAccountTask::run() {
   vault_service_logic_->AmendRemoteAccount(amend_account_request_,
-      found_local_result_, callback_);
+      found_local_result_, callback_, transport_id_);
 }
 
 void SendCachableChunkTask::run() {
   if (vault_service_logic_ != NULL)
     vault_service_logic_->CacheChunk(chunkname_, chunkcontent_, cacher_,
-                                     callback_);
+                                     callback_, transport_id_);
 }
 
 VaultService::VaultService(const std::string &pmid_public,
@@ -90,7 +92,8 @@ VaultService::VaultService(const std::string &pmid_public,
                            VaultChunkStore *vault_chunkstore,
                            kad::KNode *knode,
                            PendingOperationsHandler *poh,
-                           VaultServiceLogic *vault_service_logic)
+                           VaultServiceLogic *vault_service_logic,
+                           const boost::int16_t &transport_id)
     : pmid_public_(pmid_public),
       pmid_private_(pmid_private),
       pmid_public_signature_(pmid_public_signature),
@@ -100,6 +103,7 @@ VaultService::VaultService(const std::string &pmid_public,
       knode_(knode),
       poh_(poh),
       vault_service_logic_(vault_service_logic),
+      transport_id_(transport_id),
       prm_(),
       ah_(),
       aah_(&ah_, vault_service_logic_),
@@ -107,9 +111,9 @@ VaultService::VaultService(const std::string &pmid_public,
       thread_pool_() {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  pmid_ = co.Hash(pmid_public + pmid_public_signature_, "",
-                  crypto::STRING_STRING, true);
-  non_hex_pmid_ = base::DecodeFromHex(pmid_);
+  non_hex_pmid_ = co.Hash(pmid_public_ + pmid_public_signature_, "",
+                  crypto::STRING_STRING, false);
+  pmid_ = base::EncodeToHex(pmid_);
   thread_pool_.setMaxThreadCount(5);
 }
 
@@ -1138,7 +1142,7 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     // TTL set to 24 hrs
     std::string request_signature = co.AsymSign(co.Hash(pmid_public_ +
       pmid_public_signature_ + request->bufferpacket_name(), "",
-      crypto::STRING_STRING, true), "", pmid_private_, crypto::STRING_STRING);
+      crypto::STRING_STRING, false), "", pmid_private_, crypto::STRING_STRING);
     kad::SignedRequest sr;
     sr.set_signer_id(non_hex_pmid_);
     sr.set_public_key(pmid_public_);
@@ -1292,9 +1296,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL)
-      printf("In VaultService::GetBPMessages(%i),request is not initialized.\n",
-           knode_->host_port());
+    printf("In VaultService::GetBPMessages(%i),request is not initialized.\n",
+         knode_->host_port());
 #endif
     return;
   }
@@ -1306,10 +1309,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to validate signed public key.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to validate signed public key.\n");
 #endif
     return;
   }
@@ -1321,10 +1322,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to validate signed request.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
 #endif
     return;
   }
@@ -1334,10 +1333,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to load the local chunk where the BP is held.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to load the local chunk where the BP is held.\n");
 #endif
     return;
   }
@@ -1348,10 +1345,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to extract the messages.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to extract the messages.\n");
 #endif
     return;
   }
@@ -1363,10 +1358,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to update the local chunk store.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to update the local chunk store.\n");
 #endif
     return;
   }
@@ -1389,37 +1382,19 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
 #ifdef DEBUG
     if (knode_ != NULL)
       printf("In VaultService::AddBPMessage(%i), request is not initialized.\n",
+             knode_->host_port());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->signed_public_key(), request->signed_request(),
+      request->bufferpacket_name(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::AddBPMessage(%i), request/id doesn't validate.\n",
            knode_->host_port());
-#endif
-    return;
-  }
-
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  if (!co.AsymCheckSig(request->public_key(), request->signed_public_key(),
-      request->public_key(), crypto::STRING_STRING)) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
-      printf("failed to validate signed public key.\n");
-    }
-#endif
-    return;
-  }
-
-  if (!co.AsymCheckSig(co.Hash(request->public_key() +
-      request->signed_public_key() + request->bufferpacket_name(), "",
-      crypto::STRING_STRING, false), request->signed_request(),
-      request->public_key(), crypto::STRING_STRING)) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
-      printf("failed to validate signed request.\n");
-    }
 #endif
     return;
   }
@@ -1464,7 +1439,6 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     return;
   }
 
-  response->set_result(kAck);
   done->Run();
 }
 
@@ -1492,7 +1466,7 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::ContactInfo(%i), request does not validate.\n",
+    printf("In VaultService::ContactInfo(%i), request/id does not validate.\n",
            knode_->host_port());
 #endif
     return;
@@ -1706,7 +1680,7 @@ void VaultService::AmendRemoteAccount(
     const boost::uint64_t &size,
     const std::string &account_pmid,
     const std::string &chunkname,
-    const Callback &callback) {
+    const VoidFuncOneInt &callback) {
   // Check if we happen to hold the account - if so, modify as required
   int found_local_result = ah_.HaveAccount(account_pmid);
   if (found_local_result != kAccountNotFound) {
@@ -1741,7 +1715,7 @@ void VaultService::AmendRemoteAccount(
   // thread_pool_ handles destruction of task.
   AmendRemoteAccountTask *task =
       new AmendRemoteAccountTask(amend_account_request, found_local_result,
-                                 callback, vault_service_logic_);
+                                 callback, vault_service_logic_, transport_id_);
   thread_pool_.start(task);
 }
 
@@ -1755,7 +1729,8 @@ void VaultService::AddToRemoteRefList(const std::string &chunkname,
 
   // thread_pool_ handles destruction of task.
   AddToRemoteRefListTask *task =
-      new AddToRemoteRefListTask(chunkname, contract, vault_service_logic_);
+      new AddToRemoteRefListTask(chunkname, contract, vault_service_logic_,
+                                 transport_id_);
   thread_pool_.start(task);
 }
 
@@ -1764,7 +1739,7 @@ int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
   maidsafe::AccountStatusRequest as_req;
   as_req.set_account_pmid(account_pmid);
   as_req.set_space_requested(size);
-  return vault_service_logic_->RemoteVaultAbleToStore(as_req);
+  return vault_service_logic_->RemoteVaultAbleToStore(as_req, transport_id_);
 }
 
 RegistrationService::RegistrationService(
@@ -1819,7 +1794,7 @@ void RegistrationService::SetLocalVaultOwned(
     if (cobj.AsymCheckSig(request->public_key(), signed_key,
         request->public_key(), crypto::STRING_STRING)) {
       // checking if port is available
-      transport::Transport test_tranport;
+      transport::TransportUDT test_tranport;
       if (request->port() == 0 || test_tranport.IsPortAvailable(
           request->port())) {
         response->set_result(maidsafe::OWNED_SUCCESS);

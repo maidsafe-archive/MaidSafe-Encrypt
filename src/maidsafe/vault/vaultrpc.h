@@ -36,9 +36,9 @@ namespace maidsafe_vault {
 
 class VaultRpcs {
  public:
-  VaultRpcs(transport::Transport *transport,
+  VaultRpcs(transport::TransportHandler *transport_handler,
             rpcprotocol::ChannelManager *channel_manager)
-                : transport_(transport),
+                : transport_handler_(transport_handler),
                   channel_manager_(channel_manager),
                   own_non_hex_id_("") {}
   virtual ~VaultRpcs() {}
@@ -52,12 +52,14 @@ class VaultRpcs {
                   const boost::uint16_t &remote_port,
                   const std::string &rendezvous_ip,
                   const boost::uint16_t &rendezvous_port,
+                  const boost::int16_t &transport_id,
                   maidsafe::StoreChunkResponse *response,
                   rpcprotocol::Controller *controller,
                   google::protobuf::Closure *done);
   virtual void AddToReferenceList(
       const kad::Contact &peer,
       bool local,
+      const boost::int16_t &transport_id,
       maidsafe::AddToReferenceListRequest *add_to_reference_list_request,
       maidsafe::AddToReferenceListResponse *add_to_reference_list_response,
       rpcprotocol::Controller *controller,
@@ -65,6 +67,7 @@ class VaultRpcs {
   void RemoveFromReferenceList(
       const kad::Contact &peer,
       bool local,
+      const boost::int16_t &transport_id,
       maidsafe::RemoveFromReferenceListRequest
           *remove_from_reference_list_request,
       maidsafe::RemoveFromReferenceListResponse
@@ -74,6 +77,7 @@ class VaultRpcs {
   virtual void AmendAccount(
       const kad::Contact &peer,
       bool local,
+      const boost::int16_t &transport_id,
       maidsafe::AmendAccountRequest *amend_account_request,
       maidsafe::AmendAccountResponse *amend_account_response,
       rpcprotocol::Controller *controller,
@@ -81,6 +85,7 @@ class VaultRpcs {
   virtual void AccountStatus(
       const kad::Contact &peer,
       bool local,
+      const boost::int16_t &transport_id,
       maidsafe::AccountStatusRequest *get_account_status_request,
       maidsafe::AccountStatusResponse *get_account_status_response,
       rpcprotocol::Controller *controller,
@@ -90,6 +95,7 @@ class VaultRpcs {
                   const boost::uint16_t &remote_port,
                   const std::string &rendezvous_ip,
                   const boost::uint16_t &rendezvous_port,
+                  const boost::int16_t &transport_id,
                   maidsafe::CheckChunkResponse *response,
                   rpcprotocol::Controller *controller,
                   google::protobuf::Closure *done);
@@ -98,6 +104,7 @@ class VaultRpcs {
                 const boost::uint16_t &remote_port,
                 const std::string &rendezvous_ip,
                 const boost::uint16_t &rendezvous_port,
+                const boost::int16_t &transport_id,
                 maidsafe::GetChunkResponse *response,
                 rpcprotocol::Controller *controller,
                 google::protobuf::Closure *done);
@@ -110,6 +117,7 @@ class VaultRpcs {
                const boost::uint16_t &remote_port,
                const std::string &rendezvous_ip,
                const boost::uint16_t &rendezvous_port,
+               const boost::int16_t &transport_id,
                maidsafe::DeleteChunkResponse *response,
                rpcprotocol::Controller *controller,
                google::protobuf::Closure *done);
@@ -119,6 +127,7 @@ class VaultRpcs {
                      const boost::uint16_t &remote_port,
                      const std::string &rendezvous_ip,
                      const boost::uint16_t &rendezvous_port,
+                     const boost::int16_t &transport_id,
                      maidsafe::ValidityCheckResponse *response,
                      rpcprotocol::Controller *controller,
                      google::protobuf::Closure *done);
@@ -130,6 +139,7 @@ class VaultRpcs {
                  const boost::uint16_t &remote_port,
                  const std::string &rendezvous_ip,
                  const boost::uint16_t &rendezvous_port,
+                 const boost::int16_t &transport_id,
                  maidsafe::SwapChunkResponse *response,
                  rpcprotocol::Controller *controller,
                  google::protobuf::Closure *done);
@@ -140,6 +150,7 @@ class VaultRpcs {
                      const boost::uint16_t &remote_port,
                      const std::string &rendezvous_ip,
                      const boost::uint16_t &rendezvous_port,
+                     const boost::int16_t &transport_id,
                      maidsafe::GetBPMessagesResponse *response,
                      rpcprotocol::Controller *controller,
                      google::protobuf::Closure *done);
@@ -147,6 +158,7 @@ class VaultRpcs {
                           const boost::uint16_t &remote_port,
                           const std::string &rendezvous_ip,
                           const boost::uint16_t &rendezvous_port,
+                          const boost::int16_t &transport_id,
                           maidsafe::CacheChunkRequest *request,
                           maidsafe::CacheChunkResponse *response,
                           rpcprotocol::Controller *controller,
@@ -155,7 +167,7 @@ class VaultRpcs {
  private:
   VaultRpcs(const VaultRpcs&);
   VaultRpcs& operator=(const VaultRpcs&);
-  transport::Transport *transport_;
+  transport::TransportHandler *transport_handler_;
   rpcprotocol::ChannelManager *channel_manager_;
   std::string own_non_hex_id_;
 };

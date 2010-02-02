@@ -47,8 +47,6 @@
 
 namespace maidsafe_vault {
 
-typedef boost::function<void (const int&)> Callback;
-
 class VaultServiceLogic;
 
 struct IsOwnedPendingResponse {
@@ -61,10 +59,12 @@ class AddToRemoteRefListTask : public QRunnable {
  public:
   AddToRemoteRefListTask(const std::string &chunkname,
                          const maidsafe::StoreContract &store_contract,
-                         VaultServiceLogic *vault_service_logic)
+                         VaultServiceLogic *vault_service_logic,
+                         const boost::int16_t &transport_id)
       : chunkname_(chunkname),
         store_contract_(store_contract),
-        vault_service_logic_(vault_service_logic) {}
+        vault_service_logic_(vault_service_logic),
+        transport_id_(transport_id) {}
   void run();
  private:
   AddToRemoteRefListTask &operator=(const AddToRemoteRefListTask&);
@@ -72,6 +72,7 @@ class AddToRemoteRefListTask : public QRunnable {
   std::string chunkname_;
   maidsafe::StoreContract store_contract_;
   VaultServiceLogic *vault_service_logic_;
+  boost::int16_t transport_id_;
 };
 
 //  class RemoveFromRemoteRefListTask : public QRunnable {
@@ -96,20 +97,23 @@ class AmendRemoteAccountTask : public QRunnable {
   AmendRemoteAccountTask(
       const maidsafe::AmendAccountRequest &amend_account_request,
       const int &found_local_result,
-      Callback callback,
-      VaultServiceLogic *vault_service_logic)
+      VoidFuncOneInt callback,
+      VaultServiceLogic *vault_service_logic,
+      const boost::int16_t &transport_id)
           : amend_account_request_(amend_account_request),
             found_local_result_(found_local_result),
             callback_(callback),
-            vault_service_logic_(vault_service_logic) {}
+            vault_service_logic_(vault_service_logic),
+            transport_id_(transport_id) {}
   void run();
  private:
   AmendRemoteAccountTask &operator=(const AmendRemoteAccountTask&);
   AmendRemoteAccountTask(const AmendRemoteAccountTask&);
   maidsafe::AmendAccountRequest amend_account_request_;
   int found_local_result_;
-  Callback callback_;
+  VoidFuncOneInt callback_;
   VaultServiceLogic *vault_service_logic_;
+  boost::int16_t transport_id_;
 };
 
 class SendCachableChunkTask : public QRunnable {
@@ -118,9 +122,10 @@ class SendCachableChunkTask : public QRunnable {
                         const std::string chunkcontent,
                         const kad::ContactInfo cacher,
                         VaultServiceLogic *vault_service_logic,
-                        Callback callback)
+                        VoidFuncOneInt callback)
       : chunkname_(chunkname), chunkcontent_(chunkcontent), cacher_(cacher),
-        vault_service_logic_(vault_service_logic), callback_(callback) {}
+        vault_service_logic_(vault_service_logic), callback_(callback),
+        transport_id_(0) {}
   void run();
 
  private:
@@ -128,7 +133,8 @@ class SendCachableChunkTask : public QRunnable {
   std::string chunkcontent_;
   kad::ContactInfo cacher_;
   VaultServiceLogic *vault_service_logic_;
-  Callback callback_;
+  VoidFuncOneInt callback_;
+  boost::uint16_t transport_id_;
 };
 
 class VaultChunkStore;
@@ -141,7 +147,8 @@ class VaultService : public maidsafe::MaidsafeService {
                VaultChunkStore *vault_chunkstore,
                kad::KNode *knode,
                PendingOperationsHandler *poh,
-               VaultServiceLogic *vault_service_logic);
+               VaultServiceLogic *vault_service_logic,
+               const boost::int16_t &transport_id);
   ~VaultService() {}
   virtual void StorePrep(google::protobuf::RpcController* controller,
                          const maidsafe::StorePrepRequest *request,
@@ -304,7 +311,7 @@ class VaultService : public maidsafe::MaidsafeService {
       const boost::uint64_t &size,
       const std::string &account_pmid,
       const std::string &chunkname,
-      const Callback &callback);
+      const VoidFuncOneInt &callback);
   void AddToRemoteRefList(const std::string &chunkname,
                           const maidsafe::StoreContract &contract);
   int RemoteVaultAbleToStore(const boost::uint64_t &size,
@@ -315,6 +322,7 @@ class VaultService : public maidsafe::MaidsafeService {
   kad::KNode *knode_;
   PendingOperationsHandler *poh_;
   VaultServiceLogic *vault_service_logic_;
+  boost::int16_t transport_id_;
   typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
   PrepsReceivedMap prm_;
   AccountHandler ah_;

@@ -902,11 +902,15 @@ int Authentication::StorePacket(const std::string &hex_packet_name,
                                 const std::string &value,
                                 const PacketType &type,
                                 const IfPacketExists &if_exists) {
+// TODO(Fraser#5#): 2010-01-28 - Use callbacks properly to allow several stores
+//                               to happen concurrently.
   boost::mutex mutex;
   boost::condition_variable cond_var;
   int result(kGeneralError);
+  VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
+                                    &mutex, &cond_var, &result);
   storemanager_->StorePacket(hex_packet_name, value, type, PRIVATE, "",
-      if_exists, &mutex, &cond_var, &result);
+                             if_exists, func);
   while (result == kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);
@@ -917,16 +921,28 @@ int Authentication::StorePacket(const std::string &hex_packet_name,
 int Authentication::DeletePacket(const std::string &hex_packet_name,
                                  const std::string &value,
                                  const PacketType &type) {
+// TODO(Fraser#5#): 2010-01-28 - Use callbacks properly to allow several deletes
+//                               to happen concurrently.
   boost::mutex mutex;
   boost::condition_variable cond_var;
   int result(kGeneralError);
-  storemanager_->DeletePacket(hex_packet_name, value, type, PRIVATE, "",
-      &mutex, &cond_var, &result);
+  VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
+                                    &mutex, &cond_var, &result);
+  storemanager_->DeletePacket(hex_packet_name, value, type, PRIVATE, "", func);
   while (result == kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);
   }
   return result;
+}
+
+void Authentication::PacketOpCallback(const int &store_manager_result,
+                                      boost::mutex *mutex,
+                                      boost::condition_variable *cond_var,
+                                      int *op_result) {
+  boost::mutex::scoped_lock lock(*mutex);
+  *op_result = store_manager_result;
+  cond_var->notify_one();
 }
 
 }  // namespace maidsafe

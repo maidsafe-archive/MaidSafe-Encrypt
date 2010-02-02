@@ -287,18 +287,14 @@ void LocalStoreManager::DeletePacket(const std::string &hex_packet_name,
                                      PacketType system_packet_type,
                                      DirType dir_type,
                                      const std::string &msid,
-                                     boost::mutex *mutex,
-                                     boost::condition_variable *cond_var,
-                                     int *result) {
+                                     const VoidFuncOneInt &cb) {
 }
 
 void LocalStoreManager::DeletePacket(const std::string &hex_packet_name,
                                      PacketType system_packet_type,
                                      DirType dir_type,
                                      const std::string &msid,
-                                     boost::mutex *mutex,
-                                     boost::condition_variable *cond_var,
-                                     int *result) {
+                                     const VoidFuncOneInt &cb) {
 }
 
 void LocalStoreManager::DeletePacket(const std::string &hex_packet_name,
@@ -306,9 +302,7 @@ void LocalStoreManager::DeletePacket(const std::string &hex_packet_name,
                                      PacketType system_packet_type,
                                      DirType dir_type,
                                      const std::string &msid,
-                                     boost::mutex *mutex,
-                                     boost::condition_variable *cond_var,
-                                     int *result) {
+                                     const VoidFuncOneInt &cb) {
 }
 
 
@@ -318,18 +312,12 @@ void LocalStoreManager::StorePacket(const std::string &hex_packet_name,
                                     DirType,
                                     const std::string&,
                                     IfPacketExists if_packet_exists,
-                                    boost::mutex *mutex,
-                                    boost::condition_variable *cond_var,
-                                    int *result) {
-  int res = StorePacket_InsertToDb(hex_packet_name, value);
-  if (mutex != NULL && cond_var != NULL && result != NULL) {
-    boost::mutex::scoped_lock lock(*mutex);
-    *result = res;
-    // TODO(Fraser#5#): 2010-01-26 - Fix logic to match MSM - actions variy
-    //                               depending on if_packet_exists value.
-    *result = -11111111;
-    cond_var->notify_one();
-  }
+                                    const VoidFuncOneInt &cb) {
+  int result = StorePacket_InsertToDb(hex_packet_name, value);
+  // TODO(Fraser#5#): 2010-01-26 - Fix logic to match MSM - actions variy
+  //                               depending on if_packet_exists value.
+  cb(-11111111);
+//  cb(result);
 }
 
 int LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,

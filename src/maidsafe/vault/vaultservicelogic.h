@@ -44,8 +44,6 @@ class Contact;
 
 namespace maidsafe_vault {
 
-typedef boost::function<void (const int&)> Callback;
-
 class VaultRpcs;
 
 // This is used to hold the data required to perform a Kad lookup to get a
@@ -68,7 +66,7 @@ struct AddRefCallbackData {
         failure_count(0),
         callback_done(false),
         result(kVaultServiceError) {}
-  Callback callback;
+  VoidFuncOneInt callback;
   boost::mutex mutex;
   boost::condition_variable cv;
   std::vector<kad::Contact> contacts;
@@ -93,11 +91,13 @@ struct AmendRemoteAccountOpData {
   AmendRemoteAccountOpData(maidsafe::AmendAccountRequest req,
                            std::string name,
                            int found_local_res,
-                           Callback cb)
+                           VoidFuncOneInt cb,
+                           boost::int16_t trans_id)
       : request(req),
         account_name(name),
         found_local_result(found_local_res),
         callback(cb),
+        transport_id(trans_id),
         mutex(),
         contacts(),
         data_holders(),
@@ -107,7 +107,8 @@ struct AmendRemoteAccountOpData {
   maidsafe::AmendAccountRequest request;
   std::string account_name;  // non-hex version
   int found_local_result;
-  Callback callback;
+  VoidFuncOneInt callback;
+  boost::int16_t transport_id;
   boost::mutex mutex;
   std::vector<kad::Contact> contacts;
   std::vector<AmendRemoteAccountOpHolder> data_holders;
@@ -138,7 +139,7 @@ struct AccountStatusCallbackData {
         callback_done(false),
         result(kVaultServiceError) {}
   std::string account_name;  // non-hex version
-  Callback callback;
+  VoidFuncOneInt callback;
   boost::mutex mutex;
   boost::condition_variable cv;
   std::vector<kad::Contact> contacts;
@@ -153,7 +154,7 @@ struct CacheChunkData {
   CacheChunkData() : chunkname(), kc(), cb(), request(), response() {}
   std::string chunkname;
   kad::ContactInfo kc;
-  Callback cb;
+  VoidFuncOneInt cb;
   maidsafe::CacheChunkRequest request;
   maidsafe::CacheChunkResponse response;
   rpcprotocol::Controller controller;
@@ -174,7 +175,8 @@ class VaultServiceLogic {
   // Blocking call which looks up Chunk Info holders and sends each an
   // AddToReferenceListRequest to add this vault's ID to ref list for chunkname.
   virtual int AddToRemoteRefList(const std::string &chunkname,
-                                 const maidsafe::StoreContract &store_contract);
+                                 const maidsafe::StoreContract &store_contract,
+                                 const boost::int16_t &transport_id);
   // Blocking call to Kademlia FindCloseNodes
   int FindKNodes(const std::string &kad_key,
                  std::vector<kad::Contact> *contacts);
@@ -190,13 +192,15 @@ class VaultServiceLogic {
   // Amend account of PMID requesting to be added to Watch List or Ref List.
   virtual void AmendRemoteAccount(const maidsafe::AmendAccountRequest &request,
                                   const int &found_local_result,
-                                  const Callback &callback);
+                                  const VoidFuncOneInt &callback,
+                                  const boost::int16_t &transport_id);
   // Blocking call which looks up account holders and sends each an
   // AccountStatusRequest to establish if the account owner has space to store
-  int RemoteVaultAbleToStore(maidsafe::AccountStatusRequest request);
-
+  int RemoteVaultAbleToStore(maidsafe::AccountStatusRequest request,
+                             const boost::int16_t &transport_id);
   void CacheChunk(const std::string chunkname, const std::string chunkcontent,
-                  const kad::ContactInfo cacher, Callback callback);
+                  const kad::ContactInfo cacher, VoidFuncOneInt callback,
+                  const boost::int16_t &transport_id);
  private:
   VaultServiceLogic(const VaultServiceLogic&);
   VaultServiceLogic &operator=(const VaultServiceLogic&);

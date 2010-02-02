@@ -43,6 +43,8 @@
 
 namespace mock_vsl {
 
+typedef boost::function<void (const int&)> VoidFuncOneInt;
+
 enum FindNodesResponseType {
   kFailParse,
   kResultFail,
@@ -117,7 +119,7 @@ void RunCallback(const std::string &find_nodes_response,
                  const base::callback_func_type &callback);
 
 void RunVaultCallback(const int &result,
-                      const maidsafe_vault::Callback &callback);
+                      const mock_vsl::VoidFuncOneInt &callback);
 
 void DoneRun(const int &min_delay,
              const int &max_delay,
@@ -131,30 +133,33 @@ void ThreadedDoneRun(const int &min_delay,
 
 namespace maidsafe_vault {
 
-typedef boost::function<void (const int&)> Callback;
+typedef boost::function<void (const int&)> VoidFuncOneInt;
 
 class MockVaultRpcs : public VaultRpcs {
  public:
-  MockVaultRpcs(transport::Transport *transport,
+  MockVaultRpcs(transport::TransportHandler *transport_handler,
                 rpcprotocol::ChannelManager *channel_manager)
-                     : VaultRpcs(transport, channel_manager) {}
-  MOCK_METHOD6(AddToReferenceList, void(
+                     : VaultRpcs(transport_handler, channel_manager) {}
+  MOCK_METHOD7(AddToReferenceList, void(
       const kad::Contact &peer,
       bool local,
+      const boost::int16_t &transport_id,
       maidsafe::AddToReferenceListRequest *add_to_reference_list_request,
       maidsafe::AddToReferenceListResponse *add_to_reference_list_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done));
-  MOCK_METHOD6(AmendAccount, void(
+  MOCK_METHOD7(AmendAccount, void(
       const kad::Contact &peer,
       bool local,
+      const boost::int16_t &transport_id,
       maidsafe::AmendAccountRequest *amend_account_request,
       maidsafe::AmendAccountResponse *amend_account_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done));
-  MOCK_METHOD6(AccountStatus, void(
+  MOCK_METHOD7(AccountStatus, void(
       const kad::Contact &peer,
       bool local,
+      const boost::int16_t &transport_id,
       maidsafe::AccountStatusRequest *get_account_status_request,
       maidsafe::AccountStatusResponse *get_account_status_response,
       rpcprotocol::Controller *controller,
@@ -168,8 +173,9 @@ class MockVsl : public VaultServiceLogic {
   MOCK_METHOD2(FindCloseNodes, void(const std::string &kad_key,
                                     const base::callback_func_type &callback));
   MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
-  MOCK_METHOD2(AddToRemoteRefList, int(const std::string &chunkname,
-                   const maidsafe::StoreContract &store_contract));
+  MOCK_METHOD3(AddToRemoteRefList, int(const std::string &chunkname,
+                   const maidsafe::StoreContract &store_contract,
+                   const boost::int16_t &transport_id));
 };
 
 class MockVslAddToRefTest : public VaultServiceLogic {
@@ -179,10 +185,11 @@ class MockVslAddToRefTest : public VaultServiceLogic {
   MOCK_METHOD2(FindCloseNodes, void(const std::string &kad_key,
                                     const base::callback_func_type &callback));
   MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
-  MOCK_METHOD3(AmendRemoteAccount,
+  MOCK_METHOD4(AmendRemoteAccount,
                void(const maidsafe::AmendAccountRequest &request,
                     const int &found_local_result,
-                    const Callback &callback));
+                    const VoidFuncOneInt &callback,
+                    const boost::int16_t &transport_id));
 };
 
 class MockVslServiceTest : public VaultServiceLogic {
@@ -191,12 +198,14 @@ class MockVslServiceTest : public VaultServiceLogic {
       : VaultServiceLogic(vault_rpcs, knode) {}
   MOCK_METHOD2(FindCloseNodes, void(const std::string &kad_key,
                                     const base::callback_func_type &callback));
-  MOCK_METHOD2(AddToRemoteRefList, int(const std::string &chunkname,
-                   const maidsafe::StoreContract &store_contract));
-  MOCK_METHOD3(AmendRemoteAccount,
+  MOCK_METHOD3(AddToRemoteRefList, int(const std::string &chunkname,
+                   const maidsafe::StoreContract &store_contract,
+                   const boost::int16_t &transport_id));
+  MOCK_METHOD4(AmendRemoteAccount,
                void(const maidsafe::AmendAccountRequest &request,
                     const int &found_local_result,
-                    const Callback &callback));
+                    const VoidFuncOneInt &callback,
+                    const boost::int16_t &transport_id));
 };
 
 class MockVaultServiceLogicTest : public testing::Test {

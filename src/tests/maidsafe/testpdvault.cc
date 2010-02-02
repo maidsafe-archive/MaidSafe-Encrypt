@@ -1068,13 +1068,16 @@ TEST_F(PDVaultTest, FUNC_MAID_UpdateInvalidSystemPacket) {
 */
 
 TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
-  transport::Transport transport;
-  rpcprotocol::ChannelManager channel_manager(&transport);
-  maidsafe::ClientRpcs client_rpcs(&transport, &channel_manager);
-  ASSERT_TRUE(transport.RegisterOnServerDown(boost::bind(
+  transport::TransportUDT udt_transport;
+  transport::TransportHandler transport_handler;
+  boost::int16_t trans_id;
+  transport_handler.Register(&udt_transport, &trans_id);
+  rpcprotocol::ChannelManager channel_manager(&transport_handler);
+  maidsafe::ClientRpcs client_rpcs(&transport_handler, &channel_manager);
+  ASSERT_TRUE(transport_handler.RegisterOnServerDown(boost::bind(
               &testpdvault::DeadRvNotifier, _1, _2, _3)));
   ASSERT_TRUE(channel_manager.RegisterNotifiersToTransport());
-  ASSERT_EQ(0, transport.Start(60000));
+  ASSERT_EQ(0, transport_handler.Start(0, trans_id));
   ASSERT_EQ(0, channel_manager.Start());
 
   boost::uint16_t cache_vault_index(0), chunk_vault_index(0);
@@ -1108,7 +1111,8 @@ TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
   bool finished(false);
   google::protobuf::Closure *done =
       google::protobuf::NewCallback(&testpdvault::GetChunkCallback, &finished);
-  client_rpcs.GetChunk(peer, false, &request, &response, &controller, done);
+  client_rpcs.GetChunk(peer, false, trans_id, &request, &response, &controller,
+                       done);
 
   while (!finished)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
@@ -1123,7 +1127,7 @@ TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_TRUE(pdvaults_[cache_vault_index]->vault_chunkstore_.Has(chunkname));
 
-  transport.Stop();
+  transport_handler.StopAll();
   channel_manager.Stop();
 }
 

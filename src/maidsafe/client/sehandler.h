@@ -75,14 +75,6 @@ struct ChunksData {
   base::callback_func_type cb;
 };
 
-class CallbackResult {
- public:
-  CallbackResult();
-  void CallbackFunc(const std::string &res);
-  void Reset();
-  std::string result;
-};
-
 class SEHandler {
  public:
   SEHandler();
@@ -167,6 +159,10 @@ class SEHandler {
   void LoadChunk(const std::string &chunk_name,
                  int retry,
                  boost::shared_ptr<ChunksData> data);
+  void PacketOpCallback(const int &store_manager_result,
+                        boost::mutex *mutex,
+                        boost::condition_variable *cond_var,
+                        int *op_result);
   boost::shared_ptr<StoreManagerInterface> storem_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;

@@ -61,7 +61,7 @@ message StoreChunkResponse {
 message AddToWatchListRequest {
   required bytes chunkname = 1;
   required SignedSize signed_size = 2;
-  required bytes request_signature = 4;  // Signed using client's PMID key (PMID
+  required bytes request_signature = 3;  // Signed using client's PMID key (PMID
                                          // details included in signed_size
 }
 

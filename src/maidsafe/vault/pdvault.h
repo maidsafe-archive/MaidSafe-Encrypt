@@ -31,6 +31,7 @@
 #include <boost/thread/mutex.hpp>
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/transportudt.h>
 #include <maidsafe/utils.h>
 #include <QThreadPool>
 
@@ -216,7 +217,7 @@ class PDVault {
                  const std::string &rendezvous_ip,
                  const boost::uint16_t &rendezvous_port,
                  base::callback_func_type cb);
-  void StopRvPing() { transport_.StopPingRendezvous(); }
+  void StopRvPing() { transport_handler_.StopPingRendezvous(); }
   void SetKThreshold(const boost::uint16_t &threshold);
   friend class localvaults::Env;
  private:
@@ -300,7 +301,8 @@ class PDVault {
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   boost::uint16_t port_;
-  transport::Transport transport_;
+  transport::TransportUDT udt_transport_;
+  transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
   maidsafe::MaidsafeValidator validator_;
   kad::KNode knode_;
@@ -319,9 +321,8 @@ class PDVault {
   std::string kad_config_file_;
   PendingOperationsHandler poh_;
   QThreadPool thread_pool_;
-  boost::thread pending_ious_thread_, prune_pending_ops_thread_;
+  boost::thread prune_pending_ops_thread_;
 //  boost::uint16_t kKadStoreThreshold_;
-  maidsafe::MaidsafeValidator msv_;
 };
 
 }  // namespace maidsafe_vault

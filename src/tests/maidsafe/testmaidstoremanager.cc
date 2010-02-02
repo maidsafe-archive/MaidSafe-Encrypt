@@ -20,14 +20,18 @@
 *
 * ============================================================================
 */
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <maidsafe/contact_info.pb.h>
+#include <maidsafe/kademlia_service_messages.pb.h>
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
+#include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "protobuf/maidsafe_messages.pb.h"
+#include "maidsafe/vault/vaultchunkstore.h"
+#include "maidsafe/vault/vaultservice.h"
 
 namespace test_msm {
 
@@ -123,6 +127,50 @@ void ThreadedGetHolderContactCallbacks(
   }
 }
 
+void AddToWatchListCallback(
+    bool initialise_response,
+    const int &result,
+    const std::string &pmid,
+    const boost::uint32_t &upload_count,
+    maidsafe::AddToWatchListResponse *response,
+    google::protobuf::Closure* callback) {
+  if (initialise_response) {
+    response->set_result(result);
+    response->set_pmid(pmid);
+    response->set_upload_count(upload_count);
+  }
+  callback->Run();
+}
+
+int SendChunkCount(int *send_chunk_count,
+                   boost::mutex *mutex,
+                   boost::condition_variable *cond_var) {
+  boost::mutex::scoped_lock lock(*mutex);
+  ++(*send_chunk_count);
+  if (*send_chunk_count == 7)
+    cond_var->notify_one();
+  return 0;
+}
+
+void PacketOpCallback(const int &store_manager_result,
+                      boost::mutex *mutex,
+                      boost::condition_variable *cond_var,
+                      int *op_result) {
+  boost::mutex::scoped_lock lock(*mutex);
+  *op_result = store_manager_result;
+  cond_var->notify_one();
+}
+
+void RunDeletePacketCallbacks(
+    std::list< boost::function < void(boost::shared_ptr<
+        maidsafe::DeletePacketData>) > > functors,
+    boost::shared_ptr<maidsafe::DeletePacketData> delete_data) {
+  while (functors.size()) {
+    functors.front()(delete_data);
+    functors.pop_front();
+  }
+}
+
 }  // namespace test_msm
 
 namespace maidsafe {
@@ -139,7 +187,10 @@ class MaidStoreManagerTest : public testing::Test {
                            hex_client_pmid_(),
                            client_pmid_(),
                            mutex_(),
-                           crypto_() {
+                           crypto_(),
+                           cond_var_(),
+                           functor_(boost::bind(&test_msm::PacketOpCallback, _1,
+                               &mutex_, &cond_var_, &packet_op_result_)) {
     try {
       boost::filesystem::remove_all(test_root_dir_);
     }
@@ -199,6 +250,9 @@ class MaidStoreManagerTest : public testing::Test {
   std::string client_pmid_public_signature_, hex_client_pmid_, client_pmid_;
   boost::mutex mutex_;
   crypto::Crypto crypto_;
+  boost::condition_variable cond_var_;
+  int packet_op_result_;
+  VoidFuncOneInt functor_;
 
  private:
   MaidStoreManagerTest(const MaidStoreManagerTest&);
@@ -214,15 +268,9 @@ class MockMsmKeyUnique : public MaidsafeStoreManager {
                               kad::ContactInfo *cache_holder,
                               std::vector<std::string> *chunk_holders_ids,
                               std::string *needs_cache_copy_id));
-  MOCK_METHOD4(FindAndLoadChunk, int(
-      const std::string &chunk_name,
-      const std::vector<std::string> &chunk_holders_ids,
-      bool load_data,
-      std::string *data));
+  MOCK_METHOD2(FindKNodes, int(const std::string &kad_key,
+                               std::vector<kad::Contact> *contacts));
   MOCK_METHOD1(SendChunk, int(const StoreData &store_data));
-  MOCK_METHOD2(AddToWatchList, void(
-      const StoreData &store_data,
-      const StorePrepResponse &store_prep_response));
 };
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
@@ -231,83 +279,565 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   std::string hex_key = base::EncodeToHex(non_hex_key);
   EXPECT_CALL(msm, FindValue(non_hex_key, true, testing::_, testing::_,
       testing::_)).WillOnce(testing::Return(1))
-      .WillOnce(testing::Return(0));
+      .WillOnce(testing::Return(kSuccess));
   EXPECT_CALL(msm, FindValue(non_hex_key, false, testing::_, testing::_,
       testing::_)).WillOnce(testing::Return(1))
-      .WillOnce(testing::Return(0));
+      .WillOnce(testing::Return(kSuccess));
   ASSERT_TRUE(msm.KeyUnique(hex_key, true));
   ASSERT_TRUE(msm.KeyUnique(hex_key, false));
   ASSERT_FALSE(msm.KeyUnique(hex_key, true));
   ASSERT_FALSE(msm.KeyUnique(hex_key, false));
 }
 
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_PrepareToSendChunk) {
+class MockClientRpcs : public ClientRpcs {
+ public:
+  MockClientRpcs(transport::TransportHandler *transport_handler,
+                 rpcprotocol::ChannelManager *channel_manager)
+                     : ClientRpcs(transport_handler, channel_manager) {}
+  MOCK_METHOD7(AddToWatchList, void(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      AddToWatchListRequest *add_to_watch_list_request,
+      AddToWatchListResponse *add_to_watch_list_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done));
+};
+
+MATCHER_P(EqualsContact, kad_contact, "") {
+  return (arg.node_id() == kad_contact.node_id() &&
+          arg.host_ip() == kad_contact.host_ip() &&
+          arg.host_port() == kad_contact.host_port());
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   MockMsmKeyUnique msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+      new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
+  msm.client_rpcs_ = mock_rpcs;
   ASSERT_TRUE(client_chunkstore_->is_initialised());
-  std::string non_hex_key = crypto_.Hash("A", "", crypto::STRING_STRING, false);
-  std::string hex_key = base::EncodeToHex(non_hex_key);
-  // Set up data for calls to FindValue
-  kad::ContactInfo cache_holder;
-  cache_holder.set_node_id(crypto_.Hash("B", "", crypto::STRING_STRING, false));
-  cache_holder.set_ip("192.168.3.3");
-  cache_holder.set_port(8888);
-  std::vector<std::string> chunk_holders_ids;
-  StorePrepResponse empty_store_prep_response;
-  for (int i = 0; i < 10; ++i) {
-    chunk_holders_ids.push_back(crypto_.Hash(base::itos(i * i), "",
-                                crypto::STRING_STRING, false));
+
+  // Set up chunk
+  std::string chunk_value = base::RandomString(396);
+  std::string chunk_name = crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
+                                        false);
+  std::string hex_chunk_name = base::EncodeToHex(chunk_name);
+  ASSERT_EQ(kSuccess,
+            client_chunkstore_->AddChunkToOutgoing(chunk_name, chunk_value));
+
+  // Set up data for calls to FindKNodes
+  std::vector<kad::Contact> chunk_info_holders, few_chunk_info_holders;
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
+    kad::Contact contact(crypto_.Hash(base::itos(i * i), "",
+        crypto::STRING_STRING, false), "192.168.10." + base::itos(i), 8000 + i,
+        "192.168.10." + base::itos(i), 8000 + i);
+    chunk_info_holders.push_back(contact);
+    if (i >= msm.kKadStoreThreshold_)
+      few_chunk_info_holders.push_back(contact);
   }
-  std::string needs_cache_copy_id = crypto_.Hash("C", "", crypto::STRING_STRING,
-                                                 false);
-  std::string key_id1, public_key1, public_key_signature1, private_key1;
-  msm.GetChunkSignatureKeys(PRIVATE, "", &key_id1, &public_key1,
-      &public_key_signature1, &private_key1);
-  StoreData store_data(non_hex_key, 10, (kHashable | kNormal), PRIVATE, "",
-      key_id1, public_key1, public_key_signature1, private_key1);
+  int send_chunk_count(0);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
 
   // Set expectations
-  EXPECT_CALL(msm, FindValue(non_hex_key, false, testing::_, testing::_,
-      testing::_))
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::Return(kSuccess)))  // Call 1
-      .WillOnce(DoAll(testing::SetArgumentPointee<3>(chunk_holders_ids),
+  EXPECT_CALL(msm, FindKNodes(chunk_name, testing::_))
+      .Times(9)
+      .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
+          testing::Return(-1)))  // Call 1
+      .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_chunk_info_holders),
           testing::Return(kSuccess)))  // Call 2
-      .WillOnce(DoAll(testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::Return(kSuccess)))  // Call 3
-      .WillOnce(testing::Return(kFindValueFailure))  // Call 4
-      .WillOnce(testing::Return(kFindValueError));  // Call 5
-  EXPECT_CALL(msm, AddToWatchList(
-      testing::AllOf(testing::Field(&StoreData::non_hex_key, non_hex_key),
-                     testing::Field(&StoreData::dir_type, PRIVATE),
-                     testing::Field(&StoreData::public_key,
-                                    client_pmid_keys_.public_key()),
-                     testing::Field(&StoreData::private_key,
-                                    client_pmid_keys_.private_key()),
-                     testing::Field(&StoreData::public_key_signature,
-                                    client_pmid_public_signature_)),
+      .WillRepeatedly(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
+          testing::Return(kSuccess)));
+
+  // Contact Info holder 1
+  EXPECT_CALL(*mock_rpcs, AddToWatchList(
+      EqualsContact(chunk_info_holders.at(0)),
+      testing::_,
+      testing::_,
+      testing::_,
+      testing::_,
+      testing::_,
       testing::_))
-          .Times(2);  // Calls 1 & 2
-  EXPECT_CALL(msm, FindAndLoadChunk(non_hex_key, chunk_holders_ids, false,
-      testing::_))
-          .WillOnce(testing::Return(kSuccess))  // Call 2
-          .WillOnce(testing::Return(kLoadedChunkEmpty));  // Call 3
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, false, kAck,
+                chunk_info_holders.at(0).node_id(), 4, _1, _2))))  // Call 3
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kNack,
+                chunk_info_holders.at(0).node_id(), 4, _1, _2))))  // Call 4
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(1).node_id(), 4, _1, _2))))  // Call 5
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(0).node_id(), kMinChunkCopies + 1, _1,
+                _2))))  // Call 6
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(0).node_id(), 0, _1, _2))))  // Call 7
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(0).node_id(), 4, _1, _2))))  // Call 8
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(0).node_id(), 0, _1, _2))));  // Call 9
+
+  // Contact Info holders 2 to 12 inclusive
+  for (int i = 1; i < msm.kKadStoreThreshold_; ++i) {
+    EXPECT_CALL(*mock_rpcs, AddToWatchList(
+        EqualsContact(chunk_info_holders.at(i)),
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, false, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 3
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kNack,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 4
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i + 1).node_id(), 4, _1, _2))))  // Call 5
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), kMinChunkCopies + 1, _1,
+                _2))))  // Call 6
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 0, _1, _2))))  // Call 7
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 8
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 3, _1, _2))));  // Call 9
+  }
+
+  // Contact Info holders 13 to 16 inclusive
+  for (size_t i = msm.kKadStoreThreshold_; i < chunk_info_holders.size(); ++i) {
+    EXPECT_CALL(*mock_rpcs, AddToWatchList(
+        EqualsContact(chunk_info_holders.at(i)),
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 3
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 4
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 5
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 6
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 0, _1, _2))))  // Call 7
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 8
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 3, _1, _2))));  // Call 9
+  }
+
   EXPECT_CALL(msm, SendChunk(
-      testing::AllOf(testing::Field(&StoreData::non_hex_key, non_hex_key),
-                     testing::Field(&StoreData::dir_type, PRIVATE),
-                     testing::Field(&StoreData::public_key,
-                                    client_pmid_keys_.public_key()),
-                     testing::Field(&StoreData::private_key,
-                                    client_pmid_keys_.private_key()),
-                     testing::Field(&StoreData::public_key_signature,
-                                    client_pmid_public_signature_))))
-          .Times(2 * kMinChunkCopies);  // Call 3 (x 4) & Call 4 (x 4)
+      testing::AllOf(testing::Field(&StoreData::non_hex_key, chunk_name),
+                     testing::Field(&StoreData::dir_type, PRIVATE))))
+          .Times(7)  // Calls 8 (4 times) & 9 (3 times)
+          .WillRepeatedly(testing::WithoutArgs(testing::Invoke(
+                boost::bind(&test_msm::SendChunkCount, &send_chunk_count,
+                &mutex, &cond_var))));
 
   // Run test calls
-  for (int i = 0; i < 5; ++i) {
-    msm.PrepareToSendChunk(store_data);
+  // Call 1 - FindKNodes returns failure
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 2 - FindKNodes returns success but not enough contacts
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 3 - Five ATW responses return uninitialised
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 4 - Five ATW responses return kNack
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 5 - Five ATW responses return with wrong PMIDs
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 6 - Five ATW responses return excessive upload_count
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 7 - All ATW responses return upload_count of 0
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 8 - All ATW responses return upload_count of 4
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 9 - All ATW responses return upload_count of 3 except one which
+  //          returns an upload_count of 0
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  boost::mutex::scoped_lock lock(mutex);
+  while (send_chunk_count < 7) {
+    cond_var.wait(lock);
   }
-  // Allow time for AddToWatchList call
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
+  MaidsafeStoreManager msm(client_chunkstore_);
+
+  // Set up test data
+  const boost::uint64_t chunk_size(932);
+  std::string chunk_value = base::RandomString(chunk_size);
+  std::string chunk_name = crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
+                                        false);
+  std::string hex_chunk_name = base::EncodeToHex(chunk_name);
+
+  StoreData store_data(chunk_name, chunk_size, (kHashable | kNormal), PRIVATE,
+      "", client_pmid_, client_pmid_keys_.public_key(),
+      client_pmid_public_signature_, client_pmid_keys_.private_key());
+  boost::shared_ptr<AddToWatchListData>
+      add_to_watchlist_data(new AddToWatchListData(store_data));
+  for (size_t i = 0; i < kad::K; ++i) {
+    AddToWatchListData::AddToWatchDataHolder
+        hldr(crypto_.Hash(base::itos(i * i), "", crypto::STRING_STRING, false));
+    add_to_watchlist_data->data_holders.push_back(hldr);
+  }
+
+  // Run tests
+  int test_run(0);
+
+  // All return upload_copies == 2
+  test_run = 1;
+  for (int i = 0; i < msm.kKadStoreThreshold_ - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  for (size_t i = msm.kKadStoreThreshold_ - 1; i < kad::K; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // All return upload_copies == 0
+  test_run = 2;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = 0; i < msm.kKadStoreThreshold_ - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(0);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  for (size_t i = msm.kKadStoreThreshold_ - 1; i < kad::K; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(0);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 4 return 0, last 12 return 2.  Consensus should be 2.
+  test_run = 3;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < kad::K - msm.kKadStoreThreshold_)
+      add_to_watchlist_data->required_upload_copies.insert(0);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 11 return 2, next 4 return 1, last returns 0.  Consensus should be 0.
+  test_run = 4;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = 0; i < msm.kKadStoreThreshold_ - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  for (size_t i = msm.kKadStoreThreshold_ - 1; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(1);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(0);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesFailedConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First returns 0, next returns 1, others return 2.  Consensus should be 2.
+  test_run = 5;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = 0; i < msm.kKadStoreThreshold_ - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < 2)
+      add_to_watchlist_data->required_upload_copies.insert(i);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  for (int i = msm.kKadStoreThreshold_ - 1; i < kad::K; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesFailedConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 10 return 2, last 6 return 1.  Consensus should be 2.
+  test_run = 6;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ - 2)
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(1);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(1);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 10 return 1, last 6 return 2, chunk size == kMaxSmallChunkSize.
+  // Consensus should be 2.
+  test_run = 7;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  add_to_watchlist_data->store_data.size = kMaxSmallChunkSize;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ - 2)
+      add_to_watchlist_data->required_upload_copies.insert(1);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 10 return 1, last 6 return 2, chunk size > kMaxSmallChunkSize.
+  // Consensus should be 1.
+  test_run = 8;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  add_to_watchlist_data->store_data.size = kMaxSmallChunkSize + 1;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ - 2)
+      add_to_watchlist_data->required_upload_copies.insert(1);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(1, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 10 return 0, last 6 return 2, chunk size == kMaxSmallChunkSize.
+  // Consensus should be 2.
+  test_run = 9;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  add_to_watchlist_data->store_data.size = kMaxSmallChunkSize;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ - 2)
+      add_to_watchlist_data->required_upload_copies.insert(0);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 10 return 0, last 6 return 2, chunk size > kMaxSmallChunkSize.
+  // Consensus should be 2.
+  test_run = 10;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  add_to_watchlist_data->store_data.size = kMaxSmallChunkSize + 1;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ - 2)
+      add_to_watchlist_data->required_upload_copies.insert(0);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // Only 5 return, all return 2.  Consensus should be 2.
+  test_run = 11;
+  add_to_watchlist_data->returned_count = msm.kKadStoreThreshold_ - 1;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = msm.kKadStoreThreshold_ - 1; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // Only 5 return, two return 2, three return 1.  Consensus should be 0.
+  test_run = 12;
+  add_to_watchlist_data->returned_count = msm.kKadStoreThreshold_ - 1;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = msm.kKadStoreThreshold_ - 1; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ + 1)
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(1);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(1);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesFailedConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // Only 4 return, all return 2.  Consensus should be 0.
+  test_run = 13;
+  add_to_watchlist_data->returned_count = msm.kKadStoreThreshold_;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = msm.kKadStoreThreshold_; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesFailedConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
+  }
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
@@ -512,35 +1042,118 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       store_chunk_request.public_key_signature());
   ASSERT_EQ(request_signature, store_chunk_request.request_signature());
   ASSERT_EQ(DATA, store_chunk_request.data_type());
+}
 
-//  // Check MID packet
-//  StoreData st_packet_mid(names.at(4), "104", MID, PRIVATE, "");
-//  // Check ANMID packet
-//  StoreData st_packet_anmid(names.at(5), "105", ANMID, PRIVATE, "");
-//  // Check SMID packet
-//  StoreData st_packet_smid(names.at(6), "106", SMID, PRIVATE, "");
-//  // Check ANSMID packet
-//  StoreData st_packet_ansmid(names.at(7), "107", ANSMID, PRIVATE, "");
-//  // Check TMID packet
-//  StoreData st_packet_tmid(names.at(8), "108", TMID, PRIVATE, "");
-//  // Check ANTMID packet
-//  StoreData st_packet_antmid(names.at(9), "109", ANTMID, PRIVATE, "");
-//  // Check MPID packet
-//  StoreData st_packet_mpid(names.at(10), "110", MPID, PRIVATE, "");
-//  // Check ANMPID packet
-//  StoreData st_packet_anmpid(names.at(11), "111", ANMPID, PRIVATE, "");
-//  // Check PMID packet
-//  StoreData st_packet_pmid(names.at(12), "112", PMID, PRIVATE, "");
-//  // Check MAID packet
-//  StoreData st_packet_maid(names.at(13), "113", MAID, PRIVATE, "");
-//  // Check BUFFER packet
-//  StoreData st_packet_buffer(names.at(14), "114", BUFFER, PRIVATE, "");
-//  // Check BUFFER_INFO packet
-//  StoreData st_packet_buffer_info(names.at(15), "115", BUFFER_INFO,
-//      PRIVATE, "");
-//  // Check BUFFER_MESSAGE packet
-//  StoreData st_packet_buffer_message(names.at(16), "116", BUFFER_MESSAGE,
-//      PRIVATE, "");
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
+  MaidsafeStoreManager msm(client_chunkstore_);
+  // Make peer keys
+  crypto::RsaKeyPair peer_pmid_keys;
+  peer_pmid_keys.GenerateKeys(kRsaKeySize);
+  std::string peer_pmid_pri = peer_pmid_keys.private_key();
+  std::string peer_pmid_pub = peer_pmid_keys.public_key();
+  std::string peer_pmid_pub_signature = crypto_.AsymSign(peer_pmid_pub, "",
+      peer_pmid_pri, crypto::STRING_STRING);
+  std::string peer_pmid = crypto_.Hash(peer_pmid_pub + peer_pmid_pub_signature,
+      "", crypto::STRING_STRING, false);
+  // Make request
+  StorePrepRequest store_prep_request;
+  StoreChunkRequest store_chunk_request;
+  std::string chunk_value(base::RandomString(163));
+  std::string chunk_name(crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
+      false));
+  StoreData store_data(chunk_name, chunk_value.size(), (kHashable | kOutgoing),
+      PRIVATE, "", client_pmid_, client_pmid_keys_.public_key(),
+      client_pmid_public_signature_, client_pmid_keys_.private_key());
+  client_chunkstore_->AddChunkToOutgoing(chunk_name, chunk_value);
+  ASSERT_EQ(kSuccess, msm.GetStoreRequests(store_data, peer_pmid,
+      &store_prep_request, &store_chunk_request));
+  // Make proper response
+  maidsafe_vault::VaultChunkStore
+      vault_chunkstore(test_root_dir_ + "/VaultChunkstore", 999999, 0);
+  maidsafe_vault::VaultService vault_service(peer_pmid_pub, peer_pmid_pri,
+      peer_pmid_pub_signature, &vault_chunkstore, NULL, NULL, NULL, 0);
+  StorePrepResponse good_store_prep_response;
+  google::protobuf::Closure *done =
+      google::protobuf::NewCallback(&google::protobuf::DoNothing);
+  vault_service.StorePrep(NULL, &store_prep_request,
+                          &good_store_prep_response, done);
+
+  // Uninitialised StorePrepResponse
+  StorePrepResponse store_prep_response;
+  ASSERT_EQ(kSendPrepResponseUninitialised, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // Uninitialised StoreContract
+  store_prep_response = good_store_prep_response;
+  store_prep_response.clear_store_contract();
+  ASSERT_EQ(kSendPrepResponseUninitialised, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // Uninitialised InnerContract
+  store_prep_response = good_store_prep_response;
+  StoreContract *mutable_store_contract =
+      store_prep_response.mutable_store_contract();
+  mutable_store_contract->clear_inner_contract();
+  ASSERT_EQ(kSendPrepResponseUninitialised, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // Wrong PMID
+  store_prep_response = good_store_prep_response;
+  mutable_store_contract = store_prep_response.mutable_store_contract();
+  mutable_store_contract->set_pmid(client_pmid_);
+  ASSERT_EQ(kSendPrepPeerError, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // Altered SignedSize
+  store_prep_response = good_store_prep_response;
+  mutable_store_contract = store_prep_response.mutable_store_contract();
+  StoreContract::InnerContract *mutable_inner_contract =
+      mutable_store_contract->mutable_inner_contract();
+  SignedSize *mutable_signed_size =
+      mutable_inner_contract->mutable_signed_size();
+  mutable_signed_size->set_data_size(chunk_value.size() - 1);
+  ASSERT_EQ(kSendPrepSignedSizeAltered, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // Returned kNack
+  store_prep_response = good_store_prep_response;
+  mutable_store_contract = store_prep_response.mutable_store_contract();
+  mutable_inner_contract = mutable_store_contract->mutable_inner_contract();
+  mutable_inner_contract->set_result(kNack);
+  ASSERT_EQ(kSendPrepFailure, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // PMID doesn't validate
+  store_prep_response = good_store_prep_response;
+  mutable_store_contract = store_prep_response.mutable_store_contract();
+  std::string wrong_pmid = crypto_.Hash(base::RandomString(100), "",
+      crypto::STRING_STRING, false);
+  mutable_store_contract->set_pmid(wrong_pmid);
+  ASSERT_EQ(kSendPrepInvalidId, msm.ValidatePrepResponse(wrong_pmid,
+      store_prep_request.signed_size(), &store_prep_response));
+
+  // PMID didn't sign StoreContract correctly
+  store_prep_response = good_store_prep_response;
+  store_prep_response.set_response_signature(crypto_.AsymSign(
+      base::RandomString(100), "", peer_pmid_pri, crypto::STRING_STRING));
+  ASSERT_EQ(kSendPrepInvalidResponseSignature, msm.ValidatePrepResponse(
+      peer_pmid, store_prep_request.signed_size(), &store_prep_response));
+
+  // PMID didn't sign InnerContract correctly
+  store_prep_response = good_store_prep_response;
+  mutable_store_contract = store_prep_response.mutable_store_contract();
+  mutable_store_contract->set_signature(crypto_.AsymSign(base::RandomString(99),
+      "", peer_pmid_pri, crypto::STRING_STRING));
+  std::string ser_bad_contract;
+  mutable_store_contract->SerializeToString(&ser_bad_contract);
+  store_prep_response.set_response_signature(crypto_.AsymSign(ser_bad_contract,
+      "", peer_pmid_pri, crypto::STRING_STRING));
+  ASSERT_EQ(kSendPrepInvalidContractSignature, msm.ValidatePrepResponse(
+      peer_pmid, store_prep_request.signed_size(), &store_prep_response));
+
+  // All OK
+  ASSERT_EQ(kSuccess, msm.ValidatePrepResponse(peer_pmid,
+      store_prep_request.signed_size(), &good_store_prep_response));
 }
 
 class MockMsmSendChunk : public MaidsafeStoreManager {
@@ -570,7 +1183,7 @@ class MockMsmSendChunk : public MaidsafeStoreManager {
   MOCK_METHOD2(AddToWatchList, void(
       const StoreData &store_data,
       const StorePrepResponse &store_prep_response));
-  MOCK_METHOD3(SendPacketToKad, void(const StoreData &store_data,
+  MOCK_METHOD3(SendPacket, void(const StoreData &store_data,
                                      int *return_value,
                                      GenericConditionData *generic_cond_data));
 };
@@ -693,41 +1306,6 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 }
-/*
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePacket) {
-  MockMsmSendChunk msm(client_chunkstore_);
-  std::string packetname_hashable = crypto_.Hash("Hashable", "",
-                                                 crypto::STRING_STRING, false);
-  std::string packetname_non_hashable = crypto_.Hash("Non-Hashable", "",
-                                                 crypto::STRING_STRING, false);
-  std::string hex_packetname_hashable = base::EncodeToHex(packetname_hashable);
-  std::string hex_packetname_non_hashable =
-      base::EncodeToHex(packetname_non_hashable);
-  std::string key_id, public_key, public_key_signature, private_key;
-  msm.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
-      &public_key_signature, &private_key);
-  StoreData store_task_hashable(packetname_hashable, 8, (kHashable | kNormal),
-      PRIVATE, "", key_id, public_key, public_key_signature, private_key);
-  StoreData store_task_non_hashable(packetname_non_hashable, 8,
-      (kHashable | kNormal), PRIVATE, "", key_id, public_key,
-      public_key_signature, private_key);
-  boost::shared_ptr<boost::condition_variable>
-      cond_variable(new boost::condition_variable);
-  std::string peername = crypto_.Hash("Peer", "", crypto::STRING_STRING, false);
-  kad::Contact peer(peername, "192.192.1.2", 9998);
-  EXPECT_CALL(msm, SendPacketToKad(testing::_, testing::_, testing::_))
-      .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
-           boost::bind(&test_msm::ConditionNotifyNoFlag, -1, _1, _2))))
-      .WillRepeatedly(testing::WithArgs<1, 2>(testing::Invoke(
-           boost::bind(&test_msm::ConditionNotifyNoFlag, 0, _1, _2))));
-  ASSERT_EQ(-1, msm.StorePacket(hex_packetname_hashable,
-            "Hashable", MPID, PRIVATE, "", kDoNothingReturnFailure));
-  ASSERT_EQ(kSuccess, msm.StorePacket(hex_packetname_hashable, "Hashable",
-            ANMID, PRIVATE, "", kDoNothingReturnFailure));
-  ASSERT_EQ(kPacketUnknownType, msm.StorePacket(
-            hex_packetname_non_hashable, "eee", BUFFER_INFO, PRIVATE, "",
-            kDoNothingReturnFailure));
-}
 
 class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
  public:
@@ -738,429 +1316,652 @@ class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
                               kad::ContactInfo *cache_holder,
                               std::vector<std::string> *chunk_holders_ids,
                               std::string *needs_cache_copy_id));
-  MOCK_METHOD3(FindCloseNodes, void(
-      const std::vector<std::string> &packet_holder_ids,
-      std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
-      boost::shared_ptr<GenericConditionData> find_cond_data));
-  MOCK_METHOD4(GetStorePeer, int(const float &,
-                                 const std::vector<kad::Contact> &exclude,
-                                 kad::Contact *new_peer,
-                                 bool *local));
+  MOCK_METHOD1(SendPacket, void(boost::shared_ptr<StoreData> store_data));
+  MOCK_METHOD1(DeletePacketFromNet,
+               void(boost::shared_ptr<DeletePacketData> delete_data));
 };
 
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreNewPacket) {
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
+
+  // Add keys to Session
   crypto::RsaKeyPair anmid_keys;
   anmid_keys.GenerateKeys(kRsaKeySize);
   std::string anmid_pri = anmid_keys.private_key();
   std::string anmid_pub = anmid_keys.public_key();
   std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",
       anmid_pri, crypto::STRING_STRING);
-  std::string maid_name = crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
+  std::string anmid_name = crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
       crypto::STRING_STRING, true);
-  SessionSingleton::getInstance()->AddKey(ANMID, maid_name, anmid_pri,
+  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
       anmid_pub, anmid_pub_key_signature);
-  std::string original_packet_content("original_packet_content");
-  crypto_.set_hash_algorithm(crypto::SHA_1);
-  std::string good_checksum = crypto_.Hash("DFGHJK", "", crypto::STRING_STRING,
-                                           false);
-  std::string bad_checksum = crypto_.Hash("POIKKJ", "", crypto::STRING_STRING,
-                                           false);
-  crypto_.set_hash_algorithm(crypto::SHA_512);
-  std::string packet_content("F");
-  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
-  std::string hex_packetname = base::EncodeToHex(packetname);
-  std::vector<std::string> peernames;
-  std::vector<kad::Contact> peers;
-  std::vector< boost::shared_ptr<ChunkHolder> > packet_holders;
-  for (int i = 0; i < 4; ++i) {
-    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
-        crypto::STRING_STRING, false));
-    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
-    StorePacketResponse store_packet_response;
-    store_packet_response.set_result(kAck);
-    store_packet_response.set_pmid(peernames[i]);
-    store_packet_response.set_checksum(good_checksum);
-    boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(peers.at(i)));
-    ch->store_packet_response = store_packet_response;
-    ch->status = kContactable;
-    packet_holders.push_back(ch);
-  }
+
+  // Set up packet for storing
+  std::string packet_name = crypto_.Hash(base::RandomString(100), "",
+                                         crypto::STRING_STRING, false);
+  std::string hex_packet_name = base::EncodeToHex(packet_name);
+  std::string key_id, public_key, public_key_signature, private_key;
+  msm.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
+      &public_key_signature, &private_key);
+  ASSERT_EQ(anmid_name, key_id);
+  ASSERT_EQ(anmid_pub, public_key);
+  ASSERT_EQ(anmid_pub_key_signature, public_key_signature);
+  ASSERT_EQ(anmid_pri, private_key);
+  std::string packet_value = base::RandomString(200);
+
+  // Set up test requirements
   kad::ContactInfo cache_holder;
   cache_holder.set_node_id("a");
+  std::string ser_kad_store_response_cant_parse("Rubbish");
+  std::string ser_kad_store_response_empty;
+  std::string ser_kad_store_response_good, ser_kad_store_response_fail;
+  kad::StoreResponse store_response;
+  store_response.set_result(kad::kRpcResultSuccess);
+  store_response.SerializeToString(&ser_kad_store_response_good);
+  store_response.set_result("Fail");
+  store_response.SerializeToString(&ser_kad_store_response_fail);
 
-  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
+  // Set up expectations
+  EXPECT_CALL(msm, FindValue(packet_name, true, testing::_, testing::_,
       testing::_))
-          .Times(4)
-          .WillOnce(testing::Return(-1))  // Call 1
+          .Times(6)
+          .WillOnce(testing::Return(-1))  // Call 3
           .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-                          testing::Return(0)))  // Call 2
-          .WillOnce(testing::Return(kFindValueFailure))  // Call 3
-          .WillOnce(testing::Return(kFindValueFailure));  // Call 4
+                          testing::Return(kSuccess)))  // Call 4
+          .WillRepeatedly(testing::Return(kFindValueFailure));
 
-  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
-      .Times(2);
+  EXPECT_CALL(msm, SendPacket(testing::_))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(
+          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
+          ser_kad_store_response_empty, _1))))  // Call 5
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(
+          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
+          ser_kad_store_response_cant_parse, _1))))  // Call 6
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(
+          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
+          ser_kad_store_response_fail, _1))))  // Call 7
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(
+          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
+          ser_kad_store_response_good, _1))));  // Call 8
 
-  EXPECT_CALL(msm, GetStorePeer(testing::_, testing::_, testing::_, testing::_))
-      .Times(8)
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[0]->
-          chunk_holder_contact), testing::Return(0)))
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[1]->
-          chunk_holder_contact), testing::Return(0)))
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[2]->
-          chunk_holder_contact), testing::Return(0)))
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[3]->
-          chunk_holder_contact), testing::Return(0)))
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[0]->
-          chunk_holder_contact), testing::Return(0)))
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[1]->
-          chunk_holder_contact), testing::Return(0)))
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[2]->
-          chunk_holder_contact), testing::Return(0)))
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[3]->
-          chunk_holder_contact), testing::Return(0)));
-
-  EXPECT_CALL(msm, AssessPacketStoreResults(testing::_, testing::_, testing::_))
-      .Times(4)
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
-                      testing::Return(0)))  // Call 3
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
-                      testing::Return(0)))  // Call 3
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
-                      testing::Return(0)))  // Call 4
-      .WillOnce(testing::Return(kCommonChecksumUndecided));  // Call 4
-
-  for (int i = 0; i < 4; ++i) {
-//    EXPECT_CALL(*mock_rpcs, StorePacket(packet_holders[i]->chunk_holder_contact,
-//        testing::_, testing::_, testing::_, testing::_, testing::_))
-//            .Times(2)  // Call 3 then 4
-//            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-//                                      packet_holders[i]->store_packet_response),
-//                            testing::WithArgs<5>(testing::Invoke(
-//                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-//            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-//                                      packet_holders[i]->store_packet_response),
-//                            testing::WithArgs<5>(testing::Invoke(
-//                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
+  // Call 1 - Check with bad packet name length
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket("InvalidName", packet_value, MID, PRIVATE, "",
+                  kDoNothingReturnSuccess, functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
   }
+  ASSERT_EQ(kIncorrectKeySize, packet_op_result_);
 
-  // Call 1
-  ASSERT_EQ(kSendPacketFindValueFailure, msm.StorePacket(hex_packetname,
-      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+  // Call 2 - Check with bad packet type
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, static_cast<PacketType>(-1),
+                  PRIVATE, "", kDoNothingReturnSuccess, functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kPacketUnknownType, packet_op_result_);
 
-  // Call 2
-  ASSERT_EQ(kSendPacketCached, msm.StorePacket(hex_packetname,
-      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+  // Call 3 - FindValue fails
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "",
+                  kDoNothingReturnSuccess, functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSendPacketFindValueFailure, packet_op_result_);
 
-  // Call 3
-  ASSERT_EQ(kSuccess, msm.StorePacket(hex_packetname,
-      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+  // Call 4 - FindValue yields a cached copy
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "",
+                  kDoNothingReturnSuccess, functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSendPacketCached, packet_op_result_);
 
-  // Call 4
-  ASSERT_EQ(kCommonChecksumUndecided, msm.StorePacket(hex_packetname,
-      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+  // Call 5 - SendPacket returns no result
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "",
+                  kDoNothingReturnSuccess, functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSendPacketError, packet_op_result_);
+
+  // Call 6 - SendPacket returns unparseable result
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "",
+                  kDoNothingReturnSuccess, functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSendPacketParseError, packet_op_result_);
+
+  // Call 7 - SendPacket returns failure
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "",
+                  kDoNothingReturnSuccess, functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSendPacketFailure, packet_op_result_);
+
+  // Call 8 - SendPacket returns success
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "",
+                  kDoNothingReturnSuccess, functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
 }
 
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_StoreExistingPacket) {
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
+
+  // Add keys to Session
   crypto::RsaKeyPair anmid_keys;
   anmid_keys.GenerateKeys(kRsaKeySize);
   std::string anmid_pri = anmid_keys.private_key();
   std::string anmid_pub = anmid_keys.public_key();
   std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",
       anmid_pri, crypto::STRING_STRING);
-  std::string maid_name = crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
+  std::string anmid_name = crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
       crypto::STRING_STRING, true);
-  SessionSingleton::getInstance()->AddKey(ANMID, maid_name, anmid_pri,
+  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
       anmid_pub, anmid_pub_key_signature);
-  std::string original_packet_content("original_packet_content");
-  crypto_.set_hash_algorithm(crypto::SHA_1);
-  std::string good_checksum = crypto_.Hash("DFGHJK", "", crypto::STRING_STRING,
-                                           false);
-  std::string bad_checksum = crypto_.Hash("POIKKJ", "", crypto::STRING_STRING,
-                                           false);
-  crypto_.set_hash_algorithm(crypto::SHA_512);
-  std::string packet_content("F");
-  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
-  std::string hex_packetname = base::EncodeToHex(packetname);
-  std::vector<std::string> peernames;
-  std::vector<std::string> two_peernames;
-  std::vector<kad::Contact> peers;
-  std::vector< boost::shared_ptr<ChunkHolder> > packet_holders;
-  std::vector< boost::shared_ptr<ChunkHolder> > two_packet_holders;
-  for (int i = 0; i < 4; ++i) {
-    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
-        crypto::STRING_STRING, false));
-    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
-    StorePacketResponse store_packet_response;
-    store_packet_response.set_result(kAck);
-    store_packet_response.set_pmid(peernames[i]);
-    store_packet_response.set_checksum(good_checksum);
-    boost::shared_ptr<ChunkHolder> ch(new ChunkHolder(peers.at(i)));
-    ch->store_packet_response = store_packet_response;
-    ch->status = kContactable;
-    packet_holders.push_back(ch);
-    if (i < 2) {
-      two_peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
-        crypto::STRING_STRING, false));
-      two_packet_holders.push_back(ch);
-    }
+
+  // Set up packet for storing
+  std::string packet_name = crypto_.Hash(base::RandomString(100), "",
+                                         crypto::STRING_STRING, false);
+  std::string hex_packet_name = base::EncodeToHex(packet_name);
+  std::string key_id, public_key, public_key_signature, private_key;
+  msm.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
+      &public_key_signature, &private_key);
+  ASSERT_EQ(anmid_name, key_id);
+  ASSERT_EQ(anmid_pub, public_key);
+  ASSERT_EQ(anmid_pub_key_signature, public_key_signature);
+  ASSERT_EQ(anmid_pri, private_key);
+  std::string packet_value = base::RandomString(200);
+
+  // Set up store response
+  std::string ser_kad_store_response_good;
+  kad::StoreResponse store_response;
+  store_response.set_result(kad::kRpcResultSuccess);
+  store_response.SerializeToString(&ser_kad_store_response_good);
+
+  // Set up serialised Kademlia delete responses
+  std::string ser_kad_delete_response_cant_parse("Rubbish");
+  std::string ser_kad_delete_response_empty;
+  std::string ser_kad_delete_response_good, ser_kad_delete_response_fail;
+  kad::DeleteResponse delete_response;
+  delete_response.set_result(kad::kRpcResultSuccess);
+  delete_response.SerializeToString(&ser_kad_delete_response_good);
+  delete_response.set_result("Fail");
+  delete_response.SerializeToString(&ser_kad_delete_response_fail);
+
+  // Set up lists of DeletePacketCallbacks using serialised Kad delete responses
+  const size_t kExistingValueCount(5);
+  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
+      functors_kad_good;
+  for (size_t i = 0; i < kExistingValueCount - 1; ++i) {
+    functors_kad_good.push_back(boost::bind(
+        &MaidsafeStoreManager::DeletePacketCallback, &msm,
+        ser_kad_delete_response_good, _1));
   }
+  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
+      functors_kad_empty(functors_kad_good),
+      functors_kad_cant_parse(functors_kad_good),
+      functors_kad_fail(functors_kad_good);
+  functors_kad_empty.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_empty, _1));
+  functors_kad_cant_parse.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_cant_parse, _1));
+  functors_kad_fail.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_fail, _1));
+  functors_kad_good.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_good, _1));
+
+  // Set up vector of existing values
+  std::vector<std::string> existing_values;
+  for (size_t i = 0; i < kExistingValueCount; ++i)
+    existing_values.push_back("ExistingValue" + base::itos(i));
+
+  // Set up expectations
+  EXPECT_CALL(msm, FindValue(packet_name, true, testing::_, testing::_,
+      testing::_))
+          .Times(8)
+          .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(existing_values),
+                                testing::Return(kSuccess)));
+
+  EXPECT_CALL(msm, SendPacket(testing::_))
+      .Times(2)
+      .WillRepeatedly(testing::WithArgs<0>(testing::Invoke(
+          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
+          ser_kad_store_response_good, _1))));  // Calls 3 & 8
+
+  EXPECT_CALL(msm, DeletePacketFromNet(testing::_))  // Calls 5 to 8 inclusive
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_empty, _1))))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_cant_parse, _1))))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_fail, _1))))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_good, _1))));
+
+  // Call 1 - If exists kDoNothingReturnFailure
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "",
+                  kDoNothingReturnFailure, functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSendPacketAlreadyExists, packet_op_result_);
+
+  // Call 2 - If exists kDoNothingReturnSuccess
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "",
+                  kDoNothingReturnSuccess, functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+
+  // Call 3 - If exists kAppend
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "", kAppend,
+                  functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+
+  // Call 4 - Invalid IfExists
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "",
+                  static_cast<IfPacketExists>(-1), functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSendPacketUnknownExistsType, packet_op_result_);
+
+  // Call 5 - If exists kOverwrite - DeleteResponse empty
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
+                  functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketError, packet_op_result_);
+
+  // Call 6 - If exists kOverwrite - DeleteResponse doesn't parse
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
+                  functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketParseError, packet_op_result_);
+
+  // Call 7 - If exists kOverwrite - DeleteResponse fails
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
+                  functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketFailure, packet_op_result_);
+
+  // Call 8 - If exists kOverwrite - DeleteResponse passes
+  packet_op_result_ = kGeneralError;
+  msm.StorePacket(hex_packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
+                  functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
+  MockMsmStoreLoadPacket msm(client_chunkstore_);
+
+  // Set up test requirements
+  std::vector<std::string> packet_names, hex_packet_names;
+  const size_t kTestCount(6);
+  packet_names.push_back("InvalidName");
+  hex_packet_names.push_back("InvalidName");
+  for (size_t i = 1; i < kTestCount; ++i) {
+    packet_names.push_back(crypto_.Hash(base::RandomString(100), "",
+                                        crypto::STRING_STRING, false));
+    hex_packet_names.push_back(base::EncodeToHex(packet_names.at(i)));
+  }
+  std::vector<std::string> values, returned_values;
+  const size_t kValueCount(5);
+  for (size_t i = 0; i < kValueCount; ++i)
+    values.push_back("Value" + base::itos(i));
   kad::ContactInfo cache_holder;
   cache_holder.set_node_id("a");
 
-  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
+  // Set up expectations
+  EXPECT_CALL(msm, FindValue(packet_names.at(1), false, testing::_, testing::_,
       testing::_))
-          .Times(2)
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(peernames),
-                          testing::Return(0)))  // Call 1
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(two_peernames),
-                          testing::Return(0)));  // Call 2
-//          .WillOnce(testing::Return(kFindValueFailure))  // Call 3
-//          .WillOnce(testing::Return(kFindValueFailure));  // Call 4
+          .Times(kMaxChunkLoadRetries)
+          .WillRepeatedly(testing::Return(-1));  // Call 2
 
-  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
-      .Times(2)
-      .WillOnce(testing::SetArgumentPointee<1>(packet_holders))
-      .WillOnce(testing::SetArgumentPointee<1>(two_packet_holders));
+  EXPECT_CALL(msm, FindValue(packet_names.at(2), false, testing::_, testing::_,
+      testing::_))
+          .Times(kMaxChunkLoadRetries)
+          .WillRepeatedly(testing::Return(kSuccess));  // Call 3
 
-  EXPECT_CALL(msm, GetStorePeer(testing::_, testing::_, testing::_, testing::_))
-      .Times(2)
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[2]->
-          chunk_holder_contact), testing::Return(0)))
-//      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[1]->
-//          chunk_holder_contact), testing::Return(0)))
-//      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[2]->
-//          chunk_holder_contact), testing::Return(0)))
-//      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[3]->
-//          chunk_holder_contact), testing::Return(0)));
-//      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[0]->
-//          chunk_holder_contact), testing::Return(0)))
-//      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[1]->
-//          chunk_holder_contact), testing::Return(0)))
-//      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[2]->
-//          chunk_holder_contact), testing::Return(0)))
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(packet_holders[3]->
-          chunk_holder_contact), testing::Return(0)));
+  EXPECT_CALL(msm, FindValue(packet_names.at(3), false, testing::_, testing::_,
+      testing::_))
+          .Times(kMaxChunkLoadRetries)
+          .WillRepeatedly(DoAll(testing::SetArgumentPointee<2>(cache_holder),
+                                testing::Return(kSuccess)));  // Call 4
 
-  EXPECT_CALL(msm, AssessPacketStoreResults(testing::_, testing::_, testing::_))
-      .Times(3)
-//      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
-//                      testing::Return(0)))  // Call 3
-//      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
-//                      testing::Return(0)))  // Call 3
-//      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
-//                      testing::Return(0)))  // Call 4
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
-                      testing::Return(0)))  // Call 1
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
-                      testing::Return(0)))  // Call 2
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(good_checksum),
-                      testing::Return(0)));  // Call 2
-//      .WillOnce(testing::Return(kCommonChecksumUndecided));  // Call 4
+  EXPECT_CALL(msm, FindValue(packet_names.at(4), false, testing::_, testing::_,
+      testing::_))  // Call 5
+          .WillOnce(testing::Return(-1))
+          .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
+                          testing::Return(kSuccess)))
+          .WillOnce(DoAll(testing::SetArgumentPointee<3>(values),
+                          testing::Return(kSuccess)));
 
-  for (int i = 0; i < 4; ++i) {
-//    EXPECT_CALL(*mock_rpcs, StorePacket(packet_holders[i]->chunk_holder_contact,
-//        testing::_, testing::_, testing::_, testing::_, testing::_))
-//            .Times(2)  // Call 1
-//            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-//                                      packet_holders[i]->store_packet_response),
-//                            testing::WithArgs<5>(testing::Invoke(
-//                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))))
-//            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-//                                      packet_holders[i]->store_packet_response),
-//                            testing::WithArgs<5>(testing::Invoke(
-//                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
+  EXPECT_CALL(msm, FindValue(packet_names.at(5), false, testing::_, testing::_,
+      testing::_))  // Call 6
+          .WillOnce(DoAll(testing::SetArgumentPointee<3>(values),
+                          testing::Return(kSuccess)));
 
+  // Call 1 - Check with bad packet name length
+  size_t test_number(0);
+  returned_values.push_back("Val");
+  ASSERT_EQ(size_t(1), returned_values.size());
+  ASSERT_EQ(kIncorrectKeySize,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_values));
+  ASSERT_EQ(size_t(0), returned_values.size());
 
-  // Call 1
-  ASSERT_EQ(kSuccess, msm.StorePacket(hex_packetname,
-            original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+  // Call 2 - FindValue fails
+  ++test_number;
+  returned_values.push_back("Val");
+  ASSERT_EQ(size_t(1), returned_values.size());
+  ASSERT_EQ(kFindValueFailure,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_values));
+  ASSERT_EQ(size_t(0), returned_values.size());
 
-  // Call 2
-  ASSERT_EQ(kSuccess, msm.StorePacket(hex_packetname,
-            original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+  // Call 3 - FindValue claims success but doesn't populate value vector
+  ++test_number;
+  returned_values.push_back("Val");
+  ASSERT_EQ(size_t(1), returned_values.size());
+  ASSERT_EQ(kFindValueFailure,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_values));
+  ASSERT_EQ(size_t(0), returned_values.size());
 
-  // Call 2
-//  ASSERT_EQ(kSendPacketCached, msm.StorePacket(hex_packetname,
-//      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
-//
-//  // Call 3
-//  ASSERT_EQ(kSuccess, msm.StorePacket(hex_packetname,
-//      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
-//
-//  // Call 4
-//  ASSERT_EQ(kCommonChecksumUndecided, msm.StorePacket(hex_packetname,
-//      original_packet_content, maidsafe::MID, maidsafe::PRIVATE, ""));
+  // Call 4 - FindValue yields a cached copy
+  ++test_number;
+  returned_values.push_back("Val");
+  ASSERT_EQ(size_t(1), returned_values.size());
+  ASSERT_EQ(kFindValueFailure,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_values));
+  ASSERT_EQ(size_t(0), returned_values.size());
+
+  // Call 5 - Success
+  ++test_number;
+  returned_values.push_back("Val");
+  ASSERT_EQ(size_t(1), returned_values.size());
+  ASSERT_EQ(kSuccess,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_values));
+  ASSERT_EQ(size_t(kValueCount), returned_values.size());
+  for (size_t i = 0; i < kValueCount; ++i)
+    ASSERT_EQ(values.at(i), returned_values.at(i));
+
+  // Call 6 - Single value success
+  ++test_number;
+  std::string returned_value("Fud");
+  ASSERT_EQ(kSuccess,
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_value));
+  ASSERT_EQ(values.at(0), returned_value);
 }
 
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed) {
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
-  std::string original_packet_content("original_packet_content");
-  GenericPacket gp;
-  gp.set_data(original_packet_content);
-  gp.set_signature("Sig");
-  std::string packet_content("F");
-  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
-  std::string hex_packetname = base::EncodeToHex(packetname);
-  std::vector<std::string> find_value_results;
-  find_value_results.push_back(original_packet_content);
-  std::vector<std::string> peernames;
-  std::vector<kad::Contact> peers;
-  std::vector<GetPacketResponse> get_packet_responses_all_good;
-  for (int i = 0; i < 2; ++i) {
-    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
-        crypto::STRING_STRING, false));
-    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
-    GetPacketResponse get_packet_response;
-    get_packet_response.set_result(kAck);
-    GenericPacket *gp_add = get_packet_response.add_content();
-    *gp_add = gp;
-    get_packet_response.set_pmid(peernames[i]);
-    get_packet_responses_all_good.push_back(get_packet_response);
+
+  // Add keys to Session
+  crypto::RsaKeyPair anmid_keys;
+  anmid_keys.GenerateKeys(kRsaKeySize);
+  std::string anmid_pri = anmid_keys.private_key();
+  std::string anmid_pub = anmid_keys.public_key();
+  std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",
+      anmid_pri, crypto::STRING_STRING);
+  std::string anmid_name = crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
+      crypto::STRING_STRING, true);
+  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
+      anmid_pub, anmid_pub_key_signature);
+
+  // Set up packet for deletion
+  std::string packet_name = crypto_.Hash(base::RandomString(100), "",
+                                         crypto::STRING_STRING, false);
+  std::string hex_packet_name = base::EncodeToHex(packet_name);
+  std::string key_id, public_key, public_key_signature, private_key;
+  msm.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
+      &public_key_signature, &private_key);
+  ASSERT_EQ(anmid_name, key_id);
+  ASSERT_EQ(anmid_pub, public_key);
+  ASSERT_EQ(anmid_pub_key_signature, public_key_signature);
+  ASSERT_EQ(anmid_pri, private_key);
+  const size_t kValueCount(5);
+  std::vector<std::string> packet_values, single_value;
+  for (size_t i = 0; i < kValueCount; ++i)
+    packet_values.push_back("Value" + base::itos(i));
+  single_value.push_back("Value");
+
+  // Set up serialised Kademlia delete responses
+  std::string ser_kad_delete_response_cant_parse("Rubbish");
+  std::string ser_kad_delete_response_empty;
+  std::string ser_kad_delete_response_good, ser_kad_delete_response_fail;
+  kad::DeleteResponse delete_response;
+  delete_response.set_result(kad::kRpcResultSuccess);
+  delete_response.SerializeToString(&ser_kad_delete_response_good);
+  delete_response.set_result("Fail");
+  delete_response.SerializeToString(&ser_kad_delete_response_fail);
+
+  // Set up lists of DeletePacketCallbacks using serialised Kad delete responses
+  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
+      functors_kad_good;
+  for (size_t i = 0; i < kValueCount - 1; ++i) {
+    functors_kad_good.push_back(boost::bind(
+        &MaidsafeStoreManager::DeletePacketCallback, &msm,
+        ser_kad_delete_response_good, _1));
   }
+  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
+      functors_kad_empty(functors_kad_good),
+      functors_kad_cant_parse(functors_kad_good),
+      functors_kad_fail(functors_kad_good);
+  functors_kad_empty.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_empty, _1));
+  functors_kad_cant_parse.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_cant_parse, _1));
+  functors_kad_fail.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_fail, _1));
+  functors_kad_good.push_back(boost::bind(
+      &MaidsafeStoreManager::DeletePacketCallback, &msm,
+      ser_kad_delete_response_good, _1));
 
-
-  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
+  // Set up expectations
+  EXPECT_CALL(msm, FindValue(packet_name, false, testing::_, testing::_,
       testing::_))
-          .Times(7)
-          .WillOnce(testing::Return(-1))  // Call 1
-          .WillOnce(testing::Return(-1))  // Call 1
-          .WillOnce(testing::Return(-1))  // Call 1
-          .WillOnce(testing::Return(kSuccess))  // Call 2
-          .WillOnce(testing::Return(kSuccess))  // Call 2
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(find_value_results),
-                          testing::Return(0)))  // Call 2
-          .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(peernames),
-                                testing::Return(0)));  // Call 3
-  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
-      .Times(1)
-      .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedGetHolderContactCallbacks,
-                peers, 0, 1950, 2000, _1, _2))));  // Call 3
-  for (int i = 0; i < 2; ++i) {
-//    EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
-//        testing::_, testing::_, testing::_))
-//            .Times(1)  // Call 3
-//            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-//                                      get_packet_responses_all_good.at(i)),
-//                                  testing::WithArgs<5>(testing::Invoke(
-//                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
+          .Times(5)
+          .WillOnce(DoAll(testing::SetArgumentPointee<3>(single_value),
+                          testing::Return(kSuccess)))  // Call 9
+          .WillOnce(testing::Return(kFindNodesFailure))  // Call 10
+          .WillOnce(testing::Return(-1))  // Call 11
+          .WillOnce(testing::Return(kSuccess))  // Call 12
+          .WillOnce(DoAll(testing::SetArgumentPointee<3>(packet_values),
+                          testing::Return(kSuccess)));  // Call 13
+
+  EXPECT_CALL(msm, DeletePacketFromNet(testing::_))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_empty, _1))))  // 3
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_cant_parse, _1))))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_fail, _1))))  // 5
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_good, _1))))  // 6
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &MaidsafeStoreManager::DeletePacketCallback, &msm,
+          ser_kad_delete_response_fail, _1))))  // Call 7
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &MaidsafeStoreManager::DeletePacketCallback, &msm,
+          ser_kad_delete_response_good, _1))))  // Call 8
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_good, _1))))  // 9
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunDeletePacketCallbacks, functors_kad_good, _1))));  // 13
+
+  // Call 1 - Check with bad packet name length
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket("InvalidName", packet_values, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
   }
+  ASSERT_EQ(kIncorrectKeySize, packet_op_result_);
 
-  // Call 1
-  ASSERT_EQ(kFindValueFailure, msm.LoadPacket(hex_packetname, &packet_content));
+  // Call 2 - Invalid PacketType
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, packet_values, static_cast<PacketType>(-1),
+                   PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kPacketUnknownType, packet_op_result_);
 
-  // Call 2
-  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));
-  ASSERT_EQ(original_packet_content, packet_content);
+  // Call 3 - Multiple value request - DeleteResponse empty
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, packet_values, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketError, packet_op_result_);
 
-  // Call 3
-  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));
-  ASSERT_EQ(original_packet_content, packet_content);
+  // Call 4 - Multiple value request - DeleteResponse doesn't parse
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, packet_values, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketParseError, packet_op_result_);
+
+  // Call 5 - Multiple value request - DeleteResponse fails
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, packet_values, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketFailure, packet_op_result_);
+
+  // Call 6 - Multiple value request - DeleteResponse passes
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, packet_values, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+
+  // Call 7 - Single value request - DeleteResponse fails
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, single_value.at(0), MID, PRIVATE, "",
+                   functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketFailure, packet_op_result_);
+
+  // Call 8 - Single value request - DeleteResponse success
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, single_value.at(0), MID, PRIVATE, "",
+                   functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+
+  // Call 9 - Single value empty request - DeleteResponse success
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, "", MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+
+  // Call 10 - No values - Packet already deleted from net
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+
+  // Call 11 - No values - FindValue returns failure
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketFindValueFailure, packet_op_result_);
+
+  // Call 12 - No values - FindValue returns success but doesn't populate values
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDeletePacketFindValueFailure, packet_op_result_);
+
+  // Call 13 - No values - FindValue succeeds
+  packet_op_result_ = kGeneralError;
+  msm.DeletePacket(hex_packet_name, MID, PRIVATE, "", functor_);
+  while (packet_op_result_ == kGeneralError) {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
 }
 
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail) {
-  MockMsmStoreLoadPacket msm(client_chunkstore_);
-  std::string original_packet_content("original_packet_content");
-  GenericPacket gp;
-  gp.set_data(original_packet_content);
-  gp.set_signature("Sig");
-  std::string packet_content("F");
-  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
-  std::string hex_packetname = base::EncodeToHex(packetname);
-  std::vector<std::string> find_value_results;
-  find_value_results.push_back(original_packet_content);
-  std::vector<std::string> peernames;
-  std::vector<kad::Contact> peers;
-  std::vector<GetPacketResponse> get_packet_responses_all_bad;
-  for (int i = 0; i < 4; ++i) {
-    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
-        crypto::STRING_STRING, false));
-    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
-    GetPacketResponse get_packet_response;
-    get_packet_response.set_result(kNack);
-    GenericPacket *gp_add = get_packet_response.add_content();
-    *gp_add = gp;
-    get_packet_response.set_pmid(peernames[i]);
-    get_packet_responses_all_bad.push_back(get_packet_response);
-  }
-
-
-  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
-      testing::_))
-          .Times(1)
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(peernames),
-                          testing::Return(0)));
-  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
-      .Times(1)
-      .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedGetHolderContactCallbacks,
-                peers, 0, 1950, 2000, _1, _2))));
-  for (int i = 0; i < 4; ++i) {
-//    EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
-//        testing::_, testing::_, testing::_))
-//            .Times(1)
-//            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-//                            get_packet_responses_all_bad.at(i)),
-//                            testing::WithArgs<5>(testing::Invoke(
-//                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-  ASSERT_EQ(kLoadPacketFailure,
-            msm.LoadPacket(hex_packetname, &packet_content));
-}
-
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed) {
-  MockMsmStoreLoadPacket msm(client_chunkstore_);
-  std::string original_packet_content("original_packet_content");
-  GenericPacket gp;
-  gp.set_data(original_packet_content);
-  gp.set_signature("Sig");
-  std::string packet_content("F");
-  std::string packetname = crypto_.Hash("aa", "", crypto::STRING_STRING, false);
-  std::string hex_packetname = base::EncodeToHex(packetname);
-  std::vector<std::string> find_value_results;
-  find_value_results.push_back(original_packet_content);
-  std::vector<std::string> peernames;
-  std::vector<kad::Contact> peers;
-  std::vector<GetPacketResponse> get_packet_responses_one_good;
-  for (int i = 0; i < 4; ++i) {
-    peernames.push_back(crypto_.Hash("peer" + base::itos(i), "",
-        crypto::STRING_STRING, false));
-    peers.push_back(kad::Contact(peernames[i], "192.192.1.1", 999+i));
-    GetPacketResponse get_packet_response;
-    get_packet_response.set_result(kNack);
-    GenericPacket *gp_add = get_packet_response.add_content();
-    *gp_add = gp;
-    get_packet_response.set_pmid(peernames[i]);
-    if (i == 3)
-      get_packet_response.set_result(kAck);
-    get_packet_responses_one_good.push_back(get_packet_response);
-  }
-
-
-  EXPECT_CALL(msm, FindValue(packetname, false, testing::_, testing::_,
-      testing::_))
-          .Times(1)
-          .WillOnce(DoAll(testing::SetArgumentPointee<3>(peernames),
-                          testing::Return(0)));
-  EXPECT_CALL(msm, FindCloseNodes(testing::_, testing::_, testing::_))
-      .Times(1)
-      .WillOnce(testing::WithArgs<1, 2>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedGetHolderContactCallbacks,
-                peers, 0, 1950, 2000, _1, _2))));
-  for (int i = 0; i < 4; ++i) {
-//    EXPECT_CALL(*mock_rpcs, GetPacket(peers[i], testing::_, testing::_,
-//        testing::_, testing::_, testing::_))
-//            .Times(1)
-//            .WillOnce(DoAll(testing::SetArgumentPointee<3>(
-//                            get_packet_responses_one_good.at(i)),
-//                            testing::WithArgs<5>(testing::Invoke(
-//                boost::bind(&test_msm::ThreadedDoneRun, 100, 5000, _1)))));
-  }
-  ASSERT_EQ(kSuccess, msm.LoadPacket(hex_packetname, &packet_content));
-  ASSERT_EQ(original_packet_content, packet_content);
-}
-*/
 }  // namespace maidsafe

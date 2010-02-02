@@ -27,7 +27,7 @@
 
 #include <boost/cstdint.hpp>
 #include <maidsafe/maidsafe-dht.h>
-#define THIS_MAIDSAFE_DHT_VERSION 14
+#define THIS_MAIDSAFE_DHT_VERSION 15
 #if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
@@ -49,6 +49,8 @@ const boost::uint32_t kMinRegularFileSize = 512;
 // encoded to hex the string size is doubled.
 const boost::uint32_t kKeySize = 64;
 // const crypto::hashtype kHashSize(crypto::SHA_512);
+
+typedef boost::function<void (const int&)> VoidFuncOneInt;
 
 struct Key_Type {
   Key_Type() : package_type(), id(), private_key(), public_key() {}
@@ -307,6 +309,10 @@ const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
 const int kMaxChunkStoreTries(2);  // max number of tries to store or update a
                                    // chunk
 const boost::uint8_t kMaxStoreFailures(10);  // max number of failed store tries
+// TODO(Fraser#5#): 2010-01-29 - Move the kMaxSmallChunkSize to be set and held
+//                               by session depending on connection speed, etc.
+// max size (bytes) of a chunk deemed "small"
+const boost::uint64_t kMaxSmallChunkSize(666666);
 const boost::uint32_t kSaveUpdatesTrigger(10);  // max no of dbs in save queue
                                                  // before running save queue
 const double kMinSuccessfulPecentageOfUpdating(0.9);
