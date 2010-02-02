@@ -27,6 +27,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
+#include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/vault/vaultchunkstore.h"
@@ -124,6 +125,31 @@ void ThreadedGetHolderContactCallbacks(
           packet_holders, cond_data);
     }
   }
+}
+
+void AddToWatchListCallback(
+    bool initialise_response,
+    const int &result,
+    const std::string &pmid,
+    const boost::uint32_t &upload_count,
+    maidsafe::AddToWatchListResponse *response,
+    google::protobuf::Closure* callback) {
+  if (initialise_response) {
+    response->set_result(result);
+    response->set_pmid(pmid);
+    response->set_upload_count(upload_count);
+  }
+  callback->Run();
+}
+
+int SendChunkCount(int *send_chunk_count,
+                   boost::mutex *mutex,
+                   boost::condition_variable *cond_var) {
+  boost::mutex::scoped_lock lock(*mutex);
+  ++(*send_chunk_count);
+  if (*send_chunk_count == 7)
+    cond_var->notify_one();
+  return 0;
 }
 
 void PacketOpCallback(const int &store_manager_result,
@@ -242,15 +268,9 @@ class MockMsmKeyUnique : public MaidsafeStoreManager {
                               kad::ContactInfo *cache_holder,
                               std::vector<std::string> *chunk_holders_ids,
                               std::string *needs_cache_copy_id));
-  MOCK_METHOD4(FindAndLoadChunk, int(
-      const std::string &chunk_name,
-      const std::vector<std::string> &chunk_holders_ids,
-      bool load_data,
-      std::string *data));
+  MOCK_METHOD2(FindKNodes, int(const std::string &kad_key,
+                               std::vector<kad::Contact> *contacts));
   MOCK_METHOD1(SendChunk, int(const StoreData &store_data));
-  MOCK_METHOD2(AddToWatchList, void(
-      const StoreData &store_data,
-      const StorePrepResponse &store_prep_response));
 };
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
@@ -268,76 +288,558 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   ASSERT_FALSE(msm.KeyUnique(hex_key, true));
   ASSERT_FALSE(msm.KeyUnique(hex_key, false));
 }
-/*
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_PrepareToSendChunk) {
+
+class MockClientRpcs : public ClientRpcs {
+ public:
+  MockClientRpcs(transport::TransportHandler *transport_handler,
+                 rpcprotocol::ChannelManager *channel_manager)
+                     : ClientRpcs(transport_handler, channel_manager) {}
+  MOCK_METHOD7(AddToWatchList, void(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      AddToWatchListRequest *add_to_watch_list_request,
+      AddToWatchListResponse *add_to_watch_list_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done));
+};
+
+MATCHER_P(EqualsContact, kad_contact, "") {
+  return (arg.node_id() == kad_contact.node_id() &&
+          arg.host_ip() == kad_contact.host_ip() &&
+          arg.host_port() == kad_contact.host_port());
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   MockMsmKeyUnique msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+      new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
+  msm.client_rpcs_ = mock_rpcs;
   ASSERT_TRUE(client_chunkstore_->is_initialised());
-  std::string non_hex_key = crypto_.Hash("A", "", crypto::STRING_STRING, false);
-  std::string hex_key = base::EncodeToHex(non_hex_key);
-  // Set up data for calls to FindValue
-  kad::ContactInfo cache_holder;
-  cache_holder.set_node_id(crypto_.Hash("B", "", crypto::STRING_STRING, false));
-  cache_holder.set_ip("192.168.3.3");
-  cache_holder.set_port(8888);
-  std::vector<std::string> chunk_holders_ids;
-  StorePrepResponse empty_store_prep_response;
-  for (int i = 0; i < 10; ++i) {
-    chunk_holders_ids.push_back(crypto_.Hash(base::itos(i * i), "",
-                                crypto::STRING_STRING, false));
+
+  // Set up chunk
+  std::string chunk_value = base::RandomString(396);
+  std::string chunk_name = crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
+                                        false);
+  std::string hex_chunk_name = base::EncodeToHex(chunk_name);
+  ASSERT_EQ(kSuccess,
+            client_chunkstore_->AddChunkToOutgoing(chunk_name, chunk_value));
+
+  // Set up data for calls to FindKNodes
+  std::vector<kad::Contact> chunk_info_holders, few_chunk_info_holders;
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
+    kad::Contact contact(crypto_.Hash(base::itos(i * i), "",
+        crypto::STRING_STRING, false), "192.168.10." + base::itos(i), 8000 + i,
+        "192.168.10." + base::itos(i), 8000 + i);
+    chunk_info_holders.push_back(contact);
+    if (i >= msm.kKadStoreThreshold_)
+      few_chunk_info_holders.push_back(contact);
   }
-  std::string needs_cache_copy_id = crypto_.Hash("C", "", crypto::STRING_STRING,
-                                                 false);
-  std::string key_id1, public_key1, public_key_signature1, private_key1;
-  msm.GetChunkSignatureKeys(PRIVATE, "", &key_id1, &public_key1,
-      &public_key_signature1, &private_key1);
-  StoreData store_data(non_hex_key, 10, (kHashable | kNormal), PRIVATE, "",
-      key_id1, public_key1, public_key_signature1, private_key1);
+  int send_chunk_count(0);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
 
   // Set expectations
-  EXPECT_CALL(msm, FindValue(non_hex_key, false, testing::_, testing::_,
-      testing::_))
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-          testing::Return(kSuccess)))  // Call 1
-      .WillOnce(DoAll(testing::SetArgumentPointee<3>(chunk_holders_ids),
+  EXPECT_CALL(msm, FindKNodes(chunk_name, testing::_))
+      .Times(9)
+      .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
+          testing::Return(-1)))  // Call 1
+      .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_chunk_info_holders),
           testing::Return(kSuccess)))  // Call 2
-      .WillOnce(DoAll(testing::SetArgumentPointee<3>(chunk_holders_ids),
-          testing::Return(kSuccess)))  // Call 3
-      .WillOnce(testing::Return(kFindValueFailure))  // Call 4
-      .WillOnce(testing::Return(kFindValueError));  // Call 5
-  EXPECT_CALL(msm, AddToWatchList(
-      testing::AllOf(testing::Field(&StoreData::non_hex_key, non_hex_key),
-                     testing::Field(&StoreData::dir_type, PRIVATE),
-                     testing::Field(&StoreData::public_key,
-                                    client_pmid_keys_.public_key()),
-                     testing::Field(&StoreData::private_key,
-                                    client_pmid_keys_.private_key()),
-                     testing::Field(&StoreData::public_key_signature,
-                                    client_pmid_public_signature_)),
+      .WillRepeatedly(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
+          testing::Return(kSuccess)));
+
+  // Contact Info holder 1
+  EXPECT_CALL(*mock_rpcs, AddToWatchList(
+      EqualsContact(chunk_info_holders.at(0)),
+      testing::_,
+      testing::_,
+      testing::_,
+      testing::_,
+      testing::_,
       testing::_))
-          .Times(2);  // Calls 1 & 2
-  EXPECT_CALL(msm, FindAndLoadChunk(non_hex_key, chunk_holders_ids, false,
-      testing::_))
-          .WillOnce(testing::Return(kSuccess))  // Call 2
-          .WillOnce(testing::Return(kLoadedChunkEmpty));  // Call 3
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, false, kAck,
+                chunk_info_holders.at(0).node_id(), 4, _1, _2))))  // Call 3
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kNack,
+                chunk_info_holders.at(0).node_id(), 4, _1, _2))))  // Call 4
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(1).node_id(), 4, _1, _2))))  // Call 5
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(0).node_id(), kMinChunkCopies + 1, _1,
+                _2))))  // Call 6
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(0).node_id(), 0, _1, _2))))  // Call 7
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(0).node_id(), 4, _1, _2))))  // Call 8
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(0).node_id(), 0, _1, _2))));  // Call 9
+
+  // Contact Info holders 2 to 12 inclusive
+  for (int i = 1; i < msm.kKadStoreThreshold_; ++i) {
+    EXPECT_CALL(*mock_rpcs, AddToWatchList(
+        EqualsContact(chunk_info_holders.at(i)),
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, false, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 3
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kNack,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 4
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i + 1).node_id(), 4, _1, _2))))  // Call 5
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), kMinChunkCopies + 1, _1,
+                _2))))  // Call 6
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 0, _1, _2))))  // Call 7
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 8
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 3, _1, _2))));  // Call 9
+  }
+
+  // Contact Info holders 13 to 16 inclusive
+  for (size_t i = msm.kKadStoreThreshold_; i < chunk_info_holders.size(); ++i) {
+    EXPECT_CALL(*mock_rpcs, AddToWatchList(
+        EqualsContact(chunk_info_holders.at(i)),
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 3
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 4
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 5
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 6
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 0, _1, _2))))  // Call 7
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 8
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 3, _1, _2))));  // Call 9
+  }
+
   EXPECT_CALL(msm, SendChunk(
-      testing::AllOf(testing::Field(&StoreData::non_hex_key, non_hex_key),
-                     testing::Field(&StoreData::dir_type, PRIVATE),
-                     testing::Field(&StoreData::public_key,
-                                    client_pmid_keys_.public_key()),
-                     testing::Field(&StoreData::private_key,
-                                    client_pmid_keys_.private_key()),
-                     testing::Field(&StoreData::public_key_signature,
-                                    client_pmid_public_signature_))))
-          .Times(2 * kMinChunkCopies);  // Call 3 (x 4) & Call 4 (x 4)
+      testing::AllOf(testing::Field(&StoreData::non_hex_key, chunk_name),
+                     testing::Field(&StoreData::dir_type, PRIVATE))))
+          .Times(7)  // Calls 8 (4 times) & 9 (3 times)
+          .WillRepeatedly(testing::WithoutArgs(testing::Invoke(
+                boost::bind(&test_msm::SendChunkCount, &send_chunk_count,
+                &mutex, &cond_var))));
 
   // Run test calls
-  for (int i = 0; i < 5; ++i) {
-    msm.PrepareToSendChunk(store_data);
+  // Call 1 - FindKNodes returns failure
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 2 - FindKNodes returns success but not enough contacts
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 3 - Five ATW responses return uninitialised
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 4 - Five ATW responses return kNack
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 5 - Five ATW responses return with wrong PMIDs
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 6 - Five ATW responses return excessive upload_count
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 7 - All ATW responses return upload_count of 0
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 8 - All ATW responses return upload_count of 4
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  // Call 9 - All ATW responses return upload_count of 3 except one which
+  //          returns an upload_count of 0
+  msm.StoreChunk(hex_chunk_name, PRIVATE, "");
+
+  boost::mutex::scoped_lock lock(mutex);
+  while (send_chunk_count < 7) {
+    cond_var.wait(lock);
   }
-  // Allow time for AddToWatchList call
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
 }
-*/
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
+  MaidsafeStoreManager msm(client_chunkstore_);
+
+  // Set up test data
+  const boost::uint64_t chunk_size(932);
+  std::string chunk_value = base::RandomString(chunk_size);
+  std::string chunk_name = crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
+                                        false);
+  std::string hex_chunk_name = base::EncodeToHex(chunk_name);
+
+  StoreData store_data(chunk_name, chunk_size, (kHashable | kNormal), PRIVATE,
+      "", client_pmid_, client_pmid_keys_.public_key(),
+      client_pmid_public_signature_, client_pmid_keys_.private_key());
+  boost::shared_ptr<AddToWatchListData>
+      add_to_watchlist_data(new AddToWatchListData(store_data));
+  for (size_t i = 0; i < kad::K; ++i) {
+    AddToWatchListData::AddToWatchDataHolder
+        hldr(crypto_.Hash(base::itos(i * i), "", crypto::STRING_STRING, false));
+    add_to_watchlist_data->data_holders.push_back(hldr);
+  }
+
+  // Run tests
+  int test_run(0);
+
+  // All return upload_copies == 2
+  test_run = 1;
+  for (int i = 0; i < msm.kKadStoreThreshold_ - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  for (size_t i = msm.kKadStoreThreshold_ - 1; i < kad::K; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // All return upload_copies == 0
+  test_run = 2;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = 0; i < msm.kKadStoreThreshold_ - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(0);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  for (size_t i = msm.kKadStoreThreshold_ - 1; i < kad::K; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(0);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 4 return 0, last 12 return 2.  Consensus should be 2.
+  test_run = 3;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < kad::K - msm.kKadStoreThreshold_)
+      add_to_watchlist_data->required_upload_copies.insert(0);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 11 return 2, next 4 return 1, last returns 0.  Consensus should be 0.
+  test_run = 4;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = 0; i < msm.kKadStoreThreshold_ - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  for (size_t i = msm.kKadStoreThreshold_ - 1; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(1);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(0);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesFailedConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First returns 0, next returns 1, others return 2.  Consensus should be 2.
+  test_run = 5;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = 0; i < msm.kKadStoreThreshold_ - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < 2)
+      add_to_watchlist_data->required_upload_copies.insert(i);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  for (int i = msm.kKadStoreThreshold_ - 1; i < kad::K; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesFailedConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 10 return 2, last 6 return 1.  Consensus should be 2.
+  test_run = 6;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ - 2)
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(1);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(1);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 10 return 1, last 6 return 2, chunk size == kMaxSmallChunkSize.
+  // Consensus should be 2.
+  test_run = 7;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  add_to_watchlist_data->store_data.size = kMaxSmallChunkSize;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ - 2)
+      add_to_watchlist_data->required_upload_copies.insert(1);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 10 return 1, last 6 return 2, chunk size > kMaxSmallChunkSize.
+  // Consensus should be 1.
+  test_run = 8;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  add_to_watchlist_data->store_data.size = kMaxSmallChunkSize + 1;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ - 2)
+      add_to_watchlist_data->required_upload_copies.insert(1);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(1, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 10 return 0, last 6 return 2, chunk size == kMaxSmallChunkSize.
+  // Consensus should be 2.
+  test_run = 9;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  add_to_watchlist_data->store_data.size = kMaxSmallChunkSize;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ - 2)
+      add_to_watchlist_data->required_upload_copies.insert(0);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // First 10 return 0, last 6 return 2, chunk size > kMaxSmallChunkSize.
+  // Consensus should be 2.
+  test_run = 10;
+  add_to_watchlist_data->returned_count = 0;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  add_to_watchlist_data->store_data.size = kMaxSmallChunkSize + 1;
+  for (int i = 0; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ - 2)
+      add_to_watchlist_data->required_upload_copies.insert(0);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // Only 5 return, all return 2.  Consensus should be 2.
+  test_run = 11;
+  add_to_watchlist_data->returned_count = msm.kKadStoreThreshold_ - 1;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = msm.kKadStoreThreshold_ - 1; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // Only 5 return, two return 2, three return 1.  Consensus should be 0.
+  test_run = 12;
+  add_to_watchlist_data->returned_count = msm.kKadStoreThreshold_ - 1;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = msm.kKadStoreThreshold_ - 1; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    if (i < msm.kKadStoreThreshold_ + 1)
+      add_to_watchlist_data->required_upload_copies.insert(2);
+    else
+      add_to_watchlist_data->required_upload_copies.insert(1);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(1);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesFailedConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
+  }
+
+  // Only 4 return, all return 2.  Consensus should be 0.
+  test_run = 13;
+  add_to_watchlist_data->returned_count = msm.kKadStoreThreshold_;
+  add_to_watchlist_data->required_upload_copies.clear();
+  add_to_watchlist_data->consensus_upload_copies = -1;
+  for (int i = msm.kKadStoreThreshold_; i < kad::K - 1; ++i) {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesPendingConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+  }
+  {
+    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " +
+                 base::itos(kad::K - 1));
+    add_to_watchlist_data->required_upload_copies.insert(2);
+    ++add_to_watchlist_data->returned_count;
+    ASSERT_EQ(kUploadCopiesFailedConsensus,
+              msm.AssessUploadCounts(add_to_watchlist_data));
+    ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
+  }
+}
+
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   MaidsafeStoreManager msm(client_chunkstore_);
   std::string recipient_id = crypto_.Hash("RecipientID", "",

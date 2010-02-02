@@ -606,7 +606,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_PrepareToSendChunk);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
@@ -652,12 +653,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const StoreData &store_data,
       const std::string &recipient_id,
       RemoveFromWatchListRequest *remove_from_watch_list_request);
-                                                              //  // Send AddToWatchList request to a single Chunk Info Holder
-                                                              //  void SendAddToWatchListRequest(
-                                                              //      const kad::Contact &watch_list_holder,
-                                                              //      const AddToWatchListRequest &add_to_watch_list_request,
-                                                              //      const AddToWatchListResponse &add_to_watch_list_response,
-                                                              //      boost::mutex *mutex);
   // Get the request signature for a chunk / packet.
   void GetRequestSignature(const std::string &non_hex_name,
                            const DirType dir_type,
@@ -766,7 +761,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    std::string *serialised_get_messages_response,
                    boost::mutex *get_mutex);
   void GetChunkCallback(boost::mutex *mutex, bool *get_chunk_done);
-/*  // Non-blocking specialised version of the StorePacketToVaults method used to
+/*
+  // Non-blocking specialised version of the StorePacketToVaults method used to
   // store encrypted PD dirs only.
   int StorePdDirToVaults(const std::string &hex_packet_name,
                          const std::string &value,

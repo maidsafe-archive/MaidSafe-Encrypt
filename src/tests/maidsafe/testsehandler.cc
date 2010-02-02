@@ -76,8 +76,7 @@ void wait_for_result_seh(const FakeCallback &cb, boost::mutex *mutex) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
 };
-
-}
+}  // namespace test_seh
 
 namespace maidsafe {
 

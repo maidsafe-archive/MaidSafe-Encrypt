@@ -55,13 +55,14 @@ class ClientRpcs {
                   StoreChunkResponse *store_chunk_response,
                   rpcprotocol::Controller *controller,
                   google::protobuf::Closure *done);
-  void AddToWatchList(const kad::Contact &peer,
-                      bool local,
-                      const boost::int16_t &transport_id,
-                      AddToWatchListRequest *add_to_watch_list_request,
-                      AddToWatchListResponse *add_to_watch_list_response,
-                      rpcprotocol::Controller *controller,
-                      google::protobuf::Closure *done);
+  virtual void AddToWatchList(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      AddToWatchListRequest *add_to_watch_list_request,
+      AddToWatchListResponse *add_to_watch_list_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done);
   void RemoveFromWatchList(
       const kad::Contact &peer,
       bool local,

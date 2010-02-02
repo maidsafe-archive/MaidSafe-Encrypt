@@ -213,7 +213,7 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
     // ensure uniqueness of post-encryption hash
     // HashUnique(post_enc_hash_, dm, false);
     client_chunkstore_->AddChunkToOutgoing(base::DecodeFromHex(post_enc_hash),
-                                          temp_chunk_name);
+                                           temp_chunk_name);
     // store the post-encryption hash to datamap
     dm->add_encrypted_chunk_name(post_enc_hash);
   }

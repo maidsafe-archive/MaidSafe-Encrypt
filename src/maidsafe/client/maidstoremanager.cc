@@ -48,14 +48,6 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-//void StoreChunkTask::run() {
-//  printf("StoreChunkTask - chunk %s ENQUEUEDISED\n",
-//         HexSubstr(store_data_.non_hex_key).c_str());
-//  msm_->PrepareToSendChunk(store_data_);
-//  printf("StoreChunkTask end %s\n",
-//         HexSubstr(store_data_.non_hex_key).c_str());
-//}
-
 void AddToWatchListTask::run() {
   printf("AddToWatchListTask start %s\n",
          HexSubstr(store_data_.non_hex_key).c_str());
@@ -978,57 +970,9 @@ int MaidsafeStoreManager::AddBPMessage(
   return result;
 }
 
-//void MaidsafeStoreManager::PrepareToSendChunk(const StoreData &store_data) {
-//#ifdef DEBUG
-////  printf("In MaidsafeStoreManager::PrepareToSendChunk\n");
-//#endif
-//
-//  // Find out if the chunk already exists on the network.
-//  std::string chunk_name = store_data.non_hex_key;
-//  kad::ContactInfo cache_holder;
-//  std::vector<std::string> chunk_holders_ids;
-//  std::string needs_cache_copy_id;
-//  // If the maidsafe value is cached, this blocking Kad call to FindValue may
-//  // yield serialised contact details for a cache copy holder.  Otherwise it
-//  // should yield the reference holders.  If it yields the reference holders,
-//  // check that at least one currently has the chunk.
-//  int find_result = FindValue(chunk_name, false, &cache_holder,
-//      &chunk_holders_ids, &needs_cache_copy_id);
-//  bool exists = (find_result == kSuccess);
-//  // If FindValue failed to complete the kad function then return.
-//  if (!exists && find_result != kFindValueFailure) {
-//#ifdef DEBUG
-//    printf("In MaidsafeStoreManager::PrepareToSendChunk (%i), failed in "
-//           "FindValue.\n", knode_->host_port());
-//#endif
-//    return;
-//  }
-//  bool data_cached = (cache_holder.has_node_id());
-//  std::string data;
-//  if (exists && !data_cached) {
-//    exists = (FindAndLoadChunk(chunk_name, chunk_holders_ids, false, &data)
-//              == kSuccess);
-//  }
-//  if (exists) {
-//    // chunk_thread_pool_ handles destruction of add_to_watch_list_task.
-//    AddToWatchListTask *add_to_watch_list_task =
-//        new AddToWatchListTask(store_data, this);
-//    chunk_thread_pool_.start(add_to_watch_list_task);
-//  } else {
-//    for (int i = 0; i < kMinChunkCopies; ++i) {
-//      // chunk_thread_pool_ handles destruction of send_chunk_copy_task.
-//      SendChunkCopyTask *send_chunk_copy_task =
-//          new SendChunkCopyTask(store_data, this);
-//      chunk_thread_pool_.start(send_chunk_copy_task);
-//    }
-//  }
-//}
-//
-
 void MaidsafeStoreManager::AddToWatchList(const StoreData &store_data) {
   // TODO(Fraser#5#): 2009-12-21 - Consider repeating this until success or
   //                               some max. no. of failures.
-
   // Find the Chunk Info holders
   boost::shared_ptr<AddToWatchListData>
       data(new AddToWatchListData(store_data));
@@ -1139,20 +1083,26 @@ void MaidsafeStoreManager::AddToWatchListCallback(
 int MaidsafeStoreManager::AssessUploadCounts(
     boost::shared_ptr<AddToWatchListData> data) {
   int discrete_opinions(0);
+  size_t max_count(0);
   std::multiset<int>::iterator it;
   // data->mutex should already be locked, but just in case...
   boost::mutex::scoped_try_lock lock(data->mutex);
-  if (data->returned_count < kKadStoreThreshold_)
+if (data->returned_count < kKadStoreThreshold_)
     return kUploadCopiesPendingConsensus;
   // Get most common upload_copies figure
-  for (it = data->required_upload_copies.begin();
-      it != data->required_upload_copies.end(); ++it) {
-    if (data->required_upload_copies.count(*it) >
-        static_cast<size_t>(data->consensus_upload_copies)) {
-      data->consensus_upload_copies = data->required_upload_copies.count(*it);
-      ++discrete_opinions;
+  std::multiset<int> copy_required_upload_copies(data->required_upload_copies);
+  while (!copy_required_upload_copies.empty()) {
+    int current_copies = *(copy_required_upload_copies.begin());
+    size_t current_count = copy_required_upload_copies.erase(current_copies);
+    if (current_count > max_count) {
+      max_count = current_count;
+      data->consensus_upload_copies = current_copies;
     }
+    ++discrete_opinions;
   }
+  if (discrete_opinions == 1 && max_count >= kKadStoreThreshold_)
+    return kSuccess;
+
   // If more than two discrete opinions, return error and set copies to zero.
   if (discrete_opinions > 2) {
     data->consensus_upload_copies = 0;
@@ -1161,6 +1111,7 @@ int MaidsafeStoreManager::AssessUploadCounts(
   // If no more results due, try to get consensus.
   if (data->returned_count >= data->data_holders.size()) {
     if (discrete_opinions == 2) {
+      it = data->required_upload_copies.end();
       --it;
       int max_copies(*it);
       it = data->required_upload_copies.begin();
@@ -1169,17 +1120,22 @@ int MaidsafeStoreManager::AssessUploadCounts(
       if (data->consensus_upload_copies != max_copies) {
         if (data->store_data.size > kMaxSmallChunkSize && min_copies > 0)
           data->consensus_upload_copies = min_copies;
-      }
-      // If not enough for consensus, return error and set copies to zero.
-      if (data->required_upload_copies.count(data->consensus_upload_copies) <
-          static_cast<size_t>(kad::K - kKadStoreThreshold_)) {
-        data->consensus_upload_copies = 0;
-        return kUploadCopiesFailedConsensus;
+        else
+          data->consensus_upload_copies = max_copies;
       }
     } else if (discrete_opinions == 0) {
       data->consensus_upload_copies = 0;
       return kUploadCopiesFailedConsensus;
-    }  // Otherwise, at least kKadStoreThreshold_ agree, so enough for consensus
+    }
+  } else {
+      data->consensus_upload_copies = -1;
+      return kUploadCopiesPendingConsensus;
+  }
+  // If not enough for consensus, return error and set copies to -1.
+  if (static_cast<int>(data->required_upload_copies.count(
+      data->consensus_upload_copies)) <= kad::K - kKadStoreThreshold_) {
+    data->consensus_upload_copies = 0;
+    return kUploadCopiesFailedConsensus;
   }
   return kSuccess;
 }
