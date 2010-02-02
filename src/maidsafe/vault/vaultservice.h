@@ -112,6 +112,25 @@ class AmendRemoteAccountTask : public QRunnable {
   VaultServiceLogic *vault_service_logic_;
 };
 
+class SendCachableChunkTask : public QRunnable {
+ public:
+  SendCachableChunkTask(const std::string chunkname,
+                        const std::string chunkcontent,
+                        const kad::ContactInfo cacher,
+                        VaultServiceLogic *vault_service_logic,
+                        Callback callback)
+      : chunkname_(chunkname), chunkcontent_(chunkcontent), cacher_(cacher),
+        vault_service_logic_(vault_service_logic), callback_(callback) {}
+  void run();
+
+ private:
+  std::string chunkname_;
+  std::string chunkcontent_;
+  kad::ContactInfo cacher_;
+  VaultServiceLogic *vault_service_logic_;
+  Callback callback_;
+};
+
 class VaultChunkStore;
 
 class VaultService : public maidsafe::MaidsafeService {
@@ -179,6 +198,10 @@ class VaultService : public maidsafe::MaidsafeService {
                          const maidsafe::SwapChunkRequest *request,
                          maidsafe::SwapChunkResponse *response,
                          google::protobuf::Closure *done);
+  virtual void CacheChunk(google::protobuf::RpcController* controller,
+                         const maidsafe::CacheChunkRequest *request,
+                         maidsafe::CacheChunkResponse *response,
+                         google::protobuf::Closure *done);
   virtual void VaultStatus(google::protobuf::RpcController* controller,
                            const maidsafe::VaultStatusRequest *request,
                            maidsafe::VaultStatusResponse *response,
@@ -226,6 +249,7 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetBPMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetPacket);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesCacheChunk);
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
   void DiscardResult(const int&) {}

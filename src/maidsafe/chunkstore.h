@@ -196,10 +196,11 @@ class ChunkStore : public base::AlternativeStore {
   bool is_initialised_;
   boost::mutex initialised_mutex_, chunkstore_set_mutex_;
   // Leafs of directory paths that make up chunkstore
-  const std::string kHashableLeaf_, kNonHashableLeaf_;
-  const std::string kNormalLeaf_, kCacheLeaf_, kOutgoingLeaf_, kTempCacheLeaf_;
+  const std::string kHashableLeaf_, kNonHashableLeaf_, kNormalLeaf_,
+                    kCacheLeaf_, kOutgoingLeaf_, kTempCacheLeaf_;
   boost::uint64_t available_space_, used_space_;
 };
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_CHUNKSTORE_H_

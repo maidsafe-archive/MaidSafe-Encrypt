@@ -28,6 +28,7 @@
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/online.h>
 
+#include "maidsafe/maidsafevalidator.h"
 #include "maidsafe/vault/vaultrpc.h"
 
 namespace maidsafe_vault {
@@ -39,6 +40,7 @@ VaultServiceLogic::VaultServiceLogic(
           knode_(knode),
           our_details_(),
           non_hex_pmid_(),
+          pmid_public_key_(),
           pmid_public_signature_(),
           pmid_private_(),
           online_(false),
@@ -49,11 +51,13 @@ VaultServiceLogic::VaultServiceLogic(
 }
 
 bool VaultServiceLogic::Init(const std::string &non_hex_pmid,
+                             const std::string &pmid_public_key,
                              const std::string &pmid_public_signature,
                              const std::string &pmid_private) {
   if (knode_ == NULL)
     return false;
   non_hex_pmid_ = non_hex_pmid;
+  pmid_public_key_ = pmid_public_key;
   pmid_public_signature_ = pmid_public_signature;
   pmid_private_ = pmid_private;
   kad::Contact our_details(knode_->contact_info());
@@ -468,6 +472,50 @@ int VaultServiceLogic::RemoteVaultAbleToStore(
   boost::mutex::scoped_lock lock(data->mutex);
   data->cv.wait(lock);
   return data->result;
+}
+
+void VaultServiceLogic::CacheChunk(const std::string chunkname,
+                                   const std::string chunkcontent,
+                                   const kad::ContactInfo cacher,
+                                   Callback callback) {
+  boost::shared_ptr<CacheChunkData> data(new CacheChunkData());
+  data->chunkname = chunkname;
+  data->kc = cacher;
+  data->cb = callback;
+
+  data->request.set_chunkname(chunkname);
+  data->request.set_chunkcontent(chunkcontent);
+  data->request.set_pmid(non_hex_pmid_);
+  data->request.set_public_key(pmid_public_key_);
+  data->request.set_public_key_signature(pmid_public_signature_);
+
+  maidsafe::MaidsafeValidator msv;
+  std::string request_signature;
+  std::list<std::string> parameters;
+  parameters.push_back(pmid_public_signature_);
+  parameters.push_back(chunkname);
+  parameters.push_back(cacher.node_id());
+  msv.CreateRequestSignature(pmid_private_, parameters, &request_signature);
+  data->request.set_request_signature(request_signature);
+
+  google::protobuf::Closure *done =
+      google::protobuf::NewCallback<VaultServiceLogic,
+                                    boost::shared_ptr<CacheChunkData> >
+      (this, &VaultServiceLogic::CacheChunkCallback, data);
+  vault_rpcs_->CacheChunk(cacher.ip(), cacher.port(),
+                          cacher.rv_ip(), cacher.rv_port(),
+                          &data->request, &data->response,
+                          &data->controller, done);
+}
+
+void VaultServiceLogic::CacheChunkCallback(
+    boost::shared_ptr<CacheChunkData> data) {
+  if (!data->response.IsInitialized())
+    data->cb(kCacheChunkResponseUninitialised);
+  if (data->response.result() == kNack)
+    data->cb(kCacheChunkResponseError);
+
+  data->cb(kSuccess);
 }
 
 void VaultServiceLogic::AccountStatusCallback(

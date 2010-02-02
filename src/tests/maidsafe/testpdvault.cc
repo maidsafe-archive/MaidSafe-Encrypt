@@ -22,6 +22,7 @@
 * ============================================================================
 */
 
+#include <boost/progress.hpp>
 #include <gtest/gtest.h>
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
@@ -107,6 +108,13 @@ static void GeneralCallback(const std::string &result) {
     callback_succeeded_ = true;
     callback_timed_out_ = false;
   }
+}
+
+static void GetChunkCallback(bool *finished) {
+  *finished = true;
+}
+
+void DeadRvNotifier(const bool&, const std::string&, const boost::uint16_t&) {
 }
 
 void WaitFunction(int seconds, boost::mutex* mutex) {
@@ -355,6 +363,7 @@ class PDVaultTest : public testing::Test {
     ASSERT_TRUE(callback_succeeded_);
     ASSERT_FALSE(callback_timed_out_);
   }
+
   virtual void TearDown() {
     testpdvault::PrepareCallbackResults();
     sm_->Close(boost::bind(&testpdvault::GeneralCallback, _1), true);
@@ -662,6 +671,7 @@ TEST_F(PDVaultTest, FUNC_MAID_GetMissingChunk) {
     }
   }
 }
+
 /*
 TEST_F(PDVaultTest, FUNC_MAID_StoreSystemPacket) {
   std::map<std::string, std::string> packets;
@@ -1056,6 +1066,66 @@ TEST_F(PDVaultTest, FUNC_MAID_UpdateInvalidSystemPacket) {
   ASSERT_FALSE(callback_timed_out_);
 }
 */
+
+TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
+  transport::Transport transport;
+  rpcprotocol::ChannelManager channel_manager(&transport);
+  maidsafe::ClientRpcs client_rpcs(&transport, &channel_manager);
+  ASSERT_TRUE(transport.RegisterOnServerDown(boost::bind(
+              &testpdvault::DeadRvNotifier, _1, _2, _3)));
+  ASSERT_TRUE(channel_manager.RegisterNotifiersToTransport());
+  ASSERT_EQ(0, transport.Start(60000));
+  ASSERT_EQ(0, channel_manager.Start());
+
+  boost::uint16_t cache_vault_index(0), chunk_vault_index(0);
+  cache_vault_index = base::random_32bit_uinteger() % kNetworkSize_;
+  while (chunk_vault_index == 0 || cache_vault_index == chunk_vault_index)
+    chunk_vault_index = base::random_32bit_uinteger() % kNetworkSize_;
+
+  kad::ContactInfo kc_cacher_vault;
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string content(base::RandomString(10000));
+  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
+  while (pdvaults_[chunk_vault_index]->vault_chunkstore_.Has(chunkname)) {
+    content = base::RandomString(10000);
+    chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
+  }
+
+  ASSERT_EQ(kSuccess,
+            pdvaults_[chunk_vault_index]->vault_chunkstore_.Store(chunkname,
+                                                                  content));
+  kc_cacher_vault = pdvaults_[cache_vault_index]->knode_.contact_info();
+  std::string ser_kc_cacher_vault = kc_cacher_vault.SerializeAsString();
+
+  kad::Contact peer(pdvaults_[chunk_vault_index]->knode_.contact_info());
+  maidsafe::GetChunkRequest request;
+  request.set_chunkname(chunkname);
+  request.set_serialised_cacher_contact(ser_kc_cacher_vault);
+  maidsafe::GetChunkResponse response;
+  rpcprotocol::Controller controller;
+  bool finished(false);
+  google::protobuf::Closure *done =
+      google::protobuf::NewCallback(&testpdvault::GetChunkCallback, &finished);
+  client_rpcs.GetChunk(peer, false, &request, &response, &controller, done);
+
+  while (!finished)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(content, response.content());
+  ASSERT_EQ(pdvaults_[chunk_vault_index]->non_hex_pmid_, response.pmid());
+
+  boost::progress_timer t;
+  while (!pdvaults_[cache_vault_index]->vault_chunkstore_.Has(chunkname) &&
+         t.elapsed() < 5)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_TRUE(pdvaults_[cache_vault_index]->vault_chunkstore_.Has(chunkname));
+
+  transport.Stop();
+  channel_manager.Stop();
+}
 
 //  TEST_F(PDVaultTest, DISABLED_FUNC_MAID_SwapChunk) {
 //  }
