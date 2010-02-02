@@ -309,7 +309,7 @@ struct AddToWatchListData {
     explicit AddToWatchDataHolder(const std::string &id)
         : node_id(id), response(), controller(new rpcprotocol::Controller) {}
     std::string node_id;
-    maidsafe::AddToWatchListResponse response;
+    AddToWatchListResponse response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
   explicit AddToWatchListData(const StoreData &sd)
@@ -327,6 +327,34 @@ struct AddToWatchListData {
   boost::uint16_t returned_count;
   std::multiset<int> required_upload_copies;
   int consensus_upload_copies;
+};
+
+// This is used to hold the data required to perform a SendChunkPrep followed by
+// a SendChunkContent operation.
+struct SendChunkData {
+  SendChunkData(const StoreData &sd,
+                const kad::Contact &node,
+                bool node_local,
+                const StorePrepRequest &store_prep_req,
+                const StoreChunkRequest &store_chunk_req)
+      : store_data(sd),
+        peer(node),
+        local(node_local),
+        store_prep_request(store_prep_req),
+        store_prep_response(),
+        store_chunk_request(store_chunk_req),
+        store_chunk_response(),
+        controller(new rpcprotocol::Controller),
+        attempt(0) {}
+  StoreData store_data;
+  kad::Contact peer;
+  bool local;
+  StorePrepRequest store_prep_request;
+  StorePrepResponse store_prep_response;
+  StoreChunkRequest store_chunk_request;
+  StoreChunkResponse store_chunk_response;
+  boost::shared_ptr<rpcprotocol::Controller> controller;
+  boost::uint16_t attempt;
 };
 
 struct GenericConditionData {
@@ -673,26 +701,16 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                            const std::vector<kad::Contact> &exclude,
                            kad::Contact *new_peer,
                            bool *local);
-  // Send the "preparation to store" message and wait until called back.
-  virtual int SendPrep(
-      const kad::Contact &peer,
-      bool local,
-      boost::shared_ptr<boost::condition_variable> cond_variable,
-      StorePrepRequest *store_prep_request,
-      StorePrepResponse *store_prep_response);
+  // Start process of storing a single copy of an individual chunk onto the net
+  virtual int SendChunkPrep(const StoreData &store_data);
+  void SendPrepCallback(boost::shared_ptr<SendChunkData> send_chunk_data);
   int ValidatePrepResponse(const std::string &peer_node_id,
                            const SignedSize &request_signed_size,
                            StorePrepResponse *const store_prep_response);
-  void SendPrepCallback(GenericConditionData *send_prep_cond_data);
   // Send the actual data content to the peer.
-  virtual int SendContent(
-      const kad::Contact &peer,
-      bool local,
-      boost::shared_ptr<boost::condition_variable> cond_variable,
-      StoreChunkRequest *store_chunk_request);
-  void SendContentCallback(GenericConditionData *send_cond_data);
-  // Store a single copy of an individual chunk onto the network.
-  virtual int SendChunk(const StoreData &store_data);
+  virtual int SendChunkContent(
+      boost::shared_ptr<SendChunkData> send_chunk_data);
+  void SendContentCallback(boost::shared_ptr<SendChunkData> send_chunk_data);
   // Blocking call to Kademlia Find Nodes.
   virtual int FindKNodes(const std::string &kad_key,
                          std::vector<kad::Contact> *contacts);

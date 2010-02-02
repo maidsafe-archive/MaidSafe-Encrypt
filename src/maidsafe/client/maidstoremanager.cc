@@ -57,7 +57,7 @@ void AddToWatchListTask::run() {
 void SendChunkCopyTask::run() {
   printf("SendChunkCopyTask - chunk %s ENQUEUEDISED\n",
          HexSubstr(store_data_.non_hex_key).c_str());
-  msm_->SendChunk(store_data_);
+  msm_->SendChunkPrep(store_data_);
   printf("SendChunkCopyTask end %s\n",
          HexSubstr(store_data_.non_hex_key).c_str());
 }
@@ -1188,173 +1188,6 @@ bool MaidsafeStoreManager::WaitForOnline(const std::string &data_name,
   return true;
 }
 
-int MaidsafeStoreManager::SendChunk(const StoreData &store_data) {
-#ifdef DEBUG
-//  printf("In MaidsafeStoreManager::SendChunk\n");
-#endif
-  StoreTask task;
-  // Assess whether to start the subtask or not
-  TaskStatus status = AssessTaskStatus(store_data, kStoreChunk, &task);
-  if (status == kCompleted) {
-#ifdef DEBUG
-    printf("In MSM::SendChunk (chunk %s): Task already completed.\n",
-           HexSubstr(store_data.non_hex_key).c_str());
-#endif
-    return kStoreAlreadyCompleted;
-  }
-  if (status == kCancelled) {
-    if (task.active_subtask_count_ == 0) {
-#ifdef DEBUG
-      printf("In MSM::SendChunk (chunk %s): Task cancelled.\n",
-             HexSubstr(store_data.non_hex_key).c_str());
-#endif
-      tasks_handler_.DeleteTask(store_data.non_hex_key, kStoreChunk, "");
-    }
-    return kStoreCancelled;
-  }
-  // Establish if this is the first SendChunk for the overall task
-  bool first(task.success_count_ == 0);
-  // Get peer
-// TODO(Fraser#5#): 2009-08-14 - Uncomment lines below
-//  if (first) {  // set largest_rtt from first peer
-//    base::PDRoutingTableHandler rt_handler;
-//    base::PDRoutingTableTuple peer_details;
-//    if (rt_handler.GetTupleInfo(peer.node_id(), &peer_details) != kSuccess) {
-//      set largest rtt via tasks_handler_.SetRtt
-//      largest_rtt = 1.0f;
-//    } else {
-//      set largest rtt via tasks_handler_.SetRtt
-//      largest_rtt = peer_details.rtt();
-//    }
-//  } else {
-//    float ideal_rtt = task.largest_rtt * (1 -
-//        (static_cast<float>(task.success_count_)/task.successes_required_));
-//  }
-  float ideal_rtt = 1.0f;
-  kad::Contact peer;
-  bool local(false);
-  int peer_result = GetStorePeer(ideal_rtt, task.exclude_peers_, &peer, &local);
-  // Start subtask
-  if (tasks_handler_.StartSubTask(store_data.non_hex_key, kStoreChunk, peer) !=
-      kSuccess)
-    return kSendChunkFailure;
-  // If GetStorePeer failed, stop subtask to record failure
-  if (peer_result != kSuccess) {
-    tasks_handler_.StopSubTask(store_data.non_hex_key, kStoreChunk, false);
-#ifdef DEBUG
-    printf("In MSM::SendChunk (chunk %s): Error getting store peer.\n",
-           HexSubstr(store_data.non_hex_key).c_str());
-#endif
-    return kGetStorePeerError;
-  }
-  // Form store requests
-  StorePrepRequest store_prep_request;
-  StorePrepResponse store_prep_response;
-  StoreChunkRequest store_chunk_request;
-  int result = GetStoreRequests(store_data, peer.node_id(), &store_prep_request,
-                                &store_chunk_request);
-  if (result != kSuccess) {
-    tasks_handler_.StopSubTask(store_data.non_hex_key, kStoreChunk, false);
-#ifdef DEBUG
-    printf("In MSM::SendChunk (chunk %s): Error getting store requests.\n",
-           HexSubstr(store_data.non_hex_key).c_str());
-#endif
-    return result;
-  }
-  // Check we're online
-  if (!WaitForOnline(store_data.non_hex_key, kStoreChunk)) {
-    tasks_handler_.StopSubTask(store_data.non_hex_key, kStoreChunk, false);
-#ifdef DEBUG
-    printf("In MSM::SendChunk (chunk %s): Offline before sending prep.\n",
-           HexSubstr(store_data.non_hex_key).c_str());
-#endif
-    return kTaskCancelledOffline;
-  }
-  // Send prep
-  boost::shared_ptr<boost::condition_variable>
-      cond_variable(new boost::condition_variable);
-  result = SendPrep(peer, local, cond_variable, &store_prep_request,
-      &store_prep_response);
-  if (result != kSuccess) {
-    int overall_result =
-        tasks_handler_.StopSubTask(store_data.non_hex_key, kStoreChunk, false);
-#ifdef DEBUG
-    printf("In MSM::SendChunk (chunk %s): Error sending prep.\n",
-           HexSubstr(store_data.non_hex_key).c_str());
-#endif
-    if (overall_result == kStoreTaskFinishedPass ||
-        overall_result == kStoreTaskFinishedFail) {
-          printf("Deleting task\n\n\n");
-      tasks_handler_.DeleteTask(store_data.non_hex_key, kStoreChunk, "");
-        }
-    return result;
-  }
-  // Check task hasn't already been finished
-  status = AssessTaskStatus(store_data, kStoreChunk, &task);
-  if (status == kCompleted) {
-#ifdef DEBUG
-    printf("In MSM::SendChunk (chunk %s): Task already completed.\n",
-           HexSubstr(store_data.non_hex_key).c_str());
-#endif
-    return kStoreAlreadyCompleted;
-  }
-  if (status == kCancelled) {
-    if (task.active_subtask_count_ == 1) {
-#ifdef DEBUG
-      printf("In MSM::SendChunk (chunk %s): Task cancelled.\n",
-             HexSubstr(store_data.non_hex_key).c_str());
-#endif
-      tasks_handler_.DeleteTask(store_data.non_hex_key, kStoreChunk, "");
-    }
-    return kStoreCancelled;
-  }
-  // Send chunk content
-  int failed_attempt_count = 0;
-  while (failed_attempt_count < kMaxChunkStoreTries) {
-    // Check we're online
-    if (!WaitForOnline(store_data.non_hex_key, kStoreChunk)) {
-      tasks_handler_.StopSubTask(store_data.non_hex_key, kStoreChunk, false);
-  #ifdef DEBUG
-      printf("In MSM::SendChunk (chunk %s): Offline before sending content.\n",
-             HexSubstr(store_data.non_hex_key).c_str());
-  #endif
-      return kTaskCancelledOffline;
-    }
-    result = SendContent(peer, local, cond_variable, &store_chunk_request);
-    if (result == kSuccess) {
-      break;  // succeeded in storing to this peer
-    } else {
-      ++failed_attempt_count;
-    }
-  }
-  if (failed_attempt_count >= kMaxChunkStoreTries) {
-    if (first) {  // if this is failed 1st copy, reset largest rtt
-//      set largest rtt via tasks_handler_.SetRtt
-//      largest_rtt = -1.0f;
-    }
-    tasks_handler_.StopSubTask(store_data.non_hex_key, kStoreChunk, false);
-#ifdef DEBUG
-    printf("In MSM::SendChunk (chunk %s): Error sending content.\n",
-           HexSubstr(store_data.non_hex_key).c_str());
-#endif
-    return result;
-  }
-  // Stop subtask - record success
-  int overall_result =
-      tasks_handler_.StopSubTask(store_data.non_hex_key, kStoreChunk, true);
-#ifdef DEBUG
-  printf("Chunkname: %s  Dup count: %i\n\n",
-         HexSubstr(store_data.non_hex_key).c_str(), task.success_count_ + 1);
-#endif
-  if (overall_result == kStoreTaskFinishedPass ||
-      overall_result == kStoreTaskFinishedFail) {
-    tasks_handler_.DeleteTask(store_data.non_hex_key, kStoreChunk, "");
-  }
-// TODO(Fraser#5#): 2009-08-14 - Check later that there are enough vaults
-// listed in ref & watch lists to ensure upload ultimately successful.
-  return kSuccess;
-}
-
 int MaidsafeStoreManager::GetStoreRequests(
     const StoreData &store_data,
     const std::string &recipient_id,
@@ -1524,27 +1357,145 @@ int MaidsafeStoreManager::GetStorePeer(const float &,
   return kSuccess;
 }
 
-int MaidsafeStoreManager::SendPrep(
-    const kad::Contact &peer,
-    bool local,
-    boost::shared_ptr<boost::condition_variable> cond_variable,
-    StorePrepRequest *store_prep_request,
-    StorePrepResponse *store_prep_response) {
-  GenericConditionData send_prep_cond_data(cond_variable);
-  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-      &MaidsafeStoreManager::SendPrepCallback, &send_prep_cond_data);
-  rpcprotocol::Controller controller;
-  client_rpcs_->StorePrep(peer, local, udt_transport_.GetID(),
-      store_prep_request, store_prep_response, &controller, callback);
-  {
-    boost::mutex::scoped_lock lock(send_prep_cond_data.cond_mutex);
-    while (!send_prep_cond_data.cond_flag) {
-      send_prep_cond_data.cond_variable->wait(lock);
-    }
-    send_prep_cond_data.cond_flag = false;
+int MaidsafeStoreManager::SendChunkPrep(const StoreData &store_data) {
+#ifdef DEBUG
+//  printf("In MaidsafeStoreManager::SendChunkPrep\n");
+#endif
+  StoreTask task;
+  // Assess whether to start the subtask or not
+  TaskStatus status = AssessTaskStatus(store_data, kStoreChunk, &task);
+  if (status == kCompleted) {
+#ifdef DEBUG
+    printf("In MSM::SendChunkPrep (chunk %s): Task already completed.\n",
+           HexSubstr(store_data.non_hex_key).c_str());
+#endif
+    return kStoreAlreadyCompleted;
   }
-  return ValidatePrepResponse(peer.node_id(), store_prep_request->signed_size(),
-                              store_prep_response);
+  if (status == kCancelled) {
+    if (task.active_subtask_count_ == 0) {
+#ifdef DEBUG
+      printf("In MSM::SendChunkPrep (chunk %s): Task cancelled.\n",
+             HexSubstr(store_data.non_hex_key).c_str());
+#endif
+      tasks_handler_.DeleteTask(store_data.non_hex_key, kStoreChunk, "");
+    }
+    return kStoreCancelled;
+  }
+//  // Establish if this is the first SendChunkPrep for the overall task
+//  bool first(task.success_count_ == 0);
+//  // Get peer
+// TODO(Fraser#5#): 2009-08-14 - Uncomment lines below
+//  if (first) {  // set largest_rtt from first peer
+//    base::PDRoutingTableHandler rt_handler;
+//    base::PDRoutingTableTuple peer_details;
+//    if (rt_handler.GetTupleInfo(peer.node_id(), &peer_details) != kSuccess) {
+//      set largest rtt via tasks_handler_.SetRtt
+//      largest_rtt = 1.0f;
+//    } else {
+//      set largest rtt via tasks_handler_.SetRtt
+//      largest_rtt = peer_details.rtt();
+//    }
+//  } else {
+//    float ideal_rtt = task.largest_rtt * (1 -
+//        (static_cast<float>(task.success_count_)/task.successes_required_));
+//  }
+  float ideal_rtt = 1.0f;
+  kad::Contact peer;
+  bool local(false);
+  int peer_result = GetStorePeer(ideal_rtt, task.exclude_peers_, &peer, &local);
+  // Start subtask
+  if (tasks_handler_.StartSubTask(store_data.non_hex_key, kStoreChunk, peer) !=
+      kSuccess)
+    return kSendChunkFailure;
+  // If GetStorePeer failed, stop subtask to record failure
+  if (peer_result != kSuccess) {
+    tasks_handler_.StopSubTask(store_data.non_hex_key, kStoreChunk, false);
+#ifdef DEBUG
+    printf("In MSM::SendChunkPrep (chunk %s): Error getting store peer.\n",
+           HexSubstr(store_data.non_hex_key).c_str());
+#endif
+    return kGetStorePeerError;
+  }
+  // Form store requests
+  StorePrepRequest store_prep_request;
+  StoreChunkRequest store_chunk_request;
+  int result = GetStoreRequests(store_data, peer.node_id(), &store_prep_request,
+                                &store_chunk_request);
+  if (result != kSuccess) {
+    tasks_handler_.StopSubTask(store_data.non_hex_key, kStoreChunk, false);
+#ifdef DEBUG
+    printf("In MSM::SendChunkPrep (chunk %s): Error getting store requests.\n",
+           HexSubstr(store_data.non_hex_key).c_str());
+#endif
+    return result;
+  }
+  // Check we're online
+  if (!WaitForOnline(store_data.non_hex_key, kStoreChunk)) {
+    tasks_handler_.StopSubTask(store_data.non_hex_key, kStoreChunk, false);
+#ifdef DEBUG
+    printf("In MSM::SendChunkPrep (chunk %s): Offline before sending prep.\n",
+           HexSubstr(store_data.non_hex_key).c_str());
+#endif
+    return kTaskCancelledOffline;
+  }
+  // Send prep
+  boost::shared_ptr<SendChunkData> send_chunk_data(new SendChunkData(store_data,
+      peer, local, store_prep_request, store_chunk_request));
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &MaidsafeStoreManager::SendPrepCallback, send_chunk_data);
+  client_rpcs_->StorePrep(peer, local, udt_transport_.GetID(),
+      &store_prep_request, &send_chunk_data->store_prep_response,
+      send_chunk_data->controller.get(), callback);
+  return kSuccess;
+}
+
+void MaidsafeStoreManager::SendPrepCallback(
+    boost::shared_ptr<SendChunkData> send_chunk_data) {
+#ifdef DEBUG
+//  printf("In MaidsafeStoreManager::SendPrepCallback.\n");
+#endif
+  ++send_chunk_data->attempt;
+  int result = ValidatePrepResponse(send_chunk_data->peer.node_id(),
+      send_chunk_data->store_prep_request.signed_size(),
+      &send_chunk_data->store_prep_response);
+  if (result == kSuccess) {
+    SendChunkContent(send_chunk_data);
+  } else if (send_chunk_data->attempt < kMaxChunkStoreTries) {
+    // Check we're online
+    if (!WaitForOnline(send_chunk_data->store_data.non_hex_key, kStoreChunk)) {
+      tasks_handler_.StopSubTask(send_chunk_data->store_data.non_hex_key,
+                                 kStoreChunk, false);
+#ifdef DEBUG
+      printf("In MSM::SendPrepCallback (chunk %s): Offline before retry sending"
+             "prep.\n",
+             HexSubstr(send_chunk_data->store_data.non_hex_key).c_str());
+#endif
+      return;
+    }
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &MaidsafeStoreManager::SendPrepCallback, send_chunk_data);
+    send_chunk_data->store_prep_response.Clear();
+    client_rpcs_->StorePrep(send_chunk_data->peer,
+                            send_chunk_data->local,
+                            udt_transport_.GetID(),
+                            &send_chunk_data->store_prep_request,
+                            &send_chunk_data->store_prep_response,
+                            send_chunk_data->controller.get(),
+                            callback);
+  } else {
+    int overall_result = tasks_handler_.StopSubTask(
+        send_chunk_data->store_data.non_hex_key, kStoreChunk, false);
+#ifdef DEBUG
+    printf("In MSM::SendPrepCallback (chunk %s): Error sending prep.\n",
+           HexSubstr(send_chunk_data->store_data.non_hex_key).c_str());
+#endif
+    if (overall_result == kStoreTaskFinishedPass ||
+        overall_result == kStoreTaskFinishedFail) {
+      tasks_handler_.DeleteTask(send_chunk_data->store_data.non_hex_key,
+                                kStoreChunk, "");
+    }
+    return;
+  }
 }
 
 int MaidsafeStoreManager::ValidatePrepResponse(
@@ -1591,76 +1542,150 @@ int MaidsafeStoreManager::ValidatePrepResponse(
   return kSuccess;
 }
 
-void MaidsafeStoreManager::SendPrepCallback(
-    GenericConditionData *send_prep_cond_data) {
+int MaidsafeStoreManager::SendChunkContent(
+    boost::shared_ptr<SendChunkData> send_chunk_data) {
+  // Check task hasn't already been finished
+  StoreTask task;
+  int status =
+      AssessTaskStatus(send_chunk_data->store_data, kStoreChunk, &task);
+  if (status == kCompleted) {
 #ifdef DEBUG
-//  printf("In MaidsafeStoreManager::SendPrepCallback.\n");
+    printf("In MSM::SendChunkContent (chunk %s): Task already completed.\n",
+           HexSubstr(send_chunk_data->store_data.non_hex_key).c_str());
 #endif
-  boost::lock_guard<boost::mutex> lock(send_prep_cond_data->cond_mutex);
-  send_prep_cond_data->cond_flag = true;
-  send_prep_cond_data->cond_variable->notify_all();
-}
-
-int MaidsafeStoreManager::SendContent(
-    const kad::Contact &peer,
-    bool local,
-    boost::shared_ptr<boost::condition_variable> cond_variable,
-    StoreChunkRequest *store_chunk_request) {
-  const boost::shared_ptr<StoreChunkResponse>
-      store_chunk_response(new StoreChunkResponse());
-  GenericConditionData send_cond_data(cond_variable);
-  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-      &MaidsafeStoreManager::SendContentCallback, &send_cond_data);
-  rpcprotocol::Controller controller;
-  client_rpcs_->StoreChunk(peer, local, udt_transport_.GetID(),
-                           store_chunk_request, store_chunk_response.get(),
-                           &controller, callback);
-  {
-    boost::mutex::scoped_lock lock(send_cond_data.cond_mutex);
-    while (!send_cond_data.cond_flag) {
-      send_cond_data.cond_variable->wait(lock);
+    return kStoreAlreadyCompleted;
+  }
+  if (status == kCancelled) {
+    if (task.active_subtask_count_ == 1) {
+#ifdef DEBUG
+      printf("In MSM::SendChunkContent (chunk %s): Task cancelled.\n",
+             HexSubstr(send_chunk_data->store_data.non_hex_key).c_str());
+#endif
+      tasks_handler_.DeleteTask(send_chunk_data->store_data.non_hex_key,
+                                kStoreChunk, "");
     }
-    send_cond_data.cond_flag = false;
+    return kStoreCancelled;
   }
-  if (store_chunk_response->pmid() != peer.node_id()) {
+  // Check we're online
+  if (!WaitForOnline(send_chunk_data->store_data.non_hex_key, kStoreChunk)) {
+    tasks_handler_.StopSubTask(send_chunk_data->store_data.non_hex_key,
+                               kStoreChunk, false);
 #ifdef DEBUG
-    printf("In MSM::SendContent, ids are not OK: response pmid: %s peer "
-           "node ID: %s\n", HexSubstr(store_chunk_response->pmid()).c_str(),
-           HexSubstr(peer.node_id()).c_str());
+    printf("In MSM::SendChunkContent (chunk %s): Offline before sending"
+           "content.\n",
+           HexSubstr(send_chunk_data->store_data.non_hex_key).c_str());
 #endif
-    return kSendContentFailure;
+    return kTaskCancelledOffline;
   }
-  if (store_chunk_response->result() != kAck) {
-#ifdef DEBUG
-    printf("In MSM::SendContent, result not kAck.\n");
-#endif
-    return kSendContentFailure;
-  }
-#ifdef DEBUG
-//  printf("In MSM::SendContent, succeeded.\n");
-#endif
-  // Move chunk from Outgoing to Normal.  If this operation fails, still
-  // return kSuccess as this is non-critical.
-  ChunkType chunk_type =
-      client_chunkstore_->chunk_type(store_chunk_request->chunkname());
-  ChunkType new_type = chunk_type ^ (kOutgoing | kNormal);
-  if (client_chunkstore_->ChangeChunkType(store_chunk_request->chunkname(),
-                                          new_type) != kSuccess) {
-#ifdef DEBUG
-    printf("In MSM::SendContent, failed to change chunk type.\n");
-#endif
-  }
+  // Send chunk content
+  google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+      &MaidsafeStoreManager::SendContentCallback, send_chunk_data);
+  client_rpcs_->StoreChunk(send_chunk_data->peer,
+                           send_chunk_data->local,
+                           udt_transport_.GetID(),
+                           &send_chunk_data->store_chunk_request,
+                           &send_chunk_data->store_chunk_response,
+                           send_chunk_data->controller.get(),
+                           callback);
   return kSuccess;
 }
 
 void MaidsafeStoreManager::SendContentCallback(
-    GenericConditionData *send_cond_data) {
+    boost::shared_ptr<SendChunkData> send_chunk_data) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::SendContentCallback.\n");
 #endif
-  boost::lock_guard<boost::mutex> lock(send_cond_data->cond_mutex);
-  send_cond_data->cond_flag = true;
-  send_cond_data->cond_variable->notify_all();
+  StoreChunkResponse &response = send_chunk_data->store_chunk_response;
+  int result(kSuccess);
+  if (!response.IsInitialized()) {
+#ifdef DEBUG
+    printf("In MSM::SendContentCallback, resp from pmid %s uninitialised.\n",
+           HexSubstr(send_chunk_data->peer.node_id()).c_str());
+#endif
+    result = kSendContentFailure;
+  }
+  if (result == kSuccess &&
+      response.pmid() != send_chunk_data->peer.node_id()) {
+#ifdef DEBUG
+    printf("In MSM::SendContentCallback, ids are not OK: response pmid: %s pee"
+           "r node ID: %s\n", HexSubstr(response.pmid()).c_str(),
+           HexSubstr(send_chunk_data->peer.node_id()).c_str());
+#endif
+    result = kSendContentFailure;
+  }
+  if (result == kSuccess && response.result() != kAck) {
+#ifdef DEBUG
+    printf("In MSM::SendContentCallback, resp from pmid %s returned %u\n",
+           HexSubstr(send_chunk_data->peer.node_id()).c_str(),
+           response.result());
+#endif
+    result = kSendContentFailure;
+  }
+  if (result == kSuccess) {
+#ifdef DEBUG
+//    printf("In MSM::SendContentCallback, succeeded.\n");
+#endif
+    std::string &chunkname = send_chunk_data->store_data.non_hex_key;
+    // Stop subtask - record success
+    int overall_result =
+        tasks_handler_.StopSubTask(chunkname, kStoreChunk, true);
+#ifdef DEBUG
+    StoreTask task;
+    AssessTaskStatus(send_chunk_data->store_data, kStoreChunk, &task);
+    printf("Chunkname: %s  Dup count: %i\n\n", HexSubstr(chunkname).c_str(),
+           task.success_count_ + 1);
+#endif
+    if (overall_result == kStoreTaskFinishedPass ||
+        overall_result == kStoreTaskFinishedFail) {
+      tasks_handler_.DeleteTask(chunkname, kStoreChunk, "");
+    }
+    // TODO(Fraser#5#): 2009-08-14 - Check later that there are enough vaults
+    // listed in ref & watch lists to ensure upload ultimately successful.
+
+    // Move chunk from Outgoing to Normal.  If this operation fails, still
+    // return kSuccess as this is non-critical.
+    ChunkType chunk_type = client_chunkstore_->chunk_type(chunkname);
+    ChunkType new_type = chunk_type ^ (kOutgoing | kNormal);
+    if (client_chunkstore_->ChangeChunkType(chunkname, new_type) != kSuccess) {
+#ifdef DEBUG
+      printf("In MSM::SendContentCallback, failed to change chunk type.\n");
+#endif
+    }
+  } else if (send_chunk_data->attempt < kMaxChunkStoreTries) {  // Retry
+    // Check we're online
+    if (!WaitForOnline(send_chunk_data->store_data.non_hex_key, kStoreChunk)) {
+      tasks_handler_.StopSubTask(send_chunk_data->store_data.non_hex_key,
+                                 kStoreChunk, false);
+#ifdef DEBUG
+      printf("In MSM::SendPrepCallback (chunk %s): Offline before retry sending"
+             "prep.\n",
+             HexSubstr(send_chunk_data->store_data.non_hex_key).c_str());
+#endif
+      return;
+    }
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &MaidsafeStoreManager::SendContentCallback, send_chunk_data);
+    send_chunk_data->store_chunk_response.Clear();
+    client_rpcs_->StoreChunk(send_chunk_data->peer,
+                             send_chunk_data->local,
+                             udt_transport_.GetID(),
+                             &send_chunk_data->store_chunk_request,
+                             &send_chunk_data->store_chunk_response,
+                             send_chunk_data->controller.get(),
+                             callback);
+  } else {  // Fail
+    int overall_result = tasks_handler_.StopSubTask(
+        send_chunk_data->store_data.non_hex_key, kStoreChunk, false);
+#ifdef DEBUG
+    printf("In MSM::SendPrepCallback (chunk %s): Error sending content.\n",
+           HexSubstr(send_chunk_data->store_data.non_hex_key).c_str());
+#endif
+    if (overall_result == kStoreTaskFinishedPass ||
+        overall_result == kStoreTaskFinishedFail) {
+      tasks_handler_.DeleteTask(send_chunk_data->store_data.non_hex_key,
+                                kStoreChunk, "");
+    }
+  }
 }
 
 void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
