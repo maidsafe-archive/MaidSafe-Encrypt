@@ -1117,7 +1117,7 @@ TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
   while (!finished)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kAck, response.result());
+  ASSERT_EQ(static_cast<boost::uint32_t>(kAck), response.result());
   ASSERT_EQ(content, response.content());
   ASSERT_EQ(pdvaults_[chunk_vault_index]->non_hex_pmid_, response.pmid());
 

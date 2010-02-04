@@ -1842,7 +1842,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCacheChunk) {
   ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
-  ASSERT_EQ(0, chunkstore->space_used_by_cache());
+  ASSERT_EQ(boost::uint64_t(0), chunkstore->space_used_by_cache());
 
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
@@ -1853,8 +1853,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCacheChunk) {
   ASSERT_FALSE(chunkstore->Has(chunkname));
   ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath(chunkname,
             (maidsafe::kHashable | maidsafe::kCache), false));
-  ASSERT_EQ(0, chunkstore->space_used_by_cache());
-  ASSERT_EQ(1000, chunkstore->FreeSpace());
+  ASSERT_EQ(boost::uint64_t(0), chunkstore->space_used_by_cache());
+  ASSERT_EQ(boost::uint64_t(1000), chunkstore->FreeSpace());
 
   content = base::RandomString(999);
   chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
@@ -1862,8 +1862,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCacheChunk) {
   ASSERT_TRUE(chunkstore->Has(chunkname));
   ASSERT_TRUE(fs::exists(chunkstore->GetChunkPath(chunkname,
               (maidsafe::kHashable | maidsafe::kCache), false)));
-  ASSERT_EQ(999, chunkstore->space_used_by_cache());
-  ASSERT_EQ(1, chunkstore->FreeSpace());
+  ASSERT_EQ(boost::uint64_t(999), chunkstore->space_used_by_cache());
+  ASSERT_EQ(boost::uint64_t(1), chunkstore->FreeSpace());
 
   content = base::RandomString(999);
   chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
@@ -1871,8 +1871,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCacheChunk) {
   ASSERT_FALSE(chunkstore->Has(chunkname));
   ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath(chunkname,
             (maidsafe::kHashable | maidsafe::kCache), false));
-  ASSERT_EQ(999, chunkstore->space_used_by_cache());
-  ASSERT_EQ(1, chunkstore->FreeSpace());
+  ASSERT_EQ(boost::uint64_t(999), chunkstore->space_used_by_cache());
+  ASSERT_EQ(boost::uint64_t(1), chunkstore->FreeSpace());
 }
 
 TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreFreeCacheSpace) {
@@ -1881,7 +1881,7 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreFreeCacheSpace) {
   ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
-  ASSERT_EQ(0, chunkstore->space_used_by_cache());
+  ASSERT_EQ(boost::uint64_t(0), chunkstore->space_used_by_cache());
   ASSERT_EQ(kNoCacheSpaceToClear, chunkstore->FreeCacheSpace(1));
 
   crypto::Crypto co;
@@ -1897,19 +1897,22 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreFreeCacheSpace) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
   printf("Inserted %i chunks\n", chunks_to_test);
-  ASSERT_EQ(1000 * chunks_to_test, chunkstore->space_used_by_cache());
+  ASSERT_EQ(boost::uint64_t(1000) * chunks_to_test,
+            chunkstore->space_used_by_cache());
 
   for (int a = 0; a < chunks_to_test; ++a) {
-    ASSERT_EQ(1000 * (chunks_to_test - a), chunkstore->space_used_by_cache());
+    ASSERT_EQ(boost::uint64_t(1000) * (chunks_to_test - a),
+              chunkstore->space_used_by_cache());
     ASSERT_TRUE(chunkstore->Has(chunknames[a]));
-    ASSERT_EQ(chunks_to_test - a, chunkstore->chunkstore_set_.size());
+    ASSERT_EQ(size_t(chunks_to_test - a), chunkstore->chunkstore_set_.size());
     ASSERT_EQ(kSuccess, chunkstore->FreeCacheSpace(1000));
     ASSERT_FALSE(chunkstore->Has(chunknames[a]));
-    ASSERT_EQ(1000 * (chunks_to_test - a - 1),
+    ASSERT_EQ(boost::uint64_t(1000) * (chunks_to_test - a - 1),
               chunkstore->space_used_by_cache());
-    ASSERT_EQ(chunks_to_test - a - 1, chunkstore->chunkstore_set_.size());
+    ASSERT_EQ(size_t(chunks_to_test - a - 1),
+              chunkstore->chunkstore_set_.size());
   }
-  ASSERT_EQ(0, chunkstore->space_used_by_cache());
+  ASSERT_EQ(boost::uint64_t(0), chunkstore->space_used_by_cache());
   ASSERT_EQ(kNoCacheSpaceToClear, chunkstore->FreeCacheSpace(1));
   printf("Passed #1\n\n");
 
@@ -1922,16 +1925,18 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreFreeCacheSpace) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
   printf("Inserted %i chunks\n", chunks_to_test);
-  ASSERT_EQ(1000 * chunks_to_test, chunkstore->space_used_by_cache());
+  ASSERT_EQ(boost::uint64_t(1000) * chunks_to_test,
+            chunkstore->space_used_by_cache());
 
   ASSERT_TRUE(chunkstore->Has(chunknames[0]));
   ASSERT_TRUE(chunkstore->Has(chunknames[1]));
-  ASSERT_EQ(chunks_to_test, chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(size_t(chunks_to_test), chunkstore->chunkstore_set_.size());
   ASSERT_EQ(kSuccess, chunkstore->FreeCacheSpace(1500));
   ASSERT_FALSE(chunkstore->Has(chunknames[0]));
   ASSERT_FALSE(chunkstore->Has(chunknames[1]));
-  ASSERT_EQ(chunks_to_test - 2, chunkstore->chunkstore_set_.size());
-  ASSERT_EQ(1000 * (chunks_to_test - 2), chunkstore->space_used_by_cache());
+  ASSERT_EQ(size_t(chunks_to_test - 2), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(size_t(1000 * (chunks_to_test - 2)),
+            chunkstore->space_used_by_cache());
   printf("Passed #2\n");
 }
 
