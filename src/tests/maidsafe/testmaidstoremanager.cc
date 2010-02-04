@@ -192,7 +192,7 @@ namespace maidsafe {
 class MaidStoreManagerTest : public testing::Test {
  protected:
   MaidStoreManagerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                                 "/maidsafe_TestMSM"),
+                                 "/maidsafe_TestMSM_" + base::RandomString(6)),
                            client_chunkstore_dir_(test_root_dir_+"/Chunkstore"),
                            client_chunkstore_(),
                            client_pmid_keys_(),
@@ -532,12 +532,12 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   StoreData store_data(chunk_name, chunk_size, (kHashable | kNormal), PRIVATE,
       "", client_pmid_, client_pmid_keys_.public_key(),
       client_pmid_public_signature_, client_pmid_keys_.private_key());
-  boost::shared_ptr<AddToWatchListData>
-      add_to_watchlist_data(new AddToWatchListData(store_data));
+  boost::shared_ptr<WatchListOpData>
+      add_to_watchlist_data(new WatchListOpData(store_data));
   for (size_t i = 0; i < kad::K; ++i) {
-    AddToWatchListData::AddToWatchDataHolder
+    WatchListOpData::AddToWatchDataHolder
         hldr(crypto_.Hash(base::itos(i * i), "", crypto::STRING_STRING, false));
-    add_to_watchlist_data->data_holders.push_back(hldr);
+    add_to_watchlist_data->add_to_watchlist_data_holders.push_back(hldr);
   }
 
   // Run tests

@@ -302,9 +302,9 @@ struct DeletePacketData {
 };
 
 // This is used to hold the data required to perform a Kad lookup to get a
-// group of Chunk Info holders, send each an AddToWatchListRequest and
-// assess the responses.
-struct AddToWatchListData {
+// group of Chunk Info holders, send each an AddToWatchListRequest or
+// RemoveFromWatchListRequest and assess the responses.
+struct WatchListOpData {
   struct AddToWatchDataHolder {
     explicit AddToWatchDataHolder(const std::string &id)
         : node_id(id), response(), controller(new rpcprotocol::Controller) {}
@@ -312,19 +312,30 @@ struct AddToWatchListData {
     AddToWatchListResponse response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
-  explicit AddToWatchListData(const StoreData &sd)
+  struct RemoveFromWatchDataHolder {
+    explicit RemoveFromWatchDataHolder(const std::string &id)
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
+    std::string node_id;
+    RemoveFromWatchListResponse response;
+    boost::shared_ptr<rpcprotocol::Controller> controller;
+  };
+  explicit WatchListOpData(const StoreData &sd)
       : store_data(sd),
         mutex(),
         contacts(),
-        data_holders(),
+        add_to_watchlist_data_holders(),
+        remove_from_watchlist_data_holders(),
         returned_count(0),
+        successful_delete_count(0),
         required_upload_copies(),
         consensus_upload_copies(-1) {}
   StoreData store_data;
   boost::mutex mutex;
   std::vector<kad::Contact> contacts;
-  std::vector<AddToWatchDataHolder> data_holders;
+  std::vector<AddToWatchDataHolder> add_to_watchlist_data_holders;
+  std::vector<RemoveFromWatchDataHolder> remove_from_watchlist_data_holders;
   boost::uint16_t returned_count;
+  boost::uint16_t successful_delete_count;
   std::multiset<int> required_upload_copies;
   int consensus_upload_copies;
 };
@@ -657,13 +668,16 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Assesses each AddToWatchListResponse and if consensus of required chunk
   // upload copies is achieved, begins new SendChunkCopyTask(s) if required.
   void AddToWatchListCallback(boost::uint16_t index,
-                              boost::shared_ptr<AddToWatchListData> data);
+                              boost::shared_ptr<WatchListOpData> data);
   // Assesses AddToWatchListResponses for consensus of required chunk upload
   // copies.  Returns < 0 if no consensus.  data->mutex should already be locked
   // by method calling this one for duration of this function.
-  int AssessUploadCounts(boost::shared_ptr<AddToWatchListData> data);
+  int AssessUploadCounts(boost::shared_ptr<WatchListOpData> data);
   // Send RemoveFromWatchList requests to each of the k Chunk Info holders.
   void RemoveFromWatchList(const StoreData &store_data);
+  // Assesses each RemoveFromWatchListResponse.
+  void RemoveFromWatchListCallback(boost::uint16_t index,
+                                   boost::shared_ptr<WatchListOpData> data);
   // Returns the current status of the task and sets *task to the task if found.
   virtual TaskStatus AssessTaskStatus(const std::string &data_name,
                                       StoreTaskType task_type,
@@ -684,11 +698,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const StoreData &store_data,
       const std::vector<kad::Contact> &recipients,
       std::vector<AddToWatchListRequest> *add_to_watch_list_requests);
-  // Set up the request needed to perform the RemoveFromWatchList RPC.
-  int GetRemoveFromWatchListRequest(
+  // Set up the requests needed to perform the RemoveFromWatchList RPCs.
+  int GetRemoveFromWatchListRequests(
       const StoreData &store_data,
-      const std::string &recipient_id,
-      RemoveFromWatchListRequest *remove_from_watch_list_request);
+      const std::vector<kad::Contact> &recipients,
+      std::vector<RemoveFromWatchListRequest> *remove_from_watch_list_requests);
   // Get the request signature for a chunk / packet.
   void GetRequestSignature(const std::string &non_hex_name,
                            const DirType dir_type,
