@@ -201,9 +201,6 @@ class PDVault {
   inline boost::uint64_t UsedSpace() { return vault_chunkstore_.used_space(); }
   inline boost::uint64_t FreeSpace() { return vault_chunkstore_.FreeSpace(); }
 
-
-
-
   void SyncVault(base::callback_func_type) {}
   void RepublishChunkRef(base::callback_func_type) {}
 /*
@@ -232,6 +229,7 @@ class PDVault {
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetMissingChunk);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreSystemPacket);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
   void KadJoinedCallback(const std::string &result,
                          boost::mutex *kad_joined_mutex);
   void RegisterMaidService();

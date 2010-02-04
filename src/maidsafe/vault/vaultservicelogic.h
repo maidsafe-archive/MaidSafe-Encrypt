@@ -29,6 +29,7 @@
 #include <boost/thread/mutex.hpp>
 #include <gtest/gtest_prod.h>
 #include <maidsafe/channel-api.h>
+#include <maidsafe/contact_info.pb.h>
 
 #include <string>
 #include <vector>
@@ -149,12 +150,23 @@ struct AccountStatusCallbackData {
   int result;
 };
 
+struct CacheChunkData {
+  CacheChunkData() : chunkname(), kc(), cb(), request(), response() {}
+  std::string chunkname;
+  kad::ContactInfo kc;
+  VoidFuncOneInt cb;
+  maidsafe::CacheChunkRequest request;
+  maidsafe::CacheChunkResponse response;
+  rpcprotocol::Controller controller;
+};
+
 class VaultServiceLogic {
  public:
   VaultServiceLogic(VaultRpcs *vault_rpcs,
                     kad::KNode *knode);
   virtual ~VaultServiceLogic() {}
   bool Init(const std::string &non_hex_pmid,
+            const std::string &pmid_public_key,
             const std::string &pmid_public_signature,
             const std::string &pmid_private);
   bool online();
@@ -186,6 +198,9 @@ class VaultServiceLogic {
   // AccountStatusRequest to establish if the account owner has space to store
   int RemoteVaultAbleToStore(maidsafe::AccountStatusRequest request,
                              const boost::int16_t &transport_id);
+  void CacheChunk(const std::string chunkname, const std::string chunkcontent,
+                  const kad::ContactInfo cacher, VoidFuncOneInt callback,
+                  const boost::int16_t &transport_id);
  private:
   VaultServiceLogic(const VaultServiceLogic&);
   VaultServiceLogic &operator=(const VaultServiceLogic&);
@@ -223,10 +238,13 @@ class VaultServiceLogic {
                                const std::string &recipient_id);
   // Wrapper for knode method - virtual to allow mock testing
   virtual bool AddressIsLocal(const kad::Contact &peer);
+  void CacheChunkCallback(boost::shared_ptr<CacheChunkData> data);
+
   VaultRpcs *vault_rpcs_;
   kad::KNode *knode_;
   kad::Contact our_details_;
-  std::string non_hex_pmid_, pmid_public_signature_, pmid_private_;
+  std::string non_hex_pmid_, pmid_public_key_, pmid_public_signature_,
+              pmid_private_;
   bool online_;
   boost::mutex online_mutex_;
   boost::uint16_t kKadStoreThreshold_;

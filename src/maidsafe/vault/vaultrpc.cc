@@ -284,4 +284,21 @@ void VaultRpcs::GetBPMessages(const std::string &buffer_packet_name,
   maidsafe::MaidsafeService::Stub service(&channel);
   service.GetBPMessages(controller, &args, response, done);
 }
+
+void VaultRpcs::CacheChunk(const std::string &remote_ip,
+                           const boost::uint16_t &remote_port,
+                           const std::string &rendezvous_ip,
+                           const boost::uint16_t &rendezvous_port,
+                           const boost::int16_t &transport_id,
+                           maidsafe::CacheChunkRequest *request,
+                           maidsafe::CacheChunkResponse *response,
+                           rpcprotocol::Controller *controller,
+                           google::protobuf::Closure *done) {
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, remote_ip, remote_port, "", 0,
+                               rendezvous_ip, rendezvous_port);
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.CacheChunk(controller, request, response, done);
+}
+
 }  // namespace maidsafe_vault

@@ -90,7 +90,7 @@ class VaultChunkStore : public maidsafe::ChunkStore {
                   const boost::uint64_t &available_space,
                   const boost::uint64_t &used_space)
       : ChunkStore(chunkstore_dir, available_space, used_space), pss_(),
-        packetstore_set_mutex_() {}
+        packetstore_set_mutex_(), space_used_by_cache_(0) {}
   // This replaces the existing value - it doesn't append to the existing value
   int UpdateChunk(const std::string &key, const std::string &value);
   // Loads a chunk chosen at random from hashable normal (ie not cached) chunks
@@ -100,6 +100,10 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   // true causes failed chunks to be deleted.
   int HashCheckAllChunks(bool delete_failures,
                          std::list<std::string> *failed_keys);
+  // Cache chunk procedure
+  int CacheChunk(const std::string &key, const std::string &value);
+  // Delete oldest cached chunks to make room
+  int FreeCacheSpace(const boost::uint64_t &space_to_clear);
   // Fails if packet_name is already an entry in the packet_store_set.
   int StorePacket(const std::string &packet_name,
                   const maidsafe::GenericPacket &gp);
@@ -126,7 +130,10 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   bool HasPacket(const std::string &packet_name);
   inline boost::uint64_t available_space() { return available_space_; }
   inline boost::uint64_t used_space() { return used_space_; }
-  inline boost::uint64_t FreeSpace() { return available_space_ - used_space_; }
+  inline boost::uint64_t space_used_by_cache() { return space_used_by_cache_; }
+  inline boost::uint64_t FreeSpace() {
+    return available_space_ - used_space_ - space_used_by_cache_;
+  }
  private:
   FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreInit);
   FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreInvalidKeySize);
@@ -141,6 +148,8 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreSpace);
   FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreCheckAllChunks);
   FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedChangeType);
+  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreCacheChunk);
+  FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreFreeCacheSpace);
   FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreStorePackets);
   FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreAppendToPackets);
   FRIEND_TEST(ChunkstoreTest, FUNC_MAID_ChunkstoreOverwritePackets);
@@ -153,8 +162,10 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   inline void set_available_space(boost::uint64_t avail) {
     available_space_ = avail;
   }
+  bool EnoughSpace(const boost::uint64_t &length);
   packet_store_set pss_;
   boost::mutex packetstore_set_mutex_;
+  boost::uint64_t space_used_by_cache_;
 };
 
 }  // namespace maidsafe_vault

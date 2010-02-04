@@ -154,6 +154,15 @@ class VaultRpcs {
                      maidsafe::GetBPMessagesResponse *response,
                      rpcprotocol::Controller *controller,
                      google::protobuf::Closure *done);
+  virtual void CacheChunk(const std::string &remote_ip,
+                          const boost::uint16_t &remote_port,
+                          const std::string &rendezvous_ip,
+                          const boost::uint16_t &rendezvous_port,
+                          const boost::int16_t &transport_id,
+                          maidsafe::CacheChunkRequest *request,
+                          maidsafe::CacheChunkResponse *response,
+                          rpcprotocol::Controller *controller,
+                          google::protobuf::Closure *done);
   void SetOwnId(const std::string &non_hex_id) { own_non_hex_id_ = non_hex_id; }
  private:
   VaultRpcs(const VaultRpcs&);

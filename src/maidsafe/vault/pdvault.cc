@@ -138,7 +138,7 @@ void PDVault::Start(bool first_node) {
     // Set port, so that if vault is restarted before it is destroyed, it
     // re-uses port (unless this port has become unavailable).
     port_ = knode_.host_port();
-    if (kad_joined_ && vault_service_logic_.Init(non_hex_pmid_,
+    if (kad_joined_ && vault_service_logic_.Init(non_hex_pmid_, pmid_public_,
         signed_pmid_public_, pmid_private_))
       SetVaultStatus(kVaultStarted);
     // Start repeating pruning worker thread

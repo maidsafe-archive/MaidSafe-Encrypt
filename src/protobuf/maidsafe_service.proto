@@ -20,6 +20,7 @@ service MaidsafeService {
   rpc DeleteChunk (DeleteChunkRequest) returns (DeleteChunkResponse);
   rpc ValidityCheck (ValidityCheckRequest) returns (ValidityCheckResponse);
   rpc SwapChunk (SwapChunkRequest) returns (SwapChunkResponse);
+  rpc CacheChunk (CacheChunkRequest) returns (CacheChunkResponse);
   rpc VaultStatus (VaultStatusRequest) returns (VaultStatusResponse);
   // BP services
   rpc CreateBP( CreateBPRequest ) returns ( CreateBPResponse );

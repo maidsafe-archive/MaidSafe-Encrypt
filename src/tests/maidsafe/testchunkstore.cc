@@ -1836,6 +1836,105 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedChangeType) {
   ASSERT_TRUE(result);
 }
 
+TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCacheChunk) {
+  boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
+      storedir.string(), 1000, 0));
+  ASSERT_TRUE(chunkstore->Init());
+  test_chunkstore::WaitForInitialisation(chunkstore, 60000);
+  ASSERT_TRUE(chunkstore->is_initialised());
+  ASSERT_EQ(0, chunkstore->space_used_by_cache());
+
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string content(base::RandomString(1001));
+  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
+  ASSERT_EQ(kNoSpaceForCaching, chunkstore->CacheChunk(chunkname, content));
+  ASSERT_FALSE(chunkstore->Has(chunkname));
+  ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath(chunkname,
+            (maidsafe::kHashable | maidsafe::kCache), false));
+  ASSERT_EQ(0, chunkstore->space_used_by_cache());
+  ASSERT_EQ(1000, chunkstore->FreeSpace());
+
+  content = base::RandomString(999);
+  chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
+  ASSERT_EQ(kSuccess, chunkstore->CacheChunk(chunkname, content));
+  ASSERT_TRUE(chunkstore->Has(chunkname));
+  ASSERT_TRUE(fs::exists(chunkstore->GetChunkPath(chunkname,
+              (maidsafe::kHashable | maidsafe::kCache), false)));
+  ASSERT_EQ(999, chunkstore->space_used_by_cache());
+  ASSERT_EQ(1, chunkstore->FreeSpace());
+
+  content = base::RandomString(999);
+  chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
+  ASSERT_EQ(kNoSpaceForCaching, chunkstore->CacheChunk(chunkname, content));
+  ASSERT_FALSE(chunkstore->Has(chunkname));
+  ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath(chunkname,
+            (maidsafe::kHashable | maidsafe::kCache), false));
+  ASSERT_EQ(999, chunkstore->space_used_by_cache());
+  ASSERT_EQ(1, chunkstore->FreeSpace());
+}
+
+TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreFreeCacheSpace) {
+  boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
+      storedir.string(), 20000, 0));
+  ASSERT_TRUE(chunkstore->Init());
+  test_chunkstore::WaitForInitialisation(chunkstore, 60000);
+  ASSERT_TRUE(chunkstore->is_initialised());
+  ASSERT_EQ(0, chunkstore->space_used_by_cache());
+  ASSERT_EQ(kNoCacheSpaceToClear, chunkstore->FreeCacheSpace(1));
+
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  int chunks_to_test(10);
+  std::vector<std::string> chunknames;
+  for (int n = 0; n < chunks_to_test; ++n) {
+    std::string content(base::RandomString(1000));
+    std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
+    ASSERT_EQ(kSuccess, chunkstore->CacheChunk(chunkname, content));
+    chunknames.push_back(chunkname);
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
+  printf("Inserted %i chunks\n", chunks_to_test);
+  ASSERT_EQ(1000 * chunks_to_test, chunkstore->space_used_by_cache());
+
+  for (int a = 0; a < chunks_to_test; ++a) {
+    ASSERT_EQ(1000 * (chunks_to_test - a), chunkstore->space_used_by_cache());
+    ASSERT_TRUE(chunkstore->Has(chunknames[a]));
+    ASSERT_EQ(chunks_to_test - a, chunkstore->chunkstore_set_.size());
+    ASSERT_EQ(kSuccess, chunkstore->FreeCacheSpace(1000));
+    ASSERT_FALSE(chunkstore->Has(chunknames[a]));
+    ASSERT_EQ(1000 * (chunks_to_test - a - 1),
+              chunkstore->space_used_by_cache());
+    ASSERT_EQ(chunks_to_test - a - 1, chunkstore->chunkstore_set_.size());
+  }
+  ASSERT_EQ(0, chunkstore->space_used_by_cache());
+  ASSERT_EQ(kNoCacheSpaceToClear, chunkstore->FreeCacheSpace(1));
+  printf("Passed #1\n\n");
+
+  chunknames.clear();
+  for (int y = 0; y < chunks_to_test; ++y) {
+    std::string content(base::RandomString(1000));
+    std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
+    ASSERT_EQ(kSuccess, chunkstore->CacheChunk(chunkname, content));
+    chunknames.push_back(chunkname);
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
+  printf("Inserted %i chunks\n", chunks_to_test);
+  ASSERT_EQ(1000 * chunks_to_test, chunkstore->space_used_by_cache());
+
+  ASSERT_TRUE(chunkstore->Has(chunknames[0]));
+  ASSERT_TRUE(chunkstore->Has(chunknames[1]));
+  ASSERT_EQ(chunks_to_test, chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(kSuccess, chunkstore->FreeCacheSpace(1500));
+  ASSERT_FALSE(chunkstore->Has(chunknames[0]));
+  ASSERT_FALSE(chunkstore->Has(chunknames[1]));
+  ASSERT_EQ(chunks_to_test - 2, chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(1000 * (chunks_to_test - 2), chunkstore->space_used_by_cache());
+  printf("Passed #2\n");
+}
+
 TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreStorePackets) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));

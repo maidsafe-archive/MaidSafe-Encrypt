@@ -157,6 +157,53 @@ int VaultChunkStore::HashCheckAllChunks(bool delete_failures,
   return result ? kSuccess : kHashCheckFailure;
 }
 
+int VaultChunkStore::CacheChunk(const std::string &key,
+                                const std::string &value) {
+  if (Has(key))
+    return kSuccess;
+
+  if (!EnoughSpace(value.size()))
+    return kNoSpaceForCaching;
+
+  maidsafe::ChunkType ct(maidsafe::kHashable | maidsafe::kCache);
+  fs::path store_path = GetChunkPath(key, ct, true);
+  int n = StoreChunkFunction(key, value, store_path, ct);
+  if (n != kSuccess)
+    return n;
+
+  space_used_by_cache_ += value.size();
+  return kSuccess;
+}
+
+int VaultChunkStore::FreeCacheSpace(const boost::uint64_t &space_to_clear) {
+  if (space_used_by_cache() == 0)
+    return kNoCacheSpaceToClear;
+
+  {
+    boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
+    maidsafe::ChunkInfo chunk;
+    boost::uint64_t cleared_so_far(0);
+    while (cleared_so_far < space_to_clear) {
+      maidsafe::chunk_set_by_last_checked::iterator itr =
+          chunkstore_set_.get<1>().begin();
+      chunk = *itr;
+      if (chunk.type_ & maidsafe::kCache) {
+        fs::path p(GetChunkPath(chunk.non_hex_name_, chunk.type_, false));
+        try {
+          fs::remove_all(p);
+        }
+        catch(const std::exception &e) {}
+        maidsafe::chunk_set_by_non_hex_name::iterator name_itr =
+            chunkstore_set_.get<0>().find(chunk.non_hex_name_);
+        chunkstore_set_.erase(name_itr);
+        space_used_by_cache_ -= chunk.size_;
+        cleared_so_far += chunk.size_;
+      }
+    }
+  }
+  return kSuccess;
+}
+
 int VaultChunkStore::StorePacket(const std::string &packet_name,
                                  const maidsafe::GenericPacket &gp) {
   int valid = InitialOperationVerification(packet_name);
@@ -347,6 +394,12 @@ bool VaultChunkStore::HasPacket(const std::string &packet_name) {
   store_packet_by_index::iterator i_it = index_index.find(
       boost::make_tuple(packet_name));
   return i_it != index_index.end();
+}
+
+bool VaultChunkStore::EnoughSpace(const boost::uint64_t &length) {
+  if (FreeSpace() < length)
+    return false;
+  return true;
 }
 
 }  // namespace maidsafe_vault

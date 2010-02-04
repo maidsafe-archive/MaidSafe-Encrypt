@@ -53,6 +53,13 @@ void vsvc_dummy_callback(const std::string &result) {
 #endif
 }
 
+void int_dummy_callback(const int &result) {
+#ifdef DEBUG
+  if (result != 0)
+    printf("int_dummy_callback: something failed (%i).\n", result);
+#endif
+}
+
 void AddToRemoteRefListTask::run() {
   int result = vault_service_logic_->AddToRemoteRefList(chunkname_,
                                                         store_contract_,
@@ -71,6 +78,12 @@ void AddToRemoteRefListTask::run() {
 void AmendRemoteAccountTask::run() {
   vault_service_logic_->AmendRemoteAccount(amend_account_request_,
       found_local_result_, callback_, transport_id_);
+}
+
+void SendCachableChunkTask::run() {
+  if (vault_service_logic_ != NULL)
+    vault_service_logic_->CacheChunk(chunkname_, chunkcontent_, cacher_,
+                                     callback_, transport_id_);
 }
 
 VaultService::VaultService(const std::string &pmid_public,
@@ -776,6 +789,19 @@ void VaultService::GetChunk(google::protobuf::RpcController*,
     response->set_result(kNack);
   }
   done->Run();
+
+  std::string chunkname = request->chunkname();
+  std::string details;
+  if (request->has_serialised_cacher_contact())
+    details = request->serialised_cacher_contact();
+
+  kad::ContactInfo kc;
+  if (!details.empty() && kc.ParseFromString(details)) {
+    SendCachableChunkTask *task = new SendCachableChunkTask(chunkname, content,
+                                  kc, vault_service_logic_,
+                                  &int_dummy_callback);
+    thread_pool_.start(task);
+  }
 }
 
 void VaultService::DeleteChunk(google::protobuf::RpcController*,
@@ -888,6 +914,46 @@ void VaultService::ValidityCheck(google::protobuf::RpcController*,
                                  crypto::STRING_STRING, false);
   response->set_result(kAck);
   response->set_hash_content(hcontent);
+  done->Run();
+}
+
+void VaultService::CacheChunk(google::protobuf::RpcController*,
+                              const maidsafe::CacheChunkRequest *request,
+                              maidsafe::CacheChunkResponse *response,
+                              google::protobuf::Closure *done) {
+  response->set_result(kAck);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%i), request is not initialized.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->chunkname(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%i), request does not validate.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+
+  if (vault_chunkstore_->CacheChunk(request->chunkname(),
+      request->chunkcontent()) != kSuccess) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%i), failed to cache chunk.\n",
+           knode_->host_port());
+#endif
+  }
+
   done->Run();
 }
 

@@ -157,6 +157,7 @@ message CheckChunkResponse {
 
 message GetChunkRequest {
   required bytes chunkname = 1;
+  optional bytes serialised_cacher_contact = 2;
 }
 
 message GetChunkResponse {
@@ -206,6 +207,19 @@ message SwapChunkResponse {
   optional bytes chunkcontent2 = 7;
   optional int32 size2 = 8;
   required bytes pmid = 9;
+}
+
+message CacheChunkRequest {
+  required bytes chunkname = 1;
+  required bytes chunkcontent = 2;
+  required bytes pmid = 3;
+  required bytes public_key = 4;
+  required bytes public_key_signature = 5;
+  required bytes request_signature = 6;
+}
+
+message CacheChunkResponse {
+  required uint32 result = 1;
 }
 
 message VaultCommunication {

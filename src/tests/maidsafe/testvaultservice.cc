@@ -130,7 +130,9 @@ class VaultServicesTest : public testing::Test {
                                         vault_chunkstore_, knode_, &poh_,
                                         vault_service_logic_, transport_id);
 
-      vault_service_logic_->Init(vault_pmid_, vault_public_key_signature_,
+      vault_service_logic_->Init(vault_pmid_,
+                                 vault_public_key_,
+                                 vault_public_key_signature_,
                                  vault_private_key_);
 
       svc_channel_ = new rpcprotocol::Channel(&channel_manager_,
@@ -2276,7 +2278,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   // Not initialised
   TestCallback cb_obj;
   google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
-    (&cb_obj, &TestCallback::CallbackFunction);
+                                    (&cb_obj, &TestCallback::CallbackFunction);
   service.CreateBP(&controller, &request, &response, done);
   ASSERT_EQ(kNack, static_cast<int>(response.result()));
   ASSERT_EQ(vault_pmid_, response.pmid_id());
@@ -2862,6 +2864,64 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
   ASSERT_EQ(vault_pmid_, response.pmid_id());
   ASSERT_EQ(ep->ip(), response.ep().ip());
   ASSERT_EQ(ep->port(), response.ep().port());
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesCacheChunk) {
+  rpcprotocol::Controller controller;
+  maidsafe::CacheChunkRequest request;
+  maidsafe::CacheChunkResponse response;
+
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string content("This is a data chunk");
+  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
+  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
+                      &sig_req);
+
+  // Not initialised
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+                                    (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->CacheChunk(&controller, &request, &response, done);
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
+
+  // Wrong parameters
+  request.set_chunkname("aaaaaaaaaaaaa");
+  request.set_chunkcontent(content);
+  request.set_pmid(pmid);
+  request.set_public_key(pub_key);
+  request.set_public_key_signature(sig_pub_key);
+  request.set_request_signature(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->CacheChunk(&controller, &request, &response, done);
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
+
+  request.set_chunkname(chunkname);
+  request.set_pmid("aaaaaaaaaaaaaa");
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->CacheChunk(&controller, &request, &response, done);
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
+  ASSERT_FALSE(fs::exists(vault_service_->vault_chunkstore_->GetChunkPath(
+               chunkname, (maidsafe::kHashable | maidsafe::kCache), false)));
+
+  request.set_pmid(pmid);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->CacheChunk(&controller, &request, &response, done);
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
+  ASSERT_TRUE(vault_service_->vault_chunkstore_->Has(chunkname));
+  ASSERT_EQ(maidsafe::kHashable|maidsafe::kCache,
+            vault_service_->vault_chunkstore_->chunk_type(chunkname));
+  ASSERT_TRUE(fs::exists(vault_service_->vault_chunkstore_->GetChunkPath(
+              chunkname, (maidsafe::kHashable | maidsafe::kCache), false)));
 }
 
 }  // namespace maidsafe_vault

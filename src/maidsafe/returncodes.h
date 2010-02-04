@@ -96,7 +96,7 @@ enum ReturnCode {
   // Key Atlas Handler
   kKeyAtlasError = -6001,
 
-  // Store Manager
+  // Store Managers
   kStoreManagerError = -7001,
   kNotConnected = -7002,
   kLoadChunkFindValueFailure = -7003,
@@ -200,6 +200,8 @@ enum ReturnCode {
   kAccountStatusResponseUninitialised = -1512,
   kAccountStatusResponseFailed = -1513,
   kAccountStatusResponseError = -1514,
+  kCacheChunkResponseUninitialised = -1515,
+  kCacheChunkResponseError = -1516,
 
   // Vault
 
@@ -222,6 +224,8 @@ enum ReturnCode {
   kPacketDeleteNotFound = -3511,
   kPacketDeleteNotOwned = -3512,
   kPacketLoadNotFound = -3513,
+  kNoSpaceForCaching = -3514,
+  kNoCacheSpaceToClear = -3515,
 
   // Account Handler & Account Amendment Handler
   kAccountNotFound = -4501,
