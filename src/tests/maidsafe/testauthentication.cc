@@ -77,7 +77,7 @@ namespace maidsafe {
 class AuthenticationTest : public testing::Test {
  public:
   AuthenticationTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                                        "/maidsafe_TestAuth"),
+                             "/maidsafe_TestAuth_" + base::RandomString(6)),
                          ss(),
                          storemanager(),
                          client_chunkstore_(),

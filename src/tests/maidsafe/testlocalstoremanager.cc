@@ -100,7 +100,8 @@ void PacketOpCallback(const int &delete_result,
 class LocalStoreManagerTest : public testing::Test {
  public:
   LocalStoreManagerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                                           "/maidsafe_TestStoreManager"),
+                                "/maidsafe_TestStoreManager_" +
+                                base::RandomString(6)),
                             client_chunkstore_(),
                             storemanager(),
                             crypto_obj(),

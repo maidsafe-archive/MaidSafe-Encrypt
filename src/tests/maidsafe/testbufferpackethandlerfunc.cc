@@ -88,17 +88,27 @@ class BPCallback {
 
 class CBPHandlerTest : public testing::Test {
  public:
-  CBPHandlerTest()
-    : trans(NULL), trans_han(), ch_man(NULL), knode(), cbph(NULL),
-      bp_rpcs(), test_dir_(""), kad_config_file_(""), cryp(), keys(), cb_() {
-    test_dir_ = std::string("CBPHTest") +
-        boost::lexical_cast<std::string>(base::random_32bit_uinteger());
-    kad_config_file_ = test_dir_ + std::string("/.kadconfig");
-    keys.GenerateKeys(4096);
-    boost::filesystem::create_directories(test_dir_);
-  }
+  CBPHandlerTest() : trans(NULL),
+                     trans_han(),
+                     ch_man(NULL),
+                     knode(),
+                     cbph(NULL),
+                     bp_rpcs(),
+                     test_dir_(file_system::FileSystem::TempDir() +
+                               "/maidsafe_TestCBPH_" + base::RandomString(6)),
+                     kad_config_file_(test_dir_ + "/.kadconfig"),
+                     cryp(),
+                     keys(),
+                     cb_() {}
  protected:
   virtual void SetUp() {
+    keys.GenerateKeys(4096);
+    try {
+      boost::filesystem::create_directories(test_dir_);
+    }
+    catch(const std::exception &e) {
+      printf("CBPHandlerTest SetUp - filesystem error: %s\n", e.what());
+    }
     trans = new transport::TransportUDT;
     trans_han = new transport::TransportHandler;
     ch_man = new rpcprotocol::ChannelManager(trans_han);
@@ -147,7 +157,7 @@ class CBPHandlerTest : public testing::Test {
         boost::filesystem::remove_all(test_dir_);
     }
     catch(const std::exception &e) {
-      printf("filesystem error: %s\n", e.what());
+      printf("CBPHandlerTest TearDown - filesystem error: %s\n", e.what());
     }
   }
 

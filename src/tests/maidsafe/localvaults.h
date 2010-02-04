@@ -63,7 +63,8 @@ class Env: public testing::Environment {
   Env(const int kNetworkSize,
       const int kTestK,
       std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults)
-      : vault_dir_(file_system::FileSystem::TempDir()+"/maidsafe_TestVaults"),
+      : vault_dir_(file_system::FileSystem::TempDir() + "/maidsafe_TestVaults_"
+                   + base::RandomString(6)),
         chunkstore_dir_(vault_dir_ + "/Chunkstores"),
         kad_config_file_(".kadconfig"),
         chunkstore_dirs_(),

@@ -150,6 +150,7 @@ void WaitFunction(int seconds, boost::mutex* mutex) {
 
 void MakeChunks(boost::shared_ptr<maidsafe::ChunkStore> chunkstore,
                 int no_of_chunks,
+                const std::string &test_root_dir,
                 std::map<std::string, std::string> *chunks) {
   crypto::Crypto cryobj_;
   cryobj_.set_hash_algorithm(crypto::SHA_512);
@@ -158,8 +159,7 @@ void MakeChunks(boost::shared_ptr<maidsafe::ChunkStore> chunkstore,
     std::string chunk_content_ = base::RandomString(100);
     std::string non_hex_chunk_name_ = cryobj_.Hash(chunk_content_,
         "", crypto::STRING_STRING, false);
-    fs::path chunk_path_(file_system::FileSystem::TempDir() +
-                         "/maidsafe_TestVault");
+    fs::path chunk_path_(test_root_dir, fs::native);
     std::string hex_chunk_name_ = base::EncodeToHex(non_hex_chunk_name_);
     printf("Chunk %i - %s\n", i, HexSubstr(non_hex_chunk_name_).c_str());
     chunk_path_ /= hex_chunk_name_;
@@ -301,7 +301,7 @@ static const int kTestK_ = 16;
 class PDVaultTest : public testing::Test {
  protected:
   PDVaultTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                                 "/maidsafe_TestVault"),
+                      "/maidsafe_TestVault_" + base::RandomString(6)),
                   client_chunkstore_dir_(test_root_dir_ + "/ClientChunkstore"),
                   client_chunkstore_(),
                   chunkstore_dirs_(),
@@ -405,7 +405,8 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
   // add some valid chunks to client chunkstore and store to network
   std::map<std::string, std::string> chunks;
   const boost::uint32_t kNumOfTestChunks(23);
-  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, test_root_dir_,
+                          &chunks);
   std::map<std::string, std::string>::iterator it;
   for (it = chunks.begin(); it != chunks.end(); ++it) {
     std::string hex_chunk_name = (*it).first;
@@ -468,7 +469,8 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
 TEST_F(PDVaultTest, FUNC_MAID_GetChunks) {
   std::map<std::string, std::string> chunks;
   const boost::uint32_t kNumOfTestChunks(29);
-  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, test_root_dir_,
+                          &chunks);
   std::map<std::string, std::string>::iterator it;
   for (it = chunks.begin(); it != chunks.end(); ++it) {
     std::string hex_chunk_name = (*it).first;
@@ -545,7 +547,8 @@ TEST_F(PDVaultTest, FUNC_MAID_GetChunks) {
 TEST_F(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk) {
   std::map<std::string, std::string> chunks_;
   const boost::uint32_t kNumOfTestChunks(3);
-  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, test_root_dir_,
+                          &chunks_);
   std::map<std::string, std::string>::iterator it_;
   int i = 0;
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {
@@ -618,7 +621,8 @@ TEST_F(PDVaultTest, FUNC_MAID_GetMissingChunk) {
   const boost::uint32_t kNumOfTestChunks(3);
   ASSERT_GE(kNumOfTestChunks, boost::uint32_t(2)) <<
       "Need at least 2 copies for this test.";
-  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, &chunks_);
+  testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, test_root_dir_,
+                          &chunks_);
   std::map<std::string, std::string>::iterator it_;
   int i = 0;
   for (it_ = chunks_.begin(); it_ != chunks_.end(); ++it_) {

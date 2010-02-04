@@ -76,7 +76,8 @@ namespace maidsafe {
 class SelfEncryptionTest : public testing::Test {
  public:
   SelfEncryptionTest()
-      : test_root_dir_(file_system::FileSystem::TempDir() + "/maidsafe_TestSE"),
+      : test_root_dir_(file_system::FileSystem::TempDir() +
+            "/maidsafe_TestSE_" + base::RandomString(6)),
         ss(NULL),
         client_chunkstore_() {}
   ~SelfEncryptionTest() {}

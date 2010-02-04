@@ -76,7 +76,7 @@ namespace fs = boost::filesystem;
 class DataAtlasHandlerTest : public testing::Test {
  protected:
   DataAtlasHandlerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                                          "/maidsafe_TestDAH"),
+                               "/maidsafe_TestDAH_" + base::RandomString(6)),
                            sm(),
                            cb() { }
   ~DataAtlasHandlerTest() { }

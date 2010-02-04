@@ -284,7 +284,7 @@ class ChunkstoreTest : public testing::Test {
  protected:
   ChunkstoreTest()
       : storedir(file_system::FileSystem::TempDir() + "/maidsafe_TestChunkstore"
-                 + base::itos_ul(base::random_32bit_uinteger()), fs::native),
+                 + base::RandomString(6), fs::native),
         file_path("chunk.txt", fs::native),
         file_content("ABC"),
         hash_file_content(""),
