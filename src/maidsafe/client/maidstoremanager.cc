@@ -599,114 +599,190 @@ int MaidsafeStoreManager::SetSpaceOffered(const boost::uint64_t &space) {
   return kSuccess;
 }
 
+void MaidsafeStoreManager::GetFilteredAverage(
+    const std::vector<boost::uint64_t> &values,
+    boost::uint64_t *average,
+    size_t *n) {
+  /**
+   * note: keep values smaller than 2^(64-log2(n)); 53 bits precision!
+   */
+  boost::uint64_t sum(0);  // no double to keep precision within filtered vals
+  double sum2(0), mean(0), stddev(0), comp(0);
+  *average = 0;
+  *n = 0;
+
+  if (values.empty())
+    return;
+
+//  printf("values:");
+
+  // first pass: calculate mean
+  for (size_t i = 0; i < values.size(); ++i) {
+    sum += values[i];
+//    printf(" %llu", values[i]);
+  }
+  mean = 1.0 * sum / values.size();
+
+//  printf("\n");
+
+  // second pass: calculate standard deviation (using Kahan summation)
+  for (size_t i = 0; i < values.size(); ++i) {
+    double diff = values[i] - mean;
+    comp += diff;
+    sum2 += diff * diff;
+  }
+  stddev = sqrt((sum2 - comp * comp / values.size()) / values.size());
+
+  // third pass: only count values within sqrt(2) standard deviations from mean
+  for (size_t i = 0; i < values.size(); ++i) {
+    if (fabs(values[i] - mean) > 1.414213562 * stddev)
+      sum -= values[i];
+    else
+      ++(*n);
+  }
+  *average = sum / *n;
+
+//  printf("mean: %f, dev: %f, avg: %llu, n: %u of %u\n", mean,
+//         1.414213562 * stddev, *average, *n, values.size());
+}
+
 int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
                                             boost::uint64_t *space_given,
                                             boost::uint64_t *space_taken) {
   *space_offered = 0;
   *space_given = 0;
   *space_taken = 0;
+
   // Set the account name
-  std::string non_hex_pmid = base::DecodeFromHex(ss_->Id(PMID));
-  std::string pmid_pub = ss_->PublicKey(PMID);
-  std::string pmid_pub_sig = ss_->SignedPublicKey(PMID);
-  std::string pmid_pri = ss_->PrivateKey(PMID);
+  std::string pmid = base::DecodeFromHex(ss_->Id(PMID));
+  std::string pub_key = ss_->PublicKey(PMID);
+  std::string pub_key_sig = ss_->SignedPublicKey(PMID);
+  std::string priv_key = ss_->PrivateKey(PMID);
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string account_name = co.Hash(non_hex_pmid + kAccount, "",
-      crypto::STRING_STRING, false);
+  std::string account_name = co.Hash(pmid + kAccount, "", crypto::STRING_STRING,
+                                     false);
+
   // Find the account holders
-  std::vector<kad::Contact> account_holders;
-  if (FindKNodes(account_name, &account_holders) != kSuccess)
+  boost::shared_ptr<AccountStatusData> data(new AccountStatusData);
+  int rslt = FindKNodes(account_name, &data->contacts);
+  if (rslt != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::GetAccountDetails, Kad lookup failed -- error %i\n", rslt);
+#endif
     return kFindAccountHoldersError;
-  // Create the request
-  boost::shared_ptr<boost::condition_variable>
-      cond_var(new boost::condition_variable);
-  GenericConditionData cond_data(cond_var);
+  }
+  if (data->contacts.size() < kKadStoreThreshold_) {
+#ifdef DEBUG
+    printf("In MSM::GetAccountDetails, Kad lookup failed to find %u nodes; "
+           "found %u nodes.\n", kKadStoreThreshold_, data->contacts.size());
+#endif
+    return kFindAccountHoldersError;
+  }
+
+  // Create the requests
   AccountStatusRequest account_status_request;
-  account_status_request.set_account_pmid(non_hex_pmid);
-  account_status_request.set_public_key(pmid_pub);
-  account_status_request.set_public_key_signature(pmid_pub_sig);
+  account_status_request.set_account_pmid(pmid);
+  account_status_request.set_public_key(pub_key);
+  account_status_request.set_public_key_signature(pub_key_sig);
   std::vector<AccountStatusRequest> account_status_requests;
-  std::vector<AccountStatusResponse> account_status_responses;
-  for (boost::uint16_t i = 0; i < account_holders.size(); ++i) {
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
     std::string request_signature = co.AsymSign(co.Hash(
-        pmid_pub_sig + account_name + account_holders.at(i).node_id(), "",
-        crypto::STRING_STRING, false), "", pmid_pri, crypto::STRING_STRING);
+        pub_key_sig + account_name + data->contacts.at(i).node_id(), "",
+        crypto::STRING_STRING, false), "", priv_key, crypto::STRING_STRING);
     account_status_request.set_request_signature(request_signature);
-    AccountStatusResponse account_status_response;
     account_status_requests.push_back(account_status_request);
-    account_status_responses.push_back(account_status_response);
+    AccountStatusData::AccountStatusDataHolder holder(
+        data->contacts.at(i).node_id());
+    data->data_holders.push_back(holder);
   }
+
+  // lock the mutex here in case RPCs return before we wait on the condition
+  boost::mutex::scoped_lock lock(data->mutex);
+
   // Send the requests
-  boost::uint16_t rpcs_sent_count(account_status_responses.size());
-  for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
-    google::protobuf::Closure* callback =
-        google::protobuf::NewCallback(&google::protobuf::DoNothing);
-    rpcprotocol::Controller controller;
-    client_rpcs_->AccountStatus(account_holders.at(i),
-        AddressIsLocal(account_holders.at(i)), udt_transport_.GetID(),
-        &account_status_requests.at(i), &account_status_responses.at(i),
-        &controller, callback);
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &MaidsafeStoreManager::AccountStatusCallback, i, data);
+    client_rpcs_->AccountStatus(data->contacts.at(i),
+        AddressIsLocal(data->contacts.at(i)), udt_transport_.GetID(),
+        &account_status_requests.at(i), &data->data_holders.at(i).response,
+        data->data_holders.at(i).controller.get(), callback);
   }
-  boost::uint16_t successful_count(0);
-  boost::uint16_t failed_count(0);
-  // Once we've got enough successful replies, cancel the remaining RPCs (they
-  // should still succeed, we just won't handle the reply)
-//  while (successful_count < kKadStoreThreshold_ &&
-//         failed_count < kad::K - kKadStoreThreshold_ + 1 &&
-//         successful_count + failed_count < ref_holders.size()) {
-// TODO(Fraser#5#): 2009-10-13 - Preceding lines cause segfault on Unix due to
-// callbacks trying to lock destructed mutex - figure out why.
-  int timeout = 10000;  // milliseconds
-  int timeout_count = 0;
-  while ((successful_count + failed_count < rpcs_sent_count) &&
-         (timeout_count < timeout)) {
-    successful_count = 0;
-    failed_count = 0;
-    for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
-      boost::mutex::scoped_lock lock(cond_data.cond_mutex);
-      if (account_status_responses.at(i).IsInitialized()) {
-        if (account_status_responses.at(i).result() == kAck) {
-          ++successful_count;
-          // If we've now got enough successes, populate account data
-          if (successful_count == kKadStoreThreshold_) {
-            if (account_status_responses.at(i).has_space_offered() &&
-                account_status_responses.at(i).space_given() &&
-                account_status_responses.at(i).space_taken()) {
-              *space_offered = account_status_responses.at(i).space_offered();
-              *space_given = account_status_responses.at(i).space_given();
-              *space_taken = account_status_responses.at(i).space_taken();
-            } else {  // Account data wasn't set correctly in response
-              account_status_responses.at(i).set_result(kNack);
-              --successful_count;
-              ++failed_count;
-            }
-          }
-        } else {
-          ++failed_count;
-        }
+
+  // wait for the RPCs to return or timeout
+  while (data->returned_count < kKadStoreThreshold_) {
+    data->condition.wait(lock);
+  }
+
+  std::vector<boost::uint64_t> offered_values, given_values, taken_values;
+  int n(0);
+
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
+    AccountStatusData::AccountStatusDataHolder &holder =
+        data->data_holders.at(i);
+    if (holder.response.IsInitialized()) {
+      ++n;
+      if (holder.response.result() == kAck &&
+          holder.response.has_space_offered() &&
+          holder.response.has_space_given() &&
+          holder.response.has_space_taken()) {
+        offered_values.push_back(holder.response.space_offered());
+        given_values.push_back(holder.response.space_given());
+        taken_values.push_back(holder.response.space_taken());
       } else {
-        break;
+        offered_values.push_back(0);
+        given_values.push_back(0);
+        taken_values.push_back(0);
       }
+    } else {
+      // cancel outstanding RPCs
+      channel_manager_.
+          DeletePendingRequest(holder.controller->req_id());
     }
-    timeout_count += 10;
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-    if (timeout_count >= timeout)
-      printf("\n\n\n\n\n\n\nAccount Status TIMED OUT\n\n\n\n\n\n\n\n");
   }
-//  if (successful_count < kKadStoreThreshold_) {
-//    retry?
-// Cancel outstanding RPCs
-// TODO(Fraser#5#): 2009-10-13 - Once preceding todo is resolved, reinstate
-// following code.  Bool store_iou_response_returned needs replaced with
-// three state flag, kPending, kReturned, kDone or similar.
-//  for (boost::uint16_t j = 0; j < results.size(); ++j) {
-//    if (!results.at(j)->store_iou_response_returned)
-//      channel_manager_.
-//          DeletePendingRequest(results.at(j)->controller->req_id());
-//  }
+
+  // TODO(Steve#) do we want to fail if the majority don't have the account?
+
+  const boost::uint16_t min_res = kad::K - kKadStoreThreshold_;
+
+  // require more than 4 non-timed-out responses
+  if (n <= min_res) {
+#ifdef DEBUG
+    printf("In MSM::GetAccountDetails, received only %u responses; need more "
+           "than %u.\n", n, min_res);
+#endif
+    return kRequestInsufficientResponses;
+  }
+
+  boost::uint64_t offered_avg, given_avg, taken_avg;
+  size_t offered_n, given_n, taken_n;
+
+  // calculate filtered averages for our account values
+  GetFilteredAverage(offered_values, &offered_avg, &offered_n);
+  GetFilteredAverage(given_values,   &given_avg,   &given_n);
+  GetFilteredAverage(taken_values,   &taken_avg,   &taken_n);
+
+  // require more than 4 non-outliers of each
+  if (offered_n <= min_res || given_n <= min_res || taken_n <= min_res) {
+#ifdef DEBUG
+    printf("In MSM::GetAccountDetails, no consensus on values reached.\n");
+#endif
+    return kRequestFailedConsensus;
+  }
+
+  *space_offered = offered_avg;
+  *space_given = given_avg;
+  *space_taken = taken_avg;
   return kSuccess;
+}
+
+void MaidsafeStoreManager::AccountStatusCallback(
+    size_t /*index*/, boost::shared_ptr<AccountStatusData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  ++data->returned_count;
+  data->condition.notify_one();
 }
 
 void MaidsafeStoreManager::GetChunkSignatureKeys(DirType dir_type,
@@ -1110,9 +1186,9 @@ void MaidsafeStoreManager::AddToWatchListCallback(
       tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk,
                                 kSuccess);
     }
-  } else if (result == kUploadCopiesFailedConsensus) {
+  } else if (result == kRequestFailedConsensus) {
     tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk,
-                              kUploadCopiesFailedConsensus);
+                              kRequestFailedConsensus);
   }
 }
 
@@ -1124,7 +1200,7 @@ int MaidsafeStoreManager::AssessUploadCounts(
   // data->mutex should already be locked, but just in case...
   boost::mutex::scoped_try_lock lock(data->mutex);
 if (data->returned_count < kKadStoreThreshold_)
-    return kUploadCopiesPendingConsensus;
+    return kRequestPendingConsensus;
   // Get most common upload_copies figure
   std::multiset<int> copy_required_upload_copies(data->required_upload_copies);
   while (!copy_required_upload_copies.empty()) {
@@ -1142,7 +1218,7 @@ if (data->returned_count < kKadStoreThreshold_)
   // If more than two discrete opinions, return error and set copies to zero.
   if (discrete_opinions > 2) {
     data->consensus_upload_copies = 0;
-    return kUploadCopiesFailedConsensus;
+    return kRequestFailedConsensus;
   }
   // If no more results due, try to get consensus.
   if (data->returned_count >= data->add_to_watchlist_data_holders.size()) {
@@ -1161,17 +1237,17 @@ if (data->returned_count < kKadStoreThreshold_)
       }
     } else if (discrete_opinions == 0) {
       data->consensus_upload_copies = 0;
-      return kUploadCopiesFailedConsensus;
+      return kRequestFailedConsensus;
     }
   } else {
       data->consensus_upload_copies = -1;
-      return kUploadCopiesPendingConsensus;
+      return kRequestPendingConsensus;
   }
   // If not enough for consensus, return error and set copies to -1.
   if (static_cast<int>(data->required_upload_copies.count(
       data->consensus_upload_copies)) <= kad::K - kKadStoreThreshold_) {
     data->consensus_upload_copies = 0;
-    return kUploadCopiesFailedConsensus;
+    return kRequestFailedConsensus;
   }
   return kSuccess;
 }

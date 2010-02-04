@@ -366,6 +366,30 @@ struct SendChunkData {
   boost::uint16_t attempt;
 };
 
+// This is used to hold the data required to perform a Kad lookup to get a group
+// of account holders, send each an AccountStatusRequest and assess the
+// responses.
+struct AccountStatusData {
+  struct AccountStatusDataHolder {
+    explicit AccountStatusDataHolder(const std::string &id)
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
+    std::string node_id;
+    AccountStatusResponse response;
+    boost::shared_ptr<rpcprotocol::Controller> controller;
+  };
+  explicit AccountStatusData()
+      : mutex(),
+        condition(),
+        contacts(),
+        data_holders(),
+        returned_count(0) {}
+  boost::mutex mutex;
+  boost::condition_variable condition;
+  std::vector<kad::Contact> contacts;
+  std::vector<AccountStatusDataHolder> data_holders;
+  boost::uint16_t returned_count;
+};
+
 struct GenericConditionData {
  public:
   explicit GenericConditionData(boost::shared_ptr<boost::condition_variable> cv)
@@ -657,6 +681,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
 
   void AddStorePacketTask(const StoreData &store_data,
@@ -678,6 +704,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Assesses each RemoveFromWatchListResponse.
   void RemoveFromWatchListCallback(boost::uint16_t index,
                                    boost::shared_ptr<WatchListOpData> data);
+  void AccountStatusCallback(size_t index,
+                             boost::shared_ptr<AccountStatusData> data);
+  // Calculates the mean of only the values within sqrt(2) std devs from mean
+  // TODO(Team#) move to central place for global usage?
+  static void GetFilteredAverage(const std::vector<boost::uint64_t> &values,
+                                 boost::uint64_t *average,
+                                 size_t *n);
   // Returns the current status of the task and sets *task to the task if found.
   virtual TaskStatus AssessTaskStatus(const std::string &data_name,
                                       StoreTaskType task_type,
