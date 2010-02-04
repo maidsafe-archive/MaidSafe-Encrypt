@@ -25,6 +25,7 @@
 #include <gmock/gmock.h>
 #include <maidsafe/contact_info.pb.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
+#include <queue>
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/clientrpc.h"
@@ -34,6 +35,66 @@
 #include "maidsafe/vault/vaultservice.h"
 
 namespace test_msm {
+
+typedef boost::function<void()> VoidFunc;
+
+/**
+ * This is a thread pool, which takes boost functors and executes them in order.
+ */
+class ThreadedCallContainer {
+ public:
+  explicit ThreadedCallContainer(const size_t &num_threads)
+    : running_(false), mutex_(), condition_(), threads_(), callbacks_() {
+    for (size_t i = 0; i < num_threads; ++i) {
+      threads_.push_back(new boost::thread(boost::bind(
+          &ThreadedCallContainer::Run, this)));
+    }
+  }
+  ~ThreadedCallContainer() {
+    {
+      boost::mutex::scoped_lock lock(mutex_);
+      running_ = false;
+      condition_.notify_all();
+    }
+    for (size_t i = 0; i < threads_.size(); ++i) {
+      threads_[i]->join();
+      delete threads_[i];
+    }
+  }
+  void Enqueue(VoidFunc callback) {
+    boost::mutex::scoped_lock lock(mutex_);
+    if (!running_)
+      return;
+    callbacks_.push(callback);
+    condition_.notify_one();
+  }
+ private:
+  ThreadedCallContainer(const ThreadedCallContainer&);
+  ThreadedCallContainer &operator=(const ThreadedCallContainer&);
+  void Run() {
+    boost::mutex::scoped_lock lock(mutex_);
+    running_ = true;
+    while (running_) {
+      while (running_ && callbacks_.empty()) {
+        condition_.wait(lock);
+      }
+      while (!callbacks_.empty()) {
+        // grab the first cb from the queue, but allow other threads to operate
+        // while executing it
+        VoidFunc f = callbacks_.front();
+        callbacks_.pop();
+        mutex_.unlock();
+        f();
+        mutex_.lock();
+      }
+    }
+  }
+  bool running_;
+  boost::mutex mutex_;
+  boost::condition_variable condition_;
+  std::vector<boost::thread*> threads_;
+  std::queue<VoidFunc> callbacks_;
+};
 
 void DoneRun(const int &min_delay,
              const int &max_delay,
@@ -140,6 +201,48 @@ void AddToWatchListCallback(
     response->set_upload_count(upload_count);
   }
   callback->Run();
+}
+
+struct AccountStatusValues {
+  AccountStatusValues(const boost::uint64_t space_offered_,
+                      const boost::uint64_t space_given_,
+                      const boost::uint64_t space_taken_)
+  : space_offered(space_offered_),
+    space_given(space_given_),
+    space_taken(space_taken_) {}
+  boost::uint64_t space_offered, space_given, space_taken;
+};
+
+void AccountStatusCallback(bool initialise_response,
+                           const int &result,
+                           const std::string &pmid,
+                           bool initialise_values,
+                           const AccountStatusValues &values,
+                           maidsafe::AccountStatusResponse *response,
+                           google::protobuf::Closure* callback) {
+  if (initialise_response) {
+    response->set_result(result);
+    response->set_pmid(pmid);
+    if (initialise_values) {
+      response->set_space_offered(values.space_offered);
+      response->set_space_given(values.space_given);
+      response->set_space_taken(values.space_taken);
+    }
+  }
+  callback->Run();
+}
+
+void ThreadedAccountStatusCallback(ThreadedCallContainer *tcc,
+                                   bool initialise_response,
+                                   const int &result,
+                                   const std::string &pmid,
+                                   bool initialise_values,
+                                   const AccountStatusValues &values,
+                                   maidsafe::AccountStatusResponse *response,
+                                   google::protobuf::Closure *callback) {
+  tcc->Enqueue(boost::bind(&AccountStatusCallback, initialise_response, result,
+                           pmid, initialise_values, values, response,
+                           callback));
 }
 
 int SendChunkCount(int *send_chunk_count,
@@ -328,6 +431,14 @@ class MockClientRpcs : public ClientRpcs {
       const boost::int16_t &transport_id,
       AddToWatchListRequest *add_to_watch_list_request,
       AddToWatchListResponse *add_to_watch_list_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done));
+  MOCK_METHOD7(AccountStatus, void(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      AccountStatusRequest *account_status_request,
+      AccountStatusResponse *account_status_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done));
 };
@@ -549,7 +660,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -570,7 +681,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
     add_to_watchlist_data->required_upload_copies.insert(0);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -594,7 +705,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     else
       add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -616,7 +727,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -624,7 +735,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
     add_to_watchlist_data->required_upload_copies.insert(1);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -633,7 +744,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
                  base::itos(kad::K - 1));
     add_to_watchlist_data->required_upload_copies.insert(0);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesFailedConsensus,
+    ASSERT_EQ(kRequestFailedConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -650,7 +761,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     else
       add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -658,7 +769,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesFailedConsensus,
+    ASSERT_EQ(kRequestFailedConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -675,7 +786,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     else
       add_to_watchlist_data->required_upload_copies.insert(1);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -702,7 +813,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     else
       add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -729,7 +840,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     else
       add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -756,7 +867,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     else
       add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -783,7 +894,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     else
       add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -805,7 +916,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -830,7 +941,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     else
       add_to_watchlist_data->required_upload_copies.insert(1);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -839,7 +950,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
                  base::itos(kad::K - 1));
     add_to_watchlist_data->required_upload_copies.insert(1);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesFailedConsensus,
+    ASSERT_EQ(kRequestFailedConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -853,7 +964,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
     SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesPendingConsensus,
+    ASSERT_EQ(kRequestPendingConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -862,7 +973,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
                  base::itos(kad::K - 1));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
-    ASSERT_EQ(kUploadCopiesFailedConsensus,
+    ASSERT_EQ(kRequestFailedConsensus,
               msm.AssessUploadCounts(add_to_watchlist_data));
     ASSERT_EQ(0, add_to_watchlist_data->consensus_upload_copies);
   }
@@ -2157,6 +2268,173 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
     cond_var_.wait(lock);
   }
   ASSERT_EQ(kSuccess, packet_op_result_);
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
+  MockMsmKeyUnique msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+      new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
+  msm.client_rpcs_ = mock_rpcs;
+  ASSERT_TRUE(client_chunkstore_->is_initialised());
+
+  std::string account_name = crypto_.Hash(client_pmid_ + kAccount, "",
+      crypto::STRING_STRING, false);
+
+  // Set up data for calls to FindKNodes
+  std::vector<kad::Contact> account_holders, few_account_holders;
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
+    kad::Contact contact(crypto_.Hash(base::itos(i * i), "",
+        crypto::STRING_STRING, false), "192.168.10." + base::itos(i), 8000 + i,
+        "192.168.10." + base::itos(i), 8000 + i);
+    account_holders.push_back(contact);
+    if (i >= msm.kKadStoreThreshold_)
+      few_account_holders.push_back(contact);
+  }
+
+  test_msm::ThreadedCallContainer tcc(1);
+
+  // Set expectations
+  EXPECT_CALL(msm, FindKNodes(account_name, testing::_))
+      .Times(7)
+      .WillOnce(DoAll(testing::SetArgumentPointee<1>(account_holders),
+          testing::Return(-1)))  // Call 1
+      .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_account_holders),
+          testing::Return(kSuccess)))  // Call 2
+      .WillRepeatedly(DoAll(testing::SetArgumentPointee<1>(account_holders),
+          testing::Return(kSuccess)));
+
+  // Account holder responses
+  for (int i = 0; i < kad::K; ++i) {
+    EXPECT_CALL(*mock_rpcs, AccountStatus(
+        EqualsContact(account_holders.at(i)),
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 3
+                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
+                false, kAck, account_holders.at(i).node_id(), false,
+                test_msm::AccountStatusValues(0, 0, 0), _1, _2))))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 4
+                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
+                i < 5, kAck, account_holders.at(i).node_id(), true,
+                test_msm::AccountStatusValues(i*i, 0, 0), _1, _2))))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 5
+                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
+                i < 12, kAck, account_holders.at(i).node_id(), false,
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 6
+                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
+                i < 12, kNack, account_holders.at(i).node_id(), true,
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 7
+                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
+                i < 12, kAck, account_holders.at(i).node_id(), true,
+                test_msm::AccountStatusValues(i*i, 123, i), _1, _2))));
+  }
+
+  boost::uint64_t space_offered, space_given, space_taken;
+
+  // Call 1 - FindKNodes fails
+  printf(">> Call 1\n");
+  ASSERT_EQ(kFindAccountHoldersError,
+            msm.GetAccountDetails(&space_offered, &space_given, &space_taken));
+
+  // Call 2 - FindKNodes returns too few contacts
+  printf(">> Call 2\n");
+  ASSERT_EQ(kFindAccountHoldersError,
+            msm.GetAccountDetails(&space_offered, &space_given, &space_taken));
+
+  // Call 3 - RPCs return uninitialised responses
+  printf(">> Call 3\n");
+  ASSERT_EQ(kRequestInsufficientResponses,
+            msm.GetAccountDetails(&space_offered, &space_given, &space_taken));
+
+  // Call 4 - only 5 initialised responses, but no consensus
+  printf(">> Call 4\n");
+  ASSERT_EQ(kRequestFailedConsensus,
+            msm.GetAccountDetails(&space_offered, &space_given, &space_taken));
+
+  // Call 5 - uninitialised values in response, equals consensus (all zero)
+  printf(">> Call 5\n");
+  ASSERT_EQ(kSuccess,
+            msm.GetAccountDetails(&space_offered, &space_given, &space_taken));
+  ASSERT_EQ(0, space_offered);
+  ASSERT_EQ(0, space_given);
+  ASSERT_EQ(0, space_taken);
+
+  // Call 6 - non-acknowledged response, same as #5
+  printf(">> Call 6\n");
+  ASSERT_EQ(kSuccess,
+            msm.GetAccountDetails(&space_offered, &space_given, &space_taken));
+  ASSERT_EQ(0, space_offered);
+  ASSERT_EQ(0, space_given);
+  ASSERT_EQ(0, space_taken);
+
+  // Call 7 - initialised, diverse values in response
+  printf(">> Call 7\n");
+  ASSERT_EQ(kSuccess,
+            msm.GetAccountDetails(&space_offered, &space_given, &space_taken));
+  ASSERT_EQ(28, space_offered);  // squares of first 10 i, #11/#12 are outliers
+  ASSERT_EQ(123, space_given);  // constant 123
+  ASSERT_EQ(5, space_taken);  // first 10 i, #11 and #12 are outliers
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage) {
+  /**
+   * note: keep values smaller than 2^(64-log2(n)); 53 bits precision!
+   */
+  std::vector<boost::uint64_t> values;
+  boost::uint64_t average;
+  size_t n;
+
+  // no values
+  MaidsafeStoreManager::GetFilteredAverage(values, &average, &n);
+  ASSERT_EQ(0, average);
+  ASSERT_EQ(0, n);
+
+  // one value
+  values.push_back(5);
+  MaidsafeStoreManager::GetFilteredAverage(values, &average, &n);
+  ASSERT_EQ(5, average);
+  ASSERT_EQ(1, n);
+
+  // three values
+  values.push_back(4);
+  values.push_back(6);
+  MaidsafeStoreManager::GetFilteredAverage(values, &average, &n);
+  ASSERT_EQ(5, average);
+  ASSERT_EQ(3, n);
+
+  // four values, one is an outlier
+  values.push_back(10);
+  MaidsafeStoreManager::GetFilteredAverage(values, &average, &n);
+  ASSERT_EQ(5, average);
+  ASSERT_EQ(3, n);
+
+  // five values and one huge outlier outside precision
+  values.push_back(1000000000000000000ll);
+  MaidsafeStoreManager::GetFilteredAverage(values, &average, &n);
+  ASSERT_EQ(6, average);
+  ASSERT_EQ(4, n);
+
+  // four huge values within precision
+  values.clear();
+  values.push_back(9000000000000000ll);
+  values.push_back(9000000000000010ll);
+  values.push_back(9000000000000020ll);
+  values.push_back(9000000000000030ll);
+  MaidsafeStoreManager::GetFilteredAverage(values, &average, &n);
+  ASSERT_EQ(9000000000000015ll, average);
+  ASSERT_EQ(4, n);
+
+  // four huge values and one small outlier
+  values.push_back(10);
+  MaidsafeStoreManager::GetFilteredAverage(values, &average, &n);
+  ASSERT_EQ(9000000000000015ll, average);
+  ASSERT_EQ(4, n);
 }
 
 }  // namespace maidsafe
