@@ -188,7 +188,7 @@ class VaultServiceLogic {
                                 std::vector<kad::Contact> *contacts,
                                 boost::mutex *mutex,
                                 boost::condition_variable *cv,
-                                int *result);
+                                ReturnCode *result);
   // Amend account of PMID requesting to be added to Watch List or Ref List.
   virtual void AmendRemoteAccount(const maidsafe::AmendAccountRequest &request,
                                   const int &found_local_result,

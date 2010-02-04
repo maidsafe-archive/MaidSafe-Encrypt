@@ -259,7 +259,7 @@ void MaidsafeStoreManager::StorePacket(const std::string &hex_packet_name,
                                        const std::string &msid,
                                        IfPacketExists if_packet_exists,
                                        const VoidFuncOneInt &cb) {
-  int prep = kSuccess;
+  ReturnCode prep = kSuccess;
   if (hex_packet_name.length() != 2 * kKeySize) {
     prep = kIncorrectKeySize;
   }
@@ -547,7 +547,7 @@ void MaidsafeStoreManager::DeletePacket(const std::string &hex_packet_name,
                                         DirType dir_type,
                                         const std::string &msid,
                                         const VoidFuncOneInt &cb) {
-  int prep = kSuccess;
+  ReturnCode prep = kSuccess;
   if (hex_packet_name.length() != 2 * kKeySize) {
     prep = kIncorrectKeySize;
   }
@@ -994,7 +994,8 @@ void MaidsafeStoreManager::AddToWatchList(const StoreData &store_data) {
       printf("In MSM::AddToWatchList (chunk %s): Task cancelled.\n",
              HexSubstr(store_data.non_hex_key).c_str());
 #endif
-      tasks_handler_.DeleteTask(store_data.non_hex_key, kStoreChunk, "");
+      tasks_handler_.DeleteTask(store_data.non_hex_key, kStoreChunk,
+                                kStoreCancelledOrDone);
     }
     return;
   }
@@ -1005,7 +1006,8 @@ void MaidsafeStoreManager::AddToWatchList(const StoreData &store_data) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchList, Kad lookup failed -- error %i\n", result);
 #endif
-    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk, "");
+    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk,
+                              kStoreChunkFindNodesFailure);
     return;
   }
   if (data->contacts.size() < kKadStoreThreshold_) {
@@ -1013,7 +1015,8 @@ void MaidsafeStoreManager::AddToWatchList(const StoreData &store_data) {
     printf("In MSM::AddToWatchList, Kad lookup failed to find %u nodes; "
            "found %u nodes.\n", kKadStoreThreshold_, data->contacts.size());
 #endif
-    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk, "");
+    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk,
+                              kStoreChunkFindNodesFailure);
     return;
   }
 
@@ -1024,7 +1027,8 @@ void MaidsafeStoreManager::AddToWatchList(const StoreData &store_data) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchList, failed to generate requests.\n");
 #endif
-    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk, "");
+    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk,
+                              kStoreChunkError);
     return;
   }
   for (size_t i = 0; i < data->contacts.size(); ++i) {
@@ -1103,10 +1107,12 @@ void MaidsafeStoreManager::AddToWatchListCallback(
         chunk_thread_pool_.start(send_chunk_copy_task);
       }
     } else {
-      tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk, "");
+      tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk,
+                                kSuccess);
     }
   } else if (result == kUploadCopiesFailedConsensus) {
-    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk, "");
+    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kStoreChunk,
+                              kUploadCopiesFailedConsensus);
   }
 }
 
@@ -1221,7 +1227,7 @@ bool MaidsafeStoreManager::WaitForOnline(const std::string &data_name,
 #endif
       if (overall_result == kStoreTaskFinishedPass ||
           overall_result == kStoreTaskFinishedFail) {
-        tasks_handler_.DeleteTask(data_name, task_type, "");
+        tasks_handler_.DeleteTask(data_name, task_type, kTaskCancelledOffline);
       }
       return false;
     }
@@ -1248,7 +1254,7 @@ bool MaidsafeStoreManager::AssessTaskAndOnlineStatus(
            "cancelled.\n", HexSubstr(data_name).c_str());
 #endif
     if (task.active_subtask_count_ <= 1) {
-      tasks_handler_.DeleteTask(data_name, task_type, "");
+      tasks_handler_.DeleteTask(data_name, task_type, kTaskCancelledOffline);
     } else {
       tasks_handler_.StopSubTask(data_name, task_type, false);
     }
@@ -1456,7 +1462,8 @@ int MaidsafeStoreManager::SendChunkPrep(const StoreData &store_data) {
       printf("In MSM::SendChunkPrep (chunk %s): Task cancelled.\n",
              HexSubstr(store_data.non_hex_key).c_str());
 #endif
-      tasks_handler_.DeleteTask(store_data.non_hex_key, kStoreChunk, "");
+      tasks_handler_.DeleteTask(store_data.non_hex_key, kStoreChunk,
+                                kStoreCancelledOrDone);
     }
     return kStoreCancelledOrDone;
   }
@@ -1569,7 +1576,7 @@ void MaidsafeStoreManager::SendPrepCallback(
     if (overall_result == kStoreTaskFinishedPass ||
         overall_result == kStoreTaskFinishedFail) {
       tasks_handler_.DeleteTask(send_chunk_data->store_data.non_hex_key,
-                                kStoreChunk, "");
+                                kStoreChunk, kSendPrepFailure);
     }
     return;
   }
@@ -1692,7 +1699,7 @@ void MaidsafeStoreManager::SendContentCallback(
 #endif
     if (overall_result == kStoreTaskFinishedPass ||
         overall_result == kStoreTaskFinishedFail) {
-      tasks_handler_.DeleteTask(chunkname, kStoreChunk, "");
+      tasks_handler_.DeleteTask(chunkname, kStoreChunk, kSuccess);
     }
     // TODO(Fraser#5#): 2009-08-14 - Check later that there are enough vaults
     // listed in ref & watch lists to ensure upload ultimately successful.
@@ -1736,7 +1743,7 @@ void MaidsafeStoreManager::SendContentCallback(
     if (overall_result == kStoreTaskFinishedPass ||
         overall_result == kStoreTaskFinishedFail) {
       tasks_handler_.DeleteTask(send_chunk_data->store_data.non_hex_key,
-                                kStoreChunk, "");
+                                kStoreChunk, kSendContentFailure);
     }
   }
 }
@@ -1761,7 +1768,8 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
       printf("In MSM::RemoveFromWatchList (chunk %s): Task cancelled.\n",
              HexSubstr(store_data.non_hex_key).c_str());
 #endif
-      tasks_handler_.DeleteTask(store_data.non_hex_key, kDeleteChunk, "");
+      tasks_handler_.DeleteTask(store_data.non_hex_key, kDeleteChunk,
+                                kDeleteCancelledOrDone);
     }
     return;
   }
@@ -1773,7 +1781,8 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
     printf("In MSM::RemoveFromWatchList, Kad lookup failed -- error %i\n",
            result);
 #endif
-    tasks_handler_.DeleteTask(store_data.non_hex_key, kDeleteChunk, "");
+    tasks_handler_.DeleteTask(store_data.non_hex_key, kDeleteChunk,
+                              kDeleteChunkFindNodesFailure);
     return;
   }
   if (data->contacts.size() < kKadStoreThreshold_) {
@@ -1781,7 +1790,8 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
     printf("In MSM::RemoveFromWatchList, Kad lookup failed to find %u nodes; "
            "found %u nodes.\n", kKadStoreThreshold_, data->contacts.size());
 #endif
-    tasks_handler_.DeleteTask(store_data.non_hex_key, kDeleteChunk, "");
+    tasks_handler_.DeleteTask(store_data.non_hex_key, kDeleteChunk,
+                              kDeleteChunkFindNodesFailure);
     return;
   }
 
@@ -1792,7 +1802,8 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchList, failed to generate requests.\n");
 #endif
-    tasks_handler_.DeleteTask(store_data.non_hex_key, kDeleteChunk, "");
+    tasks_handler_.DeleteTask(store_data.non_hex_key, kDeleteChunk,
+                              kDeleteChunkError);
     return;
   }
   for (size_t i = 0; i < data->contacts.size(); ++i) {
@@ -1854,12 +1865,14 @@ void MaidsafeStoreManager::RemoveFromWatchListCallback(
 
   // Overall success
   if (data->successful_delete_count >= kKadStoreThreshold_) {
-    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kDeleteChunk, "");
+    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kDeleteChunk,
+                              kSuccess);
     return;
   }
   // Overall failure
   if (data->returned_count >= data->contacts.size())
-    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kDeleteChunk, "");
+    tasks_handler_.DeleteTask(data->store_data.non_hex_key, kDeleteChunk,
+                              kDeleteChunkFailure);
 }
 
 int MaidsafeStoreManager::FindKNodes(const std::string &kad_key,
@@ -2360,7 +2373,7 @@ void MaidsafeStoreManager::SendPacketPrep(
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::SendPacketPrep\n");
 #endif
-  int to_return = kUndefined;
+  ReturnCode to_return = kUndefined;
   kad::ContactInfo cache_holder;
   std::vector<std::string> values;
   std::string needs_cache_copy_id;
@@ -2469,7 +2482,7 @@ void MaidsafeStoreManager::OverwritePacket(
 
 void MaidsafeStoreManager::OverwritePacketStageTwo(
     boost::shared_ptr<StoreData> store_data,
-    const int &delete_result) {
+    const ReturnCode &delete_result) {
   if (delete_result == kSuccess)
     SendPacket(store_data);
   else

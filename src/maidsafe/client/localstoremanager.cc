@@ -316,7 +316,7 @@ void LocalStoreManager::StorePacket(const std::string &hex_packet_name,
   int result = StorePacket_InsertToDb(hex_packet_name, value);
   // TODO(Fraser#5#): 2010-01-26 - Fix logic to match MSM - actions vary
   //                               depending on if_packet_exists value.
-  cb(-11111111);
+  cb(kStoreManagerError);
 //  cb(result);
 }
 

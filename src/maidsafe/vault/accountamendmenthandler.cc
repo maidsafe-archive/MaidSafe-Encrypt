@@ -220,7 +220,7 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
   std::vector<kad::Contact> contacts;
   boost::mutex mutex;
   boost::condition_variable cv;
-  int result(kVaultServiceError);
+  ReturnCode result(kVaultServiceError);
   vault_service_logic_->HandleFindKNodesResponse(find_nodes_response,
       amendment.account_name, &contacts, &mutex, &cv, &result);
   if (result == kSuccess && contacts.size() >= size_t(kKadStoreThreshold_)) {

@@ -823,7 +823,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void OverwritePacket(boost::shared_ptr<StoreData> store_data,
                        const std::vector<std::string> &values);
   void OverwritePacketStageTwo(boost::shared_ptr<StoreData> store_data,
-                               const int &delete_result);
+                               const ReturnCode &delete_result);
   virtual void DeletePacketFromNet(
       boost::shared_ptr<DeletePacketData> delete_data);
   void DeletePacketCallback(const std::string &ser_kad_delete_result,

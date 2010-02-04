@@ -330,6 +330,14 @@ class MockClientRpcs : public ClientRpcs {
       AddToWatchListResponse *add_to_watch_list_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done));
+  MOCK_METHOD7(RemoveFromWatchList, void(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      RemoveFromWatchListRequest *remove_from_watch_list_request,
+      RemoveFromWatchListResponse *remove_from_watch_list_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done));
 };
 
 MATCHER_P(EqualsContact, kad_contact, "") {
@@ -1233,7 +1241,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkPrep) {
       .WillOnce(DoAll(testing::SetArgumentPointee<2>(peer),  // Call 4
                       testing::InvokeWithoutArgs(boost::bind(
                           &StoreTasksHandler::DeleteTask, &msm.tasks_handler_,
-                          store_data.non_hex_key, kStoreChunk, ""))))
+                          store_data.non_hex_key, kStoreChunk,
+                          kStoreCancelledOrDone))))
       .WillOnce(DoAll(testing::SetArgumentPointee<2>(peer),
                       testing::Return(kSuccess)))  // Call 5
       .WillOnce(DoAll(testing::SetArgumentPointee<2>(peer),

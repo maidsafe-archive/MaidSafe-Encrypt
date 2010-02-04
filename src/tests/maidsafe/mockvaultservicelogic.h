@@ -43,7 +43,8 @@
 
 namespace mock_vsl {
 
-typedef boost::function<void (const int&)> VoidFuncOneInt;
+typedef boost::function<void (const maidsafe_vault::ReturnCode&)>
+    VoidFuncOneInt;
 
 enum FindNodesResponseType {
   kFailParse,
@@ -118,8 +119,8 @@ std::string MakeFindNodesResponse(const FindNodesResponseType &type,
 void RunCallback(const std::string &find_nodes_response,
                  const base::callback_func_type &callback);
 
-void RunVaultCallback(const int &result,
-                      const mock_vsl::VoidFuncOneInt &callback);
+void RunVaultCallback(const maidsafe_vault::ReturnCode &result,
+                      const VoidFuncOneInt &callback);
 
 void DoneRun(const int &min_delay,
              const int &max_delay,
@@ -132,8 +133,6 @@ void ThreadedDoneRun(const int &min_delay,
 }  // namespace mock_vsl
 
 namespace maidsafe_vault {
-
-typedef boost::function<void (const int&)> VoidFuncOneInt;
 
 class MockVaultRpcs : public VaultRpcs {
  public:
