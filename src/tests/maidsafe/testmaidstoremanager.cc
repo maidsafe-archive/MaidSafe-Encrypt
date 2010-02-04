@@ -245,6 +245,28 @@ void ThreadedAccountStatusCallback(ThreadedCallContainer *tcc,
                            callback));
 }
 
+void AmendAccountCallback(bool initialise_response,
+                          const int &result,
+                          const std::string &pmid,
+                          maidsafe::AmendAccountResponse *response,
+                          google::protobuf::Closure* callback) {
+  if (initialise_response) {
+    response->set_result(result);
+    response->set_pmid(pmid);
+  }
+  callback->Run();
+}
+
+void ThreadedAmendAccountCallback(ThreadedCallContainer *tcc,
+                                  bool initialise_response,
+                                  const int &result,
+                                  const std::string &pmid,
+                                  maidsafe::AmendAccountResponse *response,
+                                  google::protobuf::Closure *callback) {
+  tcc->Enqueue(boost::bind(&AmendAccountCallback, initialise_response, result,
+                           pmid, response, callback));
+}
+
 int SendChunkCount(int *send_chunk_count,
                    boost::mutex *mutex,
                    boost::condition_variable *cond_var) {
@@ -447,6 +469,14 @@ class MockClientRpcs : public ClientRpcs {
       const boost::int16_t &transport_id,
       AccountStatusRequest *account_status_request,
       AccountStatusResponse *account_status_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done));
+  MOCK_METHOD7(AmendAccount, void(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      AmendAccountRequest *amend_account_request,
+      AmendAccountResponse *amend_account_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done));
 };
@@ -2300,6 +2330,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
       few_account_holders.push_back(contact);
   }
 
+  // only one thread, so the RPCs are called in order
+  // (important for the expected averages)
   test_msm::ThreadedCallContainer tcc(1);
 
   // Set expectations
@@ -2382,6 +2414,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
   ASSERT_EQ(static_cast<boost::uint64_t>(0), space_given);
   ASSERT_EQ(static_cast<boost::uint64_t>(0), space_taken);
 
+  ASSERT_EQ(12, msm.kKadStoreThreshold_) << "Adjust averages for modified K!";
+
   // Call 7 - initialised, diverse values in response
   printf(">> Call 7\n");
   ASSERT_EQ(kSuccess,
@@ -2447,6 +2481,91 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage) {
   MaidsafeStoreManager::GetFilteredAverage(values, &average, &n);
   ASSERT_EQ(static_cast<boost::uint64_t>(9000000000000015ll), average);
   ASSERT_EQ(static_cast<size_t>(4), n);
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AmendAccount) {
+  MockMsmKeyUnique msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+      new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
+  msm.client_rpcs_ = mock_rpcs;
+  ASSERT_TRUE(client_chunkstore_->is_initialised());
+
+  std::string account_name = crypto_.Hash(client_pmid_ + kAccount, "",
+      crypto::STRING_STRING, false);
+
+  // Set up data for calls to FindKNodes
+  std::vector<kad::Contact> account_holders, few_account_holders;
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
+    kad::Contact contact(crypto_.Hash(base::itos(i * i), "",
+        crypto::STRING_STRING, false), "192.168.10." + base::itos(i), 8000 + i,
+        "192.168.10." + base::itos(i), 8000 + i);
+    account_holders.push_back(contact);
+    if (i >= msm.kKadStoreThreshold_)
+      few_account_holders.push_back(contact);
+  }
+
+  // call RPCs from 4 threads
+  test_msm::ThreadedCallContainer tcc(4);
+
+  // Set expectations
+  EXPECT_CALL(msm, FindKNodes(account_name, testing::_))
+      .Times(6)
+      .WillOnce(DoAll(testing::SetArgumentPointee<1>(account_holders),
+          testing::Return(-1)))  // Call 1
+      .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_account_holders),
+          testing::Return(kSuccess)))  // Call 2
+      .WillRepeatedly(DoAll(testing::SetArgumentPointee<1>(account_holders),
+          testing::Return(kSuccess)));
+
+  // Account holder responses
+  for (int i = 0; i < kad::K; ++i) {
+    EXPECT_CALL(*mock_rpcs, AmendAccount(
+        EqualsContact(account_holders.at(i)),
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 3
+                boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
+                false, kAck, account_holders.at(i).node_id(), _1, _2))))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 4
+                boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
+                true, (i < msm.kKadStoreThreshold_ - 1 ? kAck : kNack),
+                account_holders.at(i).node_id(), _1, _2))))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 5
+                boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
+                true, kAck, (i < msm.kKadStoreThreshold_ - 1 ?
+                    account_holders.at(i).node_id() : "fail"), _1, _2))))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 6
+                boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
+                true, kAck, account_holders.at(i).node_id(), _1, _2))));
+  }
+
+  // Call 1 - FindKNodes fails
+  printf(">> Call 1\n");
+  ASSERT_EQ(kFindAccountHoldersError, msm.AmendAccount(1234));
+
+  // Call 2 - FindKNodes returns too few contacts
+  printf(">> Call 2\n");
+  ASSERT_EQ(kFindAccountHoldersError, msm.AmendAccount(1234));
+
+  // Call 3 - RPCs return uninitialised responses
+  printf(">> Call 3\n");
+  ASSERT_EQ(kRequestFailedConsensus, msm.AmendAccount(1234));
+
+  // Call 4 - five return with negative responses
+  printf(">> Call 4\n");
+  ASSERT_EQ(kRequestFailedConsensus, msm.AmendAccount(1234));
+
+  // Call 5 - five return with wrong PMIDs
+  printf(">> Call 5\n");
+  ASSERT_EQ(kRequestFailedConsensus, msm.AmendAccount(1234));
+
+  // Call 6 - successful amendment
+  printf(">> Call 6\n");
+  ASSERT_EQ(kSuccess, msm.AmendAccount(1234));
 }
 
 }  // namespace maidsafe

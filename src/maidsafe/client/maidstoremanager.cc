@@ -79,7 +79,8 @@ void DeletePacketTask::run() {
 }
 
 void AmendAccountTask::run() {
-  msm_->AmendAccount(space_offered_);
+  int result = msm_->AmendAccount(space_offered_);
+  // TODO(Team#) return result in callback
 }
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
@@ -2783,96 +2784,109 @@ bool MaidsafeStoreManager::NotDoneWithUploading() {
   }
 }
 
-void MaidsafeStoreManager::AmendAccount(const boost::uint64_t &space_offered) {
-  // TODO(Fraser#5#): 2009-12-21 - Consider repeating this until success or
-  //                               some max. no. of failures.
+int MaidsafeStoreManager::AmendAccount(const boost::uint64_t &space_offered) {
   // Set the account name
-  std::string non_hex_pmid = base::DecodeFromHex(ss_->Id(PMID));
-  std::string pmid_pub = ss_->PublicKey(PMID);
-  std::string pmid_pub_sig = ss_->SignedPublicKey(PMID);
-  std::string pmid_pri = ss_->PrivateKey(PMID);
+  std::string pmid = base::DecodeFromHex(ss_->Id(PMID));
+  std::string pub_key = ss_->PublicKey(PMID);
+  std::string pub_key_sig = ss_->SignedPublicKey(PMID);
+  std::string priv_key = ss_->PrivateKey(PMID);
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string account_name = co.Hash(non_hex_pmid + kAccount, "",
-      crypto::STRING_STRING, false);
+  std::string account_name = co.Hash(pmid + kAccount, "", crypto::STRING_STRING,
+                                     false);
+
   // Find the account holders
-  std::vector<kad::Contact> account_holders;
-  if (FindKNodes(account_name, &account_holders) != kSuccess)
-    return;
+  boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
+  int rslt = FindKNodes(account_name, &data->contacts);
+  if (rslt != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccount, Kad lookup failed -- error %i\n", rslt);
+#endif
+    return kFindAccountHoldersError;
+  }
+  if (data->contacts.size() < kKadStoreThreshold_) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccount, Kad lookup failed to find %u nodes; "
+           "found %u nodes.\n", kKadStoreThreshold_, data->contacts.size());
+#endif
+    return kFindAccountHoldersError;
+  }
+
   // Create the request
-  boost::shared_ptr<boost::condition_variable>
-      cond_var(new boost::condition_variable);
-  GenericConditionData cond_data(cond_var);
   AmendAccountRequest amend_account_request;
   amend_account_request.set_amendment_type(AmendAccountRequest::kSpaceOffered);
   SignedSize *mutable_signed_size = amend_account_request.mutable_signed_size();
   mutable_signed_size->set_data_size(space_offered);
-  mutable_signed_size->set_pmid(non_hex_pmid);
+  mutable_signed_size->set_pmid(pmid);
   mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(space_offered),
-      "", pmid_pri, crypto::STRING_STRING));
-  mutable_signed_size->set_public_key(pmid_pub);
-  mutable_signed_size->set_public_key_signature(pmid_pub_sig);
-  amend_account_request.set_account_pmid(non_hex_pmid);
-  std::vector<AmendAccountResponse> amend_account_responses;
-  for (boost::uint16_t i = 0; i < account_holders.size(); ++i) {
-    AmendAccountResponse amend_account_response;
-    amend_account_responses.push_back(amend_account_response);
+      "", priv_key, crypto::STRING_STRING));
+  mutable_signed_size->set_public_key(pub_key);
+  mutable_signed_size->set_public_key_signature(pub_key_sig);
+  amend_account_request.set_account_pmid(pmid);
+  for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
+    AmendAccountData::AmendAccountDataHolder holder(
+        data->contacts.at(i).node_id());
+    data->data_holders.push_back(holder);
   }
+
+  // lock the mutex here in case RPCs return before we wait on the condition
+  boost::mutex::scoped_lock lock(data->mutex);
+
   // Send the requests
-  boost::uint16_t rpcs_sent_count(amend_account_responses.size());
-  for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
-    google::protobuf::Closure* callback =
-        google::protobuf::NewCallback(&google::protobuf::DoNothing);
-    rpcprotocol::Controller controller;
-    client_rpcs_->AmendAccount(account_holders.at(i),
-        AddressIsLocal(account_holders.at(i)), udt_transport_.GetID(),
-        &amend_account_request, &amend_account_responses.at(i), &controller,
-        callback);
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &MaidsafeStoreManager::AmendAccountCallback, i, data);
+    client_rpcs_->AmendAccount(data->contacts.at(i),
+        AddressIsLocal(data->contacts.at(i)), udt_transport_.GetID(),
+        &amend_account_request, &data->data_holders.at(i).response,
+        data->data_holders.at(i).controller.get(), callback);
   }
-  boost::uint16_t successful_count(0);
-  boost::uint16_t failed_count(0);
-  // Once we've got enough successful replies, cancel the remaining RPCs (they
-  // should still succeed, we just won't handle the reply)
-//  while (successful_count < kKadStoreThreshold_ &&
-//         failed_count < kad::K - kKadStoreThreshold_ + 1 &&
-//         successful_count + failed_count < ref_holders.size()) {
-// TODO(Fraser#5#): 2009-10-13 - Preceding lines cause segfault on Unix due to
-// callbacks trying to lock destructed mutex - figure out why.
-  int timeout = 10000;  // milliseconds
-  int timeout_count = 0;
-  while ((successful_count + failed_count < rpcs_sent_count) &&
-         (timeout_count < timeout)) {
-    successful_count = 0;
-    failed_count = 0;
-    for (boost::uint16_t i = 0; i < rpcs_sent_count; ++i) {
-      boost::mutex::scoped_lock lock(cond_data.cond_mutex);
-      if (amend_account_responses.at(i).IsInitialized()) {
-        if (amend_account_responses.at(i).result() == kAck) {
-          ++successful_count;
-        } else {
-          ++failed_count;
-        }
-      } else {
-        break;
-      }
-    }
-    timeout_count += 10;
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-    if (timeout_count >= timeout)
-      printf("\n\n\n\n\n\n\nAmend Account TIMED OUT\n\n\n\n\n\n\n\n");
+
+  // wait for the RPCs to return or timeout, or enough positive responses
+  while (data->returned_count < data->contacts.size() &&
+         data->success_count < kKadStoreThreshold_) {
+    data->condition.wait(lock);
   }
-//  if (successful_count < kKadStoreThreshold_)
-//    retry?
-// Cancel outstanding RPCs
-// TODO(Fraser#5#): 2009-10-13 - Once preceding todo is resolved, reinstate
-// following code.  Bool store_iou_response_returned needs replaced with
-// three state flag, kPending, kReturned, kDone or similar.
-//  for (boost::uint16_t j = 0; j < results.size(); ++j) {
-//    if (!results.at(j)->store_iou_response_returned)
-//      channel_manager_.
-//          DeletePendingRequest(results.at(j)->controller->req_id());
-//  }
+
+  if (data->success_count < kKadStoreThreshold_) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccount, not enough positive responses received.\n");
+#endif
+    return kRequestFailedConsensus;
+  }
+
+  return kSuccess;
+}
+
+void MaidsafeStoreManager::AmendAccountCallback(
+    size_t index, boost::shared_ptr<AmendAccountData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  ++data->returned_count;
+  AmendAccountData::AmendAccountDataHolder &holder =
+      data->data_holders.at(index);
+  if (!holder.response.IsInitialized()) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccountCallback, response %u is uninitialised.\n",
+           index);
+#endif
+  } else if (holder.response.result() != kAck) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccountCallback, response %u has result %i.\n",
+           index, holder.response.result());
+#endif
+  } else if (holder.response.pmid() != holder.node_id) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccountCallback, response %u from %s has pmid %s.\n",
+           index, HexSubstr(holder.node_id).c_str(),
+           HexSubstr(holder.response.pmid()).c_str());
+#endif
+    // TODO(Fraser#5#): Send alert to holder.node_id's A/C holders
+  } else {
+    // everything OK
+    ++data->success_count;
+  }
+  data->condition.notify_one();
 }
 
 }  // namespace maidsafe

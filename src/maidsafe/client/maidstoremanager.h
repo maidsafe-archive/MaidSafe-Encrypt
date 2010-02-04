@@ -390,6 +390,31 @@ struct AccountStatusData {
   boost::uint16_t returned_count;
 };
 
+// This is used to hold the data required to perform a Kad lookup to get a group
+// of account holders, send each an AmendAccountRequest and assess the
+// responses.
+struct AmendAccountData {
+  struct AmendAccountDataHolder {
+    explicit AmendAccountDataHolder(const std::string &id)
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
+    std::string node_id;
+    AmendAccountResponse response;
+    boost::shared_ptr<rpcprotocol::Controller> controller;
+  };
+  explicit AmendAccountData()
+      : mutex(),
+        condition(),
+        contacts(),
+        data_holders(),
+        returned_count(0),
+        success_count(0) {}
+  boost::mutex mutex;
+  boost::condition_variable condition;
+  std::vector<kad::Contact> contacts;
+  std::vector<AmendAccountDataHolder> data_holders;
+  boost::uint16_t returned_count, success_count;
+};
+
 struct GenericConditionData {
  public:
   explicit GenericConditionData(boost::shared_ptr<boost::condition_variable> cv)
@@ -683,6 +708,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AmendAccount);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
 
   void AddStorePacketTask(const StoreData &store_data,
@@ -864,8 +890,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void DoNothingCallback(const std::string&) {}
   void PollVaultInfoCallback(const VaultStatusResponse *response,
                              base::callback_func_type cb);
-  void AmendAccount(const boost::uint64_t &space_offered);
-
+  int AmendAccount(const boost::uint64_t &space_offered);
+  void AmendAccountCallback(size_t index,
+                             boost::shared_ptr<AmendAccountData> data);
 //  void VaultContactInfoCallback(const std::string &ser_result,
 //                                base::callback_func_type cb);
   void SetLocalVaultOwnedCallback(
