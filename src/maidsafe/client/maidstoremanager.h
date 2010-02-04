@@ -334,15 +334,13 @@ struct AddToWatchListData {
 struct SendChunkData {
   SendChunkData(const StoreData &sd,
                 const kad::Contact &node,
-                bool node_local,
-                const StorePrepRequest &store_prep_req,
-                const StoreChunkRequest &store_chunk_req)
+                bool node_local)
       : store_data(sd),
         peer(node),
         local(node_local),
-        store_prep_request(store_prep_req),
+        store_prep_request(),
         store_prep_response(),
-        store_chunk_request(store_chunk_req),
+        store_chunk_request(),
         store_chunk_response(),
         controller(new rpcprotocol::Controller),
         attempt(0) {}
@@ -638,7 +636,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp);
-  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkPrep);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendPrepCallback);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkContent);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendContentCallback);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket);
@@ -659,18 +660,20 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Send RemoveFromWatchList requests to each of the k Chunk Info holders.
   void RemoveFromWatchList(const StoreData &store_data);
   // Returns the current status of the task and sets *task to the task if found.
-  virtual TaskStatus AssessTaskStatus(const StoreData &store_data,
+  virtual TaskStatus AssessTaskStatus(const std::string &data_name,
                                       StoreTaskType task_type,
                                       StoreTask *task);
   // Blocks until either we're online (returns true) or until task is cancelled
   // or finished (returns false)
   virtual bool WaitForOnline(const std::string &data_name,
                              const StoreTaskType &task_type);
+  // Assesses the task status and if task is still running, blocks until online.
+  // If the task is cancelled, this method stops the subtask in the
+  // task_handler_ and deletes the task if no subtasks remain.
+  bool AssessTaskAndOnlineStatus(const std::string &data_name,
+                                 const StoreTaskType &task_type);
   // Set up the requests needed to perform the store RPCs.
-  int GetStoreRequests(const StoreData &store_data,
-                       const std::string &recipient_id,
-                       StorePrepRequest *store_prep_request,
-                       StoreChunkRequest *store_chunk_request);
+  int GetStoreRequests(boost::shared_ptr<SendChunkData> send_chunk_data);
   // Set up the requests needed to perform the AddToWatchList RPCs.
   int GetAddToWatchListRequests(
       const StoreData &store_data,
@@ -704,9 +707,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Start process of storing a single copy of an individual chunk onto the net
   virtual int SendChunkPrep(const StoreData &store_data);
   void SendPrepCallback(boost::shared_ptr<SendChunkData> send_chunk_data);
-  int ValidatePrepResponse(const std::string &peer_node_id,
-                           const SignedSize &request_signed_size,
-                           StorePrepResponse *const store_prep_response);
+  virtual int ValidatePrepResponse(
+      const std::string &peer_node_id,
+      const SignedSize &request_signed_size,
+      StorePrepResponse *const store_prep_response);
   // Send the actual data content to the peer.
   virtual int SendChunkContent(
       boost::shared_ptr<SendChunkData> send_chunk_data);

@@ -41,20 +41,20 @@ class ClientRpcs {
       : transport_handler_(transport_handler),
         channel_manager_(channel_manager) {}
   virtual ~ClientRpcs() {}
-  void StorePrep(const kad::Contact &peer,
-                 bool local,
-                 const boost::int16_t &transport_id,
-                 StorePrepRequest *store_prep_request,
-                 StorePrepResponse *store_prep_response,
-                 rpcprotocol::Controller *controller,
-                 google::protobuf::Closure *done);
-  void StoreChunk(const kad::Contact &peer,
-                  bool local,
-                  const boost::int16_t &transport_id,
-                  StoreChunkRequest *store_chunk_request,
-                  StoreChunkResponse *store_chunk_response,
-                  rpcprotocol::Controller *controller,
-                  google::protobuf::Closure *done);
+  virtual void StorePrep(const kad::Contact &peer,
+                         bool local,
+                         const boost::int16_t &transport_id,
+                         StorePrepRequest *store_prep_request,
+                         StorePrepResponse *store_prep_response,
+                         rpcprotocol::Controller *controller,
+                         google::protobuf::Closure *done);
+  virtual void StoreChunk(const kad::Contact &peer,
+                          bool local,
+                          const boost::int16_t &transport_id,
+                          StoreChunkRequest *store_chunk_request,
+                          StoreChunkResponse *store_chunk_response,
+                          rpcprotocol::Controller *controller,
+                          google::protobuf::Closure *done);
   virtual void AddToWatchList(
       const kad::Contact &peer,
       bool local,

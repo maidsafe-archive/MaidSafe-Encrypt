@@ -152,6 +152,20 @@ int SendChunkCount(int *send_chunk_count,
   return 0;
 }
 
+void DelayedSetConnectionStatus(const int &status,
+                                const int &delay,
+                                maidsafe::SessionSingleton *ss) {
+  boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
+  ss->SetConnectionStatus(status);
+}
+
+void DelayedCancelTask(const std::string &chunkname,
+                       const int &delay,
+                       maidsafe::StoreTasksHandler *task_handler) {
+  boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
+  task_handler->CancelTask(chunkname, maidsafe::kStoreChunk);
+}
+
 void PacketOpCallback(const int &store_manager_result,
                       boost::mutex *mutex,
                       boost::condition_variable *cond_var,
@@ -294,6 +308,20 @@ class MockClientRpcs : public ClientRpcs {
   MockClientRpcs(transport::TransportHandler *transport_handler,
                  rpcprotocol::ChannelManager *channel_manager)
                      : ClientRpcs(transport_handler, channel_manager) {}
+  MOCK_METHOD7(StorePrep, void(const kad::Contact &peer,
+                               bool local,
+                               const boost::int16_t &transport_id,
+                               StorePrepRequest *store_prep_request,
+                               StorePrepResponse *store_prep_response,
+                               rpcprotocol::Controller *controller,
+                               google::protobuf::Closure *done));
+  MOCK_METHOD7(StoreChunk, void(const kad::Contact &peer,
+                                bool local,
+                                const boost::int16_t &transport_id,
+                                StoreChunkRequest *store_chunk_request,
+                                StoreChunkResponse *store_chunk_response,
+                                rpcprotocol::Controller *controller,
+                                google::protobuf::Closure *done));
   MOCK_METHOD7(AddToWatchList, void(
       const kad::Contact &peer,
       bool local,
@@ -452,9 +480,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
       testing::AllOf(testing::Field(&StoreData::non_hex_key, chunk_name),
                      testing::Field(&StoreData::dir_type, PRIVATE))))
           .Times(7)  // Calls 8 (4 times) & 9 (3 times)
-          .WillRepeatedly(testing::WithoutArgs(testing::Invoke(
-                boost::bind(&test_msm::SendChunkCount, &send_chunk_count,
-                &mutex, &cond_var))));
+          .WillRepeatedly(testing::InvokeWithoutArgs(boost::bind(
+              &test_msm::SendChunkCount, &send_chunk_count, &mutex,
+              &cond_var)));
 
   // Run test calls
   // Call 1 - FindKNodes returns failure
@@ -844,14 +872,17 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   MaidsafeStoreManager msm(client_chunkstore_);
   std::string recipient_id = crypto_.Hash("RecipientID", "",
       crypto::STRING_STRING, false);
-  StorePrepRequest store_prep_request;
-  StoreChunkRequest store_chunk_request;
   // Make chunk/packet names
   std::vector<std::string> names;
-  for (int i = 100; i < 117; ++i) {
+  for (int i = 100; i < 104; ++i) {
     std::string j(base::itos(i));
     names.push_back(crypto_.Hash(j, "", crypto::STRING_STRING, false));
   }
+  boost::shared_ptr<SendChunkData> send_chunk_data(
+      new SendChunkData(StoreData(), kad::Contact(recipient_id, "", 0), true));
+  StoreData &store_data = send_chunk_data->store_data;
+  StorePrepRequest &store_prep_request = send_chunk_data->store_prep_request;
+  StoreChunkRequest &store_chunk_request = send_chunk_data->store_chunk_request;
 
   // Check bad data - ensure existing parameters in requests are cleared
   store_prep_request.set_chunkname(names.at(0));
@@ -863,8 +894,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       &public_key_signature2, &private_key2);
   StoreData st_missing_name("", 10, (kHashable | kNormal), PRIVATE, "", key_id2,
       public_key2, public_key_signature2, private_key2);
-  ASSERT_EQ(kChunkNotInChunkstore, msm.GetStoreRequests(st_missing_name,
-      recipient_id, &store_prep_request, &store_chunk_request));
+  store_data = st_missing_name;
+  ASSERT_EQ(kChunkNotInChunkstore, msm.GetStoreRequests(send_chunk_data));
   ASSERT_EQ("", store_prep_request.chunkname());
   ASSERT_EQ("", store_chunk_request.chunkname());
 
@@ -894,8 +925,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       private_key3);
   ASSERT_EQ(kSuccess,
       client_chunkstore_->AddChunkToOutgoing(names.at(0), std::string("100")));
-  ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_private_share, recipient_id,
-      &store_prep_request, &store_chunk_request));
+  store_data = st_chunk_private_share;
+  ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
   std::string public_key_signature = crypto_.AsymSign(rsakp.public_key(), "",
       rsakp.private_key(), crypto::STRING_STRING);
   std::string request_signature = crypto_.AsymSign(crypto_.Hash(
@@ -930,8 +961,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       PUBLIC_SHARE, "", key_id4, public_key4, public_key_signature4,
       private_key4);
   client_chunkstore_->AddChunkToOutgoing(names.at(1), std::string("101"));
-  ASSERT_EQ(kGetRequestSigError, msm.GetStoreRequests(st_chunk_public_share_bad,
-      recipient_id, &store_prep_request, &store_chunk_request));
+  store_data = st_chunk_public_share_bad;
+  ASSERT_EQ(kGetRequestSigError, msm.GetStoreRequests(send_chunk_data));
   rsakp.GenerateKeys(kRsaKeySize);
   std::string anmpid_pri = rsakp.private_key();
   std::string anmpid_pub = rsakp.public_key();
@@ -955,8 +986,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   StoreData st_chunk_public_share_good(names.at(1), 3, (kHashable | kOutgoing),
       PUBLIC_SHARE, "", key_id4, public_key4, public_key_signature4,
       private_key4);
-  ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_public_share_good,
-      recipient_id, &store_prep_request, &store_chunk_request));
+  store_data = st_chunk_public_share_good;
+  ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
   request_signature = crypto_.AsymSign(crypto_.Hash(
       mpid_pub_sig + names.at(1) + recipient_id, "", crypto::STRING_STRING,
       false), "", mpid_pri, crypto::STRING_STRING);
@@ -987,8 +1018,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   StoreData st_chunk_anonymous(names.at(2), 3, (kHashable | kOutgoing),
       ANONYMOUS, "", key_id5, public_key5, public_key_signature5, private_key5);
   client_chunkstore_->AddChunkToOutgoing(names.at(2), std::string("102"));
-  ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_anonymous, recipient_id,
-      &store_prep_request, &store_chunk_request/*, &iou_done_request*/));
+  store_data = st_chunk_anonymous;
+  ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
 
   ASSERT_EQ(names.at(2), store_prep_request.chunkname());
   ASSERT_EQ(size_t(3), store_prep_request.signed_size().data_size());
@@ -1015,8 +1046,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   StoreData st_chunk_private(names.at(3), 3, (kHashable | kOutgoing), PRIVATE,
       "", key_id6, public_key6, public_key_signature6, private_key6);
   client_chunkstore_->AddChunkToOutgoing(names.at(3), std::string("103"));
-  ASSERT_EQ(kSuccess, msm.GetStoreRequests(st_chunk_private, recipient_id,
-      &store_prep_request, &store_chunk_request));
+  store_data = st_chunk_private;
+  ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
   request_signature = crypto_.AsymSign(crypto_.Hash(
       client_pmid_public_signature_ + names.at(3) + recipient_id, "",
       crypto::STRING_STRING, false), "", client_pmid_keys_.private_key(),
@@ -1056,8 +1087,6 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
   std::string peer_pmid = crypto_.Hash(peer_pmid_pub + peer_pmid_pub_signature,
       "", crypto::STRING_STRING, false);
   // Make request
-  StorePrepRequest store_prep_request;
-  StoreChunkRequest store_chunk_request;
   std::string chunk_value(base::RandomString(163));
   std::string chunk_name(crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
       false));
@@ -1065,8 +1094,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
       PRIVATE, "", client_pmid_, client_pmid_keys_.public_key(),
       client_pmid_public_signature_, client_pmid_keys_.private_key());
   client_chunkstore_->AddChunkToOutgoing(chunk_name, chunk_value);
-  ASSERT_EQ(kSuccess, msm.GetStoreRequests(store_data, peer_pmid,
-      &store_prep_request, &store_chunk_request));
+  boost::shared_ptr<SendChunkData> send_chunk_data(
+      new SendChunkData(store_data, kad::Contact(peer_pmid, "", 0), true));
+  ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
+  StorePrepRequest store_prep_request = send_chunk_data->store_prep_request;
+  StoreChunkRequest store_chunk_request = send_chunk_data->store_chunk_request;
   // Make proper response
   maidsafe_vault::VaultChunkStore
       vault_chunkstore(test_root_dir_ + "/VaultChunkstore", 999999, 0);
@@ -1156,11 +1188,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
       store_prep_request.signed_size(), &good_store_prep_response));
 }
 
-class MockMsmSendChunk : public MaidsafeStoreManager {
+class MockMsmSendChunkPrep : public MaidsafeStoreManager {
  public:
-  explicit MockMsmSendChunk(boost::shared_ptr<ChunkStore> cstore)
+  explicit MockMsmSendChunkPrep(boost::shared_ptr<ChunkStore> cstore)
       : MaidsafeStoreManager(cstore) {}
-  MOCK_METHOD3(AssessTaskStatus, TaskStatus(const StoreData &store_data,
+  MOCK_METHOD3(AssessTaskStatus, TaskStatus(const std::string &data_name,
                                             StoreTaskType task_type,
                                             StoreTask *task));
   MOCK_METHOD4(GetStorePeer, int(const float &ideal_rtt,
@@ -1169,27 +1201,11 @@ class MockMsmSendChunk : public MaidsafeStoreManager {
                                  bool *local));
   MOCK_METHOD2(WaitForOnline, bool(const std::string &data_name,
                                    const StoreTaskType &task_type));
-  MOCK_METHOD5(SendPrep, int(
-      const kad::Contact &peer,
-      bool local,
-      boost::shared_ptr<boost::condition_variable> cond_variable,
-      StorePrepRequest *store_prep_request,
-      StorePrepResponse *store_prep_response));
-  MOCK_METHOD4(SendContent, int(
-      const kad::Contact &peer,
-      bool local,
-      boost::shared_ptr<boost::condition_variable> cond_variable,
-      StoreChunkRequest *store_chunk_request));
-  MOCK_METHOD2(AddToWatchList, void(
-      const StoreData &store_data,
-      const StorePrepResponse &store_prep_response));
-  MOCK_METHOD3(SendPacket, void(const StoreData &store_data,
-                                     int *return_value,
-                                     GenericConditionData *generic_cond_data));
 };
 
-TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
-  MockMsmSendChunk msm(client_chunkstore_);
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkPrep) {
+  // Set up test data
+  MockMsmSendChunkPrep msm(client_chunkstore_);
   std::string chunkname = crypto_.Hash("ddd", "", crypto::STRING_STRING, false);
   std::string hex_chunkname = base::EncodeToHex(chunkname);
   client_chunkstore_->AddChunkToOutgoing(chunkname, std::string("ddd"));
@@ -1202,108 +1218,288 @@ TEST_F(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk) {
   kad::Contact peer(peername, "192.192.1.1", 9999);
   ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key,
       kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
-  StoreTask task(store_data.non_hex_key, kStoreChunk, store_data.size,
-      kMinChunkCopies, kMaxStoreFailures);  // For call 7
-  task.active_subtask_count_ = 1;  // For call 7
-  StoreTask task1(store_data.non_hex_key, kStoreChunk, store_data.size,
-      kMinChunkCopies, kMaxStoreFailures);  // For call 11
-  task1.success_count_ = 1;  // For call 11
-  StoreTask task2(store_data.non_hex_key, kStoreChunk, store_data.size,
-      kMinChunkCopies, kMaxStoreFailures);  // For call 12
-  task2.success_count_ = 2;  // For call 12
-  StoreTask task3(store_data.non_hex_key, kStoreChunk, store_data.size,
-      kMinChunkCopies, kMaxStoreFailures);  // For call 13
-  task3.success_count_ = 3;  // For call 13
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+
+  // Set up expectations
   EXPECT_CALL(msm, AssessTaskStatus(testing::_, kStoreChunk, testing::_))
-      .Times(21)
+      .Times(6)
       .WillOnce(testing::Return(kCompleted))  // Call 1
       .WillOnce(testing::Return(kCancelled))  // Call 2
       .WillOnce(testing::Return(kPending))  // Call 3
-      .WillOnce(testing::Return(kStarted))  // Call 4
-      .WillOnce(testing::Return(kStarted))  // Call 5
-      .WillOnce(testing::Return(kStarted))  // Call 6
-      .WillOnce(testing::Return(kCompleted))  // Call 6
-      .WillOnce(testing::Return(kStarted))  // Call 7
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task),
-          testing::Return(kCancelled)))  // Call 7
-      .WillOnce(testing::Return(kStarted))  // Call 8
-      .WillOnce(testing::Return(kStarted))  // Call 8
-      .WillOnce(testing::Return(kStarted))  // Call 9
-      .WillOnce(testing::Return(kStarted))  // Call 9
-      .WillOnce(testing::Return(kStarted))  // Call 10
-      .WillOnce(testing::Return(kStarted))  // Call 10
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task1),
-          testing::Return(kStarted)))  // Call 11
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task1),
-          testing::Return(kStarted)))  // Call 11
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task2),
-          testing::Return(kStarted)))  // Call 12
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task2),
-          testing::Return(kStarted)))  // Call 12
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task3),
-          testing::Return(kStarted)))  // Call 13
-      .WillOnce(DoAll(testing::SetArgumentPointee<2>(task3),
-          testing::Return(kStarted)));  // Call 13
-  EXPECT_CALL(msm, GetStorePeer(testing::_, testing::_, testing::_, testing::_))
-      .Times(11)
-      .WillOnce(testing::Return(kGetStorePeerError))  // Call 3
-      .WillRepeatedly(DoAll(testing::SetArgumentPointee<2>(peer),
-                            testing::Return(kSuccess)));
-  EXPECT_CALL(msm, WaitForOnline(chunkname, kStoreChunk))
-      .Times(18)
-      .WillOnce(testing::Return(false))  // Call 4
-      .WillOnce(testing::Return(true))  // Call 5
-      .WillOnce(testing::Return(true))  // Call 6
-      .WillOnce(testing::Return(true))  // Call 7
-      .WillOnce(testing::Return(true))  // Call 8
-      .WillOnce(testing::Return(false))  // Call 8
-      .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(msm, SendPrep(testing::_, testing::_, testing::_, testing::_,
-      testing::_))
-      .Times(9)
-      .WillOnce(testing::Return(kSendPrepFailure))  // Call 5
-      .WillRepeatedly(testing::Return(kSuccess));
-  EXPECT_CALL(msm, SendContent(testing::_, testing::_, testing::_, testing::_))
-      .Times(7)
-      .WillOnce(testing::Return(kSendContentFailure))  // Call 9
-      .WillOnce(testing::Return(kSendContentFailure))  // Call 9
-      .WillOnce(testing::Return(kSendContentFailure))  // Call 10
-      .WillRepeatedly(testing::Return(kSuccess));
+      .WillRepeatedly(testing::Return(kStarted));
 
-  ASSERT_EQ(kStoreAlreadyCompleted, msm.SendChunkPrep(store_data));  // Call 1
-  // The follwoing should cause the task to be removed
-  ASSERT_EQ(kStoreCancelled, msm.SendChunkPrep(store_data));  // Call 2
+  EXPECT_CALL(msm, GetStorePeer(testing::_, testing::_, testing::_, testing::_))
+      .WillOnce(testing::Return(kGetStorePeerError))  // Call 3
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(peer),  // Call 4
+                      testing::InvokeWithoutArgs(boost::bind(
+                          &StoreTasksHandler::DeleteTask, &msm.tasks_handler_,
+                          store_data.non_hex_key, kStoreChunk, ""))))
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(peer),
+                      testing::Return(kSuccess)))  // Call 5
+      .WillOnce(DoAll(testing::SetArgumentPointee<2>(peer),
+                      testing::Return(kSuccess)));  // Call 6
+
+  EXPECT_CALL(msm, WaitForOnline(chunkname, kStoreChunk))
+      .WillOnce(testing::Return(false))  // Call 5
+      .WillOnce(testing::Return(true));  // Call 6
+
+  // Run tests
+  // Call 1
+  ASSERT_EQ(kStoreCancelledOrDone, msm.SendChunkPrep(store_data));
+
+  // Call 2 - should cause the task to be removed
+  ASSERT_EQ(kStoreCancelledOrDone, msm.SendChunkPrep(store_data));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 3
   ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key,
       kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
-  ASSERT_EQ(kGetStorePeerError, msm.SendChunkPrep(store_data));  // Call 3
-  ASSERT_EQ(kTaskCancelledOffline, msm.SendChunkPrep(store_data));  // Call 4
-  ASSERT_EQ(kSendPrepFailure, msm.SendChunkPrep(store_data));  // Call 5
-  // The following implies the task is deleted - so delete the task and restart
-  ASSERT_EQ(kStoreAlreadyCompleted, msm.SendChunkPrep(store_data));  // Call 6
-  ASSERT_EQ(kSuccess, msm.tasks_handler_.DeleteTask(store_data.non_hex_key,
-      kStoreChunk, ""));
+  ASSERT_EQ(kGetStorePeerError, msm.SendChunkPrep(store_data));
+
+  // Call 4 - GetStorePeer call sneakily deletes the task before it's started
+  ASSERT_EQ(kSendChunkFailure, msm.SendChunkPrep(store_data));
+
+  // Call 5
   ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key,
       kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
-  // The following should cause the task to be removed
-  ASSERT_EQ(kStoreCancelled, msm.SendChunkPrep(store_data));  // Call 7
-  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
-  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.non_hex_key,
-      kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
+  ASSERT_EQ(kTaskCancelledOffline, msm.SendChunkPrep(store_data));
+
+  // Call 6
+  ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));
+}
+
+class MockMsmSendPrepCallback : public MaidsafeStoreManager {
+ public:
+  explicit MockMsmSendPrepCallback(boost::shared_ptr<ChunkStore> cstore)
+      : MaidsafeStoreManager(cstore) {}
+  MOCK_METHOD3(ValidatePrepResponse, int(
+      const std::string &peer_node_id,
+      const SignedSize &request_signed_size,
+      StorePrepResponse *const store_prep_response));
+  MOCK_METHOD1(SendChunkContent, int(
+      boost::shared_ptr<SendChunkData> send_chunk_data));
+};
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendPrepCallback) {
+  // Set up test data
+  MockMsmSendPrepCallback msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+      new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
+  msm.client_rpcs_ = mock_rpcs;
+  std::string chunkname = crypto_.Hash("eee", "", crypto::STRING_STRING, false);
+  std::string hex_chunkname = base::EncodeToHex(chunkname);
+  client_chunkstore_->AddChunkToOutgoing(chunkname, std::string("eee"));
+  std::string key_id, public_key, public_key_signature, private_key;
+  msm.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
+      &public_key_signature, &private_key);
+  StoreData store_data(chunkname, 3, (kHashable | kOutgoing), PRIVATE, "",
+      key_id, public_key, public_key_signature, private_key);
+  std::string peername = crypto_.Hash("peer", "", crypto::STRING_STRING, false);
+  kad::Contact peer(peername, "192.192.1.1", 9999);
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(chunkname, kStoreChunk,
+      store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
-  ASSERT_EQ(kTaskCancelledOffline, msm.SendChunkPrep(store_data));  // Call 8
-  ASSERT_EQ(kSendContentFailure, msm.SendChunkPrep(store_data));  // Call 9
-  ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));  // Call 10
-  ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));  // Call 11
-  ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));  // Call 12
-  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
-  // The follwoing should cause the task to be removed
-  ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));  // Call 13
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.StartSubTask(chunkname, kStoreChunk,
+      peer));
+  ASSERT_TRUE(msm.ss_->SetConnectionStatus(0));
+  boost::shared_ptr<SendChunkData>
+      send_chunk_data(new SendChunkData(store_data, peer, true));
+
+  // Set up expectations
+  EXPECT_CALL(msm, ValidatePrepResponse(peername, testing::_, testing::_))
+      .Times(5)
+      .WillOnce(testing::Return(kSuccess))  // Call 1
+      .WillRepeatedly(testing::Return(-1));
+
+  EXPECT_CALL(msm, SendChunkContent(testing::_));  // Call 1
+
+  EXPECT_CALL(*mock_rpcs, StorePrep(EqualsContact(peer), testing::_, testing::_,
+      testing::_, testing::_, testing::_, testing::_))
+          .Times(1);  // Call 2
+
+  // Run tests
+  // Call 1 - All OK
+  msm.SendPrepCallback(send_chunk_data);
+  StoreTask retrieved_task;
+  ASSERT_TRUE(msm.tasks_handler_.Task(chunkname, kStoreChunk, &retrieved_task));
+  ASSERT_EQ(boost::uint8_t(1), retrieved_task.active_subtask_count_);
+  ASSERT_EQ(1, send_chunk_data->attempt);
+
+  // Call 2 - Validation of store_contract fails and we're now offline.  Once
+  // online, task is still valid.
+  send_chunk_data->attempt = 0;
+  ASSERT_TRUE(msm.ss_->SetConnectionStatus(1));
+  boost::thread thr1(&test_msm::DelayedSetConnectionStatus, 0, 3000, msm.ss_);
+  msm.SendPrepCallback(send_chunk_data);
+  ASSERT_EQ(1, send_chunk_data->attempt);
+  ASSERT_TRUE(msm.tasks_handler_.Task(chunkname, kStoreChunk, &retrieved_task));
+  ASSERT_EQ(boost::uint8_t(1), retrieved_task.active_subtask_count_);
+
+  // Call 3 - Validation of store_contract fails and we're now offline.  Once
+  // online, task has been cancelled.
+  send_chunk_data->attempt = 0;
+  ASSERT_TRUE(msm.ss_->SetConnectionStatus(1));
+  boost::thread thr2(&test_msm::DelayedSetConnectionStatus, 0, 3000, msm.ss_);
+  boost::thread thr3(&test_msm::DelayedCancelTask, chunkname, 1500,
+      &msm.tasks_handler_);
+  msm.SendPrepCallback(send_chunk_data);
+  ASSERT_EQ(1, send_chunk_data->attempt);
+  ASSERT_FALSE(msm.tasks_handler_.Task(chunkname, kStoreChunk,
+               &retrieved_task));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 4 - Validation of store_contract fails and task has been cancelled.
+  send_chunk_data->attempt = 0;
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(chunkname, kStoreChunk,
+      store_data.size, kMinChunkCopies, 1));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.StartSubTask(chunkname, kStoreChunk,
+      peer));
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.CancelTask(store_data.non_hex_key,
+      kStoreChunk));
+  msm.SendPrepCallback(send_chunk_data);
+  ASSERT_EQ(1, send_chunk_data->attempt);
+  ASSERT_FALSE(msm.tasks_handler_.Task(chunkname, kStoreChunk,
+               &retrieved_task));
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 5 - Validation of store_contract fails on final attempt.
+  send_chunk_data->attempt = kMaxChunkStoreTries - 1;
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(chunkname, kStoreChunk,
+      store_data.size, kMinChunkCopies, 1));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.StartSubTask(chunkname, kStoreChunk,
+      peer));
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  msm.SendPrepCallback(send_chunk_data);
+  ASSERT_EQ(kMaxChunkStoreTries, send_chunk_data->attempt);
+  ASSERT_FALSE(msm.tasks_handler_.Task(chunkname, kStoreChunk,
+               &retrieved_task));
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkContent) {
+  MaidsafeStoreManager msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+      new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
+  msm.client_rpcs_ = mock_rpcs;
+  std::string chunkname = crypto_.Hash("fff", "", crypto::STRING_STRING, false);
+  std::string hex_chunkname = base::EncodeToHex(chunkname);
+  client_chunkstore_->AddChunkToOutgoing(chunkname, std::string("fff"));
+  std::string key_id, public_key, public_key_signature, private_key;
+  msm.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
+      &public_key_signature, &private_key);
+  StoreData store_data(chunkname, 3, (kHashable | kOutgoing), PRIVATE, "",
+      key_id, public_key, public_key_signature, private_key);
+  std::string peername = crypto_.Hash("peer", "", crypto::STRING_STRING, false);
+  kad::Contact peer(peername, "192.192.1.1", 9999);
+  ASSERT_TRUE(msm.ss_->SetConnectionStatus(0));
+  boost::shared_ptr<SendChunkData>
+      send_chunk_data(new SendChunkData(store_data, peer, true));
+
+  // Set up expectations
+  EXPECT_CALL(*mock_rpcs, StoreChunk(EqualsContact(peer), testing::_,
+      testing::_, testing::_, testing::_, testing::_, testing::_))
+          .Times(3);  // Calls 2, 3, & 5
+
+  // Run tests
+  // Call 1 - Task cancelled before sending RPC
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(chunkname, kStoreChunk,
+      store_data.size, kMinChunkCopies, 1));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.StartSubTask(chunkname, kStoreChunk,
+      peer));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.CancelTask(chunkname, kStoreChunk));
+  ASSERT_EQ(kStoreCancelledOrDone, msm.SendChunkContent(send_chunk_data));
+  StoreTask retrieved_task;
+  ASSERT_FALSE(msm.tasks_handler_.Task(chunkname, kStoreChunk,
+               &retrieved_task));
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 2 - SendChunkContent success
+  send_chunk_data->attempt = 0;
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(chunkname, kStoreChunk,
+      store_data.size, kMinChunkCopies, 1));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.StartSubTask(chunkname, kStoreChunk,
+      peer));
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  ASSERT_EQ(kSuccess, msm.SendChunkContent(send_chunk_data));
+  ASSERT_TRUE(msm.tasks_handler_.Task(chunkname, kStoreChunk, &retrieved_task));
+  ASSERT_EQ(boost::uint8_t(1), retrieved_task.active_subtask_count_);
+
+  // Call 3 - Callback with unitialised response - task still active
+  send_chunk_data->attempt = 0;
+  msm.SendContentCallback(send_chunk_data);
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  ASSERT_TRUE(msm.tasks_handler_.Task(chunkname, kStoreChunk, &retrieved_task));
+  ASSERT_EQ(boost::uint8_t(1), retrieved_task.active_subtask_count_);
+
+  // Call 4 - Callback with unitialised response - task cancelled
+  send_chunk_data->attempt = 0;
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.CancelTask(chunkname, kStoreChunk));
+  msm.SendContentCallback(send_chunk_data);
+  ASSERT_FALSE(msm.tasks_handler_.Task(chunkname, kStoreChunk,
+               &retrieved_task));
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 5 - Callback with wrong PMID - task still active
+  send_chunk_data->attempt = 0;
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(chunkname, kStoreChunk,
+      store_data.size, kMinChunkCopies, 1));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.StartSubTask(chunkname, kStoreChunk,
+      peer));
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  StoreChunkResponse &response = send_chunk_data->store_chunk_response;
+  response.set_result(kAck);
+  response.set_pmid(chunkname);
+  msm.SendContentCallback(send_chunk_data);
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  ASSERT_TRUE(msm.tasks_handler_.Task(chunkname, kStoreChunk, &retrieved_task));
+  ASSERT_EQ(boost::uint8_t(1), retrieved_task.active_subtask_count_);
+
+  // Call 6 - Callback with kNack - last attempt
+  send_chunk_data->attempt = kMaxChunkStoreTries - 1;
+  response.set_result(kNack);
+  response.set_pmid(peername);
+  msm.SendContentCallback(send_chunk_data);
+  ASSERT_FALSE(msm.tasks_handler_.Task(chunkname, kStoreChunk,
+               &retrieved_task));
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 7 - Callback OK - only one chunk copy required
+  send_chunk_data->attempt = 0;
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(chunkname, kStoreChunk,
+      store_data.size, 1, 1));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.StartSubTask(chunkname, kStoreChunk,
+      peer));
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  response.set_result(kAck);
+  msm.SendContentCallback(send_chunk_data);
+  ASSERT_FALSE(msm.tasks_handler_.Task(chunkname, kStoreChunk,
+               &retrieved_task));
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+  ChunkType chunk_type = msm.client_chunkstore_->chunk_type(chunkname);
+  ASSERT_EQ((kHashable | kNormal), chunk_type);
+
+  // Call 8 - Callback OK - kMinChunkCopies required
+  send_chunk_data->attempt = 0;
+  ChunkType new_type = chunk_type ^ (kOutgoing | kNormal);
+  ASSERT_EQ(kSuccess, client_chunkstore_->ChangeChunkType(chunkname, new_type));
+  ASSERT_EQ((kHashable | kOutgoing),
+            msm.client_chunkstore_->chunk_type(chunkname));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(chunkname, kStoreChunk,
+      store_data.size, kMinChunkCopies, 1));
+  ASSERT_EQ(kSuccess, msm.tasks_handler_.StartSubTask(chunkname, kStoreChunk,
+      peer));
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  response.set_result(kAck);
+  msm.SendContentCallback(send_chunk_data);
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  ASSERT_TRUE(msm.tasks_handler_.Task(chunkname, kStoreChunk, &retrieved_task));
+  ASSERT_EQ(boost::uint8_t(0), retrieved_task.active_subtask_count_);
+  ASSERT_EQ(boost::uint8_t(1), retrieved_task.success_count_);
+  ASSERT_EQ((kHashable | kNormal),
+            msm.client_chunkstore_->chunk_type(chunkname));
 }
 
 class MockMsmStoreLoadPacket : public MaidsafeStoreManager {

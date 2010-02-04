@@ -114,8 +114,8 @@ enum ReturnCode {
   kSendPrepInvalidResponseSignature = -7015,
   kSendPrepInvalidContractSignature = -7016,
   kSendContentFailure = -7017,
-  kStoreAlreadyCompleted = -7018,
-  kStoreCancelled = -7019,
+
+  kStoreCancelledOrDone = -7019,
   kSendChunkFailure = -7020,
   kTaskCancelledOffline = -7021,
   kFindNodesError = -7022,
