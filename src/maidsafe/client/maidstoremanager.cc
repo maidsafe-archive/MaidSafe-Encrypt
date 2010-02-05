@@ -654,6 +654,9 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
   *space_given = 0;
   *space_taken = 0;
 
+  if (ss_->ConnectionStatus() != 0)  // offline
+    return kTaskCancelledOffline;
+
   // Set the account name
   std::string pmid = base::DecodeFromHex(ss_->Id(PMID));
   std::string pub_key = ss_->PublicKey(PMID);
@@ -2785,6 +2788,9 @@ bool MaidsafeStoreManager::NotDoneWithUploading() {
 }
 
 int MaidsafeStoreManager::AmendAccount(const boost::uint64_t &space_offered) {
+  if (ss_->ConnectionStatus() != 0)  // offline
+    return kTaskCancelledOffline;
+
   // Set the account name
   std::string pmid = base::DecodeFromHex(ss_->Id(PMID));
   std::string pub_key = ss_->PublicKey(PMID);

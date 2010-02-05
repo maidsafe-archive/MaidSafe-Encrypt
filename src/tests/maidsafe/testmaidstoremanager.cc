@@ -2378,6 +2378,13 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
 
   boost::uint64_t space_offered, space_given, space_taken;
 
+  // Call 0 - not online
+  printf(">> Call 0\n");
+  ASSERT_TRUE(SessionSingleton::getInstance()->SetConnectionStatus(1));
+  ASSERT_EQ(kTaskCancelledOffline,
+            msm.GetAccountDetails(&space_offered, &space_given, &space_taken));
+  ASSERT_TRUE(SessionSingleton::getInstance()->SetConnectionStatus(0));
+
   // Call 1 - FindKNodes fails
   printf(">> Call 1\n");
   ASSERT_EQ(kFindAccountHoldersError,
@@ -2527,21 +2534,27 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AmendAccount) {
         testing::_,
         testing::_,
         testing::_))
-            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 3
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
-                false, kAck, account_holders.at(i).node_id(), _1, _2))))
-            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 4
+                false, kAck, account_holders.at(i).node_id(), _1, _2))))   // #3
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
                 true, (i < msm.kKadStoreThreshold_ - 1 ? kAck : kNack),
-                account_holders.at(i).node_id(), _1, _2))))
-            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 5
+                account_holders.at(i).node_id(), _1, _2))))            // Call 4
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
                 true, kAck, (i < msm.kKadStoreThreshold_ - 1 ?
-                    account_holders.at(i).node_id() : "fail"), _1, _2))))
-            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(         // Call 6
+                    account_holders.at(i).node_id() : "fail"), _1, _2))))  // #5
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
-                true, kAck, account_holders.at(i).node_id(), _1, _2))));
+                true, kAck, account_holders.at(i).node_id(), _1, _2))));   // #6
   }
+
+  // Call 0 - not online
+  printf(">> Call 0\n");
+  ASSERT_TRUE(SessionSingleton::getInstance()->SetConnectionStatus(1));
+  ASSERT_EQ(kTaskCancelledOffline, msm.AmendAccount(1234));
+  ASSERT_TRUE(SessionSingleton::getInstance()->SetConnectionStatus(0));
 
   // Call 1 - FindKNodes fails
   printf(">> Call 1\n");
