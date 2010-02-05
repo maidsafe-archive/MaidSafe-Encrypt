@@ -50,7 +50,7 @@ int KeyAtlas::AddKey(const int &packet_type,
                      const std::string &private_key,
                      const std::string &public_key,
                      const std::string &signed_public_key) {
-  KeyAtlasSet::iterator  it = key_ring_.find(packet_type);
+  KeyAtlasSet::iterator it = key_ring_.find(packet_type);
   if (it != key_ring_.end())
     key_ring_.erase(packet_type);
   std::string signed_pub_key = signed_public_key;
@@ -59,8 +59,10 @@ int KeyAtlas::AddKey(const int &packet_type,
                                   crypto::STRING_STRING);
   KeyAtlasRow kar(packet_type, packet_id, private_key, public_key,
                   signed_pub_key);
-  key_ring_.insert(kar);
-  return kSuccess;
+  std::pair<KeyAtlasSet::iterator, bool> p = key_ring_.insert(kar);
+  if (p.second)
+    return kSuccess;
+  return kKeyAtlasError;
 }
 
 std::string KeyAtlas::SearchKeyring(const int &packet_type,

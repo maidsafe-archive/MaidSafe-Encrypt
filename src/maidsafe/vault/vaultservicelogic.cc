@@ -28,6 +28,8 @@
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/online.h>
 
+#include <list>
+
 #include "maidsafe/maidsafevalidator.h"
 #include "maidsafe/vault/vaultrpc.h"
 

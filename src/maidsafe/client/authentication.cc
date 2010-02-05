@@ -496,12 +496,12 @@ int Authentication::ChangeUsername(std::string ser_da,
   old_user_params["PIN"] = ss_->Pin();
   old_user_params["rid"] = ss_->MidRid();
 
-  std::string packet_content;
+  std::vector<std::string> packet_content;
   int result = storemanager_->LoadPacket(tmidPacket->PacketName(
       &old_user_params), &packet_content);
   if (result != kSuccess || packet_content.empty())
     return kAuthenticationError;
-  std::string ser_tmid = packet_content;
+  std::string ser_tmid = packet_content[0];
   PacketParams rec_tmid = tmidPacket->GetData(ser_tmid, ss_->Password(),
     ss_->MidRid());
   std::string tmid_data = boost::any_cast<std::string>(rec_tmid["data"]);
@@ -611,12 +611,12 @@ int Authentication::ChangePin(std::string ser_da,
   old_user_params["PIN"] = ss_->Pin();
   old_user_params["rid"] = ss_->MidRid();
 
-  std::string packet_content;
+  std::vector<std::string> packet_content;
   int result = storemanager_->LoadPacket(tmidPacket->PacketName(
       &old_user_params), &packet_content);
   if (result != kSuccess || packet_content.empty())
     return kAuthenticationError;
-  std::string ser_tmid = packet_content;
+  std::string ser_tmid = packet_content[0];
   PacketParams rec_data = tmidPacket->GetData(ser_tmid,
     ss_->Password(), ss_->MidRid());
   std::string tmid_data = boost::any_cast<std::string>(rec_data["data"]);
@@ -731,13 +731,13 @@ bool Authentication::GetMid(const std::string &username,
   std::string mid_name = midPacket->PacketName(&params);
 
   std::string ser_packet;
-  std::string packet_content;
+  std::vector<std::string> packet_content;
   int result = storemanager_->LoadPacket(mid_name, &packet_content);
   if (result != kSuccess || packet_content.empty()) {
     delete midPacket;
     return false;
   }
-  ser_packet = packet_content;
+  ser_packet = packet_content[0];
   PacketParams info = midPacket->GetData(ser_packet, username, pin);
   // The key of mid_name clashed with another value that is not a mid
   // hence, it could not recover a valid mid but we can not return false
@@ -763,13 +763,13 @@ bool Authentication::GetSmid(const std::string &username,
     (PacketFactory::Factory(SMID));
   std::string smid_name = smidPacket->PacketName(&params);
   std::string ser_packet;
-  std::string packet_content;
+  std::vector<std::string> packet_content;
   int result = storemanager_->LoadPacket(smid_name, &packet_content);
   if (result != kSuccess || packet_content.empty()) {
     delete smidPacket;
     return false;
   }
-  ser_packet = packet_content;
+  ser_packet = packet_content[0];
   PacketParams info = smidPacket->GetData(ser_packet, username, pin);
   uint32_t rec_data = boost::any_cast<uint32_t>(info["data"]);
   if (rec_data != 0) {
@@ -793,7 +793,7 @@ void Authentication::GetUserTmid(bool smid) {
   params["PIN"] = ss_->Pin();
   params["rid"] = ss_->MidRid();
   std::string tmid_name = tmidPacket->PacketName(&params);
-  std::string packet_content;
+  std::vector<std::string> packet_content;
   int result = storemanager_->LoadPacket(tmid_name, &packet_content);
 // #ifdef DEBUG
 //    if (!load_res.ParseFromString(packet_content))
@@ -829,7 +829,7 @@ void Authentication::GetUserTmid(bool smid) {
       return;
     }
   }
-  tmid_content_ = packet_content;
+  tmid_content_ = packet_content[0];
 #ifdef DEBUG
   printf("Authentication::GetUserTmidCallback returning content result\n");
 #endif
@@ -842,12 +842,12 @@ int Authentication::PublicUsernamePublicKey(const std::string &public_username,
   MpidPacket *mpidPacket =
     static_cast<MpidPacket*>(PacketFactory::Factory(MPID));
 
-  std::string packet_content;
+  std::vector<std::string> packet_content;
   int result = storemanager_->LoadPacket(mpidPacket->PacketName(&params),
                                          &packet_content);
   if (result != kSuccess || packet_content.empty())
     return kUserDoesntExist;
-  std::string ser_generic_packet = packet_content;
+  std::string ser_generic_packet = packet_content[0];
   GenericPacket gp;
   if (!gp.ParseFromString(ser_generic_packet)) {
     return kAuthenticationError;  //  Packet corrupt
@@ -928,7 +928,8 @@ int Authentication::DeletePacket(const std::string &hex_packet_name,
   int result(kGeneralError);
   VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
                                     &mutex, &cond_var, &result);
-  storemanager_->DeletePacket(hex_packet_name, value, type, PRIVATE, "", func);
+  std::vector<std::string> values(1, value);
+  storemanager_->DeletePacket(hex_packet_name, values, type, PRIVATE, "", func);
   while (result == kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);

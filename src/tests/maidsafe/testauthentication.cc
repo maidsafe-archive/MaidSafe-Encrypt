@@ -621,10 +621,11 @@ TEST_F(AuthenticationTest, DISABLED_BEH_MAID_CreateMSIDPacket) {
   ASSERT_NE(empty_str, pub_key);
 
   // Check the packet exits
-  std::string packet_content;
+  std::vector<std::string> packet_content;
   ASSERT_EQ(kSuccess, sm->LoadPacket(msid_name, &packet_content));
+  ASSERT_EQ(size_t(1), packet_content.size());
   GenericPacket gp;
-  ASSERT_TRUE(gp.ParseFromString(packet_content));
+  ASSERT_TRUE(gp.ParseFromString(packet_content[0]));
 
   // Check packet is correct and signed
   ASSERT_EQ(pub_key, gp.data());

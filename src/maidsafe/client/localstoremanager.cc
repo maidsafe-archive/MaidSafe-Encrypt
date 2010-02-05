@@ -13,6 +13,8 @@
  */
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <maidsafe/signed_kadvalue.pb.h>
+
 #include <vector>
 
 #include "fs/filesystem.h"
@@ -66,9 +68,7 @@ void ExecCallbackVaultInfo(const base::callback_func_type &cb,
 
 LocalStoreManager::LocalStoreManager(
     boost::shared_ptr<ChunkStore> client_chunkstore)
-        : db_(),
-          vbph_(),
-          mutex_(),
+        : db_(), vbph_(), mutex_(),
           local_sm_dir_(file_system::FileSystem::LocalStoreManagerDir()),
           client_chunkstore_(client_chunkstore),
           ss_(SessionSingleton::getInstance()) {}
@@ -105,31 +105,25 @@ void LocalStoreManager::Close(base::callback_func_type cb, bool) {
   }
 }
 
-int LocalStoreManager::LoadChunk(const std::string &hex_chunk_name,
+int LocalStoreManager::LoadChunk(const std::string &chunk_name,
                                  std::string *data) {
-  return FindAndLoadChunk(hex_chunk_name, data);
+  return FindAndLoadChunk(chunk_name, data);
 }
 
-int LocalStoreManager::LoadPacket(const std::string &hex_key,
-                                  std::string *result) {
-  *result = GetValue_FromDB(hex_key);
-  return kSuccess;
-}
-
-void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,
+void LocalStoreManager::StoreChunk(const std::string &chunk_name,
                                    const DirType,
                                    const std::string&) {
 #ifdef DEBUG
 //  printf("LocalStoreManager::StoreChunk - %s\n",
 //          hex_chunk_name.substr(0, 10).c_str());
 #endif
+  std::string hex_chunk_name(base::EncodeToHex(chunk_name));
   fs::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / hex_chunk_name;
-  std::string non_hex = base::DecodeFromHex(hex_chunk_name);
-  client_chunkstore_->Store(non_hex, file_path);
+  client_chunkstore_->Store(chunk_name, file_path);
 
-  ChunkType type = client_chunkstore_->chunk_type(non_hex);
-  fs::path current = client_chunkstore_->GetChunkPath(non_hex, type, false);
+  ChunkType type = client_chunkstore_->chunk_type(chunk_name);
+  fs::path current = client_chunkstore_->GetChunkPath(chunk_name, type, false);
   try {
     if (!fs::exists(file_path)) {
       fs::copy_file(current, file_path);
@@ -140,17 +134,18 @@ void LocalStoreManager::StoreChunk(const std::string &hex_chunk_name,
   }
   // Move chunk from Outgoing to Normal.
   ChunkType chunk_type =
-      client_chunkstore_->chunk_type(non_hex);
+      client_chunkstore_->chunk_type(chunk_name);
   ChunkType new_type = chunk_type ^ (kOutgoing | kNormal);
-  if (client_chunkstore_->ChangeChunkType(non_hex, new_type) != 0) {
+  if (client_chunkstore_->ChangeChunkType(chunk_name, new_type) != 0) {
 #ifdef DEBUG
     printf("In LocalStoreManager::SendContent, failed to change chunk type.\n");
 #endif
   }
 }
 
-bool LocalStoreManager::KeyUnique(const std::string &hex_key, bool) {
+bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
   bool result = false;
+  std::string hex_key(base::EncodeToHex(key));
   try {
     boost::mutex::scoped_lock loch(mutex_);
     std::string s = "select * from network where key='" + hex_key;
@@ -170,6 +165,7 @@ bool LocalStoreManager::KeyUnique(const std::string &hex_key, bool) {
   }
   return result;
 }
+
 /*
 int LocalStoreManager::DeletePacket(const std::string &hex_key,
                                     const std::string &signature,
@@ -282,70 +278,256 @@ int LocalStoreManager::DeletePacket(const std::string &hex_key,
 }
 
 */
-void LocalStoreManager::DeletePacket(const std::string &hex_packet_name,
-                                     const std::string &value,
-                                     PacketType system_packet_type,
-                                     DirType dir_type,
-                                     const std::string &msid,
-                                     const VoidFuncOneInt &cb) {
+
+int LocalStoreManager::LoadPacket(const std::string &key,
+                                  std::vector<std::string> *results) {
+  return GetValue_FromDB(key, results);
 }
 
-void LocalStoreManager::DeletePacket(const std::string &hex_packet_name,
-                                     PacketType system_packet_type,
-                                     DirType dir_type,
-                                     const std::string &msid,
-                                     const VoidFuncOneInt &cb) {
-}
-
-void LocalStoreManager::DeletePacket(const std::string &hex_packet_name,
+void LocalStoreManager::DeletePacket(const std::string &packet_name,
                                      const std::vector<std::string> values,
-                                     PacketType system_packet_type,
-                                     DirType dir_type,
+                                     PacketType pt,
+                                     DirType dt,
                                      const std::string &msid,
                                      const VoidFuncOneInt &cb) {
+  std::string public_key;
+  SigningPublicKey(pt, dt, msid, &public_key);
+  if (public_key.empty()) {
+    cb(kNoPublicKeyToCheck);
+    return;
+  }
+
+  crypto::Crypto co;
+  for (size_t n = 0; n < values.size(); ++n) {
+    kad::SignedValue sv;
+    if (sv.ParseFromString(values[n])) {
+      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
+          crypto::STRING_STRING)) {
+        cb(kDeletePacketFailure);
+        return;
+      }
+    }
+  }
+  cb(DeletePacket_DeleteFromDb(packet_name, values, public_key));
 }
 
+int LocalStoreManager::DeletePacket_DeleteFromDb(
+    const std::string &key,
+    const std::vector<std::string> &values,
+    const std::string &public_key) {
+  std::string hex_key(base::EncodeToHex(key));
+  boost::mutex::scoped_lock loch(mutex_);
+  try {
+    std::string s("select value from network where key='" + hex_key + "';");
+    CppSQLite3Query q = db_.execQuery(s.c_str());
+    if (q.eof()) {
+#ifdef DEBUG
+      printf("LocalStoreManager::DeletePacket_DeleteFromDb - value not there "
+             "anyway.\n");
+#endif
+      return kSuccess;
+    } else {
+      kad::SignedValue ksv;
+      if (ksv.ParseFromString(q.getStringField(0))) {
+        crypto::Crypto co;
+        if (!co.AsymCheckSig(ksv.value(), ksv.value_signature(), public_key,
+            crypto::STRING_STRING)) {
+#ifdef DEBUG
+          printf("LocalStoreManager::DeletePacket_DeleteFromDb - current value "
+                 "failed validation.\n");
+#endif
+          return kDeletePacketFailure;
+        }
+      }
+    }
+  }
+  catch(CppSQLite3Exception &e1) {
+#ifdef DEBUG
+    printf("Error(%i): %s\n", e1.errorCode(),  e1.errorMessage());
+#endif
+    return -2;
+  }
 
-void LocalStoreManager::StorePacket(const std::string &hex_packet_name,
+  int deleted(values.size());
+  for (size_t n = 0; n < values.size(); ++n) {
+    try {
+      std::string hex_value(base::EncodeToHex(values[0]));
+      std::string s("delete from network where key='" + hex_key + "' "
+                    "and value='" + hex_value + "';");
+      int a = db_.execDML(s.c_str());
+      if (a < 2) {
+        --deleted;
+      } else {
+#ifdef DEBUG
+        printf("LocalStoreManager::DeletePacket_DeleteFromDb - value not there "
+               "anyway.\n");
+#endif
+        return kDeletePacketFailure;
+      }
+    }
+    catch(CppSQLite3Exception &e2) {
+#ifdef DEBUG
+      printf("Error(%i): %s\n", e2.errorCode(),  e2.errorMessage());
+#endif
+      return -2;
+    }
+  }
+
+  return kSuccess;
+}
+
+void LocalStoreManager::StorePacket(const std::string &packet_name,
                                     const std::string &value,
-                                    PacketType,
-                                    DirType,
-                                    const std::string&,
+                                    PacketType pt,
+                                    DirType dt,
+                                    const std::string& msid,
                                     IfPacketExists if_packet_exists,
                                     const VoidFuncOneInt &cb) {
-  int result = StorePacket_InsertToDb(hex_packet_name, value);
-  // TODO(Fraser#5#): 2010-01-26 - Fix logic to match MSM - actions vary
-  //                               depending on if_packet_exists value.
-  cb(-11111111);
-//  cb(result);
+  std::string public_key;
+  kad::SignedValue sv;
+  if (sv.ParseFromString(value)) {
+    SigningPublicKey(pt, dt, msid, &public_key);
+    if (public_key.empty()) {
+      cb(kNoPublicKeyToCheck);
+      return;
+    } else {
+      crypto::Crypto co;
+      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
+          crypto::STRING_STRING)) {
+        cb(kSendPacketFailure);
+        return;
+      }
+    }
+  }
+
+  std::vector<std::string> values;
+  int n = GetValue_FromDB(packet_name, &values);
+  if (n != kSuccess) {
+    cb(n);
+    return;
+  }
+  if (values.empty()) {
+    cb(StorePacket_InsertToDb(packet_name, value, public_key, false));
+  } else {
+    switch(if_packet_exists) {
+      case kDoNothingReturnFailure:
+          cb(kSendPacketFailure);
+          break;
+      case kDoNothingReturnSuccess:
+          cb(kSuccess);
+          break;
+      case kOverwrite:
+          cb(StorePacket_InsertToDb(packet_name, value, public_key, false));
+          break;
+      case kAppend:
+          cb(StorePacket_InsertToDb(packet_name, value, public_key, true));
+          break;
+    }
+  }
 }
 
-int LocalStoreManager::StorePacket_InsertToDb(const std::string &hex_key,
-                                              const std::string &value) {
+int LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
+                                              const std::string &value,
+                                              const std::string &public_key,
+                                              const bool &append) {
   try {
-    if (hex_key.length() != 2 * kKeySize) {
+    if (key.length() != kKeySize) {
       return kIncorrectKeySize;
     }
+    std::string hex_key = base::EncodeToHex(key);
     std::string s = "select value from network where key='" + hex_key + "';";
-    std::string enc_value;
     boost::mutex::scoped_lock loch(mutex_);
     CppSQLite3Query q = db_.execQuery(s.c_str());
-    CppSQLite3Buffer bufSQL;
-
-    enc_value = base::EncodeToHex(value);
-
     if (!q.eof()) {
-      std::string s1 = "delete from network where key='" + hex_key + "';";
-      CppSQLite3Query q = db_.execQuery(s1.c_str());
+      std::string dec_value = base::DecodeFromHex(q.getStringField(0));
+      kad::SignedValue sv;
+      if (sv.ParseFromString(dec_value)) {
+        crypto::Crypto co;
+        if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
+            crypto::STRING_STRING)) {
+#ifdef DEBUG
+          printf("LocalStoreManager::StorePacket_InsertToDb - "
+                 "Signature didn't validate.\n");
+#endif
+          return -2;
+        }
+      }
     }
-    bufSQL.format("insert into network values ('%s', %Q);", hex_key.c_str(),
-                  enc_value.c_str());
-    db_.execDML(bufSQL);
+
+    if (!append) {
+      s = "delete from network where key='" + hex_key + "';";
+      db_.execDML(s.c_str());
+    }
+
+    CppSQLite3Buffer bufSQL;
+    std::string hex_value = base::EncodeToHex(value);
+    s = "insert into network values ('" + hex_key + "', '" + hex_value + "');";
+    int a = db_.execDML(s.c_str());
+    if (a != 1) {
+#ifdef DEBUG
+          printf("LocalStoreManager::StorePacket_InsertToDb - "
+                 "Insert failed.\n");
+#endif
+      return -2;
+    }
     return 0;
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
-    std::cerr << e.errorCode() << "error:" << e.errorMessage() << std::endl;
+#ifdef DEBUG
+    printf("Error(%i): %s\n", e.errorCode(),  e.errorMessage());
+#endif
     return -2;
+  }
+}
+
+void LocalStoreManager::SigningPublicKey(PacketType packet_type,
+                                          DirType,
+                                          const std::string &,
+                                          std::string *public_key) {
+  public_key->clear();
+  switch (packet_type) {
+    case MID:
+    case ANMID:
+      *public_key = ss_->PublicKey(ANMID);
+      break;
+    case SMID:
+    case ANSMID:
+      *public_key = ss_->PublicKey(ANSMID);
+      break;
+    case TMID:
+    case ANTMID:
+      *public_key = ss_->PublicKey(ANTMID);
+      break;
+    case MPID:
+    case ANMPID:
+      *public_key = ss_->PublicKey(ANMPID);
+      break;
+      // TODO(Fraser#5#): 2010-01-29 - Uncomment below once auth.cc fixed (MAID
+      //                               should be signed by ANMAID, not self)
+//    case MAID:
+//    case ANMAID:
+//      *public_key = ss_->PublicKey(ANMAID);
+//      break;
+//    case PMID:
+//      *public_key = ss_->PublicKey(MAID);
+//      break;
+    case PMID:
+    case MAID:
+      *public_key = ss_->PublicKey(MAID);
+      break;
+// TODO(Dan#5#): 2010-02-03 - Dunno wtf with these as packets
+//    case MSID:
+//    case PD_DIR:
+//      GetChunkSignatureKeys(dir_type, msid, key_id, public_key,
+//                            public_key_sig, private_key);
+//      break;
+//    case BUFFER:
+//    case BUFFER_INFO:
+//    case BUFFER_MESSAGE:
+//      *public_key = ss->PublicKey(MPID);
+//      break;
+    default:
+      break;
   }
 }
 
@@ -369,7 +551,7 @@ int LocalStoreManager::CreateBP() {
   std::string bufferpacketname(BufferPacketName()), ser_packet;
 #ifdef DEBUG
   printf("LocalStoreManager::CreateBP - BP chunk(%s).\n",
-         bufferpacketname.substr(0, 10).c_str());
+         HexSubstr(bufferpacketname).c_str());
 #endif
   BufferPacket buffer_packet;
   GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
@@ -543,8 +725,9 @@ void LocalStoreManager::ContactInfo(const std::string &public_username,
 
 int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
                                         std::string *data) {
+  std::string hex_chunkname(base::EncodeToHex(chunkname));
   fs::path file_path(local_sm_dir_ + "/StoreChunks");
-  file_path = file_path / chunkname;
+  file_path = file_path / hex_chunkname;
   try {
     if (!fs::exists(file_path)) {
 #ifdef DEBUG
@@ -572,12 +755,14 @@ int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
 int LocalStoreManager::FlushDataIntoChunk(const std::string &chunkname,
                                           const std::string &data,
                                           const bool &overwrite) {
+  std::string hex_chunkname(base::EncodeToHex(chunkname));
   fs::path file_path(local_sm_dir_ + "/StoreChunks");
-  file_path = file_path / chunkname;
+  file_path = file_path / hex_chunkname;
   try {
     if (boost::filesystem::exists(file_path) && !overwrite) {
 #ifdef DEBUG
-      printf("This BP (%s) already exists\n.", chunkname.substr(0, 10).c_str());
+      printf("This BP (%s) already exists\n.",
+             hex_chunkname.substr(0, 10).c_str());
 #endif
       return -1;
     }
@@ -587,6 +772,9 @@ int LocalStoreManager::FlushDataIntoChunk(const std::string &chunkname,
     bp_file.close();
   }
   catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
     return -1;
   }
   return 0;
@@ -596,12 +784,11 @@ std::string LocalStoreManager::BufferPacketName() {
   return BufferPacketName(ss_->Id(MPID), ss_->PublicKey(MPID));
 }
 
-std::string LocalStoreManager::BufferPacketName(
-    const std::string &publicusername,
-    const std::string &public_key) {
+std::string LocalStoreManager::BufferPacketName(const std::string &pub_username,
+                                                const std::string &public_key) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  return co.Hash(publicusername + public_key, "", crypto::STRING_STRING, true);
+  return co.Hash(pub_username + public_key, "", crypto::STRING_STRING, false);
 }
 
 std::string LocalStoreManager::CreateMessage(const std::string &message,
@@ -635,23 +822,25 @@ std::string LocalStoreManager::CreateMessage(const std::string &message,
   return ser_gp;
 }
 
-std::string LocalStoreManager::GetValue_FromDB(const std::string &hex_key) {
-  CppSQLite3Binary blob;
-  std::string result;
+int LocalStoreManager::GetValue_FromDB(const std::string &key,
+                                       std::vector<std::string> *results) {
+  std::string hex_key = base::EncodeToHex(key);
   try {
     boost::mutex::scoped_lock loch(mutex_);
     std::string s = "select value from network where key='" + hex_key + "';";
     CppSQLite3Query q = db_.execQuery(s.c_str());
-    if (q.eof()) {
-      return result;
+    while (!q.eof()) {
+      results->push_back(base::DecodeFromHex(q.getStringField(0)));
+      q.nextRow();
     }
-    std::string val = q.fieldValue(static_cast<unsigned int>(0));
-    result = base::DecodeFromHex(val);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
-    return result;
+#ifdef DEBUG
+    printf("Error(%i): %s\n", e.errorCode(),  e.errorMessage());
+#endif
+    return -2;
   }
-  return result;
+  return kSuccess;
 }
 
 void LocalStoreManager::PollVaultInfo(base::callback_func_type cb) {
@@ -662,19 +851,18 @@ void LocalStoreManager::VaultContactInfo(base::callback_func_type cb) {
   boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
 }
 
-void LocalStoreManager::SetLocalVaultOwned(
-    const std::string &,
-    const std::string &pub_key,
-    const std::string &signed_pub_key,
-    const boost::uint32_t &,
-    const std::string &,
-    const boost::uint64_t &,
-    const SetLocalVaultOwnedFunctor &functor) {
+void LocalStoreManager::SetLocalVaultOwned(const std::string &,
+                                           const std::string &pub_key,
+                                           const std::string &signed_pub_key,
+                                           const boost::uint32_t &,
+                                           const std::string &,
+                                           const boost::uint64_t &,
+                                           const SetLocalVaultOwnedFunctor &f) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string pmid_name = co.Hash(pub_key + signed_pub_key, "",
                           crypto::STRING_STRING, false);
-  boost::thread thr(functor, OWNED_SUCCESS, pmid_name);
+  boost::thread thr(f, OWNED_SUCCESS, pmid_name);
 }
 
 void LocalStoreManager::LocalVaultOwned(const LocalVaultOwnedFunctor &functor) {

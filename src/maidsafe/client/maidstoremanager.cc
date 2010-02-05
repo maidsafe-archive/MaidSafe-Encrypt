@@ -365,16 +365,16 @@ int MaidsafeStoreManager::LoadChunk(const std::string &hex_chunk_name,
   }
 }
 
-int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
-                                     std::string *result) {
-  result->clear();
-  std::vector<std::string> results;
-  int retrn = LoadPacket(hex_packet_name, &results);
-  if (retrn != kSuccess)
-    return retrn;
-  *result = results.front();
-  return kSuccess;
-}
+//int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
+//                                     std::string *result) {
+//  result->clear();
+//  std::vector<std::string> results;
+//  int retrn = LoadPacket(hex_packet_name, &results);
+//  if (retrn != kSuccess)
+//    return retrn;
+//  *result = results.front();
+//  return kSuccess;
+//}
 
 int MaidsafeStoreManager::LoadPacket(const std::string &hex_packet_name,
                                      std::vector<std::string> *results) {

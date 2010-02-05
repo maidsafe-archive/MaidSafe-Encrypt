@@ -1739,8 +1739,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
   ++test_number;
   std::string returned_value("Fud");
   ASSERT_EQ(kSuccess,
-            msm.LoadPacket(hex_packet_names.at(test_number), &returned_value));
-  ASSERT_EQ(values.at(0), returned_value);
+            msm.LoadPacket(hex_packet_names.at(test_number), &returned_values));
+//  ASSERT_EQ(size_t(1), returned_values.size());
+  ASSERT_EQ(values.at(0), returned_values[0]);
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {

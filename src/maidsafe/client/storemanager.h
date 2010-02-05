@@ -71,7 +71,8 @@ class StoreManagerInterface {
                           const std::string &msid)=0;
 
   // Packets
-  virtual int LoadPacket(const std::string &hex_key, std::string *result)=0;
+  virtual int LoadPacket(const std::string &hex_key,
+                         std::vector<std::string> *results)=0;
   virtual void StorePacket(const std::string &hex_packet_name,
                            const std::string &value,
                            PacketType system_packet_type,
@@ -79,19 +80,7 @@ class StoreManagerInterface {
                            const std::string &msid,
                            IfPacketExists if_packet_exists,
                            const VoidFuncOneInt &cb)=0;
-  // Deletes a single k,v pair
-  virtual void DeletePacket(const std::string &hex_packet_name,
-                            const std::string &value,
-                            PacketType system_packet_type,
-                            DirType dir_type,
-                            const std::string &msid,
-                            const VoidFuncOneInt &cb)=0;
-  // Deletes all values for the specified key where values are currently unknown
-  virtual void DeletePacket(const std::string &hex_packet_name,
-                            PacketType system_packet_type,
-                            DirType dir_type,
-                            const std::string &msid,
-                            const VoidFuncOneInt &cb)=0;
+
   // Deletes all values for the specified key
   virtual void DeletePacket(const std::string &hex_packet_name,
                             const std::vector<std::string> values,

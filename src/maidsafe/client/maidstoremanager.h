@@ -555,7 +555,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    const VoidFuncOneInt &cb);
   int LoadChunk(const std::string &hex_chunk_name, std::string *data);
   // Loads the most recently stored value under the packet name
-  int LoadPacket(const std::string &hex_packet_name, std::string *result);
+//  int LoadPacket(const std::string &hex_packet_name, std::string *result);
   // Loads all values stored under the packet name (most recent first)
   int LoadPacket(const std::string &hex_packet_name,
                  std::vector<std::string> *results);

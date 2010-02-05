@@ -147,6 +147,7 @@ enum ReturnCode {
   kFindAccountHoldersError = -7048,
   kUploadCopiesPendingConsensus = -7049,
   kUploadCopiesFailedConsensus = -7050,
+  kNoPublicKeyToCheck = -7051,
 
   // Message Handler (-8000)
 

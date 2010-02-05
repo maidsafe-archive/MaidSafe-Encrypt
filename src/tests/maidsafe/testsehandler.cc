@@ -308,6 +308,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
   // Check the chunks are stored
   std::string ser_dm;
   ASSERT_EQ(0, dah->GetDataMap(rel_str, &ser_dm));
+  ASSERT_FALSE(ser_dm.empty());
   DataMap dm;
   ASSERT_TRUE(dm.ParseFromString(ser_dm));
 

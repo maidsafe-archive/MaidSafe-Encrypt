@@ -556,22 +556,22 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                          bool dm_encrypted,
                          bool overwrite) {
 #ifdef DEBUG
-  printf("SEHandler::DecryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)",
+  printf("SEHandler::DecryptDb - dir_path(%s) type(%i) encrypted(%i) key(%s)",
          dir_path.c_str(), dir_type, dm_encrypted, dir_key.c_str());
   printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm_, enc_dm_;
   // get dm from DHT
   if (ser_dm == "") {
-    std::string packet_content;
-    storem_->LoadPacket(dir_key, &packet_content);
-    enc_dm_ = packet_content;
-    if (enc_dm_ == "") {
+    std::vector<std::string> packet_content;
+    int result = storem_->LoadPacket(dir_key, &packet_content);
+    if (result != kSuccess || packet_content.empty()) {
 #ifdef DEBUG
-      printf("Enc dm is empty.\n");
+      printf("SEHandler::DecryptDb - Enc dm is empty.\n");
 #endif
       return -1;
     }
+    enc_dm_ = packet_content[0];
 #ifdef DEBUG
 //    std::string hex_dm = base::EncodeToHex(enc_dm_);
 //    printf("Searching dir_path(%s) and enc_dm_(%s) in uptodate_datamaps_\n",
@@ -582,7 +582,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 
     if (it != uptodate_datamaps_.end()) {
 #ifdef DEBUG
-      printf("SEHandler::DecryptDb: Found dir_path in set.\n");
+      printf("SEHandler::DecryptDb - Found dir_path in set.\n");
 #endif
       if (dm_encrypted) {
         if (it->second == enc_dm_) {

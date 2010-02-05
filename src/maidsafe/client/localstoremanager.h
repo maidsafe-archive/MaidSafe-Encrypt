@@ -52,7 +52,7 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual void CleanUpTransport() {}
   virtual void StopRvPing() {}
   virtual bool NotDoneWithUploading();
-  virtual bool KeyUnique(const std::string &hex_key, bool check_local);
+  virtual bool KeyUnique(const std::string &key, bool check_local);
 
   // Chunks
   virtual int LoadChunk(const std::string &hex_chunk_name, std::string *data);
@@ -61,7 +61,8 @@ class LocalStoreManager : public StoreManagerInterface {
                           const std::string&);
 
   // Packets
-  virtual int LoadPacket(const std::string &hex_key, std::string *result);
+  virtual int LoadPacket(const std::string &hex_key,
+                         std::vector<std::string> *results);
   virtual void StorePacket(const std::string &hex_packet_name,
                            const std::string &value,
                            PacketType system_packet_type,
@@ -69,24 +70,11 @@ class LocalStoreManager : public StoreManagerInterface {
                            const std::string &msid,
                            IfPacketExists if_packet_exists,
                            const VoidFuncOneInt &cb);
-  // Deletes a single k,v pair
-  virtual void DeletePacket(const std::string &hex_packet_name,
-                            const std::string &value,
-                            PacketType system_packet_type,
-                            DirType dir_type,
-                            const std::string &msid,
-                            const VoidFuncOneInt &cb);
-  // Deletes all values for the specified key where values are currently unknown
-  virtual void DeletePacket(const std::string &hex_packet_name,
-                            PacketType system_packet_type,
-                            DirType dir_type,
-                            const std::string &msid,
-                            const VoidFuncOneInt &cb);
-  // Deletes all values for the specified key
-  virtual void DeletePacket(const std::string &hex_packet_name,
+// Deletes all values for the specified key
+  virtual void DeletePacket(const std::string &packet_name,
                             const std::vector<std::string> values,
-                            PacketType system_packet_type,
-                            DirType dir_type,
+                            PacketType pt,
+                            DirType dt,
                             const std::string &msid,
                             const VoidFuncOneInt &cb);
 
@@ -121,20 +109,22 @@ class LocalStoreManager : public StoreManagerInterface {
   FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_DeleteBPUsers);
   FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_MultipleBPMessages);
   FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_ModifyBPUserInfo);
+
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
-  CppSQLite3DB db_;
-  VaultBufferPacketHandler vbph_;
-  boost::mutex mutex_;
-  std::string local_sm_dir_;
-  boost::shared_ptr<ChunkStore> client_chunkstore_;
-  SessionSingleton *ss_;
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
-  int StorePacket_InsertToDb(const std::string &hex_key,
-                              const std::string &value);
-  std::string GetValue_FromDB(const std::string &hex_key);
+  int StorePacket_InsertToDb(const std::string &key,
+                             const std::string &value,
+                             const std::string &public_key,
+                             const bool &append);
+  int DeletePacket_DeleteFromDb(const std::string &key,
+                                const std::vector<std::string> &values,
+                                const std::string &public_key);
+  int GetValue_FromDB(const std::string &key,
+                      std::vector<std::string> *results);
   int FindAndLoadChunk(const std::string &chunkname, std::string *data);
-  int FlushDataIntoChunk(const std::string &chunkname, const std::string &data,
+  int FlushDataIntoChunk(const std::string &chunkname,
+                         const std::string &data,
                          const bool &overwrite);
   std::string BufferPacketName();
   std::string BufferPacketName(const std::string &publicusername,
@@ -143,6 +133,15 @@ class LocalStoreManager : public StoreManagerInterface {
                             const std::string &rec_public_key,
                             const MessageType &m_type,
                             const boost::uint32_t &timestamp);
+  void SigningPublicKey(PacketType packet_type, DirType dt,
+                        const std::string &msid, std::string *public_key);
+
+  CppSQLite3DB db_;
+  VaultBufferPacketHandler vbph_;
+  boost::mutex mutex_;
+  std::string local_sm_dir_;
+  boost::shared_ptr<ChunkStore> client_chunkstore_;
+  SessionSingleton *ss_;
 };
 
 }  // namespace maidsafe

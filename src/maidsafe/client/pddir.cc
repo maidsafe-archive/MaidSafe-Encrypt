@@ -233,7 +233,8 @@ bool PdDir::DataMapExists(const int &id) {
 
 bool PdDir::DataMapExists(const std::string &file_hash) {
   try {
-    std::string s = "select * from dm where file_hash='" + file_hash + "';";
+    std::string s = "select * from dm where file_hash='" +
+                    base::EncodeToHex(file_hash) + "';";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     return !q_dm.eof();
   }
@@ -318,9 +319,10 @@ int PdDir::AddElement(const std::string &ser_mdm,
       if (ser_dm != "") {
         CppSQLite3Statement stmt1 = db_->compileStatement(
             "insert into dm values(?,?,?);");
-        stmt1.bind(1, dm.file_hash().c_str());
+        stmt1.bind(1, base::EncodeToHex(dm.file_hash()).c_str());
         stmt1.bind(2, mdm.id());
-        stmt1.bind(3, ser_dm.c_str());
+        stmt1.bind(3, base::EncodeToHex(ser_dm).c_str());
+        // printf("aaaaaaaaaaaa %s\n", ser_dm.c_str());
         ins_dm = stmt1.execDML();
         stmt1.finalize();
       } else {
@@ -414,8 +416,8 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
 
     CppSQLite3Statement stmt1 = db_->compileStatement(
         "update dm set file_hash = ?, ser_dm = ? where id = ?;");
-    stmt1.bind(1, dm.file_hash().c_str());
-    stmt1.bind(2, ser_dm.c_str());
+    stmt1.bind(1, base::EncodeToHex(dm.file_hash()).c_str());
+    stmt1.bind(2, base::EncodeToHex(ser_dm).c_str());
     stmt1.bind(3, id);
     modified_elements = stmt1.execDML();
     stmt1.finalize();
@@ -544,13 +546,18 @@ int PdDir::ListSubDirs(std::vector<std::string> *subdirs_) {
 int PdDir::GetDataMapFromHash(const std::string &file_hash,
                               std::string *ser_dm) {
   try {
-    std::string s = "select ser_dm from dm where file_hash='" + file_hash +
-                    "';";
+    std::string s = "select ser_dm from dm where file_hash='" +
+                    base::EncodeToHex(file_hash) + "';";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     if (q_dm.eof()) {
+#ifdef DEBUG
+      printf("Couldn't find file.\n");
+#endif
+      *ser_dm = "";
       return kDBCantFindFile;
     } else {
-      *ser_dm = q_dm.fieldValue(static_cast<unsigned int>(0));
+      *ser_dm = base::DecodeFromHex(q_dm.fieldValue(
+                static_cast<unsigned int>(0)));
       return kSuccess;
     }
   }
@@ -571,9 +578,14 @@ int PdDir::GetDataMap(const std::string &file_name, std::string *ser_dm) {
     std::string s = "select ser_dm from dm where id=" + base::itos(id) + ";";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     if (q_dm.eof()) {
+#ifdef DEBUG
+      printf("Couldn't find file.\n");
+#endif
+      *ser_dm = "";
       return kDBCantFindFile;
     } else {
-      *ser_dm = q_dm.fieldValue(static_cast<unsigned int>(0));
+      *ser_dm = base::DecodeFromHex(q_dm.fieldValue(
+                static_cast<unsigned int>(0)));
       return kSuccess;
     }
   }
@@ -601,11 +613,15 @@ int PdDir::GetMetaDataMap(const std::string &file_name, std::string *ser_mdm) {
     if (q_dm.eof())
       file_hash = "";
     else
-      file_hash = q_dm.fieldValue(static_cast<unsigned int>(0));
+      file_hash = base::DecodeFromHex(q_dm.fieldValue(
+                  static_cast<unsigned int>(0)));
 
     s = "select * from mdm where id=" + base::itos(id) + ";";
     CppSQLite3Query q_mdm = db_->execQuery(s.c_str());
     if (q_mdm.eof()) {
+#ifdef DEBUG
+      printf("Couldn't find file.\n");
+#endif
       *ser_mdm = "";
       return kDBCantFindFile;
     } else {
