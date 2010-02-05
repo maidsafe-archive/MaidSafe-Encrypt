@@ -63,7 +63,7 @@ class ClientRpcs {
       AddToWatchListResponse *add_to_watch_list_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done);
-  void RemoveFromWatchList(
+  virtual void RemoveFromWatchList(
       const kad::Contact &peer,
       bool local,
       const boost::int16_t &transport_id,

@@ -483,7 +483,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &hex_chunk_name,
       new_type = chunk_type ^ (kOutgoing | kTempCache);
     else if (chunk_type & kCache)
       new_type = chunk_type ^ (kCache | kTempCache);
-    if (!new_type < 0 &&
+    if (!(new_type < 0) &&
         client_chunkstore_->ChangeChunkType(chunk_name, new_type) != kSuccess) {
   #ifdef DEBUG
       printf("In MSM::DeleteChunk, failed to change chunk type.\n");

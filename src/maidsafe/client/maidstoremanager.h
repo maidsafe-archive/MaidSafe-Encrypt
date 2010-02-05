@@ -675,6 +675,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendPrepCallback);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkContent);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendContentCallback);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket);

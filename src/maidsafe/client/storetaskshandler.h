@@ -200,6 +200,7 @@ class StoreTasksHandler {
   FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskDelete);
   FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelOne);
   FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelAll);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList);
   int DoAddTask(const StoreTask &task);
   boost::mutex mutex_;
   StoreTaskSet tasks_;

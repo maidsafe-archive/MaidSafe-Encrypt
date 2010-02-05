@@ -41,8 +41,8 @@ bool StoreTasksHandler::Task(const std::string &data_name,
   it = tasks_.equal_range(boost::make_tuple(data_name, task_type));
   if (it.first == it.second) {
 #ifdef DEBUG
-    printf("In StoreTasksHandler::Task, task not found (%s)\n",
-           HexSubstr(data_name).c_str());
+//    printf("In StoreTasksHandler::Task, task not found (%s)\n",
+//           HexSubstr(data_name).c_str());
 #endif
     StoreTask default_task;
     *task = default_task;
