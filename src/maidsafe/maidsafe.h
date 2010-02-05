@@ -50,8 +50,6 @@ const boost::uint32_t kMinRegularFileSize = 512;
 const boost::uint32_t kKeySize = 64;
 // const crypto::hashtype kHashSize(crypto::SHA_512);
 
-typedef boost::function<void (const int&)> VoidFuncOneInt;
-
 struct Key_Type {
   Key_Type() : package_type(), id(), private_key(), public_key() {}
   maidsafe::PacketType package_type;
@@ -341,9 +339,18 @@ enum ValueType {
 };
 
 enum SortingMode { ALPHA, RANK, LAST };
+
 enum ShareFilter { kAll, kRo, kAdmin };
 
+typedef boost::function<void (const maidsafe::ReturnCode&)> VoidFuncOneInt;
 }  // namespace maidsafe
+
+
+namespace maidsafe_vault {
+
+typedef boost::function<void (const maidsafe_vault::ReturnCode&)>
+    VoidFuncOneInt;
+}  // namespace maidsafe_vault
 
 inline std::string HexSubstr(const std::string &non_hex) {
   return (base::EncodeToHex(non_hex).substr(0, 10) + "...");

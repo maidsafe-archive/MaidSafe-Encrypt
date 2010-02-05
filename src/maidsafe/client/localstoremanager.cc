@@ -311,7 +311,7 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
   cb(DeletePacket_DeleteFromDb(packet_name, values, public_key));
 }
 
-int LocalStoreManager::DeletePacket_DeleteFromDb(
+ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
     const std::string &key,
     const std::vector<std::string> &values,
     const std::string &public_key) {
@@ -345,7 +345,7 @@ int LocalStoreManager::DeletePacket_DeleteFromDb(
 #ifdef DEBUG
     printf("Error(%i): %s\n", e1.errorCode(),  e1.errorMessage());
 #endif
-    return -2;
+    return kStoreManagerError;
   }
 
   int deleted(values.size());
@@ -369,7 +369,7 @@ int LocalStoreManager::DeletePacket_DeleteFromDb(
 #ifdef DEBUG
       printf("Error(%i): %s\n", e2.errorCode(),  e2.errorMessage());
 #endif
-      return -2;
+      return kStoreManagerError;
     }
   }
 
@@ -403,7 +403,7 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
   std::vector<std::string> values;
   int n = GetValue_FromDB(packet_name, &values);
   if (n != kSuccess) {
-    cb(n);
+    cb(kStoreManagerError);
     return;
   }
   if (values.empty()) {
@@ -426,10 +426,10 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
   }
 }
 
-int LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
-                                              const std::string &value,
-                                              const std::string &public_key,
-                                              const bool &append) {
+ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
+                                                     const std::string &value,
+                                                     const std::string &pub_key,
+                                                     const bool &append) {
   try {
     if (key.length() != kKeySize) {
       return kIncorrectKeySize;
@@ -443,13 +443,13 @@ int LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
       kad::SignedValue sv;
       if (sv.ParseFromString(dec_value)) {
         crypto::Crypto co;
-        if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
+        if (!co.AsymCheckSig(sv.value(), sv.value_signature(), pub_key,
             crypto::STRING_STRING)) {
 #ifdef DEBUG
           printf("LocalStoreManager::StorePacket_InsertToDb - "
                  "Signature didn't validate.\n");
 #endif
-          return -2;
+          return kStoreManagerError;
         }
       }
     }
@@ -468,15 +468,15 @@ int LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
           printf("LocalStoreManager::StorePacket_InsertToDb - "
                  "Insert failed.\n");
 #endif
-      return -2;
+      return kStoreManagerError;
     }
-    return 0;
+    return kSuccess;
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
 #ifdef DEBUG
     printf("Error(%i): %s\n", e.errorCode(),  e.errorMessage());
 #endif
-    return -2;
+    return kStoreManagerError;
   }
 }
 

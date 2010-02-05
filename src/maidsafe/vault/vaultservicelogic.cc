@@ -218,7 +218,7 @@ int VaultServiceLogic::FindKNodes(const std::string &kad_key,
   contacts->clear();
   boost::mutex mutex;
   boost::condition_variable cv;
-  int result(kVaultServiceError);
+  ReturnCode result(kVaultServiceError);
   FindCloseNodes(kad_key, boost::bind(
       &VaultServiceLogic::HandleFindKNodesResponse, this, _1, kad_key, contacts,
       &mutex, &cv, &result));
@@ -240,7 +240,7 @@ void VaultServiceLogic::HandleFindKNodesResponse(
     std::vector<kad::Contact> *contacts,
     boost::mutex *mutex,
     boost::condition_variable *cv,
-    int *result) {
+    ReturnCode *result) {
   if (contacts == NULL || mutex == NULL || cv == NULL || result == NULL) {
 #ifdef DEBUG
     printf("In VSL::HandleFindKNodesResponse, (%s) NULL pointer(s) passed.\n",
@@ -310,7 +310,7 @@ void VaultServiceLogic::AmendRemoteAccountStageTwo(
   // Handle result of Kad FindKNodes
   boost::mutex mutex;
   boost::condition_variable cv;
-  int result(kVaultServiceError);
+  ReturnCode result(kVaultServiceError);
   HandleFindKNodesResponse(find_nodes_response, data->account_name,
       &data->contacts, &mutex, &cv, &result);
   if (result != kSuccess) {
@@ -376,7 +376,7 @@ void VaultServiceLogic::AmendRemoteAccountStageThree(
     return;
   AmendRemoteAccountOpData::AmendRemoteAccountOpHolder
       *holder = &data->data_holders.at(index);
-  int result(kSuccess);
+  ReturnCode result(kSuccess);
   if (!holder->response.IsInitialized()) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccountStageThree (%s), response %u "

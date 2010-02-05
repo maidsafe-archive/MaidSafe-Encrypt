@@ -30,6 +30,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/transportudt.h>
 
+#include "fs/filesystem.h"
 #include "maidsafe/clientbufferpackethandler.h"
 
 using ::testing::_;
@@ -253,13 +254,17 @@ class MockBPH : public maidsafe::ClientBufferPacketHandler {
 
 class TestClientBP : public testing::Test {
  public:
-  TestClientBP() : trans_(NULL), trans_han_(NULL), ch_man_(NULL), knode_(),
-    BPMock(), keys_(), cb_(), test_dir_(""), kad_config_file_(""), cryp()  {
-    keys_.GenerateKeys(4096);
-    test_dir_ = std::string("KnodeTest") +
-        boost::lexical_cast<std::string>(base::random_32bit_uinteger());
-    kad_config_file_ = test_dir_ + std::string("/.kadconfig");
-  }
+  TestClientBP() : trans_(NULL),
+                   trans_han_(NULL),
+                   ch_man_(NULL),
+                   knode_(),
+                   BPMock(),
+                   keys_(),
+                   cb_(),
+                   test_dir_(file_system::FileSystem::TempDir() +
+                             "/maidsafe_TestClientBP_" + base::RandomString(6)),
+                   kad_config_file_(test_dir_ + "/.kadconfig"),
+                   cryp() {}
 
   ~TestClientBP() {
     transport::TransportUDT::CleanUp();
@@ -267,6 +272,7 @@ class TestClientBP : public testing::Test {
 
  protected:
   void SetUp() {
+    keys_.GenerateKeys(4096);
     trans_ = new transport::TransportUDT();
     trans_han_ = new transport::TransportHandler();
     boost::int16_t trans_id;

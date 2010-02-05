@@ -83,7 +83,7 @@ namespace maidsafe {
 class SEHandlerTest : public testing::Test {
  protected:
   SEHandlerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                                   "/maidsafe_TestSEH"),
+                        "/maidsafe_TestSEH_" + base::RandomString(6)),
                     client_chunkstore_(),
                     cb(),
                     db_str1_(""),

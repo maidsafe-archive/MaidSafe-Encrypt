@@ -41,8 +41,8 @@ bool StoreTasksHandler::Task(const std::string &data_name,
   it = tasks_.equal_range(boost::make_tuple(data_name, task_type));
   if (it.first == it.second) {
 #ifdef DEBUG
-    printf("In StoreTasksHandler::Task, task not found (%s)\n",
-           HexSubstr(data_name).c_str());
+//    printf("In StoreTasksHandler::Task, task not found (%s)\n",
+//           HexSubstr(data_name).c_str());
 #endif
     StoreTask default_task;
     *task = default_task;
@@ -67,7 +67,7 @@ int StoreTasksHandler::AddTask(const std::string &data_name,
                                const boost::uint64_t &data_size,
                                boost::uint8_t successes_required,
                                boost::uint8_t max_failures,
-                               const base::callback_func_type &callback) {
+                               const VoidFuncOneInt &callback) {
   StoreTask task(data_name, task_type, data_size, successes_required,
                  max_failures, callback);
   return DoAddTask(task);
@@ -181,7 +181,7 @@ int StoreTasksHandler::StopSubTask(const std::string &data_name,
 
 int StoreTasksHandler::DeleteTask(const std::string &data_name,
                                   const StoreTaskType &task_type,
-                                  const std::string &callback_argument) {
+                                  const ReturnCode &callback_argument) {
   boost::mutex::scoped_lock lock(mutex_);
   std::pair<StoreTaskSet::iterator, StoreTaskSet::iterator> it;
   it = tasks_.equal_range(boost::make_tuple(data_name, task_type));

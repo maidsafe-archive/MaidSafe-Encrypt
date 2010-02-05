@@ -302,9 +302,9 @@ struct DeletePacketData {
 };
 
 // This is used to hold the data required to perform a Kad lookup to get a
-// group of Chunk Info holders, send each an AddToWatchListRequest and
-// assess the responses.
-struct AddToWatchListData {
+// group of Chunk Info holders, send each an AddToWatchListRequest or
+// RemoveFromWatchListRequest and assess the responses.
+struct WatchListOpData {
   struct AddToWatchDataHolder {
     explicit AddToWatchDataHolder(const std::string &id)
         : node_id(id), response(), controller(new rpcprotocol::Controller) {}
@@ -312,19 +312,30 @@ struct AddToWatchListData {
     AddToWatchListResponse response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
-  explicit AddToWatchListData(const StoreData &sd)
+  struct RemoveFromWatchDataHolder {
+    explicit RemoveFromWatchDataHolder(const std::string &id)
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
+    std::string node_id;
+    RemoveFromWatchListResponse response;
+    boost::shared_ptr<rpcprotocol::Controller> controller;
+  };
+  explicit WatchListOpData(const StoreData &sd)
       : store_data(sd),
         mutex(),
         contacts(),
-        data_holders(),
+        add_to_watchlist_data_holders(),
+        remove_from_watchlist_data_holders(),
         returned_count(0),
+        successful_delete_count(0),
         required_upload_copies(),
         consensus_upload_copies(-1) {}
   StoreData store_data;
   boost::mutex mutex;
   std::vector<kad::Contact> contacts;
-  std::vector<AddToWatchDataHolder> data_holders;
+  std::vector<AddToWatchDataHolder> add_to_watchlist_data_holders;
+  std::vector<RemoveFromWatchDataHolder> remove_from_watchlist_data_holders;
   boost::uint16_t returned_count;
+  boost::uint16_t successful_delete_count;
   std::multiset<int> required_upload_copies;
   int consensus_upload_copies;
 };
@@ -334,15 +345,13 @@ struct AddToWatchListData {
 struct SendChunkData {
   SendChunkData(const StoreData &sd,
                 const kad::Contact &node,
-                bool node_local,
-                const StorePrepRequest &store_prep_req,
-                const StoreChunkRequest &store_chunk_req)
+                bool node_local)
       : store_data(sd),
         peer(node),
         local(node_local),
-        store_prep_request(store_prep_req),
+        store_prep_request(),
         store_prep_response(),
-        store_chunk_request(store_chunk_req),
+        store_chunk_request(),
         store_chunk_response(),
         controller(new rpcprotocol::Controller),
         attempt(0) {}
@@ -355,6 +364,55 @@ struct SendChunkData {
   StoreChunkResponse store_chunk_response;
   boost::shared_ptr<rpcprotocol::Controller> controller;
   boost::uint16_t attempt;
+};
+
+// This is used to hold the data required to perform a Kad lookup to get a group
+// of account holders, send each an AccountStatusRequest and assess the
+// responses.
+struct AccountStatusData {
+  struct AccountStatusDataHolder {
+    explicit AccountStatusDataHolder(const std::string &id)
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
+    std::string node_id;
+    AccountStatusResponse response;
+    boost::shared_ptr<rpcprotocol::Controller> controller;
+  };
+  explicit AccountStatusData()
+      : mutex(),
+        condition(),
+        contacts(),
+        data_holders(),
+        returned_count(0) {}
+  boost::mutex mutex;
+  boost::condition_variable condition;
+  std::vector<kad::Contact> contacts;
+  std::vector<AccountStatusDataHolder> data_holders;
+  boost::uint16_t returned_count;
+};
+
+// This is used to hold the data required to perform a Kad lookup to get a group
+// of account holders, send each an AmendAccountRequest and assess the
+// responses.
+struct AmendAccountData {
+  struct AmendAccountDataHolder {
+    explicit AmendAccountDataHolder(const std::string &id)
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
+    std::string node_id;
+    AmendAccountResponse response;
+    boost::shared_ptr<rpcprotocol::Controller> controller;
+  };
+  explicit AmendAccountData()
+      : mutex(),
+        condition(),
+        contacts(),
+        data_holders(),
+        returned_count(0),
+        success_count(0) {}
+  boost::mutex mutex;
+  boost::condition_variable condition;
+  std::vector<kad::Contact> contacts;
+  std::vector<AmendAccountDataHolder> data_holders;
+  boost::uint16_t returned_count, success_count;
 };
 
 struct GenericConditionData {
@@ -638,13 +696,20 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp);
-  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkPrep);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendPrepCallback);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkContent);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendContentCallback);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AmendAccount);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
 
   void AddStorePacketTask(const StoreData &store_data,
@@ -656,36 +721,48 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Assesses each AddToWatchListResponse and if consensus of required chunk
   // upload copies is achieved, begins new SendChunkCopyTask(s) if required.
   void AddToWatchListCallback(boost::uint16_t index,
-                              boost::shared_ptr<AddToWatchListData> data);
+                              boost::shared_ptr<WatchListOpData> data);
   // Assesses AddToWatchListResponses for consensus of required chunk upload
   // copies.  Returns < 0 if no consensus.  data->mutex should already be locked
   // by method calling this one for duration of this function.
-  int AssessUploadCounts(boost::shared_ptr<AddToWatchListData> data);
+  int AssessUploadCounts(boost::shared_ptr<WatchListOpData> data);
   // Send RemoveFromWatchList requests to each of the k Chunk Info holders.
   void RemoveFromWatchList(const StoreData &store_data);
+  // Assesses each RemoveFromWatchListResponse.
+  void RemoveFromWatchListCallback(boost::uint16_t index,
+                                   boost::shared_ptr<WatchListOpData> data);
+  void AccountStatusCallback(size_t index,
+                             boost::shared_ptr<AccountStatusData> data);
+  // Calculates the mean of only the values within sqrt(2) std devs from mean
+  // TODO(Team#) move to central place for global usage?
+  static void GetFilteredAverage(const std::vector<boost::uint64_t> &values,
+                                 boost::uint64_t *average,
+                                 size_t *n);
   // Returns the current status of the task and sets *task to the task if found.
-  virtual TaskStatus AssessTaskStatus(const StoreData &store_data,
+  virtual TaskStatus AssessTaskStatus(const std::string &data_name,
                                       StoreTaskType task_type,
                                       StoreTask *task);
   // Blocks until either we're online (returns true) or until task is cancelled
   // or finished (returns false)
   virtual bool WaitForOnline(const std::string &data_name,
                              const StoreTaskType &task_type);
+  // Assesses the task status and if task is still running, blocks until online.
+  // If the task is cancelled, this method stops the subtask in the
+  // task_handler_ and deletes the task if no subtasks remain.
+  bool AssessTaskAndOnlineStatus(const std::string &data_name,
+                                 const StoreTaskType &task_type);
   // Set up the requests needed to perform the store RPCs.
-  int GetStoreRequests(const StoreData &store_data,
-                       const std::string &recipient_id,
-                       StorePrepRequest *store_prep_request,
-                       StoreChunkRequest *store_chunk_request);
+  int GetStoreRequests(boost::shared_ptr<SendChunkData> send_chunk_data);
   // Set up the requests needed to perform the AddToWatchList RPCs.
   int GetAddToWatchListRequests(
       const StoreData &store_data,
       const std::vector<kad::Contact> &recipients,
       std::vector<AddToWatchListRequest> *add_to_watch_list_requests);
-  // Set up the request needed to perform the RemoveFromWatchList RPC.
-  int GetRemoveFromWatchListRequest(
+  // Set up the requests needed to perform the RemoveFromWatchList RPCs.
+  int GetRemoveFromWatchListRequests(
       const StoreData &store_data,
-      const std::string &recipient_id,
-      RemoveFromWatchListRequest *remove_from_watch_list_request);
+      const std::vector<kad::Contact> &recipients,
+      std::vector<RemoveFromWatchListRequest> *remove_from_watch_list_requests);
   // Get the request signature for a chunk / packet.
   void GetRequestSignature(const std::string &non_hex_name,
                            const DirType dir_type,
@@ -709,9 +786,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Start process of storing a single copy of an individual chunk onto the net
   virtual int SendChunkPrep(const StoreData &store_data);
   void SendPrepCallback(boost::shared_ptr<SendChunkData> send_chunk_data);
-  int ValidatePrepResponse(const std::string &peer_node_id,
-                           const SignedSize &request_signed_size,
-                           StorePrepResponse *const store_prep_response);
+  virtual int ValidatePrepResponse(
+      const std::string &peer_node_id,
+      const SignedSize &request_signed_size,
+      StorePrepResponse *const store_prep_response);
   // Send the actual data content to the peer.
   virtual int SendChunkContent(
       boost::shared_ptr<SendChunkData> send_chunk_data);
@@ -805,7 +883,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void OverwritePacket(boost::shared_ptr<StoreData> store_data,
                        const std::vector<std::string> &values);
   void OverwritePacketStageTwo(boost::shared_ptr<StoreData> store_data,
-                               const int &delete_result);
+                               const ReturnCode &delete_result);
   virtual void DeletePacketFromNet(
       boost::shared_ptr<DeletePacketData> delete_data);
   void DeletePacketCallback(const std::string &ser_kad_delete_result,
@@ -813,8 +891,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void DoNothingCallback(const std::string&) {}
   void PollVaultInfoCallback(const VaultStatusResponse *response,
                              base::callback_func_type cb);
-  void AmendAccount(const boost::uint64_t &space_offered);
-
+  int AmendAccount(const boost::uint64_t &space_offered);
+  void AmendAccountCallback(size_t index,
+                             boost::shared_ptr<AmendAccountData> data);
 //  void VaultContactInfoCallback(const std::string &ser_result,
 //                                base::callback_func_type cb);
   void SetLocalVaultOwnedCallback(

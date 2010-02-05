@@ -78,8 +78,8 @@ class VaultServicesTest : public testing::Test {
   protected:
     VaultServicesTest()
         : chunkstore_dir_(file_system::FileSystem::TempDir() +
-              "/maidsafe_TestVaultServices" +
-              base::itos_ul(base::random_32bit_uinteger()), fs::native),
+              "/maidsafe_TestVaultServices_" + base::RandomString(6),
+              fs::native),
           vault_pmid_(),
           vault_public_key_(),
           vault_private_key_(),

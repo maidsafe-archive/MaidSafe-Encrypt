@@ -41,20 +41,20 @@ class ClientRpcs {
       : transport_handler_(transport_handler),
         channel_manager_(channel_manager) {}
   virtual ~ClientRpcs() {}
-  void StorePrep(const kad::Contact &peer,
-                 bool local,
-                 const boost::int16_t &transport_id,
-                 StorePrepRequest *store_prep_request,
-                 StorePrepResponse *store_prep_response,
-                 rpcprotocol::Controller *controller,
-                 google::protobuf::Closure *done);
-  void StoreChunk(const kad::Contact &peer,
-                  bool local,
-                  const boost::int16_t &transport_id,
-                  StoreChunkRequest *store_chunk_request,
-                  StoreChunkResponse *store_chunk_response,
-                  rpcprotocol::Controller *controller,
-                  google::protobuf::Closure *done);
+  virtual void StorePrep(const kad::Contact &peer,
+                         bool local,
+                         const boost::int16_t &transport_id,
+                         StorePrepRequest *store_prep_request,
+                         StorePrepResponse *store_prep_response,
+                         rpcprotocol::Controller *controller,
+                         google::protobuf::Closure *done);
+  virtual void StoreChunk(const kad::Contact &peer,
+                          bool local,
+                          const boost::int16_t &transport_id,
+                          StoreChunkRequest *store_chunk_request,
+                          StoreChunkResponse *store_chunk_response,
+                          rpcprotocol::Controller *controller,
+                          google::protobuf::Closure *done);
   virtual void AddToWatchList(
       const kad::Contact &peer,
       bool local,
@@ -63,7 +63,7 @@ class ClientRpcs {
       AddToWatchListResponse *add_to_watch_list_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done);
-  void RemoveFromWatchList(
+  virtual void RemoveFromWatchList(
       const kad::Contact &peer,
       bool local,
       const boost::int16_t &transport_id,
@@ -71,20 +71,20 @@ class ClientRpcs {
       RemoveFromWatchListResponse *remove_from_watch_list_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done);
-  void AmendAccount(const kad::Contact &peer,
-                    bool local,
-                    const boost::int16_t &transport_id,
-                    AmendAccountRequest *amend_account_request,
-                    AmendAccountResponse *amend_account_response,
-                    rpcprotocol::Controller *controller,
-                    google::protobuf::Closure *done);
-  void AccountStatus(const kad::Contact &peer,
-                     bool local,
-                     const boost::int16_t &transport_id,
-                     AccountStatusRequest *account_status_request,
-                     AccountStatusResponse *account_status_response,
-                     rpcprotocol::Controller *controller,
-                     google::protobuf::Closure *done);
+  virtual void AmendAccount(const kad::Contact &peer,
+                            bool local,
+                            const boost::int16_t &transport_id,
+                            AmendAccountRequest *amend_account_request,
+                            AmendAccountResponse *amend_account_response,
+                            rpcprotocol::Controller *controller,
+                            google::protobuf::Closure *done);
+  virtual void AccountStatus(const kad::Contact &peer,
+                             bool local,
+                             const boost::int16_t &transport_id,
+                             AccountStatusRequest *account_status_request,
+                             AccountStatusResponse *account_status_response,
+                             rpcprotocol::Controller *controller,
+                             google::protobuf::Closure *done);
   void CheckChunk(const kad::Contact &peer,
                   bool local,
                   const boost::int16_t &transport_id,

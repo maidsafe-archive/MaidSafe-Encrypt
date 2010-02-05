@@ -113,13 +113,13 @@ class LocalStoreManager : public StoreManagerInterface {
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
-  int StorePacket_InsertToDb(const std::string &key,
-                             const std::string &value,
-                             const std::string &public_key,
-                             const bool &append);
-  int DeletePacket_DeleteFromDb(const std::string &key,
-                                const std::vector<std::string> &values,
-                                const std::string &public_key);
+  ReturnCode StorePacket_InsertToDb(const std::string &key,
+                                    const std::string &value,
+                                    const std::string &public_key,
+                                    const bool &append);
+  ReturnCode DeletePacket_DeleteFromDb(const std::string &key,
+                                       const std::vector<std::string> &values,
+                                       const std::string &public_key);
   int GetValue_FromDB(const std::string &key,
                       std::vector<std::string> *results);
   int FindAndLoadChunk(const std::string &chunkname, std::string *data);
