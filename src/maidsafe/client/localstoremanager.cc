@@ -143,6 +143,13 @@ void LocalStoreManager::StoreChunk(const std::string &chunk_name,
   }
 }
 
+int LocalStoreManager::DeleteChunk(const std::string &,
+                                   const boost::uint64_t &,
+                                   DirType,
+                                   const std::string &) {
+  return kGeneralError;
+}
+
 bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
   bool result = false;
   std::string hex_key(base::EncodeToHex(key));
@@ -279,19 +286,19 @@ int LocalStoreManager::DeletePacket(const std::string &hex_key,
 
 */
 
-int LocalStoreManager::LoadPacket(const std::string &key,
+int LocalStoreManager::LoadPacket(const std::string &packet_name,
                                   std::vector<std::string> *results) {
-  return GetValue_FromDB(key, results);
+  return GetValue_FromDB(packet_name, results);
 }
 
 void LocalStoreManager::DeletePacket(const std::string &packet_name,
                                      const std::vector<std::string> values,
-                                     PacketType pt,
-                                     DirType dt,
+                                     PacketType system_packet_type,
+                                     DirType dir_type,
                                      const std::string &msid,
                                      const VoidFuncOneInt &cb) {
   std::string public_key;
-  SigningPublicKey(pt, dt, msid, &public_key);
+  SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
   if (public_key.empty()) {
     cb(kNoPublicKeyToCheck);
     return;
@@ -341,7 +348,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
       }
     }
   }
-  catch(CppSQLite3Exception &e1) {
+  catch(CppSQLite3Exception &e1) {  // NOLINT (Fraser)
 #ifdef DEBUG
     printf("Error(%i): %s\n", e1.errorCode(),  e1.errorMessage());
 #endif
@@ -365,7 +372,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
         return kDeletePacketFailure;
       }
     }
-    catch(CppSQLite3Exception &e2) {
+    catch(CppSQLite3Exception &e2) {  // NOLINT (Fraser)
 #ifdef DEBUG
       printf("Error(%i): %s\n", e2.errorCode(),  e2.errorMessage());
 #endif
@@ -378,15 +385,15 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
 
 void LocalStoreManager::StorePacket(const std::string &packet_name,
                                     const std::string &value,
-                                    PacketType pt,
-                                    DirType dt,
+                                    PacketType system_packet_type,
+                                    DirType dir_type,
                                     const std::string& msid,
                                     IfPacketExists if_packet_exists,
                                     const VoidFuncOneInt &cb) {
   std::string public_key;
   kad::SignedValue sv;
   if (sv.ParseFromString(value)) {
-    SigningPublicKey(pt, dt, msid, &public_key);
+    SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
     if (public_key.empty()) {
       cb(kNoPublicKeyToCheck);
       return;
@@ -409,7 +416,7 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
   if (values.empty()) {
     cb(StorePacket_InsertToDb(packet_name, value, public_key, false));
   } else {
-    switch(if_packet_exists) {
+    switch (if_packet_exists) {
       case kDoNothingReturnFailure:
           cb(kSendPacketFailure);
           break;
@@ -481,9 +488,9 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
 }
 
 void LocalStoreManager::SigningPublicKey(PacketType packet_type,
-                                          DirType,
-                                          const std::string &,
-                                          std::string *public_key) {
+                                         DirType,
+                                         const std::string &,
+                                         std::string *public_key) {
   public_key->clear();
   switch (packet_type) {
     case MID:

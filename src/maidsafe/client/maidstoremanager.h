@@ -40,10 +40,8 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/bufferpacketrpc.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/clientbufferpackethandler.h"
-#include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/storemanager.h"
 #include "maidsafe/client/storetaskshandler.h"
 
@@ -60,6 +58,8 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
 }  // namespace testpdvault
 
 namespace maidsafe {
+
+class ClientRpcs;
 
 enum ChunkHolderStatus {
   kUnknown,
@@ -175,7 +175,7 @@ class BPCallbackObj {
 
 struct StoreData {
   // Default constructor
-  StoreData() : non_hex_key(),
+  StoreData() : data_name(),
                 value(),
                 size(0),
                 msid(),
@@ -189,7 +189,7 @@ struct StoreData {
                 if_packet_exists(kDoNothingReturnFailure),
                 callback() {}
   // Store chunk constructor
-  StoreData(const std::string &non_hex_chunk_name,
+  StoreData(const std::string &chunk_name,
             const boost::uint64_t &chunk_size,
             ChunkType ch_type,
             DirType directory_type,
@@ -198,7 +198,7 @@ struct StoreData {
             const std::string &pub_key,
             const std::string &pub_key_signature,
             const std::string &priv_key)
-                : non_hex_key(non_hex_chunk_name),
+                : data_name(chunk_name),
                   value(),
                   size(chunk_size),
                   msid(ms_id),
@@ -212,7 +212,7 @@ struct StoreData {
                   if_packet_exists(kDoNothingReturnFailure),
                   callback() {}
   // Store packet constructor
-  StoreData(const std::string &non_hex_packet_name,
+  StoreData(const std::string &packet_name,
             const std::string &packet_value,
             PacketType sys_packet_type,
             DirType directory_type,
@@ -223,7 +223,7 @@ struct StoreData {
             const std::string &priv_key,
             IfPacketExists if_exists,
             VoidFuncOneInt cb)
-                : non_hex_key(non_hex_packet_name),
+                : data_name(packet_name),
                   value(packet_value),
                   size(0),
                   msid(ms_id),
@@ -236,7 +236,7 @@ struct StoreData {
                   dir_type(directory_type),
                   if_packet_exists(if_exists),
                   callback(cb) {}
-  std::string non_hex_key, value;
+  std::string data_name, value;
   boost::uint64_t size;
   std::string msid, key_id, public_key, public_key_signature, private_key;
   ChunkType chunk_type;
@@ -248,7 +248,7 @@ struct StoreData {
 
 struct DeletePacketData {
  public:
-  DeletePacketData(const std::string &non_hex_name,
+  DeletePacketData(const std::string &name,
                    const std::vector<std::string> &packet_values,
                    PacketType sys_packet_type,
                    DirType directory_type,
@@ -258,7 +258,7 @@ struct DeletePacketData {
                    const std::string &pub_key_signature,
                    const std::string &priv_key,
                    VoidFuncOneInt cb)
-                       : non_hex_packet_name(non_hex_name),
+                       : packet_name(name),
                          values(packet_values),
                          msid(ms_id),
                          key_id(key),
@@ -276,7 +276,7 @@ struct DeletePacketData {
   DeletePacketData(boost::shared_ptr<StoreData> store_data,
                    const std::vector<std::string> &vals,
                    VoidFuncOneInt cb)
-                       : non_hex_packet_name(store_data->non_hex_key),
+                       : packet_name(store_data->data_name),
                          values(vals),
                          msid(store_data->msid),
                          key_id(store_data->key_id),
@@ -289,7 +289,7 @@ struct DeletePacketData {
                          mutex(),
                          returned_count(0),
                          called_back(false) {}
-  std::string non_hex_packet_name;
+  std::string packet_name;
   std::vector<std::string> values;
   std::string msid, key_id, public_key, public_key_signature, private_key;
   PacketType system_packet_type;
@@ -595,47 +595,32 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
   void StopRvPing() { transport_handler_.StopPingRendezvous(); }
-  bool KeyUnique(const std::string &hex_key, bool check_local);
+  bool KeyUnique(const std::string &key, bool check_local);
   bool NotDoneWithUploading();
   // Adds the chunk to the store queue.  It must already be in the chunkstore.
   // If the chunk already exists (stored locally or on the net) the function
   // succeeds.  The function returns as soon as the task is enqueued.
-  void StoreChunk(const std::string &hex_chunk_name,
+  void StoreChunk(const std::string &chunk_name,
                   DirType dir_type,
                   const std::string &msid);
   // Adds the packet to the priority store queue for uploading as a Kad k,v pair
-  void StorePacket(const std::string &hex_packet_name,
+  void StorePacket(const std::string &packet_name,
                    const std::string &value,
                    PacketType system_packet_type,
                    DirType dir_type,
                    const std::string &msid,
                    IfPacketExists if_packet_exists,
                    const VoidFuncOneInt &cb);
-  int LoadChunk(const std::string &hex_chunk_name, std::string *data);
-  // Loads the most recently stored value under the packet name
-//  int LoadPacket(const std::string &hex_packet_name, std::string *result);
-  // Loads all values stored under the packet name (most recent first)
-  int LoadPacket(const std::string &hex_packet_name,
+  int LoadChunk(const std::string &chunk_name, std::string *data);
+  // Loads all values stored under the packet name
+  int LoadPacket(const std::string &packet_name,
                  std::vector<std::string> *results);
-  int DeleteChunk(const std::string &hex_chunk_name,
+  int DeleteChunk(const std::string &chunk_name,
                   const boost::uint64_t &chunk_size,
                   DirType dir_type,
                   const std::string &msid);
-  // Deletes a single k,v pair
-  void DeletePacket(const std::string &hex_packet_name,
-                    const std::string &value,
-                    PacketType system_packet_type,
-                    DirType dir_type,
-                    const std::string &msid,
-                    const VoidFuncOneInt &cb);
-  // Deletes all values for the specified key where values are currently unknown
-  void DeletePacket(const std::string &hex_packet_name,
-                    PacketType system_packet_type,
-                    DirType dir_type,
-                    const std::string &msid,
-                    const VoidFuncOneInt &cb);
   // Deletes all values for the specified key
-  void DeletePacket(const std::string &hex_packet_name,
+  void DeletePacket(const std::string &packet_name,
                     const std::vector<std::string> values,
                     PacketType system_packet_type,
                     DirType dir_type,
@@ -731,8 +716,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Assesses each RemoveFromWatchListResponse.
   void RemoveFromWatchListCallback(boost::uint16_t index,
                                    boost::shared_ptr<WatchListOpData> data);
-  void AccountStatusCallback(size_t index,
-                             boost::shared_ptr<AccountStatusData> data);
+  void AccountStatusCallback(boost::shared_ptr<AccountStatusData> data);
   // Calculates the mean of only the values within sqrt(2) std devs from mean
   // TODO(Team#) move to central place for global usage?
   static void GetFilteredAverage(const std::vector<boost::uint64_t> &values,
@@ -764,7 +748,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const std::vector<kad::Contact> &recipients,
       std::vector<RemoveFromWatchListRequest> *remove_from_watch_list_requests);
   // Get the request signature for a chunk / packet.
-  void GetRequestSignature(const std::string &non_hex_name,
+  void GetRequestSignature(const std::string &name,
                            const DirType dir_type,
                            const std::string &recipient_id,
                            const std::string &public_key,
@@ -862,14 +846,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    std::string *serialised_get_messages_response,
                    boost::mutex *get_mutex);
   void GetChunkCallback(boost::mutex *mutex, bool *get_chunk_done);
-/*
-  // Non-blocking specialised version of the StorePacketToVaults method used to
-  // store encrypted PD dirs only.
-  int StorePdDirToVaults(const std::string &hex_packet_name,
-                         const std::string &value,
-                         DirType dir_type,
-                         const std::string &msid);
-*/
   virtual void FindCloseNodes(
       const std::vector<std::string> &packet_holder_ids,
       std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,

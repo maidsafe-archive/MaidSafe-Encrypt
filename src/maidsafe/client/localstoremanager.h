@@ -55,26 +55,30 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual bool KeyUnique(const std::string &key, bool check_local);
 
   // Chunks
-  virtual int LoadChunk(const std::string &hex_chunk_name, std::string *data);
-  virtual void StoreChunk(const std::string &hex_chunk_name,
+  virtual int LoadChunk(const std::string &chunk_name, std::string *data);
+  virtual void StoreChunk(const std::string &chunk_name,
                           const DirType,
-                          const std::string&);
+                          const std::string &msid);
+  virtual int DeleteChunk(const std::string &chunk_name,
+                          const boost::uint64_t &chunk_size,
+                          DirType dir_type,
+                          const std::string &msid);
 
   // Packets
-  virtual int LoadPacket(const std::string &hex_key,
+  virtual int LoadPacket(const std::string &packet_name,
                          std::vector<std::string> *results);
-  virtual void StorePacket(const std::string &hex_packet_name,
+  virtual void StorePacket(const std::string &packet_name,
                            const std::string &value,
                            PacketType system_packet_type,
                            DirType dir_type,
                            const std::string &msid,
                            IfPacketExists if_packet_exists,
                            const VoidFuncOneInt &cb);
-// Deletes all values for the specified key
+  // Deletes all values for the specified key
   virtual void DeletePacket(const std::string &packet_name,
                             const std::vector<std::string> values,
-                            PacketType pt,
-                            DirType dt,
+                            PacketType system_packet_type,
+                            DirType dir_type,
                             const std::string &msid,
                             const VoidFuncOneInt &cb);
 
