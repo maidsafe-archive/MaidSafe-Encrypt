@@ -632,7 +632,7 @@ TEST_F(AuthenticationTest, DISABLED_BEH_MAID_CreateMSIDPacket) {
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(), pub_key,
     crypto::STRING_STRING));
   ASSERT_EQ(co.Hash(pub_key + gp.signature(), "",
-            crypto::STRING_STRING, true), msid_name);
+            crypto::STRING_STRING, false), msid_name);
 }
 
 }  // namespace maidsafe

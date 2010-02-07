@@ -77,22 +77,17 @@ class Authentication {
   bool CheckUsername(const std::string &username);
   bool CheckPin(const std::string &pin);
   bool CheckPassword(const std::string &password);
-  int CreateSignedRequest(const std::string &private_key,
-                          const std::string &public_key,
-                          const std::string &hex_packet_name,
-                          std::string *signed_public_key,
-                          std::string *signed_request);
   bool GetMid(const std::string &username, const std::string &pin, int *rid);
   bool GetSmid(const std::string &smid_name,
                const std::string &pin,
                int *rid);
   void GetUserTmid(bool smid);
-  int StorePacket(const std::string &hex_packet_name,
+  int StorePacket(const std::string &packet_name,
                   const std::string &value,
                   const PacketType &type,
                   const IfPacketExists &if_exists);
   // Unneccessary, but more efficient/faster to pass packet's value here
-  int DeletePacket(const std::string &hex_packet_name,
+  int DeletePacket(const std::string &packet_name,
                    const std::string &value,
                    const PacketType &type);
   void PacketOpCallback(const int &store_manager_result,

@@ -205,6 +205,18 @@ void MaidsafeStoreManager::CleanUpTransport() {
   transport::TransportUDT::CleanUp();
 }
 
+int MaidsafeStoreManager::ValidateInputs(const std::string &name,
+                                         const PacketType &packet_type,
+                                         const DirType &dir_type) {
+  if (name.size() != kKeySize)
+    return kIncorrectKeySize;
+  if (packet_type < PacketType_MIN || packet_type > PacketType_MAX)
+    return kPacketUnknownType;
+  if (dir_type < ANONYMOUS || dir_type > PUBLIC_SHARE)
+    return kDirUnknownType;
+  return kSuccess;
+}
+
 void MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
                                       DirType dir_type,
                                       const std::string &msid) {
@@ -212,10 +224,10 @@ void MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
 //  printf("In MaidsafeStoreManager::StoreChunk (%i), chunk_name = %s\n",
 //         knode_->host_port(), HexSubstr(chunk_name).c_str());
 #endif
-  if (chunk_name.size() != kKeySize) {
+  int valid = ValidateInputs(chunk_name, PacketType_MIN, dir_type);
+  if (valid != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::StoreChunk (chunk %s), chunk_name.size() (%u) != kKeySize ("
-           "%u)\n", HexSubstr(chunk_name).c_str(), chunk_name.size(), kKeySize);
+    printf("In MSM::StoreChunk, invalid input.  Error %i\n", valid);
 #endif
     return;
   }
@@ -269,48 +281,23 @@ void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
 //  printf("In MaidsafeStoreManager::StorePacket (%i), packet_name = %s\n",
 //         knode_->host_port(), HexSubstr(packet_name).c_str());
 #endif
-  ReturnCode prep = kSuccess;
-  if (packet_name.size() != kKeySize) {
+  int valid = ValidateInputs(packet_name, system_packet_type, dir_type);
+  if (valid != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::StorePacket(pkt %s), packetname.size() (%u) != kKeySize (%u"
-           ")\n", HexSubstr(packet_name).c_str(), packet_name.size(), kKeySize);
+    printf("In MSM::StorePacket, invalid input.  Error %i\n", valid);
 #endif
-    prep = kIncorrectKeySize;
+    cb(static_cast<ReturnCode>(valid));
+    return;
   }
-  if (prep == kSuccess) {
-    std::string key_id, public_key, public_key_signature, private_key;
-    GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
-        &public_key, &public_key_signature, &private_key);
-    switch (system_packet_type) {
-      case MID:
-      case SMID:
-      case MSID:
-      case TMID:
-      case MPID:
-      case PMID:
-      case MAID:
-      case ANMID:
-      case ANSMID:
-      case ANTMID:
-      case ANMPID: {
-        boost::shared_ptr<StoreData> store_data(new StoreData(packet_name,
-            value, system_packet_type, dir_type, msid, key_id, public_key,
-            public_key_signature, private_key, if_packet_exists, cb));
-        // packet_thread_pool_ handles destruction of store_packet_task.
-        StorePacketTask *store_packet_task =
-            new StorePacketTask(store_data, this);
-        packet_thread_pool_.start(store_packet_task);
-        return;
-      }
-      case PD_DIR:
-//        StorePdDirToVaults(hex_packet_name, value, dir_type, msid);
-        return;
-      default:
-        prep = kPacketUnknownType;
-    }
-  }
-  if (prep != kSuccess)
-    cb(prep);
+  std::string key_id, public_key, public_key_signature, private_key;
+  GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
+      &public_key, &public_key_signature, &private_key);
+  boost::shared_ptr<StoreData> store_data(new StoreData(packet_name, value,
+      system_packet_type, dir_type, msid, key_id, public_key,
+      public_key_signature, private_key, if_packet_exists, cb));
+  // packet_thread_pool_ handles destruction of store_packet_task.
+  StorePacketTask *store_packet_task = new StorePacketTask(store_data, this);
+  packet_thread_pool_.start(store_packet_task);
 }
 
 int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
@@ -326,12 +313,12 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
     return kLoadChunkFailure;
   }
   data->clear();
-  if (chunk_name.size() != kKeySize) {
+  int valid = ValidateInputs(chunk_name, PacketType_MIN, PRIVATE);
+  if (valid != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::LoadChunk (chunk %s), chunk_name.size() (%u) != kKeySize ("
-           "%u)\n", HexSubstr(chunk_name).c_str(), chunk_name.size(), kKeySize);
+    printf("In MSM::LoadChunk, invalid input.  Error %i\n", valid);
 #endif
-    return kIncorrectKeySize;
+    return valid;
   }
   if (client_chunkstore_->Load(chunk_name, data) == kSuccess) {
 #ifdef DEBUG
@@ -406,14 +393,13 @@ int MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
     return kLoadPacketFailure;
   }
   results->clear();
-  if (packet_name.size() != kKeySize) {
+  int valid = ValidateInputs(packet_name, PacketType_MIN, PRIVATE);
+  if (valid != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::LoadPacket (pkt %s), packetname.size() (%u) != kKeySize (%u"
-           ")\n", HexSubstr(packet_name).c_str(), packet_name.size(), kKeySize);
+    printf("In MSM::LoadPacket, invalid input.  Error %i\n", valid);
 #endif
-    return kIncorrectKeySize;
+    return valid;
   }
-
   kad::ContactInfo cache_holder;
   std::string needs_cache_copy_id;
   for (int attempt = 0; attempt < kMaxChunkLoadRetries; ++attempt) {
@@ -444,14 +430,13 @@ bool MaidsafeStoreManager::KeyUnique(const std::string &key, bool check_local) {
 //  printf("In MaidsafeStoreManager::KeyUnique (%i), key = %s\n",
 //         knode_->host_port(), HexSubstr(key).c_str());
 #endif
-  if (key.size() != kKeySize) {
+  int valid = ValidateInputs(key, PacketType_MIN, PRIVATE);
+  if (valid != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::KeyUnique (key %s), key.size() (%u) != kKeySize (%u)\n",
-           HexSubstr(key).c_str(), key.size(), kKeySize);
+    printf("In MSM::KeyUnique, invalid input.  Error %i\n", valid);
 #endif
     return false;
   }
-
   kad::ContactInfo cache_holder;
   std::vector<std::string> chunk_holders_ids;
   std::string needs_cache_copy_id;
@@ -474,12 +459,12 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
 //  printf("In MaidsafeStoreManager::DeleteChunk (%i), chunk_name = %s\n",
 //         knode_->host_port(), HexSubstr(chunk_name).c_str());
 #endif
-  if (chunk_name.size() != kKeySize) {
+  int valid = ValidateInputs(chunk_name, PacketType_MIN, dir_type);
+  if (valid != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::DeleteChunk (chnk %s), chunk_name.size() (%u) != kKeySize ("
-           "%u)\n", HexSubstr(chunk_name).c_str(), chunk_name.size(), kKeySize);
+    printf("In MSM::DeleteChunk, invalid input.  Error %i\n", valid);
 #endif
-    return kIncorrectKeySize;
+    return valid;
   }
   ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
     fs::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
@@ -544,48 +529,24 @@ void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
 //  printf("In MaidsafeStoreManager::DeletePacket (%i), packet_name = %s\n",
 //         knode_->host_port(), HexSubstr(packet_name).c_str());
 #endif
-  ReturnCode prep = kSuccess;
-  if (packet_name.size() != kKeySize) {
+  int valid = ValidateInputs(packet_name, system_packet_type, dir_type);
+  if (valid != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::DeletePacket(pkt %s), pcketname.size() (%u) != kKeySize (%u"
-           ")\n", HexSubstr(packet_name).c_str(), packet_name.size(), kKeySize);
+    printf("In MSM::DeletePacket, invalid input.  Error %i\n", valid);
 #endif
-    prep = kIncorrectKeySize;
+    cb(static_cast<ReturnCode>(valid));
+    return;
   }
-  if (prep == kSuccess) {
-    std::string key_id, public_key, public_key_signature, private_key;
-    GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
-        &public_key, &public_key_signature, &private_key);
-    switch (system_packet_type) {
-      case MID:
-      case SMID:
-      case MSID:
-      case TMID:
-      case MPID:
-      case PMID:
-      case MAID:
-      case ANMID:
-      case ANSMID:
-      case ANTMID:
-      case ANMPID: {
-        boost::shared_ptr<DeletePacketData> delete_data(new DeletePacketData(
-            packet_name, values, system_packet_type, dir_type, msid, key_id,
-            public_key, public_key_signature, private_key, cb));
-        // packet_thread_pool_ handles destruction of delete_packet_task.
-        DeletePacketTask *delete_packet_task =
-            new DeletePacketTask(delete_data, this);
-        packet_thread_pool_.start(delete_packet_task);
-        return;
-      }
-      case PD_DIR:
-//        StorePdDirToVaults(hex_packet_name, value, dir_type, msid);
-        return;
-      default:
-        prep = kPacketUnknownType;
-    }
-  }
-  if (prep != kSuccess)
-    cb(prep);
+  std::string key_id, public_key, public_key_signature, private_key;
+  GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
+      &public_key, &public_key_signature, &private_key);
+  boost::shared_ptr<DeletePacketData> delete_data(new DeletePacketData(
+      packet_name, values, system_packet_type, dir_type, msid, key_id,
+      public_key, public_key_signature, private_key, cb));
+  // packet_thread_pool_ handles destruction of delete_packet_task.
+  DeletePacketTask *delete_packet_task =
+      new DeletePacketTask(delete_data, this);
+  packet_thread_pool_.start(delete_packet_task);
 }
 
 int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space_offered) {
@@ -900,8 +861,8 @@ void MaidsafeStoreManager::GetPacketSignatureKeys(PacketType packet_type,
       *public_key_sig = ss->SignedPublicKey(MAID);
       *private_key = ss->PrivateKey(MAID);
       break;
-    case MSID:
     case PD_DIR:
+    case MSID:
       GetChunkSignatureKeys(dir_type, msid, key_id, public_key, public_key_sig,
                             private_key);
       break;

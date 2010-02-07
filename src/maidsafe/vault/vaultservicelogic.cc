@@ -41,7 +41,7 @@ VaultServiceLogic::VaultServiceLogic(
         : vault_rpcs_(vault_rpcs),
           knode_(knode),
           our_details_(),
-          non_hex_pmid_(),
+          pmid_(),
           pmid_public_key_(),
           pmid_public_signature_(),
           pmid_private_(),
@@ -52,13 +52,13 @@ VaultServiceLogic::VaultServiceLogic(
       &VaultServiceLogic::SetOnlineStatus, this, _1));
 }
 
-bool VaultServiceLogic::Init(const std::string &non_hex_pmid,
+bool VaultServiceLogic::Init(const std::string &pmid,
                              const std::string &pmid_public_key,
                              const std::string &pmid_public_signature,
                              const std::string &pmid_private) {
   if (knode_ == NULL)
     return false;
-  non_hex_pmid_ = non_hex_pmid;
+  pmid_ = pmid;
   pmid_public_key_ = pmid_public_key;
   pmid_public_signature_ = pmid_public_signature;
   pmid_private_ = pmid_private;
@@ -86,12 +86,12 @@ int VaultServiceLogic::AddToRemoteRefList(
     const std::string &chunkname,
     const maidsafe::StoreContract &store_contract,
     const boost::int16_t &transport_id) {
-// printf("1. Vault %s - contacts size: %u\n", HexSubstr(non_hex_pmid_).c_str(),
+// printf("1. Vault %s - contacts size: %u\n", HexSubstr(pmid_).c_str(),
 //         (*base::PDRoutingTable::getInstance())[base::itos(port_)]->size());
   if (!online()) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefList, offline %s\n",
-           HexSubstr(non_hex_pmid_).c_str());
+           HexSubstr(pmid_).c_str());
 #endif
     return kVaultOffline;
   }
@@ -101,14 +101,14 @@ int VaultServiceLogic::AddToRemoteRefList(
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefList (%s), Kad lookup failed -- "
-           "error %i\n", HexSubstr(non_hex_pmid_).c_str(), result);
+           "error %i\n", HexSubstr(pmid_).c_str(), result);
 #endif
     return result;
   }
   if (data->contacts.size() < size_t(kKadStoreThreshold_)) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefList (%s), Kad lookup failed to "
-           "find %u nodes; found %u nodes.\n", HexSubstr(non_hex_pmid_).c_str(),
+           "find %u nodes; found %u nodes.\n", HexSubstr(pmid_).c_str(),
            kKadStoreThreshold_, data->contacts.size());
 #endif
     return kVaultServiceFindNodesTooFew;
@@ -128,7 +128,7 @@ int VaultServiceLogic::AddToRemoteRefList(
 #ifdef DEBUG
 //  for (boost::uint16_t h = 0; h < data->contacts.size(); ++h) {
 //    printf("After - Vault %s,  chunk %s,  info holder %i: %s\n",
-//           HexSubstr(non_hex_pmid_).c_str(),
+//           HexSubstr(pmid_).c_str(),
 //           HexSubstr(chunkname).c_str(), h,
 //           HexSubstr(data->contacts.at(h).node_id()).c_str());
 //  }
@@ -172,14 +172,14 @@ void VaultServiceLogic::AddToRemoteRefListCallback(
   if (!holder->response.IsInitialized()) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefListCallback (%s), response %u "
-           "is uninitialised.\n", HexSubstr(non_hex_pmid_).c_str(), index);
+           "is uninitialised.\n", HexSubstr(pmid_).c_str(), index);
 #endif
     result = kAddToRefResponseUninitialised;
   }
   if (result == kSuccess && holder->response.result() != kAck) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefListCallback (%s), response %u "
-           "has result %i.\n", HexSubstr(non_hex_pmid_).c_str(), index,
+           "has result %i.\n", HexSubstr(pmid_).c_str(), index,
            holder->response.result());
 #endif
     result = kAddToRefResponseFailed;
@@ -187,7 +187,7 @@ void VaultServiceLogic::AddToRemoteRefListCallback(
   if (result == kSuccess && holder->response.pmid() != holder->node_id) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefListCallback (%s), response %u "
-           "from %s has pmid %s.\n", HexSubstr(non_hex_pmid_).c_str(), index,
+           "from %s has pmid %s.\n", HexSubstr(pmid_).c_str(), index,
            HexSubstr(holder->node_id).c_str(),
            HexSubstr(holder->response.pmid()).c_str());
 #endif
@@ -211,7 +211,7 @@ int VaultServiceLogic::FindKNodes(const std::string &kad_key,
   if (contacts == NULL) {
 #ifdef DEBUG
     printf("In VSL::FindKNodes, (%s) NULL pointer passed.\n",
-           HexSubstr(non_hex_pmid_).c_str());
+           HexSubstr(pmid_).c_str());
 #endif
     return kVaultServiceError;
   }
@@ -244,7 +244,7 @@ void VaultServiceLogic::HandleFindKNodesResponse(
   if (contacts == NULL || mutex == NULL || cv == NULL || result == NULL) {
 #ifdef DEBUG
     printf("In VSL::HandleFindKNodesResponse, (%s) NULL pointer(s) passed.\n",
-           HexSubstr(non_hex_pmid_).c_str());
+           HexSubstr(pmid_).c_str());
 #endif
     return;
   }
@@ -289,7 +289,7 @@ void VaultServiceLogic::AmendRemoteAccount(
   if (!online()) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccount, offline %s\n",
-           HexSubstr(non_hex_pmid_).c_str());
+           HexSubstr(pmid_).c_str());
 #endif
     callback(kVaultOffline);
     return;
@@ -316,7 +316,7 @@ void VaultServiceLogic::AmendRemoteAccountStageTwo(
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccountStageTwo (%s), Kad lookup failed -- "
-           "error %i\n", HexSubstr(non_hex_pmid_).c_str(), result);
+           "error %i\n", HexSubstr(pmid_).c_str(), result);
 #endif
     data->callback(result);
     return;
@@ -324,7 +324,7 @@ void VaultServiceLogic::AmendRemoteAccountStageTwo(
   if (data->contacts.size() < size_t(kKadStoreThreshold_)) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccountStageTwo (%s), Kad lookup failed to "
-           "find %u nodes; found %u nodes.\n", HexSubstr(non_hex_pmid_).c_str(),
+           "find %u nodes; found %u nodes.\n", HexSubstr(pmid_).c_str(),
            kKadStoreThreshold_, data->contacts.size());
 #endif
     data->callback(kVaultServiceFindNodesTooFew);
@@ -342,7 +342,7 @@ void VaultServiceLogic::AmendRemoteAccountStageTwo(
 #ifdef DEBUG
 //      printf("Vault %s listed as an account holder for PMID %s\n",
 //             HexSubstr((*it).node_id()).c_str(),
-//             HexSubstr(non_hex_pmid_).c_str());
+//             HexSubstr(pmid_).c_str());
 #endif
       data->contacts.erase(it);
       break;
@@ -380,14 +380,14 @@ void VaultServiceLogic::AmendRemoteAccountStageThree(
   if (!holder->response.IsInitialized()) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccountStageThree (%s), response %u "
-           "is uninitialised.\n", HexSubstr(non_hex_pmid_).c_str(), index);
+           "is uninitialised.\n", HexSubstr(pmid_).c_str(), index);
 #endif
     result = kAmendAccountResponseUninitialised;
   }
   if (result == kSuccess && holder->response.result() != kAck) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccountStageThree (%s), response %u "
-           "has result %i.\n", HexSubstr(non_hex_pmid_).c_str(), index,
+           "has result %i.\n", HexSubstr(pmid_).c_str(), index,
            holder->response.result());
 #endif
     result = kAmendAccountResponseFailed;
@@ -395,7 +395,7 @@ void VaultServiceLogic::AmendRemoteAccountStageThree(
   if (result == kSuccess && holder->response.pmid() != holder->node_id) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccountStageThree (%s), response %u "
-           "from %s has pmid %s.\n", HexSubstr(non_hex_pmid_).c_str(), index,
+           "from %s has pmid %s.\n", HexSubstr(pmid_).c_str(), index,
            HexSubstr(holder->node_id).c_str(),
            HexSubstr(holder->response.pmid()).c_str());
 #endif
@@ -419,7 +419,7 @@ int VaultServiceLogic::RemoteVaultAbleToStore(
   if (!online()) {
 #ifdef DEBUG
     printf("In VSL::RemoteVaultAbleToStore, offline %s\n",
-           HexSubstr(non_hex_pmid_).c_str());
+           HexSubstr(pmid_).c_str());
 #endif
     return kVaultOffline;
   }
@@ -433,14 +433,14 @@ int VaultServiceLogic::RemoteVaultAbleToStore(
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In VSL::RemoteVaultAbleToStore (%s), Kad lookup failed -- "
-           "error %i\n", HexSubstr(non_hex_pmid_).c_str(), result);
+           "error %i\n", HexSubstr(pmid_).c_str(), result);
 #endif
     return result;
   }
   if (data->contacts.size() < size_t(kKadTrustThreshold)) {
 #ifdef DEBUG
     printf("In VSL::RemoteVaultAbleToStore (%s), Kad lookup failed to "
-           "find %i nodes; found %u nodes.\n", HexSubstr(non_hex_pmid_).c_str(),
+           "find %i nodes; found %u nodes.\n", HexSubstr(pmid_).c_str(),
            kKadTrustThreshold, data->contacts.size());
 #endif
     return kVaultServiceFindNodesTooFew;
@@ -453,7 +453,7 @@ int VaultServiceLogic::RemoteVaultAbleToStore(
 #ifdef DEBUG
 //      printf("Vault %s listed as an account holder for PMID %s\n",
 //             HexSubstr((*it).node_id()).c_str(),
-//             HexSubstr(non_hex_pmid_).c_str());
+//             HexSubstr(pmid_).c_str());
 #endif
       data->contacts.erase(it);
       break;
@@ -494,7 +494,7 @@ void VaultServiceLogic::CacheChunk(const std::string chunkname,
 
   data->request.set_chunkname(chunkname);
   data->request.set_chunkcontent(chunkcontent);
-  data->request.set_pmid(non_hex_pmid_);
+  data->request.set_pmid(pmid_);
   data->request.set_public_key(pmid_public_key_);
   data->request.set_public_key_signature(pmid_public_signature_);
 
@@ -538,14 +538,14 @@ void VaultServiceLogic::AccountStatusCallback(
   if (!holder->response.IsInitialized()) {
 #ifdef DEBUG
     printf("In VSL::AccountStatusCallback (%s), response %u "
-           "is uninitialised.\n", HexSubstr(non_hex_pmid_).c_str(), index);
+           "is uninitialised.\n", HexSubstr(pmid_).c_str(), index);
 #endif
     result = kAccountStatusResponseUninitialised;
   }
   if (result == kSuccess && holder->response.result() != kAck) {
 #ifdef DEBUG
     printf("In VSL::AccountStatusCallback (%s), response %u "
-           "has result %i.\n", HexSubstr(non_hex_pmid_).c_str(), index,
+           "has result %i.\n", HexSubstr(pmid_).c_str(), index,
            holder->response.result());
 #endif
     result = kAccountStatusResponseFailed;
@@ -553,7 +553,7 @@ void VaultServiceLogic::AccountStatusCallback(
   if (result == kSuccess && holder->response.pmid() != holder->node_id) {
 #ifdef DEBUG
     printf("In VSL::AccountStatusCallback (%s), response %u "
-           "from %s has pmid %s.\n", HexSubstr(non_hex_pmid_).c_str(), index,
+           "from %s has pmid %s.\n", HexSubstr(pmid_).c_str(), index,
            HexSubstr(holder->node_id).c_str(),
            HexSubstr(holder->response.pmid()).c_str());
 #endif
@@ -573,13 +573,12 @@ void VaultServiceLogic::AccountStatusCallback(
 }
 
 std::string VaultServiceLogic::GetSignedRequest(
-    const std::string &non_hex_name,
+    const std::string &name,
     const std::string &recipient_id) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  return co.AsymSign(co.Hash(pmid_public_signature_ + non_hex_name +
-      recipient_id, "", crypto::STRING_STRING, false), "", pmid_private_,
-      crypto::STRING_STRING);
+  return co.AsymSign(co.Hash(pmid_public_signature_ + name + recipient_id, "",
+      crypto::STRING_STRING, false), "", pmid_private_, crypto::STRING_STRING);
 }
 
 bool VaultServiceLogic::AddressIsLocal(const kad::Contact &peer) {

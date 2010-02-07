@@ -188,7 +188,7 @@ class MockVaultServicesTest : public VaultServicesTest {
   void SetUp() {
     VaultServicesTest::SetUp();
     // Initialise mock_vault_service_logic
-    mock_vault_service_logic_.non_hex_pmid_ = vault_pmid_;
+    mock_vault_service_logic_.pmid_ = vault_pmid_;
     mock_vault_service_logic_.pmid_public_signature_ =
         vault_public_key_signature_;
     mock_vault_service_logic_.pmid_private_ = vault_private_key_;

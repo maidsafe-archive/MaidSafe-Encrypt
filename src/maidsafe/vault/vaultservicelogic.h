@@ -165,7 +165,7 @@ class VaultServiceLogic {
   VaultServiceLogic(VaultRpcs *vault_rpcs,
                     kad::KNode *knode);
   virtual ~VaultServiceLogic() {}
-  bool Init(const std::string &non_hex_pmid,
+  bool Init(const std::string &pmid,
             const std::string &pmid_public_key,
             const std::string &pmid_public_signature,
             const std::string &pmid_private);
@@ -234,7 +234,7 @@ class VaultServiceLogic {
   void AccountStatusCallback(boost::uint16_t index,
                              boost::shared_ptr<AccountStatusCallbackData> data);
   // Returns a signature for validation by recipient of RPC
-  std::string GetSignedRequest(const std::string &non_hex_name,
+  std::string GetSignedRequest(const std::string &name,
                                const std::string &recipient_id);
   // Wrapper for knode method - virtual to allow mock testing
   virtual bool AddressIsLocal(const kad::Contact &peer);
@@ -243,8 +243,7 @@ class VaultServiceLogic {
   VaultRpcs *vault_rpcs_;
   kad::KNode *knode_;
   kad::Contact our_details_;
-  std::string non_hex_pmid_, pmid_public_key_, pmid_public_signature_,
-              pmid_private_;
+  std::string pmid_, pmid_public_key_, pmid_public_signature_, pmid_private_;
   bool online_;
   boost::mutex online_mutex_;
   boost::uint16_t kKadStoreThreshold_;

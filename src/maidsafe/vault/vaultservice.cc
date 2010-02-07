@@ -98,7 +98,6 @@ VaultService::VaultService(const std::string &pmid_public,
       pmid_private_(pmid_private),
       pmid_public_signature_(pmid_public_signature),
       pmid_(),
-      non_hex_pmid_(),
       vault_chunkstore_(vault_chunkstore),
       knode_(knode),
       poh_(poh),
@@ -111,9 +110,8 @@ VaultService::VaultService(const std::string &pmid_public,
       thread_pool_() {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  non_hex_pmid_ = co.Hash(pmid_public_ + pmid_public_signature_, "",
+  pmid_ = co.Hash(pmid_public_ + pmid_public_signature_, "",
                   crypto::STRING_STRING, false);
-  pmid_ = base::EncodeToHex(pmid_);
   thread_pool_.setMaxThreadCount(5);
 }
 
@@ -122,7 +120,7 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
                              maidsafe::StorePrepResponse *response,
                              google::protobuf::Closure *done) {
   maidsafe::StoreContract *response_sc = response->mutable_store_contract();
-  response_sc->set_pmid(non_hex_pmid_);
+  response_sc->set_pmid(pmid_);
   response_sc->set_public_key(pmid_public_);
   response_sc->set_public_key_signature(pmid_public_signature_);
   maidsafe::StoreContract::InnerContract *response_ic =
@@ -196,7 +194,7 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
 
   // Check we're not being asked to store ourselves as a reference holder for
   // ourself.
-  if (request_sz.pmid() == non_hex_pmid_) {
+  if (request_sz.pmid() == pmid_) {
 #ifdef DEBUG
     printf("In VaultService::StorePrep (%i), trying to store in ourselves.\n",
            knode_->host_port());
@@ -257,7 +255,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
 #endif
   // TODO(Fraser#5#): 2009-12-28 - if this fails more than kMinStoreRetries for
   //                               same chunkname & peer, delete from prm_?
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   response->set_result(kNack);
   if (!request->IsInitialized()) {
 #ifdef DEBUG
@@ -312,7 +310,7 @@ void VaultService::AddToWatchList(
     maidsafe::AddToWatchListResponse *response,
     google::protobuf::Closure *done) {
 
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   response->set_upload_count(0);
   response->set_result(kNack);
 
@@ -447,7 +445,7 @@ void VaultService::RemoveFromWatchList(
     maidsafe::RemoveFromWatchListResponse *response,
     google::protobuf::Closure *done) {
 
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   response->set_result(kNack);
 
   if (!request->IsInitialized()) {
@@ -512,7 +510,7 @@ void VaultService::AddToReferenceList(
 //         HexSubstr(request->chunkname()).c_str(),
 //         base::EncodeToHex(request->pmid()).substr(0, 10).c_str());
 #endif
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   response->set_result(kNack);
 
   if (!request->IsInitialized()) {
@@ -610,7 +608,7 @@ void VaultService::RemoveFromReferenceList(
     const maidsafe::RemoveFromReferenceListRequest *request,
     maidsafe::RemoveFromReferenceListResponse *response,
     google::protobuf::Closure *done) {
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   response->set_result(kNack);
   // Check request is initialised
   if (!request->IsInitialized()) {
@@ -630,7 +628,7 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
                                 const maidsafe::AmendAccountRequest *request,
                                 maidsafe::AmendAccountResponse *response,
                                 google::protobuf::Closure *done) {
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   response->set_result(kNack);
   // Validate request and extract data
   boost::uint64_t account_delta;
@@ -691,7 +689,7 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
                                  const maidsafe::AccountStatusRequest *request,
                                  maidsafe::AccountStatusResponse *response,
                                  google::protobuf::Closure *done) {
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   response->set_result(kNack);
   if (!request->IsInitialized()) {
 #ifdef DEBUG
@@ -747,7 +745,7 @@ void VaultService::CheckChunk(google::protobuf::RpcController*,
 #ifdef DEBUG
 //  printf("In VaultService::CheckChunk (%i)\n", knode_->host_port());
 #endif
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
     done->Run();
@@ -767,7 +765,7 @@ void VaultService::GetChunk(google::protobuf::RpcController*,
 #ifdef DEBUG
 //  printf("In VaultService::GetChunk (%i)\n", knode_->host_port());
 #endif
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   if (!request->IsInitialized()) {
 #ifdef DEBUG
     printf("In VaultService::Get (%i), request isn't initialised.\n",
@@ -811,7 +809,7 @@ void VaultService::DeleteChunk(google::protobuf::RpcController*,
 #ifdef DEBUG
 //  printf("In VaultService::DeleteChunk (%i)\n", knode_->host_port());
 #endif
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   response->set_result(kNack);
   if (!request->IsInitialized()) {
 #ifdef DEBUG
@@ -892,7 +890,7 @@ void VaultService::ValidityCheck(google::protobuf::RpcController*,
 #ifdef DEBUG
 //  printf("In VaultService::ValidityCheck (%i)\n", knode_->host_port());
 #endif
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
     done->Run();
@@ -964,7 +962,7 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
 #ifdef DEBUG
 //  printf("In VaultService::SwapChunk (%i)\n", knode_->host_port());
 #endif
-  response->set_pmid(non_hex_pmid_);
+  response->set_pmid(pmid_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
     response->set_request_type(0);
@@ -1077,7 +1075,7 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
                             const maidsafe::CreateBPRequest *request,
                             maidsafe::CreateBPResponse *response,
                             google::protobuf::Closure *done) {
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid_id(pmid_);
   response->set_public_key(pmid_public_);
   response->set_signed_public_key(pmid_public_signature_);
   if (!request->IsInitialized()) {
@@ -1135,16 +1133,16 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
 
   if (knode_ != NULL) {
     kad::SignedValue sig_value;
-    sig_value.set_value(non_hex_pmid_);
+    sig_value.set_value(pmid_);
     co.set_hash_algorithm(crypto::SHA_512);
-    sig_value.set_value_signature(co.AsymSign(non_hex_pmid_, "", pmid_private_,
+    sig_value.set_value_signature(co.AsymSign(pmid_, "", pmid_private_,
       crypto::STRING_STRING));
     // TTL set to 24 hrs
     std::string request_signature = co.AsymSign(co.Hash(pmid_public_ +
       pmid_public_signature_ + request->bufferpacket_name(), "",
       crypto::STRING_STRING, false), "", pmid_private_, crypto::STRING_STRING);
     kad::SignedRequest sr;
-    sr.set_signer_id(non_hex_pmid_);
+    sr.set_signer_id(pmid_);
     sr.set_public_key(pmid_public_);
     sr.set_signed_public_key(pmid_public_signature_);
     sr.set_signed_request(request_signature);
@@ -1159,7 +1157,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
                                 const maidsafe::ModifyBPInfoRequest *request,
                                 maidsafe::ModifyBPInfoResponse *response,
                                 google::protobuf::Closure *done) {
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid_id(pmid_);
   response->set_public_key(pmid_public_);
   response->set_signed_public_key(pmid_public_signature_);
   response->set_result(kAck);
@@ -1288,7 +1286,7 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
                                  const maidsafe::GetBPMessagesRequest *request,
                                  maidsafe::GetBPMessagesResponse *response,
                                  google::protobuf::Closure *done) {
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid_id(pmid_);
   response->set_public_key(pmid_public_);
   response->set_signed_public_key(pmid_public_signature_);
   response->set_result(kAck);
@@ -1372,7 +1370,7 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
                                 const maidsafe::AddBPMessageRequest *request,
                                 maidsafe::AddBPMessageResponse *response,
                                 google::protobuf::Closure *done) {
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid_id(pmid_);
   response->set_public_key(pmid_public_);
   response->set_signed_public_key(pmid_public_signature_);
   response->set_result(kAck);
@@ -1446,7 +1444,7 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
                                const maidsafe::ContactInfoRequest* request,
                                maidsafe::ContactInfoResponse* response,
                                google::protobuf::Closure* done) {
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid_id(pmid_);
   response->set_public_key(pmid_public_);
   response->set_public_key_signature(pmid_public_signature_);
   response->set_result(kAck);
@@ -1573,7 +1571,7 @@ bool VaultService::ValidateSignedRequest(
   if (request_signature == kAnonymousRequestSignature)
     return true;
 
-  maidsafe::MaidsafeValidator msv(non_hex_pmid_);
+  maidsafe::MaidsafeValidator msv(pmid_);
   if (!msv.ValidateSignerId(signing_id, public_key, public_key_signature))
     return false;
   if (!msv.ValidateRequest(request_signature, public_key, public_key_signature,
@@ -1706,7 +1704,7 @@ void VaultService::AmendRemoteAccount(
   maidsafe::SignedSize *mutable_signed_size =
       amend_account_request.mutable_signed_size();
   mutable_signed_size->set_data_size(size);
-  mutable_signed_size->set_pmid(non_hex_pmid_);
+  mutable_signed_size->set_pmid(pmid_);
   mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(size), "",
                                      pmid_private_, crypto::STRING_STRING));
   mutable_signed_size->set_public_key(pmid_public_);

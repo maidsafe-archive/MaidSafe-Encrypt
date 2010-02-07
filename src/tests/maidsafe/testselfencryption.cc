@@ -771,7 +771,7 @@ TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptStringSerDA) {
   types.push_back(ANSMID);
   types.push_back(ANTMID);
   types.push_back(MAID);
-  da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, true));
+  da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, false));
   for (unsigned int i = 0; i < types.size(); ++i) {
     Key *k = da.add_keys();
     keys.ClearKeys();
@@ -782,7 +782,7 @@ TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptStringSerDA) {
     k->set_public_key_signature(co.AsymSign(keys.public_key(), "",
       keys.private_key(), crypto::STRING_STRING));
     k->set_id(co.Hash(keys.public_key() + k->public_key_signature(), "",
-      crypto::STRING_STRING, true));
+      crypto::STRING_STRING, false));
   }
   std::string ser_da("");
   ASSERT_TRUE(da.SerializeToString(&ser_da));
@@ -814,7 +814,7 @@ TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptFileSerDA) {
   types.push_back(ANSMID);
   types.push_back(ANTMID);
   types.push_back(MAID);
-  da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, true));
+  da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, false));
   for (unsigned int i = 0; i < types.size(); ++i) {
     Key *k = da.add_keys();
     keys.ClearKeys();
@@ -825,7 +825,7 @@ TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptFileSerDA) {
     k->set_public_key_signature(co.AsymSign(keys.public_key(), "",
       keys.private_key(), crypto::STRING_STRING));
     k->set_id(co.Hash(keys.public_key() + k->public_key_signature(), "",
-      crypto::STRING_STRING, true));
+      crypto::STRING_STRING, false));
   }
   std::string filename("ser_da");
   std::fstream output(filename.c_str(),

@@ -143,11 +143,51 @@ void LocalStoreManager::StoreChunk(const std::string &chunk_name,
   }
 }
 
-int LocalStoreManager::DeleteChunk(const std::string &,
-                                   const boost::uint64_t &,
+int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
+                                   const boost::uint64_t &chunk_size,
                                    DirType,
                                    const std::string &) {
-  return kGeneralError;
+  ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
+    fs::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
+                                                         false));
+  boost::uint64_t size(chunk_size);
+  if (size < 2) {
+    if (chunk_type < 0 || chunk_path == fs::path("")) {
+#ifdef DEBUG
+      printf("In LSM::DeleteChunk, didn't find chunk %s in local chunkstore - "
+             "cant delete without valid size\n", HexSubstr(chunk_name).c_str());
+#endif
+      return kDeleteSizeError;
+    }
+    try {
+      size = fs::file_size(chunk_path);
+    }
+    catch(const std::exception &e) {
+  #ifdef DEBUG
+      printf("In LSM::DeleteChunk, didn't find chunk %s in local chunkstore - "
+             "can't delete without valid size.\n%s\n",
+             HexSubstr(chunk_name).c_str(), e.what());
+  #endif
+      return kDeleteSizeError;
+    }
+  }
+  ChunkType new_type(chunk_type);
+  if (chunk_type >= 0) {
+    // Move chunk to TempCache.
+    if (chunk_type & kNormal)
+      new_type = chunk_type ^ (kNormal | kTempCache);
+    else if (chunk_type & kOutgoing)
+      new_type = chunk_type ^ (kOutgoing | kTempCache);
+    else if (chunk_type & kCache)
+      new_type = chunk_type ^ (kCache | kTempCache);
+    if (!(new_type < 0) &&
+        client_chunkstore_->ChangeChunkType(chunk_name, new_type) != kSuccess) {
+  #ifdef DEBUG
+      printf("In LSM::DeleteChunk, failed to change chunk type.\n");
+  #endif
+    }
+  }
+  return kSuccess;
 }
 
 bool LocalStoreManager::KeyUnique(const std::string &key, bool) {

@@ -40,7 +40,7 @@ class VaultRpcs {
             rpcprotocol::ChannelManager *channel_manager)
                 : transport_handler_(transport_handler),
                   channel_manager_(channel_manager),
-                  own_non_hex_id_("") {}
+                  own_id_() {}
   virtual ~VaultRpcs() {}
   void StoreChunk(const std::string &chunkname,
                   const std::string &data,
@@ -163,13 +163,13 @@ class VaultRpcs {
                           maidsafe::CacheChunkResponse *response,
                           rpcprotocol::Controller *controller,
                           google::protobuf::Closure *done);
-  void SetOwnId(const std::string &non_hex_id) { own_non_hex_id_ = non_hex_id; }
+  void SetOwnId(const std::string &id) { own_id_ = id; }
  private:
   VaultRpcs(const VaultRpcs&);
   VaultRpcs& operator=(const VaultRpcs&);
   transport::TransportHandler *transport_handler_;
   rpcprotocol::ChannelManager *channel_manager_;
-  std::string own_non_hex_id_;
+  std::string own_id_;
 };
 
 }  // namespace maidsafe_vault

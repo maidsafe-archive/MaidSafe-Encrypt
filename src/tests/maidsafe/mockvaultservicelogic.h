@@ -211,7 +211,6 @@ class MockVaultServiceLogicTest : public testing::Test {
  protected:
   MockVaultServiceLogicTest()
       : pmid_(),
-        hex_pmid_(),
         pmid_private_(),
         pmid_public_(),
         pmid_public_signature_(),
@@ -242,9 +241,8 @@ class MockVaultServiceLogicTest : public testing::Test {
     // is quicker rather than generating a new set of keys
     pmid_public_signature_ = crypto_.AsymSign(pmid_public_, "", pmid_private_,
         crypto::STRING_STRING);
-    hex_pmid_ = crypto_.Hash(pmid_public_ + pmid_public_signature_, "",
-        crypto::STRING_STRING, true);
-    pmid_ = base::DecodeFromHex(hex_pmid_);
+    pmid_ = crypto_.Hash(pmid_public_ + pmid_public_signature_, "",
+        crypto::STRING_STRING, false);
     our_contact_ = kad::Contact(pmid_, "192.168.10.10", 8008);
     std::string ser_our_contact;
     our_contact_.SerialiseToString(&ser_our_contact);
@@ -265,8 +263,7 @@ class MockVaultServiceLogicTest : public testing::Test {
   }
 
   crypto::RsaKeyPair pmid_keys_;
-  std::string pmid_, hex_pmid_, pmid_private_, pmid_public_;
-  std::string pmid_public_signature_;
+  std::string pmid_, pmid_private_, pmid_public_, pmid_public_signature_;
   std::vector<std::string> fail_parse_pmids_, fail_pmids_, few_pmids_;
   std::vector<std::string> good_pmids_;
   crypto::Crypto crypto_;

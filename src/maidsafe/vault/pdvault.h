@@ -188,7 +188,7 @@ class PDVault {
   void CleanUp();
   VaultStatus vault_status();
   void SetVaultStatus(const VaultStatus &vault_status);
-  std::string hex_node_id() const;
+  std::string node_id() const { return knode_.node_id(); }
   std::string host_ip() const { return knode_.host_ip(); }
   boost::uint16_t host_port() const { return knode_.host_port(); }
   std::string local_host_ip() const { return knode_.local_host_ip(); }
@@ -315,7 +315,6 @@ class PDVault {
   boost::mutex vault_status_mutex_;
   boost::condition_variable kad_join_cond_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
-  std::string non_hex_pmid_, signed_non_hex_pmid_;
   crypto::Crypto co_;
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   std::string kad_config_file_;

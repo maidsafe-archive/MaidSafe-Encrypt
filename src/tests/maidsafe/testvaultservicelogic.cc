@@ -109,7 +109,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   // Setup
   MockVaultRpcs mock_rpcs(NULL, NULL);
   MockVslAddToRefTest vsl(&mock_rpcs, NULL);
-  vsl.non_hex_pmid_ = pmid_;
+  vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
   vsl.online_ = true;
@@ -243,7 +243,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   // Setup
   MockVaultRpcs mock_rpcs(NULL, NULL);
   MockVsl vsl(&mock_rpcs, NULL);
-  vsl.non_hex_pmid_ = pmid_;
+  vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
   vsl.online_ = true;
@@ -451,7 +451,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   // Setup
   MockVaultRpcs mock_rpcs(NULL, NULL);
   MockVsl vsl(&mock_rpcs, NULL);
-  vsl.non_hex_pmid_ = pmid_;
+  vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
   vsl.online_ = true;

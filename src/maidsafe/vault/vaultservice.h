@@ -317,7 +317,6 @@ class VaultService : public maidsafe::MaidsafeService {
   int RemoteVaultAbleToStore(const boost::uint64_t &size,
                              const std::string &account_pmid);
   std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
-  std::string non_hex_pmid_;
   VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;
   PendingOperationsHandler *poh_;

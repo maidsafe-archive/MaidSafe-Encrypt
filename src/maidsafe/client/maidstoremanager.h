@@ -696,7 +696,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AmendAccount);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
-
+  // Check the inputs to the public methods are valid
+  int ValidateInputs(const std::string &name,
+                     const PacketType &packet_type,
+                     const DirType &dir_type);
   void AddStorePacketTask(const StoreData &store_data,
                           bool is_mutable,
                           int *return_value,

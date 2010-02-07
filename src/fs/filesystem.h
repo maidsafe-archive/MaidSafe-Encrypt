@@ -81,8 +81,6 @@ class FileSystem {
     std::string ProcessDir();  // temp dir
     // std::string NetDir(); // temp dir to emulate network
     std::string DbDir();  // dir to store dbs
-    std::string SessionName();  // name of current session TODO move to session!
-    bool SetSessionName();  // name of current session  TODO move to session !
 };
 
 }  // namespace file_system

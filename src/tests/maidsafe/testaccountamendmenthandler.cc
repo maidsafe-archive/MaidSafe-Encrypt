@@ -648,7 +648,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
 
 TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   // Setup
-  vsl_.non_hex_pmid_ = pmid_;
+  vsl_.pmid_ = pmid_;
   vsl_.pmid_public_signature_ = pmid_public_signature_;
   vsl_.pmid_private_ = pmid_private_;
   vsl_.online_ = true;

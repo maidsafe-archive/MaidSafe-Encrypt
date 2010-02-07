@@ -48,7 +48,7 @@ namespace maidsafe {
 
 DataAtlasHandler::DataAtlasHandler() :db_dir_(), dirs_() {
   file_system::FileSystem fsys_;
-  if (maidsafe::SessionSingleton::getInstance()->SessionName() != "") {
+  if (!maidsafe::SessionSingleton::getInstance()->SessionName().empty()) {
     db_dir_ = fsys_.DbDir();
   } else {
     crypto::Crypto c;

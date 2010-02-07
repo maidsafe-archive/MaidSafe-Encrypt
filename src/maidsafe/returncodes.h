@@ -148,13 +148,14 @@ enum ReturnCode {
   kCommonChecksumUndecided = -7049,
   kCommonChecksumMajority = -7050,
   kPacketUnknownType = -7051,
-  kLoadPacketFailure = -7052,
-  kStoreManagerException = -7053,
-  kFindAccountHoldersError = -7054,
-  kRequestPendingConsensus = -7055,
-  kRequestFailedConsensus = -7056,
-  kRequestInsufficientResponses = -7057,
-  kNoPublicKeyToCheck = -7058,
+  kDirUnknownType = -7502,
+  kLoadPacketFailure = -7053,
+  kStoreManagerException = -7054,
+  kFindAccountHoldersError = -7055,
+  kRequestPendingConsensus = -7056,
+  kRequestFailedConsensus = -7057,
+  kRequestInsufficientResponses = -7058,
+  kNoPublicKeyToCheck = -7059,
 
   // Message Handler (-8000)
 

@@ -55,7 +55,7 @@ void GeneratePmidStuff(std::string *public_key,
                             crypto::STRING_STRING);
   *public_key = keys.public_key();
   *private_key = keys.private_key();
-  *pmid = co.Hash(*signed_key, "", crypto::STRING_STRING, true);
+  *pmid = co.Hash(*signed_key, "", crypto::STRING_STRING, false);
 }
 
 class Env: public testing::Environment {
@@ -145,7 +145,7 @@ class Env: public testing::Environment {
     ASSERT_EQ(maidsafe_vault::kVaultStarted, (*pdvaults_)[1]->vault_status());
     base::KadConfig kad_config;
     base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-    kad_contact->set_node_id((*pdvaults_)[1]->hex_node_id());
+    kad_contact->set_node_id((*pdvaults_)[1]->node_id());
     kad_contact->set_ip((*pdvaults_)[1]->host_ip());
     kad_contact->set_port((*pdvaults_)[1]->host_port());
     kad_contact->set_local_ip((*pdvaults_)[1]->local_host_ip());
@@ -169,7 +169,7 @@ class Env: public testing::Environment {
     kad_contact->Clear();
     kad_config.Clear();
     kad_contact = kad_config.add_contact();
-    kad_contact->set_node_id((*pdvaults_)[0]->hex_node_id());
+    kad_contact->set_node_id((*pdvaults_)[0]->node_id());
     kad_contact->set_ip((*pdvaults_)[0]->host_ip());
     kad_contact->set_port((*pdvaults_)[0]->host_port());
     kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
@@ -213,7 +213,8 @@ class Env: public testing::Environment {
     printf("* No. Port   ID                                 *\n");
     for (int l = 0; l < kNetworkSize_; ++l)
       printf("* %2i  %5i  %s *\n", l, (*pdvaults_)[l]->host_port(),
-             ((*pdvaults_)[l]->hex_node_id().substr(0, 31) + "...").c_str());
+             (base::EncodeToHex((*pdvaults_)[l]->node_id()).substr(0, 31)
+             + "...").c_str());
     printf("*                                               *\n");
     printf("*-----------------------------------------------*\n\n");
 #ifdef WIN32

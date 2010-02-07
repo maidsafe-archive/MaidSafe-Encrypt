@@ -152,10 +152,8 @@ class SessionSingleton {
         return false;
       crypto::Crypto c;
       c.set_hash_algorithm(crypto::SHA_1);
-      ud_.session_name = c.Hash(Pin()+Username(),
-                                "",
-                                crypto::STRING_STRING,
-                                true);
+      ud_.session_name =
+          c.Hash(Pin()+Username(), "", crypto::STRING_STRING, false);
     }
     return true;
   }

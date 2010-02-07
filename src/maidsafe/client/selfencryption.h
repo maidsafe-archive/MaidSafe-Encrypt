@@ -61,7 +61,7 @@ class SelfEncryption {
               std::string *decrypted_str);
   std::string SHA512(const fs::path &file_path);
   std::string SHA512(const std::string &content);
-  fs::path GetChunkPath(const std::string &hex_chunk_name);
+  fs::path GetChunkPath(const std::string &chunk_name);
  private:
   int Decrypt(const maidsafe::DataMap &dm,
               const uint64_t &offset,

@@ -69,9 +69,7 @@ PDVault::PDVault(const std::string &pmid_public,
       pmid_public_(pmid_public),
       pmid_private_(pmid_private),
       signed_pmid_public_(signed_pmid_public),
-      pmid_(""),
-      non_hex_pmid_(""),
-      signed_non_hex_pmid_(""),
+      pmid_(),
       co_(),
       svc_channel_(),
       kad_config_file_(kad_config_file),
@@ -85,16 +83,13 @@ PDVault::PDVault(const std::string &pmid_public,
   co_.set_symm_algorithm(crypto::AES_256);
   co_.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co_.Hash(pmid_public_ + signed_pmid_public_, "",
-                   crypto::STRING_STRING, true);
-  non_hex_pmid_ = base::DecodeFromHex(pmid_);
-  signed_non_hex_pmid_ = co_.AsymSign(non_hex_pmid_, "", pmid_private_,
-                                      crypto::STRING_STRING);
-  validator_.set_id(non_hex_pmid_);
+                   crypto::STRING_STRING, false);
+  validator_.set_id(pmid_);
   knode_.SetAlternativeStore(&vault_chunkstore_);
   knode_.set_signature_validator(&validator_);
-  vault_rpcs_.SetOwnId(non_hex_pmid_);
+  vault_rpcs_.SetOwnId(pmid_);
   thread_pool_.setMaxThreadCount(5);
-  poh_.SetPmid(non_hex_pmid_);
+  poh_.SetPmid(pmid_);
 }
 
 PDVault::~PDVault() {
@@ -138,7 +133,7 @@ void PDVault::Start(bool first_node) {
     // Set port, so that if vault is restarted before it is destroyed, it
     // re-uses port (unless this port has become unavailable).
     port_ = knode_.host_port();
-    if (kad_joined_ && vault_service_logic_.Init(non_hex_pmid_, pmid_public_,
+    if (kad_joined_ && vault_service_logic_.Init(pmid_, pmid_public_,
         signed_pmid_public_, pmid_private_))
       SetVaultStatus(kVaultStarted);
     // Start repeating pruning worker thread
@@ -216,10 +211,6 @@ void PDVault::UnRegisterMaidService() {
     vault_service_->GetDescriptor()->name());
   svc_channel_.reset();
   vault_service_.reset();
-}
-
-std::string PDVault::hex_node_id() const {
-  return base::EncodeToHex(knode_.node_id());
 }
 
 VaultStatus PDVault::vault_status() {
@@ -650,7 +641,7 @@ void PDVault::IterativePublishChunkRef(
     signed_value.set_value_signature(co_.AsymSign(pmid_, "", pmid_private_,
         crypto::STRING_STRING));
     kad::SignedRequest sr;
-    sr.set_signer_id(non_hex_pmid_);
+    sr.set_signer_id(pmid_);
     sr.set_public_key(pmid_public_);
     sr.set_signed_public_key(signed_pmid_public_);
     sr.set_signed_request(signed_request);
@@ -1124,12 +1115,11 @@ void PDVault::SwapChunkAcceptChunk(
     return;
   }
   // Accept the swapped chunk
-  std::string chunk_name_ = swap_chunk_response->chunkname2();
-  vault_chunkstore_.Store(chunk_name_, swap_chunk_response->chunkcontent2());
+  std::string chunk_name = swap_chunk_response->chunkname2();
+  vault_chunkstore_.Store(chunk_name, swap_chunk_response->chunkcontent2());
   // Store chunk reference
-  std::string non_hex_chunk_name = base::DecodeFromHex(chunk_name_);
   std::string signed_request = co_.AsymSign(
-      co_.Hash(pmid_public_ + signed_pmid_public_ + non_hex_chunk_name,
+      co_.Hash(pmid_public_ + signed_pmid_public_ + chunk_name,
               "",
               crypto::STRING_STRING,
               false),
@@ -1141,7 +1131,7 @@ void PDVault::SwapChunkAcceptChunk(
   signed_value.set_value_signature(co_.AsymSign(pmid_, "", pmid_private_,
       crypto::STRING_STRING));
   kad::SignedRequest sr;
-  sr.set_signer_id(non_hex_pmid_);
+  sr.set_signer_id(pmid_);
   sr.set_public_key(pmid_public_);
   sr.set_signed_public_key(signed_pmid_public_);
   sr.set_signed_request(signed_request);

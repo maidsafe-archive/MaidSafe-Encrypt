@@ -365,29 +365,29 @@ bool SEHandler::MakeElement(const std::string &rel_entry,
                             const ItemType type,
                             const DirType dir_type,
                             const std::string &msid,
-                            const std::string &dir_key) {
-  std::string ser_mdm_ = "", ser_dm_ = "", dir_key_(dir_key);
-  if (!ProcessMetaData(rel_entry, type, "", 0, &ser_mdm_)) {
+                            const std::string &directory_key) {
+  std::string ser_mdm, ser_dm, dir_key(directory_key);
+  if (!ProcessMetaData(rel_entry, type, "", 0, &ser_mdm)) {
 #ifdef DEBUG
     printf("Didn't process metadata.\n");
 #endif
     return false;
   }
   if (type == EMPTY_DIRECTORY) {
-    if (dir_key_ == "")
-      GenerateUniqueKey(dir_type, msid, 0, &dir_key_);
+    if (dir_key.empty())
+      GenerateUniqueKey(dir_type, msid, 0, &dir_key);
   } else if (type == EMPTY_FILE) {
-    DataMap dm_;
-    dm_.set_file_hash(SHA512("", false));
-    dm_.SerializeToString(&ser_dm_);
+    DataMap dm;
+    dm.set_file_hash(SHA512("", false));
+    dm.SerializeToString(&ser_dm);
   } else {
 #ifdef DEBUG
     printf("Type not recognised in SEHandler::MakeElement.\n");
 #endif
     return false;
   }
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler);
-  if (!dah_->AddElement(rel_entry, ser_mdm_, ser_dm_, dir_key_, true)) {
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
+  if (!dah->AddElement(rel_entry, ser_mdm, ser_dm, dir_key, true)) {
     // ie AddElement succeeded
     return true;
   } else {
@@ -401,14 +401,14 @@ bool SEHandler::MakeElement(const std::string &rel_entry,
 int SEHandler::GenerateUniqueKey(const DirType,
                                  const std::string &,
                                  const int &attempt,
-                                 std::string *hex_key) {
-  *hex_key = base::RandomString(200);
-  *hex_key = SHA512(*hex_key, false);
+                                 std::string *key) {
+  *key = base::RandomString(200);
+  *key = SHA512(*key, false);
   int count = attempt;
-  while (!storem_->KeyUnique(*hex_key, false) && count < 5) {
+  while (!storem_->KeyUnique(*key, false) && count < 5) {
     ++count;
-    *hex_key = base::RandomString(200);
-    *hex_key = SHA512(*hex_key, false);
+    *key = base::RandomString(200);
+    *key = SHA512(*key, false);
   }
   if (count < 5) {
 //    ValueType pd_dir_type_;
@@ -417,8 +417,7 @@ int SEHandler::GenerateUniqueKey(const DirType,
 //    else
 //      pd_dir_type_ = PDDIR_SIGNED;
 //  //    std::string ser_gp = CreateDataMapPacket("temp data", dir_type, msid);
-//   return storem_->StorePacket(*hex_key, "a", PD_DIR, dir_type,
-//                                msid);
+//   return storem_->StorePacket(*key, "a", PD_DIR, dir_type, msid);
     return 0;
   }
   return -1;
@@ -499,11 +498,6 @@ int SEHandler::EncryptDb(const std::string &dir_path,
       uptodate_datamaps_.erase(it);
     }
   }
-#ifdef DEBUG
-//  std::string hex_dm = base::EncodeToHex(enc_dm_);
-//  printf("Inserting dir_path(%s) and enc_dm_(%s) into uptodate_datamaps_.\n",
-//    dir_path.c_str(), hex_dm.c_str());
-#endif
   uptodate_datamaps_.insert(
       std::pair<std::string, std::string>(dir_path, enc_dm));
 
@@ -529,9 +523,10 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   boost::mutex mutex;
   boost::condition_variable cond_var;
   int result(kGeneralError);
-  VoidFuncOneInt func = boost::bind(&SEHandler::PacketOpCallback, this, _1,
-                                    &mutex, &cond_var, &result);
-  storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kAppend, func);
+  VoidFuncOneInt functor = boost::bind(&SEHandler::PacketOpCallback, this, _1,
+                                       &mutex, &cond_var, &result);
+  storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kOverwrite,
+                       functor);
   while (result == kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);
@@ -565,18 +560,14 @@ int SEHandler::DecryptDb(const std::string &dir_path,
   if (ser_dm == "") {
     std::vector<std::string> packet_content;
     int result = storem_->LoadPacket(dir_key, &packet_content);
-    if (result != kSuccess || packet_content.empty()) {
+    if (result != kSuccess || packet_content.empty() ||
+        packet_content[0].empty()) {
 #ifdef DEBUG
       printf("SEHandler::DecryptDb - Enc dm is empty.\n");
 #endif
       return -1;
     }
     enc_dm_ = packet_content[0];
-#ifdef DEBUG
-//    std::string hex_dm = base::EncodeToHex(enc_dm_);
-//    printf("Searching dir_path(%s) and enc_dm_(%s) in uptodate_datamaps_\n",
-//      dir_path.c_str(), hex_dm.c_str());
-#endif
     std::map<std::string, std::string>::iterator it;
     it = uptodate_datamaps_.find(dir_path);
 

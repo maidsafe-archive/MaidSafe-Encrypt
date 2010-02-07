@@ -212,8 +212,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
   c.set_hash_algorithm(crypto::SHA_1);
   std::string username("user1");
   std::string pin("1234");
-  std::string session_name = c.Hash(pin + username, "",
-                             crypto::STRING_STRING, true);
+  std::string session_name =
+      c.Hash(pin + username, "", crypto::STRING_STRING, false);
 
   // Set the session values
   ASSERT_TRUE(ss_->SetUsername(username));

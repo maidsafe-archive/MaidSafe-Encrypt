@@ -2175,12 +2175,11 @@ void ClientController::SetLocalVaultOwnedCallback(
     bool *callback_arrived,
     OwnLocalVaultResult *res) {
   if (result == OWNED_SUCCESS) {
-    std::string mierda = base::EncodeToHex(pmid_name);
 #ifdef DEBUG
     printf("ClientController::SetLocalVaultOwnedCallback %s -- %s\n",
-           ss_->Id(PMID).c_str(), mierda.c_str());
+           HexSubstr(ss_->Id(PMID)).c_str(), HexSubstr(pmid_name).c_str());
 #endif
-    if (pmid_name == base::DecodeFromHex(ss_->Id(PMID))) {
+    if (pmid_name == ss_->Id(PMID)) {
       *res = result;
     } else {
       // FAILURE -- incorrect pmid name returned by the vault

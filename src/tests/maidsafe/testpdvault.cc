@@ -1124,7 +1124,7 @@ TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(static_cast<boost::uint32_t>(kAck), response.result());
   ASSERT_EQ(content, response.content());
-  ASSERT_EQ(pdvaults_[chunk_vault_index]->non_hex_pmid_, response.pmid());
+  ASSERT_EQ(pdvaults_[chunk_vault_index]->pmid_, response.pmid());
 
   boost::progress_timer t;
   while (!pdvaults_[cache_vault_index]->vault_chunkstore_.Has(chunkname) &&

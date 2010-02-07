@@ -99,12 +99,12 @@ class SEHandler {
                    const ItemType type,
                    const DirType dir_type,
                    const std::string &msid,
-                   const std::string &dir_key);
+                   const std::string &directory_key);
   //  Gets a unique DHT key for dir's db identifier
   int GenerateUniqueKey(const DirType dir_type,
                         const std::string &msid,
                         const int &attempt,
-                        std::string *hex_key);
+                        std::string *key);
   //  Retrieves DHT keys for dir and its parent dir if msid == "" or sets
   //  parent_key to MSID public key if msid != ""
   int GetDirKeys(const std::string &dir_path,

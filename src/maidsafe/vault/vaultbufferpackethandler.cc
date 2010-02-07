@@ -243,7 +243,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
   if (bpm.type() != INSTANT_MSG && bpm.type() != ADD_CONTACT_RQST) {
     public_key = bpm.sender_public_key();
     std::string id = crypto_obj_.Hash(public_key+signed_public_key, "",
-      crypto::STRING_STRING, true);
+      crypto::STRING_STRING, false);
     if (id != bpm.sender_id()) {
 #ifdef DEBUG
       printf("Invalid sender_id.\n");

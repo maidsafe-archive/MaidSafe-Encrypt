@@ -223,7 +223,7 @@ int Authentication::CreateTmidPacket(const std::string &username,
 
 int Authentication::SaveSession(std::string ser_da,
                                 PacketParams priv_keys,
-                                PacketParams pub_keys) {
+                                PacketParams) {
   PacketParams params;
   PacketParams result;
   params["username"] = ss_->Username();
@@ -898,7 +898,7 @@ void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
   cb(str_local_result);
 }
 
-int Authentication::StorePacket(const std::string &hex_packet_name,
+int Authentication::StorePacket(const std::string &packet_name,
                                 const std::string &value,
                                 const PacketType &type,
                                 const IfPacketExists &if_exists) {
@@ -909,8 +909,8 @@ int Authentication::StorePacket(const std::string &hex_packet_name,
   int result(kGeneralError);
   VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
                                     &mutex, &cond_var, &result);
-  storemanager_->StorePacket(hex_packet_name, value, type, PRIVATE, "",
-                             if_exists, func);
+  storemanager_->StorePacket(packet_name, value, type, PRIVATE, "", if_exists,
+                             func);
   while (result == kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);
@@ -918,7 +918,7 @@ int Authentication::StorePacket(const std::string &hex_packet_name,
   return result;
 }
 
-int Authentication::DeletePacket(const std::string &hex_packet_name,
+int Authentication::DeletePacket(const std::string &packet_name,
                                  const std::string &value,
                                  const PacketType &type) {
 // TODO(Fraser#5#): 2010-01-28 - Use callbacks properly to allow several deletes
@@ -929,7 +929,7 @@ int Authentication::DeletePacket(const std::string &hex_packet_name,
   VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
                                     &mutex, &cond_var, &result);
   std::vector<std::string> values(1, value);
-  storemanager_->DeletePacket(hex_packet_name, values, type, PRIVATE, "", func);
+  storemanager_->DeletePacket(packet_name, values, type, PRIVATE, "", func);
   while (result == kGeneralError) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);

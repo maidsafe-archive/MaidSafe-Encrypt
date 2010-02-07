@@ -57,7 +57,7 @@ void GeneratePmidStuff(std::string *public_key,
     crypto::STRING_STRING);
   *public_key = keys.public_key();
   *private_key = keys.private_key();
-  *pmid = co_.Hash(*signed_key, "", crypto::STRING_STRING, true);
+  *pmid = co_.Hash(*signed_key, "", crypto::STRING_STRING, false);
 };
 
 class RunPDVaults {
@@ -101,7 +101,7 @@ class RunPDVaults {
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     initial_vault_node_id_ = crypto_.Hash(initial_vault_signed_pmid_public_, "",
-                                          crypto::STRING_STRING, true);
+                                          crypto::STRING_STRING, false);
   }
 
   ~RunPDVaults() {
@@ -235,7 +235,7 @@ class RunPDVaults {
       printf(".");
       base::KadConfig kad_config;
       base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-      kad_contact->set_node_id((*pdvaults_)[0]->hex_node_id());
+      kad_contact->set_node_id((*pdvaults_)[0]->node_id());
       kad_contact->set_ip((*pdvaults_)[0]->host_ip());
       kad_contact->set_port((*pdvaults_)[0]->host_port());
       kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
@@ -277,7 +277,8 @@ class RunPDVaults {
     printf("* No. Port   ID                                 *\n");
     for (int l = 0; l < no_of_vaults_; ++l)
       printf("* %2i  %5i  %s *\n", l, (*pdvaults_)[l]->host_port(),
-             ((*pdvaults_)[l]->hex_node_id().substr(0, 31) + "...").c_str());
+             (base::EncodeToHex((*pdvaults_)[l]->node_id()).substr(0, 31) +
+             "...").c_str());
     printf("*                                               *\n");
     printf("*-----------------------------------------------*\n\n");
 #ifdef WIN32
@@ -287,7 +288,7 @@ class RunPDVaults {
 //    printf("Last node: IP(%s), port(%d), PMID(%s)\n",
 //          (*(pdvaults_))[no_of_vaults_ - 1]->host_ip().c_str(),
 //          (*(pdvaults_))[no_of_vaults_ - 1]->host_port(),
-//          (*(pdvaults_))[no_of_vaults_ - 1]->hex_node_id().c_str());
+//          HexSubstr((*(pdvaults_))[no_of_vaults_ - 1]->node_id()).c_str());
   }
 
   void TearDown() {
