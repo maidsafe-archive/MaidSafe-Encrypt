@@ -85,11 +85,11 @@ void LocalStoreManager::Init(int, base::callback_func_type cb) {
       db_.open(std::string(local_sm_dir_ + "/KademilaDb.db").c_str());
       db_.execDML("create table network(key text primary key,value text);");
     }
-    boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
+    boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
+    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
   }
 }
 
@@ -97,11 +97,11 @@ void LocalStoreManager::Close(base::callback_func_type cb, bool) {
   try {
     boost::mutex::scoped_lock loch(mutex_);
     db_.close();
-    boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
+    boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
+    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
   }
 }
 
@@ -225,14 +225,14 @@ int LocalStoreManager::DeletePacket(const std::string &hex_key,
   co.set_hash_algorithm(crypto::SHA_512);
   if (!co.AsymCheckSig(public_key, signed_public_key, public_key,
       crypto::STRING_STRING)) {
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
+    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
     return -2;
   }
 
   if (!co.AsymCheckSig(co.Hash(
       public_key + signed_public_key + key, "", crypto::STRING_STRING, false),
       signature, public_key, crypto::STRING_STRING)) {
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
+    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
     return -3;
   }
 
@@ -242,19 +242,19 @@ int LocalStoreManager::DeletePacket(const std::string &hex_key,
     std::string s = "select value from network where key='" + hex_key + "';";
     CppSQLite3Query q = db_.execQuery(s.c_str());
     if (q.eof()) {
-      boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
+      boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
       return -4;
     }
     std::string val = q.fieldValue(static_cast<unsigned int>(0));
     result = base::DecodeFromHex(val);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
+    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
     return -5;
   }
 
   if (result == "") {
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
+    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
     return -6;
   }
 
@@ -262,28 +262,28 @@ int LocalStoreManager::DeletePacket(const std::string &hex_key,
   switch (type) {
     case SYSTEM_PACKET:
         if (!syspacket.ParseFromString(result)) {
-          boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
+          boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
           return -7;
         }
         if (!co.AsymCheckSig(syspacket.data(), syspacket.signature(),
             public_key, crypto::STRING_STRING)) {
-          boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
+          boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
           return -8;
         }
         break;
 //    case BUFFER_PACKET:
 //        if (!vbph_.ValidateOwnerSignature(public_key, result)) {
-//          boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
+//          boost::thread thr(&ExecuteFailureCallback, cb, mutex_));
 //          return -9;
 //        }
 //        break;
 //    case BUFFER_PACKET_MESSAGE:
 //        if (!vbph_.ValidateOwnerSignature(public_key, result)) {
-//          boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
+//          boost::thread thr(&ExecuteFailureCallback, cb, mutex_));
 //          return -10;
 //        }
 //        if (!vbph_.ClearMessages(&result)) {
-//          boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, mutex_));
+//          boost::thread thr(&ExecuteFailureCallback, cb, mutex_));
 //          return -11;
 //        }
 //        break;
@@ -302,24 +302,24 @@ int LocalStoreManager::DeletePacket(const std::string &hex_key,
     int nRows = db_.execDML(bufSQL);
     if ( nRows > 0 ) {
       if (type != BUFFER_PACKET_MESSAGE) {
-        boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
+        boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
         return 0;
       } else {
         std::string enc_value = base::EncodeToHex(result);
         bufSQL.format("insert into network values ('%s', %Q);",
           hex_key.c_str(), enc_value.c_str());
         db_.execDML(bufSQL);
-        boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
+        boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
         return 0;
       }
     } else {
-      boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
+      boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
       return -12;
     }
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     std::cerr << e.errorCode() << "ddddddd:" << e.errorMessage() << std::endl;
-    boost::thread thr(boost::bind(&ExecuteFailureCallback, cb, &mutex_));
+    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
     return -13;
   }
 }
@@ -343,25 +343,43 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
     cb(kNoPublicKeyToCheck);
     return;
   }
-
-  crypto::Crypto co;
-  for (size_t n = 0; n < values.size(); ++n) {
-    kad::SignedValue sv;
-    if (sv.ParseFromString(values[n])) {
-      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
-          crypto::STRING_STRING)) {
-        cb(kDeletePacketFailure);
-        return;
-      }
+  std::vector<std::string> vals(values);
+  bool empty(true);
+  for (size_t i = 0; i < vals.size(); ++i) {
+    if (!vals.at(i).empty()) {
+      empty = false;
+      break;
     }
   }
-  cb(DeletePacket_DeleteFromDb(packet_name, values, public_key));
+  if (empty) {
+    ReturnCode res =
+        static_cast<ReturnCode>(GetValue_FromDB(packet_name, &vals));
+    if (res == kFindValueFailure) {  // packet doesn't exist on net
+      cb(kSuccess);
+      return;
+    } else if (res != kSuccess || vals.empty()) {
+      cb(kDeletePacketFindValueFailure);
+      return;
+    }
+  }
+//  crypto::Crypto co;
+//  for (size_t n = 0; n < values.size(); ++n) {
+//    kad::SignedValue sv;
+//    if (sv.ParseFromString(values[n])) {
+//      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
+//          crypto::STRING_STRING)) {
+//        cb(kDeletePacketFailure);
+//        return;
+//      }
+//    }
+//  }
+  cb(DeletePacket_DeleteFromDb(packet_name, vals, public_key));
 }
 
 ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
     const std::string &key,
     const std::vector<std::string> &values,
-    const std::string &public_key) {
+    const std::string &) {
   std::string hex_key(base::EncodeToHex(key));
   boost::mutex::scoped_lock loch(mutex_);
   try {
@@ -373,19 +391,19 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
              "anyway.\n");
 #endif
       return kSuccess;
-    } else {
-      kad::SignedValue ksv;
-      if (ksv.ParseFromString(q.getStringField(0))) {
-        crypto::Crypto co;
-        if (!co.AsymCheckSig(ksv.value(), ksv.value_signature(), public_key,
-            crypto::STRING_STRING)) {
-#ifdef DEBUG
-          printf("LocalStoreManager::DeletePacket_DeleteFromDb - current value "
-                 "failed validation.\n");
-#endif
-          return kDeletePacketFailure;
-        }
-      }
+//      } else {
+//        kad::SignedValue ksv;
+//        if (ksv.ParseFromString(q.getStringField(0))) {
+//          crypto::Crypto co;
+//          if (!co.AsymCheckSig(ksv.value(), ksv.value_signature(), public_key,
+//              crypto::STRING_STRING)) {
+//  #ifdef DEBUG
+//            printf("LocalStoreManager::DeletePacket_DeleteFromDb - "
+//                   "current value failed validation.\n");
+//  #endif
+//            return kDeletePacketFailure;
+//          }
+//        }
     }
   }
   catch(CppSQLite3Exception &e1) {  // NOLINT (Fraser)
@@ -431,25 +449,25 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
                                     IfPacketExists if_packet_exists,
                                     const VoidFuncOneInt &cb) {
   std::string public_key;
-  kad::SignedValue sv;
-  if (sv.ParseFromString(value)) {
-    SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
-    if (public_key.empty()) {
-      cb(kNoPublicKeyToCheck);
-      return;
-    } else {
-      crypto::Crypto co;
-      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
-          crypto::STRING_STRING)) {
-        cb(kSendPacketFailure);
-        return;
-      }
-    }
+//  kad::SignedValue sv;
+//  if (sv.ParseFromString(value)) {
+  SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
+  if (public_key.empty()) {
+    cb(kNoPublicKeyToCheck);
+    return;
+//    } else {
+//      crypto::Crypto co;
+//      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
+//          crypto::STRING_STRING)) {
+//        cb(kSendPacketFailure);
+//        return;
+//      }
   }
+//  }
 
   std::vector<std::string> values;
   int n = GetValue_FromDB(packet_name, &values);
-  if (n != kSuccess) {
+  if (n == kFindValueError) {
     cb(kStoreManagerError);
     return;
   }
@@ -475,7 +493,7 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
 
 ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
                                                      const std::string &value,
-                                                     const std::string &pub_key,
+                                                     const std::string &,
                                                      const bool &append) {
   try {
     if (key.length() != kKeySize) {
@@ -486,19 +504,19 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
     boost::mutex::scoped_lock loch(mutex_);
     CppSQLite3Query q = db_.execQuery(s.c_str());
     if (!q.eof()) {
-      std::string dec_value = base::DecodeFromHex(q.getStringField(0));
-      kad::SignedValue sv;
-      if (sv.ParseFromString(dec_value)) {
-        crypto::Crypto co;
-        if (!co.AsymCheckSig(sv.value(), sv.value_signature(), pub_key,
-            crypto::STRING_STRING)) {
-#ifdef DEBUG
-          printf("LocalStoreManager::StorePacket_InsertToDb - "
-                 "Signature didn't validate.\n");
-#endif
-          return kStoreManagerError;
-        }
-      }
+//        std::string dec_value = base::DecodeFromHex(q.getStringField(0));
+//        kad::SignedValue sv;
+//        if (sv.ParseFromString(dec_value)) {
+//          crypto::Crypto co;
+//          if (!co.AsymCheckSig(sv.value(), sv.value_signature(), pub_key,
+//              crypto::STRING_STRING)) {
+//  #ifdef DEBUG
+//            printf("LocalStoreManager::StorePacket_InsertToDb - "
+//                   "Signature didn't validate.\n");
+//  #endif
+//            return kStoreManagerError;
+//          }
+//        }
     }
 
     if (!append) {
@@ -529,9 +547,10 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
 
 void LocalStoreManager::SigningPublicKey(PacketType packet_type,
                                          DirType,
-                                         const std::string &,
+                                         const std::string &msid,
                                          std::string *public_key) {
   public_key->clear();
+  std::string private_key;
   switch (packet_type) {
     case MID:
     case ANMID:
@@ -563,7 +582,10 @@ void LocalStoreManager::SigningPublicKey(PacketType packet_type,
       *public_key = ss_->PublicKey(MAID);
       break;
 // TODO(Dan#5#): 2010-02-03 - Dunno wtf with these as packets
-//    case MSID:
+    case MSID:
+      if (ss_->GetShareKeys(msid, public_key, &private_key) != kSuccess)
+        public_key->clear();
+      break;
 //    case PD_DIR:
 //      GetChunkSignatureKeys(dir_type, msid, key_id, public_key,
 //                            public_key_sig, private_key);
@@ -871,6 +893,7 @@ std::string LocalStoreManager::CreateMessage(const std::string &message,
 
 int LocalStoreManager::GetValue_FromDB(const std::string &key,
                                        std::vector<std::string> *results) {
+  results->clear();
   std::string hex_key = base::EncodeToHex(key);
   try {
     boost::mutex::scoped_lock loch(mutex_);
@@ -885,17 +908,17 @@ int LocalStoreManager::GetValue_FromDB(const std::string &key,
 #ifdef DEBUG
     printf("Error(%i): %s\n", e.errorCode(),  e.errorMessage());
 #endif
-    return -2;
+    return kFindValueError;
   }
-  return kSuccess;
+  return (results->size() > 0) ? kSuccess : kFindValueFailure;
 }
 
 void LocalStoreManager::PollVaultInfo(base::callback_func_type cb) {
-  boost::thread thr(boost::bind(&ExecCallbackVaultInfo, cb, &mutex_));
+  boost::thread thr(&ExecCallbackVaultInfo, cb, &mutex_);
 }
 
 void LocalStoreManager::VaultContactInfo(base::callback_func_type cb) {
-  boost::thread thr(boost::bind(&ExecuteSuccessCallback, cb, &mutex_));
+  boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
 }
 
 void LocalStoreManager::SetLocalVaultOwned(const std::string &,

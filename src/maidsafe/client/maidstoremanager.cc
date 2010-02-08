@@ -537,11 +537,26 @@ void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
     cb(static_cast<ReturnCode>(valid));
     return;
   }
+
+  std::vector<std::string> vals(values);
+  if (vals.empty()) {
+    kad::ContactInfo cache_holder;
+    std::string needs_cache_copy_id;
+    int res = FindValue(packet_name, false, &cache_holder, &vals,
+                        &needs_cache_copy_id);
+    if (res == kFindValueFailure) {  // packet doesn't exist on net
+      cb(kSuccess);
+      return;
+    } else if (res != kSuccess || vals.empty()) {
+      cb(kDeletePacketFindValueFailure);
+      return;
+    }
+  }
   std::string key_id, public_key, public_key_signature, private_key;
   GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
       &public_key, &public_key_signature, &private_key);
   boost::shared_ptr<DeletePacketData> delete_data(new DeletePacketData(
-      packet_name, values, system_packet_type, dir_type, msid, key_id,
+      packet_name, vals, system_packet_type, dir_type, msid, key_id,
       public_key, public_key_signature, private_key, cb));
   // packet_thread_pool_ handles destruction of delete_packet_task.
   DeletePacketTask *delete_packet_task =

@@ -40,21 +40,21 @@ namespace test_auth {
 
 class FakeCallback {
  public:
-  FakeCallback() : result("") {}
+  FakeCallback() : result() {}
   void CallbackFunc(const std::string &res) {
     result = res;
   }
   void Reset() {
-    result = "";
+    result.clear();
   }
   std::string result;
 };
 
-void wait_for_result_ta(const FakeCallback &cb, boost::mutex *mutex) {
+void WaitForResult(const FakeCallback &cb, boost::mutex *mutex) {
   while (true) {
     {
       boost::mutex::scoped_lock guard(*mutex);
-      if (cb.result != "")
+      if (!cb.result.empty())
         return;
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(20));
@@ -113,7 +113,7 @@ class AuthenticationTest : public testing::Test {
     storemanager->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
                                       &cb, _1));
     boost::mutex mutex;
-    test_auth::wait_for_result_ta(cb, &mutex);
+    test_auth::WaitForResult(cb, &mutex);
     GenericResponse res;
     if ((!res.ParseFromString(cb.result)) ||
         (res.result() == kNack)) {
@@ -150,7 +150,7 @@ class AuthenticationTest : public testing::Test {
   AuthenticationTest &operator=(const AuthenticationTest&);
 };
 
-TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_GoodLogin) {
+TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
@@ -199,7 +199,7 @@ TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_GoodLogin) {
   ASSERT_EQ(password, ss->Password()) << "Saved password doesn't correspond";
 }
 
-TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_LoginNoUser) {
+TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
@@ -233,7 +233,7 @@ TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_LoginNoUser) {
   ASSERT_EQ(kPasswordFailure, result);
 }
 
-TEST_F(AuthenticationTest, DISABLED_BEH_MAID_RegisterUserOnce) {
+TEST_F(AuthenticationTest, BEH_MAID_RegisterUserOnce) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
@@ -273,7 +273,7 @@ TEST_F(AuthenticationTest, DISABLED_BEH_MAID_RegisterUserOnce) {
   ASSERT_EQ(password, ss->Password()) << "Saved password doesn't correspond";
 }
 
-TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_RegisterUserTwice) {
+TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
@@ -338,7 +338,7 @@ TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_RegisterUserTwice) {
   }
 */
 
-TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_ChangeUsername) {
+TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
@@ -391,12 +391,11 @@ TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_ChangeUsername) {
       default: {}
     }
   }
-
   ASSERT_EQ(kSuccess, authentication->ChangeUsername(ser_dm, lasquis, pubkeys,
             "el iuserneim")) << "Unable to change iuserneim";
   ASSERT_EQ("el iuserneim", ss->Username()) << "iuserneim is still the old one";
   std::string ser_dm_login;
-  printf("%s\t%s\t%s\n", username.c_str(), pin.c_str(), password.c_str());
+  printf("%s\t%s\t%s\n", ss->Username().c_str(), pin.c_str(), password.c_str());
 
   result = authentication->GetUserInfo("el iuserneim", pin);
   ASSERT_EQ(kUserExists, result) << "User does not exist";
@@ -409,7 +408,7 @@ TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_ChangeUsername) {
   ASSERT_EQ(kUserDoesntExist, result);
 }
 
-TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_ChangePin) {
+TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
@@ -473,7 +472,7 @@ TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_ChangePin) {
   ASSERT_EQ(kUserDoesntExist, result);
 }
 
-TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_ChangePassword) {
+TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   cb.Reset();
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
@@ -546,7 +545,7 @@ TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_ChangePassword) {
   ASSERT_EQ(kPasswordFailure, result);
 }
 
-TEST_F(AuthenticationTest, DISABLED_BEH_MAID_CreatePublicName) {
+TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
@@ -563,7 +562,7 @@ TEST_F(AuthenticationTest, DISABLED_BEH_MAID_CreatePublicName) {
             << "Created public username twice";
 }
 
-TEST_F(AuthenticationTest, DISABLED_BEH_MAID_InvalidUsernamePassword) {
+TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
@@ -578,6 +577,7 @@ TEST_F(AuthenticationTest, DISABLED_BEH_MAID_InvalidUsernamePassword) {
   boost::condition_variable cond_var;
   VoidFuncOneInt func = boost::bind(&test_auth::PacketOpCallback, _1, &mutex,
                                     &cond_var, &result);
+  ss->AddKey(ANMID, "ID", "private key", "public key", "signed public key");
   sm->StorePacket(mid_name, "rubish data with same mid name", MID,
       PRIVATE, "", kDoNothingReturnFailure, func);
   while (result == kGeneralError) {
@@ -591,7 +591,7 @@ TEST_F(AuthenticationTest, DISABLED_BEH_MAID_InvalidUsernamePassword) {
   EXPECT_EQ(kInvalidUsernameOrPin, result);
 }
 
-TEST_F(AuthenticationTest, DISABLED_BEH_MAID_CreateMSIDPacket) {
+TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
@@ -605,7 +605,7 @@ TEST_F(AuthenticationTest, DISABLED_BEH_MAID_CreateMSIDPacket) {
   authentication->CreateMSIDPacket(boost::bind(
       &test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::mutex mutex;
-  test_auth::wait_for_result_ta(cb, &mutex);
+  test_auth::WaitForResult(cb, &mutex);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   CreateMSIDResult msid_result;
   ASSERT_TRUE(msid_result.ParseFromString(cb.result));

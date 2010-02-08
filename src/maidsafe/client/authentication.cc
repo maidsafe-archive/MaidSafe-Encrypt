@@ -132,9 +132,9 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   user_params["privateKey"] =
       createSignaturePackets(ANMID, public_key);
   PacketParams mid_result = midPacket->Create(&user_params);
-  int n = StorePacket(boost::any_cast<std::string>(mid_result["name"]),
-      boost::any_cast<std::string>(mid_result["ser_packet"]), MID,
-      kDoNothingReturnFailure);
+  std::string mid_name = boost::any_cast<std::string>(mid_result["name"]);
+  std::string ser_mid = boost::any_cast<std::string>(mid_result["ser_packet"]);
+  int n = StorePacket(mid_name, ser_mid, MID, kDoNothingReturnFailure);
   if (n != kSuccess) {
     printf("Fucked in MID store: %i\n", n);
     return kAuthenticationError;
@@ -249,8 +249,8 @@ int Authentication::SaveSession(std::string ser_da,
     params["privateKey"] = boost::any_cast<std::string>(priv_keys["ANSMID"]);
     result = smidPacket->Create(&params);
     if (StorePacket(boost::any_cast<std::string>(result["name"]),
-        boost::any_cast<std::string>(result["ser_packet"]), SMID,
-        kDoNothingReturnFailure) != kSuccess) {
+        boost::any_cast<std::string>(result["ser_packet"]), SMID, kOverwrite)
+        != kSuccess) {
       return kAuthenticationError;
     }
 
@@ -279,8 +279,8 @@ int Authentication::SaveSession(std::string ser_da,
   }
 
   if (StorePacket(boost::any_cast<std::string>(mid_result["name"]),
-      boost::any_cast<std::string>(mid_result["ser_packet"]), MID,
-      kDoNothingReturnFailure) != kSuccess) {
+      boost::any_cast<std::string>(mid_result["ser_packet"]), MID, kOverwrite)
+      != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -520,13 +520,13 @@ int Authentication::ChangeUsername(std::string ser_da,
   }
   user_params["username"] = ss_->Username();
 
-  DeletePacket(midPacket->PacketName(&user_params), "", MID);
-  DeletePacket(smidPacket->PacketName(&user_params), "", SMID);
+  result = DeletePacket(midPacket->PacketName(&user_params), "", MID);
+  result = DeletePacket(smidPacket->PacketName(&user_params), "", SMID);
   user_params["rid"] = ss_->MidRid();
-  DeletePacket(tmidPacket->PacketName(&user_params), "", TMID);
+  result = DeletePacket(tmidPacket->PacketName(&user_params), "", TMID);
   if (ss_->MidRid() != ss_->SmidRid()) {
     user_params["rid"] = ss_->SmidRid();
-    DeletePacket(tmidPacket->PacketName(&user_params), "", TMID);
+    result = DeletePacket(tmidPacket->PacketName(&user_params), "", TMID);
   }
 
   ss_->SetUsername(new_username);
@@ -831,7 +831,7 @@ void Authentication::GetUserTmid(bool smid) {
   }
   tmid_content_ = packet_content[0];
 #ifdef DEBUG
-  printf("Authentication::GetUserTmidCallback returning content result\n");
+  printf("Authentication::GetUserTmidCallback returning content.\n");
 #endif
 }
 

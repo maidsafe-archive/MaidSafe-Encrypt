@@ -286,7 +286,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
   ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
 }
 
-TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
+TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_DeleteSystemPacketNotOwner) {
   kad::SignedValue gp;
   rsao_.ClearKeys();
   rsao_.GenerateKeys(4096);
