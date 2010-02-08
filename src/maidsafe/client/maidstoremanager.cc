@@ -217,9 +217,9 @@ int MaidsafeStoreManager::ValidateInputs(const std::string &name,
   return kSuccess;
 }
 
-void MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
-                                      DirType dir_type,
-                                      const std::string &msid) {
+int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
+                                     DirType dir_type,
+                                     const std::string &msid) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::StoreChunk (%i), chunk_name = %s\n",
 //         knode_->host_port(), HexSubstr(chunk_name).c_str());
@@ -229,7 +229,7 @@ void MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
 #ifdef DEBUG
     printf("In MSM::StoreChunk, invalid input.  Error %i\n", valid);
 #endif
-    return;
+    return valid;
   }
   ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
   fs::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
@@ -239,7 +239,7 @@ void MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
     printf("In MaidsafeStoreManager::StoreChunk (%i), didn't find chunk %s\n",
            knode_->host_port(), HexSubstr(chunk_name).c_str());
 #endif
-    return;
+    return kStoreChunkError;
   }
   boost::uint64_t chunk_size(0);
   try {
@@ -250,7 +250,7 @@ void MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
     printf("MaidsafeStoreManager::StoreChunk (%i) - path: %s - %s\n",
            knode_->host_port(), chunk_path.string().c_str(), e.what());
 #endif
-    return;
+    return kStoreManagerException;
   }
   // TODO(Fraser#5#): 2010-01-29 - Check we've got enough space in our account
   //                               to allow storing.
@@ -267,6 +267,9 @@ void MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
         StoreData(chunk_name, chunk_size, chunk_type, dir_type, msid, key_id,
         public_key, public_key_signature, private_key), this);
     chunk_thread_pool_.start(add_to_watch_list_task);
+    return kSuccess;
+  } else {
+    return kStoreChunkError;
   }
 }
 
@@ -425,6 +428,51 @@ int MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
   return kFindValueFailure;
 }
 
+void MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
+                                      const LoadPacketFunctor &lpf) {
+//#ifdef DEBUG
+////  printf("In MaidsafeStoreManager::LoadPacket (%i), packet_name = %s\n",
+////         knode_->host_port(), HexSubstr(packet_name).c_str());
+//#endif
+//  if (results == NULL) {
+//#ifdef DEBUG
+//    printf("In MSM::LoadPacket, results == NULL\n");
+//#endif
+//    return kLoadPacketFailure;
+//  }
+//  results->clear();
+//  int valid = ValidateInputs(packet_name, PacketType_MIN, PRIVATE);
+//  if (valid != kSuccess) {
+//#ifdef DEBUG
+//    printf("In MSM::LoadPacket, invalid input.  Error %i\n", valid);
+//#endif
+//    return valid;
+//  }
+//  kad::ContactInfo cache_holder;
+//  std::string needs_cache_copy_id;
+//  for (int attempt = 0; attempt < kMaxChunkLoadRetries; ++attempt) {
+//    cache_holder.Clear();
+//    results->clear();
+//    int res = FindValue(packet_name, false, &cache_holder, results,
+//        &needs_cache_copy_id);
+//    if (res != kSuccess || results->empty() || cache_holder.has_node_id()) {
+//      if (attempt == kMaxChunkLoadRetries - 1) {
+//#ifdef DEBUG
+//        printf("In MaidsafeStoreManager::LoadPacket (%i), failed FindValue\n",
+//               knode_->host_port());
+//#endif
+//        results->clear();
+//        return kFindValueFailure;
+//      } else {
+//        continue;
+//      }
+//    } else {
+//      return kSuccess;
+//    }
+//  }
+//  return kFindValueFailure;
+}
+
 bool MaidsafeStoreManager::KeyUnique(const std::string &key, bool check_local) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::KeyUnique (%i), key = %s\n",
@@ -449,6 +497,12 @@ bool MaidsafeStoreManager::KeyUnique(const std::string &key, bool check_local) {
     return true;
   }
   return false;
+}
+
+void MaidsafeStoreManager::KeyUnique(const std::string &key,
+                                     bool check_local,
+                                     const VoidFuncOneInt &cb) {
+
 }
 
 int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,

@@ -66,9 +66,9 @@ class StoreManagerInterface {
   virtual void StopRvPing()=0;
   virtual bool NotDoneWithUploading()=0;
   virtual bool KeyUnique(const std::string &key, bool check_local)=0;
-  virtual int KeyUnique(const std::string &key,
-                        bool check_local,
-                        const VoidFuncOneInt &cb)=0;
+  virtual void KeyUnique(const std::string &key,
+                         bool check_local,
+                         const VoidFuncOneInt &cb)=0;
 
   // Chunks
   virtual int LoadChunk(const std::string &chunk_name, std::string *data)=0;
@@ -83,22 +83,22 @@ class StoreManagerInterface {
   // Packets
   virtual int LoadPacket(const std::string &packet_name,
                          std::vector<std::string> *results)=0;
-  virtual int LoadPacket(const std::string &packet_name,
-                         const LoadPacketFunctor &lpf)=0;
-  virtual int StorePacket(const std::string &packet_name,
-                          const std::string &value,
-                          PacketType system_packet_type,
-                          DirType dir_type,
-                          const std::string &msid,
-                          IfPacketExists if_packet_exists,
-                          const VoidFuncOneInt &cb)=0;
-  // Deletes all values for the specified key
-  virtual int DeletePacket(const std::string &packet_name,
-                           const std::vector<std::string> values,
+  virtual void LoadPacket(const std::string &packet_name,
+                          const LoadPacketFunctor &lpf)=0;
+  virtual void StorePacket(const std::string &packet_name,
+                           const std::string &value,
                            PacketType system_packet_type,
                            DirType dir_type,
                            const std::string &msid,
+                           IfPacketExists if_packet_exists,
                            const VoidFuncOneInt &cb)=0;
+  // Deletes all values for the specified key
+  virtual void DeletePacket(const std::string &packet_name,
+                            const std::vector<std::string> values,
+                            PacketType system_packet_type,
+                            DirType dir_type,
+                            const std::string &msid,
+                            const VoidFuncOneInt &cb)=0;
 
   // Buffer packet
   virtual int CreateBP()=0;

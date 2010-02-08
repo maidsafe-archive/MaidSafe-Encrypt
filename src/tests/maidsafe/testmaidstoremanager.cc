@@ -676,53 +676,55 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   // Run test calls
   std::string long_key('a', kKeySize + 1);
   std::string short_key('z', kKeySize - 1);
-  msm.StoreChunk(long_key, PRIVATE, "");
-  msm.StoreChunk(short_key, PRIVATE, "");
-  msm.StoreChunk(chunk_names.at(0), static_cast<DirType>(ANONYMOUS - 1), "");
-  msm.StoreChunk(chunk_names.at(0), static_cast<DirType>(PUBLIC_SHARE + 1), "");
+  ASSERT_EQ(kIncorrectKeySize, msm.StoreChunk(long_key, PRIVATE, ""));
+  ASSERT_EQ(kIncorrectKeySize, msm.StoreChunk(short_key, PRIVATE, ""));
+  ASSERT_EQ(kDirUnknownType, msm.StoreChunk(chunk_names.at(0),
+      static_cast<DirType>(ANONYMOUS - 1), ""));
+  ASSERT_EQ(kDirUnknownType, msm.StoreChunk(chunk_names.at(0),
+      static_cast<DirType>(PUBLIC_SHARE + 1), ""));
 
   int test_run(0);
   // Call 1 - FindKNodes returns failure
-  msm.StoreChunk(chunk_names.at(test_run), PRIVATE, "");
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
 
   // Call 2 - FindKNodes returns success but not enough contacts
   ++test_run;
-  msm.StoreChunk(chunk_names.at(test_run), PRIVATE, "");
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
 
   // Call 3 - Twelve ATW responses return uninitialised
   ++test_run;
-  msm.StoreChunk(chunk_names.at(test_run), PRIVATE, "");
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
 
   // Call 4 - Twelve ATW responses return kNack
   ++test_run;
-  msm.StoreChunk(chunk_names.at(test_run), PRIVATE, "");
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
 
   // Call 5 - Twelve ATW responses return with wrong PMIDs
   ++test_run;
-  msm.StoreChunk(chunk_names.at(test_run), PRIVATE, "");
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
 
   // Call 6 - Twelve ATW responses return excessive upload_count
   ++test_run;
-  msm.StoreChunk(chunk_names.at(test_run), PRIVATE, "");
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
 
   // Call 7 - All ATW responses return upload_count of 0
   ++test_run;
   // Need to sleep to maintain order of tasks in threadpool
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  msm.StoreChunk(chunk_names.at(test_run), PRIVATE, "");
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
 
   // Call 8 - All ATW responses return upload_count of 4
   ++test_run;
   // Need to sleep to maintain order of tasks in threadpool
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  msm.StoreChunk(chunk_names.at(test_run), PRIVATE, "");
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
 
   // Call 9 - All ATW responses return upload_count of 3 except one which
   //          returns an upload_count of 0
   ++test_run;
   // Need to sleep to maintain order of tasks in threadpool
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  msm.StoreChunk(chunk_names.at(test_run), PRIVATE, "");
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
 
   boost::mutex::scoped_lock lock(mutex);
   while (send_chunk_count < 7) {

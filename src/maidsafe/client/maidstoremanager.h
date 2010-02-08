@@ -596,13 +596,16 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void CleanUpTransport();
   void StopRvPing() { transport_handler_.StopPingRendezvous(); }
   bool KeyUnique(const std::string &key, bool check_local);
+  void KeyUnique(const std::string &key,
+                 bool check_local,
+                 const VoidFuncOneInt &cb);
   bool NotDoneWithUploading();
   // Adds the chunk to the store queue.  It must already be in the chunkstore.
   // If the chunk already exists (stored locally or on the net) the function
   // succeeds.  The function returns as soon as the task is enqueued.
-  void StoreChunk(const std::string &chunk_name,
-                  DirType dir_type,
-                  const std::string &msid);
+  int StoreChunk(const std::string &chunk_name,
+                 DirType dir_type,
+                 const std::string &msid);
   // Adds the packet to the priority store queue for uploading as a Kad k,v pair
   void StorePacket(const std::string &packet_name,
                    const std::string &value,
@@ -612,9 +615,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    IfPacketExists if_packet_exists,
                    const VoidFuncOneInt &cb);
   int LoadChunk(const std::string &chunk_name, std::string *data);
-  // Loads all values stored under the packet name
+  // Blocking call which loads all values stored under the packet name
   int LoadPacket(const std::string &packet_name,
                  std::vector<std::string> *results);
+  // Non-blocking call which loads all values stored under the packet name
+  void LoadPacket(const std::string &packet_name, const LoadPacketFunctor &lpf);
   int DeleteChunk(const std::string &chunk_name,
                   const boost::uint64_t &chunk_size,
                   DirType dir_type,

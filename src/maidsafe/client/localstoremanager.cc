@@ -110,9 +110,9 @@ int LocalStoreManager::LoadChunk(const std::string &chunk_name,
   return FindAndLoadChunk(chunk_name, data);
 }
 
-void LocalStoreManager::StoreChunk(const std::string &chunk_name,
-                                   const DirType,
-                                   const std::string&) {
+int LocalStoreManager::StoreChunk(const std::string &chunk_name,
+                                  const DirType,
+                                  const std::string&) {
 #ifdef DEBUG
 //  printf("LocalStoreManager::StoreChunk - %s\n",
 //          hex_chunk_name.substr(0, 10).c_str());
@@ -141,6 +141,7 @@ void LocalStoreManager::StoreChunk(const std::string &chunk_name,
     printf("In LocalStoreManager::SendContent, failed to change chunk type.\n");
 #endif
   }
+  return kSuccess;
 }
 
 int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
@@ -213,9 +214,20 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
   return result;
 }
 
+void LocalStoreManager::KeyUnique(const std::string &key,
+                                  bool check_local,
+                                  const VoidFuncOneInt &cb) {
+
+}
+
 int LocalStoreManager::LoadPacket(const std::string &packet_name,
                                   std::vector<std::string> *results) {
   return GetValue_FromDB(packet_name, results);
+}
+
+void LocalStoreManager::LoadPacket(const std::string &packet_name,
+                                   const LoadPacketFunctor &lpf) {
+
 }
 
 void LocalStoreManager::DeletePacket(const std::string &packet_name,
@@ -266,7 +278,7 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
 ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
     const std::string &key,
     const std::vector<std::string> &values,
-    const std::string &) {
+    const std::string &public_key) {
   std::string hex_key(base::EncodeToHex(key));
   boost::mutex::scoped_lock loch(mutex_);
   try {
@@ -380,7 +392,7 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
 
 ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
                                                      const std::string &value,
-                                                     const std::string &,
+                                                     const std::string &pub_key,
                                                      const bool &append) {
   try {
     if (key.length() != kKeySize) {
