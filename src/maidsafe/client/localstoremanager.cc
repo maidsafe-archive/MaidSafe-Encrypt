@@ -213,119 +213,6 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
   return result;
 }
 
-/*
-int LocalStoreManager::DeletePacket(const std::string &hex_key,
-                                    const std::string &signature,
-                                    const std::string &public_key,
-                                    const std::string &signed_public_key,
-                                    const ValueType &type,
-                                    base::callback_func_type cb) {
-  std::string key = base::DecodeFromHex(hex_key);
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  if (!co.AsymCheckSig(public_key, signed_public_key, public_key,
-      crypto::STRING_STRING)) {
-    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
-    return -2;
-  }
-
-  if (!co.AsymCheckSig(co.Hash(
-      public_key + signed_public_key + key, "", crypto::STRING_STRING, false),
-      signature, public_key, crypto::STRING_STRING)) {
-    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
-    return -3;
-  }
-
-  std::string result = "";
-  try {
-    boost::mutex::scoped_lock loch(mutex_);
-    std::string s = "select value from network where key='" + hex_key + "';";
-    CppSQLite3Query q = db_.execQuery(s.c_str());
-    if (q.eof()) {
-      boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
-      return -4;
-    }
-    std::string val = q.fieldValue(static_cast<unsigned int>(0));
-    result = base::DecodeFromHex(val);
-  }
-  catch(CppSQLite3Exception &e) {  // NOLINT
-    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
-    return -5;
-  }
-
-  if (result == "") {
-    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
-    return -6;
-  }
-
-  GenericPacket syspacket;
-  switch (type) {
-    case SYSTEM_PACKET:
-        if (!syspacket.ParseFromString(result)) {
-          boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
-          return -7;
-        }
-        if (!co.AsymCheckSig(syspacket.data(), syspacket.signature(),
-            public_key, crypto::STRING_STRING)) {
-          boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
-          return -8;
-        }
-        break;
-//    case BUFFER_PACKET:
-//        if (!vbph_.ValidateOwnerSignature(public_key, result)) {
-//          boost::thread thr(&ExecuteFailureCallback, cb, mutex_));
-//          return -9;
-//        }
-//        break;
-//    case BUFFER_PACKET_MESSAGE:
-//        if (!vbph_.ValidateOwnerSignature(public_key, result)) {
-//          boost::thread thr(&ExecuteFailureCallback, cb, mutex_));
-//          return -10;
-//        }
-//        if (!vbph_.ClearMessages(&result)) {
-//          boost::thread thr(&ExecuteFailureCallback, cb, mutex_));
-//          return -11;
-//        }
-//        break;
-//    case BUFFER_PACKET_INFO: break;
-    case CHUNK_REFERENCE: break;
-    case WATCH_LIST: break;
-    case DATA: break;
-    case PDDIR_SIGNED: break;
-    case PDDIR_NOTSIGNED: break;
-    default: break;
-  }
-  try {
-    boost::mutex::scoped_lock loch(mutex_);
-    CppSQLite3Buffer bufSQL;
-    bufSQL.format("delete from network where key=%Q;", hex_key.c_str());
-    int nRows = db_.execDML(bufSQL);
-    if ( nRows > 0 ) {
-      if (type != BUFFER_PACKET_MESSAGE) {
-        boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
-        return 0;
-      } else {
-        std::string enc_value = base::EncodeToHex(result);
-        bufSQL.format("insert into network values ('%s', %Q);",
-          hex_key.c_str(), enc_value.c_str());
-        db_.execDML(bufSQL);
-        boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
-        return 0;
-      }
-    } else {
-      boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
-      return -12;
-    }
-  }
-  catch(CppSQLite3Exception &e) {  // NOLINT
-    std::cerr << e.errorCode() << "ddddddd:" << e.errorMessage() << std::endl;
-    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
-    return -13;
-  }
-}
-
-*/
-
 int LocalStoreManager::LoadPacket(const std::string &packet_name,
                                   std::vector<std::string> *results) {
   return GetValue_FromDB(packet_name, results);
@@ -362,17 +249,17 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
       return;
     }
   }
-//  crypto::Crypto co;
-//  for (size_t n = 0; n < values.size(); ++n) {
-//    kad::SignedValue sv;
-//    if (sv.ParseFromString(values[n])) {
-//      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
-//          crypto::STRING_STRING)) {
-//        cb(kDeletePacketFailure);
-//        return;
-//      }
-//    }
-//  }
+  crypto::Crypto co;
+  for (size_t n = 0; n < values.size(); ++n) {
+    kad::SignedValue sv;
+    if (sv.ParseFromString(values[n])) {
+      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
+          crypto::STRING_STRING)) {
+        cb(kDeletePacketFailure);
+        return;
+      }
+    }
+  }
   cb(DeletePacket_DeleteFromDb(packet_name, vals, public_key));
 }
 
@@ -391,19 +278,19 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
              "anyway.\n");
 #endif
       return kSuccess;
-//      } else {
-//        kad::SignedValue ksv;
-//        if (ksv.ParseFromString(q.getStringField(0))) {
-//          crypto::Crypto co;
-//          if (!co.AsymCheckSig(ksv.value(), ksv.value_signature(), public_key,
-//              crypto::STRING_STRING)) {
-//  #ifdef DEBUG
-//            printf("LocalStoreManager::DeletePacket_DeleteFromDb - "
-//                   "current value failed validation.\n");
-//  #endif
-//            return kDeletePacketFailure;
-//          }
-//        }
+    } else {
+      kad::SignedValue ksv;
+      if (ksv.ParseFromString(q.getStringField(0))) {
+        crypto::Crypto co;
+        if (!co.AsymCheckSig(ksv.value(), ksv.value_signature(), public_key,
+            crypto::STRING_STRING)) {
+#ifdef DEBUG
+          printf("LocalStoreManager::DeletePacket_DeleteFromDb - "
+                 "current value failed validation.\n");
+#endif
+          return kDeletePacketFailure;
+        }
+      }
     }
   }
   catch(CppSQLite3Exception &e1) {  // NOLINT (Fraser)
@@ -449,21 +336,21 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
                                     IfPacketExists if_packet_exists,
                                     const VoidFuncOneInt &cb) {
   std::string public_key;
-//  kad::SignedValue sv;
-//  if (sv.ParseFromString(value)) {
+  kad::SignedValue sv;
+  if (sv.ParseFromString(value)) {
   SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
   if (public_key.empty()) {
     cb(kNoPublicKeyToCheck);
     return;
-//    } else {
-//      crypto::Crypto co;
-//      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
-//          crypto::STRING_STRING)) {
-//        cb(kSendPacketFailure);
-//        return;
-//      }
+    } else {
+      crypto::Crypto co;
+      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
+          crypto::STRING_STRING)) {
+        cb(kSendPacketFailure);
+        return;
+      }
+    }
   }
-//  }
 
   std::vector<std::string> values;
   int n = GetValue_FromDB(packet_name, &values);
@@ -504,19 +391,19 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
     boost::mutex::scoped_lock loch(mutex_);
     CppSQLite3Query q = db_.execQuery(s.c_str());
     if (!q.eof()) {
-//        std::string dec_value = base::DecodeFromHex(q.getStringField(0));
-//        kad::SignedValue sv;
-//        if (sv.ParseFromString(dec_value)) {
-//          crypto::Crypto co;
-//          if (!co.AsymCheckSig(sv.value(), sv.value_signature(), pub_key,
-//              crypto::STRING_STRING)) {
-//  #ifdef DEBUG
-//            printf("LocalStoreManager::StorePacket_InsertToDb - "
-//                   "Signature didn't validate.\n");
-//  #endif
-//            return kStoreManagerError;
-//          }
-//        }
+      std::string dec_value = base::DecodeFromHex(q.getStringField(0));
+      kad::SignedValue sv;
+      if (sv.ParseFromString(dec_value)) {
+        crypto::Crypto co;
+        if (!co.AsymCheckSig(sv.value(), sv.value_signature(), pub_key,
+            crypto::STRING_STRING)) {
+#ifdef DEBUG
+          printf("LocalStoreManager::StorePacket_InsertToDb - "
+                 "Signature didn't validate.\n");
+#endif
+          return kStoreManagerError;
+        }
+      }
     }
 
     if (!append) {
@@ -530,8 +417,8 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
     int a = db_.execDML(s.c_str());
     if (a != 1) {
 #ifdef DEBUG
-          printf("LocalStoreManager::StorePacket_InsertToDb - "
-                 "Insert failed.\n");
+      printf("LocalStoreManager::StorePacket_InsertToDb - "
+             "Insert failed.\n");
 #endif
       return kStoreManagerError;
     }

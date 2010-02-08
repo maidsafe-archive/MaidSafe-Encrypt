@@ -878,6 +878,8 @@ void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
     return;
   }
 
+  // TODO(Dan#5#): 2010-02-08 - Add keys to session
+
   int n = StorePacket(boost::any_cast<std::string>(params["name"]),
       boost::any_cast<std::string>(params["ser_packet"]), MSID,
       kDoNothingReturnFailure);
