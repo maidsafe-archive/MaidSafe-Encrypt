@@ -580,9 +580,10 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   ss->AddKey(ANMID, "ID", "private key", "public key", "signed public key");
   sm->StorePacket(mid_name, "rubish data with same mid name", MID,
       PRIVATE, "", kDoNothingReturnFailure, func);
-  while (result == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex);
-    cond_var.wait(lock);
+    while (result == kGeneralError)
+      cond_var.wait(lock);
   }
   ASSERT_EQ(kSuccess, result);
   boost::shared_ptr<Authentication> authentication(new Authentication());

@@ -913,9 +913,10 @@ int Authentication::StorePacket(const std::string &packet_name,
                                     &mutex, &cond_var, &result);
   storemanager_->StorePacket(packet_name, value, type, PRIVATE, "", if_exists,
                              func);
-  while (result == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex);
-    cond_var.wait(lock);
+    while (result == kGeneralError)
+      cond_var.wait(lock);
   }
   return result;
 }
@@ -932,9 +933,10 @@ int Authentication::DeletePacket(const std::string &packet_name,
                                     &mutex, &cond_var, &result);
   std::vector<std::string> values(1, value);
   storemanager_->DeletePacket(packet_name, values, type, PRIVATE, "", func);
-  while (result == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex);
-    cond_var.wait(lock);
+    while (result == kGeneralError)
+      cond_var.wait(lock);
   }
   return result;
 }

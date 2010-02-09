@@ -2063,9 +2063,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   std::string short_key('z', kKeySize - 1);
   msm.StorePacket(short_key, packet_value, MID, PRIVATE, "",
                   kDoNothingReturnSuccess, functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kIncorrectKeySize, packet_op_result_);
 
@@ -2074,9 +2075,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   msm.StorePacket(packet_name, packet_value,
       static_cast<PacketType>(PacketType_MIN - 1), PRIVATE, "",
       kDoNothingReturnSuccess, functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kPacketUnknownType, packet_op_result_);
 
@@ -2085,9 +2087,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   msm.StorePacket(packet_name, packet_value, MID,
       static_cast<DirType>(PUBLIC_SHARE + 1), "",  kDoNothingReturnSuccess,
       functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kDirUnknownType, packet_op_result_);
 
@@ -2095,9 +2098,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
                   kDoNothingReturnSuccess, functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSendPacketFindValueFailure, packet_op_result_);
 
@@ -2105,9 +2109,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
                   kDoNothingReturnSuccess, functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSendPacketCached, packet_op_result_);
 
@@ -2115,9 +2120,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
                   kDoNothingReturnSuccess, functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSendPacketError, packet_op_result_);
 
@@ -2125,9 +2131,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
                   kDoNothingReturnSuccess, functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSendPacketParseError, packet_op_result_);
 
@@ -2135,9 +2142,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
                   kDoNothingReturnSuccess, functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSendPacketFailure, packet_op_result_);
 
@@ -2145,9 +2153,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
                   kDoNothingReturnSuccess, functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSuccess, packet_op_result_);
 }
@@ -2253,9 +2262,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
                   kDoNothingReturnFailure, functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSendPacketAlreadyExists, packet_op_result_);
 
@@ -2263,9 +2273,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
                   kDoNothingReturnSuccess, functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSuccess, packet_op_result_);
 
@@ -2273,9 +2284,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", kAppend,
                   functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSuccess, packet_op_result_);
 
@@ -2283,9 +2295,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
                   static_cast<IfPacketExists>(-1), functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSendPacketUnknownExistsType, packet_op_result_);
 
@@ -2293,9 +2306,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
                   functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kDeletePacketError, packet_op_result_);
 
@@ -2303,9 +2317,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
                   functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kDeletePacketParseError, packet_op_result_);
 
@@ -2313,9 +2328,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
                   functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kDeletePacketFailure, packet_op_result_);
 
@@ -2323,9 +2339,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
                   functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSuccess, packet_op_result_);
 }
@@ -2538,9 +2555,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
   // Call 1 - Check with bad packet name length
   packet_op_result_ = kGeneralError;
   msm.DeletePacket("InvalidName", packet_values, MID, PRIVATE, "", functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kIncorrectKeySize, packet_op_result_);
 
@@ -2548,9 +2566,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
   packet_op_result_ = kGeneralError;
   msm.DeletePacket(packet_name, packet_values,
       static_cast<PacketType>(PacketType_MAX + 1), PRIVATE, "", functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kPacketUnknownType, packet_op_result_);
 
@@ -2558,45 +2577,50 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
   packet_op_result_ = kGeneralError;
   msm.DeletePacket(packet_name, packet_values, MID,
                    static_cast<DirType>(ANONYMOUS - 1), "", functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kDirUnknownType, packet_op_result_);
 
   // Call 4 - Multiple value request - DeleteResponse empty
   packet_op_result_ = kGeneralError;
   msm.DeletePacket(packet_name, packet_values, MID, PRIVATE, "", functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kDeletePacketError, packet_op_result_);
 
   // Call 5 - Multiple value request - DeleteResponse doesn't parse
   packet_op_result_ = kGeneralError;
   msm.DeletePacket(packet_name, packet_values, MID, PRIVATE, "", functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kDeletePacketParseError, packet_op_result_);
 
   // Call 6 - Multiple value request - DeleteResponse fails
   packet_op_result_ = kGeneralError;
   msm.DeletePacket(packet_name, packet_values, MID, PRIVATE, "", functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kDeletePacketFailure, packet_op_result_);
 
   // Call 7 - Multiple value request - DeleteResponse passes
   packet_op_result_ = kGeneralError;
   msm.DeletePacket(packet_name, packet_values, MID, PRIVATE, "", functor_);
-  while (packet_op_result_ == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex_);
-    cond_var_.wait(lock);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
   }
   ASSERT_EQ(kSuccess, packet_op_result_);
 }

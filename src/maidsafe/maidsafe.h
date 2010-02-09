@@ -319,7 +319,7 @@ const int kChunkMaxThreadCount(20);
 // max. no. of threads in packet_thread_pool_ (in MaidsafeStoreManager)
 const int kPacketMaxThreadCount(10);
 // port where the service to register a local vault is listening
-const boost::uint16_t kLocalPort = 5484;
+const boost::uint16_t kLocalPort = 5483;
 // additionally paying PMIDs kept in watch lists
 const int kMaxReserveWatchListEntries = 250;
 // time a watcher is kept in the ChunkInfoHandler's waiting list

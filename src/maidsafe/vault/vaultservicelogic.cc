@@ -157,7 +157,8 @@ int VaultServiceLogic::AddToRemoteRefList(
                                     done);
   }
   boost::mutex::scoped_lock lock(data->mutex);
-  data->cv.wait(lock);
+  while (!data->callback_done)
+    data->cv.wait(lock);
   return data->result;
 }
 
@@ -478,7 +479,8 @@ int VaultServiceLogic::RemoteVaultAbleToStore(
                                done);
   }
   boost::mutex::scoped_lock lock(data->mutex);
-  data->cv.wait(lock);
+  while (!data->callback_done)
+    data->cv.wait(lock);
   return data->result;
 }
 
