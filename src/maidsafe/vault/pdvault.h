@@ -223,7 +223,6 @@ class PDVault {
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
-//  FRIEND_TEST(PDVaultTest, FUNC_MAID_Kademlia_FindNodes);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreChunks);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetChunks);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk);

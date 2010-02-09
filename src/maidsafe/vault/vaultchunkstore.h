@@ -67,7 +67,6 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   }
  private:
   FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreInit);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreInvalidKeySize);
   FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk);
   FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing);
   FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreDeleteChunk);

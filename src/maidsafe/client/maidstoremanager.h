@@ -684,14 +684,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkPrep);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendPrepCallback);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkContent);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendContentCallback);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket);
-  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed);
-  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail);
-  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AmendAccount);

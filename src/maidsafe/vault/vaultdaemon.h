@@ -74,7 +74,6 @@ class VaultDaemon {
   void RepublishChunkRef();
   // Do validity check on all chunks held in vault
   void ValidityCheck();
-  FRIEND_TEST(VaultDaemonTest, BEH_KAD_EmptyChunkStorage);
   void StartRegistrationService();
   void RegistrationNotification(const maidsafe::VaultConfig &vconfig);
   bool StartNotOwnedVault();
