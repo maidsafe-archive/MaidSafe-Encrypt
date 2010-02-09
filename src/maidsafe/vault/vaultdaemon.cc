@@ -35,22 +35,18 @@ namespace fs = boost::filesystem;
 namespace maidsafe_vault {
 
 VaultDaemon::~VaultDaemon() {
-  if (registration_service_ != NULL) {
-    // local_transport_.Stop();
-    local_ch_manager_->ClearChannels();
-    delete registration_service_;
-    delete registration_channel_;
-    delete local_ch_manager_;
+  if (registration_service_.get() != NULL) {
+    local_udt_transport_.Stop();
+    local_ch_manager_.ClearChannels();
   }
 
-  std::string stop_ = "VaultDaemon stopping  ";
-  boost::posix_time::ptime now_ = boost::posix_time::second_clock::local_time();
-  stop_ += boost::posix_time::to_simple_string(now_);
-  WriteToLog(stop_);
-  if (pdvault_ != NULL) {
+  std::string stop = "VaultDaemon stopping  ";
+  boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+  stop += boost::posix_time::to_simple_string(now);
+  WriteToLog(stop);
+  if (pdvault_.get() != NULL) {
     pdvault_->Stop();
     pdvault_->CleanUp();
-    delete pdvault_;
   }
 }
 
@@ -59,15 +55,13 @@ void VaultDaemon::Status() {
   WriteToLog(out);
 }
 
-void VaultDaemon::RegistrationNotification(const maidsafe::VaultConfig
-      &vconfig) {
-  {
-    boost::mutex::scoped_lock gaurd(config_mutex_);
-    std::fstream output(local_config_file_.string().c_str(),
-        std::ios::out | std::ios::trunc | std::ios::binary);
-    vconfig.SerializeToOstream(&output);
-    output.close();
-  }
+void VaultDaemon::RegistrationNotification(
+    const maidsafe::VaultConfig &vconfig) {
+  boost::mutex::scoped_lock gaurd(config_mutex_);
+  std::fstream output(local_config_file_.string().c_str(),
+      std::ios::out | std::ios::trunc | std::ios::binary);
+  vconfig.SerializeToOstream(&output);
+  output.close();
 }
 
 void VaultDaemon::TakeOwnership() {
@@ -99,11 +93,7 @@ int VaultDaemon::SetPaths() {
   app_path = fs::path("/var/cache/maidsafe/", fs::native);
 #elif defined(MAIDSAFE_WIN32)
   TCHAR szpth[MAX_PATH];
-  if (SUCCEEDED(SHGetFolderPath(NULL,
-                                CSIDL_COMMON_APPDATA,
-                                NULL,
-                                0,
-                                szpth))) {
+  if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szpth))) {
     std::ostringstream stm;
     const std::ctype<char> &ctfacet =
         std::use_facet< std::ctype<char> >(stm.getloc());
@@ -124,14 +114,14 @@ int VaultDaemon::SetPaths() {
   catch(const std::exception &ex_) {
     WriteToLog("Can't create maidsafe vault dir.");
     WriteToLog(ex_.what());
-    return -1;
+    return kVaultDaemonException;
   }
   config_file_ = vault_path_;
   config_file_ /= ".config";
   kad_config_file_ = vault_path_;
   kad_config_file_ /= ".kadconfig";
   local_config_file_ = fs::path(".config", fs::native);
-  return 0;
+  return kSuccess;
 }
 
 void VaultDaemon::SyncVault() {
@@ -150,61 +140,52 @@ void VaultDaemon::ValidityCheck() {
 }
 
 bool VaultDaemon::StartVault() {
-  return false;
-//  std::string init = "VaultDaemon starting  ";
-//  boost::posix_time::ptime now =
-//      boost::posix_time::second_clock::local_time();
-//  init += boost::posix_time::to_simple_string(now);
-//  WriteToLog(init);
-//  if (0 != SetPaths()) {
-//    WriteToLog("Failed to set path to config file - can't start vault.\n");
-//    return false;
-//  }
-//  bool started_registration_service = true;
-//  // No Config file, starting a not owned vault
-//  local_ch_manager_ = new rpcprotocol::ChannelManager(&local_transport_);
-//  if (!local_ch_manager_->RegisterNotifiersToTransport()) {
-//    delete local_ch_manager_;
-//    started_registration_service = false;
-//  } else {
-//    registration_channel_ = new rpcprotocol::Channel(local_ch_manager_,
-//        &local_transport_);
-//    registration_service_ = new maidsafe_vault::RegistrationService(
-//        boost::bind(&VaultDaemon::RegistrationNotification, this, _1));
-//    registration_channel_->SetService(registration_service_);
-//    local_ch_manager_->RegisterChannel(
-//        registration_service_->GetDescriptor()->name(),
-//        registration_channel_);
-//    if (0 != local_transport_.StartLocal(kLocalPort)) {
-//      local_ch_manager_->ClearChannels();
-//      delete registration_service_;
-//      delete registration_channel_;
-//      delete local_ch_manager_;
-//      registration_service_ = NULL;
-//      registration_channel_ = NULL;
-//      local_ch_manager_ = NULL;
-//      started_registration_service = false;
-//    }
-//  }
-//  if (!ReadConfigInfo()) {
-//    if (!started_registration_service) {
-//      WriteToLog("Failed to start registration service");
-//      return false;
-//    }
-//    if (!StartNotOwnedVault())
-//      return false;
-//    else
-//      TakeOwnership();
-//  } else {
-//    if (!StartOwnedVault()) {
-//      return false;
-//    } else {
-//      if (registration_service_ != NULL)
-//        registration_service_->set_status(maidsafe::OWNED);
-//      is_owned_ = true;
-//    }
-//  }
-//  return true;
+  std::string init = "VaultDaemon starting  ";
+  boost::posix_time::ptime now =
+      boost::posix_time::second_clock::local_time();
+  init += boost::posix_time::to_simple_string(now);
+  WriteToLog(init);
+  if (0 != SetPaths()) {
+    WriteToLog("Failed to set path to config file - can't start vault.\n");
+    return false;
+  }
+  bool started_registration_service = true;
+  // No Config file, starting a not owned vault
+  if (!local_ch_manager_.RegisterNotifiersToTransport()) {
+    started_registration_service = false;
+  } else {
+    registration_channel_.reset(new rpcprotocol::Channel(&local_ch_manager_,
+        &transport_handler_));
+    registration_service_.reset(new maidsafe_vault::RegistrationService(
+        boost::bind(&VaultDaemon::RegistrationNotification, this, _1)));
+    registration_channel_->SetService(registration_service_.get());
+    local_ch_manager_.RegisterChannel(
+        registration_service_->GetDescriptor()->name(),
+        registration_channel_.get());
+    if (0 != local_udt_transport_.StartLocal(kLocalPort)) {
+      local_ch_manager_.ClearChannels();
+      started_registration_service = false;
+    }
+  }
+  if (!ReadConfigInfo()) {
+    if (!started_registration_service) {
+      WriteToLog("Failed to start registration service");
+      return false;
+    }
+    if (!StartNotOwnedVault())
+      return false;
+    else
+      TakeOwnership();
+  } else {
+    if (!StartOwnedVault()) {
+      return false;
+    } else {
+      if (registration_service_.get() != NULL)
+        registration_service_->set_status(maidsafe::OWNED);
+      is_owned_ = true;
+    }
+  }
+  return true;
 }
 
 bool VaultDaemon::ReadConfigInfo() {
@@ -269,9 +250,9 @@ bool VaultDaemon::StartNotOwnedVault() {
   fs::path chunkstore_dir(vault_path_);
   chunkstore_dir /= "Chunkstore";
   boost::uint64_t space = 1024*1024*1024;  // 1GB
-  pdvault_ = new PDVault(keys.public_key(), keys.private_key(), signed_pubkey,
-      chunkstore_dir.string(), 0, false, false, kad_config_file_.string(),
-      space, 0);
+  pdvault_.reset(new PDVault(keys.public_key(), keys.private_key(),
+      signed_pubkey, chunkstore_dir.string(), 0, false, false,
+      kad_config_file_.string(), space, 0, &transport_handler_));
   pdvault_->Start(false);
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed to start a not owned vault");
@@ -286,19 +267,17 @@ bool VaultDaemon::StartNotOwnedVault() {
 
 void VaultDaemon::StopNotOwnedVault() {
   pdvault_->Stop();
-  delete pdvault_;
-  pdvault_ = NULL;
   fs::path chunkstore_dir(vault_path_);
   chunkstore_dir /= "Chunkstore";
   fs::remove_all(chunkstore_dir);
 }
 
 bool VaultDaemon::StartOwnedVault() {
-  if (pdvault_ != NULL)
+  if (pdvault_.get() != NULL)
     return false;
-  pdvault_ = new PDVault(pmid_public_, pmid_private_, signed_pmid_public_,
+  pdvault_.reset(new PDVault(pmid_public_, pmid_private_, signed_pmid_public_,
       chunkstore_dir_, port_, false, false, kad_config_file_.string(),
-      vault_available_space_, used_space_);
+      vault_available_space_, used_space_, &transport_handler_));
   pdvault_->Start(false);
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed To Start Owned Vault with info in config file");

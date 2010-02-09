@@ -376,7 +376,7 @@ int ClientController::CheckUserExists(const std::string &username,
 bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password,
-                                  const VaultConfigParameters &) {
+                                  const VaultConfigParameters &vcp) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::CreateUser - Not initialised.\n");
@@ -415,12 +415,12 @@ bool ClientController::CreateUser(const std::string &username,
   }
   // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
   //                             Parameters come in VaultConfigParameters.
-//  OwnLocalVaultResult olvr =
-//      SetLocalVaultOwned(vcp.port, vcp.space * 1024 * 1024, vcp.directory);
-//  #ifdef DEBUG
-//    printf("ClientController::CreateUser +++ "
-//           "OwnLocalVaultResult: %d +++\n", olvr);
-//  #endif
+  OwnLocalVaultResult olvr =
+      SetLocalVaultOwned(vcp.port, vcp.space * 1024 * 1024, vcp.directory);
+  #ifdef DEBUG
+    printf("ClientController::CreateUser +++ "
+           "OwnLocalVaultResult: %d +++\n", olvr);
+  #endif
 
   ss_->SetSessionName(false);
   std::string root_db_key;

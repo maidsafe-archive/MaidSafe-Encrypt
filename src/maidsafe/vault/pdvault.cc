@@ -50,15 +50,16 @@ PDVault::PDVault(const std::string &pmid_public,
                  bool use_upnp,
                  const std::string &kad_config_file,
                  const boost::uint64_t &available_space,
-                 const boost::uint64_t &used_space)
+                 const boost::uint64_t &used_space,
+                 transport::TransportHandler *transport_handler)
     : port_(port),
       udt_transport_(),
-      transport_handler_(),
-      channel_manager_(&transport_handler_),
+      transport_handler_(transport_handler),
+      channel_manager_(transport_handler_),
       validator_(),
-      knode_(&channel_manager_, &transport_handler_, kad::VAULT, pmid_private,
+      knode_(&channel_manager_, transport_handler_, kad::VAULT, pmid_private,
              pmid_public, port_forwarded, use_upnp),
-      vault_rpcs_(&transport_handler_, &channel_manager_),
+      vault_rpcs_(transport_handler_, &channel_manager_),
       vault_chunkstore_(chunkstore_dir, available_space, used_space),
       vault_service_(),
       vault_service_logic_(&vault_rpcs_, &knode_),
@@ -77,7 +78,7 @@ PDVault::PDVault(const std::string &pmid_public,
       thread_pool_(),
       prune_pending_ops_thread_() {
   boost::int16_t trans_id;
-  transport_handler_.Register(&udt_transport_, &trans_id);
+  transport_handler_->Register(&udt_transport_, &trans_id);
   knode_.SetTransID(trans_id);
   vault_chunkstore_.Init();
   co_.set_symm_algorithm(crypto::AES_256);
@@ -101,10 +102,10 @@ void PDVault::Start(bool first_node) {
     return;
   bool success = channel_manager_.RegisterNotifiersToTransport();
   if (success)
-    success = transport_handler_.RegisterOnServerDown(boost::bind(
+    success = transport_handler_->RegisterOnServerDown(boost::bind(
         &kad::KNode::HandleDeadRendezvousServer, &knode_, _1));
   if (success)
-    success = (transport_handler_.Start(port_, udt_transport_.GetID()) == 0);
+    success = (transport_handler_->Start(port_, udt_transport_.GetID()) == 0);
   if (success)
     success = (channel_manager_.Start() == 0);
   if (success) {
@@ -114,7 +115,7 @@ void PDVault::Start(bool first_node) {
       boost::asio::ip::address local_ip;
       base::get_local_address(&local_ip);
       knode_.Join(pmid_, kad_config_file_, local_ip.to_string(),
-          transport_handler_.listening_port(udt_transport_.GetID()),
+          transport_handler_->listening_port(udt_transport_.GetID()),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     } else {
       knode_.Join(pmid_, kad_config_file_,
@@ -180,7 +181,7 @@ int PDVault::Stop() {
     SetVaultStatus(kVaultStarted);
   else
     SetVaultStatus(kVaultStopped);
-  transport_handler_.StopAll();
+  transport_handler_->StopAll();
   channel_manager_.Stop();
   return 0;
 }
@@ -200,7 +201,7 @@ void PDVault::RegisterMaidService() {
                      &vault_service_logic_,
                      udt_transport_.GetID()));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
-      new rpcprotocol::Channel(&channel_manager_, &transport_handler_));
+      new rpcprotocol::Channel(&channel_manager_, transport_handler_));
   svc_channel_->SetService(vault_service_.get());
   channel_manager_.RegisterChannel(
     vault_service_->GetDescriptor()->name(), svc_channel_.get());

@@ -208,6 +208,7 @@ enum ReturnCode {
   kCacheChunkResponseError = -1516,
 
   // Vault
+  kVaultDaemonException = -2501,
 
   // Vault Chunkstore
   kChunkstoreError = maidsafe::kChunkstoreError,
