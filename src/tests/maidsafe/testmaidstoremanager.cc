@@ -188,19 +188,25 @@ void ThreadedGetHolderContactCallbacks(
   }
 }
 
-void AddToWatchListCallback(
-    bool initialise_response,
-    const int &result,
-    const std::string &pmid,
-    const boost::uint32_t &upload_count,
-    maidsafe::AddToWatchListResponse *response,
-    google::protobuf::Closure* callback) {
+void AddToWatchListCallback(bool initialise_response,
+                            const int &result,
+                            const std::string &pmid,
+                            const boost::uint32_t &upload_count,
+                            maidsafe::AddToWatchListResponse *response,
+                            google::protobuf::Closure* callback,
+                            int *callback_count,
+                            boost::mutex *mutex,
+                            boost::condition_variable *cond_var) {
   if (initialise_response) {
     response->set_result(result);
     response->set_pmid(pmid);
     response->set_upload_count(upload_count);
   }
   callback->Run();
+  boost::mutex::scoped_lock lock(*mutex);
+  ++(*callback_count);
+  if (*callback_count == kad::K)
+    cond_var->notify_one();
 }
 
 void RemoveFromWatchListCallback(
@@ -285,8 +291,7 @@ int SendChunkCount(int *send_chunk_count,
                    boost::condition_variable *cond_var) {
   boost::mutex::scoped_lock lock(*mutex);
   ++(*send_chunk_count);
-  if (*send_chunk_count == 3)
-    cond_var->notify_one();
+  cond_var->notify_one();
   return 0;
 }
 
@@ -589,8 +594,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   ASSERT_TRUE(client_chunkstore_->is_initialised());
 
   // Set up chunks
+  const int kTestCount(9);
   std::vector<std::string> chunk_names;
-  for (int i = 0; i < 8; ++i) {
+  for (int i = 0; i < kTestCount; ++i) {
     boost::uint64_t chunk_size = 396 + i;
     std::string chunk_value = base::RandomString(chunk_size);
     std::string chunk_name = crypto_.Hash(chunk_value, "",
@@ -610,6 +616,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     if (i >= msm.kKadStoreThreshold_)
       few_chunk_info_holders.push_back(contact);
   }
+  int callback_count(0);
   int send_chunk_count(0);
   boost::mutex mutex;
   boost::condition_variable cond_var;
@@ -623,10 +630,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_chunk_info_holders),
           testing::Return(kSuccess)));  // Call 2
 
-  for (int i = 2; i < 8; ++i) {
+  for (int i = 2; i < kTestCount; ++i) {
     EXPECT_CALL(msm, FindKNodes(chunk_names.at(i), testing::_))
         .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
-            testing::Return(kSuccess)));  // Calls 3 to 8
+            testing::Return(kSuccess)));  // Calls 3 to 9
   }
 
   // Contact Info holder 1
@@ -640,23 +647,32 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
       testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, false, kAck,
-                chunk_info_holders.at(0).node_id(), 4, _1, _2))))  // Call 3
+                chunk_info_holders.at(0).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kNack,
-                chunk_info_holders.at(0).node_id(), 4, _1, _2))))  // Call 4
+                chunk_info_holders.at(0).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(1).node_id(), 4, _1, _2))))  // Call 5
+                chunk_info_holders.at(1).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
                 chunk_info_holders.at(0).node_id(), kMinChunkCopies + 1, _1,
-                _2))))  // Call 6
+                _2, &callback_count, &mutex, &cond_var))))  // Call 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(0).node_id(), 0, _1, _2))))  // Call 7
+                chunk_info_holders.at(0).node_id(), 0, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 7
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(0).node_id(), 0, _1, _2))));  // Call 8
+                chunk_info_holders.at(0).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 8
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(0).node_id(), 0, _1, _2, &callback_count,
+                &mutex, &cond_var))));  // Call 9
 
   // Contact Info holders 2 to 12 inclusive
   for (int i = 1; i < msm.kKadStoreThreshold_; ++i) {
@@ -670,23 +686,32 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, false, kAck,
-                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 3
+                chunk_info_holders.at(i).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kNack,
-                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 4
+                chunk_info_holders.at(i).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(i + 1).node_id(), 4, _1, _2))))  // Call 5
+                chunk_info_holders.at(i + 1).node_id(), 4, _1, _2,
+                &callback_count, &mutex, &cond_var))))  // Call 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
                 chunk_info_holders.at(i).node_id(), kMinChunkCopies + 1, _1,
-                _2))))  // Call 6
+                _2, &callback_count, &mutex, &cond_var))))  // Call 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(i).node_id(), 0, _1, _2))))  // Call 7
+                chunk_info_holders.at(i).node_id(), 0, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 7
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(i).node_id(), 3, _1, _2))));  // Call 8
+                chunk_info_holders.at(i).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 8
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 3, _1, _2, &callback_count,
+                &mutex, &cond_var))));  // Call 9
   }
 
   // Contact Info holders 13 to 16 inclusive
@@ -701,28 +726,46 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 3
+                chunk_info_holders.at(i).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 4
+                chunk_info_holders.at(i).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 5
+                chunk_info_holders.at(i).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(i).node_id(), 4, _1, _2))))  // Call 6
+                chunk_info_holders.at(i).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(i).node_id(), 0, _1, _2))))  // Call 7
+                chunk_info_holders.at(i).node_id(), 0, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 7
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
-                chunk_info_holders.at(i).node_id(), 3, _1, _2))));  // Call 8
+                chunk_info_holders.at(i).node_id(), 4, _1, _2, &callback_count,
+                &mutex, &cond_var))))  // Call 8
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListCallback, true, kAck,
+                chunk_info_holders.at(i).node_id(), 3, _1, _2, &callback_count,
+                &mutex, &cond_var))));  // Call 9
   }
 
   EXPECT_CALL(msm, SendChunkPrep(
       testing::AllOf(testing::Field(&StoreData::data_name, chunk_names.at(7)),
                      testing::Field(&StoreData::dir_type, PRIVATE))))
-          .Times(3)  // Call 8
+          .Times(4)  // Call 8
+          .WillRepeatedly(testing::InvokeWithoutArgs(boost::bind(
+              &test_msm::SendChunkCount, &send_chunk_count, &mutex,
+              &cond_var)));
+
+  EXPECT_CALL(msm, SendChunkPrep(
+      testing::AllOf(testing::Field(&StoreData::data_name, chunk_names.at(8)),
+                     testing::Field(&StoreData::dir_type, PRIVATE))))
+          .Times(3)  // Call 9
           .WillRepeatedly(testing::InvokeWithoutArgs(boost::bind(
               &test_msm::SendChunkCount, &send_chunk_count, &mutex,
               &cond_var)));
@@ -736,44 +779,93 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
       static_cast<DirType>(ANONYMOUS - 1), ""));
   ASSERT_EQ(kDirUnknownType, msm.StoreChunk(chunk_names.at(0),
       static_cast<DirType>(PUBLIC_SHARE + 1), ""));
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   int test_run(0);
   // Call 1 - FindKNodes returns failure
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  int time_taken(0);
+  const int kTimeout(5000);
+  while (msm.tasks_handler_.TasksCount() != 0 && time_taken < kTimeout) {
+    time_taken += 100;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 2 - FindKNodes returns success but not enough contacts
   ++test_run;
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  time_taken = 0;
+  while (msm.tasks_handler_.TasksCount() != 0 && time_taken < kTimeout) {
+    time_taken += 100;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 3 - Twelve ATW responses return uninitialised
   ++test_run;
+  boost::mutex::scoped_lock lock(mutex);
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  while (callback_count < kad::K)
+    cond_var.wait(lock);
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 4 - Twelve ATW responses return kNack
   ++test_run;
+  callback_count = 0;
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  while (callback_count < kad::K)
+    cond_var.wait(lock);
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 5 - Twelve ATW responses return with wrong PMIDs
   ++test_run;
+  callback_count = 0;
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  while (callback_count < kad::K)
+    cond_var.wait(lock);
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 6 - Twelve ATW responses return excessive upload_count
   ++test_run;
+  callback_count = 0;
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  while (callback_count < kad::K)
+    cond_var.wait(lock);
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 7 - All ATW responses return upload_count of 0
   ++test_run;
+  callback_count = 0;
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  while (callback_count < kad::K)
+    cond_var.wait(lock);
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
-  // Call 8 - All ATW responses return upload_count of 3 except one which
+  // Call 8 - All ATW responses return upload_count of 4
+  ++test_run;
+  callback_count = 0;
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  while (send_chunk_count < 4)
+    cond_var.wait(lock);
+  ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
+  StoreTask retrieved_task;
+  ASSERT_TRUE(msm.tasks_handler_.Task(chunk_names.at(test_run), kStoreChunk,
+      &retrieved_task));
+  ASSERT_EQ(boost::uint8_t(4), retrieved_task.successes_required_);
+
+  // Call 9 - All ATW responses return upload_count of 3 except one which
   //          returns an upload_count of 0
   ++test_run;
+  callback_count = 0;
+  send_chunk_count = 0;
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
-
-  boost::mutex::scoped_lock lock(mutex);
-  while (send_chunk_count < 3) {
+  while (send_chunk_count < 3)
     cond_var.wait(lock);
-  }
+  ASSERT_EQ(size_t(2), msm.tasks_handler_.TasksCount());
+  ASSERT_TRUE(msm.tasks_handler_.Task(chunk_names.at(test_run), kStoreChunk,
+      &retrieved_task));
+  ASSERT_EQ(boost::uint8_t(3), retrieved_task.successes_required_);
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
