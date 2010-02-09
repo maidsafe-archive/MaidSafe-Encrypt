@@ -216,8 +216,7 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
 
 void LocalStoreManager::KeyUnique(const std::string &key,
                                   bool check_local,
-                                  const VoidFuncOneInt &cb) {
-
+                                  const boost::function<void(bool)> &cb) {  // NOLINT (Fraser) False positive
 }
 
 int LocalStoreManager::LoadPacket(const std::string &packet_name,
@@ -227,7 +226,6 @@ int LocalStoreManager::LoadPacket(const std::string &packet_name,
 
 void LocalStoreManager::LoadPacket(const std::string &packet_name,
                                    const LoadPacketFunctor &lpf) {
-
 }
 
 void LocalStoreManager::DeletePacket(const std::string &packet_name,

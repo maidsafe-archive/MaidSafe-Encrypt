@@ -68,7 +68,7 @@ class StoreManagerInterface {
   virtual bool KeyUnique(const std::string &key, bool check_local)=0;
   virtual void KeyUnique(const std::string &key,
                          bool check_local,
-                         const VoidFuncOneInt &cb)=0;
+                         const boost::function<void(bool)> &cb)=0;  // NOLINT (Fraser) False positive
 
   // Chunks
   virtual int LoadChunk(const std::string &chunk_name, std::string *data)=0;

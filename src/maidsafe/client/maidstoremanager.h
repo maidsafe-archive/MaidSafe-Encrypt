@@ -84,9 +84,7 @@ class CallbackObj {
     called_ = true;
   }
   std::string result() {
-//    printf("Callback obj result() - afore lock\n");
     boost::mutex::scoped_lock lock(mutex_);
-//    printf("Callback obj result() - after lock\n");
     return called_ ? result_ : "";
   }
   bool called() {
@@ -103,11 +101,8 @@ class CallbackObj {
   }
   //  Block until callback happens.
   void WaitForCallback() {
-//    printf("Callback obj WaitForCallback() - start\n");
     while (!called()) {
-//      printf("Callback obj WaitForCallback() - afore sleep\n");
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-//      printf("Callback obj WaitForCallback() - after slepp\n");
     }
   }
  private:
@@ -598,7 +593,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   bool KeyUnique(const std::string &key, bool check_local);
   void KeyUnique(const std::string &key,
                  bool check_local,
-                 const VoidFuncOneInt &cb);
+                 const boost::function<void(bool)> &cb);  // NOLINT (Fraser) False positive
   bool NotDoneWithUploading();
   // Adds the chunk to the store queue.  It must already be in the chunkstore.
   // If the chunk already exists (stored locally or on the net) the function
@@ -800,6 +795,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                         kad::ContactInfo *cache_holder,
                         std::vector<std::string> *values,
                         std::string *needs_cache_copy_id);
+  // Simple wrapper for knode_->FindValue
+  virtual void FindValue(const std::string &kad_key,
+                         bool check_local,
+                         const base::callback_func_type &cb);
   // Populates a vector of chunk holders.  Those that are contactable have
   // non-empty contact details and those that have the chunk have their variable
   // check_chunk_response_.result() == kAck.  To stop the function from sending
@@ -858,6 +857,27 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const std::vector<std::string> &packet_holder_ids,
       std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
       boost::shared_ptr<GenericConditionData> find_cond_data);
+  // Callback for blocking version of LoadPacket
+  void LoadPacketCallback(const std::vector<std::string> values_in,
+                          const int &result_in,
+                          boost::mutex *mutex,
+                          boost::condition_variable *cond_var,
+                          std::vector<std::string> *values_out,
+                          int *result_out);
+  // Callback for non-blocking version of LoadPacket
+  void LoadPacketCallback(const std::string &packet_name,
+                          const int &attempt,
+                          const std::string &ser_response,
+                          const LoadPacketFunctor &lpf);
+  // Callback for blocking version of KeyUnique
+  void KeyUniqueCallback(const bool &result_in,
+                         boost::mutex *mutex,
+                         boost::condition_variable *cond_var,
+                         bool *result_out,
+                         bool *called_back);
+  // Callback for non-blocking version of KeyUnique
+  void KeyUniqueCallback(const std::string &ser_response,
+                         const boost::function<void(bool)> &cb);  // NOLINT (Fraser) False positive
   // Assess prior existence of packet on net and handle storing if required.
   virtual void SendPacketPrep(boost::shared_ptr<StoreData> store_data);
   // Store an individual packet to the network as a kademlia value.
