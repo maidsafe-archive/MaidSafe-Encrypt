@@ -55,7 +55,7 @@ int PrivateShareHandler::MI_AddPrivateShare(
     return -2010;
 
   bool ro_participation = false;
-  if (attributes[3] == "" && participants->empty())
+  if (attributes[3] == "" && participants && participants->empty())
     ro_participation = true;
 
   private_share ps(attributes[0], attributes[1], attributes[2], attributes[3]);
@@ -66,7 +66,7 @@ int PrivateShareHandler::MI_AddPrivateShare(
     return -2010;
 
   if (!ro_participation) {
-    while (!participants->empty()) {
+    while (participants && !participants->empty()) {
       ShareParticipants sps = participants->front();
       share_participant sp(ps.msid_, sps.id, sps.public_key, sps.role);
       participants->pop_front();
@@ -244,8 +244,9 @@ int PrivateShareHandler::MI_GetShareInfo(const std::string &value,
     private_share_set_by_msid& private_share_index =
         pss_.get<private_share_msid>();
     private_share_set_by_msid::iterator it = private_share_index.find(msid);
-    if (it == private_share_index.end())
+    if (it == private_share_index.end()) {
       return -2014;
+    }
     share_attributes.push_back((*it).name_);
     share_attributes.push_back((*it).msid_);
     share_attributes.push_back((*it).msid_pub_key_);

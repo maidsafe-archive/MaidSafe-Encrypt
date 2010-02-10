@@ -143,6 +143,12 @@ class LocalStoreManager : public StoreManagerInterface {
                             const boost::uint32_t &timestamp);
   void SigningPublicKey(PacketType packet_type, DirType dt,
                         const std::string &msid, std::string *public_key);
+  void SigningPrivateKey(PacketType packet_type, DirType dt,
+                         const std::string &msid, std::string *private_key);
+  void CreateSerialisedSignedValue(const std::string value,
+                                   const PacketType &pt,
+                                   const std::string &msid,
+                                   std::string *ser_gp);
 
   CppSQLite3DB db_;
   VaultBufferPacketHandler vbph_;

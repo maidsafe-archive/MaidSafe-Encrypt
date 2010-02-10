@@ -34,46 +34,59 @@
 
 namespace maidsafe {
 
+struct SystemPacketCreation {
+  SystemPacketCreation() : vfoi(), packet_count(0), username(), pin(), rid(0) {}
+  VoidFuncOneInt vfoi;
+  int packet_count;
+  std::string username, pin;
+  boost::uint32_t rid;
+};
+struct FindSystemPacket {
+  FindSystemPacket() : spc(), pp(), pt() {}
+  boost::shared_ptr<SystemPacketCreation> spc;
+  PacketParams pp;
+  PacketType pt;
+};
+
+const boost::uint16_t NoOfSystemPackets = 8;
+
 class Authentication {
  public:
-  Authentication() : ud_(),
-                     mutex_(),
-                     crypto_(),
-                     storemanager_(),
-                     ss_(),
-                     tmid_content_() {}
+  Authentication()
+      : ud_(), mutex_(), crypto_(), sm_(), ss_(), tmid_content_(),
+        system_packets_result_(kPendingResult) {}
   void Init(boost::shared_ptr<StoreManagerInterface> smgr);
   int GetUserInfo(const std::string &username, const std::string &pin);
   int GetUserData(const std::string &password, std::string &ser_da);
-  int CreateUserSysPackets(const std::string &username, const std::string &pin,
-                           uint32_t *rid);
-  int CreateTmidPacket(const std::string &username, const std::string &pin,
-    const std::string &password, const uint32_t& rid,
-    const std::string &ser_dm);
-  int SaveSession(std::string ser_da,
-                  PacketParams priv_keys,
-                  PacketParams pub_keys);
+  int CreateUserSysPackets(const std::string &username,
+                           const std::string &pin);
+  void CreateUserSysPackets(const ReturnCode rc,
+                            const std::string &username,
+                            const std::string &pin,
+                            VoidFuncOneInt vfoi,
+                            boost::uint16_t *count,
+                            bool *calledback);
+  int CreateTmidPacket(const std::string &username,
+                       const std::string &pin,
+                       const std::string &password,
+                       const std::string &ser_dm);
+  int SaveSession(const std::string &ser_da);
   int RemoveMe(std::list<KeyAtlasRow> sig_keys);
-  int CreatePublicName(std::string public_username, PacketParams *result);
-  int ChangeUsername(std::string ser_da,
-                     PacketParams priv_keys,
-                     PacketParams pub_keys,
-                     std::string new_username);
-  int ChangePin(std::string ser_da,
-                PacketParams priv_keys,
-                PacketParams pub_keys,
-                std::string new_pin);
-  int ChangePassword(std::string ser_da,
-                     PacketParams priv_keys,
-                     PacketParams pub_keys,
-                     std::string new_password);
-  bool CheckUserExists(std::string username, std::string pin);
+  int CreatePublicName(const std::string &public_username);
+  int ChangeUsername(const std::string &ser_da,
+                     const std::string &new_username);
+  int ChangePin(const std::string &ser_da,
+                const std::string &new_pin);
+  int ChangePassword(const std::string &ser_da,
+                     const std::string &new_password);
   int PublicUsernamePublicKey(const std::string &public_username,
-                              std::string &public_key);
+                              std::string *public_key);
   void CreateMSIDPacket(base::callback_func_type cb);
  private:
-  std::string createSignaturePackets(const PacketType &type_da,
-                                     std::string &public_key);
+  std::string CreateSignaturePackets(const PacketType &type_da,
+                                     std::string *public_key);
+  void CreateSignaturePacket(boost::shared_ptr<SystemPacketCreation> spc,
+                             const PacketType &type_da);
   bool CheckUsername(const std::string &username);
   bool CheckPin(const std::string &pin);
   bool CheckPassword(const std::string &password);
@@ -85,7 +98,8 @@ class Authentication {
   int StorePacket(const std::string &packet_name,
                   const std::string &value,
                   const PacketType &type,
-                  const IfPacketExists &if_exists);
+                  const IfPacketExists &if_exists,
+                  const std::string &msid);
   // Unneccessary, but more efficient/faster to pass packet's value here
   int DeletePacket(const std::string &packet_name,
                    const std::string &value,
@@ -94,12 +108,25 @@ class Authentication {
                         boost::mutex *mutex,
                         boost::condition_variable *cond_var,
                         int *op_result);
+  void CreateSignaturePacketKeyUnique(const ReturnCode &rc,
+                                      boost::shared_ptr<FindSystemPacket> fsp);
+  void CreateSignaturePacketStore(const ReturnCode &rc,
+                                  boost::shared_ptr<FindSystemPacket> fsp);
+  void CreateSystemPacketsCallback(const ReturnCode &rc) {
+    system_packets_result_ = rc;
+  }
+  void CreateMidPacket(boost::shared_ptr<FindSystemPacket> fsp);
+  void CreateSmidPacket(boost::shared_ptr<FindSystemPacket> fsp);
+  void CreateMaidPmidPacket(boost::shared_ptr<FindSystemPacket> fsp);
+  std::string EncryptedDataMidSmid(boost::uint32_t rid);
+
   UserDetails ud_;
   boost::mutex mutex_;
   crypto::Crypto crypto_;
-  boost::shared_ptr<StoreManagerInterface> storemanager_;
+  boost::shared_ptr<StoreManagerInterface> sm_;
   SessionSingleton *ss_;
   std::string tmid_content_;
+  ReturnCode system_packets_result_;
   Authentication &operator=(const Authentication &);
   Authentication(const Authentication &);
 };

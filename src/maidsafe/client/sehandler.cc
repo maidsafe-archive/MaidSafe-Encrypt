@@ -598,21 +598,21 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 #endif
     }
 
-//      if (dir_type != ANONYMOUS) {
-//        GenericPacket gp;
-//        if (!gp.ParseFromString(enc_dm_)) {
-//  #ifdef DEBUG
-//          printf("Failed to parse generic packet.\n");
-//  #endif
-//          return -1;
-//        }
-//        enc_dm_ = gp.data();
-//        if (enc_dm_ == "") {
-//  #ifdef DEBUG
-//          printf("Enc dm is empty.\n");
-//  #endif
-//        }
-//      }
+    if (dir_type != ANONYMOUS) {
+      GenericPacket gp;
+      if (!gp.ParseFromString(enc_dm_)) {
+#ifdef DEBUG
+        printf("Failed to parse generic packet.\n");
+#endif
+        return -1;
+      }
+      enc_dm_ = gp.data();
+      if (enc_dm_ == "") {
+#ifdef DEBUG
+        printf("Enc dm is empty.\n");
+#endif
+      }
+    }
     if (dm_encrypted) {
 #ifdef DEBUG
       printf("Decrypting dm.\n");
@@ -632,24 +632,24 @@ int SEHandler::DecryptDb(const std::string &dir_path,
       ser_dm_ = enc_dm_;
     }
   } else {
-//      if (dir_type != ANONYMOUS) {
-//        GenericPacket gp;
-//        if (!gp.ParseFromString(ser_dm)) {
-//  #ifdef DEBUG
-//          printf("Failed to parse generic packet.\n");
-//  #endif
-//          return -1;
-//        }
-//        enc_dm_ = gp.data();
-//        if (enc_dm_ == "") {
-//  #ifdef DEBUG
-//          printf("Enc dm is empty.\n");
-//  #endif
-//          return -1;
-//        }
-//      } else {
-//        enc_dm_ = ser_dm;
-//      }
+    if (dir_type != ANONYMOUS) {
+      GenericPacket gp;
+      if (!gp.ParseFromString(ser_dm)) {
+#ifdef DEBUG
+        printf("Failed to parse generic packet.\n");
+#endif
+        return -1;
+      }
+      enc_dm_ = gp.data();
+      if (enc_dm_ == "") {
+#ifdef DEBUG
+        printf("Enc dm is empty.\n");
+#endif
+        return -1;
+      }
+    } else {
+      enc_dm_ = ser_dm;
+    }
     enc_dm_ = ser_dm;
     if (dm_encrypted) {
 #ifdef DEBUG

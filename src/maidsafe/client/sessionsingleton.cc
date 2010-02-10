@@ -95,7 +95,6 @@ int SessionSingleton::LoadKeys(std::list<Key> *keys) {
 }
 
 void SessionSingleton::GetKeys(std::list<KeyAtlasRow> *keys) {
-  keys->clear();
   ka_.GetKeyRing(keys);
 }
 
@@ -116,12 +115,16 @@ void SessionSingleton::SerialisedKeyRing(std::string *ser_kr) {
   da.SerializeToString(ser_kr);
 }
 
-void SessionSingleton::AddKey(const PacketType &bpt,
-                              const std::string &id,
-                              const std::string &private_key,
-                              const std::string &public_key,
-                              const std::string &signed_public_key) {
-  ka_.AddKey(bpt, id, private_key, public_key, signed_public_key);
+int SessionSingleton::AddKey(const PacketType &bpt,
+                             const std::string &id,
+                             const std::string &private_key,
+                             const std::string &public_key,
+                             const std::string &signed_public_key) {
+  return ka_.AddKey(bpt, id, private_key, public_key, signed_public_key);
+}
+
+int SessionSingleton::RemoveKey(const PacketType &bpt) {
+  return ka_.RemoveKey(bpt);
 }
 
 std::string SessionSingleton::Id(const PacketType &bpt) {
@@ -310,6 +313,7 @@ int SessionSingleton::GetShareKeys(const std::string &msid,
                                    std::string *private_key) {
   PrivateShare ps;
   if (GetShareInfo(msid, 1, &ps) != 0) {
+    printf("Pelation en SS::GetShareKeys\n");
     *public_key = "";
     *private_key = "";
     return -1;

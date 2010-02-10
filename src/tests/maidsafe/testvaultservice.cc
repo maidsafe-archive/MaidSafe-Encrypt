@@ -2676,7 +2676,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   bpm.set_sender_id("newuser");
   bpm.set_sender_public_key(newuser_pub_key);
   bpm.set_type(maidsafe::INSTANT_MSG);
-  int iter = base::random_32bit_uinteger() % 1000 +1;
+  boost::uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
   std::string aes_key = co.SecurePassword(co.Hash(msg, "",
     crypto::STRING_STRING, true), iter);
   bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", pub_key,

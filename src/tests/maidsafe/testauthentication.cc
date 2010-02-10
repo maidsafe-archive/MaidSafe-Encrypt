@@ -33,6 +33,7 @@
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "maidsafe/client/packetfactory.h"
+#include <iostream>
 
 namespace fs = boost::filesystem;
 
@@ -150,6 +151,19 @@ class AuthenticationTest : public testing::Test {
   AuthenticationTest &operator=(const AuthenticationTest&);
 };
 
+TEST_F(AuthenticationTest, FUNC_MAID_CreateUserSysPackets) {
+  boost::shared_ptr<LocalStoreManager>
+      sm(new LocalStoreManager(client_chunkstore_));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
+  std::string ser_dm_login;
+  int result = authentication->GetUserInfo(username, pin);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
+  result = authentication->CreateUserSysPackets(username, pin);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+}
+
 TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
@@ -160,8 +174,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   std::string ser_dm_login;
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  uint32_t rid;
-  result = authentication->CreateUserSysPackets(username, pin, &rid);
+  result = authentication->CreateUserSysPackets(username, pin);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
   DataMap dm;
@@ -178,8 +191,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   dm.set_compression_on(false);
   std::string ser_dm = dm.SerializeAsString();
 
-  result = authentication->CreateTmidPacket(username, pin, password, rid,
-    ser_dm);
+  result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
   cb.Reset();
@@ -208,8 +220,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
   std::string ser_dm, ser_dm_login;
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  uint32_t rid;
-  result = authentication->CreateUserSysPackets(username, pin, &rid);
+  result = authentication->CreateUserSysPackets(username, pin);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
   DataMap dm;
   dm.set_file_hash("filehash");
@@ -224,8 +235,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
   dm.add_chunk_size(205);
   dm.set_compression_on(false);
   ser_dm = dm.SerializeAsString();
-  result = authentication->CreateTmidPacket(username, pin, password, rid,
-    ser_dm);
+  result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
   result = authentication->GetUserInfo(username, pin);
   ASSERT_EQ(kUserExists, result) << "User does not exist";
@@ -243,8 +253,7 @@ TEST_F(AuthenticationTest, BEH_MAID_RegisterUserOnce) {
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  uint32_t rid;
-  result = authentication->CreateUserSysPackets(username, pin, &rid);
+  result = authentication->CreateUserSysPackets(username, pin);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
   std::string ser_da;
   ss->SerialisedKeyRing(&ser_da);
@@ -261,13 +270,12 @@ TEST_F(AuthenticationTest, BEH_MAID_RegisterUserOnce) {
   dm.add_chunk_size(205);
   dm.set_compression_on(false);
   std::string ser_dm = dm.SerializeAsString();
-  result = authentication->CreateTmidPacket(username, pin, password, rid,
-    ser_dm);
+  result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
   ASSERT_NE("", ser_da);
   ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
               "Data Atlas hasn't the correct format";
-  ASSERT_EQ(5, data_atlas.keys_size());
+  ASSERT_EQ(6, data_atlas.keys_size());
   ASSERT_EQ(username, ss->Username()) << "Saved username doesn't correspond";
   ASSERT_EQ(pin, ss->Pin()) << "Saved pin doesn't correspond";
   ASSERT_EQ(password, ss->Password()) << "Saved password doesn't correspond";
@@ -279,15 +287,12 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(sm);
-  DataAtlas data_atlas;
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  uint32_t rid;
-  result = authentication->CreateUserSysPackets(username, pin, &rid);
+  result = authentication->CreateUserSysPackets(username, pin);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  std::string ser_da;
-  ss->SerialisedKeyRing(&ser_da);
+
   DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
@@ -301,11 +306,9 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
   dm.add_chunk_size(205);
   dm.set_compression_on(false);
   std::string ser_dm = dm.SerializeAsString();
-  result = authentication->CreateTmidPacket(username, pin, password, rid,
-    ser_dm);
+  result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
-              "Data Atlas hasn't the correct format";
+
   //  User registered twice.
   ss->ResetSession();
   result = authentication->GetUserInfo(username, pin);
@@ -344,16 +347,12 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(sm);
-  DataAtlas data_atlas;
-  PacketParams lasquis, pubkeys;
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  uint32_t rid;
-  result = authentication->CreateUserSysPackets(username, pin, &rid);
+  result = authentication->CreateUserSysPackets(username, pin);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  std::string ser_da;
-  ss->SerialisedKeyRing(&ser_da);
+
   DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
@@ -367,32 +366,11 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   dm.add_chunk_size(205);
   dm.set_compression_on(false);
   std::string ser_dm = dm.SerializeAsString();
-  result = authentication->CreateTmidPacket(username, pin, password, rid,
-    ser_dm);
+  result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
-              "Data Atlas hasn't the correct format";
 
-  for (int i = 0; i < data_atlas.keys_size(); ++i) {
-    Key key = data_atlas.keys(i);
-    switch (key.type()) {
-      case ANMID:
-        lasquis["ANMID"] = key.private_key();
-        pubkeys["ANMID"] = key.public_key();
-        break;
-      case ANTMID:
-        lasquis["ANTMID"] = key.private_key();
-        pubkeys["ANTMID"] = key.public_key();
-        break;
-      case ANSMID:
-        lasquis["ANSMID"] = key.private_key();
-        pubkeys["ANSMID"] = key.public_key();
-        break;
-      default: {}
-    }
-  }
-  ASSERT_EQ(kSuccess, authentication->ChangeUsername(ser_dm, lasquis, pubkeys,
-            "el iuserneim")) << "Unable to change iuserneim";
+  ASSERT_EQ(kSuccess, authentication->ChangeUsername(ser_dm, "el iuserneim"))
+            << "Unable to change iuserneim";
   ASSERT_EQ("el iuserneim", ss->Username()) << "iuserneim is still the old one";
   std::string ser_dm_login;
   printf("%s\t%s\t%s\n", ss->Username().c_str(), pin.c_str(), password.c_str());
@@ -414,15 +392,11 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(sm);
-  PacketParams lasquis, pubkeys;
-  DataAtlas data_atlas;
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  uint32_t rid;
-  result = authentication->CreateUserSysPackets(username, pin, &rid);
+  result = authentication->CreateUserSysPackets(username, pin);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  std::string ser_da;
-  ss->SerialisedKeyRing(&ser_da);
+
   DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
@@ -436,32 +410,10 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   dm.add_chunk_size(205);
   dm.set_compression_on(false);
   std::string ser_dm = dm.SerializeAsString();
-  result = authentication->CreateTmidPacket(username, pin, password, rid,
-    ser_dm);
+  result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
-              "Data Atlas hasn't the correct format";
 
-  for (int i = 0; i < data_atlas.keys_size(); ++i) {
-    Key key = data_atlas.keys(i);
-    switch (key.type()) {
-      case ANMID:
-        lasquis["ANMID"] = key.private_key();
-        pubkeys["ANMID"] = key.public_key();
-        break;
-      case ANTMID:
-        lasquis["ANTMID"] = key.private_key();
-        pubkeys["ANTMID"] = key.public_key();
-        break;
-      case ANSMID:
-        lasquis["ANSMID"] = key.private_key();
-        pubkeys["ANSMID"] = key.public_key();
-        break;
-      default: {}
-    }
-  }
-  ASSERT_EQ(kSuccess, authentication->ChangePin(ser_dm, lasquis, pubkeys,
-      "7894")) << "Unable to change pin";
+  ASSERT_EQ(kSuccess, authentication->ChangePin(ser_dm, "7894"));
   ASSERT_EQ("7894", ss->Pin()) << "pin is still the old one";
   std::string ser_dm_login;
   result = authentication->GetUserInfo(username, "7894");
@@ -479,16 +431,14 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(sm);
-  PacketParams lasquis, pubkeys;
-  DataAtlas data_atlas;
+
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   cb.Reset();
-  uint32_t rid;
-  result = authentication->CreateUserSysPackets(username, pin, &rid);
+  result = authentication->CreateUserSysPackets(username, pin);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
   std::string ser_da;
-  ss->SerialisedKeyRing(&ser_da);
+
   DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
@@ -502,32 +452,10 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   dm.add_chunk_size(205);
   dm.set_compression_on(false);
   std::string ser_dm = dm.SerializeAsString();
-  result = authentication->CreateTmidPacket(username, pin, password, rid,
-    ser_dm);
+  result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
-              "Data Atlas hasn't the correct format";
-
-  for (int i = 0; i < data_atlas.keys_size(); ++i) {
-    Key key = data_atlas.keys(i);
-    switch (key.type()) {
-      case ANMID:
-        lasquis["ANMID"] = key.private_key();
-        pubkeys["ANMID"] = key.public_key();
-        break;
-      case ANTMID:
-        lasquis["ANTMID"] = key.private_key();
-        pubkeys["ANTMID"] = key.public_key();
-        break;
-      case ANSMID:
-        lasquis["ANSMID"] = key.private_key();
-        pubkeys["ANSMID"] = key.public_key();
-        break;
-      default: {}
-    }
-  }
-  ASSERT_EQ(kSuccess, authentication->ChangePassword(ser_dm, lasquis, pubkeys,
-            "elpasguord")) << "Unable to change password";
+  ASSERT_EQ(kSuccess, authentication->ChangePassword(ser_dm, "elpasguord")) <<
+            "Unable to change password";
 
   ASSERT_EQ("elpasguord", ss->Password()) << "Password is still the old one";
   std::string ser_dm_login;
@@ -551,14 +479,14 @@ TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(sm);
-  PacketParams result;
+
   crypto::Crypto crypto_obj;
   crypto_obj.set_symm_algorithm(crypto::AES_256);
   crypto_obj.set_hash_algorithm(crypto::SHA_512);
-  ASSERT_EQ(kSuccess, authentication->CreatePublicName("el public iuserneim",
-            &result)) << "Can't create public username";
+  ASSERT_EQ(kSuccess, authentication->CreatePublicName("el public iuserneim"))
+            << "Can't create public username";
   ASSERT_EQ(kPublicUsernameExists,
-            authentication->CreatePublicName("el public iuserneim", &result))
+            authentication->CreatePublicName("el public iuserneim"))
             << "Created public username twice";
 }
 
@@ -577,7 +505,9 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   boost::condition_variable cond_var;
   VoidFuncOneInt func = boost::bind(&test_auth::PacketOpCallback, _1, &mutex,
                                     &cond_var, &result);
-  ss->AddKey(ANMID, "ID", "private key", "public key", "signed public key");
+  crypto::RsaKeyPair keypair;
+  keypair.GenerateKeys(4096);
+  ss->AddKey(ANMID, "ID", keypair.private_key(), keypair.public_key(), "");
   sm->StorePacket(mid_name, "rubish data with same mid name", MID,
       PRIVATE, "", kDoNothingReturnFailure, func);
   while (result == kGeneralError) {

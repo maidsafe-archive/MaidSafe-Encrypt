@@ -23,6 +23,7 @@
 */
 
 #include "maidsafe/client/systempackets.h"
+#include <boost/lexical_cast.hpp>
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/utils.h>
 #include <cstdlib>
@@ -59,13 +60,13 @@ PacketParams MidPacket::Create(PacketParams *params) {
   boost::uint32_t rid = base::random_32bit_uinteger();
   while (rid == 0)
     rid = base::random_32bit_uinteger();
-  boost::uint32_t pin = base::stoi(boost::any_cast<std::string>(
-                        (*params)["PIN"]));
+  boost::uint32_t pin = boost::lexical_cast<boost::uint32_t>(boost::any_cast
+    <std::string>((*params)["PIN"]));
   std::string password = crypto_obj_.SecurePassword(
                          boost::any_cast<std::string>((*params)["username"]),
                          pin);
-  mid_packet.set_data(crypto_obj_.SymmEncrypt(base::itos(rid), "",
-                      crypto::STRING_STRING, password));
+  mid_packet.set_data(crypto_obj_.SymmEncrypt(boost::lexical_cast<std::string>
+    (rid), "", crypto::STRING_STRING, password));
   mid_packet.set_signature(crypto_obj_.AsymSign(mid_packet.data(), "",
                            boost::any_cast<std::string>(
                            (*params)["privateKey"]), crypto::STRING_STRING));
@@ -75,6 +76,7 @@ PacketParams MidPacket::Create(PacketParams *params) {
 
   result["name"] = PacketName(params);
   result["rid"] = rid;
+  result["encRid"] = mid_packet.data();
   std::string ser_packet;
   mid_packet.SerializeToString(&ser_packet);
   result["ser_packet"] = ser_packet;
@@ -86,14 +88,23 @@ PacketParams MidPacket::GetData(const std::string &serialised_packet,
                                 const std::string &PIN) {
   GenericPacket mid_packet;
   PacketParams result;
+  if (serialised_packet.empty()) {
+    result["data"] = boost::uint32_t(0);
+    return result;
+  }
   if (!mid_packet.ParseFromString(serialised_packet)) {
     result["data"] = boost::uint32_t(0);
   } else {
-    int pin = base::stoi(PIN);
+    boost::uint16_t pin = boost::lexical_cast<boost::uint16_t>(PIN);
     std::string password = crypto_obj_.SecurePassword(username, pin);
     std::string str_rid = crypto_obj_.SymmDecrypt(mid_packet.data(), "",
                           crypto::STRING_STRING, password);
-    result["data"] = static_cast<boost::uint32_t>(base::stoi(str_rid));
+    try {
+      result["data"] = boost::lexical_cast<boost::uint32_t>(str_rid);
+    }
+    catch(...) {
+      result["data"] = boost::uint32_t(0);
+    }
   }
   return result;
 }
@@ -114,12 +125,12 @@ PacketParams SmidPacket::Create(PacketParams *params) {
       (boost::any_cast<std::string>((*params)["PIN"]) == "") ||
       (boost::any_cast<std::string>((*params)["privateKey"]) == ""))
     return result;
-  boost::uint32_t pin = base::stoi(boost::any_cast<std::string>(
-                        (*params)["PIN"]));
+  boost::uint32_t pin = boost::lexical_cast<boost::uint32_t>
+    (boost::any_cast<std::string>((*params)["PIN"]));
   std::string password = crypto_obj_.SecurePassword(
                          boost::any_cast<std::string>((*params)["username"]),
                          pin);
-  smid_packet.set_data(crypto_obj_.SymmEncrypt(base::itos(
+  smid_packet.set_data(crypto_obj_.SymmEncrypt(boost::lexical_cast<std::string>(
                        boost::any_cast<boost::uint32_t>((*params)["rid"])), "",
                        crypto::STRING_STRING, password));
   smid_packet.set_signature(crypto_obj_.AsymSign(smid_packet.data(), "",
@@ -131,6 +142,7 @@ PacketParams SmidPacket::Create(PacketParams *params) {
 
   std::string ser_packet;
   result["name"] = PacketName(params);
+  result["encRid"] = smid_packet.data();
   smid_packet.SerializeToString(&ser_packet);
   result["ser_packet"] = ser_packet;
   return result;
@@ -181,6 +193,7 @@ PacketParams TmidPacket::Create(PacketParams *params) {
   std::string ser_packet;
   tmid_packet.SerializeToString(&ser_packet);
   result["ser_packet"] = ser_packet;
+  result["data"] = tmid_packet.data();
   return result;
 }
 
@@ -208,7 +221,8 @@ std::string TmidPacket::PacketName(PacketParams *params) {
                           "", crypto::STRING_STRING, false) +
          crypto_obj_.Hash(boost::any_cast<std::string>((*params)["PIN"]), "",
                           crypto::STRING_STRING, false) +
-         crypto_obj_.Hash(base::itos(boost::any_cast<boost::uint32_t>(
+         crypto_obj_.Hash(boost::lexical_cast<std::string>
+                          (boost::any_cast<boost::uint32_t>(
                           (*params)["rid"])), "", crypto::STRING_STRING, false),
          "", crypto::STRING_STRING, false);
 }
@@ -231,6 +245,7 @@ PacketParams PmidPacket::Create(PacketParams *params) {
   result["publicKey"] = keys.public_key();
   result["name"] = crypto_obj_.Hash(pmid_packet.data() +
                    pmid_packet.signature(), "", crypto::STRING_STRING, false);
+  result["signature"] = pmid_packet.signature();
 
   pmid_packet.SerializeToString(&ser_packet);
   result["ser_packet"] = ser_packet;

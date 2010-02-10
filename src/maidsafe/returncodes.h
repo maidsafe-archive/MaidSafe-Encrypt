@@ -33,6 +33,7 @@ enum ReturnCode {
   kGeneralError = -1,
   kIncorrectKeySize = -2,
   kUndefined = -3,
+  kPendingResult = -4,
 
   // Authentication
   kAuthenticationError = -1001,

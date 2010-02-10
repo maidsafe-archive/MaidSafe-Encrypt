@@ -66,6 +66,13 @@ void ExecCallbackVaultInfo(const base::callback_func_type &cb,
   cb(ser_vc);
 }
 
+void ExecReturnCodeCallback(const VoidFuncOneInt &cb,
+                            const ReturnCode rc,
+                            boost::mutex *mutex) {
+  boost::mutex::scoped_lock loch(*mutex);
+  cb(rc);
+}
+
 LocalStoreManager::LocalStoreManager(
     boost::shared_ptr<ChunkStore> client_chunkstore)
         : db_(), vbph_(), mutex_(),
@@ -217,7 +224,10 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
 void LocalStoreManager::KeyUnique(const std::string &key,
                                   bool check_local,
                                   const VoidFuncOneInt &cb) {
-
+  if (KeyUnique(key, check_local))
+    cb(kSuccess);
+  else
+    cb(kStoreManagerError);
 }
 
 int LocalStoreManager::LoadPacket(const std::string &packet_name,
@@ -225,9 +235,11 @@ int LocalStoreManager::LoadPacket(const std::string &packet_name,
   return GetValue_FromDB(packet_name, results);
 }
 
-void LocalStoreManager::LoadPacket(const std::string &packet_name,
+void LocalStoreManager::LoadPacket(const std::string &packetname,
                                    const LoadPacketFunctor &lpf) {
-
+  std::vector<std::string> results;
+  ReturnCode rc(static_cast<ReturnCode>(GetValue_FromDB(packetname, &results)));
+  lpf(results, rc);
 }
 
 void LocalStoreManager::DeletePacket(const std::string &packet_name,
@@ -261,10 +273,18 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
       return;
     }
   }
+
+  std::vector<std::string> ser_gps;
+  for (size_t a = 0; a < values.size(); ++a) {
+    std::string ser_gp;
+    CreateSerialisedSignedValue(values[a], system_packet_type, msid, &ser_gp);
+    ser_gps.push_back(ser_gp);
+  }
+
   crypto::Crypto co;
-  for (size_t n = 0; n < values.size(); ++n) {
+  for (size_t n = 0; n < ser_gps.size(); ++n) {
     kad::SignedValue sv;
-    if (sv.ParseFromString(values[n])) {
+    if (sv.ParseFromString(ser_gps[n])) {
       if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
           crypto::STRING_STRING)) {
         cb(kDeletePacketFailure);
@@ -272,7 +292,7 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
       }
     }
   }
-  cb(DeletePacket_DeleteFromDb(packet_name, vals, public_key));
+  cb(DeletePacket_DeleteFromDb(packet_name, ser_gps, public_key));
 }
 
 ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
@@ -319,6 +339,10 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
       std::string s("delete from network where key='" + hex_key + "' "
                     "and value='" + hex_value + "';");
       int a = db_.execDML(s.c_str());
+#ifdef DEBUG
+//      printf("%i - %s - %s\n", a, hex_key.substr(0,10).c_str(),
+//             hex_value.substr(0,10).c_str());
+#endif
       if (a < 2) {
         --deleted;
       } else {
@@ -347,9 +371,16 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
                                     const std::string& msid,
                                     IfPacketExists if_packet_exists,
                                     const VoidFuncOneInt &cb) {
+  std::string ser_gp;
+  CreateSerialisedSignedValue(value, system_packet_type, msid, &ser_gp);
+  if (ser_gp.empty()) {
+    cb(kNoPublicKeyToCheck);
+    return;
+  }
+
   std::string public_key;
   kad::SignedValue sv;
-  if (sv.ParseFromString(value)) {
+  if (sv.ParseFromString(ser_gp)) {
   SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
   if (public_key.empty()) {
     cb(kNoPublicKeyToCheck);
@@ -371,7 +402,7 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
     return;
   }
   if (values.empty()) {
-    cb(StorePacket_InsertToDb(packet_name, value, public_key, false));
+    cb(StorePacket_InsertToDb(packet_name, ser_gp, public_key, false));
   } else {
     switch (if_packet_exists) {
       case kDoNothingReturnFailure:
@@ -381,10 +412,10 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
           cb(kSuccess);
           break;
       case kOverwrite:
-          cb(StorePacket_InsertToDb(packet_name, value, public_key, false));
+          cb(StorePacket_InsertToDb(packet_name, ser_gp, public_key, false));
           break;
       case kAppend:
-          cb(StorePacket_InsertToDb(packet_name, value, public_key, true));
+          cb(StorePacket_InsertToDb(packet_name, ser_gp, public_key, true));
           break;
     }
   }
@@ -449,7 +480,6 @@ void LocalStoreManager::SigningPublicKey(PacketType packet_type,
                                          const std::string &msid,
                                          std::string *public_key) {
   public_key->clear();
-  std::string private_key;
   switch (packet_type) {
     case MID:
     case ANMID:
@@ -467,33 +497,64 @@ void LocalStoreManager::SigningPublicKey(PacketType packet_type,
     case ANMPID:
       *public_key = ss_->PublicKey(ANMPID);
       break;
-      // TODO(Fraser#5#): 2010-01-29 - Uncomment below once auth.cc fixed (MAID
-      //                               should be signed by ANMAID, not self)
-//    case MAID:
-//    case ANMAID:
-//      *public_key = ss_->PublicKey(ANMAID);
-//      break;
-//    case PMID:
-//      *public_key = ss_->PublicKey(MAID);
-//      break;
-    case PMID:
     case MAID:
+    case ANMAID:
+      *public_key = ss_->PublicKey(ANMAID);
+      break;
+    case PMID:
       *public_key = ss_->PublicKey(MAID);
       break;
-// TODO(Dan#5#): 2010-02-03 - Dunno wtf with these as packets
-    case MSID:
-      if (ss_->GetShareKeys(msid, public_key, &private_key) != kSuccess)
+    case MSID: {
+      std::string priv_key;
+      if (ss_->GetShareKeys(msid, public_key, &priv_key) != kSuccess)
         public_key->clear();
       break;
-//    case PD_DIR:
-//      GetChunkSignatureKeys(dir_type, msid, key_id, public_key,
-//                            public_key_sig, private_key);
-//      break;
-//    case BUFFER:
-//    case BUFFER_INFO:
-//    case BUFFER_MESSAGE:
-//      *public_key = ss->PublicKey(MPID);
-//      break;
+    }
+    case PD_DIR:
+      *public_key = ss_->PublicKey(PMID);
+      break;
+    default:
+      break;
+  }
+}
+
+void LocalStoreManager::SigningPrivateKey(PacketType packet_type,
+                                          DirType,
+                                          const std::string &msid,
+                                          std::string *private_key) {
+  private_key->clear();
+  switch (packet_type) {
+    case MID:
+    case ANMID:
+      *private_key = ss_->PrivateKey(ANMID);
+      break;
+    case SMID:
+    case ANSMID:
+      *private_key = ss_->PrivateKey(ANSMID);
+      break;
+    case TMID:
+    case ANTMID:
+      *private_key = ss_->PrivateKey(ANTMID);
+      break;
+    case MPID:
+    case ANMPID:
+      *private_key = ss_->PrivateKey(ANMPID);
+      break;
+    case MAID:
+    case ANMAID:
+      *private_key = ss_->PrivateKey(ANMAID);
+      break;
+    case PMID:
+      *private_key = ss_->PrivateKey(MAID);
+      break;
+    case MSID: {
+      std::string pub_key;
+      ss_->GetShareKeys(msid, &pub_key, private_key);
+      break;
+    }
+    case PD_DIR:
+      *private_key = ss_->PrivateKey(PMID);
+      break;
     default:
       break;
   }
@@ -839,5 +900,21 @@ void LocalStoreManager::LocalVaultOwned(const LocalVaultOwnedFunctor &functor) {
 }
 
 bool LocalStoreManager::NotDoneWithUploading() { return false; }
+
+void LocalStoreManager::CreateSerialisedSignedValue(const std::string value,
+                                                    const PacketType &pt,
+                                                    const std::string &msid,
+                                                    std::string *ser_gp) {
+  *ser_gp = "";
+  std::string private_key;
+  SigningPrivateKey(pt, PRIVATE, msid, &private_key);
+  if (private_key.empty())
+    return;
+  crypto::Crypto co;
+  GenericPacket gp;
+  gp.set_data(value);
+  gp.set_signature(co.AsymSign(value, "", private_key, crypto::STRING_STRING));
+  gp.SerializeToString(ser_gp);
+}
 
 }  // namespace maidsafe

@@ -32,7 +32,7 @@ int WriteToLog(std::string str);
 
 namespace maidsafe_vault {
 
-const int kRsaKeySize = 4096;
+const boost::uint16_t kRsaKeySize = 4096;
 
 class VaultDaemon {
   // A daemon class to assist PD vault functions

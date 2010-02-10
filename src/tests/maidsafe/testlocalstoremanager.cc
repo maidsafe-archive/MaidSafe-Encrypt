@@ -219,12 +219,10 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
   std::string gp_name = co_.Hash(gp.value() + gp.value_signature(), "",
                         crypto::STRING_STRING, false);
   ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
-  std::string gp_content;
-  gp.SerializeToString(&gp_content);
   int result(maidsafe::kGeneralError);
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  sm_->StorePacket(gp_name, gp_content, maidsafe::MID,
+  sm_->StorePacket(gp_name, gp.value(), maidsafe::MID,
       maidsafe::PRIVATE, "", maidsafe::kDoNothingReturnFailure, boost::bind(
       &test_lsm::PacketOpCallback, _1, &mutex, &cond_var, &result));
   while (result == maidsafe::kGeneralError) {
@@ -252,15 +250,13 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
                          crypto::STRING_STRING));
   std::string gp_name = co_.Hash(gp.value() + gp.value_signature(), "",
                         crypto::STRING_STRING, false);
-  std::string gp_content;
-  gp.SerializeToString(&gp_content);
 
   std::string signed_public_key = co_.AsymSign(rsao_.public_key(), "",
                                   rsao_.private_key(), crypto::STRING_STRING);
   int result(maidsafe::kGeneralError);
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  sm_->StorePacket(gp_name, gp_content, maidsafe::MID, maidsafe::PRIVATE, "",
+  sm_->StorePacket(gp_name, gp.value(), maidsafe::MID, maidsafe::PRIVATE, "",
                    maidsafe::kDoNothingReturnFailure, boost::bind(
                    &test_lsm::PacketOpCallback, _1, &mutex, &cond_var,
                    &result));
@@ -273,7 +269,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
 
   result = maidsafe::kGeneralError;
-  std::vector<std::string> values(1, gp_content);
+  std::vector<std::string> values(1, gp.value());
   sm_->DeletePacket(gp_name, values, maidsafe::MID, maidsafe::PRIVATE, "",
                     boost::bind(&test_lsm::PacketOpCallback, _1, &mutex,
                     &cond_var, &result));
@@ -286,7 +282,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
   ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
 }
 
-TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_DeleteSystemPacketNotOwner) {
+TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   kad::SignedValue gp;
   rsao_.ClearKeys();
   rsao_.GenerateKeys(4096);
@@ -296,13 +292,11 @@ TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_DeleteSystemPacketNotOwner) {
                          crypto::STRING_STRING));
   std::string gp_name = co_.Hash(gp.value() + gp.value_signature(), "",
                         crypto::STRING_STRING, false);
-  std::string gp_content;
-  gp.SerializeToString(&gp_content);
 
   int result(maidsafe::kGeneralError);
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  sm_->StorePacket(gp_name, gp_content, maidsafe::MID, maidsafe::PRIVATE, "",
+  sm_->StorePacket(gp_name, gp.value(), maidsafe::MID, maidsafe::PRIVATE, "",
                    maidsafe::kDoNothingReturnFailure, boost::bind(
                    &test_lsm::PacketOpCallback, _1, &mutex, &cond_var,
                    &result));
@@ -315,7 +309,7 @@ TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_DeleteSystemPacketNotOwner) {
 
   result = maidsafe::kGeneralError;
   rsao_.GenerateKeys(4096);
-  std::vector<std::string> values(1, gp_content);
+  std::vector<std::string> values(1, gp.value());
 
   std::string anmid_pubkey_signature(co_.AsymSign(rsao_.public_key(),
                                      "", rsao_.private_key(),

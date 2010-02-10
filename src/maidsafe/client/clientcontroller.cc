@@ -384,8 +384,7 @@ bool ClientController::CreateUser(const std::string &username,
     return false;
   }
   ss_->SetConnectionStatus(0);
-  uint32_t rid;
-  int result = auth_.CreateUserSysPackets(username, pin, &rid);
+  int result = auth_.CreateUserSysPackets(username, pin);
 
   if (result != kSuccess) {
 #ifdef DEBUG
@@ -405,7 +404,7 @@ bool ClientController::CreateUser(const std::string &username,
     ss_->ResetSession();
     return false;
   }
-  result = auth_.CreateTmidPacket(username, pin, password, rid, ser_dm);
+  result = auth_.CreateTmidPacket(username, pin, password, ser_dm);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In ClientController::CreateUser - Cannot create tmid packet\n");
@@ -728,29 +727,6 @@ int ClientController::SaveSession() {
 #endif
     return kClientControllerNotInitialised;
   }
-  PacketParams priv_keys, pub_keys;
-  std::list<KeyAtlasRow> keys;
-  ss_->GetKeys(&keys);
-
-  while (!keys.empty()) {
-    KeyAtlasRow kar = keys.front();
-    keys.pop_front();
-    switch (kar.type_) {
-      case ANMID:
-        priv_keys["ANMID"] = kar.private_key_;
-        pub_keys["ANMID"] = kar.public_key_;
-        break;
-      case ANTMID:
-        priv_keys["ANTMID"] = kar.private_key_;
-        pub_keys["ANTMID"] = kar.public_key_;
-        break;
-      case ANSMID:
-        priv_keys["ANSMID"] = kar.private_key_;
-        pub_keys["ANSMID"] = kar.public_key_;
-        break;
-      default: break;
-    }
-  }
 
   int n = SerialiseDa();
   if (n != 0) {
@@ -759,7 +735,7 @@ int ClientController::SaveSession() {
 #endif
     return n;
   }
-  n = auth_.SaveSession(ser_dm_, priv_keys, pub_keys);
+  n = auth_.SaveSession(ser_dm_);
   if (n != 0) {
 #ifdef DEBUG
     printf("ClientController::SaveSession - Failed to Save Session.\n");
@@ -807,33 +783,9 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
 #endif
     return false;
   }
-  PacketParams priv_keys, pub_keys;
   SerialiseDa();
-  std::list<KeyAtlasRow> keys;
-  ss_->GetKeys(&keys);
 
-  while (!keys.empty()) {
-    KeyAtlasRow kt = keys.front();
-    keys.pop_front();
-    switch (kt.type_) {
-      case ANMID:
-        priv_keys["ANMID"] = kt.private_key_;
-        pub_keys["ANMID"] = kt.public_key_;
-        break;
-      case ANTMID:
-        priv_keys["ANTMID"] = kt.private_key_;
-        pub_keys["ANTMID"] = kt.public_key_;
-        break;
-      case ANSMID:
-        priv_keys["ANSMID"] = kt.private_key_;
-        pub_keys["ANSMID"] = kt.public_key_;
-        break;
-      default: {}
-    }
-  }
-
-  int result = auth_.ChangeUsername(ser_dm_, priv_keys, pub_keys,
-                                     new_username);
+  int result = auth_.ChangeUsername(ser_dm_, new_username);
   if (result == kSuccess)
     return true;
   return false;
@@ -846,32 +798,9 @@ bool ClientController::ChangePin(const std::string &new_pin) {
 #endif
     return false;
   }
-  PacketParams priv_keys, pub_keys;
   SerialiseDa();
-  std::list<KeyAtlasRow> keys;
-  ss_->GetKeys(&keys);
 
-  while (!keys.empty()) {
-    KeyAtlasRow kt = keys.front();
-    keys.pop_front();
-    switch (kt.type_) {
-      case ANMID:
-        priv_keys["ANMID"] = kt.private_key_;
-        pub_keys["ANMID"] = kt.public_key_;
-        break;
-      case ANTMID:
-        priv_keys["ANTMID"] = kt.private_key_;
-        pub_keys["ANTMID"] = kt.public_key_;
-        break;
-      case ANSMID:
-        priv_keys["ANSMID"] = kt.private_key_;
-        pub_keys["ANSMID"] = kt.public_key_;
-        break;
-      default: {}
-    }
-  }
-
-  int result = auth_.ChangePin(ser_dm_, priv_keys, pub_keys, new_pin);
+  int result = auth_.ChangePin(ser_dm_, new_pin);
   if (result == kSuccess)
     return true;
   return false;
@@ -884,33 +813,9 @@ bool ClientController::ChangePassword(const std::string &new_password) {
 #endif
     return false;
   }
-  PacketParams priv_keys, pub_keys;
   SerialiseDa();
-  std::list<KeyAtlasRow> keys;
-  ss_->GetKeys(&keys);
 
-  while (!keys.empty()) {
-    KeyAtlasRow kt = keys.front();
-    keys.pop_front();
-    switch (kt.type_) {
-      case ANMID:
-        priv_keys["ANMID"] = kt.private_key_;
-        pub_keys["ANMID"] = kt.public_key_;
-        break;
-      case ANTMID:
-        priv_keys["ANTMID"] = kt.private_key_;
-        pub_keys["ANTMID"] = kt.public_key_;
-        break;
-      case ANSMID:
-        priv_keys["ANSMID"] = kt.private_key_;
-        pub_keys["ANSMID"] = kt.public_key_;
-        break;
-      default: {}
-    }
-  }
-
-  int result = auth_.ChangePassword(ser_dm_, priv_keys, pub_keys,
-                                     new_password);
+  int result = auth_.ChangePassword(ser_dm_, new_password);
   if (result == kSuccess)
     return true;
   return false;
@@ -935,8 +840,7 @@ bool ClientController::CreatePublicUsername(
     return false;
   }
 
-  PacketParams keys_result;
-  int result = auth_.CreatePublicName(public_username, &keys_result);
+  int result = auth_.CreatePublicName(public_username);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("CC::CreatePublicUsername - Error in CreatePublicName.\n");
@@ -1153,8 +1057,8 @@ int ClientController::HandleReceivedShare(
       if (r == 0) {
         sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
-        std::string public_key("aaa");
-        int result = auth_.PublicUsernamePublicKey(sp.id, public_key);
+        std::string public_key;
+        int result = auth_.PublicUsernamePublicKey(sp.id, &public_key);
         if (result != kSuccess) {
 #ifdef DEBUG
           printf("Couldn't find %s's public key.\n", sp.id.c_str());
@@ -1176,8 +1080,8 @@ int ClientController::HandleReceivedShare(
       if (r == 0) {
         sp.public_key = mic.pub_key_;
       } else {  // search for the public key in kadsafe
-        std::string public_key("aaa");
-        int result = auth_.PublicUsernamePublicKey(sp.id, public_key);
+        std::string public_key;
+        int result = auth_.PublicUsernamePublicKey(sp.id, &public_key);
         if (result != kSuccess) {
 #ifdef DEBUG
           printf("Couldn't find %s's public key.\n", sp.id.c_str());
@@ -1374,7 +1278,7 @@ int ClientController::HandleAddContactRequest(
     rec_public_key = mic.pub_key_;
   } else {  // Contact didn't exist. Add from scratch.
     // Get contact's public key
-    int result = auth_.PublicUsernamePublicKey(sender, rec_public_key);
+    int result = auth_.PublicUsernamePublicKey(sender, &rec_public_key);
     if (result != kSuccess) {
 #ifdef DEBUG
       printf("Can't get sender's public key.\n");
@@ -1693,8 +1597,8 @@ int ClientController::AddContact(const std::string &public_name) {
 #endif
     return kClientControllerNotInitialised;
   }
-  std::string public_key("aaa");
-  int result = auth_.PublicUsernamePublicKey(public_name, public_key);
+  std::string public_key;
+  int result = auth_.PublicUsernamePublicKey(public_name, &public_key);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("Couldn't find contact's public key.\n");
