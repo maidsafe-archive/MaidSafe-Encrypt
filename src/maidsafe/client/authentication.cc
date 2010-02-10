@@ -137,76 +137,6 @@ int Authentication::CreateUserSysPackets(const std::string &username,
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
   return system_packets_result_;
-
-/*
-//  std::string check_unique_mid_name =
-//      check_unique_mid_packet->PacketName(&check_unique_params);
-//
-//  if (!sm_->KeyUnique(check_unique_mid_name, false))
-//    return kUserExists;
-//
-//  MidPacket *midPacket =
-//      static_cast<MidPacket*>(PacketFactory::Factory(MID));
-//  PacketParams user_params;
-//  user_params["username"] = username;
-//  user_params["PIN"] = pin;
-//  std::string public_key;
-//
-//  user_params["privateKey"] = CreateSignaturePackets(ANMID, public_key);
-//  PacketParams mid_result = midPacket->Create(&user_params);
-//  std::string mid_name = boost::any_cast<std::string>(mid_result["name"]);
-//  std::string ser_mid = boost::any_cast<std::string>(mid_result["ser_packet"]);
-//  int n = StorePacket(mid_name, ser_mid, MID, kDoNothingReturnFailure);
-//  if (n != kSuccess) {
-//    printf("Fucked in MID store: %i\n", n);
-//    return kAuthenticationError;
-//  }
-//
-//  user_params["privateKey"] = CreateSignaturePackets(ANSMID, public_key);
-//  SmidPacket *smidPacket =
-//      static_cast<SmidPacket*>(PacketFactory::Factory(SMID));
-//  user_params["rid"] = boost::any_cast<boost::uint32_t>(mid_result["rid"]);
-//  PacketParams smid_result = smidPacket->Create(&user_params);
-//  if (StorePacket(boost::any_cast<std::string>(smid_result["name"]),
-//      boost::any_cast<std::string>(smid_result["ser_packet"]), SMID,
-//      kDoNothingReturnFailure) != kSuccess) {
-//    return kAuthenticationError;
-//  }
-//
-//  std::string privkey = CreateSignaturePackets(MAID, public_key);
-//
-//  // user_params["privateKey"] =
-//  //  CreateSignaturePackets(PMID, PMID, data_atlas, public_key);
-//  user_params["privateKey"] = privkey;
-//  PmidPacket *pmidPacket =
-//      static_cast<PmidPacket*>(PacketFactory::Factory(PMID));
-//
-//  PacketParams pmid_result = pmidPacket->Create(&user_params);
-//
-//  std::string ser_packet =
-//      boost::any_cast<std::string>(pmid_result["ser_packet"]);
-//  GenericPacket generic_packet;
-//  generic_packet.ParseFromString(ser_packet);
-//  std::string signed_public_key = generic_packet.signature();
-//
-//  if (StorePacket(boost::any_cast<std::string>(pmid_result["name"]), ser_packet,
-//      PMID, kDoNothingReturnFailure) != kSuccess) {
-//    return kAuthenticationError;
-//  }
-//
-//  ss_->AddKey(PMID, boost::any_cast<std::string>(pmid_result["name"]),
-//              boost::any_cast<std::string>(pmid_result["privateKey"]),
-//              boost::any_cast<std::string>(pmid_result["publicKey"]),
-//              signed_public_key);
-//
-//  user_params["privateKey"] = CreateSignaturePackets(ANTMID, public_key);
-//  *rid = boost::any_cast<boost::uint32_t>(mid_result["rid"]);
-//
-//  delete check_unique_mid_packet;
-//  delete midPacket;
-//  delete smidPacket;
-//  return kSuccess;
-*/
 }
 
 void Authentication::CreateUserSysPackets(const ReturnCode rc,
@@ -217,7 +147,7 @@ void Authentication::CreateUserSysPackets(const ReturnCode rc,
                                           bool *calledback) {
   if (*calledback)
     return;
-  if (rc == kSuccess) {
+  if (rc == kKeyUnique) {
     if (*count == 0) {
       ++*count;
       return;
@@ -256,7 +186,7 @@ void Authentication::CreateSignaturePacket(
 void Authentication::CreateSignaturePacketKeyUnique(
     const ReturnCode &rc,
     boost::shared_ptr<FindSystemPacket> fsp) {
-  if (rc == kSuccess) {
+  if (rc == kKeyUnique) {
     int n = ss_->AddKey(fsp->pt,
                         boost::any_cast<std::string>(fsp->pp["name"]),
                         boost::any_cast<std::string>(fsp->pp["privateKey"]),
