@@ -225,9 +225,9 @@ void LocalStoreManager::KeyUnique(const std::string &key,
                                   bool check_local,
                                   const VoidFuncOneInt &cb) {
   if (KeyUnique(key, check_local))
-    cb(kSuccess);
+    cb(kKeyUnique);
   else
-    cb(kStoreManagerError);
+    cb(kKeyNotUnique);
 }
 
 int LocalStoreManager::LoadPacket(const std::string &packet_name,

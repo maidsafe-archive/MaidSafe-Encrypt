@@ -111,13 +111,6 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
 
  private:
-  FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_AddSingleBPMessage);
-  FRIEND_TEST(ClientBufferPacketHandlerTest,
-              BEH_MAID_AddBPMessageNonAuthorisedUser);
-  FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_DeleteBPUsers);
-  FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_MultipleBPMessages);
-  FRIEND_TEST(ClientBufferPacketHandlerTest, BEH_MAID_ModifyBPUserInfo);
-
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);

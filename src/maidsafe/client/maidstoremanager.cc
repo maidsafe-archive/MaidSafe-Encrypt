@@ -396,81 +396,117 @@ int MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
     return kLoadPacketFailure;
   }
   results->clear();
-  int valid = ValidateInputs(packet_name, PacketType_MIN, PRIVATE);
-  if (valid != kSuccess) {
-#ifdef DEBUG
-    printf("In MSM::LoadPacket, invalid input.  Error %i\n", valid);
-#endif
-    return valid;
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  int op_result(kGeneralError);
+  LoadPacket(packet_name, boost::bind(&MaidsafeStoreManager::LoadPacketCallback,
+      this, _1, _2, &mutex, &cond_var, results, &op_result));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (op_result == kGeneralError)
+      cond_var.wait(lock);
   }
-  kad::ContactInfo cache_holder;
-  std::string needs_cache_copy_id;
-  for (int attempt = 0; attempt < kMaxChunkLoadRetries; ++attempt) {
-    cache_holder.Clear();
-    results->clear();
-    int res = FindValue(packet_name, false, &cache_holder, results,
-        &needs_cache_copy_id);
-    if (res != kSuccess || results->empty() || cache_holder.has_node_id()) {
-      if (attempt == kMaxChunkLoadRetries - 1) {
-#ifdef DEBUG
-        printf("In MaidsafeStoreManager::LoadPacket (%i), failed FindValue\n",
-               knode_->host_port());
-#endif
-        results->clear();
-        return kFindValueFailure;
-      } else {
-        continue;
-      }
-    } else {
-      return kSuccess;
-    }
+  return op_result;
+}
+
+void MaidsafeStoreManager::LoadPacketCallback(
+    const std::vector<std::string> values_in,
+    const int &result_in,
+    boost::mutex *mutex,
+    boost::condition_variable *cond_var,
+    std::vector<std::string> *values_out,
+    int *result_out) {
+  if (mutex == NULL || cond_var == NULL || values_out == NULL ||
+      result_out == NULL) {
+    return;
   }
-  return kFindValueFailure;
+  boost::mutex::scoped_lock lock(*mutex);
+  *values_out = values_in;
+  *result_out = result_in;
+  cond_var->notify_one();
 }
 
 void MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
                                       const LoadPacketFunctor &lpf) {
-//#ifdef DEBUG
-////  printf("In MaidsafeStoreManager::LoadPacket (%i), packet_name = %s\n",
-////         knode_->host_port(), HexSubstr(packet_name).c_str());
-//#endif
-//  if (results == NULL) {
-//#ifdef DEBUG
-//    printf("In MSM::LoadPacket, results == NULL\n");
-//#endif
-//    return kLoadPacketFailure;
-//  }
-//  results->clear();
-//  int valid = ValidateInputs(packet_name, PacketType_MIN, PRIVATE);
-//  if (valid != kSuccess) {
-//#ifdef DEBUG
-//    printf("In MSM::LoadPacket, invalid input.  Error %i\n", valid);
-//#endif
-//    return valid;
-//  }
-//  kad::ContactInfo cache_holder;
-//  std::string needs_cache_copy_id;
-//  for (int attempt = 0; attempt < kMaxChunkLoadRetries; ++attempt) {
-//    cache_holder.Clear();
-//    results->clear();
-//    int res = FindValue(packet_name, false, &cache_holder, results,
-//        &needs_cache_copy_id);
-//    if (res != kSuccess || results->empty() || cache_holder.has_node_id()) {
-//      if (attempt == kMaxChunkLoadRetries - 1) {
-//#ifdef DEBUG
-//        printf("In MaidsafeStoreManager::LoadPacket (%i), failed FindValue\n",
-//               knode_->host_port());
-//#endif
-//        results->clear();
-//        return kFindValueFailure;
-//      } else {
-//        continue;
-//      }
-//    } else {
-//      return kSuccess;
-//    }
-//  }
-//  return kFindValueFailure;
+#ifdef DEBUG
+//  printf("In MaidsafeStoreManager::LoadPacket2 (%i), packet_name = %s\n",
+//         knode_->host_port(), HexSubstr(packet_name).c_str());
+#endif
+  std::vector<std::string> results;
+  int valid = ValidateInputs(packet_name, PacketType_MIN, PRIVATE);
+  if (valid != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::LoadPacket2, invalid input.  Error %i\n", valid);
+#endif
+    lpf(results, static_cast<ReturnCode>(valid));
+    return;
+  }
+  FindValue(packet_name, false,
+      boost::bind(&MaidsafeStoreManager::LoadPacketCallback, this, packet_name,
+      0, _1, lpf));
+}
+
+void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
+                                              const int &attempt,
+                                              const std::string &ser_response,
+                                              const LoadPacketFunctor &lpf) {
+  int ret_value(kSuccess);
+  if (ser_response.empty()) {
+#ifdef DEBUG
+    printf("In MSM::LoadPacketCallback, fail - timeout.\n");
+#endif
+    ret_value = kFindValueError;
+  }
+  kad::FindResponse find_response;
+  if ((ret_value == kSuccess) && !find_response.ParseFromString(ser_response)) {
+#ifdef DEBUG
+    printf("In MSM::LoadPacketCallback, can't parse result.\n");
+#endif
+    ret_value = kFindValueParseError;
+  }
+  if ((ret_value == kSuccess) &&
+      (find_response.result() != kad::kRpcResultSuccess)) {
+#ifdef DEBUG
+    printf("In MSM::LoadPacketCallback, failed to find value.\n");
+    printf("Found %i nodes\n", find_response.closest_nodes_size());
+    printf("Found %i values\n", find_response.values_size());
+//    printf("Found alt val holder: %i\n",
+//           find_response.has_alternative_value_holder());
+#endif
+    ret_value = kFindValueFailure;
+  }
+  // If the response has an alternative_value, then the value is the ID of a
+  // peer which has a cached copy of the packet.  Packets should not be cached.
+  if ((ret_value == kSuccess) && find_response.has_alternative_value_holder()) {
+#ifdef DEBUG
+    printf("In MSM::LoadPacketCallback, node %s has cached the value.\n",
+           HexSubstr(find_response.alternative_value_holder().node_id()).
+           c_str());
+#endif
+    ret_value = kLoadPacketCached;
+  }
+  std::vector<std::string> values;
+  if (ret_value == kSuccess) {
+    bool empty(true);
+    for (int i = 0; i < find_response.values_size(); ++i) {
+      if (!find_response.values(i).empty())
+        empty = false;
+      values.push_back(find_response.values(i));
+    }
+#ifdef DEBUG
+    printf("In MSM::LoadPacketCallback, returned %i values.\n", values.size());
+#endif
+    if (empty)
+      ret_value = kFindValueFailure;
+  }
+  if ((ret_value == kSuccess) || (attempt + 1 >= kMaxChunkLoadRetries)) {
+    lpf(values, static_cast<ReturnCode>(ret_value));
+    return;
+  } else {
+    FindValue(packet_name, false,
+        boost::bind(&MaidsafeStoreManager::LoadPacketCallback, this,
+        packet_name, attempt + 1, _1, lpf));
+  }
 }
 
 bool MaidsafeStoreManager::KeyUnique(const std::string &key, bool check_local) {
@@ -478,31 +514,78 @@ bool MaidsafeStoreManager::KeyUnique(const std::string &key, bool check_local) {
 //  printf("In MaidsafeStoreManager::KeyUnique (%i), key = %s\n",
 //         knode_->host_port(), HexSubstr(key).c_str());
 #endif
-  int valid = ValidateInputs(key, PacketType_MIN, PRIVATE);
-  if (valid != kSuccess) {
-#ifdef DEBUG
-    printf("In MSM::KeyUnique, invalid input.  Error %i\n", valid);
-#endif
-    return false;
+  bool unique(false);
+  bool called_back(false);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  KeyUnique(key, check_local, boost::bind(
+      &MaidsafeStoreManager::KeyUniqueCallback, this, _1, &mutex, &cond_var,
+      &unique, &called_back));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (!called_back)
+      cond_var.wait(lock);
   }
-  kad::ContactInfo cache_holder;
-  std::vector<std::string> chunk_holders_ids;
-  std::string needs_cache_copy_id;
-  if (FindValue(key, check_local, &cache_holder, &chunk_holders_ids,
-      &needs_cache_copy_id) != kSuccess) {
-#ifdef DEBUG
-    printf("In MaidsafeStoreManager::KeyUnique (%i), FindValue - no key.\n",
-           knode_->host_port());
-#endif
-    return true;
+  return unique;
+}
+
+void MaidsafeStoreManager::KeyUniqueCallback(
+    const bool &result_in,
+    boost::mutex *mutex,
+    boost::condition_variable *cond_var,
+    bool *result_out,
+    bool *called_back) {
+  if (mutex == NULL || cond_var == NULL || result_out == NULL ||
+      called_back == NULL) {
+    return;
   }
-  return false;
+  boost::mutex::scoped_lock lock(*mutex);
+  *result_out = result_in;
+  *called_back = true;
+  cond_var->notify_one();
 }
 
 void MaidsafeStoreManager::KeyUnique(const std::string &key,
                                      bool check_local,
                                      const VoidFuncOneInt &cb) {
+#ifdef DEBUG
+//  printf("In MaidsafeStoreManager::KeyUnique2 (%i), key = %s\n",
+//         knode_->host_port(), HexSubstr(key).c_str());
+#endif
+  int valid = ValidateInputs(key, PacketType_MIN, PRIVATE);
+  if (valid != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::KeyUnique2, invalid input.  Error %i\n", valid);
+#endif
+    cb(kStoreManagerError);
+    return;
+  }
+  FindValue(key, check_local,
+      boost::bind(&MaidsafeStoreManager::KeyUniqueCallback, this, _1, cb));
+}
 
+void MaidsafeStoreManager::KeyUniqueCallback(
+    const std::string &ser_response,
+    const VoidFuncOneInt &cb) {
+  ReturnCode ret_value(kKeyUnique);
+  if (ser_response.empty()) {
+#ifdef DEBUG
+    printf("In MSM::KeyUniqueCallback, fail - timeout.\n");
+#endif
+    ret_value = kKeyNotUnique;
+  }
+  kad::FindResponse find_response;
+  if (ret_value && !find_response.ParseFromString(ser_response)) {
+#ifdef DEBUG
+    printf("In MSM::KeyUniqueCallback, can't parse result.\n");
+#endif
+    ret_value = kKeyNotUnique;
+  }
+  if (ret_value && (find_response.result() == kad::kRpcResultSuccess))
+    ret_value = kKeyNotUnique;
+  if (ret_value && find_response.has_alternative_value_holder())
+    ret_value = kKeyNotUnique;
+  cb(ret_value);
 }
 
 int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
@@ -2071,14 +2154,24 @@ int MaidsafeStoreManager::FindValue(const std::string &kad_key,
 #endif
     return kSuccess;
   }
-  for (int i = find_response.values_size(); i > 0; --i) {
-    values->push_back(find_response.values(i - 1));
+  bool empty(true);
+  for (int i = 0; i < find_response.values_size(); ++i) {
+    if (!find_response.values(i).empty()) {
+      empty = false;
+      values->push_back(find_response.values(i));
+    }
   }
 #ifdef DEBUG
   printf("In MaidsafeStoreManager::FindValue, %i values have returned.\n",
          values->size());
 #endif
-  return (values->size() > 0) ? kSuccess : kFindValueFailure;
+  return (empty) ? kFindValueFailure : kSuccess;
+}
+
+void MaidsafeStoreManager::FindValue(const std::string &kad_key,
+                                     bool check_local,
+                                     const base::callback_func_type &cb) {
+  knode_->FindValue(kad_key, check_local, cb);
 }
 
 void MaidsafeStoreManager::FindAvailableChunkHolders(

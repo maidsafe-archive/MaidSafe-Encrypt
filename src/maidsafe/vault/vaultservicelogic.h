@@ -198,8 +198,10 @@ class VaultServiceLogic {
   // AccountStatusRequest to establish if the account owner has space to store
   int RemoteVaultAbleToStore(maidsafe::AccountStatusRequest request,
                              const boost::int16_t &transport_id);
-  void CacheChunk(const std::string chunkname, const std::string chunkcontent,
-                  const kad::ContactInfo cacher, VoidFuncOneInt callback,
+  void CacheChunk(const std::string &chunkname,
+                  const std::string &chunkcontent,
+                  const kad::ContactInfo &cacher,
+                  VoidFuncOneInt callback,
                   const boost::int16_t &transport_id);
  private:
   VaultServiceLogic(const VaultServiceLogic&);

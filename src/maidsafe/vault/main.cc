@@ -91,6 +91,7 @@ class RunPDVaults {
         mutices_(),
         cb_(),
         crypto_(),
+        transport_handlers_(),
         pdvaults_(new std::vector< boost::shared_ptr<PDVault> >),
         current_nodes_created_(0),
         mutex_(),
@@ -163,10 +164,13 @@ class RunPDVaults {
         } else {
           GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
         }
+        boost::shared_ptr<transport::TransportHandler>
+            transport_handler(new transport::TransportHandler());
+        transport_handlers_.push_back(transport_handler);
         boost::shared_ptr<maidsafe_vault::PDVault>
             pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
             signed_key, dir, 0, false, false, kad_config_location,
-            1073741824, 0));
+            1073741824, 0, transport_handler.get()));
         pdvaults_->push_back(pdvault_local);
         ++current_nodes_created_;
         (*pdvaults_)[j]->Start(false);
@@ -208,10 +212,13 @@ class RunPDVaults {
         } else {
           GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
         }
+        boost::shared_ptr<transport::TransportHandler>
+            transport_handler(new transport::TransportHandler());
+        transport_handlers_.push_back(transport_handler);
         boost::shared_ptr<maidsafe_vault::PDVault>
             pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
             signed_key, chunkstore_local, this_port, false, false,
-            kad_config_location, 1073741824, 0));
+            kad_config_location, 1073741824, 0, transport_handler.get()));
         pdvaults_->push_back(pdvault_local);
         ++current_nodes_created_;
         printf(".");
@@ -343,6 +350,8 @@ class RunPDVaults {
   std::vector< boost::shared_ptr<boost::mutex> > mutices_;
   base::callback_func_type cb_;
   crypto::Crypto crypto_;
+  std::vector< boost::shared_ptr<transport::TransportHandler> >
+      transport_handlers_;
   boost::shared_ptr< std::vector< boost::shared_ptr<PDVault> > > pdvaults_;
   int current_nodes_created_;
   boost::mutex mutex_;

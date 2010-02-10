@@ -181,7 +181,8 @@ class PDVault {
           bool use_upnp,
           const std::string &kad_config_file,
           const boost::uint64_t &available_space,
-          const boost::uint64_t &vault_used_space);
+          const boost::uint64_t &vault_used_space,
+          transport::TransportHandler *transport_handler);
   ~PDVault();
   void Start(bool first_node);
   int Stop();
@@ -217,13 +218,12 @@ class PDVault {
                  const std::string &rendezvous_ip,
                  const boost::uint16_t &rendezvous_port,
                  base::callback_func_type cb);
-  void StopRvPing() { transport_handler_.StopPingRendezvous(); }
+  void StopRvPing() { transport_handler_->StopPingRendezvous(); }
   void SetKThreshold(const boost::uint16_t &threshold);
   friend class localvaults::Env;
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
-//  FRIEND_TEST(PDVaultTest, FUNC_MAID_Kademlia_FindNodes);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreChunks);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetChunks);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk);
@@ -302,7 +302,7 @@ class PDVault {
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   boost::uint16_t port_;
   transport::TransportUDT udt_transport_;
-  transport::TransportHandler transport_handler_;
+  transport::TransportHandler *transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
   maidsafe::MaidsafeValidator validator_;
   kad::KNode knode_;

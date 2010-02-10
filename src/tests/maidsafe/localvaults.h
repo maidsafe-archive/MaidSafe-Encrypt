@@ -69,6 +69,7 @@ class Env: public testing::Environment {
         kad_config_file_(".kadconfig"),
         chunkstore_dirs_(),
         crypto_(),
+        transport_handlers_(),
         pdvaults_(pdvaults),
         kNetworkSize_(kNetworkSize),
         kTestK_(kTestK),
@@ -119,15 +120,18 @@ class Env: public testing::Environment {
       fs::path chunkstore_local_path(chunkstore_local, fs::native);
       fs::create_directories(chunkstore_local_path);
       chunkstore_dirs_.push_back(chunkstore_local_path);
-      std::string public_key(""), private_key(""), signed_key(""), node_id("");
+      std::string public_key, private_key, signed_key, node_id;
       GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
 //      ASSERT_TRUE(crypto_.AsymCheckSig(public_key, signed_key, public_key,
 //                                       crypto::STRING_STRING));
       kad_config_file_ = chunkstore_local + "/.kadconfig";
+      boost::shared_ptr<transport::TransportHandler>
+          transport_handler(new transport::TransportHandler());
+      transport_handlers_.push_back(transport_handler);
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
           signed_key, chunkstore_local, 0, false, false, kad_config_file_,
-          1073741824, 0));
+          1073741824, 0, transport_handler.get()));
       pdvault_local->SetKThreshold(kTestK_ * kad::kMinSuccessfulPecentageStore);
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
@@ -258,7 +262,9 @@ class Env: public testing::Environment {
   std::string vault_dir_, chunkstore_dir_, kad_config_file_;
   std::vector<fs::path> chunkstore_dirs_;
   crypto::Crypto crypto_;
-  std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults_;
+  std::vector< boost::shared_ptr<transport::TransportHandler> >
+      transport_handlers_;
+  std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults_;
   const int kNetworkSize_;
   const int kTestK_;
   int current_nodes_created_;

@@ -93,7 +93,7 @@ class ClientController {
 //  bool DeauthoriseUsers(std::set<std::string> users);
   int ChangeConnectionStatus(int status);
   int RunDbEncQueue();
-  inline bool initialised() { return intialised_; }
+  inline bool initialised() { return initialised_; }
 
   // Messages
   bool GetMessages();
@@ -253,7 +253,7 @@ class ClientController {
   boost::mutex rec_msg_mutex_;
   boost::thread clear_messages_thread_;
   std::string client_store_;
-  bool intialised_;
+  bool initialised_;
   bool logging_out_;
 };
 

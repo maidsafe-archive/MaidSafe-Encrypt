@@ -157,7 +157,8 @@ int VaultServiceLogic::AddToRemoteRefList(
                                     done);
   }
   boost::mutex::scoped_lock lock(data->mutex);
-  data->cv.wait(lock);
+  while (!data->callback_done)
+    data->cv.wait(lock);
   return data->result;
 }
 
@@ -478,13 +479,14 @@ int VaultServiceLogic::RemoteVaultAbleToStore(
                                done);
   }
   boost::mutex::scoped_lock lock(data->mutex);
-  data->cv.wait(lock);
+  while (!data->callback_done)
+    data->cv.wait(lock);
   return data->result;
 }
 
-void VaultServiceLogic::CacheChunk(const std::string chunkname,
-                                   const std::string chunkcontent,
-                                   const kad::ContactInfo cacher,
+void VaultServiceLogic::CacheChunk(const std::string &chunkname,
+                                   const std::string &chunkcontent,
+                                   const kad::ContactInfo &cacher,
                                    VoidFuncOneInt callback,
                                    const boost::int16_t &transport_id) {
   boost::shared_ptr<CacheChunkData> data(new CacheChunkData());
