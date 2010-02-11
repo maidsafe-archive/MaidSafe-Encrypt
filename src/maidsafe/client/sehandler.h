@@ -75,14 +75,6 @@ struct ChunksData {
   base::callback_func_type cb;
 };
 
-class CallbackResult {
- public:
-  CallbackResult();
-  void CallbackFunc(const std::string &res);
-  void Reset();
-  std::string result;
-};
-
 class SEHandler {
  public:
   SEHandler();
@@ -107,12 +99,12 @@ class SEHandler {
                    const ItemType type,
                    const DirType dir_type,
                    const std::string &msid,
-                   const std::string &dir_key);
+                   const std::string &directory_key);
   //  Gets a unique DHT key for dir's db identifier
   int GenerateUniqueKey(const DirType dir_type,
                         const std::string &msid,
                         const int &attempt,
-                        std::string *hex_key);
+                        std::string *key);
   //  Retrieves DHT keys for dir and its parent dir if msid == "" or sets
   //  parent_key to MSID public key if msid != ""
   int GetDirKeys(const std::string &dir_path,
@@ -167,6 +159,10 @@ class SEHandler {
   void LoadChunk(const std::string &chunk_name,
                  int retry,
                  boost::shared_ptr<ChunksData> data);
+  void PacketOpCallback(const int &store_manager_result,
+                        boost::mutex *mutex,
+                        boost::condition_variable *cond_var,
+                        int *op_result);
   boost::shared_ptr<StoreManagerInterface> storem_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;

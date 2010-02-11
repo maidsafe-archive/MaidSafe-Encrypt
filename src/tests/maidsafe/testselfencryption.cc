@@ -76,7 +76,8 @@ namespace maidsafe {
 class SelfEncryptionTest : public testing::Test {
  public:
   SelfEncryptionTest()
-      : test_root_dir_(file_system::FileSystem::TempDir() + "/maidsafe_TestSE"),
+      : test_root_dir_(file_system::FileSystem::TempDir() +
+            "/maidsafe_TestSE_" + base::RandomString(6)),
         ss(NULL),
         client_chunkstore_() {}
   ~SelfEncryptionTest() {}
@@ -512,22 +513,22 @@ TEST_F(SelfEncryptionTest, BEH_MAID_HashFile) {
   ofs2 << "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijkl"
           "mnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
   ofs2.close();
-  ASSERT_EQ(se.SHA512(path1),
+  ASSERT_EQ(base::EncodeToHex(se.SHA512(path1)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  ASSERT_EQ(se.SHA512(path2),
+  ASSERT_EQ(base::EncodeToHex(se.SHA512(path2)),
         "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
 }
 
 TEST_F(SelfEncryptionTest, BEH_MAID_HashString) {
   SelfEncryption se(client_chunkstore_);
-  ASSERT_EQ(se.SHA512(static_cast<std::string>("abc")),
+  ASSERT_EQ(base::EncodeToHex(se.SHA512(static_cast<std::string>("abc"))),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  ASSERT_EQ(se.SHA512(static_cast<std::string>("abcdefghbcdefghicdefghijdefghij"
-        "kefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopq"
-        "rstnopqrstu")),
+  ASSERT_EQ(base::EncodeToHex(se.SHA512(static_cast<std::string>("abcdefghbcdef"
+        "ghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklm"
+        "nopqrlmnopqrsmnopqrstnopqrstu"))),
         "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
 }
@@ -557,13 +558,13 @@ TEST_F(SelfEncryptionTest, BEH_MAID_GeneratePreEncHashes) {
   iohandler->SetData(path1.string(), true);
   ASSERT_TRUE(se.GeneratePreEncHashes(iohandler, &dm));
   ASSERT_EQ(3, dm.chunk_name_size());
-  ASSERT_EQ(dm.chunk_name(0),
+  ASSERT_EQ(base::EncodeToHex(dm.chunk_name(0)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  ASSERT_EQ(dm.chunk_name(1),
+  ASSERT_EQ(base::EncodeToHex(dm.chunk_name(1)),
         "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
-  ASSERT_EQ(dm.chunk_name(2),
+  ASSERT_EQ(base::EncodeToHex(dm.chunk_name(2)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
 
@@ -576,13 +577,13 @@ TEST_F(SelfEncryptionTest, BEH_MAID_GeneratePreEncHashes) {
   iohandler->SetData(path1.string(), true);
   ASSERT_TRUE(se.GeneratePreEncHashes(iohandler, &dm));
   ASSERT_EQ(3, dm.chunk_name_size());
-  ASSERT_EQ(dm.chunk_name(0),
+  ASSERT_EQ(base::EncodeToHex(dm.chunk_name(0)),
         "2d408a0717ec188158278a796c689044361dc6fdde28d6f04973b80896e1823975cdbf"
         "12eb63f9e0591328ee235d80e9b5bf1aa6a44f4617ff3caf6400eb172d");
-  ASSERT_EQ(dm.chunk_name(1),
+  ASSERT_EQ(base::EncodeToHex(dm.chunk_name(1)),
         "2d408a0717ec188158278a796c689044361dc6fdde28d6f04973b80896e1823975cdbf"
         "12eb63f9e0591328ee235d80e9b5bf1aa6a44f4617ff3caf6400eb172d");
-  ASSERT_EQ(dm.chunk_name(2),
+  ASSERT_EQ(base::EncodeToHex(dm.chunk_name(2)),
         "2d408a0717ec188158278a796c689044361dc6fdde28d6f04973b80896e1823975cdbf"
         "12eb63f9e0591328ee235d80e9b5bf1aa6a44f4617ff3caf6400eb172d");
 }
@@ -592,19 +593,19 @@ TEST_F(SelfEncryptionTest, BEH_MAID_HashUnique) {
   std::string hash = se.SHA512(static_cast<std::string>("abc"));
   DataMap dm;
   dm.add_chunk_name(hash);
-  ASSERT_EQ(dm.chunk_name(0),
+  ASSERT_EQ(base::EncodeToHex(dm.chunk_name(0)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
   ASSERT_TRUE(se.HashUnique(dm, true, &hash));
   dm.add_chunk_name(hash);
-  ASSERT_EQ(dm.chunk_name(1),
-        "fddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a21929"
-        "92a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49");
-  ASSERT_TRUE(se.HashUnique(dm, true, &hash));
-  dm.add_chunk_name(hash);
-  ASSERT_EQ(dm.chunk_name(2),
+  ASSERT_EQ(base::EncodeToHex(dm.chunk_name(1)),
         "9fddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192"
         "992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca4");
+  ASSERT_TRUE(se.HashUnique(dm, true, &hash));
+  dm.add_chunk_name(hash);
+  ASSERT_EQ(base::EncodeToHex(dm.chunk_name(2)),
+        "a49fddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a21"
+        "92992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54c");
   hash = se.SHA512(static_cast<std::string>("ab"));
   std::string hashafter = hash;
   ASSERT_TRUE(se.HashUnique(dm, true, &hashafter));
@@ -614,16 +615,20 @@ TEST_F(SelfEncryptionTest, BEH_MAID_HashUnique) {
 TEST_F(SelfEncryptionTest, BEH_MAID_ResizeObfuscationHash) {
   SelfEncryption se(client_chunkstore_);
   std::string hash = se.SHA512(static_cast<std::string>("abc"));
-  ASSERT_EQ(hash,
+  ASSERT_EQ(base::EncodeToHex(hash),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
   std::string amended_hash;
-  ASSERT_TRUE(se.ResizeObfuscationHash(hash, 129, &amended_hash));
-  ASSERT_EQ(amended_hash, hash+"d");
-  ASSERT_TRUE(se.ResizeObfuscationHash(hash, 10, &amended_hash));
+  ASSERT_TRUE(se.ResizeObfuscationHash(base::EncodeToHex(hash), 129,
+              &amended_hash));
+  ASSERT_EQ(amended_hash, base::EncodeToHex(hash)+"d");
+  ASSERT_TRUE(se.ResizeObfuscationHash(base::EncodeToHex(hash), 10,
+              &amended_hash));
   ASSERT_EQ(amended_hash, "ddaf35a193");
-  ASSERT_TRUE(se.ResizeObfuscationHash(hash, 1280, &amended_hash));
-  ASSERT_EQ(amended_hash, hash+hash+hash+hash+hash+hash+hash+hash+hash+hash);
+  ASSERT_TRUE(se.ResizeObfuscationHash(base::EncodeToHex(hash), 1280,
+              &amended_hash));
+  ASSERT_EQ(amended_hash, base::EncodeToHex(
+            hash+hash+hash+hash+hash+hash+hash+hash+hash+hash));
 }
 
 TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptFiles) {
@@ -686,20 +691,20 @@ TEST_F(SelfEncryptionTest, BEH_MAID_DecryptFile) {
   ASSERT_EQ(0, se.Encrypt(path3.string(), false, &dm3));
   ASSERT_EQ(0, se.Encrypt(path4.string(), false, &dm4));
 
-  fs::path decrypted1_(path1.string()+".decrypted", fs::native);
-  fs::path decrypted2_(path2.string()+".decrypted", fs::native);
-  fs::path decrypted3_(path3.string()+".decrypted", fs::native);
-  fs::path decrypted4_(path4.string()+".decrypted", fs::native);
+  fs::path decrypted1(path1.string()+".decrypted", fs::native);
+  fs::path decrypted2(path2.string()+".decrypted", fs::native);
+  fs::path decrypted3(path3.string()+".decrypted", fs::native);
+  fs::path decrypted4(path4.string()+".decrypted", fs::native);
 
-  ASSERT_EQ(0, se.Decrypt(dm1, decrypted1_.string(), 0, false));
-  ASSERT_EQ(0, se.Decrypt(dm2, decrypted2_.string(), 0, false));
-  ASSERT_EQ(0, se.Decrypt(dm3, decrypted3_.string(), 0, false));
-  ASSERT_EQ(0, se.Decrypt(dm4, decrypted4_.string(), 0, false));
+  ASSERT_EQ(0, se.Decrypt(dm1, decrypted1.string(), 0, false));
+  ASSERT_EQ(0, se.Decrypt(dm2, decrypted2.string(), 0, false));
+  ASSERT_EQ(0, se.Decrypt(dm3, decrypted3.string(), 0, false));
+  ASSERT_EQ(0, se.Decrypt(dm4, decrypted4.string(), 0, false));
 
-  ASSERT_EQ(se.SHA512(path1), se.SHA512(decrypted1_));
-  ASSERT_EQ(se.SHA512(path2), se.SHA512(decrypted2_));
-  ASSERT_EQ(se.SHA512(path3), se.SHA512(decrypted3_));
-  ASSERT_EQ(se.SHA512(path4), se.SHA512(decrypted4_));
+  ASSERT_EQ(se.SHA512(path1), se.SHA512(decrypted1));
+  ASSERT_EQ(se.SHA512(path2), se.SHA512(decrypted2));
+  ASSERT_EQ(se.SHA512(path3), se.SHA512(decrypted3));
+  ASSERT_EQ(se.SHA512(path4), se.SHA512(decrypted4));
 }
 
 TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptStrings) {
@@ -766,7 +771,7 @@ TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptStringSerDA) {
   types.push_back(ANSMID);
   types.push_back(ANTMID);
   types.push_back(MAID);
-  da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, true));
+  da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, false));
   for (unsigned int i = 0; i < types.size(); ++i) {
     Key *k = da.add_keys();
     keys.ClearKeys();
@@ -777,7 +782,7 @@ TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptStringSerDA) {
     k->set_public_key_signature(co.AsymSign(keys.public_key(), "",
       keys.private_key(), crypto::STRING_STRING));
     k->set_id(co.Hash(keys.public_key() + k->public_key_signature(), "",
-      crypto::STRING_STRING, true));
+      crypto::STRING_STRING, false));
   }
   std::string ser_da("");
   ASSERT_TRUE(da.SerializeToString(&ser_da));
@@ -809,7 +814,7 @@ TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptFileSerDA) {
   types.push_back(ANSMID);
   types.push_back(ANTMID);
   types.push_back(MAID);
-  da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, true));
+  da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, false));
   for (unsigned int i = 0; i < types.size(); ++i) {
     Key *k = da.add_keys();
     keys.ClearKeys();
@@ -820,7 +825,7 @@ TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptFileSerDA) {
     k->set_public_key_signature(co.AsymSign(keys.public_key(), "",
       keys.private_key(), crypto::STRING_STRING));
     k->set_id(co.Hash(keys.public_key() + k->public_key_signature(), "",
-      crypto::STRING_STRING, true));
+      crypto::STRING_STRING, false));
   }
   std::string filename("ser_da");
   std::fstream output(filename.c_str(),

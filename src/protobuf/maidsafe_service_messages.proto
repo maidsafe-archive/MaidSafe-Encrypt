@@ -58,30 +58,10 @@ message StoreChunkResponse {
   optional bytes pmid = 2;  // vault's PMID
 }
 
-message StorePacketRequest {
-  required bytes packetname = 1;
-  repeated GenericPacket signed_data = 2;
-  optional bytes key_id = 3;  // ID of e.g. ANMID, ANTMID, ...
-  optional bytes public_key = 4;
-  optional bytes public_key_signature = 5;
-  optional bytes request_signature = 6;
-  required int32 data_type = 7;
-  required bool append = 8;
-}
-
-message StorePacketResponse {
-  required uint32 result = 1;
-  optional bytes pmid = 2;  // vault's PMID
-  optional bytes public_key = 3;
-  optional bytes public_key_signature = 4;
-  optional bytes response_signature = 5;
-  optional bytes checksum = 6;
-}
-
 message AddToWatchListRequest {
   required bytes chunkname = 1;
   required SignedSize signed_size = 2;
-  required bytes request_signature = 4;  // Signed using client's PMID key (PMID
+  required bytes request_signature = 3;  // Signed using client's PMID key (PMID
                                          // details included in signed_size
 }
 
@@ -177,41 +157,13 @@ message CheckChunkResponse {
 
 message GetChunkRequest {
   required bytes chunkname = 1;
+  optional bytes serialised_cacher_contact = 2;
 }
 
 message GetChunkResponse {
   required uint32 result = 1;
   optional bytes content = 2;
   optional bytes pmid = 3;
-}
-
-message GetPacketRequest {
-  required bytes packetname = 1;
-  optional bytes key_id = 2;  // ID of e.g. ANMID, ANTMID, ...
-  optional bytes public_key = 3;
-  optional bytes public_key_signature = 4;
-  optional bytes request_signature = 5;
-}
-
-message GetPacketResponse {
-  required uint32 result = 1;
-  repeated GenericPacket content = 2;
-  optional bytes pmid = 3;
-}
-
-message UpdateChunkRequest {
-  required bytes chunkname = 1;
-  required bytes data = 2;
-  required bytes pmid = 3;  // vault's PMID
-  required bytes public_key = 4;
-  required bytes public_key_signature = 5;
-  required bytes request_signature = 6;
-  required int32 data_type = 7;
-}
-
-message UpdateChunkResponse {
-  required uint32 result = 1;
-  optional bytes pmid = 2;
 }
 
 message DeleteChunkRequest {
@@ -255,6 +207,19 @@ message SwapChunkResponse {
   optional bytes chunkcontent2 = 7;
   optional int32 size2 = 8;
   required bytes pmid = 9;
+}
+
+message CacheChunkRequest {
+  required bytes chunkname = 1;
+  required bytes chunkcontent = 2;
+  required bytes pmid = 3;
+  required bytes public_key = 4;
+  required bytes public_key_signature = 5;
+  required bytes request_signature = 6;
+}
+
+message CacheChunkResponse {
+  required uint32 result = 1;
 }
 
 message VaultCommunication {

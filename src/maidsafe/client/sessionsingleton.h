@@ -152,10 +152,8 @@ class SessionSingleton {
         return false;
       crypto::Crypto c;
       c.set_hash_algorithm(crypto::SHA_1);
-      ud_.session_name = c.Hash(Pin()+Username(),
-                                "",
-                                crypto::STRING_STRING,
-                                true);
+      ud_.session_name =
+          c.Hash(Pin()+Username(), "", crypto::STRING_STRING, false);
     }
     return true;
   }
@@ -211,9 +209,10 @@ class SessionSingleton {
   void SerialisedKeyRing(std::string *ser_kr);
   // If signed_public_key == "", it is set as signature of given public_key
   // using given private_key.
-  void AddKey(const PacketType &bpt, const std::string &id,
-              const std::string &private_key, const std::string &public_key,
-              const std::string &signed_public_key);
+  int AddKey(const PacketType &bpt, const std::string &id,
+             const std::string &private_key, const std::string &public_key,
+             const std::string &signed_public_key);
+  int RemoveKey(const PacketType &bpt);
   std::string Id(const PacketType &bpt);
   std::string PublicKey(const PacketType &bpt);
   std::string PrivateKey(const PacketType &bpt);

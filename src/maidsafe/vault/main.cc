@@ -57,7 +57,7 @@ void GeneratePmidStuff(std::string *public_key,
     crypto::STRING_STRING);
   *public_key = keys.public_key();
   *private_key = keys.private_key();
-  *pmid = co_.Hash(*signed_key, "", crypto::STRING_STRING, true);
+  *pmid = co_.Hash(*signed_key, "", crypto::STRING_STRING, false);
 };
 
 class RunPDVaults {
@@ -91,6 +91,7 @@ class RunPDVaults {
         mutices_(),
         cb_(),
         crypto_(),
+        transport_handlers_(),
         pdvaults_(new std::vector< boost::shared_ptr<PDVault> >),
         current_nodes_created_(0),
         mutex_(),
@@ -101,7 +102,7 @@ class RunPDVaults {
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     initial_vault_node_id_ = crypto_.Hash(initial_vault_signed_pmid_public_, "",
-                                          crypto::STRING_STRING, true);
+                                          crypto::STRING_STRING, false);
   }
 
   ~RunPDVaults() {
@@ -163,10 +164,13 @@ class RunPDVaults {
         } else {
           GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
         }
+        boost::shared_ptr<transport::TransportHandler>
+            transport_handler(new transport::TransportHandler());
+        transport_handlers_.push_back(transport_handler);
         boost::shared_ptr<maidsafe_vault::PDVault>
             pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
             signed_key, dir, 0, false, false, kad_config_location,
-            1073741824, 0));
+            1073741824, 0, transport_handler.get()));
         pdvaults_->push_back(pdvault_local);
         ++current_nodes_created_;
         (*pdvaults_)[j]->Start(false);
@@ -208,10 +212,13 @@ class RunPDVaults {
         } else {
           GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
         }
+        boost::shared_ptr<transport::TransportHandler>
+            transport_handler(new transport::TransportHandler());
+        transport_handlers_.push_back(transport_handler);
         boost::shared_ptr<maidsafe_vault::PDVault>
             pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
             signed_key, chunkstore_local, this_port, false, false,
-            kad_config_location, 1073741824, 0));
+            kad_config_location, 1073741824, 0, transport_handler.get()));
         pdvaults_->push_back(pdvault_local);
         ++current_nodes_created_;
         printf(".");
@@ -235,7 +242,7 @@ class RunPDVaults {
       printf(".");
       base::KadConfig kad_config;
       base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-      kad_contact->set_node_id((*pdvaults_)[0]->hex_node_id());
+      kad_contact->set_node_id((*pdvaults_)[0]->node_id());
       kad_contact->set_ip((*pdvaults_)[0]->host_ip());
       kad_contact->set_port((*pdvaults_)[0]->host_port());
       kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
@@ -277,7 +284,8 @@ class RunPDVaults {
     printf("* No. Port   ID                                 *\n");
     for (int l = 0; l < no_of_vaults_; ++l)
       printf("* %2i  %5i  %s *\n", l, (*pdvaults_)[l]->host_port(),
-             ((*pdvaults_)[l]->hex_node_id().substr(0, 31) + "...").c_str());
+             (base::EncodeToHex((*pdvaults_)[l]->node_id()).substr(0, 31) +
+             "...").c_str());
     printf("*                                               *\n");
     printf("*-----------------------------------------------*\n\n");
 #ifdef WIN32
@@ -287,7 +295,7 @@ class RunPDVaults {
 //    printf("Last node: IP(%s), port(%d), PMID(%s)\n",
 //          (*(pdvaults_))[no_of_vaults_ - 1]->host_ip().c_str(),
 //          (*(pdvaults_))[no_of_vaults_ - 1]->host_port(),
-//          (*(pdvaults_))[no_of_vaults_ - 1]->hex_node_id().c_str());
+//          HexSubstr((*(pdvaults_))[no_of_vaults_ - 1]->node_id()).c_str());
   }
 
   void TearDown() {
@@ -342,6 +350,8 @@ class RunPDVaults {
   std::vector< boost::shared_ptr<boost::mutex> > mutices_;
   base::callback_func_type cb_;
   crypto::Crypto crypto_;
+  std::vector< boost::shared_ptr<transport::TransportHandler> >
+      transport_handlers_;
   boost::shared_ptr< std::vector< boost::shared_ptr<PDVault> > > pdvaults_;
   int current_nodes_created_;
   boost::mutex mutex_;

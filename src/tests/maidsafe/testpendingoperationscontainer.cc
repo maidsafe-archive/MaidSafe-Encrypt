@@ -46,7 +46,7 @@ class PendingOperationContainerTest : public testing::Test {
   PendingOperationsHandler poh_;
 };
 
-// Tuple of pmid, non-hex chunkname, chunksize, and pmid_publickey in that order
+// Tuple of pmid, chunkname, chunksize, and pmid_publickey in that order
 typedef boost::tuple<std::string, std::string, boost::uint64_t,
                      std::string> IouReadyTuple;
 

@@ -92,7 +92,7 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
   if (CheckEntry(iohandler) != 0)
     return -1;
 
-  file_hash_ = dm->file_hash();
+  file_hash_ = base::EncodeToHex(dm->file_hash());
 
   dm->set_se_version(version_);
 
@@ -190,7 +190,7 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
     }
     // assign temporary name for chunk
     fs::path temp_chunk_name = processing_path;
-    temp_chunk_name /= dm->chunk_name(chunk_no);
+    temp_chunk_name /= base::EncodeToHex(dm->chunk_name(chunk_no));
     // remove any old copies of the chunk
     try {
       if (fs::exists(temp_chunk_name))
@@ -212,8 +212,7 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
     std::string post_enc_hash = SHA512(temp_chunk_name);
     // ensure uniqueness of post-encryption hash
     // HashUnique(post_enc_hash_, dm, false);
-    client_chunkstore_->AddChunkToOutgoing(base::DecodeFromHex(post_enc_hash),
-                                          temp_chunk_name);
+    client_chunkstore_->AddChunkToOutgoing(post_enc_hash, temp_chunk_name);
     // store the post-encryption hash to datamap
     dm->add_encrypted_chunk_name(post_enc_hash);
   }
@@ -266,10 +265,14 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
                             const std::string &path,
                             boost::shared_ptr<DataIOHandler> iohandler,
                             std::string *decrypted_str) {
-  file_hash_ = dm.file_hash();
+  file_hash_ = base::EncodeToHex(dm.file_hash());
   // if there is no file hash, then the file has never been encrypted
-  if (file_hash_.empty())
+  if (file_hash_.empty()) {
+#ifdef DEBUG
+    printf("SelfEncryption::Decrypt - File hash empty.\n");
+#endif
     return -1;
+  }
 
   chunk_count_ = dm.chunk_name_size();
   if (chunk_count_ == 0) {
@@ -310,20 +313,32 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
       iohandler->SetData("", false);
     else
       iohandler->SetData(temp_file_path.string(), false);
-    if (!iohandler->Open())
+    if (!iohandler->Open()) {
+#ifdef DEBUG
+      printf("SelfEncryption::Decrypt - IOHandler won't open.\n");
+#endif
       return -1;
+    }
     // loop through each chunk
-    for (int chunk_no = 0; chunk_no != chunk_count_; ++chunk_no) {
+    for (int chunk_no = 0; chunk_no < chunk_count_; ++chunk_no) {
       // get chunk
       Chunk chunk;
       fs::path this_chunk_path = GetChunkPath(
           dm.encrypted_chunk_name(chunk_no));
 
       fs::ifstream fin(this_chunk_path, std::ifstream::binary);
-      if (!fin.good())
+      if (!fin.good()) {
+#ifdef DEBUG
+        printf("SelfEncryption::Decrypt - !fin.good()\n");
+#endif
         return -1;
-      if (!chunk.ParseFromIstream(&fin))
+      }
+      if (!chunk.ParseFromIstream(&fin)) {
+#ifdef DEBUG
+        printf("SelfEncryption::Decrypt - !chunk.ParseFromIstream(&fin)\n");
+#endif
         return -1;
+      }
       // check if compression was used during encryption
       compress_ = (!chunk.compression_type().empty());
       // get index numbers of pre-encryption hashes for use in obfuscation and
@@ -391,13 +406,13 @@ int SelfEncryption::CheckEntry(boost::shared_ptr<DataIOHandler> iohandler) {
 std::string SelfEncryption::SHA512(const fs::path &file_path) {  // files
   crypto::Crypto file_crypto;
   file_crypto.set_hash_algorithm(crypto::SHA_512);
-  return file_crypto.Hash(file_path.string(), "", crypto::FILE_STRING, true);
+  return file_crypto.Hash(file_path.string(), "", crypto::FILE_STRING, false);
 }
 
 std::string SelfEncryption::SHA512(const std::string &content) {  // strings
   crypto::Crypto string_crypto;
   string_crypto.set_hash_algorithm(crypto::SHA_512);
-  return string_crypto.Hash(content, "", crypto::STRING_STRING, true);
+  return string_crypto.Hash(content, "", crypto::STRING_STRING, false);
 }
 
 bool SelfEncryption::CreateProcessDirectory(fs::path *processing_path) {
@@ -416,8 +431,8 @@ bool SelfEncryption::CreateProcessDirectory(fs::path *processing_path) {
   }
 }
 
-fs::path SelfEncryption::GetChunkPath(const std::string &hex_chunk_name) {
-  return client_chunkstore_->GetChunkPath(base::DecodeFromHex(hex_chunk_name),
+fs::path SelfEncryption::GetChunkPath(const std::string &chunk_name) {
+  return client_chunkstore_->GetChunkPath(chunk_name,
                                           (kHashable | kOutgoing), true);
 }
 

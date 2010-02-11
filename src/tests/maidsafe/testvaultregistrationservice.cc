@@ -120,10 +120,10 @@ class OwnershipSenderHandler {
 class VaultRegistrationTest : public testing::Test {
  public:
   VaultRegistrationTest()
-      : server_transport_handler_(),
-        server_transport_(),
-        client_transport_handler_(),
+      : server_transport_(),
         client_transport_(),
+        server_transport_handler_(),
+        client_transport_handler_(),
         server(&server_transport_handler_),
         client(&client_transport_handler_),
         service_channel(new rpcprotocol::Channel(&server,

@@ -41,35 +41,29 @@ class ClientRpcs {
       : transport_handler_(transport_handler),
         channel_manager_(channel_manager) {}
   virtual ~ClientRpcs() {}
-  void StorePrep(const kad::Contact &peer,
-                 bool local,
-                 const boost::int16_t &transport_id,
-                 StorePrepRequest *store_prep_request,
-                 StorePrepResponse *store_prep_response,
-                 rpcprotocol::Controller *controller,
-                 google::protobuf::Closure *done);
-  void StoreChunk(const kad::Contact &peer,
-                  bool local,
-                  const boost::int16_t &transport_id,
-                  StoreChunkRequest *store_chunk_request,
-                  StoreChunkResponse *store_chunk_response,
-                  rpcprotocol::Controller *controller,
-                  google::protobuf::Closure *done);
-  virtual void StorePacket(const kad::Contact &peer,
-                           bool local,
-                           const boost::int16_t &transport_id,
-                           StorePacketRequest *store_packet_request,
-                           StorePacketResponse *store_packet_response,
-                           rpcprotocol::Controller *controller,
-                           google::protobuf::Closure *done);
-  void AddToWatchList(const kad::Contact &peer,
-                      bool local,
-                      const boost::int16_t &transport_id,
-                      AddToWatchListRequest *add_to_watch_list_request,
-                      AddToWatchListResponse *add_to_watch_list_response,
-                      rpcprotocol::Controller *controller,
-                      google::protobuf::Closure *done);
-  void RemoveFromWatchList(
+  virtual void StorePrep(const kad::Contact &peer,
+                         bool local,
+                         const boost::int16_t &transport_id,
+                         StorePrepRequest *store_prep_request,
+                         StorePrepResponse *store_prep_response,
+                         rpcprotocol::Controller *controller,
+                         google::protobuf::Closure *done);
+  virtual void StoreChunk(const kad::Contact &peer,
+                          bool local,
+                          const boost::int16_t &transport_id,
+                          StoreChunkRequest *store_chunk_request,
+                          StoreChunkResponse *store_chunk_response,
+                          rpcprotocol::Controller *controller,
+                          google::protobuf::Closure *done);
+  virtual void AddToWatchList(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      AddToWatchListRequest *add_to_watch_list_request,
+      AddToWatchListResponse *add_to_watch_list_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done);
+  virtual void RemoveFromWatchList(
       const kad::Contact &peer,
       bool local,
       const boost::int16_t &transport_id,
@@ -77,20 +71,20 @@ class ClientRpcs {
       RemoveFromWatchListResponse *remove_from_watch_list_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done);
-  void AmendAccount(const kad::Contact &peer,
-                    bool local,
-                    const boost::int16_t &transport_id,
-                    AmendAccountRequest *amend_account_request,
-                    AmendAccountResponse *amend_account_response,
-                    rpcprotocol::Controller *controller,
-                    google::protobuf::Closure *done);
-  void AccountStatus(const kad::Contact &peer,
-                     bool local,
-                     const boost::int16_t &transport_id,
-                     AccountStatusRequest *account_status_request,
-                     AccountStatusResponse *account_status_response,
-                     rpcprotocol::Controller *controller,
-                     google::protobuf::Closure *done);
+  virtual void AmendAccount(const kad::Contact &peer,
+                            bool local,
+                            const boost::int16_t &transport_id,
+                            AmendAccountRequest *amend_account_request,
+                            AmendAccountResponse *amend_account_response,
+                            rpcprotocol::Controller *controller,
+                            google::protobuf::Closure *done);
+  virtual void AccountStatus(const kad::Contact &peer,
+                             bool local,
+                             const boost::int16_t &transport_id,
+                             AccountStatusRequest *account_status_request,
+                             AccountStatusResponse *account_status_response,
+                             rpcprotocol::Controller *controller,
+                             google::protobuf::Closure *done);
   void CheckChunk(const kad::Contact &peer,
                   bool local,
                   const boost::int16_t &transport_id,
@@ -105,20 +99,6 @@ class ClientRpcs {
                 GetChunkResponse *get_chunk_response,
                 rpcprotocol::Controller *controller,
                 google::protobuf::Closure *done);
-  virtual void GetPacket(const kad::Contact &peer,
-                         bool local,
-                         const boost::int16_t &transport_id,
-                         GetPacketRequest *get_request,
-                         GetPacketResponse *get_response,
-                         rpcprotocol::Controller *controller,
-                         google::protobuf::Closure *done);
-  void UpdateChunk(const kad::Contact &peer,
-                   bool local,
-                   const boost::int16_t &transport_id,
-                   UpdateChunkRequest *update_chunk_request,
-                   UpdateChunkResponse *update_chunk_response,
-                   rpcprotocol::Controller *controller,
-                   google::protobuf::Closure *done);
   void LocalVaultOwned(LocalVaultOwnedResponse *response,
                        rpcprotocol::Controller *controller,
                        rpcprotocol::Channel *channel,

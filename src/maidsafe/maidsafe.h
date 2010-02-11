@@ -307,6 +307,10 @@ const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
 const int kMaxChunkStoreTries(2);  // max number of tries to store or update a
                                    // chunk
 const boost::uint8_t kMaxStoreFailures(10);  // max number of failed store tries
+// TODO(Fraser#5#): 2010-01-29 - Move the kMaxSmallChunkSize to be set and held
+//                               by session depending on connection speed, etc.
+// max size (bytes) of a chunk deemed "small"
+const boost::uint64_t kMaxSmallChunkSize(666666);
 const boost::uint32_t kSaveUpdatesTrigger(10);  // max no of dbs in save queue
                                                  // before running save queue
 const double kMinSuccessfulPecentageOfUpdating(0.9);
@@ -315,7 +319,7 @@ const int kChunkMaxThreadCount(20);
 // max. no. of threads in packet_thread_pool_ (in MaidsafeStoreManager)
 const int kPacketMaxThreadCount(10);
 // port where the service to register a local vault is listening
-const boost::uint16_t kLocalPort = 5484;
+const boost::uint16_t kLocalPort = 5483;
 // additionally paying PMIDs kept in watch lists
 const int kMaxReserveWatchListEntries = 250;
 // time a watcher is kept in the ChunkInfoHandler's waiting list
@@ -324,6 +328,9 @@ const int kChunkInfoWatcherPendingTimeout = 86400;  // 24 hours
 const int kChunkInfoRefActiveTimeout = 86400;  // 24 hours
 // min. no. of majority of responses from group of k nodes to accept result
 const int kKadTrustThreshold(3);
+// min. no. of responses required out of k
+const boost::uint16_t kKadStoreThreshold(kad::K *
+                                         kad::kMinSuccessfulPecentageStore);
 
 namespace maidsafe {
 
@@ -335,12 +342,25 @@ enum ValueType {
 };
 
 enum SortingMode { ALPHA, RANK, LAST };
+
 enum ShareFilter { kAll, kRo, kAdmin };
 
+typedef boost::function<void (const maidsafe::ReturnCode&)> VoidFuncOneInt;
 }  // namespace maidsafe
 
+
+namespace maidsafe_vault {
+
+typedef boost::function<void (const maidsafe_vault::ReturnCode&)>
+    VoidFuncOneInt;
+}  // namespace maidsafe_vault
+
 inline std::string HexSubstr(const std::string &non_hex) {
-  return (base::EncodeToHex(non_hex).substr(0, 10) + "...");
+  std::string hex(base::EncodeToHex(non_hex));
+  if (hex.size() > 16)
+    return (hex.substr(0, 7) + ".." + hex.substr(hex.size() - 7));
+  else
+    return hex;
 }
 
 #endif  // MAIDSAFE_MAIDSAFE_H_

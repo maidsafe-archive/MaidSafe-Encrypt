@@ -39,6 +39,8 @@ namespace mi = boost::multi_index;
 
 namespace maidsafe {
 
+typedef boost::function<void (const ReturnCode&)> VoidFuncOneInt;
+
 enum StoreTaskType {
   kStoreChunk,
   kStorePacket,
@@ -89,7 +91,7 @@ struct StoreTask {
             const boost::uint64_t &data_size,
             boost::uint8_t successes_required,
             boost::uint8_t max_failures,
-            const base::callback_func_type &callback)
+            VoidFuncOneInt callback)
       : data_name_(data_name),
         task_type_(task_type),
         data_size_(data_size),
@@ -117,7 +119,7 @@ struct StoreTask {
   boost::uint8_t success_count_;
   boost::uint8_t failures_count_;
   boost::uint8_t active_subtask_count_;
-  base::callback_func_type callback_;
+  VoidFuncOneInt callback_;
 };
 
 struct all_tasks {};
@@ -158,7 +160,7 @@ class StoreTasksHandler {
               const boost::uint64_t &data_size,
               boost::uint8_t successes_required,
               boost::uint8_t max_failures,
-              const base::callback_func_type &callback);
+              const VoidFuncOneInt &callback);
   // Set the task's successes_required_ field.
   int SetSuccessesRequired(const std::string &data_name,
                            const StoreTaskType &task_type,
@@ -181,7 +183,7 @@ class StoreTasksHandler {
   // If the task has a callback, it's run with callback_argument before deletion
   int DeleteTask(const std::string &data_name,
                  const StoreTaskType &task_type,
-                 const std::string &callback_argument);
+                 const ReturnCode &callback_argument);
   // Marks task as cancelled, but doesn't remove it from set.
   int CancelTask(const std::string &data_name,
                  const StoreTaskType &task_type);
@@ -198,6 +200,7 @@ class StoreTasksHandler {
   FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskDelete);
   FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelOne);
   FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelAll);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList);
   int DoAddTask(const StoreTask &task);
   boost::mutex mutex_;
   StoreTaskSet tasks_;

@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "maidsafe/maidsafevalidator.h"
+#include "maidsafe/opdata.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
@@ -181,36 +182,36 @@ class PDVault {
           bool use_upnp,
           const std::string &kad_config_file,
           const boost::uint64_t &available_space,
-          const boost::uint64_t &vault_used_space);
+          const boost::uint64_t &vault_used_space,
+          transport::TransportHandler *transport_handler);
   ~PDVault();
   void Start(bool first_node);
   int Stop();
   void CleanUp();
   VaultStatus vault_status();
   void SetVaultStatus(const VaultStatus &vault_status);
-  std::string hex_node_id() const;
-  std::string host_ip() const { return knode_.host_ip(); }
-  boost::uint16_t host_port() const { return knode_.host_port(); }
-  std::string local_host_ip() const { return knode_.local_host_ip(); }
-  boost::uint16_t local_host_port() { return knode_.local_host_port(); }
-  std::string rv_ip() const { return knode_.rv_ip(); }
-  boost::uint16_t rv_port() const { return knode_.rv_port(); }
+  std::string node_id() const { return knode_->node_id(); }
+  std::string host_ip() const { return knode_->host_ip(); }
+  boost::uint16_t host_port() const { return knode_->host_port(); }
+  std::string local_host_ip() const { return knode_->local_host_ip(); }
+  boost::uint16_t local_host_port() { return knode_->local_host_port(); }
+  std::string rv_ip() const { return knode_->rv_ip(); }
+  boost::uint16_t rv_port() const { return knode_->rv_port(); }
   inline boost::uint64_t available_space() {
     return vault_chunkstore_.available_space();
   }
   inline boost::uint64_t UsedSpace() { return vault_chunkstore_.used_space(); }
   inline boost::uint64_t FreeSpace() { return vault_chunkstore_.FreeSpace(); }
 
-
-
-
-  void SyncVault(base::callback_func_type cb);
-  void RepublishChunkRef(base::callback_func_type cb);
+  void SyncVault(base::callback_func_type) {}
+  void RepublishChunkRef(base::callback_func_type) {}
+/*
   void ValidityCheck(const std::string &chunk_name,
                      const std::string &random_data,
                      const kad::Contact &remote,
                      int attempt,
                      base::callback_func_type cb);
+*/
   void GetChunk(const std::string &chunk_name, base::callback_func_type cb);
   void SwapChunk(const std::string &chunk_name,
                  const std::string &remote_ip,
@@ -218,18 +219,17 @@ class PDVault {
                  const std::string &rendezvous_ip,
                  const boost::uint16_t &rendezvous_port,
                  base::callback_func_type cb);
-  void StopRvPing() { transport_handler_.StopPingRendezvous(); }
-  void SetKThreshold(const boost::uint16_t &threshold);
+  void StopRvPing() { transport_handler_->StopPingRendezvous(); }
   friend class localvaults::Env;
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
-//  FRIEND_TEST(PDVaultTest, FUNC_MAID_Kademlia_FindNodes);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreChunks);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetChunks);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetMissingChunk);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreSystemPacket);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
   void KadJoinedCallback(const std::string &result,
                          boost::mutex *kad_joined_mutex);
   void RegisterMaidService();
@@ -242,19 +242,13 @@ class PDVault {
   // Runs in a worker thread to remove this vault's ID from a chunk ref packet.
   void RemoveFromRefPacket(const std::string &chunkname,
                            const maidsafe::SignedSize &signed_size);
-  // Amend a peer's account after adding him to watch / ref list
-  int AmendAccount(maidsafe::AmendAccountRequest::Amendment amendment_type,
-                   const maidsafe::SignedSize &signed_size,
-                   const std::string &account_pmid,
-                   const std::string &chunkname);
-  // Runs in a worker thread to amend a peer's account
-  void DoAmendAccount(maidsafe::AmendAccountRequest::Amendment amendment_type,
-                      const maidsafe::SignedSize &signed_size,
-                      const std::string &account_pmid,
-                      const std::string &chunkname);
+  int AmendAccount(const boost::uint64_t &space_offered);
+  void AmendAccountCallback(size_t index,
+                            boost::shared_ptr<maidsafe::AmendAccountData> data);
+  void UpdateSpaceOffered();
 
 
-
+/*
   void IterativeSyncVault(boost::shared_ptr<SyncVaultData> data);
   void SyncVault_FindAlivePartner(
       const std::string& result,
@@ -278,6 +272,7 @@ class PDVault {
       boost::shared_ptr<RepublishChunkRefData> data);
   void IterativePublishChunkRef_Next(const std::string &result,
       boost::shared_ptr<RepublishChunkRefData> data);
+*/
   void CheckChunk(boost::shared_ptr<GetArgs> get_args);
   void CheckChunkCallback(boost::shared_ptr<maidsafe::CheckChunkResponse>
       check_chunk_response, boost::shared_ptr<GetArgs> get_args);
@@ -301,11 +296,12 @@ class PDVault {
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   boost::uint16_t port_;
   transport::TransportUDT udt_transport_;
-  transport::TransportHandler transport_handler_;
+  transport::TransportHandler *transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
   maidsafe::MaidsafeValidator validator_;
-  kad::KNode knode_;
-  VaultRpcs vault_rpcs_;
+  boost::shared_ptr<kad::KNode> knode_;
+  boost::shared_ptr<VaultRpcs> vault_rpcs_;
+  boost::shared_ptr<maidsafe::KadOps> kad_ops_;
   VaultChunkStore vault_chunkstore_;
   boost::shared_ptr<VaultService> vault_service_;
   VaultServiceLogic vault_service_logic_;
@@ -314,14 +310,12 @@ class PDVault {
   boost::mutex vault_status_mutex_;
   boost::condition_variable kad_join_cond_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
-  std::string non_hex_pmid_, signed_non_hex_pmid_;
   crypto::Crypto co_;
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   std::string kad_config_file_;
   PendingOperationsHandler poh_;
   QThreadPool thread_pool_;
   boost::thread prune_pending_ops_thread_;
-//  boost::uint16_t kKadStoreThreshold_;
 };
 
 }  // namespace maidsafe_vault

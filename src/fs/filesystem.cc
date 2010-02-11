@@ -161,7 +161,9 @@ std::string FileSystem::LocalStoreManagerDir() {
 
 std::string FileSystem::MaidsafeDir() {
   fs::path maidsafe_dir(HomeDir(), fs::native);
-  std::string tmp_dir = ".maidsafe" + SessionName();
+  std::string tmp_dir =
+      ".maidsafe" + base::EncodeToHex(
+      maidsafe::SessionSingleton::getInstance()->SessionName());
   maidsafe_dir = maidsafe_dir / tmp_dir;
   return maidsafe_dir.string();
 }
@@ -175,8 +177,8 @@ std::string FileSystem::MaidsafeHomeDir() {
 std::string FileSystem::MaidsafeFuseDir() {
   fs::path ms_dir(MaidsafeDir(), fs::native);
   std::string mount_dir("maidsafe-");
-  mount_dir +=
-    maidsafe::SessionSingleton::getInstance()->SessionName().substr(0, 8);
+  mount_dir += base::EncodeToHex(maidsafe::SessionSingleton::getInstance()->
+      SessionName()).substr(0, 8);
   fs::path fuse_dir = ms_dir / mount_dir;
   return fuse_dir.string();
 }
@@ -191,10 +193,6 @@ std::string FileSystem::DbDir() {
   fs::path ms_dir(MaidsafeDir(), fs::native);
   fs::path db_dir = ms_dir / "dir";
   return db_dir.string();
-}
-
-std::string FileSystem::SessionName() {
-  return maidsafe::SessionSingleton::getInstance()->SessionName();
 }
 
 std::string FileSystem::MakeMSPath(std::string entry) {

@@ -30,6 +30,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/transportudt.h>
 
+#include "fs/filesystem.h"
 #include "maidsafe/clientbufferpackethandler.h"
 
 using ::testing::_;
@@ -253,13 +254,17 @@ class MockBPH : public maidsafe::ClientBufferPacketHandler {
 
 class TestClientBP : public testing::Test {
  public:
-  TestClientBP() : trans_(NULL), trans_han_(NULL), ch_man_(NULL), knode_(),
-    BPMock(), keys_(), cb_(), test_dir_(""), kad_config_file_(""), cryp()  {
-    keys_.GenerateKeys(4096);
-    test_dir_ = std::string("KnodeTest") +
-        boost::lexical_cast<std::string>(base::random_32bit_uinteger());
-    kad_config_file_ = test_dir_ + std::string("/.kadconfig");
-  }
+  TestClientBP() : trans_(NULL),
+                   trans_han_(NULL),
+                   ch_man_(NULL),
+                   knode_(),
+                   BPMock(),
+                   keys_(),
+                   cb_(),
+                   test_dir_(file_system::FileSystem::TempDir() +
+                             "/maidsafe_TestClientBP_" + base::RandomString(6)),
+                   kad_config_file_(test_dir_ + "/.kadconfig"),
+                   cryp() {}
 
   ~TestClientBP() {
     transport::TransportUDT::CleanUp();
@@ -267,6 +272,7 @@ class TestClientBP : public testing::Test {
 
  protected:
   void SetUp() {
+    keys_.GenerateKeys(4096);
     trans_ = new transport::TransportUDT();
     trans_han_ = new transport::TransportHandler();
     boost::int16_t trans_id;
@@ -1009,7 +1015,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailGetBPMessagesRpc) {
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
 }
 
-TEST_F(TestClientBP, BEH_MAID_ContactInfo) {
+TEST_F(TestClientBP, BEH_MAID_ContactInfoBasic) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(4096);
@@ -1050,9 +1056,9 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfo) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  ASSERT_EQ(3, cb.status);
+  ASSERT_EQ(boost::uint32_t(3), cb.status);
   ASSERT_EQ("132.248.59.1", cb.end_point.ip());
-  ASSERT_EQ(48591, cb.end_point.port());
+  ASSERT_EQ(boost::uint32_t(48591), cb.end_point.port());
 }
 
 TEST_F(TestClientBP, BEH_MAID_ContactInfoNoReferences) {
@@ -1176,9 +1182,9 @@ TEST_F(TestClientBP, FUNC_MAID_ContactInfoOneFindContacts) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  ASSERT_EQ(3, cb.status);
+  ASSERT_EQ(boost::uint32_t(3), cb.status);
   ASSERT_EQ("132.248.59.1", cb.end_point.ip());
-  ASSERT_EQ(48591, cb.end_point.port());
+  ASSERT_EQ(boost::uint32_t(48591), cb.end_point.port());
 }
 
 TEST_F(TestClientBP, BEH_MAID_ContactInfoFailAddMessageRpc) {

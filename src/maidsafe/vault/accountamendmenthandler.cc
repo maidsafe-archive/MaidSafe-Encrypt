@@ -162,7 +162,7 @@ int AccountAmendmentHandler::AssessAmendment(const std::string &owner_pmid,
     (*chunk_info_holders_it).second = true;
     ++amendment->success_count;
     amendment->pendings.push_back(pending);
-    if (amendment->success_count >= kKadStoreThreshold_) {  // Overall success
+    if (amendment->success_count >= kKadStoreThreshold) {  // Overall success
       if (amendment->account_amendment_result == kAccountAmendmentPending) {
         // Amend actual account
         amendment->account_amendment_result = account_handler_->AmendAccount(
@@ -203,9 +203,9 @@ void AccountAmendmentHandler::CreateNewAmendment(
       return;
     }
   }
-  vault_service_logic_->FindCloseNodes(amendment.account_name, boost::bind(
-      &AccountAmendmentHandler::CreateNewAmendmentCallback, this, amendment,
-      _1));
+  vault_service_logic_->kadops()->FindCloseNodes(amendment.account_name,
+      boost::bind(&AccountAmendmentHandler::CreateNewAmendmentCallback, this,
+                  amendment, _1));
 }
 
 void AccountAmendmentHandler::CreateNewAmendmentCallback(
@@ -220,10 +220,10 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
   std::vector<kad::Contact> contacts;
   boost::mutex mutex;
   boost::condition_variable cv;
-  int result(kVaultServiceError);
+  ReturnCode result(kVaultServiceError);
   vault_service_logic_->HandleFindKNodesResponse(find_nodes_response,
       amendment.account_name, &contacts, &mutex, &cv, &result);
-  if (result == kSuccess && contacts.size() >= size_t(kKadStoreThreshold_)) {
+  if (result == kSuccess && contacts.size() >= size_t(kKadStoreThreshold)) {
     // Populate map of Chunk Info holders
     for (size_t i = 0; i < contacts.size(); ++i) {
       modified_amendment.chunk_info_holders.insert(std::pair<std::string, bool>(

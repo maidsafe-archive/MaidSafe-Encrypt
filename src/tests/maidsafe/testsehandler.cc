@@ -76,15 +76,14 @@ void wait_for_result_seh(const FakeCallback &cb, boost::mutex *mutex) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
 };
-
-}
+}  // namespace test_seh
 
 namespace maidsafe {
 
 class SEHandlerTest : public testing::Test {
  protected:
   SEHandlerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                                   "/maidsafe_TestSEH"),
+                        "/maidsafe_TestSEH_" + base::RandomString(6)),
                     client_chunkstore_(),
                     cb(),
                     db_str1_(""),
@@ -309,6 +308,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
   // Check the chunks are stored
   std::string ser_dm;
   ASSERT_EQ(0, dah->GetDataMap(rel_str, &ser_dm));
+  ASSERT_FALSE(ser_dm.empty());
   DataMap dm;
   ASSERT_TRUE(dm.ParseFromString(ser_dm));
 

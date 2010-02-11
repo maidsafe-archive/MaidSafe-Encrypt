@@ -87,7 +87,6 @@ class DataAtlasHandler {
 //  void GetKeyRing(std::list<Key_Type> *keyring);  // GetKeyRing List of strcts
 
  private:
-  FRIEND_TEST(DataAtlasHandlerTest, AddGetDataMapDAH);
   std::string GetElementNameFromPath(const std::string &element_path);
   boost::shared_ptr<PdDir> GetPdDir(const std::string &element_path,
                                     DbInitFlag flag,

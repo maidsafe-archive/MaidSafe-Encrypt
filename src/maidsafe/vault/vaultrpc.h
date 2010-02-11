@@ -40,7 +40,7 @@ class VaultRpcs {
             rpcprotocol::ChannelManager *channel_manager)
                 : transport_handler_(transport_handler),
                   channel_manager_(channel_manager),
-                  own_non_hex_id_("") {}
+                  own_id_() {}
   virtual ~VaultRpcs() {}
   void StoreChunk(const std::string &chunkname,
                   const std::string &data,
@@ -108,20 +108,6 @@ class VaultRpcs {
                 maidsafe::GetChunkResponse *response,
                 rpcprotocol::Controller *controller,
                 google::protobuf::Closure *done);
-  void UpdateChunk(const std::string &chunkname,
-               const std::string &data,
-               const std::string &public_key,
-               const std::string &public_key_signature,
-               const std::string &request_signature,
-               const maidsafe::ValueType &data_type,
-               const std::string &remote_ip,
-               const boost::uint16_t &remote_port,
-               const std::string &rendezvous_ip,
-               const boost::uint16_t &rendezvous_port,
-               const boost::int16_t &transport_id,
-               maidsafe::UpdateChunkResponse *response,
-               rpcprotocol::Controller *controller,
-               google::protobuf::Closure *done);
   void DeleteChunk(const std::string &chunkname,
                const std::string &public_key,
                const std::string &public_key_signature,
@@ -168,13 +154,22 @@ class VaultRpcs {
                      maidsafe::GetBPMessagesResponse *response,
                      rpcprotocol::Controller *controller,
                      google::protobuf::Closure *done);
-  void SetOwnId(const std::string &non_hex_id) { own_non_hex_id_ = non_hex_id; }
+  virtual void CacheChunk(const std::string &remote_ip,
+                          const boost::uint16_t &remote_port,
+                          const std::string &rendezvous_ip,
+                          const boost::uint16_t &rendezvous_port,
+                          const boost::int16_t &transport_id,
+                          maidsafe::CacheChunkRequest *request,
+                          maidsafe::CacheChunkResponse *response,
+                          rpcprotocol::Controller *controller,
+                          google::protobuf::Closure *done);
+  void SetOwnId(const std::string &id) { own_id_ = id; }
  private:
   VaultRpcs(const VaultRpcs&);
   VaultRpcs& operator=(const VaultRpcs&);
   transport::TransportHandler *transport_handler_;
   rpcprotocol::ChannelManager *channel_manager_;
-  std::string own_non_hex_id_;
+  std::string own_id_;
 };
 
 }  // namespace maidsafe_vault

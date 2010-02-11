@@ -26,6 +26,7 @@
 #include "maidsafe/vault/accountamendmenthandler.h"
 #include "maidsafe/vault/accountrepository.h"
 #include "tests/maidsafe/mockvaultservicelogic.h"
+#include "tests/maidsafe/mockkadops.h"
 
 namespace test_aah {
 
@@ -75,7 +76,10 @@ namespace maidsafe_vault {
 
 class AccountAmendmentHandlerTest : public MockVaultServiceLogicTest {
  protected:
-  AccountAmendmentHandlerTest() : ah_(), vsl_(NULL, NULL), aah_(&ah_, &vsl_) {}
+  AccountAmendmentHandlerTest()
+    : ah_(),
+      vsl_(boost::shared_ptr<VaultRpcs>(), boost::shared_ptr<kad::KNode>()),
+      aah_(&ah_, &vsl_) {}
   AccountHandler ah_;
   MockVsl vsl_;
   AccountAmendmentHandler aah_;
@@ -212,17 +216,17 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
       aah_.amendments_.get<by_timestamp>().find(test_amendment);
   bool found = (it != aah_.amendments_.get<by_timestamp>().end());
   ASSERT_TRUE(found);
-  // Set Chunk Info holders so that kKadStoreThreshold_ - 2 have responded
-  ASSERT_LE(aah_.kKadStoreThreshold_, good_pmids_.size() - 3);
-  ASSERT_GE(aah_.kKadStoreThreshold_, 3);
-  for (size_t i = 0; i < static_cast<size_t>(aah_.kKadStoreThreshold_ - 1); ++i)
+  // Set Chunk Info holders so that kKadStoreThreshold - 2 have responded
+  ASSERT_LE(kKadStoreThreshold, good_pmids_.size() - 3);
+  ASSERT_GE(kKadStoreThreshold, 3);
+  for (size_t i = 0; i < static_cast<size_t>(kKadStoreThreshold - 1); ++i)
     test_amendment.chunk_info_holders.insert(std::pair<std::string, bool>
         (good_pmids_.at(i), true));
-  for (size_t i = static_cast<size_t>(aah_.kKadStoreThreshold_ - 1);
+  for (size_t i = static_cast<size_t>(kKadStoreThreshold - 1);
        i < good_pmids_.size(); ++i)
     test_amendment.chunk_info_holders.insert(std::pair<std::string, bool>
         (good_pmids_.at(i), false));
-  test_amendment.success_count = aah_.kKadStoreThreshold_ - 2;
+  test_amendment.success_count = kKadStoreThreshold - 2;
   aah_.amendments_.get<by_timestamp>().replace(it, test_amendment);
 
   ASSERT_EQ(far_account_name, test_amendment.account_name);
@@ -230,7 +234,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(aah_.kKadStoreThreshold_ - 2),
+  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -244,7 +248,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(aah_.kKadStoreThreshold_ - 2),
+  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -258,7 +262,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(aah_.kKadStoreThreshold_ - 2),
+  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -272,7 +276,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(aah_.kKadStoreThreshold_ - 2),
+  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -286,7 +290,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(aah_.kKadStoreThreshold_ - 2),
+  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -300,7 +304,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(aah_.kKadStoreThreshold_ - 2),
+  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -321,7 +325,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(aah_.kKadStoreThreshold_ - 2),
+  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending,
             test_amendment.account_amendment_result);
@@ -341,7 +345,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(aah_.kKadStoreThreshold_ - 1),
+  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 1),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending,
             test_amendment.account_amendment_result);
@@ -361,7 +365,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(aah_.kKadStoreThreshold_),
+  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold),
             test_amendment.success_count);
   ASSERT_EQ(kSuccess, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -437,7 +441,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(kSuccess, ah_.AddAccount(far_account_name, 999999));
 
   // Expectations
-  EXPECT_CALL(vsl_, FindCloseNodes(far_account_name, testing::_))
+  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(far_account_name, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_vsl::RunCallback, fail_parse_result_, _1))))  // 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -648,7 +652,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
 
 TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   // Setup
-  vsl_.non_hex_pmid_ = pmid_;
+  vsl_.pmid_ = pmid_;
   vsl_.pmid_public_signature_ = pmid_public_signature_;
   vsl_.pmid_private_ = pmid_private_;
   vsl_.online_ = true;
@@ -688,7 +692,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   ASSERT_EQ(size_t(11), ah_.accounts_.size());
 
   // Expectations
-  EXPECT_CALL(vsl_, FindCloseNodes(account_name, testing::_))
+  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(account_name, testing::_))
       .Times(testing::AtLeast(5))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 2

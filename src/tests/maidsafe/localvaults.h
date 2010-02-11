@@ -55,7 +55,7 @@ void GeneratePmidStuff(std::string *public_key,
                             crypto::STRING_STRING);
   *public_key = keys.public_key();
   *private_key = keys.private_key();
-  *pmid = co.Hash(*signed_key, "", crypto::STRING_STRING, true);
+  *pmid = co.Hash(*signed_key, "", crypto::STRING_STRING, false);
 }
 
 class Env: public testing::Environment {
@@ -63,11 +63,13 @@ class Env: public testing::Environment {
   Env(const int kNetworkSize,
       const int kTestK,
       std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults)
-      : vault_dir_(file_system::FileSystem::TempDir()+"/maidsafe_TestVaults"),
+      : vault_dir_(file_system::FileSystem::TempDir() + "/maidsafe_TestVaults_"
+                   + base::RandomString(6)),
         chunkstore_dir_(vault_dir_ + "/Chunkstores"),
         kad_config_file_(".kadconfig"),
         chunkstore_dirs_(),
         crypto_(),
+        transport_handlers_(),
         pdvaults_(pdvaults),
         kNetworkSize_(kNetworkSize),
         kTestK_(kTestK),
@@ -118,16 +120,18 @@ class Env: public testing::Environment {
       fs::path chunkstore_local_path(chunkstore_local, fs::native);
       fs::create_directories(chunkstore_local_path);
       chunkstore_dirs_.push_back(chunkstore_local_path);
-      std::string public_key(""), private_key(""), signed_key(""), node_id("");
+      std::string public_key, private_key, signed_key, node_id;
       GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
 //      ASSERT_TRUE(crypto_.AsymCheckSig(public_key, signed_key, public_key,
 //                                       crypto::STRING_STRING));
       kad_config_file_ = chunkstore_local + "/.kadconfig";
+      boost::shared_ptr<transport::TransportHandler>
+          transport_handler(new transport::TransportHandler());
+      transport_handlers_.push_back(transport_handler);
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
           signed_key, chunkstore_local, 0, false, false, kad_config_file_,
-          1073741824, 0));
-      pdvault_local->SetKThreshold(kTestK_ * kad::kMinSuccessfulPecentageStore);
+          1073741824, 0, transport_handler.get()));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
       printf(".");
@@ -144,7 +148,7 @@ class Env: public testing::Environment {
     ASSERT_EQ(maidsafe_vault::kVaultStarted, (*pdvaults_)[1]->vault_status());
     base::KadConfig kad_config;
     base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-    kad_contact->set_node_id((*pdvaults_)[1]->hex_node_id());
+    kad_contact->set_node_id((*pdvaults_)[1]->node_id());
     kad_contact->set_ip((*pdvaults_)[1]->host_ip());
     kad_contact->set_port((*pdvaults_)[1]->host_port());
     kad_contact->set_local_ip((*pdvaults_)[1]->local_host_ip());
@@ -168,7 +172,7 @@ class Env: public testing::Environment {
     kad_contact->Clear();
     kad_config.Clear();
     kad_contact = kad_config.add_contact();
-    kad_contact->set_node_id((*pdvaults_)[0]->hex_node_id());
+    kad_contact->set_node_id((*pdvaults_)[0]->node_id());
     kad_contact->set_ip((*pdvaults_)[0]->host_ip());
     kad_contact->set_port((*pdvaults_)[0]->host_port());
     kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
@@ -212,7 +216,8 @@ class Env: public testing::Environment {
     printf("* No. Port   ID                                 *\n");
     for (int l = 0; l < kNetworkSize_; ++l)
       printf("* %2i  %5i  %s *\n", l, (*pdvaults_)[l]->host_port(),
-             ((*pdvaults_)[l]->hex_node_id().substr(0, 31) + "...").c_str());
+             (base::EncodeToHex((*pdvaults_)[l]->node_id()).substr(0, 31)
+             + "...").c_str());
     printf("*                                               *\n");
     printf("*-----------------------------------------------*\n\n");
 #ifdef WIN32
@@ -256,7 +261,9 @@ class Env: public testing::Environment {
   std::string vault_dir_, chunkstore_dir_, kad_config_file_;
   std::vector<fs::path> chunkstore_dirs_;
   crypto::Crypto crypto_;
-  std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults_;
+  std::vector< boost::shared_ptr<transport::TransportHandler> >
+      transport_handlers_;
+  std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults_;
   const int kNetworkSize_;
   const int kTestK_;
   int current_nodes_created_;

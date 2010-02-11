@@ -330,7 +330,7 @@ fs::path ChunkStore::GetChunkPath(const std::string &key,
     chunk_path = fs::path("");
   }
 #ifdef DEBUG
-//  printf("Chunk path: %s\n\n", chunk_path.string().c_str());
+//  printf("Chunk path: %s\n", chunk_path.string().c_str());
 #endif
   return chunk_path;
 }
@@ -442,7 +442,8 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
     {
       boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
       chunkstore_set_.insert(chunk);
-      IncrementUsedSpace(chunk_size);
+      if (!(type & kCache))
+        IncrementUsedSpace(chunk_size);
     }
     return kSuccess;
   }
@@ -473,7 +474,8 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
     {
       boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
       chunkstore_set_.insert(chunk);
-      IncrementUsedSpace(chunk_size);
+      if (!(type & kCache))
+        IncrementUsedSpace(chunk_size);
     }
     return kSuccess;
   }

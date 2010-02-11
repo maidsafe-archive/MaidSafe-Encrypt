@@ -67,8 +67,7 @@ void wait_for_result_seh_(const FakeCallback &cb, boost::mutex *mutex) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(5));
   }
 };
-
-}
+}  // namespace test_dah
 
 namespace maidsafe {
 
@@ -77,7 +76,7 @@ namespace fs = boost::filesystem;
 class DataAtlasHandlerTest : public testing::Test {
  protected:
   DataAtlasHandlerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                                          "/maidsafe_TestDAH"),
+                               "/maidsafe_TestDAH_" + base::RandomString(6)),
                            sm(),
                            cb() { }
   ~DataAtlasHandlerTest() { }

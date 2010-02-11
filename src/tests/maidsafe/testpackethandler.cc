@@ -56,10 +56,10 @@ TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateMID) {
   std::string mid_name;
   std::string ser_mid = boost::any_cast<std::string>(result["ser_packet"]);
   std::string hashusername = co_.Hash("user1", "", crypto::STRING_STRING,
-      true);
-  std::string hashpin = co_.Hash("1234", "", crypto::STRING_STRING, true);
+      false);
+  std::string hashpin = co_.Hash("1234", "", crypto::STRING_STRING, false);
   ASSERT_EQ(co_.Hash(hashusername + hashpin, "", crypto::STRING_STRING,
-      true), boost::any_cast<std::string>(result["name"]));
+      false), boost::any_cast<std::string>(result["name"]));
   ASSERT_TRUE(mid.ParseFromString(ser_mid));
   // Check it is correctly signed
   ASSERT_TRUE(co_.AsymCheckSig(mid.data(), mid.signature(),
@@ -107,7 +107,7 @@ TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateSigPacket) {
   ASSERT_TRUE(co_.AsymCheckSig(keys.public_key(), sigpacket.signature(),
       keys.public_key(), crypto::STRING_STRING));
   std::string expected_name = co_.Hash(sigpacket.data() +
-      sigpacket.signature(), "", crypto::STRING_STRING, true);
+      sigpacket.signature(), "", crypto::STRING_STRING, false);
   ASSERT_EQ(expected_name, name);
 }
 
@@ -129,7 +129,7 @@ TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateMPID) {
   ASSERT_TRUE(co_.AsymCheckSig(mpidpacket.data(), mpidpacket.signature(),
       keys.public_key(), crypto::STRING_STRING));
   std::string expected_name = co_.Hash(boost::any_cast<std::string>(
-      input_param["publicname"]), "", crypto::STRING_STRING, true);
+      input_param["publicname"]), "", crypto::STRING_STRING, false);
   ASSERT_EQ(expected_name, name);
 }
 
@@ -185,7 +185,7 @@ TEST_F(SystemPacketHandlerTest, BEH_MAID_CreatePMID) {
   ASSERT_TRUE(co_.AsymCheckSig(pmidpacket.data(), pmidpacket.signature(),
       keys.public_key(), crypto::STRING_STRING));
   std::string expected_name = co_.Hash(pmidpacket.data() +
-      pmidpacket.signature(), "", crypto::STRING_STRING, true);
+      pmidpacket.signature(), "", crypto::STRING_STRING, false);
   ASSERT_EQ(expected_name, name);
 }
 
@@ -213,11 +213,11 @@ TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateTMID) {
       keys.public_key(), crypto::STRING_STRING));
   // Check name
   std::string hashusername = co_.Hash("user1", "", crypto::STRING_STRING,
-      true);
-  std::string hashpin = co_.Hash("1234", "", crypto::STRING_STRING, true);
-  std::string hashrid = co_.Hash("5555", "", crypto::STRING_STRING, true);
+      false);
+  std::string hashpin = co_.Hash("1234", "", crypto::STRING_STRING, false);
+  std::string hashrid = co_.Hash("5555", "", crypto::STRING_STRING, false);
   ASSERT_EQ(co_.Hash(hashusername + hashpin + hashrid, "",
-      crypto::STRING_STRING, true),
+      crypto::STRING_STRING, false),
       boost::any_cast<std::string>(result["name"]));
   // Check data is encrypted
   ASSERT_NE(boost::any_cast<std::string>(input_param["data"]), tmid.data());
@@ -259,10 +259,10 @@ TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateSMID) {
   std::string smid_name;
   std::string ser_smid = boost::any_cast<std::string>(result["ser_packet"]);
   std::string hashusername = co_.Hash("user1", "", crypto::STRING_STRING,
-      true);
-  std::string hashpin = co_.Hash("1234", "", crypto::STRING_STRING, true);
+      false);
+  std::string hashpin = co_.Hash("1234", "", crypto::STRING_STRING, false);
   ASSERT_EQ(co_.Hash(hashusername + hashpin + "1", "",
-      crypto::STRING_STRING, true),
+      crypto::STRING_STRING, false),
       boost::any_cast<std::string>(result["name"]));
   ASSERT_TRUE(smid.ParseFromString(ser_smid));
   // Check it is correctly signed

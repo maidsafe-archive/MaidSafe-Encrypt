@@ -19,13 +19,11 @@ Watch List comprises:
 
 client:client. Check we have enough space in our account&
 
-client:Nack =info. Kademlia FIND_VALUE &
-
 *2 client
 For each Chunk Info Holder...
 *2
 
-client:>info. ADD_TO_WATCH_LIST_REQUEST
+(2)client:>info. ADD_TO_WATCH_LIST_REQUEST
 info:info. Validate request.&
 (3)info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)
 info:info. Prepare to create new Watch List.&

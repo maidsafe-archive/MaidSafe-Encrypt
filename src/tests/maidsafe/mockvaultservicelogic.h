@@ -40,8 +40,12 @@
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
+#include "tests/maidsafe/mockkadops.h"
 
 namespace mock_vsl {
+
+typedef boost::function<void (const maidsafe_vault::ReturnCode&)>
+    VoidFuncOneInt;
 
 enum FindNodesResponseType {
   kFailParse,
@@ -116,8 +120,8 @@ std::string MakeFindNodesResponse(const FindNodesResponseType &type,
 void RunCallback(const std::string &find_nodes_response,
                  const base::callback_func_type &callback);
 
-void RunVaultCallback(const int &result,
-                      const maidsafe_vault::Callback &callback);
+void RunVaultCallback(const maidsafe_vault::ReturnCode &result,
+                      const VoidFuncOneInt &callback);
 
 void DoneRun(const int &min_delay,
              const int &max_delay,
@@ -130,8 +134,6 @@ void ThreadedDoneRun(const int &min_delay,
 }  // namespace mock_vsl
 
 namespace maidsafe_vault {
-
-typedef boost::function<void (const int&)> Callback;
 
 class MockVaultRpcs : public VaultRpcs {
  public:
@@ -166,51 +168,41 @@ class MockVaultRpcs : public VaultRpcs {
 
 class MockVsl : public VaultServiceLogic {
  public:
-  MockVsl(VaultRpcs *vault_rpcs, kad::KNode *knode)
-      : VaultServiceLogic(vault_rpcs, knode) {}
-  MOCK_METHOD2(FindCloseNodes, void(const std::string &kad_key,
-                                    const base::callback_func_type &callback));
-  MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
-  MOCK_METHOD3(AddToRemoteRefList, int(const std::string &chunkname,
-                   const maidsafe::StoreContract &store_contract,
-                   const boost::int16_t &transport_id));
-};
-
-class MockVslAddToRefTest : public VaultServiceLogic {
- public:
-  MockVslAddToRefTest(VaultRpcs *vault_rpcs, kad::KNode *knode)
-      : VaultServiceLogic(vault_rpcs, knode) {}
-  MOCK_METHOD2(FindCloseNodes, void(const std::string &kad_key,
-                                    const base::callback_func_type &callback));
-  MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
-  MOCK_METHOD4(AmendRemoteAccount,
-               void(const maidsafe::AmendAccountRequest &request,
-                    const int &found_local_result,
-                    const Callback &callback,
-                    const boost::int16_t &transport_id));
-};
-
-class MockVslServiceTest : public VaultServiceLogic {
- public:
-  MockVslServiceTest(VaultRpcs *vault_rpcs, kad::KNode *knode)
-      : VaultServiceLogic(vault_rpcs, knode) {}
-  MOCK_METHOD2(FindCloseNodes, void(const std::string &kad_key,
-                                    const base::callback_func_type &callback));
+  MockVsl(const boost::shared_ptr<VaultRpcs> &vault_rpcs,
+          const boost::shared_ptr<kad::KNode> &knode)
+      : VaultServiceLogic(vault_rpcs, knode) {
+    kad_ops_.reset(new maidsafe::MockKadOps(knode));
+  }
+  boost::shared_ptr<maidsafe::MockKadOps> kadops() {
+      return boost::static_pointer_cast<maidsafe::MockKadOps>(kad_ops_);
+  }
   MOCK_METHOD3(AddToRemoteRefList, int(const std::string &chunkname,
                    const maidsafe::StoreContract &store_contract,
                    const boost::int16_t &transport_id));
   MOCK_METHOD4(AmendRemoteAccount,
                void(const maidsafe::AmendAccountRequest &request,
                     const int &found_local_result,
-                    const Callback &callback,
+                    const VoidFuncOneInt &callback,
                     const boost::int16_t &transport_id));
+  int AddToRemoteRefListReal(const std::string &chunkname,
+                             const maidsafe::StoreContract &store_contract,
+                             const boost::int16_t &transport_id) {
+    return VaultServiceLogic::AddToRemoteRefList(chunkname, store_contract,
+                                                 transport_id);
+  }
+  void AmendRemoteAccountReal(const maidsafe::AmendAccountRequest &request,
+                              const int &found_local_result,
+                              const VoidFuncOneInt &callback,
+                              const boost::int16_t &transport_id) {
+    VaultServiceLogic::AmendRemoteAccount(request, found_local_result, callback,
+                                          transport_id);
+  }
 };
 
 class MockVaultServiceLogicTest : public testing::Test {
  protected:
   MockVaultServiceLogicTest()
       : pmid_(),
-        hex_pmid_(),
         pmid_private_(),
         pmid_public_(),
         pmid_public_signature_(),
@@ -241,9 +233,8 @@ class MockVaultServiceLogicTest : public testing::Test {
     // is quicker rather than generating a new set of keys
     pmid_public_signature_ = crypto_.AsymSign(pmid_public_, "", pmid_private_,
         crypto::STRING_STRING);
-    hex_pmid_ = crypto_.Hash(pmid_public_ + pmid_public_signature_, "",
-        crypto::STRING_STRING, true);
-    pmid_ = base::DecodeFromHex(hex_pmid_);
+    pmid_ = crypto_.Hash(pmid_public_ + pmid_public_signature_, "",
+        crypto::STRING_STRING, false);
     our_contact_ = kad::Contact(pmid_, "192.168.10.10", 8008);
     std::string ser_our_contact;
     our_contact_.SerialiseToString(&ser_our_contact);
@@ -264,8 +255,7 @@ class MockVaultServiceLogicTest : public testing::Test {
   }
 
   crypto::RsaKeyPair pmid_keys_;
-  std::string pmid_, hex_pmid_, pmid_private_, pmid_public_;
-  std::string pmid_public_signature_;
+  std::string pmid_, pmid_private_, pmid_public_, pmid_public_signature_;
   std::vector<std::string> fail_parse_pmids_, fail_pmids_, few_pmids_;
   std::vector<std::string> good_pmids_;
   crypto::Crypto crypto_;

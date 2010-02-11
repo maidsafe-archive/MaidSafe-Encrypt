@@ -35,7 +35,7 @@ void AddValidTasksWithoutCb(const size_t &count,
 
 void AddValidTasksWithCb(const size_t &count,
                          maidsafe::StoreTasksHandler *tasks_handler) {
-  base::callback_func_type cb;
+  maidsafe::VoidFuncOneInt cb;
   for (size_t i = 1000; i < 1000 + count; ++i)
     tasks_handler->AddTask(base::itos(i), maidsafe::kStoreChunk, 3, 1, 0, cb);
 }
@@ -62,10 +62,10 @@ void StopSubTasksFailed(const size_t &count,
     tasks_handler->StopSubTask(data_name, task_type, false);
 }
 
-std::string result;
+maidsafe::ReturnCode result(maidsafe::kStoreManagerError);
 bool called(false);
 
-void CallbackFunc(const std::string &res) {
+void CallbackFunc(const maidsafe::ReturnCode &res) {
   result = res;
   called = true;
 }
@@ -324,31 +324,29 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskDelete) {
               tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 13, 30));
   // Check we can't delete a task that's not in the set
   ASSERT_EQ(kStoreTaskNotFound,
-            tasks_handler_.DeleteTask("a", kStoreChunk, ""));
+            tasks_handler_.DeleteTask("a", kStoreChunk, kSuccess));
   // Check we can delete a task
-  ASSERT_EQ(kSuccess, tasks_handler_.DeleteTask("50", kStoreChunk, ""));
+  ASSERT_EQ(kSuccess, tasks_handler_.DeleteTask("50", kStoreChunk, kSuccess));
   std::pair<StoreTaskSet::iterator, StoreTaskSet::iterator> it;
   it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(50),
                                                            kStoreChunk));
   bool found = (it.first != it.second);
   ASSERT_FALSE(found);
   // Add a callback task
-  base::callback_func_type cb =
-      boost::bind(&test_store_task_handler::CallbackFunc, _1);
+  VoidFuncOneInt cb = boost::bind(&test_store_task_handler::CallbackFunc, _1);
   ASSERT_EQ(kSuccess,
             tasks_handler_.AddTask("a", kStoreChunk, 3, 1, 30, cb));
-  test_store_task_handler::result.clear();
+  test_store_task_handler::result = kStoreManagerError;
   test_store_task_handler::called = false;
-  ASSERT_TRUE(test_store_task_handler::result.empty());
+  ASSERT_EQ(kStoreManagerError, test_store_task_handler::result);
   ASSERT_FALSE(test_store_task_handler::called);
   // Check the task runs the callback when deleted
-  std::string ok("OK");
-  ASSERT_EQ(kSuccess, tasks_handler_.DeleteTask("a", kStoreChunk, ok));
+  ASSERT_EQ(kSuccess, tasks_handler_.DeleteTask("a", kStoreChunk, kSuccess));
   it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(50),
                                                            kStoreChunk));
   found = (it.first != it.second);
   ASSERT_FALSE(found);
-  ASSERT_EQ(ok, test_store_task_handler::result);
+  ASSERT_EQ(kSuccess, test_store_task_handler::result);
   ASSERT_TRUE(test_store_task_handler::called);
 }
 
@@ -419,20 +417,19 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskClearAll) {
     ASSERT_EQ(kSuccess,
               tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 13, 30));
   // Add a callback task
-  base::callback_func_type cb =
-      boost::bind(&test_store_task_handler::CallbackFunc, _1);
+  VoidFuncOneInt cb = boost::bind(&test_store_task_handler::CallbackFunc, _1);
   ASSERT_EQ(kSuccess,
             tasks_handler_.AddTask("a", kStoreChunk, 3, 1, 30, cb));
-  test_store_task_handler::result.clear();
+  test_store_task_handler::result = kStoreManagerError;
   test_store_task_handler::called = false;
-  ASSERT_TRUE(test_store_task_handler::result.empty());
+  ASSERT_EQ(kStoreManagerError, test_store_task_handler::result);
   ASSERT_FALSE(test_store_task_handler::called);
   ASSERT_EQ(size_t(kTaskCount + 1), tasks_handler_.TasksCount());
   // Check we can clear all tasks
   tasks_handler_.ClearTasksHandler();
   ASSERT_EQ(size_t(0), tasks_handler_.TasksCount());
   // Check callback wasn't run
-  ASSERT_TRUE(test_store_task_handler::result.empty());
+  ASSERT_EQ(kStoreManagerError, test_store_task_handler::result);
   ASSERT_FALSE(test_store_task_handler::called);
 }
 
