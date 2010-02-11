@@ -18,11 +18,12 @@ enum PacketType {
   ANSMID = 7;
   ANTMID = 8;
   ANMPID = 9;
-  MSID = 10;
-  PD_DIR = 11;
-  BUFFER = 12;
-  BUFFER_INFO = 13;
-  BUFFER_MESSAGE = 14;
+  ANMAID = 10;
+  MSID = 11;
+  PD_DIR = 12;
+  BUFFER = 13;
+  BUFFER_INFO = 14;
+  BUFFER_MESSAGE = 15;
 }
 
 message EndPoint {
