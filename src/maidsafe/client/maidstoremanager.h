@@ -866,7 +866,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           const std::string &ser_response,
                           const LoadPacketFunctor &lpf);
   // Callback for blocking version of KeyUnique
-  void KeyUniqueCallback(const bool &result_in,
+  void KeyUniqueCallback(const ReturnCode &result_in,
                          boost::mutex *mutex,
                          boost::condition_variable *cond_var,
                          bool *result_out,

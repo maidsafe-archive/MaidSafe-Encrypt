@@ -530,7 +530,7 @@ bool MaidsafeStoreManager::KeyUnique(const std::string &key, bool check_local) {
 }
 
 void MaidsafeStoreManager::KeyUniqueCallback(
-    const bool &result_in,
+    const ReturnCode &result_in,
     boost::mutex *mutex,
     boost::condition_variable *cond_var,
     bool *result_out,
@@ -540,7 +540,7 @@ void MaidsafeStoreManager::KeyUniqueCallback(
     return;
   }
   boost::mutex::scoped_lock lock(*mutex);
-  *result_out = result_in;
+  *result_out = result_in == kKeyUnique;
   *called_back = true;
   cond_var->notify_one();
 }
