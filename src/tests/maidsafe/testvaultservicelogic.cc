@@ -29,8 +29,8 @@ namespace maidsafe_vault {
 class VaultServiceLogicTest : public MockVaultServiceLogicTest {};
 
 TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
-  MockVaultRpcs mock_rpcs(NULL, NULL);
-  VaultServiceLogic vsl(&mock_rpcs, NULL);
+  boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
+  VaultServiceLogic vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
 
   maidsafe::StoreContract sc;
   ASSERT_EQ(kVaultOffline, vsl.AddToRemoteRefList("x", sc, 0));
@@ -56,15 +56,15 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
 
 TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_FindKNodes) {
   // Setup
-  MockVaultRpcs mock_rpcs(NULL, NULL);
-  MockVsl vsl(&mock_rpcs, NULL);
+  boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
   vsl.online_ = true;
   std::vector<kad::Contact> contacts;
   kad::Contact dummy_contact = kad::Contact(crypto_.Hash("Dummy", "",
       crypto::STRING_STRING, false), "192.168.1.0", 4999);
 
   // Expectations
-  EXPECT_CALL(vsl, FindCloseNodes("x", testing::_))
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes("x", testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_vsl::RunCallback, fail_parse_result_, _1))))  // 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -107,8 +107,8 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_FindKNodes) {
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   // Setup
-  MockVaultRpcs mock_rpcs(NULL, NULL);
-  MockVslAddToRefTest vsl(&mock_rpcs, NULL);
+  boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -132,7 +132,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
       too_few_ack_responses(good_responses);
   std::vector<maidsafe::AddToReferenceListResponse>
       fail_initialise_responses(good_responses);
-  for (size_t i = vsl.kKadStoreThreshold_ - 1; i < good_contacts_.size(); ++i) {
+  for (size_t i = kKadStoreThreshold - 1; i < good_contacts_.size(); ++i) {
     bad_pmid_responses.at(i).set_pmid(good_contacts_.at(i - 1).node_id());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
@@ -143,7 +143,9 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
       crypto_.Obfuscate(pmid_, std::string(64, -1), crypto::XOR);
 
   // Expectations
-  EXPECT_CALL(vsl, FindCloseNodes(far_chunkname, testing::_))
+  EXPECT_CALL(vsl, AddToRemoteRefList(testing::_, testing:: _, testing:: _))
+      .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AddToRemoteRefListReal));
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(far_chunkname, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_vsl::RunCallback, fail_parse_result_, _1))))  // 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -158,20 +160,20 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
           boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_vsl::RunCallback, good_result_, _1))));  // Call 8
-  EXPECT_CALL(vsl, FindCloseNodes(pmid_, testing::_))  // Call 5
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(pmid_, testing::_))  // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_vsl::RunCallback, good_result_less_one_, _1))));
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {
-      EXPECT_CALL(vsl, AddressIsLocal(good_contacts_.at(i)))
+      EXPECT_CALL(*vsl.kadops(), AddressIsLocal(good_contacts_.at(i)))
           .WillOnce(testing::Return(true))  // Call 4
           .WillOnce(testing::Return(false))  // Call 5
           .WillOnce(testing::Return(true))  // Call 6
           .WillOnce(testing::Return(true))  // Call 7
           .WillOnce(testing::Return(true));  // Call 8
     } else {
-      EXPECT_CALL(vsl, AddressIsLocal(good_contacts_.at(i)))
+      EXPECT_CALL(*vsl.kadops(), AddressIsLocal(good_contacts_.at(i)))
           .WillOnce(testing::Return(true))  // Call 4
           .WillOnce(testing::Return(true))  // Call 6
           .WillOnce(testing::Return(true))  // Call 7
@@ -180,7 +182,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   }
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
-      EXPECT_CALL(mock_rpcs, AddToReferenceList(good_contacts_.at(i), true, 0,
+      EXPECT_CALL(*mock_rpcs, AddToReferenceList(good_contacts_.at(i), true, 0,
           testing::_, testing::_, testing::_, testing::_))
               .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses.at(i)),  // Call 4
@@ -200,7 +202,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))));
   }
   for (size_t i = 0; i < good_contacts_.size() - 1; ++i) {
-      EXPECT_CALL(mock_rpcs, AddToReferenceList(good_contacts_.at(i), false, 0,
+      EXPECT_CALL(*mock_rpcs, AddToReferenceList(good_contacts_.at(i), false, 0,
           testing::_, testing::_, testing::_, testing::_))  // Call 5
               .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses_less_one.at(i)),
@@ -241,8 +243,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   // Setup
-  MockVaultRpcs mock_rpcs(NULL, NULL);
-  MockVsl vsl(&mock_rpcs, NULL);
+  boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -265,7 +267,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
       too_few_ack_responses(good_responses);
   std::vector<maidsafe::AmendAccountResponse>
       fail_initialise_responses(good_responses);
-  for (size_t i = vsl.kKadStoreThreshold_ - 1; i < good_contacts_.size(); ++i) {
+  for (size_t i = kKadStoreThreshold - 1; i < good_contacts_.size(); ++i) {
     bad_pmid_responses.at(i).set_pmid(good_contacts_.at(i - 1).node_id());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
@@ -295,7 +297,10 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
       boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
 
   // Expectations
-  EXPECT_CALL(vsl, FindCloseNodes(account_name, testing::_))
+  EXPECT_CALL(vsl, AmendRemoteAccount(testing::_, testing::_, testing::_,
+                                      testing::_))
+      .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AmendRemoteAccountReal));
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(account_name, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_vsl::RunCallback, fail_parse_result_, _1))))  // 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -315,14 +320,14 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {
-      EXPECT_CALL(vsl, AddressIsLocal(good_contacts_.at(i)))
+      EXPECT_CALL(*vsl.kadops(), AddressIsLocal(good_contacts_.at(i)))
           .WillOnce(testing::Return(true))  // Call 4
           .WillOnce(testing::Return(false))  // Call 5
           .WillOnce(testing::Return(true))  // Call 6
           .WillOnce(testing::Return(true))  // Call 7
           .WillOnce(testing::Return(true));  // Call 8
     } else {
-      EXPECT_CALL(vsl, AddressIsLocal(good_contacts_.at(i)))
+      EXPECT_CALL(*vsl.kadops(), AddressIsLocal(good_contacts_.at(i)))
           .WillOnce(testing::Return(true))  // Call 4
           .WillOnce(testing::Return(true))  // Call 6
           .WillOnce(testing::Return(true))  // Call 7
@@ -331,7 +336,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   }
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
-      EXPECT_CALL(mock_rpcs, AmendAccount(good_contacts_.at(i), true, 0,
+      EXPECT_CALL(*mock_rpcs, AmendAccount(good_contacts_.at(i), true, 0,
           testing::_, testing::_, testing::_, testing::_))
               .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses.at(i)),  // Call 4
@@ -351,7 +356,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))));
   }
   for (size_t i = 0; i < good_contacts_.size() - 1; ++i) {
-      EXPECT_CALL(mock_rpcs, AmendAccount(good_contacts_.at(i), false, 0,
+      EXPECT_CALL(*mock_rpcs, AmendAccount(good_contacts_.at(i), false, 0,
           testing::_, testing::_, testing::_, testing::_))  // Call 5
               .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses_less_one.at(i)),
@@ -449,8 +454,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   // Setup
-  MockVaultRpcs mock_rpcs(NULL, NULL);
-  MockVsl vsl(&mock_rpcs, NULL);
+  boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -487,7 +492,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   request.set_account_pmid(account_owner);
 
   // Expectations
-  EXPECT_CALL(vsl, FindCloseNodes(account_name, testing::_))
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(account_name, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_vsl::RunCallback, fail_parse_result_, _1))))  // 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -507,14 +512,14 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {
-      EXPECT_CALL(vsl, AddressIsLocal(good_contacts_.at(i)))
+      EXPECT_CALL(*vsl.kadops(), AddressIsLocal(good_contacts_.at(i)))
           .WillOnce(testing::Return(true))  // Call 4
           .WillOnce(testing::Return(false))  // Call 5
           .WillOnce(testing::Return(true))  // Call 6
           .WillOnce(testing::Return(true))  // Call 7
           .WillOnce(testing::Return(true));  // Call 8
     } else {
-      EXPECT_CALL(vsl, AddressIsLocal(good_contacts_.at(i)))
+      EXPECT_CALL(*vsl.kadops(), AddressIsLocal(good_contacts_.at(i)))
           .WillOnce(testing::Return(true))  // Call 4
           .WillOnce(testing::Return(true))  // Call 6
           .WillOnce(testing::Return(true))  // Call 7
@@ -523,7 +528,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   }
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
-      EXPECT_CALL(mock_rpcs, AccountStatus(good_contacts_.at(i), true, 0,
+      EXPECT_CALL(*mock_rpcs, AccountStatus(good_contacts_.at(i), true, 0,
           testing::_, testing::_, testing::_, testing::_))
               .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses.at(i)),  // Call 4
@@ -543,7 +548,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))));
   }
   for (size_t i = 0; i < good_contacts_.size() - 1; ++i) {
-      EXPECT_CALL(mock_rpcs, AccountStatus(good_contacts_.at(i), false, 0,
+      EXPECT_CALL(*mock_rpcs, AccountStatus(good_contacts_.at(i), false, 0,
           testing::_, testing::_, testing::_, testing::_))  // Call 5
               .WillOnce(DoAll(testing::SetArgumentPointee<4>(
                                     good_responses_less_one.at(i)),

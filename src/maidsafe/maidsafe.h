@@ -328,6 +328,9 @@ const int kChunkInfoWatcherPendingTimeout = 86400;  // 24 hours
 const int kChunkInfoRefActiveTimeout = 86400;  // 24 hours
 // min. no. of majority of responses from group of k nodes to accept result
 const int kKadTrustThreshold(3);
+// min. no. of responses required out of k
+const boost::uint16_t kKadStoreThreshold(kad::K *
+                                         kad::kMinSuccessfulPecentageStore);
 
 namespace maidsafe {
 
@@ -353,7 +356,11 @@ typedef boost::function<void (const maidsafe_vault::ReturnCode&)>
 }  // namespace maidsafe_vault
 
 inline std::string HexSubstr(const std::string &non_hex) {
-  return (base::EncodeToHex(non_hex).substr(0, 10) + "...");
+  std::string hex(base::EncodeToHex(non_hex));
+  if (hex.size() > 16)
+    return (hex.substr(0, 7) + ".." + hex.substr(hex.size() - 7));
+  else
+    return hex;
 }
 
 #endif  // MAIDSAFE_MAIDSAFE_H_
