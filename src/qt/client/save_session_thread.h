@@ -13,8 +13,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_ADD_CONTACT_THREAD_H_
-#define QT_CLIENT_ADD_CONTACT_THREAD_H_
+#ifndef QT_CLIENT_SAVE_SESSION_THREAD_H_
+#define QT_CLIENT_SAVE_SESSION_THREAD_H_
 
 #include "qt/client/worker_thread.h"
 
@@ -28,7 +28,7 @@
 class SaveSessionThread : public WorkerThread {
   Q_OBJECT
  public:
-  SaveSessionThread(QObject* parent = 0);
+  explicit SaveSessionThread(QObject* parent = 0);
   virtual ~SaveSessionThread();
 
   virtual void run();
@@ -39,5 +39,5 @@ class SaveSessionThread : public WorkerThread {
     void completed(int);
 };
 
-#endif  // QT_CLIENT_ADD_CONTACT_THREAD_H_
+#endif  // QT_CLIENT_SAVE_SESSION_THREAD_H_
 

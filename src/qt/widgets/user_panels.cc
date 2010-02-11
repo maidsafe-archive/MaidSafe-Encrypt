@@ -62,7 +62,7 @@ UserPanels::UserPanels(QWidget* parent)
   connect(ui_.tabWidget_2, SIGNAL(currentChanged(int)),
           this,                 SLOT(onCurrentChanged(int)));
 
-  //tabBar shares menu builder
+  // tabBar shares menu builder
 
   menuContacts = new QMenu(this);
 
@@ -76,7 +76,7 @@ UserPanels::UserPanels(QWidget* parent)
 
   ui_.tabWidget_2->setContextMenuPolicy(Qt::CustomContextMenu);
 
-  //tabbar Shares menu builder
+  // tabbar Shares menu builder
 
   menuShares = new QMenu(this);
 
@@ -88,7 +88,7 @@ UserPanels::UserPanels(QWidget* parent)
   menuShares->addAction(sortShareUsed);
   menuShares->addAction(sortShareRecent);
 
-  //connectors signals/slots
+  // connectors signals/slots
 
   connect(ui_.tabWidget_2, SIGNAL(customContextMenuRequested(const QPoint &)),
              this,         SLOT(customContentsMenu(const QPoint &)));
@@ -123,8 +123,8 @@ void UserPanels::onPublicUsernameChosen() {
     ui_.tabWidget_2->removeTab(0);
   }
 
-  if (ui_.tabWidget_2->count() > 2){
-    } else {
+  if (ui_.tabWidget_2->count() > 2) {
+  } else {
     QPixmap contactIcon_ = QPixmap(":/icons/32/contacts");
     QPixmap shareIcon_ = QPixmap(":/icons/32/shares");
     QPixmap messagesIcon_ = QPixmap(":/icons/32/messages");
@@ -134,7 +134,7 @@ void UserPanels::onPublicUsernameChosen() {
     ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
     ui_.tabWidget_2->addTab(messages_ = new Messages, messagesIcon_, "");
     //ui_.tabWidget_2->addTab(vaultinfo_ = new VaultInfo, vaultInfoIcon_, "");
-    }
+  }
 
   ui_.tabWidget_2->setEnabled(true);
   ui_.tabWidget_2->setCurrentWidget(contacts_);
@@ -166,9 +166,9 @@ void UserPanels::onCurrentChanged(int index) {
 
 void UserPanels::activatePanel(bool active) {
   QList<Panel*> panels = findChildren<Panel*>();
-    foreach(Panel* panel, panels) {
-      panel->reset();
-    }
+  foreach(Panel* panel, panels) {
+    panel->reset();
+  }
 
   if (Panel* panel = static_cast<Panel*>(ui_.tabWidget_2->currentWidget())) {
     panel->setActive(active);
@@ -219,8 +219,8 @@ void UserPanels::setActive(bool active) {
     // To clear the Public Username field for the next user
     // Change 6 to appropriate panel number
     // if more panels are added to the stack
-   // PublicUsername* p =
-                //static_cast<PublicUsername*>(ui_.stackedWidget->widget(6));
+//    PublicUsername* p = static_cast<PublicUsername*>(
+//                       ui_.stackedWidget->widget(6));
     public_username_->clearPubUsername();
     ui_.user_public_username->clear();
     ui_.my_files_button->setEnabled(true);
@@ -228,40 +228,40 @@ void UserPanels::setActive(bool active) {
 }
 
 void UserPanels::customContentsMenu(const QPoint &pos) {
-   // QPoint point = contacts_->mapFromGlobal(QPoint(0,0));
-   // QPoint point2 = shares_->mapFromGlobal(QPoint(0,0));
-    QTabBar * tabBar = qobject_cast<QTabBar *>(ui_.tabWidget_2->childAt(pos));
-    if (!tabBar)
-        return;
-    QPoint pos2 = tabBar->mapFromParent(pos);
-    int tabIndex = tabBar->tabAt(pos2);
+  // QPoint point = contacts_->mapFromGlobal(QPoint(0,0));
+  // QPoint point2 = shares_->mapFromGlobal(QPoint(0,0));
+  QTabBar * tabBar = qobject_cast<QTabBar *>(ui_.tabWidget_2->childAt(pos));
+  if (!tabBar)
+      return;
+  QPoint pos2 = tabBar->mapFromParent(pos);
+  int tabIndex = tabBar->tabAt(pos2);
 
-    if (tabIndex == 0){
-      //Contacts
-      QPoint globalPos = ui_.tabWidget_2->mapToGlobal(pos);
-      menuContacts->exec(globalPos);
-    }
-    if (tabIndex ==1){
-      //Shares
-      QPoint globalPos = ui_.tabWidget_2->mapToGlobal(pos);
-      menuShares->exec(globalPos);
-    }
-   // if ((pos.x() < 58) && (pos.y() < 40)) {
-   // QPoint globalPos = ui_.tabWidget_2->mapToGlobal(pos);
-   // menuContacts->exec(globalPos);
-   // }
+  if (tabIndex == 0) {
+    // Contacts
+    QPoint globalPos = ui_.tabWidget_2->mapToGlobal(pos);
+    menuContacts->exec(globalPos);
+  }
+  if (tabIndex ==1) {
+    // Shares
+    QPoint globalPos = ui_.tabWidget_2->mapToGlobal(pos);
+    menuShares->exec(globalPos);
+  }
+  // if ((pos.x() < 58) && (pos.y() < 40)) {
+  // QPoint globalPos = ui_.tabWidget_2->mapToGlobal(pos);
+  // menuContacts->exec(globalPos);
+  // }
 }
 
-void UserPanels::addConvToList(QString name){
-  //if(name != "")
-    //openConvList_.append("test");
+void UserPanels::addConvToList(QString name) {
+//  if(name != "")
+//    openConvList_.append("test");
 }
 
-QList<QString> UserPanels::getConvList(){
+QList<QString> UserPanels::getConvList() {
   return openConvList_;
 }
 
-void UserPanels::setConvList(QList<QString> theList){
+void UserPanels::setConvList(QList<QString> theList) {
   openConvList_ = theList;
 }
 

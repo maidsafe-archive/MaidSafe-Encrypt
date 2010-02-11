@@ -58,13 +58,16 @@ struct ChunkInfo {
                 type_(kHashable | kNormal) {}
   ChunkInfo(const std::string &non_hex_name,
             const boost::posix_time::ptime &last_checked,
-            const ChunkType &type)
+            const ChunkType &type,
+            const boost::uint64_t &size)
                 : non_hex_name_(non_hex_name),
                   last_checked_(last_checked),
-                  type_(type) {}
+                  type_(type),
+                  size_(size) {}
   std::string non_hex_name_;
   boost::posix_time::ptime last_checked_;
   ChunkType type_;
+  boost::uint64_t size_;
   bool operator<(const ChunkInfo &c) const
       {return non_hex_name_ < c.non_hex_name_;}
 };
@@ -131,6 +134,7 @@ class ChunkStore : public base::AlternativeStore {
   fs::path GetChunkPath(const std::string &key,
                         ChunkType type,
                         bool create_path);
+  boost::uint64_t GetChunkSize(const std::string &key);
   // Check that hash of value == key
   int HashCheckChunk(const std::string &key);
   // By changing the chunk's type it will be moved to the appropriate directory

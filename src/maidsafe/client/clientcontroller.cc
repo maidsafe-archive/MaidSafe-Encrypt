@@ -415,10 +415,11 @@ bool ClientController::CreateUser(const std::string &username,
   }
   // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
   //                             Parameters come in VaultConfigParameters.
-//  OwnVaultResult ovr = OwnLocalVault(vcp.port, vcp.space * 1024 * 1024,
-//                                     vcp.directory);
+//  OwnLocalVaultResult olvr =
+//      SetLocalVaultOwned(vcp.port, vcp.space * 1024 * 1024, vcp.directory);
 //  #ifdef DEBUG
-//    printf("ClientController::CreateUser +++ OwnVaultResult: %d +++\n", ovr);
+//    printf("ClientController::CreateUser +++ "
+//           "OwnLocalVaultResult: %d +++\n", olvr);
 //  #endif
 
   ss_->SetSessionName(false);
@@ -998,7 +999,7 @@ bool ClientController::GetMessages() {
 #endif
     return false;
   }
-  if (valid_messages.size() == size_t(0)) {
+  if (valid_messages.empty()) {
     // TODO(Team#5#): return code for no messages
     return true;
   }
@@ -2153,26 +2154,30 @@ bool ClientController::VaultContactInfo() {
   return true;
 }
 
-OwnVaultResult ClientController::OwnLocalVault(const boost::uint32_t &port,
-      const boost::uint64_t &space, const std::string &chunkstore_dir) const {
+OwnLocalVaultResult ClientController::SetLocalVaultOwned(
+    const boost::uint32_t &port,
+    const boost::uint64_t &space,
+    const std::string &chunkstore_dir) const {
   bool callback_arrived = false;
-  OwnVaultResult result;
-  sm_->OwnLocalVault(ss_->PrivateKey(PMID), ss_->PublicKey(PMID),
+  OwnLocalVaultResult result;
+  sm_->SetLocalVaultOwned(ss_->PrivateKey(PMID), ss_->PublicKey(PMID),
       ss_->SignedPublicKey(PMID), port, chunkstore_dir, space,
-      boost::bind(&ClientController::OwnLocalVault_Callback,
+      boost::bind(&ClientController::SetLocalVaultOwnedCallback,
       const_cast<ClientController*>(this), _1, _2, &callback_arrived, &result));
   while (!callback_arrived)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   return result;
 }
 
-void ClientController::OwnLocalVault_Callback(const OwnVaultResult &result,
-      const std::string &pmid_name, bool *callback_arrived,
-      OwnVaultResult *res) {
+void ClientController::SetLocalVaultOwnedCallback(
+    const OwnLocalVaultResult &result,
+    const std::string &pmid_name,
+    bool *callback_arrived,
+    OwnLocalVaultResult *res) {
   if (result == OWNED_SUCCESS) {
     std::string mierda = base::EncodeToHex(pmid_name);
 #ifdef DEBUG
-    printf("ClientController::OwnLocalVault_Callback %s -- %s\n",
+    printf("ClientController::SetLocalVaultOwnedCallback %s -- %s\n",
            ss_->Id(PMID).c_str(), mierda.c_str());
 #endif
     if (pmid_name == base::DecodeFromHex(ss_->Id(PMID))) {
@@ -2188,24 +2193,22 @@ void ClientController::OwnLocalVault_Callback(const OwnVaultResult &result,
 }
 
 bool ClientController::IsLocalVaultOwned() {
-  if (LocalVaultStatus() == NOT_OWNED)
-    return false;
-  return true;
+  return (LocalVaultOwned() != NOT_OWNED);
 }
 
-VaultStatus ClientController::LocalVaultStatus() const {
+VaultStatus ClientController::LocalVaultOwned() const {
   VaultStatus result;
   bool callback_arrived = false;
-  sm_->LocalVaultStatus(boost::bind(
-      &ClientController::LocalVaultStatus_Callback, const_cast<
-      ClientController*>(this), _1, &callback_arrived, &result));
+  sm_->LocalVaultOwned(boost::bind(&ClientController::LocalVaultOwnedCallback,
+      const_cast<ClientController*>(this), _1, &callback_arrived, &result));
   while (!callback_arrived)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   return result;
 }
 
-void ClientController::LocalVaultStatus_Callback(const VaultStatus &result,
-      bool *callback_arrived, VaultStatus *res) {
+void ClientController::LocalVaultOwnedCallback(const VaultStatus &result,
+                                               bool *callback_arrived,
+                                               VaultStatus *res) {
   *res = result;
   *callback_arrived = true;
 }

@@ -78,7 +78,7 @@ void Shares::reset() {
   ui_.labelCreate->setVisible(false);
   ui_.progressBarCreate->setVisible(false);
 
-  //qDeleteAll(&shares_);
+  // qDeleteAll(&shares_);
   shares_.clear();
 
   init_ = false;
@@ -270,25 +270,25 @@ void Shares::onSharesBoxLostFocus() {
 }
 
 bool Shares::eventFilter(QObject *obj, QEvent *event) {
-     if (obj == ui_.shareNameLineEdit) {
-         if (event->type() == QEvent::FocusIn) {
-             if (ui_.shareNameLineEdit->text() == "Search Shares") {
-                ui_.shareNameLineEdit->clear();
-                QPalette pal;
-                pal.setColor(QPalette::Text, Qt::black);
-                ui_.shareNameLineEdit->setPalette(pal);
-             }
-             return true;
-         } else {
-             return false;
-         }
-     } else {
-         // pass the event on to the parent class
-         return Shares::eventFilter(obj, event);
-     }
+  if (obj == ui_.shareNameLineEdit) {
+    if (event->type() == QEvent::FocusIn) {
+      if (ui_.shareNameLineEdit->text() == "Search Shares") {
+        ui_.shareNameLineEdit->clear();
+        QPalette pal;
+        pal.setColor(QPalette::Text, Qt::black);
+        ui_.shareNameLineEdit->setPalette(pal);
+      }
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    // pass the event on to the parent class
+    return Shares::eventFilter(obj, event);
+  }
 }
 
-void Shares::onShareFilterChanged(int index){
+void Shares::onShareFilterChanged(int index) {
   filterType_ = index;
   reset();
   setActive(true);

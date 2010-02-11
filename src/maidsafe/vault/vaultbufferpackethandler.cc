@@ -13,8 +13,7 @@
  */
 
 #include "maidsafe/vault/vaultbufferpackethandler.h"
-#include <cstdio>
-#include "protobuf/packet.pb.h"
+// #include <cstdio>
 
 namespace maidsafe {
 
@@ -279,7 +278,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
     }
     if (!flag) {
 #ifdef DEBUG
-      printf("unauthorised user %s\n", hashed_sender_id.c_str());
+      printf("unauthorised user %s\n", HexSubstr(hashed_sender_id).c_str());
 #endif
       return false;
     }
@@ -290,6 +289,52 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
   gp->set_signature(message.signature());
 
   bufferpacket.SerializeToString(updated_bp);
+  return true;
+}
+
+bool VaultBufferPacketHandler::ContactInfo(const std::string &current_bp,
+                                           const std::string &public_username,
+                                           EndPoint *ep,
+                                           boost::uint16_t *status) {
+  BufferPacket bufferpacket;
+  if (!bufferpacket.ParseFromString(current_bp)) {
+#ifdef DEBUG
+    printf("VaultBufferPacketHandler::ContactInfo - Invalid bufferpacket.\n");
+#endif
+    return false;
+  }
+
+  BufferPacketInfo bpi;
+  if (bufferpacket.owner_info_size() < 1 ||
+      !bpi.ParseFromString(bufferpacket.owner_info(0).data())) {
+#ifdef DEBUG
+    printf("VaultBufferPacketHandler::ContactInfo - BP corrupt.\n");
+#endif
+    return false;
+  }
+
+  bool found(false);
+  std::string hashed_sender_id = crypto_obj_.Hash(public_username, "",
+                                                  crypto::STRING_STRING,
+                                                  false);
+  for (int n = 0; n < bpi.users_size(); ++n) {
+    if (bpi.users(n) == hashed_sender_id) {
+      found = true;
+      n = bpi.users_size();
+    }
+  }
+
+  if (!found) {
+#ifdef DEBUG
+    printf("VaultBufferPacketHandler::ContactInfo - Not allowed.\n");
+#endif
+    return false;
+  }
+
+  ep->set_ip(bpi.ep().ip());
+  ep->set_port(bpi.ep().port());
+  *status = bpi.online();
+
   return true;
 }
 

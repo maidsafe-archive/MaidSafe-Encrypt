@@ -72,72 +72,71 @@ enum ReturnCode {
   kChunkExistsInChunkstore = 3001,  // intentionally positive
 
   // Client Controller
-  kClientControllerError = -10001,
-  kClientControllerNotInitialised = -10002,
+  kClientControllerError = -4001,
+  kClientControllerNotInitialised = -4002,
 
   // Data Atlas Handler
-  kDataAtlasError = -4001,
-  kDBDoesntExist = -4002,
-  kDBOpenException = -4003,
-  kDBCreateException = -4004,
-  kDBReadWriteException = -4005,
-  kDBCloseException = -4006,
-  kDBCantFindFile = -4007,
-  kDBCantFindDirKey = -4008,
-  kParseDataMapError = -4009,
-  kAddElementError = -4010,
-  kModifyElementError = -4011,
-  kRemoveElementError = -4012,
-  kRenameElementError = -4013,
-  kCopyElementError = -4014,
-  kDataAtlasException = -4015,
+  kDataAtlasError = -5001,
+  kDBDoesntExist = -5002,
+  kDBOpenException = -5003,
+  kDBCreateException = -5004,
+  kDBReadWriteException = -5005,
+  kDBCloseException = -5006,
+  kDBCantFindFile = -5007,
+  kDBCantFindDirKey = -5008,
+  kParseDataMapError = -5009,
+  kAddElementError = -5010,
+  kModifyElementError = -5011,
+  kRemoveElementError = -5012,
+  kRenameElementError = -5013,
+  kCopyElementError = -5014,
+  kDataAtlasException = -5015,
 
   // Key Atlas Handler
-  kKeyAtlasError = -5001,
+  kKeyAtlasError = -6001,
 
   // Store Manager
-  kStoreManagerError = -6001,
-  kNotConnected = -6002,
-  kLoadChunkFindValueFailure = -6003,
-  kPreSendFindValueFailure = -6004,
-  kPreSendChunkAlreadyExists = -6005,
-  kPreSendOverwriteCached = -6006,
-  kChunkNotInChunkstore = -6007,
-  kGetRequestSigError = -6008,
-  kGetStorePeerError = -6009,
-  kSendPrepFailure = -6010,
-  kSendContentFailure = -6011,
-  kIOUsSerialiseError = -6012,
-  kStoreIOUsFindNodesFailure = -6013,
-  kStoreIOUsFailure = -6014,
-  kFindNodesError = -6015,
-  kFindNodesFailure = -6016,
-  kFindNodesParseError = -6017,
-  kFindValueError = -6018,
-  kFindValueFailure = -6019,
-  kFindValueParseError = -6020,
-  kLoadChunkFailure = -6021,
-  kLoadedChunkEmpty = -6022,
-  kGetChunkFailure = -6023,
-  kStoreIOUFailure = -6024,
-  kSendIOUDoneFailure = -6025,
-  kSendPacketError = -6026,
-  kSendPacketFailure = -6027,
-  kSendPacketFindValueFailure = -6028,
-  kSendPacketCached = -6029,
-  kSendPacketParseError = -6030,
-  kUpdateChunksFailure = -6031,
-  kCommonChecksumUndecided = -6032,
-  kCommonChecksumMajority = -6033,
-  kPacketUnknownType = -6034,
-  kLoadPacketFailure = -6035,
-  kStoreManagerException = -6036,
+  kStoreManagerError = -7001,
+  kNotConnected = -7002,
+  kLoadChunkFindValueFailure = -7003,
+  kPreSendFindValueFailure = -7004,
+  kPreSendChunkAlreadyExists = -7005,
+  kPreSendOverwriteCached = -7006,
+  kChunkNotInChunkstore = -7007,
+  kGetRequestSigError = -7008,
+  kGetStorePeerError = -7009,
+  kSendPrepFailure = -7010,
+  kSendContentFailure = -7011,
+  kStoreAlreadyCompleted = -7012,
+  kStoreCancelled = -7013,
+  kSendChunkFailure = -7014,
+  kTaskCancelledOffline = -7015,
+  kFindNodesError = -7016,
+  kFindNodesFailure = -7017,
+  kFindNodesParseError = -7018,
+  kFindValueError = -7019,
+  kFindValueFailure = -7020,
+  kFindValueParseError = -7021,
+  kLoadChunkFailure = -7022,
+  kLoadedChunkEmpty = -7023,
+  kGetChunkFailure = -7024,
+  kDeleteSizeError = -7025,
+  kSendPacketError = -7026,
+  kSendPacketFailure = -7027,
+  kSendPacketFindValueFailure = -7028,
+  kSendPacketCached = -7029,
+  kSendPacketParseError = -7030,
+  kUpdateChunksFailure = -7031,
+  kCommonChecksumUndecided = -7032,
+  kCommonChecksumMajority = -7033,
+  kPacketUnknownType = -7034,
+  kLoadPacketFailure = -7035,
+  kStoreManagerException = -7036,
+  kFindAccountHoldersError = -7037,
 
-  // Message Handler
+  // Message Handler (-8000)
 
-  // Private Share Handler
-
-  // Self Encryption Handler
+  // Private Share Handler (-9000)
 
   // Session
   kEmptyConversationId = -10001,
@@ -145,6 +144,21 @@ enum ReturnCode {
   kExistingConversation = -10003,
   kLoadKeysFailure = -10004,
   kContactListFailure = -10005,
+
+  // Self Encryption Handler (-11000)
+
+  // Store Task Handler
+  kStoreTaskHandlerError = -12001,
+  kStoreTaskIncorrectParameter = -12002,
+  kStoreTaskAlreadyExists = -12003,
+  kStoreTaskNotFound = -12004,
+  kStoreTaskNotFinished = -12005,
+  kStoreTaskFinishedFail = -12006,
+  kStoreTaskFinishedPass = 0,  // intentionally 0
+
+  // Validator
+  kValidatorNoParameters = -13001,
+  kValidatorNoPrivateKey = -13002
 };
 
 }  // namespace maidsafe
@@ -155,11 +169,25 @@ enum ReturnCode {
   // General
   kSuccess = maidsafe::kSuccess,
   kGeneralError = maidsafe::kGeneralError,
+  kVaultOffline = -501,
 
   // Service
+  kVaultServiceError = -1501,
+  kVaultServiceUninitialisedFunction = -1502,
+  kVaultServiceFindNodesError = -1503,
+  kVaultServiceFindNodesFailure = -1504,
+  kVaultServiceFindNodesTooFew = -1505,
+  kAddToRefResponseUninitialised = -1506,
+  kAddToRefResponseFailed = -1507,
+  kAddToRefResponseError = -1508,
+  kAmendAccountResponseUninitialised = -1509,
+  kAmendAccountResponseFailed = -1510,
+  kAmendAccountResponseError = -1511,
+  kAccountStatusResponseUninitialised = -1512,
+  kAccountStatusResponseFailed = -1513,
+  kAccountStatusResponseError = -1514,
 
   // Vault
-  kVaultOffline = -2501,
 
   // Vault Chunkstore
   kChunkstoreError = maidsafe::kChunkstoreError,
@@ -179,7 +207,27 @@ enum ReturnCode {
   kPacketOverwriteFailure = -3510,
   kPacketDeleteNotFound = -3511,
   kPacketDeleteNotOwned = -3512,
-  kPacketLoadNotFound = -3513
+  kPacketLoadNotFound = -3513,
+
+  // Account Handler & Account Amendment Handler
+  kAccountNotFound = -4501,
+  kAccountExists = -4502,
+  kAccountDeleteFailed = -4503,
+  kAccountWrongAccountField = -4504,
+  kAccountEmptyAlert = -4505,
+  kAccountNotEnoughSpace = -4506,
+  kAmendAccountTypeError = -4507,
+  kAmendAccountCountError = -4508,
+  kAccountAmendmentError = -4509,
+  kAccountAmendmentPending = -4510,
+  kAccountAmendmentNotFound = -4511,
+  kAccountAmendmentUpdated = -4512,
+  kAccountAmendmentFinished = -4513,
+
+  // Chunk Info Handler
+  kChunkInfoInvalidSize = -5501,
+  kChunkInfoInvalidName = -5502,
+  kChunkInfoCannotDelete = -5503
 
   // Vault Buffer Packet Handler
 };

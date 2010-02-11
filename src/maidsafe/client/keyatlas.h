@@ -26,9 +26,6 @@
 #define MAIDSAFE_CLIENT_KEYATLAS_H_
 
 #include <boost/multi_index_container.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/identity.hpp>
-#include <boost/multi_index/member.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <list>
@@ -53,12 +50,13 @@ struct KeyAtlasRow {
 };
 
 typedef boost::multi_index_container<
-  maidsafe::KeyAtlasRow,
+  KeyAtlasRow,
   boost::multi_index::indexed_by<
-      boost::multi_index::ordered_unique<boost::multi_index::member<KeyAtlasRow,
-          int, &KeyAtlasRow::type_> >
+    boost::multi_index::ordered_unique<
+      BOOST_MULTI_INDEX_MEMBER(KeyAtlasRow, int, type_)
+    >
   >
-> key_atlas_set;
+> KeyAtlasSet;
 
 class KeyAtlas {
  public:
@@ -82,7 +80,7 @@ class KeyAtlas {
 
  private:
   std::string SearchKeyring(const int &packet_type, const int &field);
-  key_atlas_set key_ring_;
+  KeyAtlasSet key_ring_;
   crypto::Crypto co_;
 };
 

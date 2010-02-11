@@ -50,7 +50,7 @@ static std::list<std::string> callback_messages_;
 namespace testpdvault {
 
 inline void DeleteCallback(const std::string &result) {
-  maidsafe::DeleteResponse resp;
+  maidsafe::DeleteChunkResponse resp;
   if (!resp.ParseFromString(result) ||
       resp.result() != kAck) {
     callback_succeeded_ = false;

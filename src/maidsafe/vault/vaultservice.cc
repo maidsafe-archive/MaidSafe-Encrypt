@@ -28,11 +28,15 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <maidsafe/kademlia_service_messages.pb.h>
+#include <maidsafe/transportudt.h>
+
+#include <list>
 
 #include "maidsafe/maidsafe.h"
+#include "maidsafe/maidsafevalidator.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultbufferpackethandler.h"
-#include "maidsafe/crypto.h"
+#include "maidsafe/vault/vaultservicelogic.h"
 
 namespace maidsafe_vault {
 
@@ -49,110 +53,251 @@ void vsvc_dummy_callback(const std::string &result) {
 #endif
 }
 
-VaultService::VaultService(const std::string &pmid_public,
-                           const std::string &pmid_private,
-                           const std::string &signed_pmid_public,
-                           VaultChunkStore *vault_chunkstore,
-                           kad::KNode *knode,
-                           PendingOperationsHandler *poh)
-    : pmid_public_(pmid_public),
-      pmid_private_(pmid_private),
-      signed_pmid_public_(signed_pmid_public),
-      pmid_(""),
-      non_hex_pmid_(""),
-      vault_chunkstore_(vault_chunkstore),
-      knode_(knode),
-      poh_(poh) {
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  pmid_ = co.Hash(pmid_public + signed_pmid_public_, "", crypto::STRING_STRING,
-                  true);
-  non_hex_pmid_ = base::DecodeFromHex(pmid_);
+void AddToRemoteRefListTask::run() {
+  int result = vault_service_logic_->AddToRemoteRefList(chunkname_,
+                                                        store_contract_,
+                                                        transport_id_);
+#ifdef DEBUG
+  if (result != kSuccess)
+    printf("AddToRemoteRefListTask returned result %i for chunk (%s).\n",
+           result, HexSubstr(chunkname_).c_str());
+#endif
 }
 
-void VaultService::StoreChunkPrep(google::protobuf::RpcController*,
-                                  const maidsafe::StorePrepRequest* request,
-                                  maidsafe::StorePrepResponse* response,
-                                  google::protobuf::Closure* done) {
-#ifdef DEBUG
-//  printf("In VaultService::StoreChunkPrep (%i), Chunk name: %s\n",
-//         knode_->host_port(), HexSubstr(request->chunkname()).c_str());
-#endif
-  response->set_pmid_id(non_hex_pmid_);
+//  void RemoveFromRemoteRefListTask::run() {
+//    vault_service_logic_->RemoveFromRemoteRefPacket(chunkname_, signed_size_);
+//  }
+
+void AmendRemoteAccountTask::run() {
+  vault_service_logic_->AmendRemoteAccount(amend_account_request_,
+      found_local_result_, callback_, transport_id_);
+}
+
+VaultService::VaultService(const std::string &pmid_public,
+                           const std::string &pmid_private,
+                           const std::string &pmid_public_signature,
+                           VaultChunkStore *vault_chunkstore,
+                           kad::KNode *knode,
+                           PendingOperationsHandler *poh,
+                           VaultServiceLogic *vault_service_logic,
+                           const boost::int16_t &transport_id)
+    : pmid_public_(pmid_public),
+      pmid_private_(pmid_private),
+      pmid_public_signature_(pmid_public_signature),
+      pmid_(),
+      non_hex_pmid_(),
+      vault_chunkstore_(vault_chunkstore),
+      knode_(knode),
+      poh_(poh),
+      vault_service_logic_(vault_service_logic),
+      transport_id_(transport_id),
+      prm_(),
+      ah_(),
+      aah_(&ah_, vault_service_logic_),
+      cih_(),
+      thread_pool_() {
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  non_hex_pmid_ = co.Hash(pmid_public_ + pmid_public_signature_, "",
+                  crypto::STRING_STRING, false);
+  pmid_ = base::EncodeToHex(pmid_);
+  thread_pool_.setMaxThreadCount(5);
+}
+
+void VaultService::StorePrep(google::protobuf::RpcController*,
+                             const maidsafe::StorePrepRequest *request,
+                             maidsafe::StorePrepResponse *response,
+                             google::protobuf::Closure *done) {
+  maidsafe::StoreContract *response_sc = response->mutable_store_contract();
+  response_sc->set_pmid(non_hex_pmid_);
+  response_sc->set_public_key(pmid_public_);
+  response_sc->set_public_key_signature(pmid_public_signature_);
+  maidsafe::StoreContract::InnerContract *response_ic =
+      response_sc->mutable_inner_contract();
+  maidsafe::SignedSize *response_sz = response_ic->mutable_signed_size();
+  const maidsafe::SignedSize &request_sz = request->signed_size();
+  response_sz->set_data_size(request_sz.data_size());
+  response_sz->set_pmid(request_sz.pmid());
+  response_sz->set_public_key(request_sz.public_key());
+  response_sz->set_public_key_signature(request_sz.public_key_signature());
+  response_sz->set_signature(request_sz.signature());
+
+  crypto::Crypto co;
+  response_ic->set_result(kNack);
+  std::string ser_response_ic;
+  response_ic->SerializeToString(&ser_response_ic);
+  response_sc->set_signature(co.AsymSign(ser_response_ic, "", pmid_private_,
+                             crypto::STRING_STRING));
+  std::string ser_response_sc;
+  response_sc->SerializeToString(&ser_response_sc);
+  response->set_response_signature(co.AsymSign(ser_response_sc, "",
+                                   pmid_private_, crypto::STRING_STRING));
+
   if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
 #ifdef DEBUG
-    printf("In VaultService::StoreChunkPrep (%i), request isn't initialized.\n",
-           knode_->host_port());
+    printf("In VaultService::StorePrep (%i), ", knode_->host_port());
+    printf("request is not initialized.\n");
 #endif
+    done->Run();
     return;
   }
-  if (!ValidateSignedRequest(request->public_key(),
-       request->signed_public_key(), request->signed_request(),
-       request->chunkname(), request->pmid())) {
-    response->set_result(kNack);
-    done->Run();
+
+  if (request->chunkname().length() != kKeySize) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunkPrep (%i), ", knode_->host_port());
+    printf("In VaultService::StorePrep (%i), ", knode_->host_port());
+    printf("failed to validate chunk name.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  if (!ValidateSignedSize(request_sz)) {
+#ifdef DEBUG
+    printf("In VaultService::StorePrep (%i), ", knode_->host_port());
+    printf("failed to validate signed size.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  PrepsReceivedMap::iterator it = prm_.find(request->chunkname());
+  if (it != prm_.end()) {
+#ifdef DEBUG
+    printf("In VaultService::StorePrep (%i), ", knode_->host_port());
+    printf("chunk name was in map.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  if (!ValidateSignedRequest(request_sz.public_key(),
+       request_sz.public_key_signature(), request->request_signature(),
+       request->chunkname(), request_sz.pmid())) {
+#ifdef DEBUG
+    printf("In VaultService::StorePrep (%i), ", knode_->host_port());
     printf("failed to validate signed request.\n");
 #endif
+    done->Run();
     return;
   }
+
   // Check we're not being asked to store ourselves as a reference holder for
   // ourself.
-  if (request->pmid() == non_hex_pmid_) {
-    response->set_result(kNack);
-    done->Run();
+  if (request_sz.pmid() == non_hex_pmid_) {
 #ifdef DEBUG
-    printf("Of all the vaults in all the worlds, you had to try and store a "
-           "reference packet here.  Feck off. (%s)\n",
-           HexSubstr(non_hex_pmid_).c_str());
-#endif
-    return;
-  }
-  boost::uint64_t data_size = request->data_size();
-  if (Storable(data_size) != 0) {
-#ifdef DEBUG
-    printf("In VaultService::StoreChunkPrep (%i), no space.\n",
+    printf("In VaultService::StorePrep (%i), trying to store in ourselves.\n",
            knode_->host_port());
 #endif
-    response->set_result(kNack);
     done->Run();
     return;
   }
-  int n = poh_->AddPendingOperation(request->pmid(), request->chunkname(),
-                                    request->data_size(), "", "", 0,
-                                    request->public_key(), STORE_ACCEPTED);
-  if (n != 0) {
+
+  // TODO(Team#5#): check peer's available space
+
+  if (Storable(request_sz.data_size()) != 0) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunkPrep (%i), failed to add pending "
-           "operation.\n", knode_->host_port());
+    printf("In VaultService::StorePrep (%i), no space.\n",
+           knode_->host_port());
 #endif
-    response->set_result(kNack);
     done->Run();
     return;
   }
-  maidsafe::IOUAuthority iou_authority;
-  iou_authority.set_data_size(data_size);
-  iou_authority.set_pmid(non_hex_pmid_);
-  std::string iou_authority_str;
-  iou_authority.SerializeToString(&iou_authority_str);
+
+  std::string peer_pmid(request_sz.pmid());
+  std::pair<PrepsReceivedMap::iterator, bool> cp =
+      prm_.insert(std::pair<std::string, maidsafe::StoreContract>(
+      request->chunkname(), *response_sc));
+
+  if (!cp.second) {
+#ifdef DEBUG
+    printf("In VaultService::StorePrep (%i), failed to insert prep into map.\n",
+           knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  response_ic->set_result(kAck);
+  response_ic->SerializeToString(&ser_response_ic);
+  response_sc->set_signature(co.AsymSign(ser_response_ic, "", pmid_private_,
+                             crypto::STRING_STRING));
+  response_sc->SerializeToString(&ser_response_sc);
+  response->set_response_signature(co.AsymSign(ser_response_sc, "",
+                                   pmid_private_, crypto::STRING_STRING));
+  done->Run();
+}
+
+void VaultService::StoreChunk(google::protobuf::RpcController*,
+                              const maidsafe::StoreChunkRequest *request,
+                              maidsafe::StoreChunkResponse *response,
+                              google::protobuf::Closure *done) {
+#ifdef DEBUG
+//  printf("Chunk name: %s\n", request->chunkname().c_str());
+//  printf("Chunk content: %s\n", request->data().c_str());
+//  printf("In VaultService::StoreChunk, Public Key: %s\n",
+//    request->public_key().c_str());
+//  printf("Signed Pub Key: %s\n", request->public_key_signature().c_str());
+//  printf("Signed Request: %s\n", request->request_signature().c_str());
+
+//  printf("In VaultService::StoreChunk (%i), Chunk name: %s\n",
+//         knode_->host_port(), HexSubstr(request->chunkname()).c_str());
+#endif
+  // TODO(Fraser#5#): 2009-12-28 - if this fails more than kMinStoreRetries for
+  //                               same chunkname & peer, delete from prm_?
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::StoreChunk (%i), request is not initialized.\n",
+           knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+       request->public_key_signature(), request->request_signature(),
+       request->chunkname(), request->pmid())) {
+#ifdef DEBUG
+    printf("In VaultService::StoreChunk (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  PrepsReceivedMap::iterator it = prm_.find(request->chunkname());
+  if (it == prm_.end()) {
+#ifdef DEBUG
+    printf("In VaultService::StoreChunk (%i), ", knode_->host_port());
+    printf("chunkname wasn't in map - no prep.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  // TODO(Team#5#): Decide on which types of data should come through here
+
+  if (!StoreChunkLocal(request->chunkname(), request->data())) {
+#ifdef DEBUG
+    printf("In VaultService::StoreChunk (%i), ", knode_->host_port());
+    printf("failed to store chunk locally.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  AddToRemoteRefList(request->chunkname(), it->second);
+  prm_.erase(request->chunkname());
   response->set_result(kAck);
-  response->set_iou_authority(iou_authority_str);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  response->set_signed_iou_authority(co.AsymSign(iou_authority_str, "",
-      pmid_private_, crypto::STRING_STRING));
   done->Run();
 }
 
 void VaultService::StorePacket(google::protobuf::RpcController*,
-                               const maidsafe::StorePacketRequest* request,
-                               maidsafe::StorePacketResponse* response,
-                               google::protobuf::Closure* done) {
-  response->set_pmid_id(non_hex_pmid_);
+                               const maidsafe::StorePacketRequest *request,
+                               maidsafe::StorePacketResponse *response,
+                               google::protobuf::Closure *done) {
+  response->set_pmid(non_hex_pmid_);
   if (!request->IsInitialized() || request->signed_data_size() == 0) {
     response->set_result(kNack);
     done->Run();
@@ -231,15 +376,17 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
     sig_value.set_value_signature(co.AsymSign(non_hex_pmid_, "", pmid_private_,
       crypto::STRING_STRING));
     // TTL set to 24 hrs
-    std::string signed_request = co.AsymSign(co.Hash(pmid_public_ +
-                                 signed_pmid_public_ + request->packetname(),
-                                 "", crypto::STRING_STRING, true), "",
-                                 pmid_private_, crypto::STRING_STRING);
+    std::string request_signature = co.AsymSign(
+        co.Hash(pmid_public_ + pmid_public_signature_ + request->packetname(),
+                "", crypto::STRING_STRING, true),
+        "",
+        pmid_private_,
+        crypto::STRING_STRING);
     kad::SignedRequest sr;
     sr.set_signer_id(non_hex_pmid_);
     sr.set_public_key(pmid_public_);
-    sr.set_signed_public_key(signed_pmid_public_);
-    sr.set_signed_request(signed_request);
+    sr.set_signed_public_key(pmid_public_signature_);
+    sr.set_signed_request(request_signature);
     knode_->StoreValue(request->packetname(), sig_value, sr, 86400,
                        &vsvc_dummy_callback);
   }
@@ -247,340 +394,468 @@ void VaultService::StorePacket(google::protobuf::RpcController*,
   done->Run();
 }
 
-void VaultService::StoreChunk(google::protobuf::RpcController*,
-                              const maidsafe::StoreRequest* request,
-                              maidsafe::StoreResponse* response,
-                              google::protobuf::Closure* done) {
-#ifdef DEBUG
-//  printf("Chunk name: %s\n", request->chunkname().c_str());
-//  printf("Chunk content: %s\n", request->data().c_str());
-//  printf("In VaultService::StoreChunk, Public Key: %s\n",
-//    request->public_key().c_str());
-//  printf("Signed Pub Key: %s\n", request->signed_public_key().c_str());
-//  printf("Signed Request: %s\n", request->signed_request().c_str());
+void VaultService::AddToWatchList(
+    google::protobuf::RpcController*,
+    const maidsafe::AddToWatchListRequest *request,
+    maidsafe::AddToWatchListResponse *response,
+    google::protobuf::Closure *done) {
 
-//  printf("In VaultService::StoreChunk (%i), Chunk name: %s\n",
-//         knode_->host_port(), HexSubstr(request->chunkname()).c_str());
-#endif
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid(non_hex_pmid_);
+  response->set_upload_count(0);
+  response->set_result(kNack);
+
   if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
 #ifdef DEBUG
-    printf("In VaultService::StoreChunk (%i), request is not initialized.\n",
-           knode_->host_port());
+    printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+    printf("request is not initialized.\n");
 #endif
+    done->Run();
     return;
   }
-  if (!ValidateSignedRequest(request->public_key(),
-       request->signed_public_key(), request->signed_request(),
-       request->chunkname(), request->pmid())) {
-    response->set_result(kNack);
-    done->Run();
+
+  if (request->chunkname().length() != kKeySize) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunk (%i), ", knode_->host_port());
+    printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+    printf("failed to validate chunk name.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  const maidsafe::SignedSize &sz = request->signed_size();
+
+  if (!ValidateSignedSize(sz)) {
+#ifdef DEBUG
+    printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+    printf("failed to validate signed size.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  if (!ValidateSignedRequest(sz.public_key(),
+                             sz.public_key_signature(),
+                             request->request_signature(),
+                             request->chunkname(),
+                             sz.pmid())) {
+#ifdef DEBUG
+    printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
     printf("failed to validate signed request.\n");
 #endif
+    done->Run();
     return;
   }
-  bool valid_data = false;
-  maidsafe::VaultBufferPacketHandler vbph;
-  switch (request->data_type()) {
-//    case maidsafe::SYSTEM_PACKET:
-    case maidsafe::PDDIR_SIGNED: if (ValidateSystemPacket(request->data(),
-                                     request->public_key()))
-                                   valid_data = true;
-                                 break;
-//    case maidsafe::BUFFER_PACKET: if (vbph.ValidateOwnerSignature(
-//                                      request->public_key(), request->data()))
-//                                    valid_data = true;
-//                                  break;
-    // TODO(David/Fraser#5#): check the validity of a pddir not signed DB
-    case maidsafe::PDDIR_NOTSIGNED: valid_data = true;
-                                    break;
-    case maidsafe::DATA: if (ValidateDataChunk(request->chunkname(),
-                             request->data()))
-                           valid_data = true;
-                         break;
-    default: break;  // No specific check for data
+
+  int required_references, required_payments;
+  if (0 != cih_.PrepareAddToWatchList(request->chunkname(), sz.pmid(),
+                                      sz.data_size(), &required_references,
+                                      &required_payments)) {
+#ifdef DEBUG
+    printf("In VaultService::AddToWatchList (%i), ", knode_->host_port());
+    printf("failed adding to waiting list.\n");
+#endif
+    done->Run();
+    return;
   }
 
-  // TODO(Team#5#): check IOU's and signatures before storing the chunk
-  // TODO(Team#5#): check available space in the vault's quota
-  if (valid_data) {
-    int n = poh_->FindOperation(request->pmid(), request->chunkname(),
-                                request->data().size(), "", "",
-                                STORE_ACCEPTED);
-    if (n != 0) {
+  response->set_upload_count(required_references);
+  response->set_result(kAck);
+  done->Run();
+
+  if (required_payments > 0) {
+    // amend account for watcher
+    AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenInc,
+                       required_payments * sz.data_size(), sz.pmid(),
+                       request->chunkname(),
+                       boost::bind(&VaultService::FinalisePayment, this,
+                                   request->chunkname(), sz.pmid(),
+                                   sz.data_size(), _1));
+  } else {
+    // verify storing permission
+    FinalisePayment(request->chunkname(), sz.pmid(), sz.data_size(),
+                    RemoteVaultAbleToStore(sz.data_size(), sz.pmid()));
+  }
+}
+
+void VaultService::FinalisePayment(const std::string &chunk_name,
+                                   const std::string &pmid,
+                                   const int &chunk_size,
+                                   const int &permission_result) {
+  if (permission_result != kSuccess) {
 #ifdef DEBUG
-      printf("In VaultService::StoreChunk (%i), not a pending operation.\n",
-      knode_->host_port());
+    printf("In VaultService::FinalisePayment (%i), ", knode_->host_port());
+    printf("failed to obtain storing permission.\n");
 #endif
-      response->set_result(kNack);
-      done->Run();
-      return;
+    std::list<std::string> creditors, references;
+    cih_.ResetAddToWatchList(chunk_name, pmid, kReasonPaymentFailed, &creditors,
+                             &references);
+    for (std::list<std::string>::iterator it = creditors.begin();
+         it != creditors.end(); ++it) {
+      // amend account for remaining entry
+      AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
+                         chunk_size, *it, chunk_name);
     }
 
-    std::string key = request->chunkname();
-    if (!StoreChunkLocal(key, request->data())) {
-      response->set_result(kNack);
-      done->Run();
-#ifdef DEBUG
-      printf("In VaultService::StoreChunk (%i), ", knode_->host_port());
-      printf("failed to store chunk locally.\n");
-#endif
-      return;
+    for (std::list<std::string>::iterator it = references.begin();
+         it != references.end(); ++it) {
+      // TODO(Steve#) delete remote chunk
+      // amend account for former chunk holder
+      AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceGivenDec,
+                         chunk_size, *it, chunk_name);
     }
-#ifdef DEBUG
-//      printf("In VaultService::StoreChunk (%i), stored chunk locally.\n",
-//             knode_->host_port());
-#endif
-    n = poh_->AdvanceStatus(request->pmid(), request->chunkname(),
-                                request->data().size(), "", "", "",
-                                STORE_DONE);
-    if (n != 0) {
-#ifdef DEBUG
-      printf("In VaultService::StoreChunk (%i), failed to advance to status "
-             "STORE_DONE.\n", knode_->host_port());
-#endif
-      response->set_result(kNack);
-      done->Run();
-      return;
+
+    return;
+  }
+
+  cih_.SetPaymentsDone(chunk_name, pmid);
+  std::string creditor;
+  int refunds;
+  if (cih_.TryCommitToWatchList(chunk_name, pmid, &creditor, &refunds)) {
+    if (refunds > 0) {
+      // amend account for watcher, in case he wasn't first after all
+      AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
+                         refunds * chunk_size, pmid, chunk_name);
     }
-    response->set_result(kAck);
+    if (!creditor.empty()) {
+      // amend account for replaced entry
+      AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
+                         chunk_size, creditor, chunk_name);
+    }
   } else {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunk (%i), failed to validate data.\n",
-           knode_->host_port());
+    printf("In VaultService::FinalisePayment (%i), ", knode_->host_port());
+    printf("couldn't commit to watch list yet.\n");
 #endif
-    response->set_result(kNack);
   }
-#ifdef DEBUG
-//  printf("Vault %i stored chunk %s\n", knode_->host_port(),
-//         HexSubstr(request->chunkname()).c_str());
-#endif
-  done->Run();
 }
 
-void VaultService::IOUDone(google::protobuf::RpcController*,
-                           const maidsafe::IOUDoneRequest* request,
-                           maidsafe::IOUDoneResponse* response,
-                           google::protobuf::Closure* done) {
-#ifdef DEBUG
-//  printf("In VaultService::IOUDone (%i), Chunk name: %s\n",
-//         knode_->host_port(), HexSubstr(request->chunkname()).c_str());
-#endif
-  response->set_pmid_id(non_hex_pmid_);
-  if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::IOUDone (%i), request isn't initialized.\n",
-           knode_->host_port());
-#endif
-    return;
-  }
-  if (!ValidateSignedRequest(request->public_key(),
-      request->signed_public_key(), request->signed_request(),
-      request->chunkname(), request->own_pmid())) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::IOUDone (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
-#endif
-    return;
-  }
-  int n = poh_->AdvanceStatus("", request->chunkname(), 0, "", "", "",
-                              IOU_READY);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("In VaultService::IOUDone (%i), failed to advance operation with "
-           "status IOU_READY.\n", knode_->host_port());
-#endif
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-  response->set_result(kAck);
-  done->Run();
-  return;
-}
-
-
-void VaultService::StoreIOU(google::protobuf::RpcController*,
-                            const maidsafe::StoreIOURequest* request,
-                            maidsafe::StoreIOUResponse* response,
-                            google::protobuf::Closure* done) {
-#ifdef DEBUG
-//  printf("In VaultService::StoreIOU (%i), Chunk name: %s\n",
-//         knode_->host_port(), HexSubstr(request->chunkname()).c_str());
-#endif
-  response->set_pmid_id(non_hex_pmid_);
-  if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StoreIOU (%i), request isn't initialized.\n",
-           knode_->host_port());
-#endif
-    return;
-  }
-  if (!ValidateSignedRequest(request->public_key(),
-      request->signed_public_key(), request->signed_request(),
-      request->chunkname(), request->own_pmid())) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StoreIOU (%i), ", knode_->host_port());
-    printf("failed to validate signed request.\n");
-#endif
-    return;
-  }
-  boost::uint64_t data_size = request->data_size();
-  if (data_size == 0) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StoreIOU (%i), ", knode_->host_port());
-    printf("invalid data size.\n");
-#endif
-    return;
-  }
-  if (request->iou() == "") {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::StoreIOU (%i), ", knode_->host_port());
-    printf("authority empty.\n");
-#endif
-    return;
-  }
-
-  int n = poh_->AddPendingOperation(request->collector_pmid(),
-                                    request->chunkname(),
-                                    request->data_size(), request->iou(), "",
-                                    0, "", IOU_RECEIVED);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("In VaultService::StoreIOU (%i), failed to add operation with status"
-           " IOU_RECEIVED.\n", knode_->host_port());
-#endif
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-#ifdef DEBUG
-//  printf("In VaultService::StoreIOU (%s), added operation with status"
-//         " IOU_RECEIVED for chunk %s & vault %s\n",
-//         HexSubstr(knode_->node_id()).c_str(),
-//         HexSubstr(request->chunkname()).c_str(),
-//         HexSubstr(request->collector_pmid()).c_str());
-#endif
-  response->set_result(kAck);
-  done->Run();
-  return;
-}
-
-void VaultService::StoreChunkReference(
+void VaultService::RemoveFromWatchList(
     google::protobuf::RpcController*,
-    const maidsafe::StoreReferenceRequest* request,
-    maidsafe::StoreReferenceResponse* response,
-    google::protobuf::Closure* done) {
+    const maidsafe::RemoveFromWatchListRequest *request,
+    maidsafe::RemoveFromWatchListResponse *response,
+    google::protobuf::Closure *done) {
+
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
+
+  if (!request->IsInitialized()) {
 #ifdef DEBUG
-//  printf("In VaultService::StoreChunkReference (%i), Chunk name: %s, "
+    printf("In VaultService::RemoveFromWatchList (%i), ", knode_->host_port());
+    printf("request is not initialized.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->chunkname(), request->pmid())) {
+#ifdef DEBUG
+    printf("In VaultService::RemoveFromWatchList (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  int chunk_size;
+  std::list<std::string> creditors, references;
+  if (0 != cih_.RemoveFromWatchList(request->chunkname(), request->pmid(),
+                                    &chunk_size, &creditors, &references)) {
+#ifdef DEBUG
+    printf("In VaultService::RemoveFromWatchList (%i), ", knode_->host_port());
+    printf("failed to remove from watch list.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  response->set_result(kAck);
+  done->Run();
+
+  for (std::list<std::string>::iterator it = creditors.begin();
+       it != creditors.end(); ++it) {
+    // amend account for remaining entry
+    AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
+                       chunk_size, *it, request->chunkname());
+  }
+
+  for (std::list<std::string>::iterator it = references.begin();
+       it != references.end(); ++it) {
+    // TODO(Steve#) delete remote chunk
+    // amend account for former chunk holder
+    AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceGivenDec,
+                       chunk_size, *it, request->chunkname());
+  }
+}
+
+void VaultService::AddToReferenceList(
+    google::protobuf::RpcController*,
+    const maidsafe::AddToReferenceListRequest *request,
+    maidsafe::AddToReferenceListResponse *response,
+    google::protobuf::Closure *done) {
+#ifdef DEBUG
+//  printf("In VaultService::AddToReferenceList (%i), Chunk name: %s, "
 //         "PMID: %s\n", knode_->host_port(),
 //         HexSubstr(request->chunkname()).c_str(),
 //         base::EncodeToHex(request->pmid()).substr(0, 10).c_str());
 #endif
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
+
   if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
 #ifdef DEBUG
-    printf("In VaultService::StoreChunkReference (%i), "
-           "request isn't initialized.\n", knode_->host_port());
+    printf("In VaultService::AddToReferenceList (%i), ", knode_->host_port());
+    printf("request is not initialized.\n");
 #endif
+    done->Run();
     return;
   }
-  if (!ValidateSignedRequest(request->public_key(),
-       request->signed_public_key(), request->signed_request(),
-       request->chunkname(), request->pmid())) {
-    response->set_result(kNack);
-    done->Run();
+
+  const maidsafe::StoreContract &store_contract = request->store_contract();
+  if (!ValidateStoreContract(store_contract)) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunkReference (%i), ", knode_->host_port());
+    printf("In VaultService::AddToReferenceList (%i), ", knode_->host_port());
+    printf("failed to validate store contract.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  if (!ValidateSignedRequest(store_contract.public_key(),
+      store_contract.public_key_signature(), request->request_signature(),
+      request->chunkname(), store_contract.pmid())) {
+#ifdef DEBUG
+    printf("In VaultService::AddToReferenceList (%i), ", knode_->host_port());
     printf("failed to validate signed request.\n");
 #endif
-    return;
-  }
-
-  if (!request->has_no_iou_rank()) {
-    std::string iou;
-    boost::uint64_t chunksize;
-    int n = poh_->GetSizeAndIOU(request->pmid(), request->chunkname(),
-                                &chunksize, &iou);
-    if (n != 0) {
-  #ifdef DEBUG
-      printf("In VaultService::StoreChunkReference (%i), failed to get IOU"
-             " for chunk %s saved by vault %s\n", knode_->host_port(),
-             HexSubstr(request->chunkname()).c_str(),
-             HexSubstr(request->pmid()).c_str());
-  #endif
-      response->set_result(kNack);
-      done->Run();
-      return;
-    }
-    response->set_iou(iou);
-    n = poh_->AdvanceStatus(request->pmid(), request->chunkname(), 0, "", "",
-                            "", IOU_COLLECTED);
-    if (n != 0) {
-  #ifdef DEBUG
-      printf("In VaultService::StoreChunkReference (%i), failed to advance to "
-             "status IOU_COLLECTED.\n", knode_->host_port());
-  #endif
-      response->set_result(kNack);
-      done->Run();
-      return;
-    }
-
-    std::string ra;
-    std::string signed_ra;
-    RankAuthorityGenerator(request->chunkname(), chunksize, request->pmid(),
-                           &ra, &signed_ra);
-    response->set_rank_authority(ra);
-    response->set_signed_rank_authority(signed_ra);
-  }
-  kad::SignedValue signed_value;
-  signed_value.set_value(request->pmid());
-  signed_value.set_value_signature(request->signed_pmid());
-  std::string ser_signed_value;
-  bool ser_ok = signed_value.SerializeToString(&ser_signed_value);
-  if (!ser_ok ||
-      !knode_->StoreValueLocal(request->chunkname(), ser_signed_value, 86400)) {
-#ifdef DEBUG
-    printf("In VaultService::StoreChunkReference (%i), failed to store pmid to"
-           "local ref packet.\n", knode_->host_port());
-#endif
-    response->set_result(kNack);
     done->Run();
     return;
   }
 
-  response->set_public_key(pmid_public_);
-  response->set_signed_public_key(signed_pmid_public_);
+  if (0 != cih_.AddToReferenceList(request->chunkname(), store_contract.pmid(),
+                   store_contract.inner_contract().signed_size().data_size())) {
+#ifdef DEBUG
+    printf("In VaultService::AddToReferenceList (%i), ", knode_->host_port());
+    printf("failed to add to reference list.\n");
+#endif
+    done->Run();
+    return;
+  }
+
   response->set_result(kAck);
+  done->Run();
+
+  DoneAddToReferenceList(store_contract, request->chunkname());
+}
+
+void VaultService::DoneAddToReferenceList(
+    const maidsafe::StoreContract &store_contract,
+    const std::string &chunk_name) {
+  int chunk_size(store_contract.inner_contract().signed_size().data_size());
+  std::string client_pmid(store_contract.inner_contract().signed_size().pmid());
+
+  kad::SignedValue signed_value;
+  signed_value.set_value(store_contract.pmid());
+  signed_value.set_value_signature(store_contract.public_key_signature());
+  if (!knode_->StoreValueLocal(chunk_name, signed_value.SerializeAsString(),
+                               86400)) {
+#ifdef DEBUG
+    printf("In VS::DoneAddToReferenceList (%i), ", knode_->host_port());
+    printf("failed to store pmid to local ref packet.\n");
+#endif
+    return;
+  }
+
+  // amend account for chunk holder (= sender)
+  AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceGivenInc,
+                     chunk_size, store_contract.pmid(), chunk_name);
+
+  cih_.SetStoringDone(chunk_name, client_pmid);
+  std::string creditor;
+  int refunds;
+  if (cih_.TryCommitToWatchList(chunk_name, client_pmid, &creditor, &refunds)) {
+    if (refunds > 0) {
+      // amend account for watcher, in case he wasn't first after all
+      AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
+                         refunds * chunk_size, client_pmid, chunk_name);
+    }
+    if (!creditor.empty()) {
+      // amend account for replaced entry
+      AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenDec,
+                         chunk_size, creditor, chunk_name);
+    }
+  } else {
+#ifdef DEBUG
+    printf("In VS::DoneAddToReferenceList (%i), ", knode_->host_port());
+    printf("couldn't commit to watch list yet.\n");
+#endif
+  }
+}
+
+void VaultService::RemoveFromReferenceList(
+    google::protobuf::RpcController*,
+    const maidsafe::RemoveFromReferenceListRequest *request,
+    maidsafe::RemoveFromReferenceListResponse *response,
+    google::protobuf::Closure *done) {
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
+  // Check request is initialised
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::RemoveFromReferenceList (%i), "
+           "request isn't initialized.\n", knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  // TODO(Team#) implement remove from reference list
   done->Run();
 }
 
-void VaultService::Get(google::protobuf::RpcController*,
-                       const maidsafe::GetRequest* request,
-                       maidsafe::GetResponse* response,
-                       google::protobuf::Closure* done) {
+void VaultService::AmendAccount(google::protobuf::RpcController*,
+                                const maidsafe::AmendAccountRequest *request,
+                                maidsafe::AmendAccountResponse *response,
+                                google::protobuf::Closure *done) {
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
+  // Validate request and extract data
+  boost::uint64_t account_delta;
+  std::string pmid;
+  if (!ValidateAmendRequest(request, &account_delta, &pmid)) {
 #ifdef DEBUG
-//  printf("In VaultService::Get (%i)\n", knode_->host_port());
+    printf("In VaultService::AmendAccount (%i), problem with request.\n",
+           knode_->host_port());
 #endif
-  response->set_pmid_id(non_hex_pmid_);
+    done->Run();
+    return;
+  }
+
+  if (ah_.HaveAccount(pmid) == kAccountNotFound) {
+    if (request->amendment_type() ==
+        maidsafe::AmendAccountRequest::kSpaceOffered) {
+      if (ah_.AddAccount(pmid, account_delta) == 0) {
+        response->set_result(kAck);
+      } else {
+#ifdef DEBUG
+        printf("In VaultService::AmendAccount (%i), failed adding %s's account."
+               "\n", knode_->host_port(), HexSubstr(pmid).c_str());
+#endif
+      }
+    }
+    done->Run();
+    return;
+  } else {
+    if (request->amendment_type() ==
+        maidsafe::AmendAccountRequest::kSpaceOffered) {
+      if (ah_.AmendAccount(pmid, 1, account_delta, false) == 0) {
+        response->set_result(kAck);
+      } else {
+#ifdef DEBUG
+        printf("In VaultService::AmendAccount (%i), failed amending space"
+               " offered by %s.\n", knode_->host_port(),
+               HexSubstr(pmid).c_str());
+#endif
+      }
+      done->Run();
+      return;
+    } else {
+      // aah_->ProcessRequest() calls done->Run();
+      int result = aah_.ProcessRequest(request, response, done);
+      if (result != 0) {
+#ifdef DEBUG
+        printf("In VaultService::AmendAccount (%i), failed amending account"
+               " of %s - error %i\n", knode_->host_port(),
+               HexSubstr(pmid).c_str(), result);
+#endif
+      }
+      return;
+    }
+  }
+}
+
+void VaultService::AccountStatus(google::protobuf::RpcController*,
+                                 const maidsafe::AccountStatusRequest *request,
+                                 maidsafe::AccountStatusResponse *response,
+                                 google::protobuf::Closure *done) {
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::AccountStatus (%i), request is not initialized.\n",
+           knode_->host_port());
+#endif
+    done->Run();
+    return;
+  }
+
+  boost::uint64_t space_offered(0), space_given(0), space_taken(0);
+  int n = ah_.GetAccountInfo(request->account_pmid(), &space_offered,
+                             &space_given, &space_taken);
+  if (n != 0) {
+#ifdef DEBUG
+    printf("In VaultService::AccountStatus (%i), ", knode_->host_port());
+    printf("don't have the account for %s.\n",
+           HexSubstr(request->account_pmid()).c_str());
+#endif
+    done->Run();
+    return;
+  }
+
+  if (request->has_space_requested()) {
+    if (space_taken + request->space_requested() <= space_offered)
+      response->set_result(kAck);
+    done->Run();
+  } else {
+    response->set_result(kAck);
+    if (!ValidateSignedRequest(request->public_key(),
+        request->public_key_signature(), request->request_signature(),
+        request->account_pmid() + kAccount, request->account_pmid())) {
+  #ifdef DEBUG
+      printf("In VaultService::AccountStatus (%i), ", knode_->host_port());
+      printf("failed to validate signed request.\n");
+  #endif
+      // TODO(Team#5#): return info that we consider "public" from the account
+      done->Run();
+      return;
+    }
+
+    response->set_space_offered(space_offered);
+    response->set_space_given(space_given);
+    response->set_space_taken(space_taken);
+    done->Run();
+  }
+}
+
+void VaultService::CheckChunk(google::protobuf::RpcController*,
+                              const maidsafe::CheckChunkRequest *request,
+                              maidsafe::CheckChunkResponse *response,
+                              google::protobuf::Closure *done) {
+#ifdef DEBUG
+//  printf("In VaultService::CheckChunk (%i)\n", knode_->host_port());
+#endif
+  response->set_pmid(non_hex_pmid_);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+    return;
+  }
+  if (HasChunkLocal(request->chunkname()))
+    response->set_result(kAck);
+  else
+    response->set_result(kNack);
+  done->Run();
+}
+
+void VaultService::GetChunk(google::protobuf::RpcController*,
+                            const maidsafe::GetChunkRequest *request,
+                            maidsafe::GetChunkResponse *response,
+                            google::protobuf::Closure *done) {
+#ifdef DEBUG
+//  printf("In VaultService::GetChunk (%i)\n", knode_->host_port());
+#endif
+  response->set_pmid(non_hex_pmid_);
   if (!request->IsInitialized()) {
 #ifdef DEBUG
     printf("In VaultService::Get (%i), request isn't initialised.\n",
@@ -605,15 +880,15 @@ void VaultService::Get(google::protobuf::RpcController*,
 }
 
 void VaultService::GetPacket(google::protobuf::RpcController*,
-                             const maidsafe::GetPacketRequest* request,
-                             maidsafe::GetPacketResponse* response,
-                             google::protobuf::Closure* done) {
+                             const maidsafe::GetPacketRequest *request,
+                             maidsafe::GetPacketResponse *response,
+                             google::protobuf::Closure *done) {
   response->Clear();
 #ifdef DEBUG
 //  if (knode_ != NULL)
 //    printf("In VaultService::GetPacket (%i)\n", knode_->host_port());
 #endif
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid(non_hex_pmid_);
   if (!request->IsInitialized()) {
 #ifdef DEBUG
     if (knode_ != NULL)
@@ -653,44 +928,24 @@ void VaultService::GetPacket(google::protobuf::RpcController*,
   done->Run();
 }
 
-void VaultService::CheckChunk(google::protobuf::RpcController*,
-                              const maidsafe::CheckChunkRequest* request,
-                              maidsafe::CheckChunkResponse* response,
-                              google::protobuf::Closure* done) {
-#ifdef DEBUG
-//  printf("In VaultService::CheckChunk (%i)\n", knode_->host_port());
-#endif
-  response->set_pmid_id(non_hex_pmid_);
-  if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-  if (HasChunkLocal(request->chunkname()))
-    response->set_result(kAck);
-  else
-    response->set_result(kNack);
-  done->Run();
-}
-
-void VaultService::Update(google::protobuf::RpcController*,
-                          const maidsafe::UpdateRequest* request,
-                          maidsafe::UpdateResponse* response,
-                          google::protobuf::Closure* done) {
+void VaultService::UpdateChunk(google::protobuf::RpcController*,
+                               const maidsafe::UpdateChunkRequest *request,
+                               maidsafe::UpdateChunkResponse *response,
+                               google::protobuf::Closure *done) {
 #ifdef DEBUG
 //    printf("Pub key: %s.\n", request->public_key().c_str());
-//  printf("In VaultService::Update (%i), Data Type: %i\n",
+//  printf("In VaultService::UpdateChunk (%i), Data Type: %i\n",
 //         knode_->host_port(), request->data_type());
 #endif
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid(non_hex_pmid_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
     done->Run();
     return;
   }
   if (!ValidateSignedRequest(request->public_key(),
-       request->signed_public_key(), request->signed_request(),
-       request->chunkname(), request->pmid_id())) {
+       request->public_key_signature(), request->request_signature(),
+       request->chunkname(), request->pmid())) {
 #ifdef DEBUG
     printf("In VaultService::Update (%i), request didn't validate.\n",
            knode_->host_port());
@@ -766,115 +1021,95 @@ void VaultService::Update(google::protobuf::RpcController*,
   return;
 }
 
-//  void VaultService::GetMessages(google::protobuf::RpcController*,
-//                                const maidsafe::GetBPMessagesRequest* request,
-//                                 maidsafe::GetBPMessagesResponse* response,
-//                                 google::protobuf::Closure* done) {
-//    response->set_pmid_id(non_hex_pmid_);
-//    if (!request->IsInitialized()) {
-//      response->set_result(kNack);
-//      done->Run();
-//      return;
-//    }
-//    crypto::Crypto co;
-//    co.set_symm_algorithm(crypto::AES_256);
-//    co.set_hash_algorithm(crypto::SHA_512);
-//    if (!co.AsymCheckSig(request->public_key(), request->signed_public_key(),
-//        request->public_key(), crypto::STRING_STRING)) {
-//      response->set_result(kNack);
-//      done->Run();
-//      return;
-//    }
-//    std::string content;
-//    if (LoadChunkLocal(request->buffer_packet_name(), &content)) {
-//      maidsafe::VaultBufferPacketHandler vbph;
-//      if (!vbph.ValidateOwnerSignature(request->public_key(), content)) {
-//        response->set_result(kNack);
-//        done->Run();
-//        return;
-//      }
-//      std::vector<std::string> msgs;
-//      if (!vbph.GetMessages(content, &msgs)) {
-//        response->set_result(kNack);
-//      } else {
-//        for (int i = 0; i < static_cast<int>(msgs.size()); i++)
-//          response->add_messages(msgs[i]);
-//        response->set_result(kAck);
-//      }
-//    } else {
-//      response->set_result(kNack);
-//    }
-//    done->Run();
-//  }
-
-void VaultService::Delete(google::protobuf::RpcController*,
-                          const maidsafe::DeleteRequest* request,
-                          maidsafe::DeleteResponse* response,
-                          google::protobuf::Closure* done) {
+void VaultService::DeleteChunk(google::protobuf::RpcController*,
+                               const maidsafe::DeleteChunkRequest *request,
+                               maidsafe::DeleteChunkResponse *response,
+                               google::protobuf::Closure *done) {
 #ifdef DEBUG
-//  printf("In VaultService::Delete (%i)\n", knode_->host_port());
+//  printf("In VaultService::DeleteChunk (%i)\n", knode_->host_port());
 #endif
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid(non_hex_pmid_);
+  response->set_result(kNack);
   if (!request->IsInitialized()) {
-    response->set_result(kNack);
+#ifdef DEBUG
+    printf("In VaultService::DeleteChunk (%i), ", knode_->host_port());
+    printf("request not initialised.\n");
+#endif
     done->Run();
     return;
   }
-  if (!ValidateSignedRequest(request->public_key(),
-      request->signed_public_key(), request->signed_request(),
-      request->chunkname(), request->pmid_id())) {
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-  std::string content;
-  if (!LoadChunkLocal(request->chunkname(), &content)) {
-    response->set_result(kNack);
-    done->Run();
-    return;
-  }
-  bool can_delete = false;
 
-  // TODO(david/jose): define how to delete chunk references of signed
-  // chunks and then just check the signature and delete it
-  maidsafe::VaultBufferPacketHandler vbph;
-  switch (request->data_type()) {
-    case maidsafe::SYSTEM_PACKET: if (ValidateSystemPacket(content,
-                                         request->public_key()))
-                                    can_delete = true;
-                                  break;
-    case maidsafe::PDDIR_SIGNED: if (ValidateSystemPacket(content,
-                                         request->public_key()))
-                                   can_delete = true;
-                                 break;
-    default: break;
+  const maidsafe::SignedSize &sz = request->signed_size();
+
+  if (!ValidateSignedSize(sz)) {
+#ifdef DEBUG
+    printf("In VaultService::DeleteChunk (%i), ", knode_->host_port());
+    printf("failed to validate signed size.\n");
+#endif
+    done->Run();
+    return;
   }
-  if (can_delete) {
-    if (request->data_type() != maidsafe::BUFFER_PACKET_MESSAGE) {
-      if (DeleteChunkLocal(request->chunkname()))
-        response->set_result(kAck);
-      else
-        response->set_result(kNack);
-    } else {
-      if (UpdateChunkLocal(request->chunkname(), content))
-        response->set_result(kAck);
-      else
-        response->set_result(kNack);
-    }
-  } else {
-    response->set_result(kNack);
+
+  if (request->chunkname().length() != kKeySize) {
+#ifdef DEBUG
+    printf("In VaultService::DeleteChunk (%i), ", knode_->host_port());
+    printf("failed to validate chunk name.\n");
+#endif
+    done->Run();
+    return;
   }
+
+  if (!ValidateSignedRequest(sz.public_key(),
+                             sz.public_key_signature(),
+                             request->request_signature(),
+                             request->chunkname(),
+                             sz.pmid())) {
+#ifdef DEBUG
+    printf("In VaultService::DeleteChunk (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  if (!HasChunkLocal(request->chunkname())) {
+    response->set_result(kAck);
+    done->Run();
+    return;
+  }
+
+  if (sz.data_size() != GetChunkSizeLocal(request->chunkname())) {
+#ifdef DEBUG
+    printf("In VaultService::DeleteChunk (%i), ", knode_->host_port());
+    printf("invalid chunk size.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  // TODO(Steve#) check request comes from ChunkInfo holder
+
+  if (!DeleteChunkLocal(request->chunkname())) {
+#ifdef DEBUG
+    printf("In VaultService::DeleteChunk (%i), ", knode_->host_port());
+    printf("failed to delete chunk.\n");
+#endif
+    done->Run();
+    return;
+  }
+
+  response->set_result(kAck);
   done->Run();
 }
 
 void VaultService::ValidityCheck(google::protobuf::RpcController*,
-                                 const maidsafe::ValidityCheckRequest* request,
-                                 maidsafe::ValidityCheckResponse* response,
-                                 google::protobuf::Closure* done) {
+                                 const maidsafe::ValidityCheckRequest *request,
+                                 maidsafe::ValidityCheckResponse *response,
+                                 google::protobuf::Closure *done) {
 #ifdef DEBUG
 //  printf("In VaultService::ValidityCheck (%i)\n", knode_->host_port());
 #endif
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid(non_hex_pmid_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
     done->Run();
@@ -900,13 +1135,13 @@ void VaultService::ValidityCheck(google::protobuf::RpcController*,
 }
 
 void VaultService::SwapChunk(google::protobuf::RpcController*,
-                             const maidsafe::SwapChunkRequest* request,
-                             maidsafe::SwapChunkResponse* response,
-                             google::protobuf::Closure* done) {
+                             const maidsafe::SwapChunkRequest *request,
+                             maidsafe::SwapChunkResponse *response,
+                             google::protobuf::Closure *done) {
 #ifdef DEBUG
 //  printf("In VaultService::SwapChunk (%i)\n", knode_->host_port());
 #endif
-  response->set_pmid_id(non_hex_pmid_);
+  response->set_pmid(non_hex_pmid_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
     response->set_request_type(0);
@@ -943,7 +1178,7 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
         done->Run();
         return;
       }
-      StoreChunkReference(key);
+//      StoreChunkReference(key);
       std::string chunkcontent2;
       if (!LoadChunkLocal(request->chunkname2(), &chunkcontent2)) {
         response->set_result(kNack);
@@ -963,9 +1198,9 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
 }
 
 void VaultService::VaultStatus(google::protobuf::RpcController*,
-                               const maidsafe::VaultStatusRequest* request,
-                               maidsafe::VaultStatusResponse* response,
-                               google::protobuf::Closure* done) {
+                               const maidsafe::VaultStatusRequest *request,
+                               maidsafe::VaultStatusResponse *response,
+                               google::protobuf::Closure *done) {
 #ifdef DEBUG
 //  printf("In VaultService::VaultStatus (%i)\n", knode_->host_port());
 #endif
@@ -1016,12 +1251,12 @@ void VaultService::VaultStatus(google::protobuf::RpcController*,
 
 // BP Services
 void VaultService::CreateBP(google::protobuf::RpcController*,
-                            const maidsafe::CreateBPRequest* request,
-                            maidsafe::CreateBPResponse* response,
-                            google::protobuf::Closure* done) {
+                            const maidsafe::CreateBPRequest *request,
+                            maidsafe::CreateBPResponse *response,
+                            google::protobuf::Closure *done) {
   response->set_pmid_id(non_hex_pmid_);
   response->set_public_key(pmid_public_);
-  response->set_signed_public_key(signed_pmid_public_);
+  response->set_signed_public_key(pmid_public_signature_);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
     done->Run();
@@ -1082,14 +1317,14 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     sig_value.set_value_signature(co.AsymSign(non_hex_pmid_, "", pmid_private_,
       crypto::STRING_STRING));
     // TTL set to 24 hrs
-    std::string signed_request = co.AsymSign(co.Hash(pmid_public_ +
-      signed_pmid_public_ + request->bufferpacket_name(), "",
-      crypto::STRING_STRING, true), "", pmid_private_, crypto::STRING_STRING);
+    std::string request_signature = co.AsymSign(co.Hash(pmid_public_ +
+      pmid_public_signature_ + request->bufferpacket_name(), "",
+      crypto::STRING_STRING, false), "", pmid_private_, crypto::STRING_STRING);
     kad::SignedRequest sr;
     sr.set_signer_id(non_hex_pmid_);
     sr.set_public_key(pmid_public_);
-    sr.set_signed_public_key(signed_pmid_public_);
-    sr.set_signed_request(signed_request);
+    sr.set_signed_public_key(pmid_public_signature_);
+    sr.set_signed_request(request_signature);
     knode_->StoreValue(request->bufferpacket_name(), sig_value, sr, 86400,
                        &vsvc_dummy_callback);
   }
@@ -1098,12 +1333,12 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
 }
 
 void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
-                                const maidsafe::ModifyBPInfoRequest* request,
-                                maidsafe::ModifyBPInfoResponse* response,
-                                google::protobuf::Closure* done) {
+                                const maidsafe::ModifyBPInfoRequest *request,
+                                maidsafe::ModifyBPInfoResponse *response,
+                                google::protobuf::Closure *done) {
   response->set_pmid_id(non_hex_pmid_);
   response->set_public_key(pmid_public_);
-  response->set_signed_public_key(signed_pmid_public_);
+  response->set_signed_public_key(pmid_public_signature_);
   response->set_result(kAck);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
@@ -1227,20 +1462,19 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
 }
 
 void VaultService::GetBPMessages(google::protobuf::RpcController*,
-                                 const maidsafe::GetBPMessagesRequest* request,
-                                 maidsafe::GetBPMessagesResponse* response,
-                                 google::protobuf::Closure* done) {
+                                 const maidsafe::GetBPMessagesRequest *request,
+                                 maidsafe::GetBPMessagesResponse *response,
+                                 google::protobuf::Closure *done) {
   response->set_pmid_id(non_hex_pmid_);
   response->set_public_key(pmid_public_);
-  response->set_signed_public_key(signed_pmid_public_);
+  response->set_signed_public_key(pmid_public_signature_);
   response->set_result(kAck);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL)
-      printf("In VaultService::GetBPMessages(%i),request is not initialized.\n",
-           knode_->host_port());
+    printf("In VaultService::GetBPMessages(%i),request is not initialized.\n",
+         knode_->host_port());
 #endif
     return;
   }
@@ -1252,10 +1486,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to validate signed public key.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to validate signed public key.\n");
 #endif
     return;
   }
@@ -1267,10 +1499,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to validate signed request.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to validate signed request.\n");
 #endif
     return;
   }
@@ -1280,10 +1510,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to load the local chunk where the BP is held.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to load the local chunk where the BP is held.\n");
 #endif
     return;
   }
@@ -1294,14 +1522,12 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to extract the messages.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to extract the messages.\n");
 #endif
     return;
   }
-  for (int i = 0; i < static_cast<int>(msgs.size()); i++)
+  for (int i = 0; i < static_cast<int>(msgs.size()); ++i)
     response->add_messages(msgs[i]);
 
   if (!UpdateChunkLocal(request->bufferpacket_name(), ser_bp)) {
@@ -1309,10 +1535,8 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
-      printf("failed to update the local chunk store.\n");
-    }
+    printf("In VaultService::GetBPMessages (%i), ", knode_->host_port());
+    printf("failed to update the local chunk store.\n");
 #endif
     return;
   }
@@ -1322,12 +1546,12 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
 }
 
 void VaultService::AddBPMessage(google::protobuf::RpcController*,
-                                const maidsafe::AddBPMessageRequest* request,
-                                maidsafe::AddBPMessageResponse* response,
-                                google::protobuf::Closure* done) {
+                                const maidsafe::AddBPMessageRequest *request,
+                                maidsafe::AddBPMessageResponse *response,
+                                google::protobuf::Closure *done) {
   response->set_pmid_id(non_hex_pmid_);
   response->set_public_key(pmid_public_);
-  response->set_signed_public_key(signed_pmid_public_);
+  response->set_signed_public_key(pmid_public_signature_);
   response->set_result(kAck);
   if (!request->IsInitialized()) {
     response->set_result(kNack);
@@ -1335,37 +1559,19 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
 #ifdef DEBUG
     if (knode_ != NULL)
       printf("In VaultService::AddBPMessage(%i), request is not initialized.\n",
+             knode_->host_port());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->signed_public_key(), request->signed_request(),
+      request->bufferpacket_name(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::AddBPMessage(%i), request/id doesn't validate.\n",
            knode_->host_port());
-#endif
-    return;
-  }
-
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  if (!co.AsymCheckSig(request->public_key(), request->signed_public_key(),
-      request->public_key(), crypto::STRING_STRING)) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
-      printf("failed to validate signed public key.\n");
-    }
-#endif
-    return;
-  }
-
-  if (!co.AsymCheckSig(co.Hash(request->public_key() +
-      request->signed_public_key() + request->bufferpacket_name(), "",
-      crypto::STRING_STRING, false), request->signed_request(),
-      request->public_key(), crypto::STRING_STRING)) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::AddBPMessage (%i), ", knode_->host_port());
-      printf("failed to validate signed request.\n");
-    }
 #endif
     return;
   }
@@ -1410,43 +1616,156 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     return;
   }
 
+  done->Run();
+}
+
+void VaultService::ContactInfo(google::protobuf::RpcController*,
+                               const maidsafe::ContactInfoRequest* request,
+                               maidsafe::ContactInfoResponse* response,
+                               google::protobuf::Closure* done) {
+  response->set_pmid_id(non_hex_pmid_);
+  response->set_public_key(pmid_public_);
+  response->set_public_key_signature(pmid_public_signature_);
   response->set_result(kAck);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo(%i), request is not initialized.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->bufferpacket_name(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo(%i), request/id does not validate.\n",
+           knode_->host_port());
+#endif
+    return;
+  }
+
+  std::string ser_bp;
+  if (!LoadChunkLocal(request->bufferpacket_name(), &ser_bp)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo (%i), ", knode_->host_port());
+    printf("failed to load the local chunk where the BP is held.\n");
+#endif
+    return;
+  }
+
+  maidsafe::EndPoint *ep = response->mutable_ep();
+  boost::uint16_t status;
+  maidsafe::VaultBufferPacketHandler vbph;
+  if (!vbph.ContactInfo(ser_bp, request->id(), ep, &status)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::ContactInfo (%i), ", knode_->host_port());
+    printf("failed in the VBPH.\n");
+#endif
+    return;
+  }
+
+  response->set_status(status);
   done->Run();
 }
 
 //////// END OF SERVICES ////////
 
-bool VaultService::ValidateSignedRequest(const std::string &public_key,
-                                         const std::string &signed_public_key,
-                                         const std::string &signed_request,
-                                         const std::string &key,
-                                         const std::string &signing_id) {
-  if (signed_request == kAnonymousSignedRequest)
-    return true;
+bool VaultService::ValidateSignedSize(const maidsafe::SignedSize &sz) {
+  if (!sz.IsInitialized())
+    return false;
+  if (!ValidateIdentity(sz.pmid(), sz.public_key(), sz.public_key_signature()))
+    return false;
   crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  if (signing_id == "" || signing_id != co.Hash(public_key + signed_public_key,
-      "", crypto::STRING_STRING, false)) {
-#ifdef DEBUG
-    if (signing_id == "")
-      printf("VaultService::ValidateSignedRequest - Empty id\n");
-    else
-      printf("VaultService::ValidateSignedRequest - Wrong id\n");
-    printf("VaultService::ValidateSignedRequest: Didn't validate signing_id %s"
-           "\n", HexSubstr(signing_id).c_str());
-#endif
+  std::string str_size = base::itos_ull(sz.data_size());
+  if (!co.AsymCheckSig(str_size, sz.signature(), sz.public_key(),
+      crypto::STRING_STRING))
+    return false;
+  return true;
+}
+
+bool VaultService::ValidateStoreContract(const maidsafe::StoreContract &sc) {
+  if (!sc.IsInitialized())
+    return false;
+  if (!ValidateIdentity(sc.pmid(), sc.public_key(), sc.public_key_signature()))
+    return false;
+  if (!sc.inner_contract().IsInitialized())
+    return false;
+  crypto::Crypto co;
+  std::string ser_ic = sc.inner_contract().SerializeAsString();
+  if (!co.AsymCheckSig(ser_ic, sc.signature(), sc.public_key(),
+      crypto::STRING_STRING))
+    return false;
+  if (sc.inner_contract().result() != kAck)
+    return false;
+  if (!ValidateSignedSize(sc.inner_contract().signed_size()))
+    return false;
+  if (sc.pmid() == sc.inner_contract().signed_size().pmid())
+    return false;
+  return true;
+}
+
+bool VaultService::ValidateAmendRequest(
+    const maidsafe::AmendAccountRequest *request,
+    boost::uint64_t *account_delta,
+    std::string *pmid) {
+  *account_delta = 0;
+  pmid->clear();
+  if (!request->IsInitialized())
+    return false;
+
+  const maidsafe::SignedSize &sz = request->signed_size();
+  if (request->amendment_type() ==
+      maidsafe::AmendAccountRequest::kSpaceOffered) {
+    if (request->account_pmid() != sz.pmid())
+      return false;
+  } else {
+    if (!request->has_chunkname())
+      return false;
+  }
+
+  if (!ValidateSignedSize(sz)) {
     return false;
   }
-  if (co.AsymCheckSig(co.Hash(signed_public_key + key +
-      non_hex_pmid_, "", crypto::STRING_STRING, false), signed_request,
-      public_key, crypto::STRING_STRING))
+
+  *pmid = request->account_pmid();
+  *account_delta = sz.data_size();
+  return true;
+}
+
+bool VaultService::ValidateSignedRequest(
+    const std::string &public_key,
+    const std::string &public_key_signature,
+    const std::string &request_signature,
+    const std::string &key,
+    const std::string &signing_id) {
+  if (request_signature == kAnonymousRequestSignature)
     return true;
-// TODO(Fraser#5#): 2009-08-25 - Remove this second check once all requests are
-//                               signed the first way (above).
-  return co.AsymCheckSig(co.Hash(public_key + signed_public_key +
-    key, "", crypto::STRING_STRING, false), signed_request, public_key,
-    crypto::STRING_STRING);
+
+  maidsafe::MaidsafeValidator msv(non_hex_pmid_);
+  if (!msv.ValidateSignerId(signing_id, public_key, public_key_signature))
+    return false;
+  if (!msv.ValidateRequest(request_signature, public_key, public_key_signature,
+      key))
+    return false;
+  return true;
+}
+
+bool VaultService::ValidateIdentity(const std::string &id,
+                                    const std::string &public_key,
+                                    const std::string &public_key_signature) {
+  maidsafe::MaidsafeValidator msv;
+  if (!msv.ValidateSignerId(id, public_key, public_key_signature))
+    return false;
+  return true;
 }
 
 bool VaultService::ValidateSystemPacket(const std::string &ser_content,
@@ -1476,15 +1795,14 @@ bool VaultService::ValidateDataChunk(const std::string &chunkname,
 
 int VaultService::Storable(const boost::uint64_t &data_size) {
 // TODO(Fraser#5#): 2009-08-04 - Deduct pending store space
-  return data_size <= vault_chunkstore_->FreeSpace() ? 0 : -1;
+  return data_size <= vault_chunkstore_->FreeSpace() && data_size != 0 ? 0 : -1;
 }
 
 bool VaultService::ModifyBufferPacketInfo(const std::string &new_info,
                                           const std::string &pub_key,
                                           std::string *updated_bp) {
-  if (!ValidateSystemPacket(new_info, pub_key)) {
+  if (!ValidateSystemPacket(new_info, pub_key))
     return false;
-  }
   maidsafe::VaultBufferPacketHandler vbph;
   return vbph.ChangeOwnerInfo(new_info, updated_bp, pub_key);
 }
@@ -1512,7 +1830,7 @@ bool VaultService::LoadChunkLocal(const std::string &chunkname,
 }
 
 bool VaultService::LoadPacketLocal(const std::string &packetname,
-                                   maidsafe::GetPacketResponse* response) {
+                                   maidsafe::GetPacketResponse *response) {
   response->set_result(kNack);
   std::vector<maidsafe::GenericPacket> gps;
   if (vault_chunkstore_->LoadPacket(packetname, &gps) != kSuccess) {
@@ -1531,36 +1849,8 @@ bool VaultService::DeleteChunkLocal(const std::string &chunkname) {
   return (vault_chunkstore_->DeleteChunk(chunkname) == kSuccess);
 }
 
-void VaultService::StoreChunkReference(const std::string &non_hex_chunkname) {
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string signed_request = co.AsymSign(co.Hash(pmid_public_ +
-      signed_pmid_public_ + non_hex_chunkname, "", crypto::STRING_STRING,
-      false), "", pmid_private_, crypto::STRING_STRING);
-  kad::ContactInfo ci = knode_->contact_info();
-  std::string contact_info;
-  ci.SerializeToString(&contact_info);
-//  #ifdef DEBUG
-//    if (!crypto_.AsymCheckSig(pmid_public_, signed_pmid_public_, pmid_public_,
-//        crypto::STRING_STRING))
-//      printf("Pa variar, la firma valio vergaaaaaaaa!");
-//  #endif
-  kad::SignedValue signed_value;
-  signed_value.set_value(contact_info);
-  signed_value.set_value_signature(co.AsymSign(contact_info, "", pmid_private_,
-                                               crypto::STRING_STRING));
-  kad::SignedRequest sr;
-  sr.set_signer_id(non_hex_pmid_);
-  sr.set_public_key(pmid_public_);
-  sr.set_signed_public_key(signed_pmid_public_);
-  sr.set_signed_request(signed_request);
-  knode_->StoreValue(non_hex_chunkname,
-                     signed_value,
-                     sr,
-                     86400,
-                     &vsvc_dummy_callback);
-  return;
+boost::uint64_t VaultService::GetChunkSizeLocal(const std::string &chunkname) {
+  return vault_chunkstore_->GetChunkSize(chunkname);
 }
 
 void VaultService::FindCloseNodesCallback(const std::string &result,
@@ -1574,32 +1864,93 @@ void VaultService::FindCloseNodesCallback(const std::string &result,
   }
 }
 
-void VaultService::RankAuthorityGenerator(const std::string &chunkname,
-                                          const boost::uint64_t &data_size,
-                                          const std::string &pmid,
-                                          std::string *rank_authority,
-                                          std::string *signed_rank_authority) {
-  *rank_authority = "";
-  *signed_rank_authority = "";
-  maidsafe::RankAuthority ra;
-  ra.set_chunkname(chunkname);
-  ra.set_data_size(data_size);
-  ra.set_pmid(pmid);
-  ra.SerializeToString(rank_authority);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  *signed_rank_authority = co.AsymSign(*rank_authority, "", pmid_private_,
-                           crypto::STRING_STRING);
+void VaultService::AmendRemoteAccount(
+    const maidsafe::AmendAccountRequest::Amendment &amendment_type,
+    const boost::uint64_t &size,
+    const std::string &account_pmid,
+    const std::string &chunkname) {
+  AmendRemoteAccount(amendment_type, size, account_pmid, chunkname,
+      boost::bind(&VaultService::DiscardResult, this, _1));
 }
 
-RegistrationService::RegistrationService(boost::function< void(
-      const maidsafe::VaultConfig&) > notifier) : notifier_(notifier),
-        status_(maidsafe::NOT_OWNED), pending_response_() {}
+void VaultService::AmendRemoteAccount(
+    const maidsafe::AmendAccountRequest::Amendment &amendment_type,
+    const boost::uint64_t &size,
+    const std::string &account_pmid,
+    const std::string &chunkname,
+    const Callback &callback) {
+  // Check if we happen to hold the account - if so, modify as required
+  int found_local_result = ah_.HaveAccount(account_pmid);
+  if (found_local_result != kAccountNotFound) {
+    bool increase(false);
+    int field(2);
+    if (amendment_type == maidsafe::AmendAccountRequest::kSpaceGivenInc ||
+        amendment_type == maidsafe::AmendAccountRequest::kSpaceTakenInc)
+      increase = true;
+    if (amendment_type == maidsafe::AmendAccountRequest::kSpaceTakenDec ||
+        amendment_type == maidsafe::AmendAccountRequest::kSpaceTakenInc)
+      field = 3;
+    // Check that we've got valid amendment type
+    if (increase || field != 2 || amendment_type ==
+        maidsafe::AmendAccountRequest::kSpaceGivenDec) {
+      found_local_result =
+          ah_.AmendAccount(account_pmid, field, size, increase);
+    }
+  }
+  crypto::Crypto co;
+  maidsafe::AmendAccountRequest amend_account_request;
+  amend_account_request.set_amendment_type(amendment_type);
+  amend_account_request.set_account_pmid(account_pmid);
+  maidsafe::SignedSize *mutable_signed_size =
+      amend_account_request.mutable_signed_size();
+  mutable_signed_size->set_data_size(size);
+  mutable_signed_size->set_pmid(non_hex_pmid_);
+  mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(size), "",
+                                     pmid_private_, crypto::STRING_STRING));
+  mutable_signed_size->set_public_key(pmid_public_);
+  mutable_signed_size->set_public_key_signature(pmid_public_signature_);
+  amend_account_request.set_chunkname(chunkname);
+  // thread_pool_ handles destruction of task.
+  AmendRemoteAccountTask *task =
+      new AmendRemoteAccountTask(amend_account_request, found_local_result,
+                                 callback, vault_service_logic_, transport_id_);
+  thread_pool_.start(task);
+}
 
-void RegistrationService::OwnVault(google::protobuf::RpcController* ,
-      const maidsafe::OwnVaultRequest* request,
-      maidsafe::OwnVaultResponse* response, google::protobuf::Closure* done) {
+void VaultService::AddToRemoteRefList(const std::string &chunkname,
+                                      const maidsafe::StoreContract &contract) {
+  // try adding to local ref list (fails if no chunk info or watchers)
+  if (0 == cih_.AddToReferenceList(chunkname, contract.pmid(),
+                         contract.inner_contract().signed_size().data_size())) {
+    DoneAddToReferenceList(contract, chunkname);
+  }
+
+  // thread_pool_ handles destruction of task.
+  AddToRemoteRefListTask *task =
+      new AddToRemoteRefListTask(chunkname, contract, vault_service_logic_,
+                                 transport_id_);
+  thread_pool_.start(task);
+}
+
+int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
+                                         const std::string &account_pmid) {
+  maidsafe::AccountStatusRequest as_req;
+  as_req.set_account_pmid(account_pmid);
+  as_req.set_space_requested(size);
+  return vault_service_logic_->RemoteVaultAbleToStore(as_req, transport_id_);
+}
+
+RegistrationService::RegistrationService(
+    boost::function< void(const maidsafe::VaultConfig&) > notifier)
+        : notifier_(notifier),
+          status_(maidsafe::NOT_OWNED),
+          pending_response_() {}
+
+void RegistrationService::SetLocalVaultOwned(
+    google::protobuf::RpcController*,
+    const maidsafe::SetLocalVaultOwnedRequest *request,
+    maidsafe::SetLocalVaultOwnedResponse *response,
+    google::protobuf::Closure *done) {
   if (!request->IsInitialized()) {
     response->set_result(maidsafe::INVALID_OWNREQUEST);
     done->Run();
@@ -1641,7 +1992,7 @@ void RegistrationService::OwnVault(google::protobuf::RpcController* ,
     if (cobj.AsymCheckSig(request->public_key(), signed_key,
         request->public_key(), crypto::STRING_STRING)) {
       // checking if port is available
-      transport::Transport test_tranport;
+      transport::TransportUDT test_tranport;
       if (request->port() == 0 || test_tranport.IsPortAvailable(
           request->port())) {
         response->set_result(maidsafe::OWNED_SUCCESS);
@@ -1671,14 +2022,17 @@ void RegistrationService::OwnVault(google::protobuf::RpcController* ,
   done->Run();
 }
 
-void RegistrationService::IsVaultOwned(google::protobuf::RpcController*,
-      const maidsafe::IsOwnedRequest*, maidsafe::IsOwnedResponse* response,
-      google::protobuf::Closure* done) {
+void RegistrationService::LocalVaultOwned(
+    google::protobuf::RpcController*,
+    const maidsafe::LocalVaultOwnedRequest*,
+    maidsafe::LocalVaultOwnedResponse *response,
+    google::protobuf::Closure *done) {
   response->set_status(status_);
   done->Run();
 }
 
-void RegistrationService::ReplyOwnVaultRequest(const bool &fail_to_start) {
+void RegistrationService::ReplySetLocalVaultOwnedRequest(
+    const bool &fail_to_start) {
   if (pending_response_.callback == NULL || pending_response_.args == NULL)
     return;
   if (fail_to_start) {
@@ -1689,4 +2043,5 @@ void RegistrationService::ReplyOwnVaultRequest(const bool &fail_to_start) {
   pending_response_.callback = NULL;
   pending_response_.args = NULL;
 }
+
 }  // namespace maidsafe_vault

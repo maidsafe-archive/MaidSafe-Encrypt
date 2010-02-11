@@ -21,6 +21,7 @@
 #include <QDateTime>
 #include <QDir>
 
+#include <list>
 #include <string>
 
 // core

@@ -12,8 +12,8 @@
  *      Author: Stephen Alexander
  */
 
-#ifndef QT_WIDGETS_PERSONAL_MESSAGES_H
-#define QT_WIDGETS_PERSONAL_MESSAGES_H
+#ifndef QT_WIDGETS_PERSONAL_MESSAGES_H_
+#define QT_WIDGETS_PERSONAL_MESSAGES_H_
 
 #include <QWidget>
 #include <QString>
@@ -27,22 +27,22 @@ class UserPanels;
 
 class PersonalMessages : public QMainWindow {
     Q_OBJECT
-  public:
-    explicit PersonalMessages(QWidget* parent = 0);
-    explicit PersonalMessages(QString name = "");
-    virtual ~PersonalMessages();
+ public:
+  explicit PersonalMessages(QWidget* parent = 0);
+  explicit PersonalMessages(QString name = "");
+  virtual ~PersonalMessages();
 
-    void setName(QString name);
-    void setMessage(QString mess);
-    QString getName();
+  void setName(QString name);
+  void setMessage(QString mess);
+  QString getName();
 
   // Panel interface
   virtual void setActive(bool);
   // Closes received messages window
   virtual void reset();
 
-    signals:
-    // Notify when a message(s) is received.
+  signals:
+  // Notify when a message(s) is received.
     void messageReceived();
 
   private slots:
@@ -58,7 +58,7 @@ class PersonalMessages : public QMainWindow {
 
     void onSendFile();
 
-private:
+ private:
   void sendMessage(const QDateTime& time,
                   const QString& sender,
                   const QString& message);
@@ -80,7 +80,6 @@ private:
   typedef QList<Message> MessageList;
   // All received messages
   MessageList messages_;
-
 };
 
-#endif // PERSONAL_MESSAGES_H_INCLUDED
+#endif  // QT_WIDGETS_PERSONAL_MESSAGES_H_

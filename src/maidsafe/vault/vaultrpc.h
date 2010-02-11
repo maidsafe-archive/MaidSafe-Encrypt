@@ -36,92 +36,115 @@ namespace maidsafe_vault {
 
 class VaultRpcs {
  public:
-  VaultRpcs(transport::Transport *transport,
+  VaultRpcs(transport::TransportHandler *transport_handler,
             rpcprotocol::ChannelManager *channel_manager)
-                : transport_(transport),
+                : transport_handler_(transport_handler),
                   channel_manager_(channel_manager),
                   own_non_hex_id_("") {}
-  ~VaultRpcs() {}
-  void StoreChunkReference(const kad::Contact &peer,
-                           bool local,
-                           maidsafe::StoreReferenceRequest *store_ref_request,
-                           maidsafe::StoreReferenceResponse *response,
-                           rpcprotocol::Controller *controller,
-                           google::protobuf::Closure *done);
-
+  virtual ~VaultRpcs() {}
   void StoreChunk(const std::string &chunkname,
-             const std::string &data,
-             const std::string &public_key,
-             const std::string &signed_public_key,
-             const std::string &signed_request,
-             const maidsafe::ValueType &data_type,
-             const std::string &remote_ip,
-             const boost::uint16_t &remote_port,
-             const std::string &rendezvous_ip,
-             const boost::uint16_t &rendezvous_port,
-             maidsafe::StoreResponse *response,
-             rpcprotocol::Controller *controller,
-             google::protobuf::Closure *done);
+                  const std::string &data,
+                  const std::string &public_key,
+                  const std::string &public_key_signature,
+                  const std::string &request_signature,
+                  const maidsafe::ValueType &data_type,
+                  const std::string &remote_ip,
+                  const boost::uint16_t &remote_port,
+                  const std::string &rendezvous_ip,
+                  const boost::uint16_t &rendezvous_port,
+                  const boost::int16_t &transport_id,
+                  maidsafe::StoreChunkResponse *response,
+                  rpcprotocol::Controller *controller,
+                  google::protobuf::Closure *done);
+  virtual void AddToReferenceList(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      maidsafe::AddToReferenceListRequest *add_to_reference_list_request,
+      maidsafe::AddToReferenceListResponse *add_to_reference_list_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done);
+  void RemoveFromReferenceList(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      maidsafe::RemoveFromReferenceListRequest
+          *remove_from_reference_list_request,
+      maidsafe::RemoveFromReferenceListResponse
+          *remove_from_reference_list_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done);
+  virtual void AmendAccount(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      maidsafe::AmendAccountRequest *amend_account_request,
+      maidsafe::AmendAccountResponse *amend_account_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done);
+  virtual void AccountStatus(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      maidsafe::AccountStatusRequest *get_account_status_request,
+      maidsafe::AccountStatusResponse *get_account_status_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done);
   void CheckChunk(const std::string &chunkname,
                   const std::string &remote_ip,
                   const boost::uint16_t &remote_port,
                   const std::string &rendezvous_ip,
                   const boost::uint16_t &rendezvous_port,
+                  const boost::int16_t &transport_id,
                   maidsafe::CheckChunkResponse *response,
                   rpcprotocol::Controller *controller,
                   google::protobuf::Closure *done);
-  void Get(const std::string &chunkname,
-           const std::string &remote_ip,
-           const boost::uint16_t &remote_port,
-           const std::string &rendezvous_ip,
-           const boost::uint16_t &rendezvous_port,
-           maidsafe::GetResponse *response,
-           rpcprotocol::Controller *controller,
-           google::protobuf::Closure *done);
-  void Update(const std::string &chunkname,
-              const std::string &data,
-              const std::string &public_key,
-              const std::string &signed_public_key,
-              const std::string &signed_request,
-              const maidsafe::ValueType &data_type,
-              const std::string &remote_ip,
-              const boost::uint16_t &remote_port,
-              const std::string &rendezvous_ip,
-              const boost::uint16_t &rendezvous_port,
-              maidsafe::UpdateResponse *response,
-              rpcprotocol::Controller *controller,
-              google::protobuf::Closure *done);
-  void Delete(const std::string &chunkname,
-              const std::string &public_key,
-              const std::string &signed_public_key,
-              const std::string &signed_request,
-              const maidsafe::ValueType &data_type,
-              const std::string &remote_ip,
-              const boost::uint16_t &remote_port,
-              const std::string &rendezvous_ip,
-              const boost::uint16_t &rendezvous_port,
-              maidsafe::DeleteResponse *response,
-              rpcprotocol::Controller *controller,
-              google::protobuf::Closure *done);
+  void GetChunk(const std::string &chunkname,
+                const std::string &remote_ip,
+                const boost::uint16_t &remote_port,
+                const std::string &rendezvous_ip,
+                const boost::uint16_t &rendezvous_port,
+                const boost::int16_t &transport_id,
+                maidsafe::GetChunkResponse *response,
+                rpcprotocol::Controller *controller,
+                google::protobuf::Closure *done);
+  void UpdateChunk(const std::string &chunkname,
+               const std::string &data,
+               const std::string &public_key,
+               const std::string &public_key_signature,
+               const std::string &request_signature,
+               const maidsafe::ValueType &data_type,
+               const std::string &remote_ip,
+               const boost::uint16_t &remote_port,
+               const std::string &rendezvous_ip,
+               const boost::uint16_t &rendezvous_port,
+               const boost::int16_t &transport_id,
+               maidsafe::UpdateChunkResponse *response,
+               rpcprotocol::Controller *controller,
+               google::protobuf::Closure *done);
+  void DeleteChunk(const std::string &chunkname,
+               const std::string &public_key,
+               const std::string &public_key_signature,
+               const std::string &request_signature,
+               const maidsafe::ValueType &data_type,
+               const std::string &remote_ip,
+               const boost::uint16_t &remote_port,
+               const std::string &rendezvous_ip,
+               const boost::uint16_t &rendezvous_port,
+               const boost::int16_t &transport_id,
+               maidsafe::DeleteChunkResponse *response,
+               rpcprotocol::Controller *controller,
+               google::protobuf::Closure *done);
   void ValidityCheck(const std::string &chunkname,
                      const std::string &random_data,
                      const std::string &remote_ip,
                      const boost::uint16_t &remote_port,
                      const std::string &rendezvous_ip,
                      const boost::uint16_t &rendezvous_port,
+                     const boost::int16_t &transport_id,
                      maidsafe::ValidityCheckResponse *response,
                      rpcprotocol::Controller *controller,
                      google::protobuf::Closure *done);
-  void GetMessages(const std::string &buffer_packet_name,
-                   const std::string &public_key,
-                   const std::string &signed_public_key,
-                   const std::string &remote_ip,
-                   const boost::uint16_t &remote_port,
-                   const std::string &rendezvous_ip,
-                   const boost::uint16_t &rendezvous_port,
-                   maidsafe::GetBPMessagesResponse *response,
-                   rpcprotocol::Controller *controller,
-                   google::protobuf::Closure *done);
   void SwapChunk(const boost::uint32_t request_type,
                  const std::string &chunkname1,
                  const std::string &chunkcontent1,
@@ -130,17 +153,30 @@ class VaultRpcs {
                  const boost::uint16_t &remote_port,
                  const std::string &rendezvous_ip,
                  const boost::uint16_t &rendezvous_port,
+                 const boost::int16_t &transport_id,
                  maidsafe::SwapChunkResponse *response,
                  rpcprotocol::Controller *controller,
                  google::protobuf::Closure *done);
+  void GetBPMessages(const std::string &buffer_packet_name,
+                     const std::string &public_key,
+                     const std::string &public_key_signature,
+                     const std::string &remote_ip,
+                     const boost::uint16_t &remote_port,
+                     const std::string &rendezvous_ip,
+                     const boost::uint16_t &rendezvous_port,
+                     const boost::int16_t &transport_id,
+                     maidsafe::GetBPMessagesResponse *response,
+                     rpcprotocol::Controller *controller,
+                     google::protobuf::Closure *done);
   void SetOwnId(const std::string &non_hex_id) { own_non_hex_id_ = non_hex_id; }
  private:
   VaultRpcs(const VaultRpcs&);
   VaultRpcs& operator=(const VaultRpcs&);
-  transport::Transport *transport_;
+  transport::TransportHandler *transport_handler_;
   rpcprotocol::ChannelManager *channel_manager_;
   std::string own_non_hex_id_;
 };
+
 }  // namespace maidsafe_vault
 
 #endif  // MAIDSAFE_VAULT_VAULTRPC_H_

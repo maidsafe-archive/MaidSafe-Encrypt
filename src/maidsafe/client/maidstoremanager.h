@@ -28,9 +28,10 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <gtest/gtest.h>
+#include <gtest/gtest_prod.h>
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht_config.h>
+#include <maidsafe/transportudt.h>
 #include <QThreadPool>
 
 #include <list>
@@ -41,9 +42,11 @@
 #include <vector>
 
 #include "maidsafe/bufferpacketrpc.h"
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/clientbufferpackethandler.h"
-#include "maidsafe/client/pdclient.h"
+#include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/storemanager.h"
+#include "maidsafe/client/storetaskshandler.h"
 
 // These forward declarations are to allow PDVaultTest functions to be declared
 // as friends of MaidsafeStoreManager.
@@ -60,6 +63,7 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
 namespace maidsafe {
 
 enum IfExists { kStoreFailure, kStoreSuccess, kOverwrite, kAppend };
+
 enum ChunkHolderStatus {
   kUnknown,
   kContactable,
@@ -70,6 +74,8 @@ enum ChunkHolderStatus {
   kFailedHolder,
   kFailedChecksum
 };
+
+enum TaskStatus { kPending, kStarted, kCancelled, kCompleted };
 
 class CallbackObj {
  public:
@@ -170,34 +176,24 @@ class BPCallbackObj {
   std::list<ValidatedBufferPacketMessage> *messages_;
 };
 
-struct StoreIouResultHolder {
- public:
-  StoreIouResultHolder()
-      : store_iou_response(),
-        store_iou_response_returned(false),
-        controller(new rpcprotocol::Controller) {}
-  StoreIOUResponse store_iou_response;
-  bool store_iou_response_returned;
-  boost::shared_ptr<rpcprotocol::Controller> controller;
- private:
-  StoreIouResultHolder &operator=(const StoreIouResultHolder&);
-  StoreIouResultHolder(const StoreIouResultHolder&);
-};
-
 struct StoreData {
   // Default constructor
   StoreData() : non_hex_key_(""),
                 value_(""),
+                size_(0),
                 msid_(""),
                 key_id_(""),
                 public_key_(""),
                 public_key_signature_(""),
                 private_key_(""),
+                chunk_type_(kHashable | kNormal),
                 system_packet_type_(MID),
                 dir_type_(PRIVATE),
                 append_(false) {}
   // Store chunk constructor
   StoreData(const std::string &non_hex_chunk_name,
+            const boost::uint64_t &size,
+            ChunkType chunk_type,
             DirType dir_type,
             const std::string &msid,
             const std::string &key_id,
@@ -206,11 +202,13 @@ struct StoreData {
             const std::string &private_key)
                 : non_hex_key_(non_hex_chunk_name),
                   value_(""),
+                  size_(size),
                   msid_(msid),
                   key_id_(key_id),
                   public_key_(public_key),
                   public_key_signature_(public_key_signature),
                   private_key_(private_key),
+                  chunk_type_(chunk_type),
                   system_packet_type_(MID),
                   dir_type_(dir_type),
                   append_(false) {}
@@ -227,16 +225,20 @@ struct StoreData {
             bool append)
                 : non_hex_key_(non_hex_packet_name),
                   value_(value),
+                  size_(0),
                   msid_(msid),
                   key_id_(key_id),
                   public_key_(public_key),
                   public_key_signature_(public_key_signature),
                   private_key_(private_key),
+                  chunk_type_(kHashable | kNormal),
                   system_packet_type_(system_packet_type),
                   dir_type_(dir_type),
                   append_(append) {}
-  std::string non_hex_key_, value_, msid_, key_id_, public_key_;
-  std::string public_key_signature_, private_key_;
+  std::string non_hex_key_, value_;
+  boost::uint64_t size_;
+  std::string msid_, key_id_, public_key_, public_key_signature_, private_key_;
+  ChunkType chunk_type_;
   PacketType system_packet_type_;
   DirType dir_type_;
   bool append_;
@@ -302,8 +304,10 @@ class StoreChunkTask : public QRunnable {
  public:
   StoreChunkTask(const StoreData &store_data,
                  IfExists if_exists,
-                 MaidsafeStoreManager *msm,
-                 const boost::uint16_t &task_id);
+                 MaidsafeStoreManager *msm)
+      : store_data_(store_data),
+        if_exists_(if_exists),
+        msm_(msm) {}
   void run();
  private:
   StoreChunkTask &operator=(const StoreChunkTask&);
@@ -311,7 +315,20 @@ class StoreChunkTask : public QRunnable {
   StoreData store_data_;
   IfExists if_exists_;
   MaidsafeStoreManager *msm_;
-  boost::uint16_t task_id_;
+};
+
+class SendChunkCopyTask : public QRunnable {
+ public:
+  SendChunkCopyTask(const StoreData &store_data,
+                    MaidsafeStoreManager *msm)
+      : store_data_(store_data),
+        msm_(msm) {}
+  void run();
+ private:
+  SendChunkCopyTask &operator=(const SendChunkCopyTask&);
+  SendChunkCopyTask(const SendChunkCopyTask&);
+  StoreData store_data_;
+  MaidsafeStoreManager *msm_;
 };
 
 class StorePacketToVaultsTask : public QRunnable {
@@ -319,8 +336,11 @@ class StorePacketToVaultsTask : public QRunnable {
   StorePacketToVaultsTask(const StoreData &store_data,
                           MaidsafeStoreManager *msm,
                           int *return_value,
-                          GenericConditionData *generic_cond_data,
-                          const boost::uint16_t &task_id);
+                          GenericConditionData *generic_cond_data)
+      : store_data_(store_data),
+        msm_(msm),
+        return_value_(return_value),
+        generic_cond_data_(generic_cond_data) {}
   void run();
  private:
   StorePacketToVaultsTask &operator=(const StorePacketToVaultsTask&);
@@ -329,16 +349,18 @@ class StorePacketToVaultsTask : public QRunnable {
   MaidsafeStoreManager *msm_;
   int *return_value_;
   GenericConditionData *generic_cond_data_;
-  boost::uint16_t task_id_;
 };
 
 class StorePacketToKadTask : public QRunnable {
  public:
   StorePacketToKadTask(const StoreData &store_data,
-                  MaidsafeStoreManager *msm,
-                  int *return_value,
-                  GenericConditionData *generic_cond_data,
-                  const boost::uint16_t &task_id);
+                       MaidsafeStoreManager *msm,
+                       int *return_value,
+                       GenericConditionData *generic_cond_data)
+      : store_data_(store_data),
+        msm_(msm),
+        return_value_(return_value),
+        generic_cond_data_(generic_cond_data) {}
   void run();
  private:
   StorePacketToKadTask &operator=(const StorePacketToKadTask&);
@@ -350,6 +372,91 @@ class StorePacketToKadTask : public QRunnable {
   boost::uint16_t task_id_;
 };
 
+class AddToWatchListTask : public QRunnable {
+ public:
+  AddToWatchListTask(const StoreData &store_data,
+                     const StorePrepResponse &store_prep_response,
+                     MaidsafeStoreManager *msm)
+      : store_data_(store_data),
+        store_prep_response_(store_prep_response),
+        msm_(msm) {}
+  AddToWatchListTask(const StoreData &store_data, MaidsafeStoreManager *msm)
+      : store_data_(store_data),
+        store_prep_response_(),
+        msm_(msm) {}
+  void run();
+ private:
+  AddToWatchListTask &operator=(const AddToWatchListTask&);
+  AddToWatchListTask(const AddToWatchListTask&);
+  StoreData store_data_;
+  StorePrepResponse store_prep_response_;
+  MaidsafeStoreManager *msm_;
+};
+
+class DeleteChunkTask : public QRunnable {
+ public:
+  DeleteChunkTask(const StoreData &store_data, MaidsafeStoreManager *msm)
+      : store_data_(store_data),
+        msm_(msm) {}
+  void run();
+ private:
+  DeleteChunkTask &operator=(const DeleteChunkTask&);
+  DeleteChunkTask(const DeleteChunkTask&);
+  StoreData store_data_;
+  MaidsafeStoreManager *msm_;
+};
+
+class AmendAccountTask : public QRunnable {
+ public:
+  AmendAccountTask(const boost::uint64_t &space_offered,
+                   MaidsafeStoreManager *msm)
+      : space_offered_(space_offered),
+        msm_(msm) {}
+  void run();
+ private:
+  AmendAccountTask &operator=(const AmendAccountTask&);
+  AmendAccountTask(const AmendAccountTask&);
+  boost::uint64_t space_offered_;
+  MaidsafeStoreManager *msm_;
+};
+
+struct SetLocalVaultOwnedCallbackArgs {
+ public:
+  explicit SetLocalVaultOwnedCallbackArgs(SetLocalVaultOwnedFunctor functor)
+      : cb(functor),
+        response(new SetLocalVaultOwnedResponse),
+        ctrl(new rpcprotocol::Controller) {}
+  SetLocalVaultOwnedFunctor cb;
+  SetLocalVaultOwnedResponse *response;
+  rpcprotocol::Controller *ctrl;
+  ~SetLocalVaultOwnedCallbackArgs() {
+    delete response;
+    delete ctrl;
+  }
+ private:
+  SetLocalVaultOwnedCallbackArgs(const SetLocalVaultOwnedCallbackArgs&);
+  SetLocalVaultOwnedCallbackArgs &operator=(
+      const SetLocalVaultOwnedCallbackArgs&);
+};
+
+struct LocalVaultOwnedCallbackArgs {
+ public:
+  explicit LocalVaultOwnedCallbackArgs(LocalVaultOwnedFunctor functor)
+      : cb(functor),
+        response(new LocalVaultOwnedResponse),
+        ctrl(new rpcprotocol::Controller) {}
+  ~LocalVaultOwnedCallbackArgs() {
+    delete response;
+    delete ctrl;
+  }
+  LocalVaultOwnedFunctor cb;
+  LocalVaultOwnedResponse *response;
+  rpcprotocol::Controller *ctrl;
+ private:
+  LocalVaultOwnedCallbackArgs(const LocalVaultOwnedCallbackArgs&);
+  LocalVaultOwnedCallbackArgs &operator=(const LocalVaultOwnedCallbackArgs&);
+};
+
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
@@ -357,7 +464,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void Init(int port, base::callback_func_type cb);
   void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
-  void StopRvPing() { transport_.StopPingRendezvous(); }
+  void StopRvPing() { transport_handler_.StopPingRendezvous(); }
   bool KeyUnique(const std::string &hex_key, bool check_local);
   bool NotDoneWithUploading();
   // Adds the chunk to the store queue.  It must already be in the chunkstore.
@@ -380,13 +487,21 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Loads all values stored under the packet name (most recent first)
   int LoadPacket(const std::string &hex_packet_name,
                  std::vector<std::string> *results);
+  int DeleteChunk(const std::string &hex_chunk_name,
+                  const boost::uint64_t &chunk_size,
+                  DirType dir_type,
+                  const std::string &msid);
   int DeletePacket(const std::string &hex_key,
                    const std::string &signature,
                    const std::string &public_key,
                    const std::string &signed_public_key,
                    const ValueType &type,
                    base::callback_func_type cb);
-
+  int CreateAccount(const boost::uint64_t &space_offered);
+  int SetSpaceOffered(const boost::uint64_t &space);
+  int GetAccountDetails(boost::uint64_t *space_offered,
+                        boost::uint64_t *space_given,
+                        boost::uint64_t *space_taken);
   // Buffer packet
   virtual int CreateBP();
   virtual int LoadBPMessages(std::list<ValidatedBufferPacketMessage> *messages);
@@ -398,11 +513,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Vault
   void PollVaultInfo(base::callback_func_type cb);
   void VaultContactInfo(base::callback_func_type cb);
-  void OwnLocalVault(const std::string &priv_key, const std::string &pub_key,
-      const std::string &signed_pub_key, const boost::uint32_t &port,
-      const std::string &chunkstore_dir, const boost::uint64_t &space,
-      boost::function<void(const OwnVaultResult&, const std::string&)> cb);
-  void LocalVaultStatus(boost::function<void(const VaultStatus&)> cb);
+  void SetLocalVaultOwned(const std::string &priv_key,
+                          const std::string &pub_key,
+                          const std::string &signed_pub_key,
+                          const boost::uint32_t &port,
+                          const std::string &chunkstore_dir,
+                          const boost::uint64_t &space,
+                          const SetLocalVaultOwnedFunctor &functor);
+  void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
   static void GetChunkSignatureKeys(DirType dir_type,
                                     const std::string &msid,
                                     std::string *key_id,
@@ -417,18 +535,21 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                                      std::string *public_key_sig,
                                      std::string *private_key);
   friend void StoreChunkTask::run();
-  friend void StorePacketToKadTask::run();
+  friend void SendChunkCopyTask::run();
   friend void StorePacketToVaultsTask::run();
+  friend void StorePacketToKadTask::run();
+  friend void AddToWatchListTask::run();
+  friend void DeleteChunkTask::run();
+  friend void AmendAccountTask::run();
   friend size_t testpdvault::CheckStoredCopies(
       std::map<std::string, std::string> chunks,
       const int &timeout,
       boost::shared_ptr<MaidsafeStoreManager> sm);
-  void ClearStoreResultMap();
-
+  friend class MsmSetLocalVaultOwnedTest;
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
-  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_PreSendAnalysis);
+  FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_PrepareToSendChunk);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_StoreIOUs);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_SendChunk);
@@ -438,37 +559,44 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllSucceed);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketAllFail);
   FRIEND_TEST(MaidStoreManagerTest, FUNC_MAID_MSM_LoadPacketOneSucceed);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetChunk1);
-  // Replace real ClientRpcs with mock object for testing
+  // Replace real ClientRpcs with mock object for testing.
   void SetMockRpcs(boost::shared_ptr<ClientRpcs> mock_rpcs) {
     client_rpcs_ = mock_rpcs;
     mock_rpcs_ = true;
   }
-  void SimpleResult_Callback(const std::string &result,
-                             base::callback_func_type cb);
-  void DeleteChunk_Callback(const std::string &result,
-                            base::callback_func_type cb);
   void AddStorePacketTask(const StoreData &store_data,
                           bool is_mutable,
                           int *return_value,
                           GenericConditionData *generic_cond_data);
-  virtual void AddStoreChunkTask(const StoreData &store_data,
-                                 IfExists if_exists);
-  // Assess and select a store method for an individual chunk.
-  virtual void PreSendAnalysis(const StoreData &store_data,
-                               IfExists if_exists,
-                               int *return_value);
-  // Store copies of an individual chunk onto the network.
-  virtual int SendChunk(
-      const StoreData &store_data,
-      boost::shared_ptr<boost::condition_variable> cond_variable,
-      int copies);
+  // Send AddToWatchList requests to each of the k Watch List holders.
+  virtual void AddToWatchList(const StoreData &store_data,
+                              const StorePrepResponse &store_prep_response);
+  // Send RemoveFromWatchList requests to each of the k Watch List holders.
+  void RemoveFromWatchList(const StoreData &store_data);
+  // Returns the current status of the task and sets *task to the task if found.
+  virtual TaskStatus AssessTaskStatus(const StoreData &store_data,
+                                      StoreTaskType task_type,
+                                      StoreTask *task);
+  // Blocks until either we're online (returns true) or until task is cancelled
+  // or finished (returns false)
+  virtual bool WaitForOnline(const std::string &data_name,
+                             const StoreTaskType &task_type);
   // Set up the requests needed to perform the store RPCs.
   int GetStoreRequests(const StoreData &store_data,
                        const std::string &recipient_id,
                        StorePrepRequest *store_prep_request,
-                       StoreRequest *store_request,
-                       IOUDoneRequest *iou_done_request);
+                       StoreChunkRequest *store_chunk_request);
+  // Set up the request needed to perform the AddToWatchList RPC.
+  int GetAddToWatchListRequest(
+      const StoreData &store_data,
+      const StorePrepResponse &store_prep_response,
+      const std::string &recipient_id,
+      AddToWatchListRequest *add_to_watch_list_request);
+  // Set up the request needed to perform the RemoveFromWatchList RPC.
+  int GetRemoveFromWatchListRequest(
+      const StoreData &store_data,
+      const std::string &recipient_id,
+      RemoveFromWatchListRequest *remove_from_watch_list_request);
   // Set up the request needed to perform the store packet RPCs.  If values
   // vector is not empty, we are sending an entire set of values for a
   // key (e.g. in case of failed existing holder), so append == false and we
@@ -511,12 +639,19 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const kad::Contact &peer,
       bool local,
       boost::shared_ptr<boost::condition_variable> cond_variable,
-      StoreRequest *store_request);
+      StoreChunkRequest *store_chunk_request);
   void SendContentCallback(GenericConditionData *send_cond_data);
-  // Pass the IOU for the peer vault to the k chunk reference holders.
-  virtual int StoreIOUs(const StoreData &store_data,
-                        const boost::uint64_t &chunk_size,
-                        const StorePrepResponse &store_prep_response);
+  // Send AddToWatchList request to a single Watch List Holder
+  void SendAddToWatchListRequest(
+      const kad::Contact &watch_list_holder,
+      const AddToWatchListRequest &add_to_watch_list_request,
+      const AddToWatchListResponse &add_to_watch_list_response,
+      boost::mutex *mutex);
+  // Assess and select a store method for an individual chunk.
+  virtual void PrepareToSendChunk(const StoreData &store_data,
+                                  IfExists if_exists);
+  // Store a single copy of an individual chunk onto the network.
+  virtual int SendChunk(const StoreData &store_data);
   // Blocking call to Kademlia Find Nodes.
   virtual int FindKNodes(const std::string &kad_key,
                          std::vector<kad::Contact> *contacts);
@@ -589,25 +724,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    std::string *serialised_get_messages_response,
                    boost::mutex *get_mutex);
   void GetChunkCallback(boost::mutex *mutex, bool *get_chunk_done);
-  // Passes the IOU to an individual reference holder.
-  virtual int SendIouToRefHolder(
-      const kad::Contact &ref_holder,
-      StoreIOURequest store_iou_request,
-      boost::mutex *store_iou_mutex,
-      boost::shared_ptr<StoreIouResultHolder> store_iou_result_holder);
-  void SendIouToRefHolderCallback(bool *store_iou_response_returned,
-                                  boost::mutex *store_iou_mutex);
-  int HandleStoreIOUResponse(
-      const boost::shared_ptr<StoreIouResultHolder> store_iou_result_holder,
-      std::set<std::string> *ref_holder_ids);
-  // Notifies a peer that this vault has passed the IOUs to the appropriate
-  // reference holders.
-  virtual int SendIOUDone(
-      const kad::Contact &peer,
-      bool local,
-      boost::shared_ptr<boost::condition_variable> cond_variable,
-      IOUDoneRequest *iou_done_request);
-  void IOUDoneCallback(GenericConditionData *iou_done_cond_data);
   // Adds the packet to the priority store queue for uploading as a maidsafe
   // (i.e. mutable) packet.  If the packet already exists on the net, the
   // value is appended or overwritten depending on the boolean "append".
@@ -666,7 +782,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const std::vector<std::string> &chunk_holders_ids);
   void UpdateChunk(const boost::shared_ptr<ChunkHolder> chunk_holder,
                    const StoreData &store_data,
-                   UpdateResponse *update_resonse,
+                   UpdateChunkResponse *update_chunk_resonse,
                    boost::condition_variable *update_conditional);
   void UpdateChunkCallback(boost::condition_variable *cond,
                            boost::shared_ptr<rpcprotocol::Controller>);
@@ -675,30 +791,29 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                            std::vector<std::string> *result);
   void GetPacketCallback(GenericConditionData *cond_data,
                          size_t *returned_rpc_count);
-  // If ret_value pointer is not NULL, sets it to rc and calls
-  // notify_all() on store_packet_conditional_ variable.
-  virtual void SetStoreReturnValue(ReturnCode rc, int *ret_value);
   void PollVaultInfoCallback(const VaultStatusResponse *response,
                              base::callback_func_type cb);
+  void AmendAccount(const boost::uint64_t &space_offered);
 
-  bool SetResultToTask(const boost::uint16_t &task_id, const int &result);
 //  void VaultContactInfoCallback(const std::string &ser_result,
 //                                base::callback_func_type cb);
-  transport::Transport transport_;
+  void SetLocalVaultOwnedCallback(
+      boost::shared_ptr<SetLocalVaultOwnedCallbackArgs> callback_args);
+  void LocalVaultOwnedCallback(
+      boost::shared_ptr<LocalVaultOwnedCallbackArgs> callback_args);
+  transport::TransportUDT udt_transport_;
+  transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
   boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<ClientRpcs> client_rpcs_;
-  PDClient *pdclient_;
   SessionSingleton *ss_;
+  StoreTasksHandler tasks_handler_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   QThreadPool chunk_thread_pool_, packet_thread_pool_;
   const boost::uint16_t kKadStoreThreshold_;
   boost::mutex store_packet_mutex_;
   boost::condition_variable get_chunk_conditional_;
   bool mock_rpcs_;
-  boost::mutex tasks_mutex_;
-  std::map<boost::uint16_t, boost::tuple<std::string, int> > tasks_;
-  boost::uint16_t task_id_;
   boost::shared_ptr<BufferPacketRpcs> bprpcs_;
   ClientBufferPacketHandler cbph_;
 };
