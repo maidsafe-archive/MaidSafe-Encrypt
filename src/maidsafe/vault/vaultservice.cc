@@ -1501,36 +1501,75 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
 //////// END OF SERVICES ////////
 
 bool VaultService::ValidateSignedSize(const maidsafe::SignedSize &sz) {
-  if (!sz.IsInitialized())
+  if (!sz.IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::ValidateSignedSize, not initialised.\n");
+#endif
     return false;
-  if (!ValidateIdentity(sz.pmid(), sz.public_key(), sz.public_key_signature()))
+  }
+  if (!ValidateIdentity(sz.pmid(), sz.public_key(),
+      sz.public_key_signature())) {
+#ifdef DEBUG
+    printf("In VaultService::ValidateSignedSize, invalid identity.\n");
+#endif
     return false;
+  }
   crypto::Crypto co;
   std::string str_size = base::itos_ull(sz.data_size());
   if (!co.AsymCheckSig(str_size, sz.signature(), sz.public_key(),
-      crypto::STRING_STRING))
+      crypto::STRING_STRING)) {
+#ifdef DEBUG
+    printf("In VaultService::ValidateSignedSize, invalid signature.\n");
+#endif
     return false;
+  }
   return true;
 }
 
 bool VaultService::ValidateStoreContract(const maidsafe::StoreContract &sc) {
-  if (!sc.IsInitialized())
+  if (!sc.IsInitialized() || !sc.inner_contract().IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::ValidateStoreContract, not initialised.\n");
+#endif
     return false;
-  if (!ValidateIdentity(sc.pmid(), sc.public_key(), sc.public_key_signature()))
+  }
+  if (!ValidateIdentity(sc.pmid(), sc.public_key(),
+      sc.public_key_signature())) {
+#ifdef DEBUG
+    printf("In VaultService::ValidateStoreContract, invalid identity.\n");
+#endif
     return false;
-  if (!sc.inner_contract().IsInitialized())
-    return false;
+  }
   crypto::Crypto co;
   std::string ser_ic = sc.inner_contract().SerializeAsString();
   if (!co.AsymCheckSig(ser_ic, sc.signature(), sc.public_key(),
-      crypto::STRING_STRING))
+      crypto::STRING_STRING)) {
+#ifdef DEBUG
+    printf("In VaultService::ValidateStoreContract, invalid signature.\n");
+#endif
     return false;
-  if (sc.inner_contract().result() != kAck)
+  }
+  if (sc.inner_contract().result() != kAck) {
+#ifdef DEBUG
+    printf("In VaultService::ValidateStoreContract, contract rejected.\n");
+#endif
     return false;
-  if (!ValidateSignedSize(sc.inner_contract().signed_size()))
+  }
+  if (!ValidateSignedSize(sc.inner_contract().signed_size())) {
+#ifdef DEBUG
+    printf("In VaultService::ValidateStoreContract, invalid signed size.\n");
+#endif
     return false;
-  if (sc.pmid() == sc.inner_contract().signed_size().pmid())
+  }
+  if (sc.pmid() == sc.inner_contract().signed_size().pmid()) {
+#ifdef DEBUG
+    printf("In VaultService::ValidateStoreContract, PMIDs of contract and "
+           "signed size don't match (%s vs %s).\n",
+           HexSubstr(sc.pmid()).c_str(),
+           HexSubstr(sc.inner_contract().signed_size().pmid()).c_str());
+#endif
     return false;
+  }
   return true;
 }
 
