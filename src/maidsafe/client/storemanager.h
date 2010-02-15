@@ -121,6 +121,7 @@ class StoreManagerInterface {
       const boost::uint64_t &space,
       const SetLocalVaultOwnedFunctor &functor)=0;
   virtual void LocalVaultOwned(const LocalVaultOwnedFunctor &functor)=0;
+  virtual int CreateAccount(const boost::uint64_t &space_offered)=0;
 };
 
 }  // namespace maidsafe

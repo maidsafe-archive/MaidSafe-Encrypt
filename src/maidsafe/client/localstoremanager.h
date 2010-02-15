@@ -109,6 +109,7 @@ class LocalStoreManager : public StoreManagerInterface {
                                   const boost::uint64_t &space,
                                   const SetLocalVaultOwnedFunctor &functor);
   virtual void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
+  virtual int CreateAccount(const boost::uint64_t&) { return kSuccess; }
 
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);

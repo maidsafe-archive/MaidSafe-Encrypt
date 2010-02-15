@@ -117,11 +117,11 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLoginSequence) {
 
   ASSERT_NE(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::DEFCON3));
-  ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
-  ASSERT_EQ(username, ss_->Username());
-  ASSERT_EQ(pin, ss_->Pin());
-  ASSERT_EQ(password, ss_->Password());
-  printf("User created.\n");
+  EXPECT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
+  EXPECT_EQ(username, ss_->Username());
+  EXPECT_EQ(pin, ss_->Pin());
+  EXPECT_EQ(password, ss_->Password());
+  printf("User created.\n===================\n\n\n\n\n");
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_EQ("", ss_->Username());

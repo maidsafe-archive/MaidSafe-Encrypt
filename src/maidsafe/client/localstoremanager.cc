@@ -67,10 +67,14 @@ void ExecCallbackVaultInfo(const base::callback_func_type &cb,
 }
 
 void ExecReturnCodeCallback(const VoidFuncOneInt &cb,
-                            const ReturnCode rc,
-                            boost::mutex *mutex) {
-  boost::mutex::scoped_lock loch(*mutex);
+                            const ReturnCode rc) {
   cb(rc);
+}
+
+void ExecReturnLoadPacketCallback(const LoadPacketFunctor &cb,
+                                  std::vector<std::string> results,
+                                  const ReturnCode rc) {
+  cb(results, rc);
 }
 
 LocalStoreManager::LocalStoreManager(
@@ -225,9 +229,9 @@ void LocalStoreManager::KeyUnique(const std::string &key,
                                   bool check_local,
                                   const VoidFuncOneInt &cb) {
   if (KeyUnique(key, check_local))
-    cb(kKeyUnique);
+    boost::thread thr(&ExecReturnCodeCallback, cb, kKeyUnique);
   else
-    cb(kKeyNotUnique);
+    boost::thread thr(&ExecReturnCodeCallback, cb, kKeyNotUnique);
 }
 
 int LocalStoreManager::LoadPacket(const std::string &packet_name,
@@ -239,7 +243,7 @@ void LocalStoreManager::LoadPacket(const std::string &packetname,
                                    const LoadPacketFunctor &lpf) {
   std::vector<std::string> results;
   ReturnCode rc(static_cast<ReturnCode>(GetValue_FromDB(packetname, &results)));
-  lpf(results, rc);
+  boost::thread thr(&ExecReturnLoadPacketCallback, lpf, results, rc);
 }
 
 void LocalStoreManager::DeletePacket(const std::string &packet_name,
@@ -251,7 +255,7 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
   std::string public_key;
   SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
   if (public_key.empty()) {
-    cb(kNoPublicKeyToCheck);
+    boost::thread thr(&ExecReturnCodeCallback, cb, kNoPublicKeyToCheck);
     return;
   }
   std::vector<std::string> vals(values);
@@ -266,10 +270,11 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
     ReturnCode res =
         static_cast<ReturnCode>(GetValue_FromDB(packet_name, &vals));
     if (res == kFindValueFailure) {  // packet doesn't exist on net
-      cb(kSuccess);
+      boost::thread thr(&ExecReturnCodeCallback, cb, kSuccess);
       return;
     } else if (res != kSuccess || vals.empty()) {
-      cb(kDeletePacketFindValueFailure);
+      boost::thread thr(&ExecReturnCodeCallback, cb,
+                        kDeletePacketFindValueFailure);
       return;
     }
   }
@@ -287,12 +292,13 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
     if (sv.ParseFromString(ser_gps[n])) {
       if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
           crypto::STRING_STRING)) {
-        cb(kDeletePacketFailure);
+        boost::thread thr(&ExecReturnCodeCallback, cb, kDeletePacketFailure);
         return;
       }
     }
   }
-  cb(DeletePacket_DeleteFromDb(packet_name, ser_gps, public_key));
+  ReturnCode rc = DeletePacket_DeleteFromDb(packet_name, ser_gps, public_key);
+  boost::thread thr(&ExecReturnCodeCallback, cb, rc);
 }
 
 ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
@@ -374,22 +380,22 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
   std::string ser_gp;
   CreateSerialisedSignedValue(value, system_packet_type, msid, &ser_gp);
   if (ser_gp.empty()) {
-    cb(kNoPublicKeyToCheck);
+    boost::thread thr(&ExecReturnCodeCallback, cb, kNoPublicKeyToCheck);
     return;
   }
 
   std::string public_key;
   kad::SignedValue sv;
   if (sv.ParseFromString(ser_gp)) {
-  SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
-  if (public_key.empty()) {
-    cb(kNoPublicKeyToCheck);
-    return;
+    SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
+    if (public_key.empty()) {
+      boost::thread thr(&ExecReturnCodeCallback, cb, kNoPublicKeyToCheck);
+      return;
     } else {
       crypto::Crypto co;
       if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
           crypto::STRING_STRING)) {
-        cb(kSendPacketFailure);
+        boost::thread thr(&ExecReturnCodeCallback, cb, kSendPacketFailure);
         return;
       }
     }
@@ -398,27 +404,30 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
   std::vector<std::string> values;
   int n = GetValue_FromDB(packet_name, &values);
   if (n == kFindValueError) {
-    cb(kStoreManagerError);
+    boost::thread thr(&ExecReturnCodeCallback, cb, kStoreManagerError);
     return;
   }
+
+  ReturnCode rc;
   if (values.empty()) {
-    cb(StorePacket_InsertToDb(packet_name, ser_gp, public_key, false));
+    rc = StorePacket_InsertToDb(packet_name, ser_gp, public_key, false);
   } else {
     switch (if_packet_exists) {
       case kDoNothingReturnFailure:
-          cb(kSendPacketFailure);
+          rc = kSendPacketFailure;
           break;
       case kDoNothingReturnSuccess:
-          cb(kSuccess);
+          rc = kSuccess;
           break;
       case kOverwrite:
-          cb(StorePacket_InsertToDb(packet_name, ser_gp, public_key, false));
+          rc = StorePacket_InsertToDb(packet_name, ser_gp, public_key, false);
           break;
       case kAppend:
-          cb(StorePacket_InsertToDb(packet_name, ser_gp, public_key, true));
+          rc = StorePacket_InsertToDb(packet_name, ser_gp, public_key, true);
           break;
     }
   }
+  boost::thread thr(&ExecReturnCodeCallback, cb, rc);
 }
 
 ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,

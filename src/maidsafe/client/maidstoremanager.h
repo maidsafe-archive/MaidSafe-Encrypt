@@ -184,15 +184,15 @@ struct StoreData {
                 if_packet_exists(kDoNothingReturnFailure),
                 callback() {}
   // Store chunk constructor
-  StoreData(const std::string &chunk_name,
-            const boost::uint64_t &chunk_size,
+  StoreData(std::string chunk_name,
+            boost::uint64_t chunk_size,
             ChunkType ch_type,
             DirType directory_type,
-            const std::string &ms_id,
-            const std::string &key,
-            const std::string &pub_key,
-            const std::string &pub_key_signature,
-            const std::string &priv_key)
+            std::string ms_id,
+            std::string key,
+            std::string pub_key,
+            std::string pub_key_signature,
+            std::string priv_key)
                 : data_name(chunk_name),
                   value(),
                   size(chunk_size),
@@ -207,15 +207,15 @@ struct StoreData {
                   if_packet_exists(kDoNothingReturnFailure),
                   callback() {}
   // Store packet constructor
-  StoreData(const std::string &packet_name,
-            const std::string &packet_value,
+  StoreData(std::string packet_name,
+            std::string packet_value,
             PacketType sys_packet_type,
             DirType directory_type,
-            const std::string &ms_id,
-            const std::string &key,
-            const std::string &pub_key,
-            const std::string &pub_key_signature,
-            const std::string &priv_key,
+            std::string ms_id,
+            std::string key,
+            std::string pub_key,
+            std::string pub_key_signature,
+            std::string priv_key,
             IfPacketExists if_exists,
             VoidFuncOneInt cb)
                 : data_name(packet_name),
@@ -243,15 +243,15 @@ struct StoreData {
 
 struct DeletePacketData {
  public:
-  DeletePacketData(const std::string &name,
-                   const std::vector<std::string> &packet_values,
+  DeletePacketData(std::string name,
+                   std::vector<std::string> packet_values,
                    PacketType sys_packet_type,
                    DirType directory_type,
-                   const std::string &ms_id,
-                   const std::string &key,
-                   const std::string &pub_key,
-                   const std::string &pub_key_signature,
-                   const std::string &priv_key,
+                   std::string ms_id,
+                   std::string key,
+                   std::string pub_key,
+                   std::string pub_key_signature,
+                   std::string priv_key,
                    VoidFuncOneInt cb)
                        : packet_name(name),
                          values(packet_values),
@@ -269,7 +269,7 @@ struct DeletePacketData {
   // This ctor effectively allows us to use a StoreData struct for deleting
   // a packet during an OverwritePacket operation
   DeletePacketData(boost::shared_ptr<StoreData> store_data,
-                   const std::vector<std::string> &vals,
+                   std::vector<std::string> vals,
                    VoidFuncOneInt cb)
                        : packet_name(store_data->data_name),
                          values(vals),
@@ -301,20 +301,20 @@ struct DeletePacketData {
 // RemoveFromWatchListRequest and assess the responses.
 struct WatchListOpData {
   struct AddToWatchDataHolder {
-    explicit AddToWatchDataHolder(const std::string &id)
+    explicit AddToWatchDataHolder(std::string id)
         : node_id(id), response(), controller(new rpcprotocol::Controller) {}
     std::string node_id;
     AddToWatchListResponse response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
   struct RemoveFromWatchDataHolder {
-    explicit RemoveFromWatchDataHolder(const std::string &id)
+    explicit RemoveFromWatchDataHolder(std::string id)
         : node_id(id), response(), controller(new rpcprotocol::Controller) {}
     std::string node_id;
     RemoveFromWatchListResponse response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
-  explicit WatchListOpData(const StoreData &sd)
+  explicit WatchListOpData(StoreData sd)
       : store_data(sd),
         mutex(),
         contacts(),
@@ -338,8 +338,8 @@ struct WatchListOpData {
 // This is used to hold the data required to perform a SendChunkPrep followed by
 // a SendChunkContent operation.
 struct SendChunkData {
-  SendChunkData(const StoreData &sd,
-                const kad::Contact &node,
+  SendChunkData(StoreData sd,
+                kad::Contact node,
                 bool node_local)
       : store_data(sd),
         peer(node),
@@ -366,13 +366,13 @@ struct SendChunkData {
 // responses.
 struct AccountStatusData {
   struct AccountStatusDataHolder {
-    explicit AccountStatusDataHolder(const std::string &id)
+    explicit AccountStatusDataHolder(std::string id)
         : node_id(id), response(), controller(new rpcprotocol::Controller) {}
     std::string node_id;
     AccountStatusResponse response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
-  explicit AccountStatusData()
+  AccountStatusData()
       : mutex(),
         condition(),
         contacts(),
@@ -390,13 +390,13 @@ struct AccountStatusData {
 // responses.
 struct AmendAccountData {
   struct AmendAccountDataHolder {
-    explicit AmendAccountDataHolder(const std::string &id)
+    explicit AmendAccountDataHolder(std::string id)
         : node_id(id), response(), controller(new rpcprotocol::Controller) {}
     std::string node_id;
     AmendAccountResponse response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
-  explicit AmendAccountData()
+  AmendAccountData()
       : mutex(),
         condition(),
         contacts(),
@@ -465,7 +465,7 @@ class SessionSingleton;
 
 class AddToWatchListTask : public QRunnable {
  public:
-  AddToWatchListTask(const StoreData &store_data, MaidsafeStoreManager *msm)
+  AddToWatchListTask(StoreData store_data, MaidsafeStoreManager *msm)
       : store_data_(store_data),
         msm_(msm) {}
   void run();
@@ -478,7 +478,7 @@ class AddToWatchListTask : public QRunnable {
 
 class SendChunkCopyTask : public QRunnable {
  public:
-  SendChunkCopyTask(const StoreData &store_data,
+  SendChunkCopyTask(StoreData store_data,
                     MaidsafeStoreManager *msm)
       : store_data_(store_data),
         msm_(msm) {}
@@ -506,7 +506,7 @@ class StorePacketTask : public QRunnable {
 
 class DeleteChunkTask : public QRunnable {
  public:
-  DeleteChunkTask(const StoreData &store_data, MaidsafeStoreManager *msm)
+  DeleteChunkTask(StoreData store_data, MaidsafeStoreManager *msm)
       : store_data_(store_data),
         msm_(msm) {}
   void run();
@@ -533,7 +533,7 @@ class DeletePacketTask : public QRunnable {
 
 class AmendAccountTask : public QRunnable {
  public:
-  AmendAccountTask(const boost::uint64_t &space_offered,
+  AmendAccountTask(boost::uint64_t space_offered,
                    MaidsafeStoreManager *msm)
       : space_offered_(space_offered),
         msm_(msm) {}
@@ -701,7 +701,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           int *return_value,
                           GenericConditionData *generic_cond_data);
   // Sends AddToWatchList requests to each of the k Chunk Info holders.
-  virtual void AddToWatchList(const StoreData &store_data);
+  virtual void AddToWatchList(StoreData store_data);
   // Assesses each AddToWatchListResponse and if consensus of required chunk
   // upload copies is achieved, begins new SendChunkCopyTask(s) if required.
   void AddToWatchListCallback(boost::uint16_t index,
@@ -914,6 +914,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   boost::condition_variable get_chunk_conditional_;
   boost::shared_ptr<BufferPacketRpcs> bprpcs_;
   ClientBufferPacketHandler cbph_;
+  static int kChunkMaxThreadCount_;
+  static int kPacketMaxThreadCount_;
 };
 
 }  // namespace maidsafe
