@@ -131,12 +131,24 @@
     </property>
     <addaction name="actionInvite"/>
    </widget>
+   <widget class="QMenu" name="actionSendFile">
+    <property name="title">
+     <string>Send</string>
+    </property>
+    <addaction name="actionSend_File"/>
+   </widget>
    <addaction name="menuTest"/>
+   <addaction name="actionSendFile"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionInvite">
    <property name="text">
     <string>Invite</string>
+   </property>
+  </action>
+  <action name="actionSend_File">
+   <property name="text">
+    <string>Send File</string>
    </property>
   </action>
  </widget>

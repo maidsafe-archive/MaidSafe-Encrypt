@@ -398,18 +398,20 @@ bool ClientController::CreateUser(const std::string &username,
 #endif
   }
 
-  result = sm_->CreateAccount(vcp.space);
-  if (result != kSuccess) {
-#ifdef DEBUG
-    printf("In CC::CreateUser - Failed to create user account.\n");
-#endif
-    ss_->ResetSession();
-    return false;
-  } else {
-#ifdef DEBUG
-    printf("In CC::CreateUser - sm_->CreateAccount DONE.\n");
-#endif
-  }
+//  Pwn the vault here
+
+//  result = sm_->CreateAccount(vcp.space);
+//  if (result != kSuccess) {
+//#ifdef DEBUG
+//    printf("In CC::CreateUser - Failed to create user account.\n");
+//#endif
+//    ss_->ResetSession();
+//    return false;
+//  } else {
+//#ifdef DEBUG
+//    printf("In CC::CreateUser - sm_->CreateAccount DONE.\n");
+//#endif
+//  }
 
   client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);

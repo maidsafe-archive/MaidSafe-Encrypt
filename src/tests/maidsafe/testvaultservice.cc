@@ -89,7 +89,7 @@ class VaultServicesTest : public testing::Test {
           channel_manager_(&transport_handler_),
           knode_(),
           vault_chunkstore_(),
-          vault_rpcs_(&transport_handler_, &channel_manager_),
+          vault_rpcs_(new VaultRpcs(&transport_handler_, &channel_manager_)),
           vault_service_logic_(),
           vault_service_(),
           svc_channel_(),
@@ -116,18 +116,18 @@ class VaultServicesTest : public testing::Test {
       }
       boost::int16_t transport_id;
       transport_handler_.Register(&udt_transport_, &transport_id);
-      knode_ = new kad::KNode(&channel_manager_, &transport_handler_,
-                              kad::VAULT, vault_private_key_, vault_public_key_,
-                              false, false);
+      knode_.reset(new kad::KNode(&channel_manager_, &transport_handler_,
+                                  kad::VAULT, vault_private_key_,
+                                  vault_public_key_, false, false));
       knode_->SetTransID(transport_id);
       vault_chunkstore_ = new VaultChunkStore(chunkstore_dir_.string(),
                                               kAvailableSpace, 0);
       ASSERT_TRUE(vault_chunkstore_->Init());
 
-      vault_service_logic_ = new VaultServiceLogic(&vault_rpcs_, knode_);
+      vault_service_logic_ = new VaultServiceLogic(vault_rpcs_, knode_);
       vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                         vault_public_key_signature_,
-                                        vault_chunkstore_, knode_, &poh_,
+                                        vault_chunkstore_, knode_.get(), &poh_,
                                         vault_service_logic_, transport_id);
 
       vault_service_logic_->Init(vault_pmid_,
@@ -152,7 +152,6 @@ class VaultServicesTest : public testing::Test {
       delete vault_service_;
       delete vault_service_logic_;
       delete vault_chunkstore_;
-      delete knode_;
 
       try {
         fs::remove_all(chunkstore_dir_);
@@ -168,9 +167,9 @@ class VaultServicesTest : public testing::Test {
     transport::TransportUDT udt_transport_;
     transport::TransportHandler transport_handler_;
     rpcprotocol::ChannelManager channel_manager_;
-    kad::KNode *knode_;
+    boost::shared_ptr<kad::KNode> knode_;
     VaultChunkStore *vault_chunkstore_;
-    VaultRpcs vault_rpcs_;
+    boost::shared_ptr<VaultRpcs> vault_rpcs_;
     VaultServiceLogic *vault_service_logic_;
     VaultService *vault_service_;
     rpcprotocol::Channel *svc_channel_;
@@ -184,7 +183,8 @@ class VaultServicesTest : public testing::Test {
 class MockVaultServicesTest : public VaultServicesTest {
  protected:
   MockVaultServicesTest()
-      : mock_vault_service_logic_(NULL, NULL) {}
+      : mock_vault_service_logic_(boost::shared_ptr<VaultRpcs>(),
+                                  boost::shared_ptr<kad::KNode>()) {}
   void SetUp() {
     VaultServicesTest::SetUp();
     // Initialise mock_vault_service_logic
@@ -196,7 +196,7 @@ class MockVaultServicesTest : public VaultServicesTest {
     mock_vault_service_logic_.our_details_ = our_details;
     mock_vault_service_logic_.SetOnlineStatus(true);
   }
-  MockVslServiceTest mock_vault_service_logic_;
+  MockVsl mock_vault_service_logic_;
  private:
   MockVaultServicesTest(const MockVaultServicesTest&);
   MockVaultServicesTest &operator=(const MockVaultServicesTest&);
@@ -452,7 +452,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_, &poh_,
+                                    vault_chunkstore_, knode_.get(), &poh_,
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
@@ -779,11 +779,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
 }
 
 TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
-  MockVsl mock_vault_service_logic(NULL, NULL);
+  boost::shared_ptr<VaultRpcs> vault_rpcs;
+  boost::shared_ptr<kad::KNode> knode;
+  MockVsl mock_vault_service_logic(vault_rpcs, knode);
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_, &poh_,
+                                    vault_chunkstore_, knode_.get(), &poh_,
                                     &mock_vault_service_logic,
                                     udt_transport_.GetID());
 
@@ -808,7 +810,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   std::string client_account_name = co.Hash(client_pmid + kAccount, "",
                                             crypto::STRING_STRING, false);
 
-  EXPECT_CALL(mock_vault_service_logic,
+  EXPECT_CALL(*mock_vault_service_logic.kadops(),
               FindCloseNodes(client_account_name, testing::_))
       .Times(testing::AtLeast(6))
       .WillRepeatedly(testing::WithArg<1>(testing::Invoke(
@@ -1207,7 +1209,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_, &poh_,
+                                    vault_chunkstore_, knode_.get(), &poh_,
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
@@ -1417,7 +1419,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_, &poh_,
+                                    vault_chunkstore_, knode_.get(), &poh_,
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
@@ -1655,7 +1657,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToReferenceList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_, &poh_,
+                                    vault_chunkstore_, knode_.get(), &poh_,
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
@@ -1916,7 +1918,7 @@ TEST_F(MockVaultServicesTest, DISABLED_FUNC_MAID_ServicesRemoveFromReferenceList
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_, &poh_,
+                                    vault_chunkstore_, knode_.get(), &poh_,
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 

@@ -33,6 +33,9 @@
 #include "qt/widgets/progress.h"
 #include "qt/widgets/user_panels.h"
 #include "qt/widgets/system_tray_icon.h"
+#include "qt/widgets/user_settings.h"
+#include "qt/perpetual_data.h"
+
 
 #include "qt/client/create_user_thread.h"
 #include "qt/client/join_kademlia_thread.h"
@@ -128,7 +131,12 @@ void PerpetualData::createActions() {
   actions_[ MY_FILES ] = ui_.actionMy_Files;
   actions_[ PRIVATE_SHARES ] = ui_.actionPrivate_Shares;
   actions_[ GO_OFFLINE ] = ui_.actionOffline;
-  // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
+  actions_[ SETTINGS ] = ui_.actionSettings;
+  actions_[ ONLINE ] = ui_.actionAvailable;
+  actions_[ AWAY ] = ui_.actionAway;
+  actions_[ BUSY ] = ui_.actionBusy;
+  actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
+ // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
   actions_[ QUIT ]->setShortcut(Qt::ALT + Qt::Key_F4);
   actions_[ FULLSCREEN ]->setShortcut(Qt::Key_F11);
@@ -147,8 +155,18 @@ void PerpetualData::createActions() {
           this,                       SLOT(onPrivateShares()));
   connect(actions_[ GO_OFFLINE ], SIGNAL(toggled(bool)),
           this,                   SLOT(onGoOffline(bool)));
-  // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
-  //         this,                     SLOT(onSaveSession()));
+  connect(actions_[ SETTINGS ], SIGNAL(triggered()),
+          this,                 SLOT(onSettingsTriggered()));
+  connect(actions_[ ONLINE ], SIGNAL(triggered()),
+          this,                 SLOT(onOnlineTriggered()));
+  connect(actions_[ AWAY ], SIGNAL(triggered()),
+          this,                 SLOT(onAwayTriggered()));
+  connect(actions_[ BUSY ], SIGNAL(triggered()),
+          this,                 SLOT(onBusyTriggered()));
+  connect(actions_[ OFFLINE_2 ], SIGNAL(triggered()),
+          this,                 SLOT(onOffline_2Triggered()));
+ // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
+ //         this,                     SLOT(onSaveSession()));
 }
 
 void PerpetualData::createMenus() {
@@ -553,7 +571,20 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
       root = QString::fromStdString(fsys.MaidsafeFuseDir() + "/My Files");
 #endif
 
-      directory = QFileDialog::getSaveFileName(this, tr("Save File"), root);
+      qfd = new QFileDialog(this,
+                     tr("File to share..."),
+                     root, tr("Any file (*)"));
+
+      connect( qfd, SIGNAL(directoryEntered(const QString &)),
+            this, SLOT(onDirectoryEntered(const QString&)));
+
+      int result = qfd->exec();
+      if (result == QDialog::Rejected) {
+        return;
+      }
+      QStringList fileNames = qfd->selectedFiles();
+
+      directory = fileNames.at(0);
 
       printf("Dir chosen: %s\n", directory.toStdString().c_str());
 
@@ -612,5 +643,55 @@ void PerpetualData::onConnectionStatusChanged(int status) {
   }
   SystemTrayIcon::instance()->showMessage(title, message);
 }
+
+void PerpetualData::onDirectoryEntered(const QString& dir){
+  printf("Contacts::onDirectoryEntered :: %s \n",dir.toStdString().c_str());
+  QString root;
+
+#ifdef __WIN32__
+  root = QString(maidsafe::SessionSingleton::getInstance()->WinDrive());
+
+  if (!dir.startsWith(root, Qt::CaseInsensitive)){
+    root = QString("%1:\\My Files").
+         arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+    qfd->setDirectory(root);
+  }
+
+#else
+  file_system::FileSystem fs;
+  root = QString::fromStdString(fs.MaidsafeFuseDir());
+
+  if (!dir.startsWith(root, Qt::CaseInsensitive)){
+    file_system::FileSystem fs;
+    root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+    qfd->setDirectory(root);
+  }
+#endif
+}
+
+void PerpetualData::onSettingsTriggered(){
+    settings_ = new UserSettings;
+
+    QFile file(":/qss/defaultWithWhite1.qss");
+    file.open(QFile::ReadOnly);
+    QString styleSheet = QLatin1String(file.readAll());
+
+    settings_->setStyleSheet(styleSheet);
+
+    settings_->exec();
+}
+
+void PerpetualData::onOnlineTriggered(){
+}
+
+void PerpetualData::onAwayTriggered(){
+}
+
+void PerpetualData::onBusyTriggered(){
+}
+
+void PerpetualData::onOffline_2Triggered(){
+}
+
 
 

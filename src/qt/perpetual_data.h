@@ -17,10 +17,12 @@
 
 // qt
 #include <QMainWindow>
+#include <QFileDialog>
 
 // local
 #include "qt/client/client_controller.h"
 #include "qt/widgets/personal_messages.h"
+#include "qt/widgets/user_settings.h"
 
 // generated
 #include "ui_pd.h"
@@ -32,6 +34,7 @@ class UserPanels;
 class MountThread;
 class Progress;
 class PersonalMessages;
+class UserSettings;
 
 // Main Window for Perpetual Data
 /*!
@@ -94,6 +97,14 @@ class PerpetualData : public QMainWindow {
     void onPrivateShares();
     void onGoOffline(bool);
     void onSaveSession();
+    void onSettingsTriggered();
+    void onOnlineTriggered();
+    void onAwayTriggered();
+    void onBusyTriggered();
+    void onOffline_2Triggered();
+
+
+    void onDirectoryEntered(const QString&);
 
     void onMessageReceived(ClientController::MessageType,
                            const QDateTime& time,
@@ -108,6 +119,8 @@ class PerpetualData : public QMainWindow {
     void onUnreadMessagesChanged(int count);
  private:
   Ui::PerpetualData ui_;
+  QFileDialog* qfd;
+
 
   // Actions
   void createActions();
@@ -119,8 +132,13 @@ class PerpetualData : public QMainWindow {
     MY_FILES,
     PRIVATE_SHARES,
     GO_OFFLINE,
-    SAVE_SESSION
-  };
+    SAVE_SESSION,
+    SETTINGS,
+    ONLINE,
+    BUSY,
+    AWAY,
+    OFFLINE_2
+    };
   typedef QMap<Action, QAction*> ActionMap;
   ActionMap actions_;
 
@@ -169,6 +187,11 @@ class PerpetualData : public QMainWindow {
 
   // Status bar label for message count
   QLabel* message_status_;
+
+  //User Settings Window
+
+  UserSettings* settings_;
+
 
   // Switch between different application states
   void setState(State state);

@@ -35,6 +35,7 @@
 #include <vector>
 
 #include "maidsafe/maidsafe.h"
+#include "maidsafe/kadops.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 namespace kad {
@@ -162,16 +163,16 @@ struct CacheChunkData {
 
 class VaultServiceLogic {
  public:
-  VaultServiceLogic(VaultRpcs *vault_rpcs,
-                    kad::KNode *knode);
+  VaultServiceLogic(const boost::shared_ptr<VaultRpcs> &vault_rpcs,
+                    const boost::shared_ptr<kad::KNode> &knode);
   virtual ~VaultServiceLogic() {}
   bool Init(const std::string &pmid,
             const std::string &pmid_public_key,
             const std::string &pmid_public_signature,
             const std::string &pmid_private);
   bool online();
+  boost::shared_ptr<maidsafe::KadOps> kadops() { return kad_ops_; }
   void SetOnlineStatus(bool online);
-  void SetKThreshold(const boost::uint16_t &threshold);
   // Blocking call which looks up Chunk Info holders and sends each an
   // AddToReferenceListRequest to add this vault's ID to ref list for chunkname.
   virtual int AddToRemoteRefList(const std::string &chunkname,
@@ -180,9 +181,6 @@ class VaultServiceLogic {
   // Blocking call to Kademlia FindCloseNodes
   int FindKNodes(const std::string &kad_key,
                  std::vector<kad::Contact> *contacts);
-  // Wrapper for knode method - virtual to allow mock testing
-  virtual void FindCloseNodes(const std::string &kad_key,
-                              const base::callback_func_type &callback);
   void HandleFindKNodesResponse(const std::string &response,
                                 const std::string &kad_key,
                                 std::vector<kad::Contact> *contacts,
@@ -214,6 +212,7 @@ class VaultServiceLogic {
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
   FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
+  friend class MockVsl;
   friend class MockVaultServicesTest;
 
   // Method called by each AddToReferenceList response in AddToRemoteRefList.
@@ -238,17 +237,15 @@ class VaultServiceLogic {
   // Returns a signature for validation by recipient of RPC
   std::string GetSignedRequest(const std::string &name,
                                const std::string &recipient_id);
-  // Wrapper for knode method - virtual to allow mock testing
-  virtual bool AddressIsLocal(const kad::Contact &peer);
   void CacheChunkCallback(boost::shared_ptr<CacheChunkData> data);
 
-  VaultRpcs *vault_rpcs_;
-  kad::KNode *knode_;
+  boost::shared_ptr<VaultRpcs> vault_rpcs_;
+  boost::shared_ptr<kad::KNode> knode_;
+  boost::shared_ptr<maidsafe::KadOps> kad_ops_;
   kad::Contact our_details_;
   std::string pmid_, pmid_public_key_, pmid_public_signature_, pmid_private_;
   bool online_;
   boost::mutex online_mutex_;
-  boost::uint16_t kKadStoreThreshold_;
 };
 
 }  // namespace maidsafe_vault

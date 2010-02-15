@@ -31,7 +31,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 
-
+#include "maidsafe/kadops.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "protobuf/maidsafe_messages.pb.h"
 
@@ -57,12 +57,14 @@ PDVault::PDVault(const std::string &pmid_public,
       transport_handler_(transport_handler),
       channel_manager_(transport_handler_),
       validator_(),
-      knode_(&channel_manager_, transport_handler_, kad::VAULT, pmid_private,
-             pmid_public, port_forwarded, use_upnp),
-      vault_rpcs_(transport_handler_, &channel_manager_),
+      knode_(new kad::KNode(&channel_manager_, transport_handler_, kad::VAULT,
+                            pmid_private, pmid_public, port_forwarded,
+                            use_upnp)),
+      vault_rpcs_(new VaultRpcs(transport_handler_, &channel_manager_)),
+      kad_ops_(new maidsafe::KadOps(knode_)),
       vault_chunkstore_(chunkstore_dir, available_space, used_space),
       vault_service_(),
-      vault_service_logic_(&vault_rpcs_, &knode_),
+      vault_service_logic_(vault_rpcs_, knode_),
       kad_joined_(false),
       vault_status_(kVaultStopped),
       vault_status_mutex_(),
@@ -79,16 +81,16 @@ PDVault::PDVault(const std::string &pmid_public,
       prune_pending_ops_thread_() {
   boost::int16_t trans_id;
   transport_handler_->Register(&udt_transport_, &trans_id);
-  knode_.SetTransID(trans_id);
+  knode_->SetTransID(trans_id);
   vault_chunkstore_.Init();
   co_.set_symm_algorithm(crypto::AES_256);
   co_.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co_.Hash(pmid_public_ + signed_pmid_public_, "",
                    crypto::STRING_STRING, false);
   validator_.set_id(pmid_);
-  knode_.SetAlternativeStore(&vault_chunkstore_);
-  knode_.set_signature_validator(&validator_);
-  vault_rpcs_.SetOwnId(pmid_);
+  knode_->SetAlternativeStore(&vault_chunkstore_);
+  knode_->set_signature_validator(&validator_);
+  vault_rpcs_->SetOwnId(pmid_);
   thread_pool_.setMaxThreadCount(5);
   poh_.SetPmid(pmid_);
 }
@@ -103,7 +105,7 @@ void PDVault::Start(bool first_node) {
   bool success = channel_manager_.RegisterNotifiersToTransport();
   if (success)
     success = transport_handler_->RegisterOnServerDown(boost::bind(
-        &kad::KNode::HandleDeadRendezvousServer, &knode_, _1));
+        &kad::KNode::HandleDeadRendezvousServer, knode_.get(), _1));
   if (success)
     success = (transport_handler_->Start(port_, udt_transport_.GetID()) == 0);
   if (success)
@@ -114,11 +116,11 @@ void PDVault::Start(bool first_node) {
     if (first_node) {
       boost::asio::ip::address local_ip;
       base::get_local_address(&local_ip);
-      knode_.Join(pmid_, kad_config_file_, local_ip.to_string(),
+      knode_->Join(pmid_, kad_config_file_, local_ip.to_string(),
           transport_handler_->listening_port(udt_transport_.GetID()),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     } else {
-      knode_.Join(pmid_, kad_config_file_,
+      knode_->Join(pmid_, kad_config_file_,
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     }
     // Hash check all current chunks in chunkstore
@@ -133,13 +135,16 @@ void PDVault::Start(bool first_node) {
     }
     // Set port, so that if vault is restarted before it is destroyed, it
     // re-uses port (unless this port has become unavailable).
-    port_ = knode_.host_port();
+    port_ = knode_->host_port();
     if (kad_joined_ && vault_service_logic_.Init(pmid_, pmid_public_,
         signed_pmid_public_, pmid_private_))
       SetVaultStatus(kVaultStarted);
     // Start repeating pruning worker thread
     prune_pending_ops_thread_ =
         boost::thread(&PDVault::PrunePendingOperations, this);
+    // Announce available space to account, try repeatedly in thread
+    // TODO(Team#) find better solution or make thread-safe!
+    boost::thread thr(boost::bind(&PDVault::UpdateSpaceOffered, this));
   }
 }
 
@@ -175,12 +180,10 @@ int PDVault::Stop() {
 //  thread_pool_.waitForDone();
   prune_pending_ops_thread_.join();
   UnRegisterMaidService();
-  knode_.Leave();
-  kad_joined_ = knode_.is_joined();
-  if (kad_joined_)
-    SetVaultStatus(kVaultStarted);
-  else
-    SetVaultStatus(kVaultStopped);
+  knode_->Leave();
+  kad_joined_ = knode_->is_joined();
+  // TODO(Team#) force exit if KNode::Leave() fails
+  SetVaultStatus(kVaultStopped);
   transport_handler_->StopAll();
   channel_manager_.Stop();
   return 0;
@@ -196,20 +199,19 @@ void PDVault::RegisterMaidService() {
                      pmid_private_,
                      signed_pmid_public_,
                      &vault_chunkstore_,
-                     &knode_,
+                     knode_.get(),
                      &poh_,
                      &vault_service_logic_,
                      udt_transport_.GetID()));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
       new rpcprotocol::Channel(&channel_manager_, transport_handler_));
   svc_channel_->SetService(vault_service_.get());
-  channel_manager_.RegisterChannel(
-    vault_service_->GetDescriptor()->name(), svc_channel_.get());
+  channel_manager_.RegisterChannel(vault_service_->GetDescriptor()->name(),
+                                   svc_channel_.get());
 }
 
 void PDVault::UnRegisterMaidService() {
-  channel_manager_.UnRegisterChannel(
-    vault_service_->GetDescriptor()->name());
+  channel_manager_.UnRegisterChannel(vault_service_->GetDescriptor()->name());
   svc_channel_.reset();
   vault_service_.reset();
 }
@@ -293,7 +295,7 @@ void PDVault::IterativeSyncVault(boost::shared_ptr<SyncVaultData> data) {
     data->chunk_names.pop_front();
     ++data->active_updating;
     // Look up the chunk references
-    knode_.FindValue(chunk_name,
+    knode_->FindValue(chunk_name,
                      false,
                      boost::bind(&PDVault::SyncVault_FindAlivePartner,
                                  this,
@@ -334,14 +336,14 @@ void PDVault::SyncVault_FindAlivePartner(const std::string& result,
       std::string contact_info = signed_value.value();
       kad::Contact remote;
       if (remote.ParseFromString(contact_info) &&
-          remote.node_id() != knode_.node_id()) {
+          remote.node_id() != knode_->node_id()) {
         correct_info = true;
-        knode_.Ping(remote,
-                    boost::bind(&PDVault::SyncVault_FindAlivePartner_Callback,
-                                this,
-                                _1,
-                                partner_data,
-                                remote));
+        knode_->Ping(remote,
+                     boost::bind(&PDVault::SyncVault_FindAlivePartner_Callback,
+                                 this,
+                                 _1,
+                                 partner_data,
+                                 remote));
       } else {
         --partner_data->number_partners;
       }
@@ -432,7 +434,7 @@ void PDVault::ValidityCheck(const std::string &chunk_name,
       &PDVault::ValidityCheckCallback, validity_check_response,
       validity_check_args);
   kad::connect_to_node conn_type =
-      knode_.CheckContactLocalAddress(
+      knode_->CheckContactLocalAddress(
           validity_check_args->chunk_holder_.node_id(),
           validity_check_args->chunk_holder_.local_ip(),
           validity_check_args->chunk_holder_.local_port(),
@@ -446,7 +448,7 @@ void PDVault::ValidityCheck(const std::string &chunk_name,
     validity_check_args->retry_remote = true;
   }
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-  vault_rpcs_.ValidityCheck(validity_check_args->chunk_name_,
+  vault_rpcs_->ValidityCheck(validity_check_args->chunk_name_,
       validity_check_args->random_data_, ip, port,
       validity_check_args->chunk_holder_.rendezvous_ip(),
       validity_check_args->chunk_holder_.rendezvous_port(),
@@ -478,7 +480,7 @@ void PDVault::ValidityCheckCallback(
           &PDVault::ValidityCheckCallback, validity_check_response,
           validity_check_args);
       rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-      vault_rpcs_.ValidityCheck(validity_check_args->chunk_name_,
+      vault_rpcs_->ValidityCheck(validity_check_args->chunk_name_,
           validity_check_args->random_data_,
           validity_check_args->chunk_holder_.host_ip(),
           validity_check_args->chunk_holder_.host_port(),
@@ -532,7 +534,7 @@ void PDVault::IterativeSyncVault_SyncChunk(
         &PDVault::IterativeSyncVault_UpdateChunk, get_chunk_response,
         synch_args);
     kad::connect_to_node conn_type =
-      knode_.CheckContactLocalAddress(synch_args->chunk_holder_.node_id(),
+      knode_->CheckContactLocalAddress(synch_args->chunk_holder_.node_id(),
                                       synch_args->chunk_holder_.local_ip(),
                                       synch_args->chunk_holder_.local_port(),
                                       synch_args->chunk_holder_.host_ip());
@@ -544,7 +546,7 @@ void PDVault::IterativeSyncVault_SyncChunk(
       port = synch_args->chunk_holder_.local_port();
     }
     rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-    vault_rpcs_.GetChunk(synch_args->chunk_name_, ip, port,
+    vault_rpcs_->GetChunk(synch_args->chunk_name_, ip, port,
         synch_args->chunk_holder_.rendezvous_ip(),
         synch_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
         get_chunk_response.get(), controller, callback);
@@ -646,14 +648,14 @@ void PDVault::IterativePublishChunkRef(
     sr.set_public_key(pmid_public_);
     sr.set_signed_public_key(signed_pmid_public_);
     sr.set_signed_request(signed_request);
-    knode_.StoreValue(chunk_name,
-                      signed_value,
-                      sr,
-                      86400,
-                      boost::bind(&PDVault::IterativePublishChunkRef_Next,
-                                  this,
-                                  _1,
-                                  data));
+    knode_->StoreValue(chunk_name,
+                       signed_value,
+                       sr,
+                       86400,
+                       boost::bind(&PDVault::IterativePublishChunkRef_Next,
+                                   this,
+                                   _1,
+                                   data));
   }
 }
 
@@ -693,8 +695,8 @@ void PDVault::FindChunkRef(boost::shared_ptr<struct LoadChunkData> data) {
 #endif
     return;
   }
-  knode_.FindValue(data->chunk_name, false,
-                   boost::bind(&PDVault::FindChunkRefCallback, this, _1, data));
+  knode_->FindValue(data->chunk_name, false,
+      boost::bind(&PDVault::FindChunkRefCallback, this, _1, data));
 }
 
 void PDVault::FindChunkRefCallback(
@@ -706,7 +708,7 @@ void PDVault::FindChunkRefCallback(
 #endif
     return;
   }
-  if (data->is_callbacked || !knode_.is_joined()) {
+  if (data->is_callbacked || !knode_->is_joined()) {
     // callback can only be called once
     return;
   }
@@ -766,10 +768,10 @@ void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &PDVault::CheckChunkCallback, check_chunk_response, get_args);
   kad::connect_to_node conn_type =
-      knode_.CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
-                                      get_args->chunk_holder_.local_ip(),
-                                      get_args->chunk_holder_.local_port(),
-                                      get_args->chunk_holder_.host_ip());
+      knode_->CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
+                                       get_args->chunk_holder_.local_ip(),
+                                       get_args->chunk_holder_.local_port(),
+                                       get_args->chunk_holder_.host_ip());
   std::string ip = get_args->chunk_holder_.host_ip();
   uint16_t port = static_cast<uint16_t>(get_args->chunk_holder_.host_port());
   if (conn_type == kad::LOCAL) {
@@ -777,7 +779,7 @@ void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
     port = get_args->chunk_holder_.local_port();
     get_args->retry_remote_ = true;
   }
-  vault_rpcs_.CheckChunk(get_args->data_->chunk_name, ip, port,
+  vault_rpcs_->CheckChunk(get_args->data_->chunk_name, ip, port,
       get_args->chunk_holder_.rendezvous_ip(),
       get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
       check_chunk_response.get(), get_args->controller_.get(), callback);
@@ -793,7 +795,7 @@ void PDVault::CheckChunkCallback(
     return;
   }
   if (get_args->data_->is_callbacked ||
-      !knode_.is_joined()) {
+      !knode_->is_joined()) {
     // callback can only be called once
     return;
   }
@@ -802,12 +804,12 @@ void PDVault::CheckChunkCallback(
       check_chunk_response->pmid() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
-//      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+//      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::CheckChunkResponse>
           check_chunk_response(new maidsafe::CheckChunkResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
           &PDVault::CheckChunkCallback, check_chunk_response, get_args);
-      vault_rpcs_.CheckChunk(get_args->data_->chunk_name,
+      vault_rpcs_->CheckChunk(get_args->data_->chunk_name,
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
@@ -836,10 +838,10 @@ void PDVault::CheckChunkCallback(
       get_args->data_->is_active = true;
       // if we're trying to get messages (a buffer packet)
       kad::connect_to_node conn_type =
-        knode_.CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
-                                        get_args->chunk_holder_.local_ip(),
-                                        get_args->chunk_holder_.local_port(),
-                                        get_args->chunk_holder_.host_ip());
+        knode_->CheckContactLocalAddress(get_args->chunk_holder_.node_id(),
+                                         get_args->chunk_holder_.local_ip(),
+                                         get_args->chunk_holder_.local_port(),
+                                         get_args->chunk_holder_.host_ip());
       std::string ip = get_args->chunk_holder_.host_ip();
       uint16_t port = static_cast<uint16_t>(
                           get_args->chunk_holder_.host_port());
@@ -853,7 +855,7 @@ void PDVault::CheckChunkCallback(
         google::protobuf::Closure* callback =
             google::protobuf::NewCallback(this, &PDVault::GetMessagesCallback,
             get_messages_response, get_args);
-        vault_rpcs_.GetBPMessages(get_args->data_->chunk_name,
+        vault_rpcs_->GetBPMessages(get_args->data_->chunk_name,
             get_args->data_->pub_key, get_args->data_->sig_pub_key, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
             get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
@@ -863,7 +865,7 @@ void PDVault::CheckChunkCallback(
           get_chunk_response(new maidsafe::GetChunkResponse());
        google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
            &PDVault::GetChunkCallback, get_chunk_response, get_args);
-        vault_rpcs_.GetChunk(get_args->data_->chunk_name, ip, port,
+        vault_rpcs_->GetChunk(get_args->data_->chunk_name, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
             get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
             get_chunk_response.get(), get_args->controller_.get(), callback);
@@ -905,12 +907,12 @@ void PDVault::GetMessagesCallback(
       get_messages_response->pmid_id() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
-//      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+//      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::GetBPMessagesResponse>
           get_messages_response(new maidsafe::GetBPMessagesResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
           &PDVault::GetMessagesCallback, get_messages_response, get_args);
-      vault_rpcs_.GetBPMessages(get_args->data_->chunk_name,
+      vault_rpcs_->GetBPMessages(get_args->data_->chunk_name,
           get_args->data_->pub_key, get_args->data_->sig_pub_key,
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
@@ -949,12 +951,12 @@ void PDVault::GetChunkCallback(
       get_chunk_response->pmid() != get_args->chunk_holder_.node_id()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
-//      knode_.UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
+//      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
       boost::shared_ptr<maidsafe::GetChunkResponse>
           get_chunk_response(new maidsafe::GetChunkResponse());
       google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
           &PDVault::GetChunkCallback, get_chunk_response, get_args);
-      vault_rpcs_.GetChunk(get_args->data_->chunk_name,
+      vault_rpcs_->GetChunk(get_args->data_->chunk_name,
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
@@ -984,7 +986,7 @@ void PDVault::RetryGetChunk(boost::shared_ptr<struct LoadChunkData> data) {
 #endif
     return;
   }
-  if (data->is_callbacked || !knode_.is_joined()) {
+  if (data->is_callbacked || !knode_->is_joined()) {
     // callback can only be called once
     return;
   }
@@ -1049,7 +1051,7 @@ void PDVault::SwapChunk(const std::string &chunk_name,
     cb(local_result_str);
   }
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-  vault_rpcs_.SwapChunk(0, chunk_name, "", chunkcontent1.size(), remote_ip,
+  vault_rpcs_->SwapChunk(0, chunk_name, "", chunkcontent1.size(), remote_ip,
       remote_port, rendezvous_ip, rendezvous_port, udt_transport_.GetID(),
       swap_chunk_response.get(), controller, callback);
 }
@@ -1086,7 +1088,7 @@ void PDVault::SwapChunkSendChunk(
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &PDVault::SwapChunkAcceptChunk, swap_chunk_response, swap_chunk_args);
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-  vault_rpcs_.SwapChunk(1, swap_chunk_args->chunkname_, chunkcontent1,
+  vault_rpcs_->SwapChunk(1, swap_chunk_args->chunkname_, chunkcontent1,
       chunkcontent1.size(), swap_chunk_args->remote_ip_,
       swap_chunk_args->remote_port_, swap_chunk_args->rendezvous_ip_,
       swap_chunk_args->rendezvous_port_, udt_transport_.GetID(),
@@ -1136,11 +1138,11 @@ void PDVault::SwapChunkAcceptChunk(
   sr.set_public_key(pmid_public_);
   sr.set_signed_public_key(signed_pmid_public_);
   sr.set_signed_request(signed_request);
-  knode_.StoreValue(swap_chunk_args->chunkname_,
-                    signed_value,
-                    sr,
-                    86400,
-                    &pdv_dummy_callback);
+  knode_->StoreValue(swap_chunk_args->chunkname_,
+                     signed_value,
+                     sr,
+                     86400,
+                     &pdv_dummy_callback);
   maidsafe::SwapChunkResponse local_result;
   std::string local_result_str("");
   local_result.set_request_type(1);
@@ -1149,8 +1151,141 @@ void PDVault::SwapChunkAcceptChunk(
   swap_chunk_args->cb_(local_result_str);
 }
 
-void PDVault::SetKThreshold(const boost::uint16_t &threshold) {
-  vault_service_logic_.SetKThreshold(threshold);
+int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
+  if (vault_status() != kVaultStarted) {
+#ifdef DEBUG
+    printf("In PDVault::AmendAccount, vault (%s) is offline.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return maidsafe::kTaskCancelledOffline;
+  }
+
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string account_name = co.Hash(pmid_ + kAccount, "",
+                                     crypto::STRING_STRING, false);
+
+  // Find the account holders
+  boost::shared_ptr<maidsafe::AmendAccountData>
+      data(new maidsafe::AmendAccountData);
+  int rslt = kad_ops_->FindKNodes(account_name, &data->contacts);
+  if (rslt != kSuccess) {
+#ifdef DEBUG
+    printf("In PDVault::AmendAccount, Kad lookup failed -- error %i\n", rslt);
+#endif
+    return maidsafe::kFindAccountHoldersError;
+  }
+  if (data->contacts.size() < kKadStoreThreshold) {
+#ifdef DEBUG
+    printf("In PDVault::AmendAccount, Kad lookup failed to find %u nodes; "
+           "found %u nodes.\n", kKadStoreThreshold, data->contacts.size());
+#endif
+    return maidsafe::kFindAccountHoldersError;
+  }
+
+  // Create the request
+  maidsafe::AmendAccountRequest amend_account_request;
+  amend_account_request.set_amendment_type(
+      maidsafe::AmendAccountRequest::kSpaceOffered);
+  maidsafe::SignedSize *mutable_signed_size =
+      amend_account_request.mutable_signed_size();
+  mutable_signed_size->set_data_size(space_offered);
+  mutable_signed_size->set_pmid(pmid_);
+  mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(space_offered),
+      "", pmid_private_, crypto::STRING_STRING));
+  mutable_signed_size->set_public_key(pmid_public_);
+  mutable_signed_size->set_public_key_signature(signed_pmid_public_);
+  amend_account_request.set_account_pmid(pmid_);
+  for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
+    maidsafe::AmendAccountData::AmendAccountDataHolder holder(
+        data->contacts.at(i).node_id());
+    data->data_holders.push_back(holder);
+  }
+
+  // lock the mutex here in case RPCs return before we wait on the condition
+  boost::mutex::scoped_lock lock(data->mutex);
+
+  // Send the requests
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &PDVault::AmendAccountCallback, i, data);
+    vault_rpcs_->AmendAccount(data->contacts.at(i),
+        kad_ops_->AddressIsLocal(data->contacts.at(i)),
+                                 udt_transport_.GetID(),
+                                 &amend_account_request,
+                                 &data->data_holders.at(i).response,
+                                 data->data_holders.at(i).controller.get(),
+                                 callback);
+  }
+
+  // wait for the RPCs to return or timeout, or enough positive responses
+  while (data->returned_count < data->contacts.size() &&
+         data->success_count < kKadStoreThreshold) {
+    data->condition.wait(lock);
+  }
+
+  if (data->success_count < kKadStoreThreshold) {
+#ifdef DEBUG
+    printf("In PDVault::AmendAccount, not enough positive responses "
+           "received.\n");
+#endif
+    return maidsafe::kRequestFailedConsensus;
+  }
+
+  return kSuccess;
+}
+
+void PDVault::AmendAccountCallback(
+    size_t index, boost::shared_ptr<maidsafe::AmendAccountData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  ++data->returned_count;
+  maidsafe::AmendAccountData::AmendAccountDataHolder &holder =
+      data->data_holders.at(index);
+  if (!holder.response.IsInitialized()) {
+#ifdef DEBUG
+    printf("In PDVault::AmendAccountCallback, response %u is uninitialised.\n",
+           index);
+#endif
+  } else if (holder.response.result() != kAck) {
+#ifdef DEBUG
+    printf("In PDVault::AmendAccountCallback, response %u has result %i.\n",
+           index, holder.response.result());
+#endif
+  } else if (holder.response.pmid() != holder.node_id) {
+#ifdef DEBUG
+    printf("In PDVault::AmendAccountCallback, response %u from %s has PMID "
+           "%s.\n", index, HexSubstr(holder.node_id).c_str(),
+           HexSubstr(holder.response.pmid()).c_str());
+#endif
+    // TODO(Fraser#5#): Send alert to holder.node_id's A/C holders
+  } else {
+    // everything OK
+    ++data->success_count;
+  }
+  data->condition.notify_one();
+}
+
+void PDVault::UpdateSpaceOffered() {
+  int n = 1;
+  while (vault_status() == kVaultStarted &&
+         0 != AmendAccount(vault_chunkstore_.available_space())) {
+#ifdef DEBUG
+      printf("PDVault::UpdateSpaceOffered (%s) failed, trying again...\n",
+             HexSubstr(pmid_).c_str());
+#endif
+    ++n;
+    boost::this_thread::sleep(boost::posix_time::seconds(20));
+  }
+#ifdef DEBUG
+  if (vault_status() == kVaultStarted)
+    printf("In PDVault::UpdateSpaceOffered (%s), set space offered to %llu "
+           "on attempt #%d.\n", HexSubstr(pmid_).c_str(),
+           vault_chunkstore_.available_space(), n);
+  else
+    printf("In PDVault::UpdateSpaceOffered (%s), vault offline, giving up "
+           "after %d attempt(s).\n", HexSubstr(pmid_).c_str(), n);
+#endif
 }
 
 }  // namespace maidsafe_vault

@@ -18,12 +18,12 @@
 #include <QWidget>
 #include <QMenu>
 #include <QAction>
+#include <QFileDialog>
 
 // local
 #include "qt/widgets/panel.h"
 #include "qt/client/contact.h"
 #include "qt/widgets/personal_messages.h"
-
 
 // generated
 #include "ui_user_contacts_panel.h"
@@ -51,9 +51,9 @@ class Contacts : public Panel {
   void addContact(Contact*);
   Ui::ContactsPage ui_;
   bool init_;
+  QFileDialog* qfd;
   ContactList contacts_;
   UserPanels* userPanels_;
-
   PersonalMessages* messages_;
 
   QList<QListWidgetItem *> currentContact();
@@ -82,6 +82,7 @@ class Contacts : public Panel {
     void onSendMessageClicked();
     void onFileSendClicked();
 
+    void onDirectoryEntered(const QString&);
     void onContactsBoxTextEdited(const QString &value);
     void onAddedContact(const QString &name,
                         const maidsafe::InstantMessage& im);

@@ -136,8 +136,7 @@ class AccountAmendmentHandler {
       : account_handler_(account_handler),
         vault_service_logic_(vault_service_logic),
         amendments_(),
-        amendment_mutex_(),
-        kKadStoreThreshold_(kad::K * kad::kMinSuccessfulPecentageStore) {}
+        amendment_mutex_() {}
   ~AccountAmendmentHandler() {}
   // Assumes that response->pmid() has already been set and that
   // request->signed_size() validates
@@ -172,7 +171,6 @@ class AccountAmendmentHandler {
   VaultServiceLogic *vault_service_logic_;
   AccountAmendmentSet amendments_;
   boost::mutex amendment_mutex_;
-  boost::uint16_t kKadStoreThreshold_;
 };
 
 }  // namespace maidsafe_vault

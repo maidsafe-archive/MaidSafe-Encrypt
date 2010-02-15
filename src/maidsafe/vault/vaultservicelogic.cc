@@ -36,18 +36,18 @@
 namespace maidsafe_vault {
 
 VaultServiceLogic::VaultServiceLogic(
-    VaultRpcs *vault_rpcs,
-    kad::KNode *knode)
+    const boost::shared_ptr<VaultRpcs> &vault_rpcs,
+    const boost::shared_ptr<kad::KNode> &knode)
         : vault_rpcs_(vault_rpcs),
           knode_(knode),
+          kad_ops_(new maidsafe::KadOps(knode)),
           our_details_(),
           pmid_(),
           pmid_public_key_(),
           pmid_public_signature_(),
           pmid_private_(),
           online_(false),
-          online_mutex_(),
-          kKadStoreThreshold_(kad::K * kad::kMinSuccessfulPecentageStore) {
+          online_mutex_() {
   base::OnlineController::instance()->RegisterObserver(0, boost::bind(
       &VaultServiceLogic::SetOnlineStatus, this, _1));
 }
@@ -56,7 +56,7 @@ bool VaultServiceLogic::Init(const std::string &pmid,
                              const std::string &pmid_public_key,
                              const std::string &pmid_public_signature,
                              const std::string &pmid_private) {
-  if (knode_ == NULL)
+  if (knode_.get() == NULL)
     return false;
   pmid_ = pmid;
   pmid_public_key_ = pmid_public_key;
@@ -76,10 +76,6 @@ bool VaultServiceLogic::online() {
 void VaultServiceLogic::SetOnlineStatus(bool online) {
   boost::mutex::scoped_lock lock(online_mutex_);
   online_ = online;
-}
-
-void VaultServiceLogic::SetKThreshold(const boost::uint16_t &threshold) {
-  kKadStoreThreshold_ = threshold;
 }
 
 int VaultServiceLogic::AddToRemoteRefList(
@@ -105,11 +101,11 @@ int VaultServiceLogic::AddToRemoteRefList(
 #endif
     return result;
   }
-  if (data->contacts.size() < size_t(kKadStoreThreshold_)) {
+  if (data->contacts.size() < size_t(kKadStoreThreshold)) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefList (%s), Kad lookup failed to "
            "find %u nodes; found %u nodes.\n", HexSubstr(pmid_).c_str(),
-           kKadStoreThreshold_, data->contacts.size());
+           kKadStoreThreshold, data->contacts.size());
 #endif
     return kVaultServiceFindNodesTooFew;
   }
@@ -149,12 +145,10 @@ int VaultServiceLogic::AddToRemoteRefList(
     google::protobuf::Closure* done = google::protobuf::NewCallback(this,
         &VaultServiceLogic::AddToRemoteRefListCallback, j, data);
     vault_rpcs_->AddToReferenceList(data->contacts.at(j),
-                                    AddressIsLocal(data->contacts.at(j)),
-                                    transport_id,
-                                    &request,
-                                    &data->data_holders.at(j).response,
-                                    data->data_holders.at(j).controller.get(),
-                                    done);
+        kad_ops_->AddressIsLocal(data->contacts.at(j)), transport_id, &request,
+                                 &data->data_holders.at(j).response,
+                                 data->data_holders.at(j).controller.get(),
+                                 done);
   }
   boost::mutex::scoped_lock lock(data->mutex);
   while (!data->callback_done)
@@ -199,8 +193,8 @@ void VaultServiceLogic::AddToRemoteRefListCallback(
     ++data->success_count;
   else
     ++data->failure_count;
-  if (data->success_count >= kKadStoreThreshold_ ||
-      data->failure_count > data->data_holders.size() - kKadStoreThreshold_) {
+  if (data->success_count >= kKadStoreThreshold ||
+      data->failure_count > data->data_holders.size() - kKadStoreThreshold) {
     data->result = result;
     data->callback_done = true;
     data->cv.notify_one();
@@ -220,19 +214,13 @@ int VaultServiceLogic::FindKNodes(const std::string &kad_key,
   boost::mutex mutex;
   boost::condition_variable cv;
   ReturnCode result(kVaultServiceError);
-  FindCloseNodes(kad_key, boost::bind(
+  kad_ops_->FindCloseNodes(kad_key, boost::bind(
       &VaultServiceLogic::HandleFindKNodesResponse, this, _1, kad_key, contacts,
       &mutex, &cv, &result));
   boost::mutex::scoped_lock lock(mutex);
   while (result == kVaultServiceError)
     cv.wait(lock);
   return result;
-}
-
-void VaultServiceLogic::FindCloseNodes(
-    const std::string &kad_key,
-    const base::callback_func_type &callback) {
-  knode_->FindCloseNodes(kad_key, callback);
 }
 
 void VaultServiceLogic::HandleFindKNodesResponse(
@@ -301,7 +289,7 @@ void VaultServiceLogic::AmendRemoteAccount(
       crypto::STRING_STRING, false));
   boost::shared_ptr<AmendRemoteAccountOpData> data(new AmendRemoteAccountOpData(
       request, account_name, found_local_result, callback, transport_id));
-  FindCloseNodes(account_name, boost::bind(
+  kad_ops_->FindCloseNodes(account_name, boost::bind(
       &VaultServiceLogic::AmendRemoteAccountStageTwo, this, data, _1));
 }
 
@@ -322,11 +310,11 @@ void VaultServiceLogic::AmendRemoteAccountStageTwo(
     data->callback(result);
     return;
   }
-  if (data->contacts.size() < size_t(kKadStoreThreshold_)) {
+  if (data->contacts.size() < size_t(kKadStoreThreshold)) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccountStageTwo (%s), Kad lookup failed to "
            "find %u nodes; found %u nodes.\n", HexSubstr(pmid_).c_str(),
-           kKadStoreThreshold_, data->contacts.size());
+           kKadStoreThreshold, data->contacts.size());
 #endif
     data->callback(kVaultServiceFindNodesTooFew);
     return;
@@ -360,12 +348,11 @@ void VaultServiceLogic::AmendRemoteAccountStageTwo(
     google::protobuf::Closure* done = google::protobuf::NewCallback(this,
         &VaultServiceLogic::AmendRemoteAccountStageThree, j, data);
     vault_rpcs_->AmendAccount(data->contacts.at(j),
-                              AddressIsLocal(data->contacts.at(j)),
-                              data->transport_id,
-                              &data->request,
-                              &data->data_holders.at(j).response,
-                              data->data_holders.at(j).controller.get(),
-                              done);
+        kad_ops_->AddressIsLocal(data->contacts.at(j)), data->transport_id,
+                                 &data->request,
+                                 &data->data_holders.at(j).response,
+                                 data->data_holders.at(j).controller.get(),
+                                 done);
   }
 }
 
@@ -407,8 +394,8 @@ void VaultServiceLogic::AmendRemoteAccountStageThree(
     ++data->success_count;
   else
     ++data->failure_count;
-  if (data->success_count >= kKadStoreThreshold_ ||
-      data->failure_count > data->data_holders.size() - kKadStoreThreshold_) {
+  if (data->success_count >= kKadStoreThreshold ||
+      data->failure_count > data->data_holders.size() - kKadStoreThreshold) {
     data->callback(result);
     data->callback_done = true;
   }
@@ -471,12 +458,10 @@ int VaultServiceLogic::RemoteVaultAbleToStore(
     google::protobuf::Closure* done = google::protobuf::NewCallback(this,
         &VaultServiceLogic::AccountStatusCallback, j, data);
     vault_rpcs_->AccountStatus(data->contacts.at(j),
-                               AddressIsLocal(data->contacts.at(j)),
-                               transport_id,
-                               &request,
-                               &data->data_holders.at(j).response,
-                               data->data_holders.at(j).controller.get(),
-                               done);
+        kad_ops_->AddressIsLocal(data->contacts.at(j)), transport_id, &request,
+                                 &data->data_holders.at(j).response,
+                                 data->data_holders.at(j).controller.get(),
+                                 done);
   }
   boost::mutex::scoped_lock lock(data->mutex);
   while (!data->callback_done)
@@ -581,11 +566,6 @@ std::string VaultServiceLogic::GetSignedRequest(
   co.set_hash_algorithm(crypto::SHA_512);
   return co.AsymSign(co.Hash(pmid_public_signature_ + name + recipient_id, "",
       crypto::STRING_STRING, false), "", pmid_private_, crypto::STRING_STRING);
-}
-
-bool VaultServiceLogic::AddressIsLocal(const kad::Contact &peer) {
-  return knode_->CheckContactLocalAddress(peer.node_id(), peer.local_ip(),
-      peer.local_port(), peer.host_ip()) == kad::LOCAL;
 }
 
 }  // namespace maidsafe_vault

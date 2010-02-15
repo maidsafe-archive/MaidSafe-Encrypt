@@ -211,6 +211,12 @@ void Contacts::addContact(Contact* contact) {
   QPixmap pixmap;
   if (contact->presence() == Presence::INVALID) {
       pixmap = QPixmap(":/icons/16/question");
+  } else if (contact->presence() == Presence::AVAILABLE) {
+      pixmap = QPixmap(":/icons/16/tick");
+  } else if (contact->presence() == Presence::BUSY) {
+      //TODO Correct symbol
+  } else if (contact->presence() == Presence::IDLE) {
+      //TODO Correct symbol
   } else {
       pixmap = QPixmap(":/icons/16/tick");
   }
@@ -335,7 +341,8 @@ void Contacts::onSendMessageClicked() {
     foreach(QWidget *widget, QApplication::allWidgets()) {
       PersonalMessages *mess = qobject_cast<PersonalMessages*>(widget);
       if (mess) {
-        // TODO(Team): get mainwindows location and offset before restoring
+      // TODO(Team#5#): 2010-01-21 - get mainwindows location and offset before
+      //                             restoring
         if (mess->getName() == contact)
           mess->showNormal();
       }
@@ -370,7 +377,7 @@ void Contacts::onFileSendClicked() {
   }
 
   // choose a file
-  // starting directoty should be the maidafe one.
+  // starting directory should be the maidafe one.
   // TODO(Team#5#): 2009-07-28 - restrict file dialog to maidsafe directories
   QString root;
 #ifdef DEBUG
@@ -381,23 +388,25 @@ void Contacts::onFileSendClicked() {
 #ifdef __WIN32__
   root = QString("%1:\\My Files").
          arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
-  QFileDialog *qfd = new QFileDialog(this,
+
+#else
+  file_system::FileSystem fs;
+  root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+
+#endif
+
+  qfd = new QFileDialog(this,
                      tr("File to share..."),
                      root, tr("Any file (*)"));
+
+  connect( qfd, SIGNAL(directoryEntered(const QString &)),
+            this, SLOT(onDirectoryEntered(const QString&)));
+
   int result = qfd->exec();
   if (result == QDialog::Rejected) {
     return;
   }
   QStringList fileNames = qfd->selectedFiles();
-#else
-  file_system::FileSystem fs;
-  root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
-  QStringList fileNames = QFileDialog::getOpenFileNames(
-                                this,
-                                "Select one to send",
-                                root,
-                                tr("Any file (*)"));
-#endif
 
 #ifdef DEBUG
   printf("Contacts::onFileSendClicked: time - %f.\n", t.elapsed());
@@ -616,4 +625,30 @@ void Contacts::DoneAddingContact(int result, QString contact) {
                                   tr("User already exists in your list."));
              break;
   }
+}
+
+void Contacts::onDirectoryEntered(const QString& dir){
+  printf("Contacts::onDirectoryEntered :: %s \n",dir.toStdString().c_str());
+  QString root;
+
+#ifdef __WIN32__
+  root = QString(maidsafe::SessionSingleton::getInstance()->WinDrive());
+
+  if (!dir.startsWith(root, Qt::CaseInsensitive)){
+    root = QString("%1:\\My Files").
+         arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+    qfd->setDirectory(root);
+  }
+
+#else
+  file_system::FileSystem fs;
+  root = QString::fromStdString(fs.MaidsafeFuseDir());
+
+  if (!dir.startsWith(root, Qt::CaseInsensitive)){
+    file_system::FileSystem fs;
+    root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+    qfd->setDirectory(root);
+  }
+
+#endif
 }

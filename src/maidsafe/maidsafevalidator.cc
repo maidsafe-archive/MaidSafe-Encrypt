@@ -70,11 +70,6 @@ bool MaidsafeValidator::ValidateRequest(const std::string &signed_request,
       crypto::STRING_STRING))
     return true;
 #ifdef DEBUG
-  printf("PN: %s\nPK: %s\nSR: %s\nPKS: %s\n",
-         HexSubstr(key).c_str(),
-         HexSubstr(public_key).c_str(),
-         HexSubstr(signed_request).c_str(),
-         HexSubstr(signed_public_key).c_str());
   printf("MaidsafeValidator::ValidateRequest - Failed to validate request.\n");
 #endif
   return false;

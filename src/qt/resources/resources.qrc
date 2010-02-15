@@ -32,5 +32,7 @@
     <file>test2withtabs.qss</file>
     <file>grey_purple.qss</file>
     <file>test2withlabel.qss</file>
+    <file>green_theme.qss</file>
+    <file>green_test.qss</file>
   </qresource>
 </RCC>

@@ -132,7 +132,6 @@ class Env: public testing::Environment {
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
           signed_key, chunkstore_local, 0, false, false, kad_config_file_,
           1073741824, 0, transport_handler.get()));
-      pdvault_local->SetKThreshold(kTestK_ * kad::kMinSuccessfulPecentageStore);
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
       printf(".");
