@@ -127,7 +127,7 @@ class SessionSingleton;
 
 class AddToWatchListTask : public QRunnable {
  public:
-  AddToWatchListTask(const StoreData &store_data, MaidsafeStoreManager *msm)
+  AddToWatchListTask(StoreData store_data, MaidsafeStoreManager *msm)
       : store_data_(store_data),
         msm_(msm) {}
   void run();
@@ -140,7 +140,7 @@ class AddToWatchListTask : public QRunnable {
 
 class SendChunkCopyTask : public QRunnable {
  public:
-  SendChunkCopyTask(const StoreData &store_data,
+  SendChunkCopyTask(StoreData store_data,
                     MaidsafeStoreManager *msm)
       : store_data_(store_data),
         msm_(msm) {}
@@ -168,7 +168,7 @@ class StorePacketTask : public QRunnable {
 
 class DeleteChunkTask : public QRunnable {
  public:
-  DeleteChunkTask(const StoreData &store_data, MaidsafeStoreManager *msm)
+  DeleteChunkTask(StoreData store_data, MaidsafeStoreManager *msm)
       : store_data_(store_data),
         msm_(msm) {}
   void run();
@@ -348,7 +348,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           int *return_value,
                           GenericConditionData *generic_cond_data);
   // Sends AddToWatchList requests to each of the k Chunk Info holders.
-  virtual void AddToWatchList(const StoreData &store_data);
+  virtual void AddToWatchList(StoreData store_data);
   // Assesses each AddToWatchListResponse and if consensus of required chunk
   // upload copies is achieved, begins new SendChunkCopyTask(s) if required.
   void AddToWatchListCallback(boost::uint16_t index,
@@ -529,6 +529,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   boost::condition_variable get_chunk_conditional_;
   boost::shared_ptr<BufferPacketRpcs> bprpcs_;
   ClientBufferPacketHandler cbph_;
+  static int kChunkMaxThreadCount_;
+  static int kPacketMaxThreadCount_;
 };
 
 }  // namespace maidsafe

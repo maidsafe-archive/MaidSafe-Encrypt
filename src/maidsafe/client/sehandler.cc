@@ -54,7 +54,7 @@ void SEHandler::Init(boost::shared_ptr<StoreManagerInterface> storem,
 }
 
 ItemType SEHandler::CheckEntry(const std::string &full_entry,
-                               uint64_t *file_size) {
+                               boost::uint64_t *file_size) {
   if (full_entry.size()>245) {
 #ifdef DEBUG
     printf("File name too long to process: %s\n", full_entry.c_str());
@@ -258,7 +258,8 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
   //    }
 }  // end EncryptFile
 
-int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
+int SEHandler::EncryptString(const std::string &data,
+                             std::string *ser_dm) {
   maidsafe::DataMap dm;
   SelfEncryption se(client_chunkstore_);
   ser_dm->clear();
@@ -273,7 +274,7 @@ int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
 bool SEHandler::ProcessMetaData(const std::string &rel_entry,
                                 const ItemType type,
                                 const std::string &hash,
-                                const uint64_t &file_size,
+                                const boost::uint64_t &file_size,
                                 std::string *ser_mdm) {
   // boost::mutex::scoped_lock lock(mutex2_);
   // if parent dir doesn't exist, quit
@@ -349,7 +350,7 @@ int SEHandler::DecryptFile(const std::string &rel_entry) {
 }
 
 int SEHandler::DecryptString(const std::string &ser_dm,
-    std::string *dec_string) {
+                             std::string *dec_string) {
   DataMap dm;
   dec_string->clear();
   dm.ParseFromString(ser_dm);
@@ -460,7 +461,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
                          DataMap *dm) {
 #ifdef DEBUG
   printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)\n",
-         dir_path.c_str(), dir_type, encrypt_dm, dir_key.c_str());
+         dir_path.c_str(), dir_type, encrypt_dm, HexSubstr(dir_key).c_str());
 //  printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm, enc_dm, db_path;
@@ -552,7 +553,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                          bool overwrite) {
 #ifdef DEBUG
   printf("SEHandler::DecryptDb - dir_path(%s) type(%i) encrypted(%i) key(%s)",
-         dir_path.c_str(), dir_type, dm_encrypted, dir_key.c_str());
+         dir_path.c_str(), dir_type, dm_encrypted, HexSubstr(dir_key).c_str());
   printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm_, enc_dm_;

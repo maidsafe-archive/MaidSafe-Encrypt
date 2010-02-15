@@ -95,6 +95,7 @@ int SessionSingleton::LoadKeys(std::list<Key> *keys) {
 }
 
 void SessionSingleton::GetKeys(std::list<KeyAtlasRow> *keys) {
+  keys->clear();
   ka_.GetKeyRing(keys);
 }
 

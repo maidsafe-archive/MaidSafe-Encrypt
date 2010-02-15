@@ -151,9 +151,9 @@ int ClientController::Init() {
     return -5;
   }
 #ifdef LOCAL_PDVAULT
-    sm_.reset(new LocalStoreManager(client_chunkstore_));
+  sm_.reset(new LocalStoreManager(client_chunkstore_));
 #else
-    sm_.reset(new MaidsafeStoreManager(client_chunkstore_));
+  sm_.reset(new MaidsafeStoreManager(client_chunkstore_));
 #endif
   if (!JoinKademlia()) {
 #ifdef DEBUG
@@ -383,31 +383,56 @@ bool ClientController::CreateUser(const std::string &username,
 #endif
     return false;
   }
+
   ss_->SetConnectionStatus(0);
   int result = auth_.CreateUserSysPackets(username, pin);
-
   if (result != kSuccess) {
 #ifdef DEBUG
-    printf("In CC::CreateUser - Failed to create user system packets\n");
+    printf("In CC::CreateUser - Failed to create user system packets.\n");
 #endif
     ss_->ResetSession();
     return false;
+  } else {
+#ifdef DEBUG
+    printf("In CC::CreateUser - auth_.CreateUserSysPackets DONE.\n");
+#endif
   }
+
+//  Pwn the vault here
+
+//  result = sm_->CreateAccount(vcp.space);
+//  if (result != kSuccess) {
+//#ifdef DEBUG
+//    printf("In CC::CreateUser - Failed to create user account.\n");
+//#endif
+//    ss_->ResetSession();
+//    return false;
+//  } else {
+//#ifdef DEBUG
+//    printf("In CC::CreateUser - sm_->CreateAccount DONE.\n");
+//#endif
+//  }
+
   client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);
   std::string ser_da, ser_dm;
   ss_->SerialisedKeyRing(&ser_da);
   if (seh_.EncryptString(ser_da, &ser_dm) != 0) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser - Cannot SelfEncrypt DA\n");
+    printf("In ClientController::CreateUser - Cannot SelfEncrypt DA.\n");
 #endif
     ss_->ResetSession();
     return false;
+  } else {
+#ifdef DEBUG
+    printf("In CC::CreateUser - sm_->CreateAccount DONE.\n");
+#endif
   }
+
   result = auth_.CreateTmidPacket(username, pin, password, ser_dm);
   if (result != kSuccess) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser - Cannot create tmid packet\n");
+    printf("In ClientController::CreateUser - Cannot create tmid packet.\n");
 #endif
     ss_->ResetSession();
     return false;
@@ -426,7 +451,7 @@ bool ClientController::CreateUser(const std::string &username,
   int res = seh_.GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
   if (res != 0) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser - Bombing out on no root_db_key\n");
+    printf("In ClientController::CreateUser - Bombing out, no root_db_key.\n");
 #endif
     return false;
   }
@@ -503,7 +528,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   if (0 != res) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser error creating DBs\n");
+    printf("In ClientController::CreateUser error creating DBs.\n");
 #endif
     return false;
   }
@@ -511,7 +536,7 @@ bool ClientController::CreateUser(const std::string &username,
   res = SetVaultConfig(ss_->PublicKey(PMID), ss_->PrivateKey(PMID));
   if (0 != res) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser error stting vault config\n");
+    printf("In ClientController::CreateUser error stting vault config.\n");
 #endif
     return false;
   }

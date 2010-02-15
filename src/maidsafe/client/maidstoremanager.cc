@@ -75,6 +75,9 @@ void DeletePacketTask::run() {
   msm_->DeletePacketFromNet(delete_data_);
 }
 
+int MaidsafeStoreManager::kPacketMaxThreadCount_ = 1;
+int MaidsafeStoreManager::kChunkMaxThreadCount_ = 1;
+
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
     : udt_transport_(),
       transport_handler_(),
@@ -155,8 +158,8 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
     maid_response.SerializeToString(&maid_result);
     cb(maid_result);
   }
-  chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount);
-  packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount);
+  chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount_);
+  packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount_);
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
 #endif
@@ -290,6 +293,14 @@ void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
   boost::shared_ptr<StoreData> store_data(new StoreData(packet_name, value,
       system_packet_type, dir_type, msid, key_id, public_key,
       public_key_signature, private_key, if_packet_exists, cb));
+#ifdef DEBUG
+//  printf("PN: %s\nV: %s\nK: %s\nPK: %s\nPKS: %s\n",
+//         HexSubstr(packet_name).c_str(),
+//         HexSubstr(value).c_str(),
+//         HexSubstr(key_id).c_str(),
+//         HexSubstr(public_key).c_str(),
+//         HexSubstr(public_key_signature).c_str());
+#endif
   // packet_thread_pool_ handles destruction of store_packet_task.
   StorePacketTask *store_packet_task = new StorePacketTask(store_data, this);
   packet_thread_pool_.start(store_packet_task);
@@ -975,39 +986,39 @@ void MaidsafeStoreManager::GetPacketSignatureKeys(PacketType packet_type,
       break;
       // TODO(Fraser#5#): 2010-01-29 - Uncomment below once auth.cc fixed (MAID
       //                               should be signed by ANMAID, not self)
-//    case MAID:
-//    case ANMAID:
-//      *key_id = ss->Id(ANMAID);
-//      *public_key = ss->PublicKey(ANMAID);
-//      *public_key_sig = ss->SignedPublicKey(ANMAID);
-//      *private_key = ss->PrivateKey(ANMAID);
-//      break;
-//    case PMID:
-//      *key_id = ss->Id(MAID);
-//      *public_key = ss->PublicKey(MAID);
-//      *public_key_sig = ss->SignedPublicKey(MAID);
-//      *private_key = ss->PrivateKey(MAID);
-//      break;
-    case PMID:
     case MAID:
+    case ANMAID:
+      *key_id = ss->Id(ANMAID);
+      *public_key = ss->PublicKey(ANMAID);
+      *public_key_sig = ss->SignedPublicKey(ANMAID);
+      *private_key = ss->PrivateKey(ANMAID);
+      break;
+    case PMID:
       *key_id = ss->Id(MAID);
       *public_key = ss->PublicKey(MAID);
       *public_key_sig = ss->SignedPublicKey(MAID);
       *private_key = ss->PrivateKey(MAID);
       break;
+//    case PMID:
+//    case MAID:
+//      *key_id = ss->Id(MAID);
+//      *public_key = ss->PublicKey(MAID);
+//      *public_key_sig = ss->SignedPublicKey(MAID);
+//      *private_key = ss->PrivateKey(MAID);
+//      break;
     case PD_DIR:
     case MSID:
       GetChunkSignatureKeys(dir_type, msid, key_id, public_key, public_key_sig,
                             private_key);
       break;
-    case BUFFER:
-    case BUFFER_INFO:
-    case BUFFER_MESSAGE:
-      *key_id = ss->Id(MPID);
-      *public_key = ss->PublicKey(MPID);
-      *public_key_sig = ss->SignedPublicKey(MPID);
-      *private_key = ss->PrivateKey(MPID);
-      break;
+//    case BUFFER:
+//    case BUFFER_INFO:
+//    case BUFFER_MESSAGE:
+//      *key_id = ss->Id(MPID);
+//      *public_key = ss->PublicKey(MPID);
+//      *public_key_sig = ss->SignedPublicKey(MPID);
+//      *private_key = ss->PrivateKey(MPID);
+//      break;
     default:
       break;
   }
@@ -1145,7 +1156,7 @@ int MaidsafeStoreManager::AddBPMessage(
   return result;
 }
 
-void MaidsafeStoreManager::AddToWatchList(const StoreData &store_data) {
+void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
   // TODO(Fraser#5#): 2009-12-21 - Consider repeating this until success or
   //                               some max. no. of failures.
   StoreTask task;
@@ -2455,13 +2466,14 @@ void MaidsafeStoreManager::SendPacket(boost::shared_ptr<StoreData> store_data) {
       store_data->private_key, crypto::STRING_STRING));
   std::string signed_request = co.AsymSign(co.Hash(store_data->public_key +
       store_data->public_key_signature + store_data->data_name, "",
-      crypto::STRING_STRING, true), "", store_data->private_key,
+      crypto::STRING_STRING, false), "", store_data->private_key,
       crypto::STRING_STRING);
   kad::SignedRequest sr;
   sr.set_signer_id(store_data->key_id);
   sr.set_public_key(store_data->public_key);
   sr.set_signed_public_key(store_data->public_key_signature);
   sr.set_signed_request(signed_request);
+  printf("SR: %s\n", HexSubstr(signed_request).c_str());
   base::callback_func_type cb = boost::bind(
       &MaidsafeStoreManager::SendPacketCallback, this, _1, store_data);
   knode_->StoreValue(store_data->data_name, signed_value, sr, 31556926, cb);
