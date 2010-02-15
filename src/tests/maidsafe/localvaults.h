@@ -113,7 +113,7 @@ class Env: public testing::Environment {
 
   virtual void SetUp() {
     // Construct and start vaults
-    printf("Creating vaults");
+    printf("Creating vaults...\n");
     for (int i = 0; i < kNetworkSize_; ++i) {
       std::string chunkstore_local = chunkstore_dir_+"/Chunkstore"+
           base::itos(i);
@@ -127,16 +127,17 @@ class Env: public testing::Environment {
       kad_config_file_ = chunkstore_local + "/.kadconfig";
       boost::shared_ptr<transport::TransportHandler>
           transport_handler(new transport::TransportHandler());
+      boost::int16_t trans_id;
+      transport::TransportUDT *udt_transport(new transport::TransportUDT);
+      transport_handler->Register(udt_transport, &trans_id);
       transport_handlers_.push_back(transport_handler);
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
           signed_key, chunkstore_local, 0, false, false, kad_config_file_,
-          1073741824, 0, transport_handler.get()));
+          1073741824, 0, transport_handler.get(), trans_id));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
-      printf(".");
     }
-    printf("\n");
     // Start second vault and add as bootstrapping node for first vault
     (*pdvaults_)[1]->Start(true);
     boost::posix_time::ptime stop =
@@ -232,8 +233,7 @@ class Env: public testing::Environment {
 #endif
     printf("In vault tear down.\n");
     bool success(false);
-    for (int i = 0; i < current_nodes_created_; ++i)
-      (*pdvaults_)[i]->StopRvPing();
+    StopCommunications();
     for (int i = 0; i < current_nodes_created_; ++i) {
       printf("Trying to stop vault %i.\n", i);
       success = false;
@@ -242,9 +242,15 @@ class Env: public testing::Environment {
         printf("Vault %i stopped.\n", i);
       else
         printf("Vault %i failed to stop correctly.\n", i);
+    }
+    for (int i = 0; i < current_nodes_created_; ++i) {
+      transport::TransportUDT *trans =
+          static_cast<transport::TransportUDT*>(transport_handlers_[i]->Get(0));
+      transport_handlers_[i]->Remove(0);
+      delete trans;
 //      if (i == current_nodes_created_ - 1)
 //        (*pdvaults_)[current_nodes_created_ - 1]->CleanUp();
-//      (*pdvaults_)[i].reset();
+      (*pdvaults_)[i].reset();
     }
     try {
       if (fs::exists(vault_dir_))
@@ -256,6 +262,13 @@ class Env: public testing::Environment {
       printf("%s\n", e_.what());
     }
     printf("Finished vault tear down.\n");
+  }
+
+  void StopCommunications() {
+    for (int i = 0; i < current_nodes_created_; ++i) {
+      (*pdvaults_)[i]->StopRvPing();
+      transport_handlers_[i]->StopAll();
+    }
   }
 
   std::string vault_dir_, chunkstore_dir_, kad_config_file_;

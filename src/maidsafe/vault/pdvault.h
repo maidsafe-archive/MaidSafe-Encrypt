@@ -183,7 +183,8 @@ class PDVault {
           const std::string &kad_config_file,
           const boost::uint64_t &available_space,
           const boost::uint64_t &vault_used_space,
-          transport::TransportHandler *transport_handler);
+          transport::TransportHandler *transport_handler,
+          const boost::int16_t &transport_id);
   ~PDVault();
   void Start(bool first_node);
   int Stop();
@@ -221,6 +222,7 @@ class PDVault {
                  base::callback_func_type cb);
   void StopRvPing() { transport_handler_->StopPingRendezvous(); }
   friend class localvaults::Env;
+  friend class PDVaultTest;
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
@@ -295,8 +297,8 @@ class PDVault {
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   boost::uint16_t port_;
-  transport::TransportUDT udt_transport_;
   transport::TransportHandler *transport_handler_;
+  boost::int16_t transport_id_;
   rpcprotocol::ChannelManager channel_manager_;
   maidsafe::MaidsafeValidator validator_;
   boost::shared_ptr<kad::KNode> knode_;

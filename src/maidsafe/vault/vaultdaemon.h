@@ -37,26 +37,7 @@ const boost::uint16_t kRsaKeySize = 4096;
 class VaultDaemon {
   // A daemon class to assist PD vault functions
  public:
-  explicit VaultDaemon(int port) : pdvault_(),
-                                   val_check_(),
-                                   is_owned_(false),
-                                   config_file_(),
-                                   local_config_file_(),
-                                   kad_config_file_(),
-                                   vault_path_(),
-                                   pmid_public_(),
-                                   pmid_private_(),
-                                   signed_pmid_public_(),
-                                   chunkstore_dir_(),
-                                   port_(port),
-                                   vault_available_space_(0),
-                                   used_space_(0),
-                                   local_udt_transport_(),
-                                   transport_handler_(),
-                                   local_ch_manager_(&transport_handler_),
-                                   registration_channel_(),
-                                   registration_service_(),
-                                   config_mutex_() {}
+  explicit VaultDaemon(int port);
   ~VaultDaemon();
   void Status();
   // Returns false if it fails to start the already owned vault or the not owned
@@ -90,7 +71,7 @@ class VaultDaemon {
   std::string chunkstore_dir_;
   boost::uint16_t port_;
   boost::uint64_t vault_available_space_, used_space_;
-  transport::TransportUDT local_udt_transport_;
+  transport::TransportUDT local_udt_transport_, global_udt_transport_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager local_ch_manager_;
   boost::shared_ptr<rpcprotocol::Channel> registration_channel_;
