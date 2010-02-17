@@ -1008,7 +1008,7 @@ int Authentication::StorePacket(const std::string &packet_name,
   VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
                                     &mutex, &cond_var, &result);
   sm_->StorePacket(packet_name, value, type, PRIVATE, msid, if_exists, func);
-  while (result == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError)
       cond_var.wait(lock);
@@ -1028,7 +1028,7 @@ int Authentication::DeletePacket(const std::string &packet_name,
                                     &mutex, &cond_var, &result);
   std::vector<std::string> values(1, value);
   sm_->DeletePacket(packet_name, values, type, PRIVATE, "", func);
-  while (result == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError)
       cond_var.wait(lock);
