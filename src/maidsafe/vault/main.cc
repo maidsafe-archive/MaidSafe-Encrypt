@@ -166,11 +166,14 @@ class RunPDVaults {
         }
         boost::shared_ptr<transport::TransportHandler>
             transport_handler(new transport::TransportHandler());
+        boost::int16_t trans_id;
+        transport::TransportUDT *udt_transport(new transport::TransportUDT);
+        transport_handler->Register(udt_transport, &trans_id);
         transport_handlers_.push_back(transport_handler);
         boost::shared_ptr<maidsafe_vault::PDVault>
             pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
             signed_key, dir, 0, false, false, kad_config_location,
-            1073741824, 0, transport_handler.get()));
+            1073741824, 0, transport_handler.get(), trans_id));
         pdvaults_->push_back(pdvault_local);
         ++current_nodes_created_;
         (*pdvaults_)[j]->Start(false);
@@ -214,11 +217,14 @@ class RunPDVaults {
         }
         boost::shared_ptr<transport::TransportHandler>
             transport_handler(new transport::TransportHandler());
+        boost::int16_t trans_id;
+        transport::TransportUDT *udt_transport(new transport::TransportUDT);
+        transport_handler->Register(udt_transport, &trans_id);
         transport_handlers_.push_back(transport_handler);
-        boost::shared_ptr<maidsafe_vault::PDVault>
-            pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
-            signed_key, chunkstore_local, this_port, false, false,
-            kad_config_location, 1073741824, 0, transport_handler.get()));
+        boost::shared_ptr<maidsafe_vault::PDVault> pdvault_local(
+            new maidsafe_vault::PDVault(public_key, private_key, signed_key,
+            chunkstore_local, this_port, false, false, kad_config_location,
+            1073741824, 0, transport_handler.get(), trans_id));
         pdvaults_->push_back(pdvault_local);
         ++current_nodes_created_;
         printf(".");

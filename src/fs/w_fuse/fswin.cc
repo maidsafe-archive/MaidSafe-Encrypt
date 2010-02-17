@@ -24,7 +24,6 @@ THE SOFTWARE.
 
 #include "fs/w_fuse/fswin.h"
 
-#include <boost/thread/recursive_mutex.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -122,7 +121,6 @@ static int WinCreateFile(LPCWSTR FileName,
                          DWORD CreationDisposition,
                          DWORD FlagsAndAttributes,
                          PDOKAN_FILE_INFO   DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
   std::string relPathStr, filePathStr, rootStr;
@@ -317,7 +315,6 @@ static int WinCreateFile(LPCWSTR FileName,
 
 static int WinCreateDirectory(LPCWSTR FileName,
                               PDOKAN_FILE_INFO) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinCreateDirectory\nFileName: %s\n", FileName);
 #endif
@@ -364,7 +361,6 @@ static int WinCreateDirectory(LPCWSTR FileName,
 
 
 static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinOpenDirectory\nFileName: %s\n", FileName);
 #endif
@@ -407,7 +403,6 @@ static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
 
 
 static int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinCloseFile\nFileName: %s\n", FileName);
 #endif
@@ -424,7 +419,6 @@ static int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
 
 
 static int WinCleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinCleanup\nFileName: %s\n", FileName);
 #endif
@@ -514,7 +508,6 @@ static int WinReadFile(LPCWSTR FileName,
                        LPDWORD ReadLength,
                        LONGLONG Offset,
                        PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinReadFile\nFileName: %s\n", FileName);
 #endif
@@ -570,7 +563,6 @@ static int WinWriteFile(LPCWSTR FileName,
                         LPDWORD NumberOfBytesWritten,
                         LONGLONG Offset,
                         PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinWriteFile\nFileName: %s\n", FileName);
 #endif
@@ -633,7 +625,6 @@ static int WinWriteFile(LPCWSTR FileName,
 
 static int WinFlushFileBuffers(LPCWSTR FileName,
                                PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinFlushFileBuffers\nFileName: %s\n", FileName);
 #endif
@@ -654,7 +645,6 @@ static int WinGetFileInformation(
     LPCWSTR FileName,
     LPBY_HANDLE_FILE_INFORMATION HandleFileInformation,
     PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinGetFileInformation\nFileName: %s\n", FileName);
 #endif
@@ -765,7 +755,6 @@ static int WinGetFileInformation(
 static int WinFindFiles(LPCWSTR FileName,
                         PFillFindData FillFindData,  // function postatic inter
                         PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinFindFiles\nFileName: %s\n", FileName);
 #endif
@@ -861,7 +850,6 @@ static int WinFindFiles(LPCWSTR FileName,
 
 
 static int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinDeleteFile\nFileName: %s\n", FileName);
 #endif
@@ -901,7 +889,6 @@ static int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
 
 static int WinDeleteDirectory(LPCWSTR FileName,
                               PDOKAN_FILE_INFO) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinDeleteDirectory\nFileName: %s\n", FileName);
 #endif
@@ -953,7 +940,6 @@ static int WinMoveFile(LPCWSTR FileName,
                        LPCWSTR NewFileName,
                        BOOL ReplaceIfExisting,
                        PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinMovefile\nFileName: %s\n", FileName);
 #endif
@@ -1014,7 +1000,6 @@ static int WinLockFile(LPCWSTR FileName,
                        LONGLONG ByteOffset,
                        LONGLONG Length,
                        PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinLockFile\nFileName: %s\n", FileName);
 #endif
@@ -1051,7 +1036,6 @@ static int WinLockFile(LPCWSTR FileName,
 static int WinSetEndOfFile(LPCWSTR FileName,
                            LONGLONG ByteOffset,
                            PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinSetEndofFile\nFileName: %s\n", FileName);
 #endif
@@ -1090,7 +1074,6 @@ static int WinSetEndOfFile(LPCWSTR FileName,
 static int WinSetAllocationSize(LPCWSTR FileName,
                                 LONGLONG AllocSize,
                                 PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinSetAllocationSize\nFileName: %s\n", FileName);
 #endif
@@ -1137,7 +1120,6 @@ static int WinSetAllocationSize(LPCWSTR FileName,
 static int WinSetFileAttributes(LPCWSTR FileName,
                                 DWORD FileAttributes,
                                 PDOKAN_FILE_INFO) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinSetFileAttributes\nFileName: %s\n", FileName);
 #endif
@@ -1160,7 +1142,6 @@ static int WinSetFileTime(LPCWSTR FileName,
                           CONST FILETIME *LastAccessTime,
                           CONST FILETIME *LastWriteTime,
                           PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinSetFileTime\nFileName: %s\n", FileName);
 #endif
@@ -1190,7 +1171,6 @@ static int WinUnlockFile(LPCWSTR FileName,
                          LONGLONG ByteOffset,
                          LONGLONG Length,
                          PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinUnLockFile\nFileName: %s\n", FileName);
 #endif

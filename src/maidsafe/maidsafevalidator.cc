@@ -25,11 +25,11 @@
 #ifndef MAIDSAFE_VALIDATIONIMPL_H_
 #define MAIDSAFE_VALIDATIONIMPL_H_
 
-#include "maidsafe/maidsafe.h"
 #include "maidsafe/maidsafevalidator.h"
 
 #include <maidsafe/maidsafe-dht_config.h>
 #include <string>
+#include "maidsafe/maidsafe.h"
 #include "maidsafe/returncodes.h"
 
 

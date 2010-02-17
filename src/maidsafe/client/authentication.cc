@@ -20,7 +20,6 @@
 #include <boost/lexical_cast.hpp>
 
 #include <cstdio>
-#include <iostream>
 
 #include "maidsafe/maidsafe.h"
 #include "protobuf/datamaps.pb.h"
@@ -113,7 +112,6 @@ int Authentication::GetUserData(const std::string &password,
 
 int Authentication::CreateUserSysPackets(const std::string &username,
                                          const std::string &pin) {
-
   PacketParams params;
   params["username"] = username;
   params["PIN"] = pin;
@@ -741,8 +739,9 @@ int Authentication::ChangePin(const std::string &ser_da,
 //                   old_user_params["rid"]))).c_str());
 
   result = DeletePacket(midPacket->PacketName(&user_params),
-           EncryptedDataMidSmid(/*boost::any_cast<boost::uint32_t>(
-           old_user_params["rid"]))*/old_mid_rid), MID);
+//           EncryptedDataMidSmid(boost::any_cast<boost::uint32_t>(
+//           old_user_params["rid"]))), MID);
+           EncryptedDataMidSmid(old_mid_rid), MID);
 //  printf("------ %s - %s\n",
 //         HexSubstr(midPacket->PacketName(&user_params)).c_str(),
 //         HexSubstr(EncryptedDataMidSmid(ss_->SmidRid())).c_str());

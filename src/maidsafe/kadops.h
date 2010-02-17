@@ -77,7 +77,7 @@ class CallbackObj {
 class KadOps {
  public:
   explicit KadOps(const boost::shared_ptr<kad::KNode> &knode);
-  virtual ~KadOps() {};
+  virtual ~KadOps() {}
   /**
    * Returns true if the peer is on the local network.
    */

@@ -48,7 +48,6 @@ with this program. If not, see <http:// www.gnu.org/licenses/>.
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/convenience.hpp>
 #include <boost/filesystem/path.hpp>
-#include <boost/thread/recursive_mutex.hpp>
 #include <cstdlib>
 
 #include <sstream>
@@ -68,8 +67,6 @@ extern "C" {
 #endif
 
 namespace fs_w_fuse {
-
-static boost::recursive_mutex dokan_mutex;
 
 #define DOKAN_OPTION_DEBUG 1       // ouput debug message
 #define DOKAN_OPTION_STDERR 2      // ouput debug message to stderr

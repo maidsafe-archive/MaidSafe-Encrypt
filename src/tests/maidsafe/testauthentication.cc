@@ -33,7 +33,6 @@
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "maidsafe/client/packetfactory.h"
-#include <iostream>
 
 namespace fs = boost::filesystem;
 
