@@ -122,7 +122,6 @@ void KeyAtlas::GetKeyRing(std::list<KeyAtlasRow> *keyring) {
   keyring->clear();
   KeyAtlasSet::iterator it;
   for (it = key_ring_.begin(); it != key_ring_.end(); it++) {
-    printf("Llave\n");
     KeyAtlasRow kar((*it).type_, (*it).id_, (*it).private_key_,
                     (*it).public_key_, (*it).signed_public_key_);
     keyring->push_back(kar);
