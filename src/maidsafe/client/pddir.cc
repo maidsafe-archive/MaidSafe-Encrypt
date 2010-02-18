@@ -167,7 +167,8 @@ int PdDir::GetDirKey(const std::string &file_name, std::string *dir_key) {
 #endif
       return kDBCantFindDirKey;
     } else {
-      *dir_key = q_mdm.fieldValue(static_cast<unsigned int>(0));
+      *dir_key = base::DecodeFromHex(
+                 q_mdm.fieldValue(static_cast<unsigned int>(0)));
       return kSuccess;
     }
   }
@@ -312,7 +313,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
       // stmt.bind(11, base::itos_ul(current_time).c_str());
       stmt.bind(10, base::itos_ul(current_time).c_str());
       stmt.bind(11, base::itos_ul(current_time).c_str());
-      stmt.bind(12, dir_key.c_str());
+      stmt.bind(12, base::EncodeToHex(dir_key).c_str());
       ins_mdm = stmt.execDML();
       stmt.finalize();
 
@@ -516,7 +517,7 @@ int PdDir::ListFolder(std::map<std::string, ItemType> *children) {
   return kSuccess;
 }
 
-int PdDir::ListSubDirs(std::vector<std::string> *subdirs_) {
+int PdDir::ListSubDirs(std::vector<std::string> *subdirs) {
   // boost::mutex::scoped_lock lock(mutex_);
   try {
     std::string s = "select display_name, type from mdm;";
@@ -529,7 +530,7 @@ int PdDir::ListSubDirs(std::vector<std::string> *subdirs_) {
       // printf("%s\n", q_mdm.getStringField(0).c_str());
 #endif
       if (q_mdm.getIntField(1) == 4 || q_mdm.getIntField(1) == 5)
-        subdirs_->push_back(q_mdm.getStringField(0));
+        subdirs->push_back(q_mdm.getStringField(0));
       q_mdm.nextRow();
     }
     q_mdm.finalize();

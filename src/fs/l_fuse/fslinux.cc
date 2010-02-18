@@ -65,10 +65,8 @@ void fuse_loop_session(struct fuse *fuse, int multithreaded) {
     maidsafe::SessionSingleton::getInstance()->SetMounted(-1);
 }
 
-
-
-FSLinux::FSLinux()
-:fuse_dispatcher_(NULL), fuse_(NULL), mountpoint_('\0'), res(0) {
+FSLinux::FSLinux() : fuse_dispatcher_(NULL), fuse_(NULL), mountpoint_('\0'),
+                     res(0) {
 //   fuse_dispatcher_->set_init(&FSLinux::ms_init);
 //   fuse_dispatcher_->set_destroy(&FSLinux::ms_destroy);
 
@@ -109,7 +107,6 @@ FSLinux::~FSLinux() {
 
 bool FSLinux::Mount(const std::string &path, const std::string &debug_mode) {
   std::string drive_name("maidsafe");
-  // drive_name += maidsafe::SessionSingleton::getInstance()->SessionName();
   umask(0);
   char **opts;
   opts = new char*[6];
@@ -121,7 +118,7 @@ bool FSLinux::Mount(const std::string &path, const std::string &debug_mode) {
   opts[4] = const_cast<char*>(fground.c_str());
   // std::string nonempty_ = "-o nonempty";
   // opts[5] = (char*)nonempty_.c_str();
-  printf("opts[1] en el Mount: %s", opts[1]);
+  printf("opts[1] en el Mount: %s\n", opts[1]);
   int multithreaded;
   fuse_operations *op = fuse_dispatcher_->get_fuseOps();
   // fuse_setup operation will be deprecated from API 3.0
@@ -149,8 +146,7 @@ bool FSLinux::Mount(const std::string &path, const std::string &debug_mode) {
       fuse_destroy(fuse_);
     return false;
   }
-  boost::thread thrd_(boost::bind(fuse_loop_session, fuse_,
-    multithreaded));
+  boost::thread thrd_(boost::bind(fuse_loop_session, fuse_, multithreaded));
   return true;
 }
 
@@ -283,8 +279,8 @@ int FSLinux::ms_open(const char *path, struct fuse_file_info *fi) {
   return 0;
 }
 
-int FSLinux::ms_read(const char *path, char *data, size_t size, off_t offset, \
-  struct fuse_file_info *fi) {
+int FSLinux::ms_read(const char *path, char *data, size_t size, off_t offset,
+                     struct fuse_file_info *fi) {
   std::string path_(path);
   printf("ms_read: %s\tfile handle: %llu", path, fi->fh);
   file_system::FileSystem fsys_;
@@ -456,7 +452,7 @@ int FSLinux::ms_fgetattr(const char *path, struct stat *stbuf,
 }
 
 int FSLinux::ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-  off_t offset, struct fuse_file_info *fi) {
+                        off_t offset, struct fuse_file_info *fi) {
   std::string path_;
   path_ = std::string(path);
     printf("ms_readdir PATH:  %s\n", path);

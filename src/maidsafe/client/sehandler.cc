@@ -28,7 +28,8 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <maidsafe/utils.h>
-#include <cstdio>
+
+#include <vector>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
@@ -260,6 +261,8 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
 
 int SEHandler::EncryptString(const std::string &data,
                              std::string *ser_dm) {
+  if (data.empty())
+    return -8;
   maidsafe::DataMap dm;
   SelfEncryption se(client_chunkstore_);
   ser_dm->clear();

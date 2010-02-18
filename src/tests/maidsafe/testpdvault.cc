@@ -347,7 +347,8 @@ class PDVaultTest : public testing::Test {
     maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::PMID, pmid_name,
         pmid_pri, pmid_pub, client_pmid_public_signature_);
     printf(" >> public key:   %s\n", HexSubstr(pmid_pub).c_str());
-    printf(" >> pub key sig:  %s\n", HexSubstr(client_pmid_public_signature_).c_str());
+    printf(" >> pub key sig:  %s\n",
+           HexSubstr(client_pmid_public_signature_).c_str());
     printf(" >> hash/name:    %s\n", HexSubstr(pmid_name).c_str());
 
     maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(0);
@@ -426,7 +427,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
   }
 
   // create an account with enough space
-  // TODO sm_->CreateAccount(data_size * kMinChunkCopies);
+  // TODO(Team) sm_->CreateAccount(data_size * kMinChunkCopies);
 
   /* printf("before: maxThreadCount = %d\n",
          sm_->packet_thread_pool_.maxThreadCount());

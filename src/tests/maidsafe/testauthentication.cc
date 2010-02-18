@@ -28,12 +28,11 @@
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/client/dataatlashandler.h"
-#include "protobuf/datamaps.pb.h"
 #include "maidsafe/client/localstoremanager.h"
+#include "maidsafe/client/packetfactory.h"
+#include "protobuf/datamaps.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
-#include "maidsafe/client/packetfactory.h"
-#include <iostream>
 
 namespace fs = boost::filesystem;
 

@@ -26,17 +26,16 @@
 class PersonalSettings : public QWidget {
     Q_OBJECT
 
-  public:
+ public:
   explicit PersonalSettings(QWidget* parent = 0);
   virtual ~PersonalSettings();
 
-  virtual void setActive(bool);
+  virtual void setActive(bool active);
   virtual void reset();
 
-  private:
-    Ui::PersonalSettingsPage ui_;
-    bool init_;
-
+ private:
+  Ui::PersonalSettingsPage ui_;
+  bool init_;
 };
 
-#endif  // PERSONAL_SETTINGS_H_INCLUDED
+#endif  // QT_WIDGETS_PERSONAL_SETTINGS_H_

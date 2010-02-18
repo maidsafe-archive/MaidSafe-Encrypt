@@ -27,7 +27,7 @@
 #include "qt/widgets/user_panels.h"
 
 PersonalMessages::PersonalMessages(QWidget* parent)
-    :active_(false), init_(false) {
+    : active_(false), init_(false) {
   ui_.setupUi(this);
 
   convName_ = "";
@@ -84,7 +84,6 @@ PersonalMessages::PersonalMessages(QString name)
 
   connect(ui_.actionSend_File, SIGNAL(triggered()),
           this,                SLOT(onSendFile()));
-
 }
 
 PersonalMessages::~PersonalMessages() {
@@ -159,17 +158,17 @@ void PersonalMessages::onSendMessageClicked() {
 void PersonalMessages::onSendInvite() {
 }
 
-void PersonalMessages::onSendFile(){
+void PersonalMessages::onSendFile() {
   QList<QString> conts;
   conts.push_back(convName_);
 
   // choose a file
   // starting directory should be the maidafe one.
   // TODO(Team#5#): 2009-07-28 - restrict file dialog to maidsafe directories
-  //Possible to do by using Directory Entered Signal
+  // Possible to do by using Directory Entered Signal
   QString root;
 #ifdef DEBUG
-  printf("PersonalMessages::onFileSendClicked: opening the \"conversation\".\n");
+  printf("PersonalMessages::onFileSendClicked: opening the 'conversation'.\n");
   boost::progress_timer t;
 #endif
 

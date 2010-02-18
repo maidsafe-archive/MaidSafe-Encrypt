@@ -16,7 +16,7 @@
 #include "qt/widgets/connection_settings.h"
 #include "qt/client/client_controller.h"
 
-ConnectionSettings::ConnectionSettings(QWidget* parent){
+ConnectionSettings::ConnectionSettings(QWidget* parent) {
   ui_.setupUi(this);
 }
 

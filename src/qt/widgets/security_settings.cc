@@ -16,7 +16,7 @@
 #include "qt/widgets/security_settings.h"
 #include "qt/client/client_controller.h"
 
-SecuritySettings::SecuritySettings(QWidget* parent){
+SecuritySettings::SecuritySettings(QWidget* parent) {
   ui_.setupUi(this);
 }
 

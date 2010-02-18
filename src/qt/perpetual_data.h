@@ -119,7 +119,7 @@ class PerpetualData : public QMainWindow {
     void onUnreadMessagesChanged(int count);
  private:
   Ui::PerpetualData ui_;
-  QFileDialog* qfd;
+  QFileDialog *qfd_;
 
 
   // Actions
@@ -188,10 +188,8 @@ class PerpetualData : public QMainWindow {
   // Status bar label for message count
   QLabel* message_status_;
 
-  //User Settings Window
-
+  // User Settings Window
   UserSettings* settings_;
-
 
   // Switch between different application states
   void setState(State state);

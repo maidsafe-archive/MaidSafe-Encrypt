@@ -144,6 +144,10 @@ std::string SessionSingleton::SignedPublicKey(const PacketType &bpt) {
   return ka_.SignedPublicKey(bpt);
 }
 
+unsigned int SessionSingleton::KeyRingSize() {
+  return ka_.KeyRingSize();
+}
+
 ////////////////////////
 // Contact operations //
 ////////////////////////

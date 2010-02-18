@@ -28,14 +28,13 @@
 class SecuritySettings : public QWidget {
     Q_OBJECT
 
-  public:
+ public:
   explicit SecuritySettings(QWidget* parent = 0);
   virtual ~SecuritySettings();
 
-  private:
-    Ui::SecuritySettingsPage ui_;
-
+ private:
+  Ui::SecuritySettingsPage ui_;
 };
 
-#endif  // SECURITY_SETTINGS_H_INCLUDED
+#endif  // QT_WIDGETS_SECURITY_SETTINGS_H_
 

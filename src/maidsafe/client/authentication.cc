@@ -19,8 +19,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <cstdio>
-#include <iostream>
+#include <vector>
 
 #include "maidsafe/maidsafe.h"
 #include "protobuf/datamaps.pb.h"
@@ -113,7 +112,6 @@ int Authentication::GetUserData(const std::string &password,
 
 int Authentication::CreateUserSysPackets(const std::string &username,
                                          const std::string &pin) {
-
   PacketParams params;
   params["username"] = username;
   params["PIN"] = pin;
@@ -194,6 +192,7 @@ void Authentication::CreateSignaturePacketKeyUnique(
                         "");
     if (n != 0) {
       // return to CreateSignaturePacket
+      printf("nionga aniadiendo la llave\n");
     }
 
     VoidFuncOneInt func = boost::bind(
@@ -250,12 +249,7 @@ void Authentication::CreateMidPacket(boost::shared_ptr<FindSystemPacket> fsp) {
 
   PacketParams mid_result = midPacket->Create(&user_params);
   ss_->SetMidRid(boost::any_cast<boost::uint32_t>(mid_result["rid"]));
-/*
-  printf("MID - %s - %s - %u\n",
-         HexSubstr(boost::any_cast<std::string>(mid_result["name"])).c_str(),
-         HexSubstr(boost::any_cast<std::string>(mid_result["encRid"])).c_str(),
-         boost::any_cast<boost::uint32_t>(mid_result["rid"]));
-*/
+
   sm_->StorePacket(boost::any_cast<std::string>(mid_result["name"]),
                    boost::any_cast<std::string>(mid_result["encRid"]),
                    MID, PRIVATE, "", kDoNothingReturnFailure,
@@ -302,6 +296,7 @@ void Authentication::CreateMaidPmidPacket(
                       boost::any_cast<std::string>(result["signature"]));
   if (n != 0) {
     // return to CreateSignaturePacket
+    printf("nionga aniadiendo la llave\n");
   }
   sm_->StorePacket(boost::any_cast<std::string>(result["name"]),
                    boost::any_cast<std::string>(result["publicKey"]),
@@ -741,13 +736,12 @@ int Authentication::ChangePin(const std::string &ser_da,
 //                   old_user_params["rid"]))).c_str());
 
   result = DeletePacket(midPacket->PacketName(&user_params),
-           EncryptedDataMidSmid(/*boost::any_cast<boost::uint32_t>(
-           old_user_params["rid"]))*/old_mid_rid), MID);
+           EncryptedDataMidSmid(old_mid_rid), MID);
 //  printf("------ %s - %s\n",
 //         HexSubstr(midPacket->PacketName(&user_params)).c_str(),
 //         HexSubstr(EncryptedDataMidSmid(ss_->SmidRid())).c_str());
   result = DeletePacket(smidPacket->PacketName(&user_params),
-           EncryptedDataMidSmid(/*ss_->SmidRid()*/old_smid_rid), SMID);
+           EncryptedDataMidSmid(old_smid_rid), SMID);
   user_params["rid"] = ss_->MidRid();
   result = DeletePacket(tmidPacket->PacketName(&user_params), "", TMID);
   if (ss_->MidRid() != ss_->SmidRid()) {

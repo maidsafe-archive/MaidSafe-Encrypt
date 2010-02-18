@@ -890,12 +890,12 @@ void LocalStoreManager::VaultContactInfo(base::callback_func_type cb) {
   boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
 }
 
-void LocalStoreManager::SetLocalVaultOwned(const std::string &,
+void LocalStoreManager::SetLocalVaultOwned(const std::string&,
                                            const std::string &pub_key,
                                            const std::string &signed_pub_key,
-                                           const boost::uint32_t &,
-                                           const std::string &,
-                                           const boost::uint64_t &,
+                                           const boost::uint32_t&,
+                                           const std::string&,
+                                           const boost::uint64_t&,
                                            const SetLocalVaultOwnedFunctor &f) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);

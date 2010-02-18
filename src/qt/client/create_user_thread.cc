@@ -50,9 +50,10 @@ void CreateUserThread::run() {
 
   maidsafe::VaultConfigParameters vcp;
   vcp.vault_type = vault_type_;
-  vcp.space = base::stoi_ul(space_.toStdString());
-  vcp.port = base::stoi_ul(port_.toStdString());
-  vcp.directory = directory_.toStdString();
+//  printf("CreateUserThread::run - %s\n", space_.toStdString().c_str());
+  vcp.space = 1024*1024*1024;
+  vcp.port = 0;
+  vcp.directory = "/home/Smer";
 
   if (!maidsafe::ClientController::getInstance()->
       CreateUser(username, pin, password, vcp)) {

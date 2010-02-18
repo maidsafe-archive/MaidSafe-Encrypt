@@ -97,13 +97,9 @@ bool UserSpaceFileSystem::mount() {
 
 bool UserSpaceFileSystem::unmount() {
   // unmount drive
-  qDebug() << "UserSpaceFileSystem::unmount() -";
   bool success = false;
-  qDebug() << "UserSpaceFileSystem::unmount() - -";
   std::string ms_dir = impl_->fsys_.MaidsafeDir();
-  qDebug() << "UserSpaceFileSystem::unmount() - - -";
   std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
-  qDebug() << "UserSpaceFileSystem::unmount() - - - -";
 #ifdef MAIDSAFE_WIN32
   std::locale loc;
   wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >

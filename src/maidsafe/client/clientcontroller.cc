@@ -394,38 +394,28 @@ bool ClientController::CreateUser(const std::string &username,
     return false;
   } else {
 #ifdef DEBUG
-    printf("In CC::CreateUser - auth_.CreateUserSysPackets DONE.\n");
+    printf("In CC::CreateUser - auth_.CreateUserSysPackets DONE - %u.\n",
+           ss_->KeyRingSize());
 #endif
   }
-
-//  Pwn the vault here
-
-//  result = sm_->CreateAccount(vcp.space);
-//  if (result != kSuccess) {
-//#ifdef DEBUG
-//    printf("In CC::CreateUser - Failed to create user account.\n");
-//#endif
-//    ss_->ResetSession();
-//    return false;
-//  } else {
-//#ifdef DEBUG
-//    printf("In CC::CreateUser - sm_->CreateAccount DONE.\n");
-//#endif
-//  }
+  ////////////////////////////////////////////////////
+  // TODO(Team#5#): 2010-02-15 - Pwn the vault here //
+  ////////////////////////////////////////////////////
 
   client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);
   std::string ser_da, ser_dm;
   ss_->SerialisedKeyRing(&ser_da);
-  if (seh_.EncryptString(ser_da, &ser_dm) != 0) {
+  result = seh_.EncryptString(ser_da, &ser_dm);
+  if (result != 0) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser - Cannot SelfEncrypt DA.\n");
+    printf("In CC::CreateUser - Cannot SelfEncrypt DA - %i.\n", result);
 #endif
     ss_->ResetSession();
     return false;
   } else {
 #ifdef DEBUG
-    printf("In CC::CreateUser - sm_->CreateAccount DONE.\n");
+    printf("In CC::CreateUser - seh_.EncryptString of DA DONE.\n");
 #endif
   }
 
@@ -436,15 +426,22 @@ bool ClientController::CreateUser(const std::string &username,
 #endif
     ss_->ResetSession();
     return false;
+  } else {
+#ifdef DEBUG
+    printf("In CC::CreateUser - auth_.CreateTmidPacket DONE.\n");
+#endif
   }
+
   // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
   //                             Parameters come in VaultConfigParameters.
-  OwnLocalVaultResult olvr =
-      SetLocalVaultOwned(vcp.port, vcp.space * 1024 * 1024, vcp.directory);
-  #ifdef DEBUG
-    printf("ClientController::CreateUser +++ "
-           "OwnLocalVaultResult: %d +++\n", olvr);
-  #endif
+  OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
+                                                vcp.space * 1024 * 1024,
+                                                vcp.directory);
+  if (olvr != OWNED_SUCCESS) {
+#ifdef DEBUG
+    printf("CC::CreateUser +++ OwnLocalVaultResult: %d +++\n", olvr);
+#endif
+  }
 
   ss_->SetSessionName(false);
   std::string root_db_key;
@@ -2272,21 +2269,21 @@ int ClientController::PathDistinction(const std::string &path,
   return n;
 }
 
-int ClientController::GetDb(const std::string &orig_path_,
+int ClientController::GetDb(const std::string &orig_path,
                             DirType *dir_type,
                             std::string *msid) {
-  std::string path_ = orig_path_;
+  std::string path = orig_path;
 #ifdef DEBUG
-  printf("\t\tCC::GetDb(%s)\n", orig_path_.c_str());
+  printf("\t\tCC::GetDb(%s)\n", orig_path.c_str());
 #endif
-  std::string db_path_, parent_path_, dir_key_;
-  if (path_.size() <= 1) {  // i.e. root
-    parent_path_ = path_;
+  std::string db_path, parent_path, dir_key;
+  if (path.size() <= 1) {  // i.e. root
+    parent_path = path;
   } else {
-    fs::path parent_(path_, fs::native);
-    parent_path_ = parent_.parent_path().string();
-    if (parent_path_ == "")
-      parent_path_ = "/";
+    fs::path parent(path, fs::native);
+    parent_path = parent.parent_path().string();
+    if (parent_path == "")
+      parent_path = "/";
     // if (parent_path_.size() <= 1 && path_!=base::TidyPath(my_files_)
     //   && path_!=base::TidyPath(public_shares_)
     //   && path_!=base::TidyPath(private_shares_)) {
@@ -2297,18 +2294,18 @@ int ClientController::GetDb(const std::string &orig_path_,
     // }
     // parent_path_ = base::TidyPath(path_);
   }
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  dah_->GetDbPath(path_, CONNECT, &db_path_);
-  PathDistinction(parent_path_, msid);
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
+  dah->GetDbPath(path, CONNECT, &db_path);
+  PathDistinction(parent_path, msid);
 #ifdef DEBUG
   printf("\t\tMSID: %s\n", msid->c_str());
 #endif
 
-  if (fs::exists(db_path_) && *msid == "") {
-    *dir_type = GetDirType(parent_path_);
+  if (fs::exists(db_path) && *msid == "") {
+    *dir_type = GetDirType(parent_path);
     return 0;
   }
-  if (dah_->GetDirKey(parent_path_, &dir_key_)) {
+  if (dah->GetDirKey(parent_path, &dir_key)) {
 #ifdef DEBUG
     printf("\t\tGetDirKey failed.\n");
 #endif
@@ -2316,16 +2313,16 @@ int ClientController::GetDb(const std::string &orig_path_,
   }
   bool overwrite = false;
   if (*msid == "") {
-    *dir_type = GetDirType(parent_path_);
+    *dir_type = GetDirType(parent_path);
   } else {
-    *dir_type = GetDirType(path_);
+    *dir_type = GetDirType(path);
     overwrite = true;
   }
-  if (seh_.DecryptDb(parent_path_, *dir_type, "", dir_key_,
+  if (seh_.DecryptDb(parent_path, *dir_type, "", dir_key,
       *msid, true, overwrite)) {
 #ifdef DEBUG
-    printf("\t\tFailed trying to decrypt dm of db with dir key: %s\n",
-          dir_key_.c_str());
+    printf("\t\tFailed trying to decrypt dm of parent(%s) db - dir key: %s\n",
+           parent_path.c_str(), HexSubstr(dir_key).c_str());
 #endif
     return -1;
   }
@@ -2410,8 +2407,9 @@ int ClientController::RunDbEncQueue() {
     DirType db_type = GetDirType((*it).first);
 #ifdef DEBUG
     printf("\t\tCC::RunDbEncQueue: first: %s\ttype: %i\tsec.first: %s\t",
-          (*it).first.c_str(), db_type, (*it).second.first.c_str());
-    printf("sec.second: %s\n", (*it).second.second.c_str());
+          HexSubstr((*it).first).c_str(), db_type,
+          HexSubstr((*it).second.first).c_str());
+    printf("sec.second: %s\n", HexSubstr((*it).second.second).c_str());
 #endif
     int int_res = seh_.EncryptDb((*it).first, db_type, (*it).second.first,
                                   (*it).second.second, true, &dm);

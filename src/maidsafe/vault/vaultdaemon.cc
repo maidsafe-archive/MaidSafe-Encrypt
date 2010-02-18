@@ -40,7 +40,7 @@ VaultDaemon::~VaultDaemon() {
     local_ch_manager_.ClearChannels();
   }
 
-  std::string stop = "VaultDaemon stopping  ";
+  std::string stop("VaultDaemon stopping ");
   boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
   stop += boost::posix_time::to_simple_string(now);
   WriteToLog(stop);
@@ -51,7 +51,7 @@ VaultDaemon::~VaultDaemon() {
 }
 
 void VaultDaemon::Status() {
-  std::string out = base::itos(pdvault_->host_port()) + " - OK";
+  std::string out(base::itos(pdvault_->host_port()) + " - OK");
   WriteToLog(out);
 }
 
@@ -140,7 +140,7 @@ void VaultDaemon::ValidityCheck() {
 }
 
 bool VaultDaemon::StartVault() {
-  std::string init = "VaultDaemon starting  ";
+  std::string init("VaultDaemon starting ");
   boost::posix_time::ptime now =
       boost::posix_time::second_clock::local_time();
   init += boost::posix_time::to_simple_string(now);
@@ -206,7 +206,7 @@ bool VaultDaemon::ReadConfigInfo() {
     WriteToLog(out);
   }
   catch(const std::exception &e) {
-    std::string err = "Can't access locations for config file at ";
+    std::string err("Can't access locations for config file at ");
     err += config_file_.string() + " or " + local_config_file_.string();
     WriteToLog(err);
     WriteToLog(e.what());
@@ -249,7 +249,7 @@ bool VaultDaemon::StartNotOwnedVault() {
       keys.private_key(), crypto::STRING_STRING);
   fs::path chunkstore_dir(vault_path_);
   chunkstore_dir /= "Chunkstore";
-  boost::uint64_t space = 1024*1024*1024;  // 1GB
+  boost::uint64_t space(1024 * 1024 * 1024);  // 1GB
   pdvault_.reset(new PDVault(keys.public_key(), keys.private_key(),
       signed_pubkey, chunkstore_dir.string(), 0, false, false,
       kad_config_file_.string(), space, 0, &transport_handler_));
@@ -260,8 +260,8 @@ bool VaultDaemon::StartNotOwnedVault() {
   }
   WriteToLog("Vault waiting to be owned started.\n");
   WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->node_id()));
-  WriteToLog("Vault IP & port:  " + pdvault_->host_ip()+":"+
-      base::itos(pdvault_->host_port()));
+  WriteToLog("Vault IP & port:  " + pdvault_->host_ip() + ":" +
+             base::itos(pdvault_->host_port()));
   return true;
 }
 
