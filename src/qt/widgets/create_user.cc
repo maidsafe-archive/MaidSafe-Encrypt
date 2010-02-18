@@ -26,7 +26,6 @@
 
 // local
 
-
 // generated
 #include "qt/widgets/create_page_welcome.h"
 #include "qt/widgets/create_page_license.h"
