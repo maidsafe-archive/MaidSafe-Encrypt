@@ -398,6 +398,7 @@ bool ClientController::CreateUser(const std::string &username,
            ss_->KeyRingSize());
 #endif
   }
+
   ////////////////////////////////////////////////////
   // TODO(Team#5#): 2010-02-15 - Pwn the vault here //
   ////////////////////////////////////////////////////

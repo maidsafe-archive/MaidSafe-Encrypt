@@ -563,7 +563,7 @@ IF(APPLE)
 ELSEIF(UNIX AND NOT APPLE)
   SET(FS_SOURCE_FILE ${SOURCE_DIR}/fs/l_fuse/fslinux.cc ${SOURCE_DIR}/fs/l_fuse/fusecpp.h)
 ELSEIF(WIN32)
-  SET(FS_SOURCE_FILE ${SOURCE_DIR}/fs/w_fuse/fswin.cc ${SOURCE_DIR}/fs/w_fuse/dokan/fileinfo.h)
+  SET(FS_SOURCE_FILE ${SOURCE_DIR}/fs/w_fuse/fswin.cc ${SOURCE_DIR}/fs/w_fuse/fswin.h)
 ENDIF(APPLE)
 
 ###################################################################################################

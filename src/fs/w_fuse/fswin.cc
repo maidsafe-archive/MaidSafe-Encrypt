@@ -24,7 +24,6 @@ THE SOFTWARE.
 
 #include "fs/w_fuse/fswin.h"
 
-#include <boost/thread/recursive_mutex.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -122,9 +121,9 @@ static int WinCreateFile(LPCWSTR FileName,
                          DWORD CreationDisposition,
                          DWORD FlagsAndAttributes,
                          PDOKAN_FILE_INFO   DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
+//  DWORD fileAttr;
   std::string relPathStr, filePathStr, rootStr;
 #ifdef DEBUG
   wprintf(L"WinCreateFile\nFileName: %s\n", FileName);
@@ -232,6 +231,13 @@ static int WinCreateFile(LPCWSTR FileName,
   WinCheckFlag(AccessMode, STANDARD_RIGHTS_READ);  // 0x00020000L
   WinCheckFlag(AccessMode, STANDARD_RIGHTS_WRITE);  // 0x00020000L
   WinCheckFlag(AccessMode, STANDARD_RIGHTS_EXECUTE);  // 0x00020000L
+
+
+//  // When filePath is a directory, needs to change the flag so that the file
+//  // can be opened.
+//  fileAttr = GetFileAttributes(filePath);
+//  if (fileAttr && fileAttr & FILE_ATTRIBUTE_DIRECTORY) {
+
   if (fs::is_directory(filePathStr)) {
     DokanFileInfo->IsDirectory = TRUE;
     // get db for *this* dir (we've already got db for parent)
@@ -317,7 +323,6 @@ static int WinCreateFile(LPCWSTR FileName,
 
 static int WinCreateDirectory(LPCWSTR FileName,
                               PDOKAN_FILE_INFO) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinCreateDirectory\nFileName: %s\n", FileName);
 #endif
@@ -364,7 +369,6 @@ static int WinCreateDirectory(LPCWSTR FileName,
 
 
 static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinOpenDirectory\nFileName: %s\n", FileName);
 #endif
@@ -407,7 +411,6 @@ static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
 
 
 static int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinCloseFile\nFileName: %s\n", FileName);
 #endif
@@ -424,7 +427,6 @@ static int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
 
 
 static int WinCleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinCleanup\nFileName: %s\n", FileName);
 #endif
@@ -514,7 +516,6 @@ static int WinReadFile(LPCWSTR FileName,
                        LPDWORD ReadLength,
                        LONGLONG Offset,
                        PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinReadFile\nFileName: %s\n", FileName);
 #endif
@@ -561,6 +562,8 @@ static int WinReadFile(LPCWSTR FileName,
   }
   if (opened)
     CloseHandle(handle);
+//  DokanResetTimeout(1000 * 30, DokanFileInfo);
+//  Sleep(1000 * 20);
   return 0;
 }
 
@@ -570,7 +573,6 @@ static int WinWriteFile(LPCWSTR FileName,
                         LPDWORD NumberOfBytesWritten,
                         LONGLONG Offset,
                         PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinWriteFile\nFileName: %s\n", FileName);
 #endif
@@ -599,8 +601,15 @@ static int WinWriteFile(LPCWSTR FileName,
     }
     opened = TRUE;
   }
-  if (SetFilePointer(handle, offset, NULL, FILE_BEGIN) ==
-      INVALID_SET_FILE_POINTER) {
+
+  if (DokanFileInfo->WriteToEndOfFile) {
+    if (SetFilePointer(handle, 0, NULL, FILE_END) == INVALID_SET_FILE_POINTER) {
+      DbgPrint(L"In WinWriteFile, seek error, offset = EOF, error = %d\n",
+               GetLastError());
+      return -1;
+    }
+  } else if (SetFilePointer(handle, offset, NULL, FILE_BEGIN) ==
+             INVALID_SET_FILE_POINTER) {
 #ifdef DEBUG
     printf("In WinWriteFile, SetFilePointer == INVALID_SET_FILE_POINTER\n");
     DWORD error = GetLastError();
@@ -633,7 +642,6 @@ static int WinWriteFile(LPCWSTR FileName,
 
 static int WinFlushFileBuffers(LPCWSTR FileName,
                                PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinFlushFileBuffers\nFileName: %s\n", FileName);
 #endif
@@ -654,7 +662,6 @@ static int WinGetFileInformation(
     LPCWSTR FileName,
     LPBY_HANDLE_FILE_INFORMATION HandleFileInformation,
     PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinGetFileInformation\nFileName: %s\n", FileName);
 #endif
@@ -754,6 +761,7 @@ static int WinGetFileInformation(
         printf("In WinGetFileInfo, FindFiles OK\n");
 #endif
       }
+      FindClose(handle);
     }
   }
   if (opened)
@@ -765,7 +773,6 @@ static int WinGetFileInformation(
 static int WinFindFiles(LPCWSTR FileName,
                         PFillFindData FillFindData,  // function postatic inter
                         PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinFindFiles\nFileName: %s\n", FileName);
 #endif
@@ -861,7 +868,6 @@ static int WinFindFiles(LPCWSTR FileName,
 
 
 static int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinDeleteFile\nFileName: %s\n", FileName);
 #endif
@@ -899,53 +905,86 @@ static int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
 }
 
 
-static int WinDeleteDirectory(LPCWSTR FileName,
-                              PDOKAN_FILE_INFO) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
+static int WinDeleteDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
 #ifdef DEBUG
   wprintf(L"WinDeleteDirectory\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
-  // HANDLE handle = (HANDLE)DokanFileInfo->Context;
+  HANDLE hFind;
+  WIN32_FIND_DATAW findData;
+  ULONG fileLen;
+  ZeroMemory(filePath, sizeof(filePath));
   GetFilePath(filePath, FileName);
   std::string relPathStr;
   GetFilePath(&relPathStr, FileName);
-  std::map<std::string, maidsafe::ItemType> children;
-  if (maidsafe::ClientController::getInstance()->readdir(relPathStr, children))
-    return -errno;
-#ifdef DEBUG
-  printf("In WinDeleteDirectory, Directory %s has %i children.\n\n\n",
-         relPathStr.c_str(),
-         children.size());
-#endif
-  if (children.size()) {
-#ifdef DEBUG
-    printf("In WinDeleteDirectory, children.size() != 0\n");
-    DbgPrint(L"In WinDeleteDirectory, error = 145\n");
-#endif
-    return -145;
+  fileLen = wcslen(filePath);
+  if (filePath[fileLen-1] != L'\\') {
+    filePath[fileLen++] = L'\\';
   }
-
-  bool gui_private_share_(false);
-  if (maidsafe::ClientController::getInstance()->ReadOnly(relPathStr,
-      gui_private_share_))
-    return -5;
-
-  if (!RemoveDirectory(filePath)) {
-#ifdef DEBUG
-    printf("In WinDeleteDirectory, RemoveDirectory failed\n");
-#endif
-    DWORD error = GetLastError();
-    DbgPrint(L"In WinDeleteDirectory, error = %lu\n\n", error);
-    return error * -1;
+  filePath[fileLen] = L'*';
+  hFind = FindFirstFile(filePath, &findData);
+  while (hFind != INVALID_HANDLE_VALUE) {
+    if (wcscmp(findData.cFileName, L"..") != 0 &&
+        wcscmp(findData.cFileName, L".") != 0) {
+      FindClose(hFind);
+      DbgPrint(L"In WinDeleteDirectory, Directory is not empty: %s\n",
+               findData.cFileName);
+      return -static_cast<int>(ERROR_DIR_NOT_EMPTY);
+    }
+    if (!FindNextFile(hFind, &findData)) {
+      break;
+    }
   }
-  if (maidsafe::ClientController::getInstance()->rmdir(relPathStr) != 0) {
+  FindClose(hFind);
+  if (GetLastError() == ERROR_NO_MORE_FILES) {
+    if (maidsafe::ClientController::getInstance()->rmdir(relPathStr) != 0) {
 #ifdef DEBUG
-    printf("In WinDeleteDirectory, rmdir failed\n");
+      printf("In WinDeleteDirectory, rmdir failed\n");
 #endif
-    return -errno;
+      return -145;
+    } else {
+      return 0;
+    }
+  } else {
+    return -1;
   }
-  return 0;
+//    std::map<std::string, maidsafe::ItemType> children;
+//    if (maidsafe::ClientController::getInstance()->readdir(relPathStr,
+//                                                           children))
+//      return -errno;
+//  #ifdef DEBUG
+//    printf("In WinDeleteDirectory, Directory %s has %i children.\n\n\n",
+//           relPathStr.c_str(),
+//           children.size());
+//  #endif
+//    if (children.size()) {
+//  #ifdef DEBUG
+//      printf("In WinDeleteDirectory, children.size() != 0\n");
+//      DbgPrint(L"In WinDeleteDirectory, error = 145\n");
+//  #endif
+//      return -145;
+//    }
+//
+//    bool gui_private_share_(false);
+//    if (maidsafe::ClientController::getInstance()->ReadOnly(relPathStr,
+//        gui_private_share_))
+//      return -5;
+//
+//    if (!RemoveDirectory(filePath)) {
+//  #ifdef DEBUG
+//      printf("In WinDeleteDirectory, RemoveDirectory failed\n");
+//  #endif
+//      DWORD error = GetLastError();
+//      DbgPrint(L"In WinDeleteDirectory, error = %lu\n\n", error);
+//      return error * -1;
+//    }
+//    if (maidsafe::ClientController::getInstance()->rmdir(relPathStr) != 0) {
+//  #ifdef DEBUG
+//      printf("In WinDeleteDirectory, rmdir failed\n");
+//  #endif
+//      return -errno;
+//    }
+//    return 0;
 }
 
 
@@ -953,7 +992,6 @@ static int WinMoveFile(LPCWSTR FileName,
                        LPCWSTR NewFileName,
                        BOOL ReplaceIfExisting,
                        PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinMovefile\nFileName: %s\n", FileName);
 #endif
@@ -1014,7 +1052,6 @@ static int WinLockFile(LPCWSTR FileName,
                        LONGLONG ByteOffset,
                        LONGLONG Length,
                        PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinLockFile\nFileName: %s\n", FileName);
 #endif
@@ -1051,7 +1088,6 @@ static int WinLockFile(LPCWSTR FileName,
 static int WinSetEndOfFile(LPCWSTR FileName,
                            LONGLONG ByteOffset,
                            PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinSetEndofFile\nFileName: %s\n", FileName);
 #endif
@@ -1090,7 +1126,6 @@ static int WinSetEndOfFile(LPCWSTR FileName,
 static int WinSetAllocationSize(LPCWSTR FileName,
                                 LONGLONG AllocSize,
                                 PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinSetAllocationSize\nFileName: %s\n", FileName);
 #endif
@@ -1108,7 +1143,7 @@ static int WinSetAllocationSize(LPCWSTR FileName,
   if (GetFileSizeEx(handle, &fileSize)) {
     if (AllocSize < fileSize.QuadPart) {
       fileSize.QuadPart = AllocSize;
-      if (SetFilePointerEx(handle, fileSize, NULL, FILE_BEGIN)) {
+      if (!SetFilePointerEx(handle, fileSize, NULL, FILE_BEGIN)) {
 #ifdef DEBUG
         printf("In WinSetAllocationSize, SetFilePointer error: %ld",
                GetLastError());
@@ -1137,7 +1172,6 @@ static int WinSetAllocationSize(LPCWSTR FileName,
 static int WinSetFileAttributes(LPCWSTR FileName,
                                 DWORD FileAttributes,
                                 PDOKAN_FILE_INFO) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinSetFileAttributes\nFileName: %s\n", FileName);
 #endif
@@ -1160,7 +1194,6 @@ static int WinSetFileTime(LPCWSTR FileName,
                           CONST FILETIME *LastAccessTime,
                           CONST FILETIME *LastWriteTime,
                           PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinSetFileTime\nFileName: %s\n", FileName);
 #endif
@@ -1190,7 +1223,6 @@ static int WinUnlockFile(LPCWSTR FileName,
                          LONGLONG ByteOffset,
                          LONGLONG Length,
                          PDOKAN_FILE_INFO DokanFileInfo) {
-  boost::recursive_mutex::scoped_lock guard(dokan_mutex);
 #ifdef DEBUG
   wprintf(L"WinUnLockFile\nFileName: %s\n", FileName);
 #endif

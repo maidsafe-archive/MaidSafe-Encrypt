@@ -51,10 +51,11 @@ PDVault::PDVault(const std::string &pmid_public,
                  const std::string &kad_config_file,
                  const boost::uint64_t &available_space,
                  const boost::uint64_t &used_space,
-                 transport::TransportHandler *transport_handler)
+                 transport::TransportHandler *transport_handler,
+                 const boost::int16_t &transport_id)
     : port_(port),
-      udt_transport_(),
       transport_handler_(transport_handler),
+      transport_id_(transport_id),
       channel_manager_(transport_handler_),
       validator_(),
       knode_(new kad::KNode(&channel_manager_, transport_handler_, kad::VAULT,
@@ -79,9 +80,7 @@ PDVault::PDVault(const std::string &pmid_public,
       poh_(),
       thread_pool_(),
       prune_pending_ops_thread_() {
-  boost::int16_t trans_id;
-  transport_handler_->Register(&udt_transport_, &trans_id);
-  knode_->SetTransID(trans_id);
+  knode_->SetTransID(transport_id_);
   vault_chunkstore_.Init();
   co_.set_symm_algorithm(crypto::AES_256);
   co_.set_hash_algorithm(crypto::SHA_512);
@@ -93,10 +92,12 @@ PDVault::PDVault(const std::string &pmid_public,
   vault_rpcs_->SetOwnId(pmid_);
   thread_pool_.setMaxThreadCount(5);
   poh_.SetPmid(pmid_);
+  printf("PDVault::PDVault() - %s\n", HexSubstr(pmid_).c_str());
 }
 
 PDVault::~PDVault() {
 //  Stop(true);
+  printf("PDVault::~PDVault() - %s\n", HexSubstr(pmid_).c_str());
 }
 
 void PDVault::Start(bool first_node) {
@@ -107,7 +108,7 @@ void PDVault::Start(bool first_node) {
     success = transport_handler_->RegisterOnServerDown(boost::bind(
         &kad::KNode::HandleDeadRendezvousServer, knode_.get(), _1));
   if (success)
-    success = (transport_handler_->Start(port_, udt_transport_.GetID()) == 0);
+    success = (transport_handler_->Start(port_, transport_id_) == 0);
   if (success)
     success = (channel_manager_.Start() == 0);
   if (success) {
@@ -117,7 +118,7 @@ void PDVault::Start(bool first_node) {
       boost::asio::ip::address local_ip;
       base::get_local_address(&local_ip);
       knode_->Join(pmid_, kad_config_file_, local_ip.to_string(),
-          transport_handler_->listening_port(udt_transport_.GetID()),
+          transport_handler_->listening_port(transport_id_),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     } else {
       knode_->Join(pmid_, kad_config_file_,
@@ -202,7 +203,7 @@ void PDVault::RegisterMaidService() {
                      knode_.get(),
                      &poh_,
                      &vault_service_logic_,
-                     udt_transport_.GetID()));
+                     transport_id_));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
       new rpcprotocol::Channel(&channel_manager_, transport_handler_));
   svc_channel_->SetService(vault_service_.get());
@@ -781,7 +782,7 @@ void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
   }
   vault_rpcs_->CheckChunk(get_args->data_->chunk_name, ip, port,
       get_args->chunk_holder_.rendezvous_ip(),
-      get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+      get_args->chunk_holder_.rendezvous_port(), transport_id_,
       check_chunk_response.get(), get_args->controller_.get(), callback);
 }
 
@@ -814,7 +815,7 @@ void PDVault::CheckChunkCallback(
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
           get_args->chunk_holder_.rendezvous_port(),
-          udt_transport_.GetID(), check_chunk_response.get(),
+          transport_id_, check_chunk_response.get(),
           get_args->controller_.get(), callback);
       return;
     }
@@ -858,7 +859,7 @@ void PDVault::CheckChunkCallback(
         vault_rpcs_->GetBPMessages(get_args->data_->chunk_name,
             get_args->data_->pub_key, get_args->data_->sig_pub_key, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
-            get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+            get_args->chunk_holder_.rendezvous_port(), transport_id_,
             get_messages_response.get(), get_args->controller_.get(), callback);
       } else {
        boost::shared_ptr<maidsafe::GetChunkResponse>
@@ -867,7 +868,7 @@ void PDVault::CheckChunkCallback(
            &PDVault::GetChunkCallback, get_chunk_response, get_args);
         vault_rpcs_->GetChunk(get_args->data_->chunk_name, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
-            get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+            get_args->chunk_holder_.rendezvous_port(), transport_id_,
             get_chunk_response.get(), get_args->controller_.get(), callback);
       }
     }
@@ -917,7 +918,7 @@ void PDVault::GetMessagesCallback(
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
-          get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+          get_args->chunk_holder_.rendezvous_port(), transport_id_,
           get_messages_response.get(), get_args->controller_.get(), callback);
       return;
     }
@@ -960,7 +961,7 @@ void PDVault::GetChunkCallback(
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
-          get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+          get_args->chunk_holder_.rendezvous_port(), transport_id_,
           get_chunk_response.get(), get_args->controller_.get(), callback);
       return;
     }
@@ -1052,7 +1053,7 @@ void PDVault::SwapChunk(const std::string &chunk_name,
   }
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   vault_rpcs_->SwapChunk(0, chunk_name, "", chunkcontent1.size(), remote_ip,
-      remote_port, rendezvous_ip, rendezvous_port, udt_transport_.GetID(),
+      remote_port, rendezvous_ip, rendezvous_port, transport_id_,
       swap_chunk_response.get(), controller, callback);
 }
 
@@ -1091,7 +1092,7 @@ void PDVault::SwapChunkSendChunk(
   vault_rpcs_->SwapChunk(1, swap_chunk_args->chunkname_, chunkcontent1,
       chunkcontent1.size(), swap_chunk_args->remote_ip_,
       swap_chunk_args->remote_port_, swap_chunk_args->rendezvous_ip_,
-      swap_chunk_args->rendezvous_port_, udt_transport_.GetID(),
+      swap_chunk_args->rendezvous_port_, transport_id_,
       swap_chunk_response.get(), controller, callback);
 }
 
@@ -1179,7 +1180,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   if (data->contacts.size() < kKadStoreThreshold) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, Kad lookup failed to find %u nodes; "
-           "found %u nodes.\n", kKadStoreThreshold, data->contacts.size());
+           "found %u node(s).\n", kKadStoreThreshold, data->contacts.size());
 #endif
     return maidsafe::kFindAccountHoldersError;
   }
@@ -1212,7 +1213,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
         &PDVault::AmendAccountCallback, i, data);
     vault_rpcs_->AmendAccount(data->contacts.at(i),
         kad_ops_->AddressIsLocal(data->contacts.at(i)),
-                                 udt_transport_.GetID(),
+                                 transport_id_,
                                  &amend_account_request,
                                  &data->data_holders.at(i).response,
                                  data->data_holders.at(i).controller.get(),
@@ -1228,7 +1229,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   if (data->success_count < kKadStoreThreshold) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, not enough positive responses "
-           "received.\n");
+           "received (%d of %d).\n", data->success_count, kKadStoreThreshold);
 #endif
     return maidsafe::kRequestFailedConsensus;
   }
@@ -1275,7 +1276,7 @@ void PDVault::UpdateSpaceOffered() {
              HexSubstr(pmid_).c_str());
 #endif
     ++n;
-    boost::this_thread::sleep(boost::posix_time::seconds(20));
+    boost::this_thread::sleep(boost::posix_time::seconds(15));
   }
 #ifdef DEBUG
   if (vault_status() == kVaultStarted)

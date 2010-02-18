@@ -42,20 +42,20 @@ int KadOps::FindKNodes(const std::string &kad_key,
   kad_cb_obj.WaitForCallback();
   if (kad_cb_obj.result().empty()) {
 #ifdef DEBUG
-    printf("In FindKNodes, fail - timeout.\n");
+    printf("In KadOps::FindKNodes, fail - timeout.\n");
 #endif
     return kFindNodesError;
   }
   kad::FindResponse find_response;
   if (!find_response.ParseFromString(kad_cb_obj.result())) {
 #ifdef DEBUG
-    printf("In FindKNodes, can't parse result.\n");
+    printf("In KadOps::FindKNodes, can't parse result.\n");
 #endif
     return kFindNodesParseError;
   }
   if (find_response.result() != kad::kRpcResultSuccess) {
 #ifdef DEBUG
-    printf("In FindKNodes, Kademlia operation failed.\n");
+    printf("In KadOps::FindKNodes, Kademlia operation failed.\n");
 #endif
     return kFindNodesFailure;
   }
@@ -87,23 +87,23 @@ int KadOps::FindValue(const std::string &kad_key,
   kad_cb_obj.WaitForCallback();
   if (kad_cb_obj.result().empty()) {
 #ifdef DEBUG
-    printf("In FindValue, fail - timeout.\n");
+    printf("In KadOps::FindValue, fail - timeout.\n");
 #endif
     return kFindValueError;
   }
   kad::FindResponse find_response;
   if (!find_response.ParseFromString(kad_cb_obj.result())) {
 #ifdef DEBUG
-    printf("In FindValue, can't parse result.\n");
+    printf("In KadOps::FindValue, can't parse result.\n");
 #endif
     return kFindValueParseError;
   }
   if (find_response.result() != kad::kRpcResultSuccess) {
 #ifdef DEBUG
-    printf("In FindValue, Kademlia op failed to find the value for key %s.\n",
-           HexSubstr(kad_key).c_str());
-    printf("Found %i nodes\n", find_response.closest_nodes_size());
-    printf("Found %i values\n", find_response.values_size());
+    printf("In KadOps::FindValue, Kademlia op failed to find the value for key "
+           "%s.\n", HexSubstr(kad_key).c_str());
+    printf("  Found %i nodes\n", find_response.closest_nodes_size());
+    printf("  Found %i values\n", find_response.values_size());
 //    printf("Found alt val holder: %i\n",
 //           find_response.has_alternative_value_holder());
 #endif
@@ -116,8 +116,8 @@ int KadOps::FindValue(const std::string &kad_key,
   if (find_response.has_alternative_value_holder()) {
     *cache_holder = find_response.alternative_value_holder();
 #ifdef DEBUG
-    printf("In FindValue, node %s has cached the value.\n",
-           cache_holder->node_id().substr(0, 20).c_str());
+    printf("In KadOps::FindValue, node %s has cached the value.\n",
+           HexSubstr(cache_holder->node_id()).c_str());
 #endif
     return kSuccess;
   }
@@ -129,7 +129,7 @@ int KadOps::FindValue(const std::string &kad_key,
     }
   }
 #ifdef DEBUG
-  printf("In FindValue, %i values have returned.\n", values->size());
+  printf("In KadOps::FindValue, %i values have returned.\n", values->size());
 #endif
   return (empty) ? kFindValueFailure : kSuccess;
 }

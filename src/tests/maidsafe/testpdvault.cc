@@ -237,7 +237,7 @@ void CreateBufferPacket(const std::string &owner,
 size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
                          const int &timeout_seconds,
                          boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm) {
-  printf("\nStarting FindValue\n\n");
+  printf("\nChecking chunk references...\n\n");
   std::set<std::string> not_stored;
   std::set<std::string> stored;
   std::map<std::string, std::string>::iterator it;
@@ -254,28 +254,24 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
       printf("Sleeping iteration %i\n", set_iteration);
       boost::this_thread::sleep(boost::posix_time::seconds(10));
     }
-    printf("Set iteration %i\n", set_iteration);
     std::set<std::string>::iterator not_stored_it = not_stored.begin();
     while (not_stored_it != not_stored.end()) {
-      std::string hex_chunk_name = (*not_stored_it);
-      std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
       kad::ContactInfo cache_holder;
       std::vector<std::string> chunk_holders_ids;
       std::string needs_cache_copy_id;
-      sm->kad_ops_->FindValue(non_hex_name, false, &cache_holder,
+      sm->kad_ops_->FindValue(*not_stored_it, false, &cache_holder,
                               &chunk_holders_ids, &needs_cache_copy_id);
-      if (chunk_holders_ids.size() >= size_t(kMinChunkCopies *
-          kad::kMinSuccessfulPecentageStore)) {
+      if (chunk_holders_ids.size() >= 1) {
         printf("Found chunk: %s - Got %u holders.\n",
-               hex_chunk_name.substr(0, 10).c_str(), chunk_holders_ids.size());
-        not_stored.erase(hex_chunk_name);
-        stored.insert(hex_chunk_name);
+               HexSubstr(*not_stored_it).c_str(), chunk_holders_ids.size());
+        not_stored.erase(*not_stored_it);
+        stored.insert(*not_stored_it);
         ++chunk_ref_count;
         found = true;
         break;
       } else {
         printf("Not there with chunk: %s - Got %u holders.\n",
-               hex_chunk_name.substr(0, 10).c_str(), chunk_holders_ids.size());
+               HexSubstr(*not_stored_it).c_str(), chunk_holders_ids.size());
       }
       ++not_stored_it;
       found = false;
@@ -285,7 +281,7 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
     printf("Could NOT load chunks:\n");
     for (std::set<std::string>::iterator not_stored_it = not_stored.begin();
          not_stored_it != not_stored.end(); ++not_stored_it)
-      printf("\t - %s\n", not_stored_it->c_str());
+      printf("\t - %s\n", HexSubstr(*not_stored_it).c_str());
   }
 
   return chunk_ref_count;
@@ -309,7 +305,10 @@ class PDVaultTest : public testing::Test {
                   sm_(),
                   client_pmid_keys_(),
                   client_maid_keys_(),
-                  client_pmid_public_signature_(),
+                  pmid_pub_key_(),
+                  pmid_priv_key_(),
+                  pmid_pub_key_sig_(),
+                  pmid_name_(),
                   mutex_(),
                   crypto_() {
     try {
@@ -324,32 +323,31 @@ class PDVaultTest : public testing::Test {
 
     printf("Generating MAID Keys...\n");
     client_maid_keys_.GenerateKeys(maidsafe::kRsaKeySize);
-    std::string maid_pri = client_maid_keys_.private_key();
-    std::string maid_pub = client_maid_keys_.public_key();
-    std::string maid_pub_key_signature = crypto_.AsymSign(maid_pub, "",
-        maid_pri, crypto::STRING_STRING);
-    std::string maid_name = crypto_.Hash(maid_pub + maid_pub_key_signature, "",
-        crypto::STRING_STRING, false);
+    std::string maid_priv_key = client_maid_keys_.private_key();
+    std::string maid_pub_key = client_maid_keys_.public_key();
+    std::string maid_pub_key_sig = crypto_.AsymSign(maid_pub_key, "",
+        maid_priv_key, crypto::STRING_STRING);
+    std::string maid_name = crypto_.Hash(maid_pub_key + maid_pub_key_sig, "",
+                                         crypto::STRING_STRING, false);
     maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::MAID, maid_name,
-        maid_pri, maid_pub, maid_pub_key_signature);
-    printf(" >> public key:   %s\n", HexSubstr(maid_pub).c_str());
-    printf(" >> pub key sig:  %s\n", HexSubstr(maid_pub_key_signature).c_str());
+        maid_priv_key, maid_pub_key, maid_pub_key_sig);
+    printf(" >> public key:   %s\n", HexSubstr(maid_pub_key).c_str());
+    printf(" >> pub key sig:  %s\n", HexSubstr(maid_pub_key_sig).c_str());
     printf(" >> hash/name:    %s\n", HexSubstr(maid_name).c_str());
 
     printf("Generating PMID Keys...\n");
     client_pmid_keys_.GenerateKeys(maidsafe::kRsaKeySize);
-    std::string pmid_pri = client_pmid_keys_.private_key();
-    std::string pmid_pub = client_pmid_keys_.public_key();
-    client_pmid_public_signature_ = crypto_.AsymSign(pmid_pub, "",
-        maid_pri, crypto::STRING_STRING);
-    std::string pmid_name = crypto_.Hash(pmid_pub +
-        client_pmid_public_signature_, "", crypto::STRING_STRING, false);
-    maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::PMID, pmid_name,
-        pmid_pri, pmid_pub, client_pmid_public_signature_);
-    printf(" >> public key:   %s\n", HexSubstr(pmid_pub).c_str());
-    printf(" >> pub key sig:  %s\n",
-           HexSubstr(client_pmid_public_signature_).c_str());
-    printf(" >> hash/name:    %s\n", HexSubstr(pmid_name).c_str());
+    pmid_priv_key_ = client_pmid_keys_.private_key();
+    pmid_pub_key_ = client_pmid_keys_.public_key();
+    pmid_pub_key_sig_ = crypto_.AsymSign(pmid_pub_key_, "", maid_priv_key,
+                                         crypto::STRING_STRING);
+    pmid_name_ = crypto_.Hash(pmid_pub_key_ + pmid_pub_key_sig_, "",
+                              crypto::STRING_STRING, false);
+    maidsafe::SessionSingleton::getInstance()->AddKey(maidsafe::PMID,
+        pmid_name_, pmid_priv_key_, pmid_pub_key_, pmid_pub_key_sig_);
+    printf(" >> public key:   %s\n", HexSubstr(pmid_pub_key_).c_str());
+    printf(" >> pub key sig:  %s\n", HexSubstr(pmid_pub_key_sig_).c_str());
+    printf(" >> hash/name:    %s\n", HexSubstr(pmid_name_).c_str());
 
     maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(0);
   }
@@ -375,6 +373,30 @@ class PDVaultTest : public testing::Test {
     testpdvault::WaitFunction(60, &mutex_);
     ASSERT_TRUE(callback_succeeded_);
     ASSERT_FALSE(callback_timed_out_);
+
+    // poor man's vault takeover
+    const size_t vlt(kNetworkSize_-1);
+    printf("Taking over vault #%d: %s => %s\n", vlt,
+           HexSubstr(pdvaults_[vlt]->pmid_).c_str(),
+           HexSubstr(pmid_name_).c_str());
+    pdvaults_[vlt]->Stop();
+    transport::TransportHandler *trns_han(pdvaults_[vlt]->transport_handler_);
+    boost::int16_t trns_id(pdvaults_[vlt]->transport_id_);
+    std::string dir(pdvaults_[vlt]->vault_chunkstore_.ChunkStoreDir());
+    boost::uint64_t used(pdvaults_[vlt]->vault_chunkstore_.used_space());
+    boost::uint64_t avlb(pdvaults_[vlt]->vault_chunkstore_.available_space());
+    std::string kad_cfg(pdvaults_[vlt]->kad_config_file_);
+    pdvaults_[vlt].reset(new PDVault(pmid_pub_key_, pmid_priv_key_,
+                                     pmid_pub_key_sig_, dir, 0, false, false,
+                                     kad_cfg, avlb, used, trns_han, trns_id));
+    pdvaults_[vlt]->Start(false);
+    int n(0);
+    while (pdvaults_[vlt]->vault_status() != kVaultStarted && n < 10) {
+      n++;
+      boost::this_thread::sleep(boost::posix_time::seconds(1));
+    }
+    ASSERT_EQ(kVaultStarted, pdvaults_[vlt]->vault_status());
+    printf("Vault #%d restarted.\n", vlt);
   }
 
   virtual void TearDown() {
@@ -390,7 +412,7 @@ class PDVaultTest : public testing::Test {
   std::vector<fs::path> chunkstore_dirs_;
   boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm_;
   crypto::RsaKeyPair client_pmid_keys_, client_maid_keys_;
-  std::string client_pmid_public_signature_;
+  std::string pmid_pub_key_, pmid_priv_key_, pmid_pub_key_sig_, pmid_name_;
   boost::mutex mutex_;
   crypto::Crypto crypto_;
 
@@ -416,7 +438,7 @@ TEST_F(PDVaultTest, FUNC_MAID_VaultStartStop) {
 
 TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
   std::map<std::string, std::string> chunks;
-  const boost::uint32_t kNumOfTestChunks(1);
+  const boost::uint32_t kNumOfTestChunks(1);  // 23
   testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, test_root_dir_,
                           &chunks);
 
@@ -426,15 +448,9 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
     data_size += (*it).second.size();
   }
 
-  // create an account with enough space
-  // TODO(Team) sm_->CreateAccount(data_size * kMinChunkCopies);
-
-  /* printf("before: maxThreadCount = %d\n",
-         sm_->packet_thread_pool_.maxThreadCount());
-  sm_->packet_thread_pool_.waitForDone();
-  printf("after: maxThreadCount = %d\n",
-         sm_->packet_thread_pool_.maxThreadCount()); */
-  boost::this_thread::sleep(boost::posix_time::seconds(3));
+  // wait for account creation of our vault
+  printf("Waiting for account creation...\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(20));
 
   // store chunks to network
   for (it = chunks.begin(); it != chunks.end(); ++it) {
@@ -443,11 +459,9 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
   printf("\n-- %i chunks enqueued for storing, total %llu bytes. --\n\n",
          kNumOfTestChunks, data_size);
 
-  boost::this_thread::sleep(boost::posix_time::seconds(20));
+  printf("Waiting for chunks to be stored...\n");
 
-/*
-  std::set<std::string> not_stored;
-  std::set<std::string> stored;
+  std::set<std::string> not_stored, stored;
   for (it = chunks.begin(); it != chunks.end(); ++it)
     not_stored.insert((*it).first);
 
@@ -462,25 +476,22 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
       printf("Sleeping iteration %i\n", set_iteration);
       boost::this_thread::sleep(boost::posix_time::seconds(10));
     }
-    printf("Set iteration %i\n", set_iteration);
     std::set<std::string>::iterator not_stored_it = not_stored.begin();
     while (not_stored_it != not_stored.end()) {
-      std::string hex_chunk_name = (*not_stored_it);
-      std::string non_hex_name = base::DecodeFromHex(hex_chunk_name);
       int chunk_count = 0;
       for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
-        if (pdvaults_[vault_no]->vault_chunkstore_.Has(non_hex_name)) {
-          std::string trace = "Vault[" + base::itos(vault_no) + "] has chunk " +
-                              hex_chunk_name.substr(0, 10);
-          SCOPED_TRACE(trace);
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has(*not_stored_it)) {
+          printf("Vault %d (%s) has chunk %s\n", vault_no,
+                 HexSubstr(pdvaults_[vault_no]->pmid_).c_str(),
+                 HexSubstr(*not_stored_it).c_str());
           ++chunk_count;
         }
       }
-      if (chunk_count >= kMinChunkCopies) {
-        not_stored.erase(hex_chunk_name);
-        stored.insert(hex_chunk_name);
-        printf("All copies of chunk %s stored\n",
-               hex_chunk_name.substr(0, 10).c_str());
+      if (chunk_count >= 1) {
+        not_stored.erase(*not_stored_it);
+        stored.insert(*not_stored_it);
+        printf("=> At least one copy of chunk %s stored.\n",
+               HexSubstr(*not_stored_it).c_str());
         found = true;
         break;
       }
@@ -491,11 +502,9 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
 
   ASSERT_EQ(chunks.size(), stored.size());
   not_stored.clear();
-  not_stored = stored;
   stored.clear();
 
-  ASSERT_EQ(chunks.size(), testpdvault::CheckStoredCopies(chunks, 300, sm_));
-*/
+  ASSERT_EQ(chunks.size(), testpdvault::CheckStoredCopies(chunks, 120, sm_));
 }
 
 TEST_F(PDVaultTest, FUNC_MAID_GetChunks) {

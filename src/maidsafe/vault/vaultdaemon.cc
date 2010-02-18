@@ -34,6 +34,32 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe_vault {
 
+VaultDaemon::VaultDaemon(int port) : pdvault_(),
+                                     val_check_(),
+                                     is_owned_(false),
+                                     config_file_(),
+                                     local_config_file_(),
+                                     kad_config_file_(),
+                                     vault_path_(),
+                                     pmid_public_(),
+                                     pmid_private_(),
+                                     signed_pmid_public_(),
+                                     chunkstore_dir_(),
+                                     port_(port),
+                                     vault_available_space_(0),
+                                     used_space_(0),
+                                     local_udt_transport_(),
+                                     global_udt_transport_(),
+                                     transport_handler_(),
+                                     local_ch_manager_(&transport_handler_),
+                                     registration_channel_(),
+                                     registration_service_(),
+                                     config_mutex_() {
+  boost::int16_t trans_id;
+  transport_handler_.Register(&global_udt_transport_, &trans_id);
+  transport_handler_.Register(&local_udt_transport_, &trans_id);
+}
+
 VaultDaemon::~VaultDaemon() {
   if (registration_service_.get() != NULL) {
     local_udt_transport_.Stop();
@@ -252,7 +278,8 @@ bool VaultDaemon::StartNotOwnedVault() {
   boost::uint64_t space(1024 * 1024 * 1024);  // 1GB
   pdvault_.reset(new PDVault(keys.public_key(), keys.private_key(),
       signed_pubkey, chunkstore_dir.string(), 0, false, false,
-      kad_config_file_.string(), space, 0, &transport_handler_));
+      kad_config_file_.string(), space, 0, &transport_handler_,
+      global_udt_transport_.GetID()));
   pdvault_->Start(false);
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed to start a not owned vault");
@@ -277,7 +304,8 @@ bool VaultDaemon::StartOwnedVault() {
     return false;
   pdvault_.reset(new PDVault(pmid_public_, pmid_private_, signed_pmid_public_,
       chunkstore_dir_, port_, false, false, kad_config_file_.string(),
-      vault_available_space_, used_space_, &transport_handler_));
+      vault_available_space_, used_space_, &transport_handler_,
+      global_udt_transport_.GetID()));
   pdvault_->Start(false);
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed To Start Owned Vault with info in config file");
