@@ -245,12 +245,13 @@ class Env: public testing::Environment {
     }
     for (int i = 0; i < current_nodes_created_; ++i) {
       transport::TransportUDT *trans =
-          static_cast<transport::TransportUDT*>(transport_handlers_[i]->Get(0));
-      transport_handlers_[i]->Remove(0);
+          static_cast<transport::TransportUDT*>(
+          transport_handlers_[i]->Get((*pdvaults_)[i]->transport_id_));
+      transport_handlers_[i]->Remove((*pdvaults_)[i]->transport_id_);
       delete trans;
 //      if (i == current_nodes_created_ - 1)
 //        (*pdvaults_)[current_nodes_created_ - 1]->CleanUp();
-      (*pdvaults_)[i].reset();
+//      (*pdvaults_)[i].reset();
     }
     try {
       if (fs::exists(vault_dir_))

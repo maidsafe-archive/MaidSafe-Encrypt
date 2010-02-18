@@ -237,7 +237,7 @@ void CreateBufferPacket(const std::string &owner,
 size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
                          const int &timeout_seconds,
                          boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm) {
-  printf("\nChecking chunk references...\n\n");
+  printf("\nChecking chunk references remotely...\n\n");
   std::set<std::string> not_stored;
   std::set<std::string> stored;
   std::map<std::string, std::string>::iterator it;
@@ -438,7 +438,7 @@ TEST_F(PDVaultTest, FUNC_MAID_VaultStartStop) {
 
 TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
   std::map<std::string, std::string> chunks;
-  const boost::uint32_t kNumOfTestChunks(1);  // 23
+  const boost::uint32_t kNumOfTestChunks(23);
   testpdvault::MakeChunks(client_chunkstore_, kNumOfTestChunks, test_root_dir_,
                           &chunks);
 
@@ -456,53 +456,69 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreChunks) {
   for (it = chunks.begin(); it != chunks.end(); ++it) {
     sm_->StoreChunk((*it).first, maidsafe::PRIVATE, "");
   }
-  printf("\n-- %i chunks enqueued for storing, total %llu bytes. --\n\n",
+  printf("\n-- Enqueued %i chunks for storing, total %llu bytes. --\n",
          kNumOfTestChunks, data_size);
 
-  printf("Waiting for chunks to be stored...\n");
+  printf("\nWaiting for chunks to get stored...\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(15));
 
-  std::set<std::string> not_stored, stored;
-  for (it = chunks.begin(); it != chunks.end(); ++it)
-    not_stored.insert((*it).first);
+  printf("\nChecking chunks and refs locally...\n");
 
-  ASSERT_EQ(chunks.size(), not_stored.size());
+  // checking for chunks and reference packets
+  std::set<std::string> stored_chunks, stored_refs;
+  int iteration = 0;
+  while ((stored_chunks.size() < chunks.size() ||
+         stored_refs.size() < chunks.size()) &&
+         iteration < 6) {
+    ++iteration;
+    printf("\n-- Sleeping iteration %i --\n\n", iteration);
+    boost::this_thread::sleep(boost::posix_time::seconds(10));
 
-  boost::uint32_t timeout(base::get_epoch_time() + 300);  // seconds.
-  int set_iteration = 0;
-  bool found(false);
-  while (stored.size() < chunks.size() && (base::get_epoch_time() < timeout)) {
-    ++set_iteration;
-    if (!found) {
-      printf("Sleeping iteration %i\n", set_iteration);
-      boost::this_thread::sleep(boost::posix_time::seconds(10));
-    }
-    std::set<std::string>::iterator not_stored_it = not_stored.begin();
-    while (not_stored_it != not_stored.end()) {
-      int chunk_count = 0;
+    for (it = chunks.begin(); it != chunks.end(); ++it) {
+      int chunk_count(0), ref_count(0);
+      std::vector<std::string> values;
+
       for (int vault_no = 0; vault_no < kNetworkSize_; ++vault_no) {
-        if (pdvaults_[vault_no]->vault_chunkstore_.Has(*not_stored_it)) {
-          printf("Vault %d (%s) has chunk %s\n", vault_no,
+        if (stored_chunks.count((*it).first) == 0 &&
+            pdvaults_[vault_no]->vault_chunkstore_.Has((*it).first)) {
+          printf("Vault %d (%s) has chunk %s.\n", vault_no,
                  HexSubstr(pdvaults_[vault_no]->pmid_).c_str(),
-                 HexSubstr(*not_stored_it).c_str());
+                 HexSubstr((*it).first).c_str());
           ++chunk_count;
         }
+        if (stored_refs.count((*it).first) == 0 &&
+            pdvaults_[vault_no]->knode_->FindValueLocal((*it).first, &values)) {
+          printf("Vault %d (%s) has %d refs to %s.\n", vault_no,
+                 HexSubstr(pdvaults_[vault_no]->pmid_).c_str(),
+                 values.size(), HexSubstr((*it).first).c_str());
+          ++ref_count;
+        }
       }
-      if (chunk_count >= 1) {
-        not_stored.erase(*not_stored_it);
-        stored.insert(*not_stored_it);
-        printf("=> At least one copy of chunk %s stored.\n",
-               HexSubstr(*not_stored_it).c_str());
-        found = true;
-        break;
+
+      if (stored_chunks.count((*it).first) == 0) {
+        if (chunk_count >= 1) {
+          stored_chunks.insert((*it).first);
+        } else {
+          printf("Chunk %s not stored this iteration.\n",
+                 HexSubstr((*it).first).c_str());
+        }
       }
-      ++not_stored_it;
-      found = false;
+
+      if (stored_refs.count((*it).first) == 0) {
+        if (ref_count >= kKadStoreThreshold) {
+          stored_refs.insert((*it).first);
+        } else {
+          printf("Only %d ref packets for %s stored so far.\n", ref_count,
+                 HexSubstr((*it).first).c_str());
+        }
+      }
     }
   }
 
-  ASSERT_EQ(chunks.size(), stored.size());
-  not_stored.clear();
-  stored.clear();
+  ASSERT_EQ(chunks.size(), stored_chunks.size());
+  stored_chunks.clear();
+  ASSERT_EQ(chunks.size(), stored_refs.size());
+  stored_refs.clear();
 
   ASSERT_EQ(chunks.size(), testpdvault::CheckStoredCopies(chunks, 120, sm_));
 }

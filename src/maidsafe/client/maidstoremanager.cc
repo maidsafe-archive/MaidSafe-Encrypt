@@ -1656,6 +1656,7 @@ int MaidsafeStoreManager::SendChunkPrep(const StoreData &store_data) {
   kad::Contact peer;
   bool local(false);
   // TODO(Team#5#): 2010-02-17 - Ensure we don't try to store on own vault
+  task.exclude_peers_.push_back(kad::Contact(ss_->Id(PMID), "", 0));
   // TODO(Team#5#): 2010-02-17 - Ensure we dont try to store twice on same vault
   int peer_result = kad_ops_->GetStorePeer(ideal_rtt, task.exclude_peers_,
                                            &peer, &local);

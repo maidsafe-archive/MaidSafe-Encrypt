@@ -192,7 +192,7 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
     return;
   }
 
-  // Check we're not being asked to store ourselves as a reference holder for
+  // Check we're not being asked to store ourselves as a chunk holder for
   // ourself.
   if (request_sz.pmid() == pmid_) {
 #ifdef DEBUG
@@ -214,6 +214,14 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
     return;
   }
 
+  response_ic->set_result(kAck);
+  response_ic->SerializeToString(&ser_response_ic);
+  response_sc->set_signature(co.AsymSign(ser_response_ic, "", pmid_private_,
+                             crypto::STRING_STRING));
+  response_sc->SerializeToString(&ser_response_sc);
+  response->set_response_signature(co.AsymSign(ser_response_sc, "",
+                                   pmid_private_, crypto::STRING_STRING));
+
   std::string peer_pmid(request_sz.pmid());
   std::pair<PrepsReceivedMap::iterator, bool> cp =
       prm_.insert(std::pair<std::string, maidsafe::StoreContract>(
@@ -224,17 +232,17 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
     printf("In VaultService::StorePrep (%s), failed to insert prep into map.\n",
            HexSubstr(pmid_).c_str());
 #endif
+    response_ic->set_result(kNack);
+    response_ic->SerializeToString(&ser_response_ic);
+    response_sc->set_signature(co.AsymSign(ser_response_ic, "", pmid_private_,
+                               crypto::STRING_STRING));
+    response_sc->SerializeToString(&ser_response_sc);
+    response->set_response_signature(co.AsymSign(ser_response_sc, "",
+                                     pmid_private_, crypto::STRING_STRING));
     done->Run();
     return;
   }
 
-  response_ic->set_result(kAck);
-  response_ic->SerializeToString(&ser_response_ic);
-  response_sc->set_signature(co.AsymSign(ser_response_ic, "", pmid_private_,
-                             crypto::STRING_STRING));
-  response_sc->SerializeToString(&ser_response_sc);
-  response->set_response_signature(co.AsymSign(ser_response_sc, "",
-                                   pmid_private_, crypto::STRING_STRING));
   done->Run();
 }
 
@@ -473,8 +481,9 @@ void VaultService::RemoveFromWatchList(
   if (0 != cih_.RemoveFromWatchList(request->chunkname(), request->pmid(),
                                     &chunk_size, &creditors, &references)) {
 #ifdef DEBUG
-    printf("In VaultService::RemoveFromWatchList (%s), failed to remove from "
-           "watch list.\n", HexSubstr(pmid_).c_str());
+    printf("In VaultService::RemoveFromWatchList (%s), failed to remove %s "
+           "from watch list.\n", HexSubstr(pmid_).c_str(),
+           HexSubstr(request->pmid()).c_str());
 #endif
     done->Run();
     return;
@@ -543,11 +552,15 @@ void VaultService::AddToReferenceList(
     return;
   }
 
-  if (0 != cih_.AddToReferenceList(request->chunkname(), store_contract.pmid(),
-                   store_contract.inner_contract().signed_size().data_size())) {
+  int res = cih_.AddToReferenceList(request->chunkname(), store_contract.pmid(),
+                     store_contract.inner_contract().signed_size().data_size());
+  if (res != 0) {
 #ifdef DEBUG
-    printf("In VaultService::AddToReferenceList (%s), failed to add to "
-           "reference list.\n", HexSubstr(pmid_).c_str());
+    printf("In VaultService::AddToReferenceList (%s), failed to add %s to "
+           "reference list for %s: %s.\n", HexSubstr(pmid_).c_str(),
+           HexSubstr(store_contract.pmid()).c_str(),
+           HexSubstr(request->chunkname()).c_str(),
+           (res = kChunkInfoInvalidName) ? "no watchers" : "wrong size");
 #endif
     done->Run();
     return;
@@ -648,9 +661,9 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
       if (ah_.AddAccount(pmid, account_delta) == 0) {
         response->set_result(kAck);
 #ifdef DEBUG
-        printf("In VaultService::AmendAccount (%s), successfully created a new "
-               "account (%s) of size %llu.\n", HexSubstr(pmid_).c_str(),
-               HexSubstr(pmid).c_str(), account_delta);
+//      printf("In VaultService::AmendAccount (%s), successfully created a new "
+//               "account (%s) of size %llu.\n", HexSubstr(pmid_).c_str(),
+//               HexSubstr(pmid).c_str(), account_delta);
 #endif
       } else {
 #ifdef DEBUG
