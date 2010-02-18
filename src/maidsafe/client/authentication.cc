@@ -112,6 +112,7 @@ int Authentication::GetUserData(const std::string &password,
 
 int Authentication::CreateUserSysPackets(const std::string &username,
                                          const std::string &pin) {
+  system_packets_result_ = kPendingResult;
   PacketParams params;
   params["username"] = username;
   params["PIN"] = pin;
@@ -192,7 +193,6 @@ void Authentication::CreateSignaturePacketKeyUnique(
                         "");
     if (n != 0) {
       // return to CreateSignaturePacket
-      printf("nionga aniadiendo la llave\n");
     }
 
     VoidFuncOneInt func = boost::bind(
@@ -296,7 +296,6 @@ void Authentication::CreateMaidPmidPacket(
                       boost::any_cast<std::string>(result["signature"]));
   if (n != 0) {
     // return to CreateSignaturePacket
-    printf("nionga aniadiendo la llave\n");
   }
   sm_->StorePacket(boost::any_cast<std::string>(result["name"]),
                    boost::any_cast<std::string>(result["publicKey"]),
@@ -404,12 +403,12 @@ int Authentication::SaveSession(const std::string &ser_da) {
 }
 
 int Authentication::RemoveMe(std::list<KeyAtlasRow> sig_keys) {
-  MidPacket *midPacket =
-    static_cast<MidPacket*>(PacketFactory::Factory(MID));
-  SmidPacket *smidPacket =
-    static_cast<SmidPacket*>(PacketFactory::Factory(SMID));
-  TmidPacket *tmidPacket =
-    static_cast<TmidPacket*>(PacketFactory::Factory(TMID));
+  boost::scoped_ptr<MidPacket> midPacket(
+      static_cast<MidPacket*>(PacketFactory::Factory(MID)));
+  boost::scoped_ptr<SmidPacket> smidPacket(
+      static_cast<SmidPacket*>(PacketFactory::Factory(SMID)));
+  boost::scoped_ptr<TmidPacket> tmidPacket(
+      static_cast<TmidPacket*>(PacketFactory::Factory(TMID)));
 
   PacketParams params;
   params["username"] = ss_->Username();

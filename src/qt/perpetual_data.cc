@@ -333,12 +333,11 @@ void PerpetualData::asyncCreateUser() {
                                                create_->PortChosen(),
                                                create_->DirectoryChosen(),
                                                this);
-
+  create_->reset();
   connect(cut,  SIGNAL(completed(bool)),
           this, SLOT(onUserCreationCompleted(bool)));
 
   cut->start();
-  create_->reset();
 }
 
 void PerpetualData::onUserCreationCompleted(bool success) {
