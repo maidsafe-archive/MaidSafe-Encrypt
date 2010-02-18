@@ -123,6 +123,7 @@ static int WinCreateFile(LPCWSTR FileName,
                          PDOKAN_FILE_INFO   DokanFileInfo) {
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
+//  DWORD fileAttr;
   std::string relPathStr, filePathStr, rootStr;
 #ifdef DEBUG
   wprintf(L"WinCreateFile\nFileName: %s\n", FileName);
@@ -230,6 +231,13 @@ static int WinCreateFile(LPCWSTR FileName,
   WinCheckFlag(AccessMode, STANDARD_RIGHTS_READ);  // 0x00020000L
   WinCheckFlag(AccessMode, STANDARD_RIGHTS_WRITE);  // 0x00020000L
   WinCheckFlag(AccessMode, STANDARD_RIGHTS_EXECUTE);  // 0x00020000L
+
+
+//  // When filePath is a directory, needs to change the flag so that the file
+//  // can be opened.
+//  fileAttr = GetFileAttributes(filePath);
+//  if (fileAttr && fileAttr & FILE_ATTRIBUTE_DIRECTORY) {
+
   if (fs::is_directory(filePathStr)) {
     DokanFileInfo->IsDirectory = TRUE;
     // get db for *this* dir (we've already got db for parent)
@@ -554,6 +562,8 @@ static int WinReadFile(LPCWSTR FileName,
   }
   if (opened)
     CloseHandle(handle);
+//  DokanResetTimeout(1000 * 30, DokanFileInfo);
+//  Sleep(1000 * 20);
   return 0;
 }
 
@@ -591,8 +601,15 @@ static int WinWriteFile(LPCWSTR FileName,
     }
     opened = TRUE;
   }
-  if (SetFilePointer(handle, offset, NULL, FILE_BEGIN) ==
-      INVALID_SET_FILE_POINTER) {
+
+  if (DokanFileInfo->WriteToEndOfFile) {
+    if (SetFilePointer(handle, 0, NULL, FILE_END) == INVALID_SET_FILE_POINTER) {
+      DbgPrint(L"In WinWriteFile, seek error, offset = EOF, error = %d\n",
+               GetLastError());
+      return -1;
+    }
+  } else if (SetFilePointer(handle, offset, NULL, FILE_BEGIN) ==
+             INVALID_SET_FILE_POINTER) {
 #ifdef DEBUG
     printf("In WinWriteFile, SetFilePointer == INVALID_SET_FILE_POINTER\n");
     DWORD error = GetLastError();
@@ -744,6 +761,7 @@ static int WinGetFileInformation(
         printf("In WinGetFileInfo, FindFiles OK\n");
 #endif
       }
+      FindClose(handle);
     }
   }
   if (opened)
@@ -887,52 +905,86 @@ static int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
 }
 
 
-static int WinDeleteDirectory(LPCWSTR FileName,
-                              PDOKAN_FILE_INFO) {
+static int WinDeleteDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
 #ifdef DEBUG
   wprintf(L"WinDeleteDirectory\nFileName: %s\n", FileName);
 #endif
   WCHAR filePath[MAX_PATH];
-  // HANDLE handle = (HANDLE)DokanFileInfo->Context;
+  HANDLE hFind;
+  WIN32_FIND_DATAW findData;
+  ULONG fileLen;
+  ZeroMemory(filePath, sizeof(filePath));
   GetFilePath(filePath, FileName);
   std::string relPathStr;
   GetFilePath(&relPathStr, FileName);
-  std::map<std::string, maidsafe::ItemType> children;
-  if (maidsafe::ClientController::getInstance()->readdir(relPathStr, children))
-    return -errno;
-#ifdef DEBUG
-  printf("In WinDeleteDirectory, Directory %s has %i children.\n\n\n",
-         relPathStr.c_str(),
-         children.size());
-#endif
-  if (children.size()) {
-#ifdef DEBUG
-    printf("In WinDeleteDirectory, children.size() != 0\n");
-    DbgPrint(L"In WinDeleteDirectory, error = 145\n");
-#endif
-    return -145;
+  fileLen = wcslen(filePath);
+  if (filePath[fileLen-1] != L'\\') {
+    filePath[fileLen++] = L'\\';
   }
-
-  bool gui_private_share_(false);
-  if (maidsafe::ClientController::getInstance()->ReadOnly(relPathStr,
-      gui_private_share_))
-    return -5;
-
-  if (!RemoveDirectory(filePath)) {
-#ifdef DEBUG
-    printf("In WinDeleteDirectory, RemoveDirectory failed\n");
-#endif
-    DWORD error = GetLastError();
-    DbgPrint(L"In WinDeleteDirectory, error = %lu\n\n", error);
-    return error * -1;
+  filePath[fileLen] = L'*';
+  hFind = FindFirstFile(filePath, &findData);
+  while (hFind != INVALID_HANDLE_VALUE) {
+    if (wcscmp(findData.cFileName, L"..") != 0 &&
+        wcscmp(findData.cFileName, L".") != 0) {
+      FindClose(hFind);
+      DbgPrint(L"In WinDeleteDirectory, Directory is not empty: %s\n",
+               findData.cFileName);
+      return -static_cast<int>(ERROR_DIR_NOT_EMPTY);
+    }
+    if (!FindNextFile(hFind, &findData)) {
+      break;
+    }
   }
-  if (maidsafe::ClientController::getInstance()->rmdir(relPathStr) != 0) {
+  FindClose(hFind);
+  if (GetLastError() == ERROR_NO_MORE_FILES) {
+    if (maidsafe::ClientController::getInstance()->rmdir(relPathStr) != 0) {
 #ifdef DEBUG
-    printf("In WinDeleteDirectory, rmdir failed\n");
+      printf("In WinDeleteDirectory, rmdir failed\n");
 #endif
-    return -errno;
+      return -145;
+    } else {
+      return 0;
+    }
+  } else {
+    return -1;
   }
-  return 0;
+//    std::map<std::string, maidsafe::ItemType> children;
+//    if (maidsafe::ClientController::getInstance()->readdir(relPathStr,
+//                                                           children))
+//      return -errno;
+//  #ifdef DEBUG
+//    printf("In WinDeleteDirectory, Directory %s has %i children.\n\n\n",
+//           relPathStr.c_str(),
+//           children.size());
+//  #endif
+//    if (children.size()) {
+//  #ifdef DEBUG
+//      printf("In WinDeleteDirectory, children.size() != 0\n");
+//      DbgPrint(L"In WinDeleteDirectory, error = 145\n");
+//  #endif
+//      return -145;
+//    }
+//
+//    bool gui_private_share_(false);
+//    if (maidsafe::ClientController::getInstance()->ReadOnly(relPathStr,
+//        gui_private_share_))
+//      return -5;
+//
+//    if (!RemoveDirectory(filePath)) {
+//  #ifdef DEBUG
+//      printf("In WinDeleteDirectory, RemoveDirectory failed\n");
+//  #endif
+//      DWORD error = GetLastError();
+//      DbgPrint(L"In WinDeleteDirectory, error = %lu\n\n", error);
+//      return error * -1;
+//    }
+//    if (maidsafe::ClientController::getInstance()->rmdir(relPathStr) != 0) {
+//  #ifdef DEBUG
+//      printf("In WinDeleteDirectory, rmdir failed\n");
+//  #endif
+//      return -errno;
+//    }
+//    return 0;
 }
 
 
@@ -1091,7 +1143,7 @@ static int WinSetAllocationSize(LPCWSTR FileName,
   if (GetFileSizeEx(handle, &fileSize)) {
     if (AllocSize < fileSize.QuadPart) {
       fileSize.QuadPart = AllocSize;
-      if (SetFilePointerEx(handle, fileSize, NULL, FILE_BEGIN)) {
+      if (!SetFilePointerEx(handle, fileSize, NULL, FILE_BEGIN)) {
 #ifdef DEBUG
         printf("In WinSetAllocationSize, SetFilePointer error: %ld",
                GetLastError());
