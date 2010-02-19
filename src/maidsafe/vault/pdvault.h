@@ -226,8 +226,7 @@ class PDVault {
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreChunks);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetChunks);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreAndGetChunks);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetMissingChunk);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreSystemPacket);

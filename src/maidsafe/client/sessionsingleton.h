@@ -44,6 +44,8 @@ namespace maidsafe {
 
 enum DefConLevels {DEFCON1 = 1, DEFCON2, DEFCON3};
 
+class MockSessionSingleton;
+
 struct UserDetails {
   UserDetails() : defconlevel(DEFCON3),
                   da_modified(false),
@@ -307,6 +309,7 @@ class SessionSingleton {
   void ClearConversations();
 
  private:
+  friend class MockSessionSingleton;
   SessionSingleton &operator=(const SessionSingleton&);
   SessionSingleton(const SessionSingleton&);
   static SessionSingleton *single;

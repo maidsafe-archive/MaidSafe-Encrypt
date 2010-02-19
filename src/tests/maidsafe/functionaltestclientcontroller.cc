@@ -50,7 +50,6 @@ namespace cc_test {
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
 static const int kNetworkSize_ = 17;
-static const int kTestK_ = 16;
 static bool initialised_ = false;
 
 }  // namespace cc_test
@@ -994,6 +993,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   testing::AddGlobalTestEnvironment(new localvaults::Env(cc_test::kNetworkSize_,
-      cc_test::kTestK_, &cc_test::pdvaults_));
+      &cc_test::pdvaults_));
   return RUN_ALL_TESTS();
 }

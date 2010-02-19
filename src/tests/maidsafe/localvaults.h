@@ -61,7 +61,6 @@ void GeneratePmidStuff(std::string *public_key,
 class Env: public testing::Environment {
  public:
   Env(const int kNetworkSize,
-      const int kTestK,
       std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults)
       : vault_dir_(file_system::FileSystem::TempDir() + "/maidsafe_TestVaults_"
                    + base::RandomString(6)),
@@ -72,7 +71,6 @@ class Env: public testing::Environment {
         transport_handlers_(),
         pdvaults_(pdvaults),
         kNetworkSize_(kNetworkSize),
-        kTestK_(kTestK),
         current_nodes_created_(0),
         mutex_(),
         single_function_timeout(60) {
@@ -279,7 +277,6 @@ class Env: public testing::Environment {
       transport_handlers_;
   std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults_;
   const int kNetworkSize_;
-  const int kTestK_;
   int current_nodes_created_;
   boost::mutex mutex_;
   boost::posix_time::seconds single_function_timeout;

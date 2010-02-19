@@ -354,11 +354,10 @@ void VaultServiceLogic::AmendRemoteAccountStageTwo(
     google::protobuf::Closure* done = google::protobuf::NewCallback(this,
         &VaultServiceLogic::AmendRemoteAccountStageThree, j, data);
     vault_rpcs_->AmendAccount(data->contacts.at(j),
-        kad_ops_->AddressIsLocal(data->contacts.at(j)), data->transport_id,
-                                 &data->request,
-                                 &data->data_holders.at(j).response,
-                                 data->data_holders.at(j).controller.get(),
-                                 done);
+                              kad_ops_->AddressIsLocal(data->contacts.at(j)),
+                              data->transport_id, &data->request,
+                              &data->data_holders.at(j).response,
+                              data->data_holders.at(j).controller.get(), done);
   }
 }
 
