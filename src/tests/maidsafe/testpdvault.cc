@@ -308,9 +308,9 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
 namespace maidsafe_vault {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
-static const int kNetworkSize = 14;
+static const int kNetworkSize = kKadStoreThreshold + 2;
 static const int kNumOfClients = 2;
-static const int kNumOfTestChunks = 1;
+static const int kNumOfTestChunks = kNetworkSize * 1.5;
 
 class PDVaultTest : public testing::Test {
  protected:
