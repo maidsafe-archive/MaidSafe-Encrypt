@@ -90,6 +90,7 @@ int Authentication::GetUserInfo(const std::string &username,
 #endif
     return kAuthenticationError;
   }
+  ss_->SetTmidContent(tmid_content_);
 
   return kUserExists;
 }
@@ -369,7 +370,7 @@ int Authentication::SaveSession(const std::string &ser_da) {
 
     params["rid"] = ss_->SmidRid();
     std::string tmidname = tmidPacket->PacketName(&params);
-    if (DeletePacket(tmidname, "", TMID) != kSuccess)
+    if (DeletePacket(tmidname, ss_->TmidContent(), TMID) != kSuccess)
       return kAuthenticationError;
 
     ss_->SetSmidRid(ss_->MidRid());

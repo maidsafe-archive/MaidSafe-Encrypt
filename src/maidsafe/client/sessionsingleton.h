@@ -71,6 +71,7 @@ struct UserDetails {
   boost::uint32_t smid_rid;
   std::string session_name;
   std::string root_db_key;
+  std::string tmid_content;
   bool self_encrypting;
   std::set<std::string> authorised_users;
   std::set<std::string> maid_authorised_users;
@@ -101,6 +102,7 @@ class SessionSingleton {
   inline boost::uint32_t MidRid() { return ud_.mid_rid; }
   inline boost::uint32_t SmidRid() { return ud_.smid_rid; }
   inline std::string SessionName() { return ud_.session_name; }
+  inline std::string TmidContent() { return ud_.tmid_content; }
   inline std::string RootDbKey() { return ud_.root_db_key; }
   inline bool SelfEncrypting() { return ud_.self_encrypting; }
   inline std::set<std::string> AuthorisedUsers() {
@@ -157,8 +159,12 @@ class SessionSingleton {
     }
     return true;
   }
-  inline bool SetRootDbKey(const std::string &root_db_key_) {
-    ud_.root_db_key = root_db_key_;
+  inline bool SetRootDbKey(const std::string &root_db_key) {
+    ud_.root_db_key = root_db_key;
+    return true;
+  }
+  inline bool SetTmidContent(const std::string &tmid_content) {
+    ud_.tmid_content = tmid_content;
     return true;
   }
   inline bool SetSelfEncrypting(bool self_encrypting) {

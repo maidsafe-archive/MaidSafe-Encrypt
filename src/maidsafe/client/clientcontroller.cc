@@ -708,8 +708,6 @@ bool ClientController::Logout() {
     return false;
   }
   logging_out_ = true;
-  int result = SaveSession();
-  clear_messages_thread_.join();
 
 //  int connection_status(0);
 //  int n = ChangeConnectionStatus(connection_status);
@@ -718,29 +716,30 @@ bool ClientController::Logout() {
 //  }
 //  ss_->SetConnectionStatus(connection_status);
 
-  if (result == kSuccess) {
+  int result = SaveSession();
+  if (result != kSuccess) {
 #ifdef DEBUG
-    printf("ClientController::Logout - OK and ran DB queue.\n");
+    printf("ClientController::Logout - Failed to save session %d.\n", result);
 #endif
-    while (sm_->NotDoneWithUploading()) {
-      boost::this_thread::sleep(boost::posix_time::seconds(1));
-    }
-
-#ifdef DEBUG
-    printf("ClientController::Logout - After threads done.\n");
-#endif
-    fsys_.UnMount();
-    ss_->ResetSession();
-    messages_.clear();
-    client_chunkstore_->Clear();
-    logging_out_ = false;
-    ser_da_.clear();
-    ser_dm_.clear();
-    return true;
+    return false;
   }
 
+  clear_messages_thread_.join();
+  while (sm_->NotDoneWithUploading()) {
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
+#ifdef DEBUG
+  printf("ClientController::Logout - After threads done.\n");
+#endif
+
+  fsys_.UnMount();
+  ss_->ResetSession();
+  messages_.clear();
+  client_chunkstore_->Clear();
+  ser_da_.clear();
+  ser_dm_.clear();
   logging_out_ = false;
-  return false;
+  return true;
 }
 
 int ClientController::SaveSession() {
@@ -764,9 +763,6 @@ int ClientController::SaveSession() {
     printf("ClientController::SaveSession - Failed to Save Session.\n");
 #endif
     return n;
-  }
-  while (sm_->NotDoneWithUploading()) {
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
   return 0;
 }
