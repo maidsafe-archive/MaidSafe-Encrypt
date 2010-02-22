@@ -40,7 +40,6 @@
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
 static const int kNetworkSize_ = 16;
-static const int kTestK_ = 16;
 
 class KadCB {
  public:
@@ -307,6 +306,6 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   testing::AddGlobalTestEnvironment(
-      new localvaults::Env(kNetworkSize_, kTestK_, &pdvaults_));
+      new localvaults::Env(kNetworkSize_, &pdvaults_));
   return RUN_ALL_TESTS();
 }

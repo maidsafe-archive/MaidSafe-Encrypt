@@ -59,6 +59,10 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
                          boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm);
 }  // namespace testpdvault
 
+namespace maidsafe_vault {
+class PDVaultTest;
+}  // namespace maidsafe_vault
+
 namespace maidsafe {
 
 class ClientRpcs;
@@ -296,19 +300,19 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           const boost::uint64_t &space,
                           const SetLocalVaultOwnedFunctor &functor);
   void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
-  static void GetChunkSignatureKeys(DirType dir_type,
-                                    const std::string &msid,
-                                    std::string *key_id,
-                                    std::string *public_key,
-                                    std::string *public_key_sig,
-                                    std::string *private_key);
-  static void GetPacketSignatureKeys(PacketType packet_type,
-                                     DirType dir_type,
-                                     const std::string &msid,
-                                     std::string *key_id,
-                                     std::string *public_key,
-                                     std::string *public_key_sig,
-                                     std::string *private_key);
+  void GetChunkSignatureKeys(DirType dir_type,
+                             const std::string &msid,
+                             std::string *key_id,
+                             std::string *public_key,
+                             std::string *public_key_sig,
+                             std::string *private_key);
+  void GetPacketSignatureKeys(PacketType packet_type,
+                              DirType dir_type,
+                              const std::string &msid,
+                              std::string *key_id,
+                              std::string *public_key,
+                              std::string *public_key_sig,
+                              std::string *private_key);
   friend void AddToWatchListTask::run();
   friend void SendChunkCopyTask::run();
   friend void StorePacketTask::run();
@@ -318,7 +322,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       std::map<std::string, std::string> chunks,
       const int &timeout,
       boost::shared_ptr<MaidsafeStoreManager> sm);
-  friend class MsmSetLocalVaultOwnedTest;
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
@@ -337,8 +340,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreChunks);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreAndGetChunks);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
+  friend class MsmSetLocalVaultOwnedTest;
+  friend class maidsafe_vault::PDVaultTest;
   // Check the inputs to the public methods are valid
   int ValidateInputs(const std::string &name,
                      const PacketType &packet_type,

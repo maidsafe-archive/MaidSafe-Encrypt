@@ -1268,18 +1268,22 @@ void PDVault::AmendAccountCallback(
 }
 
 void PDVault::UpdateSpaceOffered() {
+  // TODO(Team#) replace or make thread-safe
   int n = 1;
-  while (vault_status() == kVaultStarted &&
+  // boost::mutex::scoped_lock lock(vault_status_mutex_);
+  while (vault_status_ == kVaultStarted &&
          0 != AmendAccount(vault_chunkstore_.available_space())) {
 #ifdef DEBUG
       printf("PDVault::UpdateSpaceOffered (%s) failed, trying again...\n",
              HexSubstr(pmid_).c_str());
 #endif
     ++n;
+    // vault_status_mutex_.unlock();
     boost::this_thread::sleep(boost::posix_time::seconds(15));
+    // vault_status_mutex_.lock();
   }
 #ifdef DEBUG
-  if (vault_status() == kVaultStarted)
+  if (vault_status_ == kVaultStarted)
     printf("In PDVault::UpdateSpaceOffered (%s), set space offered to %llu "
            "on attempt #%d.\n", HexSubstr(pmid_).c_str(),
            vault_chunkstore_.available_space(), n);
