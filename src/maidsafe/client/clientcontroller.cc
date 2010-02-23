@@ -600,7 +600,7 @@ bool ClientController::ValidateUser(const std::string &password) {
   }
   ser_da_.clear();
   ser_dm_.clear();
-  int result = auth_.GetUserData(password, ser_dm_);
+  int result = auth_.GetUserData(password, &ser_dm_);
 
   if (result != kSuccess) {
     // Password validation failed

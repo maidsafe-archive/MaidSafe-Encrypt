@@ -124,10 +124,6 @@ int LocalStoreManager::LoadChunk(const std::string &chunk_name,
 int LocalStoreManager::StoreChunk(const std::string &chunk_name,
                                   const DirType,
                                   const std::string&) {
-#ifdef DEBUG
-//  printf("LocalStoreManager::StoreChunk - %s\n",
-//          hex_chunk_name.substr(0, 10).c_str());
-#endif
   std::string hex_chunk_name(base::EncodeToHex(chunk_name));
   fs::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / hex_chunk_name;
@@ -141,7 +137,9 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
     }
   }
   catch(const std::exception &e) {
+#ifdef DEBUG
     printf("%s\n", e.what());
+#endif
   }
   // Move chunk from Outgoing to Normal.
   ChunkType chunk_type =
@@ -341,20 +339,17 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
   int deleted(values.size());
   for (size_t n = 0; n < values.size(); ++n) {
     try {
-      std::string hex_value(base::EncodeToHex(values[0]));
+      std::string hex_value(base::EncodeToHex(values[n]));
       std::string s("delete from network where key='" + hex_key + "' "
                     "and value='" + hex_value + "';");
       int a = db_.execDML(s.c_str());
-#ifdef DEBUG
-//      printf("%i - %s - %s\n", a, hex_key.substr(0,10).c_str(),
-//             hex_value.substr(0,10).c_str());
-#endif
-      if (a < 2) {
+      if (a == 1) {
         --deleted;
       } else {
 #ifdef DEBUG
-        printf("LocalStoreManager::DeletePacket_DeleteFromDb - value not there "
-               "anyway.\n");
+        printf("LocalStoreManager::DeletePacket_DeleteFromDb - failure to"
+               " delete <key, value>(%s, %s).\n", hex_key.substr(0, 10).c_str(),
+               HexSubstr(values[n]).c_str());
 #endif
         return kDeletePacketFailure;
       }
@@ -587,10 +582,6 @@ int LocalStoreManager::CreateBP() {
     return -666;
 
   std::string bufferpacketname(BufferPacketName()), ser_packet;
-#ifdef DEBUG
-  printf("LocalStoreManager::CreateBP - BP chunk(%s).\n",
-         HexSubstr(bufferpacketname).c_str());
-#endif
   BufferPacket buffer_packet;
   GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
   BufferPacketInfo buffer_packet_info;
@@ -643,8 +634,7 @@ int LocalStoreManager::LoadBPMessages(
   }
   if (FlushDataIntoChunk(bufferpacketname, bp_in_chunk, true) != 0) {
 #ifdef DEBUG
-    printf("LocalStoreManager::LoadBPMessages - "
-           "Failed to flush BP into chunk.\n");
+    printf("LSM::LoadBPMessages - Failed to flush BP to chunk.\n");
 #endif
     return -1;
   }
@@ -721,8 +711,7 @@ int LocalStoreManager::AddBPMessage(const std::vector<std::string> &receivers,
 
     if (FlushDataIntoChunk(bufferpacketname, updated_bp, true) != 0) {
 #ifdef DEBUG
-      printf("LocalStoreManager::AddBPMessage - "
-             "Failed to flush BP into chunk. (%s).\n",
+      printf("LSM::AddBPMessage - Failed to flush BP into chunk. (%s).\n",
              receivers[n].c_str());
 #endif
       ++fails;

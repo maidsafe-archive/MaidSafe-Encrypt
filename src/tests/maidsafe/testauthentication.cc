@@ -78,14 +78,13 @@ class AuthenticationTest : public testing::Test {
  public:
   AuthenticationTest() : test_root_dir_(file_system::FileSystem::TempDir() +
                              "/maidsafe_TestAuth_" + base::RandomString(6)),
-                         ss(),
-                         storemanager(),
+                         ss_(),
+                         sm_(),
                          client_chunkstore_(),
                          username("user1"),
                          pin("1234"),
                          password("password1"),
                          cb() {}
-  ~AuthenticationTest() {}
  protected:
   void SetUp() {
     try {
@@ -109,8 +108,8 @@ class AuthenticationTest : public testing::Test {
       count += 10;
     }
     boost::shared_ptr<LocalStoreManager>
-        storemanager(new LocalStoreManager(client_chunkstore_));
-    storemanager->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
+        sm_(new LocalStoreManager(client_chunkstore_));
+    sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
                                       &cb, _1));
     boost::mutex mutex;
     test_auth::WaitForResult(cb, &mutex);
@@ -120,8 +119,8 @@ class AuthenticationTest : public testing::Test {
       FAIL();
       return;
     }
-    ss = SessionSingleton::getInstance();
-    ss->ResetSession();
+    ss_ = SessionSingleton::getInstance();
+    ss_->ResetSession();
     cb.Reset();
   }
   void TearDown() {
@@ -138,8 +137,8 @@ class AuthenticationTest : public testing::Test {
   }
 
   std::string test_root_dir_;
-  SessionSingleton *ss;
-  boost::shared_ptr<LocalStoreManager> storemanager;
+  SessionSingleton *ss_;
+  boost::shared_ptr<LocalStoreManager> sm_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   std::string username;
   std::string pin;
@@ -169,8 +168,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(sm);
-  DataAtlas data_atlas;
-  std::string ser_dm_login;
+
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username, pin);
@@ -189,25 +187,24 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   dm.add_chunk_size(205);
   dm.set_compression_on(false);
   std::string ser_dm = dm.SerializeAsString();
-
   result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
-  cb.Reset();
   result = authentication->GetUserInfo(username, pin);
   ASSERT_EQ(kUserExists, result) << "User does not exist";
-  result = authentication->GetUserData(password, ser_dm_login);
-  ASSERT_EQ(kSuccess, result)<< "Unable to get registered user's data";
-  ASSERT_NE("", ser_dm_login)
-      << "Serialised DA recovered from login empty string";
+  std::string ser_dm_login;
+  result = authentication->GetUserData(password, &ser_dm_login);
+  ASSERT_EQ(kSuccess, result) << "Unable to get registered user's data";
+  ASSERT_EQ(ser_dm, ser_dm_login) <<
+            "Serialised DA recovered from login empty string";
   dm.Clear();
-  ASSERT_TRUE(dm.ParseFromString(ser_dm_login))
-      << "Data Atlas hasn't the correct format";
-  ASSERT_EQ(ser_dm, ser_dm_login)
-      << "DA recoverd from login different from DA stored in registration";
-  ASSERT_EQ(username, ss->Username()) << "Saved username doesn't correspond";
-  ASSERT_EQ(pin, ss->Pin()) << "Saved pin doesn't correspond";
-  ASSERT_EQ(password, ss->Password()) << "Saved password doesn't correspond";
+  ASSERT_TRUE(dm.ParseFromString(ser_dm_login)) <<
+              "Data Atlas hasn't the correct format";
+  ASSERT_EQ(ser_dm, ser_dm_login) <<
+            "DA recoverd from login different from DA stored in registration";
+  ASSERT_EQ(username, ss_->Username()) << "Saved username doesn't correspond";
+  ASSERT_EQ(pin, ss_->Pin()) << "Saved pin doesn't correspond";
+  ASSERT_EQ(password, ss_->Password()) << "Saved password doesn't correspond";
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
@@ -238,7 +235,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
   result = authentication->GetUserInfo(username, pin);
   ASSERT_EQ(kUserExists, result) << "User does not exist";
-  result = authentication->GetUserData("password_tonto", ser_dm_login);
+  result = authentication->GetUserData("password_tonto", &ser_dm_login);
   ASSERT_EQ(kPasswordFailure, result);
 }
 
@@ -255,7 +252,7 @@ TEST_F(AuthenticationTest, BEH_MAID_RegisterUserOnce) {
   result = authentication->CreateUserSysPackets(username, pin);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
   std::string ser_da;
-  ss->SerialisedKeyRing(&ser_da);
+  ss_->SerialisedKeyRing(&ser_da);
   DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
@@ -275,9 +272,9 @@ TEST_F(AuthenticationTest, BEH_MAID_RegisterUserOnce) {
   ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
               "Data Atlas hasn't the correct format";
   ASSERT_EQ(6, data_atlas.keys_size());
-  ASSERT_EQ(username, ss->Username()) << "Saved username doesn't correspond";
-  ASSERT_EQ(pin, ss->Pin()) << "Saved pin doesn't correspond";
-  ASSERT_EQ(password, ss->Password()) << "Saved password doesn't correspond";
+  ASSERT_EQ(username, ss_->Username()) << "Saved username doesn't correspond";
+  ASSERT_EQ(pin, ss_->Pin()) << "Saved pin doesn't correspond";
+  ASSERT_EQ(password, ss_->Password()) << "Saved password doesn't correspond";
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
@@ -309,7 +306,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
   //  User registered twice.
-  ss->ResetSession();
+  ss_->ResetSession();
   result = authentication->GetUserInfo(username, pin);
   ASSERT_EQ(kUserExists, result) << "The same user was registered twice";
   // need to wait before exiting because in the background it is getting
@@ -340,6 +337,51 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
   }
 */
 
+TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSession) {
+  boost::shared_ptr<LocalStoreManager>
+      sm(new LocalStoreManager(client_chunkstore_));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  boost::shared_ptr<Authentication> authentication(new Authentication());
+  authentication->Init(sm);
+
+  int result = authentication->GetUserInfo(username, pin);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
+  result = authentication->CreateUserSysPackets(username, pin);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+
+  DataMap dm;
+  dm.set_file_hash("filehash");
+  dm.add_chunk_name("chunk1");
+  dm.add_chunk_name("chunk2");
+  dm.add_chunk_name("chunk3");
+  dm.add_encrypted_chunk_name("enc_chunk1");
+  dm.add_encrypted_chunk_name("enc_chunk2");
+  dm.add_encrypted_chunk_name("enc_chunk3");
+  dm.add_chunk_size(200);
+  dm.add_chunk_size(210);
+  dm.add_chunk_size(205);
+  dm.set_compression_on(false);
+  std::string ser_dm = dm.SerializeAsString();
+  result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+
+  // store current mid, smid and tmid details to check later whether they remain
+  // on the network
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string tmidsmidname = co.Hash(
+         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
+         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
+         co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
+                 crypto::STRING_STRING, false),
+         "", crypto::STRING_STRING, false);
+  result = authentication->SaveSession(ser_dm);
+  ASSERT_EQ(kSuccess, result) << "Can't login with new iuserneim";
+  result = authentication->SaveSession(ser_dm);
+  ASSERT_EQ(kSuccess, result) << "Can't login with new iuserneim";
+  ASSERT_TRUE(sm->KeyUnique(tmidsmidname, false));
+}
+
 TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
@@ -368,19 +410,35 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
-  ASSERT_EQ(kSuccess, authentication->ChangeUsername(ser_dm, "el iuserneim"))
-            << "Unable to change iuserneim";
-  ASSERT_EQ("el iuserneim", ss->Username()) << "iuserneim is still the old one";
-  std::string ser_dm_login;
-  printf("%s\t%s\t%s\n", ss->Username().c_str(), pin.c_str(), password.c_str());
+  // store current mid, smid and tmid details to check later whether they remain
+  // on the network
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string tmidmidname = co.Hash(
+         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
+         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
+         co.Hash(boost::lexical_cast<std::string>(ss_->MidRid()), "",
+                 crypto::STRING_STRING, false),
+         "", crypto::STRING_STRING, false);
+  std::string tmidsmidname = co.Hash(
+         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
+         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
+         co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
+                 crypto::STRING_STRING, false),
+         "", crypto::STRING_STRING, false);
 
+  ASSERT_EQ(kSuccess, authentication->ChangeUsername(ser_dm, "el iuserneim")) <<
+            "Unable to change iuserneim";
+  ASSERT_EQ("el iuserneim", ss_->Username()) <<
+            "iuserneim is still the old one";
+
+  std::string ser_dm_login;
   result = authentication->GetUserInfo("el iuserneim", pin);
   ASSERT_EQ(kUserExists, result) << "User does not exist";
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  result = authentication->GetUserData(password, ser_dm_login);
+  result = authentication->GetUserData(password, &ser_dm_login);
   ASSERT_EQ(kSuccess, result) << "Can't login with new iuserneim";
 
-  printf("%s\t%s\t%s\n", username.c_str(), pin.c_str(), password.c_str());
   result = authentication->GetUserInfo(username, pin);
   ASSERT_EQ(kUserDoesntExist, result);
 }
@@ -413,11 +471,11 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
   ASSERT_EQ(kSuccess, authentication->ChangePin(ser_dm, "7894"));
-  ASSERT_EQ("7894", ss->Pin()) << "pin is still the old one";
+  ASSERT_EQ("7894", ss_->Pin()) << "pin is still the old one";
   std::string ser_dm_login;
   result = authentication->GetUserInfo(username, "7894");
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  result = authentication->GetUserData(password, ser_dm_login);
+  result = authentication->GetUserData(password, &ser_dm_login);
   ASSERT_EQ(kSuccess, result) << "Can't login with new pin";
   result = authentication->GetUserInfo(username, pin);
   ASSERT_EQ(kUserDoesntExist, result);
@@ -456,19 +514,15 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   ASSERT_EQ(kSuccess, authentication->ChangePassword(ser_dm, "elpasguord")) <<
             "Unable to change password";
 
-  ASSERT_EQ("elpasguord", ss->Password()) << "Password is still the old one";
+  ASSERT_EQ("elpasguord", ss_->Password()) << "Password is still the old one";
   std::string ser_dm_login;
-  cb.Reset();
-  test_auth::FakeCallback fcb;
   result = authentication->GetUserInfo(username, pin);
-  cb.Reset();
   ASSERT_EQ(kUserExists, result) << "User does not exist";
-  result = authentication->GetUserData("elpasguord", ser_dm_login);
+  result = authentication->GetUserData("elpasguord", &ser_dm_login);
   ASSERT_EQ(kSuccess, result) << "Can't login with new password";
-  cb.Reset();
   result = authentication->GetUserInfo(username, pin);
   ASSERT_EQ(kUserExists, result) << "User does not exist";
-  result = authentication->GetUserData(password, ser_dm_login);
+  result = authentication->GetUserData(password, &ser_dm_login);
   ASSERT_EQ(kPasswordFailure, result);
 }
 
@@ -506,7 +560,7 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
                                     &cond_var, &result);
   crypto::RsaKeyPair keypair;
   keypair.GenerateKeys(4096);
-  ss->AddKey(ANMID, "ID", keypair.private_key(), keypair.public_key(), "");
+  ss_->AddKey(ANMID, "ID", keypair.private_key(), keypair.public_key(), "");
   sm->StorePacket(mid_name, "rubish data with same mid name", MID,
       PRIVATE, "", kDoNothingReturnFailure, func);
   {

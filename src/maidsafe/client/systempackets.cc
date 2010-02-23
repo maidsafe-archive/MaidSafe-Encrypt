@@ -170,14 +170,14 @@ PacketParams TmidPacket::Create(PacketParams *params) {
 
   std::string password = crypto_obj_.SecurePassword(
                          boost::any_cast<std::string>((*params)["password"]),
-                         boost::any_cast<uint32_t>((*params)["rid"]));
+                         boost::any_cast<boost::uint32_t>((*params)["rid"]));
 #ifdef DEBUG
   // printf("password %s\n", params["password"].string().c_str());
   // printf("rid %i\n", params["rid"].integer());
 #endif
   tmid_packet.set_data(crypto_obj_.SymmEncrypt(boost::any_cast<std::string>(
-                       (*params)["data"]), "",
-                       crypto::STRING_STRING, password));
+                       (*params)["data"]), "", crypto::STRING_STRING,
+                       password));
   tmid_packet.set_signature(crypto_obj_.AsymSign(tmid_packet.data(), "",
                             boost::any_cast<std::string>(
                             (*params)["privateKey"]), crypto::STRING_STRING));
