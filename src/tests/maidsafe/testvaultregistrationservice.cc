@@ -37,9 +37,13 @@ inline void HandleDeadServer(const bool &, const std::string &,
 
 class NotifierHandler {
  public:
-  NotifierHandler() : private_key_(""), public_key_(""), signed_public_key_(""),
-      chunkstore_dir_(""), port_(-1), available_space_(0), received_rpc_(false)
-      {}
+  NotifierHandler() : private_key_(),
+                      public_key_(),
+                      signed_public_key_(),
+                      chunkstore_dir_(),
+                      port_(-1),
+                      available_space_(0),
+                      received_rpc_(false) {}
   std::string private_key() const { return private_key_; }
   std::string public_key() const { return public_key_; }
   std::string signed_public_key() const { return signed_public_key_; }
@@ -57,10 +61,10 @@ class NotifierHandler {
     received_rpc_ = true;
   }
   void Reset() {
-    private_key_ = "";
-    public_key_ = "";
-    signed_public_key_ = "";
-    chunkstore_dir_ = "";
+    private_key_.clear();
+    public_key_.clear();
+    signed_public_key_.clear();
+    chunkstore_dir_.clear();
     port_ = -1;
     available_space_ = 0;
     received_rpc_ = false;
@@ -74,20 +78,26 @@ class NotifierHandler {
 
 class OwnershipSenderHandler {
  public:
-  OwnershipSenderHandler(): callback_arrived_(false), result_(),
-      pmid_name_(""), remote_vault_status_() {}
+  OwnershipSenderHandler() : callback_arrived_(false),
+                             result_(),
+                             pmid_name_(),
+                             remote_vault_status_() {}
   void Reset() {
     callback_arrived_ = false;
-    pmid_name_ = "";
+    pmid_name_.clear();
     result_ = maidsafe::INVALID_OWNREQUEST;
     remote_vault_status_ = maidsafe::NOT_OWNED;
   }
   void Callback(const maidsafe::SetLocalVaultOwnedResponse *response,
-      rpcprotocol::Controller *ctrl) {
+                rpcprotocol::Controller *ctrl) {
     callback_arrived_ = true;
-    if ((ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kTimeOut) ||
-         !response->IsInitialized()) {
+    if ((ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kTimeOut)) {
       printf("Rpc timeout\n");
+      result_ = maidsafe::VAULT_IS_DOWN;
+      return;
+    }
+    if (!response->IsInitialized()) {
+      printf("Rpc timeout - resp not initialised\n");
       result_ = maidsafe::VAULT_IS_DOWN;
       return;
     }
@@ -96,7 +106,7 @@ class OwnershipSenderHandler {
       pmid_name_ = response->pmid_name();
   }
   void Callback1(const maidsafe::LocalVaultOwnedResponse *response,
-    rpcprotocol::Controller *ctrl) {
+                 rpcprotocol::Controller *ctrl) {
     callback_arrived_ = true;
     if ((ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kTimeOut) ||
          !response->IsInitialized()) {;

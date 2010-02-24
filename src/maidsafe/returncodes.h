@@ -212,6 +212,9 @@ enum ReturnCode {
 
   // Vault
   kVaultDaemonException = -2501,
+  kVaultDaemonWaitingPwnage = -2502,
+  kVaultDaemonParseError = -2503,
+  kVaultDaemonConfigError = -2504,
 
   // Vault Chunkstore
   kChunkstoreError = maidsafe::kChunkstoreError,

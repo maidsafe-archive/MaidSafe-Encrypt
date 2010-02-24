@@ -32,10 +32,6 @@
 #include <string>
 #include <vector>
 #include "maidsafe/client/sessionsingleton.h"
-// if (BOOST_PLATFORM == "linux")
-//   #include "fs/l_fuse/fusecpp.h"
-
-// #define DEBUG_
 
 namespace fs = boost::filesystem;
 namespace file_system {
@@ -54,32 +50,24 @@ class FileSystem {
     bool CreateDirs();
     bool DeleteDirs();
 
-  // protected:
-  // to allow reuse if extended
   public:
-    FileSystem();
-    ~FileSystem();
-    // enum PathStatus {PROCESSING, ENCRYPTED, DONE};
     bool FuseMountPoint();
-    bool Mount();  //  Eventually actually mount a FUSE drive
+    bool Mount();
     bool UnMount();  // unmount and rewrite space with 0's TODO
     // bool WritePath(fs::path path, bool is_dir_, PathStatus state=DONE);
-    // write to fs
-    bool OpenPath(std::string path);  // read from fs
+    bool OpenPath(std::string path);
     std::string MakeMSPath(std::string entry);
     std::string MakeRelativeMSPath(std::string entry);
     std::string FullMSPathFromRelPath(const std::string &path_);
     std::string FullMSPathFromRelPath(const char *path_);
-    std::string HomeDir();  // when using fuse this will be altered
+    std::string HomeDir();
     std::string ApplicationDataDir();
     static std::string TempDir();
     static std::string LocalStoreManagerDir();
     std::string MaidsafeDir();
-    std::string MaidsafeHomeDir();  // save read ms files here
+    std::string MaidsafeHomeDir();
     std::string MaidsafeFuseDir();
-    // store chunks here (defcon 2 leave them)
     std::string ProcessDir();  // temp dir
-    // std::string NetDir(); // temp dir to emulate network
     std::string DbDir();  // dir to store dbs
 };
 
@@ -88,61 +76,5 @@ class FileSystem {
 class FSMS;
 
 class FSOSX;
-
-
-
-
-/*
-inline std::string HomeDir()
-{
-file_system::FileSystem *fsys;
-fsys = file_system::FileSystem::getInstance();
-return fsys->HomeDir();
-}
-
-inline long long int FreeHomeSpace() {
-  std::string  dir = HomeDir();
-  if (dir != "")
-  {
-    fs::path entry(dir);
-    fs::space_info spi( fs::space( entry ) );
-  return  spi.free;
-  }
-  else
-  {
-  return -1;
-  }
-}
-
-
-inline long long int TotalHomeSpace() {
-  std::string  dir = HomeDir();
-  if (dir != "")
-  {
-    fs::path entry(dir);
-    fs::space_info spi( fs::space( entry ) );
-  return  spi.capacity;
-  }
-  else
-  {
-  return -1;
-  }
-}
-
-inline long long int AvailableHomeSpace() {
-  std::string dir  = HomeDir();
-  if (dir != "")
-  {
-    fs::path entry(dir);
-    fs::space_info spi( fs::space( entry ) );
-  return  spi.available;
-  }
-  else
-  {
-  return -1;
-  }
-}
-*/
-
 
 #endif  // FS_FILESYSTEM_H_

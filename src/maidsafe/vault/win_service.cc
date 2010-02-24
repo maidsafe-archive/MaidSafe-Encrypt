@@ -135,6 +135,7 @@ void ServiceMain() {
 //      SetServiceStatus(hStatus, &ServiceStatus);
 //      return;
 //    }
+// TODO(Fraser#5#): 2010-02-23 - Handle excessive growth of logfile
     vault_daemon.Status();
     Sleep(kSleepTime);
   }

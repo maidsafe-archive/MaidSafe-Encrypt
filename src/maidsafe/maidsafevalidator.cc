@@ -43,7 +43,12 @@ bool MaidsafeValidator::ValidateSignerId(const std::string &signer_id,
   crypto::Crypto co;
   if (signer_id.empty() || public_key.empty() || signed_public_key.empty()) {
 #ifdef DEBUG
-    printf("MaidsafeValidator::ValidateSignerId - Var to validate ID empty.\n");
+    if (signer_id.empty())
+      printf("MaidsafeValidator::ValidateSignerId: signer_id empty.\n");
+    if (public_key.empty())
+      printf("MaidsafeValidator::ValidateSignerId: public_key empty.\n");
+    if (signed_public_key.empty())
+      printf("MaidsafeValidator::ValidateSignerId: signed_public_key empty.\n");
 #endif
     return false;
   }

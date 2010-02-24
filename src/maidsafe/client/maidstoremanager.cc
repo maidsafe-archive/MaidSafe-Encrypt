@@ -75,8 +75,8 @@ void DeletePacketTask::run() {
   msm_->DeletePacketFromNet(delete_data_);
 }
 
-int MaidsafeStoreManager::kPacketMaxThreadCount_ = 1;
-int MaidsafeStoreManager::kChunkMaxThreadCount_ = 1;
+int MaidsafeStoreManager::kPacketMaxThreadCount_ = 5;
+int MaidsafeStoreManager::kChunkMaxThreadCount_ = 5;
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
     : udt_transport_(),
@@ -156,10 +156,13 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
     maid_response.SerializeToString(&maid_result);
     cb(maid_result);
   }
-  chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount_);
-  packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount_);
+//                              chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount_);
+//                              packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount_);
+  chunk_thread_pool_.setMaxThreadCount(1);
+  packet_thread_pool_.setMaxThreadCount(1);
 #ifdef DEBUG
-//  printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
+  printf("\tIn MaidsafeStoreManager::Init, after Join.  On port %u\n",
+         knode_->host_port());
 #endif
 }
 
@@ -469,9 +472,9 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
   if ((ret_value == kSuccess) &&
       (find_response.result() != kad::kRpcResultSuccess)) {
 #ifdef DEBUG
-    printf("In MSM::LoadPacketCallback, failed to find value.\n");
-    printf("Found %i nodes\n", find_response.closest_nodes_size());
-    printf("Found %i values\n", find_response.values_size());
+    printf("In MSM::LoadPacketCallback, failed to find value for key %s"
+           " (found %i nodes and %i values)\n", HexSubstr(packet_name).c_str(),
+           find_response.closest_nodes_size(), find_response.values_size());
 //    printf("Found alt val holder: %i\n",
 //           find_response.has_alternative_value_holder());
 #endif
@@ -2472,7 +2475,6 @@ void MaidsafeStoreManager::SendPacket(boost::shared_ptr<StoreData> store_data) {
   sr.set_public_key(store_data->public_key);
   sr.set_signed_public_key(store_data->public_key_signature);
   sr.set_signed_request(signed_request);
-  printf("SR: %s\n", HexSubstr(signed_request).c_str());
   base::callback_func_type cb = boost::bind(
       &MaidsafeStoreManager::SendPacketCallback, this, _1, store_data);
   knode_->StoreValue(store_data->data_name, signed_value, sr, 31556926, cb);

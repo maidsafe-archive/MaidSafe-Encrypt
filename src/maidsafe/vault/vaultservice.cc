@@ -112,7 +112,7 @@ VaultService::VaultService(const std::string &pmid_public,
   co.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co.Hash(pmid_public_ + pmid_public_signature_, "",
                   crypto::STRING_STRING, false);
-  thread_pool_.setMaxThreadCount(5);
+  thread_pool_.setMaxThreadCount(1);
 }
 
 void VaultService::StorePrep(google::protobuf::RpcController*,
@@ -1806,7 +1806,7 @@ int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
 }
 
 RegistrationService::RegistrationService(
-    boost::function< void(const maidsafe::VaultConfig&) > notifier)
+    boost::function<void(const maidsafe::VaultConfig&)> notifier)
         : notifier_(notifier),
           status_(maidsafe::NOT_OWNED),
           pending_response_() {}
@@ -1850,12 +1850,12 @@ void RegistrationService::SetLocalVaultOwned(
   // Checking if keys sent are a correct RSA key pair
   crypto::Crypto cobj;
   cobj.set_hash_algorithm(crypto::SHA_512);
-  if (cobj.AsymCheckSig(request->public_key(), request->signed_public_key(),
-      request->public_key(), crypto::STRING_STRING)) {
-    std::string signed_key = cobj.AsymSign(request->public_key(), "",
-        request->private_key(), crypto::STRING_STRING);
-    if (cobj.AsymCheckSig(request->public_key(), signed_key,
-        request->public_key(), crypto::STRING_STRING)) {
+//                                    if (cobj.AsymCheckSig(request->public_key(), request->signed_public_key(),
+//                                        request->public_key(), crypto::STRING_STRING)) {
+//                                      std::string signed_key = cobj.AsymSign(request->public_key(), "",
+//                                          request->private_key(), crypto::STRING_STRING);
+//                                      if (cobj.AsymCheckSig(request->public_key(), signed_key,
+//                                          request->public_key(), crypto::STRING_STRING)) {
       // checking if port is available
       transport::TransportUDT test_tranport;
       if (request->port() == 0 || test_tranport.IsPortAvailable(
@@ -1878,12 +1878,12 @@ void RegistrationService::SetLocalVaultOwned(
       } else {
         response->set_result(maidsafe::INVALID_PORT);
       }
-    } else {
-      response->set_result(maidsafe::INVALID_RSA_KEYS);
-    }
-  } else {
-    response->set_result(maidsafe::INVALID_RSA_KEYS);
-  }
+//                                                                                    } else {
+//                                                                                      response->set_result(maidsafe::INVALID_RSA_KEYS);
+//                                                                                    }
+//                                                                                  } else {
+//                                                                                    response->set_result(maidsafe::INVALID_RSA_KEYS);
+//                                                                                  }
   done->Run();
 }
 

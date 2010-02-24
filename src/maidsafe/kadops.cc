@@ -100,10 +100,9 @@ int KadOps::FindValue(const std::string &kad_key,
   }
   if (find_response.result() != kad::kRpcResultSuccess) {
 #ifdef DEBUG
-    printf("In KadOps::FindValue, Kademlia op failed to find the value for key "
-           "%s.\n", HexSubstr(kad_key).c_str());
-    printf("  Found %i nodes\n", find_response.closest_nodes_size());
-    printf("  Found %i values\n", find_response.values_size());
+    printf("In KadOps::FindValue, failed to find value for key %s"
+           " (found %i nodes and %i values)\n", HexSubstr(kad_key).c_str(),
+           find_response.closest_nodes_size(), find_response.values_size());
 //    printf("Found alt val holder: %i\n",
 //           find_response.has_alternative_value_holder());
 #endif

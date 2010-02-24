@@ -296,6 +296,7 @@ class PDVault {
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   boost::uint16_t port_;
+  transport::TransportUDT global_udt_transport_;
   transport::TransportHandler *transport_handler_;
   boost::int16_t transport_id_;
   rpcprotocol::ChannelManager channel_manager_;
@@ -316,7 +317,7 @@ class PDVault {
   std::string kad_config_file_;
   PendingOperationsHandler poh_;
   QThreadPool thread_pool_;
-  boost::thread prune_pending_ops_thread_;
+  boost::thread prune_pending_ops_thread_, create_account_thread_;
 };
 
 }  // namespace maidsafe_vault

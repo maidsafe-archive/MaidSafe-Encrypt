@@ -79,8 +79,6 @@ class ClientController {
                   const std::string &pin,
                   const std::string &password,
                   const VaultConfigParameters &vcp);
-  int SetVaultConfig(const std::string &pmid_public,
-                     const std::string &pmid_private);
   bool ValidateUser(const std::string &password);
   bool Logout();
   int SaveSession();

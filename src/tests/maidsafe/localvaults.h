@@ -204,6 +204,8 @@ class Env: public testing::Environment {
                          std::ios::out | std::ios::trunc | std::ios::binary);
     ASSERT_TRUE(kad_config.SerializeToOstream(&output2));
     output2.close();
+    // Allow new vaults time to finish setting up their accounts.
+    boost::this_thread::sleep(boost::posix_time::seconds(10));
 #ifdef WIN32
     HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hconsole, 10 | 0 << 4);

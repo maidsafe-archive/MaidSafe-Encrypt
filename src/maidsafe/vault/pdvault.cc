@@ -54,8 +54,9 @@ PDVault::PDVault(const std::string &pmid_public,
                  transport::TransportHandler *transport_handler,
                  const boost::int16_t &transport_id)
     : port_(port),
-      transport_handler_(transport_handler),
-      transport_id_(transport_id),
+      global_udt_transport_(),
+      transport_handler_(new transport::TransportHandler()),
+      transport_id_(0),
       channel_manager_(transport_handler_),
       validator_(),
       knode_(new kad::KNode(&channel_manager_, transport_handler_, kad::VAULT,
@@ -79,7 +80,9 @@ PDVault::PDVault(const std::string &pmid_public,
       kad_config_file_(kad_config_file),
       poh_(),
       thread_pool_(),
-      prune_pending_ops_thread_() {
+      prune_pending_ops_thread_(),
+      create_account_thread_() {
+  transport_handler_->Register(&global_udt_transport_, &transport_id_);
   knode_->SetTransID(transport_id_);
   vault_chunkstore_.Init();
   co_.set_symm_algorithm(crypto::AES_256);
@@ -90,7 +93,7 @@ PDVault::PDVault(const std::string &pmid_public,
   knode_->SetAlternativeStore(&vault_chunkstore_);
   knode_->set_signature_validator(&validator_);
   vault_rpcs_->SetOwnId(pmid_);
-  thread_pool_.setMaxThreadCount(5);
+  thread_pool_.setMaxThreadCount(1);
   poh_.SetPmid(pmid_);
   printf("PDVault::PDVault() - %s\n", HexSubstr(pmid_).c_str());
 }
@@ -111,8 +114,33 @@ void PDVault::Start(bool first_node) {
     success = (transport_handler_->Start(port_, transport_id_) == 0);
   if (success)
     success = (channel_manager_.Start() == 0);
+  if (!first_node && success) {
+    try {
+      if (!fs::exists(kad_config_file_)) {
+#ifdef DEBUG
+        printf("Can't find kadconfig at %s\n", kad_config_file_.c_str());
+#endif
+        kad_config_file_ = ".kadconfig";
+      }
+      if (!fs::exists(kad_config_file_)) {
+#ifdef DEBUG
+        printf("Can't find kadconfig at %s - Failed to start vault.\n",
+               kad_config_file_.c_str());
+#endif
+        success = false;
+      }
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("In PDVault::Start - %s - Failed to start vault.\n", e.what());
+#endif
+        success = false;
+    }
+  }
   if (success) {
+                                                   printf("In PDVault::Start 1.\n");
     RegisterMaidService();
+                                                   printf("In PDVault::Start 2.\n");
     boost::mutex kad_join_mutex;
     if (first_node) {
       boost::asio::ip::address local_ip;
@@ -121,31 +149,42 @@ void PDVault::Start(bool first_node) {
           transport_handler_->listening_port(transport_id_),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     } else {
+                                                   printf("In PDVault::Start joining kad.\n");
       knode_->Join(pmid_, kad_config_file_,
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     }
     // Hash check all current chunks in chunkstore
+                                                   printf("In PDVault::Start hash checking.\n");
     std::list<std::string> failed_keys;
     if (0 != vault_chunkstore_.HashCheckAllChunks(true, &failed_keys)) {
+                                                   printf("In PDVault::Start hash checking FAILED.\n\n\n");
       return;
     }
     // Block until we've joined the Kademlia network.
+                                                   printf("In PDVault::Start waiting to join kad.\n");
     boost::mutex::scoped_lock lock(kad_join_mutex);
     while (!kad_joined_) {
       kad_join_cond_.wait(lock);
     }
+                                                   printf("In PDVault::Start joined kad.\n");
     // Set port, so that if vault is restarted before it is destroyed, it
     // re-uses port (unless this port has become unavailable).
     port_ = knode_->host_port();
     if (kad_joined_ && vault_service_logic_.Init(pmid_, pmid_public_,
-        signed_pmid_public_, pmid_private_))
+        signed_pmid_public_, pmid_private_)) {
+                                                             printf("In PDVault::Start setting status to started.\n");
+
       SetVaultStatus(kVaultStarted);
+                                                             printf("In PDVault::Start done setting status to started.\n");
+    }
     // Start repeating pruning worker thread
+                                                             printf("In PDVault::Start starting prune pending ops thread.\n");
     prune_pending_ops_thread_ =
         boost::thread(&PDVault::PrunePendingOperations, this);
     // Announce available space to account, try repeatedly in thread
     // TODO(Team#) find better solution or make thread-safe!
-    boost::thread thr(boost::bind(&PDVault::UpdateSpaceOffered, this));
+                                                             printf("In PDVault::Start starting create acc thread.\n");
+    create_account_thread_ = boost::thread(&PDVault::UpdateSpaceOffered, this);
   }
 }
 
@@ -180,6 +219,7 @@ int PDVault::Stop() {
   SetVaultStatus(kVaultStopping);
 //  thread_pool_.waitForDone();
   prune_pending_ops_thread_.join();
+  create_account_thread_.join();
   UnRegisterMaidService();
   knode_->Leave();
   kad_joined_ = knode_->is_joined();
@@ -1183,6 +1223,23 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
            "found %u node(s).\n", kKadStoreThreshold, data->contacts.size());
 #endif
     return maidsafe::kFindAccountHoldersError;
+  }
+
+  // If we are listed as an account holder, don't send RPC
+  for (std::vector<kad::Contact>::iterator it = data->contacts.begin();
+       it != data->contacts.end(); ++it) {
+////    if ((*it).node_id() == our_details_.node_id()) {
+////      if (ah_.AddAccount(pmid, account_delta) == 0) {
+////        ++data->success_count;
+////#ifdef DEBUG
+//////      printf("Vault %s listed as an account holder for PMID %s\n",
+//////             HexSubstr((*it).node_id()).c_str(),
+//////             HexSubstr(pmid_).c_str());
+////#endif
+////      }
+////      data->contacts.erase(it);
+////      break;
+////    }
   }
 
   // Create the request

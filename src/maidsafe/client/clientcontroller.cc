@@ -169,13 +169,7 @@ int ClientController::Init() {
 
 bool ClientController::JoinKademlia() {
   CC_CallbackResult cb;
-#ifdef DEBUG
-  printf("Before bootstrap in CC.\n");
-#endif
   sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
-#ifdef DEBUG
-  printf("After bootstrap in CC.\n");
-#endif
   WaitForResult(cb);
   GenericResponse result;
   if ((!result.ParseFromString(cb.result)) ||
@@ -399,9 +393,16 @@ bool ClientController::CreateUser(const std::string &username,
 #endif
   }
 
-  ////////////////////////////////////////////////////
-  // TODO(Team#5#): 2010-02-15 - Pwn the vault here //
-  ////////////////////////////////////////////////////
+  OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
+                                                vcp.space * 1024 * 1024,
+                                                vcp.directory);
+  if (olvr != OWNED_SUCCESS) {
+#ifdef DEBUG
+    printf("CC::CreateUser +++ OwnLocalVaultResult: %d +++\n", olvr);
+#endif
+    return false;
+  }
+                                      boost::this_thread::sleep(boost::posix_time::seconds(60));
 
   client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);
@@ -430,17 +431,6 @@ bool ClientController::CreateUser(const std::string &username,
   } else {
 #ifdef DEBUG
     printf("In CC::CreateUser - auth_.CreateTmidPacket DONE.\n");
-#endif
-  }
-
-  // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
-  //                             Parameters come in VaultConfigParameters.
-  OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
-                                                vcp.space * 1024 * 1024,
-                                                vcp.directory);
-  if (olvr != OWNED_SUCCESS) {
-#ifdef DEBUG
-    printf("CC::CreateUser +++ OwnLocalVaultResult: %d +++\n", olvr);
 #endif
   }
 
@@ -531,64 +521,7 @@ bool ClientController::CreateUser(const std::string &username,
     return false;
   }
 
-  res = SetVaultConfig(ss_->PublicKey(PMID), ss_->PrivateKey(PMID));
-  if (0 != res) {
-#ifdef DEBUG
-    printf("In ClientController::CreateUser error stting vault config.\n");
-#endif
-    return false;
-  }
-
   return true;
-}
-
-int ClientController::SetVaultConfig(const std::string &pmid_public,
-                                     const std::string &pmid_private) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::SetVaultConfig - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-  fs::path vault_path(fsys_.ApplicationDataDir(), fs::native);
-  vault_path /= "vault";
-  try {
-    if (!fs::exists(vault_path))
-      fs::create_directory(vault_path);
-  }
-  catch(const std::exception &ex_) {
-#ifdef DEBUG
-    printf("Can't create maidsafe vault dir.\n%s\n", ex_.what());
-#endif
-    return -1;
-  }
-  crypto::Crypto co_;
-  co_.set_symm_algorithm(crypto::AES_256);
-  co_.set_hash_algorithm(crypto::SHA_1);
-  fs::path config_file(vault_path);
-  config_file /= ".config";
-  VaultConfig vault_config;
-  vault_config.set_pmid_public(pmid_public);
-  vault_config.set_pmid_private(pmid_private);
-  //  vault_config.set_port(6666);
-  vault_config.set_signed_pmid_public(co_.AsymSign(pmid_public, "",
-      pmid_private, crypto::STRING_STRING));
-  fs::path chunkstore_path(vault_path);
-  chunkstore_path /= "Chunkstore";
-  chunkstore_path /= co_.Hash(pmid_public, "", crypto::STRING_STRING, true);
-  vault_config.set_chunkstore_dir(chunkstore_path.string());
-  vault_config.set_available_space(1024 * 1024 * 1024);
-  vault_config.set_used_space(0);
-  std::fstream output(config_file.string().c_str(),
-                      std::ios::out | std::ios::trunc | std::ios::binary);
-  if (!vault_config.SerializeToOstream(&output)) {
-#ifdef DEBUG
-    printf("Failed to write vault configuration file.\n");
-#endif
-    return -2;
-  }
-  output.close();
-  return 0;
 }
 
 bool ClientController::ValidateUser(const std::string &password) {
@@ -2088,7 +2021,7 @@ OwnLocalVaultResult ClientController::SetLocalVaultOwned(
       boost::bind(&ClientController::SetLocalVaultOwnedCallback,
       const_cast<ClientController*>(this), _1, _2, &callback_arrived, &result));
   while (!callback_arrived)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   return result;
 }
 
