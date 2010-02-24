@@ -35,15 +35,86 @@
 #include <vector>
 #include <fstream>  // NOLINT (Fraser) - for protobuf config file
 
+#include "maidsafe/chunkstore.h"
+#include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/systempackets.h"
 #include "maidsafe/vault/pdvault.h"
 #include "protobuf/maidsafe_messages.pb.h"
+#include "tests/maidsafe/mocksessionsingleton.h"
 
 namespace fs = boost::filesystem;
 
-namespace maidsafe_vault {
+volatile int ctrlc_pressed = 0;
+void ctrlc_handler(int ) {
+  printf("\nStopping vaults, please wait...\n\n");
+  ctrlc_pressed = 1;
+}
 
-const int kTestK = 16;
+static bool callback_timed_out_ = true;
+static bool callback_succeeded_ = false;
+static std::string callback_content_ = "";
+static bool callback_prepared_ = false;
+static boost::mutex callback_mutex_;
+static std::list<std::string> callback_packets_;
+static std::list<std::string> callback_messages_;
+
+namespace testpdvault {
+
+void PrepareCallbackResults() {
+  callback_timed_out_ = true;
+  callback_succeeded_ = false;
+  callback_content_ = "";
+  callback_prepared_ = true;
+  callback_packets_.clear();
+  callback_messages_.clear();
+}
+
+static void GeneralCallback(const std::string &result) {
+  maidsafe::GenericResponse result_msg;
+  if ((!result_msg.ParseFromString(result))||
+      (result_msg.result() != kAck)) {
+    callback_succeeded_ = false;
+    callback_timed_out_ = false;
+  } else {
+    callback_succeeded_ = true;
+    callback_timed_out_ = false;
+  }
+}
+
+void WaitFunction(int seconds, boost::mutex* mutex) {
+  if (!callback_prepared_) {
+    printf("Callback result variables were not set.\n");
+    return;
+  }
+  bool got_callback = false;
+  // for (int i = 0; i < seconds*100; ++i) {
+  while (!got_callback) {
+    {
+      boost::mutex::scoped_lock lock_(*mutex);
+      if (!callback_timed_out_) {
+        got_callback = true;
+        if (callback_succeeded_) {
+  //        printf("Callback succeeded after %3.2f seconds\n",
+  //               static_cast<float>(i)/100);
+          callback_prepared_ = false;
+          return;
+        } else {
+  //        printf("Callback failed after %3.2f seconds\n",
+  //               static_cast<float>(i)/100);
+          callback_prepared_ = false;
+          return;
+        }
+      }
+    }
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  }
+  callback_prepared_ = false;
+  printf("Callback timed out after %i second(s)\n", seconds);
+}
+
+}  // namespace testpdvault
+
+namespace maidsafe_vault {
 
 void GeneratePmidStuff(std::string *public_key,
                        std::string *private_key,
@@ -60,9 +131,25 @@ void GeneratePmidStuff(std::string *public_key,
   *pmid = co_.Hash(*signed_key, "", crypto::STRING_STRING, false);
 };
 
+struct ClientData {
+  explicit ClientData(const std::string &root_dir)
+    : chunkstore_dir(root_dir + "/ClientChunkstore_" + base::RandomString(8)),
+      mss(), pmid_pub_key(), pmid_priv_key(), pmid_pub_key_sig(), pmid_name(),
+      chunkstore(), msm(), pmid_keys(), maid_keys(), stored_chunks() {}
+
+  std::string chunkstore_dir;
+  maidsafe::MockSessionSingleton mss;
+  std::string pmid_pub_key, pmid_priv_key, pmid_pub_key_sig, pmid_name;
+  boost::shared_ptr<maidsafe::ChunkStore> chunkstore;
+  boost::shared_ptr<maidsafe::MaidsafeStoreManager> msm;
+  crypto::RsaKeyPair pmid_keys, maid_keys;
+  std::set<std::string> stored_chunks;
+};
+
 class RunPDVaults {
  public:
   RunPDVaults(const int &no_of_vaults,
+              const int &no_of_clients,
               const std::string &test_dir,
               const base::KadConfig &kadconfig,
               const std::string &bootstrap_id,
@@ -75,6 +162,7 @@ class RunPDVaults {
               const std::string &initial_vault_pmid_private,
               const std::string &initial_vault_signed_pmid_public)
       : no_of_vaults_(no_of_vaults),
+        no_of_clients_(no_of_clients),
         test_dir_(test_dir),
         bootstrap_id_(bootstrap_id),
         bootstrap_ip_(bootstrap_ip),
@@ -89,7 +177,6 @@ class RunPDVaults {
         kad_config_file_(".kadconfig"),
         chunkstore_dirs_(),
         mutices_(),
-        cb_(),
         crypto_(),
         transport_handlers_(),
         pdvaults_(new std::vector< boost::shared_ptr<PDVault> >),
@@ -97,12 +184,57 @@ class RunPDVaults {
         mutex_(),
         bootstrap_local_ip_(local_ip),
         bootstrap_local_port_(local_port),
-        single_function_timeout_(60) {
+        single_function_timeout_(60),
+        clients_(),
+        total_chunks_stored_(0),
+        total_chunks_retrieved_(0) {
     fs::create_directories(chunkstore_dir_);
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     initial_vault_node_id_ = crypto_.Hash(initial_vault_signed_pmid_public_, "",
                                           crypto::STRING_STRING, false);
+
+    for (int i = 0; i < no_of_clients_; ++i) {
+      {
+        boost::shared_ptr<ClientData> client(new ClientData(chunkstore_dir_));
+        clients_.push_back(client);
+      }
+      printf("Generating MAID Keys for client %d of %d...\n", i + 1,
+             no_of_clients_);
+      clients_[i]->maid_keys.GenerateKeys(maidsafe::kRsaKeySize);
+      std::string maid_priv_key = clients_[i]->maid_keys.private_key();
+      std::string maid_pub_key = clients_[i]->maid_keys.public_key();
+      std::string maid_pub_key_sig = crypto_.AsymSign(maid_pub_key, "",
+          maid_priv_key, crypto::STRING_STRING);
+      std::string maid_name = crypto_.Hash(maid_pub_key + maid_pub_key_sig, "",
+                                           crypto::STRING_STRING, false);
+      clients_[i]->mss.AddKey(maidsafe::MAID, maid_name, maid_priv_key,
+                              maid_pub_key, maid_pub_key_sig);
+      printf(" >> public key:   %s\n", HexSubstr(maid_pub_key).c_str());
+      printf(" >> pub key sig:  %s\n", HexSubstr(maid_pub_key_sig).c_str());
+      printf(" >> hash/name:    %s\n", HexSubstr(maid_name).c_str());
+
+      printf("Generating PMID Keys for client %d of %d...\n", i + 1,
+             no_of_clients_);
+      clients_[i]->pmid_keys.GenerateKeys(maidsafe::kRsaKeySize);
+      clients_[i]->pmid_priv_key = clients_[i]->pmid_keys.private_key();
+      clients_[i]->pmid_pub_key = clients_[i]->pmid_keys.public_key();
+      clients_[i]->pmid_pub_key_sig = crypto_.AsymSign(
+          clients_[i]->pmid_pub_key, "", maid_priv_key, crypto::STRING_STRING);
+      clients_[i]->pmid_name = crypto_.Hash(
+          clients_[i]->pmid_pub_key + clients_[i]->pmid_pub_key_sig, "",
+          crypto::STRING_STRING, false);
+      clients_[i]->mss.AddKey(maidsafe::PMID,
+          clients_[i]->pmid_name, clients_[i]->pmid_priv_key,
+          clients_[i]->pmid_pub_key, clients_[i]->pmid_pub_key_sig);
+      printf(" >> public key:   %s\n",
+             HexSubstr(clients_[i]->pmid_pub_key).c_str());
+      printf(" >> pub key sig:  %s\n",
+             HexSubstr(clients_[i]->pmid_pub_key_sig).c_str());
+      printf(" >> hash/name:    %s\n",
+             HexSubstr(clients_[i]->pmid_name).c_str());
+      clients_[i]->mss.SetConnectionStatus(0);
+    }
   }
 
   ~RunPDVaults() {
@@ -130,161 +262,114 @@ class RunPDVaults {
   }
 
   void SetUp() {
-    if (kad_config_.contact_size() || bootstrap_id_ != "") {
-      if (!kad_config_.contact_size()) {
-        kad_config_.Clear();
-        base::KadConfig::Contact *kad_contact_ = kad_config_.add_contact();
-        kad_contact_->set_node_id(bootstrap_id_);
-        kad_contact_->set_ip(bootstrap_ip_);
-        kad_contact_->set_port(bootstrap_port_);
-        kad_contact_->set_local_ip(bootstrap_local_ip_);
-        kad_contact_->set_local_port(bootstrap_local_port_);
-      }
-      boost::posix_time::ptime stop;
-      for (int j = 0; j < no_of_vaults_; ++j) {
-        // Save kad_config to file
-        std::string dir = chunkstore_dir_+"/Chunkstore"+ base::itos(j);
-        if (!fs::exists(fs::path(dir)))
-          fs::create_directories(dir);
-        chunkstore_dirs_.push_back(dir);
-        std::string kad_config_location = dir + "/" + kad_config_file_;
-        printf("\nkad config: %s", kad_config_location.c_str());
+    // get contact from parameters
+    if (bootstrap_id_ != "") {
+      // kad_config_.Clear();
+      base::KadConfig::Contact *kad_contact_ = kad_config_.add_contact();
+      kad_contact_->set_node_id(bootstrap_id_);
+      kad_contact_->set_ip(bootstrap_ip_);
+      kad_contact_->set_port(bootstrap_port_);
+      kad_contact_->set_local_ip(bootstrap_local_ip_);
+      kad_contact_->set_local_port(bootstrap_local_port_);
+    }
+
+    printf("Starting %d vaults and %d clients...\n", no_of_vaults_,
+           no_of_clients_);
+    boost::posix_time::ptime stop;
+    for (int j = 0; j < no_of_vaults_; ++j) {
+      std::string dir = chunkstore_dir_ + "/Chunkstore" + base::itos(j);
+      if (!fs::exists(fs::path(dir)))
+        fs::create_directories(dir);
+      chunkstore_dirs_.push_back(dir);
+      std::string kad_config_location = dir + "/" + kad_config_file_;
+
+      // Save kad_config_ to file
+      if (kad_config_.contact_size()) {
+        // printf("Kad config: %s\n", kad_config_location.c_str());
         std::fstream output(kad_config_location.c_str(),
           std::ios::out | std::ios::trunc | std::ios::binary);
         kad_config_.SerializeToOstream(&output);
         output.close();
-        boost::uint16_t this_port = 0;
-        std::string public_key, private_key, signed_key, node_id;
-        if (j == 0 && initial_vault_port_ != 0) {
-          this_port = initial_vault_port_;
-          public_key = initial_vault_pmid_public_;
-          private_key = initial_vault_pmid_private_;
-          signed_key = initial_vault_signed_pmid_public_;
-          node_id = initial_vault_node_id_;
-        } else {
-          GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
-        }
-        boost::shared_ptr<transport::TransportHandler>
-            transport_handler(new transport::TransportHandler());
-        boost::int16_t trans_id;
-        transport::TransportUDT *udt_transport(new transport::TransportUDT);
-        transport_handler->Register(udt_transport, &trans_id);
-        transport_handlers_.push_back(transport_handler);
-        boost::shared_ptr<maidsafe_vault::PDVault>
-            pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
-            signed_key, dir, 0, false, false, kad_config_location,
-            1073741824, 0, transport_handler.get(), trans_id));
-        pdvaults_->push_back(pdvault_local);
-        ++current_nodes_created_;
-        (*pdvaults_)[j]->Start(false);
-        stop = boost::posix_time::second_clock::local_time() +
-            single_function_timeout_;
-        while (((*pdvaults_)[j]->vault_status() !=
-               maidsafe_vault::kVaultStarted)
-               && boost::posix_time::second_clock::local_time() < stop) {
-          boost::this_thread::sleep(boost::posix_time::seconds(1));
-        }
-        if (maidsafe_vault::kVaultStarted != (*pdvaults_)[j]->vault_status()) {
-          printf("\nVault %i didn't start properly!\n", j);
-          return;
-        }
-        printf(".");
       }
-      printf("\n");
-//      printf("\nIn bootstrap ip: %s, port: %d\n",
-//             kad_contact_->ip().c_str(),
-//             kad_contact_->port());
-    } else {
-      // Construct (but don't start) vaults
-      for (int i = 0; i < no_of_vaults_; ++i) {
-        boost::uint16_t this_port = 0;
-        std::string chunkstore_local = chunkstore_dir_+"/Chunkstore"+
-            base::itos(i);
-        fs::path chunkstore_local_path(chunkstore_local, fs::native);
-        fs::create_directories(chunkstore_local_path);
-        chunkstore_dirs_.push_back(chunkstore_local_path);
-        std::string kad_config_location = chunkstore_local + "/" +
-            kad_config_file_;
-        std::string public_key, private_key, signed_key, node_id;
-        if (i == 0 && initial_vault_port_ != 0) {
-          this_port = initial_vault_port_;
-          public_key = initial_vault_pmid_public_;
-          private_key = initial_vault_pmid_private_;
-          signed_key = initial_vault_signed_pmid_public_;
-          node_id = initial_vault_node_id_;
-        } else {
-          GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
-        }
-        boost::shared_ptr<transport::TransportHandler>
-            transport_handler(new transport::TransportHandler());
-        boost::int16_t trans_id;
-        transport::TransportUDT *udt_transport(new transport::TransportUDT);
-        transport_handler->Register(udt_transport, &trans_id);
-        transport_handlers_.push_back(transport_handler);
-        boost::shared_ptr<maidsafe_vault::PDVault> pdvault_local(
-            new maidsafe_vault::PDVault(public_key, private_key, signed_key,
-            chunkstore_local, this_port, false, false, kad_config_location,
-            1073741824, 0, transport_handler.get(), trans_id));
-        pdvaults_->push_back(pdvault_local);
-        ++current_nodes_created_;
-        printf(".");
+
+      int client_idx = j + no_of_clients_ - no_of_vaults_;
+      boost::uint16_t this_port = 0;
+      std::string public_key, private_key, signed_key, node_id;
+      if (j == 0 && initial_vault_port_ != 0) {
+        this_port = initial_vault_port_;
+        public_key = initial_vault_pmid_public_;
+        private_key = initial_vault_pmid_private_;
+        signed_key = initial_vault_signed_pmid_public_;
+        node_id = initial_vault_node_id_;
+      } else if (client_idx >= 0) {
+        // taking over vault when creating it
+        printf("Setting up client %d of %d...\n", client_idx + 1,
+               no_of_clients_);
+        clients_[client_idx]->chunkstore =
+            boost::shared_ptr<maidsafe::ChunkStore> (new maidsafe::ChunkStore(
+            clients_[client_idx]->chunkstore_dir, 0, 0));
+        clients_[client_idx]->chunkstore->Init();
+        boost::shared_ptr<maidsafe::MaidsafeStoreManager>
+            sm_local_(new maidsafe::MaidsafeStoreManager(
+                      clients_[client_idx]->chunkstore));
+        clients_[client_idx]->msm = sm_local_;
+        clients_[client_idx]->msm->ss_ = &clients_[client_idx]->mss;
+        clients_[client_idx]->msm->kad_config_location_ = kad_config_location;
+        testpdvault::PrepareCallbackResults();
+        clients_[client_idx]->msm->Init(0,
+            boost::bind(&testpdvault::GeneralCallback, _1));
+        testpdvault::WaitFunction(60, &mutex_);
+        public_key = clients_[client_idx]->pmid_pub_key;
+        private_key = clients_[client_idx]->pmid_priv_key;
+        signed_key = clients_[client_idx]->pmid_pub_key_sig;
+        node_id = clients_[client_idx]->pmid_name;
+      } else {
+        GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
       }
-      printf("\n\tStarting vaults");
-      // Start first vault, add him as bootstrapping node for all others & start
-      // them all.
-      (*pdvaults_)[0]->Start(true);
-      boost::posix_time::ptime stop =
-          boost::posix_time::second_clock::local_time() +
+
+      boost::shared_ptr<transport::TransportHandler>
+          transport_handler(new transport::TransportHandler());
+      boost::int16_t trans_id;
+      transport::TransportUDT *udt_transport(new transport::TransportUDT);
+      transport_handler->Register(udt_transport, &trans_id);
+      transport_handlers_.push_back(transport_handler);
+      boost::shared_ptr<maidsafe_vault::PDVault>
+          pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
+          signed_key, dir, this_port, false, false, kad_config_location,
+          1073741824, 0, transport_handler.get(), trans_id));
+      pdvaults_->push_back(pdvault_local);
+      ++current_nodes_created_;
+
+      (*pdvaults_)[j]->Start(!kad_config_.contact_size());
+      stop = boost::posix_time::second_clock::local_time() +
           single_function_timeout_;
-      while (((*pdvaults_)[0]->vault_status() != kVaultStarted) &&
-             boost::posix_time::second_clock::local_time() < stop) {
+      while (((*pdvaults_)[j]->vault_status() !=
+             maidsafe_vault::kVaultStarted)
+             && boost::posix_time::second_clock::local_time() < stop) {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
       }
-      if (maidsafe_vault::kVaultStarted != (*pdvaults_)[0]->vault_status()) {
-        printf("\nVault 0 didn't start properly!\n");
+      if (maidsafe_vault::kVaultStarted != (*pdvaults_)[j]->vault_status()) {
+        printf("Vault %i didn't start properly!\n", j);
         return;
       }
 
-      printf(".");
-      base::KadConfig kad_config;
-      base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-      kad_contact->set_node_id((*pdvaults_)[0]->node_id());
-      kad_contact->set_ip((*pdvaults_)[0]->host_ip());
-      kad_contact->set_port((*pdvaults_)[0]->host_port());
-      kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
-      kad_contact->set_local_port((*pdvaults_)[0]->local_host_port());
-      // Save kad config to files and start all remaining vaults
-      for (int k = 1; k < no_of_vaults_; ++k) {
-        kad_config_file_ = chunkstore_dir_+"/Chunkstore"+ base::itos(k) +
-            "/.kadconfig";
-        std::fstream output(kad_config_file_.c_str(),
-                            std::ios::out | std::ios::trunc | std::ios::binary);
-        if (!kad_config.SerializeToOstream(&output)) {
-          printf("\nDidn't serialise kadconfig properly.\n");
-          return;
-        }
-        output.close();
-        (*pdvaults_)[k]->Start(false);
-        stop = boost::posix_time::second_clock::local_time() +
-            single_function_timeout_;
-        while (((*pdvaults_)[k]->vault_status() != kVaultStarted)
-               && boost::posix_time::second_clock::local_time() < stop) {
-          boost::this_thread::sleep(boost::posix_time::seconds(1));
-        }
-        if (maidsafe_vault::kVaultStarted != (*pdvaults_)[k]->vault_status()) {
-          printf("\nVault %i didn't start properly!\n", k);
-          return;
-        }
-        printf(".");
+      if (!kad_config_.contact_size()) {
+        // add own details to bootstrap next vault
+        base::KadConfig::Contact *kad_contact = kad_config_.add_contact();
+        kad_contact->set_node_id((*pdvaults_)[j]->node_id());
+        kad_contact->set_ip((*pdvaults_)[j]->host_ip());
+        kad_contact->set_port((*pdvaults_)[j]->host_port());
+        kad_contact->set_local_ip((*pdvaults_)[j]->local_host_ip());
+        kad_contact->set_local_port((*pdvaults_)[j]->local_host_port());
       }
     }
-    printf("\n");
+
 #ifdef WIN32
     HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hconsole, 10 | 0 << 4);
 #endif
     printf("\n*-----------------------------------------------*\n");
-    printf("*            %i local vaults running            *\n",
+    printf("*            %2i local vaults running            *\n",
            no_of_vaults_);
     printf("*                                               *\n");
     printf("* No. Port   ID                                 *\n");
@@ -293,6 +378,18 @@ class RunPDVaults {
              (base::EncodeToHex((*pdvaults_)[l]->node_id()).substr(0, 31) +
              "...").c_str());
     printf("*                                               *\n");
+    if (no_of_clients_ > 0) {
+      printf("*           %2i local clients running            *\n",
+             no_of_clients_);
+      printf("*                                               *\n");
+      printf("* No. Port   ID                                 *\n");
+      for (int l = 0; l < no_of_clients_; ++l)
+        printf("* %2i  %5i  %s... *\n", l,
+               clients_[l]->msm->knode_->host_port(),
+               (base::EncodeToHex(clients_[l]->msm->knode_->node_id()))
+               .substr(0, 31).c_str());
+      printf("*                                               *\n");
+    }
     printf("*-----------------------------------------------*\n\n");
 #ifdef WIN32
     SetConsoleTextAttribute(hconsole, 11 | 0 << 4);
@@ -302,6 +399,11 @@ class RunPDVaults {
 //          (*(pdvaults_))[no_of_vaults_ - 1]->host_ip().c_str(),
 //          (*(pdvaults_))[no_of_vaults_ - 1]->host_port(),
 //          HexSubstr((*(pdvaults_))[no_of_vaults_ - 1]->node_id()).c_str());
+
+    if (no_of_clients_ > 0) {
+      printf("\nWaiting 20 secs for account creation...\n\n");
+      boost::this_thread::sleep(boost::posix_time::seconds(20));
+    }
   }
 
   void TearDown() {
@@ -325,6 +427,12 @@ class RunPDVaults {
         (*pdvaults_)[current_nodes_created_ - 1]->CleanUp();
 //      (*pdvaults_)[i].reset();
     }
+    for (int i = 0; i < no_of_clients_; ++i) {
+      testpdvault::PrepareCallbackResults();
+      clients_[i]->msm->Close(
+          boost::bind(&testpdvault::GeneralCallback, _1), true);
+      testpdvault::WaitFunction(60, &mutex_);
+    }
     try {
       if (fs::exists(test_dir_))
         fs::remove_all(test_dir_);
@@ -337,10 +445,75 @@ class RunPDVaults {
     printf("Finished vault tear down.\n");
   }
 
+  void Process() {
+    crypto::Crypto cryobj_;
+    cryobj_.set_hash_algorithm(crypto::SHA_512);
+    cryobj_.set_symm_algorithm(crypto::AES_256);
+
+    for (int i = 0; i < no_of_clients_; ++i) {
+      // check for existance of stored chunks
+      for (std::set<std::string>::iterator it =
+               clients_[i]->stored_chunks.begin();
+           it != clients_[i]->stored_chunks.end();
+           ++it) {
+        if (ctrlc_pressed)
+          break;
+
+        clients_[i]->chunkstore->DeleteChunk(*it);
+        std::string data;
+        if (0 == clients_[i]->msm->LoadChunk(*it, &data) &&
+            *it == crypto_.Hash(data, "", crypto::STRING_STRING, false)) {
+          printf("Successfully loaded chunk %s for client %s. (%d/%d)\n",
+                 HexSubstr(*it).c_str(),
+                 HexSubstr(clients_[i]->pmid_name).c_str(),
+                 total_chunks_retrieved_, total_chunks_stored_);
+          clients_[i]->stored_chunks.erase(it);
+          ++total_chunks_retrieved_;
+          // TODO(Team#) physically delete chunk from network
+        } else {
+          printf("Could not load chunk %s for client %s. (%d/%d)\n",
+                 HexSubstr(*it).c_str(),
+                 HexSubstr(clients_[i]->pmid_name).c_str(),
+                 total_chunks_retrieved_, total_chunks_stored_);
+        }
+      }
+
+      if (ctrlc_pressed)
+        return;
+
+      // store random chunks
+      int no_of_chunks = (total_chunks_stored_ < 500) ?
+                         base::random_32bit_integer() % 6 : 0;
+      for (int j = 0; j < no_of_chunks; ++j) {
+        if (ctrlc_pressed)
+          break;
+
+        std::string chunk_content =
+            base::RandomString(base::random_32bit_integer() % 10000 * 10 + 10);
+        std::string chunk_name = cryobj_.Hash(chunk_content, "",
+                                              crypto::STRING_STRING, false);
+        fs::path chunk_path(chunkstore_dir_, fs::native);
+        printf("Storing chunk %s for client %s ...\n",
+               HexSubstr(chunk_name).c_str(),
+               HexSubstr(clients_[i]->pmid_name).c_str());
+        chunk_path /= base::EncodeToHex(chunk_name);
+        std::ofstream ofs_;
+        ofs_.open(chunk_path.string().c_str());
+        ofs_ << chunk_content;
+        ofs_.close();
+        clients_[i]->chunkstore->AddChunkToOutgoing(chunk_name, chunk_path);
+        clients_[i]->msm->StoreChunk(chunk_name, maidsafe::PRIVATE, "");
+        clients_[i]->stored_chunks.insert(chunk_name);
+        ++total_chunks_stored_;
+      }
+    }
+  }
+
  private:
   RunPDVaults(const RunPDVaults&);
   RunPDVaults &operator=(const RunPDVaults&);
   const int no_of_vaults_;
+  const int no_of_clients_;
   std::string test_dir_;
   std::string bootstrap_id_;
   std::string bootstrap_ip_;
@@ -354,7 +527,6 @@ class RunPDVaults {
   std::string chunkstore_dir_, kad_config_file_;
   std::vector<fs::path> chunkstore_dirs_;
   std::vector< boost::shared_ptr<boost::mutex> > mutices_;
-  base::callback_func_type cb_;
   crypto::Crypto crypto_;
   std::vector< boost::shared_ptr<transport::TransportHandler> >
       transport_handlers_;
@@ -364,19 +536,15 @@ class RunPDVaults {
   std::string bootstrap_local_ip_;
   boost::uint16_t bootstrap_local_port_;
   boost::posix_time::seconds single_function_timeout_;
+  std::vector< boost::shared_ptr<ClientData> > clients_;
+  int total_chunks_stored_, total_chunks_retrieved_;
 };
 
 }  // namespace maidsafe_vault
 
-  volatile int ctrlc_pressed = 0;
-  void ctrlc_handler(int ) {
-    printf("\n\n\tStopping vaults...\n");
-    ctrlc_pressed = 1;
-  }
-
 int main(int argc, char* argv[]) {
-  int num(10);
-  std::string root_dir("Vaults");
+  int num_v(10), num_c(0);
+  std::string root_dir("./Vaults");
   std::string node_id;
   std::string ip, local_ip;
   boost::uint16_t port, local_port;
@@ -405,23 +573,43 @@ int main(int argc, char* argv[]) {
   catch(const std::exception &e) {
     printf("In main, %s\n", e.what());
   }
+  printf("=== Vault Test Network ===\n\n");
   if (argc < 3) {
-    printf("\n\n\tWith no args, this runs 10 vaults in folder \"./Vaults\"\n");
-    printf("\n\tTo include args, enter \"testvault [no. of nodes (int)] ");
-    printf("[root directory of test]\n\tIf directory doesn't exist, it will ");
-    printf("be created (and deleted on close).\n\n\tOptionally a bootstrap ");
-    printf("contact can be added to the end of the args in the form [Kad ID] ");
-    printf("[IP] [port] [local IP] [local port].\n\t");
-    printf("e.g. testvault 5 C:\\TestVaults cf83e1357eefb8bdf15");
-    printf("42850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff83");
-    printf("18d2877eec2f63b931bd47417a81a538327af927da3e 192.168.2.104 61111");
-    printf(" 192.168.2.104 61111");
-    printf("\n\n\tAlternatively, the path to an existing .kadconfig file can ");
-    printf("be entered.\n\te.g. testvault 5 C:\\TestVaults C:\\.kadconfig");
-    printf("\n\n\tTo quit, press Ctrl+C.\n");
+    printf("  With no args, this runs %d vaults in folder \"%s\"\n\n", num_v,
+           root_dir.c_str());
+    printf("  To include args, enter \"testvault <#nodes>[:<#clients>] ");
+    printf("<root directory>\".\n");
+    printf("  If the directory doesn't exist, it will be created (and ");
+    printf("deleted on close).\n\n");
+    printf("  Examples:\n    testvault 5 ~/Vaults\n    testvault 7:2 ");
+    printf("C:\\TestVaults\n\n");
+    printf("  Optionally a bootstrap contact can be added to the end of the ");
+    printf("args:\n    \"... [<full Kad ID> <IP> <port> <local IP> ");
+    printf("<local port>]\"\n");
+    printf("  Alternatively as path to an existing .kadconfig file: \n");
+    printf("    \"... [<kad config path>]\"\n\n");
+    printf("  Examples:\n    testvault 5 ~/Vaults cf83e1357eef... ");
+    printf("192.168.2.104 61111 192.168.2.104 61111\n    testvault 5 ");
+    printf("~/Vaults ~/.kadconfig\n\n");
+    printf("  To quit, press Ctrl+C.\n\n");
   } else {
     std::string number(argv[1]);
-    num = base::stoi(number);
+    size_t sep = number.find(':');
+    if (sep == std::string::npos) {
+      num_v = base::stoi(number);
+    } else {
+      num_v = base::stoi(number.substr(0, sep));
+      num_c = base::stoi(number.substr(sep + 1));
+    }
+    // printf("vaults: %d  clients: %d\n", num_v, num_c);
+    if (num_v < 1 || num_c < 0) {
+      printf("Must specify at least one vault to be set up.\n");
+      return -1;
+    }
+    if (num_v <= num_c) {
+      printf("Must specify to set up more vaults than clients.\n");
+      return -2;
+    }
     std::string root(argv[2]);
     root_dir = root;
     if (argc == 4) {
@@ -431,15 +619,15 @@ int main(int argc, char* argv[]) {
         kad_config.ParseFromIstream(&infile);
         if (kad_config.contact_size()) {
           if (kad_config.contact(0).has_node_id()) {
-            printf("\n%s\n\n", kad_config.DebugString().c_str());
+            printf("%s\n\n", kad_config.DebugString().c_str());
           } else {
-            printf("\n%s is not a kadconfig file.\n\n", file.c_str());
-            return -1;
+            printf("%s is not a kadconfig file.\n", file.c_str());
+            return -3;
           }
         } else {
-            printf("\n%s is either not a kadconfig file, or it's empty.\n\n",
+            printf("%s is either not a kadconfig file, or it's empty.\n",
                    file.c_str());
-            return -2;
+            return -4;
         }
       }
       catch(const std::exception &e) {
@@ -456,12 +644,12 @@ int main(int argc, char* argv[]) {
   }
   {
     if (initial_vault_port != 0) {
-      printf("\n\n\tFound a .config file - using this for first ");
-      printf("vault's details.");
+      printf("Found a .config file - using this for first ");
+      printf("vault's details.\n\n");
     }
-    printf("\n\n\tCreating vaults");
     maidsafe_vault::RunPDVaults vaults(
-        num,
+        num_v,
+        num_c,
         root_dir,
         kad_config,
         node_id,
@@ -476,7 +664,9 @@ int main(int argc, char* argv[]) {
     vaults.SetUp();
     signal(SIGINT, ctrlc_handler);
     while (!ctrlc_pressed) {
-      boost::this_thread::sleep(boost::posix_time::seconds(1));
+      vaults.Process();
+      if (!ctrlc_pressed)
+        boost::this_thread::sleep(boost::posix_time::seconds(5));
     }
     vaults.TearDown();
   }

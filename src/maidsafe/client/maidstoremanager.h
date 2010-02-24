@@ -61,6 +61,7 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
 
 namespace maidsafe_vault {
 class PDVaultTest;
+class RunPDVaults;
 }  // namespace maidsafe_vault
 
 namespace maidsafe {
@@ -344,6 +345,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
   friend class MsmSetLocalVaultOwnedTest;
   friend class maidsafe_vault::PDVaultTest;
+  friend class maidsafe_vault::RunPDVaults;
   // Check the inputs to the public methods are valid
   int ValidateInputs(const std::string &name,
                      const PacketType &packet_type,
@@ -523,6 +525,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   transport::TransportUDT udt_transport_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
+  std::string kad_config_location_;
   boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<ClientRpcs> client_rpcs_;
   boost::shared_ptr<KadOps> kad_ops_;

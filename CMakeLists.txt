@@ -670,7 +670,7 @@ TARGET_LINK_LIBRARIES(TESTbph PDfslib PDmsclientlib PDmsvaultlib PDmaidsafelib P
 TARGET_LINK_LIBRARIES(TESTclientcontroller PDmsclientlib  PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest ${SYS_LIB} ${UDT_LIBRARY})
 #TARGET_LINK_LIBRARIES(TESTfuse PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest ${SYS_LIB} ${UDT_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTfs PDmaidsafelib PDfslib ${QT_LIBRARIES} gtest ${SYS_LIB} ${UDT_LIBRARY})
-TARGET_LINK_LIBRARIES(testvault PDmsvaultlib PDmaidsafelib PDpbmsgslib ${QT_LIBRARIES} ${SYS_LIB} ${UDT_LIBRARY})
+TARGET_LINK_LIBRARIES(testvault PDmsclientlib PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${SYS_LIB} ${UDT_LIBRARY})
 TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmaidsafelib PDpbmsgslib ${QT_LIBRARIES} ${SYS_LIB} ${UDT_LIBRARY})
 #IF(WIN32)
 #  SET(TARGET_PROPERTIES vault testvault TESTmaidsafe COMPILE_FLAGS ${CMAKE_CXX_FLAGS} --Wl,-subsystem,console)

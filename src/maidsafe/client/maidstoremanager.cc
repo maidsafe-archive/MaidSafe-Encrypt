@@ -82,6 +82,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
     : udt_transport_(),
       transport_handler_(),
       channel_manager_(&transport_handler_),
+      kad_config_location_(".kadconfig"),
       knode_(new kad::KNode(&channel_manager_, &transport_handler_, kad::CLIENT,
              "", "", false, false)),
       client_rpcs_(new ClientRpcs(&transport_handler_, &channel_manager_)),
@@ -105,15 +106,12 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
   // If kad config file exists in dir we're in, use that, otherwise get default
   // path to file.
   bool success(true);
-  std::string kadconfig_str;
   try {
-    if (fs::exists(".kadconfig")) {
-      kadconfig_str = ".kadconfig";
-    } else {
+    if (!fs::exists(kad_config_location_)) {
       file_system::FileSystem fsys;
-      fs::path kadconfig_path(fsys.ApplicationDataDir(), fs::native);
-      kadconfig_path /= ".kadconfig";
-      kadconfig_str = kadconfig_path.string();
+      fs::path kad_config_path(fsys.ApplicationDataDir(), fs::native);
+      kad_config_path /= ".kadconfig";
+      kad_config_location_ = kad_config_path.string();
     }
   }
   catch(const std::exception &ex) {
@@ -139,7 +137,7 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
 #endif
   CallbackObj kad_cb_obj;
   if (success) {
-    knode_->Join(kadconfig_str, boost::bind(&CallbackObj::CallbackFunc,
+    knode_->Join(kad_config_location_, boost::bind(&CallbackObj::CallbackFunc,
         &kad_cb_obj, _1));
     kad_cb_obj.WaitForCallback();
   }
