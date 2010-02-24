@@ -663,7 +663,7 @@ void Cleanup(boost::filesystem::path vaultpath) {
 }
 
 void CreateVaultDaemon(bool *finished) {
-  maidsafe_vault::VaultDaemon daemon(0);
+  maidsafe_vault::VaultDaemon daemon(0, "/TEST_Daemon");
   ASSERT_TRUE(daemon.StartVault());
   daemon.Status();
   boost::filesystem::path vaultpath = daemon.vault_path();
