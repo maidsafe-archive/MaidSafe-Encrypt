@@ -30,46 +30,32 @@
 #define FS_FILESYSTEM_H_
 #include <boost/filesystem.hpp>
 #include <string>
-#include <vector>
-#include "maidsafe/client/sessionsingleton.h"
 
 namespace fs = boost::filesystem;
+
+namespace maidsafe {
+enum DefConLevels {kDefCon1 = 1, kDefCon2, kDefCon3};
+}  // namespace maidsafe
+
 namespace file_system {
 
-class FileSystem {
-  private:
-    // We should mount the maidsafe dirs by
-    // 1: unencrypting existing one if it exists (we need to identify this)
-    // this can be done with a session name perhaps  (safety)
-    // 2: if not exist create an encrypted mount point and put stuff there
-    // so if machine crashes and we cannot clear up then
-    // we just leave an encrypted file (with AES256 encryption)
-    // still does not mean we can have sensitive data there though !!!
-
-    maidsafe::DefConLevels defcon_;  // this is set in the sesion singleton
-    bool CreateDirs();
-    bool DeleteDirs();
-
-  public:
-    bool FuseMountPoint();
-    bool Mount();
-    bool UnMount();  // unmount and rewrite space with 0's TODO
-    // bool WritePath(fs::path path, bool is_dir_, PathStatus state=DONE);
-    bool OpenPath(std::string path);
-    std::string MakeMSPath(std::string entry);
-    std::string MakeRelativeMSPath(std::string entry);
-    std::string FullMSPathFromRelPath(const std::string &path_);
-    std::string FullMSPathFromRelPath(const char *path_);
-    std::string HomeDir();
-    std::string ApplicationDataDir();
-    static std::string TempDir();
-    static std::string LocalStoreManagerDir();
-    std::string MaidsafeDir();
-    std::string MaidsafeHomeDir();
-    std::string MaidsafeFuseDir();
-    std::string ProcessDir();  // temp dir
-    std::string DbDir();  // dir to store dbs
-};
+fs::path HomeDir();
+fs::path ApplicationDataDir();
+fs::path TempDir();
+fs::path LocalStoreManagerDir();
+fs::path MaidsafeDir(const std::string &session_name);
+fs::path MaidsafeHomeDir(const std::string &session_name);
+fs::path MaidsafeFuseDir(const std::string &session_name);
+fs::path DbDir(const std::string &session_name);
+fs::path MakeRelativeMSPath(const std::string &entry,
+                            const std::string &session_name);
+fs::path FullMSPathFromRelPath(const std::string &entry,
+                               const std::string &session_name);
+int Mount(const std::string &session_name,
+          const maidsafe::DefConLevels &defcon);
+int UnMount(const std::string &session_name,
+            const maidsafe::DefConLevels &defcon);
+int FuseMountPoint(const std::string &session_name);
 
 }  // namespace file_system
 

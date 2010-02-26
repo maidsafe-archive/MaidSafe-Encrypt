@@ -114,7 +114,6 @@ bool VaultDaemon::TakeOwnership() {
     } else if (return_code == kVaultDaemonWaitingPwnage) {
       boost::this_thread::sleep(boost::posix_time::seconds(1.0));
     } else {
-                                              printf("return_code = %i\n", return_code);
       StopRegistrationService();
       return false;
     }
@@ -128,26 +127,8 @@ bool VaultDaemon::TakeOwnership() {
 }
 
 int VaultDaemon::SetPaths() {
-  // TODO(Fraser#5#): 2009-04-24 - This is repeated code - move to base?
-  if (vault_path_ == fs::path("")) {
-    fs::path app_path("");
-#if defined(MAIDSAFE_POSIX)
-    app_path = fs::path("/var/cache/maidsafe/", fs::native);
-#elif defined(MAIDSAFE_WIN32)
-    TCHAR szpth[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szpth))) {
-      std::ostringstream stm;
-      const std::ctype<char> &ctfacet =
-          std::use_facet< std::ctype<char> >(stm.getloc());
-      for (size_t i = 0; i < wcslen(szpth); ++i)
-        stm << ctfacet.narrow(szpth[i], 0);
-      app_path = fs::path(stm.str(), fs::native);
-      app_path /= "maidsafe";
-    }
-#elif defined(MAIDSAFE_APPLE)
-    app_path = fs::path("/Library/maidsafe/", fs::native);
-#endif
-    vault_path_ = app_path;
+  if (vault_path_ == "") {
+    vault_path_ = fs::path(file_system::ApplicationDataDir());
     vault_path_ /= "vault";
   }
   try {

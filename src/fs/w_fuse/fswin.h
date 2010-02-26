@@ -34,34 +34,13 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
   #define DOKANAPI
 #endif
 
-//  #ifndef BOOST_EXCEPTION_DISABLE
-//    #define BOOST_EXCEPTION_DISABLE
-//  #endif
-
-//  #define DOKAN_CALLBACK __stdcall
 #define DOKAN_CALLBACK __cdecl
 #define VOLUME_LABEL         L"maidsafe"
 
-#include <errno.h>
-#include <locale>
-#include <stdio.h>
-#include <stdlib.h>
 #include <windows.h>
 
-#include <boost/bind.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem/convenience.hpp>
-#include <boost/filesystem/path.hpp>
-
-#include <cstdlib>
-#include <sstream>
 #include <list>
-#include <map>
 #include <string>
-
-#include "maidsafe/utils.h"
-#include "maidsafe/client/clientcontroller.h"
-#include "protobuf/datamaps.pb.h"
 
 #ifdef __cplusplus
 extern "C" {

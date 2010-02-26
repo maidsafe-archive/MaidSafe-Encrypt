@@ -190,7 +190,8 @@ QDir ClientController::shareDirRoot(const QString& name) const {
 #else
   file_system::FileSystem fs;
   // Path comes back without that last slash
-  QString maidsafeRoot = QString::fromStdString(fs.MaidsafeFuseDir() + "/");
+  QString maidsafeRoot = QString::fromStdString(file_system::MaidsafeFuseDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string() + "/");
 #endif
 
   QString path = maidsafeRoot + pathInMaidsafe;
@@ -215,7 +216,8 @@ QDir ClientController::myFilesDirRoot(const QString& name) const {
 #else
   file_system::FileSystem fs;
   // Path comes back without that last slash
-  QString maidsafeRoot = QString::fromStdString(fs.MaidsafeFuseDir() + "/");
+  QString maidsafeRoot = QString::fromStdString(file_system::MaidsafeFuseDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string() + "/");
 #endif
 
   QString path = maidsafeRoot + pathInMaidsafe;
@@ -336,8 +338,9 @@ bool ClientController::sendInstantFile(const QString& filePath,
   qDebug() << "ClientController::sendInstantFile: " << filePath
            << " -- " << txt;
 
-  file_system::FileSystem fsys;
-  std::string rel_filename(fsys.MakeRelativeMSPath(filePath.toStdString()));
+  std::string rel_filename(file_system::MakeRelativeMSPath(
+      filePath.toStdString(),
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string());
 
 #ifdef MAIDSAFE_WIN32
   // trim e.g. C:

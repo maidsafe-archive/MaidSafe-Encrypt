@@ -562,7 +562,6 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
 
   int n;
   QString directory;
-  file_system::FileSystem fsys;
   QString root;
 
   switch (ret) {
@@ -572,7 +571,9 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
       root = QString("%1:\\My Files").
              arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
 #else
-      root = QString::fromStdString(fsys.MaidsafeFuseDir() + "/My Files");
+      root = QString::fromStdString(file_system::MaidsafeFuseDir(
+          maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+          "/My Files");
 #endif
       root += tr("/") + QString::fromStdString(ifn.filename());
       qfd_ = new QFileDialog(this, tr("Save File As..."), root);
@@ -596,7 +597,8 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
       std::string s = directory.toStdString();
       s = s.substr(2, s.length()-1);
 #else
-      std::string s(fsys.MakeRelativeMSPath(directory.toStdString()));
+      std::string s(file_system::MakeRelativeMSPath(directory.toStdString(),
+          maidsafe::SessionSingleton::getInstance()->SessionName()).string());
 #endif
 
 #ifdef DEBUG
@@ -666,12 +668,13 @@ void PerpetualData::onDirectoryEntered(const QString& dir) {
     qfd_->setDirectory(root);
   }
 #else
-  file_system::FileSystem fs;
-  root = QString::fromStdString(fs.MaidsafeFuseDir());
+  root = QString::fromStdString(file_system::MaidsafeFuseDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string());
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
-    file_system::FileSystem fs;
-    root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+    root = QString::fromStdString(file_system::MaidsafeFuseDir(
+        maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+        "/My Files");
     qfd_->setDirectory(root);
   }
 #endif

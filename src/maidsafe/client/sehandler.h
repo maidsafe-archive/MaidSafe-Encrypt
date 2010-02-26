@@ -170,7 +170,6 @@ class SEHandler {
   boost::shared_ptr<StoreManagerInterface> storem_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;
-  file_system::FileSystem fsys_;
   std::map<std::string, std::string> uptodate_datamaps_;
 };
 

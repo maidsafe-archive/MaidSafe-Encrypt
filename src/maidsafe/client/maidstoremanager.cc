@@ -108,15 +108,13 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
   bool success(true);
   try {
     if (!fs::exists(kad_config_location_)) {
-      file_system::FileSystem fsys;
-      fs::path kad_config_path(fsys.ApplicationDataDir(), fs::native);
-      kad_config_path /= ".kadconfig";
-      kad_config_location_ = kad_config_path.string();
+      fs::path kad_conf_path(file_system::ApplicationDataDir() / ".kadconfig");
+      kad_config_location_ = kad_conf_path.string();
     }
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
-    printf("In MSM::Init - %s\n", ex.what());
+    printf("In MSM::Init - Couldn't find kadconfig.\n");
 #endif
     success = false;
   }
@@ -156,10 +154,8 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
     maid_response.SerializeToString(&maid_result);
     cb(maid_result);
   }
-//                              chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount_);
-//                              packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount_);
-  chunk_thread_pool_.setMaxThreadCount(1);
-  packet_thread_pool_.setMaxThreadCount(1);
+  chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount_);
+  packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount_);
 #ifdef DEBUG
   printf("\tIn MaidsafeStoreManager::Init, after Join.  On port %u\n",
          knode_->host_port());
@@ -230,7 +226,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
   ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
   fs::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
                                                        false));
-  if (chunk_type < 0 || chunk_path == fs::path("")) {
+  if (chunk_type < 0 || chunk_path.empty()) {
 #ifdef DEBUG
     printf("In MaidsafeStoreManager::StoreChunk (%i), didn't find chunk %s\n",
            knode_->host_port(), HexSubstr(chunk_name).c_str());
@@ -613,7 +609,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
                                                          false));
   boost::uint64_t size(chunk_size);
   if (size < 2) {
-    if (chunk_type < 0 || chunk_path == fs::path("")) {
+    if (chunk_type < 0 || chunk_path.empty()) {
 #ifdef DEBUG
       printf("In MSM::DeleteChunk (%i), didn't find chunk %s in local "
              "chunkstore - can't delete without valid size.\n",
@@ -1457,7 +1453,7 @@ int MaidsafeStoreManager::GetStoreRequests(
   ChunkType chunk_type = store_data.chunk_type;
   fs::path chunk_path(client_chunkstore_->GetChunkPath(store_data.data_name,
                                                        chunk_type, false));
-  if (chunk_path == fs::path(""))
+  if (chunk_path.empty())
     return kChunkNotInChunkstore;
   boost::uint64_t chunk_size = store_data.size;
   std::string chunk_content;

@@ -62,9 +62,9 @@ class Env: public testing::Environment {
  public:
   Env(const int kNetworkSize,
       std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults)
-      : vault_dir_(file_system::FileSystem::TempDir() + "/maidsafe_TestVaults_"
-                   + base::RandomString(6)),
-        chunkstore_dir_(vault_dir_ + "/Chunkstores"),
+      : vault_dir_(file_system::TempDir() / ("maidsafe_TestVaults_" +
+                   base::RandomString(6))),
+        chunkstore_dir_(vault_dir_ / "Chunkstores"),
         kad_config_file_(".kadconfig"),
         chunkstore_dirs_(),
         crypto_(),
@@ -113,16 +113,15 @@ class Env: public testing::Environment {
     // Construct and start vaults
     printf("Creating vaults...\n");
     for (int i = 0; i < kNetworkSize_; ++i) {
-      std::string chunkstore_local = chunkstore_dir_+"/Chunkstore"+
-          base::itos(i);
-      fs::path chunkstore_local_path(chunkstore_local, fs::native);
-      fs::create_directories(chunkstore_local_path);
-      chunkstore_dirs_.push_back(chunkstore_local_path);
+      fs::path chunkstore_local = chunkstore_dir_ / ("Chunkstore" +
+          base::itos(i));
+      fs::create_directories(chunkstore_local);
+      chunkstore_dirs_.push_back(chunkstore_local);
       std::string public_key, private_key, signed_key, node_id;
       GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
 //      ASSERT_TRUE(crypto_.AsymCheckSig(public_key, signed_key, public_key,
 //                                       crypto::STRING_STRING));
-      kad_config_file_ = chunkstore_local + "/.kadconfig";
+      kad_config_file_ = chunkstore_local / ".kadconfig";
       boost::shared_ptr<transport::TransportHandler>
           transport_handler(new transport::TransportHandler());
       boost::int16_t trans_id;
@@ -131,8 +130,9 @@ class Env: public testing::Environment {
       transport_handlers_.push_back(transport_handler);
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
-          signed_key, chunkstore_local, 0, false, false, kad_config_file_,
-          1073741824, 0, transport_handler.get(), trans_id));
+          signed_key, chunkstore_local.string(), 0, false, false,
+          kad_config_file_.string(), 1073741824, 0, transport_handler.get(),
+          trans_id));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
     }
@@ -152,8 +152,8 @@ class Env: public testing::Environment {
     kad_contact->set_port((*pdvaults_)[1]->host_port());
     kad_contact->set_local_ip((*pdvaults_)[1]->local_host_ip());
     kad_contact->set_local_port((*pdvaults_)[1]->local_host_port());
-    kad_config_file_ = chunkstore_dir_+"/Chunkstore0/.kadconfig";
-    std::fstream output1(kad_config_file_.c_str(),
+    kad_config_file_ = chunkstore_dir_ / "Chunkstore0/.kadconfig";
+    std::fstream output1(kad_config_file_.string().c_str(),
                          std::ios::out | std::ios::trunc | std::ios::binary);
     ASSERT_TRUE(kad_config.SerializeToOstream(&output1));
     output1.close();
@@ -180,9 +180,9 @@ class Env: public testing::Environment {
     ASSERT_NE(maidsafe_vault::kVaultStarted, (*pdvaults_)[1]->vault_status());
     // Save kad config to files and start all remaining vaults
     for (int k = 1; k < kNetworkSize_; ++k) {
-      kad_config_file_ = chunkstore_dir_+"/Chunkstore"+ base::itos(k) +
-          "/.kadconfig";
-      std::fstream output(kad_config_file_.c_str(),
+      kad_config_file_ = chunkstore_dir_ / ("Chunkstore" + base::itos(k)) /
+          ".kadconfig";
+      std::fstream output(kad_config_file_.string().c_str(),
                           std::ios::out | std::ios::trunc | std::ios::binary);
       ASSERT_TRUE(kad_config.SerializeToOstream(&output));
       output.close();
@@ -200,7 +200,7 @@ class Env: public testing::Environment {
     }
     // Make kad config file in ./ for clients' use.
     kad_config_file_ = ".kadconfig";
-    std::fstream output2(kad_config_file_.c_str(),
+    std::fstream output2(kad_config_file_.string().c_str(),
                          std::ios::out | std::ios::trunc | std::ios::binary);
     ASSERT_TRUE(kad_config.SerializeToOstream(&output2));
     output2.close();
@@ -272,7 +272,7 @@ class Env: public testing::Environment {
     }
   }
 
-  std::string vault_dir_, chunkstore_dir_, kad_config_file_;
+  fs::path vault_dir_, chunkstore_dir_, kad_config_file_;
   std::vector<fs::path> chunkstore_dirs_;
   crypto::Crypto crypto_;
   std::vector< boost::shared_ptr<transport::TransportHandler> >

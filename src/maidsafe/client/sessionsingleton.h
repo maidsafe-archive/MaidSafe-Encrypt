@@ -34,6 +34,7 @@
 #include <string>
 #include <vector>
 
+#include "fs/filesystem.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/keyatlas.h"
 #include "maidsafe/client/contacts.h"
@@ -42,12 +43,10 @@
 
 namespace maidsafe {
 
-enum DefConLevels {DEFCON1 = 1, DEFCON2, DEFCON3};
-
 class MockSessionSingleton;
 
 struct UserDetails {
-  UserDetails() : defconlevel(DEFCON3),
+  UserDetails() : defconlevel(kDefCon3),
                   da_modified(false),
                   username(""),
                   pin(""),
@@ -157,7 +156,7 @@ class SessionSingleton {
       crypto::Crypto c;
       c.set_hash_algorithm(crypto::SHA_1);
       ud_.session_name =
-          c.Hash(Pin()+Username(), "", crypto::STRING_STRING, false);
+          c.Hash(Pin()+Username(), "", crypto::STRING_STRING, true);
     }
     return true;
   }

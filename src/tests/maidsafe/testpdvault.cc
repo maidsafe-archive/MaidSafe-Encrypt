@@ -167,7 +167,7 @@ void WaitFunction(int seconds, boost::mutex* mutex) {
 
 void MakeChunks(const std::vector< boost::shared_ptr<ClientData> > &clients,
                 int no_of_chunks,
-                const std::string &test_root_dir,
+                const fs::path &test_root_dir,
                 std::map<std::string, std::string> *chunks) {
   crypto::Crypto cryobj_;
   cryobj_.set_hash_algorithm(crypto::SHA_512);
@@ -176,9 +176,8 @@ void MakeChunks(const std::vector< boost::shared_ptr<ClientData> > &clients,
     std::string chunk_content = base::RandomString(100+i);
     std::string chunk_name = cryobj_.Hash(chunk_content, "",
                                           crypto::STRING_STRING, false);
-    fs::path chunk_path(test_root_dir, fs::native);
+    fs::path chunk_path(test_root_dir / base::EncodeToHex(chunk_name));
     printf("Chunk %i - %s\n", i, HexSubstr(chunk_name).c_str());
-    chunk_path /= base::EncodeToHex(chunk_name);
     std::ofstream ofs_;
     ofs_.open(chunk_path.string().c_str());
     ofs_ << chunk_content;
@@ -314,8 +313,8 @@ static const int kNumOfTestChunks = kNetworkSize * 1.5;
 
 class PDVaultTest : public testing::Test {
  protected:
-  PDVaultTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                      "/maidsafe_TestVault_" + base::RandomString(6)),
+  PDVaultTest() : test_root_dir_(file_system::TempDir() /
+                      ("maidsafe_TestVault_" + base::RandomString(6))),
                   clients_(),
                   mutex_(),
                   crypto_() {
@@ -332,7 +331,7 @@ class PDVaultTest : public testing::Test {
     for (int i = 0; i < kNumOfClients; ++i) {
       {
         boost::shared_ptr<testpdvault::ClientData>
-          client(new testpdvault::ClientData(test_root_dir_));
+            client(new testpdvault::ClientData(test_root_dir_.string()));
         clients_.push_back(client);
       }
       printf("Generating MAID Keys for client %d of %d...\n", i + 1,
@@ -446,7 +445,7 @@ class PDVaultTest : public testing::Test {
     }
   }
 
-  std::string test_root_dir_;
+  fs::path test_root_dir_;
   std::vector< boost::shared_ptr<testpdvault::ClientData> > clients_;
   boost::mutex mutex_;
   crypto::Crypto crypto_;

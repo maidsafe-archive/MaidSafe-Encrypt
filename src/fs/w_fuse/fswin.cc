@@ -24,10 +24,9 @@ THE SOFTWARE.
 
 #include "fs/w_fuse/fswin.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <maidsafe/utils.h>
 
-#include "fs/w_fuse/dokan/fileinfo.h"
+#include "maidsafe/client/clientcontroller.h"
 
 namespace fs = boost::filesystem;
 namespace fs_w_fuse {
@@ -1274,17 +1273,17 @@ static void CallMount(char drive) {
 
   ZeroMemory(Dokan_Options, sizeof(fs_w_fuse::DOKAN_OPTIONS));
 
-  file_system::FileSystem fsys_;
-  std::string msHome_ = fsys_.MaidsafeHomeDir();
+  maidsafe::SessionSingleton *ss = maidsafe::SessionSingleton::getInstance();
+  std::string msHome(file_system::MaidsafeHomeDir(ss->SessionName()).string());
 //   // repace '/' with '\\'
-//   for (std::string::iterator it=msHome_.begin(); it != msHome_.end(); it++){
+//   for (std::string::iterator it=msHome.begin(); it != msHome.end(); it++){
 //     if ((*it) == '/')
-//       msHome_.replace(it, it+1, "\\");
+//       msHome.replace(it, it+1, "\\");
 //   }
 #ifdef DEBUG
-  printf("msHome= %s\n", msHome_.c_str());
+  printf("msHome= %s\n", msHome.c_str());
 #endif
-  mbstowcs(fs_w_fuse::RootDirectory, msHome_.c_str(), msHome_.size());
+  mbstowcs(fs_w_fuse::RootDirectory, msHome.c_str(), msHome.size());
 #ifdef DEBUG
   wprintf(L"RootDirectory: %ls\n", fs_w_fuse::RootDirectory);
 #endif
@@ -1326,7 +1325,7 @@ static void CallMount(char drive) {
   Dokan_Operations->Unmount = WinUnmount;
 
   status = DokanMain(Dokan_Options, Dokan_Operations);
-  maidsafe::SessionSingleton::getInstance()->SetMounted(status);
+  ss->SetMounted(status);
   switch (status) {
     case DOKAN_SUCCESS:
 #ifdef DEBUG

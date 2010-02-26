@@ -212,7 +212,7 @@ class ClientController {
                     const DirType dir_type,
                     const std::string &msid);
   int RetrieveElement(const std::string &path);
-  int RemoveElement(std::string path);
+  int RemoveElement(const std::string &element_path);
   // If the database of the parent doesn't exist, it is decrypted.  GetDb also
   // sets db type and msid if it exists for parent dir or sets it to "" if not.
   int GetDb(const std::string &path_, DirType *dir_type, std::string *msid);
@@ -246,7 +246,6 @@ class ClientController {
   SEHandler seh_;
   static ClientController *single;
   std::list<InstantMessage> messages_;
-  file_system::FileSystem fsys_;
   std::map<std::string, boost::uint32_t> received_messages_;
   boost::mutex rec_msg_mutex_;
   boost::thread clear_messages_thread_;

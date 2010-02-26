@@ -80,7 +80,7 @@ void ExecReturnLoadPacketCallback(const LoadPacketFunctor &cb,
 LocalStoreManager::LocalStoreManager(
     boost::shared_ptr<ChunkStore> client_chunkstore)
         : db_(), vbph_(), mutex_(),
-          local_sm_dir_(file_system::FileSystem::LocalStoreManagerDir()),
+          local_sm_dir_(file_system::LocalStoreManagerDir().string()),
           client_chunkstore_(client_chunkstore),
           ss_(SessionSingleton::getInstance()) {}
 
@@ -162,7 +162,7 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
                                                          false));
   boost::uint64_t size(chunk_size);
   if (size < 2) {
-    if (chunk_type < 0 || chunk_path == fs::path("")) {
+    if (chunk_type < 0 || chunk_path.empty()) {
 #ifdef DEBUG
       printf("In LSM::DeleteChunk, didn't find chunk %s in local chunkstore - "
              "cant delete without valid size\n", HexSubstr(chunk_name).c_str());

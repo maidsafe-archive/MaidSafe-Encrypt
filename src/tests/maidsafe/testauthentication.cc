@@ -76,8 +76,8 @@ namespace maidsafe {
 
 class AuthenticationTest : public testing::Test {
  public:
-  AuthenticationTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                             "/maidsafe_TestAuth_" + base::RandomString(6)),
+  AuthenticationTest() : test_root_dir_(file_system::TempDir() /
+                             ("maidsafe_TestAuth_" + base::RandomString(6))),
                          ss_(),
                          sm_(),
                          client_chunkstore_(),
@@ -90,8 +90,8 @@ class AuthenticationTest : public testing::Test {
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
@@ -99,8 +99,8 @@ class AuthenticationTest : public testing::Test {
     username = "user1";
     pin = "1234";
     password = "password1";
-    client_chunkstore_ =
-        boost::shared_ptr<ChunkStore>(new ChunkStore(test_root_dir_, 0, 0));
+    client_chunkstore_ = boost::shared_ptr<ChunkStore>(
+        new ChunkStore(test_root_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
@@ -128,15 +128,15 @@ class AuthenticationTest : public testing::Test {
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
   }
 
-  std::string test_root_dir_;
+  fs::path test_root_dir_;
   SessionSingleton *ss_;
   boost::shared_ptr<LocalStoreManager> sm_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;

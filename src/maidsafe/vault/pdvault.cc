@@ -31,6 +31,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 
+#include "fs/filesystem.h"
 #include "maidsafe/kadops.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "protobuf/maidsafe_messages.pb.h"
@@ -116,6 +117,13 @@ void PDVault::Start(bool first_node) {
     success = (channel_manager_.Start() == 0);
   if (!first_node && success) {
     try {
+      if (!fs::exists(kad_config_file_)) {
+#ifdef DEBUG
+        printf("Can't find kadconfig at %s\n", kad_config_file_.c_str());
+#endif
+        kad_config_file_ = file_system::ApplicationDataDir().string() +
+            "/Test/.kadconfig";
+      }
       if (!fs::exists(kad_config_file_)) {
 #ifdef DEBUG
         printf("Can't find kadconfig at %s\n", kad_config_file_.c_str());
@@ -1228,18 +1236,18 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   // If we are listed as an account holder, don't send RPC
   for (std::vector<kad::Contact>::iterator it = data->contacts.begin();
        it != data->contacts.end(); ++it) {
-////    if ((*it).node_id() == our_details_.node_id()) {
-////      if (ah_.AddAccount(pmid, account_delta) == 0) {
-////        ++data->success_count;
-////#ifdef DEBUG
-//////      printf("Vault %s listed as an account holder for PMID %s\n",
-//////             HexSubstr((*it).node_id()).c_str(),
-//////             HexSubstr(pmid_).c_str());
-////#endif
-////      }
-////      data->contacts.erase(it);
-////      break;
-////    }
+    if ((*it).node_id() == knode_->node_id()) {
+//        if (ah_.AddAccount(pmid, account_delta) == 0) {
+//          ++data->success_count;
+//  #ifdef DEBUG
+//  //      printf("Vault %s listed as an account holder for PMID %s\n",
+//  //             HexSubstr((*it).node_id()).c_str(),
+//  //             HexSubstr(pmid_).c_str());
+//  #endif
+//        }
+//        data->contacts.erase(it);
+//        break;
+    }
   }
 
   // Create the request

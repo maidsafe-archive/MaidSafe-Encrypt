@@ -150,7 +150,7 @@ bool FindFile(const fs::path &root_dir_path,
               const std::string &non_hex_filename,
               fs::path *path_found) {
   if (!fs::exists(root_dir_path)) {
-    *path_found = fs::path("");
+    path_found->clear();
     return false;
   }
   std::string hex_filename = base::EncodeToHex(non_hex_filename);
@@ -165,7 +165,7 @@ bool FindFile(const fs::path &root_dir_path,
       return true;
     }
   }
-  *path_found = fs::path("");
+  path_found->clear();
   return false;
 }
 
@@ -283,8 +283,8 @@ namespace maidsafe_vault {
 class ChunkstoreTest : public testing::Test {
  protected:
   ChunkstoreTest()
-      : storedir(file_system::FileSystem::TempDir() + "/maidsafe_TestChunkstore"
-                 + base::RandomString(6), fs::native),
+      : storedir(file_system::TempDir() / ("maidsafe_TestChunkstore"
+                 + base::RandomString(6))),
         file_path("chunk.txt", fs::native),
         file_content("ABC"),
         hash_file_content(""),
