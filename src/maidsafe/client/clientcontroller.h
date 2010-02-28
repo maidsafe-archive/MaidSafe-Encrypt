@@ -150,7 +150,7 @@ class ClientController {
   OwnLocalVaultResult SetLocalVaultOwned(
       const boost::uint32_t &port,
       const boost::uint64_t &space,
-      const std::string &chunkstore_dir) const;
+      const std::string &vault_dir) const;
   bool IsLocalVaultOwned();
 
 

@@ -392,9 +392,14 @@ bool ClientController::CreateUser(const std::string &username,
 #endif
   }
 
+  // TODO(Fraser#5#): 2010-02-26 - Once GUI has got vault_dir defaulting to
+  // ApplicationDataDir, change this back to allow vcp.directory to be passed.
+//  OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
+//                                                vcp.space * 1024 * 1024,
+//                                                vcp.directory);
   OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
-                                                vcp.space * 1024 * 1024,
-                                                vcp.directory);
+      vcp.space * 1024 * 1024, (file_system::ApplicationDataDir() / ("Vault_" +
+      base::EncodeToHex(ss_->Id(PMID)).substr(0, 8))).string());
   if (olvr != OWNED_SUCCESS) {
 #ifdef DEBUG
     printf("CC::CreateUser +++ OwnLocalVaultResult: %d +++\n", olvr);
@@ -2023,11 +2028,11 @@ bool ClientController::VaultContactInfo() {
 OwnLocalVaultResult ClientController::SetLocalVaultOwned(
     const boost::uint32_t &port,
     const boost::uint64_t &space,
-    const std::string &chunkstore_dir) const {
+    const std::string &vault_dir) const {
   bool callback_arrived = false;
   OwnLocalVaultResult result;
   sm_->SetLocalVaultOwned(ss_->PrivateKey(PMID), ss_->PublicKey(PMID),
-      ss_->SignedPublicKey(PMID), port, chunkstore_dir, space,
+      ss_->SignedPublicKey(PMID), port, vault_dir, space,
       boost::bind(&ClientController::SetLocalVaultOwnedCallback,
       const_cast<ClientController*>(this), _1, _2, &callback_arrived, &result));
   while (!callback_arrived)

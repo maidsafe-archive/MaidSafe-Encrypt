@@ -45,15 +45,13 @@ void pdv_dummy_callback(const std::string&) {}
 PDVault::PDVault(const std::string &pmid_public,
                  const std::string &pmid_private,
                  const std::string &signed_pmid_public,
-                 const std::string &chunkstore_dir,
+                 const fs::path &vault_dir,
                  const boost::uint16_t &port,
                  bool port_forwarded,
                  bool use_upnp,
-                 const std::string &kad_config_file,
+                 const fs::path &read_only_kad_config_file,
                  const boost::uint64_t &available_space,
-                 const boost::uint64_t &used_space,
-                 transport::TransportHandler *transport_handler,
-                 const boost::int16_t &transport_id)
+                 const boost::uint64_t &used_space)
     : port_(port),
       global_udt_transport_(),
       transport_handler_(new transport::TransportHandler()),
@@ -65,7 +63,8 @@ PDVault::PDVault(const std::string &pmid_public,
                             use_upnp)),
       vault_rpcs_(new VaultRpcs(transport_handler_, &channel_manager_)),
       kad_ops_(new maidsafe::KadOps(knode_)),
-      vault_chunkstore_(chunkstore_dir, available_space, used_space),
+      vault_chunkstore_((vault_dir / "Chunkstore").string(), available_space,
+                        used_space),
       vault_service_(),
       vault_service_logic_(vault_rpcs_, knode_),
       kad_joined_(false),
@@ -78,7 +77,7 @@ PDVault::PDVault(const std::string &pmid_public,
       pmid_(),
       co_(),
       svc_channel_(),
-      kad_config_file_(kad_config_file),
+      kad_config_file_(vault_dir / ".kadconfig"),
       poh_(),
       thread_pool_(),
       prune_pending_ops_thread_(),
@@ -96,6 +95,15 @@ PDVault::PDVault(const std::string &pmid_public,
   vault_rpcs_->SetOwnId(pmid_);
   thread_pool_.setMaxThreadCount(1);
   poh_.SetPmid(pmid_);
+  try {
+    if (fs::exists(read_only_kad_config_file))
+      fs::copy_file(read_only_kad_config_file, kad_config_file_);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("In PDVault::PDVault() - %s\n", e.what());
+#endif
+  }
   printf("PDVault::PDVault() - %s\n", HexSubstr(pmid_).c_str());
 }
 
@@ -119,21 +127,21 @@ void PDVault::Start(bool first_node) {
     try {
       if (!fs::exists(kad_config_file_)) {
 #ifdef DEBUG
-        printf("Can't find kadconfig at %s\n", kad_config_file_.c_str());
+        printf("Can't find kadconfig at %s\n",
+               kad_config_file_.string().c_str());
 #endif
-        kad_config_file_ = file_system::ApplicationDataDir().string() +
-            "/Test/.kadconfig";
+        kad_config_file_ = file_system::ApplicationDataDir() / ".kadconfig";
       }
-      if (!fs::exists(kad_config_file_)) {
-#ifdef DEBUG
-        printf("Can't find kadconfig at %s\n", kad_config_file_.c_str());
-#endif
-        kad_config_file_ = ".kadconfig";
-      }
+//        if (!fs::exists(kad_config_file_)) {
+//  #ifdef DEBUG
+//          printf("Can't find kadconfig at %s\n", kad_config_file_.c_str());
+//  #endif
+//          kad_config_file_ = ".kadconfig";
+//        }
       if (!fs::exists(kad_config_file_)) {
 #ifdef DEBUG
         printf("Can't find kadconfig at %s - Failed to start vault.\n",
-               kad_config_file_.c_str());
+               kad_config_file_.string().c_str());
 #endif
         success = false;
       }
@@ -146,26 +154,24 @@ void PDVault::Start(bool first_node) {
     }
   }
   if (success) {
-                                                   printf("In PDVault::Start 1.\n");
     RegisterMaidService();
-                                                   printf("In PDVault::Start 2.\n");
     boost::mutex kad_join_mutex;
     if (first_node) {
       boost::asio::ip::address local_ip;
       base::get_local_address(&local_ip);
-      knode_->Join(pmid_, kad_config_file_, local_ip.to_string(),
+                                                   printf("In PDVault::Start joining kad (first node).\n");
+          printf("ID: %s\tIP: %s\tPort: %u\n", HexSubstr(pmid_).c_str(), HexSubstr(local_ip.to_string()).c_str(), transport_handler_->listening_port(transport_id_));
+      knode_->Join(pmid_, kad_config_file_.string(), local_ip.to_string(),
           transport_handler_->listening_port(transport_id_),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     } else {
                                                    printf("In PDVault::Start joining kad.\n");
-      knode_->Join(pmid_, kad_config_file_,
+      knode_->Join(pmid_, kad_config_file_.string(),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     }
     // Hash check all current chunks in chunkstore
-                                                   printf("In PDVault::Start hash checking.\n");
     std::list<std::string> failed_keys;
     if (0 != vault_chunkstore_.HashCheckAllChunks(true, &failed_keys)) {
-                                                   printf("In PDVault::Start hash checking FAILED.\n\n\n");
       return;
     }
     // Block until we've joined the Kademlia network.

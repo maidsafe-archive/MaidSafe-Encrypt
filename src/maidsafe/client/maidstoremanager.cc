@@ -2659,7 +2659,7 @@ void MaidsafeStoreManager::SetLocalVaultOwned(
     const std::string &pub_key,
     const std::string &signed_pub_key,
     const boost::uint32_t &port,
-    const std::string &chunkstore_dir,
+    const std::string &vault_dir,
     const boost::uint64_t &space,
     const SetLocalVaultOwnedFunctor &functor) {
   boost::shared_ptr<SetLocalVaultOwnedCallbackArgs>
@@ -2672,7 +2672,7 @@ void MaidsafeStoreManager::SetLocalVaultOwned(
   request.set_public_key(pub_key);
   request.set_signed_public_key(signed_pub_key);
   request.set_port(port);
-  request.set_chunkstore_dir(chunkstore_dir);
+  request.set_vault_dir(vault_dir);
   request.set_space(space);
   rpcprotocol::Channel channel(&channel_manager_, &transport_handler_,
                                udt_transport_.GetID(), "127.0.0.1", kLocalPort,

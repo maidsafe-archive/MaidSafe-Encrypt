@@ -40,14 +40,14 @@ class NotifierHandler {
   NotifierHandler() : private_key_(),
                       public_key_(),
                       signed_public_key_(),
-                      chunkstore_dir_(),
+                      vault_dir_(),
                       port_(-1),
                       available_space_(0),
                       received_rpc_(false) {}
   std::string private_key() const { return private_key_; }
   std::string public_key() const { return public_key_; }
   std::string signed_public_key() const { return signed_public_key_; }
-  std::string chunkstore_dir() const { return chunkstore_dir_; }
+  std::string vault_dir() const { return vault_dir_; }
   boost::int32_t port() const { return port_; }
   boost::uint64_t available_space() const { return available_space_; }
   bool received_rpc() const { return received_rpc_; }
@@ -55,7 +55,7 @@ class NotifierHandler {
     private_key_ = vconfig.pmid_private();
     public_key_ = vconfig.pmid_public();
     signed_public_key_ = vconfig.signed_pmid_public();
-    chunkstore_dir_ = vconfig.chunkstore_dir();
+    vault_dir_ = vconfig.vault_dir();
     port_ = vconfig.port();
     available_space_ = vconfig.available_space();
     received_rpc_ = true;
@@ -64,13 +64,13 @@ class NotifierHandler {
     private_key_.clear();
     public_key_.clear();
     signed_public_key_.clear();
-    chunkstore_dir_.clear();
+    vault_dir_.clear();
     port_ = -1;
     available_space_ = 0;
     received_rpc_ = false;
   }
  private:
-  std::string private_key_, public_key_, signed_public_key_, chunkstore_dir_;
+  std::string private_key_, public_key_, signed_public_key_, vault_dir_;
   boost::int32_t  port_;
   boost::uint64_t available_space_;
   bool received_rpc_;
@@ -207,7 +207,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectSetLocalVaultOwned) {
       keypair.private_key(), crypto::STRING_STRING));
   request.set_port(
       server_transport_handler_.listening_port(server_transport_.GetID()) + 1);
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(1000);
   maidsafe::SetLocalVaultOwnedResponse response;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<
@@ -227,7 +227,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectSetLocalVaultOwned) {
   ASSERT_EQ(keypair.private_key(), handler.private_key());
   ASSERT_EQ(keypair.public_key(), handler.public_key());
   ASSERT_EQ(singed_pub_key, handler.signed_public_key());
-  ASSERT_EQ(std::string("/ChunkStore"), handler.chunkstore_dir());
+  ASSERT_EQ(std::string("/ChunkStore"), handler.vault_dir());
   ASSERT_EQ(
     server_transport_handler_.listening_port(server_transport_.GetID()) + 1,
     handler.port());
@@ -260,7 +260,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectSetLocalVaultOwned) {
   ASSERT_EQ(keypair.private_key(), handler.private_key());
   ASSERT_EQ(keypair.public_key(), handler.public_key());
   ASSERT_EQ(singed_pub_key, handler.signed_public_key());
-  ASSERT_EQ(std::string("/ChunkStore"), handler.chunkstore_dir());
+  ASSERT_EQ(std::string("/ChunkStore"), handler.vault_dir());
   ASSERT_EQ(0, handler.port());
   ASSERT_EQ(boost::uint64_t(1000), handler.available_space());
 }
@@ -285,7 +285,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_signed_public_key("invalidsignedpublickey");
   request.set_port(
       server_transport_handler_.listening_port(server_transport_.GetID()) + 1);
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(1000);
   maidsafe::SetLocalVaultOwnedResponse response;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<
@@ -300,7 +300,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.signed_public_key());
   ASSERT_EQ(std::string(""), handler.private_key());
   ASSERT_EQ(std::string(""), handler.public_key());
-  ASSERT_EQ(std::string(""), handler.chunkstore_dir());
+  ASSERT_EQ(std::string(""), handler.vault_dir());
   ASSERT_EQ(-1, handler.port());
   ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   ctrl.Reset();
@@ -314,7 +314,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_signed_public_key(signed_public_key);
   request.set_port(
       server_transport_handler_.listening_port(server_transport_.GetID()) + 1);
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
@@ -328,7 +328,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.signed_public_key());
   ASSERT_EQ(std::string(""), handler.private_key());
   ASSERT_EQ(std::string(""), handler.public_key());
-  ASSERT_EQ(std::string(""), handler.chunkstore_dir());
+  ASSERT_EQ(std::string(""), handler.vault_dir());
   ASSERT_EQ(-1, handler.port());
   ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   ctrl.Reset();
@@ -342,7 +342,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_signed_public_key(signed_public_key);
   request.set_port(
       server_transport_handler_.listening_port(server_transport_.GetID()) + 1);
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
@@ -356,7 +356,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.signed_public_key());
   ASSERT_EQ(std::string(""), handler.private_key());
   ASSERT_EQ(std::string(""), handler.public_key());
-  ASSERT_EQ(std::string(""), handler.chunkstore_dir());
+  ASSERT_EQ(std::string(""), handler.vault_dir());
   ASSERT_EQ(-1, handler.port());
   ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   ctrl.Reset();
@@ -375,7 +375,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_signed_public_key(signed_public_key);
   request.set_port(
       server_transport_handler_.listening_port(server_transport_.GetID()) + 1);
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
@@ -389,7 +389,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.signed_public_key());
   ASSERT_EQ(std::string(""), handler.private_key());
   ASSERT_EQ(std::string(""), handler.public_key());
-  ASSERT_EQ(std::string(""), handler.chunkstore_dir());
+  ASSERT_EQ(std::string(""), handler.vault_dir());
   ASSERT_EQ(-1, handler.port());
   ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   ctrl.Reset();
@@ -403,7 +403,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_signed_public_key(signed_public_key);
   request.set_port(
       server_transport_handler_.listening_port(server_transport_.GetID()) + 1);
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done5 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
@@ -417,7 +417,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.signed_public_key());
   ASSERT_EQ(std::string(""), handler.private_key());
   ASSERT_EQ(std::string(""), handler.public_key());
-  ASSERT_EQ(std::string(""), handler.chunkstore_dir());
+  ASSERT_EQ(std::string(""), handler.vault_dir());
   ASSERT_EQ(-1, handler.port());
   ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   ctrl.Reset();
@@ -431,7 +431,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_signed_public_key(signed_public_key);
   request.set_port(
       server_transport_handler_.listening_port(server_transport_.GetID()) + 1);
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done6 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
@@ -445,7 +445,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.signed_public_key());
   ASSERT_EQ(std::string(""), handler.private_key());
   ASSERT_EQ(std::string(""), handler.public_key());
-  ASSERT_EQ(std::string(""), handler.chunkstore_dir());
+  ASSERT_EQ(std::string(""), handler.vault_dir());
   ASSERT_EQ(-1, handler.port());
   ASSERT_EQ(boost::uint64_t(0), handler.available_space());
 
@@ -461,7 +461,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_signed_public_key(signed_public_key);
   request.set_port(
       client_transport_handler_.listening_port(client_transport_.GetID()));
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done7 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
@@ -475,7 +475,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.signed_public_key());
   ASSERT_EQ(std::string(""), handler.private_key());
   ASSERT_EQ(std::string(""), handler.public_key());
-  ASSERT_EQ(std::string(""), handler.chunkstore_dir());
+  ASSERT_EQ(std::string(""), handler.vault_dir());
   ASSERT_EQ(-1, handler.port());
   ASSERT_EQ(boost::uint64_t(0), handler.available_space());
 
@@ -491,7 +491,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_signed_public_key(signed_public_key);
   request.set_port(
       server_transport_handler_.listening_port(server_transport_.GetID()) + 1);
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(0);
   google::protobuf::Closure *done8 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
@@ -505,7 +505,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.signed_public_key());
   ASSERT_EQ(std::string(""), handler.private_key());
   ASSERT_EQ(std::string(""), handler.public_key());
-  ASSERT_EQ(std::string(""), handler.chunkstore_dir());
+  ASSERT_EQ(std::string(""), handler.vault_dir());
   ASSERT_EQ(-1, handler.port());
   ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   // more space requested than available
@@ -523,7 +523,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_signed_public_key(signed_public_key);
   request.set_port(
       server_transport_handler_.listening_port(server_transport_.GetID()) + 1);
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(info.available + 10);
   google::protobuf::Closure *done9 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
@@ -537,7 +537,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.signed_public_key());
   ASSERT_EQ(std::string(""), handler.private_key());
   ASSERT_EQ(std::string(""), handler.public_key());
-  ASSERT_EQ(std::string(""), handler.chunkstore_dir());
+  ASSERT_EQ(std::string(""), handler.vault_dir());
   ASSERT_EQ(-1, handler.port());
   ASSERT_EQ(boost::uint64_t(0), handler.available_space());
 
@@ -553,7 +553,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_signed_public_key(signed_public_key);
   request.set_port(
       server_transport_handler_.listening_port(server_transport_.GetID()) + 1);
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done10 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
@@ -567,7 +567,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(std::string(""), handler.signed_public_key());
   ASSERT_EQ(std::string(""), handler.private_key());
   ASSERT_EQ(std::string(""), handler.public_key());
-  ASSERT_EQ(std::string(""), handler.chunkstore_dir());
+  ASSERT_EQ(std::string(""), handler.vault_dir());
   ASSERT_EQ(-1, handler.port());
   ASSERT_EQ(boost::uint64_t(0), handler.available_space());
 
@@ -583,7 +583,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   request.set_signed_public_key(signed_public_key);
   request.set_port(
       server_transport_handler_.listening_port(server_transport_.GetID()) + 1);
-  request.set_chunkstore_dir("/ChunkStore");
+  request.set_vault_dir("/ChunkStore");
   request.set_space(1000);
   google::protobuf::Closure *done11 = google::protobuf::NewCallback<
       OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
@@ -709,7 +709,7 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
   request.set_signed_public_key(cobj.AsymSign(keypair.public_key(), "",
       keypair.private_key(), crypto::STRING_STRING));
   request.set_port(0);
-  request.set_chunkstore_dir("ChunkStore");
+  request.set_vault_dir("ChunkStore");
   request.set_space(1000);
   maidsafe::SetLocalVaultOwnedResponse response;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<
