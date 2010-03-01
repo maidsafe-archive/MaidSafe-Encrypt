@@ -336,7 +336,7 @@ class RunPDVaults {
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
           signed_key, dir, this_port, false, false, kad_config_location,
-          1073741824, 0, transport_handler.get(), trans_id));
+          1073741824, 0));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
 
@@ -368,8 +368,9 @@ class RunPDVaults {
     HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hconsole, 10 | 0 << 4);
 #endif
-    printf("\n*-----------------------------------------------*\n");
-    printf("*            %2i local vaults running            *\n",
+    printf("\n");
+    printf("*-----------------------------------------------*\n");
+    printf("*            %2i local vaults running           *\n",
            no_of_vaults_);
     printf("*                                               *\n");
     printf("* No. Port   ID                                 *\n");

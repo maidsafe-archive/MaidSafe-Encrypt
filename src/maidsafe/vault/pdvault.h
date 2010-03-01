@@ -182,9 +182,7 @@ class PDVault {
           bool use_upnp,
           const std::string &kad_config_file,
           const boost::uint64_t &available_space,
-          const boost::uint64_t &vault_used_space,
-          transport::TransportHandler *transport_handler,
-          const boost::int16_t &transport_id);
+          const boost::uint64_t &vault_used_space);
   ~PDVault();
   void Start(bool first_node);
   int Stop();
@@ -315,7 +313,6 @@ class PDVault {
   crypto::Crypto co_;
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   std::string kad_config_file_;
-  PendingOperationsHandler poh_;
   QThreadPool thread_pool_;
   boost::thread prune_pending_ops_thread_, create_account_thread_;
 };

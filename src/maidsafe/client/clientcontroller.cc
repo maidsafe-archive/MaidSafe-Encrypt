@@ -393,16 +393,30 @@ bool ClientController::CreateUser(const std::string &username,
 #endif
   }
 
-  OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
-                                                vcp.space * 1024 * 1024,
-                                                vcp.directory);
-  if (olvr != OWNED_SUCCESS) {
+  // Create the account
+  result = sm_->CreateAccount(vcp.space * 1024 * 1024);
+  if (result != kSuccess) {
 #ifdef DEBUG
-    printf("CC::CreateUser +++ OwnLocalVaultResult: %d +++\n", olvr);
+    printf("In CC::CreateUser - Failed to create user account.\n");
 #endif
+    ss_->ResetSession();
     return false;
+  } else {
+#ifdef DEBUG
+    printf("In CC::CreateUser - sm_->CreateAccount DONE.\n");
+#endif
   }
-                                      boost::this_thread::sleep(boost::posix_time::seconds(60));
+
+//  OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
+//                                                vcp.space * 1024 * 1024,
+//                                                vcp.directory);
+//  if (olvr != OWNED_SUCCESS) {
+//#ifdef DEBUG
+//    printf("CC::CreateUser +++ OwnLocalVaultResult: %d +++\n", olvr);
+//#endif
+//    return false;
+//  }
+//                                      boost::this_thread::sleep(boost::posix_time::seconds(60));
 
   client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);
@@ -442,6 +456,10 @@ bool ClientController::CreateUser(const std::string &username,
     printf("In ClientController::CreateUser - Bombing out, no root_db_key.\n");
 #endif
     return false;
+  } else {
+#ifdef DEBUG
+    printf("In CC::CreateUser - seh_.GenerateUniqueKey DONE.\n");
+#endif
   }
   ss_->SetRootDbKey(root_db_key);
   fsys_.Mount();
@@ -469,13 +487,16 @@ bool ClientController::CreateUser(const std::string &username,
     if (kRootSubdir[i][1] == "") {
       seh_.GenerateUniqueKey(PRIVATE, "", 0, &key);
     } else {
-      key = kRootSubdir[i][1];
+      key = base::DecodeFromHex(kRootSubdir[i][1]);
     }
     res += dah->AddElement(base::TidyPath(kRootSubdir[i][0]),
                            ser_mdm, "", key, true);
     seh_.EncryptDb(base::TidyPath(kRootSubdir[i][0]),
                     PRIVATE, key, "", true, &dm);
   }
+#ifdef DEBUG
+  printf("In CC::CreateUser - My Files and Shares DONE.\n");
+#endif
 
   // set up share subdirs
   for (int i = 0; i < kSharesSubdirSize; ++i) {

@@ -370,14 +370,16 @@ int Authentication::SaveSession(const std::string &ser_da) {
     if (StorePacket(boost::any_cast<std::string>(result["name"]),
         boost::any_cast<std::string>(result["encRid"]), SMID, kOverwrite, "")
         != kSuccess) {
+      printf("AAAAAAAAAAAAAAAAAAAAAAAA\n");
       return kAuthenticationError;
     }
 
     params["rid"] = ss_->SmidRid();
     std::string tmidname(tmidPacket->PacketName(&params));
-    if (DeletePacket(tmidname, ss_->TmidContent(), TMID) != kSuccess)
+    if (DeletePacket(tmidname, ss_->TmidContent(), TMID) != kSuccess) {
+      printf("BBBBBBBBBBBBBBBBBBBBBBBB\n");
       return kAuthenticationError;
-
+    }
     ss_->SetSmidRid(ss_->MidRid());
   }
 
@@ -394,12 +396,14 @@ int Authentication::SaveSession(const std::string &ser_da) {
   if (StorePacket(boost::any_cast<std::string>(tmidresult["name"]),
       boost::any_cast<std::string>(tmidresult["data"]), TMID,
       kDoNothingReturnFailure, "") != kSuccess) {
+    printf("CCCCCCCCCCCCCCCCCCCCCCCCC\n");
     return kAuthenticationError;
   }
 
   if (StorePacket(boost::any_cast<std::string>(mid_result["name"]),
       boost::any_cast<std::string>(mid_result["encRid"]), MID, kOverwrite, "")
       != kSuccess) {
+    printf("DDDDDDDDDDDDDDDDDDDDDDDDD\n");
     return kAuthenticationError;
   }
 

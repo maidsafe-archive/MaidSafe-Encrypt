@@ -95,10 +95,10 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       store_packet_mutex_(),
       get_chunk_conditional_(),
       bprpcs_(new BufferPacketRpcsImpl(&transport_handler_, &channel_manager_)),
-      cbph_(bprpcs_, knode_) {
-  boost::int16_t trans_id;
-  transport_handler_.Register(&udt_transport_, &trans_id);
-  knode_->SetTransID(trans_id);
+      cbph_(bprpcs_, knode_),
+      trans_id_(0) {
+  transport_handler_.Register(&udt_transport_, &trans_id_);
+  knode_->SetTransID(trans_id_);
   knode_->SetAlternativeStore(client_chunkstore_.get());
 }
 
@@ -283,7 +283,9 @@ void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
   int valid = ValidateInputs(packet_name, system_packet_type, dir_type);
   if (valid != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::StorePacket, invalid input.  Error %i\n", valid);
+    printf("In MSM::StorePacket, invalid input.  Error %i, packetname(%s), "
+           "system_packet_type(%i), dir_type(%i)\n", valid,
+           HexSubstr(packet_name).c_str(), system_packet_type, dir_type);
 #endif
     cb(static_cast<ReturnCode>(valid));
     return;
@@ -2742,6 +2744,109 @@ bool MaidsafeStoreManager::NotDoneWithUploading() {
   } else {
     return true;
   }
+}
+
+int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string account_name = co.Hash(ss_->Id(PMID) + kAccount, "",
+                                     crypto::STRING_STRING, false);
+
+  // Find the account holders
+  boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
+  int n = kad_ops_->FindKNodes(account_name, &data->contacts);
+  if (n != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::CreateAccount, Kad lookup failed -- error %i\n", n);
+#endif
+    return kFindAccountHoldersError;
+  }
+  if (data->contacts.size() < kKadStoreThreshold) {
+#ifdef DEBUG
+    printf("In MSM::CreateAccount, Kad lookup failed to find %u nodes; "
+           "found %u node(s).\n", kKadStoreThreshold, data->contacts.size());
+#endif
+    return kFindAccountHoldersError;
+  }
+
+  // Create the request
+  AmendAccountRequest request;
+  request.set_amendment_type(AmendAccountRequest::kSpaceOffered);
+  SignedSize *mutable_signed_size = request.mutable_signed_size();
+  mutable_signed_size->set_data_size(space);
+  mutable_signed_size->set_pmid(ss_->Id(PMID));
+  mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(space),
+                                     "", ss_->PrivateKey(PMID),
+                                     crypto::STRING_STRING));
+  mutable_signed_size->set_public_key(ss_->PublicKey(PMID));
+  mutable_signed_size->set_public_key_signature(ss_->SignedPublicKey(PMID));
+  request.set_account_pmid(ss_->Id(PMID));
+  for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
+    AmendAccountData::AmendAccountDataHolder holder(
+        data->contacts.at(i).node_id());
+    data->data_holders.push_back(holder);
+  }
+
+  // lock the mutex here in case RPCs return before we wait on the condition
+  boost::mutex::scoped_lock lock(data->mutex);
+
+  // Send the requests
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &MaidsafeStoreManager::AmendAccountCallback, i, data);
+    client_rpcs_->AmendAccount(data->contacts.at(i), false, trans_id_,
+                               &request,
+                               &data->data_holders.at(i).response,
+                               data->data_holders.at(i).controller.get(),
+                               callback);
+  }
+
+  // wait for the RPCs to return or timeout, or enough positive responses
+  while (data->returned_count < data->contacts.size() &&
+         data->success_count < kKadStoreThreshold) {
+    data->condition.wait(lock);
+  }
+
+  if (data->success_count < kKadStoreThreshold) {
+#ifdef DEBUG
+    printf("In MSM::CreateAccount, not enough positive responses "
+           "received (%d of %d).\n", data->success_count, kKadStoreThreshold);
+#endif
+    return maidsafe::kRequestFailedConsensus;
+  }
+
+  return kSuccess;
+}
+
+void MaidsafeStoreManager::AmendAccountCallback(size_t index,
+    boost::shared_ptr<AmendAccountData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  ++data->returned_count;
+  AmendAccountData::AmendAccountDataHolder &holder =
+      data->data_holders.at(index);
+  if (!holder.response.IsInitialized()) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccountCallback, response %u is uninitialised.\n",
+           index);
+#endif
+  } else if (holder.response.result() != kAck) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccountCallback, response %u has result %i.\n",
+           index, holder.response.result());
+#endif
+  } else if (holder.response.pmid() != holder.node_id) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccountCallback, response %u from %s has PMID "
+           "%s.\n", index, HexSubstr(holder.node_id).c_str(),
+           HexSubstr(holder.response.pmid()).c_str());
+#endif
+    // TODO(Fraser#5#): Send alert to holder.node_id's A/C holders
+  } else {
+    // everything OK
+    ++data->success_count;
+  }
+  data->condition.notify_one();
 }
 
 }  // namespace maidsafe

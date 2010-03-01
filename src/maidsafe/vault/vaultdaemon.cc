@@ -114,7 +114,7 @@ bool VaultDaemon::TakeOwnership() {
     } else if (return_code == kVaultDaemonWaitingPwnage) {
       boost::this_thread::sleep(boost::posix_time::seconds(1.0));
     } else {
-                                              printf("return_code = %i\n", return_code);
+                                                printf("return_code = %i\n", return_code);
       StopRegistrationService();
       return false;
     }
@@ -135,7 +135,8 @@ int VaultDaemon::SetPaths() {
     app_path = fs::path("/var/cache/maidsafe/", fs::native);
 #elif defined(MAIDSAFE_WIN32)
     TCHAR szpth[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szpth))) {
+    if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0,
+        szpth))) {
       std::ostringstream stm;
       const std::ctype<char> &ctfacet =
           std::use_facet< std::ctype<char> >(stm.getloc());
@@ -298,8 +299,7 @@ bool VaultDaemon::StartNotOwnedVault() {
   boost::uint64_t space(1024 * 1024 * 1024);  // 1GB
   pdvault_.reset(new PDVault(keys.public_key(), keys.private_key(),
       signed_pubkey, chunkstore_dir.string(), 0, false, false,
-      kad_config_file_.string(), space, 0, &transport_handler_,
-      global_udt_transport_.GetID()));
+      kad_config_file_.string(), space, 0));
   pdvault_->Start(false);
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed to start a not owned vault");
@@ -328,8 +328,7 @@ bool VaultDaemon::StartOwnedVault() {
     return false;
   pdvault_.reset(new PDVault(pmid_public_, pmid_private_, signed_pmid_public_,
       chunkstore_dir_, port_, false, false, kad_config_file_.string(),
-      vault_available_space_, used_space_, &transport_handler_,
-      global_udt_transport_.GetID()));
+      vault_available_space_, used_space_));
   pdvault_->Start(false);
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed To Start Owned Vault with info in config file");
@@ -338,4 +337,5 @@ bool VaultDaemon::StartOwnedVault() {
   registration_service_->set_status(maidsafe::OWNED);
   return true;
 }
+
 }  // namespace maidsafe_vault
