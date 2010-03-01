@@ -85,7 +85,6 @@ ClientController::ClientController() : client_chunkstore_(),
                                        db_enc_queue_(),
                                        seh_(),
                                        messages_(),
-                                       fsys_(),
                                        received_messages_(),
                                        rec_msg_mutex_(),
                                        clear_messages_thread_(),
@@ -112,7 +111,7 @@ void ClientController::Destroy() {
 int ClientController::Init() {
   if (initialised_)
     return 0;
-  fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
+  fs::path client_path(file_system::ApplicationDataDir());
   try {
     // If main app dir isn't already there, create it
     if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
@@ -407,16 +406,20 @@ bool ClientController::CreateUser(const std::string &username,
 #endif
   }
 
+  // TODO(Fraser#5#): 2010-02-26 - Once GUI has got vault_dir defaulting to
+  // ApplicationDataDir, change this back to allow vcp.directory to be passed.
 //  OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
 //                                                vcp.space * 1024 * 1024,
 //                                                vcp.directory);
+//  OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
+//    vcp.space * 1024 * 1024, (file_system::ApplicationDataDir() / ("Vault_" +
+//    base::EncodeToHex(ss_->Id(PMID)).substr(0, 8))).string());
 //  if (olvr != OWNED_SUCCESS) {
 //#ifdef DEBUG
 //    printf("CC::CreateUser +++ OwnLocalVaultResult: %d +++\n", olvr);
 //#endif
 //    return false;
 //  }
-//                                      boost::this_thread::sleep(boost::posix_time::seconds(60));
 
   client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);
@@ -462,8 +465,14 @@ bool ClientController::CreateUser(const std::string &username,
 #endif
   }
   ss_->SetRootDbKey(root_db_key);
-  fsys_.Mount();
-  fsys_.FuseMountPoint();
+  if (file_system::Mount(ss_->SessionName(), ss_->DefConLevel()) != kSuccess) {
+#ifdef DEBUG
+    printf("In CC::CreateUser - cannot mount filesystem.\n");
+#endif
+    return false;
+  }
+  // Create the mount point directory
+  res += file_system::FuseMountPoint(ss_->SessionName());
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   DataAtlas da;
 
@@ -576,7 +585,13 @@ bool ClientController::ValidateUser(const std::string &password) {
 
   ss_->SetConnectionStatus(0);
   ss_->SetSessionName(false);
-  fsys_.Mount();
+  if (file_system::Mount(ss_->SessionName(), ss_->DefConLevel()) != kSuccess) {
+#ifdef DEBUG
+    printf("ClientController::ValidateUser - Cannot mount filesystem.\n");
+#endif
+    ss_->ResetSession();
+    return false;
+  }
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   if (ParseDa() != 0) {
 #ifdef DEBUG
@@ -595,7 +610,7 @@ bool ClientController::ValidateUser(const std::string &password) {
   }
 
   // Create the mount point directory
-  fsys_.FuseMountPoint();
+  file_system::FuseMountPoint(ss_->SessionName());
 
   // Do BP operations if need be
   if (ss_->PublicUsername() == "") {
@@ -686,7 +701,7 @@ bool ClientController::Logout() {
   printf("ClientController::Logout - After threads done.\n");
 #endif
 
-  fsys_.UnMount();
+  file_system::UnMount(ss_->SessionName(), ss_->DefConLevel());
   ss_->ResetSession();
   messages_.clear();
   client_chunkstore_->Clear();
@@ -730,14 +745,13 @@ bool ClientController::LeaveMaidsafeNetwork() {
   }
   std::list<KeyAtlasRow> keys;
   int result;
-  std::string dir = fsys_.MaidsafeDir();
   {
     ss_->GetKeys(&keys);
     result = auth_.RemoveMe(keys);
   }
   if (result == kSuccess) {
     try {
-      fs::remove_all(dir);
+      fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
@@ -2034,11 +2048,11 @@ bool ClientController::VaultContactInfo() {
 OwnLocalVaultResult ClientController::SetLocalVaultOwned(
     const boost::uint32_t &port,
     const boost::uint64_t &space,
-    const std::string &chunkstore_dir) const {
+    const std::string &vault_dir) const {
   bool callback_arrived = false;
   OwnLocalVaultResult result;
   sm_->SetLocalVaultOwned(ss_->PrivateKey(PMID), ss_->PublicKey(PMID),
-      ss_->SignedPublicKey(PMID), port, chunkstore_dir, space,
+      ss_->SignedPublicKey(PMID), port, vault_dir, space,
       boost::bind(&ClientController::SetLocalVaultOwnedCallback,
       const_cast<ClientController*>(this), _1, _2, &callback_arrived, &result));
   while (!callback_arrived)
@@ -2116,7 +2130,7 @@ int ClientController::RetrieveElement(const std::string &path) {
   return result;
 }
 
-int ClientController::RemoveElement(std::string path) {
+int ClientController::RemoveElement(const std::string &element_path) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::RemoveElement - Not initialised.\n");
@@ -2124,10 +2138,12 @@ int ClientController::RemoveElement(std::string path) {
     return kClientControllerNotInitialised;
   }
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
-  if (dah->RemoveElement(path))
+  if (dah->RemoveElement(element_path))
     return -1;
-  if (fs::exists(fsys_.FullMSPathFromRelPath(path)))
-    fs::remove_all(fsys_.FullMSPathFromRelPath(path));
+  fs::path full_path =
+      file_system::FullMSPathFromRelPath(element_path, ss_->SessionName());
+  if (fs::exists(full_path))
+    fs::remove_all(full_path);
   return 0;
 }
 
@@ -2186,7 +2202,7 @@ int ClientController::PathDistinction(const std::string &path,
         else
           share_name += share.at(nn);
       }
-      fs::path newDb(fsys_.MaidsafeHomeDir());
+      fs::path newDb(file_system::MaidsafeHomeDir(ss_->SessionName()));
       newDb /= ".shares";
       std::string dbNameNew(newDb.string());
 

@@ -75,26 +75,32 @@ namespace fs = boost::filesystem;
 
 class DataAtlasHandlerTest : public testing::Test {
  protected:
-  DataAtlasHandlerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                               "/maidsafe_TestDAH_" + base::RandomString(6)),
+  DataAtlasHandlerTest() : test_root_dir_(file_system::TempDir() /
+                               ("maidsafe_TestDAH_" + base::RandomString(6))),
                            sm(),
                            cb() { }
   ~DataAtlasHandlerTest() { }
   void SetUp() {
+    SessionSingleton::getInstance()->ResetSession();
+    SessionSingleton::getInstance()->SetUsername("user1");
+    SessionSingleton::getInstance()->SetPin("1234");
+    SessionSingleton::getInstance()->SetPassword("password1");
+    SessionSingleton::getInstance()->SetSessionName(false);
+    SessionSingleton::getInstance()->SetRootDbKey("whatever");
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
-      file_system::FileSystem fsys;
-      if (fs::exists(fsys.MaidsafeDir()))
-        fs::remove_all(fsys.MaidsafeDir());
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
+      std::string session_name = SessionSingleton::getInstance()->SessionName();
+      if (fs::exists(file_system::MaidsafeDir(session_name)))
+        fs::remove_all(file_system::MaidsafeDir(session_name));
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
     boost::shared_ptr<ChunkStore>
-        client_chunkstore_(new ChunkStore(test_root_dir_, 0, 0));
+        client_chunkstore_(new ChunkStore(test_root_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
@@ -113,12 +119,6 @@ class DataAtlasHandlerTest : public testing::Test {
       FAIL();
       return;
     }
-    SessionSingleton::getInstance()->ResetSession();
-    SessionSingleton::getInstance()->SetUsername("user1");
-    SessionSingleton::getInstance()->SetPin("1234");
-    SessionSingleton::getInstance()->SetPassword("password1");
-    SessionSingleton::getInstance()->SetSessionName(false);
-    SessionSingleton::getInstance()->SetRootDbKey("whatever");
     crypto::RsaKeyPair rsakp;
     rsakp.GenerateKeys(kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(PMID, "PMID", rsakp.private_key(),
@@ -129,8 +129,8 @@ class DataAtlasHandlerTest : public testing::Test {
     rsakp.GenerateKeys(kRsaKeySize);
     SessionSingleton::getInstance()->AddKey(MPID, "Me", rsakp.private_key(),
         rsakp.public_key(), "");
-    file_system::FileSystem fsys;
-    fsys.Mount();
+    ASSERT_EQ(0, file_system::Mount(SessionSingleton::getInstance()->
+        SessionName(), SessionSingleton::getInstance()->DefConLevel()));
     boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
     boost::shared_ptr<SEHandler> seh(new SEHandler());
     seh->Init(sm, client_chunkstore_);
@@ -155,7 +155,8 @@ class DataAtlasHandlerTest : public testing::Test {
         seh->GenerateUniqueKey(PRIVATE, "", 0, &key);
       else
         key = kRootSubdir[i][1];
-      fs::create_directories(fsys.MaidsafeHomeDir() + kRootSubdir[i][0]);
+      fs::create_directories(file_system::MaidsafeHomeDir(
+          SessionSingleton::getInstance()->SessionName()) / kRootSubdir[i][0]);
       dah->AddElement(base::TidyPath(kRootSubdir[i][0]), ser_mdm, "", key,
                        true);
     }
@@ -165,17 +166,17 @@ class DataAtlasHandlerTest : public testing::Test {
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
-      file_system::FileSystem fsys;
-      if (fs::exists(fsys.MaidsafeDir()))
-        fs::remove_all(fsys.MaidsafeDir());
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
+      std::string session_name = SessionSingleton::getInstance()->SessionName();
+      if (fs::exists(file_system::MaidsafeDir(session_name)))
+        fs::remove_all(file_system::MaidsafeDir(session_name));
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
   }
-  std::string test_root_dir_;
+  fs::path test_root_dir_;
   boost::shared_ptr<LocalStoreManager> sm;
   test_dah::FakeCallback cb;
  private:

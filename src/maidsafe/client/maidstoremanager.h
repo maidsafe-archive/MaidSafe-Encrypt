@@ -297,7 +297,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           const std::string &pub_key,
                           const std::string &signed_pub_key,
                           const boost::uint32_t &port,
-                          const std::string &chunkstore_dir,
+                          const std::string &vault_dir,
                           const boost::uint64_t &space,
                           const SetLocalVaultOwnedFunctor &functor);
   void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);

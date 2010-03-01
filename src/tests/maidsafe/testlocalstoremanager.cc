@@ -99,9 +99,9 @@ void PacketOpCallback(const int &delete_result,
 
 class LocalStoreManagerTest : public testing::Test {
  public:
-  LocalStoreManagerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                                           "/maidsafe_TestStoreManager_" +
-                                            base::RandomString(6)),
+  LocalStoreManagerTest() : test_root_dir_(file_system::TempDir() /
+                                           ("maidsafe_TestStoreManager_" +
+                                            base::RandomString(6))),
                             client_chunkstore_(),
                             sm_(),
                             co_(),
@@ -113,8 +113,8 @@ class LocalStoreManagerTest : public testing::Test {
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
     }
     catch(const std::exception &e) {
       printf("%s\n", e.what());
@@ -127,15 +127,15 @@ class LocalStoreManagerTest : public testing::Test {
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
     }
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
     mutex_ = new boost::mutex();
     client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
-         (new maidsafe::ChunkStore(test_root_dir_, 0, 0));
+         (new maidsafe::ChunkStore(test_root_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
@@ -185,8 +185,8 @@ class LocalStoreManagerTest : public testing::Test {
       try {
         if (fs::exists(test_root_dir_))
           fs::remove_all(test_root_dir_);
-        if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-          fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+        if (fs::exists(file_system::LocalStoreManagerDir()))
+          fs::remove_all(file_system::LocalStoreManagerDir());
       }
       catch(const std::exception &e) {
         printf("%s\n", e.what());
@@ -194,7 +194,7 @@ class LocalStoreManagerTest : public testing::Test {
     }
   }
 
-  std::string test_root_dir_;
+  fs::path test_root_dir_;
   boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore_;
   maidsafe::LocalStoreManager *sm_;
   crypto::Crypto co_;
@@ -340,8 +340,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
   std::string chunk_name = co_.Hash(chunk_content, "",
                            crypto::STRING_STRING, false);
   std::string hex_chunk_name = base::EncodeToHex(chunk_name);
-  fs::path chunk_path(test_root_dir_);
-  chunk_path /= hex_chunk_name;
+  fs::path chunk_path(test_root_dir_ / hex_chunk_name);
   fs::ofstream ofs;
   ofs.open(chunk_path.string().c_str());
   ofs << chunk_content;

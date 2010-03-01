@@ -77,9 +77,8 @@ class TestCallback {
 class VaultServicesTest : public testing::Test {
   protected:
     VaultServicesTest()
-        : chunkstore_dir_(file_system::FileSystem::TempDir() +
-              "/maidsafe_TestVaultServices_" + base::RandomString(6),
-              fs::native),
+        : chunkstore_dir_(file_system::TempDir() /
+              ("maidsafe_TestVaultServices_" + base::RandomString(6))),
           vault_pmid_(),
           vault_public_key_(),
           vault_private_key_(),

@@ -296,14 +296,14 @@ fs::path ChunkStore::GetChunkPath(const std::string &key,
     printf("In ChunkStore::GetChunkPath, %s has size %u, not %u\n",
            HexSubstr(key).c_str(), key.size(), kKeySize);
 #endif
-    return fs::path("");
+    return "";
   }
   path_map_iterator path_map_itr = path_map_.find(type);
   if (path_map_itr == path_map_.end()) {
 #ifdef DEBUG
     printf("In ChunkStore::GetChunkPath, %i is not a valid type\n", type);
 #endif
-    return fs::path("");
+    return "";
   }
   std::string hex_key = base::EncodeToHex(key);
   std::string dir_one, dir_two, dir_three;
@@ -317,7 +317,7 @@ fs::path ChunkStore::GetChunkPath(const std::string &key,
           fs::create_directories(chunk_path);
         chunk_path /= hex_key;
       } else {
-        chunk_path = fs::path("");
+        chunk_path.clear();
       }
     } else {
       chunk_path /= hex_key;
@@ -327,7 +327,7 @@ fs::path ChunkStore::GetChunkPath(const std::string &key,
 #ifdef DEBUG
     printf("%s\n", e.what());
 #endif
-    chunk_path = fs::path("");
+    chunk_path.clear();
   }
 #ifdef DEBUG
 //  printf("Chunk path: %s\n", chunk_path.string().c_str());
@@ -608,7 +608,7 @@ int ChunkStore::HashCheckChunk(const std::string &key) {
   if (type == kInvalidChunkType)
     return kInvalidChunkType;
   fs::path chunk_path(GetChunkPath(key, type, false));
-  if (chunk_path == fs::path(""))
+  if (chunk_path.empty())
     return kChunkstoreError;
   return HashCheckChunk(key, chunk_path);
 }
@@ -655,7 +655,7 @@ int ChunkStore::ChangeChunkType(const std::string &key, ChunkType type) {
     return kSuccess;
   fs::path current_chunk_path(GetChunkPath(key, current_type, false));
   fs::path new_chunk_path(GetChunkPath(key, type, true));
-  if (new_chunk_path == fs::path("")) {
+  if (new_chunk_path.empty()) {
 #ifdef DEBUG
     printf("In ChunkStore::ChangeChunkType, %i is not a valid type\n", type);
 #endif

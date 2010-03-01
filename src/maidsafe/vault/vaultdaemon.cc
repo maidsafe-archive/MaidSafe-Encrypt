@@ -40,11 +40,11 @@ VaultDaemon::VaultDaemon(const int &port, const std::string &vault_dir)
       is_owned_(false),
       config_file_(),
       kad_config_file_(),
-      vault_path_(vault_dir, fs::native),
+      app_path_(file_system::ApplicationDataDir()),
+      vault_path_(vault_dir),
       pmid_public_(),
       pmid_private_(),
       signed_pmid_public_(),
-      chunkstore_dir_(),
       port_(port),
       vault_available_space_(0),
       used_space_(0),
@@ -114,7 +114,6 @@ bool VaultDaemon::TakeOwnership() {
     } else if (return_code == kVaultDaemonWaitingPwnage) {
       boost::this_thread::sleep(boost::posix_time::seconds(1.0));
     } else {
-                                                printf("return_code = %i\n", return_code);
       StopRegistrationService();
       return false;
     }
@@ -128,28 +127,8 @@ bool VaultDaemon::TakeOwnership() {
 }
 
 int VaultDaemon::SetPaths() {
-  // TODO(Fraser#5#): 2009-04-24 - This is repeated code - move to base?
-  if (vault_path_ == fs::path("")) {
-    fs::path app_path("");
-#if defined(MAIDSAFE_POSIX)
-    app_path = fs::path("/var/cache/maidsafe/", fs::native);
-#elif defined(MAIDSAFE_WIN32)
-    TCHAR szpth[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0,
-        szpth))) {
-      std::ostringstream stm;
-      const std::ctype<char> &ctfacet =
-          std::use_facet< std::ctype<char> >(stm.getloc());
-      for (size_t i = 0; i < wcslen(szpth); ++i)
-        stm << ctfacet.narrow(szpth[i], 0);
-      app_path = fs::path(stm.str(), fs::native);
-      app_path /= "maidsafe";
-    }
-#elif defined(MAIDSAFE_APPLE)
-    app_path = fs::path("/Library/maidsafe/", fs::native);
-#endif
-    vault_path_ = app_path;
-    vault_path_ /= "vault";
+  if (vault_path_.empty()) {
+    vault_path_ = app_path_;
   }
   try {
     if (!fs::exists(vault_path_))
@@ -160,10 +139,8 @@ int VaultDaemon::SetPaths() {
     WriteToLog(ex_.what());
     return kVaultDaemonException;
   }
-  config_file_ = vault_path_;
-  config_file_ /= ".config";
-  kad_config_file_ = vault_path_;
-  kad_config_file_ /= ".kadconfig";
+  config_file_ = app_path_ / ".config";
+  kad_config_file_ = app_path_ / ".kadconfig";
   return kSuccess;
 }
 
@@ -270,7 +247,7 @@ int VaultDaemon::ReadConfigInfo() {
 #endif
     return kVaultDaemonConfigError;
   }
-  chunkstore_dir_ = vault_config.chunkstore_dir();
+  vault_path_ = vault_config.vault_dir();
   vault_available_space_ = vault_config.available_space();
   if (vault_config.has_used_space())
     used_space_ = vault_config.used_space();
@@ -284,7 +261,7 @@ int VaultDaemon::ReadConfigInfo() {
   else
     port_ = 0;
   WriteToLog("Found config file at " + config_file_.string());
-  WriteToLog("Chunkstore dir set to " + chunkstore_dir_);
+  WriteToLog("Vault dir set to " + vault_path_.string());
   return kSuccess;
 }
 
@@ -294,12 +271,12 @@ bool VaultDaemon::StartNotOwnedVault() {
   keys.GenerateKeys(kRsaKeySize);
   std::string signed_pubkey = co.AsymSign(keys.public_key(), "",
       keys.private_key(), crypto::STRING_STRING);
-  fs::path chunkstore_dir(vault_path_);
-  chunkstore_dir /= "Chunkstore";
+  std::string temp_pmid = co.Hash(keys.public_key() + signed_pubkey, "",
+      crypto::STRING_STRING, true);
+  vault_path_ = app_path_ / ("Vault_" + temp_pmid.substr(0, 8));
   boost::uint64_t space(1024 * 1024 * 1024);  // 1GB
   pdvault_.reset(new PDVault(keys.public_key(), keys.private_key(),
-      signed_pubkey, chunkstore_dir.string(), 0, false, false,
-      kad_config_file_.string(), space, 0));
+      signed_pubkey, vault_path_, 0, false, false, kad_config_file_, space, 0));
   pdvault_->Start(false);
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed to start a not owned vault");
@@ -315,10 +292,17 @@ bool VaultDaemon::StartNotOwnedVault() {
 
 int VaultDaemon::StopNotOwnedVault() {
   int result = pdvault_->Stop();
+  // TODO(Fraser#5#): 2010-02-26 - Should the old chunkstore be transferred?
   if (result == kSuccess) {
-    fs::path chunkstore_dir(vault_path_);
-    chunkstore_dir /= "Chunkstore";
-    fs::remove_all(chunkstore_dir);
+    try {
+      fs::remove_all(vault_path_);
+    }
+    catch(const std::exception &e) {
+#ifdef DEUBG
+      printf("In VaultDaemon::StopNotOwnedVault, %s\n", e.what());
+#endif
+      result = kVaultDaemonException;
+    }
   }
   return result;
 }
@@ -327,7 +311,7 @@ bool VaultDaemon::StartOwnedVault() {
   if (pdvault_.get() != NULL)
     return false;
   pdvault_.reset(new PDVault(pmid_public_, pmid_private_, signed_pmid_public_,
-      chunkstore_dir_, port_, false, false, kad_config_file_.string(),
+      vault_path_, port_, false, false, kad_config_file_,
       vault_available_space_, used_space_));
   pdvault_->Start(false);
   if (pdvault_->vault_status() == kVaultStopped) {

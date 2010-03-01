@@ -45,6 +45,7 @@
 #include <cstdlib>
 #include <map>
 
+#include "fs/filesystem.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "protobuf/datamaps.pb.h"
 
@@ -259,8 +260,8 @@ int FSLinux::ms_open(const char *path, struct fuse_file_info *fi) {
   printf("ms_open path(%s): %i.\n", path, fi->flags);
 #endif
   std::string rel_path_(path);
-  file_system::FileSystem fsys_;
-  path_ = fsys_.MaidsafeHomeDir() + path_;
+  path_ = (file_system::MaidsafeHomeDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName())/path_).string();
 
   fs::path some_path(path_);
   if (!fs::exists(some_path.parent_path()))
@@ -283,8 +284,8 @@ int FSLinux::ms_read(const char *path, char *data, size_t size, off_t offset,
                      struct fuse_file_info *fi) {
   std::string path_(path);
   printf("ms_read: %s\tfile handle: %llu", path, fi->fh);
-  file_system::FileSystem fsys_;
-  path_ = fsys_.MaidsafeHomeDir() + path_;
+  path_ = (file_system::MaidsafeHomeDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName())/path_).string();
 
   int res;
 
@@ -300,8 +301,8 @@ int FSLinux::ms_release(const char *path, struct fuse_file_info *fi) {
   printf("ms_release: %s -- %d -- ", path, fi->flags);
   printf("file handle %llu\n", fi->fh);
   std::string path_(path);
-  file_system::FileSystem fsys_;
-  path_ = fsys_.MaidsafeHomeDir() + path_;
+  path_ = (file_system::MaidsafeHomeDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName())/path_).string();
   std::string original_path_(path);
   close(fi->fh);
 
@@ -326,8 +327,8 @@ int FSLinux::ms_release(const char *path, struct fuse_file_info *fi) {
 int FSLinux::ms_write(const char *path, const char *data, size_t size,
                       off_t offset, struct fuse_file_info *fi) {
   std::string path_(path);
-  file_system::FileSystem fsys_;
-  path_ = fsys_.MaidsafeHomeDir() + path_;
+  path_ = (file_system::MaidsafeHomeDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName())/path_).string();
   printf("-------------------------------------\n");
   printf("-------------------------------------\n");
   printf("-------------------------------------\n");
@@ -473,9 +474,8 @@ int FSLinux::ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
   }
   path_ = "";
 
-  file_system::FileSystem fsys_;
-  if (fs::exists(fsys_.HomeDir()+"/.thumbnails/fail/"))
-    fs::remove_all(fsys_.HomeDir()+"/.thumbnails/fail/");
+  if (fs::exists(file_system::HomeDir() / ".thumbnails/fail/"))
+    fs::remove_all(file_system::HomeDir() / ".thumbnails/fail/");
 
   return 0;
 }
@@ -491,8 +491,8 @@ int FSLinux::ms_mkdir(const char *path, mode_t mode) {
       base::TidyPath(path1_), gui_private_share_))
     return -13;
 
-  file_system::FileSystem fsys_;
-  path_ = fsys_.MaidsafeHomeDir() + path_;
+  path_ = (file_system::MaidsafeHomeDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName())/path_).string();
   fs::path full_path_(path_);
   if (!fs::exists(full_path_))
     fs::create_directories(full_path_);
@@ -524,15 +524,15 @@ int FSLinux::ms_rename(const char *o_path, const char *n_path) {
   if (maidsafe::ClientController::getInstance()->rename(base::TidyPath(
     o_path_), base::TidyPath(n_path_)) != 0)
     return -errno;
-  file_system::FileSystem fsys_;
-  if (fs::exists(fsys_.MaidsafeHomeDir()+n_path_))
-    fs::remove(fsys_.MaidsafeHomeDir()+n_path_);
-  if (fs::exists(fsys_.MaidsafeHomeDir()+o_path_)) {
-    fs::rename((fsys_.MaidsafeHomeDir()+o_path_),
-      (fsys_.MaidsafeHomeDir()+n_path_));
+  std::string s_name = maidsafe::SessionSingleton::getInstance()->SessionName();
+  if (fs::exists(file_system::MaidsafeHomeDir(s_name) / n_path_))
+    fs::remove(file_system::MaidsafeHomeDir(s_name) / n_path_);
+  if (fs::exists(file_system::MaidsafeHomeDir(s_name) / o_path_)) {
+    fs::rename((file_system::MaidsafeHomeDir(s_name) / o_path_),
+      (file_system::MaidsafeHomeDir(s_name) / n_path_));
   }
-  o_path_ = "";
-  n_path_ = "";
+  o_path_.clear();
+  n_path_.clear();
   return 0;
 }
 
@@ -588,8 +588,8 @@ int FSLinux::ms_create(const char *path,
       base::TidyPath(path1_), gui_private_share_))
     return -13;
 
-  file_system::FileSystem fsys_;
-  path_ = fsys_.MaidsafeHomeDir() + path_;
+  path_ = (file_system::MaidsafeHomeDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName())/path_).string();
   fs::path full_path_(path_);
   fs::path branch_path_ = full_path_.parent_path();
   if (!fs::exists(branch_path_))
@@ -656,12 +656,12 @@ int FSLinux::ms_unlink(const char *path) {
   if (maidsafe::ClientController::getInstance()->unlink(base::TidyPath(
       path_)) != 0)
     return -errno;
-  file_system::FileSystem fsys_;
-  path_ = fsys_.MaidsafeHomeDir() + path_;
+  path_ = (file_system::MaidsafeHomeDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName())/path_).string();
   if (fs::exists(path_))
     fs::remove(path_);
   path_ = "";
   return 0;
 }
 
-}  // namespace
+}  // namespace fs_l_fuse

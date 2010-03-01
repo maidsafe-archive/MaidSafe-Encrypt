@@ -1842,13 +1842,13 @@ void RegistrationService::SetLocalVaultOwned(
   }
 
   // checking available space in disk
-  boost::filesystem::path chunkdir(request->chunkstore_dir());
+  boost::filesystem::path vaultdir(request->vault_dir());
   boost::filesystem::space_info info;
-  if ("/" != chunkdir.root_directory())
+  if ("/" != vaultdir.root_directory())
     info = boost::filesystem::space(boost::filesystem::path("/"));
   else
-    info = boost::filesystem::space(boost::filesystem::path(chunkdir.root_name()
-        + chunkdir.root_directory()));
+    info = boost::filesystem::space(boost::filesystem::path(vaultdir.root_name()
+        + vaultdir.root_directory()));
   if (request->space() > info.available) {
     response->set_result(maidsafe::NOT_ENOUGH_SPACE);
     done->Run();
@@ -1877,7 +1877,7 @@ void RegistrationService::SetLocalVaultOwned(
         vconfig.set_pmid_public(request->public_key());
         vconfig.set_pmid_private(request->private_key());
         vconfig.set_signed_pmid_public(request->signed_public_key());
-        vconfig.set_chunkstore_dir(request->chunkstore_dir());
+        vconfig.set_vault_dir(request->vault_dir());
         vconfig.set_port(request->port());
         vconfig.set_available_space(request->space());
         notifier_(vconfig);

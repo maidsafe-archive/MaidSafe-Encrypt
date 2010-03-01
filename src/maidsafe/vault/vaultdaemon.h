@@ -66,9 +66,8 @@ class VaultDaemon {
   boost::shared_ptr<PDVault> pdvault_;
   boost::shared_ptr<ValCheck> val_check_;
   bool is_owned_;
-  fs::path config_file_, kad_config_file_, vault_path_;
+  fs::path config_file_, kad_config_file_, app_path_, vault_path_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_;
-  std::string chunkstore_dir_;
   boost::uint16_t port_;
   boost::uint64_t vault_available_space_, used_space_;
   transport::TransportUDT local_udt_transport_, global_udt_transport_;

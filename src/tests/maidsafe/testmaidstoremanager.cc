@@ -348,9 +348,9 @@ namespace maidsafe {
 
 class MaidStoreManagerTest : public testing::Test {
  protected:
-  MaidStoreManagerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                                 "/maidsafe_TestMSM_" + base::RandomString(6)),
-                           client_chunkstore_dir_(test_root_dir_+"/Chunkstore"),
+  MaidStoreManagerTest() : test_root_dir_(file_system::TempDir() /
+                                 ("maidsafe_TestMSM_" + base::RandomString(6))),
+                           client_chunkstore_dir_(test_root_dir_/"Chunkstore"),
                            client_chunkstore_(),
                            client_pmid_keys_(),
                            client_maid_keys_(),
@@ -403,7 +403,7 @@ class MaidStoreManagerTest : public testing::Test {
 
   virtual void SetUp() {
     client_chunkstore_ = boost::shared_ptr<ChunkStore>
-        (new ChunkStore(client_chunkstore_dir_, 0, 0));
+        (new ChunkStore(client_chunkstore_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     boost::uint64_t count(0);
     while (count < 60000 && !client_chunkstore_->is_initialised()) {
@@ -413,7 +413,7 @@ class MaidStoreManagerTest : public testing::Test {
   }
   virtual void TearDown() {}
 
-  std::string test_root_dir_, client_chunkstore_dir_;
+  fs::path test_root_dir_, client_chunkstore_dir_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   crypto::RsaKeyPair client_pmid_keys_, client_maid_keys_;
   std::string client_pmid_public_signature_, client_pmid_;
@@ -1443,10 +1443,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
   StorePrepRequest store_prep_request = send_chunk_data->store_prep_request;
   StoreChunkRequest store_chunk_request = send_chunk_data->store_chunk_request;
   // Make proper response
-  maidsafe_vault::VaultChunkStore
-      vault_chunkstore(test_root_dir_ + "/VaultChunkstore", 999999, 0);
+  maidsafe_vault::VaultChunkStore vault_chunkstore((test_root_dir_ /
+      "VaultChunkstore").string(), 999999, 0);
   maidsafe_vault::VaultService vault_service(peer_pmid_pub, peer_pmid_pri,
-      peer_pmid_pub_signature, &vault_chunkstore, NULL, NULL, NULL, 0);
+      peer_pmid_pub_signature, &vault_chunkstore, NULL, NULL, 0);
   StorePrepResponse good_store_prep_response;
   google::protobuf::Closure *done =
       google::protobuf::NewCallback(&google::protobuf::DoNothing);
