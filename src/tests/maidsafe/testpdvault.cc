@@ -56,9 +56,15 @@ namespace testpdvault {
 struct ClientData {
   explicit ClientData(const std::string &root_dir)
     : chunkstore_dir(root_dir + "/ClientChunkstore_" + base::RandomString(8)),
-      mss(), pmid_pub_key(), pmid_priv_key(), pmid_pub_key_sig(), pmid_name(),
-      chunkstore(), msm(), pmid_keys(), maid_keys() {}
-
+      mss(),
+      pmid_pub_key(),
+      pmid_priv_key(),
+      pmid_pub_key_sig(),
+      pmid_name(),
+      chunkstore(),
+      msm(),
+      pmid_keys(),
+      maid_keys() {}
   std::string chunkstore_dir;
   maidsafe::MockSessionSingleton mss;
   std::string pmid_pub_key, pmid_priv_key, pmid_pub_key_sig, pmid_name;
@@ -69,8 +75,7 @@ struct ClientData {
 
 inline void DeleteCallback(const std::string &result) {
   maidsafe::DeleteChunkResponse resp;
-  if (!resp.ParseFromString(result) ||
-      resp.result() != kAck) {
+  if (!resp.ParseFromString(result) || resp.result() != kAck) {
     callback_succeeded_ = false;
     callback_timed_out_ = false;
   } else {
@@ -93,8 +98,7 @@ inline void GetPacketCallback(const std::string &result) {
 
 inline void GetMessagesCallback(const std::string &result) {
   maidsafe::GetBPMessagesResponse resp;
-  if (!resp.ParseFromString(result) ||
-      resp.result() != kAck) {
+  if (!resp.ParseFromString(result) || resp.result() != kAck) {
     callback_succeeded_ = false;
     callback_timed_out_ = false;
   } else {
@@ -109,7 +113,7 @@ inline void GetMessagesCallback(const std::string &result) {
 void PrepareCallbackResults() {
   callback_timed_out_ = true;
   callback_succeeded_ = false;
-  callback_content_ = "";
+  callback_content_.clear();
   callback_prepared_ = true;
   callback_packets_.clear();
   callback_messages_.clear();
@@ -117,8 +121,7 @@ void PrepareCallbackResults() {
 
 static void GeneralCallback(const std::string &result) {
   maidsafe::GenericResponse result_msg;
-  if ((!result_msg.ParseFromString(result))||
-      (result_msg.result() != kAck)) {
+  if ((!result_msg.ParseFromString(result)) || (result_msg.result() != kAck)) {
     callback_succeeded_ = false;
     callback_timed_out_ = false;
   } else {
@@ -131,8 +134,7 @@ static void GetChunkCallback(bool *finished) {
   *finished = true;
 }
 
-void DeadRvNotifier(const bool&, const std::string&, const boost::uint16_t&) {
-}
+void DeadRvNotifier(const bool&, const std::string&, const boost::uint16_t&) {}
 
 void WaitFunction(int seconds, boost::mutex* mutex) {
   if (!callback_prepared_) {
@@ -173,7 +175,7 @@ void MakeChunks(const std::vector< boost::shared_ptr<ClientData> > &clients,
   cryobj_.set_hash_algorithm(crypto::SHA_512);
   cryobj_.set_symm_algorithm(crypto::AES_256);
   for (int i = 0; i < no_of_chunks; ++i) {
-    std::string chunk_content = base::RandomString(100+i);
+    std::string chunk_content = base::RandomString(100 + i);
     std::string chunk_name = cryobj_.Hash(chunk_content, "",
                                           crypto::STRING_STRING, false);
     fs::path chunk_path(test_root_dir / base::EncodeToHex(chunk_name));
@@ -198,7 +200,7 @@ void CreatePacketType(const std::string &priv_key,
     maidsafe::GenericPacket gp;
     gp.set_data(base::RandomString(4096));
     gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
-      crypto::STRING_STRING));
+        crypto::STRING_STRING));
     std::string ser_packet;
     gp.SerializeToString(&ser_packet);
     std::string packet_name = co.Hash(ser_packet, "", crypto::STRING_STRING,
@@ -298,7 +300,6 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
          not_stored_it != not_stored.end(); ++not_stored_it)
       printf("\t - %s\n", HexSubstr(*not_stored_it).c_str());
   }
-
   return chunk_ref_count;
 }
 
@@ -370,7 +371,6 @@ class PDVaultTest : public testing::Test {
              HexSubstr(clients_[i]->pmid_name).c_str());
       clients_[i]->mss.SetConnectionStatus(0);
     }
-
     // maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(0);
   }
 

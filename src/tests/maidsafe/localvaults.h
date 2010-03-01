@@ -102,47 +102,56 @@ class Env: public testing::Environment {
       GeneratePmidStuff(&public_key, &private_key, &signed_key, &node_id);
       fs::path local_dir(vault_dir_ / ("Vault_" +
           base::EncodeToHex(node_id).substr(0, 8)));
-      fs::create_directories(local_dir);
+      if (!fs::exists(fs::path(local_dir))) {
+        printf("creating_directories - %s\n", local_dir.string().c_str());
+        fs::create_directories(local_dir);
+      }
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
           signed_key, local_dir, 0, false, false, kad_config_file_,
           1073741824, 0));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
-    }
-    // Start first vault and set as bootstrapping node for others
-    (*pdvaults_)[0]->Start(true);
-    boost::posix_time::ptime stop =
-        boost::posix_time::second_clock::local_time() + single_function_timeout;
-    while (((*pdvaults_)[0]->vault_status() != maidsafe_vault::kVaultStarted) &&
-           boost::posix_time::second_clock::local_time() < stop) {
-      boost::this_thread::sleep(boost::posix_time::seconds(1));
-    }
-    ASSERT_EQ(maidsafe_vault::kVaultStarted, (*pdvaults_)[0]->vault_status());
-    base::KadConfig kad_config;
-    base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-    kad_contact->set_node_id((*pdvaults_)[1]->node_id());
-    kad_contact->set_ip((*pdvaults_)[1]->host_ip());
-    kad_contact->set_port((*pdvaults_)[1]->host_port());
-    kad_contact->set_local_ip((*pdvaults_)[1]->local_host_ip());
-    kad_contact->set_local_port((*pdvaults_)[1]->local_host_port());
-    std::fstream output(kad_config_file_.string().c_str(),
-                        std::ios::out | std::ios::trunc | std::ios::binary);
-    ASSERT_TRUE(kad_config.SerializeToOstream(&output));
-    output.close();
-    // Start other vaults
-    for (int k = 1; k < kNetworkSize_; ++k) {
-      (*pdvaults_)[k]->Start(false);
-      stop = boost::posix_time::second_clock::local_time() +
-          single_function_timeout;
-      while (((*pdvaults_)[k]->vault_status() != maidsafe_vault::kVaultStarted)
-             && boost::posix_time::second_clock::local_time() < stop) {
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
-      }
-      ASSERT_EQ(maidsafe_vault::kVaultStarted,
-                (*pdvaults_)[k]->vault_status());
-      printf("Vault %i started.\n", k);
+      // Start first vault and set as bootstrapping node for others
+      if (i == 0) {
+        (*pdvaults_)[0]->Start(true);
+        boost::posix_time::ptime stop =
+            boost::posix_time::second_clock::local_time() +
+            single_function_timeout;
+        while (((*pdvaults_)[0]->vault_status() !=
+            maidsafe_vault::kVaultStarted) &&
+            boost::posix_time::second_clock::local_time() < stop) {
+          boost::this_thread::sleep(boost::posix_time::seconds(1));
+        }
+        ASSERT_EQ(maidsafe_vault::kVaultStarted,
+            (*pdvaults_)[0]->vault_status());
+        base::KadConfig kad_config;
+        base::KadConfig::Contact *kad_contact = kad_config.add_contact();
+        kad_contact->set_node_id((*pdvaults_)[0]->node_id());
+        kad_contact->set_ip((*pdvaults_)[0]->host_ip());
+        kad_contact->set_port((*pdvaults_)[0]->host_port());
+        kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
+        kad_contact->set_local_port((*pdvaults_)[0]->local_host_port());
+        std::fstream output(kad_config_file_.string().c_str(),
+                            std::ios::out | std::ios::trunc | std::ios::binary);
+        ASSERT_TRUE(kad_config.SerializeToOstream(&output));
+        output.close();
+        printf("Vault 0 started.\n");
+      } else {
+        (*pdvaults_)[i]->Start(false);
+        boost::posix_time::ptime stop =
+            boost::posix_time::second_clock::local_time() +
+            single_function_timeout;
+        while (((*pdvaults_)[i]->vault_status() !=
+            maidsafe_vault::kVaultStarted)
+            && boost::posix_time::second_clock::local_time() < stop) {
+          boost::this_thread::sleep(boost::posix_time::seconds(1));
+        }
+        ASSERT_EQ(maidsafe_vault::kVaultStarted,
+                  (*pdvaults_)[i]->vault_status());
+        printf("Vault %i started.\n", i);
 //      boost::this_thread::sleep(boost::posix_time::seconds(15));
+      }
     }
     // Make kad config file in ./ for clients' use.
     fs::copy_file(kad_config_file_, ".kadconfig");
