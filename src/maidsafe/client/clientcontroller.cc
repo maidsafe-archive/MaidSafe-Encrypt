@@ -408,18 +408,18 @@ bool ClientController::CreateUser(const std::string &username,
 
   // TODO(Fraser#5#): 2010-02-26 - Once GUI has got vault_dir defaulting to
   // ApplicationDataDir, change this back to allow vcp.directory to be passed.
-//  OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
-//                                                vcp.space * 1024 * 1024,
-//                                                vcp.directory);
-//  OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
-//    vcp.space * 1024 * 1024, (file_system::ApplicationDataDir() / ("Vault_" +
-//    base::EncodeToHex(ss_->Id(PMID)).substr(0, 8))).string());
-//  if (olvr != OWNED_SUCCESS) {
-//#ifdef DEBUG
-//    printf("CC::CreateUser +++ OwnLocalVaultResult: %d +++\n", olvr);
-//#endif
-//    return false;
-//  }
+//    OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
+//                                                  vcp.space * 1024 * 1024,
+//                                                  vcp.directory);
+//    OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
+//      vcp.space * 1024 * 1024, (file_system::ApplicationDataDir() / ("Vault_"
+//      + base::EncodeToHex(ss_->Id(PMID)).substr(0, 8))).string());
+//    if (olvr != OWNED_SUCCESS) {
+//  #ifdef DEBUG
+//      printf("CC::CreateUser +++ OwnLocalVaultResult: %d +++\n", olvr);
+//  #endif
+//      return false;
+//    }
 
   client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);

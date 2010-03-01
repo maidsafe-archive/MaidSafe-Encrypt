@@ -1854,43 +1854,30 @@ void RegistrationService::SetLocalVaultOwned(
     done->Run();
     return;
   }
-  // Checking if keys sent are a correct RSA key pair
-  crypto::Crypto cobj;
-  cobj.set_hash_algorithm(crypto::SHA_512);
-//                                    if (cobj.AsymCheckSig(request->public_key(), request->signed_public_key(),
-//                                        request->public_key(), crypto::STRING_STRING)) {
-//                                      std::string signed_key = cobj.AsymSign(request->public_key(), "",
-//                                          request->private_key(), crypto::STRING_STRING);
-//                                      if (cobj.AsymCheckSig(request->public_key(), signed_key,
-//                                          request->public_key(), crypto::STRING_STRING)) {
-      // checking if port is available
-      transport::TransportUDT test_tranport;
-      if (request->port() == 0 || test_tranport.IsPortAvailable(
-          request->port())) {
-        response->set_result(maidsafe::OWNED_SUCCESS);
-        std::string pmid_name = cobj.Hash(request->public_key()+
-            request->signed_public_key(), "", crypto::STRING_STRING, false);
-        response->set_pmid_name(pmid_name);
-        pending_response_.callback = done;
-        pending_response_.args = response;
-        maidsafe::VaultConfig vconfig;
-        vconfig.set_pmid_public(request->public_key());
-        vconfig.set_pmid_private(request->private_key());
-        vconfig.set_signed_pmid_public(request->signed_public_key());
-        vconfig.set_vault_dir(request->vault_dir());
-        vconfig.set_port(request->port());
-        vconfig.set_available_space(request->space());
-        notifier_(vconfig);
-        return;
-      } else {
-        response->set_result(maidsafe::INVALID_PORT);
-      }
-//                                                                                    } else {
-//                                                                                      response->set_result(maidsafe::INVALID_RSA_KEYS);
-//                                                                                    }
-//                                                                                  } else {
-//                                                                                    response->set_result(maidsafe::INVALID_RSA_KEYS);
-//                                                                                  }
+  // checking if port is available
+  transport::TransportUDT test_tranport;
+  if (request->port() == 0 || test_tranport.IsPortAvailable(
+      request->port())) {
+    response->set_result(maidsafe::OWNED_SUCCESS);
+    crypto::Crypto cobj;
+    cobj.set_hash_algorithm(crypto::SHA_512);
+    std::string pmid_name = cobj.Hash(request->public_key()+
+        request->signed_public_key(), "", crypto::STRING_STRING, false);
+    response->set_pmid_name(pmid_name);
+    pending_response_.callback = done;
+    pending_response_.args = response;
+    maidsafe::VaultConfig vconfig;
+    vconfig.set_pmid_public(request->public_key());
+    vconfig.set_pmid_private(request->private_key());
+    vconfig.set_signed_pmid_public(request->signed_public_key());
+    vconfig.set_vault_dir(request->vault_dir());
+    vconfig.set_port(request->port());
+    vconfig.set_available_space(request->space());
+    notifier_(vconfig);
+    return;
+  } else {
+    response->set_result(maidsafe::INVALID_PORT);
+  }
   done->Run();
 }
 

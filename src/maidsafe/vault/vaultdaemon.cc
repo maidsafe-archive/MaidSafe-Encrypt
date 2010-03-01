@@ -41,6 +41,7 @@ VaultDaemon::VaultDaemon(const int &port, const std::string &vault_dir)
       config_file_(),
       kad_config_file_(),
       app_path_(file_system::ApplicationDataDir()),
+      not_owned_path_(),
       vault_path_(vault_dir),
       pmid_public_(),
       pmid_private_(),
@@ -132,7 +133,7 @@ int VaultDaemon::SetPaths() {
   }
   try {
     if (!fs::exists(vault_path_))
-      fs::create_directory(vault_path_);
+      fs::create_directories(vault_path_);
   }
   catch(const std::exception &ex_) {
     WriteToLog("Can't create maidsafe vault dir.");
@@ -273,16 +274,25 @@ bool VaultDaemon::StartNotOwnedVault() {
       keys.private_key(), crypto::STRING_STRING);
   std::string temp_pmid = co.Hash(keys.public_key() + signed_pubkey, "",
       crypto::STRING_STRING, true);
-  vault_path_ = app_path_ / ("Vault_" + temp_pmid.substr(0, 8));
+  not_owned_path_ = app_path_ / ("Vault_" + temp_pmid.substr(0, 8));
   boost::uint64_t space(1024 * 1024 * 1024);  // 1GB
   pdvault_.reset(new PDVault(keys.public_key(), keys.private_key(),
-      signed_pubkey, vault_path_, 0, false, false, kad_config_file_, space, 0));
+      signed_pubkey, not_owned_path_, 0, false, false, kad_config_file_, space,
+      0));
   pdvault_->Start(false);
   if (pdvault_->vault_status() == kVaultStopped) {
-    WriteToLog("Failed to start a not owned vault");
-    return false;
+    WriteToLog("Failed to start a not owned vault - "
+               "trying to create a new network.");
+    pdvault_->Start(true);
+    if (pdvault_->vault_status() == kVaultStopped) {
+      WriteToLog("Failed to start a not owned vault.");
+      return false;
+    } else {
+      WriteToLog("Vault started (New network).  Waiting to be owned.\n");
+    }
+  } else {
+    WriteToLog("Vault started.  Waiting to be owned.\n");
   }
-  WriteToLog("Vault started.  Waiting to be owned.\n");
   WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->node_id()));
   WriteToLog("Vault IP & port:  " + pdvault_->host_ip() + ":" +
              base::itos(pdvault_->host_port()));
@@ -295,7 +305,7 @@ int VaultDaemon::StopNotOwnedVault() {
   // TODO(Fraser#5#): 2010-02-26 - Should the old chunkstore be transferred?
   if (result == kSuccess) {
     try {
-      fs::remove_all(vault_path_);
+      fs::remove_all(not_owned_path_);
     }
     catch(const std::exception &e) {
 #ifdef DEUBG

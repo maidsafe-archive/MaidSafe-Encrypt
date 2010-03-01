@@ -316,7 +316,7 @@ class PDVault {
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   fs::path kad_config_file_;
   QThreadPool thread_pool_;
-  boost::thread prune_pending_ops_thread_, create_account_thread_;
+  boost::thread create_account_thread_;
 };
 
 }  // namespace maidsafe_vault

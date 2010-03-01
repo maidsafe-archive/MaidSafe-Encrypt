@@ -225,45 +225,19 @@ TEST_F(MsmSetLocalVaultOwnedTest, FUNC_MAID_InvalidSetLocalVaultOwned) {
   crypto::RsaKeyPair keypair;
   keypair.GenerateKeys(maidsafe::kRsaKeySize);
   cobj.set_hash_algorithm(crypto::SHA_512);
-  std::string signed_public_key = cobj.AsymSign(keypair.public_key(), "",
-      keypair.private_key(), crypto::STRING_STRING);
   std::string priv_key = keypair.private_key();
   std::string pub_key = keypair.public_key();
-  keypair.ClearKeys();
-  keypair.GenerateKeys(maidsafe::kRsaKeySize);
-  msm_.SetLocalVaultOwned(keypair.private_key(), keypair.public_key(),
-      signed_public_key, 0, (test_root_dir_/"ChunkStore").string(), 1024, cb_);
-  while (!resulthandler_.callback_arrived())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ(maidsafe::INVALID_RSA_KEYS, resulthandler_.result());
-  ASSERT_EQ(std::string(""), resulthandler_.pmid_name());
+  // NB - In reality, key passed is PMID which is not self-signed, but no check
+  // of this is done by service, so we're OK to pass a slef-signed key here.
+  std::string signed_public_key = cobj.AsymSign(pub_key, "", priv_key,
+      crypto::STRING_STRING);
 
-  resulthandler_.Reset();
-  service_.Reset();
-  msm_.SetLocalVaultOwned(priv_key, keypair.public_key(),
-      signed_public_key, 0, (test_root_dir_/"ChunkStore").string(), 1024, cb_);
-  while (!resulthandler_.callback_arrived())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ(maidsafe::INVALID_RSA_KEYS, resulthandler_.result());
-  ASSERT_EQ(std::string(""), resulthandler_.pmid_name());
-
-  resulthandler_.Reset();
-  service_.Reset();
-  msm_.SetLocalVaultOwned(keypair.private_key(), pub_key,
-      signed_public_key, 0, (test_root_dir_/"ChunkStore").string(), 1024, cb_);
-  while (!resulthandler_.callback_arrived())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ(maidsafe::INVALID_RSA_KEYS, resulthandler_.result());
-  ASSERT_EQ(std::string(""), resulthandler_.pmid_name());
-
-  resulthandler_.Reset();
-  service_.Reset();
   msm_.SetLocalVaultOwned(priv_key, pub_key, signed_public_key, port_,
       (test_root_dir_ / "ChunkStore").string(), 1024, cb_);
   while (!resulthandler_.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::INVALID_PORT, resulthandler_.result());
-  ASSERT_EQ(std::string(""), resulthandler_.pmid_name());
+  ASSERT_TRUE(resulthandler_.pmid_name().empty());
 
   resulthandler_.Reset();
   service_.Reset();
@@ -272,7 +246,7 @@ TEST_F(MsmSetLocalVaultOwnedTest, FUNC_MAID_InvalidSetLocalVaultOwned) {
   while (!resulthandler_.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::NO_SPACE_ALLOCATED, resulthandler_.result());
-  ASSERT_EQ(std::string(""), resulthandler_.pmid_name());
+  ASSERT_TRUE(resulthandler_.pmid_name().empty());
 
   boost::filesystem::space_info info = boost::filesystem::space(
       boost::filesystem::path("/"));
@@ -283,7 +257,7 @@ TEST_F(MsmSetLocalVaultOwnedTest, FUNC_MAID_InvalidSetLocalVaultOwned) {
   while (!resulthandler_.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::NOT_ENOUGH_SPACE, resulthandler_.result());
-  ASSERT_EQ(std::string(""), resulthandler_.pmid_name());
+  ASSERT_TRUE(resulthandler_.pmid_name().empty());
 
   resulthandler_.Reset();
   service_.Reset();
@@ -295,7 +269,7 @@ TEST_F(MsmSetLocalVaultOwnedTest, FUNC_MAID_InvalidSetLocalVaultOwned) {
   while (!resulthandler_.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::FAILED_TO_START_VAULT, resulthandler_.result());
-  ASSERT_EQ(std::string(""), resulthandler_.pmid_name());
+  ASSERT_TRUE(resulthandler_.pmid_name().empty());
 
   resulthandler_.Reset();
   service_.Reset();
@@ -305,7 +279,7 @@ TEST_F(MsmSetLocalVaultOwnedTest, FUNC_MAID_InvalidSetLocalVaultOwned) {
   while (!resulthandler_.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::VAULT_ALREADY_OWNED, resulthandler_.result());
-  ASSERT_EQ(std::string(""), resulthandler_.pmid_name());
+  ASSERT_TRUE(resulthandler_.pmid_name().empty());
 
   resulthandler_.Reset();
   service_.Reset();
@@ -322,7 +296,7 @@ TEST_F(MsmSetLocalVaultOwnedTest, FUNC_MAID_InvalidSetLocalVaultOwned) {
   while (!resulthandler_.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::VAULT_IS_DOWN, resulthandler_.result());
-  ASSERT_EQ(std::string(""), resulthandler_.pmid_name());
+  ASSERT_TRUE(resulthandler_.pmid_name().empty());
 }
 
 }  // namespace maidsafe

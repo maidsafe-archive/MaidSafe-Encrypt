@@ -79,7 +79,6 @@ PDVault::PDVault(const std::string &pmid_public,
       svc_channel_(),
       kad_config_file_(vault_dir / ".kadconfig"),
       thread_pool_(),
-      prune_pending_ops_thread_(),
       create_account_thread_() {
   transport_handler_->Register(&global_udt_transport_, &transport_id_);
   knode_->SetTransID(transport_id_);
@@ -157,13 +156,10 @@ void PDVault::Start(bool first_node) {
     if (first_node) {
       boost::asio::ip::address local_ip;
       base::get_local_address(&local_ip);
-                                                   printf("In PDVault::Start joining kad (first node).\n");
-          printf("ID: %s\tIP: %s\tPort: %u\n", HexSubstr(pmid_).c_str(), HexSubstr(local_ip.to_string()).c_str(), transport_handler_->listening_port(transport_id_));
       knode_->Join(pmid_, kad_config_file_.string(), local_ip.to_string(),
           transport_handler_->listening_port(transport_id_),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     } else {
-                                                   printf("In PDVault::Start joining kad.\n");
       knode_->Join(pmid_, kad_config_file_.string(),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     }
@@ -173,30 +169,23 @@ void PDVault::Start(bool first_node) {
       return;
     }
     // Block until we've joined the Kademlia network.
-                                                   printf("In PDVault::Start waiting to join kad.\n");
     boost::mutex::scoped_lock lock(kad_join_mutex);
     while (!kad_joined_) {
       kad_join_cond_.wait(lock);
     }
-                                                   printf("In PDVault::Start joined kad.\n");
     // Set port, so that if vault is restarted before it is destroyed, it
     // re-uses port (unless this port has become unavailable).
     port_ = knode_->host_port();
     if (kad_joined_ && vault_service_logic_.Init(pmid_, pmid_public_,
         signed_pmid_public_, pmid_private_)) {
-                                                             printf("In PDVault::Start setting status to started.\n");
-
       SetVaultStatus(kVaultStarted);
-                                                             printf("In PDVault::Start done setting status to started.\n");
     }
-    // Start repeating pruning worker thread
-                                                             printf("In PDVault::Start starting prune pending ops thread.\n");
-//    prune_pending_ops_thread_ =
-//        boost::thread(&PDVault::PrunePendingOperations, this);
     // Announce available space to account, try repeatedly in thread
     // TODO(Team#) find better solution or make thread-safe!
-                                                             printf("In PDVault::Start starting create acc thread.\n");
     create_account_thread_ = boost::thread(&PDVault::UpdateSpaceOffered, this);
+  } else {
+    SetVaultStatus(kVaultStarted);
+    Stop();
   }
 }
 
@@ -229,8 +218,6 @@ int PDVault::Stop() {
     return -2;
   }
   SetVaultStatus(kVaultStopping);
-//  thread_pool_.waitForDone();
-  prune_pending_ops_thread_.join();
   create_account_thread_.join();
   UnRegisterMaidService();
   knode_->Leave();
@@ -263,9 +250,12 @@ void PDVault::RegisterMaidService() {
 }
 
 void PDVault::UnRegisterMaidService() {
-  channel_manager_.UnRegisterChannel(vault_service_->GetDescriptor()->name());
-  svc_channel_.reset();
-  vault_service_.reset();
+  if (vault_service_.get() != NULL)
+    channel_manager_.UnRegisterChannel(vault_service_->GetDescriptor()->name());
+  if (svc_channel_ != NULL)
+    svc_channel_.reset();
+  if (vault_service_ != NULL)
+    vault_service_.reset();
 }
 
 VaultStatus PDVault::vault_status() {
@@ -278,12 +268,6 @@ void PDVault::SetVaultStatus(const VaultStatus &vault_status) {
   vault_status_ = vault_status;
 }
 
-//void PDVault::PrunePendingOperations() {
-//  while (vault_status() == kVaultStarted) {
-//    poh_.PrunePendingOps();
-//    boost::this_thread::sleep(boost::posix_time::seconds(1));
-//  }
-//}
 /*
 void PDVault::SyncVault(base::callback_func_type cb) {
   // Process of updating vault:
