@@ -188,7 +188,6 @@ QDir ClientController::shareDirRoot(const QString& name) const {
   QString maidsafeRoot = QString("%1:\\").arg(
                          maidsafe::SessionSingleton::getInstance()->WinDrive());
 #else
-  file_system::FileSystem fs;
   // Path comes back without that last slash
   QString maidsafeRoot = QString::fromStdString(file_system::MaidsafeFuseDir(
       maidsafe::SessionSingleton::getInstance()->SessionName()).string() + "/");
@@ -214,7 +213,6 @@ QDir ClientController::myFilesDirRoot(const QString& name) const {
   QString maidsafeRoot = QString("%1:\\").arg(
                          maidsafe::SessionSingleton::getInstance()->WinDrive());
 #else
-  file_system::FileSystem fs;
   // Path comes back without that last slash
   QString maidsafeRoot = QString::fromStdString(file_system::MaidsafeFuseDir(
       maidsafe::SessionSingleton::getInstance()->SessionName()).string() + "/");

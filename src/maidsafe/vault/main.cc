@@ -323,8 +323,9 @@ class RunPDVaults {
     HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hconsole, 10 | 0 << 4);
 #endif
-    printf("\n*-----------------------------------------------*\n");
-    printf("*            %2i local vaults running            *\n",
+    printf("\n");
+    printf("*-----------------------------------------------*\n");
+    printf("*            %2i local vaults running           *\n",
            no_of_vaults_);
     printf("*                                               *\n");
     printf("* No. Port   ID                                 *\n");

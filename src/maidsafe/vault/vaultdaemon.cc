@@ -321,4 +321,5 @@ bool VaultDaemon::StartOwnedVault() {
   registration_service_->set_status(maidsafe::OWNED);
   return true;
 }
+
 }  // namespace maidsafe_vault

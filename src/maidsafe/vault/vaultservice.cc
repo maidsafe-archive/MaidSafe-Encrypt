@@ -91,7 +91,6 @@ VaultService::VaultService(const std::string &pmid_public,
                            const std::string &pmid_public_signature,
                            VaultChunkStore *vault_chunkstore,
                            kad::KNode *knode,
-                           PendingOperationsHandler *poh,
                            VaultServiceLogic *vault_service_logic,
                            const boost::int16_t &transport_id)
     : pmid_public_(pmid_public),
@@ -100,7 +99,6 @@ VaultService::VaultService(const std::string &pmid_public,
       pmid_(),
       vault_chunkstore_(vault_chunkstore),
       knode_(knode),
-      poh_(poh),
       vault_service_logic_(vault_service_logic),
       transport_id_(transport_id),
       prm_(),
@@ -655,6 +653,9 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     return;
   }
 
+  printf("VaultService::AmendAccount - from %s to %s\n",
+         HexSubstr(pmid).c_str(),
+         HexSubstr(knode_->node_id()).c_str());
   if (ah_.HaveAccount(pmid) == kAccountNotFound) {
     if (request->amendment_type() ==
         maidsafe::AmendAccountRequest::kSpaceOffered) {
@@ -1804,6 +1805,12 @@ int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
   as_req.set_space_requested(size);
   return vault_service_logic_->RemoteVaultAbleToStore(as_req, transport_id_);
 }
+
+int VaultService::AddAccount(const std::string &pmid,
+                             const boost::uint64_t &offer) {
+  return ah_.AddAccount(pmid, offer);
+}
+
 
 RegistrationService::RegistrationService(
     boost::function<void(const maidsafe::VaultConfig&)> notifier)

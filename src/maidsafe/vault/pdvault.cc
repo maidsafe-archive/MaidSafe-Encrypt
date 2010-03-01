@@ -78,7 +78,6 @@ PDVault::PDVault(const std::string &pmid_public,
       co_(),
       svc_channel_(),
       kad_config_file_(vault_dir / ".kadconfig"),
-      poh_(),
       thread_pool_(),
       prune_pending_ops_thread_(),
       create_account_thread_() {
@@ -94,7 +93,6 @@ PDVault::PDVault(const std::string &pmid_public,
   knode_->set_signature_validator(&validator_);
   vault_rpcs_->SetOwnId(pmid_);
   thread_pool_.setMaxThreadCount(1);
-  poh_.SetPmid(pmid_);
   try {
     if (fs::exists(read_only_kad_config_file))
       fs::copy_file(read_only_kad_config_file, kad_config_file_);
@@ -193,8 +191,8 @@ void PDVault::Start(bool first_node) {
     }
     // Start repeating pruning worker thread
                                                              printf("In PDVault::Start starting prune pending ops thread.\n");
-    prune_pending_ops_thread_ =
-        boost::thread(&PDVault::PrunePendingOperations, this);
+//    prune_pending_ops_thread_ =
+//        boost::thread(&PDVault::PrunePendingOperations, this);
     // Announce available space to account, try repeatedly in thread
     // TODO(Team#) find better solution or make thread-safe!
                                                              printf("In PDVault::Start starting create acc thread.\n");
@@ -255,7 +253,6 @@ void PDVault::RegisterMaidService() {
                      signed_pmid_public_,
                      &vault_chunkstore_,
                      knode_.get(),
-                     &poh_,
                      &vault_service_logic_,
                      transport_id_));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
@@ -281,12 +278,12 @@ void PDVault::SetVaultStatus(const VaultStatus &vault_status) {
   vault_status_ = vault_status;
 }
 
-void PDVault::PrunePendingOperations() {
-  while (vault_status() == kVaultStarted) {
-    poh_.PrunePendingOps();
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-  }
-}
+//void PDVault::PrunePendingOperations() {
+//  while (vault_status() == kVaultStarted) {
+//    poh_.PrunePendingOps();
+//    boost::this_thread::sleep(boost::posix_time::seconds(1));
+//  }
+//}
 /*
 void PDVault::SyncVault(base::callback_func_type cb) {
   // Process of updating vault:
@@ -1243,16 +1240,16 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   for (std::vector<kad::Contact>::iterator it = data->contacts.begin();
        it != data->contacts.end(); ++it) {
     if ((*it).node_id() == knode_->node_id()) {
-//        if (ah_.AddAccount(pmid, account_delta) == 0) {
-//          ++data->success_count;
-//  #ifdef DEBUG
-//  //      printf("Vault %s listed as an account holder for PMID %s\n",
-//  //             HexSubstr((*it).node_id()).c_str(),
-//  //             HexSubstr(pmid_).c_str());
-//  #endif
-//        }
-//        data->contacts.erase(it);
-//        break;
+      if (vault_service_->AddAccount((*it).node_id(), space_offered) == 0) {
+        ++data->success_count;
+#ifdef DEBUG
+//      printf("Vault %s listed as an account holder for PMID %s\n",
+//             HexSubstr((*it).node_id()).c_str(),
+//             HexSubstr(pmid_).c_str());
+#endif
+      }
+      data->contacts.erase(it);
+      break;
     }
   }
 
