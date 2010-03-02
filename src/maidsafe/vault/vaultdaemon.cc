@@ -257,7 +257,9 @@ int VaultDaemon::ReadConfigInfo() {
   // If a port between 5000 & 65535 inclusive is passed into VaultDaemon,
   // use that, otherwise try the config file.  As a last resort, set port to
   // 0 and PDVault will use a random port.
-  if (vault_config.has_port() && vault_config.port() < kMinPort)
+  if (vault_config.has_port() &&
+      vault_config.port() >= kMinPort &&
+      vault_config.port() <= kMaxPort)
     port_ = vault_config.port();
   else
     port_ = 0;
