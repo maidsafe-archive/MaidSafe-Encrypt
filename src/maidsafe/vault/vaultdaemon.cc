@@ -322,10 +322,26 @@ int VaultDaemon::StopNotOwnedVault() {
 bool VaultDaemon::StartOwnedVault() {
   if (pdvault_.get() != NULL)
     return false;
+  // If kadconfig already exists in vault dir, use that.  If not use the one
+  // in app_dir_.  If neither exists, start a new network.
+  bool first_vault(true);
+  try {
+    if (fs::exists(vault_path_ / ".kadconfig")) {
+      kad_config_file_ = vault_path_ / ".kadconfig";
+      first_vault = false;
+    } else if (fs::exists(kad_config_file_)) {
+      first_vault = false;
+    }
+  }
+  catch(const std::exception &e) {
+    WriteToLog("Failed To Start Owned Vault:");
+    WriteToLog(e.what());
+    return false;
+  }
   pdvault_.reset(new PDVault(pmid_public_, pmid_private_, signed_pmid_public_,
       vault_path_, port_, false, false, kad_config_file_,
       vault_available_space_, used_space_));
-  pdvault_->Start(false);
+  pdvault_->Start(first_vault);
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed To Start Owned Vault with info in config file");
     return false;
