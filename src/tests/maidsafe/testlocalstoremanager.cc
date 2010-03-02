@@ -24,6 +24,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/utils.h>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
@@ -207,6 +208,54 @@ class LocalStoreManagerTest : public testing::Test {
   LocalStoreManagerTest(const LocalStoreManagerTest&);
   LocalStoreManagerTest &operator=(const LocalStoreManagerTest&);
 };
+
+TEST_F(LocalStoreManagerTest, BEH_MAID_RemoveAllPacketsFromKey) {
+  kad::SignedValue gp;
+  rsao_.ClearKeys();
+  rsao_.GenerateKeys(maidsafe::kRsaKeySize);
+  int result(maidsafe::kGeneralError);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  std::string gp_name;
+
+  // Store packets with same key, different values
+  gp_name = co_.Hash("aaa", "", crypto::STRING_STRING, false);
+  for (int i=0; i < 5; ++i) {
+    gp.set_value("Generic System Packet Data" +
+                  boost::lexical_cast<std::string>(i));
+    sm_->StorePacket(gp_name, gp.value(), maidsafe::MID,
+        maidsafe::PRIVATE, "", maidsafe::kAppend, boost::bind(
+        &test_lsm::PacketOpCallback, _1, &mutex, &cond_var, &result));
+    {
+      boost::mutex::scoped_lock lock(mutex);
+      while (result == maidsafe::kGeneralError)
+        cond_var.wait(lock);
+    }
+    ASSERT_EQ(maidsafe::kSuccess, result);
+  }
+
+  // Remove said packets
+  result = maidsafe::kGeneralError;
+  sm_->DeletePacket(gp_name,
+                    std::vector<std::string>(), // Empty vector
+                    maidsafe::MID,
+                    maidsafe::PRIVATE,
+                    "",
+                    boost::bind(&test_lsm::PacketOpCallback,
+                                _1,
+                                &mutex,
+                                &cond_var,
+                                &result));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == maidsafe::kGeneralError)
+      cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kSuccess, result);
+
+  // Ensure they're all gone
+  ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
+}
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
   kad::SignedValue gp;

@@ -94,7 +94,8 @@ void LocalStoreManager::Init(int, base::callback_func_type cb) {
     } else {
       boost::mutex::scoped_lock loch(mutex_);
       db_.open(std::string(local_sm_dir_ + "/KademilaDb.db").c_str());
-      db_.execDML("create table network(key text primary key,value text);");
+      db_.execDML(
+        "create table network(key text,value text, primary key(key,value));");
     }
     boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
   }
@@ -337,28 +338,40 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
   }
 
   int deleted(values.size());
-  for (size_t n = 0; n < values.size(); ++n) {
+  if (0 == values.size()) {
     try {
-      std::string hex_value(base::EncodeToHex(values[n]));
-      std::string s("delete from network where key='" + hex_key + "' "
-                    "and value='" + hex_value + "';");
+      std::string s("delete from network where key='" + hex_key + "';");
       int a = db_.execDML(s.c_str());
-      if (a == 1) {
-        --deleted;
-      } else {
-#ifdef DEBUG
-        printf("LocalStoreManager::DeletePacket_DeleteFromDb - failure to"
-               " delete <key, value>(%s, %s).\n", hex_key.substr(0, 10).c_str(),
-               HexSubstr(values[n]).c_str());
-#endif
-        return kDeletePacketFailure;
-      }
-    }
-    catch(CppSQLite3Exception &e2) {  // NOLINT (Fraser)
+    } catch(CppSQLite3Exception &e2) {  // NOLINT (Fraser)
 #ifdef DEBUG
       printf("Error(%i): %s\n", e2.errorCode(),  e2.errorMessage());
 #endif
       return kStoreManagerError;
+    }
+  } else {
+    for (size_t n = 0; n < values.size(); ++n) {
+      try {
+        std::string hex_value(base::EncodeToHex(values[n]));
+        std::string s("delete from network where key='" + hex_key + "' "
+                      "and value='" + hex_value + "';");
+        int a = db_.execDML(s.c_str());
+        if (a == 1) {
+          --deleted;
+        } else {
+#ifdef DEBUG
+          printf("LocalStoreManager::DeletePacket_DeleteFromDb - failure to"
+                 " delete <key, value>(%s, %s).\n", hex_key.substr(0, 10).c_str(),
+                 HexSubstr(values[n]).c_str());
+#endif
+          return kDeletePacketFailure;
+        }
+      }
+      catch(CppSQLite3Exception &e2) {  // NOLINT (Fraser)
+#ifdef DEBUG
+        printf("Error(%i): %s\n", e2.errorCode(),  e2.errorMessage());
+#endif
+        return kStoreManagerError;
+      }
     }
   }
 
