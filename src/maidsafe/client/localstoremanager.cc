@@ -211,6 +211,11 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
     CppSQLite3Query q = db_.execQuery(s.c_str());
     if (q.eof())
       result = true;
+    else
+      while (!q.eof()) {
+        printf("a\n");
+        q.nextRow();
+      }
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
@@ -362,6 +367,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
           printf("LocalStoreManager::DeletePacket_DeleteFromDb - failure to"
                  " delete <key, value>(%s, %s).\n", hex_key.substr(0, 10).c_str(),
                  HexSubstr(values[n]).c_str());
+          printf("%d rows affected\n", a);
 #endif
           return kDeletePacketFailure;
         }

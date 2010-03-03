@@ -410,6 +410,10 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
+  // Save the session to create different TMIDs for MID and SMID
+  result = authentication->SaveSession(ser_dm);
+  ASSERT_EQ(kSuccess, result) << "Can't save the session";
+
   // store current mid, smid and tmid details to check later whether they remain
   // on the network
   crypto::Crypto co;
@@ -441,6 +445,10 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
 
   result = authentication->GetUserInfo(username, pin);
   ASSERT_EQ(kUserDoesntExist, result);
+
+  // Check the TMIDs are gone
+  ASSERT_TRUE(sm->KeyUnique(tmidmidname, false));
+  ASSERT_TRUE(sm->KeyUnique(tmidsmidname, false));
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {

@@ -400,6 +400,8 @@ int Authentication::SaveSession(const std::string &ser_da) {
     return kAuthenticationError;
   }
 
+  ss_->SetTmidContent(boost::any_cast<std::string>(tmidresult["data"]));
+
   if (StorePacket(boost::any_cast<std::string>(mid_result["name"]),
       boost::any_cast<std::string>(mid_result["encRid"]), MID, kOverwrite, "")
       != kSuccess) {
@@ -533,8 +535,8 @@ int Authentication::CreatePublicName(const std::string &public_username) {
 
 int Authentication::ChangeUsername(const std::string &ser_da,
                                    const std::string &new_username) {
-//  if (!CheckUsername(new_username) || new_username == ss_->Username())
-//    return INVALID_USERNAME;
+  /*if (!CheckUsername(new_username) || new_username == ss_->Username())
+    return kUserExists; // INVALID_USERNAME;*/
   int fakerid;
   if (GetMid(new_username, ss_->Pin(), &fakerid))
     return kUserExists;
@@ -630,6 +632,7 @@ int Authentication::ChangeUsername(const std::string &ser_da,
 #endif
     return kAuthenticationError;
   }
+
   result = DeletePacket(smidPacket->PacketName(&user_params),
            EncryptedDataMidSmid(ss_->SmidRid()), SMID);
   if (result != kSuccess) {
@@ -641,7 +644,7 @@ int Authentication::ChangeUsername(const std::string &ser_da,
 
   user_params["rid"] = ss_->MidRid();
   result = DeletePacket(tmidPacket->PacketName(&user_params),
-           ss_->TmidContent(), TMID);
+           /*""*/ss_->TmidContent(), TMID);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("Authentication::ChangeUsername - Failed to delete midTMID {%s}.\n",
@@ -652,13 +655,13 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   if (ss_->MidRid() != ss_->SmidRid()) {
     user_params["rid"] = ss_->SmidRid();
   // TODO(Team#5#): Save value in session to send delete
-//    result = DeletePacket(tmidPacket->PacketName(&user_params), "", TMID);
-//    if (result != kSuccess) {
-//  #ifdef DEBUG
-//      printf("Authentication::ChangeUsername - Failed to delete smidTMID.\n");
-//  #endif
-//      return kAuthenticationError;
-//    }
+    result = DeletePacket(tmidPacket->PacketName(&user_params), "", TMID);
+    if (result != kSuccess) {
+#ifdef DEBUG
+      printf("Authentication::ChangeUsername - Failed to delete smidTMID.\n");
+#endif
+      return kAuthenticationError;
+    }
   }
 
   ss_->SetUsername(new_username);
@@ -1063,7 +1066,9 @@ int Authentication::DeletePacket(const std::string &packet_name,
   int result(kGeneralError);
   VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
                                     &mutex, &cond_var, &result);
-  std::vector<std::string> values(1, value);
+  std::vector<std::string> values;
+  if ("" != value)
+    values.push_back(value);
   sm_->DeletePacket(packet_name, values, type, PRIVATE, "", func);
   {
     boost::mutex::scoped_lock lock(mutex);
