@@ -39,17 +39,18 @@
 #include <sstream>
 
 #include "fs/filesystem.h"
-#include "protobuf/datamaps.pb.h"
-#include "maidsafe/maidsafe.h"
+#include "maidsafe/client/keyatlas.h"
+#include "maidsafe/client/pddir.h"
+#include "maidsafe/client/sessionsingleton.h"
 
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
 DataAtlasHandler::DataAtlasHandler() :db_dir_(), dirs_() {
-  file_system::FileSystem fsys_;
-  if (!maidsafe::SessionSingleton::getInstance()->SessionName().empty()) {
-    db_dir_ = fsys_.DbDir();
+  SessionSingleton *ss = SessionSingleton::getInstance();
+  if (!ss->SessionName().empty()) {
+    db_dir_ = file_system::DbDir(ss->SessionName()).string();
   } else {
     crypto::Crypto c;
     c.set_hash_algorithm(crypto::SHA_1);
@@ -57,9 +58,7 @@ DataAtlasHandler::DataAtlasHandler() :db_dir_(), dirs_() {
     std::string pin = "1234";
     std::string s = c.Hash(pin+username, "", crypto::STRING_STRING, true);
     std::string mdir = ".maidsafe" + s;
-    fs::path db_dir(fsys_.HomeDir());
-    db_dir /= mdir;
-    db_dir /= "dir";
+    fs::path db_dir(file_system::HomeDir() / mdir / "dir");
     db_dir_ = db_dir.string();
   }
 }
@@ -99,10 +98,9 @@ void DataAtlasHandler::GetDbPath(const std::string &element_path,
   // element_path
   std::string pre_hash_db_name;
   if (flag != CREATE) {
-    // pre_hash_db_name = path.parent_path().filename() + db_dir_;
     pre_hash_db_name = path.parent_path().string() + db_dir_;
     // if the branch is null, we're making an element in the root, so set
-    // pre_hash_db_name_ to "/"+db_dir_
+    // pre_hash_db_name to "/"+db_dir_
     if (path.parent_path().filename() == "")
       pre_hash_db_name = fs::path("/" + db_dir_, fs::native).string();
   } else {

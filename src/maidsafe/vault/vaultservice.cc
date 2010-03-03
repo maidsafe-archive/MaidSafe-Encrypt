@@ -91,7 +91,6 @@ VaultService::VaultService(const std::string &pmid_public,
                            const std::string &pmid_public_signature,
                            VaultChunkStore *vault_chunkstore,
                            kad::KNode *knode,
-                           PendingOperationsHandler *poh,
                            VaultServiceLogic *vault_service_logic,
                            const boost::int16_t &transport_id)
     : pmid_public_(pmid_public),
@@ -100,7 +99,6 @@ VaultService::VaultService(const std::string &pmid_public,
       pmid_(),
       vault_chunkstore_(vault_chunkstore),
       knode_(knode),
-      poh_(poh),
       vault_service_logic_(vault_service_logic),
       transport_id_(transport_id),
       prm_(),
@@ -655,6 +653,9 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     return;
   }
 
+  printf("VaultService::AmendAccount - from %s to %s\n",
+         HexSubstr(pmid).c_str(),
+         HexSubstr(knode_->node_id()).c_str());
   if (ah_.HaveAccount(pmid) == kAccountNotFound) {
     if (request->amendment_type() ==
         maidsafe::AmendAccountRequest::kSpaceOffered) {
@@ -1805,6 +1806,12 @@ int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
   return vault_service_logic_->RemoteVaultAbleToStore(as_req, transport_id_);
 }
 
+int VaultService::AddAccount(const std::string &pmid,
+                             const boost::uint64_t &offer) {
+  return ah_.AddAccount(pmid, offer);
+}
+
+
 RegistrationService::RegistrationService(
     boost::function<void(const maidsafe::VaultConfig&)> notifier)
         : notifier_(notifier),
@@ -1835,55 +1842,42 @@ void RegistrationService::SetLocalVaultOwned(
   }
 
   // checking available space in disk
-  boost::filesystem::path chunkdir(request->chunkstore_dir());
+  boost::filesystem::path vaultdir(request->vault_dir());
   boost::filesystem::space_info info;
-  if ("/" != chunkdir.root_directory())
+  if ("/" != vaultdir.root_directory())
     info = boost::filesystem::space(boost::filesystem::path("/"));
   else
-    info = boost::filesystem::space(boost::filesystem::path(chunkdir.root_name()
-        + chunkdir.root_directory()));
+    info = boost::filesystem::space(boost::filesystem::path(vaultdir.root_name()
+        + vaultdir.root_directory()));
   if (request->space() > info.available) {
     response->set_result(maidsafe::NOT_ENOUGH_SPACE);
     done->Run();
     return;
   }
-  // Checking if keys sent are a correct RSA key pair
-  crypto::Crypto cobj;
-  cobj.set_hash_algorithm(crypto::SHA_512);
-//                                    if (cobj.AsymCheckSig(request->public_key(), request->signed_public_key(),
-//                                        request->public_key(), crypto::STRING_STRING)) {
-//                                      std::string signed_key = cobj.AsymSign(request->public_key(), "",
-//                                          request->private_key(), crypto::STRING_STRING);
-//                                      if (cobj.AsymCheckSig(request->public_key(), signed_key,
-//                                          request->public_key(), crypto::STRING_STRING)) {
-      // checking if port is available
-      transport::TransportUDT test_tranport;
-      if (request->port() == 0 || test_tranport.IsPortAvailable(
-          request->port())) {
-        response->set_result(maidsafe::OWNED_SUCCESS);
-        std::string pmid_name = cobj.Hash(request->public_key()+
-            request->signed_public_key(), "", crypto::STRING_STRING, false);
-        response->set_pmid_name(pmid_name);
-        pending_response_.callback = done;
-        pending_response_.args = response;
-        maidsafe::VaultConfig vconfig;
-        vconfig.set_pmid_public(request->public_key());
-        vconfig.set_pmid_private(request->private_key());
-        vconfig.set_signed_pmid_public(request->signed_public_key());
-        vconfig.set_chunkstore_dir(request->chunkstore_dir());
-        vconfig.set_port(request->port());
-        vconfig.set_available_space(request->space());
-        notifier_(vconfig);
-        return;
-      } else {
-        response->set_result(maidsafe::INVALID_PORT);
-      }
-//                                                                                    } else {
-//                                                                                      response->set_result(maidsafe::INVALID_RSA_KEYS);
-//                                                                                    }
-//                                                                                  } else {
-//                                                                                    response->set_result(maidsafe::INVALID_RSA_KEYS);
-//                                                                                  }
+  // checking if port is available
+  transport::TransportUDT test_tranport;
+  if (request->port() == 0 || test_tranport.IsPortAvailable(
+      request->port())) {
+    response->set_result(maidsafe::OWNED_SUCCESS);
+    crypto::Crypto cobj;
+    cobj.set_hash_algorithm(crypto::SHA_512);
+    std::string pmid_name = cobj.Hash(request->public_key()+
+        request->signed_public_key(), "", crypto::STRING_STRING, false);
+    response->set_pmid_name(pmid_name);
+    pending_response_.callback = done;
+    pending_response_.args = response;
+    maidsafe::VaultConfig vconfig;
+    vconfig.set_pmid_public(request->public_key());
+    vconfig.set_pmid_private(request->private_key());
+    vconfig.set_signed_pmid_public(request->signed_public_key());
+    vconfig.set_vault_dir(request->vault_dir());
+    vconfig.set_port(request->port());
+    vconfig.set_available_space(request->space());
+    notifier_(vconfig);
+    return;
+  } else {
+    response->set_result(maidsafe::INVALID_PORT);
+  }
   done->Run();
 }
 

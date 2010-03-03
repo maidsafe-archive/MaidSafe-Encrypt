@@ -390,8 +390,9 @@ void Contacts::onFileSendClicked() {
          arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
 
 #else
-  file_system::FileSystem fs;
-  root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+  root = QString::fromStdString(file_system::MaidsafeFuseDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+      "/My Files");
 
 #endif
 
@@ -642,12 +643,13 @@ void Contacts::onDirectoryEntered(const QString& dir) {
     qfd->setDirectory(root);
   }
 #else
-  file_system::FileSystem fs;
-  root = QString::fromStdString(fs.MaidsafeFuseDir());
+  root = QString::fromStdString(file_system::MaidsafeFuseDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string());
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
-    file_system::FileSystem fs;
-    root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+    root = QString::fromStdString(file_system::MaidsafeFuseDir(
+        maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+        "/My Files");
     qfd->setDirectory(root);
   }
 #endif

@@ -31,6 +31,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 
+#include "fs/filesystem.h"
 #include "maidsafe/kadops.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "protobuf/maidsafe_messages.pb.h"
@@ -44,15 +45,13 @@ void pdv_dummy_callback(const std::string&) {}
 PDVault::PDVault(const std::string &pmid_public,
                  const std::string &pmid_private,
                  const std::string &signed_pmid_public,
-                 const std::string &chunkstore_dir,
+                 const fs::path &vault_dir,
                  const boost::uint16_t &port,
                  bool port_forwarded,
                  bool use_upnp,
-                 const std::string &kad_config_file,
+                 const fs::path &read_only_kad_config_file,
                  const boost::uint64_t &available_space,
-                 const boost::uint64_t &used_space,
-                 transport::TransportHandler *transport_handler,
-                 const boost::int16_t &transport_id)
+                 const boost::uint64_t &used_space)
     : port_(port),
       global_udt_transport_(),
       transport_handler_(new transport::TransportHandler()),
@@ -64,7 +63,8 @@ PDVault::PDVault(const std::string &pmid_public,
                             use_upnp)),
       vault_rpcs_(new VaultRpcs(transport_handler_, &channel_manager_)),
       kad_ops_(new maidsafe::KadOps(knode_)),
-      vault_chunkstore_(chunkstore_dir, available_space, used_space),
+      vault_chunkstore_((vault_dir / "Chunkstore").string(), available_space,
+                        used_space),
       vault_service_(),
       vault_service_logic_(vault_rpcs_, knode_),
       kad_joined_(false),
@@ -77,10 +77,8 @@ PDVault::PDVault(const std::string &pmid_public,
       pmid_(),
       co_(),
       svc_channel_(),
-      kad_config_file_(kad_config_file),
-      poh_(),
+      kad_config_file_(vault_dir / ".kadconfig"),
       thread_pool_(),
-      prune_pending_ops_thread_(),
       create_account_thread_() {
   transport_handler_->Register(&global_udt_transport_, &transport_id_);
   knode_->SetTransID(transport_id_);
@@ -94,7 +92,15 @@ PDVault::PDVault(const std::string &pmid_public,
   knode_->set_signature_validator(&validator_);
   vault_rpcs_->SetOwnId(pmid_);
   thread_pool_.setMaxThreadCount(1);
-  poh_.SetPmid(pmid_);
+  try {
+    if (fs::exists(read_only_kad_config_file))
+      fs::copy_file(read_only_kad_config_file, kad_config_file_);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("In PDVault::PDVault() - %s\n", e.what());
+#endif
+  }
   printf("PDVault::PDVault() - %s\n", HexSubstr(pmid_).c_str());
 }
 
@@ -118,14 +124,21 @@ void PDVault::Start(bool first_node) {
     try {
       if (!fs::exists(kad_config_file_)) {
 #ifdef DEBUG
-        printf("Can't find kadconfig at %s\n", kad_config_file_.c_str());
+        printf("Can't find kadconfig at %s\n",
+               kad_config_file_.string().c_str());
 #endif
-        kad_config_file_ = ".kadconfig";
+        kad_config_file_ = file_system::ApplicationDataDir() / ".kadconfig";
       }
+//        if (!fs::exists(kad_config_file_)) {
+//  #ifdef DEBUG
+//          printf("Can't find kadconfig at %s\n", kad_config_file_.c_str());
+//  #endif
+//          kad_config_file_ = ".kadconfig";
+//        }
       if (!fs::exists(kad_config_file_)) {
 #ifdef DEBUG
         printf("Can't find kadconfig at %s - Failed to start vault.\n",
-               kad_config_file_.c_str());
+               kad_config_file_.string().c_str());
 #endif
         success = false;
       }
@@ -138,53 +151,41 @@ void PDVault::Start(bool first_node) {
     }
   }
   if (success) {
-                                                   printf("In PDVault::Start 1.\n");
     RegisterMaidService();
-                                                   printf("In PDVault::Start 2.\n");
     boost::mutex kad_join_mutex;
     if (first_node) {
       boost::asio::ip::address local_ip;
       base::get_local_address(&local_ip);
-      knode_->Join(pmid_, kad_config_file_, local_ip.to_string(),
+      knode_->Join(pmid_, kad_config_file_.string(), local_ip.to_string(),
           transport_handler_->listening_port(transport_id_),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     } else {
-                                                   printf("In PDVault::Start joining kad.\n");
-      knode_->Join(pmid_, kad_config_file_,
+      knode_->Join(pmid_, kad_config_file_.string(),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     }
     // Hash check all current chunks in chunkstore
-                                                   printf("In PDVault::Start hash checking.\n");
     std::list<std::string> failed_keys;
     if (0 != vault_chunkstore_.HashCheckAllChunks(true, &failed_keys)) {
-                                                   printf("In PDVault::Start hash checking FAILED.\n\n\n");
       return;
     }
     // Block until we've joined the Kademlia network.
-                                                   printf("In PDVault::Start waiting to join kad.\n");
     boost::mutex::scoped_lock lock(kad_join_mutex);
     while (!kad_joined_) {
       kad_join_cond_.wait(lock);
     }
-                                                   printf("In PDVault::Start joined kad.\n");
     // Set port, so that if vault is restarted before it is destroyed, it
     // re-uses port (unless this port has become unavailable).
     port_ = knode_->host_port();
     if (kad_joined_ && vault_service_logic_.Init(pmid_, pmid_public_,
         signed_pmid_public_, pmid_private_)) {
-                                                             printf("In PDVault::Start setting status to started.\n");
-
       SetVaultStatus(kVaultStarted);
-                                                             printf("In PDVault::Start done setting status to started.\n");
     }
-    // Start repeating pruning worker thread
-                                                             printf("In PDVault::Start starting prune pending ops thread.\n");
-    prune_pending_ops_thread_ =
-        boost::thread(&PDVault::PrunePendingOperations, this);
     // Announce available space to account, try repeatedly in thread
     // TODO(Team#) find better solution or make thread-safe!
-                                                             printf("In PDVault::Start starting create acc thread.\n");
     create_account_thread_ = boost::thread(&PDVault::UpdateSpaceOffered, this);
+  } else {
+    SetVaultStatus(kVaultStarted);
+    Stop();
   }
 }
 
@@ -217,8 +218,6 @@ int PDVault::Stop() {
     return -2;
   }
   SetVaultStatus(kVaultStopping);
-//  thread_pool_.waitForDone();
-  prune_pending_ops_thread_.join();
   create_account_thread_.join();
   UnRegisterMaidService();
   knode_->Leave();
@@ -241,7 +240,6 @@ void PDVault::RegisterMaidService() {
                      signed_pmid_public_,
                      &vault_chunkstore_,
                      knode_.get(),
-                     &poh_,
                      &vault_service_logic_,
                      transport_id_));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
@@ -252,9 +250,12 @@ void PDVault::RegisterMaidService() {
 }
 
 void PDVault::UnRegisterMaidService() {
-  channel_manager_.UnRegisterChannel(vault_service_->GetDescriptor()->name());
-  svc_channel_.reset();
-  vault_service_.reset();
+  if (vault_service_.get() != NULL)
+    channel_manager_.UnRegisterChannel(vault_service_->GetDescriptor()->name());
+  if (svc_channel_ != NULL)
+    svc_channel_.reset();
+  if (vault_service_ != NULL)
+    vault_service_.reset();
 }
 
 VaultStatus PDVault::vault_status() {
@@ -267,12 +268,6 @@ void PDVault::SetVaultStatus(const VaultStatus &vault_status) {
   vault_status_ = vault_status;
 }
 
-void PDVault::PrunePendingOperations() {
-  while (vault_status() == kVaultStarted) {
-    poh_.PrunePendingOps();
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-  }
-}
 /*
 void PDVault::SyncVault(base::callback_func_type cb) {
   // Process of updating vault:
@@ -1228,18 +1223,18 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   // If we are listed as an account holder, don't send RPC
   for (std::vector<kad::Contact>::iterator it = data->contacts.begin();
        it != data->contacts.end(); ++it) {
-////    if ((*it).node_id() == our_details_.node_id()) {
-////      if (ah_.AddAccount(pmid, account_delta) == 0) {
-////        ++data->success_count;
-////#ifdef DEBUG
-//////      printf("Vault %s listed as an account holder for PMID %s\n",
-//////             HexSubstr((*it).node_id()).c_str(),
-//////             HexSubstr(pmid_).c_str());
-////#endif
-////      }
-////      data->contacts.erase(it);
-////      break;
-////    }
+    if ((*it).node_id() == knode_->node_id()) {
+      if (vault_service_->AddAccount((*it).node_id(), space_offered) == 0) {
+        ++data->success_count;
+#ifdef DEBUG
+//      printf("Vault %s listed as an account holder for PMID %s\n",
+//             HexSubstr((*it).node_id()).c_str(),
+//             HexSubstr(pmid_).c_str());
+#endif
+      }
+      data->contacts.erase(it);
+      break;
+    }
   }
 
   // Create the request

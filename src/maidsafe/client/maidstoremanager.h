@@ -297,7 +297,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           const std::string &pub_key,
                           const std::string &signed_pub_key,
                           const boost::uint32_t &port,
-                          const std::string &chunkstore_dir,
+                          const std::string &vault_dir,
                           const boost::uint64_t &space,
                           const SetLocalVaultOwnedFunctor &functor);
   void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
@@ -314,6 +314,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                               std::string *public_key,
                               std::string *public_key_sig,
                               std::string *private_key);
+  virtual int CreateAccount(const boost::uint64_t &space);
+
   friend void AddToWatchListTask::run();
   friend void SendChunkCopyTask::run();
   friend void StorePacketTask::run();
@@ -522,6 +524,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       boost::shared_ptr<SetLocalVaultOwnedCallbackArgs> callback_args);
   void LocalVaultOwnedCallback(
       boost::shared_ptr<LocalVaultOwnedCallbackArgs> callback_args);
+  void AmendAccountCallback(size_t index,
+                            boost::shared_ptr<AmendAccountData> data);
+
   transport::TransportUDT udt_transport_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
@@ -539,6 +544,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   ClientBufferPacketHandler cbph_;
   static int kChunkMaxThreadCount_;
   static int kPacketMaxThreadCount_;
+  boost::int16_t trans_id_;
 };
 
 }  // namespace maidsafe

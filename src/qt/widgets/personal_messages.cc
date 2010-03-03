@@ -184,8 +184,9 @@ void PersonalMessages::onSendFile() {
   }
   QStringList fileNames = qfd->selectedFiles();
 #else
-  file_system::FileSystem fs;
-  root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+  root = QString::fromStdString(file_system::MaidsafeFuseDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+      "/My Files");
   QStringList fileNames = QFileDialog::getOpenFileNames(
                                 this,
                                 "Select one to send",
