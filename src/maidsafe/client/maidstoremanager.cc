@@ -1719,7 +1719,7 @@ void MaidsafeStoreManager::SendPrepCallback(
     if (!AssessTaskAndOnlineStatus(send_chunk_data->store_data.data_name,
         kStoreChunk)) {
 #ifdef DEBUG
-      printf("In MSM::SendChunkPrep (chunk %s): Task cancelled/completed.\n",
+      printf("In MSM::SendPrepCallback (chunk %s): Task cancelled/completed.\n",
              HexSubstr(send_chunk_data->store_data.data_name).c_str());
 #endif
       return;
@@ -1905,7 +1905,7 @@ void MaidsafeStoreManager::SendContentCallback(
     int overall_result = tasks_handler_.StopSubTask(
         send_chunk_data->store_data.data_name, kStoreChunk, false);
 #ifdef DEBUG
-    printf("In MSM::SendPrepCallback (chunk %s): Error sending content.\n",
+    printf("In MSM::SendContentCallback (chunk %s): Error sending content.\n",
            HexSubstr(send_chunk_data->store_data.data_name).c_str());
 #endif
     if (overall_result == kStoreTaskFinishedPass ||
@@ -2539,7 +2539,7 @@ void MaidsafeStoreManager::DeletePacketFromNet(
         delete_data->private_key, crypto::STRING_STRING));
     std::string signed_request = co.AsymSign(co.Hash(delete_data->public_key +
         delete_data->public_key_signature + delete_data->packet_name,
-        "", crypto::STRING_STRING, true), "", delete_data->private_key,
+        "", crypto::STRING_STRING, false), "", delete_data->private_key,
         crypto::STRING_STRING);
     kad::SignedRequest sr;
     sr.set_signer_id(delete_data->key_id);
