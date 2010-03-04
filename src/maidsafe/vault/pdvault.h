@@ -56,7 +56,7 @@ namespace maidsafe_vault {
 
 enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
 
-struct SyncVaultData {
+/* struct SyncVaultData {
   SyncVaultData() : chunk_names(), num_updated_chunks(0), num_chunks(0),
     active_updating(0), cb(), is_callbacked(false) {}
   std::list<std::string> chunk_names;  // chunks to be updated
@@ -65,9 +65,9 @@ struct SyncVaultData {
   int active_updating;
   base::callback_func_type cb;
   bool is_callbacked;
-};
+}; */
 
-struct GetAlivePartner {
+/* struct GetAlivePartner {
   GetAlivePartner(const int &num_parners, const std::string &chunk_name) :
     data(), is_found(false), contacted_partners(0),
     number_partners(num_parners), chunk_name(chunk_name) {}
@@ -76,9 +76,9 @@ struct GetAlivePartner {
   int contacted_partners;
   int number_partners;
   std::string chunk_name;
-};
+}; */
 
-struct RepublishChunkRefData {
+/* struct RepublishChunkRefData {
   RepublishChunkRefData() : chunk_names(), num_republished_chunks(0),
     num_chunks(0), cb(), is_callbacked(false) {}
   std::list<std::string> chunk_names;  // chunks to be updated
@@ -86,7 +86,7 @@ struct RepublishChunkRefData {
   int num_chunks;
   base::callback_func_type cb;
   bool is_callbacked;
-};
+}; */
 
 struct LoadChunkData {
   LoadChunkData(const std::string &chunkname, base::callback_func_type cb)
@@ -109,7 +109,7 @@ struct LoadChunkData {
   std::string sig_pub_key;
 };
 
-struct SynchArgs {
+/* struct SynchArgs {
   SynchArgs(const std::string &chunk_name,
             const kad::Contact &chunk_holder,
             boost::shared_ptr<SyncVaultData> data)
@@ -119,9 +119,9 @@ struct SynchArgs {
   const std::string chunk_name_;
   const kad::Contact chunk_holder_;
   boost::shared_ptr<SyncVaultData> data_;
-};
+}; */
 
-struct ValidityCheckArgs {
+/* struct ValidityCheckArgs {
   ValidityCheckArgs(const std::string &chunk_name,
                     const std::string &random_data,
                     const kad::Contact &chunk_holder,
@@ -135,7 +135,7 @@ struct ValidityCheckArgs {
   const kad::Contact chunk_holder_;
   base::callback_func_type cb_;
   bool retry_remote;
-};
+}; */
 
 struct GetArgs {
   GetArgs(const kad::Contact &chunk_holder,

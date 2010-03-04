@@ -2804,6 +2804,12 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
     data->condition.wait(lock);
   }
 
+  // kill all remaining RPCs before the data object is destroyed
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
+    channel_manager_.CancelPendingRequest(
+      data->data_holders.at(i).controller->req_id());
+  }
+
   if (data->success_count < kKadStoreThreshold) {
 #ifdef DEBUG
     printf("In MSM::CreateAccount, not enough positive responses "
