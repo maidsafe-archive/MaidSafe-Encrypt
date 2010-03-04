@@ -154,6 +154,8 @@ class Env: public testing::Environment {
       }
     }
     // Make kad config file in ./ for clients' use.
+    if (fs::exists(".kadconfig"))
+      fs::remove(".kadconfig");
     fs::copy_file(kad_config_file_, ".kadconfig");
     // Allow new vaults time to finish setting up their accounts.
     boost::this_thread::sleep(boost::posix_time::seconds(10));
