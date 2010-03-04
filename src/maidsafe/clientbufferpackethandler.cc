@@ -180,7 +180,7 @@ void ClientBufferPacketHandler::AddMessage(const BPInputParameters &args,
   // generating key to encrypt msg with AES
   uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
   std::string aes_key = crypto_obj_.SecurePassword(
-      crypto_obj_.Hash(message, "", crypto::STRING_STRING, true), iter);
+      crypto_obj_.Hash(message, "", crypto::STRING_STRING, false), iter);
 
   bpmsg.set_aesenc_message(crypto_obj_.SymmEncrypt(message, "",
       crypto::STRING_STRING, aes_key));

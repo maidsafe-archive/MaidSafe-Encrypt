@@ -202,7 +202,7 @@ class GetMsgsHelper {
     maidsafe::ValidatedBufferPacketMessage bp_msg;
     uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
     std::string aes_key = co.SecurePassword(co.Hash(msg, "",
-      crypto::STRING_STRING, true), iter);
+      crypto::STRING_STRING, false), iter);
     bp_msg.set_index(co.AsymEncrypt(aes_key, "", rec_pub_key,
       crypto::STRING_STRING));
     bp_msg.set_sender(sender);

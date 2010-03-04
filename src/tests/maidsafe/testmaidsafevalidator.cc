@@ -47,8 +47,6 @@ class TestMSValidator : public testing::Test {
 TEST_F(TestMSValidator, BEH_MAID_TestValidateSignerID) {
   std::string id(co.Hash(rsa_keys.public_key() + signed_public_key, "",
     crypto::STRING_STRING, false));
-  std::string id1(co.Hash(rsa_keys.public_key() + signed_public_key, "",
-    crypto::STRING_STRING, true));
   ASSERT_TRUE(validator.ValidateSignerId(id, rsa_keys.public_key(),
     signed_public_key));
   ASSERT_FALSE(validator.ValidateSignerId(id, other_keys.public_key(),
