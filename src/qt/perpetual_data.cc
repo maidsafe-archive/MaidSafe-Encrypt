@@ -20,6 +20,7 @@
 #include <QProcess>
 #include <QList>
 #include <QFileDialog>
+#include <boost/progress.hpp>
 
 #include <list>
 #include <string>
@@ -34,8 +35,6 @@
 #include "qt/widgets/user_panels.h"
 #include "qt/widgets/system_tray_icon.h"
 #include "qt/widgets/user_settings.h"
-#include "qt/perpetual_data.h"
-
 
 #include "qt/client/create_user_thread.h"
 #include "qt/client/join_kademlia_thread.h"
@@ -191,7 +190,6 @@ void PerpetualData::setState(State state) {
   disconnect(userPanels_, NULL, this, NULL);
 
   userPanels_->setActive(false);
-  create_->reset();
 
   state_ = state;
 
@@ -334,6 +332,8 @@ void PerpetualData::asyncCreateUser() {
 
   connect(cut,  SIGNAL(completed(bool)),
           this, SLOT(onUserCreationCompleted(bool)));
+
+  create_->reset();
 
   cut->start();
 }
@@ -510,6 +510,7 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
                                       const QString& sender,
                                       const QString& detail,
                                       const QString& conversation) {
+  boost::progress_timer t;
   if (type == ClientController::TEXT) {
     std::list<std::string> theList;
     maidsafe::SessionSingleton::getInstance()->ConversationList(&theList);
@@ -527,12 +528,13 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
       QString styleSheet = QLatin1String(file.readAll());
 
       mess_->setStyleSheet(styleSheet);
-      mess_->setMessage(tr("'%1' said: %2").arg(sender).arg(detail));
+      mess_->setMessage(tr("%1 said: %2").arg(sender).arg(detail));
       mess_->show();
     }
   } else if (type == ClientController::INVITE) {
     // TODO(Team#5#): 2010-01-13 - handle Invite
   }
+  printf("Perpertual Data.cc %f", t.elapsed());
 }
 
 void PerpetualData::onShareReceived(const QString& from,
@@ -572,11 +574,14 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
 #endif
 
       qfd = new QFileDialog(this,
-                     tr("File to share..."),
-                     root, tr("Any file (*)"));
+                     tr("Save File As.."),
+                     root + "/" + QString::fromStdString(ifn.filename()),
+                     tr("Any file (*)"));
 
       connect( qfd, SIGNAL(directoryEntered(const QString &)),
             this, SLOT(onDirectoryEntered(const QString&)));
+
+      qfd->setAcceptMode(QFileDialog::AcceptSave);
 
       int result = qfd->exec();
       if (result == QDialog::Rejected) {
@@ -586,7 +591,10 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
 
       directory = fileNames.at(0);
 
-      printf("Dir chosen: %s\n", directory.toStdString().c_str());
+      /*directory = QFileDialog::getSaveFileName(this,
+                          tr("Save File"), root);
+
+      printf("Dir chosen: %s\n", directory.toStdString().c_str());*/
 
 #ifdef __WIN32__
       std::string s = directory.toStdString();
@@ -644,7 +652,7 @@ void PerpetualData::onConnectionStatusChanged(int status) {
   SystemTrayIcon::instance()->showMessage(title, message);
 }
 
-void PerpetualData::onDirectoryEntered(const QString& dir){
+void PerpetualData::onDirectoryEntered(const QString& dir) {
   printf("Contacts::onDirectoryEntered :: %s \n",dir.toStdString().c_str());
   QString root;
 

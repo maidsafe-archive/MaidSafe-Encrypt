@@ -43,6 +43,9 @@ class UserSettings : public QDialog {
 
   private slots:
     void onCurrentRowChanged(int);
+    void HandleOK();
+    void HandleApply();
+    void HandleCancel();
 
   private:
     Ui::UserSettingsPage ui_;

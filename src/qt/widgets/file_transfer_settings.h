@@ -32,6 +32,8 @@ class FileTransferSettings : public QWidget {
   explicit FileTransferSettings(QWidget* parent = 0);
   virtual ~FileTransferSettings();
 
+  QHash<QString, QString> changedValues_;
+
   private:
     Ui::FileTransferPage ui_;
 

@@ -114,6 +114,7 @@ QMainWindow::separator {
 
  QMenuBar {
      background-color:#7B7B7B;
+     color: white;
  }
 
  QMenuBar::item {
@@ -124,16 +125,16 @@ QMainWindow::separator {
  }
 
  QMenuBar::item:selected { /* when selected using mouse or keyboard */
-     background: #EDEEF1;
+     background: silver;
  }
 
  QMenuBar::item:pressed {
-     background: #EDEEF1;
+     background: silver;
  } 
  
  QMenu {
      background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                       stop:0 white, stop:1 #AAAAAA);
+                                       stop:0 white, stop:1 #AAAAAA);                          
      border: 1px #8A8C94;
  }
 
@@ -149,7 +150,7 @@ QMainWindow::separator {
  }
  
   QMenu::icon:checked { /* appearance of a 'checked' icon */
-     background: gray;
+     background: black;
      border: 1px inset gray;
      position: absolute;
      top: 1px;
@@ -169,9 +170,10 @@ QMainWindow::separator {
  /* Style the tab using the tab sub-control. Note that
      it reads QTabBar _not_ QTabWidget */
  QTabBar::tab {
-     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+     /*background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
                                  stop: 0 #E1E1E1, stop: 0.4 #DDDDDD,
-                                 stop: 0.5 #D8D8D8, stop: 1.0 #D3D3D3);
+                                 stop: 0.5 #D8D8D8, stop: 1.0 #D3D3D3);*/
+     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 	lightblue, stop: 1 #c0c0c0); 
      border: 1px solid #C4C4C3;
      border-bottom-color: #C2C7CB; /* same as the pane color */
      border-top-left-radius: 4px;
@@ -181,9 +183,11 @@ QMainWindow::separator {
  }
 
  QTabBar::tab:selected, QTabBar::tab:hover {
-     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 	lightblue, stop: 1 transparent);
+               
+     /*background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
                                  stop: 0 #FEFFB9, stop: 0.4 #f4f4f4,
-                                 stop: 0.5 #e7e7e7, stop: 1.0 #fafafa);
+                                 stop: 0.5 #e7e7e7, stop: 1.0 #fafafa);*/
  }
 
  QTabBar::tab:selected {
@@ -202,8 +206,7 @@ QMainWindow::separator {
      padding: 5px;
      border-radius: 3px;
      opacity: 255;
- } 
- 
+ }  
  
 QDockWidget {
      border: 2px solid #C4C5C6;
@@ -298,7 +301,7 @@ QLabel {
  } 
  
  QLineEdit {
-     border: 2px solid gray;
+     border: 2px solid grey;
      border-radius: 10px;
      padding: 0 8px;
      background: white;
@@ -334,7 +337,7 @@ QLabel {
  }
  
  QRadioButton{
-    color: #FFFFFF;
+    color: #000000;
  }
  
  QRadioButton::indicator {

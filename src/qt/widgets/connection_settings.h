@@ -31,6 +31,8 @@ class ConnectionSettings : public QWidget {
   explicit ConnectionSettings(QWidget* parent = 0);
   virtual ~ConnectionSettings();
 
+  QHash<QString, QString> changedValues_;
+
   private:
     Ui::ConnectionSettingsPage ui_;
 

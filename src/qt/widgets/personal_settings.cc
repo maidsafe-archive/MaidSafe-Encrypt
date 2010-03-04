@@ -18,6 +18,15 @@
 
 PersonalSettings::PersonalSettings(QWidget* parent):init_(false){
   ui_.setupUi(this);
+
+    connect(ui_.usernameEdit, SIGNAL(textEdited(const QString&)),
+          this,           SLOT(onUsernameTextEdit(const QString&)));
+
+    connect(ui_.messageEdit, SIGNAL(textEdited(const QString&)),
+          this,           SLOT(onMessageTextEdit(const QString&)));
+
+    connect(ui_.pushButtonPicture, SIGNAL(clicked(bool)),
+          this,           SLOT(void onPicChangeClicked(bool)));
 }
 
 PersonalSettings::~PersonalSettings() {}
@@ -32,3 +41,17 @@ void PersonalSettings::setActive(bool b){
 
 void PersonalSettings::reset(){
 }
+
+void PersonalSettings::onUsernameTextEdit(const QString& text){
+   changedValues_.insert("username", text);
+}
+
+void PersonalSettings::onMessageTextEdit(const QString& text){
+   changedValues_.insert("message", text);
+}
+
+void PersonalSettings::onPicChangeClicked(bool b){
+   changedValues_.insert("changepic", "");
+}
+
+

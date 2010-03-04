@@ -24,7 +24,6 @@
 #include <limits.h>
 
 // core
-#include "maidsafe/client/clientcontroller.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "qt/client/check_user_thread.h"
 #include "qt/client/validate_user_thread.h"

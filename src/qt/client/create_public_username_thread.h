@@ -1,4 +1,3 @@
-
 /*
  * copyright maidsafe.net limited 2009
  * The following source code is property of maidsafe.net limited and
@@ -17,7 +16,6 @@
 #define QT_CLIENT_CREATE_PUBLIC_USERNAME_THREAD_H_
 
 #include "qt/client/worker_thread.h"
-
 
 // Worker thread for creating the pulbic username of users
 /*!

@@ -45,6 +45,7 @@
     qt/client, act as a layer between the Qt gui world and the maidsafe
     world.
 */
+
 class ClientController : public QObject {
   Q_OBJECT
  public:
@@ -63,6 +64,24 @@ class ClientController : public QObject {
   bool Init();
 
   QString publicUsername() const;
+
+  bool CreatePublicUsername(const std::string &public_username);
+  bool CreateUser(const std::string &username,
+                  const std::string &pin,
+                  const std::string &password,
+                  const maidsafe::VaultConfigParameters &vcp);
+  int CheckUserExists(const std::string &username,
+                  const std::string &pin,
+                  maidsafe::DefConLevels level);
+  int CreateNewShare(const std::string &name,
+                     const std::set<std::string> &admins,
+                     const std::set<std::string> &readonlys);
+  bool ValidateUser(const std::string &password);
+
+  // Settings
+  bool ChangeUsername(const std::string &new_username);
+  bool ChangePin(const std::string &new_pin);
+  bool ChangePassword(const std::string &new_password);
 
   // Contacts
   ContactList contacts(int type = 0) const;
@@ -125,6 +144,7 @@ class ClientController : public QObject {
   private slots:
     // temporary while we emulate message notifications
     void checkForMessages();
+    void onCheckMessagesCompleted(bool success);
 
  private:
   explicit ClientController(QObject* parent = 0);

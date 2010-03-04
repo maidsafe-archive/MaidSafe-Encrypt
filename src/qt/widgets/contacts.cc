@@ -506,9 +506,9 @@ void Contacts::onConfirmedContact(const QString &name) {
   QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
                                   Qt::MatchCaseSensitive);
 
-QMessageBox msgBox;
-  msgBox.setText("The contact has been confirmed.");
-  msgBox.exec();
+//  QMainWindow::statusBar()->showMessage(tr("user : %1 confirmed").arg(name));
+
+//TODO Stephen change status bar from here
 
   foreach(QListWidgetItem* item, items) {
     if (item->text() == name) {

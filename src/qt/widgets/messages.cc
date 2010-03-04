@@ -25,10 +25,6 @@
 
 //
 #include "maidsafe/client/contacts.h"
-#include "maidsafe/client/clientcontroller.h"
-
-
-
 
 namespace {
 

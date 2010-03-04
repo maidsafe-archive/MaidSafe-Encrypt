@@ -19,7 +19,7 @@
 #include <QDebug>
 
 // core
-#include "maidsafe/client/clientcontroller.h"
+#include "qt/client/client_controller.h"
 
 // local
 
@@ -39,7 +39,7 @@ void CreateShareThread::run() {
   QListStringToStdSet(adminSet_, &sAdminSet);
   QListStringToStdSet(roSet_, &sRoSet);
 
-  if (maidsafe::ClientController::getInstance()->CreateNewShare(
+  if (!ClientController::instance()->CreateNewShare(
       shareName_.toStdString(), sAdminSet, sRoSet) != 0) {
     qDebug() << "CreateShareThread::run FAIL";
     emit completed(false);

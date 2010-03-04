@@ -20,6 +20,7 @@
 
 // local
 #include "qt/client/client_controller.h"
+#include "qt/widgets/smily.h"
 
 #include "ui_user_personal_message.h"
 
@@ -53,22 +54,28 @@ class PersonalMessages : public QMainWindow {
                            const QString& conversation);
 
     void onSendMessageClicked();
-
     void onSendInvite();
-
     void onSendFile();
+    void onTextClicked();
+    void onColorClicked();
+    void onSmilyClicked();
+    void formatHtml();
+    void onSmilyChosen(int row,int column);
+    void onSendMessageComplete(bool success, const QString& text);
 
  private:
   void sendMessage(const QDateTime& time,
                   const QString& sender,
                   const QString& message);
 
-
   Ui::PersonalMessagePage ui_;
   bool active_;
   bool init_;
   QString convName_;
   UserPanels* userPanels_;
+  QFont font_;
+  QColor color_;
+  Smily* smilies_;
 
   // Hold basic message info
   struct Message {

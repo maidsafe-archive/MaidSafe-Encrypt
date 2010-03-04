@@ -32,6 +32,8 @@ class SecuritySettings : public QWidget {
   explicit SecuritySettings(QWidget* parent = 0);
   virtual ~SecuritySettings();
 
+  QHash<QString, QString> changedValues_;
+
   private:
     Ui::SecuritySettingsPage ui_;
 

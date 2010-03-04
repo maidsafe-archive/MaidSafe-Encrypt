@@ -1,31 +1,52 @@
 <RCC>
-  <qresource prefix="icons/64" >
-    <file alias="messages" >64/Message-64.png</file>
-    <file alias="contacts" >64/Contacts-64.png</file>
-    <file alias="shares" >64/Shares-64.png</file>
-    <file alias="settings" >64/Settings-64.png</file>
-    <file alias="contacts" >64/Contacts-64.png</file>
-    <file alias="activities" >64/UserActivities-64.png</file>
-    <file alias="help" >64/Help-64.png</file>
-    <file alias="globe" >64/Globe-64.png</file>
+  <qresource prefix="icons/64">
+    <file>64/VaultGrey-64.png</file>
+    <file alias="messages">64/Message-64.png</file>
+    <file alias="contacts">64/Contacts-64.png</file>
+    <file alias="shares">64/Shares-64.png</file>
+    <file alias="settings">64/Settings-64.png</file>
+    <file alias="contacts">64/Contacts-64.png</file>
+    <file alias="activities">64/UserActivities-64.png</file>
+    <file alias="help">64/Help-64.png</file>
+    <file alias="globe">64/Globe-64.png</file>
   </qresource>
-  <qresource prefix="icons/32" >
-    <file alias="messages" >32/Message-32.png</file>
-    <file alias="contacts" >32/Contacts-32.png</file>
-    <file alias="shares" >32/Shares-32.png</file>
-    <file alias="settings" >32/Settings-32.png</file>
-    <file alias="contacts" >32/Contacts-32.png</file>
-    <file alias="activities" >32/UserActivities-32.png</file>
-    <file alias="help" >32/Help-32.png</file>
-    <file alias="globe" >32/Globe-32.png</file>
+  <qresource prefix="icons/32">
+    <file>32/Color Picker_32.png</file>
+    <file>32/smily-select.png</file>
+    <file>32/text-select.png</file>
+    <file>32/VaultGrey-32.png</file>
+    <file>32/VaultGreen-32.png</file>
+    <file>32/AddUser-32.png</file>
+    <file alias="messages">32/Message-32.png</file>
+    <file alias="contacts">32/Contacts-32.png</file>
+    <file alias="shares">32/Shares-32.png</file>
+    <file alias="settings">32/Settings-32.png</file>
+    <file alias="contacts">32/Contacts-32.png</file>
+    <file alias="activities">32/UserActivities-32.png</file>
+    <file alias="help">32/Help-32.png</file>
+    <file alias="globe">32/Globe-32.png</file>
   </qresource>
-  <qresource prefix="icons/16" >
-    <file alias="globe" >16/Globe-16.png</file>
-    <file alias="offline" >16/Globe-16-Offline.png</file>
-    <file alias="tick" >16/tick.png</file>
-    <file alias="question" >16/question.png</file>
+  <qresource prefix="smilies">
+    <file>smily_blue/sbiggrin.gif</file>
+    <file>smily_blue/sconfused.gif</file>
+    <file>smily_blue/scool.gif</file>
+    <file>smily_blue/scry.gif</file>
+    <file>smily_blue/sdrool.gif</file>
+    <file>smily_blue/shappy.gif</file>
+    <file>smily_blue/smad.gif</file>
+    <file>smily_blue/ssad.gif</file>
+    <file>smily_blue/ssleepy.gif</file>
+    <file>smily_blue/ssmile.gif</file>
+    <file>smily_blue/ssuprised.gif</file>
+    <file>smily_blue/stongue.gif</file>
   </qresource>
-  <qresource prefix="/qss" >
+  <qresource prefix="icons/16">
+    <file alias="globe">16/Globe-16.png</file>
+    <file alias="offline">16/Globe-16-Offline.png</file>
+    <file alias="tick">16/tick.png</file>
+    <file alias="question">16/question.png</file>
+  </qresource>
+  <qresource prefix="/qss">
     <file>defaultWithWhite1.qss</file>
     <file>defaultWithWhite.qss</file>
     <file>test2withble.qss</file>

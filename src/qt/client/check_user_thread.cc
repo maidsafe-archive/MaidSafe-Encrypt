@@ -22,7 +22,7 @@
 #include <string>
 
 // core
-#include "maidsafe/client/clientcontroller.h"
+#include "qt/client/client_controller.h"
 
 // local
 
@@ -42,7 +42,7 @@ void CheckUserThread::run() {
   const std::string username = username_.toStdString();
   const std::string pin = pin_.toStdString();
 
-  int rc = maidsafe::ClientController::getInstance()->
+  int rc = ClientController::instance()->
                           CheckUserExists(username, pin, maidsafe::DEFCON3);
 
   if (rc == maidsafe::kUserDoesntExist) {

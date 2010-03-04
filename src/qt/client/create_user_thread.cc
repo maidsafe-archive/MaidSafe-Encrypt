@@ -22,7 +22,7 @@
 #include <string>
 
 // core
-#include "maidsafe/client/clientcontroller.h"
+#include "qt/client/client_controller.h"
 
 // local
 
@@ -54,7 +54,7 @@ void CreateUserThread::run() {
   vcp.port = base::stoi_ul(port_.toStdString());
   vcp.directory = directory_.toStdString();
 
-  if (!maidsafe::ClientController::getInstance()->
+  if (!ClientController::instance()->
       CreateUser(username, pin, password, vcp)) {
     emit completed(false);
   } else {

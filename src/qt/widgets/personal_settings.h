@@ -33,9 +33,16 @@ class PersonalSettings : public QWidget {
   virtual void setActive(bool);
   virtual void reset();
 
+  QHash<QString, QString> changedValues_;
+
+  private slots:
+    void onUsernameTextEdit(const QString&);
+    void onMessageTextEdit(const QString&);
+    void onPicChangeClicked(bool);
+
   private:
-    Ui::PersonalSettingsPage ui_;
     bool init_;
+    Ui::PersonalSettingsPage ui_;
 
 };
 

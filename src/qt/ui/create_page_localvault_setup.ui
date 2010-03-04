@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>260</width>
-    <height>319</height>
+    <width>234</width>
+    <height>336</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,11 +25,11 @@
       <bool>true</bool>
      </property>
      <property name="text">
-      <string>The space you offer to the network is exactly how much space you'll have to store your files in. We suggest a minimum space of 1 GB = 1024 MB.
+      <string>The space you offer to the network is exactly how much space you'll have to store your files in. We suggest minimum space of 1 GB = 1024 MB.
 
 Leaving port as 0 is also recommended as a setting. This will allow the software to determine one for you appropriately.
 
-Choose the directory so as that you might be able to increase the space when you desire.</string>
+Choose the directory so that you are able to increase the space when you desire.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>

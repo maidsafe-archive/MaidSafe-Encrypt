@@ -21,12 +21,15 @@
 #include <QTimer>
 
 #include <maidsafe/maidsafe-dht.h>
-
+#include <boost/progress.hpp>
 // std
 #include <list>
 #include <set>
 #include <string>
 #include <vector>
+
+//local
+#include "qt/client/check_for_messages_thread.h"
 
 // core
 #include "fs/filesystem.h"
@@ -34,7 +37,7 @@
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/privateshares.h"
 
-const int MESSAGE_POLL_TIMEOUT_MS = 6000;
+const int MESSAGE_POLL_TIMEOUT_MS = 3000;
 
 namespace {
   bool contactSortLessThan(const Contact* c1, const Contact* c2) {
@@ -388,10 +391,20 @@ bool ClientController::IsLocalVaultOwned() {
 
 void ClientController::checkForMessages() {
   // Check for messages only when public username is set
+
   if (publicUsername().isEmpty())
     return;
 
-  if (!maidsafe::ClientController::getInstance()->GetMessages()) {
+  CheckForMessagesThread* cfmt = new CheckForMessagesThread(this);
+
+  connect(cfmt, SIGNAL(completed(bool)),
+          this, SLOT(onCheckMessagesCompleted(bool)));
+
+  cfmt->start();
+
+  StopCheckingMessages();
+
+  /*if (!maidsafe::ClientController::getInstance()->GetMessages()) {
     if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() != 1) {
       int one(1);
       // modify CC online status
@@ -411,7 +424,42 @@ void ClientController::checkForMessages() {
     }
   }
   std::list<maidsafe::InstantMessage> msgs;
-  const int n = maidsafe::ClientController::getInstance()
+  int n = maidsafe::ClientController::getInstance()
+                ->GetInstantMessages(&msgs);
+
+
+  if (n != 0)
+    return;
+
+  std::list<maidsafe::InstantMessage> temp = msgs;
+  while (!temp.empty()) {
+      analyseMessage(temp.front());
+      temp.pop_front();
+  }*/
+}
+
+void ClientController::onCheckMessagesCompleted(bool success){
+    if (!success) {
+    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() != 1) {
+      int one(1);
+      // modify CC online status
+      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(one);
+      // signal for change of icon
+      emit connectionStatusChanged(one);
+      return;
+    }
+  } else {
+    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() == 1) {
+      int zero(0);
+      // modify CC online status
+      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(zero);
+      // signal for change of icon
+      emit connectionStatusChanged(zero);
+      return;
+    }
+  }
+  std::list<maidsafe::InstantMessage> msgs;
+  int n = maidsafe::ClientController::getInstance()
                 ->GetInstantMessages(&msgs);
 
   if (n != 0)
@@ -422,9 +470,11 @@ void ClientController::checkForMessages() {
       analyseMessage(temp.front());
       temp.pop_front();
   }
+  StartCheckingMessages();
 }
 
 int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
+  boost::progress_timer t;
   MessageType type = TEXT;
   int n = 0;
   if (im.has_contact_notification()) {
@@ -488,7 +538,6 @@ int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
     }
   }
 
-
   QDateTime time = QDateTime::currentDateTime();
   if (im.has_date()) {
     time = QDateTime::fromTime_t(im.date());
@@ -498,10 +547,58 @@ int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
   const QString conversation = QString::fromStdString(im.conversation());
 
   emit messageReceived(type, time, sender, message, conversation);
+   printf("Ansa %f", t.elapsed());
 
   return n;
+
 }
 
 int ClientController::SaveSession() {
   return maidsafe::ClientController::getInstance()->SaveSession();
 }
+
+bool ClientController::ChangeUsername(const std::string &new_username) {
+  return maidsafe::ClientController::getInstance()->ChangeUsername(new_username);
+}
+
+bool ClientController::ChangePin(const std::string &new_pin) {
+  return maidsafe::ClientController::getInstance()->ChangePin(new_pin);
+}
+
+bool ClientController::ChangePassword(const std::string &new_password) {
+  return maidsafe::ClientController::getInstance()->ChangePassword(new_password);
+}
+
+bool ClientController::CreatePublicUsername(const std::string &public_username) {
+  return maidsafe::ClientController::getInstance()->CreatePublicUsername(public_username);
+}
+
+bool ClientController::CreateUser(const std::string &username,
+                                  const std::string &pin,
+                                  const std::string &password,
+                                  const maidsafe::VaultConfigParameters &vcp) {
+  return maidsafe::ClientController::getInstance()->CreateUser(
+                          username, pin, password, vcp);
+}
+
+int ClientController::CheckUserExists(const std::string &username,
+                                      const std::string &pin,
+                                      maidsafe::DefConLevels level) {
+  return maidsafe::ClientController::getInstance()->CheckUserExists(
+                                    username, pin, level);
+}
+
+int ClientController::CreateNewShare(const std::string &name,
+                     const std::set<std::string> &admins,
+                     const std::set<std::string> &readonlys) {
+  return maidsafe::ClientController::getInstance()->CreateNewShare(
+                                    name, admins, readonlys);
+}
+
+bool ClientController::ValidateUser(const std::string &password){
+  return  maidsafe::ClientController::getInstance()->ValidateUser(password);
+}
+
+
+
+

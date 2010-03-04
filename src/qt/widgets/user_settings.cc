@@ -12,7 +12,7 @@
  *      Author: Stephen Alexander
  */
 
-
+#include <QMessageBox>
 #include "qt/widgets/user_settings.h"
 #include "qt/widgets/personal_settings.h"
 #include "qt/widgets/vault_info.h"
@@ -44,6 +44,14 @@ UserSettings::UserSettings(QWidget* parent){
   connect(ui_.settingsMenuList, SIGNAL(currentRowChanged(int)),
           this,           SLOT(onCurrentRowChanged(int)));
 
+  QPushButton* OkButton = ui_.buttonBox->button(QDialogButtonBox::Ok);
+  connect(OkButton, SIGNAL(clicked()), this, SLOT(HandleOK()));
+
+  QPushButton* CancelButton = ui_.buttonBox->button(QDialogButtonBox::Cancel);
+  connect(CancelButton, SIGNAL(clicked()), this, SLOT(HandleCancel()));
+
+  QPushButton* applyButton = ui_.buttonBox->button(QDialogButtonBox::Apply);
+  connect(applyButton, SIGNAL(clicked()), this, SLOT(HandleApply()));
 }
 
 UserSettings::~UserSettings() {}
@@ -114,3 +122,35 @@ void UserSettings::setState(State state) {
     }
   }
 }
+
+void UserSettings::HandleOK(){
+  bool applied;
+  if (!personal_->changedValues_.isEmpty()){
+    QHash<QString, QString> theHash = personal_->changedValues_;
+
+    if (theHash.contains("username")){
+      applied = ClientController::instance()->ChangeUsername(
+                              theHash.value("username").toStdString());
+    }
+    if (theHash.contains("message")){
+    }
+    if (theHash.contains("changedpic")){
+    }
+  }
+  if(!fileTransfer_->changedValues_.isEmpty()){
+  }
+  if(!connection_->changedValues_.isEmpty()){
+  }
+  if(!security_->changedValues_.isEmpty()){
+  }
+
+}
+
+void UserSettings::HandleApply(){
+
+}
+
+void UserSettings::HandleCancel(){
+
+}
+

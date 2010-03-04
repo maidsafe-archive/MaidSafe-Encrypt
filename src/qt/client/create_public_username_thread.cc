@@ -19,7 +19,7 @@
 #include <QDebug>
 
 // core
-#include "maidsafe/client/clientcontroller.h"
+#include "qt/client/client_controller.h"
 
 
 CreatePublicUsernameThread::CreatePublicUsernameThread(const QString& username,
@@ -31,7 +31,7 @@ CreatePublicUsernameThread::~CreatePublicUsernameThread() { }
 void CreatePublicUsernameThread::run() {
   qDebug() << "CreatePublicUsernameThread::run";
 
-  const bool success = maidsafe::ClientController::getInstance()->
+  const bool success = ClientController::instance()->
                        CreatePublicUsername(username_.toStdString());
 
   emit completed(success);

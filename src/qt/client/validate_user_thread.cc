@@ -22,7 +22,7 @@
 #include <string>
 
 // core
-#include "maidsafe/client/clientcontroller.h"
+#include "qt/client/client_controller.h"
 
 // local
 
@@ -40,7 +40,7 @@ void ValidateUserThread::run() {
 #endif
   const std::string password = password_.toStdString();
 
-  if (maidsafe::ClientController::getInstance()->ValidateUser(password)) {
+  if (ClientController::instance()->ValidateUser(password)) {
     emit completed(true);
   } else {
     emit completed(false);

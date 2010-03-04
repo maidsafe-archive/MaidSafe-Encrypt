@@ -30,6 +30,16 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
+          <widget class="QLabel" name="usernameEdit">
+           <property name="text">
+            <string>Enter new username here :</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineEdit_3"/>
+         </item>
+         <item>
           <widget class="QLabel" name="label">
            <property name="text">
             <string>Enter new pin here : </string>
@@ -37,7 +47,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="lineEdit"/>
+          <widget class="QLineEdit" name="pinEdit"/>
          </item>
          <item>
           <widget class="QLabel" name="label_2">
@@ -47,7 +57,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="lineEdit_2"/>
+          <widget class="QLineEdit" name="passwordEdit"/>
          </item>
         </layout>
        </widget>
