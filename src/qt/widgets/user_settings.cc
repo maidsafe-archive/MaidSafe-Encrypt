@@ -21,7 +21,7 @@
 #include "qt/widgets/security_settings.h"
 #include "qt/client/client_controller.h"
 
-UserSettings::UserSettings(QWidget* parent){
+UserSettings::UserSettings(QWidget* parent) {
   ui_.setupUi(this);
 
   createSettingsMenu();
@@ -43,7 +43,6 @@ UserSettings::UserSettings(QWidget* parent){
 
   connect(ui_.settingsMenuList, SIGNAL(currentRowChanged(int)),
           this,           SLOT(onCurrentRowChanged(int)));
-
   QPushButton* OkButton = ui_.buttonBox->button(QDialogButtonBox::Ok);
   connect(OkButton, SIGNAL(clicked()), this, SLOT(HandleOK()));
 
@@ -57,27 +56,26 @@ UserSettings::UserSettings(QWidget* parent){
 UserSettings::~UserSettings() {}
 
 void UserSettings::onCurrentRowChanged(int index) {
-    switch (index){
-      case 0:
-        setState(PERSONAL);
-        break;
-      case 1:
-        setState(CONNECTION);
-        break;
-      case 2:
-        setState(FILE_TRANSFER);
-        break;
-      case 3:
-        setState(SECURITY);
-        break;
-      case 4:
-        setState(VAULT_INFO);
-        break;
-    }
-
+  switch (index) {
+    case 0:
+      setState(PERSONAL);
+      break;
+    case 1:
+      setState(CONNECTION);
+      break;
+    case 2:
+      setState(FILE_TRANSFER);
+      break;
+    case 3:
+      setState(SECURITY);
+      break;
+    case 4:
+      setState(VAULT_INFO);
+      break;
+  }
 }
 
-void UserSettings::createSettingsMenu(){
+void UserSettings::createSettingsMenu() {
   ui_.settingsMenuList->addItem("Personal");
   ui_.settingsMenuList->addItem("Connection");
   ui_.settingsMenuList->addItem("File Transfer");

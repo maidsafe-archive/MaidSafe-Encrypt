@@ -26,11 +26,11 @@
 class PersonalSettings : public QWidget {
     Q_OBJECT
 
-  public:
+ public:
   explicit PersonalSettings(QWidget* parent = 0);
   virtual ~PersonalSettings();
 
-  virtual void setActive(bool);
+  virtual void setActive(bool active);
   virtual void reset();
 
   QHash<QString, QString> changedValues_;
@@ -40,10 +40,9 @@ class PersonalSettings : public QWidget {
     void onMessageTextEdit(const QString&);
     void onPicChangeClicked(bool);
 
-  private:
-    bool init_;
-    Ui::PersonalSettingsPage ui_;
-
+ private:
+  Ui::PersonalSettingsPage ui_;
+  bool init_;
 };
 
-#endif  // PERSONAL_SETTINGS_H_INCLUDED
+#endif  // QT_WIDGETS_PERSONAL_SETTINGS_H_

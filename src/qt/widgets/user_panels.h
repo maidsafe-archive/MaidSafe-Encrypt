@@ -74,7 +74,7 @@ class UserPanels : public QWidget {
 
   signals:
     // Notify a change in the number of unread messages
-    void unreadMessages(int);
+    void unreadMessages(int messages);
 
   private slots:
 
@@ -118,7 +118,7 @@ class UserPanels : public QWidget {
   Messages* messages_;
   Shares* shares_;
   Contacts* contacts_;
-  //VaultInfo* vaultinfo_;
+//  VaultInfo* vaultinfo_;
 
   PublicUsername* public_username_;
 

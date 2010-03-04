@@ -135,7 +135,7 @@ void PerpetualData::createActions() {
   actions_[ AWAY ] = ui_.actionAway;
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
- // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
+// actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
   actions_[ QUIT ]->setShortcut(Qt::ALT + Qt::Key_F4);
   actions_[ FULLSCREEN ]->setShortcut(Qt::Key_F11);
@@ -164,8 +164,8 @@ void PerpetualData::createActions() {
           this,                 SLOT(onBusyTriggered()));
   connect(actions_[ OFFLINE_2 ], SIGNAL(triggered()),
           this,                 SLOT(onOffline_2Triggered()));
- // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
- //         this,                     SLOT(onSaveSession()));
+// connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
+//         this,                     SLOT(onSaveSession()));
 }
 
 void PerpetualData::createMenus() {
@@ -321,6 +321,11 @@ void PerpetualData::asyncUnmount() {
 }
 
 void PerpetualData::asyncCreateUser() {
+  printf("PerpetualData::asyncCreateUser - VT: %i\nSO: %s\nP: %s\nDC: %s\n",
+         create_->VaultType(),
+         create_->SpaceOffered().toStdString().c_str(),
+         create_->PortChosen().toStdString().c_str(),
+         create_->DirectoryChosen().toStdString().c_str());
   CreateUserThread* cut = new CreateUserThread(login_->username(),
                                                login_->pin(),
                                                login_->password(),
@@ -329,7 +334,7 @@ void PerpetualData::asyncCreateUser() {
                                                create_->PortChosen(),
                                                create_->DirectoryChosen(),
                                                this);
-
+  create_->reset();
   connect(cut,  SIGNAL(completed(bool)),
           this, SLOT(onUserCreationCompleted(bool)));
 
@@ -547,7 +552,9 @@ void PerpetualData::onShareReceived(const QString& from,
 }
 
 void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
-  printf("in onFilerecieved");
+#ifdef DEBUG
+  printf("PerpetualData::onFileReceived - in onFilerecieved");
+#endif
 
   maidsafe::InstantFileNotification ifn = im.instantfile_notification();
 
@@ -560,7 +567,6 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
 
   int n;
   QString directory;
-  file_system::FileSystem fsys;
   QString root;
 
   switch (ret) {
@@ -570,48 +576,50 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
       root = QString("%1:\\My Files").
              arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
 #else
-      root = QString::fromStdString(fsys.MaidsafeFuseDir() + "/My Files");
+      root = QString::fromStdString(file_system::MaidsafeFuseDir(
+          maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+          "/My Files");
 #endif
+      root += tr("/") + QString::fromStdString(ifn.filename());
+      qfd_ = new QFileDialog(this, tr("Save File As..."), root);
+      connect(qfd_, SIGNAL(directoryEntered(const QString&)),
+              this, SLOT(onDirectoryEntered(const QString&)));
+      qfd_->setFileMode(QFileDialog::AnyFile);
+      qfd_->setAcceptMode(QFileDialog::AcceptSave);
 
-      qfd = new QFileDialog(this,
-                     tr("Save File As.."),
-                     root + "/" + QString::fromStdString(ifn.filename()),
-                     tr("Any file (*)"));
-
-      connect( qfd, SIGNAL(directoryEntered(const QString &)),
-            this, SLOT(onDirectoryEntered(const QString&)));
-
-      qfd->setAcceptMode(QFileDialog::AcceptSave);
-
-      int result = qfd->exec();
+      int result = qfd_->exec();
       if (result == QDialog::Rejected) {
         return;
       }
-      QStringList fileNames = qfd->selectedFiles();
-
+      QStringList fileNames = qfd_->selectedFiles();
       directory = fileNames.at(0);
-
-      /*directory = QFileDialog::getSaveFileName(this,
-                          tr("Save File"), root);
-
-      printf("Dir chosen: %s\n", directory.toStdString().c_str());*/
+#ifdef DEBUG
+      printf("PerpetualData::onFileReceived - Dir chosen: %s\n",
+             directory.toStdString().c_str());
+#endif
 
 #ifdef __WIN32__
       std::string s = directory.toStdString();
       s = s.substr(2, s.length()-1);
 #else
-      std::string s = fsys.MakeRelativeMSPath(directory.toStdString());
+      std::string s(file_system::MakeRelativeMSPath(directory.toStdString(),
+          maidsafe::SessionSingleton::getInstance()->SessionName()).string());
 #endif
-      printf("Dir chosen: -%s-\n", s.c_str());
+
+#ifdef DEBUG
+      printf("PerpetualData::onFileReceived - Dir chosen: -%s-\n", s.c_str());
+#endif
       n = maidsafe::ClientController::getInstance()->
           AddInstantFile(im.instantfile_notification(), s);
 
-      printf("Res : %i", n);
+#ifdef DEBUG
+      printf("PerpetualData::onFileReceived - Res: %i\n", n);
+#endif
       if (n == 0) {
         QString title = tr("File received");
         QString message = tr("'%1' has shared the file '%2' with you")
-                    .arg(QString::fromStdString(im.sender()))
-                    .arg(QString::fromStdString(ifn.filename()));
+                          .arg(QString::fromStdString(im.sender()))
+                          .arg(QString::fromStdString(ifn.filename()));
 
         SystemTrayIcon::instance()->showMessage(title, message);
       }
@@ -653,31 +661,31 @@ void PerpetualData::onConnectionStatusChanged(int status) {
 }
 
 void PerpetualData::onDirectoryEntered(const QString& dir) {
-  printf("Contacts::onDirectoryEntered :: %s \n",dir.toStdString().c_str());
+  printf("Contacts::onDirectoryEntered :: %s \n", dir.toStdString().c_str());
   QString root;
 
 #ifdef __WIN32__
   root = QString(maidsafe::SessionSingleton::getInstance()->WinDrive());
 
-  if (!dir.startsWith(root, Qt::CaseInsensitive)){
+  if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString("%1:\\My Files").
-         arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
-    qfd->setDirectory(root);
+           arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+    qfd_->setDirectory(root);
   }
-
 #else
-  file_system::FileSystem fs;
-  root = QString::fromStdString(fs.MaidsafeFuseDir());
+  root = QString::fromStdString(file_system::MaidsafeFuseDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string());
 
-  if (!dir.startsWith(root, Qt::CaseInsensitive)){
-    file_system::FileSystem fs;
-    root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
-    qfd->setDirectory(root);
+  if (!dir.startsWith(root, Qt::CaseInsensitive)) {
+    root = QString::fromStdString(file_system::MaidsafeFuseDir(
+        maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+        "/My Files");
+    qfd_->setDirectory(root);
   }
 #endif
 }
 
-void PerpetualData::onSettingsTriggered(){
+void PerpetualData::onSettingsTriggered() {
     settings_ = new UserSettings;
 
     QFile file(":/qss/defaultWithWhite1.qss");
@@ -689,16 +697,16 @@ void PerpetualData::onSettingsTriggered(){
     settings_->exec();
 }
 
-void PerpetualData::onOnlineTriggered(){
+void PerpetualData::onOnlineTriggered() {
 }
 
-void PerpetualData::onAwayTriggered(){
+void PerpetualData::onAwayTriggered() {
 }
 
-void PerpetualData::onBusyTriggered(){
+void PerpetualData::onBusyTriggered() {
 }
 
-void PerpetualData::onOffline_2Triggered(){
+void PerpetualData::onOffline_2Triggered() {
 }
 
 

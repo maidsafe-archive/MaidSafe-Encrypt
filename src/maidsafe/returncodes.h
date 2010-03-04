@@ -159,12 +159,17 @@ enum ReturnCode {
 
   // Private Share Handler (-9000)
 
-  // Session
+  // Session & FileSystem
   kEmptyConversationId = -10001,
   kNonExistentConversation = -10002,
   kExistingConversation = -10003,
   kLoadKeysFailure = -10004,
   kContactListFailure = -10005,
+  kSessionNameEmpty = -10006,
+  kFileSystemMountError = -10007,
+  kFileSystemUnmountError = -10008,
+  kFuseMountPointError = -10009,
+  kFileSystemException = -10010,
 
   // Self Encryption Handler (-11000)
 
@@ -212,6 +217,9 @@ enum ReturnCode {
 
   // Vault
   kVaultDaemonException = -2501,
+  kVaultDaemonWaitingPwnage = -2502,
+  kVaultDaemonParseError = -2503,
+  kVaultDaemonConfigError = -2504,
 
   // Vault Chunkstore
   kChunkstoreError = maidsafe::kChunkstoreError,

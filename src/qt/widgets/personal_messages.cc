@@ -30,6 +30,29 @@
 
 #include "qt/client/send_instant_message_thread.h"
 
+PersonalMessages::PersonalMessages(QWidget* parent)
+    : active_(false), init_(false) {
+  ui_.setupUi(this);
+
+  convName_ = "";
+
+  connect(ClientController::instance(),
+          SIGNAL(messageReceived(ClientController::MessageType,
+                                    const QDateTime&,
+                                    const QString&,
+                                    const QString&,
+                                    const QString&)),
+          this,
+          SLOT(onMessageReceived(ClientController::MessageType,
+                                    const QDateTime&,
+                                    const QString&,
+                                    const QString&,
+                                    const QString&)));
+
+          connect(ui_.send_message_btn, SIGNAL(clicked(bool)),
+                  this,                 SLOT(onSendMessageClicked()));
+}
+
 PersonalMessages::PersonalMessages(QString name)
     :active_(false), init_(false) {
 
@@ -74,7 +97,6 @@ PersonalMessages::PersonalMessages(QString name)
 
   connect(ui_.actionSend_File, SIGNAL(triggered()),
           this,                SLOT(onSendFile()));
-
   connect(ui_.colorButton, SIGNAL(clicked(bool)),
           this,             SLOT(onColorClicked()));
 
@@ -168,17 +190,17 @@ void PersonalMessages::onSendMessageComplete(bool success, const QString& text) 
 void PersonalMessages::onSendInvite() {
 }
 
-void PersonalMessages::onSendFile(){
+void PersonalMessages::onSendFile() {
   QList<QString> conts;
   conts.push_back(convName_);
 
   // choose a file
   // starting directory should be the maidafe one.
   // TODO(Team#5#): 2009-07-28 - restrict file dialog to maidsafe directories
-  //Possible to do by using Directory Entered Signal
+  // Possible to do by using Directory Entered Signal
   QString root;
 #ifdef DEBUG
-  printf("PersonalMessages::onFileSendClicked: opening the \"conversation\".\n");
+  printf("PersonalMessages::onFileSendClicked: opening the 'conversation'.\n");
   boost::progress_timer t;
 #endif
 
@@ -194,8 +216,9 @@ void PersonalMessages::onSendFile(){
   }
   QStringList fileNames = qfd->selectedFiles();
 #else
-  file_system::FileSystem fs;
-  root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+  root = QString::fromStdString(file_system::MaidsafeFuseDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+      "/My Files");
   QStringList fileNames = QFileDialog::getOpenFileNames(
                                 this,
                                 "Select one to send",

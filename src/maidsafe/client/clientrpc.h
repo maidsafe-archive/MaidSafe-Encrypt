@@ -113,6 +113,7 @@ class ClientRpcs {
                      rpcprotocol::Controller *controller,
                      rpcprotocol::Channel *channel,
                      google::protobuf::Closure *done);
+
  private:
   ClientRpcs(const ClientRpcs&);
   ClientRpcs& operator=(const ClientRpcs&);

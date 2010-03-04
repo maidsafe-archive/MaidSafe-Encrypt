@@ -39,11 +39,12 @@
 
 namespace fs = boost::filesystem;
 
+namespace test_se {
+
 std::string CreateRandomFile(const std::string &filename,
                              const int &filesize) {
-  file_system::FileSystem fsys;
-  fs::path file_path(fsys.MaidsafeHomeDir());
-  file_path = file_path/filename;
+  fs::path file_path(file_system::MaidsafeHomeDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()) / filename);
   fs::ofstream ofs;
   ofs.open(file_path);
   if (filesize != 0) {
@@ -71,51 +72,51 @@ std::string CreateRandomFile(const std::string &filename,
   return file_path.string();
 };
 
+}  // namespace test_se
+
 namespace maidsafe {
 
 class SelfEncryptionTest : public testing::Test {
  public:
   SelfEncryptionTest()
-      : test_root_dir_(file_system::FileSystem::TempDir() +
-            "/maidsafe_TestSE_" + base::RandomString(6)),
-        ss(NULL),
-        client_chunkstore_() {}
+      : test_root_dir_(file_system::TempDir() /
+            ("maidsafe_TestSE_" + base::RandomString(6))),
+        ss(SessionSingleton::getInstance()),
+        client_chunkstore_(),
+        ms_home_path_() {}
   ~SelfEncryptionTest() {}
  protected:
   void SetUp() {
-    try {
-      file_system::FileSystem fsys;
-      if (fs::exists(fsys.MaidsafeDir()))
-        fs::remove_all(fsys.MaidsafeDir());
-      if (fs::exists(test_root_dir_))
-        fs::remove_all(test_root_dir_);
-    }
-    catch(const std::exception& e) {
-      printf("%s\n", e.what());
-    }
-    client_chunkstore_ =
-        boost::shared_ptr<ChunkStore>(new ChunkStore(test_root_dir_, 0, 0));
-    ASSERT_TRUE(client_chunkstore_->Init());
-    int count(0);
-    while (!client_chunkstore_->is_initialised() && count < 10000) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-      count += 10;
-    }
-    ss = SessionSingleton::getInstance();
     ss->ResetSession();
     ss->SetUsername("user1");
     ss->SetPin(base::itos(base::random_32bit_uinteger()));
     ss->SetPassword("password1");
     ss->SetSessionName(false);
     ss->SetRootDbKey("whatever");
-    file_system::FileSystem fsys;
-    fsys.Mount();
+    try {
+      if (fs::exists(file_system::MaidsafeDir(ss->SessionName())))
+        fs::remove_all(file_system::MaidsafeDir(ss->SessionName()));
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
+    client_chunkstore_ = boost::shared_ptr<ChunkStore>(
+        new ChunkStore(test_root_dir_.string(), 0, 0));
+    ASSERT_TRUE(client_chunkstore_->Init());
+    int count(0);
+    while (!client_chunkstore_->is_initialised() && count < 10000) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      count += 10;
+    }
+    ASSERT_EQ(0, file_system::Mount(ss->SessionName(), ss->DefConLevel()));
+    ms_home_path_ = file_system::MaidsafeHomeDir(ss->SessionName());
   }
   void TearDown() {
     try {
-      file_system::FileSystem fsys;
-      if (fs::exists(fsys.MaidsafeDir()))
-        fs::remove_all(fsys.MaidsafeDir());
+      if (fs::exists(file_system::MaidsafeDir(ss->SessionName())))
+        fs::remove_all(file_system::MaidsafeDir(ss->SessionName()));
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
     }
@@ -123,9 +124,10 @@ class SelfEncryptionTest : public testing::Test {
       printf("%s\n", e.what());
     }
   }
-  std::string test_root_dir_;
+  fs::path test_root_dir_;
   SessionSingleton *ss;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
+  fs::path ms_home_path_;
  private:
   explicit SelfEncryptionTest(const maidsafe::SelfEncryptionTest&);
   SelfEncryptionTest &operator=(const maidsafe::SelfEncryptionTest&);
@@ -133,30 +135,29 @@ class SelfEncryptionTest : public testing::Test {
 
 TEST_F(SelfEncryptionTest, BEH_MAID_CheckEntry) {
   boost::shared_ptr<DataIOHandler> iohandler;
-  file_system::FileSystem fsys;
-  fs::path file_path(fsys.MaidsafeHomeDir());
+  fs::path file_path(ms_home_path_);
   std::string file = "test01.txt";
   file_path = file_path/file;
   iohandler.reset(new FileIOHandler);
   SelfEncryption se(client_chunkstore_);
 
   iohandler->SetData(file_path.string(), false);
-  CreateRandomFile(file, 0);
+  test_se::CreateRandomFile(file, 0);
   ASSERT_EQ(-1, se.CheckEntry(iohandler));
   fs::remove(file_path);
 
   iohandler->SetData(file_path.string(), false);
-  CreateRandomFile(file, 1);
+  test_se::CreateRandomFile(file, 1);
   ASSERT_EQ(-1, se.CheckEntry(iohandler));
   fs::remove(file_path);
 
   iohandler->SetData(file_path.string(), false);
-  CreateRandomFile(file, 2);
+  test_se::CreateRandomFile(file, 2);
   ASSERT_EQ(0, se.CheckEntry(iohandler));
   fs::remove(file_path);
 
   iohandler->SetData(file_path.string(), false);
-  CreateRandomFile(file, 1234567);
+  test_se::CreateRandomFile(file, 1234567);
   ASSERT_EQ(0, se.CheckEntry(iohandler));
   // fs::remove(file_path);
 }
@@ -166,9 +167,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CreateProcessDirectory) {
   SelfEncryption se(client_chunkstore_);
   se.file_hash_ = "TheFileHash";
   ASSERT_TRUE(se.CreateProcessDirectory(&process_path));
-  file_system::FileSystem fsys;
-  fs::path processing_path(fsys.ProcessDir(), fs::native);
-  processing_path /= "TheFileH";
+  fs::path processing_path = file_system::TempDir() / "TheFileH";
   ASSERT_EQ(processing_path.string(), process_path.string());
   ASSERT_TRUE(fs::exists(process_path));
   // add dir to this, then rerun CreateProcessDirectory to
@@ -191,11 +190,8 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CreateProcessDirectory) {
 TEST_F(SelfEncryptionTest, BEH_MAID_CheckCompressibility) {
   boost::shared_ptr<DataIOHandler> iohandler;
   iohandler.reset(new FileIOHandler);
-
-  file_system::FileSystem fsys;
-  fs::path ms_home(fsys.MaidsafeHomeDir());
   //  make compressible .txt file
-  fs::path path1 = ms_home;
+  fs::path path1 = ms_home_path_;
   path1 /= "compressible.txt";
   fs::ofstream ofs1;
   ofs1.open(path1);
@@ -204,7 +200,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CheckCompressibility) {
   ofs1.close();
 
   //  make incompressible .txt file
-  fs::path path2 = ms_home;
+  fs::path path2 = ms_home_path_;
   path2 /= "incompressible.txt";
   fs::ofstream ofs2;
   ofs2.open(path2);
@@ -212,7 +208,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CheckCompressibility) {
   ofs2.close();
 
   //  make compressible file, but with extension for incompressible file
-  fs::path path3 = ms_home;
+  fs::path path3 = ms_home_path_;
   path3 /= "incompressible.7z";
   fs::ofstream ofs3;
   ofs3.open(path3);
@@ -260,9 +256,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_ChunkAddition) {
 TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   boost::shared_ptr<DataIOHandler> iohandler;
   iohandler.reset(new FileIOHandler);
-
-  file_system::FileSystem fsys;
-  fs::path file_path(fsys.MaidsafeHomeDir());
+  fs::path file_path(ms_home_path_);
 
   SelfEncryption se(client_chunkstore_);
   uint16_t min_chunks = se.min_chunks_;
@@ -272,28 +266,28 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   // make file of size larger than (max no of chunks)*(default chunk size)
   std::string test_file1 = "test01.txt";
   uint64_t file_size1 = default_chunk_size_*max_chunks*2;
-  fs::path path1(CreateRandomFile(test_file1, file_size1), fs::native);
+  fs::path path1(test_se::CreateRandomFile(test_file1, file_size1), fs::native);
 
   // make file of size exactly (max no of chunks)*(default chunk size)
   std::string test_file2 = "test02.txt";
   uint64_t file_size2 = default_chunk_size_*max_chunks;
-  fs::path path2(CreateRandomFile(test_file2, file_size2), fs::native);
+  fs::path path2(test_se::CreateRandomFile(test_file2, file_size2), fs::native);
 
   // make file of size between (max no of chunks)*(default chunk size)
   // & (min no of chunks)*(default chunk size)
   std::string test_file3 = "test03.txt";
   uint64_t file_size3 = default_chunk_size_*(max_chunks+min_chunks)/2;
-  fs::path path3(CreateRandomFile(test_file3, file_size3), fs::native);
+  fs::path path3(test_se::CreateRandomFile(test_file3, file_size3), fs::native);
 
   //  make file of size smaller than (min no of chunks)*(default chunk size)
   std::string test_file4 = "test04.txt";
   uint64_t file_size4 = default_chunk_size_*min_chunks/2;
-  fs::path path4(CreateRandomFile(test_file4, file_size4), fs::native);
+  fs::path path4(test_se::CreateRandomFile(test_file4, file_size4), fs::native);
 
   //  make file of size 4 bytes
   std::string test_file5 = "test05.txt";
   uint64_t file_size5 = 4;
-  fs::path path5(CreateRandomFile(test_file5, file_size5), fs::native);
+  fs::path path5(test_se::CreateRandomFile(test_file5, file_size5), fs::native);
 
   //  set file hash so that each chunk size is unaltered
   DataMap dm;
@@ -496,8 +490,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
 
 TEST_F(SelfEncryptionTest, BEH_MAID_HashFile) {
   SelfEncryption se(client_chunkstore_);
-  file_system::FileSystem fsys;
-  fs::path ms_home(fsys.MaidsafeHomeDir());
+  fs::path ms_home(ms_home_path_);
 
   fs::path path1 = ms_home;
   path1 /= "test01.txt";
@@ -537,8 +530,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_GeneratePreEncHashes) {
   boost::shared_ptr<DataIOHandler> iohandler;
   iohandler.reset(new FileIOHandler);
   SelfEncryption se(client_chunkstore_);
-  file_system::FileSystem fsys;
-  fs::path ms_home(fsys.MaidsafeHomeDir());
+  fs::path ms_home(ms_home_path_);
 
   fs::path path1 = ms_home;
   path1 /= "test01.txt";
@@ -638,15 +630,15 @@ TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptFiles) {
   std::string test_file4("test04.txt");
   std::string test_file5("test05.txt");
   // empty file
-  fs::path path1(CreateRandomFile(test_file1, 0), fs::native);
+  fs::path path1(test_se::CreateRandomFile(test_file1, 0), fs::native);
   // smallest possible encryptable file
-  fs::path path2(CreateRandomFile(test_file2, 2), fs::native);
+  fs::path path2(test_se::CreateRandomFile(test_file2, 2), fs::native);
   // special small file
-  fs::path path3(CreateRandomFile(test_file3, 4), fs::native);
+  fs::path path3(test_se::CreateRandomFile(test_file3, 4), fs::native);
   // small file
-  fs::path path4(CreateRandomFile(test_file4, 24), fs::native);
+  fs::path path4(test_se::CreateRandomFile(test_file4, 24), fs::native);
   // regular file
-  fs::path path5(CreateRandomFile(test_file5, 1024), fs::native);
+  fs::path path5(test_se::CreateRandomFile(test_file5, 1024), fs::native);
   DataMap dm1, dm2, dm3, dm4, dm5;
 
   SelfEncryption se(client_chunkstore_);
@@ -672,13 +664,13 @@ TEST_F(SelfEncryptionTest, BEH_MAID_DecryptFile) {
   std::string test_file3("test03.txt");
   std::string test_file4("test04.txt");
   // smallest possible encryptable file
-  fs::path path1(CreateRandomFile(test_file1, 2), fs::native);
+  fs::path path1(test_se::CreateRandomFile(test_file1, 2), fs::native);
   // special small file
-  fs::path path2(CreateRandomFile(test_file2, 4), fs::native);
+  fs::path path2(test_se::CreateRandomFile(test_file2, 4), fs::native);
   // small file
-  fs::path path3(CreateRandomFile(test_file3, 24), fs::native);
+  fs::path path3(test_se::CreateRandomFile(test_file3, 24), fs::native);
   // regular file
-  fs::path path4(CreateRandomFile(test_file4, 1024), fs::native);
+  fs::path path4(test_se::CreateRandomFile(test_file4, 1024), fs::native);
   DataMap dm1, dm2, dm3, dm4;
 
   SelfEncryption se(client_chunkstore_);

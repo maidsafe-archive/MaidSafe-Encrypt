@@ -173,17 +173,18 @@ struct SwapChunkArgs {
 
 class PDVault {
  public:
+  // vault_dir will contain .kadconfig (copied from read_only_kad_config_file)
+  // and "Chunkstore" directory.
   PDVault(const std::string &pmid_public,
           const std::string &pmid_private,
           const std::string &signed_pmid_public,
-          const std::string &chunkstore_dir,
+          const fs::path &vault_dir,
           const boost::uint16_t &port,
           bool port_forwarded,
           bool use_upnp,
-          const std::string &kad_config_file,
+          const fs::path &read_only_kad_config_file,
           const boost::uint64_t &available_space,
-          const boost::uint64_t &vault_used_space,
-          transport::TransportHandler *transport_handler);
+          const boost::uint64_t &used_space);
   ~PDVault();
   void Start(bool first_node);
   int Stop();
@@ -221,11 +222,11 @@ class PDVault {
                  base::callback_func_type cb);
   void StopRvPing() { transport_handler_->StopPingRendezvous(); }
   friend class localvaults::Env;
+  friend class PDVaultTest;
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreChunks);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetChunks);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreAndGetChunks);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetMissingChunk);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreSystemPacket);
@@ -295,8 +296,9 @@ class PDVault {
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   boost::uint16_t port_;
-  transport::TransportUDT udt_transport_;
+  transport::TransportUDT global_udt_transport_;
   transport::TransportHandler *transport_handler_;
+  boost::int16_t transport_id_;
   rpcprotocol::ChannelManager channel_manager_;
   maidsafe::MaidsafeValidator validator_;
   boost::shared_ptr<kad::KNode> knode_;
@@ -312,10 +314,9 @@ class PDVault {
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
   crypto::Crypto co_;
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
-  std::string kad_config_file_;
-  PendingOperationsHandler poh_;
+  fs::path kad_config_file_;
   QThreadPool thread_pool_;
-  boost::thread prune_pending_ops_thread_;
+  boost::thread create_account_thread_;
 };
 
 }  // namespace maidsafe_vault

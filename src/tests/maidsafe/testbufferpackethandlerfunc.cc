@@ -40,7 +40,6 @@
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
 static const int kNetworkSize_ = 16;
-static const int kTestK_ = 16;
 
 class KadCB {
  public:
@@ -94,9 +93,9 @@ class CBPHandlerTest : public testing::Test {
                      knode(),
                      cbph(NULL),
                      bp_rpcs(),
-                     test_dir_(file_system::FileSystem::TempDir() +
-                               "/maidsafe_TestCBPH_" + base::RandomString(6)),
-                     kad_config_file_(test_dir_ + "/.kadconfig"),
+                     test_dir_(file_system::TempDir() /
+                               ("maidsafe_TestCBPH_" + base::RandomString(6))),
+                     kad_config_file_(test_dir_ / ".kadconfig"),
                      cryp(),
                      keys(),
                      cb_() {}
@@ -132,13 +131,14 @@ class CBPHandlerTest : public testing::Test {
     kad_contact->set_port(pdvaults_[0]->host_port());
     kad_contact->set_local_ip(pdvaults_[0]->local_host_ip());
     kad_contact->set_local_port(pdvaults_[0]->local_host_port());
-    std::fstream output1(kad_config_file_.c_str(),
+    std::fstream output1(kad_config_file_.string().c_str(),
                          std::ios::out | std::ios::trunc | std::ios::binary);
     ASSERT_TRUE(kad_config.SerializeToOstream(&output1));
     output1.close();
 
-    knode->Join(kad_config_file_, boost::bind(&KadCB::CallbackFunc, &cb_, _1));
-    while (cb_.result == "")
+    knode->Join(kad_config_file_.string(),
+        boost::bind(&KadCB::CallbackFunc, &cb_, _1));
+    while (cb_.result.empty())
       boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result);
     ASSERT_TRUE(knode->is_joined());
@@ -167,7 +167,7 @@ class CBPHandlerTest : public testing::Test {
   boost::shared_ptr<kad::KNode> knode;
   maidsafe::ClientBufferPacketHandler *cbph;
   boost::shared_ptr<maidsafe::BufferPacketRpcs> bp_rpcs;
-  std::string test_dir_, kad_config_file_;
+  fs::path test_dir_, kad_config_file_;
   crypto::Crypto cryp;
   crypto::RsaKeyPair keys;
   KadCB cb_;
@@ -307,6 +307,6 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   testing::AddGlobalTestEnvironment(
-      new localvaults::Env(kNetworkSize_, kTestK_, &pdvaults_));
+      new localvaults::Env(kNetworkSize_, &pdvaults_));
   return RUN_ALL_TESTS();
 }

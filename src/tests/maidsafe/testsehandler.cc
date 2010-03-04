@@ -44,9 +44,8 @@ namespace test_seh {
 std::string CreateRandomFile(const std::string &filename,
                              int size = (1024)) {
   std::string file_content = base::RandomString(size);
-  file_system::FileSystem fsys;
-  fs::path file_path(fsys.MaidsafeHomeDir());
-  file_path = file_path / filename;
+  fs::path file_path(file_system::MaidsafeHomeDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()) / filename);
   fs::ofstream ofs;
   ofs.open(file_path);
   ofs << file_content;
@@ -82,28 +81,33 @@ namespace maidsafe {
 
 class SEHandlerTest : public testing::Test {
  protected:
-  SEHandlerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                        "/maidsafe_TestSEH_" + base::RandomString(6)),
+  SEHandlerTest() : test_root_dir_(file_system::TempDir() /
+                        ("maidsafe_TestSEH_" + base::RandomString(6))),
                     client_chunkstore_(),
                     cb(),
-                    db_str1_(""),
-                    db_str2_("")  {}
+                    db_str1_(),
+                    db_str2_(),
+                    ss_(SessionSingleton::getInstance())  {}
   ~SEHandlerTest() {}
   void SetUp() {
+    ss_->SetUsername("user1");
+    ss_->SetPin("1234");
+    ss_->SetPassword("password1");
+    ss_->SetSessionName(false);
+    ss_->SetRootDbKey("whatever");
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
-      file_system::FileSystem fsys;
-      if (fs::exists(fsys.MaidsafeDir()))
-        fs::remove_all(fsys.MaidsafeDir());
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
+      if (fs::exists(file_system::MaidsafeDir(ss_->SessionName())))
+        fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
-    client_chunkstore_ =
-        boost::shared_ptr<ChunkStore>(new ChunkStore(test_root_dir_, 0, 0));
+    client_chunkstore_ = boost::shared_ptr<ChunkStore>(
+        new ChunkStore(test_root_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
@@ -122,23 +126,14 @@ class SEHandlerTest : public testing::Test {
       FAIL();
       return;
     }
-    SessionSingleton::getInstance()->SetUsername("user1");
-    SessionSingleton::getInstance()->SetPin("1234");
-    SessionSingleton::getInstance()->SetPassword("password1");
-    SessionSingleton::getInstance()->SetSessionName(false);
-    SessionSingleton::getInstance()->SetRootDbKey("whatever");
     crypto::RsaKeyPair rsa_kp;
     rsa_kp.GenerateKeys(kRsaKeySize);
-    SessionSingleton::getInstance()->AddKey(PMID, "PMID", rsa_kp.private_key(),
-                                            rsa_kp.public_key(), "");
+    ss_->AddKey(PMID, "PMID", rsa_kp.private_key(), rsa_kp.public_key(), "");
     rsa_kp.GenerateKeys(kRsaKeySize);
-    SessionSingleton::getInstance()->AddKey(MAID, "MAID", rsa_kp.private_key(),
-                                            rsa_kp.public_key(), "");
+    ss_->AddKey(MAID, "MAID", rsa_kp.private_key(), rsa_kp.public_key(), "");
     rsa_kp.GenerateKeys(kRsaKeySize);
-    SessionSingleton::getInstance()->AddKey(MPID, "Me", rsa_kp.private_key(),
-        rsa_kp.public_key(), "");
-    file_system::FileSystem fsys;
-    fsys.Mount();
+    ss_->AddKey(MPID, "Me", rsa_kp.private_key(), rsa_kp.public_key(), "");
+    ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
     boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
     boost::scoped_ptr<SEHandler> seh(new SEHandler());
     seh->Init(sm, client_chunkstore_);
@@ -163,9 +158,10 @@ class SEHandlerTest : public testing::Test {
         seh->GenerateUniqueKey(PRIVATE, "", 0, &key);
       else
         key = kRootSubdir[i][1];
-      fs::create_directories(fsys.MaidsafeHomeDir() + kRootSubdir[i][0]);
+      fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
+          kRootSubdir[i][0]);
       dah->AddElement(base::TidyPath(kRootSubdir[i][0]),
-        ser_mdm, "", key, true);
+          ser_mdm, "", key, true);
     }
 
 // *********************************************
@@ -203,21 +199,20 @@ class SEHandlerTest : public testing::Test {
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
-      file_system::FileSystem fsys;
-      if (fs::exists(fsys.MaidsafeDir()))
-        fs::remove_all(fsys.MaidsafeDir());
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
+      if (fs::exists(file_system::MaidsafeDir(ss_->SessionName())))
+        fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
   }
-  std::string test_root_dir_;
+  fs::path test_root_dir_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   test_seh::FakeCallback cb;
-  std::string db_str1_;
-  std::string db_str2_;
+  std::string db_str1_, db_str2_;
+  SessionSingleton *ss_;
  private:
   SEHandlerTest(const SEHandlerTest&);
   SEHandlerTest &operator=(const SEHandlerTest&);
@@ -264,10 +259,9 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   std::string full_str3 = test_seh::CreateRandomFile(rel_str3, size3);
   std::string full_str4 = test_seh::CreateRandomFile(rel_str4, size4);
   std::string full_str5 = test_seh::CreateRandomFile(rel_str5, size5);
-  file_system::FileSystem fsys;
-  fs::path full_path6(fsys.MaidsafeHomeDir(), fs::native);
+  fs::path full_path6(file_system::MaidsafeHomeDir(ss_->SessionName()));
   full_path6 /= rel_str6;
-  fs::path full_path7(fsys.MaidsafeHomeDir(), fs::native);
+  fs::path full_path7(file_system::MaidsafeHomeDir(ss_->SessionName()));
   full_path7 /= rel_str7;
   fs::create_directories(full_path7);
   std::string full_str6 = full_path6.string();
@@ -366,7 +360,7 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptStringWithChunksPrevLoaded) {
 }
 
 TEST_F(SEHandlerTest, FUNC_MAID_DecryptStringWithLoadChunks) {
-  SessionSingleton::getInstance()->SetDefConLevel(DEFCON2);
+  ss_->SetDefConLevel(kDefCon2);
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
@@ -380,10 +374,9 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptStringWithLoadChunks) {
   int result = seh->EncryptString(data, &ser_dm);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
-  file_system::FileSystem fsys;
   // All dirs are removed on fsys_.Mount() below.  We need to temporarily rename
   // DbDir (which contains dir's db files) to avoid deletion.
-  std::string db_dir_original = fsys.DbDir();
+  fs::path db_dir_original = file_system::DbDir(ss_->SessionName());
   std::string db_dir_new = "./W";
   try {
     fs::remove_all(db_dir_new);
@@ -392,9 +385,10 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptStringWithLoadChunks) {
   catch(const std::exception &e) {
     printf("%s\n", e.what());
   }
-  fsys.Mount();
+  ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
 
-  fs::create_directories(fsys.MaidsafeHomeDir() + kRootSubdir[0][0]);
+  fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
+      kRootSubdir[0][0]);
   try {
     fs::remove_all(db_dir_original);
     fs::rename(db_dir_new, db_dir_original);
@@ -447,7 +441,7 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithChunksPrevLoaded) {
 }
 
 TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithLoadChunks) {
-  SessionSingleton::getInstance()->SetDefConLevel(DEFCON2);
+  ss_->SetDefConLevel(kDefCon2);
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
@@ -467,10 +461,9 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithLoadChunks) {
   int result = seh->EncryptFile(rel_str, PRIVATE, "");
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
-  file_system::FileSystem fsys;
   // All dirs are removed on fsys.Mount() below.  We need to temporarily rename
   // DbDir (which contains dir's db files) to avoid deletion.
-  std::string db_dir_original = fsys.DbDir();
+  fs::path db_dir_original = file_system::DbDir(ss_->SessionName());
   std::string db_dir_new = "./W";
   try {
     fs::remove_all(db_dir_new);
@@ -479,9 +472,10 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithLoadChunks) {
   catch(const std::exception &e) {
     printf("%s\n", e.what());
   }
-  fsys.Mount();
+  ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
   ASSERT_FALSE(fs::exists(full_str));
-  fs::create_directories(fsys.MaidsafeHomeDir() + kRootSubdir[0][0]);
+  fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
+      kRootSubdir[0][0]);
   try {
     fs::remove_all(db_dir_original);
     fs::rename(db_dir_new, db_dir_original);
@@ -526,14 +520,16 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithLoadChunks) {
 //      for (char c = '0'; c <= '9'; c_++) {
 //        std::stringstream out_;
 //        out << c_;
-//        std::string f = fsys_.ApplicationDataDir() + "/client/" + out_.str();
+//        std::string f = file_system::ApplicationDataDir() +
+//                        "/client/" + out_.str();
 //        fs::remove_all(f);
 //        printf("Removing %s\n", f.c_str());
 //      }
 //      for (char c = 'a'; c <= 'f'; c_++) {
 //        std::stringstream out_;
 //        out << c_;
-//        std::string f = fsys_.ApplicationDataDir() + "client/" + out_.str();
+//        std::string f = file_system::ApplicationDataDir() +
+//                        "client/" + out_.str();
 //        fs::remove_all(f);
 //        printf("Removing %s\n", f.c_str());
 //      }
@@ -572,7 +568,6 @@ TEST_F(SEHandlerTest, FUNC_MAID_EncryptAndDecryptPrivateDb) {
   boost::scoped_ptr<SEHandler> seh(new SEHandler());
   seh->Init(sm, client_chunkstore_);
 
-  file_system::FileSystem fsys;
   fs::path db_path(db_str1_, fs::native);
   std::string key(seh->SHA512("somekey", false));
 //  std::string key("");
@@ -613,10 +608,7 @@ TEST_F(SEHandlerTest, FUNC_MAID_EncryptAndDecryptPrivateDb) {
             ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, seh->SHA512(db_str1_, true));
-
-  fs::path key_path(fsys.MaidsafeDir(), fs::native);
-  key_path /= key;
-  fs::remove(key_path);
+  fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
   sm->Close(boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1), true);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
@@ -629,7 +621,6 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
   boost::scoped_ptr<SEHandler> seh(new SEHandler());
   seh->Init(sm, client_chunkstore_);
 
-  file_system::FileSystem fsys;
   fs::path db_path(db_str2_, fs::native);
   std::string key = "testkey";
   ASSERT_TRUE(fs::exists(db_path));
@@ -653,9 +644,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
 //    ANONYMOUS, "", key, "", false, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, seh->SHA512(db_str2_, true));
-  fs::path key_path(fsys.MaidsafeDir(), fs::native);
-  key_path /= key;
-  fs::remove(key_path);
+  fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
   sm->Close(boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1), true);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }

@@ -57,6 +57,8 @@ typedef boost::function<void(const ReturnCode&, const EndPoint&,
 typedef boost::function<void(const std::vector<std::string>&,
     const ReturnCode&)> LoadPacketFunctor;
 
+typedef boost::function<void(const ReturnCode&)> CreateAccountFunctor;
+
 class StoreManagerInterface {
  public:
   virtual ~StoreManagerInterface() {}
@@ -117,10 +119,11 @@ class StoreManagerInterface {
       const std::string &pub_key,
       const std::string &signed_pub_key,
       const boost::uint32_t &port,
-      const std::string &chunkstore_dir,
+      const std::string &vault_dir,
       const boost::uint64_t &space,
       const SetLocalVaultOwnedFunctor &functor)=0;
   virtual void LocalVaultOwned(const LocalVaultOwnedFunctor &functor)=0;
+  virtual int CreateAccount(const boost::uint64_t &space)=0;
 };
 
 }  // namespace maidsafe

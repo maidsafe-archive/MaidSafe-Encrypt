@@ -79,8 +79,6 @@ class ClientController {
                   const std::string &pin,
                   const std::string &password,
                   const VaultConfigParameters &vcp);
-  int SetVaultConfig(const std::string &pmid_public,
-                     const std::string &pmid_private);
   bool ValidateUser(const std::string &password);
   bool Logout();
   int SaveSession();
@@ -152,7 +150,7 @@ class ClientController {
   OwnLocalVaultResult SetLocalVaultOwned(
       const boost::uint32_t &port,
       const boost::uint64_t &space,
-      const std::string &chunkstore_dir) const;
+      const std::string &vault_dir) const;
   bool IsLocalVaultOwned();
 
 
@@ -214,7 +212,7 @@ class ClientController {
                     const DirType dir_type,
                     const std::string &msid);
   int RetrieveElement(const std::string &path);
-  int RemoveElement(std::string path);
+  int RemoveElement(const std::string &element_path);
   // If the database of the parent doesn't exist, it is decrypted.  GetDb also
   // sets db type and msid if it exists for parent dir or sets it to "" if not.
   int GetDb(const std::string &path_, DirType *dir_type, std::string *msid);
@@ -248,7 +246,6 @@ class ClientController {
   SEHandler seh_;
   static ClientController *single;
   std::list<InstantMessage> messages_;
-  file_system::FileSystem fsys_;
   std::map<std::string, boost::uint32_t> received_messages_;
   boost::mutex rec_msg_mutex_;
   boost::thread clear_messages_thread_;

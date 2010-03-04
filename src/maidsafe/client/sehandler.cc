@@ -28,7 +28,8 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <maidsafe/utils.h>
-#include <cstdio>
+
+#include <vector>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
@@ -43,7 +44,7 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 SEHandler::SEHandler()
-    : storem_(), client_chunkstore_(), ss_(), fsys_(), uptodate_datamaps_() {}
+    : storem_(), client_chunkstore_(), ss_(), uptodate_datamaps_() {}
 
 void SEHandler::Init(boost::shared_ptr<StoreManagerInterface> storem,
                      boost::shared_ptr<ChunkStore> client_chunkstore) {
@@ -54,7 +55,7 @@ void SEHandler::Init(boost::shared_ptr<StoreManagerInterface> storem,
 }
 
 ItemType SEHandler::CheckEntry(const std::string &full_entry,
-                               uint64_t *file_size) {
+                               boost::uint64_t *file_size) {
   if (full_entry.size()>245) {
 #ifdef DEBUG
     printf("File name too long to process: %s\n", full_entry.c_str());
@@ -116,94 +117,57 @@ ItemType SEHandler::CheckEntry(const std::string &full_entry,
 
 std::string SEHandler::SHA512(const std::string &full_entry,
                               bool hash_contents) {
-  SelfEncryption se_(client_chunkstore_);
+  SelfEncryption se(client_chunkstore_);
   if (hash_contents) {
-    fs::path path_(full_entry, fs::native);
-    return se_.SHA512(path_);
+    fs::path entry_path(full_entry, fs::native);
+    return se.SHA512(entry_path);
   } else {
-    return se_.SHA512(full_entry);
+    return se.SHA512(full_entry);
   }
 }
 
 int SEHandler::EncryptFile(const std::string &rel_entry,
                            const DirType dir_type,
                            const std::string &msid) {
-  // boost::mutex::scoped_lock lock(mutex1_);
 #ifdef DEBUG
   // printf("Encrypting: %s\n", rel_entry.c_str());
 #endif
-  // std::string rel_entry = fsys_->MakeRelativeMSPath(full_entry);
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler);
-  std::string full_entry_ = fsys_.FullMSPathFromRelPath(rel_entry);
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
+  std::string full_entry = file_system::FullMSPathFromRelPath(
+      rel_entry, ss_->SessionName()).string();
 
-  uint64_t file_size_ = 0;
-  ItemType type_ = CheckEntry(full_entry_, &file_size_);
-  DataMap dm_, dm_retrieved_;
-  std::string ser_dm_retrieved_="", ser_dm_="", ser_mdm_="";
-  std::string file_hash_="", dir_key_="";
-  SelfEncryption se_(client_chunkstore_);
+  boost::uint64_t file_size = 0;
+  ItemType item_type = CheckEntry(full_entry, &file_size);
+  DataMap dm, dm_retrieved;
+  std::string ser_dm_retrieved, ser_dm, ser_mdm, file_hash, dir_key;
+  SelfEncryption se(client_chunkstore_);
 #ifdef DEBUG
   // printf("Full entry: %s\n", full_entry_.c_str());
   // printf("Type: %i\n", type_);
   // printf("File size: %lu\n", file_size_);
 #endif
-  switch (type_) {
+  switch (item_type) {
     // case DIRECTORY:
     // case EMPTY_DIRECTORY:
     //   GenerateUniqueKey(dir_key_);
     //   break;
     case EMPTY_FILE:
-      dm_.set_file_hash(SHA512(full_entry_, true));
-      dm_.SerializeToString(&ser_dm_);
+      dm.set_file_hash(SHA512(full_entry, true));
+      dm.SerializeToString(&ser_dm);
       break;
     case REGULAR_FILE:
     case SMALL_FILE:
-      file_hash_ = SHA512(full_entry_, true);
+      file_hash = SHA512(full_entry, true);
       // Try to get DM for this file.  If NULL return or file_hash
       // different, then encrypt.
-      if (!dah_->GetDataMap(rel_entry, &ser_dm_retrieved_))  // ie found dm
-        dm_retrieved_.ParseFromString(ser_dm_retrieved_);
-      if (ser_dm_retrieved_ == "" || dm_retrieved_.file_hash() != file_hash_) {
-        dm_.set_file_hash(file_hash_);
-        if (se_.Encrypt(full_entry_, false, &dm_))
+      if (dah->GetDataMap(rel_entry, &ser_dm_retrieved) == kSuccess)
+        dm_retrieved.ParseFromString(ser_dm_retrieved);
+      if (ser_dm_retrieved.empty() || dm_retrieved.file_hash() != file_hash) {
+        dm.set_file_hash(file_hash);
+        if (se.Encrypt(full_entry, false, &dm) != kSuccess)
           return -2;
-//          for(int i=0;i < dm_.encrypted_chunk_name_size();i++) {
-//          //this needs threads or defereds threads is easier
-//          //boost::mutex::scoped_lock lock(mutex_);
-//          //Checking if node is in the network
-//  //TODO(Richard): check if this op is going to work with callbacks(Kademlia)
-//          if (storem_->IsKeyUnique(dm_.encrypted_chunk_name(i))) {
-//            //TODO write the watchlist
-//            std::string value;
-//            //read the value of the chunk from the maidsafe dir
-//         fs::path chunk_path = se_.GetChunkPath(dm_.encrypted_chunk_name(i));
-//            uintmax_t size = fs::file_size(chunk_path);
-//            boost::scoped_ptr<char> temp(new char[size]);
-//            fs::ifstream fstr;
-//            fstr.open(chunk_path, std::ios_base::binary);
-//            fstr.read(temp.get(), size);
-//            fstr.close();
-//            std::string result((const char*)temp.get(), size);
-//            value = result;
-//
-//            if (!(storem_->Store(dm_.encrypted_chunk_name(i), value, DATA)))
-//              return -4;
-//          }
-// #ifdef DEBUG
-//          else {
-//            printf("Chunk already stored in the network\n");
-//          }
-// #endif
-//        }
-
-//        CallbackResult cbr;
-//        StoreChunks(dm_,
-//                    dir_type,
-//                    msid,
-//                    boost::bind(&CallbackResult::CallbackFunc, &cbr, _1));
-//        WaitForResult(cbr);
-        StoreChunks(dm_, dir_type, msid);
-        dm_.SerializeToString(&ser_dm_);
+        StoreChunks(dm, dir_type, msid);
+        dm.SerializeToString(&ser_dm);
       }
       break;
     case LOCKED_FILE:
@@ -233,32 +197,18 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
       return -10;
   }
 
-  // boost::mutex::scoped_lock lock(mutex_);
-  if (!ProcessMetaData(rel_entry, type_, file_hash_, file_size_, &ser_mdm_))
+  if (!ProcessMetaData(rel_entry, item_type, file_hash, file_size, &ser_mdm))
     return -11;
-  if (dah_->AddElement(rel_entry, ser_mdm_, ser_dm_, dir_key_, true)) {
-    // ie AddElements failed
+  if (dah->AddElement(rel_entry, ser_mdm, ser_dm, dir_key, true) != kSuccess) {
     return -500;
   }
-  // fs::remove(full_entry_);
   return 0;
-  // size and stats missing TODO
-  // add to stack filehash
-  // some other thing saves session and pop x from stack
-  // read stack to find whats stored
-  // need a session update now
-  // to ensure all is well before showing user files
-  // are backed up completely
-  // we should keep these and pass many at once to session
-  // pass a finish flag to this.
-  //    if (auth->SaveSession(da->SerialiseDataAtlas()) == kSuccess)
-  //    {
-  //      for (int i=0;i < sizeof(vectorofnamesbackedup); i++)
-  //        RETURN (!FSYS->WITEPATH(ENTRY,FSYS->DONE));
-  //    }
-}  // end EncryptFile
+}
 
-int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
+int SEHandler::EncryptString(const std::string &data,
+                             std::string *ser_dm) {
+  if (data.empty())
+    return -8;
   maidsafe::DataMap dm;
   SelfEncryption se(client_chunkstore_);
   ser_dm->clear();
@@ -273,7 +223,7 @@ int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
 bool SEHandler::ProcessMetaData(const std::string &rel_entry,
                                 const ItemType type,
                                 const std::string &hash,
-                                const uint64_t &file_size,
+                                const boost::uint64_t &file_size,
                                 std::string *ser_mdm) {
   // boost::mutex::scoped_lock lock(mutex2_);
   // if parent dir doesn't exist, quit
@@ -316,23 +266,36 @@ bool SEHandler::ProcessMetaData(const std::string &rel_entry,
 }  // end ProcessMetaData
 
 int SEHandler::DecryptFile(const std::string &rel_entry) {
-  // boost::mutex::scoped_lock lock(mutex3_);
 #ifdef DEBUG
   // printf("Decrypting: %s\n", entry);
 #endif
-  DataMap dm;
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler);
-  std::string ser_dm_="";
-  // std::string rel_entry = fsys_->MakeRelativeMSPath(full_entry_);
-  std::string full_entry_ = fsys_.FullMSPathFromRelPath(rel_entry);
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
+  std::string ser_dm;
   // if we don't get DM, this is a directory and cannot be decrypted
-  if (!dah_->GetDataMap(rel_entry, &ser_dm_)) {  // ie found dm
-    std::string decrypted_path_ = fsys_.MakeMSPath(full_entry_);
-    dm.ParseFromString(ser_dm_);
-//    CallbackResult cbr;
+  if (dah->GetDataMap(rel_entry, &ser_dm) == kSuccess) {
+    //  Get full path
+    fs::path full_path(fs::system_complete(
+        file_system::FullMSPathFromRelPath(rel_entry, ss_->SessionName())));
+    std::string decrypted_path = full_path.string();
+
+    fs::path ms_path(file_system::MaidsafeHomeDir(ss_->SessionName()));
+    fs::path home_path(file_system::HomeDir());
+
+    if (decrypted_path.substr(0, ms_path.string().size()) !=
+        ms_path.string()) {
+      if (decrypted_path.substr(0, home_path.string().size()) ==
+          home_path.string()) {
+        decrypted_path.erase(0, home_path.string().size());
+        decrypted_path.insert(0, ms_path.string());
+      } else {
+        std::string root_path = home_path.root_path().string();
+        decrypted_path.erase(0, root_path.size());
+        decrypted_path.insert(0, ms_path.string());
+      }
+    }
+    DataMap dm;
+    dm.ParseFromString(ser_dm);
     int n = LoadChunks(dm);
-//    WaitForResult(cbr);
-//    GetResponse result;
     if (n != 0) {
 #ifdef DEBUG
       printf("Failed to get all chunks.\n");
@@ -340,16 +303,16 @@ int SEHandler::DecryptFile(const std::string &rel_entry) {
       return -1;
     }
     SelfEncryption se(client_chunkstore_);
-    if (se.Decrypt(dm, decrypted_path_, 0, false))
-      return -1;
-    else
+    if (se.Decrypt(dm, decrypted_path, 0, false) == kSuccess)
       return 0;
+    else
+      return -1;
   }
   return -2;
 }
 
 int SEHandler::DecryptString(const std::string &ser_dm,
-    std::string *dec_string) {
+                             std::string *dec_string) {
   DataMap dm;
   dec_string->clear();
   dm.ParseFromString(ser_dm);
@@ -460,7 +423,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
                          DataMap *dm) {
 #ifdef DEBUG
   printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)\n",
-         dir_path.c_str(), dir_type, encrypt_dm, dir_key.c_str());
+         dir_path.c_str(), dir_type, encrypt_dm, HexSubstr(dir_key).c_str());
 //  printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm, enc_dm, db_path;
@@ -552,7 +515,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                          bool overwrite) {
 #ifdef DEBUG
   printf("SEHandler::DecryptDb - dir_path(%s) type(%i) encrypted(%i) key(%s)",
-         dir_path.c_str(), dir_type, dm_encrypted, dir_key.c_str());
+         dir_path.c_str(), dir_type, dm_encrypted, HexSubstr(dir_key).c_str());
   printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm_, enc_dm_;

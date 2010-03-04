@@ -140,6 +140,12 @@ int VaultServiceLogic::AddToRemoteRefList(
   maidsafe::StoreContract *sc = request.mutable_store_contract();
   *sc = store_contract;
   for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
+#ifdef DEBUG
+//    printf("In VSL::AddToRemoteRefList (%s), trying to add reference to "
+//           "chunk %s to vault %s...\n", HexSubstr(pmid_).c_str(),
+//           HexSubstr(chunkname).c_str(),
+//           HexSubstr(data->contacts.at(j).node_id()).c_str());
+#endif
     request.set_request_signature(GetSignedRequest(chunkname,
         data->contacts.at(j).node_id()));
     google::protobuf::Closure* done = google::protobuf::NewCallback(this,
@@ -348,11 +354,10 @@ void VaultServiceLogic::AmendRemoteAccountStageTwo(
     google::protobuf::Closure* done = google::protobuf::NewCallback(this,
         &VaultServiceLogic::AmendRemoteAccountStageThree, j, data);
     vault_rpcs_->AmendAccount(data->contacts.at(j),
-        kad_ops_->AddressIsLocal(data->contacts.at(j)), data->transport_id,
-                                 &data->request,
-                                 &data->data_holders.at(j).response,
-                                 data->data_holders.at(j).controller.get(),
-                                 done);
+                              kad_ops_->AddressIsLocal(data->contacts.at(j)),
+                              data->transport_id, &data->request,
+                              &data->data_holders.at(j).response,
+                              data->data_holders.at(j).controller.get(), done);
   }
 }
 

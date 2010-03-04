@@ -34,6 +34,7 @@
 #include <string>
 #include <vector>
 
+#include "fs/filesystem.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/keyatlas.h"
 #include "maidsafe/client/contacts.h"
@@ -42,10 +43,10 @@
 
 namespace maidsafe {
 
-enum DefConLevels {DEFCON1 = 1, DEFCON2, DEFCON3};
+class MockSessionSingleton;
 
 struct UserDetails {
-  UserDetails() : defconlevel(DEFCON3),
+  UserDetails() : defconlevel(kDefCon3),
                   da_modified(false),
                   username(""),
                   pin(""),
@@ -71,6 +72,7 @@ struct UserDetails {
   boost::uint32_t smid_rid;
   std::string session_name;
   std::string root_db_key;
+  std::string tmid_content;
   bool self_encrypting;
   std::set<std::string> authorised_users;
   std::set<std::string> maid_authorised_users;
@@ -101,6 +103,7 @@ class SessionSingleton {
   inline boost::uint32_t MidRid() { return ud_.mid_rid; }
   inline boost::uint32_t SmidRid() { return ud_.smid_rid; }
   inline std::string SessionName() { return ud_.session_name; }
+  inline std::string TmidContent() { return ud_.tmid_content; }
   inline std::string RootDbKey() { return ud_.root_db_key; }
   inline bool SelfEncrypting() { return ud_.self_encrypting; }
   inline std::set<std::string> AuthorisedUsers() {
@@ -153,12 +156,16 @@ class SessionSingleton {
       crypto::Crypto c;
       c.set_hash_algorithm(crypto::SHA_1);
       ud_.session_name =
-          c.Hash(Pin()+Username(), "", crypto::STRING_STRING, false);
+          c.Hash(Pin()+Username(), "", crypto::STRING_STRING, true);
     }
     return true;
   }
-  inline bool SetRootDbKey(const std::string &root_db_key_) {
-    ud_.root_db_key = root_db_key_;
+  inline bool SetRootDbKey(const std::string &root_db_key) {
+    ud_.root_db_key = root_db_key;
+    return true;
+  }
+  inline bool SetTmidContent(const std::string &tmid_content) {
+    ud_.tmid_content = tmid_content;
     return true;
   }
   inline bool SetSelfEncrypting(bool self_encrypting) {
@@ -207,6 +214,7 @@ class SessionSingleton {
   int LoadKeys(std::list<Key> *keys);
   void GetKeys(std::list<KeyAtlasRow> *keys);
   void SerialisedKeyRing(std::string *ser_kr);
+  unsigned int KeyRingSize();
   // If signed_public_key == "", it is set as signature of given public_key
   // using given private_key.
   int AddKey(const PacketType &bpt, const std::string &id,
@@ -306,6 +314,7 @@ class SessionSingleton {
   void ClearConversations();
 
  private:
+  friend class MockSessionSingleton;
   SessionSingleton &operator=(const SessionSingleton&);
   SessionSingleton(const SessionSingleton&);
   static SessionSingleton *single;

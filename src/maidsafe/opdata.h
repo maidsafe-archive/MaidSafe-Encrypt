@@ -226,7 +226,7 @@ struct SendChunkData {
         store_chunk_request(),
         store_chunk_response(),
         controller(new rpcprotocol::Controller),
-        attempt(0) {}
+        attempt(0) { controller->set_timeout(30); }
   StoreData store_data;
   kad::Contact peer;
   bool local;

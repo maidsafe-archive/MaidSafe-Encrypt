@@ -25,17 +25,18 @@
 #ifndef MAIDSAFE_CLIENT_DATAATLASHANDLER_H_
 #define MAIDSAFE_CLIENT_DATAATLASHANDLER_H_
 
-#include <list>
 #include <map>
 #include <string>
 #include <vector>
 
 #include "gtest/gtest_prod.h"
-
-#include "maidsafe/client/keyatlas.h"
-#include "maidsafe/client/pddir.h"
+#include "protobuf/datamaps.pb.h"
+#include "maidsafe/maidsafe.h"
 
 namespace maidsafe {
+
+class PdDir;
+class KeyAtlas;
 
 class DataAtlasHandler {
  public:

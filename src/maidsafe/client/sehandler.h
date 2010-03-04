@@ -81,20 +81,24 @@ class SEHandler {
   void Init(boost::shared_ptr<StoreManagerInterface> storem,
             boost::shared_ptr<ChunkStore> client_chunkstore);
   ~SEHandler() {}
-  ItemType CheckEntry(const std::string &full_entry, uint64_t *file_size);
+  ItemType CheckEntry(const std::string &full_entry,
+                      boost::uint64_t *file_size);
   //  Get the hash of the file contents if bool = true, else hash filename
-  std::string SHA512(const std::string &full_entry, bool hash_contents);
+  std::string SHA512(const std::string &full_entry,
+                     bool hash_contents);
   int EncryptFile(const std::string &rel_entry,
                   const DirType dir_type,
                   const std::string &msid);
-  int EncryptString(const std::string &data, std::string *ser_dm);
+  int EncryptString(const std::string &data,
+                    std::string *ser_dm);
   bool ProcessMetaData(const std::string &rel_entry,
                        const ItemType type,
                        const std::string &hash,
-                       const uint64_t &file_size,
+                       const boost::uint64_t &file_size,
                        std::string *ser_mdm);
   int DecryptFile(const std::string &rel_entry);
-  int DecryptString(const std::string &ser_dm, std::string *dec_string);
+  int DecryptString(const std::string &ser_dm,
+                    std::string *dec_string);
   bool MakeElement(const std::string &rel_entry,
                    const ItemType type,
                    const DirType dir_type,
@@ -166,8 +170,6 @@ class SEHandler {
   boost::shared_ptr<StoreManagerInterface> storem_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;
-//  boost::recursive_mutex *mutex_;
-  file_system::FileSystem fsys_;
   std::map<std::string, std::string> uptodate_datamaps_;
 };
 

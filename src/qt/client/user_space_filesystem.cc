@@ -47,7 +47,6 @@ class UserSpaceFileSystem::UserSpaceFileSystemImpl {
  public:
   UserSpaceFileSystemImpl() { }
 
-  file_system::FileSystem fsys_;
 #ifdef MAIDSAFE_WIN32
   // none needed
 #elif defined(MAIDSAFE_POSIX)
@@ -84,7 +83,8 @@ bool UserSpaceFileSystem::mount() {
   fs_w_fuse::Mount(drive);
   maidsafe::SessionSingleton::getInstance()->SetWinDrive(drive);
 #elif defined(MAIDSAFE_POSIX)
-  std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
+  std::string mount_point = file_system::MaidsafeFuseDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string();
   impl_->fsl_.Mount(mount_point, debug_mode);
 #endif
   boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -97,13 +97,11 @@ bool UserSpaceFileSystem::mount() {
 
 bool UserSpaceFileSystem::unmount() {
   // unmount drive
-  qDebug() << "UserSpaceFileSystem::unmount() -";
   bool success = false;
-  qDebug() << "UserSpaceFileSystem::unmount() - -";
-  std::string ms_dir = impl_->fsys_.MaidsafeDir();
-  qDebug() << "UserSpaceFileSystem::unmount() - - -";
-  std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
-  qDebug() << "UserSpaceFileSystem::unmount() - - - -";
+//  std::string ms_dir = file_system::MaidsafeDir(
+//      maidsafe::SessionSingleton::getInstance()->SessionName()).string();
+//  std::string mount_point = file_system::MaidsafeFuseDir(
+//      maidsafe::SessionSingleton::getInstance()->SessionName()).string();
 #ifdef MAIDSAFE_WIN32
   std::locale loc;
   wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >

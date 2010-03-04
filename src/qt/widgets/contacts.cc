@@ -214,9 +214,9 @@ void Contacts::addContact(Contact* contact) {
   } else if (contact->presence() == Presence::AVAILABLE) {
       pixmap = QPixmap(":/icons/16/tick");
   } else if (contact->presence() == Presence::BUSY) {
-      //TODO Correct symbol
+      // TODO(Team#5#) Correct symbol
   } else if (contact->presence() == Presence::IDLE) {
-      //TODO Correct symbol
+      // TODO(Team#5#) Correct symbol
   } else {
       pixmap = QPixmap(":/icons/16/tick");
   }
@@ -390,8 +390,9 @@ void Contacts::onFileSendClicked() {
          arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
 
 #else
-  file_system::FileSystem fs;
-  root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+  root = QString::fromStdString(file_system::MaidsafeFuseDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+      "/My Files");
 
 #endif
 
@@ -399,8 +400,8 @@ void Contacts::onFileSendClicked() {
                      tr("File to share..."),
                      root, tr("Any file (*)"));
 
-  connect( qfd, SIGNAL(directoryEntered(const QString &)),
-            this, SLOT(onDirectoryEntered(const QString&)));
+  connect(qfd,  SIGNAL(directoryEntered(const QString&)),
+          this, SLOT(onDirectoryEntered(const QString&)));
 
   int result = qfd->exec();
   if (result == QDialog::Rejected) {
@@ -627,28 +628,29 @@ void Contacts::DoneAddingContact(int result, QString contact) {
   }
 }
 
-void Contacts::onDirectoryEntered(const QString& dir){
-  printf("Contacts::onDirectoryEntered :: %s \n",dir.toStdString().c_str());
+void Contacts::onDirectoryEntered(const QString& dir) {
+#ifdef DEBUG
+  printf("Contacts::onDirectoryEntered :: %s \n", dir.toStdString().c_str());
+#endif
   QString root;
 
 #ifdef __WIN32__
   root = QString(maidsafe::SessionSingleton::getInstance()->WinDrive());
 
-  if (!dir.startsWith(root, Qt::CaseInsensitive)){
+  if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString("%1:\\My Files").
          arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
     qfd->setDirectory(root);
   }
-
 #else
-  file_system::FileSystem fs;
-  root = QString::fromStdString(fs.MaidsafeFuseDir());
+  root = QString::fromStdString(file_system::MaidsafeFuseDir(
+      maidsafe::SessionSingleton::getInstance()->SessionName()).string());
 
-  if (!dir.startsWith(root, Qt::CaseInsensitive)){
-    file_system::FileSystem fs;
-    root = QString::fromStdString(fs.MaidsafeFuseDir() + "/My Files");
+  if (!dir.startsWith(root, Qt::CaseInsensitive)) {
+    root = QString::fromStdString(file_system::MaidsafeFuseDir(
+        maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+        "/My Files");
     qfd->setDirectory(root);
   }
-
 #endif
 }

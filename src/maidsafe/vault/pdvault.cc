@@ -31,6 +31,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 
+#include "fs/filesystem.h"
 #include "maidsafe/kadops.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "protobuf/maidsafe_messages.pb.h"
@@ -44,17 +45,17 @@ void pdv_dummy_callback(const std::string&) {}
 PDVault::PDVault(const std::string &pmid_public,
                  const std::string &pmid_private,
                  const std::string &signed_pmid_public,
-                 const std::string &chunkstore_dir,
+                 const fs::path &vault_dir,
                  const boost::uint16_t &port,
                  bool port_forwarded,
                  bool use_upnp,
-                 const std::string &kad_config_file,
+                 const fs::path &read_only_kad_config_file,
                  const boost::uint64_t &available_space,
-                 const boost::uint64_t &used_space,
-                 transport::TransportHandler *transport_handler)
+                 const boost::uint64_t &used_space)
     : port_(port),
-      udt_transport_(),
-      transport_handler_(transport_handler),
+      global_udt_transport_(),
+      transport_handler_(new transport::TransportHandler()),
+      transport_id_(0),
       channel_manager_(transport_handler_),
       validator_(),
       knode_(new kad::KNode(&channel_manager_, transport_handler_, kad::VAULT,
@@ -62,7 +63,8 @@ PDVault::PDVault(const std::string &pmid_public,
                             use_upnp)),
       vault_rpcs_(new VaultRpcs(transport_handler_, &channel_manager_)),
       kad_ops_(new maidsafe::KadOps(knode_)),
-      vault_chunkstore_(chunkstore_dir, available_space, used_space),
+      vault_chunkstore_((vault_dir / "Chunkstore").string(), available_space,
+                        used_space),
       vault_service_(),
       vault_service_logic_(vault_rpcs_, knode_),
       kad_joined_(false),
@@ -75,13 +77,11 @@ PDVault::PDVault(const std::string &pmid_public,
       pmid_(),
       co_(),
       svc_channel_(),
-      kad_config_file_(kad_config_file),
-      poh_(),
+      kad_config_file_(vault_dir / ".kadconfig"),
       thread_pool_(),
-      prune_pending_ops_thread_() {
-  boost::int16_t trans_id;
-  transport_handler_->Register(&udt_transport_, &trans_id);
-  knode_->SetTransID(trans_id);
+      create_account_thread_() {
+  transport_handler_->Register(&global_udt_transport_, &transport_id_);
+  knode_->SetTransID(transport_id_);
   vault_chunkstore_.Init();
   co_.set_symm_algorithm(crypto::AES_256);
   co_.set_hash_algorithm(crypto::SHA_512);
@@ -91,12 +91,22 @@ PDVault::PDVault(const std::string &pmid_public,
   knode_->SetAlternativeStore(&vault_chunkstore_);
   knode_->set_signature_validator(&validator_);
   vault_rpcs_->SetOwnId(pmid_);
-  thread_pool_.setMaxThreadCount(5);
-  poh_.SetPmid(pmid_);
+  thread_pool_.setMaxThreadCount(1);
+  try {
+    if (fs::exists(read_only_kad_config_file))
+      fs::copy_file(read_only_kad_config_file, kad_config_file_);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("In PDVault::PDVault() - %s\n", e.what());
+#endif
+  }
+  printf("PDVault::PDVault() - %s\n", HexSubstr(pmid_).c_str());
 }
 
 PDVault::~PDVault() {
 //  Stop(true);
+  printf("PDVault::~PDVault() - %s\n", HexSubstr(pmid_).c_str());
 }
 
 void PDVault::Start(bool first_node) {
@@ -107,20 +117,50 @@ void PDVault::Start(bool first_node) {
     success = transport_handler_->RegisterOnServerDown(boost::bind(
         &kad::KNode::HandleDeadRendezvousServer, knode_.get(), _1));
   if (success)
-    success = (transport_handler_->Start(port_, udt_transport_.GetID()) == 0);
+    success = (transport_handler_->Start(port_, transport_id_) == 0);
   if (success)
     success = (channel_manager_.Start() == 0);
+  if (!first_node && success) {
+    try {
+      if (!fs::exists(kad_config_file_)) {
+#ifdef DEBUG
+        printf("Can't find kadconfig at %s\n",
+               kad_config_file_.string().c_str());
+#endif
+        kad_config_file_ = file_system::ApplicationDataDir() / ".kadconfig";
+      }
+//        if (!fs::exists(kad_config_file_)) {
+//  #ifdef DEBUG
+//          printf("Can't find kadconfig at %s\n", kad_config_file_.c_str());
+//  #endif
+//          kad_config_file_ = ".kadconfig";
+//        }
+      if (!fs::exists(kad_config_file_)) {
+#ifdef DEBUG
+        printf("Can't find kadconfig at %s - Failed to start vault.\n",
+               kad_config_file_.string().c_str());
+#endif
+        success = false;
+      }
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("In PDVault::Start - %s - Failed to start vault.\n", e.what());
+#endif
+        success = false;
+    }
+  }
   if (success) {
     RegisterMaidService();
     boost::mutex kad_join_mutex;
     if (first_node) {
       boost::asio::ip::address local_ip;
       base::get_local_address(&local_ip);
-      knode_->Join(pmid_, kad_config_file_, local_ip.to_string(),
-          transport_handler_->listening_port(udt_transport_.GetID()),
+      knode_->Join(pmid_, kad_config_file_.string(), local_ip.to_string(),
+          transport_handler_->listening_port(transport_id_),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     } else {
-      knode_->Join(pmid_, kad_config_file_,
+      knode_->Join(pmid_, kad_config_file_.string(),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     }
     // Hash check all current chunks in chunkstore
@@ -137,14 +177,15 @@ void PDVault::Start(bool first_node) {
     // re-uses port (unless this port has become unavailable).
     port_ = knode_->host_port();
     if (kad_joined_ && vault_service_logic_.Init(pmid_, pmid_public_,
-        signed_pmid_public_, pmid_private_))
+        signed_pmid_public_, pmid_private_)) {
       SetVaultStatus(kVaultStarted);
-    // Start repeating pruning worker thread
-    prune_pending_ops_thread_ =
-        boost::thread(&PDVault::PrunePendingOperations, this);
+    }
     // Announce available space to account, try repeatedly in thread
     // TODO(Team#) find better solution or make thread-safe!
-    boost::thread thr(boost::bind(&PDVault::UpdateSpaceOffered, this));
+    create_account_thread_ = boost::thread(&PDVault::UpdateSpaceOffered, this);
+  } else {
+    SetVaultStatus(kVaultStarted);
+    Stop();
   }
 }
 
@@ -177,8 +218,7 @@ int PDVault::Stop() {
     return -2;
   }
   SetVaultStatus(kVaultStopping);
-//  thread_pool_.waitForDone();
-  prune_pending_ops_thread_.join();
+  create_account_thread_.join();
   UnRegisterMaidService();
   knode_->Leave();
   kad_joined_ = knode_->is_joined();
@@ -200,9 +240,8 @@ void PDVault::RegisterMaidService() {
                      signed_pmid_public_,
                      &vault_chunkstore_,
                      knode_.get(),
-                     &poh_,
                      &vault_service_logic_,
-                     udt_transport_.GetID()));
+                     transport_id_));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
       new rpcprotocol::Channel(&channel_manager_, transport_handler_));
   svc_channel_->SetService(vault_service_.get());
@@ -211,9 +250,12 @@ void PDVault::RegisterMaidService() {
 }
 
 void PDVault::UnRegisterMaidService() {
-  channel_manager_.UnRegisterChannel(vault_service_->GetDescriptor()->name());
-  svc_channel_.reset();
-  vault_service_.reset();
+  if (vault_service_.get() != NULL)
+    channel_manager_.UnRegisterChannel(vault_service_->GetDescriptor()->name());
+  if (svc_channel_ != NULL)
+    svc_channel_.reset();
+  if (vault_service_ != NULL)
+    vault_service_.reset();
 }
 
 VaultStatus PDVault::vault_status() {
@@ -226,12 +268,6 @@ void PDVault::SetVaultStatus(const VaultStatus &vault_status) {
   vault_status_ = vault_status;
 }
 
-void PDVault::PrunePendingOperations() {
-  while (vault_status() == kVaultStarted) {
-    poh_.PrunePendingOps();
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-  }
-}
 /*
 void PDVault::SyncVault(base::callback_func_type cb) {
   // Process of updating vault:
@@ -781,7 +817,7 @@ void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
   }
   vault_rpcs_->CheckChunk(get_args->data_->chunk_name, ip, port,
       get_args->chunk_holder_.rendezvous_ip(),
-      get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+      get_args->chunk_holder_.rendezvous_port(), transport_id_,
       check_chunk_response.get(), get_args->controller_.get(), callback);
 }
 
@@ -814,7 +850,7 @@ void PDVault::CheckChunkCallback(
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
           get_args->chunk_holder_.rendezvous_port(),
-          udt_transport_.GetID(), check_chunk_response.get(),
+          transport_id_, check_chunk_response.get(),
           get_args->controller_.get(), callback);
       return;
     }
@@ -858,7 +894,7 @@ void PDVault::CheckChunkCallback(
         vault_rpcs_->GetBPMessages(get_args->data_->chunk_name,
             get_args->data_->pub_key, get_args->data_->sig_pub_key, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
-            get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+            get_args->chunk_holder_.rendezvous_port(), transport_id_,
             get_messages_response.get(), get_args->controller_.get(), callback);
       } else {
        boost::shared_ptr<maidsafe::GetChunkResponse>
@@ -867,7 +903,7 @@ void PDVault::CheckChunkCallback(
            &PDVault::GetChunkCallback, get_chunk_response, get_args);
         vault_rpcs_->GetChunk(get_args->data_->chunk_name, ip, port,
             get_args->chunk_holder_.rendezvous_ip(),
-            get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+            get_args->chunk_holder_.rendezvous_port(), transport_id_,
             get_chunk_response.get(), get_args->controller_.get(), callback);
       }
     }
@@ -917,7 +953,7 @@ void PDVault::GetMessagesCallback(
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
-          get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+          get_args->chunk_holder_.rendezvous_port(), transport_id_,
           get_messages_response.get(), get_args->controller_.get(), callback);
       return;
     }
@@ -960,7 +996,7 @@ void PDVault::GetChunkCallback(
           get_args->chunk_holder_.host_ip(),
           get_args->chunk_holder_.host_port(),
           get_args->chunk_holder_.rendezvous_ip(),
-          get_args->chunk_holder_.rendezvous_port(), udt_transport_.GetID(),
+          get_args->chunk_holder_.rendezvous_port(), transport_id_,
           get_chunk_response.get(), get_args->controller_.get(), callback);
       return;
     }
@@ -1052,7 +1088,7 @@ void PDVault::SwapChunk(const std::string &chunk_name,
   }
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   vault_rpcs_->SwapChunk(0, chunk_name, "", chunkcontent1.size(), remote_ip,
-      remote_port, rendezvous_ip, rendezvous_port, udt_transport_.GetID(),
+      remote_port, rendezvous_ip, rendezvous_port, transport_id_,
       swap_chunk_response.get(), controller, callback);
 }
 
@@ -1091,7 +1127,7 @@ void PDVault::SwapChunkSendChunk(
   vault_rpcs_->SwapChunk(1, swap_chunk_args->chunkname_, chunkcontent1,
       chunkcontent1.size(), swap_chunk_args->remote_ip_,
       swap_chunk_args->remote_port_, swap_chunk_args->rendezvous_ip_,
-      swap_chunk_args->rendezvous_port_, udt_transport_.GetID(),
+      swap_chunk_args->rendezvous_port_, transport_id_,
       swap_chunk_response.get(), controller, callback);
 }
 
@@ -1179,9 +1215,26 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   if (data->contacts.size() < kKadStoreThreshold) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, Kad lookup failed to find %u nodes; "
-           "found %u nodes.\n", kKadStoreThreshold, data->contacts.size());
+           "found %u node(s).\n", kKadStoreThreshold, data->contacts.size());
 #endif
     return maidsafe::kFindAccountHoldersError;
+  }
+
+  // If we are listed as an account holder, don't send RPC
+  for (std::vector<kad::Contact>::iterator it = data->contacts.begin();
+       it != data->contacts.end(); ++it) {
+    if ((*it).node_id() == knode_->node_id()) {
+      if (vault_service_->AddAccount((*it).node_id(), space_offered) == 0) {
+        ++data->success_count;
+#ifdef DEBUG
+//      printf("Vault %s listed as an account holder for PMID %s\n",
+//             HexSubstr((*it).node_id()).c_str(),
+//             HexSubstr(pmid_).c_str());
+#endif
+      }
+      data->contacts.erase(it);
+      break;
+    }
   }
 
   // Create the request
@@ -1212,7 +1265,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
         &PDVault::AmendAccountCallback, i, data);
     vault_rpcs_->AmendAccount(data->contacts.at(i),
         kad_ops_->AddressIsLocal(data->contacts.at(i)),
-                                 udt_transport_.GetID(),
+                                 transport_id_,
                                  &amend_account_request,
                                  &data->data_holders.at(i).response,
                                  data->data_holders.at(i).controller.get(),
@@ -1228,7 +1281,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   if (data->success_count < kKadStoreThreshold) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, not enough positive responses "
-           "received.\n");
+           "received (%d of %d).\n", data->success_count, kKadStoreThreshold);
 #endif
     return maidsafe::kRequestFailedConsensus;
   }
@@ -1267,18 +1320,22 @@ void PDVault::AmendAccountCallback(
 }
 
 void PDVault::UpdateSpaceOffered() {
+  // TODO(Team#) replace or make thread-safe
   int n = 1;
-  while (vault_status() == kVaultStarted &&
+  // boost::mutex::scoped_lock lock(vault_status_mutex_);
+  while (vault_status_ == kVaultStarted &&
          0 != AmendAccount(vault_chunkstore_.available_space())) {
 #ifdef DEBUG
       printf("PDVault::UpdateSpaceOffered (%s) failed, trying again...\n",
              HexSubstr(pmid_).c_str());
 #endif
     ++n;
-    boost::this_thread::sleep(boost::posix_time::seconds(20));
+    // vault_status_mutex_.unlock();
+    boost::this_thread::sleep(boost::posix_time::seconds(15));
+    // vault_status_mutex_.lock();
   }
 #ifdef DEBUG
-  if (vault_status() == kVaultStarted)
+  if (vault_status_ == kVaultStarted)
     printf("In PDVault::UpdateSpaceOffered (%s), set space offered to %llu "
            "on attempt #%d.\n", HexSubstr(pmid_).c_str(),
            vault_chunkstore_.available_space(), n);

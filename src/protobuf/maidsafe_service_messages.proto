@@ -259,7 +259,7 @@ message SetLocalVaultOwnedRequest {
   required bytes public_key = 1;
   required bytes private_key = 2;
   required bytes signed_public_key = 3;
-  required bytes chunkstore_dir = 4;
+  required bytes vault_dir = 4;
   required uint32 port = 5;
   required uint64 space = 6;
 }

@@ -110,7 +110,6 @@ class SelfEncryption {
   bool compress_;
   std::string file_hash_;
   int chunk_count_;
-  file_system::FileSystem fsys_;
 };
 
 }  // namespace maidsafe

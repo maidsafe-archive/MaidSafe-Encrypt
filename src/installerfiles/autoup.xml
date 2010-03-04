@@ -1,0 +1,8 @@
+<autoUpdateProject>
+	<fullName>Perpetual Data</fullName>
+    	<shortName>pd</shortName>
+    	<vendor>maidsafe.net</vendor>
+    	<version>0.1</version>
+    	<singleInstanceCheck>1</singleInstanceCheck>
+    	<requireInstallationByRootUser>1</requireInstallationByRootUser>
+</autoUpdateProject>

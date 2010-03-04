@@ -16,7 +16,7 @@
 #include "qt/widgets/personal_settings.h"
 #include "qt/client/client_controller.h"
 
-PersonalSettings::PersonalSettings(QWidget* parent):init_(false){
+PersonalSettings::PersonalSettings(QWidget* parent) : init_(false) {
   ui_.setupUi(this);
 
     connect(ui_.usernameEdit, SIGNAL(textEdited(const QString&)),
@@ -31,7 +31,7 @@ PersonalSettings::PersonalSettings(QWidget* parent):init_(false){
 
 PersonalSettings::~PersonalSettings() {}
 
-void PersonalSettings::setActive(bool b){
+void PersonalSettings::setActive(bool b) {
   if (b && !init_) {
     init_ = true;
     ui_.usernameEdit->setText(ClientController::instance()->publicUsername());
@@ -39,7 +39,7 @@ void PersonalSettings::setActive(bool b){
   }
 }
 
-void PersonalSettings::reset(){
+void PersonalSettings::reset() {
 }
 
 void PersonalSettings::onUsernameTextEdit(const QString& text){
