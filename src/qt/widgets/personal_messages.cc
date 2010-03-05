@@ -24,16 +24,15 @@
 #include <QFontDialog>
 #include <QColorDialog>
 
+#include <string>
+
 #include "qt/client/client_controller.h"
+#include "qt/client/send_instant_message_thread.h"
 #include "qt/widgets/user_panels.h"
 
-#include "qt/client/send_instant_message_thread.h"
-
 PersonalMessages::PersonalMessages(QWidget* parent)
-    : active_(false), init_(false) {
+    : active_(false), init_(false), convName_("") {
   ui_.setupUi(this);
-
-  convName_ = "";
 
   connect(ClientController::instance(),
           SIGNAL(messageReceived(ClientController::MessageType,
@@ -53,7 +52,7 @@ PersonalMessages::PersonalMessages(QWidget* parent)
 }
 
 PersonalMessages::PersonalMessages(QString name)
-    :active_(false), init_(false) {
+    : active_(false), init_(false) {
 
   setWindowIcon(QPixmap(":/icons/16/globe"));
   ui_.setupUi(this);
@@ -89,7 +88,7 @@ PersonalMessages::PersonalMessages(QString name)
           this,                 SLOT(onSendMessageClicked()));
 
   connect(ui_.textButton, SIGNAL(clicked(bool)),
-        this,                   SLOT(onTextClicked()));
+          this,           SLOT(onTextClicked()));
 
   connect(ui_.actionInvite, SIGNAL(triggered()),
           this,             SLOT(onSendInvite()));
@@ -101,7 +100,6 @@ PersonalMessages::PersonalMessages(QString name)
 
   connect(ui_.smilyButton, SIGNAL(clicked(bool)),
           this,             SLOT(onSmilyClicked()));
-
 }
 
 PersonalMessages::~PersonalMessages() {
@@ -134,8 +132,9 @@ void PersonalMessages::onMessageReceived(ClientController::MessageType,
                                  const QString& conversation) {
   boost::progress_timer t;
   if (sender == convName_) {
-    //ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
-    ui_.message_window->insertHtml(tr("<br />%1 said: %2").arg(sender).arg(message));
+//    ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+    ui_.message_window->insertHtml(tr("<br />%1 said: %2").arg(sender)
+                                   .arg(message));
   }
     printf("Personal Messages.cc %f", t.elapsed());
 }
@@ -146,8 +145,8 @@ void PersonalMessages::sendMessage(const QDateTime& time,
 }
 
 void PersonalMessages::setName(QString name) {
-  /*convName_ = name;
-  ui_.username_lbl->setText(name_);*/
+//  convName_ = name;
+//  ui_.username_lbl->setText(name_);
 }
 
 QString PersonalMessages::getName() {
@@ -155,7 +154,7 @@ QString PersonalMessages::getName() {
 }
 
 void PersonalMessages::setMessage(QString mess) {
-  //ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  // ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
   ui_.message_window->insertHtml(mess);
 }
 
@@ -166,7 +165,8 @@ void PersonalMessages::onSendMessageClicked() {
 
     QString text = ui_.message_text_edit->toHtml();
 
-    SendInstantMessageThread* simt = new SendInstantMessageThread(text, convName_, conts, this);
+    SendInstantMessageThread* simt = new SendInstantMessageThread(text,
+                                     convName_, conts, this);
 
     connect(simt, SIGNAL(sendMessageCompleted(bool, const QString&)),
           this, SLOT(onSendMessageComplete(bool, const QString&)));
@@ -175,19 +175,20 @@ void PersonalMessages::onSendMessageClicked() {
   }
 }
 
-void PersonalMessages::onSendMessageComplete(bool success, const QString& text) {
+void PersonalMessages::onSendMessageComplete(bool success,
+                                             const QString& text) {
   if (success) {
-      //ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
-      ui_.message_window->insertHtml(tr("<br />You said: %1").arg(text));
-    } else {
-      const QString msg = tr("Error sending message.");
-      QMessageBox::warning(this, tr("Error"), msg);
-    }
-    ui_.message_text_edit->clear();
+//    ui_.message_window->moveCursor(QTextCursor::End,
+//                                   QTextCursor::MoveAnchor);
+    ui_.message_window->insertHtml(tr("<br />You said: %1").arg(text));
+  } else {
+    const QString msg = tr("Error sending message.");
+    QMessageBox::warning(this, tr("Error"), msg);
+  }
+  ui_.message_text_edit->clear();
 }
 
-void PersonalMessages::onSendInvite() {
-}
+void PersonalMessages::onSendInvite() { }
 
 void PersonalMessages::onSendFile() {
   QList<QString> conts;
@@ -216,13 +217,12 @@ void PersonalMessages::onSendFile() {
   QStringList fileNames = qfd->selectedFiles();
 #else
   root = QString::fromStdString(file_system::MaidsafeFuseDir(
-      maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
-      "/My Files");
-  QStringList fileNames = QFileDialog::getOpenFileNames(
-                                this,
-                                "Select one to send",
-                                root,
-                                tr("Any file (*)"));
+         maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+         "/My Files");
+  QStringList fileNames = QFileDialog::getOpenFileNames(this,
+                                                        "Select one to send",
+                                                        root,
+                                                        tr("Any file (*)"));
 #endif
 
 #ifdef DEBUG
@@ -247,7 +247,7 @@ void PersonalMessages::onSendFile() {
                                        QString(),
                                        &ok);
   if (!ok) {
-      return;
+    return;
   }
 
   if (ClientController::instance()->sendInstantFile(filename, text, conts,
@@ -261,88 +261,93 @@ void PersonalMessages::onSendFile() {
   }
 }
 
-void PersonalMessages::onTextClicked(){
-bool ok;
-QString startTags;
- font_ = QFontDialog::getFont(
-                 &ok, QFont("Times New Roman", 10), this);
- if (ok) {
-   formatHtml();
- } else {
+void PersonalMessages::onTextClicked() {
+  bool ok;
+  QString startTags;
+  font_ = QFontDialog::getFont(&ok, QFont("Times New Roman", 10), this);
+  if (ok) {
+    formatHtml();
+  } else {
      // the user canceled the dialog; font is set to the initial
      // value, in this case Helvetica [Cronyx], 10
- }
+  }
 }
 
-void PersonalMessages::onColorClicked(){
+void PersonalMessages::onColorClicked() {
   bool ok;
-  color_ = QColorDialog::getColor(QColor("black"),this);
+  color_ = QColorDialog::getColor(QColor("black"), this);
   formatHtml();
 }
 
-void PersonalMessages::formatHtml(){
-
+void PersonalMessages::formatHtml() {
   QString currentHtml = ui_.message_text_edit->toHtml();
-
   ui_.message_text_edit->setFont(font_);
   ui_.message_text_edit->setTextColor(color_);
-
-  //ui_.message_window->setPlainText(currentHtml);
+//  ui_.message_window->setPlainText(currentHtml);
 }
 
-void PersonalMessages::onSmilyClicked(){
+void PersonalMessages::onSmilyClicked() {
   smilies_ = new Smily();
 
-  connect(smilies_, SIGNAL(smilyChosen(int,int)),
-        this,      SLOT(onSmilyChosen(int,int)));
+  connect(smilies_, SIGNAL(smilyChosen(int, int)),
+          this,     SLOT(onSmilyChosen(int, int)));
 
   smilies_->show();
-  QPoint globalPos = ui_.smilyButton->mapToGlobal(QPoint(0,0));
+  QPoint globalPos = ui_.smilyButton->mapToGlobal(QPoint(0, 0));
   smilies_->move(globalPos);
 }
 
-void PersonalMessages::onSmilyChosen(int row,int column){
-
-  if (column == 0){
-    if(row == 0){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//sbiggrin.gif\";");
+void PersonalMessages::onSmilyChosen(int row, int column) {
+  if (column == 0) {
+    if (row == 0) {
+      ui_.message_text_edit->insertHtml(
+          "<img src=\"://smilies//smily_blue//sbiggrin.gif\";");
     }
-    if(row == 1){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//scry.gif\";");
+    if (row == 1) {
+      ui_.message_text_edit->insertHtml(
+          "<img src=\"://smilies//smily_blue//scry.gif\";");
     }
-    if(row == 2){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//smad.gif\";");
+    if (row == 2) {
+      ui_.message_text_edit->insertHtml(
+          "<img src=\"://smilies//smily_blue//smad.gif\";");
     }
-    if(row == 3){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//ssmile.gif\";");
+    if (row == 3) {
+      ui_.message_text_edit->insertHtml(
+        "<img src=\"://smilies//smily_blue//ssmile.gif\";");
     }
-  }
-  if (column == 1){
-    if(row == 0){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//sconfused.gif\";");
+  } else if (column == 1) {
+    if (row == 0) {
+      ui_.message_text_edit->insertHtml(
+        "<img src=\"://smilies//smily_blue//sconfused.gif\";");
     }
-    if(row == 1){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//sdrool.gif\";");
+    if (row == 1) {
+      ui_.message_text_edit->insertHtml(
+        "<img src=\"://smilies//smily_blue//sdrool.gif\";");
     }
-    if(row == 2){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//ssad.gif\";");
+    if (row == 2) {
+      ui_.message_text_edit->insertHtml(
+        "<img src=\"://smilies//smily_blue//ssad.gif\";");
     }
-    if(row == 3){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//ssuprised.gif\";");
+    if (row == 3) {
+      ui_.message_text_edit->insertHtml(
+        "<img src=\"://smilies//smily_blue//ssuprised.gif\";");
     }
-  }
-    if (column == 2){
-    if(row == 0){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//scool.gif\";");
+  } else if (column == 2) {
+    if (row == 0) {
+      ui_.message_text_edit->insertHtml(
+        "<img src=\"://smilies//smily_blue//scool.gif\";");
     }
-    if(row == 1){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//shappy.gif\";");
+    if (row == 1) {
+      ui_.message_text_edit->insertHtml(
+        "<img src=\"://smilies//smily_blue//shappy.gif\";");
     }
-    if(row == 2){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//ssleepy.gif\";");
+    if (row == 2) {
+      ui_.message_text_edit->insertHtml(
+        "<img src=\"://smilies//smily_blue//ssleepy.gif\";");
     }
-    if(row == 3){
-      ui_.message_text_edit->insertHtml("<img src=\"://smilies//smily_blue//stongue.gif\";");
+    if (row == 3) {
+      ui_.message_text_edit->insertHtml(
+        "<img src=\"://smilies//smily_blue//stongue.gif\";");
     }
   }
 }

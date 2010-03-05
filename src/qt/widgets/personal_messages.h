@@ -60,7 +60,7 @@ class PersonalMessages : public QMainWindow {
     void onColorClicked();
     void onSmilyClicked();
     void formatHtml();
-    void onSmilyChosen(int row,int column);
+    void onSmilyChosen(int row, int column);
     void onSendMessageComplete(bool success, const QString& text);
 
  private:

@@ -34,8 +34,8 @@
 
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/maidsafevalidator.h"
+#include "maidsafe/vaultbufferpackethandler.h"
 #include "maidsafe/vault/vaultchunkstore.h"
-#include "maidsafe/vault/vaultbufferpackethandler.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 
 namespace maidsafe_vault {

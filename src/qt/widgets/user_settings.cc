@@ -121,34 +121,28 @@ void UserSettings::setState(State state) {
   }
 }
 
-void UserSettings::HandleOK(){
+void UserSettings::HandleOK() {
   bool applied;
-  if (!personal_->changedValues_.isEmpty()){
+  if (!personal_->changedValues_.isEmpty()) {
     QHash<QString, QString> theHash = personal_->changedValues_;
 
-    if (theHash.contains("username")){
+    if (theHash.contains("username")) {
       applied = ClientController::instance()->ChangeUsername(
-                              theHash.value("username").toStdString());
+                theHash.value("username").toStdString());
     }
-    if (theHash.contains("message")){
+    if (theHash.contains("message")) {
     }
-    if (theHash.contains("changedpic")){
+    if (theHash.contains("changedpic")) {
     }
   }
-  if(!fileTransfer_->changedValues_.isEmpty()){
+  if (!fileTransfer_->changedValues_.isEmpty()) {
   }
-  if(!connection_->changedValues_.isEmpty()){
+  if (!connection_->changedValues_.isEmpty()) {
   }
-  if(!security_->changedValues_.isEmpty()){
+  if (!security_->changedValues_.isEmpty()) {
   }
-
 }
 
-void UserSettings::HandleApply(){
+void UserSettings::HandleApply() { }
 
-}
-
-void UserSettings::HandleCancel(){
-
-}
-
+void UserSettings::HandleCancel() { }

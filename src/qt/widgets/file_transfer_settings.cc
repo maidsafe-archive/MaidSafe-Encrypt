@@ -12,14 +12,11 @@
  *      Author: Stephen Alexander
  */
 
-
 #include "qt/widgets/file_transfer_settings.h"
 #include "qt/client/client_controller.h"
 
-FileTransferSettings::FileTransferSettings(QWidget* parent){
+FileTransferSettings::FileTransferSettings(QWidget* parent) {
   ui_.setupUi(this);
 }
 
-FileTransferSettings::~FileTransferSettings() {}
-
-
+FileTransferSettings::~FileTransferSettings() { }

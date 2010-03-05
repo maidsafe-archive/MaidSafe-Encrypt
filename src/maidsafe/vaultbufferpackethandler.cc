@@ -12,8 +12,7 @@
  *      Author: Team
  */
 
-#include "maidsafe/vault/vaultbufferpackethandler.h"
-// #include <cstdio>
+#include "maidsafe/vaultbufferpackethandler.h"
 
 namespace maidsafe {
 

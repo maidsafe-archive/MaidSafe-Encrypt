@@ -12,26 +12,26 @@
  *      Author: Stephen Alexander
  */
 
-#ifndef SMILY_H_INCLUDED
-#define SMILY_H_INCLUDED
+#ifndef QT_WIDGETS_SMILY_H_
+#define QT_WIDGETS_SMILY_H_
 
 #include "ui_smily.h"
 
-class Smily : public QDialog{
+class Smily : public QDialog {
   Q_OBJECT
-  public:
-    explicit Smily(QWidget* parent = 0);
-    virtual ~Smily();
+ public:
+  explicit Smily(QWidget* parent = 0);
+  virtual ~Smily();
 
   signals:
-  void smilyChosen(int,int);
+    void smilyChosen(int, int);
 
-  private:
+ private:
   Ui::ChooseSmily ui_;
 
   private slots:
-  void onCellDoubleClicked(int row, int column);
+    void onCellDoubleClicked(int row, int column);
 };
 
 
-#endif // SMILY_H_INCLUDED
+#endif  // QT_WIDGETS_SMILY_H_

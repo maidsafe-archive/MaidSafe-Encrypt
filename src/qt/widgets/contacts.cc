@@ -509,7 +509,7 @@ void Contacts::onConfirmedContact(const QString &name) {
 
 //  QMainWindow::statusBar()->showMessage(tr("user : %1 confirmed").arg(name));
 
-//TODO Stephen change status bar from here
+// TODO(Stephen): change status bar from here
 
   foreach(QListWidgetItem* item, items) {
     if (item->text() == name) {

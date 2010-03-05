@@ -342,14 +342,15 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
     return kStoreManagerError;
   }
 
-  int deleted(values.size());
+  int deleted(values.size()), a(0);
   if (0 == values.size()) {
     try {
       std::string s("delete from network where key='" + hex_key + "';");
-      int a = db_.execDML(s.c_str());
+      a = db_.execDML(s.c_str());
     } catch(CppSQLite3Exception &e2) {  // NOLINT (Fraser)
 #ifdef DEBUG
       printf("Error(%i): %s\n", e2.errorCode(),  e2.errorMessage());
+      printf("%d rows affected\n", a);
 #endif
       return kStoreManagerError;
     }
@@ -359,13 +360,14 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
         std::string hex_value(base::EncodeToHex(values[n]));
         std::string s("delete from network where key='" + hex_key + "' "
                       "and value='" + hex_value + "';");
-        int a = db_.execDML(s.c_str());
+        a = db_.execDML(s.c_str());
         if (a == 1) {
           --deleted;
         } else {
 #ifdef DEBUG
           printf("LocalStoreManager::DeletePacket_DeleteFromDb - failure to"
-                 " delete <key, value>(%s, %s).\n", hex_key.substr(0, 10).c_str(),
+                 " delete <key, value>(%s, %s).\n",
+                 hex_key.substr(0, 10).c_str(),
                  HexSubstr(values[n]).c_str());
           printf("%d rows affected\n", a);
 #endif
