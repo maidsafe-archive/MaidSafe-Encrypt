@@ -66,7 +66,7 @@ void AddToRemoteRefListTask::run() {
                                                         transport_id_);
 #ifdef DEBUG
   if (result != kSuccess)
-    printf("AddToRemoteRefListTask returned result %i for chunk (%s).\n",
+    printf("AddToRemoteRefListTask returned result %i for chunk %s.\n",
            result, HexSubstr(chunkname_).c_str());
 #endif
 }
@@ -162,8 +162,9 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
 
   if (!ValidateSignedSize(request_sz)) {
 #ifdef DEBUG
-    printf("In VaultService::StorePrep (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to validate signed size.\n");
+    printf("In VaultService::StorePrep (%s), failed to validate signed size "
+           "(chunk %s).\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -172,8 +173,8 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
   PrepsReceivedMap::iterator it = prm_.find(request->chunkname());
   if (it != prm_.end()) {
 #ifdef DEBUG
-    printf("In VaultService::StorePrep (%s), ", HexSubstr(pmid_).c_str());
-    printf("chunk name was in map.\n");
+    printf("In VaultService::StorePrep (%s), chunk name %s was in map.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -183,8 +184,9 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
        request_sz.public_key_signature(), request->request_signature(),
        request->chunkname(), request_sz.pmid())) {
 #ifdef DEBUG
-    printf("In VaultService::StorePrep (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to validate signed request.\n");
+    printf("In VaultService::StorePrep (%s), failed to validate signed request "
+           "(chunk %s).\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -194,8 +196,9 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
   // ourself.
   if (request_sz.pmid() == pmid_) {
 #ifdef DEBUG
-    printf("In VaultService::StorePrep (%s), trying to store in ourselves.\n",
-           HexSubstr(pmid_).c_str());
+    printf("In VaultService::StorePrep (%s), trying to store in ourselves "
+           "(chunk %s).\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -205,8 +208,8 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
 
   if (Storable(request_sz.data_size()) != 0) {
 #ifdef DEBUG
-    printf("In VaultService::StorePrep (%s), not enough space.\n",
-           HexSubstr(pmid_).c_str());
+    printf("In VaultService::StorePrep (%s), not enough space for %s.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -227,8 +230,9 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
 
   if (!cp.second) {
 #ifdef DEBUG
-    printf("In VaultService::StorePrep (%s), failed to insert prep into map.\n",
-           HexSubstr(pmid_).c_str());
+    printf("In VaultService::StorePrep (%s), failed to insert prep for %s "
+           "into map.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     response_ic->set_result(kNack);
     response_ic->SerializeToString(&ser_response_ic);
@@ -276,8 +280,9 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
        request->public_key_signature(), request->request_signature(),
        request->chunkname(), request->pmid())) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunk (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to validate signed request.\n");
+    printf("In VaultService::StoreChunk (%s), failed to validate signed "
+           "request (chunk %s).\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -286,8 +291,9 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
   PrepsReceivedMap::iterator it = prm_.find(request->chunkname());
   if (it == prm_.end()) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunk (%s), ", HexSubstr(pmid_).c_str());
-    printf("chunkname wasn't in map - no prep.\n");
+    printf("In VaultService::StoreChunk (%s), chunk name (%s) wasn't in map - "
+           "no prep.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -297,8 +303,9 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
 
   if (!StoreChunkLocal(request->chunkname(), request->data())) {
 #ifdef DEBUG
-    printf("In VaultService::StoreChunk (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to store chunk locally.\n");
+    printf("In VaultService::StoreChunk (%s), failed to store chunk %s "
+           "locally.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -342,8 +349,9 @@ void VaultService::AddToWatchList(
 
   if (!ValidateSignedSize(sz)) {
 #ifdef DEBUG
-    printf("In VaultService::AddToWatchList (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to validate signed size.\n");
+    printf("In VaultService::AddToWatchList (%s), failed to validate signed "
+           "size (chunk %s).\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -355,8 +363,9 @@ void VaultService::AddToWatchList(
                              request->chunkname(),
                              sz.pmid())) {
 #ifdef DEBUG
-    printf("In VaultService::AddToWatchList (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to validate signed request.\n");
+    printf("In VaultService::AddToWatchList (%s), failed to validate signed "
+           "request (chunk %s).\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -367,8 +376,9 @@ void VaultService::AddToWatchList(
                                       sz.data_size(), &required_references,
                                       &required_payments)) {
 #ifdef DEBUG
-    printf("In VaultService::AddToWatchList (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed adding to waiting list.\n");
+    printf("In VaultService::AddToWatchList (%s), failed adding to waiting "
+           "list for %s.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -399,8 +409,9 @@ void VaultService::FinalisePayment(const std::string &chunk_name,
                                    const int &permission_result) {
   if (permission_result != kSuccess) {
 #ifdef DEBUG
-    printf("In VaultService::FinalisePayment (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to obtain storing permission.\n");
+    printf("In VaultService::FinalisePayment (%s), failed to obtain storing "
+           "permission for %s.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(chunk_name).c_str());
 #endif
     std::list<std::string> creditors, references;
     cih_.ResetAddToWatchList(chunk_name, pmid, kReasonPaymentFailed, &creditors,
@@ -439,8 +450,9 @@ void VaultService::FinalisePayment(const std::string &chunk_name,
     }
   } else {
 #ifdef DEBUG
-    printf("In VaultService::FinalisePayment (%s), ", HexSubstr(pmid_).c_str());
-    printf("couldn't commit to watch list yet (not stored).\n");
+    printf("In VaultService::FinalisePayment (%s), couldn't commit to watch "
+           "list yet (%s hasn't stored chunk %s).\n", HexSubstr(pmid_).c_str(),
+           HexSubstr(pmid).c_str(), HexSubstr(chunk_name).c_str());
 #endif
   }
 }
@@ -468,7 +480,8 @@ void VaultService::RemoveFromWatchList(
       request->chunkname(), request->pmid())) {
 #ifdef DEBUG
     printf("In VaultService::RemoveFromWatchList (%s), failed to validate "
-           "signed request.\n", HexSubstr(pmid_).c_str());
+           "signed request (chunk %s).\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -480,8 +493,9 @@ void VaultService::RemoveFromWatchList(
                                     &chunk_size, &creditors, &references)) {
 #ifdef DEBUG
     printf("In VaultService::RemoveFromWatchList (%s), failed to remove %s "
-           "from watch list.\n", HexSubstr(pmid_).c_str(),
-           HexSubstr(request->pmid()).c_str());
+           "from watch list for chunk %s.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->pmid()).c_str(),
+           HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -533,7 +547,8 @@ void VaultService::AddToReferenceList(
   if (!ValidateStoreContract(store_contract)) {
 #ifdef DEBUG
     printf("In VaultService::AddToReferenceList (%s), failed to validate store "
-           "contract.\n", HexSubstr(pmid_).c_str());
+           "contract for chunk %s.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -544,7 +559,8 @@ void VaultService::AddToReferenceList(
       request->chunkname(), store_contract.pmid())) {
 #ifdef DEBUG
     printf("In VaultService::AddToReferenceList (%s), failed to validate "
-           "signed request.\n", HexSubstr(pmid_).c_str());
+           "signed request (chunk %s).\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
@@ -583,7 +599,8 @@ void VaultService::DoneAddToReferenceList(
                                86400)) {
 #ifdef DEBUG
     printf("In VaultService::DoneAddToReferenceList (%s), failed to store PMID "
-           "to local ref packet.\n", HexSubstr(pmid_).c_str());
+           "to local ref packet for chunk %s.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(chunk_name).c_str());
 #endif
     return;
   }
@@ -609,7 +626,9 @@ void VaultService::DoneAddToReferenceList(
   } else {
 #ifdef DEBUG
     printf("In VaultService::DoneAddToReferenceList (%s), couldn't commit to "
-           "watch list yet (not paid).\n", HexSubstr(pmid_).c_str());
+           "watch list yet (%s hasn't paid for chunk %s).\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(client_pmid).c_str(),
+           HexSubstr(chunk_name).c_str());
 #endif
   }
 }
@@ -653,9 +672,9 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     return;
   }
 
-  printf("VaultService::AmendAccount - from %s to %s\n",
+  /* printf("VaultService::AmendAccount - from %s to %s\n",
          HexSubstr(pmid).c_str(),
-         HexSubstr(knode_->node_id()).c_str());
+         HexSubstr(knode_->node_id()).c_str()); */
   if (ah_.HaveAccount(pmid) == kAccountNotFound) {
     if (request->amendment_type() ==
         maidsafe::AmendAccountRequest::kSpaceOffered) {
@@ -808,8 +827,8 @@ void VaultService::GetChunk(google::protobuf::RpcController*,
     response->set_content(content);
   } else {
 #ifdef DEBUG
-    printf("In VaultService::Get (%s), couldn't find chunk locally.\n",
-           HexSubstr(pmid_).c_str());
+    printf("In VaultService::Get (%s), couldn't find chunk %s locally.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     response->set_result(kNack);
   }
@@ -1607,6 +1626,9 @@ bool VaultService::ValidateAmendRequest(
   *account_delta = 0;
   pmid->clear();
   if (!request->IsInitialized())
+    return false;
+
+  if (request->account_pmid() == pmid_)
     return false;
 
   const maidsafe::SignedSize &sz = request->signed_size();

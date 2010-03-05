@@ -97,12 +97,12 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_FindKNodes) {
 
   // Call 5
   ASSERT_EQ(kSuccess, vsl.FindKNodes("x", &contacts));
-  ASSERT_EQ(size_t(16), contacts.size());
+  ASSERT_EQ(size_t(kad::K), contacts.size());
 
   // Call 6
   contacts.push_back(dummy_contact);
   ASSERT_EQ(kSuccess, vsl.FindKNodes("x", &contacts));
-  ASSERT_EQ(size_t(16), contacts.size());
+  ASSERT_EQ(size_t(kad::K), contacts.size());
 }
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
