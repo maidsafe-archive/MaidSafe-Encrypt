@@ -76,20 +76,20 @@ bool UserSpaceFileSystem::mount() {
   qDebug() << "UserSpaceFileSystem::mount after 2 sec sleep";
 #endif
 
-  maidsafe::SessionSingleton::getInstance()->SetMounted(0);
+  ClientController::instance()->SetMounted(0);
 
   std::string debug_mode("-d");
 #ifdef MAIDSAFE_WIN32
   char drive = maidsafe::ClientController::getInstance()->DriveLetter();
   fs_w_fuse::Mount(drive);
-  maidsafe::SessionSingleton::getInstance()->SetWinDrive(drive);
+  ClientController::instance()->SetWinDrive(drive);
 #elif defined(MAIDSAFE_POSIX)
   std::string mount_point = impl_->fsys_.MaidsafeFuseDir();
   impl_->fsl_.Mount(mount_point, debug_mode);
 #endif
   boost::this_thread::sleep(boost::posix_time::seconds(1));
 
-  if (maidsafe::SessionSingleton::getInstance()->Mounted() != 0) {
+  if (ClientController::instance()->Mounted() != 0) {
       return false;
   }
   return true;
@@ -107,7 +107,7 @@ bool UserSpaceFileSystem::unmount() {
 #ifdef MAIDSAFE_WIN32
   std::locale loc;
   wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
-      (loc).widen(maidsafe::SessionSingleton::getInstance()->WinDrive());
+      (loc).widen(ClientController::instance()->WinDrive());
   success = fs_w_fuse::DokanUnmount(drive_letter);
 
 /*
@@ -117,7 +117,7 @@ bool UserSpaceFileSystem::unmount() {
   QString operation("open");
   QString command("dokanctl");
   QString parameters(" /u ");
-  parameters.append(maidsafe::SessionSingleton::getInstance()->WinDrive());
+  parameters.append(ClientController::instance()->WinDrive());
   quintptr returnValue;
   QT_WA(
       {

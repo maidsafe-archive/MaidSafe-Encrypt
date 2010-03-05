@@ -596,8 +596,35 @@ int ClientController::CreateNewShare(const std::string &name,
 }
 
 bool ClientController::ValidateUser(const std::string &password){
-  return  maidsafe::ClientController::getInstance()->ValidateUser(password);
+  return maidsafe::ClientController::getInstance()->ValidateUser(password);
 }
+
+int ClientController::ConversationList(std::list<std::string> *conversations){
+  return maidsafe::SessionSingleton::getInstance()->ConversationList(conversations);
+}
+
+int ClientController::AddConversation(const std::string &id){
+  return maidsafe::SessionSingleton::getInstance()->AddConversation(id);
+}
+
+int ClientController::RemoveConversation(const std::string &id){
+  return maidsafe::SessionSingleton::getInstance()->RemoveConversation(id);
+}
+
+int ClientController::ConversationExits(const std::string &id){
+  return maidsafe::SessionSingleton::getInstance()->ConversationExits(id);
+}
+
+void ClientController::ClearConversations(){
+  maidsafe::SessionSingleton::getInstance()->ClearConversations();
+}
+
+int ClientController::GetContactInfo(const std::string &pub_name,
+                                     maidsafe::mi_contact *mic) {
+  return maidsafe::SessionSingleton::getInstance()->GetContactInfo(pub_name, mic);
+}
+
+
 
 
 

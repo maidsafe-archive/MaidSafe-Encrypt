@@ -24,7 +24,6 @@
 #include <QFontDialog>
 #include <QColorDialog>
 
-#include "maidsafe/client/sessionsingleton.h"
 #include "qt/client/client_controller.h"
 #include "qt/widgets/user_panels.h"
 
@@ -45,7 +44,7 @@ PersonalMessages::PersonalMessages(QString name)
   color_ = QColor("Black");
   ui_.partListWidget->addItem(name);
 
-  int n = maidsafe::SessionSingleton::getInstance()->AddConversation(
+  int n = ClientController::instance()->AddConversation(
           convName_.toStdString());
 
   this->setWindowTitle(this->windowTitle() + " " + name);
@@ -84,7 +83,7 @@ PersonalMessages::PersonalMessages(QString name)
 }
 
 PersonalMessages::~PersonalMessages() {
-  int n = maidsafe::SessionSingleton::getInstance()->RemoveConversation(
+  int n = ClientController::instance()->RemoveConversation(
           convName_.toStdString());
 }
 
@@ -184,7 +183,7 @@ void PersonalMessages::onSendFile(){
 
 #ifdef __WIN32__
   root = QString("%1:\\My Files").
-         arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+         arg(ClientController::instance()->WinDrive());
   QFileDialog *qfd = new QFileDialog(this,
                      tr("File to share..."),
                      root, tr("Any file (*)"));
