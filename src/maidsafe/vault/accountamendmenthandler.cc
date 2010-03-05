@@ -153,7 +153,7 @@ int AccountAmendmentHandler::AssessAmendment(const std::string &owner_pmid,
     }
   }
   std::map<std::string, bool>::iterator chunk_info_holders_it =
-      amendment->chunk_info_holders.find(pending.request->signed_size().pmid());
+      amendment->chunk_info_holders.find(pending.request.signed_size().pmid());
   // If Chunk Info holder is not in the map, or has already been accounted for
   if (chunk_info_holders_it == amendment->chunk_info_holders.end() ||
       (*chunk_info_holders_it).second) {
@@ -209,8 +209,8 @@ void AccountAmendmentHandler::CreateNewAmendment(
 }
 
 void AccountAmendmentHandler::CreateNewAmendmentCallback(
-    const AccountAmendment &amendment,
-    const std::string &find_nodes_response) {
+    AccountAmendment amendment,
+    std::string find_nodes_response) {
   boost::mutex::scoped_lock lock(amendment_mutex_);
   AmendmentsByTimestamp::iterator it =
       amendments_.get<by_timestamp>().find(amendment);

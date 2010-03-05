@@ -202,7 +202,7 @@ class GetMsgsHelper {
     maidsafe::ValidatedBufferPacketMessage bp_msg;
     uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
     std::string aes_key = co.SecurePassword(co.Hash(msg, "",
-      crypto::STRING_STRING, true), iter);
+      crypto::STRING_STRING, false), iter);
     bp_msg.set_index(co.AsymEncrypt(aes_key, "", rec_pub_key,
       crypto::STRING_STRING));
     bp_msg.set_sender(sender);
@@ -261,9 +261,9 @@ class TestClientBP : public testing::Test {
                    BPMock(),
                    keys_(),
                    cb_(),
-                   test_dir_(file_system::FileSystem::TempDir() +
-                             "/maidsafe_TestClientBP_" + base::RandomString(6)),
-                   kad_config_file_(test_dir_ + "/.kadconfig"),
+                   test_dir_(file_system::TempDir() / ("maidsafe_TestClientBP_"
+                      + base::RandomString(6))),
+                   kad_config_file_(test_dir_ / ".kadconfig"),
                    cryp() {}
 
   ~TestClientBP() {
@@ -291,10 +291,10 @@ class TestClientBP : public testing::Test {
     cb_.Reset();
     boost::asio::ip::address local_ip;
     ASSERT_TRUE(base::get_local_address(&local_ip));
-    knode_->Join(kad_config_file_, local_ip.to_string(),
+    knode_->Join(kad_config_file_.string(), local_ip.to_string(),
         trans_->listening_port(),
         boost::bind(&KadCB::CallbackFunc, &cb_, _1));
-    while (cb_.result == "")
+    while (cb_.result.empty())
       boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result);
     ASSERT_TRUE(knode_->is_joined());
@@ -330,7 +330,7 @@ class TestClientBP : public testing::Test {
   boost::shared_ptr<MockBPRpcs> BPMock;
   crypto::RsaKeyPair keys_;
   KadCB cb_;
-  std::string test_dir_, kad_config_file_;
+  fs::path test_dir_, kad_config_file_;
   crypto::Crypto cryp;
 };
 

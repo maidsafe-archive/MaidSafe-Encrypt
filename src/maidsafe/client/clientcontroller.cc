@@ -85,7 +85,6 @@ ClientController::ClientController() : client_chunkstore_(),
                                        db_enc_queue_(),
                                        seh_(),
                                        messages_(),
-                                       fsys_(),
                                        received_messages_(),
                                        rec_msg_mutex_(),
                                        clear_messages_thread_(),
@@ -112,7 +111,7 @@ void ClientController::Destroy() {
 int ClientController::Init() {
   if (initialised_)
     return 0;
-  fs::path client_path(fsys_.ApplicationDataDir(), fs::native);
+  fs::path client_path(file_system::ApplicationDataDir());
   try {
     // If main app dir isn't already there, create it
     if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
@@ -151,9 +150,9 @@ int ClientController::Init() {
     return -5;
   }
 #ifdef LOCAL_PDVAULT
-    sm_.reset(new LocalStoreManager(client_chunkstore_));
+  sm_.reset(new LocalStoreManager(client_chunkstore_));
 #else
-    sm_.reset(new MaidsafeStoreManager(client_chunkstore_));
+  sm_.reset(new MaidsafeStoreManager(client_chunkstore_));
 #endif
   if (!JoinKademlia()) {
 #ifdef DEBUG
@@ -169,13 +168,7 @@ int ClientController::Init() {
 
 bool ClientController::JoinKademlia() {
   CC_CallbackResult cb;
-#ifdef DEBUG
-  printf("Before bootstrap in CC.\n");
-#endif
   sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
-#ifdef DEBUG
-  printf("After bootstrap in CC.\n");
-#endif
   WaitForResult(cb);
   GenericResponse result;
   if ((!result.ParseFromString(cb.result)) ||
@@ -383,56 +376,103 @@ bool ClientController::CreateUser(const std::string &username,
 #endif
     return false;
   }
+
   ss_->SetConnectionStatus(0);
   int result = auth_.CreateUserSysPackets(username, pin);
-
   if (result != kSuccess) {
 #ifdef DEBUG
-    printf("In CC::CreateUser - Failed to create user system packets\n");
+    printf("In CC::CreateUser - Failed to create user system packets.\n");
 #endif
     ss_->ResetSession();
     return false;
+  } else {
+#ifdef DEBUG
+    printf("In CC::CreateUser - auth_.CreateUserSysPackets DONE - %u.\n",
+           ss_->KeyRingSize());
+#endif
   }
+
+  // Create the account
+  result = sm_->CreateAccount(vcp.space * 1024 * 1024);
+  if (result != kSuccess) {
+#ifdef DEBUG
+    printf("In CC::CreateUser - Failed to create user account.\n");
+#endif
+    ss_->ResetSession();
+    return false;
+  } else {
+#ifdef DEBUG
+    printf("In CC::CreateUser - sm_->CreateAccount DONE.\n");
+#endif
+  }
+
+  // TODO(Fraser#5#): 2010-02-26 - Once GUI has got vault_dir defaulting to
+  // ApplicationDataDir, change this back to allow vcp.directory to be passed.
+//    OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
+//                                                  vcp.space * 1024 * 1024,
+//                                                  vcp.directory);
+//    OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
+//      vcp.space * 1024 * 1024, (file_system::ApplicationDataDir() / ("Vault_"
+//      + base::EncodeToHex(ss_->Id(PMID)).substr(0, 8))).string());
+//    if (olvr != OWNED_SUCCESS) {
+//  #ifdef DEBUG
+//      printf("CC::CreateUser +++ OwnLocalVaultResult: %d +++\n", olvr);
+//  #endif
+//      return false;
+//    }
+
   client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);
   std::string ser_da, ser_dm;
   ss_->SerialisedKeyRing(&ser_da);
-  if (seh_.EncryptString(ser_da, &ser_dm) != 0) {
+  result = seh_.EncryptString(ser_da, &ser_dm);
+  if (result != 0) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser - Cannot SelfEncrypt DA\n");
+    printf("In CC::CreateUser - Cannot SelfEncrypt DA - %i.\n", result);
 #endif
     ss_->ResetSession();
     return false;
+  } else {
+#ifdef DEBUG
+    printf("In CC::CreateUser - seh_.EncryptString of DA DONE.\n");
+#endif
   }
+
   result = auth_.CreateTmidPacket(username, pin, password, ser_dm);
   if (result != kSuccess) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser - Cannot create tmid packet\n");
+    printf("In ClientController::CreateUser - Cannot create tmid packet.\n");
 #endif
     ss_->ResetSession();
     return false;
+  } else {
+#ifdef DEBUG
+    printf("In CC::CreateUser - auth_.CreateTmidPacket DONE.\n");
+#endif
   }
-  // TODO(Team#5#): 2009-08-17 - Add local vault registration here.
-  //                             Parameters come in VaultConfigParameters.
-  OwnLocalVaultResult olvr =
-      SetLocalVaultOwned(vcp.port, vcp.space * 1024 * 1024, vcp.directory);
-  #ifdef DEBUG
-    printf("ClientController::CreateUser +++ "
-           "OwnLocalVaultResult: %d +++\n", olvr);
-  #endif
 
   ss_->SetSessionName(false);
   std::string root_db_key;
   int res = seh_.GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
   if (res != 0) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser - Bombing out on no root_db_key\n");
+    printf("In ClientController::CreateUser - Bombing out, no root_db_key.\n");
+#endif
+    return false;
+  } else {
+#ifdef DEBUG
+    printf("In CC::CreateUser - seh_.GenerateUniqueKey DONE.\n");
+#endif
+  }
+  ss_->SetRootDbKey(root_db_key);
+  if (file_system::Mount(ss_->SessionName(), ss_->DefConLevel()) != kSuccess) {
+#ifdef DEBUG
+    printf("In CC::CreateUser - cannot mount filesystem.\n");
 #endif
     return false;
   }
-  ss_->SetRootDbKey(root_db_key);
-  fsys_.Mount();
-  fsys_.FuseMountPoint();
+  // Create the mount point directory
+  res += file_system::FuseMountPoint(ss_->SessionName());
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   DataAtlas da;
 
@@ -456,13 +496,16 @@ bool ClientController::CreateUser(const std::string &username,
     if (kRootSubdir[i][1] == "") {
       seh_.GenerateUniqueKey(PRIVATE, "", 0, &key);
     } else {
-      key = kRootSubdir[i][1];
+      key = base::DecodeFromHex(kRootSubdir[i][1]);
     }
     res += dah->AddElement(base::TidyPath(kRootSubdir[i][0]),
                            ser_mdm, "", key, true);
     seh_.EncryptDb(base::TidyPath(kRootSubdir[i][0]),
                     PRIVATE, key, "", true, &dm);
   }
+#ifdef DEBUG
+  printf("In CC::CreateUser - My Files and Shares DONE.\n");
+#endif
 
   // set up share subdirs
   for (int i = 0; i < kSharesSubdirSize; ++i) {
@@ -503,69 +546,12 @@ bool ClientController::CreateUser(const std::string &username,
 
   if (0 != res) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser error creating DBs\n");
-#endif
-    return false;
-  }
-
-  res = SetVaultConfig(ss_->PublicKey(PMID), ss_->PrivateKey(PMID));
-  if (0 != res) {
-#ifdef DEBUG
-    printf("In ClientController::CreateUser error stting vault config\n");
+    printf("In ClientController::CreateUser error creating DBs.\n");
 #endif
     return false;
   }
 
   return true;
-}
-
-int ClientController::SetVaultConfig(const std::string &pmid_public,
-                                     const std::string &pmid_private) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::SetVaultConfig - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-  fs::path vault_path(fsys_.ApplicationDataDir(), fs::native);
-  vault_path /= "vault";
-  try {
-    if (!fs::exists(vault_path))
-      fs::create_directory(vault_path);
-  }
-  catch(const std::exception &ex_) {
-#ifdef DEBUG
-    printf("Can't create maidsafe vault dir.\n%s\n", ex_.what());
-#endif
-    return -1;
-  }
-  crypto::Crypto co_;
-  co_.set_symm_algorithm(crypto::AES_256);
-  co_.set_hash_algorithm(crypto::SHA_1);
-  fs::path config_file(vault_path);
-  config_file /= ".config";
-  VaultConfig vault_config;
-  vault_config.set_pmid_public(pmid_public);
-  vault_config.set_pmid_private(pmid_private);
-  //  vault_config.set_port(6666);
-  vault_config.set_signed_pmid_public(co_.AsymSign(pmid_public, "",
-      pmid_private, crypto::STRING_STRING));
-  fs::path chunkstore_path(vault_path);
-  chunkstore_path /= "Chunkstore";
-  chunkstore_path /= co_.Hash(pmid_public, "", crypto::STRING_STRING, true);
-  vault_config.set_chunkstore_dir(chunkstore_path.string());
-  vault_config.set_available_space(1024 * 1024 * 1024);
-  vault_config.set_used_space(0);
-  std::fstream output(config_file.string().c_str(),
-                      std::ios::out | std::ios::trunc | std::ios::binary);
-  if (!vault_config.SerializeToOstream(&output)) {
-#ifdef DEBUG
-    printf("Failed to write vault configuration file.\n");
-#endif
-    return -2;
-  }
-  output.close();
-  return 0;
 }
 
 bool ClientController::ValidateUser(const std::string &password) {
@@ -577,7 +563,7 @@ bool ClientController::ValidateUser(const std::string &password) {
   }
   ser_da_.clear();
   ser_dm_.clear();
-  int result = auth_.GetUserData(password, ser_dm_);
+  int result = auth_.GetUserData(password, &ser_dm_);
 
   if (result != kSuccess) {
     // Password validation failed
@@ -599,7 +585,13 @@ bool ClientController::ValidateUser(const std::string &password) {
 
   ss_->SetConnectionStatus(0);
   ss_->SetSessionName(false);
-  fsys_.Mount();
+  if (file_system::Mount(ss_->SessionName(), ss_->DefConLevel()) != kSuccess) {
+#ifdef DEBUG
+    printf("ClientController::ValidateUser - Cannot mount filesystem.\n");
+#endif
+    ss_->ResetSession();
+    return false;
+  }
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   if (ParseDa() != 0) {
 #ifdef DEBUG
@@ -618,7 +610,7 @@ bool ClientController::ValidateUser(const std::string &password) {
   }
 
   // Create the mount point directory
-  fsys_.FuseMountPoint();
+  file_system::FuseMountPoint(ss_->SessionName());
 
   // Do BP operations if need be
   if (ss_->PublicUsername() == "") {
@@ -685,8 +677,6 @@ bool ClientController::Logout() {
     return false;
   }
   logging_out_ = true;
-  int result = SaveSession();
-  clear_messages_thread_.join();
 
 //  int connection_status(0);
 //  int n = ChangeConnectionStatus(connection_status);
@@ -695,29 +685,30 @@ bool ClientController::Logout() {
 //  }
 //  ss_->SetConnectionStatus(connection_status);
 
-  if (result == kSuccess) {
+  int result = SaveSession();
+  if (result != kSuccess) {
 #ifdef DEBUG
-    printf("ClientController::Logout - OK and ran DB queue.\n");
+    printf("ClientController::Logout - Failed to save session %d.\n", result);
 #endif
-    while (sm_->NotDoneWithUploading()) {
-      boost::this_thread::sleep(boost::posix_time::seconds(1));
-    }
-
-#ifdef DEBUG
-    printf("ClientController::Logout - After threads done.\n");
-#endif
-    fsys_.UnMount();
-    ss_->ResetSession();
-    messages_.clear();
-    client_chunkstore_->Clear();
-    logging_out_ = false;
-    ser_da_.clear();
-    ser_dm_.clear();
-    return true;
+    return false;
   }
 
+  clear_messages_thread_.join();
+  while (sm_->NotDoneWithUploading()) {
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
+#ifdef DEBUG
+  printf("ClientController::Logout - After threads done.\n");
+#endif
+
+  file_system::UnMount(ss_->SessionName(), ss_->DefConLevel());
+  ss_->ResetSession();
+  messages_.clear();
+  client_chunkstore_->Clear();
+  ser_da_.clear();
+  ser_dm_.clear();
   logging_out_ = false;
-  return false;
+  return true;
 }
 
 int ClientController::SaveSession() {
@@ -742,9 +733,6 @@ int ClientController::SaveSession() {
 #endif
     return n;
   }
-  while (sm_->NotDoneWithUploading()) {
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-  }
   return 0;
 }
 
@@ -757,14 +745,13 @@ bool ClientController::LeaveMaidsafeNetwork() {
   }
   std::list<KeyAtlasRow> keys;
   int result;
-  std::string dir = fsys_.MaidsafeDir();
   {
     ss_->GetKeys(&keys);
     result = auth_.RemoveMe(keys);
   }
   if (result == kSuccess) {
     try {
-      fs::remove_all(dir);
+      fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
@@ -2061,15 +2048,15 @@ bool ClientController::VaultContactInfo() {
 OwnLocalVaultResult ClientController::SetLocalVaultOwned(
     const boost::uint32_t &port,
     const boost::uint64_t &space,
-    const std::string &chunkstore_dir) const {
+    const std::string &vault_dir) const {
   bool callback_arrived = false;
   OwnLocalVaultResult result;
   sm_->SetLocalVaultOwned(ss_->PrivateKey(PMID), ss_->PublicKey(PMID),
-      ss_->SignedPublicKey(PMID), port, chunkstore_dir, space,
+      ss_->SignedPublicKey(PMID), port, vault_dir, space,
       boost::bind(&ClientController::SetLocalVaultOwnedCallback,
       const_cast<ClientController*>(this), _1, _2, &callback_arrived, &result));
   while (!callback_arrived)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   return result;
 }
 
@@ -2143,7 +2130,7 @@ int ClientController::RetrieveElement(const std::string &path) {
   return result;
 }
 
-int ClientController::RemoveElement(std::string path) {
+int ClientController::RemoveElement(const std::string &element_path) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::RemoveElement - Not initialised.\n");
@@ -2151,10 +2138,12 @@ int ClientController::RemoveElement(std::string path) {
     return kClientControllerNotInitialised;
   }
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
-  if (dah->RemoveElement(path))
+  if (dah->RemoveElement(element_path))
     return -1;
-  if (fs::exists(fsys_.FullMSPathFromRelPath(path)))
-    fs::remove_all(fsys_.FullMSPathFromRelPath(path));
+  fs::path full_path =
+      file_system::FullMSPathFromRelPath(element_path, ss_->SessionName());
+  if (fs::exists(full_path))
+    fs::remove_all(full_path);
   return 0;
 }
 
@@ -2213,7 +2202,7 @@ int ClientController::PathDistinction(const std::string &path,
         else
           share_name += share.at(nn);
       }
-      fs::path newDb(fsys_.MaidsafeHomeDir());
+      fs::path newDb(file_system::MaidsafeHomeDir(ss_->SessionName()));
       newDb /= ".shares";
       std::string dbNameNew(newDb.string());
 
@@ -2247,21 +2236,21 @@ int ClientController::PathDistinction(const std::string &path,
   return n;
 }
 
-int ClientController::GetDb(const std::string &orig_path_,
+int ClientController::GetDb(const std::string &orig_path,
                             DirType *dir_type,
                             std::string *msid) {
-  std::string path_ = orig_path_;
+  std::string path = orig_path;
 #ifdef DEBUG
-  printf("\t\tCC::GetDb(%s)\n", orig_path_.c_str());
+  printf("\t\tCC::GetDb(%s)\n", orig_path.c_str());
 #endif
-  std::string db_path_, parent_path_, dir_key_;
-  if (path_.size() <= 1) {  // i.e. root
-    parent_path_ = path_;
+  std::string db_path, parent_path, dir_key;
+  if (path.size() <= 1) {  // i.e. root
+    parent_path = path;
   } else {
-    fs::path parent_(path_, fs::native);
-    parent_path_ = parent_.parent_path().string();
-    if (parent_path_ == "")
-      parent_path_ = "/";
+    fs::path parent(path, fs::native);
+    parent_path = parent.parent_path().string();
+    if (parent_path == "")
+      parent_path = "/";
     // if (parent_path_.size() <= 1 && path_!=base::TidyPath(my_files_)
     //   && path_!=base::TidyPath(public_shares_)
     //   && path_!=base::TidyPath(private_shares_)) {
@@ -2272,18 +2261,18 @@ int ClientController::GetDb(const std::string &orig_path_,
     // }
     // parent_path_ = base::TidyPath(path_);
   }
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  dah_->GetDbPath(path_, CONNECT, &db_path_);
-  PathDistinction(parent_path_, msid);
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
+  dah->GetDbPath(path, CONNECT, &db_path);
+  PathDistinction(parent_path, msid);
 #ifdef DEBUG
   printf("\t\tMSID: %s\n", msid->c_str());
 #endif
 
-  if (fs::exists(db_path_) && *msid == "") {
-    *dir_type = GetDirType(parent_path_);
+  if (fs::exists(db_path) && *msid == "") {
+    *dir_type = GetDirType(parent_path);
     return 0;
   }
-  if (dah_->GetDirKey(parent_path_, &dir_key_)) {
+  if (dah->GetDirKey(parent_path, &dir_key)) {
 #ifdef DEBUG
     printf("\t\tGetDirKey failed.\n");
 #endif
@@ -2291,16 +2280,16 @@ int ClientController::GetDb(const std::string &orig_path_,
   }
   bool overwrite = false;
   if (*msid == "") {
-    *dir_type = GetDirType(parent_path_);
+    *dir_type = GetDirType(parent_path);
   } else {
-    *dir_type = GetDirType(path_);
+    *dir_type = GetDirType(path);
     overwrite = true;
   }
-  if (seh_.DecryptDb(parent_path_, *dir_type, "", dir_key_,
+  if (seh_.DecryptDb(parent_path, *dir_type, "", dir_key,
       *msid, true, overwrite)) {
 #ifdef DEBUG
-    printf("\t\tFailed trying to decrypt dm of db with dir key: %s\n",
-          dir_key_.c_str());
+    printf("\t\tFailed trying to decrypt dm of parent(%s) db - dir key: %s\n",
+           parent_path.c_str(), HexSubstr(dir_key).c_str());
 #endif
     return -1;
   }
@@ -2385,8 +2374,9 @@ int ClientController::RunDbEncQueue() {
     DirType db_type = GetDirType((*it).first);
 #ifdef DEBUG
     printf("\t\tCC::RunDbEncQueue: first: %s\ttype: %i\tsec.first: %s\t",
-          (*it).first.c_str(), db_type, (*it).second.first.c_str());
-    printf("sec.second: %s\n", (*it).second.second.c_str());
+          HexSubstr((*it).first).c_str(), db_type,
+          HexSubstr((*it).second.first).c_str());
+    printf("sec.second: %s\n", HexSubstr((*it).second.second).c_str());
 #endif
     int int_res = seh_.EncryptDb((*it).first, db_type, (*it).second.first,
                                   (*it).second.second, true, &dm);

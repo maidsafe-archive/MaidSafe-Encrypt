@@ -24,6 +24,7 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/utils.h>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
@@ -99,9 +100,9 @@ void PacketOpCallback(const int &delete_result,
 
 class LocalStoreManagerTest : public testing::Test {
  public:
-  LocalStoreManagerTest() : test_root_dir_(file_system::FileSystem::TempDir() +
-                                           "/maidsafe_TestStoreManager_" +
-                                            base::RandomString(6)),
+  LocalStoreManagerTest() : test_root_dir_(file_system::TempDir() /
+                                           ("maidsafe_TestStoreManager_" +
+                                            base::RandomString(6))),
                             client_chunkstore_(),
                             sm_(),
                             co_(),
@@ -113,8 +114,8 @@ class LocalStoreManagerTest : public testing::Test {
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
     }
     catch(const std::exception &e) {
       printf("%s\n", e.what());
@@ -127,15 +128,15 @@ class LocalStoreManagerTest : public testing::Test {
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-        fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
     }
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
     mutex_ = new boost::mutex();
     client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
-         (new maidsafe::ChunkStore(test_root_dir_, 0, 0));
+         (new maidsafe::ChunkStore(test_root_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
@@ -185,8 +186,8 @@ class LocalStoreManagerTest : public testing::Test {
       try {
         if (fs::exists(test_root_dir_))
           fs::remove_all(test_root_dir_);
-        if (fs::exists(file_system::FileSystem::LocalStoreManagerDir()))
-          fs::remove_all(file_system::FileSystem::LocalStoreManagerDir());
+        if (fs::exists(file_system::LocalStoreManagerDir()))
+          fs::remove_all(file_system::LocalStoreManagerDir());
       }
       catch(const std::exception &e) {
         printf("%s\n", e.what());
@@ -194,7 +195,7 @@ class LocalStoreManagerTest : public testing::Test {
     }
   }
 
-  std::string test_root_dir_;
+  fs::path test_root_dir_;
   boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore_;
   maidsafe::LocalStoreManager *sm_;
   crypto::Crypto co_;
@@ -207,6 +208,54 @@ class LocalStoreManagerTest : public testing::Test {
   LocalStoreManagerTest(const LocalStoreManagerTest&);
   LocalStoreManagerTest &operator=(const LocalStoreManagerTest&);
 };
+
+TEST_F(LocalStoreManagerTest, BEH_MAID_RemoveAllPacketsFromKey) {
+  kad::SignedValue gp;
+  rsao_.ClearKeys();
+  rsao_.GenerateKeys(maidsafe::kRsaKeySize);
+  int result(maidsafe::kGeneralError);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  std::string gp_name;
+
+  // Store packets with same key, different values
+  gp_name = co_.Hash("aaa", "", crypto::STRING_STRING, false);
+  for (int i=0; i < 5; ++i) {
+    gp.set_value("Generic System Packet Data" +
+                  boost::lexical_cast<std::string>(i));
+    sm_->StorePacket(gp_name, gp.value(), maidsafe::MID,
+        maidsafe::PRIVATE, "", maidsafe::kAppend, boost::bind(
+        &test_lsm::PacketOpCallback, _1, &mutex, &cond_var, &result));
+    {
+      boost::mutex::scoped_lock lock(mutex);
+      while (result == maidsafe::kGeneralError)
+        cond_var.wait(lock);
+    }
+    ASSERT_EQ(maidsafe::kSuccess, result);
+  }
+
+  // Remove said packets
+  result = maidsafe::kGeneralError;
+  sm_->DeletePacket(gp_name,
+                    std::vector<std::string>(), // Empty vector
+                    maidsafe::MID,
+                    maidsafe::PRIVATE,
+                    "",
+                    boost::bind(&test_lsm::PacketOpCallback,
+                                _1,
+                                &mutex,
+                                &cond_var,
+                                &result));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == maidsafe::kGeneralError)
+      cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kSuccess, result);
+
+  // Ensure they're all gone
+  ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
+}
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
   kad::SignedValue gp;
@@ -340,8 +389,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
   std::string chunk_name = co_.Hash(chunk_content, "",
                            crypto::STRING_STRING, false);
   std::string hex_chunk_name = base::EncodeToHex(chunk_name);
-  fs::path chunk_path(test_root_dir_);
-  chunk_path /= hex_chunk_name;
+  fs::path chunk_path(test_root_dir_ / hex_chunk_name);
   fs::ofstream ofs;
   ofs.open(chunk_path.string().c_str());
   ofs << chunk_content;

@@ -51,7 +51,7 @@ class SessionSingletonTest : public testing::Test {
 TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   // Check session is clean originally
   ASSERT_FALSE(ss_->DaModified());
-  ASSERT_EQ(DEFCON3, ss_->DefConLevel());
+  ASSERT_EQ(kDefCon3, ss_->DefConLevel());
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
@@ -77,7 +77,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
 
   // Modify session
   ASSERT_TRUE(ss_->SetDaModified(true));
-  ASSERT_TRUE(ss_->SetDefConLevel(DEFCON1));
+  ASSERT_TRUE(ss_->SetDefConLevel(kDefCon1));
   ASSERT_TRUE(ss_->SetUsername("aaa"));
   ASSERT_TRUE(ss_->SetPin("bbb"));
   ASSERT_TRUE(ss_->SetPassword("ccc"));
@@ -111,7 +111,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
 
   // Verify modifications
   ASSERT_TRUE(ss_->DaModified());
-  ASSERT_EQ(DEFCON1, ss_->DefConLevel());
+  ASSERT_EQ(kDefCon1, ss_->DefConLevel());
   ASSERT_EQ("aaa", ss_->Username());
   ASSERT_EQ("bbb", ss_->Pin());
   ASSERT_EQ("ccc", ss_->Password());
@@ -168,7 +168,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
 
   // Check session is clean again
   ASSERT_FALSE(ss_->DaModified());
-  ASSERT_EQ(DEFCON3, ss_->DefConLevel());
+  ASSERT_EQ(kDefCon3, ss_->DefConLevel());
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
@@ -213,7 +213,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
   std::string username("user1");
   std::string pin("1234");
   std::string session_name =
-      c.Hash(pin + username, "", crypto::STRING_STRING, false);
+      c.Hash(pin + username, "", crypto::STRING_STRING, true);
 
   // Set the session values
   ASSERT_TRUE(ss_->SetUsername(username));
@@ -520,5 +520,4 @@ TEST_F(SessionSingletonTest, BEH_MAID_Conversations) {
   ASSERT_EQ(0, ss_->ConversationList(&conv));
   ASSERT_EQ(size_t(0), conv.size());
 }
-
 }  // namespace maidsafe

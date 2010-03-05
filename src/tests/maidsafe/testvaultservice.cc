@@ -77,9 +77,8 @@ class TestCallback {
 class VaultServicesTest : public testing::Test {
   protected:
     VaultServicesTest()
-        : chunkstore_dir_(file_system::FileSystem::TempDir() +
-              "/maidsafe_TestVaultServices_" + base::RandomString(6),
-              fs::native),
+        : chunkstore_dir_(file_system::TempDir() /
+              ("maidsafe_TestVaultServices_" + base::RandomString(6))),
           vault_pmid_(),
           vault_public_key_(),
           vault_private_key_(),
@@ -92,8 +91,7 @@ class VaultServicesTest : public testing::Test {
           vault_rpcs_(new VaultRpcs(&transport_handler_, &channel_manager_)),
           vault_service_logic_(),
           vault_service_(),
-          svc_channel_(),
-          poh_() {}
+          svc_channel_() {}
 
     virtual void SetUp() {
       CreateRSAKeys(&vault_public_key_, &vault_private_key_);
@@ -127,7 +125,7 @@ class VaultServicesTest : public testing::Test {
       vault_service_logic_ = new VaultServiceLogic(vault_rpcs_, knode_);
       vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                         vault_public_key_signature_,
-                                        vault_chunkstore_, knode_.get(), &poh_,
+                                        vault_chunkstore_, knode_.get(),
                                         vault_service_logic_, transport_id);
 
       vault_service_logic_->Init(vault_pmid_,
@@ -173,7 +171,6 @@ class VaultServicesTest : public testing::Test {
     VaultServiceLogic *vault_service_logic_;
     VaultService *vault_service_;
     rpcprotocol::Channel *svc_channel_;
-    PendingOperationsHandler poh_;
 
   private:
     VaultServicesTest(const VaultServicesTest&);
@@ -452,7 +449,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_.get(), &poh_,
+                                    vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
@@ -785,7 +782,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_.get(), &poh_,
+                                    vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic,
                                     udt_transport_.GetID());
 
@@ -1209,7 +1206,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_.get(), &poh_,
+                                    vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
@@ -1419,7 +1416,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_.get(), &poh_,
+                                    vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
@@ -1657,7 +1654,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToReferenceList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_.get(), &poh_,
+                                    vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
@@ -1918,7 +1915,7 @@ TEST_F(MockVaultServicesTest, DISABLED_FUNC_MAID_ServicesRemoveFromReferenceList
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
-                                    vault_chunkstore_, knode_.get(), &poh_,
+                                    vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
@@ -2271,7 +2268,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_,
+      vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
@@ -2338,7 +2335,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_,
+      vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest create_request;
@@ -2498,7 +2495,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_,
+      vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
@@ -2574,7 +2571,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   VaultService service(vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL, &poh_,
+      vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
@@ -2680,7 +2677,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   bpm.set_type(maidsafe::INSTANT_MSG);
   boost::uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
   std::string aes_key = co.SecurePassword(co.Hash(msg, "",
-    crypto::STRING_STRING, true), iter);
+    crypto::STRING_STRING, false), iter);
   bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", pub_key,
     crypto::STRING_STRING));
   bpm.set_aesenc_message(co.SymmEncrypt(msg, "", crypto::STRING_STRING,
@@ -2754,7 +2751,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
   VaultService service(vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_,
-                       NULL, &poh_, vault_service_logic_,
+                       NULL, vault_service_logic_,
                        udt_transport_.GetID());
   rpcprotocol::Controller create_controller;
   maidsafe::CreateBPRequest create_request;

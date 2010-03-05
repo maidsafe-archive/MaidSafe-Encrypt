@@ -56,7 +56,7 @@ namespace maidsafe_vault {
 
 enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
 
-struct SyncVaultData {
+/* struct SyncVaultData {
   SyncVaultData() : chunk_names(), num_updated_chunks(0), num_chunks(0),
     active_updating(0), cb(), is_callbacked(false) {}
   std::list<std::string> chunk_names;  // chunks to be updated
@@ -65,9 +65,9 @@ struct SyncVaultData {
   int active_updating;
   base::callback_func_type cb;
   bool is_callbacked;
-};
+}; */
 
-struct GetAlivePartner {
+/* struct GetAlivePartner {
   GetAlivePartner(const int &num_parners, const std::string &chunk_name) :
     data(), is_found(false), contacted_partners(0),
     number_partners(num_parners), chunk_name(chunk_name) {}
@@ -76,9 +76,9 @@ struct GetAlivePartner {
   int contacted_partners;
   int number_partners;
   std::string chunk_name;
-};
+}; */
 
-struct RepublishChunkRefData {
+/* struct RepublishChunkRefData {
   RepublishChunkRefData() : chunk_names(), num_republished_chunks(0),
     num_chunks(0), cb(), is_callbacked(false) {}
   std::list<std::string> chunk_names;  // chunks to be updated
@@ -86,7 +86,7 @@ struct RepublishChunkRefData {
   int num_chunks;
   base::callback_func_type cb;
   bool is_callbacked;
-};
+}; */
 
 struct LoadChunkData {
   LoadChunkData(const std::string &chunkname, base::callback_func_type cb)
@@ -109,7 +109,7 @@ struct LoadChunkData {
   std::string sig_pub_key;
 };
 
-struct SynchArgs {
+/* struct SynchArgs {
   SynchArgs(const std::string &chunk_name,
             const kad::Contact &chunk_holder,
             boost::shared_ptr<SyncVaultData> data)
@@ -119,9 +119,9 @@ struct SynchArgs {
   const std::string chunk_name_;
   const kad::Contact chunk_holder_;
   boost::shared_ptr<SyncVaultData> data_;
-};
+}; */
 
-struct ValidityCheckArgs {
+/* struct ValidityCheckArgs {
   ValidityCheckArgs(const std::string &chunk_name,
                     const std::string &random_data,
                     const kad::Contact &chunk_holder,
@@ -135,7 +135,7 @@ struct ValidityCheckArgs {
   const kad::Contact chunk_holder_;
   base::callback_func_type cb_;
   bool retry_remote;
-};
+}; */
 
 struct GetArgs {
   GetArgs(const kad::Contact &chunk_holder,
@@ -173,17 +173,18 @@ struct SwapChunkArgs {
 
 class PDVault {
  public:
+  // vault_dir will contain .kadconfig (copied from read_only_kad_config_file)
+  // and "Chunkstore" directory.
   PDVault(const std::string &pmid_public,
           const std::string &pmid_private,
           const std::string &signed_pmid_public,
-          const std::string &chunkstore_dir,
+          const fs::path &vault_dir,
           const boost::uint16_t &port,
           bool port_forwarded,
           bool use_upnp,
-          const std::string &kad_config_file,
+          const fs::path &read_only_kad_config_file,
           const boost::uint64_t &available_space,
-          const boost::uint64_t &vault_used_space,
-          transport::TransportHandler *transport_handler);
+          const boost::uint64_t &used_space);
   ~PDVault();
   void Start(bool first_node);
   int Stop();
@@ -221,11 +222,11 @@ class PDVault {
                  base::callback_func_type cb);
   void StopRvPing() { transport_handler_->StopPingRendezvous(); }
   friend class localvaults::Env;
+  friend class PDVaultTest;
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreChunks);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetChunks);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreAndGetChunks);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_GetMissingChunk);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreSystemPacket);
@@ -295,8 +296,9 @@ class PDVault {
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   boost::uint16_t port_;
-  transport::TransportUDT udt_transport_;
+  transport::TransportUDT global_udt_transport_;
   transport::TransportHandler *transport_handler_;
+  boost::int16_t transport_id_;
   rpcprotocol::ChannelManager channel_manager_;
   maidsafe::MaidsafeValidator validator_;
   boost::shared_ptr<kad::KNode> knode_;
@@ -312,10 +314,9 @@ class PDVault {
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
   crypto::Crypto co_;
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
-  std::string kad_config_file_;
-  PendingOperationsHandler poh_;
+  fs::path kad_config_file_;
   QThreadPool thread_pool_;
-  boost::thread prune_pending_ops_thread_;
+  boost::thread create_account_thread_;
 };
 
 }  // namespace maidsafe_vault

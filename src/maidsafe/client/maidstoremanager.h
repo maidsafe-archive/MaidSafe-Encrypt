@@ -59,6 +59,11 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
                          boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm);
 }  // namespace testpdvault
 
+namespace maidsafe_vault {
+class PDVaultTest;
+class RunPDVaults;
+}  // namespace maidsafe_vault
+
 namespace maidsafe {
 
 class ClientRpcs;
@@ -127,7 +132,7 @@ class SessionSingleton;
 
 class AddToWatchListTask : public QRunnable {
  public:
-  AddToWatchListTask(const StoreData &store_data, MaidsafeStoreManager *msm)
+  AddToWatchListTask(StoreData store_data, MaidsafeStoreManager *msm)
       : store_data_(store_data),
         msm_(msm) {}
   void run();
@@ -140,7 +145,7 @@ class AddToWatchListTask : public QRunnable {
 
 class SendChunkCopyTask : public QRunnable {
  public:
-  SendChunkCopyTask(const StoreData &store_data,
+  SendChunkCopyTask(StoreData store_data,
                     MaidsafeStoreManager *msm)
       : store_data_(store_data),
         msm_(msm) {}
@@ -168,7 +173,7 @@ class StorePacketTask : public QRunnable {
 
 class DeleteChunkTask : public QRunnable {
  public:
-  DeleteChunkTask(const StoreData &store_data, MaidsafeStoreManager *msm)
+  DeleteChunkTask(StoreData store_data, MaidsafeStoreManager *msm)
       : store_data_(store_data),
         msm_(msm) {}
   void run();
@@ -292,23 +297,25 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           const std::string &pub_key,
                           const std::string &signed_pub_key,
                           const boost::uint32_t &port,
-                          const std::string &chunkstore_dir,
+                          const std::string &vault_dir,
                           const boost::uint64_t &space,
                           const SetLocalVaultOwnedFunctor &functor);
   void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
-  static void GetChunkSignatureKeys(DirType dir_type,
-                                    const std::string &msid,
-                                    std::string *key_id,
-                                    std::string *public_key,
-                                    std::string *public_key_sig,
-                                    std::string *private_key);
-  static void GetPacketSignatureKeys(PacketType packet_type,
-                                     DirType dir_type,
-                                     const std::string &msid,
-                                     std::string *key_id,
-                                     std::string *public_key,
-                                     std::string *public_key_sig,
-                                     std::string *private_key);
+  void GetChunkSignatureKeys(DirType dir_type,
+                             const std::string &msid,
+                             std::string *key_id,
+                             std::string *public_key,
+                             std::string *public_key_sig,
+                             std::string *private_key);
+  void GetPacketSignatureKeys(PacketType packet_type,
+                              DirType dir_type,
+                              const std::string &msid,
+                              std::string *key_id,
+                              std::string *public_key,
+                              std::string *public_key_sig,
+                              std::string *private_key);
+  virtual int CreateAccount(const boost::uint64_t &space);
+
   friend void AddToWatchListTask::run();
   friend void SendChunkCopyTask::run();
   friend void StorePacketTask::run();
@@ -318,7 +325,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       std::map<std::string, std::string> chunks,
       const int &timeout,
       boost::shared_ptr<MaidsafeStoreManager> sm);
-  friend class MsmSetLocalVaultOwnedTest;
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
@@ -337,8 +343,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreChunks);
+  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreAndGetChunks);
   FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
+  friend class MsmSetLocalVaultOwnedTest;
+  friend class maidsafe_vault::PDVaultTest;
+  friend class maidsafe_vault::RunPDVaults;
   // Check the inputs to the public methods are valid
   int ValidateInputs(const std::string &name,
                      const PacketType &packet_type,
@@ -348,7 +357,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           int *return_value,
                           GenericConditionData *generic_cond_data);
   // Sends AddToWatchList requests to each of the k Chunk Info holders.
-  virtual void AddToWatchList(const StoreData &store_data);
+  virtual void AddToWatchList(StoreData store_data);
   // Assesses each AddToWatchListResponse and if consensus of required chunk
   // upload copies is achieved, begins new SendChunkCopyTask(s) if required.
   void AddToWatchListCallback(boost::uint16_t index,
@@ -515,9 +524,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       boost::shared_ptr<SetLocalVaultOwnedCallbackArgs> callback_args);
   void LocalVaultOwnedCallback(
       boost::shared_ptr<LocalVaultOwnedCallbackArgs> callback_args);
+  void AmendAccountCallback(size_t index,
+                            boost::shared_ptr<AmendAccountData> data);
+
   transport::TransportUDT udt_transport_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
+  std::string kad_config_location_;
   boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<ClientRpcs> client_rpcs_;
   boost::shared_ptr<KadOps> kad_ops_;
@@ -529,6 +542,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   boost::condition_variable get_chunk_conditional_;
   boost::shared_ptr<BufferPacketRpcs> bprpcs_;
   ClientBufferPacketHandler cbph_;
+  static int kChunkMaxThreadCount_;
+  static int kPacketMaxThreadCount_;
+  boost::int16_t trans_id_;
 };
 
 }  // namespace maidsafe

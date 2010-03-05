@@ -28,7 +28,10 @@
 #include "maidsafe/maidsafevalidator.h"
 
 #include <maidsafe/maidsafe-dht_config.h>
+
 #include <string>
+
+#include "maidsafe/maidsafe.h"
 #include "maidsafe/returncodes.h"
 
 
@@ -40,14 +43,19 @@ bool MaidsafeValidator::ValidateSignerId(const std::string &signer_id,
   crypto::Crypto co;
   if (signer_id.empty() || public_key.empty() || signed_public_key.empty()) {
 #ifdef DEBUG
-    printf("MaidsafeValidator::ValidateSignerId - incomplete parameters\n");
+    if (signer_id.empty())
+      printf("MaidsafeValidator::ValidateSignerId: signer_id empty.\n");
+    if (public_key.empty())
+      printf("MaidsafeValidator::ValidateSignerId: public_key empty.\n");
+    if (signed_public_key.empty())
+      printf("MaidsafeValidator::ValidateSignerId: signed_public_key empty.\n");
 #endif
     return false;
   }
   if (signer_id != co.Hash(public_key + signed_public_key, "",
       crypto::STRING_STRING, false)) {
 #ifdef DEBUG
-    printf("MaidsafeValidator::ValidateSignerId - validation failed\n");
+    printf("MaidsafeValidator::ValidateSignerId - Id doesn't validate.\n");
 #endif
     return false;
   }
@@ -69,7 +77,7 @@ bool MaidsafeValidator::ValidateRequest(const std::string &signed_request,
       crypto::STRING_STRING))
     return true;
 #ifdef DEBUG
-  printf("MaidsafeValidator::ValidateRequest - validation failed\n");
+  printf("MaidsafeValidator::ValidateRequest - Failed to validate request.\n");
 #endif
   return false;
 }

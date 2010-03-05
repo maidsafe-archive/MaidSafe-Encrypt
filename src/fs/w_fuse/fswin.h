@@ -3,7 +3,7 @@
 
   Copyright (C) 2008 Hiroki Asakawa info@dokan-dev.net
 
-  http:// dokan-dev.net/en
+  http://dokan-dev.net/en
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License as published by the Free
@@ -15,53 +15,32 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public License along
-with this program. If not, see <http:// www.gnu.org/licenses/>.
+with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
 
 #ifndef FS_W_FUSE_FSWIN_H_
 #define FS_W_FUSE_FSWIN_H_
 
-#define DOKAN_DRIVER_NAME   L"dokan.sys"
+#define DOKAN_DRIVER_NAME L"dokan.sys"
 
-#ifdef _EXPORTING
-  #define DOKANAPI __declspec(dllimport) __stdcall
+#ifndef _M_X64
+  #ifdef _EXPORTING
+    #define DOKANAPI __declspec(dllimport) __stdcall
+  #else
+    #define DOKANAPI __declspec(dllexport) __stdcall
+  #endif
 #else
-  #define DOKANAPI __declspec(dllexport) __stdcall
+  #define DOKANAPI
 #endif
 
-// #ifndef BOOST_EXCEPTION_DISABLE
-//   #define BOOST_EXCEPTION_DISABLE
-// #endif
-
-// #define DOKAN_CALLBACK __stdcall
 #define DOKAN_CALLBACK __cdecl
 #define VOLUME_LABEL         L"maidsafe"
 
-#include <errno.h>
-#include <locale>
-#include <stdio.h>
-#include <stdlib.h>
 #include <windows.h>
 
-#include <boost/bind.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem/convenience.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/thread/recursive_mutex.hpp>
-#include <cstdlib>
-
-#include <sstream>
-
-
-
 #include <list>
-#include <map>
 #include <string>
-
-#include "maidsafe/utils.h"
-#include "maidsafe/client/clientcontroller.h"
-#include "protobuf/datamaps.pb.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,253 +48,234 @@ extern "C" {
 
 namespace fs_w_fuse {
 
-static boost::recursive_mutex dokan_mutex;
-
-#define DOKAN_OPTION_DEBUG 1       // ouput debug message
-#define DOKAN_OPTION_STDERR 2      // ouput debug message to stderr
-#define DOKAN_OPTION_ALT_STREAM 4  // use alternate stream
-#define DOKAN_OPTION_KEEP_ALIVE 8  // use auto unmount
-#define DOKAN_OPTION_NETWORK 16    // use network drive
+#define DOKAN_OPTION_DEBUG 1       // Ouput debug message
+#define DOKAN_OPTION_STDERR 2      // Ouput debug message to stderr
+#define DOKAN_OPTION_ALT_STREAM 4  // Use alternate stream
+#define DOKAN_OPTION_KEEP_ALIVE 8  // Use auto unmount
+#define DOKAN_OPTION_NETWORK 16    // Use network drive
 
 typedef struct _DOKAN_OPTIONS {
-  WCHAR DriveLetter;      // drive letter to be mounted
-  USHORT ThreadCount;     // number of threads to be used
-  ULONG Options;          // combination of DOKAN_OPTIONS_*
+  WCHAR DriveLetter;      // Drive letter to be mounted
+  USHORT ThreadCount;     // Number of threads to be used
+  ULONG Options;          // Combination of DOKAN_OPTIONS_*
   ULONG64 GlobalContext;  // FileSystem can use this variable
 } DOKAN_OPTIONS, *PDOKAN_OPTIONS;
 
 typedef struct _DOKAN_FILE_INFO {
-  ULONG64   Context;        //  FileSystem can use this variable
-  ULONG64   DokanContext;   //  Don't touch this
-  ULONG   ProcessId;        //  process id for the thread that originally
-                            //  requested a given I/O operation
-  UCHAR   IsDirectory;      //  requesting a directory file
-  UCHAR   DeleteOnClose;    //  Delete on when "cleanup" is called
-  PDOKAN_OPTIONS DokanOptions;
+  ULONG64 Context;              // FileSystem can use this variable
+  ULONG64 DokanContext;         // Don't touch this
+  PDOKAN_OPTIONS DokanOptions;  // A pointer to DOKAN_OPTIONS which was passed
+                                //   to DokanMain.
+  ULONG ProcessId;              // Process id for the thread that originally
+                                //   requested a given I/O operation
+  UCHAR IsDirectory;            // Requesting a directory file
+  UCHAR DeleteOnClose;          // Delete on when "cleanup" is called
+  UCHAR PagingIo;               // Read or write is paging IO.
+  UCHAR SynchronousIo;          // Read or write is synchronous IO.
+  UCHAR Nocache;
+  UCHAR WriteToEndOfFile;       // If true, write to the current end of file
+                                //   instead of Offset parameter.
 } DOKAN_FILE_INFO, *PDOKAN_FILE_INFO;
-
 
 extern std::list<ULONG64> to_encrypt_;
 extern std::list<std::string> to_delete_;
 
-//  FillFileData
-//    add an entry in FindFiles
-//    return 1 if buffer is full, otherwise 0
-//    (currently never return 1)
+// Add an entry in FindFiles
+// Return 1 if buffer is full, otherwise 0 (currently never return 1)
 typedef int (WINAPI *PFillFindData) (PWIN32_FIND_DATAW, PDOKAN_FILE_INFO);
 
 typedef struct _DOKAN_OPERATIONS {
-  //  When an error occurs, return negative value.
-  //  Usually you should return GetLastError() * -1.
+  // When an error occurs, return negative value.
+  // Usually you should return GetLastError() * -1.
 
-
-  //  CreateFile
-  //    If file is a directory, CreateFile (not OpenDirectory) may be called.
-  //    In this case, CreateFile should return 0 when that directory can be
-  //    opened.  You should set TRUE on DokanFileInfo->IsDirectory when file
-  //    is a directory.  When CreationDisposition is CREATE_ALWAYS or
-  //    OPEN_ALWAYS and a file already exists, you should return
-  //    ERROR_ALREADY_EXISTS(183) (not negative value)
+  // If file is a directory, CreateFile (not OpenDirectory) may be called.
+  // In this case, CreateFile should return 0 when that directory can be opened.
+  // You should set TRUE on DokanFileInfo->IsDirectory when file is a directory.
+  // When CreationDisposition is CREATE_ALWAYS or OPEN_ALWAYS and a file already
+  // exists, you should return ERROR_ALREADY_EXISTS(183) (not negative value)
   int (DOKAN_CALLBACK *CreateFile) (  // NOLINT (Fraser)
-    LPCWSTR,      //  FileName
-    DWORD,        //  DesiredAccess
-    DWORD,        //  ShareMode
-    DWORD,        //  CreationDisposition
-    DWORD,        //  FlagsAndAttributes
-    // HANDLE,    //  TemplateFile
-    PDOKAN_FILE_INFO);
+      LPCWSTR,      // FileName
+      DWORD,        // DesiredAccess
+      DWORD,        // ShareMode
+      DWORD,        // CreationDisposition
+      DWORD,        // FlagsAndAttributes
+      // HANDLE,    // TemplateFile
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *OpenDirectory) (  // NOLINT (Fraser)
-    LPCWSTR,            //  FileName
-    PDOKAN_FILE_INFO);
+      LPCWSTR,  // FileName
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *CreateDirectory) (  // NOLINT (Fraser)
-    LPCWSTR,            //  FileName
-    PDOKAN_FILE_INFO);
+      LPCWSTR,  // FileName
+      PDOKAN_FILE_INFO);
 
-  //  When FileInfo->DeleteOnClose is true, you must delete the file in Cleanup.
+  // When FileInfo->DeleteOnClose is true, you must delete the file in Cleanup.
   int (DOKAN_CALLBACK *Cleanup) (  // NOLINT (Fraser)
-    LPCWSTR,      //  FileName
-    PDOKAN_FILE_INFO);
+      LPCWSTR,  // FileName
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *CloseFile) (  // NOLINT (Fraser)
-    LPCWSTR,      //  FileName
-    PDOKAN_FILE_INFO);
+      LPCWSTR,  // FileName
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *ReadFile) (  // NOLINT (Fraser)
-    LPCWSTR,   //  FileName
-    LPVOID,    //  Buffer
-    DWORD,     //  NumberOfBytesToRead
-    LPDWORD,   //  NumberOfBytesRead
-    LONGLONG,  //  Offset
-    PDOKAN_FILE_INFO);
+      LPCWSTR,   // FileName
+      LPVOID,    // Buffer
+      DWORD,     // NumberOfBytesToRead
+      LPDWORD,   // NumberOfBytesRead
+      LONGLONG,  // Offset
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *WriteFile) (  // NOLINT (Fraser)
-    LPCWSTR,   //  FileName
-    LPCVOID,   //  Buffer
-    DWORD,     //  NumberOfBytesToWrite
-    LPDWORD,   //  NumberOfBytesWritten
-    LONGLONG,  //  Offset
-    PDOKAN_FILE_INFO);
+      LPCWSTR,   // FileName
+      LPCVOID,   // Buffer
+      DWORD,     // NumberOfBytesToWrite
+      LPDWORD,   // NumberOfBytesWritten
+      LONGLONG,  // Offset
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *FlushFileBuffers) (  // NOLINT (Fraser)
-    LPCWSTR,  //  FileName
-    PDOKAN_FILE_INFO);
+      LPCWSTR,  // FileName
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *GetFileInformation) (  // NOLINT (Fraser)
-    LPCWSTR,                       //  FileName
-    LPBY_HANDLE_FILE_INFORMATION,  //  Buffer
-    PDOKAN_FILE_INFO);
+      LPCWSTR,  // FileName
+      LPBY_HANDLE_FILE_INFORMATION,  // Buffer
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *FindFiles) (  // NOLINT (Fraser)
-    LPCWSTR,            //  PathName
-    PFillFindData,      //  call this function with PWIN32_FIND_DATAW
-    PDOKAN_FILE_INFO);  //   (see PFillFindData definition)
+      LPCWSTR,            // PathName
+      PFillFindData,      // Call this function with PWIN32_FIND_DATAW
+      PDOKAN_FILE_INFO);  // (see PFillFindData definition)
 
-  //  You should implement either FindFires or FindFilesWithPattern
+  // You should implement either FindFiles or FindFilesWithPattern
   int (DOKAN_CALLBACK *FindFilesWithPattern) (  // NOLINT (Fraser)
-    LPCWSTR,        //  PathName
-    LPCWSTR,        //  SearchPattern
-    PFillFindData,  //  call this function with PWIN32_FIND_DATAW
-    PDOKAN_FILE_INFO);
+      LPCWSTR,        // PathName
+      LPCWSTR,        // SearchPattern
+      PFillFindData,  // call this function with PWIN32_FIND_DATAW
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *SetFileAttributes) (  // NOLINT (Fraser)
-    LPCWSTR,  //  FileName
-    DWORD,    //  FileAttributes
-    PDOKAN_FILE_INFO);
+      LPCWSTR,  // FileName
+      DWORD,    // FileAttributes
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *SetFileTime) (  // NOLINT (Fraser)
-    LPCWSTR,          //  FileName
-    CONST FILETIME*,  //  CreationTime
-    CONST FILETIME*,  //  LastAccessTime
-    CONST FILETIME*,  //  LastWriteTime
-    PDOKAN_FILE_INFO);
+      LPCWSTR,          // FileName
+      CONST FILETIME*,  // CreationTime
+      CONST FILETIME*,  // LastAccessTime
+      CONST FILETIME*,  // LastWriteTime
+      PDOKAN_FILE_INFO);
 
-  //  You should not delete file on DeleteFile or DeleteDirectory.
-  //  When DeleteFile or DeleteDirectory, you must check whether
-  //  you can delete or not, and return 0 (when you can delete it)
-  //  or appropriate error codes such as -ERROR_DIR_NOT_EMPTY,
-  //  -ERROR_SHARING_VIOLATION.
-  //  When you return 0 (ERROR_SUCCESS), you get Cleanup with
-  //  FileInfo->DeleteOnClose set TRUE, you delete the file.
+  // You should not delete file on DeleteFile or DeleteDirectory.
+  // When DeleteFile or DeleteDirectory, you must check whether
+  // you can delete or not, and return 0 (when you can delete it)
+  // or appropriate error codes such as -ERROR_DIR_NOT_EMPTY,
+  // -ERROR_SHARING_VIOLATION.
+  // When you return 0 (ERROR_SUCCESS), you get Cleanup with
+  // FileInfo->DeleteOnClose set TRUE, you delete the file.
   int (DOKAN_CALLBACK *DeleteFile) (  // NOLINT (Fraser)
-    LPCWSTR,  //  FileName
-    PDOKAN_FILE_INFO);
+      LPCWSTR,  // FileName
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *DeleteDirectory) (  // NOLINT (Fraser)
-    LPCWSTR,  //  FileName
-    PDOKAN_FILE_INFO);
+      LPCWSTR,  // FileName
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *MoveFile) (  // NOLINT (Fraser)
-    LPCWSTR,  //  ExistingFileName
-    LPCWSTR,  //  NewFileName
-    BOOL,     //  ReplaceExisiting
-    PDOKAN_FILE_INFO);
+      LPCWSTR,  // ExistingFileName
+      LPCWSTR,  // NewFileName
+      BOOL,     // ReplaceExisiting
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *SetEndOfFile) (  // NOLINT (Fraser)
-    LPCWSTR,   //  FileName
-    LONGLONG,  //  Length
-    PDOKAN_FILE_INFO);
+      LPCWSTR,   // FileName
+      LONGLONG,  // Length
+      PDOKAN_FILE_INFO);
 
 	int (DOKAN_CALLBACK *SetAllocationSize) (  // NOLINT (Fraser)
-    LPCWSTR,  // FileName
-    LONGLONG,  // Length
-    PDOKAN_FILE_INFO);
+      LPCWSTR,   // FileName
+      LONGLONG,  // Length
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *LockFile) (  // NOLINT (Fraser)
-    LPCWSTR,   //  FileName
-    LONGLONG,  //  ByteOffset
-    LONGLONG,  //  Length
-    PDOKAN_FILE_INFO);
+      LPCWSTR,   // FileName
+      LONGLONG,  // ByteOffset
+      LONGLONG,  // Length
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *UnlockFile) (  // NOLINT (Fraser)
-    LPCWSTR,   //  FileName
-    LONGLONG,  //  ByteOffset
-    LONGLONG,  //  Length
-    PDOKAN_FILE_INFO);
+      LPCWSTR,   // FileName
+      LONGLONG,  // ByteOffset
+      LONGLONG,  // Length
+      PDOKAN_FILE_INFO);
 
-  //  Neither GetDiskFreeSpace nor GetVolumeInformation
-  //  save the DokanFileContext->Context.
-  //  Before these methods are called, CreateFile may not be called.
-  //  (ditto CloseFile and Cleanup)
+  // Neither GetDiskFreeSpace nor GetVolumeInformation
+  // save the DokanFileContext->Context.
+  // Before these methods are called, CreateFile may not be called.
+  // (ditto CloseFile and Cleanup)
 
-  //  see Win32 API GetDiskFreeSpaceEx
+  // See Win32 API GetDiskFreeSpaceEx
   int (DOKAN_CALLBACK *GetDiskFreeSpace) (  // NOLINT (Fraser)
-    PULONGLONG,  //  FreeBytesAvailable
-    PULONGLONG,  //  TotalNumberOfBytes
-    PULONGLONG,  //  TotalNumberOfFreeBytes
-    PDOKAN_FILE_INFO);
+      PULONGLONG,  // FreeBytesAvailable
+      PULONGLONG,  // TotalNumberOfBytes
+      PULONGLONG,  // TotalNumberOfFreeBytes
+      PDOKAN_FILE_INFO);
 
-  //  see Win32 API GetVolumeInformation
+  // See Win32 API GetVolumeInformation
   int (DOKAN_CALLBACK *GetVolumeInformation) (  // NOLINT (Fraser)
-    LPWSTR,   //  VolumeNameBuffer
-    DWORD,    //  VolumeNameSize
-    LPDWORD,  //  VolumeSerialNumber
-    LPDWORD,  //  MaximumComponentLength
-    LPDWORD,  //  FileSystemFlags
-    LPWSTR,   //  FileSystemNameBuffer
-    DWORD,    //  FileSystemNameSize
-    PDOKAN_FILE_INFO);
+      LPWSTR,   // VolumeNameBuffer
+      DWORD,    // VolumeNameSize in num of chars
+      LPDWORD,  // VolumeSerialNumber
+      LPDWORD,  // MaximumComponentLength in num of chars
+      LPDWORD,  // FileSystemFlags
+      LPWSTR,   // FileSystemNameBuffer
+      DWORD,    // FileSystemNameSize in num of chars
+      PDOKAN_FILE_INFO);
 
   int (DOKAN_CALLBACK *Unmount)(PDOKAN_FILE_INFO);
 } DOKAN_OPERATIONS, *PDOKAN_OPERATIONS;
 
 
-/* DokanMain returns error codes */
-#define DOKAN_SUCCESS             0
-#define DOKAN_ERROR               -1 /* General Error */
-#define DOKAN_DRIVE_LETTER_ERROR   -2 /* Bad Drive letter */
-#define DOKAN_DRIVER_INSTALL_ERROR   -3 /* Can't install driver */
-#define DOKAN_START_ERROR         -4 /* Driver something wrong */
-#define DOKAN_MOUNT_ERROR         -5 /* Can't assign a drive letter */
+// DokanMain returns error codes
+#define DOKAN_SUCCESS 0
+#define DOKAN_ERROR -1                 // General Error
+#define DOKAN_DRIVE_LETTER_ERROR -2    // Bad Drive letter
+#define DOKAN_DRIVER_INSTALL_ERROR -3  // Can't install driver
+#define DOKAN_START_ERROR -4           // Driver has something wrong
+#define DOKAN_MOUNT_ERROR -5           // Can't assign a drive letter
 
+int DOKANAPI DokanMain(PDOKAN_OPTIONS DokanOptions,
+                       PDOKAN_OPERATIONS DokanOperations);
 
-int DOKANAPI
-DokanMain(
-  PDOKAN_OPTIONS   DokanOptions,
-  PDOKAN_OPERATIONS DokanOperations);
+BOOL DOKANAPI DokanUnmount(WCHAR DriveLetter);
 
+// Check whether Name can match Expression
+// Expression can contain wildcard characters (? and *)
+BOOL DOKANAPI DokanIsNameInExpression(LPCWSTR Expression,  // Matching pattern
+                                      LPCWSTR Name,        // File name
+                                      BOOL IgnoreCase);
 
-BOOL DOKANAPI
-DokanUnmount(
-  WCHAR DriveLetter);
+ULONG DOKANAPI DokanVersion();
 
+ULONG DOKANAPI DokanDriverVersion();
 
-//  DokanIsNameInExpression
-//    check whether Name can match Expression
-//    Expression can contain wildcard characters (? and *)
-BOOL DOKANAPI
-DokanIsNameInExpression(
-  LPCWSTR      Expression,      //  matching pattern
-  LPCWSTR      Name,         //  file name
-  BOOL      IgnoreCase);
+// Extends the time out of the current IO operation in driver.
+BOOL DOKANAPI DokanResetTimeout(ULONG Timeout,  // timeout in milliseconds
+                                PDOKAN_FILE_INFO DokanFileInfo);
 
+// For internal use
+// Don't call
+BOOL DOKANAPI DokanServiceInstall(LPCWSTR ServiceName,
+                                  DWORD ServiceType,
+                                  LPCWSTR ServiceFullPath);
 
-ULONG DOKANAPI
-DokanVersion();
+BOOL DOKANAPI DokanServiceDelete(LPCWSTR ServiceName);
 
-ULONG DOKANAPI
-DokanDriverVersion();
+BOOL DOKANAPI DokanNetworkProviderInstall();
 
-
-//  for internal use
-//  don't call
-BOOL DOKANAPI
-DokanServiceInstall(
-  LPCWSTR   ServiceName,
-  DWORD   ServiceType,
-  LPCWSTR ServiceFullPath);
-
-BOOL DOKANAPI
-DokanServiceDelete(
-  LPCWSTR   ServiceName);
-
-BOOL DOKANAPI
-DokanNetworkProviderInstall();
-
-BOOL DOKANAPI
-DokanNetworkProviderUninstall();
-
+BOOL DOKANAPI DokanNetworkProviderUninstall();
 
 void Mount(char drive);
 
@@ -324,6 +284,5 @@ void Mount(char drive);
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif  // FS_W_FUSE_FSWIN_H_

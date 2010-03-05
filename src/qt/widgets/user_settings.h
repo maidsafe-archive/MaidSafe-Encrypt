@@ -37,7 +37,7 @@ class VaultInfo;
 class UserSettings : public QDialog {
     Q_OBJECT
 
-  public:
+ public:
   explicit UserSettings(QWidget* parent = 0);
   virtual ~UserSettings();
 
@@ -47,11 +47,11 @@ class UserSettings : public QDialog {
     void HandleApply();
     void HandleCancel();
 
-  private:
-    Ui::UserSettingsPage ui_;
-    QStringList Pages;
+ private:
+  Ui::UserSettingsPage ui_;
+  QStringList Pages;
 
-    void createSettingsMenu();
+  void createSettingsMenu();
 
   enum State {
     PERSONAL,
@@ -69,7 +69,6 @@ class UserSettings : public QDialog {
   ConnectionSettings* connection_;
   FileTransferSettings* fileTransfer_;
   SecuritySettings* security_;
-
 };
 
-#endif  // USER_SETTINGS_H_INCLUDED
+#endif  // QT_WIDGETS_USER_SETTINGS_H_

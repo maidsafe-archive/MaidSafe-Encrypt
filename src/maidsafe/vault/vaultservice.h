@@ -29,6 +29,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
+#include <maidsafe/contact_info.pb.h>
 #include <maidsafe/crypto.h>
 #include <maidsafe/utils.h>
 #include <QThreadPool>
@@ -41,7 +42,6 @@
 #include "maidsafe/vault/accountamendmenthandler.h"
 #include "maidsafe/vault/accountrepository.h"
 #include "maidsafe/vault/chunkinfohandler.h"
-#include "maidsafe/vault/pendingoperations.h"
 #include "protobuf/maidsafe_service.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
 
@@ -146,7 +146,6 @@ class VaultService : public maidsafe::MaidsafeService {
                const std::string &pmid_public_signature,
                VaultChunkStore *vault_chunkstore,
                kad::KNode *knode,
-               PendingOperationsHandler *poh,
                VaultServiceLogic *vault_service_logic,
                const boost::int16_t &transport_id);
   ~VaultService() {}
@@ -233,7 +232,7 @@ class VaultService : public maidsafe::MaidsafeService {
                            const maidsafe::ContactInfoRequest* request,
                            maidsafe::ContactInfoResponse* response,
                            google::protobuf::Closure* done);
-
+  int AddAccount(const std::string &pmid, const boost::uint64_t &offer);
  private:
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateIdentity);
@@ -316,7 +315,6 @@ class VaultService : public maidsafe::MaidsafeService {
   std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
   VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;
-  PendingOperationsHandler *poh_;
   VaultServiceLogic *vault_service_logic_;
   boost::int16_t transport_id_;
   typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;

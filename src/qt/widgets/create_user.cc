@@ -26,7 +26,6 @@
 
 // local
 
-
 // generated
 #include "qt/widgets/create_page_welcome.h"
 #include "qt/widgets/create_page_license.h"
@@ -132,13 +131,13 @@ void CreateUser::setCurrentPage(int index, int dir) {
   ui_.back->setEnabled(index > 0);
   ui_.next->setEnabled(page->isComplete());
   ui_.next->setText(index == pages_.size() - 1 ? tr("Finish") : tr("Next >"));
-//  if (index == pages_.size() - 1) {
-//    qDebug() << "CreateUser::setCurrentPage VaultType: " << VaultType();
-//    qDebug() << "CreateUser::setCurrentPage SpaceOffered: " << SpaceOffered();
-//    qDebug() << "CreateUser::setCurrentPage PortChosen: " << PortChosen();
-//    qDebug() << "CreateUser::setCurrentPage DirectoryChosen: "
-//             << DirectoryChosen();
-//  }
+  if (index == pages_.size() - 1) {
+    qDebug() << "CreateUser::setCurrentPage VaultType: " << VaultType();
+    qDebug() << "CreateUser::setCurrentPage SpaceOffered: " << SpaceOffered();
+    qDebug() << "CreateUser::setCurrentPage PortChosen: " << PortChosen();
+    qDebug() << "CreateUser::setCurrentPage DirectoryChosen: "
+             << DirectoryChosen();
+  }
 }
 
 void CreateUser::onCompleteChanged() {

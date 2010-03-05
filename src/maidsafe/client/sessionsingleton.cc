@@ -51,7 +51,7 @@ void SessionSingleton::Destroy() {
 
 bool SessionSingleton::ResetSession() {
   SetDaModified(false);
-  SetDefConLevel(DEFCON3);
+  SetDefConLevel(kDefCon3);
   SetUsername("");
   SetPin("");
   SetPassword("");
@@ -95,6 +95,7 @@ int SessionSingleton::LoadKeys(std::list<Key> *keys) {
 }
 
 void SessionSingleton::GetKeys(std::list<KeyAtlasRow> *keys) {
+  keys->clear();
   ka_.GetKeyRing(keys);
 }
 
@@ -141,6 +142,10 @@ std::string SessionSingleton::PrivateKey(const PacketType &bpt) {
 
 std::string SessionSingleton::SignedPublicKey(const PacketType &bpt) {
   return ka_.SignedPublicKey(bpt);
+}
+
+unsigned int SessionSingleton::KeyRingSize() {
+  return ka_.KeyRingSize();
 }
 
 ////////////////////////

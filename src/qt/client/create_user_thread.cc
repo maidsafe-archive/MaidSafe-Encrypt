@@ -18,6 +18,7 @@
 // qt
 #include <QDebug>
 
+#include <boost/lexical_cast.hpp>
 // std
 #include <string>
 
@@ -47,11 +48,12 @@ void CreateUserThread::run() {
   const std::string pin = pin_.toStdString();
   const std::string password = password_.toStdString();
   const std::string port = port_.toStdString();
+  const std::string space = space_.toStdString();
 
   maidsafe::VaultConfigParameters vcp;
   vcp.vault_type = vault_type_;
-  vcp.space = base::stoi_ul(space_.toStdString());
-  vcp.port = base::stoi_ul(port_.toStdString());
+  vcp.space = boost::lexical_cast<boost::uint32_t>(space);
+  vcp.port = boost::lexical_cast<boost::uint32_t>(port);
   vcp.directory = directory_.toStdString();
 
   if (!ClientController::instance()->

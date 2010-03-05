@@ -28,5 +28,6 @@ echo.
  goto :eof
 :function
  echo.
+ del filelist.txt filelist2.txt code_style_errors.txt code_style_errors2.txt
  exit /B 1
  goto :eof

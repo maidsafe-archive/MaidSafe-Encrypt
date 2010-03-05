@@ -75,10 +75,14 @@ void DeletePacketTask::run() {
   msm_->DeletePacketFromNet(delete_data_);
 }
 
+int MaidsafeStoreManager::kPacketMaxThreadCount_ = 5;
+int MaidsafeStoreManager::kChunkMaxThreadCount_ = 5;
+
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
     : udt_transport_(),
       transport_handler_(),
       channel_manager_(&transport_handler_),
+      kad_config_location_(".kadconfig"),
       knode_(new kad::KNode(&channel_manager_, &transport_handler_, kad::CLIENT,
              "", "", false, false)),
       client_rpcs_(new ClientRpcs(&transport_handler_, &channel_manager_)),
@@ -91,10 +95,10 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       store_packet_mutex_(),
       get_chunk_conditional_(),
       bprpcs_(new BufferPacketRpcsImpl(&transport_handler_, &channel_manager_)),
-      cbph_(bprpcs_, knode_) {
-  boost::int16_t trans_id;
-  transport_handler_.Register(&udt_transport_, &trans_id);
-  knode_->SetTransID(trans_id);
+      cbph_(bprpcs_, knode_),
+      trans_id_(0) {
+  transport_handler_.Register(&udt_transport_, &trans_id_);
+  knode_->SetTransID(trans_id_);
   knode_->SetAlternativeStore(client_chunkstore_.get());
 }
 
@@ -102,20 +106,15 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
   // If kad config file exists in dir we're in, use that, otherwise get default
   // path to file.
   bool success(true);
-  std::string kadconfig_str;
   try {
-    if (fs::exists(".kadconfig")) {
-      kadconfig_str = ".kadconfig";
-    } else {
-      file_system::FileSystem fsys;
-      fs::path kadconfig_path(fsys.ApplicationDataDir(), fs::native);
-      kadconfig_path /= ".kadconfig";
-      kadconfig_str = kadconfig_path.string();
+    if (!fs::exists(kad_config_location_)) {
+      fs::path kad_conf_path(file_system::ApplicationDataDir() / ".kadconfig");
+      kad_config_location_ = kad_conf_path.string();
     }
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
-    printf("In MSM::Init - %s\n", ex.what());
+    printf("In MSM::Init - Couldn't find kadconfig.\n");
 #endif
     success = false;
   }
@@ -136,7 +135,7 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
 #endif
   CallbackObj kad_cb_obj;
   if (success) {
-    knode_->Join(kadconfig_str, boost::bind(&CallbackObj::CallbackFunc,
+    knode_->Join(kad_config_location_, boost::bind(&CallbackObj::CallbackFunc,
         &kad_cb_obj, _1));
     kad_cb_obj.WaitForCallback();
   }
@@ -155,10 +154,11 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
     maid_response.SerializeToString(&maid_result);
     cb(maid_result);
   }
-  chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount);
-  packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount);
+  chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount_);
+  packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount_);
 #ifdef DEBUG
-//  printf("\tIn MaidsafeStoreManager::Init, after Join.\n");
+  printf("\tIn MaidsafeStoreManager::Init, after Join.  On port %u\n",
+         knode_->host_port());
 #endif
 }
 
@@ -226,7 +226,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
   ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
   fs::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
                                                        false));
-  if (chunk_type < 0 || chunk_path == fs::path("")) {
+  if (chunk_type < 0 || chunk_path.empty()) {
 #ifdef DEBUG
     printf("In MaidsafeStoreManager::StoreChunk (%i), didn't find chunk %s\n",
            knode_->host_port(), HexSubstr(chunk_name).c_str());
@@ -279,7 +279,9 @@ void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
   int valid = ValidateInputs(packet_name, system_packet_type, dir_type);
   if (valid != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::StorePacket, invalid input.  Error %i\n", valid);
+    printf("In MSM::StorePacket, invalid input.  Error %i, packetname(%s), "
+           "system_packet_type(%i), dir_type(%i)\n", valid,
+           HexSubstr(packet_name).c_str(), system_packet_type, dir_type);
 #endif
     cb(static_cast<ReturnCode>(valid));
     return;
@@ -290,6 +292,14 @@ void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
   boost::shared_ptr<StoreData> store_data(new StoreData(packet_name, value,
       system_packet_type, dir_type, msid, key_id, public_key,
       public_key_signature, private_key, if_packet_exists, cb));
+#ifdef DEBUG
+//  printf("PN: %s\nV: %s\nK: %s\nPK: %s\nPKS: %s\n",
+//         HexSubstr(packet_name).c_str(),
+//         HexSubstr(value).c_str(),
+//         HexSubstr(key_id).c_str(),
+//         HexSubstr(public_key).c_str(),
+//         HexSubstr(public_key_signature).c_str());
+#endif
   // packet_thread_pool_ handles destruction of store_packet_task.
   StorePacketTask *store_packet_task = new StorePacketTask(store_data, this);
   packet_thread_pool_.start(store_packet_task);
@@ -460,9 +470,9 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
   if ((ret_value == kSuccess) &&
       (find_response.result() != kad::kRpcResultSuccess)) {
 #ifdef DEBUG
-    printf("In MSM::LoadPacketCallback, failed to find value.\n");
-    printf("Found %i nodes\n", find_response.closest_nodes_size());
-    printf("Found %i values\n", find_response.values_size());
+    printf("In MSM::LoadPacketCallback, failed to find value for key %s"
+           " (found %i nodes and %i values)\n", HexSubstr(packet_name).c_str(),
+           find_response.closest_nodes_size(), find_response.values_size());
 //    printf("Found alt val holder: %i\n",
 //           find_response.has_alternative_value_holder());
 #endif
@@ -601,7 +611,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
                                                          false));
   boost::uint64_t size(chunk_size);
   if (size < 2) {
-    if (chunk_type < 0 || chunk_path == fs::path("")) {
+    if (chunk_type < 0 || chunk_path.empty()) {
 #ifdef DEBUG
       printf("In MSM::DeleteChunk (%i), didn't find chunk %s in local "
              "chunkstore - can't delete without valid size.\n",
@@ -896,10 +906,9 @@ void MaidsafeStoreManager::GetChunkSignatureKeys(DirType dir_type,
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  SessionSingleton *ss = SessionSingleton::getInstance();
   switch (dir_type) {
     case PRIVATE_SHARE:
-      if (kSuccess == ss->GetShareKeys(msid, public_key, private_key)) {
+      if (kSuccess == ss_->GetShareKeys(msid, public_key, private_key)) {
         *key_id = msid;
         *public_key_sig =
             co.AsymSign(*public_key, "", *private_key, crypto::STRING_STRING);
@@ -911,10 +920,10 @@ void MaidsafeStoreManager::GetChunkSignatureKeys(DirType dir_type,
       }
       break;
     case PUBLIC_SHARE:
-      *key_id = ss->Id(MPID);
-      *public_key = ss->PublicKey(MPID);
-      *public_key_sig = ss->SignedPublicKey(MPID);
-      *private_key = ss->PrivateKey(MPID);
+      *key_id = ss_->Id(MPID);
+      *public_key = ss_->PublicKey(MPID);
+      *public_key_sig = ss_->SignedPublicKey(MPID);
+      *private_key = ss_->PrivateKey(MPID);
       break;
     case ANONYMOUS:
       *key_id = " ";
@@ -924,10 +933,10 @@ void MaidsafeStoreManager::GetChunkSignatureKeys(DirType dir_type,
       break;
     case PRIVATE:
     default:
-      *key_id = ss->Id(PMID);
-      *public_key = ss->PublicKey(PMID);
-      *public_key_sig = ss->SignedPublicKey(PMID);
-      *private_key = ss->PrivateKey(PMID);
+      *key_id = ss_->Id(PMID);
+      *public_key = ss_->PublicKey(PMID);
+      *public_key_sig = ss_->SignedPublicKey(PMID);
+      *private_key = ss_->PrivateKey(PMID);
       break;
   }
 }
@@ -943,71 +952,70 @@ void MaidsafeStoreManager::GetPacketSignatureKeys(PacketType packet_type,
   public_key->clear();
   public_key_sig->clear();
   private_key->clear();
-  SessionSingleton *ss = SessionSingleton::getInstance();
   switch (packet_type) {
     case MID:
     case ANMID:
-      *key_id = ss->Id(ANMID);
-      *public_key = ss->PublicKey(ANMID);
-      *public_key_sig = ss->SignedPublicKey(ANMID);
-      *private_key = ss->PrivateKey(ANMID);
+      *key_id = ss_->Id(ANMID);
+      *public_key = ss_->PublicKey(ANMID);
+      *public_key_sig = ss_->SignedPublicKey(ANMID);
+      *private_key = ss_->PrivateKey(ANMID);
       break;
     case SMID:
     case ANSMID:
-      *key_id = ss->Id(ANSMID);
-      *public_key = ss->PublicKey(ANSMID);
-      *public_key_sig = ss->SignedPublicKey(ANSMID);
-      *private_key = ss->PrivateKey(ANSMID);
+      *key_id = ss_->Id(ANSMID);
+      *public_key = ss_->PublicKey(ANSMID);
+      *public_key_sig = ss_->SignedPublicKey(ANSMID);
+      *private_key = ss_->PrivateKey(ANSMID);
       break;
     case TMID:
     case ANTMID:
-      *key_id = ss->Id(ANTMID);
-      *public_key = ss->PublicKey(ANTMID);
-      *public_key_sig = ss->SignedPublicKey(ANTMID);
-      *private_key = ss->PrivateKey(ANTMID);
+      *key_id = ss_->Id(ANTMID);
+      *public_key = ss_->PublicKey(ANTMID);
+      *public_key_sig = ss_->SignedPublicKey(ANTMID);
+      *private_key = ss_->PrivateKey(ANTMID);
       break;
     case MPID:
     case ANMPID:
-      *key_id = ss->Id(ANMPID);
-      *public_key = ss->PublicKey(ANMPID);
-      *public_key_sig = ss->SignedPublicKey(ANMPID);
-      *private_key = ss->PrivateKey(ANMPID);
+      *key_id = ss_->Id(ANMPID);
+      *public_key = ss_->PublicKey(ANMPID);
+      *public_key_sig = ss_->SignedPublicKey(ANMPID);
+      *private_key = ss_->PrivateKey(ANMPID);
       break;
       // TODO(Fraser#5#): 2010-01-29 - Uncomment below once auth.cc fixed (MAID
       //                               should be signed by ANMAID, not self)
-//    case MAID:
-//    case ANMAID:
-//      *key_id = ss->Id(ANMAID);
-//      *public_key = ss->PublicKey(ANMAID);
-//      *public_key_sig = ss->SignedPublicKey(ANMAID);
-//      *private_key = ss->PrivateKey(ANMAID);
-//      break;
-//    case PMID:
-//      *key_id = ss->Id(MAID);
-//      *public_key = ss->PublicKey(MAID);
-//      *public_key_sig = ss->SignedPublicKey(MAID);
-//      *private_key = ss->PrivateKey(MAID);
-//      break;
-    case PMID:
     case MAID:
-      *key_id = ss->Id(MAID);
-      *public_key = ss->PublicKey(MAID);
-      *public_key_sig = ss->SignedPublicKey(MAID);
-      *private_key = ss->PrivateKey(MAID);
+    case ANMAID:
+      *key_id = ss_->Id(ANMAID);
+      *public_key = ss_->PublicKey(ANMAID);
+      *public_key_sig = ss_->SignedPublicKey(ANMAID);
+      *private_key = ss_->PrivateKey(ANMAID);
       break;
+    case PMID:
+      *key_id = ss_->Id(MAID);
+      *public_key = ss_->PublicKey(MAID);
+      *public_key_sig = ss_->SignedPublicKey(MAID);
+      *private_key = ss_->PrivateKey(MAID);
+      break;
+//    case PMID:
+//    case MAID:
+//      *key_id = ss_->Id(MAID);
+//      *public_key = ss_->PublicKey(MAID);
+//      *public_key_sig = ss_->SignedPublicKey(MAID);
+//      *private_key = ss_->PrivateKey(MAID);
+//      break;
     case PD_DIR:
     case MSID:
       GetChunkSignatureKeys(dir_type, msid, key_id, public_key, public_key_sig,
                             private_key);
       break;
-    case BUFFER:
-    case BUFFER_INFO:
-    case BUFFER_MESSAGE:
-      *key_id = ss->Id(MPID);
-      *public_key = ss->PublicKey(MPID);
-      *public_key_sig = ss->SignedPublicKey(MPID);
-      *private_key = ss->PrivateKey(MPID);
-      break;
+//    case BUFFER:
+//    case BUFFER_INFO:
+//    case BUFFER_MESSAGE:
+//      *key_id = ss_->Id(MPID);
+//      *public_key = ss_->PublicKey(MPID);
+//      *public_key_sig = ss_->SignedPublicKey(MPID);
+//      *private_key = ss_->PrivateKey(MPID);
+//      break;
     default:
       break;
   }
@@ -1145,7 +1153,7 @@ int MaidsafeStoreManager::AddBPMessage(
   return result;
 }
 
-void MaidsafeStoreManager::AddToWatchList(const StoreData &store_data) {
+void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
   // TODO(Fraser#5#): 2009-12-21 - Consider repeating this until success or
   //                               some max. no. of failures.
   StoreTask task;
@@ -1447,7 +1455,7 @@ int MaidsafeStoreManager::GetStoreRequests(
   ChunkType chunk_type = store_data.chunk_type;
   fs::path chunk_path(client_chunkstore_->GetChunkPath(store_data.data_name,
                                                        chunk_type, false));
-  if (chunk_path == fs::path(""))
+  if (chunk_path.empty())
     return kChunkNotInChunkstore;
   boost::uint64_t chunk_size = store_data.size;
   std::string chunk_content;
@@ -1644,6 +1652,9 @@ int MaidsafeStoreManager::SendChunkPrep(const StoreData &store_data) {
   float ideal_rtt = 1.0f;
   kad::Contact peer;
   bool local(false);
+  // TODO(Team#5#): 2010-02-17 - Ensure we don't try to store on own vault
+  task.exclude_peers_.push_back(kad::Contact(ss_->Id(PMID), "", 0));
+  // TODO(Team#5#): 2010-02-17 - Ensure we dont try to store twice on same vault
   int peer_result = kad_ops_->GetStorePeer(ideal_rtt, task.exclude_peers_,
                                            &peer, &local);
   // Start subtask
@@ -1708,7 +1719,7 @@ void MaidsafeStoreManager::SendPrepCallback(
     if (!AssessTaskAndOnlineStatus(send_chunk_data->store_data.data_name,
         kStoreChunk)) {
 #ifdef DEBUG
-      printf("In MSM::SendChunkPrep (chunk %s): Task cancelled/completed.\n",
+      printf("In MSM::SendPrepCallback (chunk %s): Task cancelled/completed.\n",
              HexSubstr(send_chunk_data->store_data.data_name).c_str());
 #endif
       return;
@@ -1894,7 +1905,7 @@ void MaidsafeStoreManager::SendContentCallback(
     int overall_result = tasks_handler_.StopSubTask(
         send_chunk_data->store_data.data_name, kStoreChunk, false);
 #ifdef DEBUG
-    printf("In MSM::SendPrepCallback (chunk %s): Error sending content.\n",
+    printf("In MSM::SendContentCallback (chunk %s): Error sending content.\n",
            HexSubstr(send_chunk_data->store_data.data_name).c_str());
 #endif
     if (overall_result == kStoreTaskFinishedPass ||
@@ -2455,7 +2466,7 @@ void MaidsafeStoreManager::SendPacket(boost::shared_ptr<StoreData> store_data) {
       store_data->private_key, crypto::STRING_STRING));
   std::string signed_request = co.AsymSign(co.Hash(store_data->public_key +
       store_data->public_key_signature + store_data->data_name, "",
-      crypto::STRING_STRING, true), "", store_data->private_key,
+      crypto::STRING_STRING, false), "", store_data->private_key,
       crypto::STRING_STRING);
   kad::SignedRequest sr;
   sr.set_signer_id(store_data->key_id);
@@ -2528,7 +2539,7 @@ void MaidsafeStoreManager::DeletePacketFromNet(
         delete_data->private_key, crypto::STRING_STRING));
     std::string signed_request = co.AsymSign(co.Hash(delete_data->public_key +
         delete_data->public_key_signature + delete_data->packet_name,
-        "", crypto::STRING_STRING, true), "", delete_data->private_key,
+        "", crypto::STRING_STRING, false), "", delete_data->private_key,
         crypto::STRING_STRING);
     kad::SignedRequest sr;
     sr.set_signer_id(delete_data->key_id);
@@ -2650,7 +2661,7 @@ void MaidsafeStoreManager::SetLocalVaultOwned(
     const std::string &pub_key,
     const std::string &signed_pub_key,
     const boost::uint32_t &port,
-    const std::string &chunkstore_dir,
+    const std::string &vault_dir,
     const boost::uint64_t &space,
     const SetLocalVaultOwnedFunctor &functor) {
   boost::shared_ptr<SetLocalVaultOwnedCallbackArgs>
@@ -2663,7 +2674,7 @@ void MaidsafeStoreManager::SetLocalVaultOwned(
   request.set_public_key(pub_key);
   request.set_signed_public_key(signed_pub_key);
   request.set_port(port);
-  request.set_chunkstore_dir(chunkstore_dir);
+  request.set_vault_dir(vault_dir);
   request.set_space(space);
   rpcprotocol::Channel channel(&channel_manager_, &transport_handler_,
                                udt_transport_.GetID(), "127.0.0.1", kLocalPort,
@@ -2729,6 +2740,115 @@ bool MaidsafeStoreManager::NotDoneWithUploading() {
   } else {
     return true;
   }
+}
+
+int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string account_name = co.Hash(ss_->Id(PMID) + kAccount, "",
+                                     crypto::STRING_STRING, false);
+
+  // Find the account holders
+  boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
+  int n = kad_ops_->FindKNodes(account_name, &data->contacts);
+  if (n != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::CreateAccount, Kad lookup failed -- error %i\n", n);
+#endif
+    return kFindAccountHoldersError;
+  }
+  if (data->contacts.size() < kKadStoreThreshold) {
+#ifdef DEBUG
+    printf("In MSM::CreateAccount, Kad lookup failed to find %u nodes; "
+           "found %u node(s).\n", kKadStoreThreshold, data->contacts.size());
+#endif
+    return kFindAccountHoldersError;
+  }
+
+  // Create the request
+  AmendAccountRequest request;
+  request.set_amendment_type(AmendAccountRequest::kSpaceOffered);
+  SignedSize *mutable_signed_size = request.mutable_signed_size();
+  mutable_signed_size->set_data_size(space);
+  mutable_signed_size->set_pmid(ss_->Id(PMID));
+  mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(space),
+                                     "", ss_->PrivateKey(PMID),
+                                     crypto::STRING_STRING));
+  mutable_signed_size->set_public_key(ss_->PublicKey(PMID));
+  mutable_signed_size->set_public_key_signature(ss_->SignedPublicKey(PMID));
+  request.set_account_pmid(ss_->Id(PMID));
+  for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
+    AmendAccountData::AmendAccountDataHolder holder(
+        data->contacts.at(i).node_id());
+    data->data_holders.push_back(holder);
+  }
+
+  // lock the mutex here in case RPCs return before we wait on the condition
+  boost::mutex::scoped_lock lock(data->mutex);
+
+  // Send the requests
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &MaidsafeStoreManager::AmendAccountCallback, i, data);
+    client_rpcs_->AmendAccount(data->contacts.at(i), false, trans_id_,
+                               &request,
+                               &data->data_holders.at(i).response,
+                               data->data_holders.at(i).controller.get(),
+                               callback);
+  }
+
+  // wait for the RPCs to return or timeout, or enough positive responses
+  while (data->returned_count < data->contacts.size() &&
+         data->success_count < kKadStoreThreshold) {
+    data->condition.wait(lock);
+  }
+
+  // kill all remaining RPCs before the data object is destroyed
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
+    channel_manager_.CancelPendingRequest(
+      data->data_holders.at(i).controller->req_id());
+  }
+
+  if (data->success_count < kKadStoreThreshold) {
+#ifdef DEBUG
+    printf("In MSM::CreateAccount, not enough positive responses "
+           "received (%d of %d).\n", data->success_count, kKadStoreThreshold);
+#endif
+    return maidsafe::kRequestFailedConsensus;
+  }
+
+  return kSuccess;
+}
+
+void MaidsafeStoreManager::AmendAccountCallback(size_t index,
+    boost::shared_ptr<AmendAccountData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  ++data->returned_count;
+  AmendAccountData::AmendAccountDataHolder &holder =
+      data->data_holders.at(index);
+  if (!holder.response.IsInitialized()) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccountCallback, response %u is uninitialised.\n",
+           index);
+#endif
+  } else if (holder.response.result() != kAck) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccountCallback, response %u has result %i.\n",
+           index, holder.response.result());
+#endif
+  } else if (holder.response.pmid() != holder.node_id) {
+#ifdef DEBUG
+    printf("In MSM::AmendAccountCallback, response %u from %s has PMID "
+           "%s.\n", index, HexSubstr(holder.node_id).c_str(),
+           HexSubstr(holder.response.pmid()).c_str());
+#endif
+    // TODO(Fraser#5#): Send alert to holder.node_id's A/C holders
+  } else {
+    // everything OK
+    ++data->success_count;
+  }
+  data->condition.notify_one();
 }
 
 }  // namespace maidsafe

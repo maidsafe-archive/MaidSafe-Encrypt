@@ -27,16 +27,15 @@
 class ConnectionSettings : public QWidget {
     Q_OBJECT
 
-  public:
+ public:
   explicit ConnectionSettings(QWidget* parent = 0);
   virtual ~ConnectionSettings();
 
   QHash<QString, QString> changedValues_;
 
-  private:
-    Ui::ConnectionSettingsPage ui_;
-
+ private:
+  Ui::ConnectionSettingsPage ui_;
 };
 
-#endif  // CONNECTION_SETTINGS_H_INCLUDED
+#endif  // QT_WIDGETS_CONNECTION_SETTINGS_H_
 

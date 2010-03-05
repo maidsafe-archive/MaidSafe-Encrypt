@@ -63,8 +63,7 @@ SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
       min_chunklet_size_(32),
       compress_(true),
       file_hash_(""),
-      chunk_count_(0),
-      fsys_() {
+      chunk_count_(0) {
 #ifdef DEBUG
 //          printf("version_ = %s\n", version_);
 //          printf("min_chunks_ = %u\n", min_chunks_);
@@ -416,8 +415,7 @@ std::string SelfEncryption::SHA512(const std::string &content) {  // strings
 }
 
 bool SelfEncryption::CreateProcessDirectory(fs::path *processing_path) {
-  *processing_path = fs::path(fsys_.ProcessDir(), fs::native);
-  *processing_path /= file_hash_.substr(0, 8);
+  *processing_path = file_system::TempDir() / file_hash_.substr(0, 8);
   try {
     fs::remove_all(*processing_path);
     fs::create_directories(*processing_path);

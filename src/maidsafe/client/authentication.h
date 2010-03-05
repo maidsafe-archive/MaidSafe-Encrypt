@@ -57,7 +57,7 @@ class Authentication {
         system_packets_result_(kPendingResult) {}
   void Init(boost::shared_ptr<StoreManagerInterface> smgr);
   int GetUserInfo(const std::string &username, const std::string &pin);
-  int GetUserData(const std::string &password, std::string &ser_da);
+  int GetUserData(const std::string &password, std::string *ser_da);
   int CreateUserSysPackets(const std::string &username,
                            const std::string &pin);
   void CreateUserSysPackets(const ReturnCode rc,
