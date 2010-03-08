@@ -10,8 +10,9 @@ enum ItemType {
   DIRECTORY = 4;
   EMPTY_DIRECTORY = 5;
   LINK = 6;
-  NOT_FOR_PROCESSING = 7;
-  UNKNOWN = 8;
+  MAIDSAFE_CHUNK = 7;
+  NOT_FOR_PROCESSING = 8;
+  UNKNOWN = 9;
 }
 
 message PublicContact {

@@ -453,7 +453,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   ss_->SetSessionName(false);
   std::string root_db_key;
-  int res = seh_.GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
+  int res = seh_.GenerateUniqueKey(&root_db_key);
   if (res != 0) {
 #ifdef DEBUG
     printf("In ClientController::CreateUser - Bombing out, no root_db_key.\n");
@@ -493,8 +493,8 @@ bool ClientController::CreateUser(const std::string &username,
     boost::uint32_t current_time = base::get_epoch_time();
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
-    if (kRootSubdir[i][1] == "") {
-      seh_.GenerateUniqueKey(PRIVATE, "", 0, &key);
+    if (kRootSubdir[i][1].empty()) {
+      seh_.GenerateUniqueKey(&key);
     } else {
       key = base::DecodeFromHex(kRootSubdir[i][1]);
     }
@@ -524,8 +524,8 @@ bool ClientController::CreateUser(const std::string &username,
     boost::uint32_t current_time = base::get_epoch_time();
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
-    if (kSharesSubdir[i][1] == "") {  // ie no preassigned key so not public
-      seh_.GenerateUniqueKey(PRIVATE, "", 0, &key);
+    if (kSharesSubdir[i][1].empty()) {  // ie no preassigned key so not public
+      seh_.GenerateUniqueKey(&key);
       res += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
                              ser_mdm, "", key, true);
       seh_.EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
@@ -2544,10 +2544,10 @@ int ClientController::mkdir(const std::string &path) {
 #ifdef DEBUG
   printf("MSID after GetDb: %s\n", msid.c_str());
 #endif
-  msid = "";
+  msid.clear();
   PathDistinction(path, &msid);
   dir_type = GetDirType(path);
-  if (!seh_.MakeElement(path, EMPTY_DIRECTORY, dir_type, msid, "")) {
+  if (!seh_.MakeElement(path, EMPTY_DIRECTORY, "")) {
 #ifdef DEBUG
     printf("\t\tIn CC::mkdir, seh_.MakeElement(%s, EMPTY_DIRECTORY) failed\n",
            path.c_str());
@@ -2559,7 +2559,7 @@ int ClientController::mkdir(const std::string &path) {
   printf("MSID after MakeElement: %s -- type: %i\n", msid.c_str(), dir_type);
 #endif
   fs::path pp(path);
-  msid = "";
+  msid.clear();
   PathDistinction(pp.parent_path().string(), &msid);
   dir_type = GetDirType(pp.parent_path().string());
 #ifdef DEBUG
@@ -2785,7 +2785,7 @@ int ClientController::mknod(const std::string &path) {
   printf("MSID after GetDb: %s\n", msid.c_str());
 #endif
 
-  if (!seh_.MakeElement(path, EMPTY_FILE, dir_type, msid, ""))
+  if (!seh_.MakeElement(path, EMPTY_FILE, ""))
     return -1;
 #ifdef DEBUG
   printf("MSID after MakeElement: %s\n", msid.c_str());
@@ -2901,7 +2901,7 @@ int ClientController::cpdir(const std::string &path,
 
   std::string new_rel_root_ = n_path.parent_path().string();
   std::string new_dir_key_;
-  seh_.GenerateUniqueKey(db_type2, msid2, 0, &new_dir_key_);
+  seh_.GenerateUniqueKey(&new_dir_key_);
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   if (dah_->CopyElement(ms_old_rel_entry_,
                         ms_new_rel_entry_,

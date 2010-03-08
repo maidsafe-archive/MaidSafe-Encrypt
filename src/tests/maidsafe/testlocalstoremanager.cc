@@ -220,7 +220,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_RemoveAllPacketsFromKey) {
 
   // Store packets with same key, different values
   gp_name = co_.Hash("aaa", "", crypto::STRING_STRING, false);
-  for (int i=0; i < 5; ++i) {
+  for (int i = 0; i < 5; ++i) {
     gp.set_value("Generic System Packet Data" +
                   boost::lexical_cast<std::string>(i));
     sm_->StorePacket(gp_name, gp.value(), maidsafe::MID,
@@ -237,7 +237,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_RemoveAllPacketsFromKey) {
   // Remove said packets
   result = maidsafe::kGeneralError;
   sm_->DeletePacket(gp_name,
-                    std::vector<std::string>(), // Empty vector
+                    std::vector<std::string>(),  // Empty vector
                     maidsafe::MID,
                     maidsafe::PRIVATE,
                     "",

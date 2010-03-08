@@ -365,8 +365,8 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
         } else {
 #ifdef DEBUG
           printf("LocalStoreManager::DeletePacket_DeleteFromDb - failure to"
-                 " delete <key, value>(%s, %s).\n", hex_key.substr(0, 10).c_str(),
-                 HexSubstr(values[n]).c_str());
+                 " delete <key, value>(%s, %s).\n",
+                 hex_key.substr(0, 10).c_str(), HexSubstr(values[n]).c_str());
           printf("%d rows affected\n", a);
 #endif
           return kDeletePacketFailure;

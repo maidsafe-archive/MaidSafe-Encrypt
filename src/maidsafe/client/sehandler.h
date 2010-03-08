@@ -27,72 +27,44 @@
 #define MAIDSAFE_CLIENT_SEHANDLER_H_
 
 #include <boost/filesystem.hpp>
-#include <stdint.h>
+#include <boost/thread/condition.hpp>
+#include <gtest/gtest_prod.h>
 
 #include <map>
 #include <string>
 
-#include "maidsafe/client/dataatlashandler.h"
+#include "protobuf/datamaps.pb.h"
 #include "maidsafe/maidsafe.h"
-#include "maidsafe/client/selfencryption.h"
-#include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/client/storemanager.h"
-
 
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
 class ChunkStore;
+class SessionSingleton;
+class StoreManagerInterface;
 
 const int kMaxStoreRetries = 2;
 const int kMaxLoadRetries = 2;
 const int kParallelStores = 1;
 const int kParallelLoads = 3;
 
-struct ChunksData {
-  ChunksData(const DataMap &datamap,
-             const DirType dir_type,
-             const std::string &ms_id,
-             base::callback_func_type cbf)
-                 : dm(datamap),
-                   msid(ms_id),
-                   dir_type(dir_type),
-                   total_chunks(dm.encrypted_chunk_name_size()),
-                   chunks_done(0),
-                   index(-1),
-                   active_chunks(0),
-                   is_calledback(false),
-                   cb(cbf) {}
-  const DataMap dm;
-  const std::string msid;
-  const DirType dir_type;
-  const int total_chunks;
-  int chunks_done;
-  int index;
-  int active_chunks;
-  bool is_calledback;
-  base::callback_func_type cb;
-};
-
 class SEHandler {
  public:
   SEHandler();
+  ~SEHandler() {}
   void Init(boost::shared_ptr<StoreManagerInterface> storem,
             boost::shared_ptr<ChunkStore> client_chunkstore);
-  ~SEHandler() {}
-  ItemType CheckEntry(const std::string &full_entry,
-                      boost::uint64_t *file_size);
   //  Get the hash of the file contents if bool = true, else hash filename
   std::string SHA512(const std::string &full_entry,
                      bool hash_contents);
   int EncryptFile(const std::string &rel_entry,
-                  const DirType dir_type,
+                  const DirType &dir_type,
                   const std::string &msid);
   int EncryptString(const std::string &data,
                     std::string *ser_dm);
   bool ProcessMetaData(const std::string &rel_entry,
-                       const ItemType type,
+                       const ItemType &type,
                        const std::string &hash,
                        const boost::uint64_t &file_size,
                        std::string *ser_mdm);
@@ -100,15 +72,10 @@ class SEHandler {
   int DecryptString(const std::string &ser_dm,
                     std::string *dec_string);
   bool MakeElement(const std::string &rel_entry,
-                   const ItemType type,
-                   const DirType dir_type,
-                   const std::string &msid,
+                   const ItemType &type,
                    const std::string &directory_key);
   //  Gets a unique DHT key for dir's db identifier
-  int GenerateUniqueKey(const DirType dir_type,
-                        const std::string &msid,
-                        const int &attempt,
-                        std::string *key);
+  int GenerateUniqueKey(std::string *key);
   //  Retrieves DHT keys for dir and its parent dir if msid == "" or sets
   //  parent_key to MSID public key if msid != ""
   int GetDirKeys(const std::string &dir_path,
@@ -117,7 +84,7 @@ class SEHandler {
                  std::string *parent_key);
   //  Encrypts dir's db and sets ser_dm_ to encrypted datamap of db
   int EncryptDb(const std::string &dir_path,
-                const DirType dir_type,
+                const DirType &dir_type,
                 const std::string &dir_key,
                 const std::string &msid,
                 const bool &encrypt_dm,
@@ -130,20 +97,15 @@ class SEHandler {
                 const std::string &msid,
                 bool dm_encrypted,
                 bool overwrite);
-  int RemoveKeyFromUptodateDms(const std::string &key);
-  // void Init();
-  // static void finish();
-  // bool AddJob(std::string path, seh_job_type jobtype);
-  // bool ProcessedJob(seh_processed_jobs &job);
-  // int ProcessedJobs() { return processed_job_queue_.size(); }
-  // int PendingJobs();
-  // bool Run() { return run_; }
-  // void SetRun(bool run) { run_ = run; }
-  // int GetThreadCount() { return thread_count_; }
 
  private:
   SEHandler &operator=(const SEHandler &);
   SEHandler(const SEHandler &);
+  FRIEND_TEST(SEHandlerTest, BEH_MAID_Check_Entry);
+  FRIEND_TEST(SEHandlerTest, FUNC_MAID_EncryptAndDecryptPrivateDb);
+  ItemType CheckEntry(const fs::path &full_path,
+                      boost::uint64_t *file_size,
+                      std::string *file_hash);
   //  Encrypt db's datamap for storing on DHT
   int EncryptDm(const std::string &dir_path,
                 const std::string &ser_dm,
@@ -154,15 +116,11 @@ class SEHandler {
                 const std::string &enc_dm,
                 const std::string &msid,
                 std::string *ser_dm);
-//  void WaitForResult(const CallbackResult &cb);
   void StoreChunks(const DataMap &dm,
-                   const DirType dir_type,
+                   const DirType &dir_type,
                    const std::string &msid);
   int LoadChunks(const DataMap &dm);
-  void IterativeLoadChunks(boost::shared_ptr<ChunksData> data);
-  void LoadChunk(const std::string &chunk_name,
-                 int retry,
-                 boost::shared_ptr<ChunksData> data);
+  int RemoveKeyFromUptodateDms(const std::string &key);
   void PacketOpCallback(const int &store_manager_result,
                         boost::mutex *mutex,
                         boost::condition_variable *cond_var,
