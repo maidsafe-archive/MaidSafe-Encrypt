@@ -73,6 +73,9 @@ class ClientController : public QObject {
   inline std::string SessionName() { return maidsafe::SessionSingleton::getInstance()->SessionName(); }
   inline bool SetConnectionStatus(int status) {return maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(status); }
 
+  char DriveLetter();
+  bool Logout();
+
   bool CreatePublicUsername(const std::string &public_username);
   bool CreateUser(const std::string &username,
                   const std::string &pin,
@@ -120,6 +123,7 @@ class ClientController : public QObject {
 
 
   // Messaging
+  bool GetMessages();
   void StartCheckingMessages();
   void StopCheckingMessages();
   bool sendInstantMessage(const QString& txt,

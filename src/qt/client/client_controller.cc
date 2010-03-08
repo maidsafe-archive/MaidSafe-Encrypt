@@ -382,12 +382,24 @@ bool ClientController::PollVaultInfo(QString *chunkstore,
   return false;
 }
 
+bool ClientController::Logout() {
+  return maidsafe::ClientController::getInstance()->Logout();
+}
+
+char ClientController::DriveLetter(){
+  return maidsafe::ClientController::getInstance()->DriveLetter();
+}
+
 bool ClientController::IsLocalVaultOwned() {
   // For local version returns always false. Use the return true to check for
   // other behaviour.
 
   //  return true;
   return maidsafe::ClientController::getInstance()->IsLocalVaultOwned();
+}
+
+bool ClientController::GetMessages(){
+  return maidsafe::ClientController::getInstance()->GetMessages();
 }
 
 void ClientController::checkForMessages() {

@@ -17,8 +17,6 @@
 
 #include "qt/client/worker_thread.h"
 
-#include "maidsafe/client/clientcontroller.h"
-
 // Worker thread for sending instant messages
 /*!
     sending an instant message over the network is blocking and can take
