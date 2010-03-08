@@ -57,6 +57,8 @@ bool SessionSingleton::ResetSession() {
   SetPassword("");
   SetMidRid(0);
   SetSmidRid(0);
+  SetTmidContent("");
+  SetSmidTmidContent("");
   SetSessionName(true);
   SetRootDbKey("");
   std::set<std::string> empty_set;
