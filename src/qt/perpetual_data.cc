@@ -26,7 +26,7 @@
 #include <string>
 
 // core
-#include "maidsafe/client/sessionsingleton.h"
+#include "qt/client/client_controller.h"
 
 // local
 #include "qt/widgets/login.h"
@@ -448,7 +448,7 @@ void PerpetualData::onAbout() {
 }
 
 void PerpetualData::onMyFiles() {
-  if (maidsafe::SessionSingleton::getInstance()->SessionName().empty())
+  if (ClientController::instance()->SessionName().empty())
     return;
 
   qDebug() << "PerpetualData::onMyFiles()";
@@ -457,7 +457,7 @@ void PerpetualData::onMyFiles() {
 }
 
 void PerpetualData::onPrivateShares() {
-  if (maidsafe::SessionSingleton::getInstance()->SessionName().empty())
+  if (ClientController::instance()->SessionName().empty())
     return;
 
   qDebug() << "PerpetualData::onPrivateShares()";
@@ -468,10 +468,10 @@ void PerpetualData::onPrivateShares() {
 void PerpetualData::onGoOffline(bool b) {
   if (b) {
     SystemTrayIcon::instance()->ChangeStatus(1);
-    maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(1);
+    ClientController::instance()->SetConnectionStatus(1);
   } else {
     SystemTrayIcon::instance()->ChangeStatus(0);
-    maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(0);
+    ClientController::instance()->SetConnectionStatus(0);
   }
 }
 
@@ -518,7 +518,7 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
   boost::progress_timer t;
   if (type == ClientController::TEXT) {
     std::list<std::string> theList;
-    maidsafe::SessionSingleton::getInstance()->ConversationList(&theList);
+    ClientController::instance()->ConversationList(&theList);
 
     QList<QString> messageList;
     foreach(std::string theConv, theList) {
@@ -574,7 +574,7 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
       // Save
 #ifdef __WIN32__
       root = QString("%1:\\My Files").
-             arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+             arg(ClientController::instance()->WinDrive());
 #else
       root = QString::fromStdString(file_system::MaidsafeFuseDir(
           maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
@@ -665,11 +665,11 @@ void PerpetualData::onDirectoryEntered(const QString& dir) {
   QString root;
 
 #ifdef __WIN32__
-  root = QString(maidsafe::SessionSingleton::getInstance()->WinDrive());
+  root = QString(ClientController::instance()->WinDrive());
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString("%1:\\My Files").
-           arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+         arg(ClientController::instance()->WinDrive());
     qfd_->setDirectory(root);
   }
 #else

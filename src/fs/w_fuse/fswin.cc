@@ -25,6 +25,7 @@ THE SOFTWARE.
 #include "fs/w_fuse/fswin.h"
 
 #include <maidsafe/utils.h>
+#include <map>
 
 #include "maidsafe/client/clientcontroller.h"
 

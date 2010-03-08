@@ -12,8 +12,8 @@
  *      Author: Stephen
  */
 
-#ifndef CHECK_FOR_MESSAGES_THREAD_H_INCLUDED
-#define CHECK_FOR_MESSAGES_THREAD_H_INCLUDED
+#ifndef QT_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
+#define QT_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
 
 #include "qt/client/worker_thread.h"
 #include "maidsafe/client/clientcontroller.h"
@@ -21,11 +21,10 @@
 class CheckForMessagesThread : public WorkerThread {
   Q_OBJECT
  public:
-  CheckForMessagesThread(QObject* parent = 0);
+  explicit CheckForMessagesThread(QObject* parent = 0);
   virtual ~CheckForMessagesThread();
 
   virtual void run();
-
 };
 
-#endif // CHECK_FOR_MESSAGES_THREAD_H_INCLUDED
+#endif  // QT_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_

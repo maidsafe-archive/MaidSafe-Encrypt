@@ -241,7 +241,7 @@ void Contacts::onViewProfileClicked() {
 
   QListWidgetItem *contact = contacts.front();
   maidsafe::mi_contact mic;
-  int n = maidsafe::SessionSingleton::getInstance()->GetContactInfo(
+  int n = ClientController::instance()->GetContactInfo(
           contact->text().toStdString(), &mic);
 
   if (n != 0) {
@@ -320,7 +320,7 @@ void Contacts::onSendMessageClicked() {
                                        &ok);*/
 
     std::list<std::string> theList;
-    maidsafe::SessionSingleton::getInstance()->ConversationList(&theList);
+    ClientController::instance()->ConversationList(&theList);
 
     QList<QString> messageList;
     foreach(std::string theConv, theList) {
@@ -387,7 +387,7 @@ void Contacts::onFileSendClicked() {
 
 #ifdef __WIN32__
   root = QString("%1:\\My Files").
-         arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+         arg(ClientController::instance()->WinDrive());
 
 #else
   root = QString::fromStdString(file_system::MaidsafeFuseDir(
@@ -509,7 +509,7 @@ void Contacts::onConfirmedContact(const QString &name) {
 
 //  QMainWindow::statusBar()->showMessage(tr("user : %1 confirmed").arg(name));
 
-//TODO Stephen change status bar from here
+// TODO(Stephen): change status bar from here
 
   foreach(QListWidgetItem* item, items) {
     if (item->text() == name) {
@@ -635,11 +635,11 @@ void Contacts::onDirectoryEntered(const QString& dir) {
   QString root;
 
 #ifdef __WIN32__
-  root = QString(maidsafe::SessionSingleton::getInstance()->WinDrive());
+  root = QString(ClientController::instance()->WinDrive());
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString("%1:\\My Files").
-         arg(maidsafe::SessionSingleton::getInstance()->WinDrive());
+         arg(ClientController::instance()->WinDrive());
     qfd->setDirectory(root);
   }
 #else

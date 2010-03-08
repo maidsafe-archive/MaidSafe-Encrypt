@@ -1278,6 +1278,12 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
     data->condition.wait(lock);
   }
 
+  // kill all remaining RPCs before the data object is destroyed
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
+    channel_manager_.CancelPendingRequest(
+      data->data_holders.at(i).controller->req_id());
+  }
+
   if (data->success_count < kKadStoreThreshold) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, not enough positive responses "
@@ -1321,13 +1327,13 @@ void PDVault::AmendAccountCallback(
 
 void PDVault::UpdateSpaceOffered() {
   // TODO(Team#) replace or make thread-safe
-  int n = 1;
+  int n(1), result;
   // boost::mutex::scoped_lock lock(vault_status_mutex_);
   while (vault_status_ == kVaultStarted &&
-         0 != AmendAccount(vault_chunkstore_.available_space())) {
+         0 != (result = AmendAccount(vault_chunkstore_.available_space()))) {
 #ifdef DEBUG
-      printf("PDVault::UpdateSpaceOffered (%s) failed, trying again...\n",
-             HexSubstr(pmid_).c_str());
+      printf("PDVault::UpdateSpaceOffered (%s) failed (%d), "
+             "trying again...\n", HexSubstr(pmid_).c_str(), result);
 #endif
     ++n;
     // vault_status_mutex_.unlock();
@@ -1339,6 +1345,9 @@ void PDVault::UpdateSpaceOffered() {
     printf("In PDVault::UpdateSpaceOffered (%s), set space offered to %llu "
            "on attempt #%d.\n", HexSubstr(pmid_).c_str(),
            vault_chunkstore_.available_space(), n);
+  else if (result == 0)
+    printf("In PDVault::UpdateSpaceOffered (%s), amendment successfull but "
+           "vault now offline.\n", HexSubstr(pmid_).c_str());
   else
     printf("In PDVault::UpdateSpaceOffered (%s), vault offline, giving up "
            "after %d attempt(s).\n", HexSubstr(pmid_).c_str(), n);

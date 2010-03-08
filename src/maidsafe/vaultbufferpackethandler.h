@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_VAULT_VAULTBUFFERPACKETHANDLER_H_
-#define MAIDSAFE_VAULT_VAULTBUFFERPACKETHANDLER_H_
+#ifndef MAIDSAFE_VAULTBUFFERPACKETHANDLER_H_
+#define MAIDSAFE_VAULTBUFFERPACKETHANDLER_H_
 
 #include <maidsafe/crypto.h>
 #include <maidsafe/utils.h>
@@ -73,4 +73,4 @@ class VaultBufferPacketHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_VAULT_VAULTBUFFERPACKETHANDLER_H_
+#endif  // MAIDSAFE_VAULTBUFFERPACKETHANDLER_H_

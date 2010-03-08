@@ -342,14 +342,15 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
     return kStoreManagerError;
   }
 
-  int deleted(values.size());
+  int deleted(values.size()), a(0);
   if (0 == values.size()) {
     try {
       std::string s("delete from network where key='" + hex_key + "';");
-      int a = db_.execDML(s.c_str());
+      a = db_.execDML(s.c_str());
     } catch(CppSQLite3Exception &e2) {  // NOLINT (Fraser)
 #ifdef DEBUG
       printf("Error(%i): %s\n", e2.errorCode(),  e2.errorMessage());
+      printf("%d rows affected\n", a);
 #endif
       return kStoreManagerError;
     }
@@ -359,7 +360,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
         std::string hex_value(base::EncodeToHex(values[n]));
         std::string s("delete from network where key='" + hex_key + "' "
                       "and value='" + hex_value + "';");
-        int a = db_.execDML(s.c_str());
+        a = db_.execDML(s.c_str());
         if (a == 1) {
           --deleted;
         } else {
@@ -852,7 +853,7 @@ std::string LocalStoreManager::CreateMessage(const std::string &message,
   co.set_symm_algorithm(crypto::AES_256);
   int iter = base::random_32bit_uinteger() % 1000 +1;
   std::string aes_key = co.SecurePassword(co.Hash(message, "",
-                        crypto::STRING_STRING, true), iter);
+                        crypto::STRING_STRING, false), iter);
   bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", rec_public_key,
                                     crypto::STRING_STRING));
   bpm.set_aesenc_message(co.SymmEncrypt(message, "", crypto::STRING_STRING,

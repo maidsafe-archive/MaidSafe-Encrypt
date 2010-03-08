@@ -28,15 +28,15 @@
 #include <maidsafe/crypto.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/transportudt.h>
+
 #include "fs/filesystem.h"
-#include "maidsafe/vault/vaultbufferpackethandler.h"
+#include "maidsafe/vaultbufferpackethandler.h"
+#include "maidsafe/vault/chunkinfohandler.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 #include "tests/maidsafe/mockvaultservicelogic.h"
-
-#include "maidsafe/vault/chunkinfohandler.h"
 
 namespace fs = boost::filesystem;
 
@@ -2677,7 +2677,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   bpm.set_type(maidsafe::INSTANT_MSG);
   boost::uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
   std::string aes_key = co.SecurePassword(co.Hash(msg, "",
-    crypto::STRING_STRING, true), iter);
+    crypto::STRING_STRING, false), iter);
   bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", pub_key,
     crypto::STRING_STRING));
   bpm.set_aesenc_message(co.SymmEncrypt(msg, "", crypto::STRING_STRING,

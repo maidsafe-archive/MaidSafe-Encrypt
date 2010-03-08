@@ -22,6 +22,7 @@
 
 #include <boost/filesystem.hpp>
 
+#include "fs/filesystem.h"
 #include "qt/client/client_controller.h"
 
 // Must be at least a 2 digit number
@@ -75,9 +76,10 @@ void CreateLocalVaultPage::cleanupPage() {
           .arg(QString(availableSpace_.c_str())));
   ui_.labelSpace->setText(qs);
   ui_.lineDirectory->setReadOnly(true);
-  ui_.lineSpace->setText(tr("1024"));
+  ui_.lineSpace->setText(tr("10240"));
   ui_.linePort->setText(tr("0"));
-  ui_.lineDirectory->setText(tr(""));
+  ui_.lineDirectory->setText(QString::fromStdString(
+      file_system::ApplicationDataDir().string()));
 }
 
 bool CreateLocalVaultPage::isComplete() const {

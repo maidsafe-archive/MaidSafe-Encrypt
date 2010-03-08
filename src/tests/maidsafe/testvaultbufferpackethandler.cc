@@ -21,7 +21,7 @@
 * ============================================================================
 */
 #include <gtest/gtest.h>
-#include "maidsafe/vault/vaultbufferpackethandler.h"
+#include "maidsafe/vaultbufferpackethandler.h"
 
 class VaultBufferPacketHandlerTest : public testing::Test {
  public:

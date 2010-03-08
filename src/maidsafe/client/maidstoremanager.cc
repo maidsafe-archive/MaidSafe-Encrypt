@@ -847,7 +847,7 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
     } else {
       // cancel outstanding RPCs
       channel_manager_.
-          DeletePendingRequest(holder.controller->req_id());
+          CancelPendingRequest(holder.controller->req_id());
     }
   }
 
@@ -2312,7 +2312,7 @@ int MaidsafeStoreManager::FindAndLoadChunk(
     for (int m = 0; m < holder_count; ++m) {
       if (chunk_holders.at(m)->status == kContactable) {
         if (chunk_holders.at(m)->controller.get() != NULL) {
-          channel_manager_.DeletePendingRequest(chunk_holders.at(m)->
+          channel_manager_.CancelPendingRequest(chunk_holders.at(m)->
               controller->req_id());
         }
       }
@@ -2802,6 +2802,12 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   while (data->returned_count < data->contacts.size() &&
          data->success_count < kKadStoreThreshold) {
     data->condition.wait(lock);
+  }
+
+  // kill all remaining RPCs before the data object is destroyed
+  for (size_t i = 0; i < data->contacts.size(); ++i) {
+    channel_manager_.CancelPendingRequest(
+      data->data_holders.at(i).controller->req_id());
   }
 
   if (data->success_count < kKadStoreThreshold) {

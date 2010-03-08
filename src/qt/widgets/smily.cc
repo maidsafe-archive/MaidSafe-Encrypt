@@ -12,23 +12,22 @@
  *      Author: Stephen Alexander
  */
 
- #include "qt/widgets/smily.h"
+#include "qt/widgets/smily.h"
 
- Smily::Smily(QWidget* parent){
-    setWindowFlags( Qt::Popup);
-      ui_.setupUi(this);
-      adjustSize();
+Smily::Smily(QWidget* parent) {
+  setWindowFlags(Qt::Popup);
+  ui_.setupUi(this);
+  adjustSize();
 
-    connect(ui_.tableWidget, SIGNAL(cellDoubleClicked(int, int)),
-         this,                 SLOT(onCellDoubleClicked(int, int)));
- }
+  connect(ui_.tableWidget, SIGNAL(cellDoubleClicked(int, int)),
+          this,            SLOT(onCellDoubleClicked(int, int)));
+}
 
- Smily::~Smily(){
- }
+Smily::~Smily() { }
 
- void Smily::onCellDoubleClicked(int row, int column){
-   emit smilyChosen(row,column);
-    this->close();
- }
+void Smily::onCellDoubleClicked(int row, int column) {
+  emit smilyChosen(row, column);
+  this->close();
+}
 
 

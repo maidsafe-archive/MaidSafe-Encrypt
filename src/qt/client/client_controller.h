@@ -22,19 +22,19 @@
 #include <QDir>
 
 #include <list>
+#include <set>
 #include <string>
 
 // core
 #include "maidsafe/client/clientinterface.h"
 #include "maidsafe/client/clientcontroller.h"
+#include "maidsafe/client/contacts.h"
 
 // local
-#include "qt/client/share.h"
+#include "qt/client/contact.h"
 #include "qt/client/profile.h"
 #include "qt/client/presence.h"
-#include "qt/client/contact.h"
-
-
+#include "qt/client/share.h"
 
 // Wrapper for maidsafe::ClientController
 /*!
@@ -65,6 +65,26 @@ class ClientController : public QObject {
 
   QString publicUsername() const;
 
+  inline bool SetWinDrive(char win_drive) {
+    return maidsafe::SessionSingleton::getInstance()->SetWinDrive(win_drive);
+  }
+  inline char WinDrive() {
+    return maidsafe::SessionSingleton::getInstance()->WinDrive();
+  }
+  inline int Mounted() {
+    return maidsafe::SessionSingleton::getInstance()->Mounted();
+  }
+  inline bool SetMounted(int mounted) {
+    return maidsafe::SessionSingleton::getInstance()->SetMounted(mounted);
+  }
+  inline std::string SessionName() {
+    return maidsafe::SessionSingleton::getInstance()->SessionName();
+  }
+  inline bool SetConnectionStatus(int status) {
+    return maidsafe::SessionSingleton::getInstance()->
+           SetConnectionStatus(status);
+  }
+
   bool CreatePublicUsername(const std::string &public_username);
   bool CreateUser(const std::string &username,
                   const std::string &pin,
@@ -78,6 +98,17 @@ class ClientController : public QObject {
                      const std::set<std::string> &readonlys);
   bool ValidateUser(const std::string &password);
 
+
+  ///////////////////////////////
+  //// Conversation Handling ////
+  ///////////////////////////////
+
+  int ConversationList(std::list<std::string> *conversations);
+  int AddConversation(const std::string &id);
+  int RemoveConversation(const std::string &id);
+  int ConversationExits(const std::string &id);
+  void ClearConversations();
+
   // Settings
   bool ChangeUsername(const std::string &new_username);
   bool ChangePin(const std::string &new_pin);
@@ -88,7 +119,7 @@ class ClientController : public QObject {
   QStringList contactsNames() const;
   int addContact(const QString& name);
   bool removeContact(const QString& name);
-
+  int GetContactInfo(const std::string &pub_name, maidsafe::mi_contact *mic);
 
   // Shares
   bool createShare(const QString& shareName,
