@@ -29,7 +29,7 @@ PersonalSettings::PersonalSettings(QWidget* parent) : init_(false) {
           this,           SLOT(void onPicChangeClicked(bool)));
 }
 
-PersonalSettings::~PersonalSettings() {}
+PersonalSettings::~PersonalSettings() { }
 
 void PersonalSettings::setActive(bool b) {
   if (b && !init_) {
@@ -39,19 +39,18 @@ void PersonalSettings::setActive(bool b) {
   }
 }
 
-void PersonalSettings::reset() {
+void PersonalSettings::reset() { }
+
+void PersonalSettings::onUsernameTextEdit(const QString& text) {
+  changedValues_.insert("username", text);
 }
 
-void PersonalSettings::onUsernameTextEdit(const QString& text){
-   changedValues_.insert("username", text);
+void PersonalSettings::onMessageTextEdit(const QString& text) {
+  changedValues_.insert("message", text);
 }
 
-void PersonalSettings::onMessageTextEdit(const QString& text){
-   changedValues_.insert("message", text);
-}
-
-void PersonalSettings::onPicChangeClicked(bool b){
-   changedValues_.insert("changepic", "");
+void PersonalSettings::onPicChangeClicked(bool b) {
+  changedValues_.insert("changepic", "");
 }
 
 

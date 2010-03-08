@@ -372,23 +372,24 @@ void VaultServiceLogic::AmendRemoteAccountStageThree(
   ReturnCode result(kSuccess);
   if (!holder->response.IsInitialized()) {
 #ifdef DEBUG
-    printf("In VSL::AmendRemoteAccountStageThree (%s), response %u "
-           "is uninitialised.\n", HexSubstr(pmid_).c_str(), index);
+    printf("In VSL::AmendRemoteAccountStageThree (%s), response %u from %s "
+           "is uninitialised.\n", HexSubstr(pmid_).c_str(), index,
+           HexSubstr(holder->node_id).c_str());
 #endif
     result = kAmendAccountResponseUninitialised;
   }
   if (result == kSuccess && holder->response.result() != kAck) {
 #ifdef DEBUG
-    printf("In VSL::AmendRemoteAccountStageThree (%s), response %u "
-           "has result %i.\n", HexSubstr(pmid_).c_str(), index,
-           holder->response.result());
+    printf("In VSL::AmendRemoteAccountStageThree (%s), response %u from %s "
+           "is negative (%i).\n", HexSubstr(pmid_).c_str(), index,
+           HexSubstr(holder->node_id).c_str(), holder->response.result());
 #endif
     result = kAmendAccountResponseFailed;
   }
   if (result == kSuccess && holder->response.pmid() != holder->node_id) {
 #ifdef DEBUG
-    printf("In VSL::AmendRemoteAccountStageThree (%s), response %u "
-           "from %s has pmid %s.\n", HexSubstr(pmid_).c_str(), index,
+    printf("In VSL::AmendRemoteAccountStageThree (%s), response %u from %s "
+           "has PMID %s.\n", HexSubstr(pmid_).c_str(), index,
            HexSubstr(holder->node_id).c_str(),
            HexSubstr(holder->response.pmid()).c_str());
 #endif

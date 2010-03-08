@@ -12,8 +12,8 @@
  *      Author: Stephen Alexander
  */
 
-#ifndef SEND_INSTANT_MESSAGE_THREAD_H_INCLUDED
-#define SEND_INSTANT_MESSAGE_THREAD_H_INCLUDED
+#ifndef QT_CLIENT_SEND_INSTANT_MESSAGE_THREAD_H_
+#define QT_CLIENT_SEND_INSTANT_MESSAGE_THREAD_H_
 
 #include "qt/client/worker_thread.h"
 
@@ -42,4 +42,4 @@ class SendInstantMessageThread : public WorkerThread {
     void sendMessageCompleted(bool, const QString&);
 };
 
-#endif // SEND_INSTANT_MESSAGE_THREAD_H_INCLUDED
+#endif  // QT_CLIENT_SEND_INSTANT_MESSAGE_THREAD_H_

@@ -22,6 +22,7 @@
 #include <QDir>
 
 #include <list>
+#include <set>
 #include <string>
 
 // core
@@ -30,12 +31,10 @@
 #include "maidsafe/client/contacts.h"
 
 // local
-#include "qt/client/share.h"
+#include "qt/client/contact.h"
 #include "qt/client/profile.h"
 #include "qt/client/presence.h"
-#include "qt/client/contact.h"
-
-
+#include "qt/client/share.h"
 
 // Wrapper for maidsafe::ClientController
 /*!
@@ -66,12 +65,25 @@ class ClientController : public QObject {
 
   QString publicUsername() const;
 
-  inline bool SetWinDrive(char win_drive) { return maidsafe::SessionSingleton::getInstance()->SetWinDrive(win_drive); }
-  inline char WinDrive() { return maidsafe::SessionSingleton::getInstance()->WinDrive(); }
-  inline int Mounted() { return maidsafe::SessionSingleton::getInstance()->Mounted(); }
-  inline bool SetMounted(int mounted) { return maidsafe::SessionSingleton::getInstance()->SetMounted(mounted); }
-  inline std::string SessionName() { return maidsafe::SessionSingleton::getInstance()->SessionName(); }
-  inline bool SetConnectionStatus(int status) {return maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(status); }
+  inline bool SetWinDrive(char win_drive) {
+    return maidsafe::SessionSingleton::getInstance()->SetWinDrive(win_drive);
+  }
+  inline char WinDrive() {
+    return maidsafe::SessionSingleton::getInstance()->WinDrive();
+  }
+  inline int Mounted() {
+    return maidsafe::SessionSingleton::getInstance()->Mounted();
+  }
+  inline bool SetMounted(int mounted) {
+    return maidsafe::SessionSingleton::getInstance()->SetMounted(mounted);
+  }
+  inline std::string SessionName() {
+    return maidsafe::SessionSingleton::getInstance()->SessionName();
+  }
+  inline bool SetConnectionStatus(int status) {
+    return maidsafe::SessionSingleton::getInstance()->
+           SetConnectionStatus(status);
+  }
 
   char DriveLetter();
   bool Logout();

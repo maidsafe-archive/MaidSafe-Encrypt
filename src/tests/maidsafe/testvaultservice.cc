@@ -28,15 +28,15 @@
 #include <maidsafe/crypto.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/transportudt.h>
+
 #include "fs/filesystem.h"
-#include "maidsafe/vault/vaultbufferpackethandler.h"
+#include "maidsafe/vaultbufferpackethandler.h"
+#include "maidsafe/vault/chunkinfohandler.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 #include "tests/maidsafe/mockvaultservicelogic.h"
-
-#include "maidsafe/vault/chunkinfohandler.h"
 
 namespace fs = boost::filesystem;
 

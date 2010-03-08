@@ -311,6 +311,7 @@ static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNetworkSize = kKadStoreThreshold + 2;
 static const int kNumOfClients = 2;
 static const int kNumOfTestChunks = kNetworkSize * 1.5;
+// Note: StoreAndGetChunks only works for small K due to resource problems
 
 class PDVaultTest : public testing::Test {
  protected:
@@ -528,7 +529,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
         if (chunk_count >= kNumOfClients) {
           stored_chunks.insert((*it).first);
         } else {
-          printf("Only %d chunks (%s) stored so far.\n", chunk_count,
+          printf("Only %d copies of %s stored so far.\n", chunk_count,
                  HexSubstr((*it).first).c_str());
         }
       }
