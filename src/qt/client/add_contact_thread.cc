@@ -31,10 +31,10 @@ AddContactThread::~AddContactThread() { }
 
 void AddContactThread::run() {
   qDebug() << "AddContactThread::run";
-#ifdef DEBUG
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
-  qDebug() << "AddContactThread::run - After SLEEP";
-#endif
+//  #ifdef DEBUG
+//    boost::this_thread::sleep(boost::posix_time::seconds(2));
+//    qDebug() << "AddContactThread::run - After SLEEP";
+//  #endif
   const int n = ClientController::instance()->addContact(publicUsername_);
 
   emit completed(n, publicUsername_);

@@ -86,6 +86,13 @@ bool ChunkStore::Init() {
 #endif
     set_is_initialised(false);
   }
+  for (int i = 0; i < kDefaultChunkCount; ++i) {
+    std::string key = base::DecodeFromHex(kDefaultChunks[i][0]);
+    std::string value = base::DecodeFromHex(kDefaultChunks[i][1]);
+    ChunkType type = GetChunkType(key, value, false);
+    fs::path chunk_path(GetChunkPath(key, type, true));
+    StoreChunkFunction(key, value, chunk_path, type);
+  }
   return is_initialised();
 }
 
