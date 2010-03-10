@@ -105,7 +105,7 @@ class CBPHandlerTest : public testing::Test {
                      cb_() {}
  protected:
   virtual void SetUp() {
-    keys.GenerateKeys(4096);
+    keys.GenerateKeys(maidsafe::kRsaKeySize);
     try {
       boost::filesystem::create_directories(test_dir_);
     }
@@ -179,7 +179,7 @@ class CBPHandlerTest : public testing::Test {
 
 TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   std::string owner_pubkey(keys.public_key()),
               owner_privkey(keys.private_key());
   BPCallback cb;
@@ -205,7 +205,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
   boost::this_thread::sleep(boost::posix_time::seconds(30));
   keys.ClearKeys();
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   printf("Step 2\n");
 
   std::string sender_id("user1");

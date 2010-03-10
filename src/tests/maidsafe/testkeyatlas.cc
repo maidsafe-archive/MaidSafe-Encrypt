@@ -28,6 +28,7 @@
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/utils.h>
 #include "maidsafe/client/keyatlas.h"
+#include "maidsafe/client/packetfactory.h"
 
 namespace fs = boost::filesystem;
 
@@ -129,7 +130,7 @@ TEST_F(KeyAtlasTest, FUNC_MAID_GetSignedPublicKey) {
   std::string pri_keys[11];
   for (int i = 0; i < 11; i++) {
     crypto::RsaKeyPair rskp;
-    rskp.GenerateKeys(4096);
+    rskp.GenerateKeys(maidsafe::kRsaKeySize);
     std::string package_id = "Package ID " + base::itos(i);
     pri_keys[i] = rskp.private_key();
     pub_keys[i] = rskp.public_key();
@@ -149,7 +150,7 @@ TEST_F(KeyAtlasTest, FUNC_MAID_GetSignedPublicKey) {
   // add a package which already has a public key signature
   std::string pub_key, pri_key, pub_key_sig = "Signature";
   crypto::RsaKeyPair rskp;
-  rskp.GenerateKeys(4096);
+  rskp.GenerateKeys(maidsafe::kRsaKeySize);
   std::string package_id = "Package ID 11";
   pri_key = rskp.private_key();
   pub_key = rskp.public_key();

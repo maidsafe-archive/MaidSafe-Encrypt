@@ -29,10 +29,10 @@ SaveSessionThread::~SaveSessionThread() { }
 
 void SaveSessionThread::run() {
   qDebug() << "SaveSessionThread::run";
-#ifdef DEBUG
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
-  qDebug() << "SaveSessionThread::run - After SLEEP";
-#endif
+//  #ifdef DEBUG
+//    boost::this_thread::sleep(boost::posix_time::seconds(2));
+//    qDebug() << "SaveSessionThread::run - After SLEEP";
+//  #endif
   const int n = ClientController::instance()->SaveSession();
 
   emit completed(n);

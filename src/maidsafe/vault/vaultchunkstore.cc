@@ -183,9 +183,10 @@ int VaultChunkStore::FreeCacheSpace(const boost::uint64_t &space_to_clear) {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
     maidsafe::ChunkInfo chunk;
     boost::uint64_t cleared_so_far(0);
-    while (cleared_so_far < space_to_clear) {
-      maidsafe::chunk_set_by_last_checked::iterator itr =
-          chunkstore_set_.get<1>().begin();
+    maidsafe::chunk_set_by_last_checked::iterator itr =
+        chunkstore_set_.get<1>().begin();
+    while (cleared_so_far < space_to_clear &&
+        itr != chunkstore_set_.get<1>().end()) {
       chunk = *itr;
       if (chunk.type_ & maidsafe::kCache) {
         fs::path p(GetChunkPath(chunk.non_hex_name_, chunk.type_, false));
@@ -193,11 +194,12 @@ int VaultChunkStore::FreeCacheSpace(const boost::uint64_t &space_to_clear) {
           fs::remove_all(p);
         }
         catch(const std::exception &e) {}
-        maidsafe::chunk_set_by_non_hex_name::iterator name_itr =
-            chunkstore_set_.get<0>().find(chunk.non_hex_name_);
-        chunkstore_set_.erase(name_itr);
+        chunkstore_set_.get<1>().erase(itr);
+        --itr;
         space_used_by_cache_ -= chunk.size_;
         cleared_so_far += chunk.size_;
+      } else {
+        ++itr;
       }
     }
   }

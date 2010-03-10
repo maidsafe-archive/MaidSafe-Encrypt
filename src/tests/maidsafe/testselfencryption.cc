@@ -32,9 +32,10 @@
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
+#include "maidsafe/client/dataiohandler.h"
+#include "maidsafe/client/packetfactory.h"
 #include "maidsafe/client/selfencryption.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/client/dataiohandler.h"
 #include "protobuf/datamaps.pb.h"
 
 namespace fs = boost::filesystem;
@@ -767,7 +768,7 @@ TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptStringSerDA) {
   for (unsigned int i = 0; i < types.size(); ++i) {
     Key *k = da.add_keys();
     keys.ClearKeys();
-    keys.GenerateKeys(4096);
+    keys.GenerateKeys(kRsaKeySize);
     k->set_type(types[i]);
     k->set_private_key(keys.private_key());
     k->set_public_key(keys.public_key());
@@ -810,7 +811,7 @@ TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptFileSerDA) {
   for (unsigned int i = 0; i < types.size(); ++i) {
     Key *k = da.add_keys();
     keys.ClearKeys();
-    keys.GenerateKeys(4096);
+    keys.GenerateKeys(kRsaKeySize);
     k->set_type(types[i]);
     k->set_private_key(keys.private_key());
     k->set_public_key(keys.public_key());
