@@ -613,8 +613,15 @@ bool ClientController::ValidateUser(const std::string &password) {
   file_system::FuseMountPoint(ss_->SessionName());
 
   // Do BP operations if need be
-  if (ss_->PublicUsername() == "") {
-    return true;
+  if (ss_->PublicUsername() != "") {
+    std::vector<std::string> info;
+    if (GetInfo("", &info) != 0) {
+#ifdef DEBUG
+      printf("ClientController::ValidateUser - Cannot get BP Info.\n");
+#endif
+      ss_->ResetSession();
+      return false;
+    }
   }
 
 //  // CHANGE CONNECTION STATUS
