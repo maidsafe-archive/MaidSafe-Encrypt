@@ -60,8 +60,7 @@ class UserSettings : public QDialog {
     CONNECTION,
     FILE_TRANSFER,
     SECURITY,
-    VAULT_INFO,
-    PROFILE
+    VAULT_INFO
     };
 
   void setState(State state);

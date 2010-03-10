@@ -26,7 +26,7 @@ PersonalSettings::PersonalSettings(QWidget* parent) : init_(false) {
           this,           SLOT(onMessageTextEdit(const QString&)));
 
     connect(ui_.pushButtonPicture, SIGNAL(clicked(bool)),
-          this,           SLOT(void onPicChangeClicked(bool)));
+          this,           SLOT(onPicChangeClicked(bool)));
 }
 
 PersonalSettings::~PersonalSettings() { }
