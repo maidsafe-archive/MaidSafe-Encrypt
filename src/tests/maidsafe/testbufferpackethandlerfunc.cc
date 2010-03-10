@@ -63,16 +63,19 @@ class BPCallback {
   void BPOperation_CB(const maidsafe::ReturnCode &res) {
     result = res;
   }
-  void BPGetMsgs_CB(const maidsafe::ReturnCode &res,
-    const std::list<maidsafe::ValidatedBufferPacketMessage> &rec_msgs) {
+  void BPGetMsgs_CB(
+      const maidsafe::ReturnCode &res,
+      const std::list<maidsafe::ValidatedBufferPacketMessage> &rec_msgs) {
     result = res;
     msgs = rec_msgs;
   }
   void ContactInfo_CB(const maidsafe::ReturnCode &res,
                       const maidsafe::EndPoint &ep,
+                      const maidsafe::PersonalDetails &pd,
                       const boost::uint32_t &st) {
     result = res;
     end_point = ep;
+    personal_details = pd;
     status = st;
   }
   void Reset() {
@@ -82,6 +85,7 @@ class BPCallback {
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
   maidsafe::EndPoint end_point;
+  maidsafe::PersonalDetails personal_details;
   boost::uint32_t status;
 };
 
@@ -225,7 +229,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
 
   cb.Reset();
   cbph->ContactInfo(bpip1, sender_id, "publicname", owner_pubkey, boost::bind(
-                    &BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                    &BPCallback::ContactInfo_CB, &cb, _1, _2, _3, 4),
                     trans->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -263,7 +267,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
 
   cb.Reset();
   cbph->ContactInfo(bpip1, sender_id, recv_id, owner_pubkey, boost::bind(
-                    &BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                    &BPCallback::ContactInfo_CB, &cb, _1, _2, _3, _4),
                     trans->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));

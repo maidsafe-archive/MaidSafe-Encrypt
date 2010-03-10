@@ -116,7 +116,9 @@ void BPAddMsgCallbackFailed(const kad::Contact &peer,
 }
 
 void ContactInfoCallbackSucceed(const kad::Contact &peer,
-  maidsafe::ContactInfoResponse *response, google::protobuf::Closure *done) {
+                                maidsafe::ContactInfoResponse *response,
+                                google::protobuf::Closure *done) {
+  printf("ContactInfoCallbackSucceed\n");
   response->set_result(kAck);
   response->set_pmid_id(peer.node_id());
   response->set_status(3);
@@ -127,7 +129,8 @@ void ContactInfoCallbackSucceed(const kad::Contact &peer,
 }
 
 void ContactInfoCallbackFailed(const kad::Contact &peer,
-  maidsafe::ContactInfoResponse *response, google::protobuf::Closure *done) {
+                               maidsafe::ContactInfoResponse *response,
+                               google::protobuf::Closure *done) {
   response->set_result(kNack);
   response->set_pmid_id(peer.node_id());
   done->Run();
@@ -163,9 +166,11 @@ class BPCallback {
   }
   void ContactInfo_CB(const maidsafe::ReturnCode &res,
                       const maidsafe::EndPoint &ep,
+                      const maidsafe::PersonalDetails &pd,
                       const boost::uint32_t &st) {
     result = res;
     end_point = ep;
+    personal_details = pd;
     status = st;
   }
   void Reset() {
@@ -175,6 +180,7 @@ class BPCallback {
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
   maidsafe::EndPoint end_point;
+  maidsafe::PersonalDetails personal_details;
   boost::uint32_t status;
 };
 
@@ -1051,7 +1057,8 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoBasic) {
                         crypto::STRING_STRING, false);
 
   cbph.ContactInfo(bpip, "el nalga derecha", "", "",
-                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                   boost::bind(&BPCallback::ContactInfo_CB,
+                               &cb, _1, _2, _3, _4),
                    trans_->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1093,7 +1100,8 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoNoReferences) {
     crypto::STRING_STRING, false);
 
   cbph.ContactInfo(bpip, "el nalga derecha", "", "",
-                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                   boost::bind(&BPCallback::ContactInfo_CB,
+                               &cb, _1, _2, _3, _4),
                    trans_->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1133,7 +1141,8 @@ TEST_F(TestClientBP, FUNC_MAID_ContactInfoFailAllFindContacts) {
     crypto::STRING_STRING, false);
 
   cbph.ContactInfo(bpip, "el nalga derecha", "", "",
-                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                   boost::bind(&BPCallback::ContactInfo_CB,
+                               &cb, _1, _2, _3, _4),
                    trans_->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1177,7 +1186,8 @@ TEST_F(TestClientBP, FUNC_MAID_ContactInfoOneFindContacts) {
     crypto::STRING_STRING, false);
 
   cbph.ContactInfo(bpip, "el nalga derecha", "", "",
-                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                   boost::bind(&BPCallback::ContactInfo_CB,
+                               &cb, _1, _2, _3, _4),
                    trans_->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1221,7 +1231,8 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoFailAddMessageRpc) {
     crypto::STRING_STRING, false);
 
   cbph.ContactInfo(bpip, "el nalga derecha", "", "",
-                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                   boost::bind(&BPCallback::ContactInfo_CB,
+                               &cb, _1, _2, _3, _4),
                    trans_->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));

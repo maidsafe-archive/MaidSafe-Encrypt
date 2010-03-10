@@ -1300,7 +1300,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     return;
   }
 
-  if (!vbph.ChangeOwnerInfo(request->data(), &ser_bp, request->public_key())) {
+  if (!vbph.ChangeOwnerInfo(request->data(), request->public_key(), &ser_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1528,9 +1528,10 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
   }
 
   maidsafe::EndPoint *ep = response->mutable_ep();
+  maidsafe::PersonalDetails *pd = response->mutable_pd();
   boost::uint16_t status;
   maidsafe::VaultBufferPacketHandler vbph;
-  if (!vbph.ContactInfo(ser_bp, request->id(), ep, &status)) {
+  if (!vbph.ContactInfo(ser_bp, request->id(), ep, pd, &status)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1700,15 +1701,6 @@ bool VaultService::ValidateDataChunk(const std::string &chunkname,
 int VaultService::Storable(const boost::uint64_t &data_size) {
 // TODO(Fraser#5#): 2009-08-04 - Deduct pending store space
   return data_size <= vault_chunkstore_->FreeSpace() && data_size != 0 ? 0 : -1;
-}
-
-bool VaultService::ModifyBufferPacketInfo(const std::string &new_info,
-                                          const std::string &pub_key,
-                                          std::string *updated_bp) {
-  if (!ValidateSystemPacket(new_info, pub_key))
-    return false;
-  maidsafe::VaultBufferPacketHandler vbph;
-  return vbph.ChangeOwnerInfo(new_info, updated_bp, pub_key);
 }
 
 bool VaultService::HasChunkLocal(const std::string &chunkname) {

@@ -1727,13 +1727,45 @@ std::string ClientController::GenerateBPInfo() {
   if (ss_->GetPublicUsernameList(&contacts) != 0)
     return "";
   BufferPacketInfo bpi;
-  bpi.set_owner("a pile of shit");
-  bpi.set_ownerpublickey("public key belonging to the pile of shit");
+  bpi.set_owner(ss_->Id(MPID));
+  bpi.set_owner_publickey(ss_->PublicKey(MPID));
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   for (size_t n = 0; n < contacts.size(); ++n) {
     bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
   }
+  EndPoint *ep = bpi.mutable_ep();
+  *ep = ss_->Ep();
+  PersonalDetails *pd = bpi.mutable_pd();
+  *pd = ss_->Pd();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  return ser_bpi;
+}
+
+std::string ClientController::GenerateBPInfo(
+    const std::vector<std::string> &info) {
+  std::vector<std::string> contacts;
+  if (ss_->GetPublicUsernameList(&contacts) != 0)
+    return "";
+  BufferPacketInfo bpi;
+  bpi.set_owner(ss_->Id(MPID));
+  bpi.set_owner_publickey(ss_->PublicKey(MPID));
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  for (size_t n = 0; n < contacts.size(); ++n) {
+    bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
+  }
+  EndPoint *ep = bpi.mutable_ep();
+  *ep = ss_->Ep();
+  PersonalDetails *pd = bpi.mutable_pd();
+  pd->set_full_name(info[0]);
+  pd->set_phone_number(info[1]);
+  pd->set_birthday(info[2]);
+  pd->set_gender(info[3]);
+  pd->set_language(info[4]);
+  pd->set_city(info[5]);
+  pd->set_country(info[6]);
   std::string ser_bpi;
   bpi.SerializeToString(&ser_bpi);
   return ser_bpi;
@@ -1939,6 +1971,60 @@ int ClientController::CreateNewShare(const std::string &name,
   #endif
       return -22;
     }
+  }
+
+  return 0;
+}
+
+/////////////////////
+// Info Operations //
+/////////////////////
+
+int ClientController::GetInfo(const std::string &public_username,
+                              std::vector<std::string> *info) {
+  info->clear();
+  BPCallback bpc;
+  ContactInfoNotifier cin = boost::bind(&BPCallback::ContactInfoCallback,
+                            &bpc, _1, _2, _3, _4);
+  bool own(true);
+  if (public_username.empty()) {
+    sm_->OwnInfo(cin);
+  } else {
+    sm_->ContactInfo(public_username, ss_->Id(MPID), cin);
+    own = false;
+  }
+  while (bpc.result == kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(250));
+
+  if (bpc.result != kSuccess) {
+#ifdef DEBUG
+    printf("CC::GetInfo - Failed to get info %d\n", bpc.result);
+#endif
+    return bpc.result;
+  }
+
+  if (!own) {
+    info->push_back(bpc.personal_details.full_name());
+    info->push_back(bpc.personal_details.phone_number());
+    info->push_back(bpc.personal_details.gender());
+    info->push_back(bpc.personal_details.language());
+    info->push_back(bpc.personal_details.city());
+    info->push_back(bpc.personal_details.country());
+  } else {
+    ss_->SetPd(bpc.personal_details);
+    ss_->SetEp(bpc.end_point);
+  }
+
+  return 0;
+}
+
+int ClientController::SetInfo(const std::vector<std::string> &info) {
+  int n = sm_->ModifyBPInfo(GenerateBPInfo(info));
+  if (n != 0) {
+#ifdef DEBUG
+    printf("CC::SetInfo - Failed to set info.\n");
+#endif
+    return n;
   }
 
   return 0;

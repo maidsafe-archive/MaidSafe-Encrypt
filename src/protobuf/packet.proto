@@ -26,6 +26,16 @@ enum PacketType {
   BUFFER_MESSAGE = 15;
 }
 
+message PersonalDetails {
+  optional bytes full_name = 1;
+  optional bytes phone_number = 2;
+  optional bytes birthday = 3;
+  optional bytes gender = 4;
+  optional bytes language = 5;
+  optional bytes city = 6;
+  optional bytes country = 7;
+}
+
 message EndPoint {
   required bytes ip = 1;
   required uint32 port = 2;
@@ -39,10 +49,11 @@ message GenericPacket {
 
 message BufferPacketInfo {
   required bytes owner = 1;
-  required bytes ownerPublicKey = 2;
+  required bytes owner_publickey = 2;
   repeated bytes users = 3;
   optional int32 online = 4;
   optional EndPoint ep = 5;
+  optional PersonalDetails pd = 6;
 }
 
 message BufferPacketMessage {

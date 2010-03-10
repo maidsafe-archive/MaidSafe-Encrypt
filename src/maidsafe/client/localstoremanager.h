@@ -94,9 +94,10 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual int AddBPMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &m_type);
-  void ContactInfo(const std::string &public_username,
-                   const std::string &me,
-                   ContactInfoNotifier cin);
+  virtual void ContactInfo(const std::string &public_username,
+                           const std::string &me,
+                           ContactInfoNotifier cin);
+  virtual void OwnInfo(ContactInfoNotifier cin);
 
   // Vault
   virtual void PollVaultInfo(base::callback_func_type cb);

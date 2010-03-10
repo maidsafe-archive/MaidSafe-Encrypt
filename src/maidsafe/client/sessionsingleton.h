@@ -62,7 +62,9 @@ struct UserDetails {
                   win_drive('\0'),
                   connection_status(0),
                   vault_ip(),
-                  vault_port(0) {}
+                  vault_port(0),
+                  ep(),
+                  pd() {}
   DefConLevels defconlevel;
   bool da_modified;
   std::string username;
@@ -82,6 +84,8 @@ struct UserDetails {
   int connection_status;
   std::string vault_ip;
   boost::uint32_t vault_port;
+  EndPoint ep;
+  PersonalDetails pd;
 };
 
 class SessionSingleton {
@@ -119,6 +123,8 @@ class SessionSingleton {
   inline int ConnectionStatus() { return ud_.connection_status; }
   inline std::string VaultIP() { return ud_.vault_ip; }
   inline boost::uint32_t VaultPort() { return ud_.vault_port; }
+  inline EndPoint Ep() { return ud_.ep; }
+  inline PersonalDetails Pd() { return ud_.pd; }
 
   // Mutators
   inline bool SetDefConLevel(DefConLevels defconlevel) {
@@ -211,6 +217,14 @@ class SessionSingleton {
     } else {
       return false;
     }
+  }
+  inline bool SetEp(const EndPoint &ep) {
+    ud_.ep = ep;
+    return true;
+  }
+  inline bool SetPd(const PersonalDetails &pd) {
+    ud_.pd = pd;
+    return true;
   }
 
   ///////////////////////////

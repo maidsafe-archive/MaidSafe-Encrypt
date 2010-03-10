@@ -1153,6 +1153,16 @@ int MaidsafeStoreManager::AddBPMessage(
   return result;
 }
 
+void MaidsafeStoreManager::ContactInfo(const std::string &public_username,
+                                       const std::string &me,
+                                       ContactInfoNotifier cin) {
+  return;
+}
+
+void MaidsafeStoreManager::OwnInfo(ContactInfoNotifier cin) {
+  return;
+}
+
 void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
   // TODO(Fraser#5#): 2009-12-21 - Consider repeating this until success or
   //                               some max. no. of failures.

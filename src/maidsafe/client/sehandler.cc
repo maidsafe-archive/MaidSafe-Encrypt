@@ -26,6 +26,7 @@
 #include "maidsafe/client/sehandler.h"
 
 #include <boost/filesystem/fstream.hpp>
+#include <vector>
 
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/selfencryption.h"
