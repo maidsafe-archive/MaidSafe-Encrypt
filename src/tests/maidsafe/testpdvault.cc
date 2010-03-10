@@ -241,7 +241,7 @@ void CreateBufferPacket(const std::string &owner,
   maidsafe::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
   maidsafe::BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(owner);
-  buffer_packet_info.set_ownerpublickey(public_key);
+  buffer_packet_info.set_owner_publickey(public_key);
   buffer_packet_info.set_online(false);
   std::string ser_info;
   buffer_packet_info.SerializeToString(&ser_info);

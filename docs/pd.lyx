@@ -58,9 +58,9 @@ April, 2009
 This paper presents a new way of networking and data handling globally.
  This data centric network is likely to revolutionise the IT industry in
  a very positive fashion.
- for the first time you will be able to walk up to any computer and like
- saying 'you be mine' log in and its your computer, with all your data,
- desktop etc.
+  For the first time you will be able to approach any computer and like
+ saying 'you be mine', log in, and it is as though it becomes your computer, with all your data,
+ desktop etc. but without leaving any trace upon logout.
  
 \end_layout
 
@@ -169,7 +169,7 @@ PARstart{N}{etworks}
  the Internet.
  An issue with today's systems is that they require centralised controls
  and data structures.
- This paper describes a method of distributing data in a controlled non-owned
+ This paper describes a method of distributing data in a controlled, non-owned
  grid.
  The main elements of the system are: 
 \end_layout
@@ -187,7 +187,7 @@ globally distributed Public Key Infrastructure (
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "PKI"
-description "Public Key Infrastructure, typically using RSA to create a key pair. The public key is given to anyone and used to encrypt information that is only decrypted by the private key. The public key can confirm the private key of the ID has signed data. A server is usually employed to tie the ID with the public key, this is where errors can happen as keys may be replaced on the server, subverting the whole mechanism."
+description "Public Key Infrastructure, typically using RSA to create a key pair. The public key is given to anyone and used to encrypt information that is only decrypted by the private key. The public key can confirm the private key of the ID has signed data. A server is usually employed to tie the ID with the public key, however, this is where errors can happen as keys may be replaced on the server, subverting the whole mechanism."
 
 \end_inset
 
@@ -230,16 +230,16 @@ maidsafe can be considered a platform rather than a single application and
  on this platform there is the ability for many applications to exist.
  The significant difference from traditional networks and particularly storage
  area networks is that in a maidsafe network people are self policed, network
- controlled, self created and completely unknown, there is however publicaly
- known ID's that can be created by users, however these are separated from
- their login or data management ID's used elsewhere in the network.
+ controlled, self created and completely unknown.  There are publicly
+ known IDs that can be created by users, however, these are separated from
+ their login or data management IDs used elsewhere in the network.
 \end_layout
 
 \begin_layout Standard
 The initial response to the findings of this system are varied and range
  from impossible all the way to this is amazing.
  A point to note is that the systems represented by this paper are at present
- very computer intensive in areas, requires significant bandwidth and may
+ very computationally intensive in areas, require significant bandwidth and may
  appear to be unsustainable, however initial testing proves this not to
  be the case substantively, although it should also be noted we are in a
  state of Moore's Law growth in CPU and possibly faster than this with broadband
@@ -389,9 +389,9 @@ There have been many advances over the last 20 years which provide many
 \begin_layout Standard
 These initial requirements for the new network already being in place, all
  that is needed is a different way to design the whole thing, as though
- we were presented with a situation where computers, broadband, DHT etc.
+ we were presented with a situation where computers, broadband, DHTs etc.
  were all just newly available.
- The question is glaring, would we have built what we see now? The answer
+ The question is glaring;  Would we have built what we see now? The answer
  is likely a resounding no! So in summary we have:
 \end_layout
 
@@ -440,12 +440,11 @@ Given the above parameters it would seem incredible not to design some system
 \end_layout
 
 \begin_layout Note
-Please note the references used throughout this paper do not provide links
+The references used throughout this paper do not provide links
  to the source.
  A Internet search will find these documents in their current location.
  This is intentional as dead links tend to stop the user from continuing
- to find the cited document, some references are from the IEEE and will
- require an account.
+ to find the cited document.  Some references are from the IEEE, requiring an account.
 \end_layout
 
 \begin_layout Subsection
@@ -455,13 +454,13 @@ Methodology
 \begin_layout Standard
 By taking a small proportion of every hard drive's free space and adding
  this together we would have enormous storage.
- In addition the ability to duplicate data across many locations would give
+ In addition, the ability to duplicate data across many locations would give
  the ability to ensure data can be monitored and when necessary self repaired
  (by making further copies on disk part (node or computer) failure etc.).
 \end_layout
 
 \begin_layout Standard
-Take these computers and link them in a way in which everyone benefits and
+Linking these computers in a way in which everyone benefits and
  does not necessarily have to pay any price would be seen as not only acceptable
  but as a significant benefit.
  To allow people to add data, whatever it may be, and be assured that their
@@ -485,7 +484,7 @@ The ability for users to create their own encrypted user identifiers and
 
 \end_inset
 
- This allows security to be not enhanced but altered significantly.
+.  This allows security to be not enhanced but altered significantly.
  
 \begin_inset Box Shadowbox
 position "t"
@@ -506,14 +505,14 @@ It is inconcievable that in today's world the implemetation of stronger
  records are transmitted back to a server or a cluster of servers (regardless
  it is a centralised corporate controlled environement), so imagine in this
  case you use biometric authentication i.e.
- a system reads your finger print, then sends it to an authentication system.
- If this finger print is stolen from that server then the thief not only
- has your password to that system but actually has your finger print, it
- is easy to change a password but not your finger, so the question has to
- be asked again, is that really more secure.
- Now with maidsafe nothing is transmitted back to a central resource, nobody
+ a system reads your fingerprint, then sends it to an authentication system.
+ If this fingerprint is stolen from that server then the thief not only
+ has your password to that system but actually has your fingerprint.  It
+ is easy to change a password, but not your finger, so the question has to
+ be asked again; is that really more secure?
+ With maidsafe, nothing is transmitted back to a central resource, nobody
  knows you have an account, or who you are, so where can a thief steal your
- ID ?
+ ID?
 \end_layout
 
 \end_inset
@@ -525,12 +524,12 @@ It is inconcievable that in today's world the implemetation of stronger
 maidsafe or any other software system known today cannot defeat keyboard
  readers (or any device which intercepts keystrokes or other human input
  device).
- maidsafe takes teh view anything digitised is able to be copied, therefor
+ maidsafe takes the view that anything digitised is able to be copied, therefor
  it makes sense to limit these situations.
 \end_layout
 
 \begin_layout Standard
-By allowing self authentication people would be free of corporate controls
+By allowing self authentication, people would be free of corporate controls
  or risks regarding their data protection.
  This could be achieved by users placing random data only they know the
  name of and password protecting that data for later re-validation.
@@ -543,14 +542,12 @@ People may prefer to be in control of their own digital assets and not to
 \end_layout
 
 \begin_layout Standard
-Interestingly in this design any disk space you donate or are required to
+Interestingly in this design, any disk space you donate or are required to
  provide to the network 
 \emph on
 will not store your data
 \emph default
-.
- Therefore you give up space for backup and the network stores none of your
- data in that space.
+, rather, the encrypted chunks of other people's files will reside on your space, and equally they will store the encrypted parts making up your files.
 \end_layout
 
 \begin_layout Standard
@@ -560,7 +557,7 @@ In the maidsafe network, the network will self-heal and data will move around
 \end_layout
 
 \begin_layout Standard
-Also in this network and perhaps one of the most important facts is that
+One of the most important parts of this network is that
  a truly distributed network will be created, enabling people to validate
  who they are and undeniably who they are communicating with.
 \end_layout
@@ -714,13 +711,13 @@ Transport
 \begin_layout Standard
 Therefor it is noted maidsafe does not require ftp, web, email etc.
  and in fact can replace these technologies relatively easily with a faster
- and more secure network, in addition the DNS system that has suffered in
+ and more secure network.  In addition, the DNS system that has suffered in
  recent times with capacity issues, phishing (theft and fraud by pretending
  to be another site - using name mangeling or DNS poisining techniques)
  and other attacks is also not required.
- maidsafe also allows data to move freely and cache when in use, this means
- that busy site's or sites under attack actually get replicated and become
- faster rather than slower or failing altogether.
+ maidsafe also allows data to move freely and cache when in use.  This means
+ that busy sites or sites under attack actually get replicated and become
+ faster rather than slower, or failing altogether.
 \end_layout
 
 \begin_layout Section
@@ -743,7 +740,7 @@ maidsafe employs a transport that is UDP (User Datagram Protocol) based,
  punching, UPNP, NAT-PMP etc.) at the basic network layer (UDP) and also
  for small kadmelia messages.
  As the maidsafe layer requests reliability in sending data a TCP emulation
- layer is required, this was initially an air-hook implementation but more
+ layer is required.  This was initially an air-hook implementation but more
  recently greater success has been with UDT
 \begin_inset CommandInset citation
 LatexCommand cite
@@ -763,7 +760,7 @@ The DHT is used in maidsafe technology as a key/
 \emph on
 value
 \emph default
- pair.
+ pair
  storage area i.e.
  we store a hash key and associate 
 \emph on
@@ -802,7 +799,7 @@ core
 \emph default
 .
  All we do is store a key and value – we do not need to understand where
- it is, it is just stored.
+ it is; it is just stored.
  We can also check a key exists i.e.
  when we want to create an ID we can check for uniqueness by querying the
  DHT if required.
@@ -813,7 +810,7 @@ DHT Tuning
 \end_layout
 
 \begin_layout Standard
-Kademlia, like most DHT's can be tuned to affect performance, namely reliance
+Kademlia, like most DHTs, can be tuned to affect performance; namely reliance
  to churn over bandwidth used and local processing power (although this
  is relatively small).
  A good example of this is cited in section 4.2 of 
@@ -861,8 +858,8 @@ Filesystem Layer
 \end_layout
 
 \begin_layout Standard
-The filesystem layer is presented here as the user interface, although the
- system has in fact 2 user interfaces in reality, the fuse interface and
+The filesystem layer is presented here as the user interface, although in reality the
+ system has 2 user interfaces; the fuse interface and
  a graphical user interface to provide the login screen and amongst others
  the messaging screen, vault management, contacts etc.
 \end_layout
@@ -873,10 +870,10 @@ FUSE (File System In UserspacE)
 
 \begin_layout Standard
 The filesystem presented to the user has to be one which is controlled by
- the maidsafe client process and populated from the users own datamap, whilst
+ the maidsafe client process and populated from the users' own datamap, whilst
  at the same time only appearing to have all the users data actually there
  (otherwise download all data all the time limits the system).
- for this purpose a FileSystem in userspace was required.
+  For this purpose, a filesystem in userspace was required.
  The chosen system is slightly different for each tier1 operating system
  Linux has FUSE, MAC OSX has MACFUSE and Windows has Dokan.
 \end_layout
@@ -892,11 +889,11 @@ All of these have a very similar API (Application Programming Interface)
 These systems are all kernel level components and as such allow us to present
  a full filesystem to the user as a mounted drive (similar to a usb drive)
  where users can browse the drive like any other drive on their computer.
- this device is a software device and as such we can allow an infinite amount
+  This device is a software device and as such we can allow an infinite amount
  of data to be present on it.
  Any application accessing the data believes this is a normal filesystem
  and treats it as such.
- Underneath this the maidsafe client software is retrieving bits of data
+ Underneath this, the maidsafe client software is retrieving bits of data
  and reconstituting pieces or whole files on request and at the same time
  may be chunking encrypting and storing data saved to this drive, all invisibly
  to the user.
@@ -914,18 +911,17 @@ Data Serialisation, Transfer and RPC system
 In the maidsafe layer data is continually being serialised and sent across
  the network and messages containing requests and responses are being transferre
 d.
- To accomplish this there are generally many serialisation options available.
- The option chosen here is 'protocol buffers' which is an open sourced project
+ To accomplish this there are many serialisation options available.
+ The option chosen here is 'protocol buffers', which is an open sourced project
  from Google (many Google components are used by maidsafe, including coding
  standards, test framework etc.).
  These allow data to be serialised based on templates known as proto files
  which are compiled into native c++ code which the programmer can use to
  write and read serialised data in a very efficient manner.
- 
 \end_layout
 
 \begin_layout Standard
-XML was considered but rejected as the overhead was too high for a system
+XML was considered, but rejected, as the overhead was too high for a system
  where the data end points can be so tightly controlled.
  Interconnection to the maidsafe API would not likely include data transfer
  issues and therefor the data serialisation would be considered a private
@@ -944,15 +940,13 @@ Buffer Packet
 
 \begin_layout Standard
 To enable faster moving values than a standard kademlia key could update
- or keep in synchronisation a special kademlia type is created called a
+ or keep in synchronisation, a special kademlia type is created called a
  buffer packet.
- This is a system where a key can accept many short TTL values and the recipient
-s of these values read them on and confirm there new by the hash of the
+ This is a system where a key can accept many short TTL values.  The recipients of these values read them then confirm they are new using the hash of the
  value being checked for uniqueness.
- This requires the TTL on the data to be at least 20% shorter than the remembere
-d hashes list the recipient has to create and monitor.
+ This requires the TTL on the data to be at least 20% shorter than the remembered hashes list the recipient has to create and monitor.
  As an indicative step a TTL of 180seconds is recommended with a remembered
- list time of 50seconds to ensure consistency.
+ list time of 50 seconds to ensure consistency.
  This allows what would seem like faster reads on the network than is currently
  possible.
  Here kademlia delete is not used but rather TTL and data expiration is
@@ -980,7 +974,7 @@ An important building block for the system depends on what we call buffer
  These packets can be data chunks, stored on the vaults in a data form and
  referenced from the DHT key,value pair.
  For the purpose of simplicity here we depict the buffer packet as a value
- in the key value pair.
+ in the <key, value> pair.
  
 \end_layout
 
@@ -992,10 +986,10 @@ We have known keys in the DHT key value pair such as PMID, MPID, MAID etc.
  to send to a buffer packet for DAVID would be H(DAVIDBUFFER)) - now we
  have the hash of the PMID for example as a key H(PMID) which we can easily
  find given a known PMID.
- If we want a buffer packet we append the work BUFFER to the PMID and hash
+ If we want a buffer packet, we append the word BUFFER to the PMID and hash
  it.
- We can then find this key easily with H(PMID+BUFFER), this is true for
- all known ID's we have on the network.
+ We can then find this key easily with H(PMID+BUFFER), which is true of
+ all known IDs we have on the network.
 \end_layout
 
 \begin_layout Standard
@@ -1006,12 +1000,12 @@ The content of these keys (i.e.
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $Sign(ID's\, allowed\, or\, ALL)_{[PMID]}$
+\begin_inset Formula $Sign(IDs\, allowed\, or\, ALL)_{[PMID]}$
 \end_inset
 
  (This signature allows the owner (PMID) to delete or remove content from
  the value.
- It also identifies which ID's can store information here)
+ It also identifies which IDs can store information here)
 \end_layout
 
 \begin_layout Itemize
@@ -1056,12 +1050,12 @@ A special entry in the buffer packet
 \end_inset
 
  may be set which tells other nodes trying to communicate that the end node
- is actually on line at the relevant IP and UDP Port (the RV IP and port
+ is actually online at the relevant IP and UDP Port (the RV IP and port
  are described later), in this case the censoring or filtering of messages
- is handled at the node itself, which will silently drop all non authorised
+ is handled at the node itself, which will silently drop all non-authorised
  messages.
- This can be enhanced by creating a share like scenario where a key pair
- is created and the users passed the public key to decrypt this location,
+ This can be enhanced by creating a share like scenario, where a key pair
+ is created and the user is passed the public key to decrypt this location,
  or even a password is created for nodes to decrypt this information if
  synchronous encryption is decided to be a better option here.
 \end_layout
@@ -1071,7 +1065,7 @@ Chunk Info Holder (CIH)
 \end_layout
 
 \begin_layout Standard
-The CIH contains 2 peices of logic, the watchlist and the reference packet.
+The CIH contains 2 peices of logic: the watchlist and the reference packet.
  
 \end_layout
 
@@ -1080,18 +1074,17 @@ Watchlist
 \end_layout
 
 \begin_layout Standard
-The watch list is a list of 4 ID's that are all self signed and works as
+The watch list is a list of 4 IDs that are all self signed and works as
  follows:
 \end_layout
 
 \begin_layout Itemize
-A client requests the network store a chunk by selecting 4 nodes form his
+A client requests that the network store a chunk by selecting 4 nodes from his
  routing table with the appropriate rank
 \end_layout
 
 \begin_layout Standard
-The ID's are the PMID ID's and are not linked to the user ID or public ID
- and are only used to save data and request delete of data chunks.
+The IDs are the PMID IDs, and are not linked to the user ID or public ID; they are only used to save data and request delete of data chunks.
  This list may eventually be encompassed in the rank packet described later.
  
 \end_layout
@@ -1172,7 +1165,7 @@ name "sub:Chunk-References"
 
 \begin_layout Standard
 As a vault stores a chunk it updates the chunk reference packet with a message
- signed by it's PMID.
+ signed by its PMID.
  This packet takes the form 
 \end_layout
 
@@ -1239,9 +1232,9 @@ Chunk Name (Key)
 \end_layout
 
 \begin_layout Standard
-The key holder is the k closest nodes to the key as standard in Kadmelia
+The key holders are the k closest nodes to the key as is standard in Kadmelia
  networks.
- It has to know this is a chunk reference packet and follows these rules.
+ They must know this is a chunk reference packet and follow these rules:
 \end_layout
 
 \begin_layout Enumerate
@@ -1257,11 +1250,11 @@ Allow deletion of a value by the signing authority of the value (in this
 Allow deletion of a value on lost chunk - by the request of any of the other
  chunk holders signed by their PMID.
  In this case the holder will confirm with the 'to be deleted' PMID that
- the vault has in fact lost the chunk (or stopped storing it), this is done
+ the vault has in fact lost the chunk (or stopped storing it).  This is achieved
  via a RPC.
- If the deletion request is valid the reference is removed and the existing
- chunk holder messaged (to their buffer packet - or direct) that there is
- a lost chunk
+ If the deletion request is valid, the reference is removed and the existing
+ chunk holder is messaged (to their buffer packet - or direct), declaring that there is
+ a lost chunk.
 \begin_inset Foot
 status collapsed
 

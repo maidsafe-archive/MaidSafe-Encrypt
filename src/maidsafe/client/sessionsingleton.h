@@ -62,7 +62,9 @@ struct UserDetails {
                   win_drive('\0'),
                   connection_status(0),
                   vault_ip(),
-                  vault_port(0) {}
+                  vault_port(0),
+                  ep(),
+                  pd() {}
   DefConLevels defconlevel;
   bool da_modified;
   std::string username;
@@ -73,6 +75,7 @@ struct UserDetails {
   std::string session_name;
   std::string root_db_key;
   std::string tmid_content;
+  std::string smidtmid_content;
   bool self_encrypting;
   std::set<std::string> authorised_users;
   std::set<std::string> maid_authorised_users;
@@ -81,6 +84,8 @@ struct UserDetails {
   int connection_status;
   std::string vault_ip;
   boost::uint32_t vault_port;
+  EndPoint ep;
+  PersonalDetails pd;
 };
 
 class SessionSingleton {
@@ -104,6 +109,7 @@ class SessionSingleton {
   inline boost::uint32_t SmidRid() { return ud_.smid_rid; }
   inline std::string SessionName() { return ud_.session_name; }
   inline std::string TmidContent() { return ud_.tmid_content; }
+  inline std::string SmidTmidContent() { return ud_.smidtmid_content; }
   inline std::string RootDbKey() { return ud_.root_db_key; }
   inline bool SelfEncrypting() { return ud_.self_encrypting; }
   inline std::set<std::string> AuthorisedUsers() {
@@ -117,6 +123,8 @@ class SessionSingleton {
   inline int ConnectionStatus() { return ud_.connection_status; }
   inline std::string VaultIP() { return ud_.vault_ip; }
   inline boost::uint32_t VaultPort() { return ud_.vault_port; }
+  inline EndPoint Ep() { return ud_.ep; }
+  inline PersonalDetails Pd() { return ud_.pd; }
 
   // Mutators
   inline bool SetDefConLevel(DefConLevels defconlevel) {
@@ -168,6 +176,10 @@ class SessionSingleton {
     ud_.tmid_content = tmid_content;
     return true;
   }
+  inline bool SetSmidTmidContent(const std::string &smidtmid_content) {
+    ud_.smidtmid_content = smidtmid_content;
+    return true;
+  }
   inline bool SetSelfEncrypting(bool self_encrypting) {
     ud_.self_encrypting = self_encrypting;
     return true;
@@ -205,6 +217,14 @@ class SessionSingleton {
     } else {
       return false;
     }
+  }
+  inline bool SetEp(const EndPoint &ep) {
+    ud_.ep = ep;
+    return true;
+  }
+  inline bool SetPd(const PersonalDetails &pd) {
+    ud_.pd = pd;
+    return true;
   }
 
   ///////////////////////////

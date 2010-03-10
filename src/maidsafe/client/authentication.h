@@ -95,6 +95,7 @@ class Authentication {
                const std::string &pin,
                int *rid);
   void GetUserTmid(bool smid);
+  void GetUserSmidTmid(void);
   int StorePacket(const std::string &packet_name,
                   const std::string &value,
                   const PacketType &type,
@@ -125,7 +126,7 @@ class Authentication {
   crypto::Crypto crypto_;
   boost::shared_ptr<StoreManagerInterface> sm_;
   SessionSingleton *ss_;
-  std::string tmid_content_;
+  std::string tmid_content_, smidtmid_content_;
   ReturnCode system_packets_result_;
   Authentication &operator=(const Authentication &);
   Authentication(const Authentication &);

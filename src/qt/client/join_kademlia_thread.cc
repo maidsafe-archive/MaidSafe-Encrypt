@@ -28,10 +28,10 @@ JoinKademliaThread::~JoinKademliaThread() { }
 
 void JoinKademliaThread::run() {
   qDebug() << "JoinKademliaThread::run";
-#ifdef DEBUG
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
-  qDebug() << "JoinKademliaThread::run - After SLEEP";
-#endif
+//  #ifdef DEBUG
+//    boost::this_thread::sleep(boost::posix_time::seconds(2));
+//    qDebug() << "JoinKademliaThread::run - After SLEEP";
+//  #endif
   if (ClientController::instance()->Init() == maidsafe::kSuccess) {
     emit completed(true);
   } else {

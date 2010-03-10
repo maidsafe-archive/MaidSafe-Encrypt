@@ -26,6 +26,7 @@
 #include <maidsafe/maidsafe-dht_config.h>
 #include "maidsafe/maidsafevalidator.h"
 #include "maidsafe/returncodes.h"
+#include "maidsafe/client/packetfactory.h"
 
 class TestMSValidator : public testing::Test {
  public:
@@ -33,10 +34,10 @@ class TestMSValidator : public testing::Test {
                       validator() {}
  protected:
   void SetUp() {
-    rsa_keys.GenerateKeys(4096);
+    rsa_keys.GenerateKeys(maidsafe::kRsaKeySize);
     signed_public_key = co.AsymSign(rsa_keys.public_key(), "",
      rsa_keys.private_key(), crypto::STRING_STRING);
-    other_keys.GenerateKeys(4096);
+    other_keys.GenerateKeys(maidsafe::kRsaKeySize);
   }
   crypto::Crypto co;
   crypto::RsaKeyPair rsa_keys, other_keys;

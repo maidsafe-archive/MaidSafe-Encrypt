@@ -453,7 +453,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   ss_->SetSessionName(false);
   std::string root_db_key;
-  int res = seh_.GenerateUniqueKey(PRIVATE, "", 0, &root_db_key);
+  int res = seh_.GenerateUniqueKey(&root_db_key);
   if (res != 0) {
 #ifdef DEBUG
     printf("In ClientController::CreateUser - Bombing out, no root_db_key.\n");
@@ -493,8 +493,8 @@ bool ClientController::CreateUser(const std::string &username,
     boost::uint32_t current_time = base::get_epoch_time();
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
-    if (kRootSubdir[i][1] == "") {
-      seh_.GenerateUniqueKey(PRIVATE, "", 0, &key);
+    if (kRootSubdir[i][1].empty()) {
+      seh_.GenerateUniqueKey(&key);
     } else {
       key = base::DecodeFromHex(kRootSubdir[i][1]);
     }
@@ -524,8 +524,8 @@ bool ClientController::CreateUser(const std::string &username,
     boost::uint32_t current_time = base::get_epoch_time();
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
-    if (kSharesSubdir[i][1] == "") {  // ie no preassigned key so not public
-      seh_.GenerateUniqueKey(PRIVATE, "", 0, &key);
+    if (kSharesSubdir[i][1].empty()) {  // ie no preassigned key so not public
+      seh_.GenerateUniqueKey(&key);
       res += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
                              ser_mdm, "", key, true);
       seh_.EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
@@ -1727,13 +1727,45 @@ std::string ClientController::GenerateBPInfo() {
   if (ss_->GetPublicUsernameList(&contacts) != 0)
     return "";
   BufferPacketInfo bpi;
-  bpi.set_owner("a pile of shit");
-  bpi.set_ownerpublickey("public key belonging to the pile of shit");
+  bpi.set_owner(ss_->Id(MPID));
+  bpi.set_owner_publickey(ss_->PublicKey(MPID));
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   for (size_t n = 0; n < contacts.size(); ++n) {
     bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
   }
+  EndPoint *ep = bpi.mutable_ep();
+  *ep = ss_->Ep();
+  PersonalDetails *pd = bpi.mutable_pd();
+  *pd = ss_->Pd();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  return ser_bpi;
+}
+
+std::string ClientController::GenerateBPInfo(
+    const std::vector<std::string> &info) {
+  std::vector<std::string> contacts;
+  if (ss_->GetPublicUsernameList(&contacts) != 0)
+    return "";
+  BufferPacketInfo bpi;
+  bpi.set_owner(ss_->Id(MPID));
+  bpi.set_owner_publickey(ss_->PublicKey(MPID));
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  for (size_t n = 0; n < contacts.size(); ++n) {
+    bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
+  }
+  EndPoint *ep = bpi.mutable_ep();
+  *ep = ss_->Ep();
+  PersonalDetails *pd = bpi.mutable_pd();
+  pd->set_full_name(info[0]);
+  pd->set_phone_number(info[1]);
+  pd->set_birthday(info[2]);
+  pd->set_gender(info[3]);
+  pd->set_language(info[4]);
+  pd->set_city(info[5]);
+  pd->set_country(info[6]);
   std::string ser_bpi;
   bpi.SerializeToString(&ser_bpi);
   return ser_bpi;
@@ -1939,6 +1971,60 @@ int ClientController::CreateNewShare(const std::string &name,
   #endif
       return -22;
     }
+  }
+
+  return 0;
+}
+
+/////////////////////
+// Info Operations //
+/////////////////////
+
+int ClientController::GetInfo(const std::string &public_username,
+                              std::vector<std::string> *info) {
+  info->clear();
+  BPCallback bpc;
+  ContactInfoNotifier cin = boost::bind(&BPCallback::ContactInfoCallback,
+                            &bpc, _1, _2, _3, _4);
+  bool own(true);
+  if (public_username.empty()) {
+    sm_->OwnInfo(cin);
+  } else {
+    sm_->ContactInfo(public_username, ss_->Id(MPID), cin);
+    own = false;
+  }
+  while (bpc.result == kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(250));
+
+  if (bpc.result != kSuccess) {
+#ifdef DEBUG
+    printf("CC::GetInfo - Failed to get info %d\n", bpc.result);
+#endif
+    return bpc.result;
+  }
+
+  if (!own) {
+    info->push_back(bpc.personal_details.full_name());
+    info->push_back(bpc.personal_details.phone_number());
+    info->push_back(bpc.personal_details.gender());
+    info->push_back(bpc.personal_details.language());
+    info->push_back(bpc.personal_details.city());
+    info->push_back(bpc.personal_details.country());
+  } else {
+    ss_->SetPd(bpc.personal_details);
+    ss_->SetEp(bpc.end_point);
+  }
+
+  return 0;
+}
+
+int ClientController::SetInfo(const std::vector<std::string> &info) {
+  int n = sm_->ModifyBPInfo(GenerateBPInfo(info));
+  if (n != 0) {
+#ifdef DEBUG
+    printf("CC::SetInfo - Failed to set info.\n");
+#endif
+    return n;
   }
 
   return 0;
@@ -2544,10 +2630,10 @@ int ClientController::mkdir(const std::string &path) {
 #ifdef DEBUG
   printf("MSID after GetDb: %s\n", msid.c_str());
 #endif
-  msid = "";
+  msid.clear();
   PathDistinction(path, &msid);
   dir_type = GetDirType(path);
-  if (!seh_.MakeElement(path, EMPTY_DIRECTORY, dir_type, msid, "")) {
+  if (!seh_.MakeElement(path, EMPTY_DIRECTORY, "")) {
 #ifdef DEBUG
     printf("\t\tIn CC::mkdir, seh_.MakeElement(%s, EMPTY_DIRECTORY) failed\n",
            path.c_str());
@@ -2559,7 +2645,7 @@ int ClientController::mkdir(const std::string &path) {
   printf("MSID after MakeElement: %s -- type: %i\n", msid.c_str(), dir_type);
 #endif
   fs::path pp(path);
-  msid = "";
+  msid.clear();
   PathDistinction(pp.parent_path().string(), &msid);
   dir_type = GetDirType(pp.parent_path().string());
 #ifdef DEBUG
@@ -2785,7 +2871,7 @@ int ClientController::mknod(const std::string &path) {
   printf("MSID after GetDb: %s\n", msid.c_str());
 #endif
 
-  if (!seh_.MakeElement(path, EMPTY_FILE, dir_type, msid, ""))
+  if (!seh_.MakeElement(path, EMPTY_FILE, ""))
     return -1;
 #ifdef DEBUG
   printf("MSID after MakeElement: %s\n", msid.c_str());
@@ -2901,7 +2987,7 @@ int ClientController::cpdir(const std::string &path,
 
   std::string new_rel_root_ = n_path.parent_path().string();
   std::string new_dir_key_;
-  seh_.GenerateUniqueKey(db_type2, msid2, 0, &new_dir_key_);
+  seh_.GenerateUniqueKey(&new_dir_key_);
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   if (dah_->CopyElement(ms_old_rel_entry_,
                         ms_new_rel_entry_,

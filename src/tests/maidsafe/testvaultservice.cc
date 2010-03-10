@@ -2292,7 +2292,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
 
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
-  bpi.set_ownerpublickey(pub_key);
+  bpi.set_owner_publickey(pub_key);
   bpi.set_online(1);
   bpi.add_users("newuser");
   maidsafe::BufferPacket bp;
@@ -2354,7 +2354,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
 
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
-  bpi.set_ownerpublickey(pub_key);
+  bpi.set_owner_publickey(pub_key);
   bpi.set_online(1);
   bpi.add_users("newuser");
   maidsafe::BufferPacket bp;
@@ -2439,11 +2439,22 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   modify_response.Clear();
   bpi.Clear();
   bpi.set_owner("Dan");
-  bpi.set_ownerpublickey(pub_key);
+  bpi.set_owner_publickey(pub_key);
   bpi.set_online(0);
   bpi.add_users("newuser0");
   bpi.add_users("newuser1");
   bpi.add_users("newuser2");
+  maidsafe::EndPoint *ep = bpi.mutable_ep();
+  ep->set_ip("132.248.59.1");
+  ep->set_port(132);
+  maidsafe::PersonalDetails *pd = bpi.mutable_pd();
+  pd->set_full_name("Juanbert Tupadre");
+  pd->set_phone_number("0987654321");
+  pd->set_birthday("01/01/1970");
+  pd->set_gender("Male");
+  pd->set_language("English");
+  pd->set_city("Troon");
+  pd->set_country("United Kingdom of Her Majesty the Queen");
   bpi.SerializeToString(&ser_bpi);
   gp.set_data(ser_bpi);
   gp.set_signature(co.AsymSign(gp.data(), "", priv_key, crypto::STRING_STRING));
@@ -2486,11 +2497,20 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   ASSERT_TRUE(bp.ParseFromString(test_content));
   ASSERT_TRUE(bpi.ParseFromString(bp.owner_info(0).data()));
   ASSERT_EQ("Dan", bpi.owner());
-  ASSERT_EQ(pub_key, bpi.ownerpublickey());
+  ASSERT_EQ(pub_key, bpi.owner_publickey());
   ASSERT_EQ(0, bpi.online());
   ASSERT_EQ(3, bpi.users_size());
   for (int n = 0; n < bpi.users_size(); ++n)
     ASSERT_EQ("newuser" + base::itos(n), bpi.users(n));
+  ASSERT_EQ(ep->ip(), bpi.ep().ip());
+  ASSERT_EQ(ep->port(), bpi.ep().port());
+  ASSERT_EQ(pd->full_name(), bpi.pd().full_name());
+  ASSERT_EQ(pd->phone_number(), bpi.pd().phone_number());
+  ASSERT_EQ(pd->birthday(), bpi.pd().birthday());
+  ASSERT_EQ(pd->gender(), bpi.pd().gender());
+  ASSERT_EQ(pd->language(), bpi.pd().language());
+  ASSERT_EQ(pd->city(), bpi.pd().city());
+  ASSERT_EQ(pd->country(), bpi.pd().country());
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
@@ -2513,7 +2533,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
 
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
-  bpi.set_ownerpublickey(pub_key);
+  bpi.set_owner_publickey(pub_key);
   bpi.set_online(1);
   bpi.add_users("newuser");
   maidsafe::BufferPacket bp;
@@ -2589,7 +2609,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
 
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
-  bpi.set_ownerpublickey(pub_key);
+  bpi.set_owner_publickey(pub_key);
   bpi.set_online(1);
   bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
   maidsafe::BufferPacket bp;
@@ -2765,19 +2785,28 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
 
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
-  bpi.set_ownerpublickey(pub_key);
+  bpi.set_owner_publickey(pub_key);
   bpi.set_online(1);
   bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
   maidsafe::EndPoint *ep = bpi.mutable_ep();
   ep->set_ip("132.248.59.1");
   ep->set_port(13224);
+  maidsafe::PersonalDetails *pd = bpi.mutable_pd();
+  pd->set_full_name("Juanbert Tupadre");
+  pd->set_phone_number("0987654321");
+  pd->set_birthday("01/01/1970");
+  pd->set_gender("Male");
+  pd->set_language("English");
+  pd->set_city("Troon");
+  pd->set_country("United Kingdom of Her Majesty the Queen");
+
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();
   std::string ser_bpi;
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
   info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
-    crypto::STRING_STRING));
+                      crypto::STRING_STRING));
   std::string ser_gp;
   info->SerializeToString(&ser_gp);
   std::string ser_bp;
@@ -2786,7 +2815,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
   std::string bufferpacket_name(co.Hash("DanBUFFER", "", crypto::STRING_STRING,
                                 false));
   CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
-    &sig_req);
+                      &sig_req);
   create_request.set_bufferpacket_name(bufferpacket_name);
   create_request.set_data(ser_bp);
   create_request.set_pmid(pmid);
@@ -2863,6 +2892,36 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
   ASSERT_EQ(vault_pmid_, response.pmid_id());
   ASSERT_EQ(ep->ip(), response.ep().ip());
   ASSERT_EQ(ep->port(), response.ep().port());
+  ASSERT_EQ(pd->full_name(), response.pd().full_name());
+  ASSERT_EQ(pd->phone_number(), response.pd().phone_number());
+  ASSERT_EQ(pd->birthday(), response.pd().birthday());
+  ASSERT_EQ(pd->gender(), response.pd().gender());
+  ASSERT_EQ(pd->language(), response.pd().language());
+  ASSERT_EQ(pd->city(), response.pd().city());
+  ASSERT_EQ(pd->country(), response.pd().country());
+
+  response.Clear();
+  request.set_bufferpacket_name(bufferpacket_name);
+  request.set_id("Dan");
+  request.set_pmid(pmid);
+  request.set_public_key(pub_key);
+  request.set_public_key_signature(sig_pub_key);
+  request.set_request_signature(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->ContactInfo(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
+  ASSERT_EQ(ep->ip(), response.ep().ip());
+  ASSERT_EQ(ep->port(), response.ep().port());
+  ASSERT_EQ(pd->full_name(), response.pd().full_name());
+  ASSERT_EQ(pd->phone_number(), response.pd().phone_number());
+  ASSERT_EQ(pd->birthday(), response.pd().birthday());
+  ASSERT_EQ(pd->gender(), response.pd().gender());
+  ASSERT_EQ(pd->language(), response.pd().language());
+  ASSERT_EQ(pd->city(), response.pd().city());
+  ASSERT_EQ(pd->country(), response.pd().country());
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesCacheChunk) {

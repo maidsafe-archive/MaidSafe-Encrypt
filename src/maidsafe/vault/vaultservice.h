@@ -274,9 +274,6 @@ class VaultService : public maidsafe::MaidsafeService {
   bool ValidateDataChunk(const std::string &chunkname,
                          const std::string &content);
   int Storable(const boost::uint64_t &data_size);
-  bool ModifyBufferPacketInfo(const std::string &new_info,
-                              const std::string &pub_key,
-                              std::string *updated_bp);
   bool HasChunkLocal(const std::string &chunkname);
   bool StoreChunkLocal(const std::string &chunkname,
                        const std::string &content);

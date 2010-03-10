@@ -30,9 +30,11 @@
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
+#include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/packetfactory.h"
 #include "maidsafe/client/sehandler.h"
+#include "maidsafe/client/selfencryption.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/maidsafe.h"
 #include "protobuf/maidsafe_messages.pb.h"
@@ -154,8 +156,8 @@ class SEHandlerTest : public testing::Test {
       boost::uint32_t current_time = base::get_epoch_time();
       mdm.set_creation_time(current_time);
       mdm.SerializeToString(&ser_mdm);
-      if (kRootSubdir[i][1] == "")
-        seh->GenerateUniqueKey(PRIVATE, "", 0, &key);
+      if (kRootSubdir[i][1].empty())
+        seh->GenerateUniqueKey(&key);
       else
         key = kRootSubdir[i][1];
       fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
@@ -238,6 +240,7 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   for (int i = 0; i < 20; i++)
     name_too_long += "NameTooLong";
   fs::path rel_path8 = rel_path / name_too_long;
+  fs::path rel_path9 = rel_path / "file9";
   std::string rel_str1 = base::TidyPath(rel_path1.string());
   std::string rel_str2 = base::TidyPath(rel_path2.string());
   std::string rel_str3 = base::TidyPath(rel_path3.string());
@@ -246,41 +249,77 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   std::string rel_str6 = base::TidyPath(rel_path6.string());
   std::string rel_str7 = base::TidyPath(rel_path7.string());
   std::string rel_str8 = base::TidyPath(rel_path8.string());
-  int size1 = 0;
-  int size2 = kMinRegularFileSize - 1;
-  int size3 = kMinRegularFileSize;
-  int size4 = 5;
-  int size5 = 5;
-  int size6 = 0;
-  int size7 = 0;
-  int size8 = 5;
-  std::string full_str1 = test_seh::CreateRandomFile(rel_str1, size1);
-  std::string full_str2 = test_seh::CreateRandomFile(rel_str2, size2);
-  std::string full_str3 = test_seh::CreateRandomFile(rel_str3, size3);
-  std::string full_str4 = test_seh::CreateRandomFile(rel_str4, size4);
-  std::string full_str5 = test_seh::CreateRandomFile(rel_str5, size5);
-  fs::path full_path6(file_system::MaidsafeHomeDir(ss_->SessionName()));
-  full_path6 /= rel_str6;
-  fs::path full_path7(file_system::MaidsafeHomeDir(ss_->SessionName()));
-  full_path7 /= rel_str7;
+  std::string rel_str9 = base::TidyPath(rel_path9.string());
+  boost::uint64_t size1 = 0;
+  boost::uint64_t size2 = kMinRegularFileSize - 1;
+  boost::uint64_t size3 = kMinRegularFileSize;
+  boost::uint64_t size4 = 5;
+  boost::uint64_t size5 = 5;
+  boost::uint64_t size6 = 0;
+  boost::uint64_t size7 = 0;
+  boost::uint64_t size8 = 0;
+  boost::uint64_t size9 = 0;
+  fs::path full_path1(test_seh::CreateRandomFile(rel_str1, size1));
+  fs::path full_path2(test_seh::CreateRandomFile(rel_str2, size2));
+  fs::path full_path3(test_seh::CreateRandomFile(rel_str3, size3));
+  fs::path full_path4(test_seh::CreateRandomFile(rel_str4, size4));
+  fs::path full_path5(test_seh::CreateRandomFile(rel_str5, size5));
+  fs::path full_path6(file_system::MaidsafeHomeDir(ss_->SessionName()) /
+      rel_str6);
+  fs::path full_path7(file_system::MaidsafeHomeDir(ss_->SessionName()) /
+      rel_str7);
   fs::create_directories(full_path7);
-  std::string full_str6 = full_path6.string();
-  std::string full_str7 = full_path7.string();
-  std::string full_str8 = test_seh::CreateRandomFile(rel_str8, size8);
-  uint64_t returned_size1, returned_size2, returned_size3;
-  uint64_t returned_size6, returned_size7, returned_size8;
-  ASSERT_TRUE(EMPTY_FILE == seh->CheckEntry(full_str1, &returned_size1));
-  ASSERT_EQ(size1, static_cast<int>(returned_size1));
-  ASSERT_TRUE(SMALL_FILE == seh->CheckEntry(full_str2, &returned_size2));
-  ASSERT_EQ(size2, static_cast<int>(returned_size2));
-  ASSERT_TRUE(REGULAR_FILE == seh->CheckEntry(full_str3, &returned_size3));
-  ASSERT_EQ(size3, static_cast<int>(returned_size3));
-  ASSERT_TRUE(EMPTY_DIRECTORY == seh->CheckEntry(full_str6, &returned_size6));
-  ASSERT_EQ(size6, static_cast<int>(returned_size6));
-  ASSERT_TRUE(EMPTY_DIRECTORY == seh->CheckEntry(full_str7, &returned_size7));
-  ASSERT_EQ(size7, static_cast<int>(returned_size7));
-  ASSERT_TRUE(NOT_FOR_PROCESSING == seh->CheckEntry(full_str8,
-                                                    &returned_size8));
+  fs::path full_path8 = test_seh::CreateRandomFile(rel_str8, size8);
+  fs::path full_path9 = test_seh::CreateRandomFile(rel_str9, size9);
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string hash1(co.Hash(full_path1.string(), "", crypto::FILE_STRING,
+      false));
+  std::string hash2(co.Hash(full_path2.string(), "", crypto::FILE_STRING,
+      false));
+  std::string hash3(co.Hash(full_path3.string(), "", crypto::FILE_STRING,
+      false));
+  std::string hash6, hash7, hash8;
+  std::string hash9(co.Hash(full_path9.string(), "", crypto::FILE_STRING,
+      false));
+  fs::path before(full_path9);
+  fs::path after(full_path9.parent_path() / base::EncodeToHex(hash9));
+  fs::rename(before, after);
+  full_path9 = after;
+  boost::uint64_t returned_size1(9), returned_size2(9), returned_size3(9);
+  boost::uint64_t returned_size6(9), returned_size7(9), returned_size8(9);
+  boost::uint64_t returned_size9(9);
+  std::string returned_hash1("A"), returned_hash2("A"), returned_hash3("A");
+  std::string returned_hash6("A"), returned_hash7("A"), returned_hash8("A");
+  std::string returned_hash9("A");
+  ASSERT_EQ(EMPTY_FILE,
+            seh->CheckEntry(full_path1, &returned_size1, &returned_hash1));
+  ASSERT_EQ(size1, returned_size1);
+  ASSERT_EQ(hash1, returned_hash1);
+  ASSERT_EQ(SMALL_FILE,
+            seh->CheckEntry(full_path2, &returned_size2, &returned_hash2));
+  ASSERT_EQ(size2, returned_size2);
+  ASSERT_EQ(hash2, returned_hash2);
+  ASSERT_EQ(REGULAR_FILE,
+            seh->CheckEntry(full_path3, &returned_size3, &returned_hash3));
+  ASSERT_EQ(size3, returned_size3);
+  ASSERT_EQ(hash3, returned_hash3);
+  ASSERT_EQ(EMPTY_DIRECTORY,
+            seh->CheckEntry(full_path6, &returned_size6, &returned_hash6));
+  ASSERT_EQ(size6, returned_size6);
+  ASSERT_EQ(hash6, returned_hash6);
+  ASSERT_EQ(EMPTY_DIRECTORY,
+            seh->CheckEntry(full_path7, &returned_size7, &returned_hash7));
+  ASSERT_EQ(size7, returned_size7);
+  ASSERT_EQ(hash7, returned_hash7);
+  ASSERT_EQ(NOT_FOR_PROCESSING,
+            seh->CheckEntry(full_path8, &returned_size8, &returned_hash8));
+  ASSERT_EQ(size8, returned_size8);
+  ASSERT_EQ(hash8, returned_hash8);
+  ASSERT_EQ(MAIDSAFE_CHUNK,
+            seh->CheckEntry(full_path9, &returned_size9, &returned_hash9));
+  ASSERT_EQ(size9, returned_size9);
+  ASSERT_TRUE(returned_hash9.empty());
 }
 
 TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
@@ -569,12 +608,14 @@ TEST_F(SEHandlerTest, FUNC_MAID_EncryptAndDecryptPrivateDb) {
   seh->Init(sm, client_chunkstore_);
 
   fs::path db_path(db_str1_, fs::native);
-  std::string key(seh->SHA512("somekey", false));
-//  std::string key("");
-//  ASSERT_EQ(0, seh->GenerateUniqueKey(PRIVATE, "", 0, &key));
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string key = co.Hash("somekey", "", crypto::STRING_STRING, false);
+//  std::string key;
+//  ASSERT_EQ(0, seh->GenerateUniqueKey(&key));
 //  dah->GetDirKey(kRootSubdir[0][0], &key);
   ASSERT_TRUE(fs::exists(db_path));
-  std::string hash_before = seh->SHA512(db_str1_, true);
+  std::string hash_before = co.Hash(db_str1_, "", crypto::FILE_STRING, false);
   DataMap dm;
   std::string ser_dm;
   dm.SerializeToString(&ser_dm);
@@ -588,7 +629,7 @@ TEST_F(SEHandlerTest, FUNC_MAID_EncryptAndDecryptPrivateDb) {
   ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kRootSubdir[0][0]), PRIVATE,
             ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
-  ASSERT_EQ(hash_before, seh->SHA512(db_str1_, true));
+  ASSERT_EQ(hash_before, co.Hash(db_str1_, "", crypto::FILE_STRING, false));
 
   // Deleting the details of the DB
   fs::remove(db_path);
@@ -601,13 +642,13 @@ TEST_F(SEHandlerTest, FUNC_MAID_EncryptAndDecryptPrivateDb) {
   ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kRootSubdir[0][0]), PRIVATE,
             ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
-  ASSERT_EQ(hash_before, seh->SHA512(db_str1_, true));
+  ASSERT_EQ(hash_before, co.Hash(db_str1_, "", crypto::FILE_STRING, false));
 
   // Test decryption with the directory DB ser_dm in the map
   ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kRootSubdir[0][0]), PRIVATE,
             ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
-  ASSERT_EQ(hash_before, seh->SHA512(db_str1_, true));
+  ASSERT_EQ(hash_before, co.Hash(db_str1_, "", crypto::FILE_STRING, false));
   fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
   sm->Close(boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1), true);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -624,7 +665,9 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
   fs::path db_path(db_str2_, fs::native);
   std::string key = "testkey";
   ASSERT_TRUE(fs::exists(db_path));
-  std::string hash_before = seh->SHA512(db_str2_, true);
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string hash_before = co.Hash(db_str2_, "", crypto::FILE_STRING, false);
   std::string ser_dm;
 // *********************************************
 // Anonymous Shares are disabled at the moment *
@@ -639,11 +682,11 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
 //  ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kSharesSubdir[1][0]),
 //    ANONYMOUS, ser_dm, key, "", false, false));
   ASSERT_TRUE(fs::exists(db_path));
-  ASSERT_EQ(hash_before, seh->SHA512(db_str2_, true));
+  ASSERT_EQ(hash_before, co.Hash(db_str2_, "", crypto::FILE_STRING, false));
 //  ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kSharesSubdir[1][0]),
 //    ANONYMOUS, "", key, "", false, false));
   ASSERT_TRUE(fs::exists(db_path));
-  ASSERT_EQ(hash_before, seh->SHA512(db_str2_, true));
+  ASSERT_EQ(hash_before, co.Hash(db_str2_, "", crypto::FILE_STRING, false));
   fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
   sm->Close(boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1), true);
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));

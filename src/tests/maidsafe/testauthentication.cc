@@ -376,9 +376,9 @@ TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSession) {
                  crypto::STRING_STRING, false),
          "", crypto::STRING_STRING, false);
   result = authentication->SaveSession(ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Can't login with new iuserneim";
+  ASSERT_EQ(kSuccess, result) << "Can't save session 1";
   result = authentication->SaveSession(ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Can't login with new iuserneim";
+  ASSERT_EQ(kSuccess, result) << "Can't save session 2";
   ASSERT_TRUE(sm->KeyUnique(tmidsmidname, false));
 }
 
@@ -411,6 +411,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
   // Save the session to create different TMIDs for MID and SMID
+  std::string tmidcontent = ss_->TmidContent();
   result = authentication->SaveSession(ser_dm);
   ASSERT_EQ(kSuccess, result) << "Can't save the session";
 
@@ -424,6 +425,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
          co.Hash(boost::lexical_cast<std::string>(ss_->MidRid()), "",
                  crypto::STRING_STRING, false),
          "", crypto::STRING_STRING, false);
+
   std::string tmidsmidname = co.Hash(
          co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
          co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
@@ -438,6 +440,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
 
   std::string ser_dm_login;
   result = authentication->GetUserInfo("el iuserneim", pin);
+
   ASSERT_EQ(kUserExists, result) << "User does not exist";
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   result = authentication->GetUserData(password, &ser_dm_login);
@@ -478,6 +481,29 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   result = authentication->CreateTmidPacket(username, pin, password, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
+  // Save the session to create different TMIDs for MID and SMID
+  std::string tmidcontent = ss_->TmidContent();
+  result = authentication->SaveSession(ser_dm);
+  ASSERT_EQ(kSuccess, result) << "Can't save the session";
+
+  // store current mid, smid and tmid details to check later whether they remain
+  // on the network
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string tmidmidname = co.Hash(
+         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
+         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
+         co.Hash(boost::lexical_cast<std::string>(ss_->MidRid()), "",
+                 crypto::STRING_STRING, false),
+         "", crypto::STRING_STRING, false);
+
+  std::string tmidsmidname = co.Hash(
+         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
+         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
+         co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
+                 crypto::STRING_STRING, false),
+         "", crypto::STRING_STRING, false);
+
   ASSERT_EQ(kSuccess, authentication->ChangePin(ser_dm, "7894"));
   ASSERT_EQ("7894", ss_->Pin()) << "pin is still the old one";
   std::string ser_dm_login;
@@ -487,6 +513,10 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   ASSERT_EQ(kSuccess, result) << "Can't login with new pin";
   result = authentication->GetUserInfo(username, pin);
   ASSERT_EQ(kUserDoesntExist, result);
+
+  // Check the TMIDs are gone
+  ASSERT_TRUE(sm->KeyUnique(tmidmidname, false));
+  ASSERT_TRUE(sm->KeyUnique(tmidsmidname, false));
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {

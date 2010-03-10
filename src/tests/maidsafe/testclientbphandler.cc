@@ -32,6 +32,7 @@
 
 #include "fs/filesystem.h"
 #include "maidsafe/clientbufferpackethandler.h"
+#include "maidsafe/client/packetfactory.h"
 
 using ::testing::_;
 using ::testing::Invoke;
@@ -116,7 +117,9 @@ void BPAddMsgCallbackFailed(const kad::Contact &peer,
 }
 
 void ContactInfoCallbackSucceed(const kad::Contact &peer,
-  maidsafe::ContactInfoResponse *response, google::protobuf::Closure *done) {
+                                maidsafe::ContactInfoResponse *response,
+                                google::protobuf::Closure *done) {
+  printf("ContactInfoCallbackSucceed\n");
   response->set_result(kAck);
   response->set_pmid_id(peer.node_id());
   response->set_status(3);
@@ -127,7 +130,8 @@ void ContactInfoCallbackSucceed(const kad::Contact &peer,
 }
 
 void ContactInfoCallbackFailed(const kad::Contact &peer,
-  maidsafe::ContactInfoResponse *response, google::protobuf::Closure *done) {
+                               maidsafe::ContactInfoResponse *response,
+                               google::protobuf::Closure *done) {
   response->set_result(kNack);
   response->set_pmid_id(peer.node_id());
   done->Run();
@@ -163,9 +167,11 @@ class BPCallback {
   }
   void ContactInfo_CB(const maidsafe::ReturnCode &res,
                       const maidsafe::EndPoint &ep,
+                      const maidsafe::PersonalDetails &pd,
                       const boost::uint32_t &st) {
     result = res;
     end_point = ep;
+    personal_details = pd;
     status = st;
   }
   void Reset() {
@@ -175,6 +181,7 @@ class BPCallback {
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
   maidsafe::EndPoint end_point;
+  maidsafe::PersonalDetails personal_details;
   boost::uint32_t status;
 };
 
@@ -272,7 +279,7 @@ class TestClientBP : public testing::Test {
 
  protected:
   void SetUp() {
-    keys_.GenerateKeys(4096);
+    keys_.GenerateKeys(maidsafe::kRsaKeySize);
     trans_ = new transport::TransportUDT();
     trans_han_ = new transport::TransportHandler();
     boost::int16_t trans_id;
@@ -337,7 +344,7 @@ class TestClientBP : public testing::Test {
 TEST_F(TestClientBP, BEH_MAID_CreateBP_OK) {
   maidsafe::ClientBufferPacketHandler cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -360,7 +367,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBP_OK) {
 TEST_F(TestClientBP, BEH_MAID_CreateBPFailOnce) {
   maidsafe::ClientBufferPacketHandler cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -383,7 +390,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBPFailOnce) {
 TEST_F(TestClientBP, BEH_MAID_CreateBPFailThenSucceed) {
   maidsafe::ClientBufferPacketHandler cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -407,7 +414,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBPFailThenSucceed) {
 TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfo) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -448,7 +455,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfo) {
 TEST_F(TestClientBP, BEH_MAID_ModifyOINoReferences) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -480,7 +487,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOINoReferences) {
 TEST_F(TestClientBP, BEH_MAID_ModifyOIFailAllFindContacts) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -513,7 +520,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailAllFindContacts) {
 TEST_F(TestClientBP, BEH_MAID_ModifyOIFailOneFindContacts) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -556,7 +563,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailOneFindContacts) {
 TEST_F(TestClientBP, BEH_MAID_ModifyOIFailModifyInfoRpc) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -597,7 +604,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailModifyInfoRpc) {
 TEST_F(TestClientBP, BEH_MAID_AddMessage) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -626,7 +633,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessage) {
 
   // creating info of receiver
   keys.ClearKeys();
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
     crypto::STRING_STRING);
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
@@ -643,7 +650,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessage) {
 TEST_F(TestClientBP, BEH_MAID_AddMsgNoReferences) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -665,7 +672,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgNoReferences) {
 
   // creating info of receiver
   keys.ClearKeys();
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
     crypto::STRING_STRING);
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
@@ -682,7 +689,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgNoReferences) {
 TEST_F(TestClientBP, FUNC_MAID_AddMsgFailAllFindContacts) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -705,7 +712,7 @@ TEST_F(TestClientBP, FUNC_MAID_AddMsgFailAllFindContacts) {
 
   // creating info of receiver
   keys.ClearKeys();
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
     crypto::STRING_STRING);
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
@@ -722,7 +729,7 @@ TEST_F(TestClientBP, FUNC_MAID_AddMsgFailAllFindContacts) {
 TEST_F(TestClientBP, FUNC_MAID_AddMsgFailOneFindContacts) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -753,7 +760,7 @@ TEST_F(TestClientBP, FUNC_MAID_AddMsgFailOneFindContacts) {
 
   // creating info of receiver
   keys.ClearKeys();
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
     crypto::STRING_STRING);
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
@@ -770,7 +777,7 @@ TEST_F(TestClientBP, FUNC_MAID_AddMsgFailOneFindContacts) {
 TEST_F(TestClientBP, BEH_MAID_AddMsgFailAddMessageRpc) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -799,7 +806,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgFailAddMessageRpc) {
 
   // creating info of receiver
   keys.ClearKeys();
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
     crypto::STRING_STRING);
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
@@ -816,7 +823,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgFailAddMessageRpc) {
 TEST_F(TestClientBP, BEH_MAID_GetMessages) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
   GetMsgsHelper helper;
@@ -867,7 +874,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessages) {
 TEST_F(TestClientBP, BEH_MAID_GetMsgsOneFindContactsFail) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
   GetMsgsHelper helper;
@@ -920,7 +927,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsOneFindContactsFail) {
 TEST_F(TestClientBP, BEH_MAID_GetMsgsNoReferences) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -950,7 +957,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsNoReferences) {
 TEST_F(TestClientBP, BEH_MAID_GetMsgsFailAllFindContacts) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -981,7 +988,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailAllFindContacts) {
 TEST_F(TestClientBP, BEH_MAID_GetMsgsFailGetBPMessagesRpc) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
   GetMsgsHelper helper;
@@ -1018,7 +1025,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailGetBPMessagesRpc) {
 TEST_F(TestClientBP, BEH_MAID_ContactInfoBasic) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -1044,14 +1051,15 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoBasic) {
 
   // creating info of querier
   keys.ClearKeys();
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
                    crypto::STRING_STRING);
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
                         crypto::STRING_STRING, false);
 
   cbph.ContactInfo(bpip, "el nalga derecha", "", "",
-                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                   boost::bind(&BPCallback::ContactInfo_CB,
+                               &cb, _1, _2, _3, _4),
                    trans_->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1064,7 +1072,7 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoBasic) {
 TEST_F(TestClientBP, BEH_MAID_ContactInfoNoReferences) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -1086,14 +1094,15 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoNoReferences) {
 
   // creating info of querier
   keys.ClearKeys();
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
     crypto::STRING_STRING);
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
   cbph.ContactInfo(bpip, "el nalga derecha", "", "",
-                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                   boost::bind(&BPCallback::ContactInfo_CB,
+                               &cb, _1, _2, _3, _4),
                    trans_->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1103,7 +1112,7 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoNoReferences) {
 TEST_F(TestClientBP, FUNC_MAID_ContactInfoFailAllFindContacts) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -1126,14 +1135,15 @@ TEST_F(TestClientBP, FUNC_MAID_ContactInfoFailAllFindContacts) {
 
   // creating info of querier
   keys.ClearKeys();
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
     crypto::STRING_STRING);
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
   cbph.ContactInfo(bpip, "el nalga derecha", "", "",
-                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                   boost::bind(&BPCallback::ContactInfo_CB,
+                               &cb, _1, _2, _3, _4),
                    trans_->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1143,7 +1153,7 @@ TEST_F(TestClientBP, FUNC_MAID_ContactInfoFailAllFindContacts) {
 TEST_F(TestClientBP, FUNC_MAID_ContactInfoOneFindContacts) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -1170,14 +1180,15 @@ TEST_F(TestClientBP, FUNC_MAID_ContactInfoOneFindContacts) {
 
   // creating info of querier
   keys.ClearKeys();
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
     crypto::STRING_STRING);
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
   cbph.ContactInfo(bpip, "el nalga derecha", "", "",
-                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                   boost::bind(&BPCallback::ContactInfo_CB,
+                               &cb, _1, _2, _3, _4),
                    trans_->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -1190,7 +1201,7 @@ TEST_F(TestClientBP, FUNC_MAID_ContactInfoOneFindContacts) {
 TEST_F(TestClientBP, BEH_MAID_ContactInfoFailAddMessageRpc) {
   MockBPH cbph(BPMock, knode_);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
 
   BPCallback cb;
 
@@ -1214,14 +1225,15 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoFailAddMessageRpc) {
 
   // creating info of querier
   keys.ClearKeys();
-  keys.GenerateKeys(4096);
+  keys.GenerateKeys(maidsafe::kRsaKeySize);
   signed_pub_key = cryp.AsymSign(keys.public_key(), "", keys.private_key(),
     crypto::STRING_STRING);
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
     crypto::STRING_STRING, false);
 
   cbph.ContactInfo(bpip, "el nalga derecha", "", "",
-                   boost::bind(&BPCallback::ContactInfo_CB, &cb, _1, _2, _3),
+                   boost::bind(&BPCallback::ContactInfo_CB,
+                               &cb, _1, _2, _3, _4),
                    trans_->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));

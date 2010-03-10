@@ -26,20 +26,12 @@
 #include "maidsafe/client/sehandler.h"
 
 #include <boost/filesystem/fstream.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <maidsafe/utils.h>
-
 #include <vector>
 
-#include "fs/filesystem.h"
-#include "maidsafe/chunkstore.h"
 #include "maidsafe/client/dataatlashandler.h"
-#include "maidsafe/client/privateshares.h"
-#include "protobuf/packet.pb.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
-#include "protobuf/maidsafe_messages.pb.h"
-
-namespace fs = boost::filesystem;
+#include "maidsafe/client/selfencryption.h"
+#include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/client/storemanager.h"
 
 namespace maidsafe {
 
@@ -54,80 +46,77 @@ void SEHandler::Init(boost::shared_ptr<StoreManagerInterface> storem,
   client_chunkstore_ = client_chunkstore;
 }
 
-ItemType SEHandler::CheckEntry(const std::string &full_entry,
-                               boost::uint64_t *file_size) {
-  if (full_entry.size()>245) {
+ItemType SEHandler::CheckEntry(const fs::path &full_path,
+                               boost::uint64_t *file_size,
+                               std::string *file_hash) {
+  *file_size = 0;
+  file_hash->clear();
+  // TODO(Fraser#5#): 2010-03-08 - Change 245 below for constant
+  if (full_path.string().size() > 245) {
 #ifdef DEBUG
-    printf("File name too long to process: %s\n", full_entry.c_str());
+    printf("File name too long to process: %s\n", full_path.string().c_str());
 #endif
     return NOT_FOR_PROCESSING;
   }
-  fs::path path_(full_entry, fs::native);
+  bool exists(false);
+  bool is_directory(false);
+  bool is_symlink(false);
+  bool is_regular(false);
+  bool is_empty(false);
   try {
-    fs::exists(path_);
-    fs::is_directory(path_);
-    fs::is_symlink(path_);
-    fs::is_regular(path_);
-    fs::is_empty(path_);
+    exists = fs::exists(full_path);
+    is_directory = fs::is_directory(full_path);
+    is_symlink = fs::is_symlink(full_path);
+    is_regular = fs::is_regular(full_path);
+    is_empty = fs::is_empty(full_path);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("In SEHandler::CheckEntry, %s\n", e.what());
 #endif
     return UNKNOWN;
   }
 
-  if (!fs::is_directory(path_) &&
-      !fs::is_symlink(path_) &&
-      fs::is_regular(path_) &&
-      fs::exists(path_)) {
-    // If file size < 2 bytes, it's too small to chunk
-    // if (fs::file_size(path_)<2) return SMALL_FILE;
-    // leave this up to calling object now !
-    // David Irvine<david.irvine@maidsafe.net>  15/09/2008 11:08:38
-    // return a number which is the file size enum all else negative
+  if (!is_directory && !is_symlink && is_regular && exists) {
     try {
-      std::ifstream test_;
-      test_.open(path_.string().c_str(), std::ifstream::binary);
-      if (!test_.good())
+      std::ifstream test;
+      test.open(full_path.string().c_str(), std::ifstream::binary);
+      if (!test.good())
         return LOCKED_FILE;
-      test_.close();
+      test.close();
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
-      printf("%s\n", e.what());
+      printf("In SEHandler::CheckEntry, %s\n", e.what());
 #endif
       return LOCKED_FILE;
     }
-    *file_size = fs::file_size(path_);
-    if (*file_size == 0) return EMPTY_FILE;
-    if (*file_size < kMinRegularFileSize) return SMALL_FILE;
-    if (base::StrToLwr(fs::extension(path_)) == ".lnk" ||
-        fs::is_symlink(path_))
-      return LINK;  // fails in Windows
+    // TODO(Fraser#5#): 2010-03-08 - This fails in Windows - fix.
+    if (base::StrToLwr(fs::extension(full_path)) == ".lnk" || is_symlink)
+      return LINK;
+
+    *file_size = fs::file_size(full_path);
+    crypto::Crypto co;
+    co.set_hash_algorithm(crypto::SHA_512);
+    *file_hash = co.Hash(full_path.string(), "", crypto::FILE_STRING, false);
+    if (full_path.filename() == base::EncodeToHex(*file_hash)) {
+      *file_size = 0;
+      file_hash->clear();
+      return MAIDSAFE_CHUNK;
+    }
+    if (*file_size == 0)
+      return EMPTY_FILE;
+    if (*file_size < kMinRegularFileSize)
+      return SMALL_FILE;
     return REGULAR_FILE;
-  } else if (fs::is_directory(path_) &&
-           !fs::is_symlink(path_) &&
-           fs::exists(path_)) {
-    *file_size = 0;
+  } else if (is_directory && !is_symlink && exists) {
     return EMPTY_DIRECTORY;
   }
   return UNKNOWN;
 }  // end CheckEntry
 
-std::string SEHandler::SHA512(const std::string &full_entry,
-                              bool hash_contents) {
-  SelfEncryption se(client_chunkstore_);
-  if (hash_contents) {
-    fs::path entry_path(full_entry, fs::native);
-    return se.SHA512(entry_path);
-  } else {
-    return se.SHA512(full_entry);
-  }
-}
-
 int SEHandler::EncryptFile(const std::string &rel_entry,
-                           const DirType dir_type,
+                           const DirType &dir_type,
                            const std::string &msid) {
 #ifdef DEBUG
   // printf("Encrypting: %s\n", rel_entry.c_str());
@@ -137,9 +126,10 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
       rel_entry, ss_->SessionName()).string();
 
   boost::uint64_t file_size = 0;
-  ItemType item_type = CheckEntry(full_entry, &file_size);
+  std::string file_hash;
+  ItemType item_type = CheckEntry(full_entry, &file_size, &file_hash);
   DataMap dm, dm_retrieved;
-  std::string ser_dm_retrieved, ser_dm, ser_mdm, file_hash, dir_key;
+  std::string ser_dm_retrieved, ser_dm, ser_mdm, dir_key;
   SelfEncryption se(client_chunkstore_);
 #ifdef DEBUG
   // printf("Full entry: %s\n", full_entry_.c_str());
@@ -152,12 +142,11 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
     //   GenerateUniqueKey(dir_key_);
     //   break;
     case EMPTY_FILE:
-      dm.set_file_hash(SHA512(full_entry, true));
+      dm.set_file_hash(file_hash);
       dm.SerializeToString(&ser_dm);
       break;
     case REGULAR_FILE:
     case SMALL_FILE:
-      file_hash = SHA512(full_entry, true);
       // Try to get DM for this file.  If NULL return or file_hash
       // different, then encrypt.
       if (dah->GetDataMap(rel_entry, &ser_dm_retrieved) == kSuccess)
@@ -180,25 +169,30 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
       printf("Can't encrypt: entry is a link.\n");
 #endif
       return -7;
+    case MAIDSAFE_CHUNK:
+#ifdef DEBUG
+      printf("Can't encrypt: entry is a maidsafe chunk.\n");
+#endif
+      return -8;
     case NOT_FOR_PROCESSING:
 #ifdef DEBUG
       printf("Can't encrypt: file not for processing.\n");
 #endif
-      return -8;
+      return -9;
     case UNKNOWN:
 #ifdef DEBUG
       printf("Can't encrypt: unknown file type.\n");
 #endif
-      return -9;
+      return -10;
     default:
 #ifdef DEBUG
       printf("Can't encrypt.\n");
 #endif
-      return -10;
+      return -11;
   }
 
   if (!ProcessMetaData(rel_entry, item_type, file_hash, file_size, &ser_mdm))
-    return -11;
+    return -12;
   if (dah->AddElement(rel_entry, ser_mdm, ser_dm, dir_key, true) != kSuccess) {
     return -500;
   }
@@ -212,7 +206,9 @@ int SEHandler::EncryptString(const std::string &data,
   maidsafe::DataMap dm;
   SelfEncryption se(client_chunkstore_);
   ser_dm->clear();
-  dm.set_file_hash(se.SHA512(data));
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  dm.set_file_hash(co.Hash(data, "", crypto::STRING_STRING, false));
   if (se.Encrypt(data, true, &dm))
     return -2;
   StoreChunks(dm, PRIVATE, "");
@@ -221,7 +217,7 @@ int SEHandler::EncryptString(const std::string &data,
 }
 
 bool SEHandler::ProcessMetaData(const std::string &rel_entry,
-                                const ItemType type,
+                                const ItemType &type,
                                 const std::string &hash,
                                 const boost::uint64_t &file_size,
                                 std::string *ser_mdm) {
@@ -325,9 +321,7 @@ int SEHandler::DecryptString(const std::string &ser_dm,
 }
 
 bool SEHandler::MakeElement(const std::string &rel_entry,
-                            const ItemType type,
-                            const DirType dir_type,
-                            const std::string &msid,
+                            const ItemType &type,
                             const std::string &directory_key) {
   std::string ser_mdm, ser_dm, dir_key(directory_key);
   if (!ProcessMetaData(rel_entry, type, "", 0, &ser_mdm)) {
@@ -338,10 +332,12 @@ bool SEHandler::MakeElement(const std::string &rel_entry,
   }
   if (type == EMPTY_DIRECTORY) {
     if (dir_key.empty())
-      GenerateUniqueKey(dir_type, msid, 0, &dir_key);
+      GenerateUniqueKey(&dir_key);
   } else if (type == EMPTY_FILE) {
     DataMap dm;
-    dm.set_file_hash(SHA512("", false));
+    crypto::Crypto co;
+    co.set_hash_algorithm(crypto::SHA_512);
+    dm.set_file_hash(co.Hash("", "", crypto::STRING_STRING, false));
     dm.SerializeToString(&ser_dm);
   } else {
 #ifdef DEBUG
@@ -361,29 +357,18 @@ bool SEHandler::MakeElement(const std::string &rel_entry,
   }
 }
 
-int SEHandler::GenerateUniqueKey(const DirType,
-                                 const std::string &,
-                                 const int &attempt,
-                                 std::string *key) {
-  *key = base::RandomString(200);
-  *key = SHA512(*key, false);
-  int count = attempt;
-  while (!storem_->KeyUnique(*key, false) && count < 5) {
-    ++count;
-    *key = base::RandomString(200);
-    *key = SHA512(*key, false);
+int SEHandler::GenerateUniqueKey(std::string *key) {
+  const int kMaxAttempts(5);
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  int count(0);
+  for (; count < kMaxAttempts; ++count) {
+    std::string random_string = base::RandomString(200);
+    *key = co.Hash(random_string, "", crypto::STRING_STRING, false);
+    if (storem_->KeyUnique(*key, false))
+      break;
   }
-  if (count < 5) {
-//    ValueType pd_dir_type_;
-//    if (dir_type == ANONYMOUS)
-//      pd_dir_type_ = PDDIR_NOTSIGNED;
-//    else
-//      pd_dir_type_ = PDDIR_SIGNED;
-//  //    std::string ser_gp = CreateDataMapPacket("temp data", dir_type, msid);
-//   return storem_->StorePacket(*key, "a", PD_DIR, dir_type, msid);
-    return 0;
-  }
-  return -1;
+  return (count < 5) ? 0 : -1;
 }
 
 int SEHandler::GetDirKeys(const std::string &dir_path,
@@ -410,13 +395,15 @@ int SEHandler::GetDirKeys(const std::string &dir_path,
     std::string private_key("");
     if (0 != ss_->GetShareKeys(msid, parent_key, &private_key))
       return -1;
-    *parent_key = SHA512(*parent_key, false);
+    crypto::Crypto co;
+    co.set_hash_algorithm(crypto::SHA_512);
+    *parent_key = co.Hash(*parent_key, "", crypto::STRING_STRING, false);
   }
   return 0;
 }
 
 int SEHandler::EncryptDb(const std::string &dir_path,
-                         const DirType dir_type,
+                         const DirType &dir_type,
                          const std::string &dir_key,
                          const std::string &msid,
                          const bool &encrypt_dm,
@@ -432,12 +419,14 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   dah->GetDbPath(dir_path, CREATE, &db_path);
   if (!fs::exists(db_path))
     return -2;
-  std::string file_hash = SHA512(db_path, true);
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string file_hash = co.Hash(db_path, "", crypto::FILE_STRING, false);
 
   // when encrypting root db and keys db (during logout), GetDbPath fails above,
   // so insert alternative value for file hashes.
-  if (file_hash == "")
-    file_hash = SHA512(db_path, false);
+  if (file_hash.empty())
+    file_hash = co.Hash(db_path, "", crypto::STRING_STRING, false);
 #ifdef DEBUG
   // printf("File hash = %s\n", file_hash);
 #endif
@@ -684,8 +673,10 @@ int SEHandler::EncryptDm(const std::string &dir_path,
   // if msid != "" otherwise it sets it to the dir key of the parent folder
   GetDirKeys(dir_path, msid, &key_, &parent_key_);
 
-  enc_hash_ = SHA512(parent_key_ + key_, false);
-  xor_hash_ = SHA512(key_ + parent_key_, false);
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  enc_hash_ = co.Hash(parent_key_ + key_, "", crypto::STRING_STRING, false);
+  xor_hash_ = co.Hash(key_ + parent_key_, "", crypto::STRING_STRING, false);
 #ifdef DEBUG
 //  //  if (msid != "") {
 //      printf("In EncryptDm dir_path: %s\n"
@@ -727,8 +718,10 @@ int SEHandler::DecryptDm(const std::string &dir_path,
     return -1;
   }
 
-  enc_hash_ = SHA512(parent_key_ + key_, false);
-  xor_hash_ = SHA512(key_ + parent_key_, false);
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  enc_hash_ = co.Hash(parent_key_ + key_, "", crypto::STRING_STRING, false);
+  xor_hash_ = co.Hash(key_ + parent_key_, "", crypto::STRING_STRING, false);
 #ifdef DEBUG
 //  //  if (msid != "") {
 //      printf("In DecryptDm dir_path: %s\n"
@@ -781,7 +774,7 @@ int SEHandler::LoadChunks(const DataMap &dm) {
 }
 
 void SEHandler::StoreChunks(const DataMap &dm,
-                            const DirType dir_type,
+                            const DirType &dir_type,
                             const std::string &msid) {
   for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i)
     storem_->StoreChunk(dm.encrypted_chunk_name(i), dir_type, msid);

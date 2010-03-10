@@ -289,6 +289,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual int AddBPMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &type);
+  virtual void ContactInfo(const std::string &public_username,
+                           const std::string &me,
+                           ContactInfoNotifier cin);
+  virtual void OwnInfo(ContactInfoNotifier cin);
 
   // Vault
   void PollVaultInfo(base::callback_func_type cb);

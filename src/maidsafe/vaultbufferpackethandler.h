@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_VAULT_VAULTBUFFERPACKETHANDLER_H_
-#define MAIDSAFE_VAULT_VAULTBUFFERPACKETHANDLER_H_
+#ifndef MAIDSAFE_VAULTBUFFERPACKETHANDLER_H_
+#define MAIDSAFE_VAULTBUFFERPACKETHANDLER_H_
 
 #include <maidsafe/crypto.h>
 #include <maidsafe/utils.h>
@@ -39,18 +39,18 @@ namespace maidsafe {
 class VaultBufferPacketHandler {
  public:
   VaultBufferPacketHandler();
-  bool ValidateOwnerSignature(std::string public_key,
-                              std::string ser_bufferpacket);
+  bool ValidateOwnerSignature(const std::string &public_key,
+                              const std::string &ser_bufferpacket);
   bool CheckStatus(const std::string &current_bp,
                    const std::string &ser_message,
                    const std::string &signed_public_key,
                    int *status);
   bool GetMessages(std::string *ser_bp, std::vector<std::string> *msgs);
   bool ClearMessages(std::string *ser_bufferpacket);
-  bool IsOwner(std::string owner_id, GenericPacket gp_info);
-  bool ChangeOwnerInfo(std::string ser_gp,
-                       std::string *ser_packet,
-                       std::string public_key);
+  bool IsOwner(const std::string &owner_id, const GenericPacket &gp_info);
+  bool ChangeOwnerInfo(const std::string &ser_gp,
+                       const std::string &public_key,
+                       std::string *ser_packet);
   bool AddMessage(const std::string &current_bp,
                   const std::string &ser_message,
                   const std::string &signed_public_key,
@@ -58,6 +58,7 @@ class VaultBufferPacketHandler {
   bool ContactInfo(const std::string &current_bp,
                    const std::string &public_username,
                    EndPoint *ep,
+                   PersonalDetails *pd,
                    boost::uint16_t *status);
 
 
@@ -73,4 +74,4 @@ class VaultBufferPacketHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_VAULT_VAULTBUFFERPACKETHANDLER_H_
+#endif  // MAIDSAFE_VAULTBUFFERPACKETHANDLER_H_

@@ -79,6 +79,23 @@ bool ChunkStore::Init() {
       }
     }
     set_is_initialised(temp_result);
+    for (int i = 0; i < kDefaultChunkCount; ++i) {
+      std::string key = base::DecodeFromHex(kDefaultChunks[i][0]);
+      std::string value = base::DecodeFromHex(kDefaultChunks[i][1]);
+      ChunkType type(kHashable | kNormal);
+      fs::path chunk_path(GetChunkPath(key, type, true));
+      boost::uint64_t chunk_size(value.size());
+      fs::ofstream fstr;
+      fstr.open(chunk_path, std::ios_base::binary);
+      fstr.write(value.c_str(), chunk_size);
+      fstr.close();
+      ChunkInfo chunk(key, boost::posix_time::microsec_clock::local_time(),
+          type, chunk_size);
+      {
+        boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
+        chunkstore_set_.insert(chunk);
+      }
+    }
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG

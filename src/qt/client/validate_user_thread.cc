@@ -34,10 +34,10 @@ ValidateUserThread::~ValidateUserThread() { }
 
 void ValidateUserThread::run() {
   qDebug() << "ValidateUserThread::run";
-#ifdef DEBUG
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
-  qDebug() << "ValidateUserThread::run - After SLEEP";
-#endif
+//  #ifdef DEBUG
+//    boost::this_thread::sleep(boost::posix_time::seconds(2));
+//    qDebug() << "ValidateUserThread::run - After SLEEP";
+//  #endif
   const std::string password = password_.toStdString();
 
   if (ClientController::instance()->ValidateUser(password)) {

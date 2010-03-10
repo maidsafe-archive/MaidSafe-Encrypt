@@ -151,8 +151,8 @@ class DataAtlasHandlerTest : public testing::Test {
       boost::uint32_t current_time_ = base::get_epoch_time();
       mdm.set_creation_time(current_time_);
       mdm.SerializeToString(&ser_mdm);
-      if (kRootSubdir[i][1] == "")
-        seh->GenerateUniqueKey(PRIVATE, "", 0, &key);
+      if (kRootSubdir[i][1].empty())
+        seh->GenerateUniqueKey(&key);
       else
         key = kRootSubdir[i][1];
       fs::create_directories(file_system::MaidsafeHomeDir(

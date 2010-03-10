@@ -68,11 +68,11 @@ UserSpaceFileSystem::~UserSpaceFileSystem() {
 }
 
 bool UserSpaceFileSystem::mount() {
-#ifdef DEBUG
-  qDebug() << "UserSpaceFileSystem::mount before 2 sec sleep";
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
-  qDebug() << "UserSpaceFileSystem::mount after 2 sec sleep";
-#endif
+//  #ifdef DEBUG
+  qDebug() << "UserSpaceFileSystem::mount";
+//    boost::this_thread::sleep(boost::posix_time::seconds(2));
+//    qDebug() << "UserSpaceFileSystem::mount after 2 sec sleep";
+//  #endif
 
   ClientController::instance()->SetMounted(0);
 

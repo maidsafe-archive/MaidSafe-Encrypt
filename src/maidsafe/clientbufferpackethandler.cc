@@ -32,7 +32,7 @@ void ClientBufferPacketHandler::CreateBufferPacket(
   GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
   BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(args.sign_id);
-  buffer_packet_info.set_ownerpublickey(args.public_key);
+  buffer_packet_info.set_owner_publickey(args.public_key);
   buffer_packet_info.set_online(1);
   ser_owner_info->set_data(buffer_packet_info.SerializeAsString());
   ser_owner_info->set_signature(crypto_obj_.AsymSign(
@@ -133,7 +133,7 @@ void ClientBufferPacketHandler::ModifyOwnerInfo(const BPInputParameters &args,
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(args.sign_id);
-  buffer_packet_info.set_ownerpublickey(args.public_key);
+  buffer_packet_info.set_owner_publickey(args.public_key);
   buffer_packet_info.set_online(status);
   EndPoint *ep = buffer_packet_info.mutable_ep();
   ep->set_ip(knode_->host_ip());
@@ -306,7 +306,8 @@ void ClientBufferPacketHandler::FindReferences_CB(const std::string &result,
       case GET_INFO: {
                      EndPoint ep;
                      boost::uint32_t status(0);
-                     data->cb_getinfo(kGetBPInfoError, ep, status);
+                     PersonalDetails pd;
+                     data->cb_getinfo(kGetBPInfoError, ep, pd, status);
                      break;
                      }
     }
@@ -428,16 +429,19 @@ void ClientBufferPacketHandler::IterativeFindContacts(
                            data.contactinfo_response->result() == kAck &&
                            data.contactinfo_response->pmid_id() ==
                              data.ctc.node_id()) {
+                         PersonalDetails pd;
                          EndPoint ep;
                          ep.set_ip("");
                          ep.set_port(0);
                          boost::uint32_t status(0);
                          if (data.contactinfo_response->has_ep() &&
-                             data.contactinfo_response->has_status()) {
+                             data.contactinfo_response->has_status() &&
+                             data.contactinfo_response->has_pd()) {
                            ep = data.contactinfo_response->ep();
                            status = data.contactinfo_response->status();
+                           pd = data.contactinfo_response->pd();
                          }
-                         data.data->cb_getinfo(kSuccess, ep, status);
+                         data.data->cb_getinfo(kSuccess, ep, pd, status);
                          return;
                        }
                        break;
@@ -465,7 +469,8 @@ void ClientBufferPacketHandler::IterativeFindContacts(
                            }
         case GET_INFO: {
                        EndPoint ep;
-                       data.data->cb_getinfo(kGetBPInfoError, ep, 0);
+                       PersonalDetails pd;
+                       data.data->cb_getinfo(kGetBPInfoError, ep, pd, 0);
                        break;
                        }
       }
