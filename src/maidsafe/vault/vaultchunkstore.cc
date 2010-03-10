@@ -194,9 +194,8 @@ int VaultChunkStore::FreeCacheSpace(const boost::uint64_t &space_to_clear) {
           fs::remove_all(p);
         }
         catch(const std::exception &e) {}
-        maidsafe::chunk_set_by_non_hex_name::iterator name_itr =
-            chunkstore_set_.get<0>().find(chunk.non_hex_name_);
-        chunkstore_set_.erase(name_itr);
+        chunkstore_set_.get<1>().erase(itr);
+        --itr;
         space_used_by_cache_ -= chunk.size_;
         cleared_so_far += chunk.size_;
       } else {
