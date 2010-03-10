@@ -101,6 +101,10 @@ class ClientController : public QObject {
                      const std::set<std::string> &readonlys);
   bool ValidateUser(const std::string &password);
 
+  //Get Own Info
+  int GetInfo(const std::string &public_username,
+              std::vector<std::string> *info);
+  int SetInfo(const std::vector<std::string> &info);
 
   ///////////////////////////////
   //// Conversation Handling ////

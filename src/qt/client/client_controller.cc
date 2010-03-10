@@ -636,3 +636,14 @@ int ClientController::GetContactInfo(const std::string &pub_name,
   return maidsafe::SessionSingleton::getInstance()->GetContactInfo(pub_name,
                                                                    mic);
 }
+
+int ClientController::GetInfo(const std::string &public_username,
+              std::vector<std::string> *info){
+  return maidsafe::ClientController::getInstance()->GetInfo(public_username,
+                                                            info);
+}
+
+int ClientController::SetInfo(const std::vector<std::string> &info){
+  return maidsafe::ClientController::getInstance()->SetInfo(info);
+}
+
