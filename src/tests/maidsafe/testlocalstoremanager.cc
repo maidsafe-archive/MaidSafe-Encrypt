@@ -293,7 +293,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
 TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
   kad::SignedValue gp;
   rsao_.ClearKeys();
-  rsao_.GenerateKeys(4096);
+  rsao_.GenerateKeys(maidsafe::kRsaKeySize);
   gp.set_value("Generic System Packet Data");
   gp.set_value_signature(co_.AsymSign(gp.value(), "",
                          ss_->PrivateKey(maidsafe::ANMID),
@@ -337,7 +337,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
 TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   kad::SignedValue gp;
   rsao_.ClearKeys();
-  rsao_.GenerateKeys(4096);
+  rsao_.GenerateKeys(maidsafe::kRsaKeySize);
   gp.set_value("Generic System Packet Data");
   gp.set_value_signature(co_.AsymSign(gp.value(), "",
                          ss_->PrivateKey(maidsafe::ANMID),
@@ -361,7 +361,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
 
   result = maidsafe::kGeneralError;
-  rsao_.GenerateKeys(4096);
+  rsao_.GenerateKeys(maidsafe::kRsaKeySize);
   std::vector<std::string> values(1, gp.value());
 
   std::string anmid_pubkey_signature(co_.AsymSign(rsao_.public_key(),
@@ -495,7 +495,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   // Create the user "Juanito", add to session, then the message and send it
   ss_->ResetSession();
   crypto::RsaKeyPair rsa_kp;
-  rsa_kp.GenerateKeys(4096);
+  rsa_kp.GenerateKeys(maidsafe::kRsaKeySize);
   std::string private_key = rsa_kp.private_key();
   std::string public_key = rsa_kp.public_key();
   std::string signed_public_key = co_.AsymSign(public_key, "",
@@ -544,7 +544,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   // Create the user "Juanito", add to session, then the message and send it
   ss_->ResetSession();
   crypto::RsaKeyPair rsa_kp;
-  rsa_kp.GenerateKeys(4096);
+  rsa_kp.GenerateKeys(maidsafe::kRsaKeySize);
   std::string private_key = rsa_kp.private_key();
   std::string public_key = rsa_kp.public_key();
   std::string signed_public_key = co_.AsymSign(public_key, "",
@@ -643,7 +643,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
   // Create the user "Juanito", add to session, then the message and send it
   ss_->ResetSession();
   crypto::RsaKeyPair rsa_kp;
-  rsa_kp.GenerateKeys(4096);
+  rsa_kp.GenerateKeys(maidsafe::kRsaKeySize);
   std::string private_key = rsa_kp.private_key();
   std::string public_key = rsa_kp.public_key();
   std::string signed_public_key = co_.AsymSign(public_key, "",

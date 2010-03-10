@@ -18,6 +18,7 @@
 #include <maidsafe/crypto.h>
 #include <maidsafe/utils.h>
 #include "fs/filesystem.h"
+#include "maidsafe/client/packetfactory.h"
 #include "maidsafe/returncodes.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "protobuf/packet.pb.h"
@@ -84,7 +85,7 @@ bool MakeKeys(const boost::uint32_t &num_keys,
               std::vector<std::string> *public_key) {
   for (boost::uint32_t i = 0; i < num_keys; ++i) {
     crypto::RsaKeyPair kp;
-    kp.GenerateKeys(4096);
+    kp.GenerateKeys(maidsafe::kRsaKeySize);
     private_key->push_back(kp.private_key());
     public_key->push_back(kp.public_key());
 //    printf("Key pair %i :- pri: %s pub: %s\n", i,
@@ -438,14 +439,16 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
   ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount),
+            chunkstore->chunkstore_set_.size());
   // check using hashable chunk
   ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
                                           &h_value, &h_name));
   int test_chunk = 0;
   ASSERT_EQ(0, chunkstore->Store(h_name.at(test_chunk),
                                  h_value.at(test_chunk)));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   fs::path found("");
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
                                         &found));
@@ -458,7 +461,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
             chunkstore->Store(h_name.at(test_chunk), file_path));
   ASSERT_EQ(kInvalidChunkType,
             chunkstore->Store(h_name.at(test_chunk), std::string("New value")));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   // check contents of file
   ASSERT_NE(found.filename(), "");
   boost::uint64_t chunk_size = fs::file_size(found);
@@ -474,14 +478,16 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
   // move to Outgoing and check we can store again
   ASSERT_EQ(0, chunkstore->ChangeChunkType(h_name.at(test_chunk),
             maidsafe::kHashable | maidsafe::kOutgoing));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
                                         &found));
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
                                              chunkstore->kOutgoingLeaf_));
   ASSERT_EQ(0, chunkstore->Store(h_name.at(test_chunk),
                                  h_value.at(test_chunk)));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
                                         &found));
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
@@ -489,35 +495,40 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
   // check a hashable chunk which is already cached can be stored
   ASSERT_EQ(0, chunkstore->ChangeChunkType(h_name.at(test_chunk),
             maidsafe::kHashable | maidsafe::kCache));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
                                         &found));
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
                                              chunkstore->kCacheLeaf_));
   ASSERT_EQ(0, chunkstore->Store(h_name.at(test_chunk),
                                  h_value.at(test_chunk)));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
                                         &found));
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
                                              chunkstore->kNormalLeaf_));
   ASSERT_EQ(0, chunkstore->ChangeChunkType(h_name.at(test_chunk),
             maidsafe::kHashable | maidsafe::kTempCache));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
                                         &found));
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
                                              chunkstore->kTempCacheLeaf_));
   ASSERT_EQ(0, chunkstore->Store(h_name.at(test_chunk),
                                  h_value.at(test_chunk)));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
                                         &found));
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
                                              chunkstore->kNormalLeaf_));
   // check we can add a chunk which is stored as a file
   ASSERT_EQ(0, chunkstore->Store(hash_file_content, file_path));
-  ASSERT_EQ(size_t(2), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 2,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, hash_file_content, &found));
   // check file has been added to correct directory
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
@@ -527,7 +538,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
                                           &nh_value, &nh_name));
   ASSERT_EQ(0, chunkstore->Store(nh_name.at(test_chunk),
                                      nh_value.at(test_chunk)));
-  ASSERT_EQ(size_t(3), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 3,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, nh_name.at(test_chunk),
                                         &found));
   // check file has been added to correct directory
@@ -547,7 +559,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
   ASSERT_EQ(nh_value.at(test_chunk), stored_value2);
   // check we can add a chunk which is stored as a file
   ASSERT_EQ(0, chunkstore->Store(other_hash, file_path));
-  ASSERT_EQ(size_t(4), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 4,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, other_hash, &found));
   // check file has been added to correct directory
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found,
@@ -557,7 +570,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk) {
   std::string wrong_length_key("too short");
   ASSERT_EQ(maidsafe::kIncorrectKeySize,
       chunkstore->Store(wrong_length_key, h_value.at(0)));
-  ASSERT_EQ(size_t(4), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 4,
+            chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(test_chunkstore::FindFile(storedir, wrong_length_key, &found));
   ASSERT_FALSE(chunkstore->Has(wrong_length_key));
 }
@@ -568,14 +582,16 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
   ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount),
+            chunkstore->chunkstore_set_.size());
   // check using hashable chunk
   ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
                                           &h_value, &h_name));
   int test_chunk = 0;
   ASSERT_EQ(0, chunkstore->AddChunkToOutgoing(h_name.at(test_chunk),
                                               h_value.at(test_chunk)));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   fs::path found("");
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
                                         &found));
@@ -591,7 +607,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
   // TODO(Team#5#): 2009-04-06 - Decide when to overwrite file using Store
   //  std::string new_val("New value");
   //  ASSERT_NE(0, chunkstore->Store(h_name.at(test_chunk), new_val));
-  //  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  //  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+  //            chunkstore->chunkstore_set_.size());
 
   // check contents of file
   ASSERT_NE(found.filename(), "");
@@ -607,7 +624,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
   ASSERT_EQ(h_value.at(test_chunk), stored_value1);
   // check we can add a chunk which is stored as a file
   ASSERT_EQ(0, chunkstore->AddChunkToOutgoing(hash_file_content, file_path));
-  ASSERT_EQ(size_t(2), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 2,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, hash_file_content, &found));
   // check file has been added to correct directory
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found, chunkstore->kHashableLeaf_,
@@ -617,7 +635,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
                                           &nh_value, &nh_name));
   ASSERT_EQ(0, chunkstore->AddChunkToOutgoing(nh_name.at(test_chunk),
                                               nh_value.at(test_chunk)));
-  ASSERT_EQ(size_t(3), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 3,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, nh_name.at(test_chunk),
                                         &found));
   // check file has been added to correct directory
@@ -642,7 +661,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
   ASSERT_EQ(nh_value.at(test_chunk), stored_value2);
   // check we can add a chunk which is stored as a file
   ASSERT_EQ(0, chunkstore->AddChunkToOutgoing(other_hash, file_path));
-  ASSERT_EQ(size_t(4), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 4,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, other_hash, &found));
   // check file has been added to correct directory
   ASSERT_TRUE(test_chunkstore::CheckFilePath(found,
@@ -652,7 +672,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing) {
   std::string wrong_length_key("too short");
   ASSERT_EQ(kIncorrectKeySize,
             chunkstore->Store(wrong_length_key, h_value.at(0)));
-  ASSERT_EQ(size_t(4), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 4,
+            chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(test_chunkstore::FindFile(storedir, wrong_length_key, &found));
   ASSERT_FALSE(chunkstore->Has(wrong_length_key));
 }
@@ -723,14 +744,16 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreDeleteChunk) {
   ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount),
+            chunkstore->chunkstore_set_.size());
   // check using hashable chunk
   ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 3, 32000, &h_size,
                                           &h_value, &h_name));
   int test_chunk = 0;
   ASSERT_EQ(0, chunkstore->Store(h_name.at(test_chunk),
                                      h_value.at(test_chunk)));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(chunkstore->Has(h_name.at(test_chunk)));
   fs::path found("");
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, h_name.at(test_chunk),
@@ -738,17 +761,20 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreDeleteChunk) {
   ASSERT_NE(found.filename(), "");
   ASSERT_TRUE(fs::exists(found));
   ASSERT_EQ(0, chunkstore->DeleteChunk(h_name.at(test_chunk)));
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount),
+            chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(chunkstore->Has(h_name.at(test_chunk)));
   ASSERT_FALSE(fs::exists(found));
   ASSERT_EQ(0, chunkstore->DeleteChunk(h_name.at(test_chunk)));
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount),
+            chunkstore->chunkstore_set_.size());
   // check using non-hashable chunk
   ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, false, 3, 32000, &nh_size,
                                           &nh_value, &nh_name));
   ASSERT_EQ(0, chunkstore->Store(nh_name.at(test_chunk),
                                      nh_value.at(test_chunk)));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   ASSERT_TRUE(chunkstore->Has(nh_name.at(test_chunk)));
   found = fs::path("");
   ASSERT_TRUE(test_chunkstore::FindFile(storedir, nh_name.at(test_chunk),
@@ -756,11 +782,13 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreDeleteChunk) {
   ASSERT_NE(found.filename(), "");
   ASSERT_TRUE(fs::exists(found));
   ASSERT_EQ(0, chunkstore->DeleteChunk(nh_name.at(test_chunk)));
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount),
+            chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(chunkstore->Has(nh_name.at(test_chunk)));
   ASSERT_FALSE(fs::exists(found));
   ASSERT_EQ(0, chunkstore->DeleteChunk(nh_name.at(test_chunk)));
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount),
+            chunkstore->chunkstore_set_.size());
   // check using non-existent chunk
   std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
                                         false);
@@ -776,6 +804,10 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreLoadRandomChunk) {
   ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
+  for (int i = 0; i < kDefaultChunkCount; ++i) {
+    std::string key = base::DecodeFromHex(kDefaultChunks[i][0]);
+    ASSERT_EQ(0, chunkstore->DeleteChunk(key));
+  }
   // test when chunkstore is empty
   std::string key("key"), val("val");
   ASSERT_EQ(kChunkstoreError, chunkstore->LoadRandomChunk(&key, &val));
@@ -1071,7 +1103,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreSpace) {
   ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount),
+            chunkstore->chunkstore_set_.size());
   // check space
   ASSERT_EQ(boost::uint64_t(kStartingAvailableSpace),
             chunkstore->available_space());
@@ -1081,7 +1114,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreSpace) {
   ASSERT_TRUE(test_chunkstore::MakeChunks(1, cry_obj, true, 1000, 10000,
                                           &h_size, &h_value, &h_name));
   ASSERT_EQ(0, chunkstore->Store(h_name.at(0), h_value.at(0)));
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   // check space has been amended correctly
   ASSERT_EQ(boost::uint64_t(kStartingAvailableSpace),
             chunkstore->available_space());
@@ -1091,7 +1125,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreSpace) {
             chunkstore->FreeSpace());
   // delete the chunk
   ASSERT_EQ(0, chunkstore->DeleteChunk(h_name.at(0)));
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount),
+            chunkstore->chunkstore_set_.size());
   // check space has been amended correctly
   ASSERT_EQ(boost::uint64_t(kStartingAvailableSpace),
             chunkstore->available_space());
@@ -1139,7 +1174,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreReuseDirectory) {
   ASSERT_TRUE(chunkstore1->Init());
   test_chunkstore::WaitForInitialisation(chunkstore1, 60000);
   ASSERT_TRUE(chunkstore1->is_initialised());
-  ASSERT_EQ(size_t(kNumberOfChunks), chunkstore1->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + kNumberOfChunks,
+            chunkstore1->chunkstore_set_.size());
   for (int k = 0; k < kNumberOfChunks; k++) {
     ASSERT_TRUE(chunkstore1->Has(h_name.at(k)));
     std::string rec_value("Value");
@@ -1153,7 +1189,8 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreReuseDirectory) {
   ASSERT_TRUE(chunkstore2->Init());
   test_chunkstore::WaitForInitialisation(chunkstore2, 60000);
   ASSERT_TRUE(chunkstore2->is_initialised());
-  ASSERT_EQ(size_t(kNumberOfChunks - 1), chunkstore2->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + kNumberOfChunks - 1,
+            chunkstore2->chunkstore_set_.size());
   ASSERT_FALSE(chunkstore2->Has(h_name.at(0)));
 }
 
@@ -1169,7 +1206,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreClear) {
 
   // Clear empty chunk store
   ASSERT_EQ(0, chunkstore->Clear());
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(0), chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(fs::exists(chunkstore->kChunkstorePath_));
 
   // Empty with one chunk in
@@ -1178,18 +1215,20 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreClear) {
   std::string tempval;
   ASSERT_EQ(0, chunkstore->Load(h_name.at(0), &tempval));
   ASSERT_EQ(h_value.at(0), tempval);
-  ASSERT_EQ(size_t(1), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + 1,
+            chunkstore->chunkstore_set_.size());
   ASSERT_EQ(0, chunkstore->Clear());
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(0), chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(fs::exists(chunkstore->kChunkstorePath_));
 
   // Empty with kNumberOfChunks chunks
   ASSERT_TRUE(chunkstore->Init());
   for (size_t i = 0; i < h_value.size(); ++i)
     ASSERT_EQ(0, chunkstore->Store(h_name.at(i), h_value.at(i)));
-  ASSERT_EQ(size_t(kNumberOfChunks), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + kNumberOfChunks,
+            chunkstore->chunkstore_set_.size());
   ASSERT_EQ(0, chunkstore->Clear());
-  ASSERT_EQ(size_t(0), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(0), chunkstore->chunkstore_set_.size());
   ASSERT_FALSE(fs::exists(chunkstore->kChunkstorePath_));
 }
 
@@ -1199,6 +1238,10 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreGetAllChunks) {
   ASSERT_TRUE(chunkstore->Init());
   test_chunkstore::WaitForInitialisation(chunkstore, 60000);
   ASSERT_TRUE(chunkstore->is_initialised());
+  for (int i = 0; i < kDefaultChunkCount; ++i) {
+    std::string key = base::DecodeFromHex(kDefaultChunks[i][0]);
+    ASSERT_EQ(0, chunkstore->DeleteChunk(key));
+  }
   // Check with empty chunkstore.
   std::list<std::string> ret_chunk_names;
   chunkstore->GetAllChunks(&ret_chunk_names);
@@ -1888,12 +1931,13 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreFreeCacheSpace) {
     ASSERT_EQ(boost::uint64_t(1000) * (chunks_to_test - a),
               chunkstore->space_used_by_cache());
     ASSERT_TRUE(chunkstore->Has(chunknames[a]));
-    ASSERT_EQ(size_t(chunks_to_test - a), chunkstore->chunkstore_set_.size());
+    ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + chunks_to_test - a,
+              chunkstore->chunkstore_set_.size());
     ASSERT_EQ(kSuccess, chunkstore->FreeCacheSpace(1000));
     ASSERT_FALSE(chunkstore->Has(chunknames[a]));
     ASSERT_EQ(boost::uint64_t(1000) * (chunks_to_test - a - 1),
               chunkstore->space_used_by_cache());
-    ASSERT_EQ(size_t(chunks_to_test - a - 1),
+    ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + chunks_to_test - a - 1,
               chunkstore->chunkstore_set_.size());
   }
   ASSERT_EQ(boost::uint64_t(0), chunkstore->space_used_by_cache());
@@ -1914,11 +1958,13 @@ TEST_F(ChunkstoreTest, FUNC_MAID_ChunkstoreFreeCacheSpace) {
 
   ASSERT_TRUE(chunkstore->Has(chunknames[0]));
   ASSERT_TRUE(chunkstore->Has(chunknames[1]));
-  ASSERT_EQ(size_t(chunks_to_test), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + chunks_to_test,
+            chunkstore->chunkstore_set_.size());
   ASSERT_EQ(kSuccess, chunkstore->FreeCacheSpace(1500));
   ASSERT_FALSE(chunkstore->Has(chunknames[0]));
   ASSERT_FALSE(chunkstore->Has(chunknames[1]));
-  ASSERT_EQ(size_t(chunks_to_test - 2), chunkstore->chunkstore_set_.size());
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + chunks_to_test - 2,
+            chunkstore->chunkstore_set_.size());
   ASSERT_EQ(size_t(1000 * (chunks_to_test - 2)),
             chunkstore->space_used_by_cache());
   printf("Passed #2\n");

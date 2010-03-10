@@ -38,7 +38,7 @@ protected:
     mutex = new boost::recursive_mutex *[kNetworkSize];
     cry_obj.set_symm_algorithm(crypto::AES_256);
     cry_obj.set_hash_algorithm(crypto::SHA_512);
-    keys.GenerateKeys(4096);
+    keys.GenerateKeys(maidsafe::kRsaKeySize);
     sig_pub_key = cry_obj.AsymSign(keys.public_key(), "", keys.private_key(),
       crypto::STRING_STRING);
 
@@ -363,7 +363,7 @@ TEST_F(PDClientTest, BEH_KAD_StoreChunk_InvalidRequest) {
     sig_pub_key + encoded_chunk_name, "", crypto::STRING_STRING, true), "",
     keys.private_key(), crypto::STRING_STRING);
   crypto::RsaKeyPair otherkeys;
-  otherkeys.GenerateKeys(4096);
+  otherkeys.GenerateKeys(maidsafe::kRsaKeySize);
   ASSERT_NE(keys.public_key(), otherkeys.public_key());
   pdclient->StoreChunk(chunk_name, chunk_content, otherkeys.public_key(),
     sig_pub_key, sig_req, maidsafe::DATA,

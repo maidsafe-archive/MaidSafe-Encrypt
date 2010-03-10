@@ -25,6 +25,7 @@
 #include <gtest/gtest.h>
 #include <maidsafe/crypto.h>
 
+#include "maidsafe/client/packetfactory.h"
 #include "maidsafe/client/sessionsingleton.h"
 
 namespace maidsafe {
@@ -234,7 +235,7 @@ TEST_F(SessionSingletonTest, FUNC_MAID_SessionKeyRingIO) {
   DataAtlas da;
   for (int n = 0; n < 7; ++n) {
     crypto::RsaKeyPair rskp;
-    rskp.GenerateKeys(4096);
+    rskp.GenerateKeys(kRsaKeySize);
     pri_keys[n] = rskp.private_key();
     pub_keys[n] = rskp.public_key();
     Key *k = da.add_keys();

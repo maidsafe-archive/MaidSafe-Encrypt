@@ -32,8 +32,8 @@
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht_config.h>
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "maidsafe/client/packetfactory.h"
 #include "maidsafe/maidsafe.h"
@@ -67,7 +67,7 @@ class KGroup {
           pmid_public_signature(pmid_public_signature_in) {}
     Member() : pmid(), pmid_private(), pmid_public(), pmid_public_signature() {
       crypto::RsaKeyPair kp;
-      kp.GenerateKeys(4096);
+      kp.GenerateKeys(maidsafe::kRsaKeySize);
       pmid_private = kp.private_key();
       pmid_public = kp.public_key();
       crypto::Crypto co;
