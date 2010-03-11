@@ -29,7 +29,7 @@ CheckForMessagesThread::~CheckForMessagesThread() { }
 void CheckForMessagesThread::run() {
   qDebug() << "CheckForMessagesThread::run";
 
-  const bool success = maidsafe::ClientController::getInstance()->GetMessages();
+  const bool success = ClientController::instance()->GetMessages();
 
   emit completed(success);
 }

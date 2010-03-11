@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>277</width>
-    <height>301</height>
+    <width>273</width>
+    <height>378</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -54,6 +54,13 @@
          </item>
          <item row="3" column="0">
           <widget class="QLineEdit" name="messageEdit"/>
+         </item>
+         <item row="4" column="0">
+          <widget class="QCheckBox" name="saveConvCheckBox">
+           <property name="text">
+            <string>Save conversation history?</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
