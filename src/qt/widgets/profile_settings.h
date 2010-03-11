@@ -36,6 +36,17 @@ class ProfileSettings : public QWidget {
 
   QHash<QString, QString> changedValues_;
 
+  private slots:
+    void onPubNameTextEdit(const QString&);
+    void onFullNameTextEdit(const QString&);
+    void onPhoneTextEdit(const QString&);
+    void onBirthDayTextEdit(const QString&);
+    void onLanguageTextEdit(const QString&);
+    void onCityTextEdit(const QString&);
+    void onCountryTextEdit(const QString&);
+    void onFemaleChanged(int);
+    void onMaleChanged(int);
+
  private:
   Ui::ProfileSettingsPage ui_;
   bool init_;

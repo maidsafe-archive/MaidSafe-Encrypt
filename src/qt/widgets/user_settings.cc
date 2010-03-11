@@ -11,9 +11,11 @@
  *  Created on: Jan 23, 2010
  *      Author: Stephen Alexander
  */
+#include "qt/widgets/user_settings.h"
 
 #include <QMessageBox>
-#include "qt/widgets/user_settings.h"
+#include <QDebug>
+
 #include "qt/client/client_controller.h"
 
 UserSettings::UserSettings(QWidget* parent) {
@@ -146,6 +148,26 @@ void UserSettings::HandleOK() {
   if (!connection_->changedValues_.isEmpty()) {
   }
   if (!security_->changedValues_.isEmpty()) {
+  }
+  if (!profile_->changedValues_.isEmpty()) {
+    QHash<QString, QString> theHash = personal_->changedValues_;
+
+    std::vector<std::string> profileInfo;
+
+    profileInfo.push_back(theHash["PubName"].toStdString());
+    //QDebug(*theHash.value("PubName"));
+    profileInfo.push_back(theHash["FullName"].toStdString());
+    profileInfo.push_back(theHash["Phone"].toStdString());
+    profileInfo.push_back(theHash["BirthDay"].toStdString());
+    profileInfo.push_back(theHash["Gender"].toStdString());
+    profileInfo.push_back(theHash["Language"].toStdString());
+    profileInfo.push_back(theHash["City"].toStdString());
+    profileInfo.push_back(theHash["Country"].toStdString());
+
+    int n = ClientController::instance()->SetInfo(profileInfo);
+
+    QMessageBox::warning(this, tr("Set Info Warning"),
+                        QString(tr("Result. %1").arg(n)));
   }
 }
 
