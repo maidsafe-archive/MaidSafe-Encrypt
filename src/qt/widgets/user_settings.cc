@@ -150,11 +150,10 @@ void UserSettings::HandleOK() {
   if (!security_->changedValues_.isEmpty()) {
   }
   if (!profile_->changedValues_.isEmpty()) {
-    QHash<QString, QString> theHash = personal_->changedValues_;
+    QHash<QString, QString> theHash = profile_->changedValues_;
 
     std::vector<std::string> profileInfo;
 
-    profileInfo.push_back(theHash["PubName"].toStdString());
     //QDebug(*theHash.value("PubName"));
     profileInfo.push_back(theHash["FullName"].toStdString());
     profileInfo.push_back(theHash["Phone"].toStdString());
