@@ -119,13 +119,14 @@ void BPAddMsgCallbackFailed(const kad::Contact &peer,
 void ContactInfoCallbackSucceed(const kad::Contact &peer,
                                 maidsafe::ContactInfoResponse *response,
                                 google::protobuf::Closure *done) {
-  printf("ContactInfoCallbackSucceed\n");
   response->set_result(kAck);
   response->set_pmid_id(peer.node_id());
   response->set_status(3);
   maidsafe::EndPoint *ep = response->mutable_ep();
   ep->set_ip("132.248.59.1");
   ep->set_port(48591);
+  maidsafe::PersonalDetails *pd = response->mutable_pd();
+  pd->Clear();
   done->Run();
 }
 
@@ -1027,8 +1028,6 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoBasic) {
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(maidsafe::kRsaKeySize);
 
-  BPCallback cb;
-
   EXPECT_CALL(cbph, FindReferences(_, _))
     .Times(1)
     .WillOnce(WithArgs<0>(Invoke(FindReferencesCBSucceed)));
@@ -1057,6 +1056,7 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoBasic) {
   std::string recv_id = cryp.Hash(keys.public_key() + signed_pub_key, "",
                         crypto::STRING_STRING, false);
 
+  BPCallback cb;
   cbph.ContactInfo(bpip, "el nalga derecha", "", "",
                    boost::bind(&BPCallback::ContactInfo_CB,
                                &cb, _1, _2, _3, _4),

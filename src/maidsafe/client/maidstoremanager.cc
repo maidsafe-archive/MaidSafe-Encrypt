@@ -1156,11 +1156,20 @@ int MaidsafeStoreManager::AddBPMessage(
 void MaidsafeStoreManager::ContactInfo(const std::string &public_username,
                                        const std::string &me,
                                        ContactInfoNotifier cin) {
-  return;
+  BPInputParameters bi_input_params = {ss_->Id(MPID), ss_->PublicKey(MPID),
+                                       ss_->PrivateKey(MPID)};
+  std::string rec_pub_key;
+  if (public_username == me)
+    rec_pub_key = ss_->PublicKey(MPID);
+  else
+    rec_pub_key = ss_->GetContactPublicKey(public_username);
+
+  cbph_.ContactInfo(bi_input_params, me, public_username, rec_pub_key,
+                    cin, udt_transport_.GetID());
 }
 
 void MaidsafeStoreManager::OwnInfo(ContactInfoNotifier cin) {
-  return;
+  ContactInfo(ss_->Id(MPID), ss_->Id(MPID), cin);
 }
 
 void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
