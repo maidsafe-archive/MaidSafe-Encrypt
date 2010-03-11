@@ -313,8 +313,8 @@ void ClientBufferPacketHandler::FindReferences_CB(const std::string &result,
     }
     return;
   }
-  for (int i = 0; i < rslt.values_size(); ++i)
-    data->holder_ids.push_back(rslt.values(i));
+  for (int i = 0; i < rslt.signed_values_size(); ++i)
+    data->holder_ids.push_back(rslt.signed_values(i).value());
 
   ModifyBPCallbackData cb_data;
   cb_data.data = data;
@@ -340,39 +340,40 @@ void ClientBufferPacketHandler::FindRemoteContact_CB(const std::string &result,
     cb_data.ctrl = new rpcprotocol::Controller;
     cb_data.ctc = ctc;
 
+    google::protobuf::Closure *done = NULL;
     switch (cb_data.data->type) {
-      case MODIFY_INFO: {
+      case MODIFY_INFO:
         cb_data.modify_response = new ModifyBPInfoResponse;
-        google::protobuf::Closure *done = google::protobuf::NewCallback <
+        done = google::protobuf::NewCallback <
           ClientBufferPacketHandler, ModifyBPCallbackData > (this,
           &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
         rpcs_->ModifyBPInfo(ctc, local, transport_id, &data->modify_request,
           cb_data.modify_response, cb_data.ctrl, done);
-      }
-      case ADD_MESSAGE: {
+        break;
+      case ADD_MESSAGE:
         cb_data.add_msg_response = new AddBPMessageResponse;
-        google::protobuf::Closure *done = google::protobuf::NewCallback <
+        done = google::protobuf::NewCallback <
           ClientBufferPacketHandler, ModifyBPCallbackData > (this,
           &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
         rpcs_->AddBPMessage(ctc, local, transport_id, &data->add_msg_request,
           cb_data.add_msg_response, cb_data.ctrl, done);
-      }
-      case GET_MESSAGES: {
+        break;
+      case GET_MESSAGES:
         cb_data.get_msgs_response = new GetBPMessagesResponse;
-        google::protobuf::Closure *done = google::protobuf::NewCallback <
+        done = google::protobuf::NewCallback <
           ClientBufferPacketHandler, ModifyBPCallbackData > (this,
           &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
         rpcs_->GetBPMessages(ctc, local, transport_id, &data->get_msgs_request,
           cb_data.get_msgs_response, cb_data.ctrl, done);
-      }
-      case GET_INFO: {
+        break;
+      case GET_INFO:
         cb_data.contactinfo_response = new ContactInfoResponse;
-        google::protobuf::Closure *done = google::protobuf::NewCallback <
+        done = google::protobuf::NewCallback <
           ClientBufferPacketHandler, ModifyBPCallbackData > (this,
           &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
         rpcs_->ContactInfo(ctc, local, transport_id, &data->contactinfo_request,
           cb_data.contactinfo_response, cb_data.ctrl, done);
-      }
+        break;
     }
   }
 }
