@@ -90,7 +90,8 @@ ClientController::ClientController() : client_chunkstore_(),
                                        clear_messages_thread_(),
                                        client_store_(),
                                        initialised_(false),
-                                       logging_out_(false) {}
+                                       logging_out_(false),
+                                       logged_in_(false) {}
 
 boost::mutex cc_mutex;
 
@@ -634,6 +635,7 @@ bool ClientController::ValidateUser(const std::string &password) {
 
   clear_messages_thread_ = boost::thread(&ClientController::ClearStaleMessages,
                                          this);
+  logged_in_ = true;
   return true;
 }
 
@@ -715,6 +717,7 @@ bool ClientController::Logout() {
   ser_da_.clear();
   ser_dm_.clear();
   logging_out_ = false;
+  logged_in_ = false;
   return true;
 }
 
@@ -1989,37 +1992,43 @@ int ClientController::CreateNewShare(const std::string &name,
 
 int ClientController::GetInfo(const std::string &public_username,
                               std::vector<std::string> *info) {
-  info->clear();
-  BPCallback bpc;
-  ContactInfoNotifier cin = boost::bind(&BPCallback::ContactInfoCallback,
-                            &bpc, _1, _2, _3, _4);
-  bool own(true);
-  if (public_username.empty()) {
-    sm_->OwnInfo(cin);
-  } else {
-    sm_->ContactInfo(public_username, ss_->Id(MPID), cin);
-    own = false;
-  }
-  while (bpc.result == kGeneralError)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(250));
+  if (!logged_in_) {
+    if (!public_username.empty() && info == NULL)
+      return kClientControllerError;
+    else
+      info->clear();
+    BPCallback bpc;
+    ContactInfoNotifier cin = boost::bind(&BPCallback::ContactInfoCallback,
+                              &bpc, _1, _2, _3, _4);
+    bool own(true);
+    if (public_username.empty()) {
+      sm_->OwnInfo(cin);
+    } else {
+      sm_->ContactInfo(public_username, ss_->Id(MPID), cin);
+      own = false;
+    }
+    while (bpc.result == kGeneralError)
+      boost::this_thread::sleep(boost::posix_time::milliseconds(250));
 
-  if (bpc.result != kSuccess) {
-#ifdef DEBUG
-    printf("CC::GetInfo - Failed to get info %d\n", bpc.result);
-#endif
-    return bpc.result;
-  }
+    if (bpc.result != kSuccess) {
+  #ifdef DEBUG
+      printf("CC::GetInfo - Failed to get info %d\n", bpc.result);
+  #endif
+      return bpc.result;
+    }
 
-  if (!own) {
-    info->push_back(bpc.personal_details.full_name());
-    info->push_back(bpc.personal_details.phone_number());
-    info->push_back(bpc.personal_details.gender());
-    info->push_back(bpc.personal_details.language());
-    info->push_back(bpc.personal_details.city());
-    info->push_back(bpc.personal_details.country());
-  } else {
-    ss_->SetPd(bpc.personal_details);
-    ss_->SetEp(bpc.end_point);
+    if (!own) {
+      info->push_back(bpc.personal_details.full_name());
+      info->push_back(bpc.personal_details.phone_number());
+      info->push_back(bpc.personal_details.gender());
+      info->push_back(bpc.personal_details.language());
+      info->push_back(bpc.personal_details.city());
+      info->push_back(bpc.personal_details.country());
+    } else {
+      printf("Putting stuff to the session - %s\n", bpc.personal_details.full_name().c_str());
+      ss_->SetPd(bpc.personal_details);
+      ss_->SetEp(bpc.end_point);
+    }
   }
 
   return 0;
@@ -2033,6 +2042,19 @@ int ClientController::SetInfo(const std::vector<std::string> &info) {
 #endif
     return n;
   }
+
+  printf("CC::SetInfo - %s\n", info[0].c_str());
+
+  PersonalDetails pd;
+  pd.set_full_name(info[0]);
+  pd.set_phone_number(info[1]);
+  pd.set_birthday(info[2]);
+  pd.set_gender(info[3]);
+  pd.set_language(info[4]);
+  pd.set_city(info[5]);
+  pd.set_country(info[6]);
+
+  ss_->SetPd(pd);
 
   return 0;
 }

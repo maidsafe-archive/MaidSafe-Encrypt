@@ -27,9 +27,7 @@ CheckForMessagesThread::CheckForMessagesThread(QObject* parent)
 CheckForMessagesThread::~CheckForMessagesThread() { }
 
 void CheckForMessagesThread::run() {
-  qDebug() << "CheckForMessagesThread::run";
-
+//  qDebug() << "CheckForMessagesThread::run";
   const bool success = ClientController::instance()->GetMessages();
-
   emit completed(success);
 }

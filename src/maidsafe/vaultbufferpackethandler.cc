@@ -67,7 +67,7 @@ bool VaultBufferPacketHandler::GetMessages(std::string *ser_bp,
   BufferPacketMessage bpm;
   if (bp.messages_size() == 0) {
 #ifdef DEBUG
-    printf("VaultBufferPacketHandler::GetMessages - NO messages.\n");
+//    printf("VaultBufferPacketHandler::GetMessages - NO messages.\n");
 #endif
     return true;
   }
