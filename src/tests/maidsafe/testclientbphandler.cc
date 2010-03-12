@@ -47,8 +47,12 @@ void execute_cb(base::callback_func_type cb, const std::string &result) {
 void FindReferencesCBSucceed(base::callback_func_type cb) {
   kad::FindResponse res;
   res.set_result(kad::kRpcResultSuccess);
-  for (int i = 0; i < kMinChunkCopies; ++i)
-    res.add_values("id" + boost::lexical_cast<std::string>(i));
+  for (int i = 0; i < kMinChunkCopies; ++i) {
+    kad::SignedValue *sig_val = res.add_signed_values();
+    sig_val->set_value("id" + boost::lexical_cast<std::string>(i));
+    // TODO(Team#) sign value
+    sig_val->set_value_signature("xyz");
+  }
   boost::thread thrd(execute_cb, cb, res.SerializeAsString());
 }
 
@@ -431,13 +435,6 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfo) {
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPInfoCallbackSucceed)));
 
-  EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies);
-  EXPECT_CALL(*BPMock, GetBPMessages(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies);
-  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies);
-
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
     keys.private_key(), crypto::STRING_STRING);
   maidsafe::BPInputParameters bpip = {cryp.Hash(keys.public_key() +
@@ -539,13 +536,6 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailOneFindContacts) {
     .Times(kMinChunkCopies-1)
     .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPInfoCallbackSucceed)));
 
-  EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies - 1);
-  EXPECT_CALL(*BPMock, GetBPMessages(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies - 1);
-  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies - 1);
-
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
     keys.private_key(), crypto::STRING_STRING);
   maidsafe::BPInputParameters bpip = {cryp.Hash(keys.public_key() +
@@ -580,13 +570,6 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOIFailModifyInfoRpc) {
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPInfoCallbackFailed)));
 
-  EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies);
-  EXPECT_CALL(*BPMock, GetBPMessages(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies);
-  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies);
-
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
     keys.private_key(), crypto::STRING_STRING);
   maidsafe::BPInputParameters bpip = {cryp.Hash(keys.public_key() +
@@ -620,11 +603,6 @@ TEST_F(TestClientBP, BEH_MAID_AddMessage) {
   EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _, _))
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPAddMsgCallbackSucceed)));
-
-  EXPECT_CALL(*BPMock, GetBPMessages(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies);
-  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies);
 
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
     keys.private_key(), crypto::STRING_STRING);
@@ -748,11 +726,6 @@ TEST_F(TestClientBP, FUNC_MAID_AddMsgFailOneFindContacts) {
     .Times(kMinChunkCopies-1)
     .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPAddMsgCallbackSucceed)));
 
-  EXPECT_CALL(*BPMock, GetBPMessages(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies - 1);
-  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies - 1);
-
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
     keys.private_key(), crypto::STRING_STRING);
   maidsafe::BPInputParameters bpip = {cryp.Hash(keys.public_key() +
@@ -793,11 +766,6 @@ TEST_F(TestClientBP, BEH_MAID_AddMsgFailAddMessageRpc) {
   EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _, _))
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPAddMsgCallbackFailed)));
-
-  EXPECT_CALL(*BPMock, GetBPMessages(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies);
-  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies);
 
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
     keys.private_key(), crypto::STRING_STRING);
@@ -844,9 +812,6 @@ TEST_F(TestClientBP, BEH_MAID_GetMessages) {
     .Times(1)
     .WillOnce(WithArgs<0, 4, 6>(Invoke
       (&helper, &GetMsgsHelper::BPGetMsgsCallbackSucceed)));
-
-  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _, _))
-    .Times(1);
 
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
     keys.private_key(), crypto::STRING_STRING);
@@ -897,9 +862,6 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsOneFindContactsFail) {
     .Times(1)
     .WillOnce(WithArgs<0, 4, 6>(Invoke
       (&helper, &GetMsgsHelper::BPGetMsgsCallbackSucceed)));
-
-  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _, _))
-    .Times(1);
 
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
     keys.private_key(), crypto::STRING_STRING);
@@ -1006,9 +968,6 @@ TEST_F(TestClientBP, BEH_MAID_GetMsgsFailGetBPMessagesRpc) {
     .Times(kMinChunkCopies)
     .WillRepeatedly(WithArgs<0, 4, 6>(Invoke
       (&helper, &GetMsgsHelper::BPGetMsgsCallbackFailed)));
-
-  EXPECT_CALL(*BPMock, ContactInfo(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies);
 
   std::string signed_pub_key = cryp.AsymSign(keys.public_key(), "",
     keys.private_key(), crypto::STRING_STRING);

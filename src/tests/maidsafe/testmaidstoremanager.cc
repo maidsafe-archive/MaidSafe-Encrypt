@@ -457,7 +457,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   find_response.set_result(kad::kRpcResultSuccess);
   find_response.SerializeToString(&ser_result_no_values);
   find_response.set_result(kad::kRpcResultFailure);
-  find_response.add_values("Value");
+  kad::SignedValue *sig_val = find_response.add_signed_values();
+  sig_val->set_value("Value");
+  sig_val->set_value_signature("Sig");
   find_response.SerializeToString(&ser_result_fail);
   find_response.set_result(kad::kRpcResultSuccess);
   find_response.SerializeToString(&ser_result_good);
@@ -617,16 +619,19 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(*mko, FindKNodes(chunk_names.at(0), testing::_))
+  EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(0),
+                                   testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
           testing::Return(-1)));  // Call 1
 
-  EXPECT_CALL(*mko, FindKNodes(chunk_names.at(1), testing::_))
+  EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(1),
+                                   testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_chunk_info_holders),
           testing::Return(kSuccess)));  // Call 2
 
   for (int i = 2; i < kTestCount; ++i) {
-    EXPECT_CALL(*mko, FindKNodes(chunk_names.at(i), testing::_))
+    EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(i),
+        testing::An< std::vector<kad::Contact>* >()))
         .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
             testing::Return(kSuccess)));  // Calls 3 to 9
   }
@@ -1896,16 +1901,19 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(*mko, FindKNodes(chunk_names.at(1), testing::_))
+  EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(1),
+                                   testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
           testing::Return(-1)));  // Call 2
 
-  EXPECT_CALL(*mko, FindKNodes(chunk_names.at(2), testing::_))
+  EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(2),
+                                   testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_chunk_info_holders),
           testing::Return(kSuccess)));  // Call 3
 
   for (int i = 3; i < 7; ++i) {
-    EXPECT_CALL(*mko, FindKNodes(chunk_names.at(i), testing::_))
+    EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(i),
+        testing::An< std::vector<kad::Contact>* >()))
         .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
             testing::Return(kSuccess)));  // Calls 4 to 7
   }
@@ -2454,8 +2462,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
   find_response.set_result(kad::kRpcResultSuccess);
   find_response.SerializeToString(&ser_result_no_values);
   find_response.set_result(kad::kRpcResultFailure);
-  for (size_t i = 0; i < kValueCount; ++i)
-    find_response.add_values("Value" + base::itos(i));
+  for (size_t i = 0; i < kValueCount; ++i) {
+    kad::SignedValue *sig_val = find_response.add_signed_values();
+    sig_val->set_value("Value" + base::itos(i));
+    sig_val->set_value_signature("Sig");
+  }
   find_response.SerializeToString(&ser_result_fail);
   find_response.set_result(kad::kRpcResultSuccess);
   find_response.SerializeToString(&ser_result_good);
@@ -2744,7 +2755,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(*mko, FindKNodes(account_name, testing::_))
+  EXPECT_CALL(*mko, FindCloseNodes(account_name,
+                                   testing::An< std::vector<kad::Contact>* >()))
       .Times(7)
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(account_holders),
           testing::Return(-1)))  // Call 1

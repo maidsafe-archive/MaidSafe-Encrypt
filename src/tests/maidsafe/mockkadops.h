@@ -3,7 +3,7 @@
 *
 * Copyright [2010] maidsafe.net limited
 *
-* Description:  A mock KadOps object, used in multiple places
+* Description:  A mock KadOps object, and related helper methods
 * Created:      2010-02-11
 * Company:      maidsafe.net limited
 *
@@ -28,6 +28,24 @@
 #include <string>
 
 #include "maidsafe/maidsafe.h"
+#include "maidsafe/kadops.h"
+
+namespace mock_kadops {
+
+enum FindNodesResponseType {
+  kFailParse,
+  kResultFail,
+  kTooFewContacts,
+  kGood
+};
+
+std::string MakeFindNodesResponse(const FindNodesResponseType &type,
+                                  std::vector<std::string> *pmids);
+
+void RunCallback(const std::string &find_nodes_response,
+                 const base::callback_func_type &callback);
+
+}  // namespace mock_kadops
 
 namespace maidsafe {
 
@@ -37,18 +55,22 @@ class MockKadOps : public KadOps {
       : KadOps(knode) {}
   MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
   MOCK_METHOD1(AddressIsLocal, bool(const kad::ContactInfo &peer));
-  MOCK_METHOD5(FindValue, int(const std::string &kad_key,
-                              bool check_local,
-                              kad::ContactInfo *cache_holder,
-                              std::vector<std::string> *chunk_holders_ids,
-                              std::string *needs_cache_copy_id));
   MOCK_METHOD3(FindValue, void(const std::string &kad_key,
                                bool check_local,
                                const base::callback_func_type &cb));
+  MOCK_METHOD5(FindValue, int(const std::string &kad_key,
+                              bool check_local,
+                              kad::ContactInfo *cache_holder,
+                              std::vector<std::string> *values,
+                              std::string *needs_cache_copy_id));
   MOCK_METHOD2(FindCloseNodes, void(const std::string &kad_key,
                                     const base::callback_func_type &callback));
-  MOCK_METHOD2(FindKNodes, int(const std::string &kad_key,
-                               std::vector<kad::Contact> *contacts));
+  MOCK_METHOD2(FindCloseNodes, int(const std::string &kad_key,
+                                   std::vector<kad::Contact> *contacts));
+  int FindCloseNodesReal(const std::string &kad_key,
+                         std::vector<kad::Contact> *contacts) {
+    return KadOps::FindCloseNodes(kad_key, contacts);
+  }
   MOCK_METHOD4(GetStorePeer, int(const float &ideal_rtt,
                                  const std::vector<kad::Contact> &exclude,
                                  kad::Contact *new_peer,

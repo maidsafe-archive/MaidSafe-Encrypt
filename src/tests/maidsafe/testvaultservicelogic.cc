@@ -23,6 +23,7 @@
 */
 
 #include "tests/maidsafe/mockvaultservicelogic.h"
+#include "tests/maidsafe/mockkadops.h"
 
 namespace maidsafe_vault {
 
@@ -33,7 +34,7 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   VaultServiceLogic vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
 
   maidsafe::StoreContract sc;
-  ASSERT_EQ(kVaultOffline, vsl.AddToRemoteRefList("x", sc, 0));
+  ASSERT_EQ(kVaultOffline, vsl.AddToRemoteRefList("x", sc, kSuccess, 0));
 
   maidsafe::AmendAccountRequest aar;
   boost::mutex mutex;
@@ -51,58 +52,7 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   ASSERT_EQ(kVaultOffline, result);
 
   maidsafe::AccountStatusRequest asr;
-  ASSERT_EQ(kVaultOffline, vsl.RemoteVaultAbleToStore(asr, 0));
-}
-
-TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_FindKNodes) {
-  // Setup
-  boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
-  vsl.online_ = true;
-  std::vector<kad::Contact> contacts;
-  kad::Contact dummy_contact = kad::Contact(crypto_.Hash("Dummy", "",
-      crypto::STRING_STRING, false), "192.168.1.0", 4999);
-
-  // Expectations
-  EXPECT_CALL(*vsl.kadops(), FindCloseNodes("x", testing::_))
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, fail_parse_result_, _1))))  // 2
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, fail_result_, _1))))  // Call 3
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, few_result_, _1))))  // Call 4
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 5
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))));  // Call 6
-
-  // Call 1
-  ASSERT_EQ(kVaultServiceError, vsl.FindKNodes("x", NULL));
-
-  // Call 2
-  contacts.push_back(dummy_contact);
-  ASSERT_EQ(size_t(1), contacts.size());
-  ASSERT_EQ(kVaultServiceFindNodesError, vsl.FindKNodes("x", &contacts));
-  ASSERT_EQ(size_t(0), contacts.size());
-
-  // Call 3
-  contacts.push_back(dummy_contact);
-  ASSERT_EQ(size_t(1), contacts.size());
-  ASSERT_EQ(kVaultServiceFindNodesFailure, vsl.FindKNodes("x", &contacts));
-  ASSERT_EQ(size_t(0), contacts.size());
-
-  // Call 4
-  ASSERT_EQ(kSuccess, vsl.FindKNodes("x", &contacts));
-  ASSERT_EQ(size_t(2), contacts.size());
-
-  // Call 5
-  ASSERT_EQ(kSuccess, vsl.FindKNodes("x", &contacts));
-  ASSERT_EQ(size_t(kad::K), contacts.size());
-
-  // Call 6
-  contacts.push_back(dummy_contact);
-  ASSERT_EQ(kSuccess, vsl.FindKNodes("x", &contacts));
-  ASSERT_EQ(size_t(kad::K), contacts.size());
+  ASSERT_EQ(kVaultOffline, vsl.RemoteVaultAbleToStore(asr, kSuccess, 0));
 }
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
@@ -143,26 +93,33 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
       crypto_.Obfuscate(pmid_, std::string(64, -1), crypto::XOR);
 
   // Expectations
-  EXPECT_CALL(vsl, AddToRemoteRefList(testing::_, testing:: _, testing:: _))
+  EXPECT_CALL(vsl, AddToRemoteRefList(testing::_, testing::_, testing::_,
+                                      testing::_))
       .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AddToRemoteRefListReal));
-  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(far_chunkname, testing::_))
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(testing::_,
+      testing::An< std::vector<kad::Contact>* >()))
+      .WillRepeatedly(testing::Invoke(vsl.kadops().get(),
+          &maidsafe::MockKadOps::FindCloseNodesReal));
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(far_chunkname,
+      testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, fail_parse_result_, _1))))  // 1
+          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, fail_result_, _1))))  // Call 2
+          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, few_result_, _1))))  // Call 3
+          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))  // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 6
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 6
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 7
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))));  // Call 8
-  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(pmid_, testing::_))  // Call 5
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // 8
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(pmid_,
+      testing::An<const base::callback_func_type&>()))  // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_less_one_, _1))));
+          boost::bind(&mock_kadops::RunCallback, good_result_less_one_, _1))));
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {
@@ -212,33 +169,35 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 
   // Call 1 - FindKNodes fails (NULL pointer)
   ASSERT_EQ(kVaultServiceFindNodesError,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
 
   // Call 2 - FindKNodes returns kNack
   ASSERT_EQ(kVaultServiceFindNodesFailure,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
 
   // Call 3 - FindKnodes only returns 1 node
   ASSERT_EQ(kVaultServiceFindNodesTooFew,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
 
   // Call 4 - All OK
-  ASSERT_EQ(kSuccess, vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
+  ASSERT_EQ(kSuccess, vsl.AddToRemoteRefList(far_chunkname, store_contract,
+                                             kSuccess, 0));
 
   // Call 5 - All OK - we're close to chunkname, so we replace contact 16
-  ASSERT_EQ(kSuccess, vsl.AddToRemoteRefList(pmid_, store_contract, 0));
+  ASSERT_EQ(kSuccess, vsl.AddToRemoteRefList(pmid_, store_contract, kSuccess,
+                                             0));
 
   // Call 6 - Five responses have incorrect PMID
   ASSERT_EQ(kAddToRefResponseError,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
 
   // Call 7 - Five responses return kNack
   ASSERT_EQ(kAddToRefResponseFailed,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
 
   // Call 8 - Five responses don't have result set
   ASSERT_EQ(kAddToRefResponseUninitialised,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, 0));
+            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
 }
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
@@ -300,23 +259,24 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   EXPECT_CALL(vsl, AmendRemoteAccount(testing::_, testing::_, testing::_,
                                       testing::_))
       .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AmendRemoteAccountReal));
-  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(account_name, testing::_))
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(account_name,
+      testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, fail_parse_result_, _1))))  // 1
+          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, fail_result_, _1))))  // Call 2
+          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, few_result_, _1))))  // Call 3
+          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))  // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_less_one_, _1))))
+          boost::bind(&mock_kadops::RunCallback, good_result_less_one_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 6
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 6
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 7
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))));  // Call 8
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // 8
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {
@@ -492,23 +452,28 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   request.set_account_pmid(account_owner);
 
   // Expectations
-  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(account_name, testing::_))
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(testing::_,
+      testing::An< std::vector<kad::Contact>* >()))
+      .WillRepeatedly(testing::Invoke(vsl.kadops().get(),
+          &maidsafe::MockKadOps::FindCloseNodesReal));
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(account_name,
+      testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, fail_parse_result_, _1))))  // 1
+          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, fail_result_, _1))))  // Call 2
+          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, few_result_, _1))))  // Call 3
+          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))  // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_less_one_, _1))))
+          boost::bind(&mock_kadops::RunCallback, good_result_less_one_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 6
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 6
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 7
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))));  // Call 8
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // 8
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {
@@ -558,33 +523,33 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
 
   // Call 1 - FindKNodes fails (NULL pointer)
   ASSERT_EQ(kVaultServiceFindNodesError,
-            vsl.RemoteVaultAbleToStore(request, 0));
+            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
 
   // Call 2 - FindKNodes returns kNack
   ASSERT_EQ(kVaultServiceFindNodesFailure,
-            vsl.RemoteVaultAbleToStore(request, 0));
+            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
 
   // Call 3 - FindKnodes only returns 1 node
   ASSERT_EQ(kVaultServiceFindNodesTooFew,
-            vsl.RemoteVaultAbleToStore(request, 0));
+            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
 
   // Call 4 - All OK
-  ASSERT_EQ(kSuccess, vsl.RemoteVaultAbleToStore(request, 0));
+  ASSERT_EQ(kSuccess, vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
 
   // Call 5 - All OK - FindKNodes only returns 15 nodes, so we're contact 16
-  ASSERT_EQ(kSuccess, vsl.RemoteVaultAbleToStore(request, 0));
+  ASSERT_EQ(kSuccess, vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
 
   // Call 6 - Fourteen responses have incorrect PMID
   ASSERT_EQ(kAccountStatusResponseError,
-            vsl.RemoteVaultAbleToStore(request, 0));
+            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
 
   // Call 7 - Fourteen responses return kNack
   ASSERT_EQ(kAccountStatusResponseFailed,
-            vsl.RemoteVaultAbleToStore(request, 0));
+            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
 
   // Call 8 - Fourteen responses don't have result set
   ASSERT_EQ(kAccountStatusResponseUninitialised,
-            vsl.RemoteVaultAbleToStore(request, 0));
+            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
 }
 
 }  // namespace maidsafe_vault

@@ -81,6 +81,7 @@ void VaultServiceLogic::SetOnlineStatus(bool online) {
 int VaultServiceLogic::AddToRemoteRefList(
     const std::string &chunkname,
     const maidsafe::StoreContract &store_contract,
+    const int &found_local_result,
     const boost::int16_t &transport_id) {
 // printf("1. Vault %s - contacts size: %u\n", HexSubstr(pmid_).c_str(),
 //         (*base::PDRoutingTable::getInstance())[base::itos(port_)]->size());
@@ -91,17 +92,32 @@ int VaultServiceLogic::AddToRemoteRefList(
 #endif
     return kVaultOffline;
   }
-  // Find the Chunk Info holders
-  boost::shared_ptr<AddRefCallbackData> data(new AddRefCallbackData());
-  int result = FindKNodes(chunkname, &data->contacts);
+
+  // Find the Chunk Info holders (blocking)
+  boost::shared_ptr<AddRefCallbackData> data(new AddRefCallbackData(
+      found_local_result));
+  int result = kad_ops_->FindCloseNodes(chunkname, &data->contacts);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefList (%s), Kad lookup failed -- "
            "error %i\n", HexSubstr(pmid_).c_str(), result);
 #endif
+    switch (result) {
+      case maidsafe::kFindNodesError:
+      case maidsafe::kFindNodesParseError:
+        return kVaultServiceFindNodesError;
+      case maidsafe::kFindNodesFailure:
+        return kVaultServiceFindNodesFailure;
+    }
     return result;
   }
-  if (data->contacts.size() < size_t(kKadStoreThreshold)) {
+
+  bool within_k_closest = maidsafe::ContactWithinClosest(chunkname,
+                                                         our_details_,
+                                                         data->contacts);
+
+  if (data->contacts.size() + (within_k_closest ? 1 : 0) <
+      size_t(kKadStoreThreshold)) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefList (%s), Kad lookup failed to "
            "find %u nodes; found %u nodes.\n", HexSubstr(pmid_).c_str(),
@@ -109,18 +125,20 @@ int VaultServiceLogic::AddToRemoteRefList(
 #endif
     return kVaultServiceFindNodesTooFew;
   }
-  for (std::vector<kad::Contact>::iterator it = data->contacts.begin();
-       it != data->contacts.end(); ++it) {
-    if ((*it).node_id() == our_details_.node_id()) {
-#ifdef DEBUG
-//      printf("Vault %s listed as a ref holder to itself for chunk %s\n",
-//             HexSubstr((*it).node_id()).c_str(),
-//             HexSubstr(chunkname).c_str());
-#endif
-      data->contacts.erase(it);
-      break;
-    }
+
+  if (within_k_closest) {
+    while (data->contacts.size() >= kad::K)
+      data->contacts.pop_back();  // only need K-1 closest now
+    // We've already tried to add to the ref list if we happen to hold it.
+    if (data->found_local_result == kSuccess)
+      ++data->success_count;
+    else
+      ++data->failure_count;
+  } else if (data->found_local_result == kSuccess) {
+    // We amended the local ref list, but shouldn't even have it!
+    // TODO(Team#) trigger transfer of chunk info data to closer node
   }
+
 #ifdef DEBUG
 //  for (boost::uint16_t h = 0; h < data->contacts.size(); ++h) {
 //    printf("After - Vault %s,  chunk %s,  info holder %i: %s\n",
@@ -134,6 +152,7 @@ int VaultServiceLogic::AddToRemoteRefList(
     AddRefCallbackData::AddRefDataHolder holder(data->contacts.at(i).node_id());
     data->data_holders.push_back(holder);
   }
+
   // Send RPCs
   maidsafe::AddToReferenceListRequest request;
   request.set_chunkname(chunkname);
@@ -156,6 +175,7 @@ int VaultServiceLogic::AddToRemoteRefList(
                                  data->data_holders.at(j).controller.get(),
                                  done);
   }
+
   boost::mutex::scoped_lock lock(data->mutex);
   while (!data->callback_done)
     data->cv.wait(lock);
@@ -168,6 +188,7 @@ void VaultServiceLogic::AddToRemoteRefListCallback(
   boost::mutex::scoped_lock lock(data->mutex);
   if (data->callback_done)
     return;
+
   AddRefCallbackData::AddRefDataHolder *holder = &data->data_holders.at(index);
   int result(kSuccess);
   if (!holder->response.IsInitialized()) {
@@ -177,6 +198,7 @@ void VaultServiceLogic::AddToRemoteRefListCallback(
 #endif
     result = kAddToRefResponseUninitialised;
   }
+
   if (result == kSuccess && holder->response.result() != kAck) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefListCallback (%s), response %u "
@@ -185,6 +207,7 @@ void VaultServiceLogic::AddToRemoteRefListCallback(
 #endif
     result = kAddToRefResponseFailed;
   }
+
   if (result == kSuccess && holder->response.pmid() != holder->node_id) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefListCallback (%s), response %u "
@@ -195,6 +218,7 @@ void VaultServiceLogic::AddToRemoteRefListCallback(
     result = kAddToRefResponseError;
     // TODO(Fraser#5#): 2010-01-08 - Send alert to holder->node_id's A/C holders
   }
+
   if (result == kSuccess)
     ++data->success_count;
   else
@@ -207,75 +231,6 @@ void VaultServiceLogic::AddToRemoteRefListCallback(
   }
 }
 
-int VaultServiceLogic::FindKNodes(const std::string &kad_key,
-                                  std::vector<kad::Contact> *contacts) {
-  if (contacts == NULL) {
-#ifdef DEBUG
-    printf("In VSL::FindKNodes, (%s) NULL pointer passed.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-    return kVaultServiceError;
-  }
-  contacts->clear();
-  boost::mutex mutex;
-  boost::condition_variable cv;
-  ReturnCode result(kVaultServiceError);
-  kad_ops_->FindCloseNodes(kad_key, boost::bind(
-      &VaultServiceLogic::HandleFindKNodesResponse, this, _1, kad_key, contacts,
-      &mutex, &cv, &result));
-  boost::mutex::scoped_lock lock(mutex);
-  while (result == kVaultServiceError)
-    cv.wait(lock);
-  return result;
-}
-
-void VaultServiceLogic::HandleFindKNodesResponse(
-    const std::string &response,
-    const std::string &kad_key,
-    std::vector<kad::Contact> *contacts,
-    boost::mutex *mutex,
-    boost::condition_variable *cv,
-    ReturnCode *result) {
-  if (contacts == NULL || mutex == NULL || cv == NULL || result == NULL) {
-#ifdef DEBUG
-    printf("In VSL::HandleFindKNodesResponse, (%s) NULL pointer(s) passed.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-    return;
-  }
-  kad::FindResponse find_response;
-  if (!find_response.ParseFromString(response)) {
-#ifdef DEBUG
-    printf("In VSL::HandleFindKNodesResponse, can't parse result.\n");
-#endif
-    boost::mutex::scoped_lock lock(*mutex);
-    *result = kVaultServiceFindNodesError;
-    cv->notify_one();
-    return;
-  }
-  if (find_response.result() != kad::kRpcResultSuccess) {
-#ifdef DEBUG
-    printf("In VSL::HandleFindKNodesResponse, Kademlia operation failed.\n");
-#endif
-    boost::mutex::scoped_lock lock(*mutex);
-    *result = kVaultServiceFindNodesFailure;
-    cv->notify_one();
-    return;
-  }
-  boost::mutex::scoped_lock lock(*mutex);
-  for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
-    kad::Contact contact;
-    contact.ParseFromString(find_response.closest_nodes(i));
-    contacts->push_back(contact);
-  }
-  // Insert our own contact details if we are within the k closest.
-  kad::InsertKadContact(kad_key, our_details_, contacts);
-  if (contacts->size() > kad::K)
-    contacts->pop_back();
-  *result = kSuccess;
-  cv->notify_one();
-}
-
 void VaultServiceLogic::AmendRemoteAccount(
     const maidsafe::AmendAccountRequest &request,
     const int &found_local_result,
@@ -283,12 +238,13 @@ void VaultServiceLogic::AmendRemoteAccount(
     const boost::int16_t &transport_id) {
   if (!online()) {
 #ifdef DEBUG
-    printf("In VSL::AmendRemoteAccount, offline %s\n",
+    printf("In VSL::AmendRemoteAccount (%s), offline.\n",
            HexSubstr(pmid_).c_str());
 #endif
     callback(kVaultOffline);
     return;
   }
+
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string account_name(co.Hash(request.account_pmid() + kAccount, "",
@@ -302,21 +258,41 @@ void VaultServiceLogic::AmendRemoteAccount(
 void VaultServiceLogic::AmendRemoteAccountStageTwo(
     boost::shared_ptr<AmendRemoteAccountOpData> data,
     const std::string &find_nodes_response) {
-  // Handle result of Kad FindKNodes
+  // Handle result of Kademlia FindCloseNodes
   boost::mutex mutex;
   boost::condition_variable cv;
-  ReturnCode result(kVaultServiceError);
-  HandleFindKNodesResponse(find_nodes_response, data->account_name,
-      &data->contacts, &mutex, &cv, &result);
-  if (result != kSuccess) {
+  maidsafe::ReturnCode result(maidsafe::kFindNodesError);
+  kad_ops_->HandleFindCloseNodesResponse(find_nodes_response,
+                                         data->account_name, &data->contacts,
+                                         &mutex, &cv, &result);
+  if (result != maidsafe::kSuccess) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccountStageTwo (%s), Kad lookup failed -- "
            "error %i\n", HexSubstr(pmid_).c_str(), result);
 #endif
-    data->callback(result);
+    switch (result) {
+      case maidsafe::kFindNodesError:
+      case maidsafe::kFindNodesParseError:
+        data->callback(kVaultServiceFindNodesError);
+        break;
+      case maidsafe::kFindNodesFailure:
+        data->callback(kVaultServiceFindNodesFailure);
+        break;
+      default:
+        data->callback(kVaultServiceError);
+    }
     return;
   }
-  if (data->contacts.size() < size_t(kKadStoreThreshold)) {
+
+  // ensure account holder != account subject
+  maidsafe::RemoveKadContact(data->request.account_pmid(), &data->contacts);
+
+  bool within_k_closest = maidsafe::ContactWithinClosest(data->account_name,
+                                                         our_details_,
+                                                         data->contacts);
+
+  if (data->contacts.size() + (within_k_closest ? 1 : 0) <
+      size_t(kKadStoreThreshold)) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccountStageTwo (%s), Kad lookup failed to "
            "find %u nodes; found %u nodes.\n", HexSubstr(pmid_).c_str(),
@@ -325,30 +301,27 @@ void VaultServiceLogic::AmendRemoteAccountStageTwo(
     data->callback(kVaultServiceFindNodesTooFew);
     return;
   }
-  for (std::vector<kad::Contact>::iterator it = data->contacts.begin();
-       it != data->contacts.end(); ++it) {
-    if ((*it).node_id() == our_details_.node_id()) {
-      // We've already tried to amend the account if we happen to hold it in
-      // VaultService::AmendRemoteAccount function.
-      if (data->found_local_result == kSuccess)
-        ++data->success_count;
-      else
-        ++data->failure_count;
-#ifdef DEBUG
-//      printf("Vault %s listed as an account holder for PMID %s\n",
-//             HexSubstr((*it).node_id()).c_str(),
-//             HexSubstr(pmid_).c_str());
-#endif
-      data->contacts.erase(it);
-      break;
-    }
+
+  if (within_k_closest) {
+    while (data->contacts.size() >= kad::K)
+      data->contacts.pop_back();  // only need K-1 closest now
+    // We've already tried to amend the account if we happen to hold it.
+    if (data->found_local_result == kSuccess)
+      ++data->success_count;
+    else
+      ++data->failure_count;
+  } else if (data->found_local_result == kSuccess) {
+    // We amended the local account, but shouldn't even have it!
+    // TODO(Team#) trigger transfer of account data to closer node
   }
+
   // Set up holders for forthcoming individual RPCs
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     AmendRemoteAccountOpData::AmendRemoteAccountOpHolder
         holder(data->contacts.at(i).node_id());
     data->data_holders.push_back(holder);
   }
+
   // Send RPCs
   for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
     google::protobuf::Closure* done = google::protobuf::NewCallback(this,
@@ -378,6 +351,7 @@ void VaultServiceLogic::AmendRemoteAccountStageThree(
 #endif
     result = kAmendAccountResponseUninitialised;
   }
+
   if (result == kSuccess && holder->response.result() != kAck) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccountStageThree (%s), response %u from %s "
@@ -386,6 +360,7 @@ void VaultServiceLogic::AmendRemoteAccountStageThree(
 #endif
     result = kAmendAccountResponseFailed;
   }
+
   if (result == kSuccess && holder->response.pmid() != holder->node_id) {
 #ifdef DEBUG
     printf("In VSL::AmendRemoteAccountStageThree (%s), response %u from %s "
@@ -396,6 +371,7 @@ void VaultServiceLogic::AmendRemoteAccountStageThree(
     result = kAmendAccountResponseError;
     // TODO(Fraser#5#): 2010-01-08 - Send alert to holder->node_id's A/C holders
   }
+
   if (result == kSuccess)
     ++data->success_count;
   else
@@ -409,29 +385,47 @@ void VaultServiceLogic::AmendRemoteAccountStageThree(
 
 int VaultServiceLogic::RemoteVaultAbleToStore(
     maidsafe::AccountStatusRequest request,
+    const int &found_local_result,
     const boost::int16_t &transport_id) {
   if (!online()) {
 #ifdef DEBUG
-    printf("In VSL::RemoteVaultAbleToStore, offline %s\n",
+    printf("In VSL::RemoteVaultAbleToStore (%s), offline.\n",
            HexSubstr(pmid_).c_str());
 #endif
     return kVaultOffline;
   }
+
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string account_name(co.Hash(request.account_pmid() + kAccount, "",
       crypto::STRING_STRING, false));
   boost::shared_ptr<AccountStatusCallbackData>
-      data(new AccountStatusCallbackData(account_name));
-  int result = FindKNodes(account_name, &data->contacts);
+      data(new AccountStatusCallbackData(found_local_result));
+  int result = kad_ops_->FindCloseNodes(account_name, &data->contacts);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In VSL::RemoteVaultAbleToStore (%s), Kad lookup failed -- "
            "error %i\n", HexSubstr(pmid_).c_str(), result);
 #endif
+    switch (result) {
+      case maidsafe::kFindNodesError:
+      case maidsafe::kFindNodesParseError:
+        return kVaultServiceFindNodesError;
+      case maidsafe::kFindNodesFailure:
+        return kVaultServiceFindNodesFailure;
+    }
     return result;
   }
-  if (data->contacts.size() < size_t(kKadTrustThreshold)) {
+
+  // ensure account holder != account subject
+  maidsafe::RemoveKadContact(request.account_pmid(), &data->contacts);
+
+  bool within_k_closest = maidsafe::ContactWithinClosest(account_name,
+                                                         our_details_,
+                                                         data->contacts);
+
+  if (data->contacts.size() + (within_k_closest ? 1 : 0) <
+      size_t(kKadStoreThreshold)) {
 #ifdef DEBUG
     printf("In VSL::RemoteVaultAbleToStore (%s), Kad lookup failed to "
            "find %i nodes; found %u nodes.\n", HexSubstr(pmid_).c_str(),
@@ -439,26 +433,27 @@ int VaultServiceLogic::RemoteVaultAbleToStore(
 #endif
     return kVaultServiceFindNodesTooFew;
   }
-  for (std::vector<kad::Contact>::iterator it = data->contacts.begin();
-       it != data->contacts.end(); ++it) {
-    if ((*it).node_id() == our_details_.node_id()) {
-      // TODO(Fraser#5#): 2010-01-11 - Query own account handler to get result
-      // in VaultService::RemoteVaultAbleToStore and pass result through to here
-#ifdef DEBUG
-//      printf("Vault %s listed as an account holder for PMID %s\n",
-//             HexSubstr((*it).node_id()).c_str(),
-//             HexSubstr(pmid_).c_str());
-#endif
-      data->contacts.erase(it);
-      break;
-    }
+
+  if (within_k_closest) {
+    while (data->contacts.size() >= kad::K)
+      data->contacts.pop_back();  // only need K-1 closest now
+    // We've already tried to check the account if we happen to hold it.
+    if (data->found_local_result == kSuccess)
+      ++data->success_count;
+    else
+      ++data->failure_count;
+  } else if (data->found_local_result == kSuccess) {
+    // We checked the local account, but shouldn't even have it!
+    // TODO(Team#) trigger transfer of account data to closer node
   }
+
   // Set up holders for forthcoming individual RPCs
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     AccountStatusCallbackData::AccountStatusHolder
         holder(data->contacts.at(i).node_id());
     data->data_holders.push_back(holder);
   }
+
   // Send RPCs
   for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
     google::protobuf::Closure* done = google::protobuf::NewCallback(this,
@@ -469,10 +464,61 @@ int VaultServiceLogic::RemoteVaultAbleToStore(
                                  data->data_holders.at(j).controller.get(),
                                  done);
   }
+
   boost::mutex::scoped_lock lock(data->mutex);
   while (!data->callback_done)
     data->cv.wait(lock);
   return data->result;
+}
+
+void VaultServiceLogic::AccountStatusCallback(
+    boost::uint16_t index,
+    boost::shared_ptr<AccountStatusCallbackData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  if (data->callback_done)
+    return;
+
+  AccountStatusCallbackData::AccountStatusHolder
+      *holder = &data->data_holders.at(index);
+  int result(kSuccess);
+  if (!holder->response.IsInitialized()) {
+#ifdef DEBUG
+    printf("In VSL::AccountStatusCallback (%s), response %u "
+           "is uninitialised.\n", HexSubstr(pmid_).c_str(), index);
+#endif
+    result = kAccountStatusResponseUninitialised;
+  }
+
+  if (result == kSuccess && holder->response.result() != kAck) {
+#ifdef DEBUG
+    printf("In VSL::AccountStatusCallback (%s), response %u "
+           "has result %i.\n", HexSubstr(pmid_).c_str(), index,
+           holder->response.result());
+#endif
+    result = kAccountStatusResponseFailed;
+  }
+
+  if (result == kSuccess && holder->response.pmid() != holder->node_id) {
+#ifdef DEBUG
+    printf("In VSL::AccountStatusCallback (%s), response %u "
+           "from %s has pmid %s.\n", HexSubstr(pmid_).c_str(), index,
+           HexSubstr(holder->node_id).c_str(),
+           HexSubstr(holder->response.pmid()).c_str());
+#endif
+    result = kAccountStatusResponseError;
+    // TODO(Fraser#5#): 2010-01-08 - Send alert to holder->node_id's A/C holders
+  }
+
+  if (result == kSuccess)
+    ++data->success_count;
+  else
+    ++data->failure_count;
+  if (data->success_count - data->failure_count >= kKadTrustThreshold ||
+      data->failure_count > data->data_holders.size() - kKadTrustThreshold) {
+    data->result = result;
+    data->callback_done = true;
+    data->cv.notify_one();
+  }
 }
 
 void VaultServiceLogic::CacheChunk(const std::string &chunkname,
@@ -517,52 +563,6 @@ void VaultServiceLogic::CacheChunkCallback(
     data->cb(kCacheChunkResponseError);
 
   data->cb(kSuccess);
-}
-
-void VaultServiceLogic::AccountStatusCallback(
-    boost::uint16_t index,
-    boost::shared_ptr<AccountStatusCallbackData> data) {
-  boost::mutex::scoped_lock lock(data->mutex);
-  if (data->callback_done)
-    return;
-  AccountStatusCallbackData::AccountStatusHolder
-      *holder = &data->data_holders.at(index);
-  int result(kSuccess);
-  if (!holder->response.IsInitialized()) {
-#ifdef DEBUG
-    printf("In VSL::AccountStatusCallback (%s), response %u "
-           "is uninitialised.\n", HexSubstr(pmid_).c_str(), index);
-#endif
-    result = kAccountStatusResponseUninitialised;
-  }
-  if (result == kSuccess && holder->response.result() != kAck) {
-#ifdef DEBUG
-    printf("In VSL::AccountStatusCallback (%s), response %u "
-           "has result %i.\n", HexSubstr(pmid_).c_str(), index,
-           holder->response.result());
-#endif
-    result = kAccountStatusResponseFailed;
-  }
-  if (result == kSuccess && holder->response.pmid() != holder->node_id) {
-#ifdef DEBUG
-    printf("In VSL::AccountStatusCallback (%s), response %u "
-           "from %s has pmid %s.\n", HexSubstr(pmid_).c_str(), index,
-           HexSubstr(holder->node_id).c_str(),
-           HexSubstr(holder->response.pmid()).c_str());
-#endif
-    result = kAccountStatusResponseError;
-    // TODO(Fraser#5#): 2010-01-08 - Send alert to holder->node_id's A/C holders
-  }
-  if (result == kSuccess)
-    ++data->success_count;
-  else
-    ++data->failure_count;
-  if (data->success_count - data->failure_count >= kKadTrustThreshold ||
-      data->failure_count > data->data_holders.size() - kKadTrustThreshold) {
-    data->result = result;
-    data->callback_done = true;
-    data->cv.notify_one();
-  }
 }
 
 std::string VaultServiceLogic::GetSignedRequest(

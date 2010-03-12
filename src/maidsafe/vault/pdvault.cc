@@ -180,6 +180,8 @@ void PDVault::Start(bool first_node) {
         signed_pmid_public_, pmid_private_)) {
       SetVaultStatus(kVaultStarted);
     }
+    kad::Contact our_details(knode_->contact_info());
+    our_details_ = our_details;
     // Announce available space to account, try repeatedly in thread
     // TODO(Team#) find better solution or make thread-safe!
     create_account_thread_ = boost::thread(&PDVault::UpdateSpaceOffered, this);
@@ -750,8 +752,7 @@ void PDVault::FindChunkRefCallback(
   }
   kad::FindResponse result_msg;
   if (!result_msg.ParseFromString(result) ||
-      result_msg.result() == kad::kRpcResultFailure ||
-      result_msg.values_size() == 0) {
+      result_msg.result() == kad::kRpcResultFailure) {
     // no chunk references were found
     maidsafe::GetChunkResponse local_result;
     std::string local_result_str("");
@@ -761,11 +762,11 @@ void PDVault::FindChunkRefCallback(
     data->cb(local_result_str);
     return;
   }
-  data->number_holders = result_msg.values_size();
+  data->number_holders = result_msg.signed_values_size();
   bool correct_info(false);
-  for (int i = 0; i < result_msg.values_size(); ++i) {
+  for (int i = 0; i < result_msg.signed_values_size(); ++i) {
     kad::SignedValue signed_value;
-    if (signed_value.ParseFromString(result_msg.values(i))) {
+    if (signed_value.ParseFromString(result_msg.signed_values(i).value())) {
       std::string contact_info = signed_value.value();
       kad::Contact remote;
       if (remote.ParseFromString(contact_info)) {
@@ -1205,36 +1206,28 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   // Find the account holders
   boost::shared_ptr<maidsafe::AmendAccountData>
       data(new maidsafe::AmendAccountData);
-  int rslt = kad_ops_->FindKNodes(account_name, &data->contacts);
+  int rslt = kad_ops_->FindCloseNodes(account_name, &data->contacts);
   if (rslt != kSuccess) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, Kad lookup failed -- error %i\n", rslt);
 #endif
     return maidsafe::kFindAccountHoldersError;
   }
-  if (data->contacts.size() < kKadStoreThreshold) {
+
+  if (maidsafe::ContactWithinClosest(account_name, our_details_,
+                                     data->contacts)) {
+    // we are within the K closest, but can't hold our own account;
+    // create the account on not more than K-1 nodes
+    while (data->contacts.size() >= kad::K)
+      data->contacts.pop_back();
+  }
+
+  if (data->contacts.size() < size_t(kKadStoreThreshold)) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, Kad lookup failed to find %u nodes; "
            "found %u node(s).\n", kKadStoreThreshold, data->contacts.size());
 #endif
     return maidsafe::kFindAccountHoldersError;
-  }
-
-  // If we are listed as an account holder, don't send RPC
-  for (std::vector<kad::Contact>::iterator it = data->contacts.begin();
-       it != data->contacts.end(); ++it) {
-    if ((*it).node_id() == knode_->node_id()) {
-      if (vault_service_->AddAccount((*it).node_id(), space_offered) == 0) {
-        ++data->success_count;
-#ifdef DEBUG
-//      printf("Vault %s listed as an account holder for PMID %s\n",
-//             HexSubstr((*it).node_id()).c_str(),
-//             HexSubstr(pmid_).c_str());
-#endif
-      }
-      data->contacts.erase(it);
-      break;
-    }
   }
 
   // Create the request
