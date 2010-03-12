@@ -758,8 +758,9 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
     } else {
 #ifdef DEBUG
       printf("In VaultService::AccountStatus (%s), ", HexSubstr(pmid_).c_str());
-      printf("requested space (%llu) not available (> %llu).\n",
-             request->space_requested(), space_offered - space_taken);
+      printf("requested space (%s) not available (> %s).\n",
+             base::itos_ull(request->space_requested()).c_str(),
+             base::itos_ull(space_offered - space_taken).c_str());
 #endif
     }
     done->Run();

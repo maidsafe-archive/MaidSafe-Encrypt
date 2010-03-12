@@ -1342,9 +1342,9 @@ void PDVault::UpdateSpaceOffered() {
   }
 #ifdef DEBUG
   if (vault_status_ == kVaultStarted)
-    printf("In PDVault::UpdateSpaceOffered (%s), set space offered to %llu "
+    printf("In PDVault::UpdateSpaceOffered (%s), set space offered to %s "
            "on attempt #%d.\n", HexSubstr(pmid_).c_str(),
-           vault_chunkstore_.available_space(), n);
+           base::itos_ull(vault_chunkstore_.available_space()).c_str(), n);
   else if (result == 0)
     printf("In PDVault::UpdateSpaceOffered (%s), amendment successfull but "
            "vault now offline.\n", HexSubstr(pmid_).c_str());

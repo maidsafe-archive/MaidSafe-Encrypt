@@ -1103,7 +1103,7 @@ TEST_F(PDClientTest, FUNC_KAD_UpdateBufferPacket) {
   UpdateChunkCallback cb3;
   //Updating bp info not owner and invalid owner info data
   crypto::RsaKeyPair newkeys;
-  newkeys.GenerateKeys(4096);
+  newkeys.GenerateKeys(maidsafe::kRsaKeySize);
   std::string new_sig_pk = cry_obj.AsymSign(newkeys.public_key(), "",
     newkeys.private_key(), crypto::STRING_STRING);
   std::string new_sig_req = cry_obj.AsymSign(cry_obj.Hash(newkeys.public_key()+

@@ -42,7 +42,7 @@ class VaultDaemonTest: public testing::Test {
     cry_obj.set_symm_algorithm(crypto::AES_256);
     cry_obj.set_hash_algorithm(crypto::SHA_512);
     crypto::RsaKeyPair keys;
-    keys.GenerateKeys(4096);
+    keys.GenerateKeys(maidsafe::kRsaKeySize);
     pub_key = keys.public_key();
     priv_key = keys.private_key();
     sig_pub_key = cry_obj.AsymSign(pub_key, "", priv_key,

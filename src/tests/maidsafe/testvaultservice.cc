@@ -33,6 +33,7 @@
 #include "maidsafe/vaultbufferpackethandler.h"
 #include "maidsafe/vault/chunkinfohandler.h"
 #include "maidsafe/vault/vaultchunkstore.h"
+#include "maidsafe/vault/vaultdaemon.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/vault/vaultservicelogic.h"
@@ -44,7 +45,7 @@ const boost::uint64_t kAvailableSpace = 1073741824;
 
 inline void CreateRSAKeys(std::string *pub_key, std::string *priv_key) {
   crypto::RsaKeyPair kp;
-  kp.GenerateKeys(4096);
+  kp.GenerateKeys(maidsafe_vault::kRsaKeySize);
   *pub_key =  kp.public_key();
   *priv_key = kp.private_key();
 }

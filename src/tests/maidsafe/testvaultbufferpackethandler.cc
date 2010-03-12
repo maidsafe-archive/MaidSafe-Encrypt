@@ -21,6 +21,7 @@
 * ============================================================================
 */
 #include <gtest/gtest.h>
+#include "maidsafe/client/packetfactory.h"
 #include "maidsafe/vaultbufferpackethandler.h"
 
 class VaultBufferPacketHandlerTest : public testing::Test {
@@ -33,7 +34,7 @@ class VaultBufferPacketHandlerTest : public testing::Test {
     cry_obj.set_symm_algorithm(crypto::AES_256);
     cry_obj.set_hash_algorithm(crypto::SHA_512);
     testuser = "testuser";
-    rsakp.GenerateKeys(4096);
+    rsakp.GenerateKeys(maidsafe::kRsaKeySize);
     public_key = rsakp.public_key();
     private_key = rsakp.private_key();
     maidsafe::BufferPacketInfo bpi;
@@ -61,7 +62,7 @@ class VaultBufferPacketHandlerTest : public testing::Test {
 TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ValidateOwnerSig) {
   ASSERT_TRUE(vbph.ValidateOwnerSignature(public_key, ser_bp));
   crypto::RsaKeyPair rsakp;
-  rsakp.GenerateKeys(4096);
+  rsakp.GenerateKeys(maidsafe::kRsaKeySize);
   ASSERT_FALSE(vbph.ValidateOwnerSignature(rsakp.public_key(), ser_bp));
 }
 
@@ -121,7 +122,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
   maidsafe::MessageType type;
   ASSERT_FALSE(vbph.CheckMsgStructure(ser_msg, &sender, &type));
   crypto::RsaKeyPair rsakp;
-  rsakp.GenerateKeys(4096);
+  rsakp.GenerateKeys(maidsafe::kRsaKeySize);
   maidsafe::GenericPacket gp_msg;
   maidsafe::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("non authuser");
@@ -206,7 +207,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
   std::string sender;
   maidsafe::MessageType type;
   crypto::RsaKeyPair rsakp;
-  rsakp.GenerateKeys(4096);
+  rsakp.GenerateKeys(maidsafe::kRsaKeySize);
   maidsafe::GenericPacket gp_msg;
   maidsafe::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("non authuser");
