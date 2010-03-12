@@ -674,11 +674,11 @@ void PerpetualData::onDirectoryEntered(const QString& dir) {
   }
 #else
   root = QString::fromStdString(file_system::MaidsafeFuseDir(
-      maidsafe::SessionSingleton::getInstance()->SessionName()).string());
+      ClientController::instance()->SessionName()).string());
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString::fromStdString(file_system::MaidsafeFuseDir(
-        maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+        ClientController::instance()->SessionName()).string() +
         "/My Files");
     qfd_->setDirectory(root);
   }

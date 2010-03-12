@@ -21,7 +21,6 @@
 
 // core
 #include <maidsafe/maidsafe-dht.h>
-#include "maidsafe/client/clientcontroller.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
 // local

@@ -11,14 +11,11 @@
  *  Created on: Jan 23, 2010
  *      Author: Stephen Alexander
  */
+#include "qt/widgets/user_settings.h"
 
 #include <QMessageBox>
-#include "qt/widgets/user_settings.h"
-#include "qt/widgets/personal_settings.h"
-#include "qt/widgets/vault_info.h"
-#include "qt/widgets/connection_settings.h"
-#include "qt/widgets/file_transfer_settings.h"
-#include "qt/widgets/security_settings.h"
+#include <QDebug>
+
 #include "qt/client/client_controller.h"
 
 UserSettings::UserSettings(QWidget* parent) {
@@ -31,13 +28,14 @@ UserSettings::UserSettings(QWidget* parent) {
   fileTransfer_ = new FileTransferSettings;
   security_     = new SecuritySettings;
   connection_   = new ConnectionSettings;
-
+  profile_      = new ProfileSettings;
 
   ui_.stackedWidget->addWidget(personal_);
   ui_.stackedWidget->addWidget(vault_);
   ui_.stackedWidget->addWidget(fileTransfer_);
   ui_.stackedWidget->addWidget(security_);
   ui_.stackedWidget->addWidget(connection_);
+  ui_.stackedWidget->addWidget(profile_);
 
   ui_.stackedWidget->setCurrentWidget(personal_);
 
@@ -72,6 +70,9 @@ void UserSettings::onCurrentRowChanged(int index) {
     case 4:
       setState(VAULT_INFO);
       break;
+    case 5:
+      setState(PROFILE);
+      break;
   }
 }
 
@@ -81,6 +82,7 @@ void UserSettings::createSettingsMenu() {
   ui_.settingsMenuList->addItem("File Transfer");
   ui_.settingsMenuList->addItem("Security");
   ui_.settingsMenuList->addItem("Vault Info");
+  ui_.settingsMenuList->addItem("Profile");
 }
 
 void UserSettings::setState(State state) {
@@ -114,6 +116,12 @@ void UserSettings::setState(State state) {
       vault_->setActive(true);
       break;
     }
+    case PROFILE:
+    {
+      ui_.stackedWidget->setCurrentWidget(profile_);
+      profile_->setActive(true);
+      break;
+    }
     default:
     {
       break;
@@ -140,6 +148,25 @@ void UserSettings::HandleOK() {
   if (!connection_->changedValues_.isEmpty()) {
   }
   if (!security_->changedValues_.isEmpty()) {
+  }
+  if (!profile_->changedValues_.isEmpty()) {
+    QHash<QString, QString> theHash = profile_->changedValues_;
+
+    std::vector<std::string> profileInfo;
+
+    //QDebug(*theHash.value("PubName"));
+    profileInfo.push_back(theHash["FullName"].toStdString());
+    profileInfo.push_back(theHash["Phone"].toStdString());
+    profileInfo.push_back(theHash["BirthDay"].toStdString());
+    profileInfo.push_back(theHash["Gender"].toStdString());
+    profileInfo.push_back(theHash["Language"].toStdString());
+    profileInfo.push_back(theHash["City"].toStdString());
+    profileInfo.push_back(theHash["Country"].toStdString());
+
+    int n = ClientController::instance()->SetInfo(profileInfo);
+
+    QMessageBox::warning(this, tr("Set Info Warning"),
+                        QString(tr("Result. %1").arg(n)));
   }
 }
 

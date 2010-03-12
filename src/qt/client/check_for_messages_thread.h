@@ -16,7 +16,6 @@
 #define QT_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
 
 #include "qt/client/worker_thread.h"
-#include "maidsafe/client/clientcontroller.h"
 
 class CheckForMessagesThread : public WorkerThread {
   Q_OBJECT

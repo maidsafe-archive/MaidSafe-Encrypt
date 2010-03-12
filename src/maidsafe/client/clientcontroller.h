@@ -282,6 +282,7 @@ class ClientController {
   std::string client_store_;
   bool initialised_;
   bool logging_out_;
+  bool logged_in_;
 };
 
 }  // namespace maidsafe

@@ -479,7 +479,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
                         crypto::STRING_STRING);
 
   EXPECT_CALL(mock_vault_service_logic_,
-              AddToRemoteRefList(chunk_name, testing::_, testing::_))
+              AddToRemoteRefList(chunk_name, testing::_, testing::_,
+                                 testing::_))
       .Times(testing::Exactly(1));
   EXPECT_CALL(mock_vault_service_logic_,
               AmendRemoteAccount(testing::_, testing::_, testing::_,
@@ -809,10 +810,11 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
                                             crypto::STRING_STRING, false);
 
   EXPECT_CALL(*mock_vault_service_logic.kadops(),
-              FindCloseNodes(client_account_name, testing::_))
+              FindCloseNodes(client_account_name,
+                             testing::An<const base::callback_func_type&>()))
       .Times(testing::AtLeast(6))
       .WillRepeatedly(testing::WithArg<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback,
+          boost::bind(&mock_kadops::RunCallback,
           k_group.serialised_find_nodes_response(), _1))));
 
   std::string chunk_data("This is a data chunk");
@@ -1430,9 +1432,6 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-
-  kad::FindResponse find_response;
-  find_response.set_result(kad::kRpcResultSuccess);
 
   EXPECT_CALL(mock_vault_service_logic_,
               AmendRemoteAccount(testing::_, testing::_, testing::_,
