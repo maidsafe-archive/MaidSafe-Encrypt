@@ -141,9 +141,9 @@ int KadOps::FindValue(const std::string &kad_key,
   if (find_response.result() != kad::kRpcResultSuccess) {
 #ifdef DEBUG
     printf("In KadOps::FindValue, failed to find value for key %s"
-           " (found %i nodes and %i values)\n",
+           " (found %i nodes, %i values and %i signed vals)\n",
            HexSubstr(kad_key).c_str(), find_response.closest_nodes_size(),
-           find_response.values_size());
+           find_response.values_size(), find_response.signed_values_size());
     for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
       kad::Contact contact;
       contact.ParseFromString(find_response.closest_nodes(i));
