@@ -2573,7 +2573,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
             msm.LoadPacket(packet_names.at(test_number), &returned_values));
   ASSERT_EQ(size_t(kValueCount), returned_values.size());
   for (size_t i = 0; i < kValueCount; ++i)
-    ASSERT_EQ(find_response.values(i), returned_values.at(i));
+    ASSERT_EQ(find_response.signed_values(i).value(), returned_values.at(i));
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
