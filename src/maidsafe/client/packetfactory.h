@@ -26,9 +26,10 @@
 #define MAIDSAFE_CLIENT_PACKETFACTORY_H_
 
 #include <boost/any.hpp>
+#include <boost/thread.hpp>
 #include <maidsafe/crypto.h>
-#include <list>
 #include <map>
+#include <queue>
 #include <string>
 
 #include "protobuf/datamaps.pb.h"
@@ -36,24 +37,58 @@
 namespace maidsafe {
 
 const boost::uint16_t kRsaKeySize = 4096;  // size to generate RSA keys in bits.
+const boost::uint16_t kNoOfSystemPackets = 8;
+const boost::uint16_t kMaxCryptoThreadCount = 3;
 
 typedef std::map<std::string, boost::any> PacketParams;
 
+class CryptoKeyPairs {
+ public:
+  CryptoKeyPairs();
+  ~CryptoKeyPairs();
+  void Init(const boost::uint16_t &max_thread_count,
+            const boost::uint16_t &buffer_count);
+  crypto::RsaKeyPair GetKeyPair();
+  boost::uint16_t max_thread_count();
+  boost::uint16_t buffer_count();
+  void set_max_thread_count(const boost::uint16_t &max_thread_count);
+  void set_buffer_count(const boost::uint16_t &buffer_count);
+ private:
+  CryptoKeyPairs &operator=(const CryptoKeyPairs&);
+  CryptoKeyPairs(const CryptoKeyPairs&);
+  void CreateThread();
+  void DestroyThread();
+  void CreateKeyPair();
+  boost::uint16_t max_thread_count_, buffer_count_, running_thread_count_;
+  std::queue<crypto::RsaKeyPair> key_buffer_;
+  boost::mutex kb_mutex_;
+  boost::condition_variable kb_cond_var_;
+  std::map< boost::thread::id, boost::shared_ptr<boost::thread> > threads_;
+};
+
 class Packet {
  public:
-  Packet();
+  explicit Packet(const crypto::RsaKeyPair &rsakp);
+  virtual ~Packet() {}
   virtual PacketParams Create(PacketParams *params) = 0;
+  virtual PacketParams GetData(const std::string &serialised_packet);
   bool ValidateSignature(const std::string &serialised_packet,
                          const std::string &public_key);
-  PacketParams GetData(std::string serialised_packet);
-  virtual ~Packet()=0;
-// protected:
+ protected:
   crypto::Crypto crypto_obj_;
+  crypto::RsaKeyPair rsakp_;
+ private:
+  Packet &operator=(const Packet&);
+  Packet(const Packet&);
 };
 
 class PacketFactory {
  public:
-  static Packet *Factory(PacketType type);
+  static boost::shared_ptr<Packet> Factory(PacketType type,
+                                           const crypto::RsaKeyPair &rsakp);
+ private:
+  PacketFactory &operator=(const PacketFactory&);
+  PacketFactory(const PacketFactory&);
 };
 
 }  // namespace maidsafe

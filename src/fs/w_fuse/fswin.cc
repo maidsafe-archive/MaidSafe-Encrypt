@@ -1147,7 +1147,7 @@ static int WinSetAllocationSize(LPCWSTR FileName,
 #ifdef DEBUG
         printf("In WinSetAllocationSize, SetFilePointer error: %ld",
                GetLastError());
-        printf(", offfset = %lld\n\n", AllocSize);
+        printf(", offfset = %s\n\n", base::itos_ull(AllocSize).c_str());
 #endif
         return GetLastError() * -1;
       }

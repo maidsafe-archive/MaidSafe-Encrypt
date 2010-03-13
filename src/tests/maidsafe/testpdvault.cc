@@ -490,8 +490,9 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   for (int i = 0; i < kNumOfClients; ++i)
     for (it = chunks.begin(); it != chunks.end(); ++it)
       clients_[i]->msm->StoreChunk((*it).first, maidsafe::PRIVATE, "");
-  printf("\n-- Enqueued %i chunks for storing, total %llu bytes. --\n",
-         kNumOfTestChunks, data_size);
+  printf("\n-- Enqueued %s chunks for storing, total %s bytes. --\n",
+         base::itos_ull(kNumOfTestChunks).c_str(),
+         base::itos_ull(data_size).c_str());
 
   printf("\nWaiting for chunks to get stored...\n");
   boost::this_thread::sleep(boost::posix_time::seconds(15));

@@ -6,13 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-<<<<<<< HEAD
-    <width>427</width>
-    <height>288</height>
-=======
     <width>420</width>
     <height>255</height>
->>>>>>> bb32d736893325c40017e68d6e3fb50b86c41f86
    </rect>
   </property>
   <property name="sizePolicy">
@@ -39,8 +34,6 @@
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QTextEdit" name="message_window">
-<<<<<<< HEAD
-=======
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>0</horstretch>
@@ -56,7 +49,6 @@
         <property name="documentTitle">
          <string/>
         </property>
->>>>>>> bb32d736893325c40017e68d6e3fb50b86c41f86
         <property name="readOnly">
          <bool>true</bool>
         </property>
@@ -64,13 +56,8 @@
          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-<<<<<<< HEAD
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt; color:#000000;&quot;&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-=======
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Arial'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'MS Shell Dlg 2'; color:#000000;&quot;&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
->>>>>>> bb32d736893325c40017e68d6e3fb50b86c41f86
         </property>
         <property name="textInteractionFlags">
          <set>Qt::NoTextInteraction</set>
@@ -79,17 +66,10 @@ p, li { white-space: pre-wrap; }
       </item>
      </layout>
     </item>
-<<<<<<< HEAD
-    <item row="1" column="0">
-     <widget class="QTextEdit" name="message_text_edit">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
-=======
     <item row="2" column="0">
      <widget class="QTextEdit" name="message_text_edit">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
->>>>>>> bb32d736893325c40017e68d6e3fb50b86c41f86
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
@@ -109,11 +89,6 @@ p, li { white-space: pre-wrap; }
       <property name="baseSize">
        <size>
         <width>0</width>
-<<<<<<< HEAD
-        <height>0</height>
-       </size>
-      </property>
-=======
         <height>25</height>
        </size>
       </property>
@@ -123,31 +98,12 @@ p, li { white-space: pre-wrap; }
         <pointsize>10</pointsize>
        </font>
       </property>
->>>>>>> bb32d736893325c40017e68d6e3fb50b86c41f86
       <property name="html">
        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-<<<<<<< HEAD
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt; color:#000000;&quot;&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="QPushButton" name="send_message_btn">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="text">
-       <string>Send Message</string>
-=======
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Arial'; font-size:10pt; font-weight:400; font-style:normal;&quot; bgcolor=&quot;#ffffff&quot;&gt;
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'MS Shell Dlg 2'; font-size:8pt; color:#000000;&quot;&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
->>>>>>> bb32d736893325c40017e68d6e3fb50b86c41f86
       </property>
      </widget>
     </item>
@@ -195,80 +151,6 @@ p, li { white-space: pre-wrap; }
       </widget>
      </widget>
     </item>
-<<<<<<< HEAD
-    <item row="2" column="0">
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QPushButton" name="smilyButton">
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="../resources/resources.qrc">
-          <normaloff>:/icons/32/32/smily-select.png</normaloff>:/icons/32/32/smily-select.png</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>32</width>
-          <height>16</height>
-         </size>
-        </property>
-        <property name="flat">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="textButton">
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="../resources/resources.qrc">
-          <normaloff>:/icons/32/32/text-select.png</normaloff>:/icons/32/32/text-select.png</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>20</width>
-          <height>16</height>
-         </size>
-        </property>
-        <property name="flat">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="colorButton">
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="../resources/resources.qrc">
-          <normaloff>:/icons/32/32/Color Picker_32.png</normaloff>:/icons/32/32/Color Picker_32.png</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>16</width>
-          <height>16</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-=======
     <item row="2" column="1">
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
@@ -345,7 +227,6 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
       </item>
->>>>>>> bb32d736893325c40017e68d6e3fb50b86c41f86
      </layout>
     </item>
    </layout>
@@ -355,11 +236,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-<<<<<<< HEAD
-     <width>427</width>
-=======
      <width>420</width>
->>>>>>> bb32d736893325c40017e68d6e3fb50b86c41f86
      <height>21</height>
     </rect>
    </property>

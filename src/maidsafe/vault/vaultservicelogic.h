@@ -58,7 +58,7 @@ struct AddRefCallbackData {
     maidsafe::AddToReferenceListResponse response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
-  AddRefCallbackData(int found_local_res)
+  explicit AddRefCallbackData(int found_local_res)
       : found_local_result(found_local_res),
         mutex(),
         cv(),

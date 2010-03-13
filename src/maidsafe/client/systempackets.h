@@ -28,6 +28,7 @@
 #include <boost/cstdint.hpp>
 
 #include <string>
+#include <vector>
 
 #include "protobuf/packet.pb.h"
 #include "maidsafe/client/packetfactory.h"
@@ -36,39 +37,67 @@ namespace maidsafe {
 
 class SignaturePacket : public Packet {
  public:
+  explicit SignaturePacket(const crypto::RsaKeyPair &rsakp) : Packet(rsakp) {}
   PacketParams Create(PacketParams *params);
+ private:
+  SignaturePacket &operator=(const SignaturePacket&);
+  SignaturePacket(const SignaturePacket&);
 };
+
 class MidPacket : public Packet {
  public:
+  explicit MidPacket(const crypto::RsaKeyPair &rsakp) : Packet(rsakp) {}
+  virtual ~MidPacket() {}
+  virtual PacketParams Create(PacketParams *params);
   PacketParams GetData(const std::string &serialised_packet,
                        const std::string &username,
                        const std::string &PIN);
-  PacketParams Create(PacketParams *params);
-  std::string PacketName(PacketParams *params);
+  virtual std::string PacketName(PacketParams *params);
+ private:
+  MidPacket &operator=(const MidPacket&);
+  MidPacket(const MidPacket&);
 };
 
 class SmidPacket : public MidPacket {
  public:
+  explicit SmidPacket(const crypto::RsaKeyPair &rsakp) : MidPacket(rsakp) {}
   PacketParams Create(PacketParams *params);
   std::string PacketName(PacketParams *params);
+ private:
+  SmidPacket &operator=(const SmidPacket&);
+  SmidPacket(const SmidPacket&);
 };
 
 class TmidPacket : public Packet {
  public:
+  explicit TmidPacket(const crypto::RsaKeyPair &rsakp) : Packet(rsakp) {}
   PacketParams Create(PacketParams *params);
   PacketParams GetData(const std::string &serialised_packet,
                        const std::string &password,
                        const boost::uint32_t &rid);
   std::string PacketName(PacketParams *params);
+ private:
+  TmidPacket &operator=(const TmidPacket&);
+  TmidPacket(const TmidPacket&);
 };
+
 class PmidPacket : public Packet {
  public:
+  explicit PmidPacket(const crypto::RsaKeyPair &rsakp) : Packet(rsakp) {}
   PacketParams Create(PacketParams *params);
+ private:
+  PmidPacket &operator=(const PmidPacket&);
+  PmidPacket(const PmidPacket&);
 };
+
 class MpidPacket : public Packet {
  public:
+  explicit MpidPacket(const crypto::RsaKeyPair &rsakp) : Packet(rsakp) {}
   PacketParams Create(PacketParams *params);
   std::string PacketName(PacketParams *params);
+ private:
+  MpidPacket &operator=(const MpidPacket&);
+  MpidPacket(const MpidPacket&);
 };
 
 }  // namespace maidsafe

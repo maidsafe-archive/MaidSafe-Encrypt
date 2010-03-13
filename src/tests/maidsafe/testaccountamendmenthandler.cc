@@ -444,7 +444,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(far_account_name,
       testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))  // 1
+          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -454,7 +454,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // Call 6
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // Cll 6
 
   // Call 1 - Fail to parse FindNodes response
   int test_run(0);

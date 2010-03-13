@@ -27,9 +27,120 @@
 
 namespace maidsafe {
 
-Packet::Packet(): crypto_obj_() {
+CryptoKeyPairs::CryptoKeyPairs()
+    : max_thread_count_(0),
+      buffer_count_(0),
+      running_thread_count_(0),
+      key_buffer_(),
+      kb_mutex_(),
+      kb_cond_var_(),
+      threads_() {}
+
+CryptoKeyPairs::~CryptoKeyPairs() {
+  set_max_thread_count(0);
+  while (running_thread_count_ > 0)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+}
+
+void CryptoKeyPairs::Init(const boost::uint16_t &max_thread_count,
+                          const boost::uint16_t &buffer_count) {
+  set_max_thread_count(max_thread_count);
+  set_buffer_count(buffer_count);
+}
+
+void CryptoKeyPairs::CreateThread() {
+  boost::mutex::scoped_lock lock(kb_mutex_);
+  if ((running_thread_count_ < max_thread_count_) &&
+      (key_buffer_.size() + running_thread_count_ < buffer_count_)) {
+    boost::shared_ptr<boost::thread> thr(new boost::thread(
+        &maidsafe::CryptoKeyPairs::CreateKeyPair, this));
+    ++running_thread_count_;
+  }
+}
+
+void CryptoKeyPairs::DestroyThread() {
+  boost::mutex::scoped_lock lock(kb_mutex_);
+  --running_thread_count_;
+}
+
+void CryptoKeyPairs::CreateKeyPair() {
+  boost::this_thread::at_thread_exit(boost::bind(&CryptoKeyPairs::DestroyThread,
+      this));
+  crypto::RsaKeyPair rsakp;
+  rsakp.GenerateKeys(kRsaKeySize);
+  {
+    boost::mutex::scoped_lock lock(kb_mutex_);
+    key_buffer_.push(rsakp);
+    kb_cond_var_.notify_one();
+  }
+  CreateThread();
+}
+
+crypto::RsaKeyPair CryptoKeyPairs::GetKeyPair() {
+  boost::mutex::scoped_lock lock(kb_mutex_);
+  if (max_thread_count_ > 0 && buffer_count_ > 0) {
+    while (key_buffer_.empty())
+      kb_cond_var_.wait(lock);
+    crypto::RsaKeyPair rsakp = key_buffer_.front();
+    key_buffer_.pop();
+    lock.unlock();
+    CreateThread();
+    return rsakp;
+  } else {
+    crypto::RsaKeyPair rsakp;
+    rsakp.GenerateKeys(kRsaKeySize);
+    return rsakp;
+  }
+}
+
+boost::uint16_t CryptoKeyPairs::max_thread_count() {
+  boost::mutex::scoped_lock lock(kb_mutex_);
+  return max_thread_count_;
+}
+
+boost::uint16_t CryptoKeyPairs::buffer_count() {
+  boost::mutex::scoped_lock lock(kb_mutex_);
+  return buffer_count_;
+}
+
+void CryptoKeyPairs::set_max_thread_count(
+    const boost::uint16_t &max_thread_count) {
+  {
+    boost::mutex::scoped_lock lock(kb_mutex_);
+    if (max_thread_count > kMaxCryptoThreadCount)
+      max_thread_count_ = kMaxCryptoThreadCount;
+    else
+      max_thread_count_ = max_thread_count;
+  }
+  CreateThread();
+}
+
+void CryptoKeyPairs::set_buffer_count(const boost::uint16_t &buffer_count) {
+  {
+    boost::mutex::scoped_lock lock(kb_mutex_);
+    if (buffer_count > kNoOfSystemPackets)
+      buffer_count_ = kNoOfSystemPackets;
+    else
+      buffer_count_ = buffer_count;
+  }
+  CreateThread();
+}
+
+Packet::Packet(const crypto::RsaKeyPair &rsakp) : crypto_obj_(), rsakp_(rsakp) {
   crypto_obj_.set_hash_algorithm(crypto::SHA_512);
   crypto_obj_.set_symm_algorithm(crypto::AES_256);
+  if (rsakp_.private_key().empty())
+    rsakp_.GenerateKeys(kRsaKeySize);
+}
+
+PacketParams Packet::GetData(const std::string &serialised_packet) {
+  PacketParams result;
+  GenericPacket packet;
+  if (!packet.ParseFromString(serialised_packet))
+    result["data"] = std::string();
+  else
+    result["data"] = packet.data();
+  return result;
 }
 
 bool Packet::ValidateSignature(const std::string &serialised_packet,
@@ -37,32 +148,26 @@ bool Packet::ValidateSignature(const std::string &serialised_packet,
   GenericPacket packet;
   if (!packet.ParseFromString(serialised_packet))
     return false;
-  return crypto_obj_.AsymCheckSig(packet.data(),
-                                  packet.signature(),
-                                  public_key,
+  return crypto_obj_.AsymCheckSig(packet.data(), packet.signature(), public_key,
                                   crypto::STRING_STRING);
 }
 
-PacketParams Packet::GetData(std::string serialised_packet) {
-  PacketParams result;
-  GenericPacket packet;
-  if (!packet.ParseFromString(serialised_packet))
-    result["data"] = std::string("");
-  else
-    result["data"] = packet.data();
-  return result;
-}
-
-Packet::~Packet() {}
-
-Packet *PacketFactory::Factory(PacketType type) {
+boost::shared_ptr<Packet> PacketFactory::Factory(
+    PacketType type,
+    const crypto::RsaKeyPair &rsakp) {
   switch (type) {
-    case MID: return new MidPacket();break;
-    case SMID: return new SmidPacket();break;
-    case TMID: return new TmidPacket();break;
-    case MPID: return new MpidPacket();break;
-    case PMID: return new PmidPacket();break;
-    default:return new SignaturePacket();
+    case MID:
+      return boost::shared_ptr<Packet>(new MidPacket(rsakp));
+    case SMID:
+      return boost::shared_ptr<Packet>(new SmidPacket(rsakp));
+    case TMID:
+      return boost::shared_ptr<Packet>(new TmidPacket(rsakp));
+    case MPID:
+      return boost::shared_ptr<Packet>(new MpidPacket(rsakp));
+    case PMID:
+      return boost::shared_ptr<Packet>(new PmidPacket(rsakp));
+    default:
+      return boost::shared_ptr<Packet>(new SignaturePacket(rsakp));
   }
 }
 
