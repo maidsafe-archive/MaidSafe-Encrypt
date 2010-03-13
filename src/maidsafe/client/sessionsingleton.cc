@@ -69,6 +69,8 @@ bool SessionSingleton::ResetSession() {
   SetConnectionStatus(1);
   SetVaultIP("");
   SetVaultPort(0);
+  SetEp(EndPoint());
+  SetPd(PersonalDetails());
   ka_.ClearKeyRing();
   ch_.ClearContacts();
   psh_.MI_ClearPrivateShares();

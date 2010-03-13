@@ -472,7 +472,8 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
 #ifdef DEBUG
     printf("In MSM::LoadPacketCallback, failed to find value for key %s"
            " (found %i nodes and %i values)\n", HexSubstr(packet_name).c_str(),
-           find_response.closest_nodes_size(), find_response.values_size());
+           find_response.closest_nodes_size(),
+           find_response.signed_values_size());
 //    printf("Found alt val holder: %i\n",
 //           find_response.has_alternative_value_holder());
 #endif
@@ -491,10 +492,10 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
   std::vector<std::string> values;
   if (ret_value == kSuccess) {
     bool empty(true);
-    for (int i = 0; i < find_response.values_size(); ++i) {
-      if (!find_response.values(i).empty())
+    for (int i = 0; i < find_response.signed_values_size(); ++i) {
+      if (!find_response.signed_values(i).value().empty())
         empty = false;
-      values.push_back(find_response.values(i));
+      values.push_back(find_response.signed_values(i).value());
     }
 #ifdef DEBUG
     printf("In MSM::LoadPacketCallback, returned %i values.\n", values.size());
@@ -774,13 +775,17 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
 
   // Find the account holders
   boost::shared_ptr<AccountStatusData> data(new AccountStatusData);
-  int rslt = kad_ops_->FindKNodes(account_name, &data->contacts);
+  int rslt = kad_ops_->FindCloseNodes(account_name, &data->contacts);
   if (rslt != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::GetAccountDetails, Kad lookup failed -- error %i\n", rslt);
 #endif
     return kFindAccountHoldersError;
   }
+
+  // never send the RPC to our own vault
+  RemoveKadContact(pmid, &data->contacts);
+
   if (data->contacts.size() < kKadStoreThreshold) {
 #ifdef DEBUG
     printf("In MSM::GetAccountDetails, Kad lookup failed to find %u nodes; "
@@ -1153,6 +1158,25 @@ int MaidsafeStoreManager::AddBPMessage(
   return result;
 }
 
+void MaidsafeStoreManager::ContactInfo(const std::string &public_username,
+                                       const std::string &me,
+                                       ContactInfoNotifier cin) {
+  BPInputParameters bi_input_params = {ss_->Id(MPID), ss_->PublicKey(MPID),
+                                       ss_->PrivateKey(MPID)};
+  std::string rec_pub_key;
+  if (public_username == me)
+    rec_pub_key = ss_->PublicKey(MPID);
+  else
+    rec_pub_key = ss_->GetContactPublicKey(public_username);
+
+  cbph_.ContactInfo(bi_input_params, me, public_username, rec_pub_key,
+                    cin, udt_transport_.GetID());
+}
+
+void MaidsafeStoreManager::OwnInfo(ContactInfoNotifier cin) {
+  ContactInfo(ss_->Id(MPID), ss_->Id(MPID), cin);
+}
+
 void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
   // TODO(Fraser#5#): 2009-12-21 - Consider repeating this until success or
   //                               some max. no. of failures.
@@ -1180,7 +1204,7 @@ void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  int result = kad_ops_->FindKNodes(store_data.data_name, &data->contacts);
+  int result = kad_ops_->FindCloseNodes(store_data.data_name, &data->contacts);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchList, Kad lookup failed -- error %i\n", result);
@@ -1943,7 +1967,7 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  int result = kad_ops_->FindKNodes(store_data.data_name, &data->contacts);
+  int result = kad_ops_->FindCloseNodes(store_data.data_name, &data->contacts);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchList, Kad lookup failed -- error %i\n",
@@ -2055,7 +2079,7 @@ void MaidsafeStoreManager::FindAvailableChunkHolders(
   *check_chunk_rpc_count = 0;
   // Find chunk holders' contact details
   for (size_t h = 0; h < chunk_holders_ids.size(); ++h) {
-    knode_->FindCloseNodes(chunk_holders_ids[h],
+    kad_ops_->FindCloseNodes(chunk_holders_ids[h],
         boost::bind(&MaidsafeStoreManager::GetHolderContactCallback, this,
         chunk_holders_ids[h], _1, chunk_holders, cond_data));
   }
@@ -2396,7 +2420,7 @@ void MaidsafeStoreManager::FindCloseNodes(
   packet_holders->clear();
   // Find packet holders' contact details
   for (size_t h = 0; h < packet_holder_ids.size(); ++h) {
-    knode_->FindCloseNodes(packet_holder_ids.at(h),
+    kad_ops_->FindCloseNodes(packet_holder_ids.at(h),
         boost::bind(&MaidsafeStoreManager::GetHolderContactCallback, this,
         packet_holder_ids.at(h), _1, packet_holders, find_cond_data));
   }
@@ -2751,13 +2775,17 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
 
   // Find the account holders
   boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
-  int n = kad_ops_->FindKNodes(account_name, &data->contacts);
+  int n = kad_ops_->FindCloseNodes(account_name, &data->contacts);
   if (n != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::CreateAccount, Kad lookup failed -- error %i\n", n);
 #endif
     return kFindAccountHoldersError;
   }
+
+  // never send the RPC to our own vault
+  RemoveKadContact(ss_->Id(PMID), &data->contacts);
+
   if (data->contacts.size() < kKadStoreThreshold) {
 #ifdef DEBUG
     printf("In MSM::CreateAccount, Kad lookup failed to find %u nodes; "

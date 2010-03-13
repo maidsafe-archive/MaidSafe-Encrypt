@@ -63,6 +63,7 @@ void int_dummy_callback(const int &result) {
 void AddToRemoteRefListTask::run() {
   int result = vault_service_logic_->AddToRemoteRefList(chunkname_,
                                                         store_contract_,
+                                                        found_local_result_,
                                                         transport_id_);
 #ifdef DEBUG
   if (result != kSuccess)
@@ -77,7 +78,8 @@ void AddToRemoteRefListTask::run() {
 
 void AmendRemoteAccountTask::run() {
   vault_service_logic_->AmendRemoteAccount(amend_account_request_,
-      found_local_result_, callback_, transport_id_);
+                                           found_local_result_, callback_,
+                                           transport_id_);
 }
 
 void SendCachableChunkTask::run() {
@@ -410,8 +412,8 @@ void VaultService::FinalisePayment(const std::string &chunk_name,
   if (permission_result != kSuccess) {
 #ifdef DEBUG
     printf("In VaultService::FinalisePayment (%s), failed to obtain storing "
-           "permission for %s.\n",
-           HexSubstr(pmid_).c_str(), HexSubstr(chunk_name).c_str());
+           "permission for client %s and chunk %s.\n", HexSubstr(pmid_).c_str(),
+           HexSubstr(pmid).c_str(), HexSubstr(chunk_name).c_str());
 #endif
     std::list<std::string> creditors, references;
     cih_.ResetAddToWatchList(chunk_name, pmid, kReasonPaymentFailed, &creditors,
@@ -425,7 +427,7 @@ void VaultService::FinalisePayment(const std::string &chunk_name,
 
     for (std::list<std::string>::iterator it = references.begin();
          it != references.end(); ++it) {
-      // TODO(Steve#) delete remote chunk
+      // TODO(Team#) delete ref packet and remote chunks
       // amend account for former chunk holder
       AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceGivenDec,
                          chunk_size, *it, chunk_name);
@@ -1300,7 +1302,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     return;
   }
 
-  if (!vbph.ChangeOwnerInfo(request->data(), &ser_bp, request->public_key())) {
+  if (!vbph.ChangeOwnerInfo(request->data(), request->public_key(), &ser_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1528,9 +1530,10 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
   }
 
   maidsafe::EndPoint *ep = response->mutable_ep();
+  maidsafe::PersonalDetails *pd = response->mutable_pd();
   boost::uint16_t status;
   maidsafe::VaultBufferPacketHandler vbph;
-  if (!vbph.ContactInfo(ser_bp, request->id(), ep, &status)) {
+  if (!vbph.ContactInfo(ser_bp, request->id(), ep, pd, &status)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1625,20 +1628,38 @@ bool VaultService::ValidateAmendRequest(
     std::string *pmid) {
   *account_delta = 0;
   pmid->clear();
-  if (!request->IsInitialized())
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::ValidateAmendRequest, not initialised.\n");
+#endif
     return false;
+  }
 
-  if (request->account_pmid() == pmid_)
+  if (request->account_pmid() == pmid_) {
+#ifdef DEBUG
+    printf("In VaultService::ValidateAmendRequest, can't manage own account "
+           "locally.\n");
+#endif
     return false;
+  }
 
   const maidsafe::SignedSize &sz = request->signed_size();
   if (request->amendment_type() ==
       maidsafe::AmendAccountRequest::kSpaceOffered) {
-    if (request->account_pmid() != sz.pmid())
+    if (request->account_pmid() != sz.pmid()) {
+#ifdef DEBUG
+      printf("In VaultService::ValidateAmendRequest, account owner must be "
+             "size signer.\n");
+#endif
       return false;
+    }
   } else {
-    if (!request->has_chunkname())
+    if (!request->has_chunkname()) {
+#ifdef DEBUG
+      printf("In VaultService::ValidateAmendRequest, no chunk name given.\n");
+#endif
       return false;
+    }
   }
 
   if (!ValidateSignedSize(sz)) {
@@ -1700,15 +1721,6 @@ bool VaultService::ValidateDataChunk(const std::string &chunkname,
 int VaultService::Storable(const boost::uint64_t &data_size) {
 // TODO(Fraser#5#): 2009-08-04 - Deduct pending store space
   return data_size <= vault_chunkstore_->FreeSpace() && data_size != 0 ? 0 : -1;
-}
-
-bool VaultService::ModifyBufferPacketInfo(const std::string &new_info,
-                                          const std::string &pub_key,
-                                          std::string *updated_bp) {
-  if (!ValidateSystemPacket(new_info, pub_key))
-    return false;
-  maidsafe::VaultBufferPacketHandler vbph;
-  return vbph.ChangeOwnerInfo(new_info, updated_bp, pub_key);
 }
 
 bool VaultService::HasChunkLocal(const std::string &chunkname) {
@@ -1783,8 +1795,16 @@ void VaultService::AmendRemoteAccount(
         maidsafe::AmendAccountRequest::kSpaceGivenDec) {
       found_local_result =
           ah_.AmendAccount(account_pmid, field, size, increase);
+#ifdef DEBUG
+      if (found_local_result != kSuccess) {
+        printf("In VaultService::AmendRemoteAccount (%s), failed amending "
+               "space offered by %s.\n", HexSubstr(pmid_).c_str(),
+               HexSubstr(account_pmid).c_str());
+      }
+#endif
     }
   }
+
   crypto::Crypto co;
   maidsafe::AmendAccountRequest amend_account_request;
   amend_account_request.set_amendment_type(amendment_type);
@@ -1798,6 +1818,7 @@ void VaultService::AmendRemoteAccount(
   mutable_signed_size->set_public_key(pmid_public_);
   mutable_signed_size->set_public_key_signature(pmid_public_signature_);
   amend_account_request.set_chunkname(chunkname);
+
   // thread_pool_ handles destruction of task.
   AmendRemoteAccountTask *task =
       new AmendRemoteAccountTask(amend_account_request, found_local_result,
@@ -1808,24 +1829,40 @@ void VaultService::AmendRemoteAccount(
 void VaultService::AddToRemoteRefList(const std::string &chunkname,
                                       const maidsafe::StoreContract &contract) {
   // try adding to local ref list (fails if no chunk info or watchers)
-  if (0 == cih_.AddToReferenceList(chunkname, contract.pmid(),
-                         contract.inner_contract().signed_size().data_size())) {
+  int found_local_result = cih_.AddToReferenceList(chunkname, contract.pmid(),
+      contract.inner_contract().signed_size().data_size());
+  if (found_local_result == kSuccess) {
     DoneAddToReferenceList(contract, chunkname);
   }
 
   // thread_pool_ handles destruction of task.
   AddToRemoteRefListTask *task =
-      new AddToRemoteRefListTask(chunkname, contract, vault_service_logic_,
-                                 transport_id_);
+      new AddToRemoteRefListTask(chunkname, contract, found_local_result,
+                                 vault_service_logic_, transport_id_);
   thread_pool_.start(task);
 }
 
 int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
                                          const std::string &account_pmid) {
+  boost::uint64_t space_offered(0), space_given(0), space_taken(0);
+  int found_local_result = ah_.GetAccountInfo(account_pmid, &space_offered,
+                                              &space_given, &space_taken);
+  if (found_local_result == kSuccess && space_taken + size > space_offered) {
+    found_local_result = kGeneralError;
+#ifdef DEBUG
+    printf("In VaultService::RemoteVaultAbleToStore (%s), requested space "
+           "(%llu) not available (> %llu).\n",
+           HexSubstr(pmid_).c_str(), size, space_offered - space_taken);
+#endif
+  }
+
   maidsafe::AccountStatusRequest as_req;
   as_req.set_account_pmid(account_pmid);
   as_req.set_space_requested(size);
-  return vault_service_logic_->RemoteVaultAbleToStore(as_req, transport_id_);
+
+  return vault_service_logic_->RemoteVaultAbleToStore(as_req,
+                                                      found_local_result,
+                                                      transport_id_);
 }
 
 int VaultService::AddAccount(const std::string &pmid,

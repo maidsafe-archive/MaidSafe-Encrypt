@@ -38,8 +38,8 @@ bool VaultBufferPacketHandler::CheckMsgStructure(const std::string &ser_message,
   return true;
 }
 
-bool VaultBufferPacketHandler::IsOwner(std::string owner_id,
-                                       GenericPacket gp_info) {
+bool VaultBufferPacketHandler::IsOwner(const std::string &owner_id,
+                                       const GenericPacket &gp_info) {
   BufferPacketInfo bpi;
   if (!bpi.ParseFromString(gp_info.data()))
     return false;
@@ -48,8 +48,9 @@ bool VaultBufferPacketHandler::IsOwner(std::string owner_id,
   return false;
 }
 
-bool VaultBufferPacketHandler::ValidateOwnerSignature(std::string public_key,
-    std::string ser_bufferpacket) {
+bool VaultBufferPacketHandler::ValidateOwnerSignature(
+    const std::string &public_key,
+    const std::string &ser_bufferpacket) {
   BufferPacket bp;
   if (!bp.ParseFromString(ser_bufferpacket))
     return false;
@@ -66,7 +67,7 @@ bool VaultBufferPacketHandler::GetMessages(std::string *ser_bp,
   BufferPacketMessage bpm;
   if (bp.messages_size() == 0) {
 #ifdef DEBUG
-    printf("VaultBufferPacketHandler::GetMessages - NO messages.\n");
+//    printf("VaultBufferPacketHandler::GetMessages - NO messages.\n");
 #endif
     return true;
   }
@@ -103,9 +104,9 @@ bool VaultBufferPacketHandler::ClearMessages(std::string *ser_bufferpacket) {
   return true;
 }
 
-bool VaultBufferPacketHandler::ChangeOwnerInfo(std::string ser_gp,
-                                               std::string *ser_packet,
-                                               std::string public_key) {
+bool VaultBufferPacketHandler::ChangeOwnerInfo(const std::string &ser_gp,
+                                               const std::string &public_key,
+                                               std::string *ser_packet) {
   if (!ValidateOwnerSignature(public_key, *ser_packet)) {
     return false;
   }
@@ -294,6 +295,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
 bool VaultBufferPacketHandler::ContactInfo(const std::string &current_bp,
                                            const std::string &public_username,
                                            EndPoint *ep,
+                                           PersonalDetails *pd,
                                            boost::uint16_t *status) {
   BufferPacket bufferpacket;
   if (!bufferpacket.ParseFromString(current_bp)) {
@@ -312,26 +314,29 @@ bool VaultBufferPacketHandler::ContactInfo(const std::string &current_bp,
     return false;
   }
 
-  bool found(false);
-  std::string hashed_sender_id = crypto_obj_.Hash(public_username, "",
-                                                  crypto::STRING_STRING,
-                                                  false);
-  for (int n = 0; n < bpi.users_size(); ++n) {
-    if (bpi.users(n) == hashed_sender_id) {
-      found = true;
-      n = bpi.users_size();
+  if (!IsOwner(public_username, bufferpacket.owner_info(0))) {
+    bool found(false);
+    std::string hashed_sender_id = crypto_obj_.Hash(public_username, "",
+                                                    crypto::STRING_STRING,
+                                                    false);
+    for (int n = 0; n < bpi.users_size(); ++n) {
+      if (bpi.users(n) == hashed_sender_id) {
+        found = true;
+        n = bpi.users_size();
+      }
     }
-  }
 
-  if (!found) {
-#ifdef DEBUG
-    printf("VaultBufferPacketHandler::ContactInfo - Not allowed.\n");
-#endif
-    return false;
+    if (!found) {
+  #ifdef DEBUG
+      printf("VaultBufferPacketHandler::ContactInfo - Not allowed.\n");
+  #endif
+      return false;
+    }
   }
 
   ep->set_ip(bpi.ep().ip());
   ep->set_port(bpi.ep().port());
+  *pd = bpi.pd();
   *status = bpi.online();
 
   return true;

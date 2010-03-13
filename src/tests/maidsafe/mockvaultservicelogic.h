@@ -47,13 +47,6 @@ namespace mock_vsl {
 typedef boost::function<void (const maidsafe_vault::ReturnCode&)>
     VoidFuncOneInt;
 
-enum FindNodesResponseType {
-  kFailParse,
-  kResultFail,
-  kTooFewContacts,
-  kGood
-};
-
 class KGroup {
  public:
   struct Member {
@@ -114,12 +107,6 @@ void CopyResult(const int &response,
                 boost::condition_variable *cv,
                 int *result);
 
-std::string MakeFindNodesResponse(const FindNodesResponseType &type,
-                                  std::vector<std::string> *pmids);
-
-void RunCallback(const std::string &find_nodes_response,
-                 const base::callback_func_type &callback);
-
 void RunVaultCallback(const maidsafe_vault::ReturnCode &result,
                       const VoidFuncOneInt &callback);
 
@@ -176,8 +163,9 @@ class MockVsl : public VaultServiceLogic {
   boost::shared_ptr<maidsafe::MockKadOps> kadops() {
       return boost::static_pointer_cast<maidsafe::MockKadOps>(kad_ops_);
   }
-  MOCK_METHOD3(AddToRemoteRefList, int(const std::string &chunkname,
+  MOCK_METHOD4(AddToRemoteRefList, int(const std::string &chunkname,
                    const maidsafe::StoreContract &store_contract,
+                   const int &found_local_result,
                    const boost::int16_t &transport_id));
   MOCK_METHOD4(AmendRemoteAccount,
                void(const maidsafe::AmendAccountRequest &request,
@@ -186,8 +174,10 @@ class MockVsl : public VaultServiceLogic {
                     const boost::int16_t &transport_id));
   int AddToRemoteRefListReal(const std::string &chunkname,
                              const maidsafe::StoreContract &store_contract,
+                             const int &found_local_result,
                              const boost::int16_t &transport_id) {
     return VaultServiceLogic::AddToRemoteRefList(chunkname, store_contract,
+                                                 found_local_result,
                                                  transport_id);
   }
   void AmendRemoteAccountReal(const maidsafe::AmendAccountRequest &request,
@@ -211,14 +201,16 @@ class MockVaultServiceLogicTest : public testing::Test {
         few_pmids_(),
         good_pmids_(),
         fail_parse_result_(
-            mock_vsl::MakeFindNodesResponse(mock_vsl::kFailParse,
-                                            &fail_parse_pmids_)),
-        fail_result_(mock_vsl::MakeFindNodesResponse(mock_vsl::kResultFail,
-                                                     &fail_pmids_)),
-        few_result_(mock_vsl::MakeFindNodesResponse(mock_vsl::kTooFewContacts,
-                                                    &few_pmids_)),
-        good_result_(mock_vsl::MakeFindNodesResponse(mock_vsl::kGood,
-                                                     &good_pmids_)),
+            mock_kadops::MakeFindNodesResponse(mock_kadops::kFailParse,
+                                               &fail_parse_pmids_)),
+        fail_result_(
+            mock_kadops::MakeFindNodesResponse(mock_kadops::kResultFail,
+                                               &fail_pmids_)),
+        few_result_(
+            mock_kadops::MakeFindNodesResponse(mock_kadops::kTooFewContacts,
+                                               &few_pmids_)),
+        good_result_(mock_kadops::MakeFindNodesResponse(mock_kadops::kGood,
+                                                        &good_pmids_)),
         good_result_less_one_(),
         our_contact_(),
         good_contacts_() {}

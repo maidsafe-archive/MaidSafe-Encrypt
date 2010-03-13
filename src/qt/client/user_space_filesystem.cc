@@ -31,7 +31,6 @@
 
 // core
 #include "fs/filesystem.h"
-#include "maidsafe/client/clientcontroller.h"
 
 // 3rd party
 #if defined(MAIDSAFE_WIN32)
@@ -79,12 +78,12 @@ bool UserSpaceFileSystem::mount() {
 
   std::string debug_mode("-d");
 #ifdef MAIDSAFE_WIN32
-  char drive = maidsafe::ClientController::getInstance()->DriveLetter();
+  char drive = ClientController::instance()->DriveLetter();
   fs_w_fuse::Mount(drive);
   ClientController::instance()->SetWinDrive(drive);
 #elif defined(MAIDSAFE_POSIX)
   std::string mount_point = file_system::MaidsafeFuseDir(
-      maidsafe::SessionSingleton::getInstance()->SessionName()).string();
+      ClientController::instance()->SessionName()).string();
   impl_->fsl_.Mount(mount_point, debug_mode);
 #endif
   boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -147,7 +146,7 @@ bool UserSpaceFileSystem::unmount() {
 #endif
 
   // logout from client controller
-  const bool n = maidsafe::ClientController::getInstance()->Logout();
+  const bool n = ClientController::instance()->Logout();
   if (!n) {
     // TODO(Team#5#): 2009-06-25 - do stuff
     success = false;

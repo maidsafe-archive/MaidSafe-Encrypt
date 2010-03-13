@@ -213,7 +213,6 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
       result = true;
     else
       while (!q.eof()) {
-        printf("a\n");
         q.nextRow();
       }
   }
@@ -349,7 +348,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
       a = db_.execDML(s.c_str());
     } catch(CppSQLite3Exception &e2) {  // NOLINT (Fraser)
 #ifdef DEBUG
-      printf("Error(%i): %s\n", e2.errorCode(),  e2.errorMessage());
+      printf("Error(%i): %s - ", e2.errorCode(),  e2.errorMessage());
       printf("%d rows affected\n", a);
 #endif
       return kStoreManagerError;
@@ -606,7 +605,7 @@ int LocalStoreManager::CreateBP() {
   GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
   BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(ss_->Id(MPID));
-  buffer_packet_info.set_ownerpublickey(ss_->PublicKey(MPID));
+  buffer_packet_info.set_owner_publickey(ss_->PublicKey(MPID));
   buffer_packet_info.set_online(1);
   EndPoint *ep = buffer_packet_info.mutable_ep();
   ep->set_ip("127.0.0.1");
@@ -681,7 +680,7 @@ int LocalStoreManager::ModifyBPInfo(const std::string &info) {
     return -1;
   }
   std::string new_bp;
-  if (!vbph_.ChangeOwnerInfo(ser_gp, &bp_in_chunk, ss_->PublicKey(MPID))) {
+  if (!vbph_.ChangeOwnerInfo(ser_gp, ss_->PublicKey(MPID), &bp_in_chunk)) {
 #ifdef DEBUG
     printf("LocalStoreManager::ModifyBPInfo - Failed to change owner info.\n");
 #endif
@@ -744,13 +743,18 @@ int LocalStoreManager::AddBPMessage(const std::vector<std::string> &receivers,
 void LocalStoreManager::ContactInfo(const std::string &public_username,
                                     const std::string &me,
                                     ContactInfoNotifier cin) {
-  std::string rec_pub_key(ss_->GetContactPublicKey(public_username));
+  std::string rec_pub_key;
+  if (public_username == me)
+    rec_pub_key = ss_->PublicKey(MPID);
+  else
+    rec_pub_key = ss_->GetContactPublicKey(public_username);
   std::string bufferpacketname(BufferPacketName(public_username, rec_pub_key));
   std::string bp_in_chunk;
   EndPoint ep;
+  PersonalDetails pd;
   boost::uint16_t status(1);
   if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
-    boost::thread thr(cin, kGetBPInfoError, ep, status);
+    boost::thread thr(cin, kGetBPInfoError, ep, pd, status);
 #ifdef DEBUG
     printf("LocalStoreManager::ContactInfo - Failed to find BP chunk(%s).\n",
            bufferpacketname.substr(0, 10).c_str());
@@ -758,8 +762,8 @@ void LocalStoreManager::ContactInfo(const std::string &public_username,
     return;
   }
 
-  if (!vbph_.ContactInfo(bp_in_chunk, me, &ep, &status)) {
-    boost::thread thr(cin, kGetBPInfoError, ep, status);
+  if (!vbph_.ContactInfo(bp_in_chunk, me, &ep, &pd, &status)) {
+    boost::thread thr(cin, kGetBPInfoError, ep, pd, status);
 #ifdef DEBUG
     printf("LocalStoreManager::ContactInfo - Failed(%i) to get info (%s).\n",
            kGetBPInfoError, public_username.c_str());
@@ -767,7 +771,11 @@ void LocalStoreManager::ContactInfo(const std::string &public_username,
     return;
   }
 
-  boost::thread thr(cin, kSuccess, ep, status);
+  boost::thread thr(cin, kSuccess, ep, pd, status);
+}
+
+void LocalStoreManager::OwnInfo(ContactInfoNotifier cin) {
+  ContactInfo(ss_->Id(MPID), ss_->Id(MPID), cin);
 }
 
 int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,

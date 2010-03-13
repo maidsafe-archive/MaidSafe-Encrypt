@@ -80,7 +80,10 @@ class BPCallbackObj {
                       cond_var_(cond_var),
                       mutex_(mutex),
                       result_(result),
-                      messages_(NULL) {
+                      end_point_(NULL),
+                      personal_details_(NULL),
+                      messages_(NULL),
+                      status_(0) {
     boost::mutex::scoped_lock lock(*mutex_);
     *called_back = false;
     *result_ = kBPAwaitingCallback;
@@ -94,7 +97,10 @@ class BPCallbackObj {
                       cond_var_(cond_var),
                       mutex_(mutex),
                       result_(result),
-                      messages_(messages) {
+                      end_point_(NULL),
+                      personal_details_(NULL),
+                      messages_(messages),
+                      status_(0) {
     boost::mutex::scoped_lock lock(*mutex_);
     *called_back = false;
     *result_ = kBPAwaitingCallback;
@@ -119,12 +125,24 @@ class BPCallbackObj {
     *called_back_ = true;
     cond_var_->notify_all();
   }
+  void BPContactInfoCallback(const maidsafe::ReturnCode &res,
+                             const maidsafe::EndPoint &ep,
+                             const maidsafe::PersonalDetails &pd,
+                             const boost::uint32_t &st) {
+    *result_ = res;
+    *end_point_ = ep;
+    *personal_details_ = pd;
+    *status_ = st;
+  }
  private:
   bool *called_back_;
   boost::condition_variable *cond_var_;
   boost::mutex *mutex_;
   ReturnCode *result_;
+  EndPoint *end_point_;
+  PersonalDetails *personal_details_;
   std::list<ValidatedBufferPacketMessage> *messages_;
+  boost::uint32_t *status_;
 };
 
 class ChunkStore;
@@ -289,6 +307,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual int AddBPMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &type);
+  virtual void ContactInfo(const std::string &public_username,
+                           const std::string &me,
+                           ContactInfoNotifier cin);
+  virtual void OwnInfo(ContactInfoNotifier cin);
 
   // Vault
   void PollVaultInfo(base::callback_func_type cb);

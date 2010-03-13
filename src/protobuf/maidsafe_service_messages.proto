@@ -363,5 +363,6 @@ message ContactInfoResponse {
   optional bytes public_key = 3;
   optional bytes public_key_signature = 4;
   optional EndPoint ep = 5;
-  optional uint32 status = 6;
+  optional PersonalDetails pd = 6;
+  optional uint32 status = 7;
 }

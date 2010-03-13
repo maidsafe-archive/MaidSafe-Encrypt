@@ -21,17 +21,18 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
-#include <google/protobuf/descriptor.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
+#include <gtest/gtest.h>
+#include <google/protobuf/descriptor.h>
 #include <maidsafe/transportudt.h>
+
 #include "fs/filesystem.h"
-#include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/crypto.h"
 #include "maidsafe/client/packetfactory.h"
 #include "maidsafe/vault/vaultdaemon.h"
+#include "maidsafe/vault/vaultservice.h"
 
 inline void HandleDeadServer(const bool &, const std::string &,
   const boost::uint16_t&) {}

@@ -23,6 +23,12 @@
 #include <QInputDialog>
 #include <QFontDialog>
 #include <QColorDialog>
+#include <QKeyEvent>
+#include <QFile>
+#include <QTextStream>
+#include <QRegExp>
+#include <QDateTime>
+#include <QDebug>
 
 #include <string>
 
@@ -53,18 +59,19 @@ PersonalMessages::PersonalMessages(QWidget* parent)
 
 PersonalMessages::PersonalMessages(QString name)
     : active_(false), init_(false) {
-
+  setAttribute(Qt::WA_DeleteOnClose, true);
   setWindowIcon(QPixmap(":/icons/16/globe"));
   ui_.setupUi(this);
 
+  ui_.message_text_edit->installEventFilter(this);
   statusBar()->hide();
 
-  // const QString pu = ClientController::instance()->publicUsername();
   smilies_ = new Smily;
   convName_ = name;
-  font_ = QFont("Times New Roman", 10);
+  font_ = QFont("Arial", 10);
   color_ = QColor("Black");
   ui_.partListWidget->addItem(name);
+  dir_ = "" + convName_ + ".html";
 
   int n = ClientController::instance()->AddConversation(
           convName_.toStdString());
@@ -100,20 +107,52 @@ PersonalMessages::PersonalMessages(QString name)
 
   connect(ui_.smilyButton, SIGNAL(clicked(bool)),
           this,             SLOT(onSmilyClicked()));
+
+  connect(ui_.message_text_edit, SIGNAL(textChanged()),
+          this,           SLOT(onMessageTextEdit()));
+
+  loadConversation();
 }
 
 PersonalMessages::~PersonalMessages() {
   int n = ClientController::instance()->RemoveConversation(
           convName_.toStdString());
+  dir_ = "" + convName_ + ".html";
+  QFile f(dir_);
+  f.open(QIODevice::WriteOnly);
+  QTextStream out(&f);
+  out << ui_.message_window->toHtml();
+  f.close();
+  qDebug() << "Destroy Finished";
 }
+
+void PersonalMessages::closeEvent(QCloseEvent *event) {
+  /*qDebug() << "Close Started";
+#ifdef __WIN32__
+  dir_ = QString("%1:\\My Files\\%2").
+        arg(ClientController::instance()->WinDrive()).arg(convName_ + ".html");
+#else
+  dir_ = QString::fromStdString(file_system::MaidsafeFuseDir(
+  ClientController::instance()->SessionName()).string() +
+         "/My Files/" + convName_ + ".html");
+#endif
+
+  qDebug() << "Close 50";
+  qDebug() << dir_;
+  QFile f(dir_);
+  f.open(QIODevice::WriteOnly);
+  QTextStream out(&f);
+  out << ui_.message_window->toHtml();
+  f.close();
+  qDebug() << "Close Finished";*/
+}
+
 
 void PersonalMessages::setActive(bool b) {
   if (b && !init_) {
     init_ = true;
   }
-
   active_ = b;
-
   if (active_) {
     emit messageReceived();
   }
@@ -121,8 +160,18 @@ void PersonalMessages::setActive(bool b) {
 
 void PersonalMessages::reset() {
   messages_.clear();
-
   init_ = false;
+}
+
+void PersonalMessages::loadConversation(){
+  QFile file(dir_);
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    return;
+  QTextStream in(&file);
+  QString line = in.readAll();
+  ui_.message_window->setHtml(line);
+  file.close();
+  ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
 }
 
 void PersonalMessages::onMessageReceived(ClientController::MessageType,
@@ -132,11 +181,16 @@ void PersonalMessages::onMessageReceived(ClientController::MessageType,
                                  const QString& conversation) {
   boost::progress_timer t;
   if (sender == convName_) {
-//    ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
-    ui_.message_window->insertHtml(tr("<br />%1 said: %2").arg(sender)
-                                   .arg(message));
+    ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+    QDateTime theDate = QDateTime::currentDateTime();
+    QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
+
+    ui_.message_window->insertHtml(tr("<span style=\"background-color:#CCFF99\">"
+                                      "<br />%3 %1 said: %2</span>"
+                                      ).arg(sender).arg(message).arg(date));
   }
     printf("Personal Messages.cc %f", t.elapsed());
+    ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
 }
 
 void PersonalMessages::sendMessage(const QDateTime& time,
@@ -154,8 +208,14 @@ QString PersonalMessages::getName() {
 }
 
 void PersonalMessages::setMessage(QString mess) {
-  // ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
-  ui_.message_window->insertHtml(mess);
+  ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  QDateTime theDate = QDateTime::currentDateTime();
+  QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
+
+  ui_.message_window->insertHtml(tr("<span style=\"background-color:#CCFF99\">"
+                                      "<br />%3 %1 said: %2</span>"
+                                      ).arg(convName_).arg(mess).arg(date));
+  ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
 }
 
 void PersonalMessages::onSendMessageClicked() {
@@ -178,9 +238,14 @@ void PersonalMessages::onSendMessageClicked() {
 void PersonalMessages::onSendMessageComplete(bool success,
                                              const QString& text) {
   if (success) {
-//    ui_.message_window->moveCursor(QTextCursor::End,
-//                                   QTextCursor::MoveAnchor);
-    ui_.message_window->insertHtml(tr("<br />You said: %1").arg(text));
+   QDateTime theDate = QDateTime::currentDateTime();
+   QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
+   ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+   ui_.message_window->insertHtml(tr("<span style=\"background-color:#E0FFFF\">"
+                                     "<br />%1 you said: %2 </span>")
+                                     .arg(date).arg(text));
+  ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+
   } else {
     const QString msg = tr("Error sending message.");
     QMessageBox::warning(this, tr("Error"), msg);
@@ -188,7 +253,14 @@ void PersonalMessages::onSendMessageComplete(bool success,
   ui_.message_text_edit->clear();
 }
 
-void PersonalMessages::onSendInvite() { }
+void PersonalMessages::onSendInvite() {
+  QString filename = QFileDialog::getSaveFileName(this, "Save file", "", ".html");
+  QFile f( filename );
+  f.open( QIODevice::WriteOnly);
+  QTextStream out(&f);
+  out << ui_.message_window->toHtml();
+  f.close();
+  }
 
 void PersonalMessages::onSendFile() {
   QList<QString> conts;
@@ -217,7 +289,7 @@ void PersonalMessages::onSendFile() {
   QStringList fileNames = qfd->selectedFiles();
 #else
   root = QString::fromStdString(file_system::MaidsafeFuseDir(
-         maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+  ClientController::instance()->SessionName()).string() +
          "/My Files");
   QStringList fileNames = QFileDialog::getOpenFileNames(this,
                                                         "Select one to send",
@@ -277,6 +349,21 @@ void PersonalMessages::onColorClicked() {
   bool ok;
   color_ = QColorDialog::getColor(QColor("black"), this);
   formatHtml();
+}
+
+bool PersonalMessages::eventFilter(QObject *obj, QEvent *event)
+{
+  if (event->type() == QEvent::KeyPress) {
+    QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+    if (keyEvent->key() == Qt::Key_Return){
+      onSendMessageClicked();
+      return true;
+    } else {
+      return QObject::eventFilter(obj, event);
+    }
+  } else {
+    return QObject::eventFilter(obj, event);
+  }
 }
 
 void PersonalMessages::formatHtml() {
@@ -351,4 +438,13 @@ void PersonalMessages::onSmilyChosen(int row, int column) {
     }
   }
 }
+
+void PersonalMessages::onMessageTextEdit(){
+  QString text = ui_.message_text_edit->toHtml();
+
+  text.replace(":-D","<img src=\"://smilies//smily_blue//sbiggrin.gif\";");
+
+}
+
+
 

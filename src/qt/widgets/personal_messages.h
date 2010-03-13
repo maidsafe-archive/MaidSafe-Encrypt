@@ -17,6 +17,7 @@
 
 #include <QWidget>
 #include <QString>
+#include <QStringList>
 
 // local
 #include "qt/client/client_controller.h"
@@ -62,8 +63,15 @@ class PersonalMessages : public QMainWindow {
     void formatHtml();
     void onSmilyChosen(int row, int column);
     void onSendMessageComplete(bool success, const QString& text);
+    void onMessageTextEdit();
+
+  protected:
+    bool eventFilter(QObject *obj, QEvent *ev);
+    void closeEvent ( QCloseEvent * event );
 
  private:
+  void loadConversation();
+
   void sendMessage(const QDateTime& time,
                   const QString& sender,
                   const QString& message);
@@ -76,6 +84,7 @@ class PersonalMessages : public QMainWindow {
   QFont font_;
   QColor color_;
   Smily* smilies_;
+  QString dir_;
 
   // Hold basic message info
   struct Message {

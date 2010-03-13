@@ -59,10 +59,12 @@ class AddToRemoteRefListTask : public QRunnable {
  public:
   AddToRemoteRefListTask(const std::string &chunkname,
                          const maidsafe::StoreContract &store_contract,
+                         const int &found_local_result,
                          VaultServiceLogic *vault_service_logic,
                          const boost::int16_t &transport_id)
       : chunkname_(chunkname),
         store_contract_(store_contract),
+        found_local_result_(found_local_result),
         vault_service_logic_(vault_service_logic),
         transport_id_(transport_id) {}
   void run();
@@ -71,6 +73,7 @@ class AddToRemoteRefListTask : public QRunnable {
   AddToRemoteRefListTask(const AddToRemoteRefListTask&);
   std::string chunkname_;
   maidsafe::StoreContract store_contract_;
+  int found_local_result_;
   VaultServiceLogic *vault_service_logic_;
   boost::int16_t transport_id_;
 };
@@ -274,9 +277,6 @@ class VaultService : public maidsafe::MaidsafeService {
   bool ValidateDataChunk(const std::string &chunkname,
                          const std::string &content);
   int Storable(const boost::uint64_t &data_size);
-  bool ModifyBufferPacketInfo(const std::string &new_info,
-                              const std::string &pub_key,
-                              std::string *updated_bp);
   bool HasChunkLocal(const std::string &chunkname);
   bool StoreChunkLocal(const std::string &chunkname,
                        const std::string &content);

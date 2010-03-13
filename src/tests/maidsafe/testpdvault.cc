@@ -241,7 +241,7 @@ void CreateBufferPacket(const std::string &owner,
   maidsafe::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
   maidsafe::BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(owner);
-  buffer_packet_info.set_ownerpublickey(public_key);
+  buffer_packet_info.set_owner_publickey(public_key);
   buffer_packet_info.set_online(false);
   std::string ser_info;
   buffer_packet_info.SerializeToString(&ser_info);
@@ -279,7 +279,7 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
       sm->kad_ops_->FindValue(*not_stored_it, false, &cache_holder,
                               &chunk_holders_ids, &needs_cache_copy_id);
       if (chunk_holders_ids.size() >= 1) {
-        printf("Found chunk: %s - Got %u holders.\n",
+        printf("Found chunk ref for %s, got %u holders.\n",
                HexSubstr(*not_stored_it).c_str(), chunk_holders_ids.size());
         not_stored.erase(*not_stored_it);
         stored.insert(*not_stored_it);
@@ -287,7 +287,7 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
         found = true;
         break;
       } else {
-        printf("Not there with chunk: %s - Got %u holders.\n",
+        printf("Not there with chunk ref for %s, got %u holders.\n",
                HexSubstr(*not_stored_it).c_str(), chunk_holders_ids.size());
       }
       ++not_stored_it;
@@ -295,7 +295,7 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
     }
   }
   if (!not_stored.empty()) {
-    printf("Could NOT load chunks:\n");
+    printf("Could NOT find refs to chunks:\n");
     for (std::set<std::string>::iterator not_stored_it = not_stored.begin();
          not_stored_it != not_stored.end(); ++not_stored_it)
       printf("\t - %s\n", HexSubstr(*not_stored_it).c_str());
@@ -308,10 +308,14 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
 namespace maidsafe_vault {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
-static const int kNetworkSize = kKadStoreThreshold + 2;
-static const int kNumOfClients = 2;
+static const int kNumOfClients = 1;
+static const int kNetworkSize = kKadStoreThreshold + kMinChunkCopies +
+                                kNumOfClients;
 static const int kNumOfTestChunks = kNetworkSize * 1.5;
-// Note: StoreAndGetChunks only works for small K due to resource problems
+/**
+ * Note: StoreAndGetChunks only works for small K due to resource problems
+ *       Recommended are K = 8 and kMinSuccessfulPecentageStore = 50%
+ */
 
 class PDVaultTest : public testing::Test {
  protected:
@@ -549,6 +553,8 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   stored_chunks.clear();
   ASSERT_EQ(chunks.size(), stored_refs.size());
   stored_refs.clear();
+
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
 
   ASSERT_EQ(chunks.size(),
             testpdvault::CheckStoredCopies(chunks, 120, clients_[0]->msm));

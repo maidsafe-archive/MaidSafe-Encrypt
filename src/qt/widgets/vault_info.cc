@@ -34,6 +34,9 @@ VaultInfo::VaultInfo(QWidget* parent)
     : Panel(parent)
     , init_(false) {
   ui_.setupUi(this);
+
+  connect(ui_.updateButton, SIGNAL(clicked(bool)),
+          this,             SLOT(onUpdateClicked()));
 }
 
 void VaultInfo::setActive(bool b) {
@@ -47,16 +50,21 @@ void VaultInfo::setActive(bool b) {
     bool res = ClientController::instance()->PollVaultInfo(&chunkstore,
                &offered_space, &free_space, &ip, &port);
     if (res) {
-      std::string offered(base::itos_ull(offered_space));
-      std::string free(base::itos_ull(free_space));
-      std::string used(base::itos_ull(offered_space - free_space));
+      std::string offered(base::itos_ull(offered_space/1024));
+      std::string free(base::itos_ull(free_space/1024));
+      std::string used(base::itos_ull((offered_space - free_space)/1024));
       std::string s_port(base::itos_ul(port));
-      ui_.lcdOffered->display(QString::fromStdString(offered));
-      ui_.lcdFree->display(QString::fromStdString(free));
-      ui_.lcdUsed->display(QString::fromStdString(used));
+      ui_.offeredLbl->setText(QString::fromStdString(offered + " Kb"));
+      ui_.freeLbl->setText(QString::fromStdString(free + " Kb"));
+      ui_.usedLbl->setText(QString::fromStdString(used + " Kb"));
       ui_.labelStoringDirectory->setText(chunkstore);
       ui_.labelIP->setText(ip);
       ui_.labelPort->setText(QString::fromStdString(s_port));
+
+      ui_.vaultSpaceBar->setMinimum(0);
+      ui_.vaultSpaceBar->setMaximum(offered_space);
+      ui_.vaultSpaceBar->setValue(offered_space - free_space);
+
       if ((offered_space * 0.1) < free_space) {
         ui_.labelVaultStatusMessage->setText(tr("<font color=green>Vault is "
                                              "feeling goooood =)</font>"));
@@ -70,21 +78,20 @@ void VaultInfo::setActive(bool b) {
           "Attention! Your vault seems to be offline!</strong></font>"));
     }
     init_ = true;
-    infoPollTimer_.start(5000);  // 60 secs
-    connect(&infoPollTimer_, SIGNAL(timeout()),
-            this,            SLOT(onUpdateVaultInfo()));
   } else if (!b && init_) {
     reset();
   }
 }
 
 void VaultInfo::reset() {
-  infoPollTimer_.stop();
-  disconnect(&infoPollTimer_, NULL, this, NULL);
   init_ = false;
 }
 
 VaultInfo::~VaultInfo() { }
+
+void VaultInfo::onUpdateClicked(){
+  onUpdateVaultInfo();
+}
 
 void VaultInfo::onUpdateVaultInfo() {
   QString chunkstore;
@@ -95,16 +102,21 @@ void VaultInfo::onUpdateVaultInfo() {
   bool b = ClientController::instance()->PollVaultInfo(&chunkstore,
          &offered_space, &free_space, &ip, &port);
   if (b) {
-    std::string offered(base::itos_ull(offered_space));
-    std::string free(base::itos_ull(free_space));
-    std::string used(base::itos_ull(offered_space - free_space));
+    std::string offered(base::itos_ull(offered_space/1024));
+    std::string free(base::itos_ull(free_space/1024));
+    std::string used(base::itos_ull((offered_space - free_space)/1024));
     std::string s_port(base::itos_ul(port));
-    ui_.lcdOffered->display(QString::fromStdString(offered));
-    ui_.lcdFree->display(QString::fromStdString(free));
-    ui_.lcdUsed->display(QString::fromStdString(used));
+    ui_.offeredLbl->setText(QString::fromStdString(offered + " Kb"));
+    ui_.freeLbl->setText(QString::fromStdString(free + " Kb"));
+    ui_.usedLbl->setText(QString::fromStdString(used + " Kb"));
     ui_.labelStoringDirectory->setText(chunkstore);
     ui_.labelIP->setText(ip);
     ui_.labelPort->setText(QString::fromStdString(s_port));
+
+    ui_.vaultSpaceBar->setMinimum(0);
+    ui_.vaultSpaceBar->setMaximum(offered_space);
+    ui_.vaultSpaceBar->setValue(offered_space - free_space);
+
     if ((offered_space * 0.1) < free_space) {
       ui_.labelVaultStatusMessage->setText(tr("<font color=green>Vault is "
                                            "feeling goooood =)</font>"));

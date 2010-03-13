@@ -26,6 +26,7 @@
 #include "qt/widgets/connection_settings.h"
 #include "qt/widgets/file_transfer_settings.h"
 #include "qt/widgets/security_settings.h"
+#include "qt/widgets/profile_settings.h"
 #include "ui_user_settings.h"
 
 class SecuritySettings;
@@ -33,6 +34,7 @@ class FileTransferSettings;
 class ConnectionSettings;
 class PersonalSettings;
 class VaultInfo;
+class ProfileSettings;
 
 class UserSettings : public QDialog {
     Q_OBJECT
@@ -58,7 +60,8 @@ class UserSettings : public QDialog {
     CONNECTION,
     FILE_TRANSFER,
     SECURITY,
-    VAULT_INFO
+    VAULT_INFO,
+    PROFILE
     };
 
   void setState(State state);
@@ -69,6 +72,7 @@ class UserSettings : public QDialog {
   ConnectionSettings* connection_;
   FileTransferSettings* fileTransfer_;
   SecuritySettings* security_;
+  ProfileSettings* profile_;
 };
 
 #endif  // QT_WIDGETS_USER_SETTINGS_H_

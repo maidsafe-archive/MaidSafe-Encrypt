@@ -52,6 +52,32 @@ class CC_CallbackResult {
   std::string result;
 };
 
+class BPCallback {
+ public:
+  BPCallback() : result(kGeneralError), end_point(), status(0) {}
+  void ContactInfoCallback(const ReturnCode &res,
+                           const EndPoint &ep,
+                           const PersonalDetails &pd,
+                           const boost::uint32_t &st) {
+    result = res;
+    end_point = ep;
+    personal_details = pd;
+    status = st;
+  }
+
+  void Reset() {
+    end_point.Clear();
+    personal_details.Clear();
+    result = kGeneralError;
+  }
+
+  ReturnCode result;
+  EndPoint end_point;
+  PersonalDetails personal_details;
+  boost::uint32_t status;
+};
+
+
 struct VaultConfigParameters {
   VaultConfigParameters() : vault_type(0), space(0), port(0), directory() {}
   int vault_type;
@@ -131,14 +157,17 @@ class ClientController {
                    const std::string &pub_name);
   int ShareList(const SortingMode &sm, const ShareFilter &sf,
                 std::list<std::string> *share_list);
-
   int GetSortedShareList(std::list<maidsafe::private_share> *ps_list,
                    const SortingMode &sm,
                    const std::string &pub_name);
-
   int CreateNewShare(const std::string &name,
                      const std::set<std::string> &admins,
                      const std::set<std::string> &readonlys);
+
+  // Own Info operations
+  int GetInfo(const std::string &public_username,
+              std::vector<std::string> *info);
+  int SetInfo(const std::vector<std::string> &info);
 
   // Vault operations
   bool PollVaultInfo(std::string *chunkstore,
@@ -235,6 +264,7 @@ class ClientController {
                                bool *callback_arrived,
                                VaultStatus *res);
   std::string GenerateBPInfo();
+  std::string GenerateBPInfo(const std::vector<std::string> &info);
 
   // Variables
   boost::shared_ptr<ChunkStore> client_chunkstore_;
@@ -252,6 +282,7 @@ class ClientController {
   std::string client_store_;
   bool initialised_;
   bool logging_out_;
+  bool logged_in_;
 };
 
 }  // namespace maidsafe

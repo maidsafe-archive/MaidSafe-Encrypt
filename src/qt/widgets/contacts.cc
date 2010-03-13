@@ -38,7 +38,6 @@
 #include "qt/client/client_controller.h"
 #include "qt/widgets/user_panels.h"
 
-
 Contacts::Contacts(QWidget* parent)
     : Panel(parent)
     , init_(false) {

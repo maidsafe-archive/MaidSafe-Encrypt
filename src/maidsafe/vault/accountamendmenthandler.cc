@@ -220,10 +220,12 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
   std::vector<kad::Contact> contacts;
   boost::mutex mutex;
   boost::condition_variable cv;
-  ReturnCode result(kVaultServiceError);
-  vault_service_logic_->HandleFindKNodesResponse(find_nodes_response,
-      amendment.account_name, &contacts, &mutex, &cv, &result);
-  if (result == kSuccess && contacts.size() >= size_t(kKadStoreThreshold)) {
+  maidsafe::ReturnCode result(maidsafe::kFindNodesError);
+  vault_service_logic_->kadops()->HandleFindCloseNodesResponse(
+      find_nodes_response, amendment.account_name, &contacts, &mutex, &cv,
+      &result);
+  if (result == maidsafe::kSuccess && contacts.size() >=
+      size_t(kKadStoreThreshold)) {
     // Populate map of Chunk Info holders
     for (size_t i = 0; i < contacts.size(); ++i) {
       modified_amendment.chunk_info_holders.insert(std::pair<std::string, bool>(
