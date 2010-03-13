@@ -21,6 +21,7 @@
 #ifndef MAIDSAFE_KADOPS_H_
 #define MAIDSAFE_KADOPS_H_
 
+#include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
 #include <maidsafe/kademlia_service_messages.pb.h>

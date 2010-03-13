@@ -2025,7 +2025,10 @@ int ClientController::GetInfo(const std::string &public_username,
       info->push_back(bpc.personal_details.city());
       info->push_back(bpc.personal_details.country());
     } else {
-      printf("Putting stuff to the session - %s\n", bpc.personal_details.full_name().c_str());
+#ifdef DEBUG
+      printf("Putting stuff to the session - %s\n",
+             bpc.personal_details.full_name().c_str());
+#endif
       ss_->SetPd(bpc.personal_details);
       ss_->SetEp(bpc.end_point);
     }

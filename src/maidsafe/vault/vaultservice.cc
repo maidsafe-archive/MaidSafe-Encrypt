@@ -1852,8 +1852,9 @@ int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
     found_local_result = kGeneralError;
 #ifdef DEBUG
     printf("In VaultService::RemoteVaultAbleToStore (%s), requested space "
-           "(%llu) not available (> %llu).\n",
-           HexSubstr(pmid_).c_str(), size, space_offered - space_taken);
+           "(%s) not available (> %s).\n",
+           HexSubstr(pmid_).c_str(), base::itos_ull(size).c_str(),
+           base::itos_ull(space_offered - space_taken).c_str());
 #endif
   }
 
