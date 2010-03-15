@@ -407,7 +407,8 @@ int Authentication::SaveSession(const std::string &ser_da) {
     params["rid"] = ss_->SmidRid();
     std::string tmidname(tmidPacket->PacketName(&params));
     if (DeletePacket(tmidname, ss_->SmidTmidContent(), TMID) != kSuccess) {
-      printf("BBBBBBBBBBBBBBBBBBBBBBBB\n");
+      printf("BBBBBBBBBBBBBBBBBBBBBBBB - %s\n",
+             HexSubstr(ss_->SmidTmidContent()).c_str());
       return kAuthenticationError;
     }
     ss_->SetSmidRid(ss_->MidRid());
