@@ -378,8 +378,35 @@ TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSession) {
          co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
                  crypto::STRING_STRING, false),
          "", crypto::STRING_STRING, false);
+  dm.Clear();
+  dm.set_file_hash("filehash1");
+  dm.add_chunk_name("chunk11");
+  dm.add_chunk_name("chunk21");
+  dm.add_chunk_name("chunk31");
+  dm.add_encrypted_chunk_name("enc_chunk11");
+  dm.add_encrypted_chunk_name("enc_chunk21");
+  dm.add_encrypted_chunk_name("enc_chunk31");
+  dm.add_chunk_size(2001);
+  dm.add_chunk_size(2101);
+  dm.add_chunk_size(2051);
+  dm.set_compression_on(false);
+  ser_dm = dm.SerializeAsString();
   result = authentication->SaveSession(ser_dm);
   ASSERT_EQ(kSuccess, result) << "Can't save session 1";
+
+  dm.Clear();
+  dm.set_file_hash("filehash2");
+  dm.add_chunk_name("chunk12");
+  dm.add_chunk_name("chunk22");
+  dm.add_chunk_name("chunk32");
+  dm.add_encrypted_chunk_name("enc_chunk12");
+  dm.add_encrypted_chunk_name("enc_chunk22");
+  dm.add_encrypted_chunk_name("enc_chunk32");
+  dm.add_chunk_size(2002);
+  dm.add_chunk_size(2102);
+  dm.add_chunk_size(2052);
+  dm.set_compression_on(false);
+  ser_dm = dm.SerializeAsString();
   result = authentication->SaveSession(ser_dm);
   ASSERT_EQ(kSuccess, result) << "Can't save session 2";
   ASSERT_TRUE(sm->KeyUnique(tmidsmidname, false));

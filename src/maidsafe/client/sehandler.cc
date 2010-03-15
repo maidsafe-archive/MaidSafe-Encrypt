@@ -629,23 +629,15 @@ int SEHandler::DecryptDb(const std::string &dir_path,
   std::string db_path_;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler);
   dah_->GetDbPath(dir_path, CREATE, &db_path_);
-//  CallbackResult cbr;
-#ifdef DEBUG
-  printf("Let's look for the chunks.\n");
-#endif
+
   int n = LoadChunks(dm);
-//  WaitForResult(cbr);
-#ifdef DEBUG
-  printf("Found the chunks: %d.\n", n);
-#endif
-//  GetResponse load_result;
-//  load_result.Clear();
   if (n != 0) {
 #ifdef DEBUG
     printf("Failed to get all chunks.\n");
 #endif
     return -1;
   }
+
   SelfEncryption se(client_chunkstore_);
   if (se.Decrypt(dm, db_path_, 0, overwrite)) {
 #ifdef DEBUG
