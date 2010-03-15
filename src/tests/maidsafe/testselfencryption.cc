@@ -37,6 +37,7 @@
 #include "maidsafe/client/selfencryption.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "protobuf/datamaps.pb.h"
+#include "tests/maidsafe/cached_keys.h"
 
 namespace fs = boost::filesystem;
 
@@ -84,7 +85,8 @@ class SelfEncryptionTest : public testing::Test {
             ("maidsafe_TestSE_" + base::RandomString(6))),
         ss(SessionSingleton::getInstance()),
         client_chunkstore_(),
-        ms_home_path_() {}
+        ms_home_path_(),
+        keys_() {}
   ~SelfEncryptionTest() {}
  protected:
   void SetUp() {
@@ -129,6 +131,7 @@ class SelfEncryptionTest : public testing::Test {
   SessionSingleton *ss;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   fs::path ms_home_path_;
+  std::vector<crypto::RsaKeyPair> keys_;
  private:
   explicit SelfEncryptionTest(const maidsafe::SelfEncryptionTest&);
   SelfEncryptionTest &operator=(const maidsafe::SelfEncryptionTest&);
@@ -725,7 +728,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptStrings) {
   ASSERT_EQ(3, dm5.chunk_name_size());
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_DecryptString) {
+TEST_F(SelfEncryptionTest, BEH_MAID_SelfDecryptString) {
   std::string str1(base::RandomString(2));
   std::string str2(base::RandomString(4));
   std::string str3(base::RandomString(24));
@@ -755,27 +758,25 @@ TEST_F(SelfEncryptionTest, BEH_MAID_DecryptString) {
   ASSERT_EQ(str4, dec4);
 }
 
-TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptStringSerDA) {
+TEST_F(SelfEncryptionTest, BEH_MAID_EncryptDecryptStringSerDA) {
   DataAtlas da;
   crypto::Crypto co;
-  crypto::RsaKeyPair keys;
   std::vector<PacketType> types;
   types.push_back(ANMID);
   types.push_back(ANSMID);
   types.push_back(ANTMID);
   types.push_back(MAID);
   da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, false));
+  cached_keys::MakeKeys(types.size(), &keys_);
   for (unsigned int i = 0; i < types.size(); ++i) {
     Key *k = da.add_keys();
-    keys.ClearKeys();
-    keys.GenerateKeys(kRsaKeySize);
     k->set_type(types[i]);
-    k->set_private_key(keys.private_key());
-    k->set_public_key(keys.public_key());
-    k->set_public_key_signature(co.AsymSign(keys.public_key(), "",
-      keys.private_key(), crypto::STRING_STRING));
-    k->set_id(co.Hash(keys.public_key() + k->public_key_signature(), "",
-      crypto::STRING_STRING, false));
+    k->set_private_key(keys_.at(i).private_key());
+    k->set_public_key(keys_.at(i).public_key());
+    k->set_public_key_signature(co.AsymSign(keys_.at(i).public_key(), "",
+        keys_.at(i).private_key(), crypto::STRING_STRING));
+    k->set_id(co.Hash(keys_.at(i).public_key() + k->public_key_signature(), "",
+        crypto::STRING_STRING, false));
   }
   std::string ser_da("");
   ASSERT_TRUE(da.SerializeToString(&ser_da));
@@ -798,27 +799,25 @@ TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptStringSerDA) {
 //  fs::remove(fpath);
 }
 
-TEST_F(SelfEncryptionTest, FUNC_MAID_EncryptDecryptFileSerDA) {
+TEST_F(SelfEncryptionTest, BEH_MAID_EncryptDecryptFileSerDA) {
   DataAtlas da;
   crypto::Crypto co;
-  crypto::RsaKeyPair keys;
   std::vector<PacketType> types;
   types.push_back(ANMID);
   types.push_back(ANSMID);
   types.push_back(ANTMID);
   types.push_back(MAID);
   da.set_root_db_key(co.Hash("db_key", "", crypto::STRING_STRING, false));
+  cached_keys::MakeKeys(types.size(), &keys_);
   for (unsigned int i = 0; i < types.size(); ++i) {
     Key *k = da.add_keys();
-    keys.ClearKeys();
-    keys.GenerateKeys(kRsaKeySize);
     k->set_type(types[i]);
-    k->set_private_key(keys.private_key());
-    k->set_public_key(keys.public_key());
-    k->set_public_key_signature(co.AsymSign(keys.public_key(), "",
-      keys.private_key(), crypto::STRING_STRING));
-    k->set_id(co.Hash(keys.public_key() + k->public_key_signature(), "",
-      crypto::STRING_STRING, false));
+    k->set_private_key(keys_.at(i).private_key());
+    k->set_public_key(keys_.at(i).public_key());
+    k->set_public_key_signature(co.AsymSign(keys_.at(i).public_key(), "",
+        keys_.at(i).private_key(), crypto::STRING_STRING));
+    k->set_id(co.Hash(keys_.at(i).public_key() + k->public_key_signature(), "",
+        crypto::STRING_STRING, false));
   }
   std::string filename("ser_da");
   std::fstream output(filename.c_str(),

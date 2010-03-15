@@ -27,6 +27,7 @@
 
 #include "maidsafe/client/packetfactory.h"
 #include "maidsafe/client/sessionsingleton.h"
+#include "tests/maidsafe/cached_keys.h"
 
 namespace maidsafe {
 
@@ -229,15 +230,15 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
   ASSERT_EQ("", ss_->SessionName());
 }
 
-TEST_F(SessionSingletonTest, FUNC_MAID_SessionKeyRingIO) {
+TEST_F(SessionSingletonTest, BEH_MAID_SessionKeyRingIO) {
   std::string pub_keys[7];
   std::string pri_keys[7];
   DataAtlas da;
+  std::vector<crypto::RsaKeyPair> crypto_keys;
+  cached_keys::MakeKeys(7, &crypto_keys);
   for (int n = 0; n < 7; ++n) {
-    crypto::RsaKeyPair rskp;
-    rskp.GenerateKeys(kRsaKeySize);
-    pri_keys[n] = rskp.private_key();
-    pub_keys[n] = rskp.public_key();
+    pri_keys[n] = crypto_keys.at(n).private_key();
+    pub_keys[n] = crypto_keys.at(n).public_key();
     Key *k = da.add_keys();
     k->set_type(PacketType(n));
     k->set_id("id" + base::itos(n));

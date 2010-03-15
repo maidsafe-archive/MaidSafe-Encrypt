@@ -40,6 +40,7 @@
 #include "maidsafe/client/systempackets.h"
 #include "maidsafe/kademlia_service_messages.pb.h"
 #include "maidsafe/vault/pdvault.h"
+#include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/localvaults.h"
 #include "tests/maidsafe/mocksessionsingleton.h"
 

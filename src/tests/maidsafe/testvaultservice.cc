@@ -37,6 +37,7 @@
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/vault/vaultservicelogic.h"
+#include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/mockvaultservicelogic.h"
 
 namespace fs = boost::filesystem;
@@ -76,106 +77,108 @@ class TestCallback {
 };
 
 class VaultServicesTest : public testing::Test {
-  protected:
-    VaultServicesTest()
-        : chunkstore_dir_(file_system::TempDir() /
-              ("maidsafe_TestVaultServices_" + base::RandomString(6))),
-          vault_pmid_(),
-          vault_public_key_(),
-          vault_private_key_(),
-          vault_public_key_signature_(),
-          udt_transport_(),
-          transport_handler_(),
-          channel_manager_(&transport_handler_),
-          knode_(),
-          vault_chunkstore_(),
-          vault_rpcs_(new VaultRpcs(&transport_handler_, &channel_manager_)),
-          vault_service_logic_(),
-          vault_service_(),
-          svc_channel_() {}
+ protected:
+  VaultServicesTest()
+      : chunkstore_dir_(file_system::TempDir() /
+            ("maidsafe_TestVaultServices_" + base::RandomString(6))),
+        vault_pmid_(),
+        vault_public_key_(),
+        vault_private_key_(),
+        vault_public_key_signature_(),
+        udt_transport_(),
+        transport_handler_(),
+        channel_manager_(&transport_handler_),
+        knode_(),
+        vault_chunkstore_(),
+        vault_rpcs_(new VaultRpcs(&transport_handler_, &channel_manager_)),
+        vault_service_logic_(),
+        vault_service_(),
+        svc_channel_(),
+        keys_() {}
 
-    virtual void SetUp() {
-      CreateRSAKeys(&vault_public_key_, &vault_private_key_);
-      {
-        crypto::Crypto co;
-        co.set_symm_algorithm(crypto::AES_256);
-        co.set_hash_algorithm(crypto::SHA_512);
-        vault_public_key_signature_ = co.AsymSign(vault_public_key_, "",
-                                                  vault_private_key_,
-                                                  crypto::STRING_STRING);
-        vault_pmid_ = co.Hash(vault_public_key_ + vault_public_key_signature_,
-                              "", crypto::STRING_STRING, false);
-      }
-
-      try {
-        fs::remove_all(chunkstore_dir_);
-      }
-      catch(const std::exception &e) {
-        printf("%s\n", e.what());
-      }
-      boost::int16_t transport_id;
-      transport_handler_.Register(&udt_transport_, &transport_id);
-      knode_.reset(new kad::KNode(&channel_manager_, &transport_handler_,
-                                  kad::VAULT, vault_private_key_,
-                                  vault_public_key_, false, false));
-      knode_->SetTransID(transport_id);
-      vault_chunkstore_ = new VaultChunkStore(chunkstore_dir_.string(),
-                                              kAvailableSpace, 0);
-      ASSERT_TRUE(vault_chunkstore_->Init());
-
-      vault_service_logic_ = new VaultServiceLogic(vault_rpcs_, knode_);
-      vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
-                                        vault_public_key_signature_,
-                                        vault_chunkstore_, knode_.get(),
-                                        vault_service_logic_, transport_id);
-
-      vault_service_logic_->Init(vault_pmid_,
-                                 vault_public_key_,
-                                 vault_public_key_signature_,
-                                 vault_private_key_);
-
-      svc_channel_ = new rpcprotocol::Channel(&channel_manager_,
-                                              &transport_handler_);
-      svc_channel_->SetService(vault_service_);
-      channel_manager_.RegisterChannel(vault_service_->GetDescriptor()->name(),
-                                       svc_channel_);
+  virtual void SetUp() {
+    CreateRSAKeys(&vault_public_key_, &vault_private_key_);
+    {
+      crypto::Crypto co;
+      co.set_symm_algorithm(crypto::AES_256);
+      co.set_hash_algorithm(crypto::SHA_512);
+      vault_public_key_signature_ = co.AsymSign(vault_public_key_, "",
+                                                vault_private_key_,
+                                                crypto::STRING_STRING);
+      vault_pmid_ = co.Hash(vault_public_key_ + vault_public_key_signature_,
+                            "", crypto::STRING_STRING, false);
     }
 
-    virtual void TearDown() {
-      channel_manager_.UnRegisterChannel(
-          vault_service_->GetDescriptor()->name());
-      transport_handler_.StopAll();
-      channel_manager_.Stop();
-      transport::TransportUDT::CleanUp();
-      delete svc_channel_;
-      delete vault_service_;
-      delete vault_service_logic_;
-      delete vault_chunkstore_;
-
-      try {
-        fs::remove_all(chunkstore_dir_);
-      }
-      catch(const std::exception &e) {
-        printf("%s\n", e.what());
-      }
+    try {
+      fs::remove_all(chunkstore_dir_);
     }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+    boost::int16_t transport_id;
+    transport_handler_.Register(&udt_transport_, &transport_id);
+    knode_.reset(new kad::KNode(&channel_manager_, &transport_handler_,
+                                kad::VAULT, vault_private_key_,
+                                vault_public_key_, false, false));
+    knode_->SetTransID(transport_id);
+    vault_chunkstore_ = new VaultChunkStore(chunkstore_dir_.string(),
+                                            kAvailableSpace, 0);
+    ASSERT_TRUE(vault_chunkstore_->Init());
 
-    fs::path chunkstore_dir_;
-    std::string vault_pmid_, vault_public_key_, vault_private_key_;
-    std::string vault_public_key_signature_;
-    transport::TransportUDT udt_transport_;
-    transport::TransportHandler transport_handler_;
-    rpcprotocol::ChannelManager channel_manager_;
-    boost::shared_ptr<kad::KNode> knode_;
-    VaultChunkStore *vault_chunkstore_;
-    boost::shared_ptr<VaultRpcs> vault_rpcs_;
-    VaultServiceLogic *vault_service_logic_;
-    VaultService *vault_service_;
-    rpcprotocol::Channel *svc_channel_;
+    vault_service_logic_ = new VaultServiceLogic(vault_rpcs_, knode_);
+    vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+                                      vault_public_key_signature_,
+                                      vault_chunkstore_, knode_.get(),
+                                      vault_service_logic_, transport_id);
 
-  private:
-    VaultServicesTest(const VaultServicesTest&);
-    VaultServicesTest& operator=(const VaultServicesTest&);
+    vault_service_logic_->Init(vault_pmid_,
+                               vault_public_key_,
+                               vault_public_key_signature_,
+                               vault_private_key_);
+
+    svc_channel_ = new rpcprotocol::Channel(&channel_manager_,
+                                            &transport_handler_);
+    svc_channel_->SetService(vault_service_);
+    channel_manager_.RegisterChannel(vault_service_->GetDescriptor()->name(),
+                                     svc_channel_);
+  }
+
+  virtual void TearDown() {
+    channel_manager_.UnRegisterChannel(
+        vault_service_->GetDescriptor()->name());
+    transport_handler_.StopAll();
+    channel_manager_.Stop();
+    transport::TransportUDT::CleanUp();
+    delete svc_channel_;
+    delete vault_service_;
+    delete vault_service_logic_;
+    delete vault_chunkstore_;
+
+    try {
+      fs::remove_all(chunkstore_dir_);
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
+
+  fs::path chunkstore_dir_;
+  std::string vault_pmid_, vault_public_key_, vault_private_key_;
+  std::string vault_public_key_signature_;
+  transport::TransportUDT udt_transport_;
+  transport::TransportHandler transport_handler_;
+  rpcprotocol::ChannelManager channel_manager_;
+  boost::shared_ptr<kad::KNode> knode_;
+  VaultChunkStore *vault_chunkstore_;
+  boost::shared_ptr<VaultRpcs> vault_rpcs_;
+  VaultServiceLogic *vault_service_logic_;
+  VaultService *vault_service_;
+  rpcprotocol::Channel *svc_channel_;
+  std::vector<crypto::RsaKeyPair> keys_;
+
+ private:
+  VaultServicesTest(const VaultServicesTest&);
+  VaultServicesTest& operator=(const VaultServicesTest&);
 };
 
 class MockVaultServicesTest : public VaultServicesTest {
@@ -1205,7 +1208,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   }
 }
 
-TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToWatchList) {
+TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
@@ -1415,7 +1418,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToWatchList) {
   }
 }
 
-TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
+TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
@@ -1650,7 +1653,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
   }
 }
 
-TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAddToReferenceList) {
+TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,

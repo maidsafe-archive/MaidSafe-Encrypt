@@ -33,6 +33,7 @@
 #include "protobuf/datamaps.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
+#include "tests/maidsafe/cached_keys.h"
 
 namespace fs = boost::filesystem;
 
@@ -69,6 +70,8 @@ void PacketOpCallback(const int &store_manager_result,
   *op_result = store_manager_result;
   cond_var->notify_one();
 };
+
+std::vector<crypto::RsaKeyPair> keys;
 
 }  // namespace test_auth
 
@@ -585,9 +588,9 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
-  crypto::RsaKeyPair keypair1, keypair2;
-  keypair1.GenerateKeys(kRsaKeySize);
-  keypair2.GenerateKeys(kRsaKeySize);
+  cached_keys::MakeKeys(2, &test_auth::keys);
+  crypto::RsaKeyPair keypair1 = test_auth::keys.at(0);
+  crypto::RsaKeyPair keypair2 = test_auth::keys.at(1);
   boost::shared_ptr<MidPacket> midPacket(boost::static_pointer_cast<MidPacket>(
       PacketFactory::Factory(MID, keypair1)));
   PacketParams params;

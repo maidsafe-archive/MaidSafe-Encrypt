@@ -33,6 +33,7 @@
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultservice.h"
+#include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/mockkadops.h"
 
 namespace test_msm {
@@ -360,7 +361,8 @@ class MaidStoreManagerTest : public testing::Test {
                            crypto_(),
                            cond_var_(),
                            functor_(boost::bind(&test_msm::PacketOpCallback, _1,
-                               &mutex_, &cond_var_, &packet_op_result_)) {
+                               &mutex_, &cond_var_, &packet_op_result_)),
+                           keys_() {
     try {
       boost::filesystem::remove_all(test_root_dir_);
     }
@@ -370,7 +372,8 @@ class MaidStoreManagerTest : public testing::Test {
     fs::create_directories(test_root_dir_);
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
-    client_maid_keys_.GenerateKeys(kRsaKeySize);
+    cached_keys::MakeKeys(5, &keys_);
+    client_maid_keys_ = keys_.at(0);
     std::string maid_pri = client_maid_keys_.private_key();
     std::string maid_pub = client_maid_keys_.public_key();
     std::string maid_pub_key_signature = crypto_.AsymSign(maid_pub, "",
@@ -379,7 +382,7 @@ class MaidStoreManagerTest : public testing::Test {
         crypto::STRING_STRING, false);
     SessionSingleton::getInstance()->AddKey(MAID, maid_name, maid_pri, maid_pub,
         maid_pub_key_signature);
-    client_pmid_keys_.GenerateKeys(kRsaKeySize);
+    client_pmid_keys_ = keys_.at(1);
     std::string pmid_pri = client_pmid_keys_.private_key();
     std::string pmid_pub = client_pmid_keys_.public_key();
     client_pmid_public_signature_ = crypto_.AsymSign(pmid_pub, "",
@@ -422,6 +425,7 @@ class MaidStoreManagerTest : public testing::Test {
   boost::condition_variable cond_var_;
   int packet_op_result_;
   VoidFuncOneInt functor_;
+  std::vector<crypto::RsaKeyPair> keys_;
 
  private:
   MaidStoreManagerTest(const MaidStoreManagerTest&);
@@ -1249,8 +1253,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
 
   // Check PRIVATE_SHARE chunk
   std::string msid_name = crypto_.Hash("b", "", crypto::STRING_STRING, false);
-  crypto::RsaKeyPair rsakp;
-  rsakp.GenerateKeys(kRsaKeySize);
+  crypto::RsaKeyPair rsakp = keys_.at(2);
   std::vector<std::string> attributes;
   attributes.push_back("PrivateShare");
   attributes.push_back(msid_name);
@@ -1311,7 +1314,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   client_chunkstore_->AddChunkToOutgoing(names.at(1), std::string("101"));
   store_data = st_chunk_public_share_bad;
   ASSERT_EQ(kGetRequestSigError, msm.GetStoreRequests(send_chunk_data));
-  rsakp.GenerateKeys(kRsaKeySize);
+  rsakp = keys_.at(3);
   std::string anmpid_pri = rsakp.private_key();
   std::string anmpid_pub = rsakp.public_key();
   std::string anmpid_pub_sig = crypto_.AsymSign(anmpid_pub, "", anmpid_pri,
@@ -1320,7 +1323,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       false);
   SessionSingleton::getInstance()->AddKey(ANMPID, anmpid_name, anmpid_pri,
       anmpid_pub, anmpid_pub_sig);
-  rsakp.GenerateKeys(kRsaKeySize);
+  rsakp = keys_.at(4);
   std::string mpid_pri = rsakp.private_key();
   std::string mpid_pub = rsakp.public_key();
   std::string mpid_pub_sig = crypto_.AsymSign(mpid_pub, "",
@@ -1426,8 +1429,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
   MaidsafeStoreManager msm(client_chunkstore_);
   // Make peer keys
-  crypto::RsaKeyPair peer_pmid_keys;
-  peer_pmid_keys.GenerateKeys(kRsaKeySize);
+  crypto::RsaKeyPair peer_pmid_keys = keys_.at(2);
   std::string peer_pmid_pri = peer_pmid_keys.private_key();
   std::string peer_pmid_pub = peer_pmid_keys.public_key();
   std::string peer_pmid_pub_signature = crypto_.AsymSign(peer_pmid_pub, "",
@@ -2093,8 +2095,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   msm.kad_ops_ = mko;
 
   // Add keys to Session
-  crypto::RsaKeyPair anmid_keys;
-  anmid_keys.GenerateKeys(kRsaKeySize);
+  crypto::RsaKeyPair anmid_keys = keys_.at(2);
   std::string anmid_pri = anmid_keys.private_key();
   std::string anmid_pub = anmid_keys.public_key();
   std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",
@@ -2260,8 +2261,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   msm.kad_ops_ = mko;
 
   // Add keys to Session
-  crypto::RsaKeyPair anmid_keys;
-  anmid_keys.GenerateKeys(kRsaKeySize);
+  crypto::RsaKeyPair anmid_keys = keys_.at(2);
   std::string anmid_pri = anmid_keys.private_key();
   std::string anmid_pub = anmid_keys.public_key();
   std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",
@@ -2580,8 +2580,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
 
   // Add keys to Session
-  crypto::RsaKeyPair anmid_keys;
-  anmid_keys.GenerateKeys(kRsaKeySize);
+  crypto::RsaKeyPair anmid_keys = keys_.at(2);
   std::string anmid_pri = anmid_keys.private_key();
   std::string anmid_pub = anmid_keys.public_key();
   std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",

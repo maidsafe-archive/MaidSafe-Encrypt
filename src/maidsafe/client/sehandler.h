@@ -102,7 +102,7 @@ class SEHandler {
   SEHandler &operator=(const SEHandler &);
   SEHandler(const SEHandler &);
   FRIEND_TEST(SEHandlerTest, BEH_MAID_Check_Entry);
-  FRIEND_TEST(SEHandlerTest, FUNC_MAID_EncryptAndDecryptPrivateDb);
+  FRIEND_TEST(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb);
   ItemType CheckEntry(const fs::path &full_path,
                       boost::uint64_t *file_size,
                       std::string *file_hash);

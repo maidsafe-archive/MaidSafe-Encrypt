@@ -38,6 +38,7 @@
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/maidsafe.h"
 #include "protobuf/maidsafe_messages.pb.h"
+#include "tests/maidsafe/cached_keys.h"
 
 namespace fs = boost::filesystem;
 
@@ -89,7 +90,8 @@ class SEHandlerTest : public testing::Test {
                     cb(),
                     db_str1_(),
                     db_str2_(),
-                    ss_(SessionSingleton::getInstance())  {}
+                    ss_(SessionSingleton::getInstance()),
+                    keys_() {}
   ~SEHandlerTest() {}
   void SetUp() {
     ss_->SetUsername("user1");
@@ -128,13 +130,13 @@ class SEHandlerTest : public testing::Test {
       FAIL();
       return;
     }
-    crypto::RsaKeyPair rsa_kp;
-    rsa_kp.GenerateKeys(kRsaKeySize);
-    ss_->AddKey(PMID, "PMID", rsa_kp.private_key(), rsa_kp.public_key(), "");
-    rsa_kp.GenerateKeys(kRsaKeySize);
-    ss_->AddKey(MAID, "MAID", rsa_kp.private_key(), rsa_kp.public_key(), "");
-    rsa_kp.GenerateKeys(kRsaKeySize);
-    ss_->AddKey(MPID, "Me", rsa_kp.private_key(), rsa_kp.public_key(), "");
+    cached_keys::MakeKeys(3, &keys_);
+    ss_->AddKey(PMID, "PMID", keys_.at(0).private_key(),
+        keys_.at(0).public_key(), "");
+    ss_->AddKey(MAID, "MAID", keys_.at(1).private_key(),
+        keys_.at(1).public_key(), "");
+    ss_->AddKey(MPID, "Me", keys_.at(2).private_key(),
+        keys_.at(2).public_key(), "");
     ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
     boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
     boost::scoped_ptr<SEHandler> seh(new SEHandler());
@@ -215,6 +217,7 @@ class SEHandlerTest : public testing::Test {
   test_seh::FakeCallback cb;
   std::string db_str1_, db_str2_;
   SessionSingleton *ss_;
+  std::vector<crypto::RsaKeyPair> keys_;
  private:
   SEHandlerTest(const SEHandlerTest&);
   SEHandlerTest &operator=(const SEHandlerTest&);
@@ -374,7 +377,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
-TEST_F(SEHandlerTest, FUNC_MAID_DecryptStringWithChunksPrevLoaded) {
+TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithChunksPrevLoaded) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
@@ -398,7 +401,7 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptStringWithChunksPrevLoaded) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
-TEST_F(SEHandlerTest, FUNC_MAID_DecryptStringWithLoadChunks) {
+TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
   ss_->SetDefConLevel(kDefCon2);
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
@@ -445,7 +448,7 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptStringWithLoadChunks) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
-TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithChunksPrevLoaded) {
+TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
@@ -479,7 +482,7 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithChunksPrevLoaded) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 }
 
-TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithLoadChunks) {
+TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   ss_->SetDefConLevel(kDefCon2);
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
@@ -599,7 +602,7 @@ TEST_F(SEHandlerTest, FUNC_MAID_DecryptWithLoadChunks) {
 //    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 //  }
 
-TEST_F(SEHandlerTest, FUNC_MAID_EncryptAndDecryptPrivateDb) {
+TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));

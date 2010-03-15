@@ -33,6 +33,7 @@
 #include "maidsafe/client/packetfactory.h"
 #include "maidsafe/vault/vaultdaemon.h"
 #include "maidsafe/vault/vaultservice.h"
+#include "tests/maidsafe/cached_keys.h"
 
 inline void HandleDeadServer(const bool &, const std::string &,
   const boost::uint16_t&) {}
@@ -141,7 +142,8 @@ class VaultRegistrationTest : public testing::Test {
         service_channel(new rpcprotocol::Channel(&server,
                                                  &server_transport_handler_)),
         handler(),
-        service() {}
+        service(),
+        keys_() {}
   ~VaultRegistrationTest() {
       transport::TransportUDT::CleanUp();
   }
@@ -183,13 +185,15 @@ class VaultRegistrationTest : public testing::Test {
   boost::shared_ptr<rpcprotocol::Channel> service_channel;
   NotifierHandler handler;
   boost::shared_ptr<maidsafe_vault::RegistrationService> service;
+  std::vector<crypto::RsaKeyPair> keys_;
 };
 
 TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectSetLocalVaultOwned) {
   ASSERT_EQ(maidsafe::NOT_OWNED, service->status());
   crypto::Crypto cobj;
-  crypto::RsaKeyPair keypair;
-  keypair.GenerateKeys(maidsafe::kRsaKeySize);
+  std::vector<crypto::RsaKeyPair> keys;
+  cached_keys::MakeKeys(1, &keys);
+  crypto::RsaKeyPair keypair = keys.at(0);
   cobj.set_hash_algorithm(crypto::SHA_512);
   std::string signed_pub_key = cobj.AsymSign(keypair.public_key(), "",
       keypair.private_key(), crypto::STRING_STRING);
@@ -269,8 +273,9 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_CorrectSetLocalVaultOwned) {
 
 TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   crypto::Crypto cobj;
-  crypto::RsaKeyPair keypair;
-  keypair.GenerateKeys(maidsafe::kRsaKeySize);
+  std::vector<crypto::RsaKeyPair> keys;
+  cached_keys::MakeKeys(1, &keys);
+  crypto::RsaKeyPair keypair = keys.at(0);
   cobj.set_hash_algorithm(crypto::SHA_512);
   std::string priv_key = keypair.private_key();
   std::string pub_key = keypair.public_key();
@@ -515,8 +520,9 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
   ASSERT_EQ(0, client_transport_handler.Start(0, client_transport_id));
   ASSERT_EQ(0, client.Start());
   crypto::Crypto cobj;
-  crypto::RsaKeyPair keypair;
-  keypair.GenerateKeys(maidsafe::kRsaKeySize);
+  std::vector<crypto::RsaKeyPair> keys;
+  cached_keys::MakeKeys(1, &keys);
+  crypto::RsaKeyPair keypair = keys.at(0);
   cobj.set_hash_algorithm(crypto::SHA_512);
   std::string signed_pub_key = cobj.AsymSign(keypair.public_key(), "",
       keypair.private_key(), crypto::STRING_STRING);

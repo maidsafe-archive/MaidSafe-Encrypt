@@ -27,38 +27,11 @@
 #include <string>
 #include <cstdlib>
 #include "maidsafe/client/systempackets.h"
+#include "tests/maidsafe/cached_keys.h"
 
 namespace test_sph {
 
-int count(0);
-
 std::vector<crypto::RsaKeyPair> keys;
-
-void MakeKeys() {
-  if (keys.empty()) {
-    crypto::RsaKeyPair keypair1, keypair2, keypair3, keypair4, keypair5;
-    boost::thread thr1(&crypto::RsaKeyPair::GenerateKeys, boost::ref(keypair1),
-        maidsafe::kRsaKeySize);
-    boost::thread thr2(&crypto::RsaKeyPair::GenerateKeys, boost::ref(keypair2),
-        maidsafe::kRsaKeySize);
-    boost::thread thr3(&crypto::RsaKeyPair::GenerateKeys, boost::ref(keypair3),
-        maidsafe::kRsaKeySize);
-    boost::thread thr4(&crypto::RsaKeyPair::GenerateKeys, boost::ref(keypair4),
-        maidsafe::kRsaKeySize);
-    boost::thread thr5(&crypto::RsaKeyPair::GenerateKeys, boost::ref(keypair5),
-        maidsafe::kRsaKeySize);
-    thr1.join();
-    thr2.join();
-    thr3.join();
-    thr4.join();
-    thr5.join();
-    keys.push_back(keypair1);
-    keys.push_back(keypair2);
-    keys.push_back(keypair3);
-    keys.push_back(keypair4);
-    keys.push_back(keypair5);
-  }
-}
 
 }  // namespace test_sph
 
@@ -66,12 +39,14 @@ namespace maidsafe {
 
 class SystemPacketHandlerTest : public testing::Test {
  public:
-  SystemPacketHandlerTest() : co_(), input_param_() {}
+  SystemPacketHandlerTest()
+      : co_(),
+        input_param_() {}
  protected:
   virtual void SetUp() {
     co_.set_symm_algorithm(crypto::AES_256);
     co_.set_hash_algorithm(crypto::SHA_512);
-    test_sph::MakeKeys();
+    cached_keys::MakeKeys(5, &test_sph::keys);
   }
   crypto::Crypto co_;  // used for validating
   PacketParams input_param_;

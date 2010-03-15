@@ -80,21 +80,6 @@ bool MakeChunks(const boost::uint32_t &num_chunks,
           name->size() == num_chunks);
 }
 
-bool MakeKeys(const boost::uint32_t &num_keys,
-              std::vector<std::string> *private_key,
-              std::vector<std::string> *public_key) {
-  for (boost::uint32_t i = 0; i < num_keys; ++i) {
-    crypto::RsaKeyPair kp;
-    kp.GenerateKeys(maidsafe::kRsaKeySize);
-    private_key->push_back(kp.private_key());
-    public_key->push_back(kp.public_key());
-//    printf("Key pair %i :- pri: %s pub: %s\n", i,
-//           base::EncodeToHex(kp.private_key()).substr(100, 110).c_str(),
-//           base::EncodeToHex(kp.public_key()).substr(0, 60).c_str());
-  }
-  return true;
-}
-
 // Makes (num_packets) packets of length between min_packet_size and
 // max_packet_size bytes.  min_packet_size will be resized to 3 if too small and
 // max_packet_size will be resized to 1024 if too large.

@@ -44,8 +44,8 @@ CryptoKeyPairs::~CryptoKeyPairs() {
 
 void CryptoKeyPairs::Init(const boost::uint16_t &max_thread_count,
                           const boost::uint16_t &buffer_count) {
-  set_max_thread_count(max_thread_count);
   set_buffer_count(buffer_count);
+  set_max_thread_count(max_thread_count);
 }
 
 void CryptoKeyPairs::CreateThread() {
@@ -78,7 +78,7 @@ void CryptoKeyPairs::CreateKeyPair() {
 
 crypto::RsaKeyPair CryptoKeyPairs::GetKeyPair() {
   boost::mutex::scoped_lock lock(kb_mutex_);
-  if (max_thread_count_ > 0 && buffer_count_ > 0) {
+  if (running_thread_count_ > 0 && buffer_count_ > 0) {
     while (key_buffer_.empty())
       kb_cond_var_.wait(lock);
     crypto::RsaKeyPair rsakp = key_buffer_.front();

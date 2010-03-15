@@ -32,6 +32,7 @@
 #include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/packetfactory.h"
+#include "tests/maidsafe/cached_keys.h"
 
 namespace test_vault_reg {
 
@@ -188,8 +189,9 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
 
 TEST_F(MsmSetLocalVaultOwnedTest, BEH_MAID_SetLocalVaultOwned) {
   crypto::Crypto cobj;
-  crypto::RsaKeyPair keypair;
-  keypair.GenerateKeys(maidsafe::kRsaKeySize);
+  std::vector<crypto::RsaKeyPair> keys;
+  cached_keys::MakeKeys(1, &keys);
+  crypto::RsaKeyPair keypair = keys.at(0);
   cobj.set_hash_algorithm(crypto::SHA_512);
   std::string signed_public_key = cobj.AsymSign(keypair.public_key(), "",
       keypair.private_key(), crypto::STRING_STRING);
@@ -222,8 +224,9 @@ TEST_F(MsmSetLocalVaultOwnedTest, BEH_MAID_SetLocalVaultOwned) {
 
 TEST_F(MsmSetLocalVaultOwnedTest, FUNC_MAID_InvalidSetLocalVaultOwned) {
   crypto::Crypto cobj;
-  crypto::RsaKeyPair keypair;
-  keypair.GenerateKeys(maidsafe::kRsaKeySize);
+  std::vector<crypto::RsaKeyPair> keys;
+  cached_keys::MakeKeys(1, &keys);
+  crypto::RsaKeyPair keypair = keys.at(0);
   cobj.set_hash_algorithm(crypto::SHA_512);
   std::string priv_key = keypair.private_key();
   std::string pub_key = keypair.public_key();
