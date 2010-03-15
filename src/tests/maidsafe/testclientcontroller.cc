@@ -47,9 +47,9 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-class FunctionalClientControllerTest : public testing::Test {
+class ClientControllerTest : public testing::Test {
  protected:
-  FunctionalClientControllerTest()
+  ClientControllerTest()
       : cc_dir_(file_system::TempDir() / ("maidsafe_TestCC_" +
                 base::RandomString(6))),
         cc_(),
@@ -59,13 +59,17 @@ class FunctionalClientControllerTest : public testing::Test {
         vcp_() {}
 
   static void TearDownTestCase() {
-    // transport::TransportUDT::CleanUp();
+    try {
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
+    }
+    catch(const std::exception &e) {
+      printf("Error: %s\n", e.what());
+    }
   }
 
   void SetUp() {
     try {
-      if (fs::exists(file_system::LocalStoreManagerDir()))
-        fs::remove_all(file_system::LocalStoreManagerDir());
       fs::create_directories(cc_dir_);
     }
     catch(const std::exception &e) {
@@ -101,12 +105,12 @@ class FunctionalClientControllerTest : public testing::Test {
   fs::path final_dir_;
   VaultConfigParameters vcp_;
  private:
-  FunctionalClientControllerTest(const FunctionalClientControllerTest&);
-  FunctionalClientControllerTest &operator=
-      (const FunctionalClientControllerTest&);
+  ClientControllerTest(const ClientControllerTest&);
+  ClientControllerTest &operator=
+      (const ClientControllerTest&);
 };
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLoginSequence) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLoginSequence) {
   std::string username("User1");
   std::string pin("1234");
   std::string password("The beagle has landed.");
@@ -117,7 +121,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLoginSequence) {
 
   ASSERT_NE(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
-  boost::progress_timer t;
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
@@ -149,7 +152,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLoginSequence) {
   printf("Can't log in with fake details.\n");
 }
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerChangeDetails) {
   std::string username("User2");
   std::string pin("2345");
   std::string password("The axolotl has landed.");
@@ -261,10 +264,10 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
   printf("Can't log in with old u/p/w.\n");
 }
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
-  std::string username = "User3";
-  std::string pin = "3456";
-  std::string password = "The fanjeeta has landed.";
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerCreatePubUsername) {
+  std::string username("User3");
+  std::string pin("3456");
+  std::string password("The fanjeeta has landed.");
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
@@ -329,7 +332,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
 }
 
 /*
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLeaveNetwork) {
   std::string username = "User4";
   std::string pin = "4567";
   std::string password = "The chubster has landed.";
@@ -380,10 +383,10 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
 }
 */
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
-  std::string username = "User5";
-  std::string pin = "5678";
-  std::string password = "The limping dog has landed.";
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerBackupFile) {
+  std::string username("User5");
+  std::string pin("5678");
+  std::string password("The limping dog has landed.");
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
@@ -453,11 +456,11 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   printf("Logged out user.\n");
 }
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerSaveSession) {
   // Create a user
-  std::string username = "User5andAhalf";
-  std::string pin = "55678";
-  std::string password = "That pair should have its own television show.";
+  std::string username("User5andAhalf");
+  std::string pin("55678");
+  std::string password("That pair should have its own television show.");
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
@@ -549,7 +552,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession) {
       fs::remove(full_path);
 }
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerContactAddition) {
   std::string username("User6");
   std::string pin("6789");
   std::string password("The deleted folder has landed.");
@@ -720,7 +723,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
 }
 
 /*
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerShares) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerShares) {
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
@@ -812,10 +815,10 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerShares) {
 }
 */
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {
-  std::string username = "User7";
-  std::string pin = "7890";
-  std::string password = "The pint of lager has landed on the floor.";
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerFuseFunctions) {
+  std::string username("User7");
+  std::string pin("7890");
+  std::string password("The pint of lager has landed on the floor.");
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());

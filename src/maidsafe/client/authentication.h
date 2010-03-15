@@ -102,7 +102,7 @@ class Authentication {
                const std::string &pin,
                int *rid);
   void GetUserTmid(bool smid);
-  void GetUserSmidTmid(void);
+  void GetUserSmidTmid();
   int StorePacket(const std::string &packet_name,
                   const std::string &value,
                   const PacketType &type,

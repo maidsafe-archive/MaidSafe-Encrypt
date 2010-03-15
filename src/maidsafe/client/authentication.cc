@@ -354,17 +354,21 @@ int Authentication::CreateTmidPacket(const std::string &username,
   user_params["data"] = ser_dm;
   PacketParams tmid_result = tmidPacket->Create(&user_params);
   std::string enc_tmid(boost::any_cast<std::string>(tmid_result["data"]));
-  if (StorePacket(boost::any_cast<std::string>(tmid_result["name"]),
-      enc_tmid, TMID, kDoNothingReturnFailure, "") != kSuccess) {
+  std::string name_tmid(boost::any_cast<std::string>(tmid_result["name"]));
+  if (StorePacket(name_tmid, enc_tmid, TMID, kDoNothingReturnFailure, "")
+      != kSuccess) {
     ss_->SetMidRid(0);
     ss_->SetSmidRid(0);
     return kAuthenticationError;
   }
+  printf("CreateTmidPacket - (%s, %s)\n", HexSubstr(name_tmid).c_str(),
+                                          HexSubstr(enc_tmid).c_str());
 
   ss_->SetUsername(username);
   ss_->SetPin(pin);
   ss_->SetPassword(password);
   ss_->SetTmidContent(enc_tmid);
+  ss_->SetSmidTmidContent(enc_tmid);
 
   return kSuccess;
 }
@@ -380,6 +384,7 @@ int Authentication::SaveSession(const std::string &ser_da) {
     if (!GetSmid(ss_->Username(), ss_->Pin(), &smidrid)) {
       ss_->SetSmidRid(ss_->MidRid());
     } else {
+      printf("Got smid\n");
       ss_->SetSmidRid(smidrid);
     }
   }
@@ -407,10 +412,12 @@ int Authentication::SaveSession(const std::string &ser_da) {
     params["rid"] = ss_->SmidRid();
     std::string tmidname(tmidPacket->PacketName(&params));
     if (DeletePacket(tmidname, ss_->SmidTmidContent(), TMID) != kSuccess) {
-      printf("BBBBBBBBBBBBBBBBBBBBBBBB - %s\n",
+      printf("BBBBBBBBBBBBBBBBBBBBBBBB - (%s, %s)\n", HexSubstr(tmidname).c_str(),
              HexSubstr(ss_->SmidTmidContent()).c_str());
       return kAuthenticationError;
     }
+    printf("SaveSession - (%s, %s)\n", HexSubstr(tmidname).c_str(),
+           HexSubstr(ss_->SmidTmidContent()).c_str());
     ss_->SetSmidRid(ss_->MidRid());
     ss_->SetSmidTmidContent(ss_->TmidContent());
   }
@@ -1016,7 +1023,7 @@ void Authentication::GetUserTmid(bool smid) {
   tmid_content_ = packet_content[0];
 }
 
-void Authentication::GetUserSmidTmid(void) {
+void Authentication::GetUserSmidTmid() {
   if (0 == ss_->SmidRid()) {
     int rid;
     if (!GetSmid(ss_->Username(), ss_->Pin(), &rid)) {
@@ -1052,6 +1059,12 @@ void Authentication::GetUserSmidTmid(void) {
   }
 
   smidtmid_content_ = packet_content[0];
+  GenericPacket gp;
+  if (gp.ParseFromString(packet_content[0]))
+    smidtmid_content_ = gp.data();
+    printf("Ya veo que chingados paso\n");
+  printf("GetUserSmidTmid - (%s, %s)\n", HexSubstr(smidtmid_name).c_str(),
+                                         HexSubstr(smidtmid_content_).c_str());
 }
 
 int Authentication::PublicUsernamePublicKey(const std::string &public_username,

@@ -296,7 +296,7 @@ int ClientController::SerialiseDa() {
     k->set_public_key_signature(kar.signed_public_key_);
     keyring.pop_front();
   }
-  printf("ClientController::SerialiseDa() - Finished with Keys.\n");
+//  printf("ClientController::SerialiseDa() - Finished with Keys.\n");
 
   std::vector<maidsafe::mi_contact> contacts;
   ss_->GetContactList(&contacts);
@@ -317,7 +317,7 @@ int ClientController::SerialiseDa() {
     pc->set_rank(contacts[n].rank_);
     pc->set_last_contact(contacts[n].last_contact_);
   }
-  printf("ClientController::SerialiseDa() - Finished with Contacts.\n");
+//  printf("ClientController::SerialiseDa() - Finished with Contacts.\n");
 
   std::list<PrivateShare> ps_list;
   ss_->GetFullShareList(ALPHA, kAll, &ps_list);
@@ -342,13 +342,13 @@ int ClientController::SerialiseDa() {
     }
     ps_list.pop_front();
   }
-  printf("ClientController::SerialiseDa() - Finished with Shares.\n");
+//  printf("ClientController::SerialiseDa() - Finished with Shares.\n");
   ser_da_.clear();
   ser_dm_.clear();
   data_atlas_.SerializeToString(&ser_da_);
   seh_.EncryptString(ser_da_, &ser_dm_);
 
-  printf("ClientController::SerialiseDa() - Serialised.\n");
+//  printf("ClientController::SerialiseDa() - Serialised.\n");
 
   return 0;
 }
