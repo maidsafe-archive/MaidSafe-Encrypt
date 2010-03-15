@@ -33,6 +33,7 @@
 #include "protobuf/datamaps.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
+#include "tests/maidsafe/cached_keys.h"
 
 namespace fs = boost::filesystem;
 
@@ -69,6 +70,8 @@ void PacketOpCallback(const int &store_manager_result,
   *op_result = store_manager_result;
   cond_var->notify_one();
 };
+
+std::vector<crypto::RsaKeyPair> keys;
 
 }  // namespace test_auth
 
@@ -154,7 +157,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateUserSysPackets) {
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   std::string ser_dm_login;
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -167,7 +170,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -212,7 +215,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   std::string ser_dm, ser_dm_login;
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -244,7 +247,7 @@ TEST_F(AuthenticationTest, BEH_MAID_RegisterUserOnce) {
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   DataAtlas data_atlas;
 
   int result = authentication->GetUserInfo(username, pin);
@@ -282,7 +285,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -342,7 +345,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSession) {
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -375,8 +378,35 @@ TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSession) {
          co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
                  crypto::STRING_STRING, false),
          "", crypto::STRING_STRING, false);
+  dm.Clear();
+  dm.set_file_hash("filehash1");
+  dm.add_chunk_name("chunk11");
+  dm.add_chunk_name("chunk21");
+  dm.add_chunk_name("chunk31");
+  dm.add_encrypted_chunk_name("enc_chunk11");
+  dm.add_encrypted_chunk_name("enc_chunk21");
+  dm.add_encrypted_chunk_name("enc_chunk31");
+  dm.add_chunk_size(2001);
+  dm.add_chunk_size(2101);
+  dm.add_chunk_size(2051);
+  dm.set_compression_on(false);
+  ser_dm = dm.SerializeAsString();
   result = authentication->SaveSession(ser_dm);
   ASSERT_EQ(kSuccess, result) << "Can't save session 1";
+
+  dm.Clear();
+  dm.set_file_hash("filehash2");
+  dm.add_chunk_name("chunk12");
+  dm.add_chunk_name("chunk22");
+  dm.add_chunk_name("chunk32");
+  dm.add_encrypted_chunk_name("enc_chunk12");
+  dm.add_encrypted_chunk_name("enc_chunk22");
+  dm.add_encrypted_chunk_name("enc_chunk32");
+  dm.add_chunk_size(2002);
+  dm.add_chunk_size(2102);
+  dm.add_chunk_size(2052);
+  dm.set_compression_on(false);
+  ser_dm = dm.SerializeAsString();
   result = authentication->SaveSession(ser_dm);
   ASSERT_EQ(kSuccess, result) << "Can't save session 2";
   ASSERT_TRUE(sm->KeyUnique(tmidsmidname, false));
@@ -387,7 +417,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -459,7 +489,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username, pin);
@@ -525,7 +555,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -569,7 +599,7 @@ TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
   crypto::Crypto crypto_obj;
   crypto_obj.set_symm_algorithm(crypto::AES_256);
@@ -585,8 +615,11 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
-  MidPacket *midPacket = static_cast<MidPacket*>
-      (PacketFactory::Factory(MID));
+  cached_keys::MakeKeys(2, &test_auth::keys);
+  crypto::RsaKeyPair keypair1 = test_auth::keys.at(0);
+  crypto::RsaKeyPair keypair2 = test_auth::keys.at(1);
+  boost::shared_ptr<MidPacket> midPacket(boost::static_pointer_cast<MidPacket>(
+      PacketFactory::Factory(MID, keypair1)));
   PacketParams params;
   params["username"] = username;
   params["PIN"] = pin;
@@ -596,10 +629,8 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   boost::condition_variable cond_var;
   VoidFuncOneInt func = boost::bind(&test_auth::PacketOpCallback, _1, &mutex,
                                     &cond_var, &result);
-  crypto::RsaKeyPair keypair;
-  keypair.GenerateKeys(4096);
-  ss_->AddKey(ANMID, "ID", keypair.private_key(), keypair.public_key(), "");
-  sm->StorePacket(mid_name, "rubish data with same mid name", MID,
+  ss_->AddKey(ANMID, "ID", keypair2.private_key(), keypair2.public_key(), "");
+  sm->StorePacket(mid_name, "rubbish data with same mid name", MID,
       PRIVATE, "", kDoNothingReturnFailure, func);
   {
     boost::mutex::scoped_lock lock(mutex);
@@ -608,7 +639,7 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   }
   ASSERT_EQ(kSuccess, result);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kInvalidUsernameOrPin, result);
 }
@@ -618,7 +649,7 @@ TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(sm);
+  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);

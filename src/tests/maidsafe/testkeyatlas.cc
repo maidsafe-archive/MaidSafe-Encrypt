@@ -29,18 +29,21 @@
 #include <maidsafe/utils.h>
 #include "maidsafe/client/keyatlas.h"
 #include "maidsafe/client/packetfactory.h"
+#include "tests/maidsafe/cached_keys.h"
 
 namespace fs = boost::filesystem;
 
 class KeyAtlasTest : public testing::Test {
  public:
-  KeyAtlasTest() : key_ring_() {}
+  KeyAtlasTest() : key_ring_(), keys_() {}
  protected:
   void SetUp() {
     key_ring_.ClearKeyRing();
+    cached_keys::MakeKeys(12, &keys_);
   }
   void TearDown() {}
   maidsafe::KeyAtlas key_ring_;
+  std::vector<crypto::RsaKeyPair> keys_;
 };
 
 TEST_F(KeyAtlasTest, BEH_MAID_AddKeys) {
@@ -120,7 +123,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetPublicKey) {
   }
 }
 
-TEST_F(KeyAtlasTest, FUNC_MAID_GetSignedPublicKey) {
+TEST_F(KeyAtlasTest, BEH_MAID_GetSignedPublicKey) {
   // try to get non-existent public key
   ASSERT_EQ("", key_ring_.PrivateKey(0))
             << "Returned public key for non-existent key.";
@@ -129,11 +132,9 @@ TEST_F(KeyAtlasTest, FUNC_MAID_GetSignedPublicKey) {
   std::string pub_keys[11];
   std::string pri_keys[11];
   for (int i = 0; i < 11; i++) {
-    crypto::RsaKeyPair rskp;
-    rskp.GenerateKeys(maidsafe::kRsaKeySize);
     std::string package_id = "Package ID " + base::itos(i);
-    pri_keys[i] = rskp.private_key();
-    pub_keys[i] = rskp.public_key();
+    pri_keys[i] = keys_.at(i).private_key();
+    pub_keys[i] = keys_.at(i).public_key();
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, pri_keys[i],
               pub_keys[i], "")) << "Failed to add key " << i << ".";
   }
@@ -149,11 +150,9 @@ TEST_F(KeyAtlasTest, FUNC_MAID_GetSignedPublicKey) {
 
   // add a package which already has a public key signature
   std::string pub_key, pri_key, pub_key_sig = "Signature";
-  crypto::RsaKeyPair rskp;
-  rskp.GenerateKeys(maidsafe::kRsaKeySize);
   std::string package_id = "Package ID 11";
-  pri_key = rskp.private_key();
-  pub_key = rskp.public_key();
+  pri_key = keys_.at(11).private_key();
+  pub_key = keys_.at(11).public_key();
   ASSERT_EQ(0, key_ring_.AddKey(11, package_id, pri_key, pub_key, pub_key_sig))
       << "Failed to add key 11.";
   ASSERT_EQ(pub_key_sig, key_ring_.SignedPublicKey(11));

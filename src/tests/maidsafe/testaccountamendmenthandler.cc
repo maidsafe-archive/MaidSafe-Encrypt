@@ -441,19 +441,20 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(kSuccess, ah_.AddAccount(far_account_name, 999999));
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(far_account_name, testing::_))
+  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(far_account_name,
+      testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, fail_parse_result_, _1))))  // 1
+          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, fail_result_, _1))))  // Call 2
+          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, few_result_, _1))))  // Call 3
+          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))  // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 5
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))));  // Call 6
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // Cll 6
 
   // Call 1 - Fail to parse FindNodes response
   int test_run(0);
@@ -692,18 +693,19 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   ASSERT_EQ(size_t(11), ah_.accounts_.size());
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(account_name, testing::_))
+  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(account_name,
+      testing::An<const base::callback_func_type&>()))
       .Times(testing::AtLeast(5))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 2
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 3
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, fail_result_, _1))))  // Call 5
+          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 5
       .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_vsl::RunCallback, good_result_, _1))));
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));
 
   // Call 1 - Request has wrong type
   int test_run(0);
@@ -821,7 +823,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
     ASSERT_EQ(kSuccess, aah_.ProcessRequest(&requests.at(i), &responses.at(i),
               callbacks.at(i)));
   }
-  while (cbh.called_back_count() < 22)
+  while (cbh.called_back_count() < 7 + kad::K)
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   int success_count(0);
   for (int i = 1; i < kad::K; ++i) {
@@ -829,8 +831,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  ASSERT_GE(success_count, kad::K - 2);
-  ASSERT_LE(aah_.amendments_.size(), size_t(2));
+  ASSERT_EQ(success_count, kad::K - 1);
+  ASSERT_EQ(aah_.amendments_.size(), size_t(0));
   ASSERT_TRUE(test_aah::CheckAcc(account_owner, offer, 1000, acc_used, &ah_));
   ASSERT_EQ(size_t(11), ah_.accounts_.size());
 }

@@ -311,6 +311,7 @@ class PDVault {
   VaultStatus vault_status_;
   boost::mutex vault_status_mutex_;
   boost::condition_variable kad_join_cond_;
+  kad::Contact our_details_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
   crypto::Crypto co_;
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;

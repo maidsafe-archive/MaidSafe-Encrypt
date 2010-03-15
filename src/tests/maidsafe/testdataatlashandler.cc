@@ -42,6 +42,7 @@
 #include "protobuf/datamaps.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
+#include "tests/maidsafe/cached_keys.h"
 
 namespace test_dah {
 
@@ -78,7 +79,8 @@ class DataAtlasHandlerTest : public testing::Test {
   DataAtlasHandlerTest() : test_root_dir_(file_system::TempDir() /
                                ("maidsafe_TestDAH_" + base::RandomString(6))),
                            sm(),
-                           cb() { }
+                           cb(),
+                           keys_() {}
   ~DataAtlasHandlerTest() { }
   void SetUp() {
     SessionSingleton::getInstance()->ResetSession();
@@ -119,16 +121,13 @@ class DataAtlasHandlerTest : public testing::Test {
       FAIL();
       return;
     }
-    crypto::RsaKeyPair rsakp;
-    rsakp.GenerateKeys(kRsaKeySize);
-    SessionSingleton::getInstance()->AddKey(PMID, "PMID", rsakp.private_key(),
-                                            rsakp.public_key(), "");
-    rsakp.GenerateKeys(kRsaKeySize);
-    SessionSingleton::getInstance()->AddKey(MAID, "MAID", rsakp.private_key(),
-        rsakp.public_key(), "");
-    rsakp.GenerateKeys(kRsaKeySize);
-    SessionSingleton::getInstance()->AddKey(MPID, "Me", rsakp.private_key(),
-        rsakp.public_key(), "");
+    cached_keys::MakeKeys(3, &keys_);
+    SessionSingleton::getInstance()->AddKey(PMID, "PMID",
+        keys_.at(0).private_key(), keys_.at(0).public_key(), "");
+    SessionSingleton::getInstance()->AddKey(MAID, "MAID",
+        keys_.at(1).private_key(), keys_.at(1).public_key(), "");
+    SessionSingleton::getInstance()->AddKey(MPID, "Me",
+        keys_.at(2).private_key(), keys_.at(2).public_key(), "");
     ASSERT_EQ(0, file_system::Mount(SessionSingleton::getInstance()->
         SessionName(), SessionSingleton::getInstance()->DefConLevel()));
     boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
@@ -179,6 +178,7 @@ class DataAtlasHandlerTest : public testing::Test {
   fs::path test_root_dir_;
   boost::shared_ptr<LocalStoreManager> sm;
   test_dah::FakeCallback cb;
+  std::vector<crypto::RsaKeyPair> keys_;
  private:
   explicit DataAtlasHandlerTest(const maidsafe::DataAtlasHandlerTest&);
   DataAtlasHandlerTest &operator=(const maidsafe::DataAtlasHandlerTest&);

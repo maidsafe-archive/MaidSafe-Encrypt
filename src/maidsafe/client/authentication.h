@@ -41,6 +41,7 @@ struct SystemPacketCreation {
   std::string username, pin;
   boost::uint32_t rid;
 };
+
 struct FindSystemPacket {
   FindSystemPacket() : spc(), pp(), pt() {}
   boost::shared_ptr<SystemPacketCreation> spc;
@@ -48,14 +49,20 @@ struct FindSystemPacket {
   PacketType pt;
 };
 
-const boost::uint16_t NoOfSystemPackets = 8;
-
 class Authentication {
  public:
   Authentication()
-      : ud_(), mutex_(), crypto_(), sm_(), ss_(), tmid_content_(),
-        system_packets_result_(kPendingResult) {}
-  void Init(boost::shared_ptr<StoreManagerInterface> smgr);
+      : ud_(),
+        mutex_(),
+        crypto_(),
+        sm_(),
+        ss_(),
+        tmid_content_(),
+        system_packets_result_(kPendingResult),
+        crypto_key_pairs_() {}
+  void Init(const boost::uint16_t &max_crypto_thread_count,
+            const boost::uint16_t &crypto_key_buffer_count,
+            boost::shared_ptr<StoreManagerInterface> smgr);
   int GetUserInfo(const std::string &username, const std::string &pin);
   int GetUserData(const std::string &password, std::string *ser_da);
   int CreateUserSysPackets(const std::string &username,
@@ -128,6 +135,7 @@ class Authentication {
   SessionSingleton *ss_;
   std::string tmid_content_, smidtmid_content_;
   ReturnCode system_packets_result_;
+  CryptoKeyPairs crypto_key_pairs_;
   Authentication &operator=(const Authentication &);
   Authentication(const Authentication &);
 };

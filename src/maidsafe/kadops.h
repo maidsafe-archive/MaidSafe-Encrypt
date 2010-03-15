@@ -21,6 +21,7 @@
 #ifndef MAIDSAFE_KADOPS_H_
 #define MAIDSAFE_KADOPS_H_
 
+#include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
@@ -87,10 +88,24 @@ class KadOps {
    */
   virtual bool AddressIsLocal(const kad::ContactInfo &peer);
   /**
-   * Blocking call to Kademlia Find Nodes.
+   * Wrapper for the non-blocking Kademlia function.
    */
-  virtual int FindKNodes(const std::string &kad_key,
-                         std::vector<kad::Contact> *contacts);
+  virtual void FindCloseNodes(const std::string &kad_key,
+                              const base::callback_func_type &callback);
+  /**
+   * Blocking call to Kademlia's FindCloseNodes.
+   */
+  virtual int FindCloseNodes(const std::string &kad_key,
+                             std::vector<kad::Contact> *contacts);
+  /**
+   * A callback handler for passing to FindCloseNodes.
+   */
+  void HandleFindCloseNodesResponse(const std::string &response,
+                                    const std::string &kad_key,
+                                    std::vector<kad::Contact> *contacts,
+                                    boost::mutex *mutex,
+                                    boost::condition_variable *cv,
+                                    ReturnCode *result);
   /**
    * Blocking call to Kademlia Find Value.  If the maidsafe value is cached,
    * this may yield serialised contact details for a cache copy holder.
@@ -108,13 +123,8 @@ class KadOps {
    * Simple wrapper for the Kademlia function.
    */
   virtual void FindValue(const std::string &kad_key,
-                        bool check_local,
-                        const base::callback_func_type &cb);
-  /**
-   * Simple wrapper for the Kademlia function.
-   */
-  virtual void FindCloseNodes(const std::string &kad_key,
-                              const base::callback_func_type &callback);
+                         bool check_local,
+                         const base::callback_func_type &cb);
   /**
    * Get a new contact from the routing table to try and store a chunk on.  The
    * closest to the ideal_rtt will be chosen from those not in the vector to
@@ -130,6 +140,27 @@ class KadOps {
   KadOps& operator=(const KadOps&);
   boost::shared_ptr<kad::KNode> knode_;
 };
+
+/**
+ * Determine whether a contact is closer to a key than at least one of the
+ * contacts in a given vector.
+ * @param key Kademlia key for calculating the distance
+ * @param new_contact the reference contact to compare the others to
+ * @param closest_contacts a vector of contacts to compare new_contact to
+ * @return true if new_contact is closer to key than one of closest_contacts
+ */
+bool ContactWithinClosest(const std::string &key,
+    const kad::Contact &new_contact,
+    const std::vector<kad::Contact> &closest_contacts);
+
+/**
+ * Removes the contact with a given ID from a vector of contacts, if included.
+ * @param id the contact ID to search for and remove
+ * @param contacts pointer to a contact vector to remove the contact from
+ * @return true if contact found and removed, otherwise false
+ */
+bool RemoveKadContact(const std::string &id,
+                      std::vector<kad::Contact> *contacts);
 
 }  // namespace maidsafe
 

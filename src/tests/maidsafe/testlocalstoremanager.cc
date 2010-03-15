@@ -32,6 +32,7 @@
 #include "maidsafe/client/sessionsingleton.h"
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
+#include "tests/maidsafe/cached_keys.h"
 
 namespace fs = boost::filesystem;
 
@@ -109,10 +110,10 @@ class LocalStoreManagerTest : public testing::Test {
                             client_chunkstore_(),
                             sm_(),
                             co_(),
-                            rsao_(),
                             mutex_(),
                             cb(mutex_),
-                            ss_(maidsafe::SessionSingleton::getInstance()) {}
+                            ss_(maidsafe::SessionSingleton::getInstance()),
+                            keys_() {}
   ~LocalStoreManagerTest() {
     try {
       if (fs::exists(test_root_dir_))
@@ -127,6 +128,7 @@ class LocalStoreManagerTest : public testing::Test {
 
  protected:
   void SetUp() {
+    cached_keys::MakeKeys(3, &keys_);
     ss_->ResetSession();
     try {
       if (fs::exists(test_root_dir_))
@@ -160,20 +162,16 @@ class LocalStoreManagerTest : public testing::Test {
     ss_ = maidsafe::SessionSingleton::getInstance();
     co_.set_symm_algorithm(crypto::AES_256);
     co_.set_hash_algorithm(crypto::SHA_512);
-    crypto::RsaKeyPair rsao_;
-    rsao_.GenerateKeys(maidsafe::kRsaKeySize);
-    ss_->AddKey(maidsafe::MPID, "Me", rsao_.private_key(),
-                rsao_.public_key(), "");
-    rsao_.ClearKeys();
-    rsao_.GenerateKeys(maidsafe::kRsaKeySize);
-    std::string anmid_pubkey_signature(co_.AsymSign(rsao_.public_key(),
-                                       "", rsao_.private_key(),
+    ss_->AddKey(maidsafe::MPID, "Me", keys_.at(0).private_key(),
+                keys_.at(0).public_key(), "");
+    std::string anmid_pubkey_signature(co_.AsymSign(keys_.at(1).public_key(),
+                                       "", keys_.at(1).private_key(),
                                        crypto::STRING_STRING));
-    std::string anmid_name(co_.Hash(rsao_.public_key() +
+    std::string anmid_name(co_.Hash(keys_.at(1).public_key() +
                            anmid_pubkey_signature, "", crypto::STRING_STRING,
                            false));
-    ss_->AddKey(maidsafe::ANMID, anmid_name, rsao_.private_key(),
-                rsao_.public_key(), anmid_pubkey_signature);
+    ss_->AddKey(maidsafe::ANMID, anmid_name, keys_.at(1).private_key(),
+                keys_.at(1).public_key(), anmid_pubkey_signature);
     cb.Reset();
   }
 
@@ -202,10 +200,10 @@ class LocalStoreManagerTest : public testing::Test {
   boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore_;
   maidsafe::LocalStoreManager *sm_;
   crypto::Crypto co_;
-  crypto::RsaKeyPair rsao_;
   boost::mutex *mutex_;
   test_lsm::FakeCallback cb;
   maidsafe::SessionSingleton *ss_;
+  std::vector<crypto::RsaKeyPair> keys_;
 
  private:
   LocalStoreManagerTest(const LocalStoreManagerTest&);
@@ -214,8 +212,6 @@ class LocalStoreManagerTest : public testing::Test {
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_RemoveAllPacketsFromKey) {
   kad::SignedValue gp;
-  rsao_.ClearKeys();
-  rsao_.GenerateKeys(maidsafe::kRsaKeySize);
   int result(maidsafe::kGeneralError);
   boost::mutex mutex;
   boost::condition_variable cond_var;
@@ -262,8 +258,6 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_RemoveAllPacketsFromKey) {
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
   kad::SignedValue gp;
-  rsao_.ClearKeys();
-  rsao_.GenerateKeys(maidsafe::kRsaKeySize);
   gp.set_value("Generic System Packet Data");
   gp.set_value_signature(co_.AsymSign(gp.value(), "",
                          ss_->PrivateKey(maidsafe::ANMID),
@@ -295,8 +289,6 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
   kad::SignedValue gp;
-  rsao_.ClearKeys();
-  rsao_.GenerateKeys(maidsafe::kRsaKeySize);
   gp.set_value("Generic System Packet Data");
   gp.set_value_signature(co_.AsymSign(gp.value(), "",
                          ss_->PrivateKey(maidsafe::ANMID),
@@ -304,8 +296,9 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
   std::string gp_name = co_.Hash(gp.value() + gp.value_signature(), "",
                         crypto::STRING_STRING, false);
 
-  std::string signed_public_key = co_.AsymSign(rsao_.public_key(), "",
-                                  rsao_.private_key(), crypto::STRING_STRING);
+  std::string signed_public_key = co_.AsymSign(keys_.at(2).public_key(), "",
+                                  keys_.at(2).private_key(),
+                                  crypto::STRING_STRING);
   int result(maidsafe::kGeneralError);
   boost::mutex mutex;
   boost::condition_variable cond_var;
@@ -339,8 +332,6 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   kad::SignedValue gp;
-  rsao_.ClearKeys();
-  rsao_.GenerateKeys(maidsafe::kRsaKeySize);
   gp.set_value("Generic System Packet Data");
   gp.set_value_signature(co_.AsymSign(gp.value(), "",
                          ss_->PrivateKey(maidsafe::ANMID),
@@ -364,17 +355,16 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
 
   result = maidsafe::kGeneralError;
-  rsao_.GenerateKeys(maidsafe::kRsaKeySize);
   std::vector<std::string> values(1, gp.value());
 
-  std::string anmid_pubkey_signature(co_.AsymSign(rsao_.public_key(),
-                                     "", rsao_.private_key(),
+  std::string anmid_pubkey_signature(co_.AsymSign(keys_.at(2).public_key(),
+                                     "", keys_.at(2).private_key(),
                                      crypto::STRING_STRING));
-  std::string anmid_name(co_.Hash(rsao_.public_key() +
+  std::string anmid_name(co_.Hash(keys_.at(2).public_key() +
                          anmid_pubkey_signature, "", crypto::STRING_STRING,
                          false));
-  ss_->AddKey(maidsafe::ANMID, anmid_name, rsao_.private_key(),
-              rsao_.public_key(), anmid_pubkey_signature);
+  ss_->AddKey(maidsafe::ANMID, anmid_name, keys_.at(2).private_key(),
+              keys_.at(2).public_key(), anmid_pubkey_signature);
 
   sm_->DeletePacket(gp_name, values, maidsafe::MID, maidsafe::PRIVATE, "",
                     boost::bind(&test_lsm::PacketOpCallback, _1, &mutex,
@@ -505,10 +495,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
 
   // Create the user "Juanito", add to session, then the message and send it
   ss_->ResetSession();
-  crypto::RsaKeyPair rsa_kp;
-  rsa_kp.GenerateKeys(maidsafe::kRsaKeySize);
-  std::string private_key = rsa_kp.private_key();
-  std::string public_key = rsa_kp.public_key();
+  std::string private_key = keys_.at(2).private_key();
+  std::string public_key = keys_.at(2).public_key();
   std::string signed_public_key = co_.AsymSign(public_key, "",
                                   private_key, crypto::STRING_STRING);
   ss_->AddKey(maidsafe::MPID, "Juanito", private_key, public_key,
@@ -554,10 +542,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
 
   // Create the user "Juanito", add to session, then the message and send it
   ss_->ResetSession();
-  crypto::RsaKeyPair rsa_kp;
-  rsa_kp.GenerateKeys(maidsafe::kRsaKeySize);
-  std::string private_key = rsa_kp.private_key();
-  std::string public_key = rsa_kp.public_key();
+  std::string private_key = keys_.at(2).private_key();
+  std::string public_key = keys_.at(2).public_key();
   std::string signed_public_key = co_.AsymSign(public_key, "",
                                   private_key, crypto::STRING_STRING);
   ss_->AddKey(maidsafe::MPID, "Juanito", private_key, public_key,
@@ -679,10 +665,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
 
   // Create the user "Juanito", add to session, then the message and send it
   ss_->ResetSession();
-  crypto::RsaKeyPair rsa_kp;
-  rsa_kp.GenerateKeys(maidsafe::kRsaKeySize);
-  std::string private_key = rsa_kp.private_key();
-  std::string public_key = rsa_kp.public_key();
+  std::string private_key = keys_.at(2).private_key();
+  std::string public_key = keys_.at(2).public_key();
   std::string signed_public_key = co_.AsymSign(public_key, "",
                                   private_key, crypto::STRING_STRING);
   ss_->AddKey(maidsafe::MPID, "Juanito", private_key, public_key,
