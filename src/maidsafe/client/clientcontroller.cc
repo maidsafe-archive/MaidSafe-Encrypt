@@ -1734,8 +1734,12 @@ int ClientController::DeleteContact(const std::string &public_name) {
 
 std::string ClientController::GenerateBPInfo() {
   std::vector<std::string> contacts;
-  if (ss_->GetPublicUsernameList(&contacts) != 0)
+  if (ss_->GetPublicUsernameList(&contacts) != 0) {
+#ifdef DEBUG
+    printf("CC::GenerateBPInfo() - Failed to get list of contacts.\n");
+#endif
     return "";
+  }
   BufferPacketInfo bpi;
   bpi.set_owner(ss_->Id(MPID));
   bpi.set_owner_publickey(ss_->PublicKey(MPID));
@@ -1748,8 +1752,7 @@ std::string ClientController::GenerateBPInfo() {
   *ep = ss_->Ep();
   PersonalDetails *pd = bpi.mutable_pd();
   *pd = ss_->Pd();
-  std::string ser_bpi;
-  bpi.SerializeToString(&ser_bpi);
+  std::string ser_bpi(bpi.SerializeAsString());
   return ser_bpi;
 }
 
