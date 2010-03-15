@@ -336,7 +336,7 @@ void PersonalMessages::onSendFile() {
 void PersonalMessages::onTextClicked() {
   bool ok;
   QString startTags;
-  font_ = QFontDialog::getFont(&ok, QFont("Times New Roman", 10), this);
+  font_ = QFontDialog::getFont(&ok, QFont("Arial", 10), this);
   if (ok) {
     formatHtml();
   } else {
@@ -442,7 +442,61 @@ void PersonalMessages::onSmilyChosen(int row, int column) {
 void PersonalMessages::onMessageTextEdit(){
   QString text = ui_.message_text_edit->toHtml();
 
-  text.replace(":-D","<img src=\"://smilies//smily_blue//sbiggrin.gif\";");
+  if (text.contains(":-D")) {
+    text.replace(":-D","<img src=\"://smilies//smily_blue//sbiggrin.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  }
+  else if (text.contains(":-)")) {
+    text.replace(":-)","<img src=\"://smilies//smily_blue//ssmile.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  }
+  else if (text.contains(":-O")) {
+    text.replace(":-O","<img src=\"://smilies//smily_blue//ssuprised.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  }
+  else if (text.contains(":-P")) {
+    text.replace(":-P","<img src=\"://smilies//smily_blue//stongue.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  }
+  else if (text.contains(":-\\")) {
+    text.replace(":-\\","<img src=\"://smilies//smily_blue//sconfused.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  }
+  else if (text.contains(":)~")) {
+    text.replace(":)~","<img src=\"://smilies//smily_blue//sdrool.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  }
+  else if (text.contains(">:)")) {
+    text.replace(">:)","<img src=\"://smilies//smily_blue//smad.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  }
+  else if (text.contains("8-)")) {
+    text.replace("8-)","<img src=\"://smilies//smily_blue//scool.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  }
+  else if (text.contains(":')")) {
+    text.replace(":')","<img src=\"://smilies//smily_blue//scry.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  }
+  else if (text.contains(":-(")) {
+    text.replace(":-(","<img src=\"://smilies//smily_blue//ssad.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  }
+  else if (text.contains(":-Z")) {
+    text.replace(":-Z","<img src=\"://smilies//smily_blue//ssleepy.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  }
 
 }
 

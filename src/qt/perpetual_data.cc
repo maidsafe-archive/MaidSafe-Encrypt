@@ -130,7 +130,7 @@ void PerpetualData::createActions() {
   actions_[ MY_FILES ] = ui_.actionMy_Files;
   actions_[ PRIVATE_SHARES ] = ui_.actionPrivate_Shares;
   actions_[ GO_OFFLINE ] = ui_.actionOffline;
-  actions_[ SETTINGS ] = ui_.actionSettings;
+  actions_[ SETTINGS ] = ui_.actionSettings_2;
   actions_[ ONLINE ] = ui_.actionAvailable;
   actions_[ AWAY ] = ui_.actionAway;
   actions_[ BUSY ] = ui_.actionBusy;

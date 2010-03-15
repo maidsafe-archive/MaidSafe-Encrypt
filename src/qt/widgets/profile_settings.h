@@ -44,8 +44,8 @@ class ProfileSettings : public QWidget {
     void onLanguageTextEdit(const QString&);
     void onCityTextEdit(const QString&);
     void onCountryTextEdit(const QString&);
-    void onFemaleChanged(int);
-    void onMaleChanged(int);
+    void onFemaleChanged(bool);
+    void onMaleChanged(bool);
 
  private:
   Ui::ProfileSettingsPage ui_;

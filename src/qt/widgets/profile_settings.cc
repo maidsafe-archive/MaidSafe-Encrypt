@@ -11,11 +11,11 @@
  *  Created on: Jan 23, 2010
  *      Author: Stephen Alexander
  */
+#include "qt/widgets/profile_settings.h"
 
 #include <QDebug>
 #include <QMessageBox>
 
-#include "qt/widgets/profile_settings.h"
 #include "qt/client/client_controller.h"
 
 ProfileSettings::ProfileSettings(QWidget* parent) : init_(false) {
@@ -24,29 +24,29 @@ ProfileSettings::ProfileSettings(QWidget* parent) : init_(false) {
     connect(ui_.pubNameEdit, SIGNAL(textEdited(const QString&)),
           this,           SLOT(onPubNameTextEdit(const QString&)));
 
-    connect(ui_.fullNameEdit, SIGNAL(textEdited(const QString&)),
+    connect(ui_.fullNameEdit, SIGNAL(textChanged(const QString&)),
           this,           SLOT(onFullNameTextEdit(const QString&)));
 
-    connect(ui_.phoneNumberEdit, SIGNAL(textEdited(const QString&)),
+    connect(ui_.phoneNumberEdit, SIGNAL(textChanged(const QString&)),
           this,           SLOT(onPhoneTextEdit(const QString&)));
 
-    connect(ui_.birthDayEdit, SIGNAL(textEdited(const QString&)),
+    connect(ui_.birthDayEdit, SIGNAL(textChanged(const QString&)),
           this,           SLOT(onBirthDayTextEdit(const QString&)));
 
-    connect(ui_.languageEdit, SIGNAL(textEdited(const QString&)),
+    connect(ui_.languageEdit, SIGNAL(textChanged(const QString&)),
           this,           SLOT(onLanguageTextEdit(const QString&)));
 
-    connect(ui_.cityEdit, SIGNAL(textEdited(const QString&)),
+    connect(ui_.cityEdit, SIGNAL(textChanged(const QString&)),
           this,           SLOT(onCityTextEdit(const QString&)));
 
-    connect(ui_.countryEdit, SIGNAL(textEdited(const QString&)),
+    connect(ui_.countryEdit, SIGNAL(textChanged(const QString&)),
           this,           SLOT(onCountryTextEdit(const QString&)));
 
-    connect(ui_.radioFemale, SIGNAL(stateChanged(int)),
-          this,           SLOT(onFemaleChanged(int)));
+    connect(ui_.radioFemale, SIGNAL(toggled(bool)),
+          this,           SLOT(onFemaleChanged(bool)));
 
-    connect(ui_.radioMale, SIGNAL(stateChanged(int)),
-          this,           SLOT(onMaleChanged(int)));
+    connect(ui_.radioMale, SIGNAL(toggled(bool)),
+          this,           SLOT(onMaleChanged(bool)));
 
 }
 
@@ -80,7 +80,10 @@ void ProfileSettings::setActive(bool b) {
   ui_.cityEdit->setText(QString(pd.city().c_str()));
   ui_.countryEdit->setText(QString(pd.country().c_str()));
 //  QString gender = QString(1, QChar(pd.));
-  QString gender = QString(1, 'M');
+
+  QString gender = QString::fromStdString(pd.gender().c_str());
+
+  qDebug() << "gender reading :" + gender;
 
   if(gender.contains("F", Qt::CaseInsensitive))
     ui_.radioFemale->setChecked(true);
@@ -112,10 +115,20 @@ void ProfileSettings::onCountryTextEdit(const QString& text){
 void ProfileSettings::onPubNameTextEdit(const QString& text){
   changedValues_.insert("PubName", text);
 }
-void ProfileSettings::onFemaleChanged(int i){
-  changedValues_.insert("Gender", "F");
+void ProfileSettings::onFemaleChanged(bool checked){
+  if (checked){
+    changedValues_.insert("Gender", "F");
+  }
+  else {
+    changedValues_.insert("Gender", "M");
+  }
 }
-void ProfileSettings::onMaleChanged(int i){
-  changedValues_.insert("Gender", "M");
+void ProfileSettings::onMaleChanged(bool checked){
+    if (checked){
+    changedValues_.insert("Gender", "M");
+  }
+  else {
+    changedValues_.insert("Gender", "F");
+  }
 }
 
