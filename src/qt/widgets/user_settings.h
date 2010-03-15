@@ -48,6 +48,8 @@ class UserSettings : public QDialog {
     void HandleOK();
     void HandleApply();
     void HandleCancel();
+    void onSaveProfileSettingsCompleted(bool);
+    void onSaveSecuritySettingsCompleted(bool);
 
  private:
   Ui::UserSettingsPage ui_;

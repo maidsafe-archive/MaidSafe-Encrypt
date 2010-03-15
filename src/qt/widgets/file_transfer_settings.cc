@@ -17,6 +17,7 @@
 
 FileTransferSettings::FileTransferSettings(QWidget* parent) {
   ui_.setupUi(this);
+
 }
 
 FileTransferSettings::~FileTransferSettings() { }

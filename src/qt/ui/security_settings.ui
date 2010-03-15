@@ -30,14 +30,14 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QLabel" name="usernameEdit">
+          <widget class="QLabel" name="usernameLbl">
            <property name="text">
             <string>Enter new username here :</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="lineEdit_3"/>
+          <widget class="QLineEdit" name="usernameEdit"/>
          </item>
          <item>
           <widget class="QLabel" name="label">
