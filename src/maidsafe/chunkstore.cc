@@ -394,9 +394,9 @@ int ChunkStore::Store(const std::string &key, const fs::path &file) {
     ChunkType type = chunk_type(key);
     if ((type & kOutgoing) == kOutgoing)
       return kSuccess;
-//#ifdef DEBUG
-//    printf("Chunk already exists in ChunkStore::StoreChunk.\n");
-//#endif
+//  #ifdef DEBUG
+//      printf("Chunk already exists in ChunkStore::StoreChunk.\n");
+//  #endif
     return (type == (kHashable | kCache) || type == (kHashable | kTempCache)) ?
         ChangeChunkType(key, kHashable | kNormal) : kInvalidChunkType;
   }
@@ -411,9 +411,9 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
   if (valid != kSuccess)
     return valid;
   if (Has(key)) {
-//#ifdef DEBUG
-//    printf("Chunk already exists in ChunkStore::AddChunkToOutgoing.\n");
-//#endif
+//  #ifdef DEBUG
+//      printf("Chunk already exists in ChunkStore::AddChunkToOutgoing.\n");
+//  #endif
     return kChunkExistsInChunkstore;
   }
   ChunkType type = GetChunkType(key, value, true);
@@ -428,9 +428,9 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
   if (valid != kSuccess)
     return valid;
   if (Has(key)) {
-//#ifdef DEBUG
-//    printf("Chunk already exists in ChunkStore::AddChunkToOutgoing.\n");
-//#endif
+//  #ifdef DEBUG
+//      printf("Chunk already exists in ChunkStore::AddChunkToOutgoing.\n");
+//  #endif
     return kChunkExistsInChunkstore;
   }
   ChunkType type = GetChunkType(key, file, true);

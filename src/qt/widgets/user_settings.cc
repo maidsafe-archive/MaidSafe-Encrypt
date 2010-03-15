@@ -162,7 +162,7 @@ void UserSettings::HandleOK() {
     if (ok && !text.isEmpty()) {
       const bool success = ClientController::instance()->ValidateUser(
                                                             text.toStdString());
-      if (success){
+      if (success) {
         SaveSecuritySettingsThread* ssst =
                                   new SaveSecuritySettingsThread(theHash, this);
 
@@ -170,8 +170,7 @@ void UserSettings::HandleOK() {
               this, SLOT(onSaveSecuritySettingsCompleted(bool)));
 
         ssst->start();
-      }
-      else{
+      } else {
         QMessageBox::warning(this, tr("Wrong Password"),
                         QString(tr("Security Info will not be changed")));
       }
@@ -189,15 +188,15 @@ void UserSettings::HandleOK() {
   }
 }
 
-void UserSettings::onSaveProfileSettingsCompleted(bool success){
+void UserSettings::onSaveProfileSettingsCompleted(bool success) {
   QMessageBox::warning(this, tr("Profile Settings Thread Complete"),
-                        QString(tr("Result. %1").arg(success)));
+                       QString(tr("Result. %1").arg(success)));
 }
 
 
-void UserSettings::onSaveSecuritySettingsCompleted(bool success){
+void UserSettings::onSaveSecuritySettingsCompleted(bool success) {
   QMessageBox::warning(this, tr("Security Settings Thread Complete"),
-                        QString(tr("Result. %1").arg(success)));
+                       QString(tr("Result. %1").arg(success)));
 }
 
 void UserSettings::HandleApply() { }

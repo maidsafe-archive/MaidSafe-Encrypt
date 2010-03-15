@@ -504,7 +504,8 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                          bool overwrite) {
 #ifdef DEBUG
 //  printf("SEHandler::DecryptDb - dir_path(%s) type(%i) encrypted(%i) key(%s)",
-//         dir_path.c_str(), dir_type, dm_encrypted, HexSubstr(dir_key).c_str());
+//         dir_path.c_str(), dir_type, dm_encrypted,
+//         HexSubstr(dir_key).c_str());
 //  printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm_, enc_dm_;
@@ -749,10 +750,10 @@ int SEHandler::LoadChunks(const DataMap &dm) {
   for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
     std::string data;
     int n = storem_->LoadChunk(dm.encrypted_chunk_name(i), &data);
-//#ifdef DEBUG
-//    printf("SEHandler::LoadChunks chunk(%s): result(%d)\n",
-//           HexSubstr(dm.encrypted_chunk_name(i)).c_str(), n);
-//#endif
+//  #ifdef DEBUG
+//      printf("SEHandler::LoadChunks chunk(%s): result(%d)\n",
+//             HexSubstr(dm.encrypted_chunk_name(i)).c_str(), n);
+//  #endif
     chunks_found += n;
     SelfEncryption se(client_chunkstore_);
     fs::path chunk_path = se.GetChunkPath(dm.encrypted_chunk_name(i));

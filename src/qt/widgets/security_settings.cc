@@ -38,7 +38,7 @@ void SecuritySettings::onPinTextEdit(const QString& text) {
   changedValues_.insert("pin", text);
 }
 
-void SecuritySettings::onPasswordTextEdit(const QString& text){
+void SecuritySettings::onPasswordTextEdit(const QString& text) {
   changedValues_.insert("password", text);
 }
 

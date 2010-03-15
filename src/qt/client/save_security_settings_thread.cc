@@ -1,4 +1,3 @@
-
 /*
  * copyright maidsafe.net limited 2009
  * The following source code is property of maidsafe.net limited and
@@ -23,8 +22,8 @@
 
 
 SaveSecuritySettingsThread::SaveSecuritySettingsThread(
-                              QHash<QString, QString> theHash, QObject* parent)
-    : WorkerThread(parent), theHash_(theHash) { }
+    QHash<QString, QString> theHash, QObject* parent)
+      : WorkerThread(parent), theHash_(theHash) { }
 
 SaveSecuritySettingsThread::~SaveSecuritySettingsThread() { }
 
@@ -32,13 +31,13 @@ void SaveSecuritySettingsThread::run() {
   bool success = false;
   qDebug() << "SaveSecuritySettingsThread::run";
 
-  if(theHash_.contains("username")){
+  if (theHash_.contains("username")) {
     success = ClientController::instance()->ChangeUsername(
                   theHash_.value("username").toStdString());
   }
-  if(theHash_.contains("Pin")) {
+  if (theHash_.contains("Pin")) {
   }
-  if(theHash_.contains("Password")) {
+  if (theHash_.contains("Password")) {
   }
   emit completed(success);
 }

@@ -1,4 +1,3 @@
-
 /*
  * copyright maidsafe.net limited 2009
  * The following source code is property of maidsafe.net limited and
@@ -18,13 +17,16 @@
 // qt
 #include <QDebug>
 
+#include <string>
+#include <vector>
+
 // core
 #include "qt/client/client_controller.h"
 
 
 SaveProfileSettingsThread::SaveProfileSettingsThread(
-                              QHash<QString, QString> theHash, QObject* parent)
-    : WorkerThread(parent), theHash_(theHash) { }
+    QHash<QString, QString> theHash, QObject* parent)
+      : WorkerThread(parent), theHash_(theHash) { }
 
 SaveProfileSettingsThread::~SaveProfileSettingsThread() { }
 

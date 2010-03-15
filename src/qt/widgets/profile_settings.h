@@ -13,8 +13,8 @@
  */
 
 
-#ifndef PROFILE_SETTINGS_H_INCLUDED
-#define PROFILE_SETTINGS_H_INCLUDED
+#ifndef QT_WIDGETS_PROFILE_SETTINGS_H_
+#define QT_WIDGETS_PROFILE_SETTINGS_H_
 
 #include <QWidget>
 #include <QString>
@@ -53,4 +53,4 @@ class ProfileSettings : public QWidget {
 };
 
 
-#endif // PROFILE_SETTINGS_H_INCLUDED
+#endif  // QT_WIDGETS_PROFILE_SETTINGS_H_
