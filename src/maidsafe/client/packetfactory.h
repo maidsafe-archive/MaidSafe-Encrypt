@@ -27,6 +27,7 @@
 
 #include <boost/any.hpp>
 #include <boost/thread.hpp>
+#include <gtest/gtest_prod.h>
 #include <maidsafe/crypto.h>
 #include <map>
 #include <queue>
@@ -56,6 +57,8 @@ class CryptoKeyPairs {
  private:
   CryptoKeyPairs &operator=(const CryptoKeyPairs&);
   CryptoKeyPairs(const CryptoKeyPairs&);
+  FRIEND_TEST(CryptoKeyPairsTest, BEH_MAID_GetCryptoKeysUnthreaded);
+  FRIEND_TEST(CryptoKeyPairsTest, FUNC_MAID_GetCryptoKeysThreaded);
   void CreateThread();
   void DestroyThread();
   void CreateKeyPair();
@@ -63,7 +66,6 @@ class CryptoKeyPairs {
   std::queue<crypto::RsaKeyPair> key_buffer_;
   boost::mutex kb_mutex_;
   boost::condition_variable kb_cond_var_;
-  std::map< boost::thread::id, boost::shared_ptr<boost::thread> > threads_;
 };
 
 class Packet {

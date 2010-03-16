@@ -33,8 +33,7 @@ CryptoKeyPairs::CryptoKeyPairs()
       running_thread_count_(0),
       key_buffer_(),
       kb_mutex_(),
-      kb_cond_var_(),
-      threads_() {}
+      kb_cond_var_() {}
 
 CryptoKeyPairs::~CryptoKeyPairs() {
   boost::mutex::scoped_lock lock(kb_mutex_);
@@ -51,8 +50,8 @@ void CryptoKeyPairs::Init(const boost::uint16_t &max_thread_count,
 
 void CryptoKeyPairs::CreateThread() {
   boost::mutex::scoped_lock lock(kb_mutex_);
-  if ((running_thread_count_ < max_thread_count_) &&
-      (key_buffer_.size() + running_thread_count_ < buffer_count_)) {
+  if ((running_thread_count_ < max_thread_count_) && (buffer_count_ > 0) &&
+      (key_buffer_.size() + running_thread_count_ <= buffer_count_)) {
     boost::shared_ptr<boost::thread> thr(new boost::thread(
         &maidsafe::CryptoKeyPairs::CreateKeyPair, this));
     ++running_thread_count_;
@@ -81,15 +80,13 @@ void CryptoKeyPairs::CreateKeyPair() {
 crypto::RsaKeyPair CryptoKeyPairs::GetKeyPair() {
   boost::mutex::scoped_lock lock(kb_mutex_);
   crypto::RsaKeyPair rsakp;
-  if (running_thread_count_ > 0 && buffer_count_ > 0) {
-    while (key_buffer_.empty() && running_thread_count_ > 0 &&
-           buffer_count_ > 0) {
-      kb_cond_var_.wait(lock);
-    }
-    if (!key_buffer_.empty()) {
-      rsakp = key_buffer_.front();
-      key_buffer_.pop();
-    }
+  while (key_buffer_.empty() && running_thread_count_ > 0 &&
+         buffer_count_ > 0) {
+    kb_cond_var_.wait(lock);
+  }
+  if (!key_buffer_.empty()) {
+    rsakp = key_buffer_.front();
+    key_buffer_.pop();
   }
   if (rsakp.public_key().empty() || rsakp.private_key().empty()) {
     rsakp.ClearKeys();
