@@ -37,9 +37,10 @@ CryptoKeyPairs::CryptoKeyPairs()
       threads_() {}
 
 CryptoKeyPairs::~CryptoKeyPairs() {
-  set_max_thread_count(0);
+  boost::mutex::scoped_lock lock(kb_mutex_);
+  max_thread_count_ = 0;
   while (running_thread_count_ > 0)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+    kb_cond_var_.wait(lock);
 }
 
 void CryptoKeyPairs::Init(const boost::uint16_t &max_thread_count,
