@@ -15,8 +15,11 @@
 
 #include <QMessageBox>
 #include <QDebug>
+#include <QInputDialog>
 
 #include "qt/client/client_controller.h"
+#include "qt/client/save_profile_settings_thread.h"
+#include "qt/client/save_security_settings_thread.h"
 
 UserSettings::UserSettings(QWidget* parent) {
   ui_.setupUi(this);
@@ -134,40 +137,66 @@ void UserSettings::HandleOK() {
   if (!personal_->changedValues_.isEmpty()) {
     QHash<QString, QString> theHash = personal_->changedValues_;
 
-    if (theHash.contains("username")) {
+    /*if (theHash.contains("username")) {
       applied = ClientController::instance()->ChangeUsername(
                 theHash.value("username").toStdString());
     }
     if (theHash.contains("message")) {
     }
     if (theHash.contains("changedpic")) {
-    }
+    }*/
   }
   if (!fileTransfer_->changedValues_.isEmpty()) {
   }
   if (!connection_->changedValues_.isEmpty()) {
   }
   if (!security_->changedValues_.isEmpty()) {
+    QHash<QString, QString> theHash = security_->changedValues_;
+    bool ok;
+    QString text = QInputDialog::getText(this,
+                                       tr("Change Settings"),
+                                       tr("Please enter your current password"),
+                                       QLineEdit::Normal,
+                                       QString(),
+                                       &ok);
+    if (ok && !text.isEmpty()) {
+      const bool success = ClientController::instance()->ValidateUser(
+                                                            text.toStdString());
+      if (success) {
+        SaveSecuritySettingsThread* ssst =
+                                  new SaveSecuritySettingsThread(theHash, this);
+
+        connect(ssst, SIGNAL(completed(bool)),
+              this, SLOT(onSaveSecuritySettingsCompleted(bool)));
+
+        ssst->start();
+      } else {
+        QMessageBox::warning(this, tr("Wrong Password"),
+                        QString(tr("Security Info will not be changed")));
+      }
+    }
   }
   if (!profile_->changedValues_.isEmpty()) {
     QHash<QString, QString> theHash = profile_->changedValues_;
+    SaveProfileSettingsThread* spst =
+                                  new SaveProfileSettingsThread(theHash, this);
 
-    std::vector<std::string> profileInfo;
+    connect(spst, SIGNAL(completed(bool)),
+            this, SLOT(onSaveProfileSettingsCompleted(bool)));
 
-    //QDebug(*theHash.value("PubName"));
-    profileInfo.push_back(theHash["FullName"].toStdString());
-    profileInfo.push_back(theHash["Phone"].toStdString());
-    profileInfo.push_back(theHash["BirthDay"].toStdString());
-    profileInfo.push_back(theHash["Gender"].toStdString());
-    profileInfo.push_back(theHash["Language"].toStdString());
-    profileInfo.push_back(theHash["City"].toStdString());
-    profileInfo.push_back(theHash["Country"].toStdString());
-
-    int n = ClientController::instance()->SetInfo(profileInfo);
-
-    QMessageBox::warning(this, tr("Set Info Warning"),
-                        QString(tr("Result. %1").arg(n)));
+    spst->start();
   }
+}
+
+void UserSettings::onSaveProfileSettingsCompleted(bool success) {
+  QMessageBox::warning(this, tr("Profile Settings Thread Complete"),
+                       QString(tr("Result. %1").arg(success)));
+}
+
+
+void UserSettings::onSaveSecuritySettingsCompleted(bool success) {
+  QMessageBox::warning(this, tr("Security Settings Thread Complete"),
+                       QString(tr("Result. %1").arg(success)));
 }
 
 void UserSettings::HandleApply() { }

@@ -102,6 +102,7 @@ PersonalMessages::PersonalMessages(QString name)
 
   connect(ui_.actionSend_File, SIGNAL(triggered()),
           this,                SLOT(onSendFile()));
+
   connect(ui_.colorButton, SIGNAL(clicked(bool)),
           this,             SLOT(onColorClicked()));
 
@@ -127,24 +128,7 @@ PersonalMessages::~PersonalMessages() {
 }
 
 void PersonalMessages::closeEvent(QCloseEvent *event) {
-  /*qDebug() << "Close Started";
-#ifdef __WIN32__
-  dir_ = QString("%1:\\My Files\\%2").
-        arg(ClientController::instance()->WinDrive()).arg(convName_ + ".html");
-#else
-  dir_ = QString::fromStdString(file_system::MaidsafeFuseDir(
-  ClientController::instance()->SessionName()).string() +
-         "/My Files/" + convName_ + ".html");
-#endif
 
-  qDebug() << "Close 50";
-  qDebug() << dir_;
-  QFile f(dir_);
-  f.open(QIODevice::WriteOnly);
-  QTextStream out(&f);
-  out << ui_.message_window->toHtml();
-  f.close();
-  qDebug() << "Close Finished";*/
 }
 
 
@@ -163,7 +147,7 @@ void PersonalMessages::reset() {
   init_ = false;
 }
 
-void PersonalMessages::loadConversation(){
+void PersonalMessages::loadConversation() {
   QFile file(dir_);
   if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
     return;
@@ -171,26 +155,26 @@ void PersonalMessages::loadConversation(){
   QString line = in.readAll();
   ui_.message_window->setHtml(line);
   file.close();
-  ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
 }
 
 void PersonalMessages::onMessageReceived(ClientController::MessageType,
-                                 const QDateTime& time,
-                                 const QString& sender,
-                                 const QString& message,
-                                 const QString& conversation) {
+                                         const QDateTime& time,
+                                         const QString& sender,
+                                         const QString& message,
+                                         const QString& conversation) {
   boost::progress_timer t;
   if (sender == convName_) {
-    ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+    ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
     QDateTime theDate = QDateTime::currentDateTime();
     QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
 
-    ui_.message_window->insertHtml(tr("<span style=\"background-color:#CCFF99\">"
-                                      "<br />%3 %1 said: %2</span>"
-                                      ).arg(sender).arg(message).arg(date));
+    ui_.message_window->insertHtml(
+        tr("<span style=\"background-color:#CCFF99\">"
+           "<br />%3 %1 said: %2</span>").arg(sender).arg(message).arg(date));
   }
     printf("Personal Messages.cc %f", t.elapsed());
-    ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+    ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
 }
 
 void PersonalMessages::sendMessage(const QDateTime& time,
@@ -208,14 +192,14 @@ QString PersonalMessages::getName() {
 }
 
 void PersonalMessages::setMessage(QString mess) {
-  ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
   QDateTime theDate = QDateTime::currentDateTime();
   QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
 
-  ui_.message_window->insertHtml(tr("<span style=\"background-color:#CCFF99\">"
-                                      "<br />%3 %1 said: %2</span>"
-                                      ).arg(convName_).arg(mess).arg(date));
-  ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
+  ui_.message_window->insertHtml(
+      tr("<span style=\"background-color:#CCFF99\">"
+         "<br />%3 %1 said: %2</span>").arg(convName_).arg(mess).arg(date));
+  ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
 }
 
 void PersonalMessages::onSendMessageClicked() {
@@ -238,14 +222,13 @@ void PersonalMessages::onSendMessageClicked() {
 void PersonalMessages::onSendMessageComplete(bool success,
                                              const QString& text) {
   if (success) {
-   QDateTime theDate = QDateTime::currentDateTime();
-   QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
-   ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
-   ui_.message_window->insertHtml(tr("<span style=\"background-color:#E0FFFF\">"
-                                     "<br />%1 you said: %2 </span>")
-                                     .arg(date).arg(text));
-  ui_.message_window->moveCursor(QTextCursor::End,QTextCursor::MoveAnchor);
-
+    QDateTime theDate = QDateTime::currentDateTime();
+    QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
+    ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
+    ui_.message_window->insertHtml(
+        tr("<span style=\"background-color:#E0FFFF\">"
+           "<br />%1 you said: %2 </span>").arg(date).arg(text));
+    ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
   } else {
     const QString msg = tr("Error sending message.");
     QMessageBox::warning(this, tr("Error"), msg);
@@ -254,13 +237,14 @@ void PersonalMessages::onSendMessageComplete(bool success,
 }
 
 void PersonalMessages::onSendInvite() {
-  QString filename = QFileDialog::getSaveFileName(this, "Save file", "", ".html");
-  QFile f( filename );
-  f.open( QIODevice::WriteOnly);
+  QString filename = QFileDialog::getSaveFileName(this, "Save file", "",
+                                                  ".html");
+  QFile f(filename);
+  f.open(QIODevice::WriteOnly);
   QTextStream out(&f);
   out << ui_.message_window->toHtml();
   f.close();
-  }
+}
 
 void PersonalMessages::onSendFile() {
   QList<QString> conts;
@@ -336,7 +320,7 @@ void PersonalMessages::onSendFile() {
 void PersonalMessages::onTextClicked() {
   bool ok;
   QString startTags;
-  font_ = QFontDialog::getFont(&ok, QFont("Times New Roman", 10), this);
+  font_ = QFontDialog::getFont(&ok, QFont("Arial", 10), this);
   if (ok) {
     formatHtml();
   } else {
@@ -351,11 +335,10 @@ void PersonalMessages::onColorClicked() {
   formatHtml();
 }
 
-bool PersonalMessages::eventFilter(QObject *obj, QEvent *event)
-{
+bool PersonalMessages::eventFilter(QObject *obj, QEvent *event) {
   if (event->type() == QEvent::KeyPress) {
     QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
-    if (keyEvent->key() == Qt::Key_Return){
+    if (keyEvent->key() == Qt::Key_Return) {
       onSendMessageClicked();
       return true;
     } else {
@@ -439,11 +422,65 @@ void PersonalMessages::onSmilyChosen(int row, int column) {
   }
 }
 
-void PersonalMessages::onMessageTextEdit(){
+void PersonalMessages::onMessageTextEdit() {
   QString text = ui_.message_text_edit->toHtml();
 
-  text.replace(":-D","<img src=\"://smilies//smily_blue//sbiggrin.gif\";");
-
+  if (text.contains(":-D")) {
+    text.replace(":-D", "<img src=\"://smilies//smily_blue//sbiggrin.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,
+                                      QTextCursor::MoveAnchor);
+  } else if (text.contains(":-)")) {
+    text.replace(":-)", "<img src=\"://smilies//smily_blue//ssmile.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,
+                                      QTextCursor::MoveAnchor);
+  } else if (text.contains(":-O")) {
+    text.replace(":-O", "<img src=\"://smilies//smily_blue//ssuprised.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,
+                                      QTextCursor::MoveAnchor);
+  } else if (text.contains(":-P")) {
+    text.replace(":-P", "<img src=\"://smilies//smily_blue//stongue.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,
+                                      QTextCursor::MoveAnchor);
+  } else if (text.contains(":-\\")) {
+    text.replace(":-\\", "<img src=\"://smilies//smily_blue//sconfused.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,
+                                      QTextCursor::MoveAnchor);
+  } else if (text.contains(":)~")) {
+    text.replace(":)~", "<img src=\"://smilies//smily_blue//sdrool.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,
+                                      QTextCursor::MoveAnchor);
+  } else if (text.contains(">:)")) {
+    text.replace(">:)", "<img src=\"://smilies//smily_blue//smad.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,
+                                      QTextCursor::MoveAnchor);
+  } else if (text.contains("8-)")) {
+    text.replace("8-)", "<img src=\"://smilies//smily_blue//scool.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,
+                                      QTextCursor::MoveAnchor);
+  } else if (text.contains(":')")) {
+    text.replace(":')", "<img src=\"://smilies//smily_blue//scry.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,
+                                      QTextCursor::MoveAnchor);
+  } else if (text.contains(":-(")) {
+    text.replace(":-(", "<img src=\"://smilies//smily_blue//ssad.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,
+                                      QTextCursor::MoveAnchor);
+  } else if (text.contains(":-Z")) {
+    text.replace(":-Z", "<img src=\"://smilies//smily_blue//ssleepy.gif\";");
+    ui_.message_text_edit->setHtml(text);
+    ui_.message_text_edit->moveCursor(QTextCursor::End,
+                                      QTextCursor::MoveAnchor);
+  }
 }
 
 

@@ -12,15 +12,36 @@
  *      Author: Stephen Alexander
  */
 
-
 #include "qt/widgets/security_settings.h"
 #include "qt/client/client_controller.h"
 
 SecuritySettings::SecuritySettings(QWidget* parent) {
   ui_.setupUi(this);
+
+  connect(ui_.usernameEdit, SIGNAL(textEdited(const QString&)),
+          this,           SLOT(onUsernameTextEdit(const QString&)));
+
+  connect(ui_.pinEdit, SIGNAL(textEdited(const QString&)),
+          this,           SLOT(onPinTextEdit(const QString&)));
+
+  connect(ui_.passwordEdit, SIGNAL(textEdited(const QString&)),
+          this,           SLOT(onPasswordTextEdit(const QString&)));
 }
 
 SecuritySettings::~SecuritySettings() {}
+
+void SecuritySettings::onUsernameTextEdit(const QString& text) {
+  changedValues_.insert("username", text);
+}
+
+void SecuritySettings::onPinTextEdit(const QString& text) {
+  changedValues_.insert("pin", text);
+}
+
+void SecuritySettings::onPasswordTextEdit(const QString& text) {
+  changedValues_.insert("password", text);
+}
+
 
 
 

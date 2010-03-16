@@ -67,7 +67,7 @@ class PersonalMessages : public QMainWindow {
 
   protected:
     bool eventFilter(QObject *obj, QEvent *ev);
-    void closeEvent ( QCloseEvent * event );
+    void closeEvent(QCloseEvent *event);
 
  private:
   void loadConversation();

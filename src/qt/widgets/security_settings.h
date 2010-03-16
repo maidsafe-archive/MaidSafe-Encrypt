@@ -31,8 +31,12 @@ class SecuritySettings : public QWidget {
  public:
   explicit SecuritySettings(QWidget* parent = 0);
   virtual ~SecuritySettings();
-
   QHash<QString, QString> changedValues_;
+
+  private slots:
+    void onUsernameTextEdit(const QString&);
+    void onPinTextEdit(const QString&);
+    void onPasswordTextEdit(const QString&);
 
  private:
   Ui::SecuritySettingsPage ui_;

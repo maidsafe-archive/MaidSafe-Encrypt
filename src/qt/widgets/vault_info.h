@@ -36,8 +36,8 @@ class VaultInfo : public Panel {
   virtual void setActive(bool);
   virtual void reset();
 
- private slots:
-  void onUpdateClicked();
+  private slots:
+    void onUpdateClicked();
 
  private:
   Ui::VaultInfoPage ui_;
