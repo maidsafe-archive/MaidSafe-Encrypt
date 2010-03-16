@@ -1418,7 +1418,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   }
 }
 
-TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
+TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
                                     vault_public_key_signature_,
