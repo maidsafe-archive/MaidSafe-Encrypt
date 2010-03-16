@@ -96,6 +96,7 @@ class ClientControllerTest : public testing::Test {
     catch(const std::exception &e) {
       printf("Error: %s\n", e.what());
     }
+    cc_->Destroy();
   }
 
   fs::path cc_dir_;
