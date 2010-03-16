@@ -22,7 +22,7 @@
 
 #include "qt/client/worker_thread.h"
 
-// Worker thread for creating the pulbic username of users
+// Worker thread for saving security information
 /*!
     Saving Security Information is blocking and can take a while so we
     use a worker thread to ensure that it doesn't block the main gui.

@@ -20,7 +20,6 @@
 // core
 #include "qt/client/client_controller.h"
 
-
 SaveSecuritySettingsThread::SaveSecuritySettingsThread(
     QHash<QString, QString> theHash, QObject* parent)
       : WorkerThread(parent), theHash_(theHash) { }
@@ -33,7 +32,7 @@ void SaveSecuritySettingsThread::run() {
 
   if (theHash_.contains("username")) {
     success = ClientController::instance()->ChangeUsername(
-                  theHash_.value("username").toStdString());
+                  theHash_["username"].toStdString());
   }
   if (theHash_.contains("Pin")) {
   }

@@ -102,6 +102,7 @@ PersonalMessages::PersonalMessages(QString name)
 
   connect(ui_.actionSend_File, SIGNAL(triggered()),
           this,                SLOT(onSendFile()));
+
   connect(ui_.colorButton, SIGNAL(clicked(bool)),
           this,             SLOT(onColorClicked()));
 
@@ -127,24 +128,7 @@ PersonalMessages::~PersonalMessages() {
 }
 
 void PersonalMessages::closeEvent(QCloseEvent *event) {
-  /*qDebug() << "Close Started";
-#ifdef __WIN32__
-  dir_ = QString("%1:\\My Files\\%2").
-        arg(ClientController::instance()->WinDrive()).arg(convName_ + ".html");
-#else
-  dir_ = QString::fromStdString(file_system::MaidsafeFuseDir(
-  ClientController::instance()->SessionName()).string() +
-         "/My Files/" + convName_ + ".html");
-#endif
 
-  qDebug() << "Close 50";
-  qDebug() << dir_;
-  QFile f(dir_);
-  f.open(QIODevice::WriteOnly);
-  QTextStream out(&f);
-  out << ui_.message_window->toHtml();
-  f.close();
-  qDebug() << "Close Finished";*/
 }
 
 
@@ -462,7 +446,7 @@ void PersonalMessages::onMessageTextEdit() {
     ui_.message_text_edit->moveCursor(QTextCursor::End,
                                       QTextCursor::MoveAnchor);
   } else if (text.contains(":-\\")) {
-    text.replace(":-\\", "<img src=\"://smilies//smily_blue//sconfused.gif\";");  //NOLINT
+    text.replace(":-\\", "<img src=\"://smilies//smily_blue//sconfused.gif\";");
     ui_.message_text_edit->setHtml(text);
     ui_.message_text_edit->moveCursor(QTextCursor::End,
                                       QTextCursor::MoveAnchor);
