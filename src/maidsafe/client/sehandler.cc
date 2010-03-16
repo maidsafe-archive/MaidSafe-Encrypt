@@ -474,12 +474,12 @@ int SEHandler::EncryptDb(const std::string &dir_path,
 
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  int result(kGeneralError);
+  int result(kPendingResult);
   VoidFuncOneInt functor = boost::bind(&SEHandler::PacketOpCallback, this, _1,
                                        &mutex, &cond_var, &result);
   storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kOverwrite,
                        functor);
-  while (result == kGeneralError) {
+  while (result == kPendingResult) {
     boost::mutex::scoped_lock lock(mutex);
     cond_var.wait(lock);
   }

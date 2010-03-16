@@ -354,7 +354,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
       return kSuccess;
     } else {
       kad::SignedValue ksv;
-      if (ksv.ParseFromString(q.getStringField(0))) {
+      if (ksv.ParseFromString(base::DecodeFromHex(q.getStringField(0)))) {
         crypto::Crypto co;
         if (!co.AsymCheckSig(ksv.value(), ksv.value_signature(), public_key,
             crypto::STRING_STRING)) {
