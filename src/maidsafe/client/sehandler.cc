@@ -479,9 +479,10 @@ int SEHandler::EncryptDb(const std::string &dir_path,
                                        &mutex, &cond_var, &result);
   storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kOverwrite,
                        functor);
-  while (result == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex);
-    cond_var.wait(lock);
+    while (result == kGeneralError)
+      cond_var.wait(lock);
   }
   return result;
 #ifdef DEBUG
