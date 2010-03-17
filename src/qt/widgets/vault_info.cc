@@ -89,7 +89,7 @@ void VaultInfo::reset() {
 
 VaultInfo::~VaultInfo() { }
 
-void VaultInfo::onUpdateClicked(){
+void VaultInfo::onUpdateClicked() {
   onUpdateVaultInfo();
 }
 

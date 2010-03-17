@@ -409,8 +409,8 @@ int SEHandler::EncryptDb(const std::string &dir_path,
                          const bool &encrypt_dm,
                          DataMap *dm) {
 #ifdef DEBUG
-  printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)\n",
-         dir_path.c_str(), dir_type, encrypt_dm, HexSubstr(dir_key).c_str());
+//  printf("SEHandler::EncryptDb dir_path(%s) type(%i) encrypted(%i) key(%s)\n",
+//         dir_path.c_str(), dir_type, encrypt_dm, HexSubstr(dir_key).c_str());
 //  printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm, enc_dm, db_path;
@@ -474,14 +474,15 @@ int SEHandler::EncryptDb(const std::string &dir_path,
 
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  int result(kGeneralError);
+  int result(kPendingResult);
   VoidFuncOneInt functor = boost::bind(&SEHandler::PacketOpCallback, this, _1,
                                        &mutex, &cond_var, &result);
   storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kOverwrite,
                        functor);
-  while (result == kGeneralError) {
+  {
     boost::mutex::scoped_lock lock(mutex);
-    cond_var.wait(lock);
+    while (result == kGeneralError)
+      cond_var.wait(lock);
   }
   return result;
 #ifdef DEBUG
@@ -503,9 +504,10 @@ int SEHandler::DecryptDb(const std::string &dir_path,
                          bool dm_encrypted,
                          bool overwrite) {
 #ifdef DEBUG
-  printf("SEHandler::DecryptDb - dir_path(%s) type(%i) encrypted(%i) key(%s)",
-         dir_path.c_str(), dir_type, dm_encrypted, HexSubstr(dir_key).c_str());
-  printf(" msid(%s)\n", msid.c_str());
+//  printf("SEHandler::DecryptDb - dir_path(%s) type(%i) encrypted(%i) key(%s)",
+//         dir_path.c_str(), dir_type, dm_encrypted,
+//         HexSubstr(dir_key).c_str());
+//  printf(" msid(%s)\n", msid.c_str());
 #endif
   std::string ser_dm_, enc_dm_;
   // get dm from DHT
@@ -749,10 +751,10 @@ int SEHandler::LoadChunks(const DataMap &dm) {
   for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
     std::string data;
     int n = storem_->LoadChunk(dm.encrypted_chunk_name(i), &data);
-#ifdef DEBUG
-    printf("SEHandler::LoadChunks chunk(%s): result(%d)\n",
-           HexSubstr(dm.encrypted_chunk_name(i)).c_str(), n);
-#endif
+//  #ifdef DEBUG
+//      printf("SEHandler::LoadChunks chunk(%s): result(%d)\n",
+//             HexSubstr(dm.encrypted_chunk_name(i)).c_str(), n);
+//  #endif
     chunks_found += n;
     SelfEncryption se(client_chunkstore_);
     fs::path chunk_path = se.GetChunkPath(dm.encrypted_chunk_name(i));

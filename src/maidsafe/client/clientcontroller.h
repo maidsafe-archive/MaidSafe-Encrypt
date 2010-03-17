@@ -230,6 +230,8 @@ class ClientController {
   // Friend tests
   FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile);
   FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession);
+  FRIEND_TEST(ClientControllerTest, BEH_MAID_LocalControllerBackupFile);
+  FRIEND_TEST(ClientControllerTest, BEH_MAID_LocalControllerSaveSession);
   // Functions
   ClientController();
   ~ClientController() {}

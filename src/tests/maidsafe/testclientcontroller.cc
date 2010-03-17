@@ -47,9 +47,9 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-class FunctionalClientControllerTest : public testing::Test {
+class ClientControllerTest : public testing::Test {
  protected:
-  FunctionalClientControllerTest()
+  ClientControllerTest()
       : cc_dir_(file_system::TempDir() / ("maidsafe_TestCC_" +
                 base::RandomString(6))),
         cc_(),
@@ -58,14 +58,28 @@ class FunctionalClientControllerTest : public testing::Test {
         final_dir_(),
         vcp_() {}
 
+  static void SetUpTestCase() {
+    try {
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
+    }
+    catch(const std::exception &e) {
+      printf("Error: %s\n", e.what());
+    }
+  }
+
   static void TearDownTestCase() {
-    // transport::TransportUDT::CleanUp();
+    try {
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
+    }
+    catch(const std::exception &e) {
+      printf("Error: %s\n", e.what());
+    }
   }
 
   void SetUp() {
     try {
-      if (fs::exists(file_system::LocalStoreManagerDir()))
-        fs::remove_all(file_system::LocalStoreManagerDir());
       fs::create_directories(cc_dir_);
     }
     catch(const std::exception &e) {
@@ -92,6 +106,7 @@ class FunctionalClientControllerTest : public testing::Test {
     catch(const std::exception &e) {
       printf("Error: %s\n", e.what());
     }
+    cc_->Destroy();
   }
 
   fs::path cc_dir_;
@@ -101,12 +116,12 @@ class FunctionalClientControllerTest : public testing::Test {
   fs::path final_dir_;
   VaultConfigParameters vcp_;
  private:
-  FunctionalClientControllerTest(const FunctionalClientControllerTest&);
-  FunctionalClientControllerTest &operator=
-      (const FunctionalClientControllerTest&);
+  ClientControllerTest(const ClientControllerTest&);
+  ClientControllerTest &operator=
+      (const ClientControllerTest&);
 };
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLoginSequence) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLoginSequence) {
   std::string username("User1");
   std::string pin("1234");
   std::string password("The beagle has landed.");
@@ -117,7 +132,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLoginSequence) {
 
   ASSERT_NE(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
-  boost::progress_timer t;
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
@@ -149,7 +163,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLoginSequence) {
   printf("Can't log in with fake details.\n");
 }
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerChangeDetails) {
   std::string username("User2");
   std::string pin("2345");
   std::string password("The axolotl has landed.");
@@ -166,23 +180,31 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
   printf("User created.\n");
-
-  ASSERT_TRUE(cc_->ChangeUsername("juan.smer"));
-  ASSERT_EQ("juan.smer", ss_->Username());
-  ASSERT_EQ(pin, ss_->Pin());
-  ASSERT_EQ(password, ss_->Password());
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
-  printf("Changed username.\n");
-
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
-
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
 
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  ASSERT_EQ(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
+  ASSERT_TRUE(cc_->ValidateUser(password));
+  ASSERT_EQ(username, ss_->Username());
+  ASSERT_EQ(pin, ss_->Pin());
+  ASSERT_EQ(password, ss_->Password());
+  printf("Logged in.\n");
+  ASSERT_TRUE(cc_->ChangeUsername("juan.smer"));
+  ASSERT_EQ("juan.smer", ss_->Username());
+  ASSERT_EQ(pin, ss_->Pin());
+  ASSERT_EQ(password, ss_->Password());
+  printf("Changed username.\n");
+
+
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(ss_->Username().empty());
+  ASSERT_TRUE(ss_->Pin().empty());
+  ASSERT_TRUE(ss_->Password().empty());
+  printf("Logged out.\n");
 
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists("juan.smer", pin, maidsafe::kDefCon3));
@@ -195,18 +217,13 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
   ASSERT_EQ("juan.smer", ss_->Username());
   ASSERT_EQ("2207", ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
   printf("Changed pin.\n");
-
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
-
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
 
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists("juan.smer", "2207", maidsafe::kDefCon3));
@@ -220,18 +237,13 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
   ASSERT_EQ("juan.smer", ss_->Username());
   ASSERT_EQ("2207", ss_->Pin());
   ASSERT_EQ("elpasguor", ss_->Password());
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
   printf("Changed password.\n");
-
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
-
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
 
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists("juan.smer", "2207", maidsafe::kDefCon3));
@@ -248,8 +260,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
 
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
-
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists("juan.smer", "2207", maidsafe::kDefCon3));
   ASSERT_FALSE(cc_->ValidateUser(password))
@@ -261,10 +271,10 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
   printf("Can't log in with old u/p/w.\n");
 }
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
-  std::string username = "User3";
-  std::string pin = "3456";
-  std::string password = "The fanjeeta has landed.";
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerCreatePubUsername) {
+  std::string username("User3");
+  std::string pin("3456");
+  std::string password("The fanjeeta has landed.");
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
@@ -287,8 +297,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
   ASSERT_EQ("el.mambo.tonnnnnto", ss_->PublicUsername());
   printf("Public Username already created.\n");
 
-  boost::this_thread::sleep(boost::posix_time::seconds(6));
-
   ASSERT_TRUE(cc_->GetMessages());
   std::list<maidsafe::InstantMessage> messages;
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
@@ -300,8 +308,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
 
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
-
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
   ASSERT_TRUE(cc_->ValidateUser(password));
@@ -310,26 +316,20 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
   ASSERT_EQ(password, ss_->Password());
   ASSERT_EQ("el.mambo.tonnnnnto", ss_->PublicUsername());
 
-  boost::this_thread::sleep(boost::posix_time::seconds(6));
-
   ASSERT_TRUE(cc_->GetMessages());
   messages.clear();
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
   ASSERT_EQ(size_t(0), messages.size());
-
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
-
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
 }
 
 /*
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLeaveNetwork) {
   std::string username = "User4";
   std::string pin = "4567";
   std::string password = "The chubster has landed.";
@@ -380,10 +380,10 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
 }
 */
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
-  std::string username = "User5";
-  std::string pin = "5678";
-  std::string password = "The limping dog has landed.";
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerBackupFile) {
+  std::string username("User5");
+  std::string pin("5678");
+  std::string password("The limping dog has landed.");
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
@@ -423,8 +423,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out user.\n");
 
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
-
   if (fs::exists(full_path))
       fs::remove(full_path);
 
@@ -453,11 +451,11 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   printf("Logged out user.\n");
 }
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerSaveSession) {
   // Create a user
-  std::string username = "User5andAhalf";
-  std::string pin = "55678";
-  std::string password = "That pair should have its own television show.";
+  std::string username("User5andAhalf");
+  std::string pin("55678");
+  std::string password("That pair should have its own television show.");
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
@@ -549,7 +547,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession) {
       fs::remove(full_path);
 }
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerContactAddition) {
   std::string username("User6");
   std::string pin("6789");
   std::string password("The deleted folder has landed.");
@@ -578,10 +576,8 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
 
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
-
   std::string username1("User61");
-  std::string pin1("67891");
+  std::string pin1("6789");
   std::string password1("The deleted folder has landed.1");
   std::string public_username1("el.mambo.nalga1");
 
@@ -595,8 +591,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_EQ(public_username1, ss_->PublicUsername());
   printf("Public Username 1 created.\n");
 
-  boost::this_thread::sleep(boost::posix_time::seconds(6));
-
   ASSERT_EQ(0, cc_->AddContact(public_username));
   printf("Public Username 1 added Public Username.\n");
 
@@ -606,8 +600,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out 1.\n");
 
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
-
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
   ASSERT_TRUE(cc_->ValidateUser(password));
@@ -616,8 +608,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_EQ(password, ss_->Password());
   ASSERT_EQ(public_username, ss_->PublicUsername());
   printf("Logged in.\n");
-
-  boost::this_thread::sleep(boost::posix_time::seconds(6));
 
   ASSERT_TRUE(cc_->GetMessages());
   std::list<maidsafe::InstantMessage> messages;
@@ -643,8 +633,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
 
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
-
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists(username1, pin1, maidsafe::kDefCon3));
   ASSERT_TRUE(cc_->ValidateUser(password1));
@@ -653,8 +641,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_EQ(password1, ss_->Password());
   ASSERT_EQ(public_username1, ss_->PublicUsername());
   printf("Logged in 1.\n");
-
-  boost::this_thread::sleep(boost::posix_time::seconds(6));
 
   ASSERT_TRUE(cc_->GetMessages());
   messages.clear();
@@ -679,15 +665,11 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_EQ(0, cc_->SendInstantMessage(text_msg, contact_names, ""));
   printf("Public Username 1 sent txt message  to Public Username.\n");
 
-  boost::this_thread::sleep(boost::posix_time::seconds(6));
-
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out 1.\n");
-
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
 
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
@@ -696,8 +678,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
   ASSERT_EQ(public_username, ss_->PublicUsername());
-
-  boost::this_thread::sleep(boost::posix_time::seconds(6));
 
   ASSERT_TRUE(cc_->GetMessages());
   messages.clear();
@@ -715,12 +695,10 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerContactAddition) {
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
-
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
 }
 
 /*
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerShares) {
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerShares) {
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
@@ -812,10 +790,10 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerShares) {
 }
 */
 
-TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {
-  std::string username = "User7";
-  std::string pin = "7890";
-  std::string password = "The pint of lager has landed on the floor.";
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerFuseFunctions) {
+  std::string username("User7");
+  std::string pin("7890");
+  std::string password("The pint of lager has landed on the floor.");
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
@@ -981,8 +959,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out user.\n");
-
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
 }
 
 }  // namespace maidsafe

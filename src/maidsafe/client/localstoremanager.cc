@@ -79,12 +79,18 @@ void ExecReturnLoadPacketCallback(const LoadPacketFunctor &cb,
 
 LocalStoreManager::LocalStoreManager(
     boost::shared_ptr<ChunkStore> client_chunkstore)
-        : db_(), vbph_(), mutex_(),
+        : db_(),
+          vbph_(),
+          mutex_(),
           local_sm_dir_(file_system::LocalStoreManagerDir().string()),
           client_chunkstore_(client_chunkstore),
           ss_(SessionSingleton::getInstance()) {}
 
 void LocalStoreManager::Init(int, base::callback_func_type cb) {
+#ifdef LOCAL_PDVAULT
+  // Simulate knode join
+//  boost::this_thread::sleep(boost::posix_time::seconds(3));
+#endif
   try {
     if (!fs::exists(local_sm_dir_ + "/StoreChunks")) {
       fs::create_directories(local_sm_dir_ + "/StoreChunks");
@@ -106,6 +112,10 @@ void LocalStoreManager::Init(int, base::callback_func_type cb) {
 }
 
 void LocalStoreManager::Close(base::callback_func_type cb, bool) {
+#ifdef LOCAL_PDVAULT
+  // Simulate chunk threadpool join and knode leave
+//  boost::this_thread::sleep(boost::posix_time::seconds(3));
+#endif
   try {
     boost::mutex::scoped_lock loch(mutex_);
     db_.close();
@@ -119,12 +129,23 @@ void LocalStoreManager::Close(base::callback_func_type cb, bool) {
 
 int LocalStoreManager::LoadChunk(const std::string &chunk_name,
                                  std::string *data) {
+  if (client_chunkstore_->Load(chunk_name, data) == kSuccess) {
+#ifdef DEBUG
+//    printf("In LSM::LoadChunk, found chunk %s in local chunkstore.\n",
+//           HexSubstr(chunk_name).c_str());
+#endif
+    return kSuccess;
+  }
   return FindAndLoadChunk(chunk_name, data);
 }
 
 int LocalStoreManager::StoreChunk(const std::string &chunk_name,
                                   const DirType,
                                   const std::string&) {
+#ifdef LOCAL_PDVAULT
+  // Simulate knode lookup in AddToWatchList
+//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+#endif
   std::string hex_chunk_name(base::EncodeToHex(chunk_name));
   fs::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / hex_chunk_name;
@@ -158,6 +179,10 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
                                    const boost::uint64_t &chunk_size,
                                    DirType,
                                    const std::string &) {
+#ifdef LOCAL_PDVAULT
+  // Simulate knode lookup in RemoveFromWatchList
+//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+#endif
   ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
     fs::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
                                                          false));
@@ -202,6 +227,10 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
 }
 
 bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
+#ifdef LOCAL_PDVAULT
+  // Simulate knode findvalue in AddToWatchList
+//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+#endif
   bool result = false;
   std::string hex_key(base::EncodeToHex(key));
   try {
@@ -308,6 +337,10 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
     const std::string &key,
     const std::vector<std::string> &values,
     const std::string &public_key) {
+#ifdef LOCAL_PDVAULT
+  // Simulate knode lookup
+//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+#endif
   std::string hex_key(base::EncodeToHex(key));
   boost::mutex::scoped_lock loch(mutex_);
   try {
@@ -321,7 +354,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
       return kSuccess;
     } else {
       kad::SignedValue ksv;
-      if (ksv.ParseFromString(q.getStringField(0))) {
+      if (ksv.ParseFromString(base::DecodeFromHex(q.getStringField(0)))) {
         crypto::Crypto co;
         if (!co.AsymCheckSig(ksv.value(), ksv.value_signature(), public_key,
             crypto::STRING_STRING)) {
@@ -448,6 +481,10 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
                                                      const std::string &value,
                                                      const std::string &pub_key,
                                                      const bool &append) {
+#ifdef LOCAL_PDVAULT
+  // Simulate knode lookup
+//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+#endif
   try {
     if (key.length() != kKeySize) {
       return kIncorrectKeySize;
@@ -780,6 +817,10 @@ void LocalStoreManager::OwnInfo(ContactInfoNotifier cin) {
 
 int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
                                         std::string *data) {
+#ifdef LOCAL_PDVAULT
+  // Simulate knode lookup
+//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+#endif
   std::string hex_chunkname(base::EncodeToHex(chunkname));
   fs::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / hex_chunkname;
@@ -879,6 +920,10 @@ std::string LocalStoreManager::CreateMessage(const std::string &message,
 
 int LocalStoreManager::GetValue_FromDB(const std::string &key,
                                        std::vector<std::string> *results) {
+#ifdef LOCAL_PDVAULT
+  // Simulate knode lookup
+//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+#endif
   results->clear();
   std::string hex_key = base::EncodeToHex(key);
   try {

@@ -242,7 +242,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
   ASSERT_EQ(kPasswordFailure, result);
 }
 
-TEST_F(AuthenticationTest, BEH_MAID_RegisterUserOnce) {
+TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserOnce) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));

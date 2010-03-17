@@ -360,8 +360,10 @@ int Authentication::CreateTmidPacket(const std::string &username,
   user_params["data"] = ser_dm;
   PacketParams tmid_result = tmidPacket->Create(&user_params);
   std::string enc_tmid(boost::any_cast<std::string>(tmid_result["data"]));
-  if (StorePacket(boost::any_cast<std::string>(tmid_result["name"]),
-      enc_tmid, TMID, kDoNothingReturnFailure, "") != kSuccess) {
+  std::string name_tmid(boost::any_cast<std::string>(tmid_result["name"]));
+  std::string ser_tmid(boost::any_cast<std::string>(tmid_result["ser_packet"]));
+  if (StorePacket(name_tmid, enc_tmid, TMID, kDoNothingReturnFailure, "")
+      != kSuccess) {
     ss_->SetMidRid(0);
     ss_->SetSmidRid(0);
     return kAuthenticationError;
@@ -370,7 +372,8 @@ int Authentication::CreateTmidPacket(const std::string &username,
   ss_->SetUsername(username);
   ss_->SetPin(pin);
   ss_->SetPassword(password);
-  ss_->SetTmidContent(enc_tmid);
+  ss_->SetTmidContent(ser_tmid);
+  ss_->SetSmidTmidContent(enc_tmid);
 
   return kSuccess;
 }
@@ -406,19 +409,20 @@ int Authentication::SaveSession(const std::string &ser_da) {
     if (StorePacket(boost::any_cast<std::string>(result["name"]),
         boost::any_cast<std::string>(result["encRid"]), SMID, kOverwrite, "")
         != kSuccess) {
-      printf("AAAAAAAAAAAAAAAAAAAAAAAA\n");
       return kAuthenticationError;
     }
 
     params["rid"] = ss_->SmidRid();
     std::string tmidname(tmidPacket->PacketName(&params));
     if (DeletePacket(tmidname, ss_->SmidTmidContent(), TMID) != kSuccess) {
-      printf("BBBBBBBBBBBBBBBBBBBBBBBB - %s\n",
-             HexSubstr(ss_->SmidTmidContent()).c_str());
       return kAuthenticationError;
     }
     ss_->SetSmidRid(ss_->MidRid());
-    ss_->SetSmidTmidContent(ss_->TmidContent());
+    GenericPacket gp;
+    std::string tmid_content;
+    if (gp.ParseFromString(ss_->TmidContent()))
+      tmid_content = gp.data();
+    ss_->SetSmidTmidContent(tmid_content);
   }
 
   params["privateKey"] = ss_->PrivateKey(ANMID);
@@ -434,16 +438,14 @@ int Authentication::SaveSession(const std::string &ser_da) {
   if (StorePacket(boost::any_cast<std::string>(tmidresult["name"]),
       boost::any_cast<std::string>(tmidresult["data"]), TMID,
       kDoNothingReturnFailure, "") != kSuccess) {
-    printf("CCCCCCCCCCCCCCCCCCCCCCCCC\n");
     return kAuthenticationError;
   }
 
-  ss_->SetTmidContent(boost::any_cast<std::string>(tmidresult["data"]));
+  ss_->SetTmidContent(boost::any_cast<std::string>(tmidresult["ser_packet"]));
 
   if (StorePacket(boost::any_cast<std::string>(mid_result["name"]),
       boost::any_cast<std::string>(mid_result["encRid"]), MID, kOverwrite, "")
       != kSuccess) {
-    printf("DDDDDDDDDDDDDDDDDDDDDDDDD\n");
     return kAuthenticationError;
   }
 
@@ -687,8 +689,12 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   }
 
   user_params["rid"] = ss_->MidRid();
+  GenericPacket gp;
+  std::string tmidcontent;
+  if (gp.ParseFromString(ss_->TmidContent()))
+    tmidcontent = gp.data();
   result = DeletePacket(tmidPacket->PacketName(&user_params),
-           ss_->TmidContent(), TMID);
+           tmidcontent, TMID);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("Authentication::ChangeUsername - Failed to delete midTMID {%s}.\n",
@@ -699,8 +705,12 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   if (ss_->MidRid() != ss_->SmidRid()) {
     user_params["rid"] = ss_->SmidRid();
   // TODO(Team#5#): Save value in session to send delete
+    gp.Clear();
+    std::string smidtmid_content;
+    if (gp.ParseFromString(ss_->SmidTmidContent()))
+      smidtmid_content = gp.data();
     result = DeletePacket(tmidPacket->PacketName(&user_params),
-                          ss_->SmidTmidContent(), TMID);
+                          smidtmid_content, TMID);
     if (result != kSuccess) {
 #ifdef DEBUG
       printf("Authentication::ChangeUsername - Failed to delete smidTMID.\n");
@@ -712,6 +722,8 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   ss_->SetUsername(new_username);
   ss_->SetSmidRid(ss_->MidRid());
   ss_->SetMidRid(boost::any_cast<boost::uint32_t>(mid_result["rid"]));
+  ss_->SetTmidContent(boost::any_cast<std::string>(tmid_result["ser_packet"]));
+  ss_->SetSmidTmidContent(boost::any_cast<std::string>(tmid_result["data"]));
 
   return kSuccess;
 }
@@ -830,8 +842,12 @@ int Authentication::ChangePin(const std::string &ser_da,
   }
 
   user_params["rid"] = ss_->MidRid();
+  GenericPacket gp;
+  std::string tmid_content;
+  if (gp.ParseFromString(ss_->TmidContent()))
+    tmid_content = gp.data();
   result = DeletePacket(tmidPacket->PacketName(&user_params),
-           ss_->TmidContent(), TMID);
+           tmid_content, TMID);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("Authentication::ChangePin - Failed to delete midTMID {%s}.\n",
@@ -842,8 +858,12 @@ int Authentication::ChangePin(const std::string &ser_da,
   if (ss_->MidRid() != ss_->SmidRid()) {
     user_params["rid"] = ss_->SmidRid();
   // TODO(Team#5#): Save value in session to send delete
+    gp.Clear();
+    std::string smidtmid_content;
+    if (gp.ParseFromString(ss_->SmidTmidContent()))
+      smidtmid_content = gp.data();
     result = DeletePacket(tmidPacket->PacketName(&user_params),
-                          ss_->SmidTmidContent(), TMID);
+                          smidtmid_content, TMID);
     if (result != kSuccess) {
 #ifdef DEBUG
       printf("Authentication::ChangePin - Failed to delete smidTMID.\n");
@@ -855,6 +875,8 @@ int Authentication::ChangePin(const std::string &ser_da,
   ss_->SetPin(new_pin);
   ss_->SetSmidRid(ss_->MidRid());
   ss_->SetMidRid(boost::any_cast<boost::uint32_t>(mid_result["rid"]));
+  ss_->SetTmidContent(boost::any_cast<std::string>(tmid_result["ser_packet"]));
+  ss_->SetSmidTmidContent(boost::any_cast<std::string>(tmid_result["data"]));
 
   return kSuccess;
 }
@@ -972,7 +994,6 @@ bool Authentication::GetSmid(const std::string &username,
   PacketParams info = smidPacket->GetData(ser_packet, username, pin);
   boost::uint32_t rec_data = boost::any_cast<boost::uint32_t>(info["data"]);
   if (rec_data == 0) {
-    printf("GetSmid: rec_data = %d\n", rec_data);
     // The key of mid_name clashed with another value that is not a smid.
     // It could not recover a valid smid but we can not return false
     // because that would mean it doesn't exists
@@ -1024,7 +1045,7 @@ void Authentication::GetUserTmid(bool smid) {
   tmid_content_ = packet_content[0];
 }
 
-void Authentication::GetUserSmidTmid(void) {
+void Authentication::GetUserSmidTmid() {
   if (0 == ss_->SmidRid()) {
     int rid;
     if (!GetSmid(ss_->Username(), ss_->Pin(), &rid)) {
@@ -1060,6 +1081,9 @@ void Authentication::GetUserSmidTmid(void) {
   }
 
   smidtmid_content_ = packet_content[0];
+  GenericPacket gp;
+  if (gp.ParseFromString(packet_content[0]))
+    smidtmid_content_ = gp.data();
 }
 
 int Authentication::PublicUsernamePublicKey(const std::string &public_username,

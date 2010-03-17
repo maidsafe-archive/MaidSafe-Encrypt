@@ -105,12 +105,13 @@
    </widget>
    <widget class="QMenu" name="menuApplications">
     <property name="title">
-     <string>Applications</string>
+     <string>Tools</string>
     </property>
     <addaction name="actionWord_Processor"/>
     <addaction name="actionSpread_Sheet"/>
     <addaction name="actionPresentation"/>
     <addaction name="actionBrowser"/>
+    <addaction name="actionSettings_2"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -118,7 +119,6 @@
     </property>
     <addaction name="actionAbout"/>
     <addaction name="actionManual"/>
-    <addaction name="actionSettings"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -227,6 +227,11 @@
    </property>
    <property name="text">
     <string>Offline</string>
+   </property>
+  </action>
+  <action name="actionSettings_2">
+   <property name="text">
+    <string>Settings</string>
    </property>
   </action>
  </widget>

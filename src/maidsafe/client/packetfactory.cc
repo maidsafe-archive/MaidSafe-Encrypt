@@ -33,13 +33,13 @@ CryptoKeyPairs::CryptoKeyPairs()
       running_thread_count_(0),
       key_buffer_(),
       kb_mutex_(),
-      kb_cond_var_(),
-      threads_() {}
+      kb_cond_var_() {}
 
 CryptoKeyPairs::~CryptoKeyPairs() {
-  set_max_thread_count(0);
+  boost::mutex::scoped_lock lock(kb_mutex_);
+  max_thread_count_ = 0;
   while (running_thread_count_ > 0)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+    kb_cond_var_.wait(lock);
 }
 
 void CryptoKeyPairs::Init(const boost::uint16_t &max_thread_count,
@@ -50,8 +50,8 @@ void CryptoKeyPairs::Init(const boost::uint16_t &max_thread_count,
 
 void CryptoKeyPairs::CreateThread() {
   boost::mutex::scoped_lock lock(kb_mutex_);
-  if ((running_thread_count_ < max_thread_count_) &&
-      (key_buffer_.size() + running_thread_count_ < buffer_count_)) {
+  if ((running_thread_count_ < max_thread_count_) && (buffer_count_ > 0) &&
+      (key_buffer_.size() + running_thread_count_ <= buffer_count_)) {
     boost::shared_ptr<boost::thread> thr(new boost::thread(
         &maidsafe::CryptoKeyPairs::CreateKeyPair, this));
     ++running_thread_count_;
@@ -61,6 +61,7 @@ void CryptoKeyPairs::CreateThread() {
 void CryptoKeyPairs::DestroyThread() {
   boost::mutex::scoped_lock lock(kb_mutex_);
   --running_thread_count_;
+  kb_cond_var_.notify_one();
 }
 
 void CryptoKeyPairs::CreateKeyPair() {
@@ -78,19 +79,22 @@ void CryptoKeyPairs::CreateKeyPair() {
 
 crypto::RsaKeyPair CryptoKeyPairs::GetKeyPair() {
   boost::mutex::scoped_lock lock(kb_mutex_);
-  if (running_thread_count_ > 0 && buffer_count_ > 0) {
-    while (key_buffer_.empty())
-      kb_cond_var_.wait(lock);
-    crypto::RsaKeyPair rsakp = key_buffer_.front();
-    key_buffer_.pop();
-    lock.unlock();
-    CreateThread();
-    return rsakp;
-  } else {
-    crypto::RsaKeyPair rsakp;
-    rsakp.GenerateKeys(kRsaKeySize);
-    return rsakp;
+  crypto::RsaKeyPair rsakp;
+  while (key_buffer_.empty() && running_thread_count_ > 0 &&
+         buffer_count_ > 0) {
+    kb_cond_var_.wait(lock);
   }
+  if (!key_buffer_.empty()) {
+    rsakp = key_buffer_.front();
+    key_buffer_.pop();
+  }
+  if (rsakp.public_key().empty() || rsakp.private_key().empty()) {
+    rsakp.ClearKeys();
+    rsakp.GenerateKeys(kRsaKeySize);
+  }
+  lock.unlock();
+  CreateThread();
+  return rsakp;
 }
 
 boost::uint16_t CryptoKeyPairs::max_thread_count() {
@@ -122,6 +126,7 @@ void CryptoKeyPairs::set_buffer_count(const boost::uint16_t &buffer_count) {
       buffer_count_ = kNoOfSystemPackets;
     else
       buffer_count_ = buffer_count;
+    kb_cond_var_.notify_one();
   }
   CreateThread();
 }

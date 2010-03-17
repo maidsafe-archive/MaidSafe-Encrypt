@@ -383,7 +383,7 @@ bool ClientController::Logout() {
   return maidsafe::ClientController::getInstance()->Logout();
 }
 
-char ClientController::DriveLetter(){
+char ClientController::DriveLetter() {
   return maidsafe::ClientController::getInstance()->DriveLetter();
 }
 
@@ -395,7 +395,7 @@ bool ClientController::IsLocalVaultOwned() {
   return maidsafe::ClientController::getInstance()->IsLocalVaultOwned();
 }
 
-bool ClientController::GetMessages(){
+bool ClientController::GetMessages() {
   return maidsafe::ClientController::getInstance()->GetMessages();
 }
 
@@ -638,12 +638,12 @@ int ClientController::GetContactInfo(const std::string &pub_name,
 }
 
 int ClientController::GetInfo(const std::string &public_username,
-              std::vector<std::string> *info){
+                              std::vector<std::string> *info) {
   return maidsafe::ClientController::getInstance()->GetInfo(public_username,
                                                             info);
 }
 
-int ClientController::SetInfo(const std::vector<std::string> &info){
+int ClientController::SetInfo(const std::vector<std::string> &info) {
   return maidsafe::ClientController::getInstance()->SetInfo(info);
 }
 
