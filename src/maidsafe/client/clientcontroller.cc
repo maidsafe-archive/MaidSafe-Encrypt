@@ -710,6 +710,8 @@ bool ClientController::Logout() {
   printf("ClientController::Logout - After threads done.\n");
 #endif
 
+  while (ss_->Mounted() == 0)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   file_system::UnMount(ss_->SessionName(), ss_->DefConLevel());
   ss_->ResetSession();
   messages_.clear();

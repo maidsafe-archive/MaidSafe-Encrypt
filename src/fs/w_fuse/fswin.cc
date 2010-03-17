@@ -1362,6 +1362,7 @@ static void CallMount(char drive) {
   }
   free(Dokan_Options);
   free(Dokan_Operations);
+  maidsafe::SessionSingleton::getInstance()->SetMounted(1);
 }
 
 void Mount(char drive) {
