@@ -1369,13 +1369,21 @@ void Mount(char drive) {
   boost::thread thrd(CallMount, drive);
   std::string mounted_drive(1, drive);
   mounted_drive += ":";
-  while (!fs::exists(mounted_drive)) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-  }
-  maidsafe::SessionSingleton::getInstance()->SetMounted(0);
+  try {
+    while (!fs::exists(mounted_drive)) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+    }
+    maidsafe::SessionSingleton::getInstance()->SetMounted(0);
 #ifdef DEBUG
-  printf("Dokan mounted drive at %s\n", mounted_drive.c_str());
+    printf("Dokan mounted drive at %s\n", mounted_drive.c_str());
 #endif
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("Dokan failed to mounted drive at %s\n%s\n",
+           mounted_drive.c_str(), e.what());
+#endif
+  }
 }
 
 }  // namespace fs_w_fuse

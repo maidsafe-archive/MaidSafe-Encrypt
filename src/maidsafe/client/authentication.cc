@@ -66,8 +66,8 @@ void Authentication::Init(const boost::uint16_t &max_crypto_thread_count,
 int Authentication::GetUserInfo(const std::string &username,
                                 const std::string &pin) {
   ss_->SetSmidRid(0);
-  tmid_content_ = "";
-  smidtmid_content_ = "";
+  tmid_content_.clear();
+  smidtmid_content_.clear();
   int rid = 0;
   bool smid = false;
   if (!GetMid(username, pin, &rid)) {
@@ -78,6 +78,7 @@ int Authentication::GetUserInfo(const std::string &username,
     ss_->SetSmidRid(rid);
     smid = true;
   }
+  crypto_key_pairs_.set_max_thread_count(1);
   if (rid == 0) {
     ss_->ResetSession();
     return kInvalidUsernameOrPin;
@@ -95,13 +96,13 @@ int Authentication::GetUserInfo(const std::string &username,
   // Getting tmid
   GetUserTmid(smid);
   GetUserSmidTmid();
-  if (tmid_content_ == "") {
+  if (tmid_content_.empty()) {
 #ifdef DEBUG
     printf("Authentication::GetUserInfo - no TMID after GetUserTmid.\n");
 #endif
     return kAuthenticationError;
   }
-  if (smidtmid_content_ == "") {
+  if (smidtmid_content_.empty()) {
 #ifdef DEBUG
     printf("Authentication::GetUserInfo - no  SMID TMID after GetUserTmid.\n");
 #endif
@@ -649,7 +650,7 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   PacketParams rec_tmid = tmidPacket->GetData(ser_tmid, ss_->Password(),
                           ss_->MidRid());
   std::string tmid_data = boost::any_cast<std::string>(rec_tmid["data"]);
-  if (tmid_data == "")
+  if (tmid_data.empty())
     return kAuthenticationError;
   old_user_params["data"] = tmid_data;
   old_user_params["privateKey"] = ss_->PrivateKey(ANTMID);
@@ -802,7 +803,7 @@ int Authentication::ChangePin(const std::string &ser_da,
   PacketParams rec_tmid = tmidPacket->GetData(ser_tmid, ss_->Password(),
                           ss_->MidRid());
   std::string tmid_data = boost::any_cast<std::string>(rec_tmid["data"]);
-  if (tmid_data == "")
+  if (tmid_data.empty())
     return kAuthenticationError;
   old_user_params["data"] = tmid_data;
   old_user_params["privateKey"] = ss_->PrivateKey(ANTMID);
