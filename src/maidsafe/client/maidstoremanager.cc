@@ -102,7 +102,8 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
   knode_->SetAlternativeStore(client_chunkstore_.get());
 }
 
-void MaidsafeStoreManager::Init(int port, base::callback_func_type cb) {
+void MaidsafeStoreManager::Init(int port, base::callback_func_type cb,
+                                fs::path) {
   // If kad config file exists in dir we're in, use that, otherwise get default
   // path to file.
   bool success(true);

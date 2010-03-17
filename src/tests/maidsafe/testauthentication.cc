@@ -112,8 +112,8 @@ class AuthenticationTest : public testing::Test {
     }
     boost::shared_ptr<LocalStoreManager>
         sm_(new LocalStoreManager(client_chunkstore_));
-    sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                                      &cb, _1));
+    sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+              test_root_dir_);
     boost::mutex mutex;
     test_auth::WaitForResult(cb, &mutex);
     GenericResponse res;
@@ -155,7 +155,8 @@ class AuthenticationTest : public testing::Test {
 TEST_F(AuthenticationTest, FUNC_MAID_CreateUserSysPackets) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   std::string ser_dm_login;
@@ -168,7 +169,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateUserSysPackets) {
 TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
@@ -213,7 +215,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
 TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   std::string ser_dm, ser_dm_login;
@@ -245,7 +248,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserOnce) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   DataAtlas data_atlas;
@@ -283,7 +287,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserOnce) {
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
@@ -343,7 +348,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
 TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSession) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
@@ -415,7 +421,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSession) {
 TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
@@ -487,7 +494,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
 TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   int result = authentication->GetUserInfo(username, pin);
@@ -553,7 +561,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   cb.Reset();
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
@@ -597,7 +606,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
 TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
 
@@ -614,7 +624,8 @@ TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
 TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   cached_keys::MakeKeys(2, &test_auth::keys);
   crypto::RsaKeyPair keypair1 = test_auth::keys.at(0);
   crypto::RsaKeyPair keypair2 = test_auth::keys.at(1);
@@ -647,7 +658,8 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
 TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   crypto::Crypto co;

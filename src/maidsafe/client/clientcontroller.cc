@@ -169,7 +169,7 @@ int ClientController::Init() {
 
 bool ClientController::JoinKademlia() {
   CC_CallbackResult cb;
-  sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
+  sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1), "");
   WaitForResult(cb);
   GenericResponse result;
   if ((!result.ParseFromString(cb.result)) ||
