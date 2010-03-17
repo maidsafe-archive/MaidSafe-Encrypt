@@ -284,6 +284,7 @@ void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
            HexSubstr(packet_name).c_str(), system_packet_type, dir_type);
 #endif
     cb(static_cast<ReturnCode>(valid));
+    printf("MaidsafeStoreManager::StorePacket: Not validated\n");
     return;
   }
   std::string key_id, public_key, public_key_signature, private_key;
@@ -495,7 +496,7 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
     for (int i = 0; i < find_response.signed_values_size(); ++i) {
       if (!find_response.signed_values(i).value().empty())
         empty = false;
-      values.push_back(find_response.signed_values(i).value());
+      values.push_back(find_response.signed_values(i).SerializeAsString()); //.value()
     }
 #ifdef DEBUG
     printf("In MSM::LoadPacketCallback, returned %i values.\n", values.size());
@@ -558,9 +559,6 @@ void MaidsafeStoreManager::KeyUnique(const std::string &key,
 #endif
   int valid = ValidateInputs(key, PacketType_MIN, PRIVATE);
   if (valid != kSuccess) {
-#ifdef DEBUG
-    printf("In MSM::KeyUnique2, invalid input.  Error %i\n", valid);
-#endif
     cb(kStoreManagerError);
     return;
   }
@@ -2428,6 +2426,7 @@ void MaidsafeStoreManager::FindCloseNodes(
 
 void MaidsafeStoreManager::SendPacketPrep(
     boost::shared_ptr<StoreData> store_data) {
+  printf("In MaidsafeStoreManager::SendPacketPrep\n");
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::SendPacketPrep\n");
 #endif

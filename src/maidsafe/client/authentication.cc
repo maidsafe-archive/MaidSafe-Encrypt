@@ -80,6 +80,9 @@ int Authentication::GetUserInfo(const std::string &username,
   }
   if (rid == 0) {
     ss_->ResetSession();
+#ifdef DEBUG
+    printf("Authentication::GetUserInfo - rid is 0\n");
+#endif
     return kInvalidUsernameOrPin;
   }
   ss_->SetMidRid(rid);
@@ -89,6 +92,9 @@ int Authentication::GetUserInfo(const std::string &username,
   // Get smid
   if (!GetSmid(username, pin, &rid)) {
     ss_->ResetSession();
+#ifdef DEBUG
+    printf("Authentication::GetUserInfo - Can't find smid 2\n");
+#endif
     return kUserDoesntExist;
   }
   ss_->SetSmidRid(rid);
@@ -936,10 +942,12 @@ bool Authentication::GetMid(const std::string &username,
   // hence, it could not recover a valid mid but we can not return false
   // because that would mean it doesn't exist
   boost::uint32_t rec_data = boost::any_cast<boost::uint32_t>(info["data"]);
+  /*
   if (rec_data == 0) {
     *rid = 0;
     return true;
   }
+  */
   *rid = rec_data;
   return true;
 }
@@ -1079,10 +1087,12 @@ int Authentication::PublicUsernamePublicKey(const std::string &public_username,
 }
 
 void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
+  printf("Authentication::CreateMSIDPacket started\n");
   PacketParams params;
   boost::shared_ptr<SignaturePacket> sigPacket(
       boost::static_pointer_cast<SignaturePacket>(PacketFactory::Factory(MSID,
       crypto_key_pairs_.GetKeyPair())));
+  printf("Authentication::CreateMSIDPacket creating sigPacket\n");
   sigPacket->Create(&params);
 
   int count = 0;
@@ -1091,6 +1101,7 @@ void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
     ++count;
 
   if (count > 9) {
+    printf("Authentication::CreateMSIDPacket can't get unique name\n");
     CreateMSIDResult local_result;
     local_result.set_result(kNack);
     std::string ser_local_result;
@@ -1105,19 +1116,24 @@ void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
   atts.push_back(boost::any_cast<std::string>(params["name"]));
   atts.push_back(boost::any_cast<std::string>(params["publicKey"]));
   atts.push_back(boost::any_cast<std::string>(params["privateKey"]));
+  printf("Authentication::CreateMSIDPacket Adding private share\n");
   int n = ss_->AddPrivateShare(atts, share_stats, NULL);
 
+  printf("Authentication::CreateMSIDPacket storing MSID\n");
   n = StorePacket(boost::any_cast<std::string>(params["name"]),
       boost::any_cast<std::string>(params["publicKey"]), MSID,
       kDoNothingReturnFailure, boost::any_cast<std::string>(params["name"]));
+  printf("Authentication::CreateMSIDPacket removing private share\n");
   ss_->DeletePrivateShare(atts[0], 0);
 
   StoreChunkResponse result_msg;
   CreateMSIDResult local_result;
   std::string str_local_result;
   if (n != 0) {
+    printf("Authentication::CreateMSIDPacket kNack\n");
     local_result.set_result(kNack);
   } else {
+    printf("Authentication::CreateMSIDPacket Ack\n");
     local_result.set_result(kAck);
     local_result.set_private_key(boost::any_cast<std::string>(
         params["privateKey"]));
@@ -1125,7 +1141,9 @@ void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
         params["publicKey"]));
     local_result.set_name(boost::any_cast<std::string>(params["name"]));
   }
+  printf("Authentication::CreateMSIDPacket serialising to string\n");
   local_result.SerializeToString(&str_local_result);
+  printf("Authentication::CreateMSIDPacket calling cb\n");
   cb(str_local_result);
 }
 
@@ -1141,7 +1159,7 @@ int Authentication::StorePacket(const std::string &packet_name,
   int result(kGeneralError);
   VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
                                     &mutex, &cond_var, &result);
-  sm_->StorePacket(packet_name, value, type, PRIVATE, msid, if_exists, func);
+  sm_->StorePacket(packet_name, value, type, PRIVATE_SHARE, msid, if_exists, func);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError)
