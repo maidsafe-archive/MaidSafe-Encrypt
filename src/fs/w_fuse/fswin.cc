@@ -1297,7 +1297,7 @@ static void CallMount(char drive) {
     Dokan_Options->Options |= DOKAN_OPTION_DEBUG;
   if (g_UseStdErr)
     Dokan_Options->Options |= DOKAN_OPTION_STDERR;
-  Dokan_Options->Options |= DOKAN_OPTION_KEEP_ALIVE;
+//  Dokan_Options->Options |= DOKAN_OPTION_KEEP_ALIVE;
   Dokan_Options->Options |= DOKAN_OPTION_NETWORK;
 
   ZeroMemory(Dokan_Operations, sizeof(fs_w_fuse::DOKAN_OPERATIONS));
@@ -1326,12 +1326,8 @@ static void CallMount(char drive) {
   Dokan_Operations->Unmount = WinUnmount;
 
   status = DokanMain(Dokan_Options, Dokan_Operations);
-  ss->SetMounted(status);
   switch (status) {
     case DOKAN_SUCCESS:
-#ifdef DEBUG
-      printf("Dokan Success\n");
-#endif
       break;
     case DOKAN_ERROR:
 #ifdef DEBUG
@@ -1369,10 +1365,16 @@ static void CallMount(char drive) {
 }
 
 void Mount(char drive) {
+  boost::thread thrd(CallMount, drive);
+  std::string mounted_drive(1, drive);
+  mounted_drive += ":";
+  while (!fs::exists(mounted_drive)) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+  }
+  maidsafe::SessionSingleton::getInstance()->SetMounted(0);
 #ifdef DEBUG
-  printf("In Mount()\n");
+  printf("Dokan mounted drive at %s\n", mounted_drive.c_str());
 #endif
-  boost::thread thrd_(CallMount, drive);
 }
 
 }  // namespace fs_w_fuse
