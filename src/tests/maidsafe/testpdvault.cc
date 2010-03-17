@@ -402,7 +402,8 @@ class PDVaultTest : public testing::Test {
       clients_[i]->msm = sm_local_;
       clients_[i]->msm->ss_ = &clients_[i]->mss;
       testpdvault::PrepareCallbackResults();
-      clients_[i]->msm->Init(0, boost::bind(&testpdvault::GeneralCallback, _1));
+      clients_[i]->msm->Init(0, boost::bind(&testpdvault::GeneralCallback, _1),
+                             "");
       testpdvault::WaitFunction(60, &mutex_);
       ASSERT_TRUE(callback_succeeded_);
       ASSERT_FALSE(callback_timed_out_);

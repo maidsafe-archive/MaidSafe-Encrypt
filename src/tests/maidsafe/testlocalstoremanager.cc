@@ -150,8 +150,8 @@ class LocalStoreManagerTest : public testing::Test {
     }
     sm_ = new maidsafe::LocalStoreManager(client_chunkstore_);
     // sm_ = new Localsm_();
-    sm_->Init(0, boost::bind(&test_lsm::FakeCallback::CallbackFunc,
-                                      &cb, _1));
+    sm_->Init(0, boost::bind(&test_lsm::FakeCallback::CallbackFunc, &cb, _1),
+              test_root_dir_);
     wait_for_result_lsm(cb, mutex_);
     maidsafe::GenericResponse res;
     ASSERT_TRUE(res.ParseFromString(cb.result_));

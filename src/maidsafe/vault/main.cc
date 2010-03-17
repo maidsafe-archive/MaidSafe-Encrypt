@@ -269,7 +269,7 @@ class RunPDVaults {
             kad_config_path_.string();
         testpdvault::PrepareCallbackResults();
         clients_[client_idx]->msm->Init(0,
-            boost::bind(&testpdvault::GeneralCallback, _1));
+            boost::bind(&testpdvault::GeneralCallback, _1), "");
         testpdvault::WaitFunction(60, &mutex_);
         public_key = clients_[client_idx]->pmid_pub_key;
         private_key = clients_[client_idx]->pmid_priv_key;
