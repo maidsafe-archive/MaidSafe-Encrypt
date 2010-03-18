@@ -25,49 +25,48 @@ THE SOFTWARE.
 #include "fs/w_fuse/fswin.h"
 
 #include <maidsafe/utils.h>
+
+#include <list>
 #include <map>
 
 #include "maidsafe/client/clientcontroller.h"
 
 namespace fs = boost::filesystem;
+
 namespace fs_w_fuse {
-
-BOOL g_UseStdErr;
-BOOL g_DebugMode;
-
-static void DbgPrint(LPCWSTR format, ...) {
-  if (g_DebugMode) {
-    WCHAR buffer[512];
-    va_list argp;
-    va_start(argp, format);
-    // vswprintf_s(buffer, sizeof(buffer)/sizeof(WCHAR), format, argp);
-    va_end(argp);
-#ifdef DEBUG
-    if (g_UseStdErr) {
-      fwprintf(stderr, buffer);
-    } else {
-      // OutputDebugStringW(buffer);
-      wprintf(buffer);
-    }
-#endif
-  }
-}
-
 
 std::list<ULONG64> to_encrypt_;
 std::list<std::string> to_delete_;
 
-static WCHAR RootDirectory[MAX_PATH];
-// static WCHAR DokanDrive[3] = L"M:";
+static void DbgPrint(LPCWSTR format, ...) {
+#ifdef DEBUG
+  WCHAR buffer[512];
+  va_list argp;
+  va_start(argp, format);
+  vswprintf(buffer, format, argp);
+  va_end(argp);
+  OutputDebugStringW(buffer);
+#endif
+}
 
-static void GetFilePath(PWCHAR filePath, LPCWSTR FileName) {
+static void DbgPrint(LPCSTR format, ...) {
+#ifdef DEBUG
+  CHAR buffer[512];
+  va_list argp;
+  va_start(argp, format);
+  vsprintf(buffer, format, argp);
+  va_end(argp);
+  OutputDebugStringA(buffer);
+#endif
+}
+
+void GetFilePath(PWCHAR filePath, LPCWSTR FileName) {
   RtlZeroMemory(filePath, MAX_PATH);
   wcsncpy(filePath, RootDirectory, wcslen(RootDirectory));
   wcsncat(filePath, FileName, wcslen(FileName));
 }
 
-
-//  static void GetDokanFilePath(PWCHAR filePath, LPCWSTR FileName) {
+//  void GetDokanFilePath(PWCHAR filePath, LPCWSTR FileName) {
 //    std::locale loc;
 //    WCHAR DokanDrive[3];
 //    DokanDrive[0] = std::use_facet< std::ctype<wchar_t> >(loc).widen(
@@ -79,8 +78,7 @@ static void GetFilePath(PWCHAR filePath, LPCWSTR FileName) {
 //    wcsncat(filePath, FileName, wcslen(FileName));
 //  }
 
-
-static void GetFilePath(std::string *filePathStr, LPCWSTR FileName) {
+void GetFilePath(std::string *filePathStr, LPCWSTR FileName) {
   std::ostringstream stm;
   const std::ctype<char> &ctfacet =
       std::use_facet< std::ctype<char> >(stm.getloc());
@@ -90,8 +88,7 @@ static void GetFilePath(std::string *filePathStr, LPCWSTR FileName) {
   *filePathStr = base::TidyPath(path_.string());
 }
 
-
-static FILETIME GetFileTime(ULONGLONG linuxtime) {
+FILETIME GetFileTime(ULONGLONG linuxtime) {
   FILETIME filetime, ft;
   SYSTEMTIME systime;
   systime.wYear = 1970;
@@ -111,23 +108,17 @@ static FILETIME GetFileTime(ULONGLONG linuxtime) {
   return filetime;
 }
 
-
-#define WinCheckFlag(val, flag) if (val&flag) {DbgPrint(L"\t\t\" L#flag L\"\n"); }  // NOLINT
-
-
-static int WinCreateFile(LPCWSTR FileName,
-                         DWORD AccessMode,
-                         DWORD ShareMode,
-                         DWORD CreationDisposition,
-                         DWORD FlagsAndAttributes,
-                         PDOKAN_FILE_INFO   DokanFileInfo) {
+int WinCreateFile(LPCWSTR FileName,
+                  DWORD AccessMode,
+                  DWORD ShareMode,
+                  DWORD CreationDisposition,
+                  DWORD FlagsAndAttributes,
+                  PDOKAN_FILE_INFO DokanFileInfo) {
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
 //  DWORD fileAttr;
   std::string relPathStr, filePathStr, rootStr;
-#ifdef DEBUG
-  wprintf(L"WinCreateFile\nFileName: %s\n", FileName);
-#endif
+  DbgPrint(L"WinCreateFile\nFileName: %s\n", FileName);
   GetFilePath(filePath, FileName);
   GetFilePath(&filePathStr, filePath);
   GetFilePath(&relPathStr, FileName);
@@ -178,9 +169,7 @@ static int WinCreateFile(LPCWSTR FileName,
         fs::create_directories(full_branch_path_);
       }
       catch(const std::exception &e) {
-#ifdef DEBUG
-        printf("In WinCreateFile: %s\n", e.what());
-#endif
+        DbgPrint("In WinCreateFile: %s\n", e.what());
         DWORD error = GetLastError();
         return error * -1;
       }
@@ -192,20 +181,14 @@ static int WinCreateFile(LPCWSTR FileName,
     mdm.ParseFromString(ser_mdm);
     if (mdm.type() < 3) {  // i.e. if this is a file
       int res = maidsafe::ClientController::getInstance()->read(relPathStr);
-#ifdef DEBUG
-      printf("In WinCreateFile: Decryption of %s: %i\n",
+      DbgPrint("In WinCreateFile: Decryption of %s: %i\n",
              relPathStr.c_str(),
              res);
-#endif
     } else if (mdm.type() == 4 || mdm.type() == 5) {  //  i.e. if this is a dir
-#ifdef DEBUG
-      printf("In WinCreateFile: Making dir %s\n", filePathStr.c_str());
-#endif
+      DbgPrint("In WinCreateFile: Making dir %s\n", filePathStr.c_str());
       fs::create_directory(filePathStr);
     } else {
-#ifdef DEBUG
-      printf("In WinCreateFile: don't recognise mdm type.\n");
-#endif
+      DbgPrint("In WinCreateFile: don't recognise mdm type.\n");
       return -99999;
     }
   }
@@ -284,13 +267,13 @@ static int WinCreateFile(LPCWSTR FileName,
     if (created_cache_dir_ && fs::exists(full_branch_path_)) {
       fs::remove(full_branch_path_);
     }
-#ifdef DEBUG
-    printf("In WinCreateFile: handle == INVALID_HANDLE_VALUE\t error = %lu\n",
+    DbgPrint("In WinCreateFile: handle == INVALID_HANDLE_VALUE\t error = %lu\n",
            error);
+#ifdef DEBUG
     if (CreationDisposition == OPEN_EXISTING)
-      printf("OPEN_EXISTING\n");
+      DbgPrint("OPEN_EXISTING\n");
     if (CreationDisposition == CREATE_NEW)
-      printf("CREATE_NEW\n");
+      DbgPrint("CREATE_NEW\n");
 #endif
     return error * -1;  // error codes are negated val of Win Sys Error codes
   }
@@ -305,27 +288,19 @@ static int WinCreateFile(LPCWSTR FileName,
 
   if (CreationDisposition != CREATE_NEW)
     return 0;
-#ifdef DEBUG
-  printf("In WinCreateFile: Encyption decider.\n");
-#endif
+  DbgPrint("In WinCreateFile: Encyption decider.\n");
   std::list<ULONG64>::iterator it;
   for (it = to_encrypt_.begin(); it != to_encrypt_.end(); ++it) {
     if (*it == DokanFileInfo->Context)
       return 0;
   }
-#ifdef DEBUG
-  printf("In WinCreateFile: Adding to encryption list\n");
-#endif
+  DbgPrint("In WinCreateFile: Adding to encryption list\n");
   to_encrypt_.push_back(DokanFileInfo->Context);
   return 0;
 }
 
-
-static int WinCreateDirectory(LPCWSTR FileName,
-                              PDOKAN_FILE_INFO) {
-#ifdef DEBUG
-  wprintf(L"WinCreateDirectory\nFileName: %s\n", FileName);
-#endif
+int WinCreateDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
+  DbgPrint(L"WinCreateDirectory\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   GetFilePath(filePath, FileName);
   if (wcslen(FileName) == 1)
@@ -333,10 +308,8 @@ static int WinCreateDirectory(LPCWSTR FileName,
   std::string dir_path_str;
   GetFilePath(&dir_path_str, filePath);
   fs::path dir_path(dir_path_str);
-#ifdef DEBUG
-  printf("In WinCreateDirectory, dir_path_str: %s\n",
+  DbgPrint("In WinCreateDirectory, dir_path_str: %s\n",
          dir_path.string().c_str());
-#endif
 
 //  if (!fs::exists(dir_path)) {
 
@@ -344,18 +317,14 @@ static int WinCreateDirectory(LPCWSTR FileName,
   // to avoid removing existing files from directory
   if (!CreateDirectory(filePath, NULL)) {
     DWORD error = GetLastError();
-#ifdef DEBUG
-    printf("In WinCreateDirectory, error: %lu\n", error);
-#endif
+    DbgPrint("In WinCreateDirectory, error: %lu\n", error);
     return error * -1;  // error code is negated val of Win Sys Error code
   }
 //  }
   std::string filePathStr, relPathStr;
   GetFilePath(&filePathStr, filePath);
   GetFilePath(&relPathStr, FileName);
-#ifdef DEBUG
-  printf("In WinCreateDirectory, ms_mkdir PATH: %s\n", relPathStr.c_str());
-#endif
+  DbgPrint("In WinCreateDirectory, ms_mkdir PATH: %s\n", relPathStr.c_str());
   bool gui_private_share_(false);
   if (maidsafe::ClientController::getInstance()->ReadOnly(relPathStr,
       gui_private_share_))
@@ -367,11 +336,8 @@ static int WinCreateDirectory(LPCWSTR FileName,
   return 0;
 }
 
-
-static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinOpenDirectory\nFileName: %s\n", FileName);
-#endif
+int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinOpenDirectory\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
   DWORD attr;
@@ -379,9 +345,7 @@ static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   attr = GetFileAttributes(filePath);
   if (attr == INVALID_FILE_ATTRIBUTES) {
     DWORD error = GetLastError();
-#ifdef DEBUG
-    printf("In WinOpenDirectory, error = %lu\n\n", error);
-#endif
+    DbgPrint("In WinOpenDirectory, error = %lu\n\n", error);
     return error * -1;
   }
   if (!(attr & FILE_ATTRIBUTE_DIRECTORY)) {
@@ -398,9 +362,7 @@ static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
                       FILE_FLAG_BACKUP_SEMANTICS,
                       NULL);
   if (handle == INVALID_HANDLE_VALUE) {
-#ifdef DEBUG
-    printf("In WinOpenDirectory, handle == INVALID_HANDLE_VALUE\n");
-#endif
+    DbgPrint("In WinOpenDirectory, handle == INVALID_HANDLE_VALUE\n");
     DWORD error = GetLastError();
     DbgPrint(L"In WinOpenDirectory, error = %lu\n\n", error);
     return error * -1;
@@ -409,11 +371,8 @@ static int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   return 0;
 }
 
-
-static int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinCloseFile\nFileName: %s\n", FileName);
-#endif
+int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinCloseFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   std::string filePathStr;
   GetFilePath(filePath, FileName);
@@ -425,11 +384,8 @@ static int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   return 0;
 }
 
-
-static int WinCleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinCleanup\nFileName: %s\n", FileName);
-#endif
+int WinCleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinCleanup\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   std::string filePathStr, relPathStr;
   GetFilePath(filePath, FileName);
@@ -460,14 +416,10 @@ static int WinCleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
       return 0;
     if (encrypt_) {
       if (maidsafe::ClientController::getInstance()->write(relPathStr) != 0) {
-#ifdef DEBUG
-        printf("In WinCleanup, Encryption failed.\n");
-#endif
+        DbgPrint("In WinCleanup, Encryption failed.\n");
         return -errno;
-#ifdef DEBUG
       } else {
-        printf("In WinCleanup, Encryption succeeded.\n");
-#endif
+        DbgPrint("In WinCleanup, Encryption succeeded.\n");
       }
     }
 //     if (!to_delete_.size())
@@ -509,16 +461,13 @@ static int WinCleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   return 0;
 }
 
-
-static int WinReadFile(LPCWSTR FileName,
-                       LPVOID Buffer,
-                       DWORD BufferLength,
-                       LPDWORD ReadLength,
-                       LONGLONG Offset,
-                       PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinReadFile\nFileName: %s\n", FileName);
-#endif
+int WinReadFile(LPCWSTR FileName,
+                LPVOID Buffer,
+                DWORD BufferLength,
+                LPDWORD ReadLength,
+                LONGLONG Offset,
+                PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinReadFile\nFileName: %s\n", FileName);
   WCHAR   filePath[MAX_PATH];
   HANDLE   handle = (HANDLE)DokanFileInfo->Context;
   ULONG   offset = (ULONG)Offset;
@@ -533,9 +482,7 @@ static int WinReadFile(LPCWSTR FileName,
                         0,
                         NULL);
     if (handle == INVALID_HANDLE_VALUE) {
-#ifdef DEBUG
-      printf("In WinReadFile, handle == INVALID_HANDLE_VALUE\n");
-#endif
+      DbgPrint("In WinReadFile, handle == INVALID_HANDLE_VALUE\n");
       DWORD error = GetLastError();
       DbgPrint(L"In WinReadFile, error = %lu\n\n", error);
       return -1;
@@ -567,15 +514,13 @@ static int WinReadFile(LPCWSTR FileName,
   return 0;
 }
 
-static int WinWriteFile(LPCWSTR FileName,
-                        LPCVOID Buffer,
-                        DWORD NumberOfBytesToWrite,
-                        LPDWORD NumberOfBytesWritten,
-                        LONGLONG Offset,
-                        PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinWriteFile\nFileName: %s\n", FileName);
-#endif
+int WinWriteFile(LPCWSTR FileName,
+                 LPCVOID Buffer,
+                 DWORD NumberOfBytesToWrite,
+                 LPDWORD NumberOfBytesWritten,
+                 LONGLONG Offset,
+                 PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinWriteFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle = (HANDLE)DokanFileInfo->Context;
   ULONG offset = (ULONG)Offset;
@@ -592,8 +537,8 @@ static int WinWriteFile(LPCWSTR FileName,
                         0,
                         NULL);
     if (handle == INVALID_HANDLE_VALUE) {
+      DbgPrint("In WinWriteFile, handle == INVALID_HANDLE_VALUE\n");
 #ifdef DEBUG
-      printf("In WinWriteFile, handle == INVALID_HANDLE_VALUE\n");
       DWORD error = GetLastError();
       DbgPrint(L"In WinWriteFile, error = %lu\n\n", error);
 #endif
@@ -610,8 +555,8 @@ static int WinWriteFile(LPCWSTR FileName,
     }
   } else if (SetFilePointer(handle, offset, NULL, FILE_BEGIN) ==
              INVALID_SET_FILE_POINTER) {
+    DbgPrint("In WinWriteFile, SetFilePointer == INVALID_SET_FILE_POINTER\n");
 #ifdef DEBUG
-    printf("In WinWriteFile, SetFilePointer == INVALID_SET_FILE_POINTER\n");
     DWORD error = GetLastError();
     DbgPrint(L"In WinWriteFile, error = %lu\n\n", error);
 #endif
@@ -622,9 +567,7 @@ static int WinWriteFile(LPCWSTR FileName,
                  NumberOfBytesToWrite,
                  NumberOfBytesWritten,
                  NULL)) {
-#ifdef DEBUG
-    printf("In WinWriteFile, failed WriteFile\n");
-#endif
+    DbgPrint("In WinWriteFile, failed WriteFile\n");
     return -1;
   }
   //  close the file when it is reopened
@@ -639,12 +582,8 @@ static int WinWriteFile(LPCWSTR FileName,
   return 0;
 }
 
-
-static int WinFlushFileBuffers(LPCWSTR FileName,
-                               PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinFlushFileBuffers\nFileName: %s\n", FileName);
-#endif
+int WinFlushFileBuffers(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinFlushFileBuffers\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle = (HANDLE)DokanFileInfo->Context;
   GetFilePath(filePath, FileName);
@@ -657,14 +596,10 @@ static int WinFlushFileBuffers(LPCWSTR FileName,
   return 0;
 }
 
-
-static int WinGetFileInformation(
-    LPCWSTR FileName,
-    LPBY_HANDLE_FILE_INFORMATION HandleFileInformation,
-    PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinGetFileInformation\nFileName: %s\n", FileName);
-#endif
+int WinGetFileInformation(LPCWSTR FileName,
+                          LPBY_HANDLE_FILE_INFORMATION HandleFileInformation,
+                          PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinGetFileInformation\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle = (HANDLE)DokanFileInfo->Context;
   BOOL opened = FALSE;
@@ -674,8 +609,8 @@ static int WinGetFileInformation(
   if (!handle || handle == INVALID_HANDLE_VALUE) {
     //  If CreateDirectory returned FILE_ALREADY_EXISTS and
     //  it is called with FILE_OPEN_IF, that handle must be opened.
+    DbgPrint("In WinGetFileInfo, handle == INVALID_HANDLE_VALUE\n");
 #ifdef DEBUG
-    printf("In WinGetFileInfo, handle == INVALID_HANDLE_VALUE\n");
     DWORD error = GetLastError();
     DbgPrint(L"In WinGetFileInfo, error = %lu\n\n", error);
 #endif
@@ -688,8 +623,8 @@ static int WinGetFileInformation(
       FILE_FLAG_BACKUP_SEMANTICS,
       NULL);
     if (handle == INVALID_HANDLE_VALUE) {
+      DbgPrint("In WinGetFileInfo, NEW handle == INVALID_HANDLE_VALUE\n");
 #ifdef DEBUG
-      printf("In WinGetFileInfo, NEW handle == INVALID_HANDLE_VALUE\n");
       error = GetLastError();
       DbgPrint(L"In WinGetFileInfo, error = %lu\n\n", error);
 #endif
@@ -709,8 +644,8 @@ static int WinGetFileInformation(
       ZeroMemory(&find, sizeof(WIN32_FIND_DATAW));
       handle = FindFirstFile(filePath, &find);
       if (handle == INVALID_HANDLE_VALUE) {
+        DbgPrint("In WinGetFileInfo, 1st filehandle == INVALID_HANDLE_VALUE\n");
 #ifdef DEBUG
-        printf("In WinGetFileInfo, 1st file handle == INVALID_HANDLE_VALUE\n");
         DWORD error = GetLastError();
         DbgPrint(L"In WinGetFileInfo, error = %lu\n\n", error);
 #endif
@@ -718,9 +653,7 @@ static int WinGetFileInformation(
       }
       if (maidsafe::ClientController::getInstance()->getattr(relPathStr,
                                                              ser_mdm)) {
-#ifdef DEBUG
-        printf("In WinGetFileInfo, getattr failed\n");
-#endif
+        DbgPrint("In WinGetFileInfo, getattr failed\n");
         return -1;
       }
       mdm.ParseFromString(ser_mdm);
@@ -740,9 +673,8 @@ static int WinGetFileInformation(
             mdm.file_size_high();  // find.nFileSizeHigh;
         HandleFileInformation->nFileSizeLow =
             mdm.file_size_low();  // find.nFileSizeLow;
-#ifdef DEBUG
-        printf("In WinGetFileInfo, FindFiles OK\n");
-#endif
+
+        DbgPrint("In WinGetFileInfo, FindFiles OK\n");
       } else if (mdm.type() == maidsafe::EMPTY_DIRECTORY ||
                  mdm.type() == maidsafe::DIRECTORY) {
       HandleFileInformation->dwFileAttributes = find.dwFileAttributes;
@@ -757,9 +689,8 @@ static int WinGetFileInformation(
         HandleFileInformation->nFileSizeHigh = 0;  // find.nFileSizeHigh;
         HandleFileInformation->nFileSizeLow = 0;  // find.nFileSizeLow;
         DokanFileInfo->IsDirectory = TRUE;
-#ifdef DEBUG
-        printf("In WinGetFileInfo, FindFiles OK\n");
-#endif
+
+        DbgPrint("In WinGetFileInfo, FindFiles OK\n");
       }
       FindClose(handle);
     }
@@ -769,13 +700,10 @@ static int WinGetFileInformation(
   return 0;
 }
 
-
-static int WinFindFiles(LPCWSTR FileName,
-                        PFillFindData FillFindData,  // function postatic inter
-                        PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinFindFiles\nFileName: %s\n", FileName);
-#endif
+int WinFindFiles(LPCWSTR FileName,
+                 PFillFindData FillFindData,  // function postatic inter
+                 PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinFindFiles\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   WIN32_FIND_DATAW findData;
   PWCHAR yenStar = const_cast<PWCHAR>(L"\\*");
@@ -796,9 +724,7 @@ static int WinFindFiles(LPCWSTR FileName,
     path_ /= s;
     if (maidsafe::ClientController::getInstance()->getattr(path_.string(),
                                                            ser_mdm)) {
-#ifdef DEBUG
-      printf("In WinFindFiles, getattr failed\n");
-#endif
+      DbgPrint("In WinFindFiles, getattr failed\n");
       return -1;
     }
     mdm.ParseFromString(ser_mdm);
@@ -818,9 +744,8 @@ static int WinFindFiles(LPCWSTR FileName,
                           strlen(charpath) + 1,
                           findData.cFileName,
                           MAX_PATH);
-#ifdef DEBUG
-      wprintf(L"\tchild: %s\ttype: %i\n", findData.cFileName, ityp);
-#endif
+
+      DbgPrint(L"\tchild: %s\ttype: %i\n", findData.cFileName, ityp);
       findData.cAlternateFileName[ 14 ] = NULL;
       // create children directories if they don't exist
       std::string root_dir;
@@ -832,9 +757,7 @@ static int WinFindFiles(LPCWSTR FileName,
           fs::create_directories(sub_dir);
         }
         catch(const std::exception &e) {
-#ifdef DEBUG
-          printf("In WinFindFiles, %s\n", e.what());
-#endif
+          DbgPrint("In WinFindFiles, %s\n", e.what());
           DWORD error = GetLastError();
           DbgPrint(L"In WinFindFiles, error = %lu\n\n", error);
           return error * -1;
@@ -854,9 +777,8 @@ static int WinFindFiles(LPCWSTR FileName,
                           strlen(charpath) + 1,
                           findData.cFileName,
                           MAX_PATH);
-#ifdef DEBUG
-      wprintf(L"\tchild: %s\ttype: %i\n", findData.cFileName, ityp);
-#endif
+
+      DbgPrint(L"\tchild: %s\ttype: %i\n", findData.cFileName, ityp);
       findData.cAlternateFileName[ 14 ] = NULL;
     }
     children.erase(children.begin());
@@ -866,11 +788,8 @@ static int WinFindFiles(LPCWSTR FileName,
   return 0;
 }
 
-
-static int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
-#ifdef DEBUG
-  wprintf(L"WinDeleteFile\nFileName: %s\n", FileName);
-#endif
+int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
+  DbgPrint(L"WinDeleteFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   // HANDLE handle = (HANDLE)DokanFileInfo->Context;
   GetFilePath(filePath, FileName);
@@ -886,29 +805,22 @@ static int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
       }
     }
   }
-#ifdef DEBUG
-  printf("In WinDeleteFile, after erasing %s from to_delete_ list.\n",
+  DbgPrint("In WinDeleteFile, after erasing %s from to_delete_ list.\n",
          relPathStr.c_str());
-#endif
   bool gui_private_share_(false);
   if (maidsafe::ClientController::getInstance()->ReadOnly(relPathStr,
       gui_private_share_))
     return -5;
 
   if (maidsafe::ClientController::getInstance()->unlink(relPathStr) != 0) {
-#ifdef DEBUG
-    printf("In WinDeleteFile, unlink failed\n");
-#endif
+    DbgPrint("In WinDeleteFile, unlink failed\n");
     // return -errno;
   }
   return 0;
 }
 
-
-static int WinDeleteDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
-#ifdef DEBUG
-  wprintf(L"WinDeleteDirectory\nFileName: %s\n", FileName);
-#endif
+int WinDeleteDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
+  DbgPrint(L"WinDeleteDirectory\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE hFind;
   WIN32_FIND_DATAW findData;
@@ -938,9 +850,7 @@ static int WinDeleteDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
   FindClose(hFind);
   if (GetLastError() == ERROR_NO_MORE_FILES) {
     if (maidsafe::ClientController::getInstance()->rmdir(relPathStr) != 0) {
-#ifdef DEBUG
-      printf("In WinDeleteDirectory, rmdir failed\n");
-#endif
+      DbgPrint("In WinDeleteDirectory, rmdir failed\n");
       return -145;
     } else {
       return 0;
@@ -952,16 +862,12 @@ static int WinDeleteDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
 //    if (maidsafe::ClientController::getInstance()->readdir(relPathStr,
 //                                                           children))
 //      return -errno;
-//  #ifdef DEBUG
-//    printf("In WinDeleteDirectory, Directory %s has %i children.\n\n\n",
+//    DbgPrint("In WinDeleteDirectory, Directory %s has %i children.\n\n\n",
 //           relPathStr.c_str(),
 //           children.size());
-//  #endif
 //    if (children.size()) {
-//  #ifdef DEBUG
-//      printf("In WinDeleteDirectory, children.size() != 0\n");
+//      DbgPrint("In WinDeleteDirectory, children.size() != 0\n");
 //      DbgPrint(L"In WinDeleteDirectory, error = 145\n");
-//  #endif
 //      return -145;
 //    }
 //
@@ -971,30 +877,23 @@ static int WinDeleteDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
 //      return -5;
 //
 //    if (!RemoveDirectory(filePath)) {
-//  #ifdef DEBUG
-//      printf("In WinDeleteDirectory, RemoveDirectory failed\n");
-//  #endif
+//      DbgPrint("In WinDeleteDirectory, RemoveDirectory failed\n");
 //      DWORD error = GetLastError();
 //      DbgPrint(L"In WinDeleteDirectory, error = %lu\n\n", error);
 //      return error * -1;
 //    }
 //    if (maidsafe::ClientController::getInstance()->rmdir(relPathStr) != 0) {
-//  #ifdef DEBUG
-//      printf("In WinDeleteDirectory, rmdir failed\n");
-//  #endif
+//      DbgPrint("In WinDeleteDirectory, rmdir failed\n");
 //      return -errno;
 //    }
 //    return 0;
 }
 
-
-static int WinMoveFile(LPCWSTR FileName,
-                       LPCWSTR NewFileName,
-                       BOOL ReplaceIfExisting,
-                       PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinMovefile\nFileName: %s\n", FileName);
-#endif
+int WinMoveFile(LPCWSTR FileName,
+                LPCWSTR NewFileName,
+                BOOL ReplaceIfExisting,
+                PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinMovefile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   WCHAR newFilePath[MAX_PATH];
   BOOL status;
@@ -1015,7 +914,6 @@ static int WinMoveFile(LPCWSTR FileName,
       gui_private_share_))
     return -5;
 
-
   if (maidsafe::ClientController::getInstance()->rename(o_path_, n_path_) != 0)
     return -errno;
   if (ReplaceIfExisting) {
@@ -1030,9 +928,7 @@ static int WinMoveFile(LPCWSTR FileName,
     return -static_cast<int>(error);
   }
   //  Need to move file in list of files needing deleted after cleanup.
-#ifdef DEBUG
-  printf("In WinMoveFile, files for deletion: ");
-#endif
+  DbgPrint("In WinMoveFile, files for deletion: ");
   if (!to_delete_.size())
     return status == TRUE ? 0 : -1;
   for (std::list<std::string>::iterator dit = to_delete_.begin();
@@ -1047,14 +943,11 @@ static int WinMoveFile(LPCWSTR FileName,
   return status == TRUE ? 0 : -1;
 }
 
-
-static int WinLockFile(LPCWSTR FileName,
-                       LONGLONG ByteOffset,
-                       LONGLONG Length,
-                       PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinLockFile\nFileName: %s\n", FileName);
-#endif
+int WinLockFile(LPCWSTR FileName,
+                LONGLONG ByteOffset,
+                LONGLONG Length,
+                PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinLockFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
   LARGE_INTEGER offset;
@@ -1062,9 +955,7 @@ static int WinLockFile(LPCWSTR FileName,
   GetFilePath(filePath, FileName);
   handle = (HANDLE)DokanFileInfo->Context;
   if (!handle || handle == INVALID_HANDLE_VALUE) {
-#ifdef DEBUG
-    printf("In WinLockFile, handle == INVALID_HANDLE_VALUE\n");
-#endif
+    DbgPrint("In WinLockFile, handle == INVALID_HANDLE_VALUE\n");
     return -1;
   }
   length.QuadPart = Length;
@@ -1076,45 +967,34 @@ static int WinLockFile(LPCWSTR FileName,
                length.LowPart)) {
     return 0;
   } else {
-#ifdef DEBUG
-    printf("In WinLockFile, LockFile failed\n");
-#endif
+    DbgPrint("In WinLockFile, LockFile failed\n");
     return -1;
   }
   return 0;
 }
 
-
-static int WinSetEndOfFile(LPCWSTR FileName,
-                           LONGLONG ByteOffset,
-                           PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinSetEndofFile\nFileName: %s\n", FileName);
-#endif
+int WinSetEndOfFile(LPCWSTR FileName,
+                    LONGLONG ByteOffset,
+                    PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinSetEndofFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
   LARGE_INTEGER offset;
   GetFilePath(filePath, FileName);
   handle = (HANDLE)DokanFileInfo->Context;
   if (!handle || handle == INVALID_HANDLE_VALUE) {
-#ifdef DEBUG
-    printf("In WinSetEndOfFile, handle == INVALID_HANDLE_VALUE\n");
-#endif
+    DbgPrint("In WinSetEndOfFile, handle == INVALID_HANDLE_VALUE\n");
     return -1;
   }
   offset.QuadPart = ByteOffset;
   if (!SetFilePointerEx(handle, offset, NULL, FILE_BEGIN)) {
-#ifdef DEBUG
-    printf("In WinSetEndOfFile, SetFilePointerEx failed\n");
-#endif
+    DbgPrint("In WinSetEndOfFile, SetFilePointerEx failed\n");
     DWORD error = GetLastError();
     DbgPrint(L"In WinSetEndOfFile, error = %lu\n\n", error);
     return error * -1;
   }
   if (!SetEndOfFile(handle)) {
-#ifdef DEBUG
-    printf("In WinSetEndOfFile, SetEndOfFile failed\n");
-#endif
+    DbgPrint("In WinSetEndOfFile, SetEndOfFile failed\n");
     DWORD error = GetLastError();
     DbgPrint(L"In WinSetEndOfFile, error = %lu\n\n", error);
     return error * -1;
@@ -1122,39 +1002,30 @@ static int WinSetEndOfFile(LPCWSTR FileName,
   return 0;
 }
 
-
-static int WinSetAllocationSize(LPCWSTR FileName,
-                                LONGLONG AllocSize,
-                                PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinSetAllocationSize\nFileName: %s\n", FileName);
-#endif
+int WinSetAllocationSize(LPCWSTR FileName,
+                         LONGLONG AllocSize,
+                         PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinSetAllocationSize\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
   LARGE_INTEGER fileSize;
   GetFilePath(filePath, FileName);
   handle = (HANDLE)DokanFileInfo->Context;
   if (!handle || handle == INVALID_HANDLE_VALUE) {
-#ifdef DEBUG
-    printf("In WinSetAllocationSize, handle == INVALID_HANDLE_VALUE\n");
-#endif
+    DbgPrint("In WinSetAllocationSize, handle == INVALID_HANDLE_VALUE\n");
     return -1;
   }
   if (GetFileSizeEx(handle, &fileSize)) {
     if (AllocSize < fileSize.QuadPart) {
       fileSize.QuadPart = AllocSize;
       if (!SetFilePointerEx(handle, fileSize, NULL, FILE_BEGIN)) {
-#ifdef DEBUG
-        printf("In WinSetAllocationSize, SetFilePointer error: %ld",
+        DbgPrint("In WinSetAllocationSize, SetFilePointer error: %ld",
                GetLastError());
-        printf(", offfset = %s\n\n", base::itos_ull(AllocSize).c_str());
-#endif
+        DbgPrint(", offfset = %s\n\n", base::itos_ull(AllocSize).c_str());
         return GetLastError() * -1;
       }
       if (!SetEndOfFile(handle)) {
-#ifdef DEBUG
-        printf("In WinSetAllocationSize, SetEndOfFile failed\n");
-#endif
+        DbgPrint("In WinSetAllocationSize, SetEndOfFile failed\n");
         DWORD error = GetLastError();
         DbgPrint(L"In WinSetAllocationSize, error = %lu\n\n", error);
         return error * -1;
@@ -1168,19 +1039,14 @@ static int WinSetAllocationSize(LPCWSTR FileName,
   return 0;
 }
 
-
-static int WinSetFileAttributes(LPCWSTR FileName,
-                                DWORD FileAttributes,
-                                PDOKAN_FILE_INFO) {
-#ifdef DEBUG
-  wprintf(L"WinSetFileAttributes\nFileName: %s\n", FileName);
-#endif
+int WinSetFileAttributes(LPCWSTR FileName,
+                         DWORD FileAttributes,
+                         PDOKAN_FILE_INFO) {
+  DbgPrint(L"WinSetFileAttributes\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   GetFilePath(filePath, FileName);
   if (!SetFileAttributes(filePath, FileAttributes)) {
-#ifdef DEBUG
-    printf("In WinSetFileAttributes, SetFileAttributes failed\n");
-#endif
+    DbgPrint("In WinSetFileAttributes, SetFileAttributes failed\n");
     DWORD error = GetLastError();
     DbgPrint(L"In WinSetFileAttributes, error = %lu\n\n", error);
     return error * -1;
@@ -1188,29 +1054,22 @@ static int WinSetFileAttributes(LPCWSTR FileName,
   return 0;
 }
 
-
-static int WinSetFileTime(LPCWSTR FileName,
-                          CONST FILETIME *CreationTime,
-                          CONST FILETIME *LastAccessTime,
-                          CONST FILETIME *LastWriteTime,
-                          PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinSetFileTime\nFileName: %s\n", FileName);
-#endif
+int WinSetFileTime(LPCWSTR FileName,
+                   CONST FILETIME *CreationTime,
+                   CONST FILETIME *LastAccessTime,
+                   CONST FILETIME *LastWriteTime,
+                   PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinSetFileTime\nFileName: %s\n", FileName);
   WCHAR   filePath[MAX_PATH];
   HANDLE   handle;
   GetFilePath(filePath, FileName);
   handle = (HANDLE)DokanFileInfo->Context;
   if (!handle || handle == INVALID_HANDLE_VALUE) {
-#ifdef DEBUG
-    printf("In WinSetFileTime, handle == INVALID_HANDLE_VALUE\n");
-#endif
+    DbgPrint("In WinSetFileTime, handle == INVALID_HANDLE_VALUE\n");
     return -1;
   }
   if (!SetFileTime(handle, CreationTime, LastAccessTime, LastWriteTime)) {
-#ifdef DEBUG
-    printf("In WinSetFileTime, SetFileAttributes failed\n");
-#endif
+    DbgPrint("In WinSetFileTime, SetFileAttributes failed\n");
     DWORD error = GetLastError();
     DbgPrint(L"In WinSetFileTime, error = %lu\n\n", error);
     return error * -1;
@@ -1218,14 +1077,11 @@ static int WinSetFileTime(LPCWSTR FileName,
   return 0;
 }
 
-
-static int WinUnlockFile(LPCWSTR FileName,
-                         LONGLONG ByteOffset,
-                         LONGLONG Length,
-                         PDOKAN_FILE_INFO DokanFileInfo) {
-#ifdef DEBUG
-  wprintf(L"WinUnLockFile\nFileName: %s\n", FileName);
-#endif
+int WinUnlockFile(LPCWSTR FileName,
+                  LONGLONG ByteOffset,
+                  LONGLONG Length,
+                  PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"WinUnLockFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
   LARGE_INTEGER length;
@@ -1233,9 +1089,7 @@ static int WinUnlockFile(LPCWSTR FileName,
   GetFilePath(filePath, FileName);
   handle = (HANDLE)DokanFileInfo->Context;
   if (!handle || handle == INVALID_HANDLE_VALUE) {
-#ifdef DEBUG
-    printf("In WinUnLockFile, handle == INVALID_HANDLE_VALUE\n");
-#endif
+    DbgPrint("In WinUnLockFile, handle == INVALID_HANDLE_VALUE\n");
     return -1;
   }
   length.QuadPart = Length;
@@ -1247,32 +1101,26 @@ static int WinUnlockFile(LPCWSTR FileName,
                  length.LowPart)) {
     return 0;
   } else {
-#ifdef DEBUG
-    printf("In WinUnlockFile, UnlockFile failed\n");
-#endif
+    DbgPrint("In WinUnlockFile, UnlockFile failed\n");
     return -1;
   }
   return 0;
 }
 
-
-static int WinUnmount(PDOKAN_FILE_INFO) {
+int WinUnmount(PDOKAN_FILE_INFO) {
   DbgPrint(L"\tUnmount\n");
   return 0;
 }
 
-
-static void CallMount(char drive) {
-#ifdef DEBUG
-  printf("In CallMount()\n");
-#endif
+void CallMount(char drive) {
+  DbgPrint("In CallMount()\n");
   int status;
-  fs_w_fuse::PDOKAN_OPERATIONS Dokan_Operations =
-      (fs_w_fuse::PDOKAN_OPERATIONS)malloc(sizeof(fs_w_fuse::DOKAN_OPERATIONS));
-  fs_w_fuse::PDOKAN_OPTIONS Dokan_Options =
-      (fs_w_fuse::PDOKAN_OPTIONS)malloc(sizeof(fs_w_fuse::DOKAN_OPTIONS));
+  PDOKAN_OPERATIONS Dokan_Operations =
+      (PDOKAN_OPERATIONS)malloc(sizeof(DOKAN_OPERATIONS));
+  PDOKAN_OPTIONS Dokan_Options =
+      (PDOKAN_OPTIONS)malloc(sizeof(DOKAN_OPTIONS));
 
-  ZeroMemory(Dokan_Options, sizeof(fs_w_fuse::DOKAN_OPTIONS));
+  ZeroMemory(Dokan_Options, sizeof(DOKAN_OPTIONS));
 
   maidsafe::SessionSingleton *ss = maidsafe::SessionSingleton::getInstance();
   std::string msHome(file_system::MaidsafeHomeDir(ss->SessionName()).string());
@@ -1281,26 +1129,25 @@ static void CallMount(char drive) {
 //     if ((*it) == '/')
 //       msHome.replace(it, it+1, "\\");
 //   }
+  mbstowcs(RootDirectory, msHome.c_str(), msHome.size());
+  DbgPrint("msHome= %s\n", msHome.c_str());
+  DbgPrint(L"RootDirectory: %ls\n", RootDirectory);
 #ifdef DEBUG
   printf("msHome= %s\n", msHome.c_str());
+  wprintf(L"RootDirectory: %ls\n", RootDirectory);
 #endif
-  mbstowcs(fs_w_fuse::RootDirectory, msHome.c_str(), msHome.size());
-#ifdef DEBUG
-  wprintf(L"RootDirectory: %ls\n", fs_w_fuse::RootDirectory);
-#endif
-  g_DebugMode = TRUE;
-  g_UseStdErr = FALSE;
 
   Dokan_Options->DriveLetter = drive;
   Dokan_Options->ThreadCount = 3;
-  if (g_DebugMode)
-    Dokan_Options->Options |= DOKAN_OPTION_DEBUG;
-  if (g_UseStdErr)
-    Dokan_Options->Options |= DOKAN_OPTION_STDERR;
+#ifdef DEBUG
+  Dokan_Options->Options |= DOKAN_OPTION_DEBUG;
+//  Dokan_Options->Options |= DOKAN_OPTION_STDERR;
+#endif
 //  Dokan_Options->Options |= DOKAN_OPTION_KEEP_ALIVE;
   Dokan_Options->Options |= DOKAN_OPTION_NETWORK;
+//  Dokan_Options->Options |= DOKAN_OPTION_REMOVABLE;
 
-  ZeroMemory(Dokan_Operations, sizeof(fs_w_fuse::DOKAN_OPERATIONS));
+  ZeroMemory(Dokan_Operations, sizeof(DOKAN_OPERATIONS));
   Dokan_Operations->CreateFile = WinCreateFile;
   Dokan_Operations->OpenDirectory = WinOpenDirectory;
   Dokan_Operations->CreateDirectory = WinCreateDirectory;
@@ -1384,6 +1231,10 @@ void Mount(char drive) {
            mounted_drive.c_str(), e.what());
 #endif
   }
+}
+
+bool UnMount(char drive) {
+  return DokanUnmount(drive);
 }
 
 }  // namespace fs_w_fuse

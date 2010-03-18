@@ -45,7 +45,7 @@ class ChunkStore;
 
 class LocalStoreManager : public StoreManagerInterface {
  public:
-  LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore);
+  explicit LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore);
   virtual ~LocalStoreManager() {}
   virtual void Init(int, base::callback_func_type cb, fs::path db_directory);
   virtual void Close(base::callback_func_type cb, bool);
