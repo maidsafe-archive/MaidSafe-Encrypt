@@ -412,8 +412,9 @@ void VaultService::FinalisePayment(const std::string &chunk_name,
   if (permission_result != kSuccess) {
 #ifdef DEBUG
     printf("In VaultService::FinalisePayment (%s), failed to obtain storing "
-           "permission for client %s and chunk %s.\n", HexSubstr(pmid_).c_str(),
-           HexSubstr(pmid).c_str(), HexSubstr(chunk_name).c_str());
+           "permission for client %s and chunk %s  -- result %i.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str(),
+           HexSubstr(chunk_name).c_str(), permission_result);
 #endif
     std::list<std::string> creditors, references;
     cih_.ResetAddToWatchList(chunk_name, pmid, kReasonPaymentFailed, &creditors,
