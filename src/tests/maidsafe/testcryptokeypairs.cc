@@ -73,13 +73,11 @@ TEST_F(CryptoKeyPairsTest, FUNC_MAID_GetCryptoKeysThreaded) {
       success = true;
       break;
     } else {
-  printf("ckp.key_buffer_.size() %d, ckp.buffer_count_ %d\n", ckp.key_buffer_.size(), ckp.buffer_count_);
       lock.unlock();
       count += 100;
       boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     }
   }
-  printf("ckp.key_buffer_.size() %d, ckp.buffer_count_ %d\n", ckp.key_buffer_.size(), ckp.buffer_count_);
   ASSERT_TRUE(success);
   {
     boost::mutex::scoped_lock lock(ckp.kb_mutex_);

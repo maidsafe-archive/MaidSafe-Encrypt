@@ -404,7 +404,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(kSuccess, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 }
-*/
+
 TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   // Setup
   const int kTestRuns(6);
