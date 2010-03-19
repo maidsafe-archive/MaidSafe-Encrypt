@@ -64,7 +64,7 @@ TEST_F(CryptoKeyPairsTest, FUNC_MAID_GetCryptoKeysThreaded) {
   ckp.Init(kMaxCryptoThreadCount + 1, kNoOfSystemPackets + 1);
   ASSERT_EQ(kMaxCryptoThreadCount, ckp.max_thread_count());
   ASSERT_EQ(kNoOfSystemPackets, ckp.buffer_count());
-  const int kTimeout(100000);
+  const int kTimeout(200000);
   int count(0);
   bool success(false);
   while (count < kTimeout) {
@@ -73,11 +73,13 @@ TEST_F(CryptoKeyPairsTest, FUNC_MAID_GetCryptoKeysThreaded) {
       success = true;
       break;
     } else {
+  printf("ckp.key_buffer_.size() %d, ckp.buffer_count_ %d\n", ckp.key_buffer_.size(), ckp.buffer_count_);
       lock.unlock();
       count += 100;
       boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     }
   }
+  printf("ckp.key_buffer_.size() %d, ckp.buffer_count_ %d\n", ckp.key_buffer_.size(), ckp.buffer_count_);
   ASSERT_TRUE(success);
   {
     boost::mutex::scoped_lock lock(ckp.kb_mutex_);

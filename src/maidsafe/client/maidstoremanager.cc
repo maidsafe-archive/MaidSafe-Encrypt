@@ -2426,7 +2426,6 @@ void MaidsafeStoreManager::FindCloseNodes(
 
 void MaidsafeStoreManager::SendPacketPrep(
     boost::shared_ptr<StoreData> store_data) {
-  printf("In MaidsafeStoreManager::SendPacketPrep\n");
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::SendPacketPrep\n");
 #endif

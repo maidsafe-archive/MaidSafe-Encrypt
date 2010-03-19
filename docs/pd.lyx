@@ -2293,8 +2293,8 @@ To get to the k-closest nodes, we require that nodes do not return anything
 \end_layout
 
 \begin_layout Example
-Nodes with flagged cache values will check using this process they are not
- in the k-closest nodes and timeout (exponentially) the cache value.
+Nodes with flagged cache values will check using this process that they
+ are not in the k-closest nodes and timeout (exponentially) the cache value.
  
 \end_layout
 
@@ -2306,13 +2306,12 @@ Locks
 To achieve reliability of data where multiple copies may exist and be altered
  from multiple locations is a problem that requires addressing, before changing
  data.
- Using the above scenario a node intending (and allowed to, if required)
- tries to get all the k closest nodes via an iterative search.
+ Using the above scenario a node intending to alter a piece of data tries
+ to get all the k-closest nodes via an iterative search.
  On success each node is sent a lock request which it answers with (Acknowledge)
  ACK or (Negative Acknowledge) NACK.
- Each node can pass this request to its known k closest nodes.
- On receipt of k ACK's the node then alters the value (if allowed as previously
- stated).
+ Each node can pass this request to its known k-closest nodes.
+ On receipt of k ACKs, the node then alters the value.
  On receiving an altered value the holding nodes release the lock.
  Failure to receive a value update in 10 seconds should auto release the
  lock.
@@ -2340,26 +2339,25 @@ Overview
 \end_layout
 
 \begin_layout Standard
-The vaults are initially a very capable, fast and efficient massively distribute
-d storage mechanism, 
+The vaults are a very capable, fast and efficient massively distributed
+ storage mechanism but 
 \emph on
 not
 \emph default
- a distributed filesystem as in Andrews or CFS etc.
- but a storage mechanism that can be presented on any filesystem whether
- a local system such as FAT, FAT32, NTFS, EXTx, resier etc.
+ merely a distributed filesystem as in Andrews or CFS.
+ Instead, each vault is a conceptual storage mechanism that can be presented
+ on any filesystem whether a local system such as FAT, FAT32, NTFS, EXTx,
+ resier etc.
  or a network file system such as NFS, Andrews, SMBFS etc.
- although debatable there would be no requirement for network file systems
+ although debateably there would be no requirement for network file systems
  in a maidsafe network.
 \end_layout
 
 \begin_layout Standard
-The vault is the storage component of the network initially, but is also
- partially responsible for signature validation, decryption and an ever
- increasing amount of services.
- Initially the vault is only concerned with 2 layers of the system.
- It is a service or daemon and controlled by either an individual client
- or several clients, these layers are as follows:
+The vault is primarily the storage component of the network, but is also
+ partially responsible for signature validation and decryption.
+ It is a service or daemon controlled by either an individual client or
+ several clients and makes use of the following layers:
 \end_layout
 
 \begin_layout Standard
@@ -2397,22 +2395,22 @@ Transport
 \end_layout
 
 \begin_layout Itemize
-Transport Layer - or Layer 1 is responsible for providing the network routing,
+Transport Layer (Layer 1) is responsible for providing the network routing,
  NAT traversal and network churn management.
  
 \end_layout
 
 \begin_layout Itemize
-maidsafe (MAID) Layer - or Layer 2 is responsible for implementing most
- of what follows in this paper, including all algorithms relating to self
- healing (additional churn control), ranking, perpetual data, self encryption
- and most importantly self or anonymous authentication.
+maidsafe (MAID) Layer (Layer 2) is responsible for implementing most of
+ what follows in this paper, including all algorithms relating to self healing
+ (additional churn control), ranking, perpetual data, self encryption and
+ most importantly self or anonymous authentication.
 \end_layout
 
 \begin_layout Standard
 To allow fairness in the system of vaults a measurement has to be made of
- the vaults capability to store and provide access to data.
- This measurement should take into account at a minimum the vaults on line
+ the vaults' capability to store and provide access to data.
+ This measurement should take into account at a minimum the vaults online
  time, bandwidth, processing speed, free CPU availability, and drive capacity.
  This may seem like a lot to take into account and measure with any degree
  of accuracy, so a system that would allow every aspect of a vault to be
@@ -2433,16 +2431,16 @@ In nature this mechanism is made clear for us to see, the strength of an
  organism is how best it survives, the most effective hunters obtain the
  most nourishment, the most efficient plants grow to gather the most sunshine
  and so on.
- The lesson is the more efficient a system is the stronger and more effective
+ The lesson is the more efficient a system, the stronger and more effective
  it is.
  
 \end_layout
 
 \begin_layout Standard
-Vaults are organised to mimic this philosophy in computer terms and this
+Vaults are organised to mimic this philosophy in computing terms, which
  means a system that tolerates (to varying degrees) inefficiency as well
  as rewarding efficiency (as in nature).
- Vaults 'raison d'etre' is to store and allow retrieval of data, the more
+ Vaults 'raison d'être' is to store and allow retrieval of data; the more
  data it can store and provide the more efficient it is.
  The ability to store data should then be based in a logical manner, which
  as it turns out is a very effective process.
@@ -2463,13 +2461,12 @@ NAT traversal
 \end_layout
 
 \begin_layout Standard
-Vaults require a publicly accessible UDP port for the network to function
- and a vault to provide the save/get data capability.
+Vaults require a publicly accessible UDP port for the network to function.
  This is made difficult today as most computers are behind firewalls.
  There is currently no method of firewall penetration that is guaranteed
  to work in every case.
  There are several attempts such as STUN, TURN, ICE, UPNP, PNP-NAT and many
- others but on their own there is no guaranteed method with the exception
+ others, but on their own there is no guaranteed method with the exception
  of (debatable) TURN where every node is connected to an external node and
  relays all traffic through it.
  This is not an acceptable situation for large data transfers though as
@@ -2479,9 +2476,10 @@ Vaults require a publicly accessible UDP port for the network to function
 
 \begin_layout Standard
 There is a mechanism called UDP hole punching which shows success rates
- of around 83-92%, maidsafe utilises standard UDP hole punching using known
- accessible addresses to punch the hole through.
- The nodes that are seen as 'direct' connect are 
+ of around 83-92%.
+ maidsafe utilises standard UDP hole punching using known accessible addresses
+ to punch the hole through.
+ The nodes that are seen as 'direct' connect are:
 \end_layout
 
 \begin_layout Enumerate
@@ -2535,7 +2533,7 @@ Vaults will default to use a random port in the range 5001-65535 (user definable
 
 \begin_layout Standard
 User defined, this is where a user decides to manually port forward a router
- port to the vault (via the client RPC's).
+ port to the vault (via the client RPCs).
  
 \end_layout
 
@@ -2546,10 +2544,10 @@ The other port will be a standard fall back port
 \emph default
  and this port will broadcast the vaults presence on start-up to the local
  network (via a UDP broadcast).
- Any ports responding will do so with their KADID, this KADID which is actual
- fact the PMID will go into the vaults routing table as the internal IP:port
+ Any ports responding will do so with their KADID (which is actually the
+ PMID) and will go into the vaults' routing table as the internal IP:port
  of that PMID.
- The vault will only every pass this to other internally connected vaults.
+ The vault will only ever pass this to other internally connected vaults.
  To any external request this information is ignored and the PMID external
  contact details are used.
  
@@ -2561,12 +2559,12 @@ Network Segmentation
 
 \begin_layout Standard
 In the case of network failure / segmentation all vaults will periodically
- broadcast a bootstrap (FIND_NODE RPC) on this port to locate other nodes,
- when other nodes are found the internal contact details PLUS the normal
+ broadcast a bootstrap (FIND_NODE RPC) on this port to locate other nodes.
+ When other nodes are found, the internal contact details PLUS the normal
  external contact details are provided, if available.
  This allows the networks to reconfigure into smaller networks and hopefully
  find the parent network again when the network error has been sorted.
- In large catastrophes like continents going off line (possible) this allows
+ In large catastrophes like continents going offline (possible) this allows
  maidsafe to continue to operate and it is hoped the data would be 100%
  available very quickly on such an outage.
  
@@ -2579,7 +2577,7 @@ Listening socket
 \begin_layout Standard
 Vaults will start a listening socket for incoming messages and deal with
  them appropriately.
- The issues to be aware of here are 
+ The issues to be aware of here are:
 \end_layout
 
 \begin_layout Enumerate
@@ -2629,7 +2627,7 @@ reference "tab:Vault-Control-RPC"
 
 \end_inset
 
- for a list of vault RPC's that are controlled by the owning client.
+ for a list of vault RPCs that are controlled by the owning client.
 \end_layout
 
 \begin_layout Standard
@@ -2640,7 +2638,7 @@ reference "tab:vault-generalVault-General"
 
 \end_inset
 
- for a list of vault RPC's that are used by other vaults and clients.
+ for a list of vault RPCs that are used by other vaults and clients.
 \end_layout
 
 \begin_layout Standard
@@ -3546,17 +3544,18 @@ Local Vault Registration
 \begin_layout Standard
 This is the situation where a person is registering themselves on the system
  that actually will run their vault.
- This need not be there computer, one they have access to and is on-line
- most of the time with some available disk space.
+ A user's vault doesn't necessarily need to run on their computer or the
+ same computer as the client, only one which they have access to and is
+ online most of the time with some available disk space.
  On successful registration the user can then log into any maidsafe client
  on any machine and access their data.
  In the case of a family situation then perhaps all the family will create
- their user id on a single machine that's always on, but then choose to
+ their user ID on a single machine that's always on, but then choose to
  use the client part on only their own machine.
 \end_layout
 
 \begin_layout Enumerate
-A vault starts and waits on a client to connect with it to provide a PMID
+A vault starts and waits for a client to connect with it to provide a PMID
  key pair.
 \end_layout
 
@@ -3614,7 +3613,7 @@ s where users will port forward rather than have maidsafe hole punch or
 \end_layout
 
 \begin_layout Enumerate
-The vault then starts it's main port and goes through the normal bootstrap
+The vault then starts its main port and goes through the normal bootstrap
  process.
 \end_layout
 
@@ -3684,8 +3683,8 @@ Vault Startup
 \end_layout
 
 \begin_layout Enumerate
-Vaults starts up, demonizes and reads its configuration file, or waits on
- ownership in registration mode, see 
+A vault starts up as a daemon process and reads its configuration file,
+ or waits on ownership in registration mode, see 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Local-Vault-Registration"
@@ -3696,14 +3695,15 @@ reference "sub:Local-Vault-Registration"
 \end_layout
 
 \begin_layout Enumerate
-From the file it takes the hash of the signed public PMID key, this is the
- vault ID (==PMID) 
+From the file it takes the hash of the signed public PMID key, which is
+ used as the vault ID (==PMID) 
 \end_layout
 
 \begin_layout Enumerate
 The vault now carries out a network bootstrap to determine its connectivity
- status (behind firewall etc..), this is done from a list of potential network
- bootstrap nodes who are directly connected
+ status (behind firewall etc..).
+ This is done from a list of potential network bootstrap nodes who are directly
+ connected
 \begin_inset Foot
 status collapsed
 
@@ -3715,23 +3715,23 @@ In this scenario directly connected means has a publicly accessible IP/PORT
 
 \end_inset
 
-' and can act as rendezvous nodes if need be.
+' and can act as rendezvous nodes if needbe.
 \end_layout
 
 \begin_layout Enumerate
-The vault now carries out a kademlia bootstrap (FIND_NODE==PMID), this is
- done from a cache of previously known kademlia nodes (sorted by rank -
- highest first)
+The vault now carries out a Kademlia bootstrap (FIND_NODE==PMID).
+ This is done from a cache of previously known Kademlia nodes (sorted by
+ rank - highest first)
 \end_layout
 
 \begin_layout Enumerate
 The vault then does a check on each chunk to determine what chunks are still
- under it's control (i.e.
+ under its control (i.e.
  it is in the reference holders value for the chunk).
 \end_layout
 
 \begin_layout Enumerate
-The vault then moves the lost chunks to it's cache directory
+The vault then moves the lost chunks to its cache directory
 \end_layout
 
 \begin_layout Subsection
@@ -3746,12 +3746,12 @@ name "sub:Rank-Packets-(or"
 \end_layout
 
 \begin_layout Standard
-As previously discussed for this system to operate effectively the vaults
- have to be able to provide a mechanism that allows the good to grow and
- the weak to fail and all the options in between.
- This is accomplished using special system packets called rank packets.
- These rely on a the ability to delete single signed values from a chunk
- containing a list of values.
+For this system to operate effectively the vaults have to be able to provide
+ a mechanism that allows the good to grow, the weak to fail and all the
+ options in between.
+ This is accomplished using special system packets called rank packets which
+ rely on a the ability to delete single signed values from a chunk containing
+ a list of values.
  This particular chunk is called a rank chunk.
 \end_layout
 
@@ -3761,28 +3761,28 @@ So a rank chunk is H(MPID + "RANK") (the actual word rank).
 \end_layout
 
 \begin_layout Standard
-This packet is held as a Kademlia key value in the K closest nodes as standard
- in kademlia.
- Again as in 
+This packet is held as a Kademlia key value in the k-closest nodes as standard
+ in Kademlia.
+ As in 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Chunk-References"
 
 \end_inset
 
- the node has to know this is a rank packet and follow some rules regarding
+, the node has to know this is a rank packet and follow some rules regarding
  it.
 \end_layout
 
 \begin_layout Standard
-In this document rank is described in a fashion that basically is a count
- of how much data any PMID has on the network any any one time and this
- is incremented or decremented to allow a node to recover space, i.e.
- when a user deletes a file the cline tpart of the system will instruct
- the vault to depete the equivelent number of chunks that make up the file.
+In this document rank is described in a fashion that is basically a count
+ of how much data any PMID has on the network at any one time and this is
+ incremented or decremented to allow a node to recover space, i.e.
+ when a user deletes a file, the client part of the system will instruct
+ the vault to delete the equivelent number of chunks that make up the file.
  This deletion means the vault moves some chunks to a cache dir, but only
  after instructing the network for a reduce rank message.
- Failure to intruct a reduce rank message will in fact cuase the network
+ Failure to instruct a reduce rank message will in fact cuase the network
  to reduce the rank by a factor of 2 or 3 times the actual amount of data
  the vault deletes.
 \end_layout
@@ -3792,23 +3792,22 @@ Rank Decrement
 \end_layout
 
 \begin_layout Enumerate
-On receipt of an decrement rank message - the signature is checked , confirm
- that this is a signature of the reference chunk holder, also the remove
- request notice is passed as a part of this signed message, the signature
- of this remove notice is also checked.
+On receipt of an decrement rank message, the signature is checked to confirm
+ that this is a signature of the reference chunk holder, the remove request
+ notice is passed as a part of this signed message and the signature of
+ this remove notice is also checked.
  
 \end_layout
 
 \begin_layout Enumerate
-The rank is decremented, again by the size of the chunk in Kilobytes and
- the validation packet described above is passed to the K closest nodes
- to do likewise.
+The rank is decremented by the size of the chunk in kilobytes and the validation
+ packet described above is passed to the k-closest nodes to do likewise.
 \end_layout
 
 \begin_layout Enumerate
-Any note to decrement a rank is checked by all nodes, in case of disagreement
- this is a majority rule situation where the majority will likely be the
- actual rank sorted due to churn effects of the network.
+Any note to decrement a rank is checked by all nodes.
+ In case of disagreement this is a majority rule situation where the majority
+ will likely be the actual rank sorted due to churn effects of the network.
 \end_layout
 
 \begin_layout Subsubsection
@@ -3818,8 +3817,8 @@ Rank Increment
 \begin_layout Standard
 In this case the actual PMID to be incremented is responsible for acquiring
  the increment notice.
- Again the number to increment by is the size of the chunk in Kilobytes.
- This is done using the following process.
+ Again the number to increment by is the size of the chunk in kilobytes.
+ This is done using the following process:
 \end_layout
 
 \begin_layout Enumerate
@@ -3841,12 +3840,12 @@ The reference holder checks his cache dir for the relevant add reference
 \end_layout
 
 \begin_layout Enumerate
-The reference holder then republishes the new chunk reference with the k
- closest nodes and the copy of the increment request.
+The reference holder then republishes the new chunk reference with the k-closest
+ nodes and the copy of the increment request.
 \end_layout
 
 \begin_layout Enumerate
-The reference holder deletes the relevant add reference file(to stop multiple
+The reference holder deletes the relevant add reference file (to stop multiple
  adds).
 \end_layout
 
@@ -3964,15 +3963,15 @@ How do we store / find this rank etc.
 \end_layout
 
 \begin_layout Standard
-The rank is part of the contact tuple for each PMID on the network and transmitt
-ed and saved into routing tables.
+The rank is part of the contact tuple for each PMID on the network, transmitted
+ and saved via routing tables.
  The update rank can be obtained at any time by checking the rank packet.
  This rank should be returned with every FIND_NODE RPC.
- A FIND_RANK RPC will allow the kademlia network to be queried for all nodes
+ A FIND_RANK RPC will allow the Kademlia network to be queried for all nodes
  close to the RANK packet and the average of the returned values is considered
- that nodes rank.
+ that nodes' rank.
  This RPC may be performed prior to a STORE_DATA RPC to ensure the rank
- is correct and up to date, when required.
+ is correct and up-to-date, when required.
 \end_layout
 
 \begin_layout Standard
@@ -3985,14 +3984,33 @@ Save Chunk Location
 \end_layout
 
 \begin_layout Standard
-To store a bit of data - we want to find nodes to store this on - so what
- nodes do we want.
- well we need to know the RTT for nodes in our routing tables and we calculate
+To store a bit of data we firstly need to determine which nodes to store
+ the data on.
+ We need to know the RTT for nodes in our routing tables and we calculate
  the locations based on rank / RTT e.g.
- 1: our rank is 1123 2: We search for nodes with a rank just short of this
- or equal (from our routing table) 3: We get the distribution of these nodes
- by call - closest - furthest - then the two at ~33% and ~67%.
- 4: do a swap chunk 
+ 
+\end_layout
+
+\begin_layout Standard
+1.
+ Our rank is 1123
+\end_layout
+
+\begin_layout Standard
+2.
+ We search for nodes with a rank just short of this or equal (from our routing
+ table)
+\end_layout
+
+\begin_layout Standard
+3.
+ We get the distribution of these nodes by call - closest - furthest - then
+ the two at ~33% and ~67%.
+\end_layout
+
+\begin_layout Standard
+4.
+ Do a swap chunk 
 \end_layout
 
 \begin_layout Standard
@@ -4015,14 +4033,31 @@ Swap Chunk example
 \end_layout
 
 \begin_layout Standard
-Swap chunks are the method used for storing data, you will already have
- candidates with good Geo location and rank.
+Swapping chunks is the method used to store data.
+ You will already have candidates with good geo-location and rank.
  The offer to store a chunk of the same size is made to them (they should
  be happy your rank is probably better than theirs).
- Recipient 1: checks your rank 2: If you have any lost chunk references
- - they will request you contact the holder of a lost chunk and get another
- copy and have them sign a stored receipt in your rank packet.
- 3: They agree to the swap.
+\end_layout
+
+\begin_layout Standard
+Recipient 
+\end_layout
+
+\begin_layout Standard
+1.
+ Checks your rank
+\end_layout
+
+\begin_layout Standard
+2.
+ If you have any lost chunk references - they will request you contact the
+ holder of a lost chunk and get another copy and have them sign a stored
+ receipt in your rank packet.
+\end_layout
+
+\begin_layout Standard
+3.
+ They agree to the swap.
  The chunk they swap will be of a same or less size - but their choice of
  which chunk is decided by a few factors a: size (obviously) b: Length of
  time they have held the chunk (use oldest first) / OR a chunk which shows
@@ -4031,9 +4066,18 @@ Swap chunks are the method used for storing data, you will already have
 \end_layout
 
 \begin_layout Standard
-You 1: On swap agreement - you send your chunk the first (closest partner)
- and the nodes to store on.
- 2: Each node in turn replies with a stored OK - you remove from your queue
+You
+\end_layout
+
+\begin_layout Standard
+1.
+ On swap agreement - you send your chunk the first (closest partner) and
+ the nodes to store on.
+\end_layout
+
+\begin_layout Standard
+2.
+ Each node in turn replies with a stored OK - you remove from your queue
  (this can be carried out much faster by relaying all data from start through
  partners to last partner - single transmission).
  Each node keeps a copy of the data swapped - i.e.
@@ -4046,9 +4090,10 @@ Cache Chunk
 \end_layout
 
 \begin_layout Standard
-When searching for a chunk (akin to find value in kademlia) you tell the
- last node that did not have the chunk to take a copy of this data.
- The last node gets the data and consequent find value will return this
+When searching for a chunk (akin to find value in Kademlia), the client
+ tells the last node that did not have the chunk to take a copy of this
+ data.
+ The last node gets the data and consequently find value will return this
  chunk to the searcher.
 \end_layout
 
@@ -4057,8 +4102,8 @@ Cache times - or how long do we store a cache chunk ?
 \end_layout
 
 \begin_layout Standard
-Option 1: As in kademlia we store the cache chunk for a time which is inversely
- proportional to the xor distance from the original.
+Option 1: As in Kademlia we store the cache chunk for a time which is inversely
+ proportional to the XOR distance from the original.
 \end_layout
 
 \begin_layout Standard

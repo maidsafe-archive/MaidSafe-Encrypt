@@ -778,6 +778,7 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
 #ifdef DEBUG
     printf("CC::ChangeUsername - Not initialised.\n");
 #endif
+    printf("CC::ChangeUsername - Not initialised.\n");
     return false;
   }
   SerialiseDa();
