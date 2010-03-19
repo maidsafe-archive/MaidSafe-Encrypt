@@ -50,7 +50,7 @@ void CryptoKeyPairs::Init(const boost::uint16_t &max_thread_count,
 
 void CryptoKeyPairs::CreateThread() {
   boost::mutex::scoped_lock lock(kb_mutex_);
-  if ((running_thread_count_ < max_thread_count_) && (buffer_count_ > 0) &&
+  while ((running_thread_count_ < max_thread_count_) && (buffer_count_ > 0) &&
       (key_buffer_.size() + running_thread_count_ <= buffer_count_)) {
     boost::shared_ptr<boost::thread> thr(new boost::thread(
         &maidsafe::CryptoKeyPairs::CreateKeyPair, this));
