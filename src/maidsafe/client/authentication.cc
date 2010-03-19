@@ -580,13 +580,14 @@ int Authentication::CreatePublicName(const std::string &public_username) {
 
 int Authentication::ChangeUsername(const std::string &ser_da,
                                    const std::string &new_username) {
-  printf("Authentication::ChangeUsername: start\n");
 
   /*if (!CheckUsername(new_username) || new_username == ss_->Username())
     return kUserExists; // INVALID_USERNAME;*/
   int fakerid;
   if (GetMid(new_username, ss_->Pin(), &fakerid)) {
+#ifdef DEBUG
     printf("Authentication::ChangeUsername: user exists\n");
+#endif
     return kUserExists;
   }
 
@@ -619,7 +620,9 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   if (StorePacket(boost::any_cast<std::string>(mid_result["name"]),
       boost::any_cast<std::string>(mid_result["encRid"]), MID,
       kDoNothingReturnFailure, "") != kSuccess) {
+#ifdef DEBUG
     printf("Authentication::ChangeUsername: Can't store new MID\n");
+#endif
     return kAuthenticationError;
   }
   //  Creating and storing new SMID packet with new username and old MID Rid
@@ -630,7 +633,9 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   if (StorePacket(boost::any_cast<std::string>(smid_result["name"]),
       boost::any_cast<std::string>(smid_result["encRid"]), SMID,
       kDoNothingReturnFailure, "") != kSuccess) {
+#ifdef DEBUG
     printf("Authentication::ChangeUsername: Can't store new SMID\n");
+#endif
     return kAuthenticationError;
   }
   //  Creating new TMID-->MID with new MID Rid
@@ -645,7 +650,9 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   if (StorePacket(boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["data"]), TMID,
       kDoNothingReturnFailure, "") != kSuccess) {
+#ifdef DEBUG
     printf("Authentication::ChangeUsername: Can't store new TMID\n");
+#endif
     return kAuthenticationError;
   }
   //  Creating new TMID-->SMID with old MID Rid and pointing to old DA
@@ -673,7 +680,9 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   if (StorePacket(boost::any_cast<std::string>(tmid_result["name"]),
       boost::any_cast<std::string>(tmid_result["data"]), TMID,
       kDoNothingReturnFailure, "") != kSuccess) {
+#ifdef DEBUG
     printf("Authentication::ChangeUsername: Can't store new SMID TMID\n");
+#endif
     return kAuthenticationError;
   }
   user_params["username"] = ss_->Username();
@@ -682,14 +691,18 @@ int Authentication::ChangeUsername(const std::string &ser_da,
            EncryptedDataMidSmid(boost::any_cast<boost::uint32_t>(
            old_user_params["rid"])), MID);
   if (result != kSuccess) {
+#ifdef DEBUG
     printf("Authentication::ChangeUsername - Failed to delete MID.\n");
+#endif
     return kAuthenticationError;
   }
 
   result = DeletePacket(smidPacket->PacketName(&user_params),
            EncryptedDataMidSmid(ss_->SmidRid()), SMID);
   if (result != kSuccess) {
+#ifdef DEBUG
     printf("Authentication::ChangeUsername - Failed to delete SMID.\n");
+#endif
     return kAuthenticationError;
   }
 
@@ -701,8 +714,10 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   result = DeletePacket(tmidPacket->PacketName(&user_params),
            tmidcontent, TMID);
   if (result != kSuccess) {
+#ifdef DEBUG
     printf("Authentication::ChangeUsername - Failed to delete midTMID {%s}.\n",
            ss_->TmidContent().c_str());
+#endif
     return kAuthenticationError;
   }
   if (ss_->MidRid() != ss_->SmidRid()) {
@@ -715,7 +730,9 @@ int Authentication::ChangeUsername(const std::string &ser_da,
     result = DeletePacket(tmidPacket->PacketName(&user_params),
                           smidtmid_content, TMID);
     if (result != kSuccess) {
+#ifdef DEBUG
       printf("Authentication::ChangeUsername - Failed to delete smidTMID.\n");
+#endif
       return kAuthenticationError;
     }
   }
@@ -725,8 +742,6 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   ss_->SetMidRid(boost::any_cast<boost::uint32_t>(mid_result["rid"]));
   ss_->SetTmidContent(boost::any_cast<std::string>(tmid_result["ser_packet"]));
   ss_->SetSmidTmidContent(boost::any_cast<std::string>(tmid_result["data"]));
-
-  printf("Authentication::ChangeUsername: all good :)\n");
   return kSuccess;
 }
 
