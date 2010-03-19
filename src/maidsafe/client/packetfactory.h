@@ -39,7 +39,7 @@ namespace maidsafe {
 
 const boost::uint16_t kRsaKeySize = 4096;  // size to generate RSA keys in bits.
 const boost::uint16_t kNoOfSystemPackets = 8;
-const boost::uint16_t kMaxCryptoThreadCount = 5;
+const boost::uint16_t kMaxCryptoThreadCount = 3;
 
 typedef std::map<std::string, boost::any> PacketParams;
 
