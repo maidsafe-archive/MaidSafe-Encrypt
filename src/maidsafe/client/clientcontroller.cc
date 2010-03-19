@@ -169,7 +169,7 @@ int ClientController::Init() {
 
 bool ClientController::JoinKademlia() {
   CC_CallbackResult cb;
-  sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
+  sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1), "");
   WaitForResult(cb);
   GenericResponse result;
   if ((!result.ParseFromString(cb.result)) ||
@@ -709,6 +709,18 @@ bool ClientController::Logout() {
 #ifdef DEBUG
   printf("ClientController::Logout - After threads done.\n");
 #endif
+
+  std::string mounted_win_drive(1, ss_->WinDrive());
+  mounted_win_drive += ":";
+  try {
+    while (fs::exists(mounted_win_drive) && ss_->Mounted() == 0)
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("ClientController::Logout - %s\n", e.what());
+#endif
+  }
 
   file_system::UnMount(ss_->SessionName(), ss_->DefConLevel());
   ss_->ResetSession();

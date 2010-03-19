@@ -86,11 +86,14 @@ LocalStoreManager::LocalStoreManager(
           client_chunkstore_(client_chunkstore),
           ss_(SessionSingleton::getInstance()) {}
 
-void LocalStoreManager::Init(int, base::callback_func_type cb) {
+void LocalStoreManager::Init(int, base::callback_func_type cb,
+                             fs::path db_directory) {
 #ifdef LOCAL_PDVAULT
   // Simulate knode join
 //  boost::this_thread::sleep(boost::posix_time::seconds(3));
 #endif
+  if (!db_directory.string().empty())
+    local_sm_dir_ = db_directory.string();
   try {
     if (!fs::exists(local_sm_dir_ + "/StoreChunks")) {
       fs::create_directories(local_sm_dir_ + "/StoreChunks");

@@ -257,7 +257,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
   virtual ~MaidsafeStoreManager() {}
-  void Init(int port, base::callback_func_type cb);
+  void Init(int port, base::callback_func_type cb, fs::path db_directory);
   void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
   void StopRvPing() { transport_handler_.StopPingRendezvous(); }

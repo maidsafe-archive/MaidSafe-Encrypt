@@ -62,7 +62,9 @@ typedef boost::function<void(const ReturnCode&)> CreateAccountFunctor;
 class StoreManagerInterface {
  public:
   virtual ~StoreManagerInterface() {}
-  virtual void Init(int port, base::callback_func_type cb)=0;
+  virtual void Init(int port,
+                    base::callback_func_type cb,
+                    fs::path db_directory)=0;
   virtual void Close(base::callback_func_type cb, bool cancel_pending_ops)=0;
   virtual void CleanUpTransport()=0;
   virtual void StopRvPing()=0;

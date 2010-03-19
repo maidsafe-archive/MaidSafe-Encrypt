@@ -121,7 +121,8 @@ class SEHandlerTest : public testing::Test {
     boost::shared_ptr<LocalStoreManager>
         sm(new LocalStoreManager(client_chunkstore_));
     cb.Reset();
-    sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
+    sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+             test_root_dir_);
     boost::mutex mutex;
     wait_for_result_seh(cb, &mutex);
     GenericResponse result;
@@ -226,7 +227,8 @@ class SEHandlerTest : public testing::Test {
 TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   boost::scoped_ptr<SEHandler> seh(new SEHandler());
   seh->Init(sm, client_chunkstore_);
@@ -328,7 +330,8 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
 TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   boost::scoped_ptr<SEHandler> seh(new SEHandler());
   seh->Init(sm, client_chunkstore_);
@@ -357,7 +360,8 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
 TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   boost::scoped_ptr<SEHandler> seh(new SEHandler());
   seh->Init(sm, client_chunkstore_);
@@ -380,7 +384,8 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
 TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithChunksPrevLoaded) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   boost::scoped_ptr<SEHandler> seh(new SEHandler());
   seh->Init(sm, client_chunkstore_);
@@ -405,7 +410,8 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
   ss_->SetDefConLevel(kDefCon2);
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   boost::scoped_ptr<SEHandler> seh(new SEHandler());
   seh->Init(sm, client_chunkstore_);
@@ -451,7 +457,8 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
 TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   boost::scoped_ptr<SEHandler> seh(new SEHandler());
   seh->Init(sm, client_chunkstore_);
@@ -486,7 +493,8 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   ss_->SetDefConLevel(kDefCon2);
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   boost::scoped_ptr<SEHandler> seh(new SEHandler());
   seh->Init(sm, client_chunkstore_);
@@ -537,7 +545,8 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
 
 //  TEST_F(SEHandlerTest, FUNC_MAID_Decrypt_FailedToLoadChunk) {
 //   boost::shared_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
-//    sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
+//    sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+//             test_root_dir_);
 //    boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));
 //    boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
 //
@@ -605,7 +614,8 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
 TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   boost::scoped_ptr<SEHandler> seh(new SEHandler());
   seh->Init(sm, client_chunkstore_);
@@ -660,7 +670,8 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
 TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
   boost::shared_ptr<LocalStoreManager>
       sm(new LocalStoreManager(client_chunkstore_));
-  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1));
+  sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+           test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   boost::scoped_ptr<SEHandler> seh(new SEHandler());
   seh->Init(sm, client_chunkstore_);

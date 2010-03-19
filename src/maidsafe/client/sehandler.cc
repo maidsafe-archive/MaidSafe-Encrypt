@@ -481,7 +481,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
                        functor);
   {
     boost::mutex::scoped_lock lock(mutex);
-    while (result == kGeneralError)
+    while (result == kPendingResult)
       cond_var.wait(lock);
   }
   return result;
