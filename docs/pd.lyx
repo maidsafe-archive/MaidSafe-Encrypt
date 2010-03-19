@@ -4119,28 +4119,52 @@ Cache Lost Chunk
 \end_layout
 
 \begin_layout Standard
-In the special case of lost chunks we need to make copies - and how to do
- this fairly has been a point of internal debate for me anyway.
+In the special case of lost chunks we need to make copies.
+ How to do this fairly remains a point of internal debate.
  It would appear there may be a flaw in the design as a hacker may just
  request all his chunks are lost copies, thereby bypassing any payment.
 \end_layout
 
 \begin_layout Standard
-So there's a couple of rules to stop that and enhance the system 1: Chunk
- lost store request must be co signed by original storage partners.
- 2: Cache lost chunks stored in a separate locations from normal cache (only
+So there are a couple of rules to stop that and enhance the system:
+\end_layout
+
+\begin_layout Standard
+1.
+ Chunk lost store request must be co signed by original storage partners.
+\end_layout
+
+\begin_layout Standard
+2.
+ Cache lost chunks stored in a separate locations from normal cache (only
  to differentiate) but follows same rules about giving the data.
- 3: Cache chunk is stored along with the ID of who stored it.
- 4: A validity check on these chunks is requested to force the partners
- to again check the node that lost the chunk - if all ok - this chunk is
- deleted (or moved to normal cache dir and follow same rules as a normal
- cache chunk) 5: If there is no chance to have this taken back the cache
- chunk holder is deemed to now be in control of this chunk and the partners
- sign an receipt for having stored a chunk (DISCUSS) 6: In the case of 5
- the originator will have his swap chunk swapped back for no charge by the
- partners (he has not honored his deal by losing this chunk) - so when he
- is next on line he can take the chunk back or lose it ! - If the chunk
- has more people looking at it (i.e.
+\end_layout
+
+\begin_layout Standard
+3.
+ Cache chunk is stored along with the ID of who stored it.
+\end_layout
+
+\begin_layout Standard
+4.
+ A validity check on these chunks is requested to force the partners to
+ again check the node that lost the chunk - if all ok - this chunk is deleted
+ (or moved to normal cache dir and follow same rules as a normal cache chunk)
+\end_layout
+
+\begin_layout Standard
+5.
+ If there is no chance to have this taken back the cache chunk holder is
+ deemed to now be in control of this chunk and the partners sign a receipt
+ for having stored a chunk (DISCUSS)
+\end_layout
+
+\begin_layout Standard
+6.
+ In the case of 5, the originator will have his swap chunk swapped back
+ for no charge by the partners (he has not honored his deal by losing this
+ chunk) - so when he is next online he can take the chunk back or lose it!
+ If the chunk has more people looking at it (i.e.
  buffer packet shows more people looking at it) then the originator is penalized
  with a lost chunk notice on his rank packet.
 \end_layout
@@ -4150,12 +4174,12 @@ Validity Check
 \end_layout
 
 \begin_layout Standard
-To ensure data validity is constant on the network validity checks are performed
- at regular intervals.
- For each chunk a vault holds it will carry out a vailidity check from time
+To ensure data validity is constant on the network, validity checks are
+ performed at regular intervals.
+ For each chunk a vault holds it will carry out a validity check from time
  to time on the chunk.
- Chunks health checks (or validity checks) are required to ensure data is,
- actually in existance and also not been tampered with or damaged.
+ Chunks' health checks (or validity checks) are required to ensure data
+ is actually in existance and also not been tampered with or damaged.
  
 \end_layout
 
@@ -4184,16 +4208,15 @@ On startup - any chunk noted as lost in your rank packet - should initiate
 \begin_layout Enumerate
 At any time a corrupted chunk in the rank packet should initiate a check
  on all chunks you have (otherwise you will find it hard to save data -
- or the client attached the the vault will).
+ or the client attached to the vault will).
  This will make the corrupted one go to bottom of the list faster.
  
 \end_layout
 
 \begin_layout Standard
 Each of the above is done in conjunction with a validity check for the chunk
- with longest time between a validity check.
- ! Any validity check for any chunk will mean you always check the longest
- unchecked chunk.
+ with longest time between a validity check! Any validity check for any
+ chunk will mean you always check the longest unchecked chunk.
 \end_layout
 
 \begin_layout Subsubsection
@@ -4206,9 +4229,9 @@ This checking process is between partner nodes who all share a common chunk.
  a chunk copied 4 times will have 4 validity checking nodes.
  To allow the network to check the data without transmitting the actual
  data another method is described below.
- It should be noted that ALL data chunks ID is a hash of the content, therefore
- there is another check available for end user client node to validate the
- data they receive.
+ It should be noted that ALL data chunks' IDs are a hash of the content,
+ therefore there is another check available for end user client node to
+ validate the data they receive.
  The partner node validity check is described below:
 \end_layout
 
@@ -4308,17 +4331,17 @@ The layers can be thought of as:
 \end_layout
 
 \begin_layout Itemize
-Network Layer - or Layer 1 is responsible for providing the network access.
+Network Layer (Layer 1) is responsible for providing the network access.
  
 \end_layout
 
 \begin_layout Itemize
-MAID Layer - or Layer 2 is the storage area as far as a client can tell.
+MAID Layer (Layer 2) is the storage area as far as a client can tell.
 \end_layout
 
 \begin_layout Itemize
-FileSystem Layer - or Layer 3 is the area of the system responsible for
- presenting the user with a filesystem from which to work with data.
+FileSystem Layer (Layer 3) is the area of the system responsible for presenting
+ the user with a filesystem from which to work with data.
  Initially this will be a FUSE implementation (Filesystem In User Space).
  For embedded systems where FUSE type is not available the file interface
  may be controlled via a traditional explorer type windows in the application
@@ -4330,7 +4353,7 @@ Self Authentication
 \end_layout
 
 \begin_layout Standard
-A user is authorised on the the network with 3 unique pieces of information.
+A user is authorised on the the network with 3 unique pieces of information:
  A username (U), a pin number (P), and a password (W).
  We use a method of hashing called Secure Hash Algorithm (SHA) in this case.
  SHA produces a code for given data, any small change in the data produces
@@ -4367,19 +4390,6 @@ Create a User Identity
 \end_inset
 
  (to ensure uniqueness)
-\end_layout
-
-\begin_layout Enumerate
-\paragraph_spacing onehalf
-\align left
-Create a MAID packet as in 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sub:Create-an-ID"
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Enumerate
@@ -4446,7 +4456,7 @@ reference "sub:Create-an-ID"
 \begin_layout Enumerate
 \paragraph_spacing onehalf
 \align left
-\begin_inset Formula $RSA{\scriptstyle {\textstyle sign}_{(k)_{ANSMID}}{\displaystyle (R)\equiv R{\scriptstyle s}}}$
+\begin_inset Formula $RSA{\scriptstyle {\textstyle sign}_{(k)_{ANSMID}}{\displaystyle (R)\equiv Q{\scriptstyle s}}}$
 \end_inset
 
  
@@ -4468,7 +4478,7 @@ SMID
 \begin_layout Enumerate
 Create
 \emph on
- ANMID
+ ANMAID
 \emph default
  as in 
 \begin_inset CommandInset ref
@@ -4487,7 +4497,7 @@ reference "sub:Create-an-ID"
 \end_inset
 
 
-\begin_inset Formula $RSAsign_{(k)_{[ANMIAD]}}{\scriptstyle }(p)\equiv x$
+\begin_inset Formula $RSAsign_{(k)_{[ANMAID]}}{\scriptstyle }(p)\equiv x$
 \end_inset
 
  (sign public key with private key)
@@ -4509,7 +4519,7 @@ MAID
 \begin_layout Enumerate
 \paragraph_spacing onehalf
 \align left
-\begin_inset Formula $n\equiv H(H(U)+H(P)+H(d)$
+\begin_inset Formula $n\equiv H(H(U)+H(P)+H(d))$
 \end_inset
 
 
@@ -4891,7 +4901,7 @@ Add data structure (key pairs etc.
 \emph on
 ID
 \emph default
-'s (
+s (
 \emph on
 MAID, MID, PMID
 \emph default
@@ -4937,8 +4947,8 @@ The Data Map (i.e.
 \end_inset
 
 ) of the Data Atlas is what is stored to the TMID and encrypted with the
- users password (W).
- Data Atlas's are represented to the user as a file system with the file
+ user's password (W).
+ Data Atlases are represented to the user as a file system with the file
  name and path containing the file hash which maps to the Data Atlas to
  retrieve the file content.
 \end_layout
@@ -4957,7 +4967,7 @@ name "sub:Public-ID-MPID"
 \begin_layout Standard
 This is a different packet from others as its name must be the hash of the
  users chosen public name.
- Unlike other packets MPID public Id's should be stored with any node that
+ Unlike other packets MPID public IDs should be stored with any node that
  communicates with it.
  Only allowing delete from these nodes with a revocation certificate [LATER]
 \end_layout
@@ -5051,7 +5061,7 @@ MPID
 \end_layout
 
 \begin_layout Standard
-The MPID buffer packet may contain a list of ID's allowed to post messages
+The MPID buffer packet may contain a list of IDs allowed to post messages
  there.
  This is described in the messenger section.
  
@@ -5102,7 +5112,7 @@ reference "sub:Ranking"
 \end_layout
 
 \begin_layout Enumerate
-S1 reply's OK you need to store a chunk (c2) from me to.
+S1 replies OK you need to store a chunk (c2) from me to.
  This chunk is of the same size.
 \end_layout
 
@@ -5151,7 +5161,7 @@ Client Node Churn Resolution
 \end_layout
 
 \begin_layout Standard
-As vaults from rank 0 to X are expected to be on line for a determinable
+As vaults from rank 0 to X are expected to be online for a determinable
  percentage of time (or else they are demoted / promoted) then their effect
  on churn is somewhat determinable.
  However, client nodes are not, and so they can have a detrimental effect
@@ -5168,16 +5178,8 @@ As maidsafe alters Kademlia to use a 512 bit number rather than a SHA-1
 \end_layout
 
 \begin_layout Itemize
-All client node's addresses comprise an initial (512-160) 352 bits which
- are all 
-\begin_inset Quotes eld
-\end_inset
-
--
-\begin_inset Quotes erd
-\end_inset
-
-s (hyphens)
+All client node's addresses comprise an initial 352 (512-160) bits which
+ are all hyphens
 \end_layout
 
 \begin_layout Itemize
@@ -5187,8 +5189,8 @@ All client node's last 160 bits of address will be a standard SHA-1 hash
 \end_layout
 
 \begin_layout Standard
-To implement this we have is_unique calls in the system to ensure we do
- not have collisions of data on the network, including creating ID's with
+To implement this, we have is_unique calls in the system to ensure we do
+ not have collisions of data on the network, including creating IDs with
  key pairs etc.
  (at the system level).
  To ensure we never try and store a 
@@ -5232,7 +5234,7 @@ Find nearest node to this name.
 \end_layout
 
 \begin_layout Enumerate
-Retrieve the value for the key of the name, this will provide at least 3
+Retrieve the value for the key of the name; this will provide at least 3
  locations of duplicate chunks.
 \end_layout
 
@@ -5250,8 +5252,8 @@ Delete Data from Network
 \end_layout
 
 \begin_layout Standard
-The act of deleting data is again relatively although some caveats are in
- place.
+The act of deleting data is again relatively simple, although some caveats
+ are in place.
  Here we distinguish between data chunks and system chunks.
  
 \end_layout
@@ -5259,7 +5261,7 @@ The act of deleting data is again relatively although some caveats are in
 \begin_layout Standard
 Data chunks are chunks on the network where the name (which is also the
  key in the DHT key value pair) is equivalent to the hash of the chunk content.
- this provides a safety check for chunk validity.
+ This provides a safety check for chunk validity.
  System chunks on the other hand may not always meet this criteria, although
  all system chunks are signed by a PKI private key.
  
@@ -5270,11 +5272,11 @@ The process is as follows.
 \end_layout
 
 \begin_layout Enumerate
-vault gets a signed request to delete a chunk.
+Vault gets a signed request to delete a chunk.
 \end_layout
 
 \begin_layout Enumerate
-vault checks this chunk by attempting to extract a signature.
+Vault checks this chunk by attempting to extract a signature.
 \end_layout
 
 \begin_layout Enumerate
@@ -5289,8 +5291,8 @@ The vault passes this request on to his peers who are also saving the chunk.
 \end_layout
 
 \begin_layout Enumerate
-If the signature does not match the request is silently dropped, and a system
- alert is generated [ALERT_ATTEMPTED_UNAUTHORISED_DELETE].
+If the signature does not match, the request is silently dropped, and a
+ system alert is generated [ALERT_ATTEMPTED_UNAUTHORISED_DELETE].
 \end_layout
 
 \begin_layout Enumerate
@@ -5312,8 +5314,8 @@ reference "sub:Chunk-lifetimes-and"
 \end_layout
 
 \begin_layout Enumerate
-If data chunk and no ID's are left in the list then the chunk is marked
- for delete in 60 days.
+If data chunk and no IDs are left in the list then the chunk is marked for
+ delete in 60 days.
  
 \end_layout
 
@@ -5419,7 +5421,7 @@ reference "sub:Generic-BUFFER-packet"
 \end_layout
 
 \begin_layout Itemize
-where C1 and C2 are MPID nodes on the network sharing data.
+Where C1 and C2 are MPID nodes on the network sharing data.
 \end_layout
 
 \begin_layout Subsection
@@ -5457,7 +5459,7 @@ DA and a subset of
 \end_layout
 
 \begin_layout Enumerate
-select data maps as created in section 
+Select data maps as created in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Data-maps"
@@ -5468,7 +5470,7 @@ reference "sub:Data-maps"
 \end_layout
 
 \begin_layout Enumerate
-select data Metadata from section 
+Select data Metadata from section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Data-maps"
@@ -5484,15 +5486,15 @@ es/addusers/delusers/updateusers)
 \end_layout
 
 \begin_layout Enumerate
-concatenate
+Concatenate
 \end_layout
 
 \begin_layout Enumerate
-serialise into share called Ns
+Serialise into share called Ns
 \end_layout
 
 \begin_layout Enumerate
-send sys message to public name you are sharing with (in a buffer message
+Send sys message to public name you are sharing with (in a buffer message
  as in 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -5635,8 +5637,8 @@ It has been suggested in tests done at a local level that this could achieve
  maidsafe imagine this would mean a reduction in disk space required today
  - or a reclamation of disk space of somewhere between 60 - 90%, although
  only real world testing will provide the definitive answer.
- Update ! a recent study by datamoniotor puts savings from 4 /1 to 89 /1
- with an average at enterprise level of 20 /1 i.e.
+ A recent study by datamonitor puts savings from 4 /1 to 89 /1 with an average
+ at enterprise level of 20 /1 i.e.
  20Gb can be backed up on 1 Gb space, therefore 95% savings.
 \end_layout
 
@@ -5670,7 +5672,7 @@ Web Site Logins with No Password
 \end_layout
 
 \begin_layout Standard
-[PD signs requests using public or anon ID's]
+[PD signs requests using public or anon IDs]
 \end_layout
 
 \begin_layout Section
@@ -5679,7 +5681,7 @@ Future Trends
 
 \begin_layout Standard
 The future of this type of technology is a bright one.
- A self managed digital ID which can spawn as many ID's as the system or
+ A self managed digital ID which can spawn as many IDs as the system or
  the user decides it should (SHA512 hashes allow for 
 \begin_inset Formula $2x10^{154}$
 \end_inset
@@ -5702,7 +5704,7 @@ A cryptographically secure digital ID with which any human can carry out
  Logging in to PayPal is an example.
  With a maidsafe System, a member can log in from any networked computer
  in the world.
- The Login process takes place on the local computer and involves only the
+ The login process takes place on the local computer and involves only the
  user and the software.
  No password is ever transmitted.
  This ID can be used for anonymous self-authenticated voting, for file sharing
@@ -5716,21 +5718,21 @@ Digital coin, like the gold coin of old, is a thing.
 \end_layout
 
 \begin_layout Enumerate
-be subdivided or combined, and be appropriately re-denominated to any decimal
+Be subdivided or combined, and be appropriately re-denominated to any decimal
  place; 
 \end_layout
 
 \begin_layout Enumerate
-remember and display the contractual agreement from which it originated;
+Remember and display the contractual agreement from which it originated;
  
 \end_layout
 
 \begin_layout Enumerate
-perform internal calculations according to pre-set formula, and, 
+Perform internal calculations according to pre-set formula, and, 
 \end_layout
 
 \begin_layout Enumerate
-autonomously access the Internet for variables to input into said formula.
+Autonomously access the Internet for variables to input into said formula.
  
 \end_layout
 
