@@ -204,6 +204,7 @@ PacketParams TmidPacket::GetData(const std::string &serialised_packet,
   GenericPacket tmid_packet;
   PacketParams result;
   if (!tmid_packet.ParseFromString(serialised_packet)) {
+    printf("Nalgaaaaaaaaaaaaaaaaaaaa\n");
     result["data"] = std::string();
   } else {
     std::string secure_passw = crypto_obj_.SecurePassword(password, rid);

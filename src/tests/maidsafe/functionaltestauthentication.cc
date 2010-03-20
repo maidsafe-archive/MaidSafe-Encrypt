@@ -86,7 +86,6 @@ class FunctionalAuthenticationTest : public testing::Test {
   FunctionalAuthenticationTest() : test_root_dir_(file_system::TempDir() /
                              ("maidsafe_TestAuth_" + base::RandomString(6))),
                          ss_(),
-                         sm_(),
                          client_chunkstore_(),
                          pin_("1234"),
                          password_("password1"),
@@ -112,18 +111,6 @@ class FunctionalAuthenticationTest : public testing::Test {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
       count += 10;
     }
-    boost::shared_ptr<MaidsafeStoreManager>
-        sm_(new MaidsafeStoreManager(client_chunkstore_));
-    sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                                      &cb_, _1), test_root_dir_);
-    boost::mutex mutex;
-    test_auth::WaitForResult(cb_, &mutex);
-    GenericResponse res;
-    if ((!res.ParseFromString(cb_.result)) ||
-        (res.result() == kNack)) {
-      FAIL();
-      return;
-    }
     ss_ = SessionSingleton::getInstance();
     ss_->ResetSession();
     cb_.Reset();
@@ -143,7 +130,6 @@ class FunctionalAuthenticationTest : public testing::Test {
 
   fs::path test_root_dir_;
   SessionSingleton *ss_;
-  boost::shared_ptr<MaidsafeStoreManager> sm_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   std::string pin_;
   std::string password_;
@@ -157,8 +143,6 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_MSM_CreateUserSysPackets) {
   std::string username = "user1";
   boost::shared_ptr<MaidsafeStoreManager>
       sm(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                          &cb_, _1), test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   std::string ser_dm_login;
@@ -172,8 +156,6 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_MSM_GoodLogin) {
   std::string username = "user2";
   boost::shared_ptr<MaidsafeStoreManager>
       sm(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                          &cb_, _1), test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   int result = authentication->GetUserInfo(username, pin_);
@@ -218,8 +200,6 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_MSM_LoginNoUser) {
   std::string username = "user3";
   boost::shared_ptr<MaidsafeStoreManager>
       sm(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                          &cb_, _1), test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   std::string ser_dm, ser_dm_login;
@@ -252,8 +232,6 @@ TEST_F(FunctionalAuthenticationTest, BEH_MAID_RegisterUserOnce) {
   std::string username = "user4";
   boost::shared_ptr<MaidsafeStoreManager>
       sm(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                          &cb_, _1), test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   DataAtlas data_atlas;
@@ -292,8 +270,6 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_MSM_RegisterUserTwice) {
   std::string username = "user5";
   boost::shared_ptr<MaidsafeStoreManager>
       sm(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                          &cb_, _1), test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   int result = authentication->GetUserInfo(username, pin_);
@@ -330,8 +306,6 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_MSM_RepeatedSaveSession) {
   std::string username = "user6";
   boost::shared_ptr<MaidsafeStoreManager>
       sm(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                          &cb_, _1), test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   int result = authentication->GetUserInfo(username, pin_);
@@ -376,8 +350,6 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_MSM_ChangeUsername) {
   std::string username = "user7";
   boost::shared_ptr<MaidsafeStoreManager>
       sm(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                          &cb_, _1), test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   int result = authentication->GetUserInfo(username, pin_);
@@ -449,8 +421,6 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_MSM_ChangePin) {
   std::string username = "user8";
   boost::shared_ptr<MaidsafeStoreManager>
       sm(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                          &cb_, _1), test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   int result = authentication->GetUserInfo(username, pin_);
@@ -516,8 +486,6 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_MSM_ChangePassword) {
   std::string username = "user9";
   boost::shared_ptr<MaidsafeStoreManager>
       sm(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                          &cb_, _1), test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   int result = authentication->GetUserInfo(username, pin_);
@@ -561,8 +529,6 @@ TEST_F(FunctionalAuthenticationTest, BEH_MAID_MSM_CreatePublicName) {
   std::string username = "user10";
   boost::shared_ptr<MaidsafeStoreManager>
       sm(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                          &cb_, _1), test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   crypto::Crypto crypto_obj;
@@ -579,8 +545,6 @@ TEST_F(FunctionalAuthenticationTest, BEH_MAID_MSM_CreateMSIDPacket) {
   std::string username = "user12";
   boost::shared_ptr<MaidsafeStoreManager>
       sm(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc,
-                          &cb_, _1), test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   crypto::Crypto co;

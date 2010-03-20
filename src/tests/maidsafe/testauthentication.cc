@@ -210,6 +210,24 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   ASSERT_EQ(username, ss_->Username()) << "Saved username doesn't correspond";
   ASSERT_EQ(pin, ss_->Pin()) << "Saved pin doesn't correspond";
   ASSERT_EQ(password, ss_->Password()) << "Saved password doesn't correspond";
+
+
+  result = authentication->SaveSession(ser_dm);
+  ASSERT_EQ(kSuccess, result);
+  result = authentication->GetUserInfo(username, pin);
+  ASSERT_EQ(kUserExists, result) << "User does not exist";
+  ser_dm_login.clear();
+  result = authentication->GetUserData(password, &ser_dm_login);
+  ASSERT_EQ(kSuccess, result) << "Unable to get registered user's data";
+  ASSERT_EQ(ser_dm, ser_dm_login) <<
+            "Serialised DA recovered from login empty string";
+  dm.Clear();
+  ASSERT_TRUE(dm.ParseFromString(ser_dm_login)) <<
+              "Data Atlas hasn't the correct format";
+  ASSERT_EQ(ser_dm, ser_dm_login) <<
+            "DA recoverd from login different from DA stored in registration";
+  ASSERT_EQ(username, ss_->Username()) << "Saved username doesn't correspond";
+  ASSERT_EQ(pin, ss_->Pin()) << "Saved pin doesn't correspond";
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
@@ -448,7 +466,6 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
   // Save the session to create different TMIDs for MID and SMID
-  std::string tmidcontent = ss_->TmidContent();
   result = authentication->SaveSession(ser_dm);
   ASSERT_EQ(kSuccess, result) << "Can't save the session";
 
@@ -474,12 +491,12 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
             "Unable to change iuserneim";
   ASSERT_EQ("el iuserneim", ss_->Username()) <<
             "iuserneim is still the old one";
+  ASSERT_NE(ss_->MidRid(), ss_->SmidRid());
 
-  std::string ser_dm_login;
   result = authentication->GetUserInfo("el iuserneim", pin);
 
   ASSERT_EQ(kUserExists, result) << "User does not exist";
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  std::string ser_dm_login;
   result = authentication->GetUserData(password, &ser_dm_login);
   ASSERT_EQ(kSuccess, result) << "Can't login with new iuserneim";
 
@@ -541,12 +558,15 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
          co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
                  crypto::STRING_STRING, false),
          "", crypto::STRING_STRING, false);
+  std::string mid_tmid = ss_->TmidContent();
+  std::string smid_tmid = ss_->SmidTmidContent();
 
   ASSERT_EQ(kSuccess, authentication->ChangePin(ser_dm, "7894"));
   ASSERT_EQ("7894", ss_->Pin()) << "pin is still the old one";
-  std::string ser_dm_login;
+  ASSERT_NE(ss_->MidRid(), ss_->SmidRid());
+
   result = authentication->GetUserInfo(username, "7894");
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  std::string ser_dm_login;
   result = authentication->GetUserData(password, &ser_dm_login);
   ASSERT_EQ(kSuccess, result) << "Can't login with new pin";
   result = authentication->GetUserInfo(username, pin);
@@ -652,7 +672,8 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   boost::shared_ptr<Authentication> authentication(new Authentication());
   authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
   result = authentication->GetUserInfo(username, pin);
-  EXPECT_EQ(kInvalidUsernameOrPin, result);
+  EXPECT_EQ(kUserDoesntExist, result);
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 }
 
 TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
