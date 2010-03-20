@@ -497,7 +497,7 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
     for (int i = 0; i < find_response.signed_values_size(); ++i) {
       if (!find_response.signed_values(i).value().empty())
         empty = false;
-      values.push_back(find_response.signed_values(i).SerializeAsString()); //.value()
+      values.push_back(find_response.signed_values(i).SerializeAsString());
     }
 #ifdef DEBUG
     printf("In MSM::LoadPacketCallback, returned %i values.\n", values.size());

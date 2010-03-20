@@ -27,6 +27,7 @@
 
 #include <list>
 #include <string>
+#include <vector>
 
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
