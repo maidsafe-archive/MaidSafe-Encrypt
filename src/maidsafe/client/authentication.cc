@@ -88,6 +88,8 @@ int Authentication::GetUserInfo(const std::string &username,
   while (user_info_result_ == kPendingResult)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
+  ss_->SetUsername(username);
+  ss_->SetPin(pin);
   return user_info_result_;
 }
 

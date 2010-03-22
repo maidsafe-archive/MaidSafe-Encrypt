@@ -103,6 +103,15 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
     responses.push_back(response);
     test_aah::CallbacksHolder cbh(&mutex, &cv);
     maidsafe::AmendAccountRequest request;
+    request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+    request.set_account_pmid(far_account_name);
+    maidsafe::SignedSize *mutable_signed_size = request.mutable_signed_size();
+    mutable_signed_size->set_data_size(1000);
+    mutable_signed_size->set_pmid(good_pmids_.at(i));
+    mutable_signed_size->set_signature("IrrelevantSig");
+    mutable_signed_size->set_public_key("IrrelevantPubKey");
+    mutable_signed_size->set_public_key_signature("IrrelevantPubKeySig");
+    request.set_chunkname("IrrelevantChunkname");
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
         &test_aah::CallbacksHolder::callback);
     PendingAmending pending(&request, &responses.at(i), done);
