@@ -53,9 +53,7 @@ struct PendingAmending {
   maidsafe::AmendAccountResponse *response;
   google::protobuf::Closure *done;
   bool operator==(const PendingAmending &other) const {
-    return (request.SerializeAsString() == other.request.SerializeAsString() &&
-            response == other.response &&
-            done == other.done);
+    return (request.SerializeAsString() == other.request.SerializeAsString());
   }
   bool operator!=(const PendingAmending &other) const {
     return !(*this == other);
