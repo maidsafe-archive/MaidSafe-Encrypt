@@ -482,7 +482,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
                         crypto::STRING_STRING);
 
   EXPECT_CALL(mock_vault_service_logic_,
-              AddToRemoteRefList(chunk_name, testing::_, testing::_,
+              AddToRemoteRefList(testing::_, testing::_, testing::_,
                                  testing::_))
       .Times(testing::Exactly(1));
   EXPECT_CALL(mock_vault_service_logic_,

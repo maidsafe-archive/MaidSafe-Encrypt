@@ -147,6 +147,24 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                         <distributionFile>
                             <origin>../../QtGuid4.dll</origin>
                         </distributionFile>
+                        <distributionFile>
+                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libcryptopp.a</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libcryptopp.dll</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libmaidsafe.a</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libmaidsafe.dll</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libudt.a</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libudt.dll</origin>
+                        </distributionFile>
                     </distributionFileList>
                 </folder>
                 <folder>
@@ -421,7 +439,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <name>autoupdaterosx</name>
                     <platforms>osx</platforms>
                     <distributionFileList>
-                        <distributionFile origin="../../../../../Applications/BitRock InstallBuilder Enterprise 6.2.6/autoupdate/output/autoupdate-osx.app"/>
+                        <distributionFile origin="/Applications/BitRock InstallBuilder Enterprise 6.2.6/autoupdate/output/autoupdate-osx.app"/>
                     </distributionFileList>
                 </folder>
             </folderList>

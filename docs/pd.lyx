@@ -359,7 +359,7 @@ p = public key (used to encrypt)
 \end_layout
 
 \begin_layout Standard
-netputV = put a Value on the network (kademlia)
+netputV = put a Value on the network (Kademlia)
 \end_layout
 
 \begin_layout Standard
@@ -367,7 +367,7 @@ netputD = put Data on the network (maidsafe)
 \end_layout
 
 \begin_layout Standard
-netgetV = get Value from network (kadmelia)
+netgetV = get Value from network (Kadmelia)
 \end_layout
 
 \begin_layout Standard
@@ -645,7 +645,7 @@ Do things
 \begin_inset Text
 
 \begin_layout Plain Layout
-kademlia
+Kademlia
 \end_layout
 
 \end_inset
@@ -657,7 +657,7 @@ kademlia
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "DNS"
-description "Domain Name System, used to convert IP addresses (such as 88.222.43.12) into memorable names such as maidsafe.net, google.com etc. "
+description "Domain Name System, used to convert IP addresses (such as 88.222.43.12) into memorable names such as maidsafe.net, google.com etc. and vice versa"
 
 \end_inset
 
@@ -922,7 +922,7 @@ d.
  coding standards, test framework etc.).
  These allow data to be serialised based on templates known as proto files
  which are compiled into native c++ code which the programmer can use to
- write and read serialised data in a very efficient manner.
+ read and write serialised data in a very efficient manner.
 \end_layout
 
 \begin_layout Standard
@@ -944,8 +944,8 @@ Buffer Packet
 \end_layout
 
 \begin_layout Standard
-To enable faster moving values than a standard kademlia key could update
- or keep in synchronisation, a special kademlia type is created called a
+To enable faster moving values than a standard Kademlia key could update
+ or keep in synchronisation, a special Kademlia type is created called a
  buffer packet.
  This is a system where a key can accept many short TTL values.
   The recipients of these values read them then confirm they are new using
@@ -956,7 +956,7 @@ d hashes list the recipient has to create and monitor.
  list time of 50 seconds to ensure consistency.
  This allows what would seem like faster reads on the network than is currently
  possible.
- Here kademlia delete is not used but rather TTL and data expiration is
+ Here Kademlia delete is not used but rather TTL and data expiration is
  used.
 \end_layout
 
@@ -1642,7 +1642,7 @@ Content == Public Key signed by
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "ANMAID"
-description "Anonymous MAID keypair, this keypair is never used for anything other than sign the MAID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
+description "Anonymous MAID keypair. This keypair is never used for anything other than sign the MAID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
 
 \end_inset
 
@@ -1659,7 +1659,7 @@ ID == H( content )
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "TMID"
-description "[Temporary maidsafe IDentification] An ever changing chunk (at every session update) which holds the data map of the data atlas (i.e. a database of all stored files)."
+description "[Temporary maidsafe IDentification]. An ever changing chunk (at every session update) which holds the data map of the data atlas (i.e. a database of all stored files)."
 
 \end_inset
 
@@ -1682,7 +1682,7 @@ Content == (data map of data atlas) encrypted using users password signed
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "ANTMID"
-description "Anonymous TMID keypair, this keypair is never used for anything other than sign the TMID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
+description "Anonymous TMID keypair. This keypair is never used for anything other than sign the TMID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
 
 \end_inset
 
@@ -1699,7 +1699,7 @@ ID == H( content )
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "MPID"
-description "[maidsafe Public IDentification] A special packet which creates a user identity that is public. This packet is not linked with any other in the system, i.e. there is no link between this and login or data storage and retrieval. It can be considered to be a publicly viewable name (e.g. printed on a business card) that gives no clues to the user's system credentials. "
+description "[maidsafe Public IDentification]. A special packet which creates a user identity that is public. This packet is not linked with any other in the system, i.e. there is no link between this and login or data storage and retrieval. It can be considered to be a publicly viewable name (e.g. printed on a business card) that gives no clues to the user's system credentials. "
 
 \end_inset
 
@@ -1721,7 +1721,7 @@ Content == Public Key signed by
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "ANMPID"
-description "Anonymous MPID keypair, this keypair is never used for anything other than sign the MPID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
+description "Anonymous MPID keypair. This keypair is never used for anything other than to sign the MPID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
 
 \end_inset
 
@@ -1738,7 +1738,7 @@ ID == H( public name )
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "PMID"
-description "[Proxy maidsafe IDentification] A packet named with the hash of the Vault's public key signed by the owners MAID, and which is linked to the MAID. By linking the vault and the client, it allows the client to store data directly by signing requests with this PMID key. The PMID keypair is created by the client."
+description "[Proxy maidsafe IDentification]. A packet named with the hash of the vault's public key, signed by the owners MAID and which is linked to the MAID. By linking the vault and the client, it allows the client to store data directly by signing requests with this PMID key. The PMID keypair is created by the client."
 
 \end_inset
 
@@ -1767,7 +1767,7 @@ ID == H( content )
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "MSID"
-description " [maidsafe Shared IDentification] A private share data map held locally and updated on the network via messages."
+description " [maidsafe Shared IDentification]. A private share data map held locally and updated on the network via messages."
 
 \end_inset
 
@@ -1782,7 +1782,7 @@ MSID
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "PPMID"
-description " [Purchasable Proxy maidsafe IDentification] A packet used to maintain a list of disk space which may be allocated by Maidsafe to others either at a cost or by donation, etc. This is used in the pdzone registration process."
+description " [Purchasable Proxy Maidsafe IDentification]. A packet used to maintain a list of disk space which may be allocated by maidsafe to others either at a cost or by donation, etc. This is used in the pdzone registration process."
 
 \end_inset
 
@@ -1873,7 +1873,7 @@ Overview
 \end_layout
 
 \begin_layout Note
-This section assumes the reader has read the kademlia paper referenced in
+This section assumes the reader has read the Kademlia paper referenced in
  this section as repeating the details is not of value here.
 \end_layout
 
@@ -1922,7 +1922,7 @@ The reason for this is twofold; initially the value is generally a large
 \end_layout
 
 \begin_layout Example
-So maidsafe uses kademlia to store keys and values as well as routing informatio
+So maidsafe uses Kademlia to store keys and values as well as routing informatio
 n, but uses an overlay network (maid layer) to ensure data robustness (explained
  in Vaults section 
 \begin_inset CommandInset ref
@@ -2000,7 +2000,7 @@ key "key-15"
 \end_layout
 
 \begin_layout Standard
-Standard kademlia, though, has some limitations and an example of some limitatio
+Standard Kademlia, though, has some limitations and an example of some limitatio
 ns are:
 \end_layout
 
@@ -3019,7 +3019,7 @@ name "tab:Vault-Control-RPC"
 
 \end_inset
 
- Vault Control RPC's
+ Vault Control RPCs
 \end_layout
 
 \end_inset
@@ -3514,7 +3514,7 @@ name "tab:vault-generalVault-General"
 
 \end_inset
 
-Vault General RPC's
+Vault General RPCs
 \end_layout
 
 \end_inset
@@ -5853,7 +5853,7 @@ key "key-15"
 \end_inset
 
 PETAR MAYMOUNKOV AND DAVID MAZI`RESE Kademlia: A Peer-to-peer Information
- System Based on the XOR Metric {petar,dm}@cs.nyu.edu http://kademlia.scs.cs.nyu.edu
+ System Based on the XOR Metric {petar,dm}@cs.nyu.edu http://Kademlia.scs.cs.nyu.edu
  
 \end_layout
 

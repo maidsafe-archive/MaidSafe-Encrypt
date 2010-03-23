@@ -55,64 +55,25 @@ struct IsOwnedPendingResponse {
   maidsafe::SetLocalVaultOwnedResponse* args;
 };
 
-class AddToRemoteRefListTask : public QRunnable {
+template <typename T>
+class RemoteTask : public QRunnable {
  public:
-  AddToRemoteRefListTask(const std::string &chunkname,
-                         const maidsafe::StoreContract &store_contract,
-                         const int &found_local_result,
-                         VaultServiceLogic *vault_service_logic,
-                         const boost::int16_t &transport_id)
-      : chunkname_(chunkname),
-        store_contract_(store_contract),
-        found_local_result_(found_local_result),
-        vault_service_logic_(vault_service_logic),
-        transport_id_(transport_id) {}
-  void run();
- private:
-  AddToRemoteRefListTask &operator=(const AddToRemoteRefListTask&);
-  AddToRemoteRefListTask(const AddToRemoteRefListTask&);
-  std::string chunkname_;
-  maidsafe::StoreContract store_contract_;
-  int found_local_result_;
-  VaultServiceLogic *vault_service_logic_;
-  boost::int16_t transport_id_;
-};
-
-//  class RemoveFromRemoteRefListTask : public QRunnable {
-//   public:
-//    RemoveFromRemoteRefListTask(const std::string &chunkname,
-//                                const maidsafe::SignedSize &signed_size,
-//                                VaultServiceLogic *vault_service_logic)
-//        : chunkname_(chunkname),
-//          signed_size_(signed_size),
-//          vault_service_logic_(vault_service_logic) {}
-//    void run();
-//   private:
-// RemoveFromRemoteRefListTask &operator=(const RemoveFromRemoteRefListTask&);
-//    RemoveFromRemoteRefListTask(const RemoveFromRemoteRefListTask&);
-//    std::string chunkname_;
-//    maidsafe::SignedSize signed_size_;
-//    VaultServiceLogic *vault_service_logic_;
-//  };
-
-class AmendRemoteAccountTask : public QRunnable {
- public:
-  AmendRemoteAccountTask(
-      const maidsafe::AmendAccountRequest &amend_account_request,
+  RemoteTask(
+      const T &request,
       const int &found_local_result,
       VoidFuncOneInt callback,
       VaultServiceLogic *vault_service_logic,
       const boost::int16_t &transport_id)
-          : amend_account_request_(amend_account_request),
+          : request_(request),
             found_local_result_(found_local_result),
             callback_(callback),
             vault_service_logic_(vault_service_logic),
             transport_id_(transport_id) {}
   void run();
  private:
-  AmendRemoteAccountTask &operator=(const AmendRemoteAccountTask&);
-  AmendRemoteAccountTask(const AmendRemoteAccountTask&);
-  maidsafe::AmendAccountRequest amend_account_request_;
+  RemoteTask &operator=(const RemoteTask&);
+  RemoteTask(const RemoteTask&);
+  T request_;
   int found_local_result_;
   VoidFuncOneInt callback_;
   VaultServiceLogic *vault_service_logic_;
@@ -310,8 +271,9 @@ class VaultService : public maidsafe::MaidsafeService {
       const VoidFuncOneInt &callback);
   void AddToRemoteRefList(const std::string &chunkname,
                           const maidsafe::StoreContract &contract);
-  int RemoteVaultAbleToStore(const boost::uint64_t &size,
-                             const std::string &account_pmid);
+  void RemoteVaultAbleToStore(const boost::uint64_t &size,
+                              const std::string &account_pmid,
+                              const VoidFuncOneInt &callback);
   std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
   VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;
