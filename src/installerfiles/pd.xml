@@ -439,7 +439,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <name>autoupdaterosx</name>
                     <platforms>osx</platforms>
                     <distributionFileList>
-                        <distributionFile origin="../../../Applications/BitRock InstallBuilder Enterprise 6.2.6/autoupdate/output/autoupdate-osx.app"/>
+                        <distributionFile origin="/Applications/BitRock InstallBuilder Enterprise 6.2.6/autoupdate/output/autoupdate-osx.app"/>
                     </distributionFileList>
                 </folder>
             </folderList>
