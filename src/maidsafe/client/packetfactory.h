@@ -26,11 +26,9 @@
 #define MAIDSAFE_CLIENT_PACKETFACTORY_H_
 
 #include <boost/any.hpp>
-#include <boost/thread.hpp>
 #include <gtest/gtest_prod.h>
 #include <maidsafe/crypto.h>
 #include <map>
-#include <queue>
 #include <string>
 
 #include "protobuf/datamaps.pb.h"
@@ -39,34 +37,8 @@ namespace maidsafe {
 
 const boost::uint16_t kRsaKeySize = 4096;  // size to generate RSA keys in bits.
 const boost::uint16_t kNoOfSystemPackets = 8;
-const boost::uint16_t kMaxCryptoThreadCount = 3;
 
 typedef std::map<std::string, boost::any> PacketParams;
-
-class CryptoKeyPairs {
- public:
-  CryptoKeyPairs();
-  ~CryptoKeyPairs();
-  void Init(const boost::uint16_t &max_thread_count,
-            const boost::uint16_t &buffer_count);
-  crypto::RsaKeyPair GetKeyPair();
-  boost::uint16_t max_thread_count();
-  boost::uint16_t buffer_count();
-  void set_max_thread_count(const boost::uint16_t &max_thread_count);
-  void set_buffer_count(const boost::uint16_t &buffer_count);
- private:
-  CryptoKeyPairs &operator=(const CryptoKeyPairs&);
-  CryptoKeyPairs(const CryptoKeyPairs&);
-  FRIEND_TEST(CryptoKeyPairsTest, BEH_MAID_GetCryptoKeysUnthreaded);
-  FRIEND_TEST(CryptoKeyPairsTest, FUNC_MAID_GetCryptoKeysThreaded);
-  void CreateThread();
-  void DestroyThread();
-  void CreateKeyPair();
-  boost::uint16_t max_thread_count_, buffer_count_, running_thread_count_;
-  std::queue<crypto::RsaKeyPair> key_buffer_;
-  boost::mutex kb_mutex_;
-  boost::condition_variable kb_cond_var_;
-};
 
 class Packet {
  public:

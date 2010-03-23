@@ -33,7 +33,7 @@
 #include <vector>
 
 #include "fs/filesystem.h"
-#include "maidsafe/client/systempackets.h"
+#include "maidsafe/client/cryptokeypairs.h"
 
 namespace fs = boost::filesystem;
 
@@ -67,11 +67,12 @@ inline void MakeKeys(const int &key_count,
   int need_keys = key_count - static_cast<int>(keys->size());
   if (need_keys > 0) {
     maidsafe::CryptoKeyPairs kps;
-    kps.Init(maidsafe::kMaxCryptoThreadCount, need_keys);
+    kps.StartToCreateKeyPairs(need_keys);
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    kps.set_max_thread_count(0);
     for (int i = 0; i < need_keys; ++i) {
-      crypto::RsaKeyPair rsakp = kps.GetKeyPair();
+      crypto::RsaKeyPair rsakp;
+      if (!kps.GetKeyPair(&rsakp))
+        break;
       keys->push_back(rsakp);
       maidsafe::GenericPacket *gp = keys_buffer.add_messages();
       gp->set_data(rsakp.public_key());
