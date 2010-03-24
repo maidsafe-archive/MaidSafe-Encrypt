@@ -31,9 +31,8 @@
 #include <boost/noncopyable.hpp>
 #include <gtest/gtest_prod.h>
 #include <maidsafe/crypto.h>
-#include <string>
+#include <list>
 #include <vector>
-#include <queue>
 
 namespace maidsafe {
 
@@ -56,6 +55,6 @@ class CryptoKeyPairs : public boost::noncopyable {
   bool started_, destroying_this_;
 };
 
-}
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_CLIENT_CRYPTOKEYPAIRS_H_

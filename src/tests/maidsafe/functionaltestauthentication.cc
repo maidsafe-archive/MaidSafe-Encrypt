@@ -121,7 +121,7 @@ class FunctionalAuthenticationTest : public testing::Test {
       FAIL();
       return;
     }
-    authentication_->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm_);
+    authentication_->Init(kNoOfSystemPackets, sm_);
     ss_ = SessionSingleton::getInstance();
     ss_->ResetSession();
     cb_.Reset();

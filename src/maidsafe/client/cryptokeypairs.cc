@@ -61,7 +61,7 @@ bool CryptoKeyPairs::StartToCreateKeyPairs(const boost::int16_t
           boost::bind(&CryptoKeyPairs::CreateKeyPair, this)));
       ++i;
     }
-    catch (const boost::thread_resource_error&) {
+    catch(const boost::thread_resource_error&) {
       break;
     }
   }
@@ -69,7 +69,6 @@ bool CryptoKeyPairs::StartToCreateKeyPairs(const boost::int16_t
     started_ = false;
   }
   return started_;
-
 }
 
 void CryptoKeyPairs::CreateKeyPair() {

@@ -158,7 +158,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateUserSysPackets) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
   std::string ser_dm_login;
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -172,7 +172,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -236,7 +236,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
   std::string ser_dm, ser_dm_login;
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -269,7 +269,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserOnce) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
   DataAtlas data_atlas;
 
   int result = authentication->GetUserInfo(username, pin);
@@ -308,7 +308,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -369,7 +369,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSession) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -442,7 +442,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -514,7 +514,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication->CreateUserSysPackets(username, pin);
@@ -584,7 +584,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
 
   int result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -629,7 +629,7 @@ TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
 
   crypto::Crypto crypto_obj;
   crypto_obj.set_symm_algorithm(crypto::AES_256);
@@ -670,7 +670,7 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   }
   ASSERT_EQ(kSuccess, result);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
   result = authentication->GetUserInfo(username, pin);
   EXPECT_EQ(kUserDoesntExist, result);
   boost::this_thread::sleep(boost::posix_time::seconds(5));
@@ -682,7 +682,7 @@ TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
   sm->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::shared_ptr<Authentication> authentication(new Authentication());
-  authentication->Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm);
+  authentication->Init(kNoOfSystemPackets, sm_);
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);

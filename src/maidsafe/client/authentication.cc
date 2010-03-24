@@ -53,8 +53,7 @@ char *utils_trim(char *szSource) {
   return utils_trim_left(utils_trim_right(utils_trim_left(szSource)));
 }
 
-void Authentication::Init(const boost::uint16_t &max_crypto_thread_count,
-                          const boost::uint16_t &crypto_key_buffer_count,
+void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count,
                           boost::shared_ptr<StoreManagerInterface> smgr) {
   sm_ = smgr;
   ss_ = SessionSingleton::getInstance();
