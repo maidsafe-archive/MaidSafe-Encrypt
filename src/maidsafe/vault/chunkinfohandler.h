@@ -28,38 +28,108 @@
 #include <gtest/gtest_prod.h>
 #include <maidsafe/maidsafe-dht.h>
 
-#include <string>
+#include <algorithm>
 #include <list>
 #include <map>
+#include <string>
+#include <utility>
 
 #include "maidsafe/maidsafe.h"
+#include "protobuf/sync_data.pb.h"
 
 namespace maidsafe_vault {
 
 enum ResetReason {kReasonStoringFailed, kReasonPaymentFailed, kReasonStale};
 
-struct WatchListEntry {
-  std::string pmid;
-  bool can_delete;
-};
-
-struct ReferenceListEntry {
-  std::string pmid;
-  boost::uint32_t last_seen;
-  // TODO(Team#) ranked chunk holders?
-};
-
 struct WaitingListEntry {
+  WaitingListEntry() : pmid(),
+                       creation_time(0),
+                       storing_done(false),
+                       payments_done(false),
+                       requested_payments(0) {}
+  explicit WaitingListEntry(
+      const ChunkInfoMap::VaultChunkInfo::WaitingListEntry &waiting_list_entry)
+          : pmid(waiting_list_entry.pmid()),
+            creation_time(waiting_list_entry.creation_time()),
+            storing_done(waiting_list_entry.storing_done()),
+            payments_done(waiting_list_entry.payments_done()),
+            requested_payments(waiting_list_entry.requested_payments()) {}
   std::string pmid;
   boost::uint32_t creation_time;
   bool storing_done;
   bool payments_done;
   int requested_payments;
+  void PutToPb(ChunkInfoMap::VaultChunkInfo *vault_chunk_info) {
+    ChunkInfoMap::VaultChunkInfo::WaitingListEntry *waiting_list_entry =
+        vault_chunk_info->add_waiting_list_entry();
+    waiting_list_entry->set_pmid(pmid);
+    waiting_list_entry->set_creation_time(creation_time);
+    waiting_list_entry->set_storing_done(storing_done);
+    waiting_list_entry->set_payments_done(payments_done);
+    waiting_list_entry->set_requested_payments(requested_payments);
+  }
+};
+
+struct WatchListEntry {
+  WatchListEntry() : pmid(), can_delete(false) {}
+  explicit WatchListEntry(
+      const ChunkInfoMap::VaultChunkInfo::WatchListEntry &watch_list_entry)
+          : pmid(watch_list_entry.pmid()),
+            can_delete(watch_list_entry.can_delete()) {}
+  std::string pmid;
+  bool can_delete;
+  void PutToPb(ChunkInfoMap::VaultChunkInfo *vault_chunk_info) {
+    ChunkInfoMap::VaultChunkInfo::WatchListEntry *watch_list_entry =
+        vault_chunk_info->add_watch_list_entry();
+    watch_list_entry->set_pmid(pmid);
+    watch_list_entry->set_can_delete(can_delete);
+  }
+};
+
+struct ReferenceListEntry {
+  ReferenceListEntry() : pmid(), last_seen(0) {}
+  explicit ReferenceListEntry(
+      const ChunkInfoMap::VaultChunkInfo::ReferenceListEntry &ref_list_entry)
+          : pmid(ref_list_entry.pmid()),
+            last_seen(ref_list_entry.last_seen()) {}
+  std::string pmid;
+  boost::uint32_t last_seen;
+  // TODO(Team#) ranked chunk holders?
+  void PutToPb(ChunkInfoMap::VaultChunkInfo *vault_chunk_info) {
+    ChunkInfoMap::VaultChunkInfo::ReferenceListEntry *reference_list_entry =
+        vault_chunk_info->add_reference_list_entry();
+    reference_list_entry->set_pmid(pmid);
+    reference_list_entry->set_last_seen(last_seen);
+  }
 };
 
 struct ChunkInfo {
-  ChunkInfo() : waiting_list(), watch_list(), reference_list(),
-                watcher_count(0), watcher_checksum(0), chunk_size(0) {}
+  ChunkInfo() : waiting_list(),
+                watch_list(),
+                reference_list(),
+                watcher_count(0),
+                watcher_checksum(0),
+                chunk_size(0) {}
+  explicit ChunkInfo(const ChunkInfoMap::VaultChunkInfo &vault_chunk_info)
+      : waiting_list(),
+        watch_list(),
+        reference_list(),
+        watcher_count(vault_chunk_info.watcher_count()),
+        watcher_checksum(vault_chunk_info.watcher_checksum()),
+        chunk_size(vault_chunk_info.chunk_size()) {
+    for (int i = 0; i < vault_chunk_info.waiting_list_entry_size(); ++i) {
+      waiting_list.push_back(WaitingListEntry(
+          vault_chunk_info.waiting_list_entry(i)));
+    }
+    for (int i = 0; i < vault_chunk_info.watch_list_entry_size(); ++i) {
+      watch_list.push_back(WatchListEntry(
+          vault_chunk_info.watch_list_entry(i)));
+    }
+    for (int i = 0; i < vault_chunk_info.reference_list_entry_size(); ++i) {
+      reference_list.push_back(ReferenceListEntry(
+          vault_chunk_info.reference_list_entry(i)));
+    }
+  }
   std::list<WaitingListEntry> waiting_list;
   std::list<WatchListEntry> watch_list;
   std::list<ReferenceListEntry> reference_list;
@@ -103,6 +173,8 @@ class ChunkInfoHandler {
   void SetPaymentsDone(const std::string &chunk_name, const std::string &pmid);
   void GetStaleWaitingListEntries(std::list< std::pair<std::string,
                                                        std::string> > *entries);
+  ChunkInfoMap PutToPb();
+  bool GetFromPb(const ChunkInfoMap &chunk_info_map);
  private:
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerInit);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum);
@@ -112,6 +184,7 @@ class ChunkInfoHandler {
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerReset);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerFailsafe);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPruning);
+  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetPb);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk);
   bool HasWatchers(const std::string &chunk_name);
   int ActiveReferences(const std::string &chunk_name);

@@ -24,6 +24,7 @@
 
 #include "maidsafe/vault/accountrepository.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace maidsafe_vault {
@@ -149,6 +150,42 @@ int AccountHandler::AddAlerts(const std::string &pmid,
   accounts_.replace(it, row);
 
   return kSuccess;
+}
+
+VaultAccountSet AccountHandler::PutToPb() {
+  VaultAccountSet vault_account_set;
+  boost::mutex::scoped_lock loch(account_mutex_);
+  AccountSet::iterator it = accounts_.begin();
+  while (it != accounts_.end()) {
+    VaultAccountSet::VaultAccount *vault_account =
+        vault_account_set.add_vault_account();
+    vault_account->set_pmid((*it).pmid_);
+    vault_account->set_offered((*it).offered_);
+    vault_account->set_vault_used((*it).vault_used_);
+    vault_account->set_account_used((*it).account_used_);
+    std::for_each((*it).alerts_.begin(), (*it).alerts_.end(),
+        boost::bind<void>(*it, _1, vault_account));
+    ++it;
+  }
+  return vault_account_set;
+}
+
+bool AccountHandler::GetFromPb(const VaultAccountSet &vault_account_set) {
+  VaultAccountSet::VaultAccount vault_account;
+  std::list<std::string> alerts;
+  boost::mutex::scoped_lock loch(account_mutex_);
+  for (int i = 0; i < vault_account_set.vault_account_size(); ++i) {
+    vault_account.Clear();
+    vault_account = vault_account_set.vault_account(i);
+    alerts.clear();
+    for (int j = 0; j < vault_account.alerts_size(); ++j)
+      alerts.push_back(vault_account.alerts(j));
+    Account row(vault_account.pmid(), vault_account.offered(),
+        vault_account.vault_used(), vault_account.account_used(), alerts);
+    accounts_.insert(row);
+  }
+  return (static_cast<size_t>(vault_account_set.vault_account_size()) ==
+          accounts_.size());
 }
 
 }  // namespace maidsafe_vault

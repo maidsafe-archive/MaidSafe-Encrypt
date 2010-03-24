@@ -423,4 +423,43 @@ boost::uint64_t ChunkInfoHandler::GetChecksum(const std::string &id) {
             const_cast<char*>(id.substr(kKeySize - 8).data()));
 }
 
+ChunkInfoMap ChunkInfoHandler::PutToPb() {
+  ChunkInfoMap chunk_info_map;
+  std::map<std::string, ChunkInfo>::iterator it;
+  ChunkInfoMap::VaultChunkInfo *vault_chunk_info;
+  boost::mutex::scoped_lock loch(chunk_info_mutex_);
+  for (it = chunk_infos_.begin(); it != chunk_infos_.end(); ++it) {
+    vault_chunk_info = chunk_info_map.add_vault_chunk_info();
+    vault_chunk_info->set_chunk_name((*it).first);
+    std::for_each((*it).second.waiting_list.begin(),
+        (*it).second.waiting_list.end(),
+        boost::bind(&WaitingListEntry::PutToPb, _1, vault_chunk_info));
+    std::for_each((*it).second.watch_list.begin(),
+        (*it).second.watch_list.end(),
+        boost::bind(&WatchListEntry::PutToPb, _1, vault_chunk_info));
+    std::for_each((*it).second.reference_list.begin(),
+        (*it).second.reference_list.end(),
+        boost::bind(&ReferenceListEntry::PutToPb, _1, vault_chunk_info));
+    vault_chunk_info->set_watcher_count((*it).second.watcher_count);
+    vault_chunk_info->set_watcher_checksum((*it).second.watcher_checksum);
+    vault_chunk_info->set_chunk_size((*it).second.chunk_size);
+  }
+  return chunk_info_map;
+}
+
+bool ChunkInfoHandler::GetFromPb(const ChunkInfoMap &chunk_info_map) {
+  ChunkInfoMap::VaultChunkInfo vault_chunk_info;
+  boost::mutex::scoped_lock loch(chunk_info_mutex_);
+  std::map<std::string, ChunkInfo>::iterator it = chunk_infos_.begin();
+  for (int i = 0; i < chunk_info_map.vault_chunk_info_size(); ++i) {
+    vault_chunk_info.Clear();
+    vault_chunk_info = chunk_info_map.vault_chunk_info(i);
+    ChunkInfo chunk_info(vault_chunk_info);
+    it = chunk_infos_.insert(it, std::pair<std::string, ChunkInfo>(
+        vault_chunk_info.chunk_name(), chunk_info));
+  }
+  return (static_cast<size_t>(chunk_info_map.vault_chunk_info_size()) ==
+          chunk_infos_.size());
+}
+
 }  // namespace maidsafe_vault

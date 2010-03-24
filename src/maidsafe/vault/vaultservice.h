@@ -172,6 +172,10 @@ class VaultService : public maidsafe::MaidsafeService {
                          const maidsafe::CacheChunkRequest *request,
                          maidsafe::CacheChunkResponse *response,
                          google::protobuf::Closure *done);
+  virtual void GetSyncData(google::protobuf::RpcController* controller,
+                           const maidsafe::GetSyncDataRequest *request,
+                           maidsafe::GetSyncDataResponse *response,
+                           google::protobuf::Closure *done);
   virtual void VaultStatus(google::protobuf::RpcController* controller,
                            const maidsafe::VaultStatusRequest *request,
                            maidsafe::VaultStatusResponse *response,

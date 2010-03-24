@@ -963,46 +963,6 @@ void VaultService::ValidityCheck(google::protobuf::RpcController*,
   done->Run();
 }
 
-void VaultService::CacheChunk(google::protobuf::RpcController*,
-                              const maidsafe::CacheChunkRequest *request,
-                              maidsafe::CacheChunkResponse *response,
-                              google::protobuf::Closure *done) {
-  response->set_result(kAck);
-  if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::CacheChunk(%s), request is not initialized.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-    return;
-  }
-
-  if (!ValidateSignedRequest(request->public_key(),
-      request->public_key_signature(), request->request_signature(),
-      request->chunkname(), request->pmid())) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::CacheChunk(%s), request does not validate.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-    return;
-  }
-
-  if (vault_chunkstore_->CacheChunk(request->chunkname(),
-      request->chunkcontent()) != kSuccess) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::CacheChunk(%s), failed to cache chunk.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-  }
-
-  done->Run();
-}
-
 void VaultService::SwapChunk(google::protobuf::RpcController*,
                              const maidsafe::SwapChunkRequest *request,
                              maidsafe::SwapChunkResponse *response,
@@ -1064,6 +1024,86 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
   }
   response->set_result(kAck);
   done->Run();
+}
+
+void VaultService::CacheChunk(google::protobuf::RpcController*,
+                              const maidsafe::CacheChunkRequest *request,
+                              maidsafe::CacheChunkResponse *response,
+                              google::protobuf::Closure *done) {
+  response->set_result(kAck);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%s), request is not initialized.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->chunkname(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%s), request does not validate.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (vault_chunkstore_->CacheChunk(request->chunkname(),
+      request->chunkcontent()) != kSuccess) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%s), failed to cache chunk.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+  }
+
+  done->Run();
+}
+
+void VaultService::GetSyncData(google::protobuf::RpcController*,
+                               const maidsafe::GetSyncDataRequest *request,
+                               maidsafe::GetSyncDataResponse *response,
+                               google::protobuf::Closure *done) {
+  response->set_result(kAck);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetSyncData(%s), request is not initialized.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+//    if (!ValidateSignedRequest(request->public_key(),
+//        request->public_key_signature(), request->request_signature(),
+//        request->chunkname(), request->pmid())) {
+//      response->set_result(kNack);
+//      done->Run();
+//  #ifdef DEBUG
+//      printf("In VaultService::CacheChunk(%s), request does not validate.\n",
+//             HexSubstr(pmid_).c_str());
+//  #endif
+//      return;
+//    }
+//
+//    if (vault_chunkstore_->CacheChunk(request->chunkname(),
+//        request->chunkcontent()) != kSuccess) {
+//      response->set_result(kNack);
+//      done->Run();
+//  #ifdef DEBUG
+//      printf("In VaultService::CacheChunk(%s), failed to cache chunk.\n",
+//             HexSubstr(pmid_).c_str());
+//  #endif
+//    }
+//
+//    done->Run();
 }
 
 void VaultService::VaultStatus(google::protobuf::RpcController*,
