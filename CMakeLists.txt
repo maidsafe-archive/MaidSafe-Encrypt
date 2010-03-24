@@ -898,7 +898,7 @@ IF(WIN32)
                     DEPENDS perpetualdata vault)
 ENDIF(WIN32)
 IF(UNIX AND NOT APPLE)
-  add_custom_target(installer "~/BitRock\ InstallBuilder\ Enterprise\ 6.2.6/autoupdate/bin/customize.bin" build ${SOURCE_DIR}/installerfiles/autoup.xml
-                    COMMAND ALL path/to/installbuilder/bin/builder build ${SOURCE_DIR}/pd.xml
+  add_custom_target(installer "~/installbuilder-6.3.0/autoupdate/bin/customize.bin" build ${SOURCE_DIR}/installerfiles/autoup.xml
+                    COMMAND ALL "~/installbuilder-6.3.0/bin/builder" build ${SOURCE_DIR}/pd.xml
                     DEPENDS perpetualdata vault)
 ENDIF(UNIX AND NOT APPLE)
