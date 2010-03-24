@@ -60,26 +60,22 @@ void int_dummy_callback(const int &result) {
 #endif
 }
 
-void AddToRemoteRefListTask::run() {
-  int result = vault_service_logic_->AddToRemoteRefList(chunkname_,
-                                                        store_contract_,
-                                                        found_local_result_,
-                                                        transport_id_);
-#ifdef DEBUG
-  if (result != kSuccess)
-    printf("AddToRemoteRefListTask returned result %i for chunk %s.\n",
-           result, HexSubstr(chunkname_).c_str());
-#endif
+template<>
+void RemoteTask<maidsafe::AmendAccountRequest>::run() {
+  vault_service_logic_->AmendRemoteAccount(request_, found_local_result_,
+                                           callback_, transport_id_);
 }
 
-//  void RemoveFromRemoteRefListTask::run() {
-//    vault_service_logic_->RemoveFromRemoteRefPacket(chunkname_, signed_size_);
-//  }
+template <>
+void RemoteTask<maidsafe::AccountStatusRequest>::run() {
+  vault_service_logic_->RemoteVaultAbleToStore(request_, found_local_result_,
+                                               callback_, transport_id_);
+}
 
-void AmendRemoteAccountTask::run() {
-  vault_service_logic_->AmendRemoteAccount(amend_account_request_,
-                                           found_local_result_, callback_,
-                                           transport_id_);
+template <>
+void RemoteTask<maidsafe::AddToReferenceListRequest>::run() {
+  vault_service_logic_->AddToRemoteRefList(request_, found_local_result_,
+                                           callback_, transport_id_);
 }
 
 void SendCachableChunkTask::run() {
@@ -400,8 +396,10 @@ void VaultService::AddToWatchList(
                                    sz.data_size(), _1));
   } else {
     // verify storing permission
-    FinalisePayment(request->chunkname(), sz.pmid(), sz.data_size(),
-                    RemoteVaultAbleToStore(sz.data_size(), sz.pmid()));
+    RemoteVaultAbleToStore(sz.data_size(), sz.pmid(),
+                           boost::bind(&VaultService::FinalisePayment, this,
+                                       request->chunkname(), sz.pmid(),
+                                       sz.data_size(), _1));
   }
 }
 
@@ -965,46 +963,6 @@ void VaultService::ValidityCheck(google::protobuf::RpcController*,
   done->Run();
 }
 
-void VaultService::CacheChunk(google::protobuf::RpcController*,
-                              const maidsafe::CacheChunkRequest *request,
-                              maidsafe::CacheChunkResponse *response,
-                              google::protobuf::Closure *done) {
-  response->set_result(kAck);
-  if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::CacheChunk(%s), request is not initialized.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-    return;
-  }
-
-  if (!ValidateSignedRequest(request->public_key(),
-      request->public_key_signature(), request->request_signature(),
-      request->chunkname(), request->pmid())) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::CacheChunk(%s), request does not validate.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-    return;
-  }
-
-  if (vault_chunkstore_->CacheChunk(request->chunkname(),
-      request->chunkcontent()) != kSuccess) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::CacheChunk(%s), failed to cache chunk.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-  }
-
-  done->Run();
-}
-
 void VaultService::SwapChunk(google::protobuf::RpcController*,
                              const maidsafe::SwapChunkRequest *request,
                              maidsafe::SwapChunkResponse *response,
@@ -1066,6 +1024,86 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
   }
   response->set_result(kAck);
   done->Run();
+}
+
+void VaultService::CacheChunk(google::protobuf::RpcController*,
+                              const maidsafe::CacheChunkRequest *request,
+                              maidsafe::CacheChunkResponse *response,
+                              google::protobuf::Closure *done) {
+  response->set_result(kAck);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%s), request is not initialized.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->chunkname(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%s), request does not validate.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (vault_chunkstore_->CacheChunk(request->chunkname(),
+      request->chunkcontent()) != kSuccess) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%s), failed to cache chunk.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+  }
+
+  done->Run();
+}
+
+void VaultService::GetSyncData(google::protobuf::RpcController*,
+                               const maidsafe::GetSyncDataRequest *request,
+                               maidsafe::GetSyncDataResponse *response,
+                               google::protobuf::Closure *done) {
+  response->set_result(kAck);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetSyncData(%s), request is not initialized.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+//    if (!ValidateSignedRequest(request->public_key(),
+//        request->public_key_signature(), request->request_signature(),
+//        request->chunkname(), request->pmid())) {
+//      response->set_result(kNack);
+//      done->Run();
+//  #ifdef DEBUG
+//      printf("In VaultService::CacheChunk(%s), request does not validate.\n",
+//             HexSubstr(pmid_).c_str());
+//  #endif
+//      return;
+//    }
+//
+//    if (vault_chunkstore_->CacheChunk(request->chunkname(),
+//        request->chunkcontent()) != kSuccess) {
+//      response->set_result(kNack);
+//      done->Run();
+//  #ifdef DEBUG
+//      printf("In VaultService::CacheChunk(%s), failed to cache chunk.\n",
+//             HexSubstr(pmid_).c_str());
+//  #endif
+//    }
+//
+//    done->Run();
 }
 
 void VaultService::VaultStatus(google::protobuf::RpcController*,
@@ -1822,9 +1860,9 @@ void VaultService::AmendRemoteAccount(
   amend_account_request.set_chunkname(chunkname);
 
   // thread_pool_ handles destruction of task.
-  AmendRemoteAccountTask *task =
-      new AmendRemoteAccountTask(amend_account_request, found_local_result,
-                                 callback, vault_service_logic_, transport_id_);
+  RemoteTask<maidsafe::AmendAccountRequest> *task =
+      new RemoteTask<maidsafe::AmendAccountRequest>(amend_account_request,
+          found_local_result, callback, vault_service_logic_, transport_id_);
   thread_pool_.start(task);
 }
 
@@ -1837,15 +1875,24 @@ void VaultService::AddToRemoteRefList(const std::string &chunkname,
     DoneAddToReferenceList(contract, chunkname);
   }
 
+  maidsafe::AddToReferenceListRequest add_to_ref_list_request;
+  add_to_ref_list_request.set_chunkname(chunkname);
+  maidsafe::StoreContract *sc =
+      add_to_ref_list_request.mutable_store_contract();
+  *sc = contract;
+
   // thread_pool_ handles destruction of task.
-  AddToRemoteRefListTask *task =
-      new AddToRemoteRefListTask(chunkname, contract, found_local_result,
-                                 vault_service_logic_, transport_id_);
+  RemoteTask<maidsafe::AddToReferenceListRequest> *task =
+      new RemoteTask<maidsafe::AddToReferenceListRequest>(
+          add_to_ref_list_request, found_local_result,
+          boost::bind(&VaultService::DiscardResult, this, _1),
+          vault_service_logic_, transport_id_);
   thread_pool_.start(task);
 }
 
-int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
-                                         const std::string &account_pmid) {
+void VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
+                                          const std::string &account_pmid,
+                                          const VoidFuncOneInt &callback) {
   boost::uint64_t space_offered(0), space_given(0), space_taken(0);
   int found_local_result = ah_.GetAccountInfo(account_pmid, &space_offered,
                                               &space_given, &space_taken);
@@ -1859,13 +1906,15 @@ int VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
 #endif
   }
 
-  maidsafe::AccountStatusRequest as_req;
-  as_req.set_account_pmid(account_pmid);
-  as_req.set_space_requested(size);
+  maidsafe::AccountStatusRequest account_status_request;
+  account_status_request.set_account_pmid(account_pmid);
+  account_status_request.set_space_requested(size);
 
-  return vault_service_logic_->RemoteVaultAbleToStore(as_req,
-                                                      found_local_result,
-                                                      transport_id_);
+  // thread_pool_ handles destruction of task.
+  RemoteTask<maidsafe::AccountStatusRequest> *task =
+      new RemoteTask<maidsafe::AccountStatusRequest>(account_status_request,
+          found_local_result, callback, vault_service_logic_, transport_id_);
+  thread_pool_.start(task);
 }
 
 int VaultService::AddAccount(const std::string &pmid,

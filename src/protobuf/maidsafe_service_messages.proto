@@ -5,6 +5,7 @@
 // PMID" and the recipient's is known as "vault's PMID".
 
 import "packet.proto";
+import "sync_data.proto";
 
 package maidsafe;
 
@@ -220,6 +221,19 @@ message CacheChunkRequest {
 
 message CacheChunkResponse {
   required uint32 result = 1;
+}
+
+message GetSyncDataRequest {
+  required bytes pmid = 1;
+  required bytes public_key = 2;
+  required bytes public_key_signature = 3;
+  required bytes request_signature = 4;
+}
+
+message GetSyncDataResponse {
+  required uint32 result = 1;
+  optional maidsafe_vault.VaultAccountSet vault_account_set = 2;
+  optional maidsafe_vault.ChunkInfoMap chunk_info_map = 3;
 }
 
 message VaultCommunication {

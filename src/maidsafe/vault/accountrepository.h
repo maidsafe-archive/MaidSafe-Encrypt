@@ -30,28 +30,38 @@
 #include <maidsafe/maidsafe-dht.h>
 
 #include <list>
-#include <map>
 #include <string>
 #include <vector>
 
 #include "maidsafe/maidsafe.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
+#include "protobuf/sync_data.pb.h"
 
 namespace mi = boost::multi_index;
 
 namespace maidsafe_vault {
 
+
 struct Account {
+  Account(std::string pmid,
+          boost::uint64_t offered,
+          boost::uint64_t vault_used,
+          boost::uint64_t account_used,
+          std::list<std::string> alerts)
+              : pmid_(pmid),
+                offered_(offered),
+                vault_used_(vault_used),
+                account_used_(account_used),
+                alerts_(alerts) {}
+  void operator() (const std::string &alert,
+                   VaultAccountSet::VaultAccount *vault_account) {
+    vault_account->add_alerts(alert);
+  }
   std::string pmid_;
   boost::uint64_t offered_;
   boost::uint64_t vault_used_;
   boost::uint64_t account_used_;
   std::list<std::string> alerts_;
-
-  Account(std::string pmid, boost::uint64_t offered, boost::uint64_t vault_used,
-          boost::uint64_t account_used, std::list<std::string> alerts)
-          : pmid_(pmid), offered_(offered), vault_used_(vault_used),
-            account_used_(account_used), alerts_(alerts) {}
 };
 
 // Tags
@@ -84,6 +94,8 @@ class AccountHandler {
                      boost::uint64_t *account_used);
   int GetAlerts(const std::string &pmid, std::list<std::string> *alerts);
   int AddAlerts(const std::string &pmid, const std::string &alert);
+  VaultAccountSet PutToPb();
+  bool GetFromPb(const VaultAccountSet &vault_account_set);
  private:
   AccountHandler(const AccountHandler&);
   AccountHandler& operator=(const AccountHandler&);
@@ -91,6 +103,7 @@ class AccountHandler {
   FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerAddAndFind);
   FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerModify);
   FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete);
+  FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerDeletePutGetPb);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
   AccountSet accounts_;
   boost::mutex account_mutex_;

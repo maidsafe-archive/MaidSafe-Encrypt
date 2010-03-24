@@ -522,4 +522,102 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPruning) {
   ASSERT_EQ(client, entries.front().second);
 }
 
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetPb) {
+  ChunkInfoHandler chunk_info_handler1, chunk_info_handler2;
+  std::pair<std::map<std::string, ChunkInfo>::iterator, bool> result;
+  const int kNumEntries(749);
+  for (int i = 0; i < kNumEntries; ++i) {
+    ChunkInfo chunk_info;
+    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+      WaitingListEntry waiting_list_entry;
+      waiting_list_entry.pmid = base::RandomString(128);
+      waiting_list_entry.creation_time = base::random_32bit_uinteger();
+      waiting_list_entry.storing_done = waiting_list_entry.creation_time % 2;
+      waiting_list_entry.payments_done = waiting_list_entry.creation_time % 3;
+      waiting_list_entry.requested_payments = base::random_32bit_integer();
+      chunk_info.waiting_list.push_back(waiting_list_entry);
+    }
+    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+      WatchListEntry watch_list_entry;
+      watch_list_entry.pmid = base::RandomString(128);
+      watch_list_entry.can_delete =
+          watch_list_entry.pmid.at(0) < watch_list_entry.pmid.at(1);
+      chunk_info.watch_list.push_back(watch_list_entry);
+    }
+    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+      ReferenceListEntry reference_list_entry;
+      reference_list_entry.pmid = base::RandomString(128);
+      reference_list_entry.last_seen = base::random_32bit_uinteger();
+      chunk_info.reference_list.push_back(reference_list_entry);
+    }
+    chunk_info.watcher_count = base::random_32bit_uinteger();
+    chunk_info.watcher_checksum = base::random_32bit_uinteger();
+    chunk_info.chunk_size = base::random_32bit_uinteger();
+    result = chunk_info_handler1.chunk_infos_.insert(
+        std::pair<std::string, ChunkInfo>(base::RandomString(128), chunk_info));
+    ASSERT_TRUE(result.second);
+  }
+  ChunkInfoMap chunk_info_map = chunk_info_handler1.PutToPb();
+  std::string serialised_chunk_info_map1;
+  ASSERT_TRUE(chunk_info_map.SerializeToString(&serialised_chunk_info_map1));
+  chunk_info_map.Clear();
+  ASSERT_TRUE(chunk_info_map.ParseFromString(serialised_chunk_info_map1));
+  ASSERT_TRUE(chunk_info_handler2.GetFromPb(chunk_info_map));
+  ASSERT_EQ(chunk_info_handler1.chunk_infos_.size(),
+            chunk_info_handler2.chunk_infos_.size());
+  std::map<std::string, ChunkInfo>::iterator it1 =
+      chunk_info_handler1.chunk_infos_.begin();
+  std::map<std::string, ChunkInfo>::iterator it2 =
+      chunk_info_handler2.chunk_infos_.begin();
+  for (; it1 != chunk_info_handler1.chunk_infos_.end(); ++it1, ++it2) {
+    std::string chunk_name1((*it1).first), chunk_name2((*it2).first);
+    ASSERT_EQ(chunk_name1, chunk_name2);
+    ChunkInfo chunk_info1((*it1).second), chunk_info2((*it2).second);
+    ASSERT_EQ(chunk_info1.waiting_list.size(), chunk_info2.waiting_list.size());
+    std::list<WaitingListEntry>::iterator waiting_list_it1 =
+        chunk_info1.waiting_list.begin();
+    std::list<WaitingListEntry>::iterator waiting_list_it2 =
+        chunk_info2.waiting_list.begin();
+    for (; waiting_list_it1 != chunk_info1.waiting_list.end();
+        ++waiting_list_it1, ++waiting_list_it2) {
+      ASSERT_EQ((*waiting_list_it1).pmid, (*waiting_list_it2).pmid);
+      ASSERT_EQ((*waiting_list_it1).creation_time,
+                (*waiting_list_it2).creation_time);
+      ASSERT_EQ((*waiting_list_it1).storing_done,
+                (*waiting_list_it2).storing_done);
+      ASSERT_EQ((*waiting_list_it1).payments_done,
+                (*waiting_list_it2).payments_done);
+      ASSERT_EQ((*waiting_list_it1).requested_payments,
+                (*waiting_list_it2).requested_payments);
+    }
+    std::list<WatchListEntry>::iterator watch_list_it1 =
+        chunk_info1.watch_list.begin();
+    std::list<WatchListEntry>::iterator watch_list_it2 =
+        chunk_info2.watch_list.begin();
+    for (; watch_list_it1 != chunk_info1.watch_list.end();
+        ++watch_list_it1, ++watch_list_it2) {
+      ASSERT_EQ((*watch_list_it1).pmid, (*watch_list_it2).pmid);
+      ASSERT_EQ((*watch_list_it1).can_delete, (*watch_list_it2).can_delete);
+    }
+    std::list<ReferenceListEntry>::iterator reference_list_it1 =
+        chunk_info1.reference_list.begin();
+    std::list<ReferenceListEntry>::iterator reference_list_it2 =
+        chunk_info2.reference_list.begin();
+    for (; reference_list_it1 != chunk_info1.reference_list.end();
+        ++reference_list_it1, ++reference_list_it2) {
+      ASSERT_EQ((*reference_list_it1).pmid, (*reference_list_it2).pmid);
+      ASSERT_EQ((*reference_list_it1).last_seen,
+                (*reference_list_it2).last_seen);
+    }
+    ASSERT_EQ(chunk_info1.watcher_count, chunk_info2.watcher_count);
+    ASSERT_EQ(chunk_info1.watcher_checksum, chunk_info2.watcher_checksum);
+    ASSERT_EQ(chunk_info1.chunk_size, chunk_info2.chunk_size);
+  }
+  chunk_info_map.Clear();
+  chunk_info_map = chunk_info_handler2.PutToPb();
+  std::string serialised_chunk_info_map2;
+  ASSERT_TRUE(chunk_info_map.SerializeToString(&serialised_chunk_info_map2));
+  ASSERT_EQ(serialised_chunk_info_map1, serialised_chunk_info_map2);
+}
+
 }  // namespace maidsafe_vault
