@@ -23,111 +23,76 @@
 */
 
 #include <gtest/gtest.h>
-
-#include <boost/filesystem.hpp>
-
+#include "maidsafe/client/cryptokeypairs.h"
 #include "maidsafe/client/packetfactory.h"
-
-namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-class CryptoKeyPairsTest : public testing::Test {
- public:
-  CryptoKeyPairsTest() {}
- protected:
-  void SetUp() {}
-  void TearDown() {}
- private:
-  CryptoKeyPairsTest &operator=(const CryptoKeyPairsTest&);
-  CryptoKeyPairsTest(const CryptoKeyPairsTest&);
-};
-
-TEST_F(CryptoKeyPairsTest, BEH_MAID_GetCryptoKeysUnthreaded) {
+TEST(CryptoKeyPairsTest, BEH_MAID_GetCryptoKey) {
   CryptoKeyPairs ckp;
-  ckp.Init(0, 0);
-  ASSERT_EQ(boost::uint16_t(0), ckp.max_thread_count_);
-  ASSERT_EQ(boost::uint16_t(0), ckp.buffer_count_);
-  ASSERT_EQ(boost::uint16_t(0), ckp.running_thread_count_);
-  ASSERT_TRUE(ckp.key_buffer_.empty());
-  crypto::RsaKeyPair rsakp = ckp.GetKeyPair();
-  ASSERT_FALSE(rsakp.public_key().empty());
-  ASSERT_FALSE(rsakp.private_key().empty());
-  ASSERT_EQ(boost::uint16_t(0), ckp.max_thread_count_);
-  ASSERT_EQ(boost::uint16_t(0), ckp.buffer_count_);
-  ASSERT_EQ(boost::uint16_t(0), ckp.running_thread_count_);
-  ASSERT_TRUE(ckp.key_buffer_.empty());
+  crypto::RsaKeyPair kp;
+  ASSERT_FALSE(ckp.GetKeyPair(&kp));
+  ASSERT_TRUE(ckp.StartToCreateKeyPairs(1));
+  ASSERT_TRUE(ckp.GetKeyPair(&kp));
+  ASSERT_FALSE(kp.public_key().empty());
+  ASSERT_FALSE(kp.private_key().empty());
 }
 
-TEST_F(CryptoKeyPairsTest, FUNC_MAID_GetCryptoKeysThreaded) {
+TEST(CryptoKeyPairsTest, FUNC_MAID_GetMultipleCryptoKeys) {
   CryptoKeyPairs ckp;
-  ckp.Init(kMaxCryptoThreadCount + 1, kNoOfSystemPackets + 1);
-  ASSERT_EQ(kMaxCryptoThreadCount, ckp.max_thread_count());
-  ASSERT_EQ(kNoOfSystemPackets, ckp.buffer_count());
-  const int kTimeout(200000);
-  int count(0);
-  bool success(false);
-  while (count < kTimeout) {
-    boost::mutex::scoped_lock lock(ckp.kb_mutex_);
-    if (ckp.key_buffer_.size() == ckp.buffer_count_) {
-      success = true;
+  boost::int16_t no_of_keys = 20;
+  std::vector<crypto::RsaKeyPair> kps;
+  ASSERT_TRUE(ckp.StartToCreateKeyPairs(no_of_keys));
+  ASSERT_FALSE(ckp.StartToCreateKeyPairs(no_of_keys));
+
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  crypto::RsaKeyPair kp;
+  while (ckp.GetKeyPair(&kp)) {
+    kps.push_back(kp);
+    ASSERT_FALSE(kp.public_key().empty());
+    ASSERT_FALSE(kp.private_key().empty());
+    kp.ClearKeys();
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
+
+  ASSERT_EQ(no_of_keys, kps.size());
+}
+
+TEST(CryptoKeyPairsTest, FUNC_MAID_ReuseObject) {
+  CryptoKeyPairs ckp;
+  boost::int16_t no_of_keys(5);
+  std::vector<crypto::RsaKeyPair> kps;
+  ASSERT_TRUE(ckp.StartToCreateKeyPairs(no_of_keys));
+  ASSERT_FALSE(ckp.StartToCreateKeyPairs(no_of_keys));
+
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  crypto::RsaKeyPair kp;
+  boost::int16_t i(0), keys_rec(3);
+  while (ckp.GetKeyPair(&kp)) {
+    if (i == keys_rec)
       break;
-    } else {
-      lock.unlock();
-      count += 100;
-      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    }
+    kps.push_back(kp);
+    ASSERT_FALSE(kp.public_key().empty());
+    ASSERT_FALSE(kp.private_key().empty());
+    kp.ClearKeys();
+    ++i;
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
-  ASSERT_TRUE(success);
-  {
-    boost::mutex::scoped_lock lock(ckp.kb_mutex_);
-    ASSERT_EQ(boost::uint16_t(0), ckp.running_thread_count_);
+
+  while (!ckp.StartToCreateKeyPairs(no_of_keys))
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+
+  while (ckp.GetKeyPair(&kp)) {
+    kps.push_back(kp);
+    ASSERT_FALSE(kp.public_key().empty());
+    ASSERT_FALSE(kp.private_key().empty());
+    kp.ClearKeys();
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
-  ckp.set_max_thread_count(0);
-  ckp.set_buffer_count(0);
-  {
-    boost::mutex::scoped_lock lock(ckp.kb_mutex_);
-    ASSERT_EQ(ckp.key_buffer_.size(), kNoOfSystemPackets);
-  }
-  crypto::RsaKeyPair rsakp;
-  for (size_t i = 0; i < kNoOfSystemPackets; ++i) {
-    rsakp = ckp.GetKeyPair();
-    ASSERT_FALSE(rsakp.public_key().empty());
-    ASSERT_FALSE(rsakp.private_key().empty());
-  }
-  {
-    boost::mutex::scoped_lock lock(ckp.kb_mutex_);
-    ASSERT_EQ(boost::uint16_t(0), ckp.running_thread_count_);
-    ASSERT_EQ(size_t(0), ckp.key_buffer_.size());
-  }
-  ckp.set_max_thread_count(kMaxCryptoThreadCount + 1);
-  ASSERT_EQ(kMaxCryptoThreadCount, ckp.max_thread_count());
-  {
-    boost::mutex::scoped_lock lock(ckp.kb_mutex_);
-    ASSERT_EQ(size_t(0), ckp.key_buffer_.size());
-    ASSERT_EQ(boost::uint16_t(0), ckp.running_thread_count_);
-  }
-  rsakp = ckp.GetKeyPair();
-  {
-    boost::mutex::scoped_lock lock(ckp.kb_mutex_);
-    ASSERT_EQ(size_t(0), ckp.key_buffer_.size());
-    ASSERT_EQ(boost::uint16_t(0), ckp.running_thread_count_);
-  }
-  ckp.set_max_thread_count(0);
-  ckp.set_buffer_count(kNoOfSystemPackets + 1);
-  ASSERT_EQ(kNoOfSystemPackets, ckp.buffer_count());
-  {
-    boost::mutex::scoped_lock lock(ckp.kb_mutex_);
-    ASSERT_EQ(size_t(0), ckp.key_buffer_.size());
-    ASSERT_EQ(boost::uint16_t(0), ckp.running_thread_count_);
-  }
-  rsakp = ckp.GetKeyPair();
-  {
-    boost::mutex::scoped_lock lock(ckp.kb_mutex_);
-    ASSERT_EQ(size_t(0), ckp.key_buffer_.size());
-    ASSERT_EQ(boost::uint16_t(0), ckp.running_thread_count_);
-  }
-  ckp.set_max_thread_count(1);
+
+
+
+  ASSERT_EQ(no_of_keys + keys_rec, kps.size());
 }
 
 }  // namespace maidsafe

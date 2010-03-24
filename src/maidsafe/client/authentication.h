@@ -32,6 +32,7 @@
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
 #include "maidsafe/client/systempackets.h"
+#include "maidsafe/client/cryptokeypairs.h"
 
 namespace maidsafe {
 
