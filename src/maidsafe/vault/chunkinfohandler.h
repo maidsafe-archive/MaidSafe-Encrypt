@@ -141,9 +141,10 @@ struct ChunkInfo {
 
 class ChunkInfoHandler {
  public:
-  ChunkInfoHandler() : chunk_infos_(), chunk_info_mutex_() {}
+  explicit ChunkInfoHandler(bool start_immediately)
+      : chunk_infos_(), chunk_info_mutex_(), started_(start_immediately) {}
   ~ChunkInfoHandler() {}
-
+  void set_started(bool started);
   int PrepareAddToWatchList(const std::string &chunk_name,
                             const std::string &pmid,
                             const boost::uint64_t &chunk_size,
@@ -174,7 +175,7 @@ class ChunkInfoHandler {
   void GetStaleWaitingListEntries(std::list< std::pair<std::string,
                                                        std::string> > *entries);
   ChunkInfoMap PutToPb();
-  bool GetFromPb(const ChunkInfoMap &chunk_info_map);
+  void GetFromPb(const ChunkInfoMap &chunk_info_map);
  private:
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerInit);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum);
@@ -193,6 +194,7 @@ class ChunkInfoHandler {
   boost::uint64_t GetChecksum(const std::string &id);
   std::map<std::string, ChunkInfo> chunk_infos_;
   boost::mutex chunk_info_mutex_;
+  bool started_;
 };
 
 }  // namespace maidsafe_vault

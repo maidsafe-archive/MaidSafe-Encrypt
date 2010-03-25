@@ -37,14 +37,14 @@ class ChunkInfoHandlerTest : public testing::Test {
 };
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerInit) {
-  ChunkInfoHandler cih;
+  ChunkInfoHandler cih(true);
   ASSERT_EQ(size_t(0), cih.chunk_infos_.size());
   ASSERT_FALSE(cih.HasWatchers("some chunk name"));
   ASSERT_EQ(0, cih.ActiveReferences("some chunk name"));
 }
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum) {
-  ChunkInfoHandler cih;
+  ChunkInfoHandler cih(true);
   boost::uint64_t checksum = cih.GetChecksum(base::DecodeFromHex(
       "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
       "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF1234567890ABCDEF"));
@@ -52,7 +52,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum) {
 }
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
-  ChunkInfoHandler cih;
+  ChunkInfoHandler cih(true);
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
 
@@ -197,7 +197,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
 }
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRefund) {
-  ChunkInfoHandler cih;
+  ChunkInfoHandler cih(true);
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
 
@@ -236,7 +236,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRefund) {
 }
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove) {
-  ChunkInfoHandler cih;
+  ChunkInfoHandler cih(true);
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
 
@@ -381,7 +381,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove) {
 }
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerReset) {
-  ChunkInfoHandler cih;
+  ChunkInfoHandler cih(true);
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
 
@@ -459,7 +459,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerReset) {
 }
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerFailsafe) {
-  ChunkInfoHandler cih;
+  ChunkInfoHandler cih(true);
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
 
@@ -498,7 +498,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerFailsafe) {
 }
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPruning) {
-  ChunkInfoHandler cih;
+  ChunkInfoHandler cih(true);
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
 
@@ -523,7 +523,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPruning) {
 }
 
 TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetPb) {
-  ChunkInfoHandler chunk_info_handler1, chunk_info_handler2;
+  ChunkInfoHandler chunk_info_handler1(true), chunk_info_handler2(true);
   std::pair<std::map<std::string, ChunkInfo>::iterator, bool> result;
   const int kNumEntries(749);
   for (int i = 0; i < kNumEntries; ++i) {
@@ -562,7 +562,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetPb) {
   ASSERT_TRUE(chunk_info_map.SerializeToString(&serialised_chunk_info_map1));
   chunk_info_map.Clear();
   ASSERT_TRUE(chunk_info_map.ParseFromString(serialised_chunk_info_map1));
-  ASSERT_TRUE(chunk_info_handler2.GetFromPb(chunk_info_map));
+  chunk_info_handler2.GetFromPb(chunk_info_map);
   ASSERT_EQ(chunk_info_handler1.chunk_infos_.size(),
             chunk_info_handler2.chunk_infos_.size());
   std::map<std::string, ChunkInfo>::iterator it1 =

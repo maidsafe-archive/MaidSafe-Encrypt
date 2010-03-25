@@ -29,8 +29,15 @@
 
 namespace maidsafe_vault {
 
+void AccountHandler::set_started(bool started) {
+  boost::mutex::scoped_lock lock(account_mutex_);
+  started_ = started;
+}
+
 int AccountHandler::HaveAccount(const std::string &pmid) {
   boost::mutex::scoped_lock loch(account_mutex_);
+  if (!started_)
+    return kAccountHandlerNotStarted;
   AccountSet::iterator it = accounts_.find(pmid);
   if (it == accounts_.end())
     return kAccountNotFound;
@@ -42,6 +49,8 @@ int AccountHandler::AddAccount(const std::string &pmid,
                                const boost::uint64_t &offer) {
   Account row(pmid, offer, 0, 0, std::list<std::string>());
   boost::mutex::scoped_lock loch(account_mutex_);
+  if (!started_)
+    return kAccountHandlerNotStarted;
   std::pair<AccountSet::iterator, bool> sp = accounts_.insert(row);
 
   if (!sp.second)
@@ -51,6 +60,8 @@ int AccountHandler::AddAccount(const std::string &pmid,
 
 int AccountHandler::DeleteAccount(const std::string &pmid) {
   boost::mutex::scoped_lock loch(account_mutex_);
+  if (!started_)
+    return kAccountHandlerNotStarted;
   AccountSet::iterator it = accounts_.find(pmid);
   if (it == accounts_.end())
     return kAccountNotFound;
@@ -68,6 +79,8 @@ int AccountHandler::AmendAccount(const std::string &pmid, const int &field,
   if (field < 1 || field > 3)
     return kAccountWrongAccountField;
   boost::mutex::scoped_lock loch(account_mutex_);
+  if (!started_)
+    return kAccountHandlerNotStarted;
   AccountSet::iterator it = accounts_.find(pmid);
   if (it == accounts_.end())
     return kAccountNotFound;
@@ -109,6 +122,8 @@ int AccountHandler::GetAccountInfo(const std::string &pmid,
                                    boost::uint64_t *vault_used,
                                    boost::uint64_t *account_used) {
   boost::mutex::scoped_lock loch(account_mutex_);
+  if (!started_)
+    return kAccountHandlerNotStarted;
   AccountSet::iterator it = accounts_.find(pmid);
   if (it == accounts_.end())
     return kAccountNotFound;
@@ -124,6 +139,8 @@ int AccountHandler::GetAlerts(const std::string &pmid,
                               std::list<std::string> *alerts) {
   alerts->clear();
   boost::mutex::scoped_lock loch(account_mutex_);
+  if (!started_)
+    return kAccountHandlerNotStarted;
   AccountSet::iterator it = accounts_.find(pmid);
   if (it == accounts_.end())
     return kAccountNotFound;
@@ -141,6 +158,8 @@ int AccountHandler::AddAlerts(const std::string &pmid,
   if (alert.empty())
     return kAccountEmptyAlert;
   boost::mutex::scoped_lock loch(account_mutex_);
+  if (!started_)
+    return kAccountHandlerNotStarted;
   AccountSet::iterator it = accounts_.find(pmid);
   if (it == accounts_.end())
     return kAccountNotFound;
@@ -170,7 +189,7 @@ VaultAccountSet AccountHandler::PutToPb() {
   return vault_account_set;
 }
 
-bool AccountHandler::GetFromPb(const VaultAccountSet &vault_account_set) {
+void AccountHandler::GetFromPb(const VaultAccountSet &vault_account_set) {
   VaultAccountSet::VaultAccount vault_account;
   std::list<std::string> alerts;
   boost::mutex::scoped_lock loch(account_mutex_);
@@ -184,8 +203,7 @@ bool AccountHandler::GetFromPb(const VaultAccountSet &vault_account_set) {
         vault_account.vault_used(), vault_account.account_used(), alerts);
     accounts_.insert(row);
   }
-  return (static_cast<size_t>(vault_account_set.vault_account_size()) ==
-          accounts_.size());
+  started_ = true;
 }
 
 }  // namespace maidsafe_vault

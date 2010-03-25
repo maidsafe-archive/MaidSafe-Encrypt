@@ -246,6 +246,11 @@ class PDVault {
   int AmendAccount(const boost::uint64_t &space_offered);
   void AmendAccountCallback(size_t index,
                             boost::shared_ptr<maidsafe::AmendAccountData> data);
+  // Send request to kad-closest and k-th closest peers for their maidsafe info.
+  void JoinMaidsafeNet();
+  void JoinMaidsafeNetCallback(
+      boost::shared_ptr<maidsafe::GetSyncDataResponse> get_sync_data_response,
+      boost::shared_ptr<boost::mutex> mutex);
   void UpdateSpaceOffered();
 
 
@@ -317,7 +322,7 @@ class PDVault {
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   fs::path kad_config_file_;
   QThreadPool thread_pool_;
-  boost::thread create_account_thread_;
+  boost::thread maidsafe_join_thread_, create_account_thread_;
 };
 
 }  // namespace maidsafe_vault

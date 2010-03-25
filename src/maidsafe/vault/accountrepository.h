@@ -79,8 +79,10 @@ typedef mi::multi_index_container<
 
 class AccountHandler {
  public:
-  AccountHandler() : accounts_(), account_mutex_() {}
+  explicit AccountHandler(bool start_immediately)
+      : accounts_(), account_mutex_(), started_(start_immediately) {}
   ~AccountHandler() {}
+  void set_started(bool started);
   int HaveAccount(const std::string &pmid);
   int AddAccount(const std::string &pmid, const boost::uint64_t &offer);
   int DeleteAccount(const std::string &pmid);
@@ -95,7 +97,7 @@ class AccountHandler {
   int GetAlerts(const std::string &pmid, std::list<std::string> *alerts);
   int AddAlerts(const std::string &pmid, const std::string &alert);
   VaultAccountSet PutToPb();
-  bool GetFromPb(const VaultAccountSet &vault_account_set);
+  void GetFromPb(const VaultAccountSet &vault_account_set);
  private:
   AccountHandler(const AccountHandler&);
   AccountHandler& operator=(const AccountHandler&);
@@ -107,6 +109,7 @@ class AccountHandler {
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
   AccountSet accounts_;
   boost::mutex account_mutex_;
+  bool started_;
 };
 
 }  // namespace maidsafe_vault

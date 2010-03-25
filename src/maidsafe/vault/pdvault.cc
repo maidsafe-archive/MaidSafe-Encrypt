@@ -30,6 +30,7 @@
 #include <maidsafe/general_messages.pb.h>
 #include <maidsafe/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/routingtable.h>
 
 #include "fs/filesystem.h"
 #include "maidsafe/kadops.h"
@@ -79,6 +80,7 @@ PDVault::PDVault(const std::string &pmid_public,
       svc_channel_(),
       kad_config_file_(vault_dir / ".kadconfig"),
       thread_pool_(),
+      maidsafe_join_thread_(),
       create_account_thread_() {
   transport_handler_->Register(&global_udt_transport_, &transport_id_);
   knode_->SetTransID(transport_id_);
@@ -184,6 +186,7 @@ void PDVault::Start(bool first_node) {
     our_details_ = our_details;
     // Announce available space to account, try repeatedly in thread
     // TODO(Team#) find better solution or make thread-safe!
+    maidsafe_join_thread_ = boost::thread(&PDVault::JoinMaidsafeNet, this);
     create_account_thread_ = boost::thread(&PDVault::UpdateSpaceOffered, this);
   } else {
     SetVaultStatus(kVaultStarted);
@@ -1318,6 +1321,77 @@ void PDVault::AmendAccountCallback(
   data->condition.notify_one();
 }
 
+void PDVault::JoinMaidsafeNet() {
+  boost::shared_ptr<maidsafe::GetSyncDataResponse>
+      get_sync_data_response1(new maidsafe::GetSyncDataResponse);
+  boost::shared_ptr<maidsafe::GetSyncDataResponse>
+      get_sync_data_response2(new maidsafe::GetSyncDataResponse);
+  // Get K Kademlia-closest peers
+  base::PDRoutingTableHandler rt_handler;
+  std::list<base::PDRoutingTableTuple> close_peers;
+  if (rt_handler.GetClosestContacts(pmid_, kad::K, &close_peers) != kSuccess ||
+      close_peers.empty()) {
+#ifdef DEBUG
+    printf("In PDVault::JoinMaidsafeNet (%s), failed to query local"
+           "routing table.\n", HexSubstr(pmid_).c_str());
+#endif
+    vault_service_->AddStartupSyncData(get_sync_data_response1);
+    return;
+  }
+
+  bool single_peer = close_peers.size() == size_t(1);
+  base::PDRoutingTableTuple closest_tuple = close_peers.front();
+  maidsafe::GetSyncDataRequest get_sync_data_request1;
+  get_sync_data_request1.set_pmid(pmid_);
+  get_sync_data_request1.set_public_key(pmid_public_);
+  get_sync_data_request1.set_public_key_signature(signed_pmid_public_);
+  maidsafe::GetSyncDataRequest get_sync_data_request2(get_sync_data_request1);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string signature = co.AsymSign(co.Hash(signed_pmid_public_ +
+      closest_tuple.kademlia_id_, "", crypto::STRING_STRING, false), "",
+      pmid_private_, crypto::STRING_STRING);
+  get_sync_data_request1.set_request_signature(signature);
+
+  boost::shared_ptr<boost::mutex> mutex(new boost::mutex);
+  boost::shared_ptr<rpcprotocol::Controller> ctlr1(new rpcprotocol::Controller);
+  google::protobuf::Closure* done1 = google::protobuf::NewCallback(this,
+        &PDVault::JoinMaidsafeNetCallback, get_sync_data_response1, mutex);
+  kad::Contact peer1(closest_tuple.kademlia_id_, closest_tuple.host_ip_,
+      closest_tuple.host_port_, closest_tuple.host_ip_,
+      closest_tuple.host_port_, closest_tuple.rendezvous_ip_,
+      closest_tuple.rendezvous_port_);
+  vault_rpcs_->GetSyncData(peer1, kad_ops_->AddressIsLocal(peer1),
+                           transport_id_, &get_sync_data_request1,
+                           get_sync_data_response1.get(), ctlr1.get(), done1);
+  if (single_peer)
+    return;
+
+  base::PDRoutingTableTuple furthest_tuple = close_peers.back();
+  signature = co.AsymSign(co.Hash(signed_pmid_public_ +
+      furthest_tuple.kademlia_id_, "", crypto::STRING_STRING, false), "",
+      pmid_private_, crypto::STRING_STRING);
+  get_sync_data_request2.set_request_signature(signature);
+  boost::shared_ptr<rpcprotocol::Controller> ctlr2(new rpcprotocol::Controller);
+  google::protobuf::Closure* done2 = google::protobuf::NewCallback(this,
+        &PDVault::JoinMaidsafeNetCallback, get_sync_data_response2, mutex);
+  kad::Contact peer2(furthest_tuple.kademlia_id_, furthest_tuple.host_ip_,
+      furthest_tuple.host_port_, furthest_tuple.host_ip_,
+      furthest_tuple.host_port_, furthest_tuple.rendezvous_ip_,
+      furthest_tuple.rendezvous_port_);
+  vault_rpcs_->GetSyncData(peer2, kad_ops_->AddressIsLocal(peer2),
+                           transport_id_, &get_sync_data_request2,
+                           get_sync_data_response2.get(), ctlr2.get(), done2);
+}
+
+void PDVault::JoinMaidsafeNetCallback(
+    boost::shared_ptr<maidsafe::GetSyncDataResponse> get_sync_data_response,
+    boost::shared_ptr<boost::mutex> mutex) {
+  boost::mutex::scoped_lock lock(*mutex);
+  vault_service_->AddStartupSyncData(get_sync_data_response);
+}
+
 void PDVault::UpdateSpaceOffered() {
   // TODO(Team#) replace or make thread-safe
   int n(1), result;
@@ -1339,7 +1413,7 @@ void PDVault::UpdateSpaceOffered() {
            "on attempt #%d.\n", HexSubstr(pmid_).c_str(),
            base::itos_ull(vault_chunkstore_.available_space()).c_str(), n);
   else if (result == 0)
-    printf("In PDVault::UpdateSpaceOffered (%s), amendment successfull but "
+    printf("In PDVault::UpdateSpaceOffered (%s), amendment successful but "
            "vault now offline.\n", HexSubstr(pmid_).c_str());
   else
     printf("In PDVault::UpdateSpaceOffered (%s), vault offline, giving up "
