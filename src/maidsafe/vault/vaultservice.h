@@ -113,6 +113,8 @@ class VaultService : public maidsafe::MaidsafeService {
                VaultServiceLogic *vault_service_logic,
                const boost::int16_t &transport_id);
   ~VaultService() {}
+  void AddStartupSyncData(
+      boost::shared_ptr<maidsafe::GetSyncDataResponse> get_sync_data_response);
   virtual void StorePrep(google::protobuf::RpcController* controller,
                          const maidsafe::StorePrepRequest *request,
                          maidsafe::StorePrepResponse *response,
