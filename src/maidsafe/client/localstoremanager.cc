@@ -688,6 +688,7 @@ int LocalStoreManager::LoadBPMessages(
                             ss_->PrivateKey(MPID), crypto::STRING_STRING);
       valid_message.set_message(co.SymmDecrypt(valid_message.message(),
                                 "", crypto::STRING_STRING, aes_key));
+      valid_message.set_index("");
       messages->push_back(valid_message);
     }
   }

@@ -28,6 +28,7 @@ MountThread::MountThread(MountAction action, QObject* parent)
 MountThread::~MountThread() { }
 
 void MountThread::run() {
+  qDebug() << "MountThread::run";
   bool success = false;
   if (action_ == MOUNT) {
     success = UserSpaceFileSystem::instance()->mount();

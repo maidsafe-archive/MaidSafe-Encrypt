@@ -121,7 +121,7 @@ class ClientControllerTest : public testing::Test {
       (const ClientControllerTest&);
 };
 
-TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLoginSequence) {
+TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerLoginSequence) {
   std::string username("User1");
   std::string pin("1234");
   std::string password("The beagle has landed.");
@@ -163,7 +163,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLoginSequence) {
   printf("Can't log in with fake details.\n");
 }
 
-TEST_F(ClientControllerTest, BEH_MAID_LocalControllerChangeDetails) {
+TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerChangeDetails) {
   std::string username("User2");
   std::string pin("2345");
   std::string password("The axolotl has landed.");
@@ -198,7 +198,6 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerChangeDetails) {
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
   printf("Changed username.\n");
-
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(ss_->Username().empty());
@@ -258,7 +257,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerChangeDetails) {
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out.\n");
+  printf("Logged out.\n\n");
 
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists("juan.smer", "2207", maidsafe::kDefCon3));
@@ -271,7 +270,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerChangeDetails) {
   printf("Can't log in with old u/p/w.\n");
 }
 
-TEST_F(ClientControllerTest, BEH_MAID_LocalControllerCreatePubUsername) {
+TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerCreatePubUsername) {
   std::string username("User3");
   std::string pin("3456");
   std::string password("The fanjeeta has landed.");
@@ -380,7 +379,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLeaveNetwork) {
 }
 */
 
-TEST_F(ClientControllerTest, BEH_MAID_LocalControllerBackupFile) {
+TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerBackupFile) {
   std::string username("User5");
   std::string pin("5678");
   std::string password("The limping dog has landed.");
@@ -451,7 +450,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerBackupFile) {
   printf("Logged out user.\n");
 }
 
-TEST_F(ClientControllerTest, BEH_MAID_LocalControllerSaveSession) {
+TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerSaveSession) {
   // Create a user
   std::string username("User5andAhalf");
   std::string pin("55678");
@@ -492,7 +491,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerSaveSession) {
 
   // Save the session
   ASSERT_EQ(0, cc_->SaveSession());
-  printf("\n\n\nSaved the session\n\n\n");
+  printf("Saved the session\n");
 
   // Reset the client controller
   /*
@@ -502,20 +501,20 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerSaveSession) {
   printf("Client controller address after: %d\n", cc_);
   */
   cc_->client_chunkstore_->Clear();
-  printf("\n\n\nCleared the chunkstore\n\n\n");
+  printf("Cleared the chunkstore\n");
   ss_->ResetSession();
-  printf("\n\n\nReset the session\n\n\n");
+  printf("Reset the session\n");
 
   // Remove the local file
   if (fs::exists(full_path))
-      fs::remove(full_path);
+    fs::remove(full_path);
 
   // Login
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
-  printf("\n\n\nChecked for user\n\n\n");
+  printf("Checked for user\n");
   ASSERT_TRUE(cc_->ValidateUser(password));
-  printf("\n\n\nLogged in\n\n\n");
+  printf("Logged in\n");
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
@@ -547,7 +546,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerSaveSession) {
       fs::remove(full_path);
 }
 
-TEST_F(ClientControllerTest, BEH_MAID_LocalControllerContactAddition) {
+TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerContactAddition) {
   std::string username("User6");
   std::string pin("6789");
   std::string password("The deleted folder has landed.");
@@ -557,7 +556,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerContactAddition) {
   ASSERT_TRUE(ss_->Password().empty());
   ASSERT_EQ(maidsafe::kUserDoesntExist,
             cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
-  printf("Preconditions fulfilled.\n");
+  printf("Preconditions fulfilled.\n\n");
 
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
@@ -574,7 +573,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerContactAddition) {
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out.\n");
+  printf("Logged out.\n\n");
 
   std::string username1("User61");
   std::string pin1("6789");
@@ -598,7 +597,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerContactAddition) {
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out 1.\n");
+  printf("Logged out 1.\n\n");
 
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
@@ -613,6 +612,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerContactAddition) {
   std::list<maidsafe::InstantMessage> messages;
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
+  printf("Public Username got one message.\n");
   maidsafe::InstantMessage im = messages.front();
   ASSERT_TRUE(im.has_contact_notification());
   ASSERT_EQ(public_username1, im.sender());
@@ -624,6 +624,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerContactAddition) {
   if (cn.has_contact())
     ci = cn.contact();
   ASSERT_EQ(0, cc_->HandleAddContactRequest(ci, im.sender()));
+  printf("Public Username handled the add request.\n");
   ASSERT_FALSE(ss_->GetContactPublicKey(public_username1).empty());
   printf("Public Username confirmed Public Username 1.\n");
 
@@ -631,7 +632,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerContactAddition) {
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out.\n");
+  printf("Logged out.\n\n");
 
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists(username1, pin1, maidsafe::kDefCon3));
@@ -663,13 +664,13 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerContactAddition) {
   std::vector<std::string> contact_names;
   contact_names.push_back(public_username);
   ASSERT_EQ(0, cc_->SendInstantMessage(text_msg, contact_names, ""));
-  printf("Public Username 1 sent txt message  to Public Username.\n");
+  printf("Public Username 1 sent txt message to Public Username.\n");
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out 1.\n");
+  printf("Logged out 1.\n\n");
 
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
@@ -790,7 +791,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerShares) {
 }
 */
 
-TEST_F(ClientControllerTest, BEH_MAID_LocalControllerFuseFunctions) {
+TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerFuseFunctions) {
   std::string username("User7");
   std::string pin("7890");
   std::string password("The pint of lager has landed on the floor.");
@@ -959,6 +960,62 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerFuseFunctions) {
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out user.\n");
+}
+
+TEST_F(ClientControllerTest, BEH_MAID_LocalControllerHandleMessages) {
+  int total_msgs(5);
+  boost::uint32_t now(base::get_epoch_time());
+  std::list<ValidatedBufferPacketMessage> valid_messages;
+  maidsafe::ValidatedBufferPacketMessage vbpm;
+  maidsafe::InstantMessage im;
+  for (int n = 0; n < total_msgs; ++n) {
+    vbpm.Clear();
+    im.Clear();
+    vbpm.set_sender("nalga");
+    vbpm.set_index("aaaaaaaaaaaaaaaaaaa");
+    vbpm.set_type(maidsafe::INSTANT_MSG);
+    vbpm.set_timestamp(now);
+    im.set_sender("nalga");
+    im.set_message("que nalgotas!!");
+    im.set_date(now);
+    vbpm.set_message(im.SerializeAsString());
+    valid_messages.push_back(vbpm);
+  }
+
+  ASSERT_EQ(0, cc_->HandleMessages(&valid_messages));
+  ASSERT_EQ(size_t(1), cc_->instant_messages_.size());
+}
+
+TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerClearStaleMessages) {
+  size_t total_msgs(5);
+  boost::thread thr(&ClientController::ClearStaleMessages, cc_);
+  boost::uint32_t now(base::get_epoch_time());
+  std::list<ValidatedBufferPacketMessage> valid_messages;
+  maidsafe::ValidatedBufferPacketMessage vbpm;
+  maidsafe::InstantMessage im;
+  for (size_t n = 0; n < total_msgs; ++n) {
+    vbpm.Clear();
+    im.Clear();
+    vbpm.set_sender("nalga");
+    vbpm.set_index(base::itos(n));
+    vbpm.set_type(maidsafe::INSTANT_MSG);
+    vbpm.set_timestamp(now);
+    im.set_sender("nalga");
+    im.set_message("que nalgotas!!");
+    im.set_date(now);
+    vbpm.set_message(im.SerializeAsString());
+    valid_messages.push_back(vbpm);
+  }
+
+  ASSERT_EQ(0, cc_->HandleMessages(&valid_messages));
+  ASSERT_EQ(total_msgs, cc_->instant_messages_.size());
+  ASSERT_EQ(total_msgs, cc_->received_messages_.size());
+  printf("Before sleep to wait for message clear.\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(21));
+  printf("After sleep to wait for message clear.\n");
+  ASSERT_EQ(0, cc_->received_messages_.size());
+  cc_->logging_out_ = true;
+  thr.join();
 }
 
 }  // namespace maidsafe

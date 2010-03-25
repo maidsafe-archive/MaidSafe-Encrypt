@@ -22,12 +22,33 @@
 
 
 CheckForMessagesThread::CheckForMessagesThread(QObject* parent)
-    : WorkerThread(parent) { }
+    : WorkerThread(parent), interval_(3), started_(false),
+      interval_mutex_(), start_mutex_() { }
 
 CheckForMessagesThread::~CheckForMessagesThread() { }
 
 void CheckForMessagesThread::run() {
-//  qDebug() << "CheckForMessagesThread::run";
-  const bool success = ClientController::instance()->GetMessages();
-  emit completed(success);
+  qDebug() << "CheckForMessagesThread::run";
+  while (started()) {
+    const bool success = ClientController::instance()->GetMessages();
+    emit completed(success);
+    boost::this_thread::sleep(boost::posix_time::seconds(interval()));
+  }
+}
+
+boost::uint16_t CheckForMessagesThread::interval() {
+  boost::mutex::scoped_lock loch_ness(start_mutex_);
+  return interval_;
+}
+void CheckForMessagesThread::set_interval(boost::uint16_t the_interval) {
+  boost::mutex::scoped_lock loch_ness(start_mutex_);
+  interval_ = the_interval;
+}
+bool CheckForMessagesThread::started() {
+  boost::mutex::scoped_lock loch_lomond(start_mutex_);
+  return started_;
+}
+void CheckForMessagesThread::set_started(bool turn_on) {
+  boost::mutex::scoped_lock loch_lomond(start_mutex_);
+  started_ = turn_on;
 }

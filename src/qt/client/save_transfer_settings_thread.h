@@ -12,8 +12,8 @@
  *      Author: Stephen
  */
 
-#ifndef SAVE_TRANSFER_SETTINGS_THREAD_H_INCLUDED
-#define SAVE_TRANSFER_SETTINGS_THREAD_H_INCLUDED
+#ifndef QT_CLIENT_SAVE_TRANSFER_SETTINGS_THREAD_H_
+#define QT_CLIENT_SAVE_TRANSFER_SETTINGS_THREAD_H_
 
 #include <QWidget>
 #include <QString>
@@ -41,4 +41,4 @@ class SaveTransferSettingsThread : public WorkerThread {
   QHash<QString, QString> theHash_;
 };
 
-#endif // SAVE_TRANSFER_SETTINGS_THREAD_H_INCLUDED
+#endif  // QT_CLIENT_SAVE_TRANSFER_SETTINGS_THREAD_H_

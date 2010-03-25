@@ -12,8 +12,8 @@
  *      Author: Stephen
  */
 
-#ifndef SAVE_CONNECTION_SETTINGS_THREAD_H_INCLUDED
-#define SAVE_CONNECTION_SETTINGS_THREAD_H_INCLUDED
+#ifndef QT_CLIENT_SAVE_CONNECTION_SETTINGS_THREAD_H_
+#define QT_CLIENT_SAVE_CONNECTION_SETTINGS_THREAD_H_
 
 #include <QWidget>
 #include <QString>
@@ -41,4 +41,4 @@ class SaveConnectionSettingsThread : public WorkerThread {
   QHash<QString, QString> theHash_;
 };
 
-#endif // SAVE_CONNECTION_SETTINGS_THREAD_H_INCLUDED
+#endif  // QT_CLIENT_SAVE_CONNECTION_SETTINGS_THREAD_H_

@@ -230,8 +230,13 @@ class ClientController {
   // Friend tests
   FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile);
   FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession);
-  FRIEND_TEST(ClientControllerTest, BEH_MAID_LocalControllerBackupFile);
-  FRIEND_TEST(ClientControllerTest, BEH_MAID_LocalControllerSaveSession);
+  FRIEND_TEST(ClientControllerTest, FUNC_MAID_LocalControllerBackupFile);
+  FRIEND_TEST(ClientControllerTest, FUNC_MAID_LocalControllerSaveSession);
+  FRIEND_TEST(ClientControllerTest, FUNC_MAID_LocalControllerContactAddition);
+  FRIEND_TEST(ClientControllerTest, BEH_MAID_LocalControllerHandleMessages);
+  FRIEND_TEST(ClientControllerTest,
+              FUNC_MAID_LocalControllerClearStaleMessages);
+
   // Functions
   ClientController();
   ~ClientController() {}
@@ -274,10 +279,10 @@ class ClientController {
   Authentication auth_;
   SessionSingleton *ss_;
   std::string ser_da_, ser_dm_;
-  std::map<std::string, std::pair<std::string, std::string> >db_enc_queue_;
+  std::map<std::string, std::pair<std::string, std::string> > db_enc_queue_;
   SEHandler seh_;
   static ClientController *single;
-  std::list<InstantMessage> messages_;
+  std::list<InstantMessage> instant_messages_;
   std::map<std::string, boost::uint32_t> received_messages_;
   boost::mutex rec_msg_mutex_;
   boost::thread clear_messages_thread_;

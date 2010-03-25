@@ -32,6 +32,7 @@
 #include "maidsafe/client/contacts.h"
 
 // local
+#include "qt/client/check_for_messages_thread.h"
 #include "qt/client/contact.h"
 #include "qt/client/profile.h"
 #include "qt/client/presence.h"
@@ -183,7 +184,6 @@ class ClientController : public QObject {
 
   private slots:
     // temporary while we emulate message notifications
-    void checkForMessages();
     void onCheckMessagesCompleted(bool success);
 
  private:
@@ -191,8 +191,8 @@ class ClientController : public QObject {
   virtual ~ClientController();
 
   int analyseMessage(const maidsafe::InstantMessage& im);
-  class ClientControllerImpl;
-  ClientControllerImpl* impl_;
+  bool checking_for_messages_;
+  CheckForMessagesThread *cfmt_;
 };
 
 #endif  // QT_CLIENT_CLIENT_CONTROLLER_H_

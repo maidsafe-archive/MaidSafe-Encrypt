@@ -84,7 +84,7 @@ ClientController::ClientController() : client_chunkstore_(),
                                        ser_dm_(""),
                                        db_enc_queue_(),
                                        seh_(),
-                                       messages_(),
+                                       instant_messages_(),
                                        received_messages_(),
                                        rec_msg_mutex_(),
                                        clear_messages_thread_(),
@@ -623,6 +623,8 @@ bool ClientController::ValidateUser(const std::string &password) {
       ss_->ResetSession();
       return false;
     }
+    clear_messages_thread_ = boost::thread(
+                             &ClientController::ClearStaleMessages, this);
   }
 
 //  // CHANGE CONNECTION STATUS
@@ -633,8 +635,6 @@ bool ClientController::ValidateUser(const std::string &password) {
 //  }
 //  ss_->SetConnectionStatus(connection_status);
 
-  clear_messages_thread_ = boost::thread(&ClientController::ClearStaleMessages,
-                                         this);
   logged_in_ = true;
   return true;
 }
@@ -686,6 +686,7 @@ bool ClientController::Logout() {
     return false;
   }
   logging_out_ = true;
+  clear_messages_thread_.join();
 
 //  int connection_status(0);
 //  int n = ChangeConnectionStatus(connection_status);
@@ -702,7 +703,6 @@ bool ClientController::Logout() {
     return false;
   }
 
-  clear_messages_thread_.join();
   while (sm_->NotDoneWithUploading()) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
@@ -724,7 +724,11 @@ bool ClientController::Logout() {
 
   file_system::UnMount(ss_->SessionName(), ss_->DefConLevel());
   ss_->ResetSession();
-  messages_.clear();
+  instant_messages_.clear();
+  {
+    boost::mutex::scoped_lock loch(rec_msg_mutex_);
+    received_messages_.clear();
+  }
   client_chunkstore_->Clear();
   ser_da_.clear();
   ser_dm_.clear();
@@ -835,8 +839,7 @@ bool ClientController::ChangePassword(const std::string &new_password) {
 // Buffer Packet Operations //
 //////////////////////////////
 
-bool ClientController::CreatePublicUsername(
-    const std::string &public_username) {
+bool ClientController::CreatePublicUsername(const std::string &pub_username) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::CreatePublicUsername - Not initialised.\n");
@@ -850,7 +853,7 @@ bool ClientController::CreatePublicUsername(
     return false;
   }
 
-  int result = auth_.CreatePublicName(public_username);
+  int result = auth_.CreatePublicName(pub_username);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("CC::CreatePublicUsername - Error in CreatePublicName.\n");
@@ -865,6 +868,8 @@ bool ClientController::CreatePublicUsername(
     return false;
   }
 
+  clear_messages_thread_ = boost::thread(
+                           &ClientController::ClearStaleMessages, this);
   return true;
 }
 
@@ -929,35 +934,37 @@ int ClientController::HandleMessages(
 #endif
     return kClientControllerNotInitialised;
   }
+
   int result = 0;
-#ifdef DEBUG
-      printf("=========================================\n");
-#endif
   while (!valid_messages->empty()) {
+#ifdef DEBUG
+//    printf("CC::HandleMessages - Sender: %s\n", valid_messages->front().sender().c_str());
+//    printf("CC::HandleMessages - Index: %s\n", HexSubstr(valid_messages->front().index()).c_str());
+//    printf("CC::HandleMessages - Type: %d\n", valid_messages->front().type());
+//    printf("CC::HandleMessages - Time: %d\n", valid_messages->front().timestamp());
+#endif
+
     std::map<std::string, boost::uint32_t>::iterator it;
     rec_msg_mutex_.lock();
-#ifdef DEBUG
-    printf("ClientController::HandleMessages - received_messages_ size: %d\n",
-           received_messages_.size());
-#endif
-    it = received_messages_.find(valid_messages->front().message());
+//#ifdef DEBUG
+//    printf("ClientController::HandleMessages - received_messages_ size: %d\n",
+//           received_messages_.size());
+//#endif
+    it = received_messages_.find(valid_messages->front().SerializeAsString());
     if (it != received_messages_.end()) {
 #ifdef DEBUG
-      printf("ClientController::HandleMessages - Previously received message.");
+      printf("ClientController::HandleMessages - Previously received msg.\n");
 #endif
       rec_msg_mutex_.unlock();
+      valid_messages->pop_front();
       continue;
     }
 
+    boost::uint32_t now = base::get_epoch_time();
     received_messages_.insert(std::pair<std::string, boost::uint32_t>(
-                              valid_messages->front().message(),
-                              valid_messages->front().timestamp()));
+                              valid_messages->front().SerializeAsString(),
+                              now));
     rec_msg_mutex_.unlock();
-#ifdef DEBUG
-    printf("ClientController::HandleMessages timestamp: %d\n",
-           valid_messages->front().timestamp());
-    printf("=========================================\n");
-#endif
     switch (valid_messages->front().type()) {
       case ADD_CONTACT_RQST:
       case INSTANT_MSG:
@@ -971,31 +978,42 @@ int ClientController::HandleMessages(
 }
 
 void ClientController::ClearStaleMessages() {
-  int recheck_interval = 100;  // milliseconds
-  int total_sleep = 10000;  // milliseconds
   while (!logging_out_) {
-#ifdef DEBUG
-    printf("ClientController::ClearStaleMessages timestamp: %d\n",
-           base::get_epoch_time());
-#endif
-    if (ss_->PublicUsername() == "")
-      return;
-    boost::mutex::scoped_lock loch(rec_msg_mutex_);
-    boost::uint32_t now = base::get_epoch_time() - 10;
-    std::map<std::string, boost::uint32_t>::iterator it;
-    for (it = received_messages_.begin();
-         it != received_messages_.end(); ++it) {
-      if (it->second > now)
-        break;
+    int round(0);
+    while (round < 2) {
+      if (!logging_out_) {
+        boost::this_thread::sleep(boost::posix_time::seconds(5));
+        ++round;
+      } else {
+        return;
+      }
     }
-    received_messages_.erase(received_messages_.begin(), it);
-    int count = 0;
-    while (!logging_out_ && count < total_sleep) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(
-          recheck_interval));
-      count += recheck_interval;
+    {
+      boost::mutex::scoped_lock loch(rec_msg_mutex_);
+#ifdef DEBUG
+//      printf("CC::ClearStaleMessages timestamp: %d %d\n",
+//             base::get_epoch_time(), received_messages_.size());
+#endif
+      boost::uint32_t now = base::get_epoch_time() - 10;
+      std::map<std::string, boost::uint32_t>::iterator it;
+      std::vector<std::string> msgs;
+      for (it = received_messages_.begin();
+           it != received_messages_.end(); ++it) {
+        if (it->second < now)
+          msgs.push_back(it->first);
+//        printf("CC::ClearStaleMessages - Message: %d\n", it->second);
+      }
+      for (size_t n = 0 ; n < msgs.size(); ++n) {
+        received_messages_.erase(msgs[n]);
+//        size_t a = received_messages_.erase(msgs[n]);
+//        printf("CC::ClearStaleMessages erased %d with result %d\n", n, a);
+      }
+#ifdef DEBUG
+//      printf("CC::ClearStaleMessages() - erased %d\n", msgs.size());
+#endif
     }
   }
+//  printf("CC::ClearStaleMessages() - Left\n");
 }
 
 int ClientController::HandleDeleteContactNotification(
@@ -1027,8 +1045,8 @@ int ClientController::HandleReceivedShare(
     return kClientControllerNotInitialised;
   }
 #ifdef DEBUG
-  printf("Dir key: %s", psn.dir_db_key().c_str());
-  printf("Public key: %s", psn.public_key().c_str());
+  printf("Dir key: %s", HexSubstr(psn.dir_db_key()).c_str());
+  printf("Public key: %s", HexSubstr(psn.public_key()).c_str());
 #endif
 
   std::vector<std::string> attributes;
@@ -1163,20 +1181,30 @@ int ClientController::HandleInstantMessage(
 #endif
     return kClientControllerNotInitialised;
   }
-#ifdef DEBUG
-  printf("INSTANT MESSAGE received\n");
-  printf("Sender: %s\n", vbpm.sender().c_str());
-#endif
+//#ifdef DEBUG
+//  printf("INSTANT MESSAGE received - ");
+//  printf("Sender: %s\n", vbpm.sender().c_str());
+//#endif
   InstantMessage im;
   if (im.ParseFromString(vbpm.message())) {
-      messages_.push_back(im);
+      instant_messages_.push_back(im);
 #ifdef DEBUG
-      printf("%s\n", im.message().c_str());
+//      printf("CC::HandleInstantMessage - %s\n", im.sender().c_str());
+//      printf("CC::HandleInstantMessage - %s\n", im.message().c_str());
+//      printf("CC::HandleInstantMessage - %d\n", im.date());
+//      if (im.has_conversation())
+//        printf("CC::HandleInstantMessage - %s\n", im.conversation().c_str());
+//      if (im.has_contact_notification())
+//        printf("CC::HandleInstantMessage - contact_notification\n");
+//      if (im.has_instantfile_notification())
+//        printf("CC::HandleInstantMessage - instantfile_notification\n");
+//      if (im.has_privateshare_notification())
+//        printf("CC::HandleInstantMessage - privateshare_notification\n");
 #endif
     return 0;
-  } else {
-    return -1;
   }
+
+  return -1;
 }
 
 int ClientController::AddInstantFile(
@@ -1465,8 +1493,8 @@ int ClientController::GetInstantMessages(std::list<InstantMessage> *messages) {
 #endif
     return kClientControllerNotInitialised;
   }
-  *messages = messages_;
-  messages_.clear();
+  *messages = instant_messages_;
+  instant_messages_.clear();
   return 0;
 }
 
@@ -1886,8 +1914,8 @@ int ClientController::CreateNewShare(const std::string &name,
   std::vector<std::string> attributes;
   attributes.push_back(name);
 #ifdef DEBUG
-  printf("Public key: %s\n", cmsidr.public_key().c_str());
-  printf("MSID: %s\n", cmsidr.name().c_str());
+  printf("Public key: %s\n", HexSubstr(cmsidr.public_key()).c_str());
+  printf("MSID: %s\n", HexSubstr(cmsidr.name()).c_str());
 #endif
   // MSID & keys are needed here
   attributes.push_back(cmsidr.name());
@@ -2399,7 +2427,7 @@ int ClientController::GetDb(const std::string &orig_path,
   dah->GetDbPath(path, CONNECT, &db_path);
   PathDistinction(parent_path, msid);
 #ifdef DEBUG
-  printf("\t\tMSID: %s\n", msid->c_str());
+  printf("\t\tMSID: %s\n", HexSubstr(*msid).c_str());
 #endif
 
   if (fs::exists(db_path) && *msid == "") {
@@ -2435,7 +2463,8 @@ int ClientController::SaveDb(const std::string &db_path,
                              const std::string &msid,
                              const bool &immediate_save) {
 #ifdef DEBUG
-  printf("\t\tCC::SaveDb %s with MSID = %s\n", db_path.c_str(), msid.c_str());
+  printf("\t\tCC::SaveDb %s with MSID = %s\n", db_path.c_str(),
+         HexSubstr(msid).c_str());
 #endif
   std::string parent_path_(""), dir_key_("");
   fs::path temp_(db_path);
@@ -2690,15 +2719,16 @@ int ClientController::mkdir(const std::string &path) {
   }
 
 #ifdef DEBUG
-  printf("MSID after MakeElement: %s -- type: %i\n", msid.c_str(), dir_type);
+  printf("MSID after MakeElement: %s -- type: %i\n",
+         HexSubstr(msid).c_str(), dir_type);
 #endif
   fs::path pp(path);
   msid.clear();
   PathDistinction(pp.parent_path().string(), &msid);
   dir_type = GetDirType(pp.parent_path().string());
 #ifdef DEBUG
-  printf("MSID after PathDis parent: %s. Path: %s -- type: %i\n", msid.c_str(),
-    pp.parent_path().string().c_str(), dir_type);
+  printf("MSID after PathDis parent: %s. Path: %s -- type: %i\n",
+         HexSubstr(msid).c_str(), pp.parent_path().string().c_str(), dir_type);
 #endif
   bool immediate_save = true;
   if (msid == "") {
@@ -2722,8 +2752,8 @@ int ClientController::mkdir(const std::string &path) {
   PathDistinction(imaginary_.string(), &msid);
   dir_type = GetDirType(imaginary_.string());
 #ifdef DEBUG
-  printf("MSID after imaginary string: %s -- type: %i\n", msid.c_str(),
-    dir_type);
+  printf("MSID after imaginary string: %s -- type: %i\n",
+         HexSubstr(msid).c_str(), dir_type);
 #endif
   immediate_save = true;
   if (msid == "")

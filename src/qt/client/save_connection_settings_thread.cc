@@ -29,5 +29,4 @@ SaveConnectionSettingsThread::~SaveConnectionSettingsThread() { }
 void SaveConnectionSettingsThread::run() {
   bool success = false;
   qDebug() << "SaveConnectionSettingsThread::run";
-
 }

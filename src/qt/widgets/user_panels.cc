@@ -50,9 +50,6 @@ UserPanels::UserPanels(QWidget* parent)
 
   ui_.my_files_button->setAutoDefault(true);
 
-  connect(messages_, SIGNAL(messageReceived()),
-          this,      SLOT(onMessageReceived()));
-
   connect(public_username_, SIGNAL(complete()),
           this,             SLOT(onPublicUsernameChosen()));
 
@@ -133,6 +130,9 @@ void UserPanels::onPublicUsernameChosen() {
     ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
     ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
     ui_.tabWidget_2->addTab(messages_ = new Messages, messagesIcon_, "");
+    connect(messages_, SIGNAL(messageReceived()),
+            this,      SLOT(onMessageReceived()));
+
     // ui_.tabWidget_2->addTab(vaultinfo_ = new VaultInfo, vaultInfoIcon_, "");
   }
 

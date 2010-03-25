@@ -33,13 +33,13 @@ CreateShareThread::CreateShareThread(const QString& shareName,
 CreateShareThread::~CreateShareThread() { }
 
 void CreateShareThread::run() {
-  qDebug() << "CreateShareThread::run ~~~~~~~~~~~~~";
+  qDebug() << "CreateShareThread::run";
   std::set<std::string> sAdminSet;
   std::set<std::string> sRoSet;
   QListStringToStdSet(adminSet_, &sAdminSet);
   QListStringToStdSet(roSet_, &sRoSet);
 
-  if (!ClientController::instance()->CreateNewShare(
+  if (ClientController::instance()->CreateNewShare(
       shareName_.toStdString(), sAdminSet, sRoSet) != 0) {
     qDebug() << "CreateShareThread::run FAIL";
     emit completed(false);

@@ -504,6 +504,7 @@ std::list<ValidatedBufferPacketMessage> ClientBufferPacketHandler::ValidateMsgs(
           private_key, crypto::STRING_STRING);
       msg.set_message(crypto_obj_.SymmDecrypt(msg.message(),
           "", crypto::STRING_STRING, aes_key));
+      msg.set_index("");
       result.push_back(msg);
     }
   }

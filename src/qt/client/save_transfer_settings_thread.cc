@@ -29,5 +29,4 @@ SaveTransferSettingsThread::~SaveTransferSettingsThread() { }
 void SaveTransferSettingsThread::run() {
   bool success = false;
   qDebug() << "SaveTransferSettingsThread::run";
-
 }

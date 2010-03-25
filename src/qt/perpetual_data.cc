@@ -431,6 +431,7 @@ void PerpetualData::quit() {
 
 void PerpetualData::onQuit() {
   // TODO(Team#5#): 2009-08-18 - confirm quit if something in progress
+  ClientController::instance()->StopCheckingMessages();
   if (state_ != LOGGED_IN) {
     qApp->quit();
   } else {
