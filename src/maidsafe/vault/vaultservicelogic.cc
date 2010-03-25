@@ -225,7 +225,7 @@ void VaultServiceLogic::RemoteOpStageTwo(
 
 template<>
 bool VaultServiceLogic::RemoveKadContact(
-    boost::shared_ptr<AddToReferenceListOpData> data) {
+    boost::shared_ptr<AddToReferenceListOpData>) {
   return true;
 }
 

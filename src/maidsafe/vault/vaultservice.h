@@ -113,6 +113,8 @@ class VaultService : public maidsafe::MaidsafeService {
                VaultServiceLogic *vault_service_logic,
                const boost::int16_t &transport_id);
   ~VaultService() {}
+  void AddStartupSyncData(
+      boost::shared_ptr<maidsafe::GetSyncDataResponse> get_sync_data_response);
   virtual void StorePrep(google::protobuf::RpcController* controller,
                          const maidsafe::StorePrepRequest *request,
                          maidsafe::StorePrepResponse *response,
@@ -172,6 +174,10 @@ class VaultService : public maidsafe::MaidsafeService {
                          const maidsafe::CacheChunkRequest *request,
                          maidsafe::CacheChunkResponse *response,
                          google::protobuf::Closure *done);
+  virtual void GetSyncData(google::protobuf::RpcController* controller,
+                           const maidsafe::GetSyncDataRequest *request,
+                           maidsafe::GetSyncDataResponse *response,
+                           google::protobuf::Closure *done);
   virtual void VaultStatus(google::protobuf::RpcController* controller,
                            const maidsafe::VaultStatusRequest *request,
                            maidsafe::VaultStatusResponse *response,

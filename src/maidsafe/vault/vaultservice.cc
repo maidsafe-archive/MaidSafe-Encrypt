@@ -28,6 +28,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <maidsafe/kademlia_service_messages.pb.h>
+#include <maidsafe/routingtable.h>
 #include <maidsafe/transportudt.h>
 
 #include <list>
@@ -100,15 +101,56 @@ VaultService::VaultService(const std::string &pmid_public,
       vault_service_logic_(vault_service_logic),
       transport_id_(transport_id),
       prm_(),
-      ah_(),
+      ah_(false),
       aah_(&ah_, vault_service_logic_),
-      cih_(),
+      cih_(false),
       thread_pool_() {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   pmid_ = co.Hash(pmid_public_ + pmid_public_signature_, "",
                   crypto::STRING_STRING, false);
   thread_pool_.setMaxThreadCount(1);
+}
+
+void VaultService::AddStartupSyncData(
+    boost::shared_ptr<maidsafe::GetSyncDataResponse> get_sync_data_response) {
+  if (!get_sync_data_response->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::AddStartupSyncData(%s), response is not "
+           "initialized.\n", HexSubstr(pmid_).c_str());
+#endif
+    ah_.set_started(true);
+    cih_.set_started(true);
+  }
+
+  if (get_sync_data_response->result() != kAck) {
+#ifdef DEBUG
+    printf("In VaultService::AddStartupSyncData(%s), result is not kAck.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    ah_.set_started(true);
+    cih_.set_started(true);
+  }
+
+  if (get_sync_data_response->has_vault_account_set()) {
+    ah_.GetFromPb(get_sync_data_response->vault_account_set());
+  } else {
+#ifdef DEBUG
+    printf("In VaultService::AddStartupSyncData(%s), missing "
+           "vault_account_set.\n", HexSubstr(pmid_).c_str());
+#endif
+    ah_.set_started(true);
+  }
+
+  if (get_sync_data_response->has_chunk_info_map()) {
+    cih_.GetFromPb(get_sync_data_response->chunk_info_map());
+  } else {
+#ifdef DEBUG
+    printf("In VaultService::AddStartupSyncData(%s), missing "
+           "chunk_info_map.\n", HexSubstr(pmid_).c_str());
+#endif
+    cih_.set_started(true);
+  }
 }
 
 void VaultService::StorePrep(google::protobuf::RpcController*,
@@ -963,46 +1005,6 @@ void VaultService::ValidityCheck(google::protobuf::RpcController*,
   done->Run();
 }
 
-void VaultService::CacheChunk(google::protobuf::RpcController*,
-                              const maidsafe::CacheChunkRequest *request,
-                              maidsafe::CacheChunkResponse *response,
-                              google::protobuf::Closure *done) {
-  response->set_result(kAck);
-  if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::CacheChunk(%s), request is not initialized.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-    return;
-  }
-
-  if (!ValidateSignedRequest(request->public_key(),
-      request->public_key_signature(), request->request_signature(),
-      request->chunkname(), request->pmid())) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::CacheChunk(%s), request does not validate.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-    return;
-  }
-
-  if (vault_chunkstore_->CacheChunk(request->chunkname(),
-      request->chunkcontent()) != kSuccess) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::CacheChunk(%s), failed to cache chunk.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-  }
-
-  done->Run();
-}
-
 void VaultService::SwapChunk(google::protobuf::RpcController*,
                              const maidsafe::SwapChunkRequest *request,
                              maidsafe::SwapChunkResponse *response,
@@ -1064,6 +1066,109 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
   }
   response->set_result(kAck);
   done->Run();
+}
+
+void VaultService::CacheChunk(google::protobuf::RpcController*,
+                              const maidsafe::CacheChunkRequest *request,
+                              maidsafe::CacheChunkResponse *response,
+                              google::protobuf::Closure *done) {
+  response->set_result(kAck);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%s), request is not initialized.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->chunkname(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%s), request does not validate.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (vault_chunkstore_->CacheChunk(request->chunkname(),
+      request->chunkcontent()) != kSuccess) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::CacheChunk(%s), failed to cache chunk.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+  }
+
+  done->Run();
+}
+
+void VaultService::GetSyncData(google::protobuf::RpcController*,
+                               const maidsafe::GetSyncDataRequest *request,
+                               maidsafe::GetSyncDataResponse *response,
+                               google::protobuf::Closure *done) {
+  response->set_result(kNack);
+  if (!request->IsInitialized()) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetSyncData(%s), request is not initialized.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(), "",
+      request->pmid())) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetSyncData(%s), request does not validate.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  // Check the node is (Kademlia) close
+  base::PDRoutingTableHandler rt_handler;
+  std::list<base::PDRoutingTableTuple> close_peers;
+  if (rt_handler.GetClosestContacts(pmid_, kad::K, &close_peers) != kSuccess) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetSyncData(%s), failed to query local"
+           "routing table.\n", HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+  std::list<base::PDRoutingTableTuple>::iterator peer_list_itr =
+      close_peers.begin();
+  bool found(false);
+  while (peer_list_itr != close_peers.end()) {
+    if ((*peer_list_itr).kademlia_id_ == request->pmid()) {
+      found = true;
+      break;
+    }
+    ++peer_list_itr;
+  }
+  if (!found) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetSyncData(%s), requester (%s) not in local"
+           "routing table's closest k nodes.\n", HexSubstr(pmid_).c_str(),
+           HexSubstr(request->pmid()).c_str());
+#endif
+  } else {
+    response->set_result(kAck);
+    VaultAccountSet *vault_account_set = response->mutable_vault_account_set();
+    *vault_account_set = ah_.PutToPb();
+    ChunkInfoMap *chunk_info_map = response->mutable_chunk_info_map();
+    *chunk_info_map = cih_.PutToPb();
+    done->Run();
+  }
 }
 
 void VaultService::VaultStatus(google::protobuf::RpcController*,

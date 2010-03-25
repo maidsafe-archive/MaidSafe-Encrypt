@@ -27,6 +27,11 @@
 
 namespace maidsafe_vault {
 
+void ChunkInfoHandler::set_started(bool started) {
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  started_ = started;
+}
+
 int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
                                             const std::string &pmid,
                                             const boost::uint64_t &chunk_size,
@@ -35,6 +40,8 @@ int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
   *required_references = 0;
   *required_payments = 0;
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
 
   ChunkInfo &ci = chunk_infos_[chunk_name];
 
@@ -92,9 +99,11 @@ bool ChunkInfoHandler::TryCommitToWatchList(const std::string &chunk_name,
                                             const std::string &pmid,
                                             std::string *creditor,
                                             int *refunds) {
-  *creditor = "";
+  creditor->clear();
   *refunds = 0;
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return false;
   if (chunk_infos_.count(chunk_name) == 0)
     return false;
 
@@ -163,6 +172,8 @@ void ChunkInfoHandler::ResetAddToWatchList(const std::string &chunk_name,
                                            std::list<std::string> *creditors,
                                            std::list<std::string> *references) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return;
   if (chunk_infos_.count(chunk_name) == 0)
     return;
   ChunkInfo &ci = chunk_infos_[chunk_name];
@@ -197,6 +208,8 @@ int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
                                           std::list<std::string> *creditors,
                                           std::list<std::string> *references) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
 
   if (!HasWatchers(chunk_name))
     return kChunkInfoInvalidName;
@@ -273,6 +286,8 @@ int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
                                          const std::string &pmid,
                                          const boost::uint64_t &chunk_size) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
   if (!HasWatchers(chunk_name))
     return kChunkInfoInvalidName;
 
@@ -303,6 +318,8 @@ int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
                                               const std::string &pmid,
                                               int *chunk_size) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
   if (chunk_infos_.count(chunk_name) == 0)
     return kChunkInfoInvalidName;
 
@@ -329,6 +346,8 @@ int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
 void ChunkInfoHandler::SetStoringDone(const std::string &chunk_name,
                                       const std::string &pmid) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return;
   if (chunk_infos_.count(chunk_name) == 0)
     return;
   ChunkInfo &ci = chunk_infos_[chunk_name];
@@ -347,6 +366,8 @@ void ChunkInfoHandler::SetStoringDone(const std::string &chunk_name,
 void ChunkInfoHandler::SetPaymentsDone(const std::string &chunk_name,
                                        const std::string &pmid) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return;
   if (chunk_infos_.count(chunk_name) == 0)
     return;
   ChunkInfo &ci = chunk_infos_[chunk_name];
@@ -365,6 +386,8 @@ void ChunkInfoHandler::SetPaymentsDone(const std::string &chunk_name,
 void ChunkInfoHandler::GetStaleWaitingListEntries(
     std::list< std::pair<std::string, std::string> > *entries) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return;
   boost::uint32_t now = base::get_epoch_time();
   for (std::map<std::string, ChunkInfo>::iterator ci_it = chunk_infos_.begin();
        ci_it != chunk_infos_.end(); ++ci_it) {
@@ -421,6 +444,49 @@ boost::uint64_t ChunkInfoHandler::GetChecksum(const std::string &id) {
   // return last 8 bytes of the ID as number
   return *reinterpret_cast<boost::uint64_t*>(
             const_cast<char*>(id.substr(kKeySize - 8).data()));
+}
+
+ChunkInfoMap ChunkInfoHandler::PutToPb() {
+  ChunkInfoMap chunk_info_map;
+  std::map<std::string, ChunkInfo>::iterator it;
+  ChunkInfoMap::VaultChunkInfo *vault_chunk_info;
+  boost::mutex::scoped_lock loch(chunk_info_mutex_);
+  for (it = chunk_infos_.begin(); it != chunk_infos_.end(); ++it) {
+    vault_chunk_info = chunk_info_map.add_vault_chunk_info();
+    vault_chunk_info->set_chunk_name((*it).first);
+    std::for_each((*it).second.waiting_list.begin(),
+        (*it).second.waiting_list.end(),
+        boost::bind(&WaitingListEntry::PutToPb, _1, vault_chunk_info));
+    std::for_each((*it).second.watch_list.begin(),
+        (*it).second.watch_list.end(),
+        boost::bind(&WatchListEntry::PutToPb, _1, vault_chunk_info));
+    std::for_each((*it).second.reference_list.begin(),
+        (*it).second.reference_list.end(),
+        boost::bind(&ReferenceListEntry::PutToPb, _1, vault_chunk_info));
+    vault_chunk_info->set_watcher_count((*it).second.watcher_count);
+    vault_chunk_info->set_watcher_checksum((*it).second.watcher_checksum);
+    vault_chunk_info->set_chunk_size((*it).second.chunk_size);
+  }
+  return chunk_info_map;
+}
+
+void ChunkInfoHandler::GetFromPb(const ChunkInfoMap &chunk_info_map) {
+  ChunkInfoMap::VaultChunkInfo vault_chunk_info;
+  boost::mutex::scoped_lock loch(chunk_info_mutex_);
+  bool use_max_efficiency = chunk_infos_.empty();
+  std::map<std::string, ChunkInfo>::iterator it = chunk_infos_.begin();
+  for (int i = 0; i < chunk_info_map.vault_chunk_info_size(); ++i) {
+    vault_chunk_info.Clear();
+    vault_chunk_info = chunk_info_map.vault_chunk_info(i);
+    ChunkInfo chunk_info(vault_chunk_info);
+    if (use_max_efficiency)
+      it = chunk_infos_.insert(it, std::pair<std::string, ChunkInfo>(
+          vault_chunk_info.chunk_name(), chunk_info));
+    else
+      chunk_infos_.insert(std::pair<std::string, ChunkInfo>(
+          vault_chunk_info.chunk_name(), chunk_info));
+  }
+  started_ = true;
 }
 
 }  // namespace maidsafe_vault

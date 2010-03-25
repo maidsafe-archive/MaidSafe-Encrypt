@@ -37,12 +37,12 @@ class AccountHandlerTest : public testing::Test {
 };
 
 TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerInit) {
-  AccountHandler ah;
+  AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
 }
 
 TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerAddAndFind) {
-  AccountHandler ah;
+  AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
   ASSERT_EQ(kAccountNotFound, ah.HaveAccount("AAAAAAAAA"));
 
@@ -56,7 +56,7 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerAddAndFind) {
 }
 
 TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerModify) {
-  AccountHandler ah;
+  AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
   std::string pmid("some pmid");
   boost::uint64_t offered(0), vault_space(0), account_used(0);
@@ -134,7 +134,7 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerModify) {
 }
 
 TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete) {
-  AccountHandler ah;
+  AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
   std::string pmid("some pmid");
   boost::uint64_t offer(1234567890);
@@ -148,6 +148,50 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete) {
   ASSERT_EQ(0, ah.DeleteAccount(pmid));
   ASSERT_EQ(kAccountNotFound, ah.HaveAccount(pmid));
   ASSERT_EQ(kAccountNotFound, ah.DeleteAccount(pmid));
+}
+
+TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerDeletePutGetPb) {
+  AccountHandler account_handler1(true), account_handler2(true);
+  std::pair<AccountSet::iterator, bool> result;
+  const int kNumEntries(698);
+  for (int i = 0; i < kNumEntries; ++i) {
+    std::list<std::string> alerts;
+    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 999); ++j)
+      alerts.push_back(base::RandomString(base::random_32bit_uinteger() % 999));
+    Account account(base::RandomString(128), base::random_32bit_uinteger(),
+        base::random_32bit_uinteger(), base::random_32bit_uinteger(), alerts);
+    result = account_handler1.accounts_.insert(account);
+    ASSERT_TRUE(result.second);
+  }
+  VaultAccountSet vault_account_set = account_handler1.PutToPb();
+  std::string serialised_vault_account_set1;
+  ASSERT_TRUE(vault_account_set.SerializeToString(
+      &serialised_vault_account_set1));
+  vault_account_set.Clear();
+  ASSERT_TRUE(vault_account_set.ParseFromString(serialised_vault_account_set1));
+  account_handler2.GetFromPb(vault_account_set);
+  ASSERT_EQ(account_handler1.accounts_.size(),
+            account_handler2.accounts_.size());
+  AccountSet::iterator it1 = account_handler1.accounts_.begin();
+  AccountSet::iterator it2 = account_handler2.accounts_.begin();
+  for (; it1 != account_handler1.accounts_.end(); ++it1, ++it2) {
+    Account account1(*it1), account2(*it2);
+    ASSERT_EQ(account1.pmid_, account2.pmid_);
+    ASSERT_EQ(account1.offered_, account2.offered_);
+    ASSERT_EQ(account1.vault_used_, account2.vault_used_);
+    ASSERT_EQ(account1.account_used_, account2.account_used_);
+    ASSERT_EQ(account1.alerts_.size(), account2.alerts_.size());
+    std::list<std::string>::iterator alerts_it1 = account1.alerts_.begin();
+    std::list<std::string>::iterator alerts_it2 = account2.alerts_.begin();
+    for (; alerts_it1 != account1.alerts_.end(); ++alerts_it1, ++alerts_it2)
+      ASSERT_EQ(*alerts_it1, *alerts_it2);
+  }
+  vault_account_set.Clear();
+  vault_account_set = account_handler1.PutToPb();
+  std::string serialised_vault_account_set2;
+  ASSERT_TRUE(vault_account_set.SerializeToString(
+      &serialised_vault_account_set2));
+  ASSERT_EQ(serialised_vault_account_set1, serialised_vault_account_set2);
 }
 
 }  // namespace maidsafe_vault

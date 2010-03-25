@@ -131,6 +131,10 @@ class VaultServicesTest : public testing::Test {
                                       vault_chunkstore_, knode_.get(),
                                       vault_service_logic_, transport_id);
 
+    boost::shared_ptr<maidsafe::GetSyncDataResponse>
+        get_sync_data_response(new maidsafe::GetSyncDataResponse);
+    vault_service_->AddStartupSyncData(get_sync_data_response);
+
     vault_service_logic_->Init(vault_pmid_,
                                vault_public_key_,
                                vault_public_key_signature_,
@@ -456,6 +460,10 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
+
+  boost::shared_ptr<maidsafe::GetSyncDataResponse>
+      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  vault_service_->AddStartupSyncData(get_sync_data_response);
 
   rpcprotocol::Controller controller;
   maidsafe::StoreChunkRequest request;
@@ -790,6 +798,10 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic,
                                     udt_transport_.GetID());
+
+  boost::shared_ptr<maidsafe::GetSyncDataResponse>
+      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  vault_service_->AddStartupSyncData(get_sync_data_response);
 
   rpcprotocol::Controller controller;
   maidsafe::AmendAccountRequest request;
@@ -1216,6 +1228,10 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
+  boost::shared_ptr<maidsafe::GetSyncDataResponse>
+      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  vault_service_->AddStartupSyncData(get_sync_data_response);
+
   rpcprotocol::Controller controller;
   maidsafe::AddToWatchListRequest request;
   maidsafe::AddToWatchListResponse response;
@@ -1425,6 +1441,10 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
+
+  boost::shared_ptr<maidsafe::GetSyncDataResponse>
+      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  vault_service_->AddStartupSyncData(get_sync_data_response);
 
   rpcprotocol::Controller controller;
   maidsafe::AddToWatchListRequest add_request;
@@ -1660,6 +1680,10 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
+
+  boost::shared_ptr<maidsafe::GetSyncDataResponse>
+      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  vault_service_->AddStartupSyncData(get_sync_data_response);
 
   rpcprotocol::Controller controller;
   maidsafe::AddToReferenceListRequest request;
@@ -1921,6 +1945,10 @@ TEST_F(MockVaultServicesTest, DISABLED_FUNC_MAID_ServicesRemoveFromReferenceList
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
+
+  boost::shared_ptr<maidsafe::GetSyncDataResponse>
+      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  vault_service_->AddStartupSyncData(get_sync_data_response);
 
   ASSERT_TRUE(false) << "-- NOT IMPLEMENTED --";
   /*

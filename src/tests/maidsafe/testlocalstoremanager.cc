@@ -519,7 +519,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
-  ASSERT_NE("", messages.front().index());
+  ASSERT_EQ("", messages.front().index());
   ASSERT_EQ(maidsafe::INSTANT_MSG, messages.front().type());
 
   // Check message is gone
@@ -567,7 +567,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
-  ASSERT_NE("", messages.front().index());
+  ASSERT_EQ("", messages.front().index());
   ASSERT_EQ(maidsafe::ADD_CONTACT_RQST, messages.front().type());
   maidsafe::BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
@@ -599,7 +599,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
-  ASSERT_NE("", messages.front().index());
+  ASSERT_EQ("", messages.front().index());
   ASSERT_EQ(maidsafe::INSTANT_MSG, messages.front().type());
 }
 

@@ -55,7 +55,7 @@ TEST(CryptoKeyPairsTest, FUNC_MAID_GetMultipleCryptoKeys) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
 
-  ASSERT_EQ(no_of_keys, kps.size());
+  ASSERT_EQ(static_cast<size_t>(no_of_keys), kps.size());
 }
 
 TEST(CryptoKeyPairsTest, FUNC_MAID_ReuseObject) {
@@ -90,9 +90,7 @@ TEST(CryptoKeyPairsTest, FUNC_MAID_ReuseObject) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
 
-
-
-  ASSERT_EQ(no_of_keys + keys_rec, kps.size());
+  ASSERT_EQ(static_cast<size_t>(no_of_keys + keys_rec), kps.size());
 }
 
 }  // namespace maidsafe

@@ -161,7 +161,7 @@ int ClientController::Init() {
 #endif
     return -1;
   }
-  auth_.Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm_);
+  auth_.Init(kNoOfSystemPackets, sm_);
   ss_ = SessionSingleton::getInstance();
   initialised_ = true;
   return 0;

@@ -77,7 +77,7 @@ namespace maidsafe_vault {
 class AccountAmendmentHandlerTest : public MockVaultServiceLogicTest {
  protected:
   AccountAmendmentHandlerTest()
-    : ah_(),
+    : ah_(true),
       vsl_(boost::shared_ptr<VaultRpcs>(), boost::shared_ptr<kad::KNode>()),
       aah_(&ah_, &vsl_) {}
   AccountHandler ah_;

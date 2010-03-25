@@ -77,8 +77,7 @@ class Authentication {
         user_info_result_(kPendingResult),
         get_smidtimid_result_(kPendingResult),
         crypto_key_pairs_() {}
-  void Init(const boost::uint16_t &max_crypto_thread_count,
-            const boost::uint16_t &crypto_key_buffer_count,
+  void Init(const boost::uint16_t &crypto_key_buffer_count,
             boost::shared_ptr<StoreManagerInterface> smgr);
   int GetUserInfo(const std::string &username, const std::string &pin);
   int GetUserData(const std::string &password, std::string *ser_da);
@@ -165,7 +164,6 @@ class Authentication {
   crypto::Crypto crypto_;
   boost::shared_ptr<StoreManagerInterface> sm_;
   SessionSingleton *ss_;
-//  std::string tmid_content_, smidtmid_content_;
   ReturnCode system_packets_result_, user_info_result_, get_smidtimid_result_;
   CryptoKeyPairs crypto_key_pairs_;
   Authentication &operator=(const Authentication &);
