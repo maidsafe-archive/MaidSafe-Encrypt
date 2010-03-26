@@ -100,8 +100,7 @@ class AuthenticationTest : public testing::Test {
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
-    client_chunkstore_ = boost::shared_ptr<ChunkStore>(
-        new ChunkStore(test_root_dir_.string(), 0, 0));
+    client_chunkstore_.reset(new ChunkStore(test_root_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
@@ -538,7 +537,7 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
   PacketParams params;
   params["username"] = username_;
   params["pin"] = pin_;
-  std::string mid_name = midPacket->PacketName(&params);
+  std::string mid_name = midPacket->PacketName(params);
   int result(kGeneralError);
   boost::mutex mutex;
   boost::condition_variable cond_var;
