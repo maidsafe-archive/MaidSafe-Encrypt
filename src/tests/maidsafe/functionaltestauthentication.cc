@@ -128,6 +128,15 @@ class FunctionalAuthenticationTest : public testing::Test {
   }
   void TearDown() {
     cb_.Reset();
+    sm_->Close(boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb_, _1), true);
+    boost::mutex mutex;
+    test_auth::WaitForResult(cb_, &mutex);
+    GenericResponse res;
+    if ((!res.ParseFromString(cb_.result)) ||
+        (res.result() == kNack)) {
+      FAIL();
+      return;
+    }
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
@@ -191,6 +200,8 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_GoodLogin) {
   ASSERT_EQ(kSuccess, result) << "Unable to get registered user's data";
   ASSERT_EQ(ser_dm, ser_dm_login) <<
             "Serialised DA recovered from login empty string";
+  while (authentication_->get_smidtimid_result() == kPendingResult)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   dm.Clear();
   ASSERT_TRUE(dm.ParseFromString(ser_dm_login)) <<
               "Data Atlas hasn't the correct format";
@@ -227,6 +238,8 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_LoginNoUser) {
   ASSERT_EQ(kUserExists, result) << "User does not exist";
   result = authentication_->GetUserData("password_tonto", &ser_dm_login);
   ASSERT_EQ(kPasswordFailure, result);
+  while (authentication_->get_smidtimid_result() == kPendingResult)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
 TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_RegisterUserOnce) {
@@ -292,7 +305,8 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_RegisterUserTwice) {
   ASSERT_EQ(kUserExists, result) << "The same user was registered twice";
   // need to wait before exiting because in the background it is getting
   // the TMID of the user
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  while (authentication_->get_smidtimid_result() == kPendingResult)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
 TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_RepeatedSaveSession) {
@@ -393,6 +407,8 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_ChangeUsername) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   result = authentication_->GetUserData(password_, &ser_dm_login);
   ASSERT_EQ(kSuccess, result) << "Can't login with new iuserneim";
+  while (authentication_->get_smidtimid_result() == kPendingResult)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 
   result = authentication_->GetUserInfo(username, pin_);
   ASSERT_EQ(kUserDoesntExist, result);
@@ -400,6 +416,8 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_ChangeUsername) {
   // Check the TMIDs are gone
   ASSERT_TRUE(sm_->KeyUnique(tmidmidname, false));
   ASSERT_TRUE(sm_->KeyUnique(tmidsmidname, false));
+  while (authentication_->get_smidtimid_result() == kPendingResult)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
 TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_ChangePin) {
@@ -455,12 +473,16 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_ChangePin) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   result = authentication_->GetUserData(password_, &ser_dm_login);
   ASSERT_EQ(kSuccess, result) << "Can't login with new pin_";
+  while (authentication_->get_smidtimid_result() == kPendingResult)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   result = authentication_->GetUserInfo(username, pin_);
   ASSERT_EQ(kUserDoesntExist, result);
 
   // Check the TMIDs are gone
   ASSERT_TRUE(sm_->KeyUnique(tmidmidname, false));
   ASSERT_TRUE(sm_->KeyUnique(tmidsmidname, false));
+  while (authentication_->get_smidtimid_result() == kPendingResult)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
 TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_ChangePassword) {
@@ -496,6 +518,8 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_ChangePassword) {
   ASSERT_EQ(kUserExists, result) << "User does not exist";
   result = authentication_->GetUserData("elpasguord", &ser_dm_login);
   ASSERT_EQ(kSuccess, result) << "Can't login with new password_";
+  while (authentication_->get_smidtimid_result() == kPendingResult)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   result = authentication_->GetUserInfo(username, pin_);
   ASSERT_EQ(kUserExists, result) << "User does not exist";
   result = authentication_->GetUserData(password_, &ser_dm_login);

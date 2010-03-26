@@ -42,15 +42,16 @@ typedef std::map<std::string, boost::any> PacketParams;
 
 class Packet {
  public:
-  explicit Packet(const crypto::RsaKeyPair &rsakp);
-  virtual ~Packet() {}
-  virtual PacketParams Create(PacketParams *params) = 0;
-  virtual PacketParams GetData(const std::string &serialised_packet);
-  bool ValidateSignature(const std::string &serialised_packet,
-                         const std::string &public_key);
+  Packet();
+  virtual ~Packet();
+  virtual PacketParams Create(PacketParams params) = 0;
+  virtual PacketParams GetData(const std::string &ser_packet,
+      PacketParams params) = 0;
+  virtual std::string PacketName(PacketParams params) = 0;
  protected:
   crypto::Crypto crypto_obj_;
-  crypto::RsaKeyPair rsakp_;
+  virtual bool ValidateSignature(const GenericPacket &packet,
+      const std::string &public_key);
  private:
   Packet &operator=(const Packet&);
   Packet(const Packet&);
@@ -58,8 +59,7 @@ class Packet {
 
 class PacketFactory {
  public:
-  static boost::shared_ptr<Packet> Factory(PacketType type,
-                                           const crypto::RsaKeyPair &rsakp);
+  static boost::shared_ptr<Packet> Factory(const PacketType type);
  private:
   PacketFactory &operator=(const PacketFactory&);
   PacketFactory(const PacketFactory&);

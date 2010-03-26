@@ -364,7 +364,13 @@ int ClientController::CheckUserExists(const std::string &username,
   }
   ss_->ResetSession();
   ss_->SetDefConLevel(level);
-  return auth_.GetUserInfo(username, pin);
+  int result = auth_.GetUserInfo(username, pin);
+  if (result != kSuccess) {
+    while (auth_.get_smidtimid_result() == kPendingResult) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    }
+  }
+  return result;
 }
 
 bool ClientController::CreateUser(const std::string &username,

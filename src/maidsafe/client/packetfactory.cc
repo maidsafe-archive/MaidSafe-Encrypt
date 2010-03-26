@@ -27,48 +27,34 @@
 
 namespace maidsafe {
 
-Packet::Packet(const crypto::RsaKeyPair &rsakp) : crypto_obj_(), rsakp_(rsakp) {
+Packet::Packet(): crypto_obj_() {
   crypto_obj_.set_hash_algorithm(crypto::SHA_512);
   crypto_obj_.set_symm_algorithm(crypto::AES_256);
-  if (rsakp_.private_key().empty())
-    rsakp_.GenerateKeys(kRsaKeySize);
 }
 
-PacketParams Packet::GetData(const std::string &serialised_packet) {
-  PacketParams result;
-  GenericPacket packet;
-  if (!packet.ParseFromString(serialised_packet))
-    result["data"] = std::string();
-  else
-    result["data"] = packet.data();
-  return result;
+Packet::~Packet() {
 }
 
-bool Packet::ValidateSignature(const std::string &serialised_packet,
-                               const std::string &public_key) {
-  GenericPacket packet;
-  if (!packet.ParseFromString(serialised_packet))
-    return false;
+bool Packet::ValidateSignature(const GenericPacket &packet,
+      const std::string &public_key) {
   return crypto_obj_.AsymCheckSig(packet.data(), packet.signature(), public_key,
                                   crypto::STRING_STRING);
 }
 
-boost::shared_ptr<Packet> PacketFactory::Factory(
-    PacketType type,
-    const crypto::RsaKeyPair &rsakp) {
+boost::shared_ptr<Packet> PacketFactory::Factory(const PacketType type) {
   switch (type) {
     case MID:
-      return boost::shared_ptr<Packet>(new MidPacket(rsakp));
+      return boost::shared_ptr<Packet>(new MidPacket);
     case SMID:
-      return boost::shared_ptr<Packet>(new SmidPacket(rsakp));
+      return boost::shared_ptr<Packet>(new SmidPacket);
     case TMID:
-      return boost::shared_ptr<Packet>(new TmidPacket(rsakp));
+      return boost::shared_ptr<Packet>(new TmidPacket);
     case MPID:
-      return boost::shared_ptr<Packet>(new MpidPacket(rsakp));
+      return boost::shared_ptr<Packet>(new MpidPacket);
     case PMID:
-      return boost::shared_ptr<Packet>(new PmidPacket(rsakp));
+      return boost::shared_ptr<Packet>(new PmidPacket);
     default:
-      return boost::shared_ptr<Packet>(new SignaturePacket(rsakp));
+      return boost::shared_ptr<Packet>(new SignaturePacket);
   }
 }
 
