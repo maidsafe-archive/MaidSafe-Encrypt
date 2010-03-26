@@ -97,7 +97,7 @@ void PacketOpCallback(const int &delete_result,
                       int *result) {
   boost::mutex::scoped_lock lock(*mutex);
   *result = delete_result;
-  cond_var->notify_one();
+  cond_var->notify_all();
 };
 
 }  // namespace test_lsm
@@ -231,6 +231,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_RemoveAllPacketsFromKey) {
         cond_var.wait(lock);
     }
     ASSERT_EQ(maidsafe::kSuccess, result);
+    result = maidsafe::kGeneralError;
   }
 
   // Remove said packets
