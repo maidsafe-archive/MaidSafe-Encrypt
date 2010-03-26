@@ -31,7 +31,7 @@ namespace maidsafe {
 CryptoKeyPairs::CryptoKeyPairs()
       : keypairs_done_(0), keypairs_todo_(0), keypairs_(),
         thrds_(kMaxCryptoThreadCount, boost::shared_ptr<boost::thread>()),
-        keyslist_mutex_(), keys_done_mutex_(), keys_cond_(),
+        keyslist_mutex_(), keys_done_mutex_(), keys_cond_(), start_mutex_(),
         started_(false), destroying_this_(false) {
 }
 
@@ -47,9 +47,12 @@ CryptoKeyPairs::~CryptoKeyPairs() {
 
 bool CryptoKeyPairs::StartToCreateKeyPairs(const boost::int16_t
       &no_of_keypairs) {
-  if (started_)
-    return false;
-  started_ = true;
+  {
+    boost::mutex::scoped_lock lock(start_mutex_);
+    if (started_)
+      return false;
+    started_ = true;
+  }
   keypairs_todo_ = no_of_keypairs;
   keypairs_done_ = keypairs_.size();
   boost::int16_t keys_needed = keypairs_todo_ - keypairs_done_;
@@ -93,16 +96,19 @@ void CryptoKeyPairs::CreateKeyPair() {
 }
 
 void CryptoKeyPairs::FinishedCreating() {
-  boost::mutex::scoped_lock lock(keys_done_mutex_);
-  if (keypairs_todo_ == keypairs_done_)
-    started_ = false;
+  {
+    boost::mutex::scoped_lock lock(keys_done_mutex_);
+    if (keypairs_todo_ == keypairs_done_)
+      started_ = false;
+  }
+  keys_cond_.notify_all();
 }
 
 bool CryptoKeyPairs::GetKeyPair(crypto::RsaKeyPair *keypair) {
   bool result;
-
   // All keys that were asked for have been created, all threads have finished
   if (!started_) {
+    boost::mutex::scoped_lock lock(keyslist_mutex_);
     if (keypairs_.empty()) {
       result = false;
     } else {
@@ -111,17 +117,16 @@ bool CryptoKeyPairs::GetKeyPair(crypto::RsaKeyPair *keypair) {
       result = true;
     }
   } else {
-    {
-      boost::mutex::scoped_lock lock(keyslist_mutex_);
-      while (keypairs_.empty()) {
-        keys_cond_.wait(lock);
-      }
+    boost::mutex::scoped_lock lock(keyslist_mutex_);
+    while (keypairs_.empty() && started_) {
+      keys_cond_.wait(lock);
     }
-    *keypair = keypairs_.front();
-    {
-      boost::mutex::scoped_lock lock(keyslist_mutex_);
+    if (!keypairs_.empty()) {
+      *keypair = keypairs_.front();
       keypairs_.pop_front();
       result = true;
+    } else {
+      result = false;
     }
   }
   return result;

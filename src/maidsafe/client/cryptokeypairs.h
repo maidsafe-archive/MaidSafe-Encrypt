@@ -50,7 +50,7 @@ class CryptoKeyPairs : public boost::noncopyable {
   boost::int16_t keypairs_done_, keypairs_todo_;
   std::list<crypto::RsaKeyPair> keypairs_;
   std::vector< boost::shared_ptr<boost::thread> > thrds_;
-  boost::mutex keyslist_mutex_, keys_done_mutex_;
+  boost::mutex keyslist_mutex_, keys_done_mutex_, start_mutex_;
   boost::condition_variable keys_cond_;
   bool started_, destroying_this_;
 };

@@ -37,8 +37,11 @@ namespace maidsafe {
 
 class SignaturePacket : public Packet {
  public:
-  explicit SignaturePacket(const crypto::RsaKeyPair &rsakp) : Packet(rsakp) {}
-  PacketParams Create(PacketParams *params);
+  SignaturePacket() {}
+  PacketParams Create(PacketParams params);
+  PacketParams GetData(const std::string &ser_packet,
+      PacketParams params);
+  std::string PacketName(PacketParams params);
  private:
   SignaturePacket &operator=(const SignaturePacket&);
   SignaturePacket(const SignaturePacket&);
@@ -46,13 +49,12 @@ class SignaturePacket : public Packet {
 
 class MidPacket : public Packet {
  public:
-  explicit MidPacket(const crypto::RsaKeyPair &rsakp) : Packet(rsakp) {}
+  explicit MidPacket() {}
   virtual ~MidPacket() {}
-  virtual PacketParams Create(PacketParams *params);
-  PacketParams GetData(const std::string &serialised_packet,
-                       const std::string &username,
-                       const std::string &PIN);
-  virtual std::string PacketName(PacketParams *params);
+  virtual PacketParams Create(PacketParams params);
+  PacketParams GetData(const std::string &ser_packet,
+      PacketParams params);
+  std::string PacketName(PacketParams params);
  private:
   MidPacket &operator=(const MidPacket&);
   MidPacket(const MidPacket&);
@@ -60,9 +62,9 @@ class MidPacket : public Packet {
 
 class SmidPacket : public MidPacket {
  public:
-  explicit SmidPacket(const crypto::RsaKeyPair &rsakp) : MidPacket(rsakp) {}
-  PacketParams Create(PacketParams *params);
-  std::string PacketName(PacketParams *params);
+  SmidPacket() {}
+  PacketParams Create(PacketParams params);
+  std::string PacketName(PacketParams params);
  private:
   SmidPacket &operator=(const SmidPacket&);
   SmidPacket(const SmidPacket&);
@@ -70,12 +72,11 @@ class SmidPacket : public MidPacket {
 
 class TmidPacket : public Packet {
  public:
-  explicit TmidPacket(const crypto::RsaKeyPair &rsakp) : Packet(rsakp) {}
-  PacketParams Create(PacketParams *params);
-  PacketParams GetData(const std::string &serialised_packet,
-                       const std::string &password,
-                       const boost::uint32_t &rid);
-  std::string PacketName(PacketParams *params);
+  TmidPacket() {}
+  PacketParams Create(PacketParams params);
+  PacketParams GetData(const std::string &ser_packet,
+      PacketParams params);
+  std::string PacketName(PacketParams params);
  private:
   TmidPacket &operator=(const TmidPacket&);
   TmidPacket(const TmidPacket&);
@@ -83,8 +84,11 @@ class TmidPacket : public Packet {
 
 class PmidPacket : public Packet {
  public:
-  explicit PmidPacket(const crypto::RsaKeyPair &rsakp) : Packet(rsakp) {}
-  PacketParams Create(PacketParams *params);
+  PmidPacket() {}
+  PacketParams Create(PacketParams params);
+  PacketParams GetData(const std::string &ser_packet,
+      PacketParams params);
+  std::string PacketName(PacketParams params);
  private:
   PmidPacket &operator=(const PmidPacket&);
   PmidPacket(const PmidPacket&);
@@ -92,9 +96,11 @@ class PmidPacket : public Packet {
 
 class MpidPacket : public Packet {
  public:
-  explicit MpidPacket(const crypto::RsaKeyPair &rsakp) : Packet(rsakp) {}
-  PacketParams Create(PacketParams *params);
-  std::string PacketName(PacketParams *params);
+  MpidPacket() {}
+  PacketParams Create(PacketParams params);
+  PacketParams GetData(const std::string &ser_packet,
+      PacketParams params);
+  std::string PacketName(PacketParams params);
  private:
   MpidPacket &operator=(const MpidPacket&);
   MpidPacket(const MpidPacket&);

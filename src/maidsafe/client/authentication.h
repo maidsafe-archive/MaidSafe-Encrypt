@@ -105,6 +105,9 @@ class Authentication {
   int PublicUsernamePublicKey(const std::string &public_username,
                               std::string *public_key);
   void CreateMSIDPacket(base::callback_func_type cb);
+  ReturnCode get_smidtimid_result() {
+    return get_smidtimid_result_;
+  }
  private:
   std::string CreateSignaturePackets(const PacketType &type_da,
                                      std::string *public_key);
@@ -114,10 +117,6 @@ class Authentication {
   bool CheckPin(const std::string &pin);
   bool CheckPassword(const std::string &password);
 
-//  bool GetMid(const std::string &username, const std::string &pin, int *rid);
-//  bool GetSmid(const std::string &smid_name,
-//               const std::string &pin,
-//               int *rid);
   void GetMidCallback(const std::vector<std::string> &values,
                       const ReturnCode &rc,
                       boost::shared_ptr<UserInfo> ui);
@@ -133,8 +132,6 @@ class Authentication {
                            const ReturnCode &rc,
                            boost::shared_ptr<UserInfo> ui);
 
-//  void GetUserTmid(bool smid);
-//  void GetUserSmidTmid();
   int StorePacket(const std::string &packet_name,
                   const std::string &value,
                   const PacketType &type,

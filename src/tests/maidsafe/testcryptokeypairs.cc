@@ -89,8 +89,37 @@ TEST(CryptoKeyPairsTest, FUNC_MAID_ReuseObject) {
     kp.ClearKeys();
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
+  ASSERT_EQ(no_of_keys + keys_rec, kps.size());
+}
 
-  ASSERT_EQ(static_cast<size_t>(no_of_keys + keys_rec), kps.size());
+void GetKeys(CryptoKeyPairs *ckp, int *counter, const boost::int16_t &total) {
+  for (int i = 0; i < total; ++i) {
+    crypto::RsaKeyPair kp;
+    while (!ckp->GetKeyPair(&kp)) {
+      kp.ClearKeys();
+      if (ckp->StartToCreateKeyPairs(total)) {
+      }
+    }
+    ASSERT_FALSE(kp.private_key().empty());
+    ASSERT_FALSE(kp.public_key().empty());
+    ++(*counter);
+  }
+}
+
+TEST(CryptoKeyPairsTest, FUNC_MAID_AccessFromDiffThreads) {
+  CryptoKeyPairs ckp;
+  boost::int16_t no_of_keys(6), no_of_thrds(4);
+  std::vector<crypto::RsaKeyPair> kps;
+  ASSERT_TRUE(ckp.StartToCreateKeyPairs(no_of_keys));
+  boost::thread_group thrds;
+  std::vector<int> keys_gen(no_of_thrds, 0);
+  for (int i = 0; i < no_of_thrds; ++i) {
+    thrds.create_thread(boost::bind(&GetKeys, &ckp, &keys_gen[i], no_of_keys));
+  }
+  thrds.join_all();
+  for (int i = 0; i < no_of_thrds; ++i) {
+    ASSERT_EQ(no_of_keys, keys_gen[i]);
+  }
 }
 
 }  // namespace maidsafe
