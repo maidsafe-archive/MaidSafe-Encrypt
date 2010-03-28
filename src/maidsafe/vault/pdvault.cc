@@ -81,7 +81,8 @@ PDVault::PDVault(const std::string &pmid_public,
       kad_config_file_(vault_dir / ".kadconfig"),
       thread_pool_(),
       maidsafe_join_thread_(),
-      create_account_thread_() {
+      create_account_thread_(),
+      routing_table_() {
   transport_handler_->Register(&global_udt_transport_, &transport_id_);
   knode_->SetTransID(transport_id_);
   vault_chunkstore_.Init();
@@ -178,6 +179,9 @@ void PDVault::Start(bool first_node) {
     // Set port, so that if vault is restarted before it is destroyed, it
     // re-uses port (unless this port has become unavailable).
     port_ = knode_->host_port();
+    routing_table_ = (*base::PDRoutingTable::getInstance())
+          [boost::lexical_cast<std::string>(port_)];
+
     if (kad_joined_ && vault_service_logic_.Init(pmid_, pmid_public_,
         signed_pmid_public_, pmid_private_)) {
       SetVaultStatus(kVaultStarted);
@@ -223,14 +227,15 @@ int PDVault::Stop() {
     return -2;
   }
   SetVaultStatus(kVaultStopping);
+  maidsafe_join_thread_.join();
   create_account_thread_.join();
   UnRegisterMaidService();
   knode_->Leave();
   kad_joined_ = knode_->is_joined();
   // TODO(Team#) force exit if KNode::Leave() fails
-  SetVaultStatus(kVaultStopped);
   transport_handler_->StopAll();
   channel_manager_.Stop();
+  SetVaultStatus(kVaultStopped);
   return 0;
 }
 
@@ -1195,7 +1200,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   if (vault_status() != kVaultStarted) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, vault (%s) is offline.\n",
-           HexSubstr(pmid_).c_str());
+           HexSubCstr(pmid_));
 #endif
     return maidsafe::kTaskCancelledOffline;
   }
@@ -1310,8 +1315,8 @@ void PDVault::AmendAccountCallback(
   } else if (holder.response.pmid() != holder.node_id) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccountCallback, response %u from %s has PMID "
-           "%s.\n", index, HexSubstr(holder.node_id).c_str(),
-           HexSubstr(holder.response.pmid()).c_str());
+           "%s.\n", index, HexSubCstr(holder.node_id),
+           HexSubCstr(holder.response.pmid()));
 #endif
     // TODO(Fraser#5#): Send alert to holder.node_id's A/C holders
   } else {
@@ -1322,20 +1327,17 @@ void PDVault::AmendAccountCallback(
 }
 
 void PDVault::JoinMaidsafeNet() {
-  boost::shared_ptr<maidsafe::GetSyncDataResponse>
-      get_sync_data_response1(new maidsafe::GetSyncDataResponse);
-  boost::shared_ptr<maidsafe::GetSyncDataResponse>
-      get_sync_data_response2(new maidsafe::GetSyncDataResponse);
   // Get K Kademlia-closest peers
-  base::PDRoutingTableHandler rt_handler;
   std::list<base::PDRoutingTableTuple> close_peers;
-  if (rt_handler.GetClosestContacts(pmid_, kad::K, &close_peers) != kSuccess ||
-      close_peers.empty()) {
+  if (routing_table_->GetClosestContacts(pmid_, kad::K, &close_peers) !=
+      kSuccess || close_peers.empty()) {
 #ifdef DEBUG
     printf("In PDVault::JoinMaidsafeNet (%s), failed to query local"
-           "routing table.\n", HexSubstr(pmid_).c_str());
+           "routing table.\n", HexSubCstr(pmid_));
 #endif
-    vault_service_->AddStartupSyncData(get_sync_data_response1);
+    // Start service with uninitialised response
+    maidsafe::GetSyncDataResponse get_sync_data_response;
+    vault_service_->AddStartupSyncData(get_sync_data_response);
     return;
   }
 
@@ -1355,16 +1357,17 @@ void PDVault::JoinMaidsafeNet() {
   get_sync_data_request1.set_request_signature(signature);
 
   boost::shared_ptr<boost::mutex> mutex(new boost::mutex);
-  boost::shared_ptr<rpcprotocol::Controller> ctlr1(new rpcprotocol::Controller);
+  boost::shared_ptr<SyncDataArgs> sync_data_args1(new SyncDataArgs(mutex));
   google::protobuf::Closure* done1 = google::protobuf::NewCallback(this,
-        &PDVault::JoinMaidsafeNetCallback, get_sync_data_response1, mutex);
+        &PDVault::JoinMaidsafeNetCallback, sync_data_args1);
   kad::Contact peer1(closest_tuple.kademlia_id_, closest_tuple.host_ip_,
       closest_tuple.host_port_, closest_tuple.host_ip_,
       closest_tuple.host_port_, closest_tuple.rendezvous_ip_,
       closest_tuple.rendezvous_port_);
   vault_rpcs_->GetSyncData(peer1, kad_ops_->AddressIsLocal(peer1),
                            transport_id_, &get_sync_data_request1,
-                           get_sync_data_response1.get(), ctlr1.get(), done1);
+                           &sync_data_args1->get_sync_data_response,
+                           &sync_data_args1->controller, done1);
   if (single_peer)
     return;
 
@@ -1373,34 +1376,34 @@ void PDVault::JoinMaidsafeNet() {
       furthest_tuple.kademlia_id_, "", crypto::STRING_STRING, false), "",
       pmid_private_, crypto::STRING_STRING);
   get_sync_data_request2.set_request_signature(signature);
-  boost::shared_ptr<rpcprotocol::Controller> ctlr2(new rpcprotocol::Controller);
+  boost::shared_ptr<SyncDataArgs> sync_data_args2(new SyncDataArgs(mutex));
   google::protobuf::Closure* done2 = google::protobuf::NewCallback(this,
-        &PDVault::JoinMaidsafeNetCallback, get_sync_data_response2, mutex);
+        &PDVault::JoinMaidsafeNetCallback, sync_data_args2);
   kad::Contact peer2(furthest_tuple.kademlia_id_, furthest_tuple.host_ip_,
       furthest_tuple.host_port_, furthest_tuple.host_ip_,
       furthest_tuple.host_port_, furthest_tuple.rendezvous_ip_,
       furthest_tuple.rendezvous_port_);
   vault_rpcs_->GetSyncData(peer2, kad_ops_->AddressIsLocal(peer2),
                            transport_id_, &get_sync_data_request2,
-                           get_sync_data_response2.get(), ctlr2.get(), done2);
+                           &sync_data_args2->get_sync_data_response,
+                           &sync_data_args2->controller, done2);
 }
 
 void PDVault::JoinMaidsafeNetCallback(
-    boost::shared_ptr<maidsafe::GetSyncDataResponse> get_sync_data_response,
-    boost::shared_ptr<boost::mutex> mutex) {
-  boost::mutex::scoped_lock lock(*mutex);
-  vault_service_->AddStartupSyncData(get_sync_data_response);
+    boost::shared_ptr<SyncDataArgs> sync_data_args) {
+  boost::mutex::scoped_lock lock(*sync_data_args->mutex);
+  vault_service_->AddStartupSyncData(sync_data_args->get_sync_data_response);
 }
 
 void PDVault::UpdateSpaceOffered() {
   // TODO(Team#) replace or make thread-safe
   int n(1), result;
   // boost::mutex::scoped_lock lock(vault_status_mutex_);
-  while (vault_status_ == kVaultStarted &&
+  while (vault_status() == kVaultStarted &&
          0 != (result = AmendAccount(vault_chunkstore_.available_space()))) {
 #ifdef DEBUG
       printf("PDVault::UpdateSpaceOffered (%s) failed (%d), "
-             "trying again...\n", HexSubstr(pmid_).c_str(), result);
+             "trying again...\n", HexSubCstr(pmid_), result);
 #endif
     ++n;
     // vault_status_mutex_.unlock();
@@ -1408,16 +1411,16 @@ void PDVault::UpdateSpaceOffered() {
     // vault_status_mutex_.lock();
   }
 #ifdef DEBUG
-  if (vault_status_ == kVaultStarted)
+  if (vault_status() == kVaultStarted)
     printf("In PDVault::UpdateSpaceOffered (%s), set space offered to %s "
-           "on attempt #%d.\n", HexSubstr(pmid_).c_str(),
+           "on attempt #%d.\n", HexSubCstr(pmid_),
            base::itos_ull(vault_chunkstore_.available_space()).c_str(), n);
   else if (result == 0)
     printf("In PDVault::UpdateSpaceOffered (%s), amendment successful but "
-           "vault now offline.\n", HexSubstr(pmid_).c_str());
+           "vault now offline.\n", HexSubCstr(pmid_));
   else
     printf("In PDVault::UpdateSpaceOffered (%s), vault offline, giving up "
-           "after %d attempt(s).\n", HexSubstr(pmid_).c_str(), n);
+           "after %d attempt(s).\n", HexSubCstr(pmid_), n);
 #endif
 }
 

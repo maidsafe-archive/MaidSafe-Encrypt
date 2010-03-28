@@ -1659,9 +1659,10 @@ int MaidsafeStoreManager::SendChunkPrep(const StoreData &store_data) {
 //  // Get peer
 // TODO(Fraser#5#): 2009-08-14 - Uncomment lines below
 //  if (first) {  // set largest_rtt from first peer
-//    base::PDRoutingTableHandler rt_handler;
 //    base::PDRoutingTableTuple peer_details;
-//    if (rt_handler.GetTupleInfo(peer.node_id(), &peer_details) != kSuccess) {
+//    if ((*base::PDRoutingTable::getInstance())[boost::lexical_cast<
+//        std::string>(knode_.host_port())]->GetTupleInfo(peer.node_id(),
+//            &peer_details) != kSuccess) {
 //      set largest rtt via tasks_handler_.SetRtt
 //      largest_rtt = 1.0f;
 //    } else {

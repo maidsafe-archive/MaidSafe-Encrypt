@@ -113,27 +113,29 @@ VaultService::VaultService(const std::string &pmid_public,
 }
 
 void VaultService::AddStartupSyncData(
-    boost::shared_ptr<maidsafe::GetSyncDataResponse> get_sync_data_response) {
-  if (!get_sync_data_response->IsInitialized()) {
+    const maidsafe::GetSyncDataResponse &get_sync_data_response) {
+  if (!get_sync_data_response.IsInitialized()) {
 #ifdef DEBUG
     printf("In VaultService::AddStartupSyncData(%s), response is not "
            "initialized.\n", HexSubstr(pmid_).c_str());
 #endif
     ah_.set_started(true);
     cih_.set_started(true);
+    return;
   }
 
-  if (get_sync_data_response->result() != kAck) {
+  if (get_sync_data_response.result() != kAck) {
 #ifdef DEBUG
     printf("In VaultService::AddStartupSyncData(%s), result is not kAck.\n",
            HexSubstr(pmid_).c_str());
 #endif
     ah_.set_started(true);
     cih_.set_started(true);
+    return;
   }
 
-  if (get_sync_data_response->has_vault_account_set()) {
-    ah_.GetFromPb(get_sync_data_response->vault_account_set());
+  if (get_sync_data_response.has_vault_account_set()) {
+    ah_.GetFromPb(get_sync_data_response.vault_account_set());
   } else {
 #ifdef DEBUG
     printf("In VaultService::AddStartupSyncData(%s), missing "
@@ -142,8 +144,8 @@ void VaultService::AddStartupSyncData(
     ah_.set_started(true);
   }
 
-  if (get_sync_data_response->has_chunk_info_map()) {
-    cih_.GetFromPb(get_sync_data_response->chunk_info_map());
+  if (get_sync_data_response.has_chunk_info_map()) {
+    cih_.GetFromPb(get_sync_data_response.chunk_info_map());
   } else {
 #ifdef DEBUG
     printf("In VaultService::AddStartupSyncData(%s), missing "
