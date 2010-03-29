@@ -557,12 +557,12 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetPb) {
         std::pair<std::string, ChunkInfo>(base::RandomString(128), chunk_info));
     ASSERT_TRUE(result.second);
   }
-  ChunkInfoMap chunk_info_map = chunk_info_handler1.PutToPb();
+  ChunkInfoMap chunk_info_map = chunk_info_handler1.PutMapToPb();
   std::string serialised_chunk_info_map1;
   ASSERT_TRUE(chunk_info_map.SerializeToString(&serialised_chunk_info_map1));
   chunk_info_map.Clear();
   ASSERT_TRUE(chunk_info_map.ParseFromString(serialised_chunk_info_map1));
-  chunk_info_handler2.GetFromPb(chunk_info_map);
+  chunk_info_handler2.GetMapFromPb(chunk_info_map);
   ASSERT_EQ(chunk_info_handler1.chunk_infos_.size(),
             chunk_info_handler2.chunk_infos_.size());
   std::map<std::string, ChunkInfo>::iterator it1 =
@@ -614,7 +614,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetPb) {
     ASSERT_EQ(chunk_info1.chunk_size, chunk_info2.chunk_size);
   }
   chunk_info_map.Clear();
-  chunk_info_map = chunk_info_handler2.PutToPb();
+  chunk_info_map = chunk_info_handler2.PutMapToPb();
   std::string serialised_chunk_info_map2;
   ASSERT_TRUE(chunk_info_map.SerializeToString(&serialised_chunk_info_map2));
   ASSERT_EQ(serialised_chunk_info_map1, serialised_chunk_info_map2);

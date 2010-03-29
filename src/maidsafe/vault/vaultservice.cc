@@ -135,7 +135,7 @@ void VaultService::AddStartupSyncData(
   }
 
   if (get_sync_data_response.has_vault_account_set()) {
-    ah_.GetFromPb(get_sync_data_response.vault_account_set());
+    ah_.GetSetFromPb(get_sync_data_response.vault_account_set());
   } else {
 #ifdef DEBUG
     printf("In VaultService::AddStartupSyncData(%s), missing "
@@ -145,7 +145,7 @@ void VaultService::AddStartupSyncData(
   }
 
   if (get_sync_data_response.has_chunk_info_map()) {
-    cih_.GetFromPb(get_sync_data_response.chunk_info_map());
+    cih_.GetMapFromPb(get_sync_data_response.chunk_info_map());
   } else {
 #ifdef DEBUG
     printf("In VaultService::AddStartupSyncData(%s), missing "
@@ -1166,9 +1166,9 @@ void VaultService::GetSyncData(google::protobuf::RpcController*,
   } else {
     response->set_result(kAck);
     VaultAccountSet *vault_account_set = response->mutable_vault_account_set();
-    *vault_account_set = ah_.PutToPb();
+    *vault_account_set = ah_.PutSetToPb();
     ChunkInfoMap *chunk_info_map = response->mutable_chunk_info_map();
-    *chunk_info_map = cih_.PutToPb();
+    *chunk_info_map = cih_.PutMapToPb();
     done->Run();
   }
 }
