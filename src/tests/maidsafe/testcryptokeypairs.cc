@@ -122,4 +122,12 @@ TEST(CryptoKeyPairsTest, FUNC_MAID_AccessFromDiffThreads) {
   }
 }
 
+TEST(CryptoKeyPairsTest, BEH_MAID_DestroyObjectWhileGenKeys) {
+  CryptoKeyPairs *ckp = new CryptoKeyPairs;
+  ckp->StartToCreateKeyPairs(100);
+  boost::this_thread::sleep(boost::posix_time::seconds(6));
+  delete ckp;
+  SUCCEED();
+}
+
 }  // namespace maidsafe
