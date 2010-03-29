@@ -89,7 +89,7 @@ TEST(CryptoKeyPairsTest, FUNC_MAID_ReuseObject) {
     kp.ClearKeys();
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
-  ASSERT_EQ(no_of_keys + keys_rec, kps.size());
+  ASSERT_EQ(static_cast<size_t>(no_of_keys + keys_rec), kps.size());
 }
 
 void GetKeys(CryptoKeyPairs *ckp, int *counter, const boost::int16_t &total) {

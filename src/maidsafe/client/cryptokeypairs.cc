@@ -31,7 +31,7 @@ namespace maidsafe {
 CryptoKeyPairs::CryptoKeyPairs()
       : keypairs_done_(0), keypairs_todo_(0), keypairs_(),
         thrds_(kMaxCryptoThreadCount, boost::shared_ptr<boost::thread>()),
-        keyslist_mutex_(), keys_done_mutex_(), keys_cond_(), start_mutex_(),
+        keyslist_mutex_(), keys_done_mutex_(), start_mutex_(), keys_cond_(),
         started_(false), destroying_this_(false) {
 }
 

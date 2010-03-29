@@ -178,6 +178,14 @@ class VaultService : public maidsafe::MaidsafeService {
                            const maidsafe::GetSyncDataRequest *request,
                            maidsafe::GetSyncDataResponse *response,
                            google::protobuf::Closure *done);
+  virtual void GetAccount(google::protobuf::RpcController* controller,
+                           const maidsafe::GetAccountRequest *request,
+                           maidsafe::GetAccountResponse *response,
+                           google::protobuf::Closure *done);
+  virtual void GetChunkInfo(google::protobuf::RpcController* controller,
+                           const maidsafe::GetChunkInfoRequest *request,
+                           maidsafe::GetChunkInfoResponse *response,
+                           google::protobuf::Closure *done);
   virtual void VaultStatus(google::protobuf::RpcController* controller,
                            const maidsafe::VaultStatusRequest *request,
                            maidsafe::VaultStatusResponse *response,
@@ -280,6 +288,9 @@ class VaultService : public maidsafe::MaidsafeService {
   void RemoteVaultAbleToStore(const boost::uint64_t &size,
                               const std::string &account_pmid,
                               const VoidFuncOneInt &callback);
+  // Returns whether the node is within "count" closest nodes (Kademlia closest)
+  bool NodeWithinClosest(const std::string &peer_pmid,
+                         const boost::uint16_t &count);
   std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
   VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;

@@ -1135,28 +1135,7 @@ void VaultService::GetSyncData(google::protobuf::RpcController*,
     return;
   }
 
-  // Check the node is (Kademlia) close
-  base::PDRoutingTableHandler rt_handler;
-  std::list<base::PDRoutingTableTuple> close_peers;
-  if (rt_handler.GetClosestContacts(pmid_, kad::K, &close_peers) != kSuccess) {
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::GetSyncData(%s), failed to query local"
-           "routing table.\n", HexSubstr(pmid_).c_str());
-#endif
-    return;
-  }
-  std::list<base::PDRoutingTableTuple>::iterator peer_list_itr =
-      close_peers.begin();
-  bool found(false);
-  while (peer_list_itr != close_peers.end()) {
-    if ((*peer_list_itr).kademlia_id_ == request->pmid()) {
-      found = true;
-      break;
-    }
-    ++peer_list_itr;
-  }
-  if (!found) {
+  if (!NodeWithinClosest(request->pmid(), kad::K)) {
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::GetSyncData(%s), requester (%s) not in local"
@@ -1171,6 +1150,20 @@ void VaultService::GetSyncData(google::protobuf::RpcController*,
     *chunk_info_map = cih_.PutMapToPb();
     done->Run();
   }
+}
+
+void VaultService::GetAccount(google::protobuf::RpcController*,
+                              const maidsafe::GetAccountRequest *request,
+                              maidsafe::GetAccountResponse *response,
+                              google::protobuf::Closure *done) {
+
+}
+
+void VaultService::GetChunkInfo(google::protobuf::RpcController*,
+                                const maidsafe::GetChunkInfoRequest *request,
+                                maidsafe::GetChunkInfoResponse *response,
+                                google::protobuf::Closure *done) {
+
 }
 
 void VaultService::VaultStatus(google::protobuf::RpcController*,
@@ -1989,6 +1982,31 @@ int VaultService::AddAccount(const std::string &pmid,
   return ah_.AddAccount(pmid, offer);
 }
 
+bool VaultService::NodeWithinClosest(const std::string &peer_pmid,
+                                     const boost::uint16_t &count) {
+  boost::shared_ptr<base::PDRoutingTableHandler> rt_handler =
+      (*base::PDRoutingTable::getInstance())
+          [boost::lexical_cast<std::string>(knode_->host_port())];
+  std::list<base::PDRoutingTableTuple> close_peers;
+  if (rt_handler->GetClosestContacts(pmid_, count, &close_peers) != kSuccess) {
+#ifdef DEBUG
+    printf("In VaultService::NodeWithinClosest(%s), failed to query local"
+           "routing table.\n", HexSubstr(pmid_).c_str());
+#endif
+    return false;
+  }
+  std::list<base::PDRoutingTableTuple>::iterator peer_list_itr =
+      close_peers.begin();
+  bool found(false);
+  while (peer_list_itr != close_peers.end()) {
+    if ((*peer_list_itr).kademlia_id_ == peer_pmid) {
+      found = true;
+      break;
+    }
+    ++peer_list_itr;
+  }
+  return found;
+}
 
 RegistrationService::RegistrationService(
     boost::function<void(const maidsafe::VaultConfig&)> notifier)
