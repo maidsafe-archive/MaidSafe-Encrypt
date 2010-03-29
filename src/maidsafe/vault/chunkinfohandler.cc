@@ -405,7 +405,7 @@ bool ChunkInfoHandler::HasWatchers(const std::string &chunk_name) {
   if (chunk_infos_.count(chunk_name) == 0)
     return false;
   ChunkInfo &ci = chunk_infos_[chunk_name];
-  return /* ci.watch_list.size() != 0 || */ ci.waiting_list.size() != 0 ||
+  return /* ci.watch_list.size() != 0 || */ !ci.waiting_list.empty() ||
          ci.watcher_count != 0 || ci.watcher_checksum != 0;
 }
 
@@ -446,31 +446,26 @@ boost::uint64_t ChunkInfoHandler::GetChecksum(const std::string &id) {
             const_cast<char*>(id.substr(kKeySize - 8).data()));
 }
 
-ChunkInfoMap ChunkInfoHandler::PutToPb() {
+ChunkInfoMap ChunkInfoHandler::PutMapToPb() {
   ChunkInfoMap chunk_info_map;
-  std::map<std::string, ChunkInfo>::iterator it;
-  ChunkInfoMap::VaultChunkInfo *vault_chunk_info;
-  boost::mutex::scoped_lock loch(chunk_info_mutex_);
-  for (it = chunk_infos_.begin(); it != chunk_infos_.end(); ++it) {
-    vault_chunk_info = chunk_info_map.add_vault_chunk_info();
-    vault_chunk_info->set_chunk_name((*it).first);
-    std::for_each((*it).second.waiting_list.begin(),
-        (*it).second.waiting_list.end(),
-        boost::bind(&WaitingListEntry::PutToPb, _1, vault_chunk_info));
-    std::for_each((*it).second.watch_list.begin(),
-        (*it).second.watch_list.end(),
-        boost::bind(&WatchListEntry::PutToPb, _1, vault_chunk_info));
-    std::for_each((*it).second.reference_list.begin(),
-        (*it).second.reference_list.end(),
-        boost::bind(&ReferenceListEntry::PutToPb, _1, vault_chunk_info));
-    vault_chunk_info->set_watcher_count((*it).second.watcher_count);
-    vault_chunk_info->set_watcher_checksum((*it).second.watcher_checksum);
-    vault_chunk_info->set_chunk_size((*it).second.chunk_size);
+  {
+    boost::mutex::scoped_lock loch(chunk_info_mutex_);
+    std::for_each(chunk_infos_.begin(), chunk_infos_.end(), boost::bind(
+        &ChunkInfoHandler::AddChunkInfoToPbSet, this, _1, &chunk_info_map));
   }
   return chunk_info_map;
 }
 
-void ChunkInfoHandler::GetFromPb(const ChunkInfoMap &chunk_info_map) {
+void ChunkInfoHandler::AddChunkInfoToPbSet(
+    const std::pair<const std::string, ChunkInfo> &pr,
+    ChunkInfoMap *chunk_info_map) {
+  ChunkInfoMap::VaultChunkInfo *vault_chunk_info =
+      chunk_info_map->add_vault_chunk_info();
+  ChunkInfo chunk_info(pr.second);
+  chunk_info.PutToPb(pr.first, vault_chunk_info);
+}
+
+void ChunkInfoHandler::GetMapFromPb(const ChunkInfoMap &chunk_info_map) {
   ChunkInfoMap::VaultChunkInfo vault_chunk_info;
   boost::mutex::scoped_lock loch(chunk_info_mutex_);
   bool use_max_efficiency = chunk_infos_.empty();
@@ -488,5 +483,38 @@ void ChunkInfoHandler::GetFromPb(const ChunkInfoMap &chunk_info_map) {
   }
   started_ = true;
 }
+
+int ChunkInfoHandler::GetChunkInfo(const std::string &chunk_name,
+                                   ChunkInfo *chunk_info) {
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_) {
+    *chunk_info = ChunkInfo();
+    return kChunkInfoHandlerNotStarted;
+  }
+  std::map<std::string, ChunkInfo>::iterator it = chunk_infos_.find(chunk_name);
+
+  if (it == chunk_infos_.end()) {
+    *chunk_info = ChunkInfo();
+    return kChunkInfoInvalidName;
+  } else {
+    *chunk_info = (*it).second;
+    return kSuccess;
+  }
+}
+
+int ChunkInfoHandler::InsertChunkInfoFromPb(
+    const ChunkInfoMap::VaultChunkInfo &vault_chunk_info) {
+  ChunkInfo chunk_info(vault_chunk_info);
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
+  std::pair<std::map<std::string, ChunkInfo>::iterator, bool> sp =
+      chunk_infos_.insert(std::pair<std::string, ChunkInfo>
+          (vault_chunk_info.chunk_name(), chunk_info));
+  if (!sp.second)
+    return kChunkInfoExists;
+  return kSuccess;
+}
+
 
 }  // namespace maidsafe_vault

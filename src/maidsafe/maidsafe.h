@@ -377,6 +377,7 @@ namespace maidsafe_vault {
 
 typedef boost::function<void (const maidsafe_vault::ReturnCode&)>
     VoidFuncOneInt;
+
 }  // namespace maidsafe_vault
 
 inline std::string HexSubstr(const std::string &non_hex) {
@@ -385,10 +386,6 @@ inline std::string HexSubstr(const std::string &non_hex) {
     return (hex.substr(0, 7) + ".." + hex.substr(hex.size() - 7));
   else
     return hex;
-}
-
-inline const char* HexSubCstr(const std::string &non_hex) {
-  return HexSubstr(non_hex).c_str();
 }
 
 #endif  // MAIDSAFE_MAIDSAFE_H_

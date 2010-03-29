@@ -1200,7 +1200,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   if (vault_status() != kVaultStarted) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, vault (%s) is offline.\n",
-           HexSubCstr(pmid_));
+           HexSubstr(pmid_).c_str());
 #endif
     return maidsafe::kTaskCancelledOffline;
   }
@@ -1315,8 +1315,8 @@ void PDVault::AmendAccountCallback(
   } else if (holder.response.pmid() != holder.node_id) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccountCallback, response %u from %s has PMID "
-           "%s.\n", index, HexSubCstr(holder.node_id),
-           HexSubCstr(holder.response.pmid()));
+           "%s.\n", index, HexSubstr(holder.node_id).c_str(),
+           HexSubstr(holder.response.pmid()).c_str());
 #endif
     // TODO(Fraser#5#): Send alert to holder.node_id's A/C holders
   } else {
@@ -1333,7 +1333,7 @@ void PDVault::JoinMaidsafeNet() {
       kSuccess || close_peers.empty()) {
 #ifdef DEBUG
     printf("In PDVault::JoinMaidsafeNet (%s), failed to query local"
-           "routing table.\n", HexSubCstr(pmid_));
+           "routing table.\n", HexSubstr(pmid_).c_str());
 #endif
     // Start service with uninitialised response
     maidsafe::GetSyncDataResponse get_sync_data_response;
@@ -1403,7 +1403,7 @@ void PDVault::UpdateSpaceOffered() {
          0 != (result = AmendAccount(vault_chunkstore_.available_space()))) {
 #ifdef DEBUG
       printf("PDVault::UpdateSpaceOffered (%s) failed (%d), "
-             "trying again...\n", HexSubCstr(pmid_), result);
+             "trying again...\n", HexSubstr(pmid_).c_str(), result);
 #endif
     ++n;
     // vault_status_mutex_.unlock();
@@ -1413,14 +1413,14 @@ void PDVault::UpdateSpaceOffered() {
 #ifdef DEBUG
   if (vault_status() == kVaultStarted)
     printf("In PDVault::UpdateSpaceOffered (%s), set space offered to %s "
-           "on attempt #%d.\n", HexSubCstr(pmid_),
+           "on attempt #%d.\n", HexSubstr(pmid_).c_str(),
            base::itos_ull(vault_chunkstore_.available_space()).c_str(), n);
   else if (result == 0)
     printf("In PDVault::UpdateSpaceOffered (%s), amendment successful but "
-           "vault now offline.\n", HexSubCstr(pmid_));
+           "vault now offline.\n", HexSubstr(pmid_).c_str());
   else
     printf("In PDVault::UpdateSpaceOffered (%s), vault offline, giving up "
-           "after %d attempt(s).\n", HexSubCstr(pmid_), n);
+           "after %d attempt(s).\n", HexSubstr(pmid_).c_str(), n);
 #endif
 }
 

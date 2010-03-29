@@ -41,6 +41,12 @@ namespace mi = boost::multi_index;
 
 namespace maidsafe_vault {
 
+// TODO(Fraser#5#): 2010-03-29 - Ennumerate and define alert types and struct
+//                               Once done, replace following free function
+inline void PutAlertToPb(const std::string &alert,
+                         VaultAccountSet::VaultAccount *vault_account) {
+  vault_account->add_alerts(alert);
+};
 
 struct Account {
   Account(std::string pmid,
@@ -48,20 +54,39 @@ struct Account {
           boost::uint64_t vault_used,
           boost::uint64_t account_used,
           std::list<std::string> alerts)
-              : pmid_(pmid),
-                offered_(offered),
-                vault_used_(vault_used),
-                account_used_(account_used),
-                alerts_(alerts) {}
-  void operator() (const std::string &alert,
-                   VaultAccountSet::VaultAccount *vault_account) {
-    vault_account->add_alerts(alert);
+              : pmid(pmid),
+                offered(offered),
+                vault_used(vault_used),
+                account_used(account_used),
+                alerts(alerts) {}
+  Account(const Account &account)
+      : pmid(account.pmid),
+        offered(account.offered),
+        vault_used(account.vault_used),
+        account_used(account.account_used),
+        alerts(account.alerts) {}
+  explicit Account(const VaultAccountSet::VaultAccount &vault_account)
+      : pmid(vault_account.pmid()),
+        offered(vault_account.offered()),
+        vault_used(vault_account.vault_used()),
+        account_used(vault_account.account_used()),
+        alerts() {
+    for (int i = 0; i < vault_account.alerts_size(); ++i)
+      alerts.push_back(vault_account.alerts(i));
   }
-  std::string pmid_;
-  boost::uint64_t offered_;
-  boost::uint64_t vault_used_;
-  boost::uint64_t account_used_;
-  std::list<std::string> alerts_;
+  void PutToPb(VaultAccountSet::VaultAccount *vault_account) {
+    vault_account->set_pmid(pmid);
+    vault_account->set_offered(offered);
+    vault_account->set_vault_used(vault_used);
+    vault_account->set_account_used(account_used);
+    std::for_each(alerts.begin(), alerts.end(),
+        boost::bind(&PutAlertToPb, _1, vault_account));
+  }
+  std::string pmid;
+  boost::uint64_t offered;
+  boost::uint64_t vault_used;
+  boost::uint64_t account_used;
+  std::list<std::string> alerts;
 };
 
 // Tags
@@ -72,7 +97,7 @@ typedef mi::multi_index_container<
   mi::indexed_by<
     mi::ordered_unique<
       mi::tag<account_pmid>,
-      BOOST_MULTI_INDEX_MEMBER(Account, std::string, pmid_)
+      BOOST_MULTI_INDEX_MEMBER(Account, std::string, pmid)
     >
   >
 > AccountSet;
@@ -96,8 +121,10 @@ class AccountHandler {
                      boost::uint64_t *account_used);
   int GetAlerts(const std::string &pmid, std::list<std::string> *alerts);
   int AddAlerts(const std::string &pmid, const std::string &alert);
-  VaultAccountSet PutToPb();
-  void GetFromPb(const VaultAccountSet &vault_account_set);
+  VaultAccountSet PutSetToPb();
+  void GetSetFromPb(const VaultAccountSet &vault_account_set);
+  int GetAccount(const std::string &pmid, Account *account);
+  int InsertAccountFromPb(const VaultAccountSet::VaultAccount &vault_account);
  private:
   AccountHandler(const AccountHandler&);
   AccountHandler& operator=(const AccountHandler&);
@@ -105,8 +132,9 @@ class AccountHandler {
   FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerAddAndFind);
   FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerModify);
   FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete);
-  FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerDeletePutGetPb);
+  FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
+  void AddAccountToPbSet(Account account, VaultAccountSet *vault_account_set);
   AccountSet accounts_;
   boost::mutex account_mutex_;
   bool started_;

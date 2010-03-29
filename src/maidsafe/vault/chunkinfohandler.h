@@ -137,6 +137,19 @@ struct ChunkInfo {
   boost::uint64_t watcher_checksum;
   boost::uint64_t chunk_size;
   // TODO(Team#) stats?
+  void PutToPb(const std::string &chunk_name,
+               ChunkInfoMap::VaultChunkInfo *vault_chunk_info) {
+    vault_chunk_info->set_chunk_name(chunk_name);
+    std::for_each(waiting_list.begin(), waiting_list.end(),
+        boost::bind(&WaitingListEntry::PutToPb, _1, vault_chunk_info));
+    std::for_each(watch_list.begin(), watch_list.end(),
+        boost::bind(&WatchListEntry::PutToPb, _1, vault_chunk_info));
+    std::for_each(reference_list.begin(), reference_list.end(),
+        boost::bind(&ReferenceListEntry::PutToPb, _1, vault_chunk_info));
+    vault_chunk_info->set_watcher_count(watcher_count);
+    vault_chunk_info->set_watcher_checksum(watcher_checksum);
+    vault_chunk_info->set_chunk_size(chunk_size);
+  }
 };
 
 class ChunkInfoHandler {
@@ -174,8 +187,11 @@ class ChunkInfoHandler {
   void SetPaymentsDone(const std::string &chunk_name, const std::string &pmid);
   void GetStaleWaitingListEntries(std::list< std::pair<std::string,
                                                        std::string> > *entries);
-  ChunkInfoMap PutToPb();
-  void GetFromPb(const ChunkInfoMap &chunk_info_map);
+  ChunkInfoMap PutMapToPb();
+  void GetMapFromPb(const ChunkInfoMap &chunk_info_map);
+  int GetChunkInfo(const std::string &chunk_name, ChunkInfo *chunk_info);
+  int InsertChunkInfoFromPb(
+      const ChunkInfoMap::VaultChunkInfo &vault_chunk_info);
  private:
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerInit);
   FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum);
@@ -192,6 +208,8 @@ class ChunkInfoHandler {
   void ClearReferenceList(const std::string &chunk_name,
                           std::list<std::string> *references);
   boost::uint64_t GetChecksum(const std::string &id);
+  void AddChunkInfoToPbSet(const std::pair<const std::string, ChunkInfo> &pr,
+                           ChunkInfoMap *chunk_info_map);
   std::map<std::string, ChunkInfo> chunk_infos_;
   boost::mutex chunk_info_mutex_;
   bool started_;

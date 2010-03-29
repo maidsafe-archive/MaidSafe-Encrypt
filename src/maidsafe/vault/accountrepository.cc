@@ -87,28 +87,28 @@ int AccountHandler::AmendAccount(const std::string &pmid, const int &field,
 
   Account row = *it;
   switch (field) {
-    case 1: if (amount < row.vault_used_ || amount < row.account_used_)
+    case 1: if (amount < row.vault_used || amount < row.account_used)
               return kAccountNotEnoughSpace;
-            row.offered_ = amount;
+            row.offered = amount;
             break;
     case 2: if (increase) {
-              if ((amount + row.vault_used_) > row.offered_)
+              if ((amount + row.vault_used) > row.offered)
                 return kAccountNotEnoughSpace;
-              row.vault_used_ += amount;
+              row.vault_used += amount;
             } else {
-              if ((row.vault_used_ - amount) > row.vault_used_)
+              if ((row.vault_used - amount) > row.vault_used)
                 return kAccountNotEnoughSpace;
-              row.vault_used_ -= amount;
+              row.vault_used -= amount;
             }
             break;
     case 3: if (increase) {
-              if ((amount + row.account_used_) > row.offered_)
+              if ((amount + row.account_used) > row.offered)
                 return kAccountNotEnoughSpace;
-              row.account_used_ += amount;
+              row.account_used += amount;
             } else {
-              if ((row.account_used_ - amount) > row.account_used_)
+              if ((row.account_used - amount) > row.account_used)
                 return kAccountNotEnoughSpace;
-              row.account_used_ -= amount;
+              row.account_used -= amount;
             }
             break;
   }
@@ -128,9 +128,9 @@ int AccountHandler::GetAccountInfo(const std::string &pmid,
   if (it == accounts_.end())
     return kAccountNotFound;
 
-  *offered = it->offered_;
-  *vault_used = it->vault_used_;
-  *account_used = it->account_used_;
+  *offered = it->offered;
+  *vault_used = it->vault_used;
+  *account_used = it->account_used;
 
   return kSuccess;
 }
@@ -146,8 +146,8 @@ int AccountHandler::GetAlerts(const std::string &pmid,
     return kAccountNotFound;
 
   Account row = *it;
-  *alerts = row.alerts_;
-  row.alerts_.clear();
+  *alerts = row.alerts;
+  row.alerts.clear();
   accounts_.replace(it, row);
 
   return kSuccess;
@@ -165,31 +165,30 @@ int AccountHandler::AddAlerts(const std::string &pmid,
     return kAccountNotFound;
 
   Account row = *it;
-  row.alerts_.push_back(alert);
+  row.alerts.push_back(alert);
   accounts_.replace(it, row);
 
   return kSuccess;
 }
 
-VaultAccountSet AccountHandler::PutToPb() {
+VaultAccountSet AccountHandler::PutSetToPb() {
   VaultAccountSet vault_account_set;
-  boost::mutex::scoped_lock loch(account_mutex_);
-  AccountSet::iterator it = accounts_.begin();
-  while (it != accounts_.end()) {
-    VaultAccountSet::VaultAccount *vault_account =
-        vault_account_set.add_vault_account();
-    vault_account->set_pmid((*it).pmid_);
-    vault_account->set_offered((*it).offered_);
-    vault_account->set_vault_used((*it).vault_used_);
-    vault_account->set_account_used((*it).account_used_);
-    std::for_each((*it).alerts_.begin(), (*it).alerts_.end(),
-        boost::bind<void>(*it, _1, vault_account));
-    ++it;
+  {
+    boost::mutex::scoped_lock loch(account_mutex_);
+    std::for_each(accounts_.begin(), accounts_.end(), boost::bind(
+        &AccountHandler::AddAccountToPbSet, this, _1, &vault_account_set));
   }
   return vault_account_set;
 }
 
-void AccountHandler::GetFromPb(const VaultAccountSet &vault_account_set) {
+void AccountHandler::AddAccountToPbSet(Account account,
+                                       VaultAccountSet *vault_account_set) {
+  VaultAccountSet::VaultAccount *vault_account =
+      vault_account_set->add_vault_account();
+  account.PutToPb(vault_account);
+}
+
+void AccountHandler::GetSetFromPb(const VaultAccountSet &vault_account_set) {
   VaultAccountSet::VaultAccount vault_account;
   std::list<std::string> alerts;
   boost::mutex::scoped_lock loch(account_mutex_);
@@ -204,6 +203,35 @@ void AccountHandler::GetFromPb(const VaultAccountSet &vault_account_set) {
     accounts_.insert(row);
   }
   started_ = true;
+}
+
+int AccountHandler::GetAccount(const std::string &pmid,
+                               Account *account) {
+  boost::mutex::scoped_lock loch(account_mutex_);
+  if (!started_) {
+    *account = Account("", 0, 0, 0, std::list<std::string>());
+    return kAccountHandlerNotStarted;
+  }
+  AccountSet::iterator it = accounts_.find(pmid);
+  if (it == accounts_.end()) {
+    *account = Account("", 0, 0, 0, std::list<std::string>());
+    return kAccountNotFound;
+  } else {
+    *account = *it;
+    return kSuccess;
+  }
+}
+
+int AccountHandler::InsertAccountFromPb(
+    const VaultAccountSet::VaultAccount &vault_account) {
+  Account account(vault_account);
+  boost::mutex::scoped_lock loch(account_mutex_);
+  if (!started_)
+    return kAccountHandlerNotStarted;
+  std::pair<AccountSet::iterator, bool> sp = accounts_.insert(account);
+  if (!sp.second)
+    return kAccountExists;
+  return kSuccess;
 }
 
 }  // namespace maidsafe_vault

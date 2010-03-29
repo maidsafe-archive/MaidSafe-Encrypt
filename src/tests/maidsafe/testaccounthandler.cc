@@ -150,7 +150,7 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete) {
   ASSERT_EQ(kAccountNotFound, ah.DeleteAccount(pmid));
 }
 
-TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerDeletePutGetPb) {
+TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb) {
   AccountHandler account_handler1(true), account_handler2(true);
   std::pair<AccountSet::iterator, bool> result;
   const int kNumEntries(698);
@@ -163,31 +163,31 @@ TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerDeletePutGetPb) {
     result = account_handler1.accounts_.insert(account);
     ASSERT_TRUE(result.second);
   }
-  VaultAccountSet vault_account_set = account_handler1.PutToPb();
+  VaultAccountSet vault_account_set = account_handler1.PutSetToPb();
   std::string serialised_vault_account_set1;
   ASSERT_TRUE(vault_account_set.SerializeToString(
       &serialised_vault_account_set1));
   vault_account_set.Clear();
   ASSERT_TRUE(vault_account_set.ParseFromString(serialised_vault_account_set1));
-  account_handler2.GetFromPb(vault_account_set);
+  account_handler2.GetSetFromPb(vault_account_set);
   ASSERT_EQ(account_handler1.accounts_.size(),
             account_handler2.accounts_.size());
   AccountSet::iterator it1 = account_handler1.accounts_.begin();
   AccountSet::iterator it2 = account_handler2.accounts_.begin();
   for (; it1 != account_handler1.accounts_.end(); ++it1, ++it2) {
     Account account1(*it1), account2(*it2);
-    ASSERT_EQ(account1.pmid_, account2.pmid_);
-    ASSERT_EQ(account1.offered_, account2.offered_);
-    ASSERT_EQ(account1.vault_used_, account2.vault_used_);
-    ASSERT_EQ(account1.account_used_, account2.account_used_);
-    ASSERT_EQ(account1.alerts_.size(), account2.alerts_.size());
-    std::list<std::string>::iterator alerts_it1 = account1.alerts_.begin();
-    std::list<std::string>::iterator alerts_it2 = account2.alerts_.begin();
-    for (; alerts_it1 != account1.alerts_.end(); ++alerts_it1, ++alerts_it2)
+    ASSERT_EQ(account1.pmid, account2.pmid);
+    ASSERT_EQ(account1.offered, account2.offered);
+    ASSERT_EQ(account1.vault_used, account2.vault_used);
+    ASSERT_EQ(account1.account_used, account2.account_used);
+    ASSERT_EQ(account1.alerts.size(), account2.alerts.size());
+    std::list<std::string>::iterator alerts_it1 = account1.alerts.begin();
+    std::list<std::string>::iterator alerts_it2 = account2.alerts.begin();
+    for (; alerts_it1 != account1.alerts.end(); ++alerts_it1, ++alerts_it2)
       ASSERT_EQ(*alerts_it1, *alerts_it2);
   }
   vault_account_set.Clear();
-  vault_account_set = account_handler1.PutToPb();
+  vault_account_set = account_handler1.PutSetToPb();
   std::string serialised_vault_account_set2;
   ASSERT_TRUE(vault_account_set.SerializeToString(
       &serialised_vault_account_set2));
