@@ -387,4 +387,8 @@ inline std::string HexSubstr(const std::string &non_hex) {
     return hex;
 }
 
+inline const char* HexSubCstr(const std::string &non_hex) {
+  return HexSubstr(non_hex).c_str();
+}
+
 #endif  // MAIDSAFE_MAIDSAFE_H_

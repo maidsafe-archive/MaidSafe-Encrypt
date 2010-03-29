@@ -55,7 +55,9 @@ template <typename T1, typename T2>
 struct RemoteOpData {
   struct RemoteOpHolder {
     explicit RemoteOpHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {
+      controller->set_timeout(20);
+    }
     std::string node_id;
     T2 response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
