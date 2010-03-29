@@ -302,6 +302,51 @@ void VaultRpcs::GetSyncData(
                       done);
 }
 
+void VaultRpcs::GetAccount(const kad::Contact &peer,
+                           bool local,
+                           const boost::int16_t &transport_id,
+                           maidsafe::GetAccountRequest *get_account_request,
+                           maidsafe::GetAccountResponse *get_account_response,
+                           rpcprotocol::Controller *controller,
+                           google::protobuf::Closure *done) {
+  std::string local_ip;
+  boost::uint16_t local_port(0);
+  if (local) {
+    local_ip = peer.local_ip();
+    local_port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.GetAccount(controller, get_account_request, get_account_response,
+                     done);
+}
+
+void VaultRpcs::GetChunkInfo(
+    const kad::Contact &peer,
+    bool local,
+    const boost::int16_t &transport_id,
+    maidsafe::GetChunkInfoRequest *get_chunk_info_request,
+    maidsafe::GetChunkInfoResponse *get_chunk_info_response,
+    rpcprotocol::Controller *controller,
+    google::protobuf::Closure *done) {
+  std::string local_ip;
+  boost::uint16_t local_port(0);
+  if (local) {
+    local_ip = peer.local_ip();
+    local_port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.GetChunkInfo(controller, get_chunk_info_request,
+                       get_chunk_info_response, done);
+}
+
 void VaultRpcs::GetBPMessages(const std::string &buffer_packet_name,
                               const std::string &public_key,
                               const std::string &public_key_signature,

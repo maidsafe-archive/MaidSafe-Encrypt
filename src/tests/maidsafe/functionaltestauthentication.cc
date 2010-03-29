@@ -128,7 +128,8 @@ class FunctionalAuthenticationTest : public testing::Test {
   }
   void TearDown() {
     cb_.Reset();
-    sm_->Close(boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb_, _1), true);
+    sm_->Close(boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb_, _1),
+               true);
     boost::mutex mutex;
     test_auth::WaitForResult(cb_, &mutex);
     GenericResponse res;

@@ -154,6 +154,7 @@ struct ChunkInfo {
 
 class ChunkInfoHandler {
  public:
+  typedef std::map<std::string, ChunkInfo> CIMap;
   explicit ChunkInfoHandler(bool start_immediately)
       : chunk_infos_(), chunk_info_mutex_(), started_(start_immediately) {}
   ~ChunkInfoHandler() {}
@@ -208,9 +209,9 @@ class ChunkInfoHandler {
   void ClearReferenceList(const std::string &chunk_name,
                           std::list<std::string> *references);
   boost::uint64_t GetChecksum(const std::string &id);
-  void AddChunkInfoToPbSet(const std::pair<const std::string, ChunkInfo> &pr,
+  void AddChunkInfoToPbSet(const CIMap::value_type &ci_pair,
                            ChunkInfoMap *chunk_info_map);
-  std::map<std::string, ChunkInfo> chunk_infos_;
+  CIMap chunk_infos_;
   boost::mutex chunk_info_mutex_;
   bool started_;
 };

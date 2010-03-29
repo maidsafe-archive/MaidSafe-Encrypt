@@ -1156,14 +1156,105 @@ void VaultService::GetAccount(google::protobuf::RpcController*,
                               const maidsafe::GetAccountRequest *request,
                               maidsafe::GetAccountResponse *response,
                               google::protobuf::Closure *done) {
+  response->set_result(kNack);
+  if (!request->IsInitialized()) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetAccount(%s), request is not initialized.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
 
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->account_pmid(), request->pmid())) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetAccount(%s), request does not validate.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (!NodeWithinClosest(request->pmid(), kad::K)) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetAccount(%s), requester (%s) not in local"
+           "routing table's closest k nodes.\n", HexSubstr(pmid_).c_str(),
+           HexSubstr(request->pmid()).c_str());
+#endif
+    return;
+  }
+
+  Account account("", 0, 0, 0, std::list<std::string>());
+  int result = ah_.GetAccount(request->account_pmid(), &account);
+  if (result != kSuccess) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetAccount(%s), don't have account for node %s.\n",
+           HexSubstr(pmid_).c_str(),
+           HexSubstr(request->account_pmid()).c_str());
+#endif
+    return;
+  } else {
+    response->set_result(kAck);
+    account.PutToPb(response->mutable_vault_account());
+    done->Run();
+  }
 }
 
 void VaultService::GetChunkInfo(google::protobuf::RpcController*,
                                 const maidsafe::GetChunkInfoRequest *request,
                                 maidsafe::GetChunkInfoResponse *response,
                                 google::protobuf::Closure *done) {
+  response->set_result(kNack);
+  if (!request->IsInitialized()) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetChunkInfo(%s), request is not initialized.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
 
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->chunkname(), request->pmid())) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetChunkInfo(%s), request does not validate.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (!NodeWithinClosest(request->pmid(), kad::K)) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetChunkInfo(%s), requester (%s) not in local"
+           "routing table's closest k nodes.\n", HexSubstr(pmid_).c_str(),
+           HexSubstr(request->pmid()).c_str());
+#endif
+    return;
+  }
+
+  ChunkInfo chunk_info;
+  int result = cih_.GetChunkInfo(request->chunkname(), &chunk_info);
+  if (result != kSuccess) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetChunkInfo(%s), don't have ChunkInfo for chunk"
+           " %s.\n", HexSubstr(pmid_).c_str(),
+           HexSubstr(request->chunkname()).c_str());
+#endif
+    return;
+  } else {
+    response->set_result(kAck);
+    chunk_info.PutToPb(request->chunkname(),
+                       response->mutable_vault_chunk_info());
+    done->Run();
+  }
 }
 
 void VaultService::VaultStatus(google::protobuf::RpcController*,
