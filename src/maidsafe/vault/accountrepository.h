@@ -133,6 +133,7 @@ class AccountHandler {
   FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerModify);
   FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete);
   FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb);
+  FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
   void AddAccountToPbSet(Account account, VaultAccountSet *vault_account_set);
   AccountSet accounts_;
