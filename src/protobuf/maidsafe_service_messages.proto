@@ -97,17 +97,14 @@ message AddToReferenceListResponse {
   optional bytes pmid = 2;
 }
 
-message RemoveFromReferenceListRequest {
+message GetChunkReferencesRequest {
   required bytes chunkname = 1;
-  required bytes pmid = 2;  // vault's PMID
-  required bytes public_key = 3;
-  required bytes public_key_signature = 4;
-  required bytes request_signature = 5;
 }
 
-message RemoveFromReferenceListResponse {
+message GetChunkReferencesResponse {
   required uint32 result = 1;
   optional bytes pmid = 2;
+  repeated bytes references = 3;
 }
 
 message AmendAccountRequest {

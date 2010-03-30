@@ -90,6 +90,12 @@ class KadOps {
   /**
    * Wrapper for the non-blocking Kademlia function.
    */
+  virtual void FindNode(const std::string &node_id,
+                        base::callback_func_type cb,
+                        const bool &local);
+  /**
+   * Wrapper for the non-blocking Kademlia function.
+   */
   virtual void FindCloseNodes(const std::string &kad_key,
                               const base::callback_func_type &callback);
   /**
@@ -109,10 +115,10 @@ class KadOps {
   /**
    * Blocking call to Kademlia Find Value.  If the maidsafe value is cached,
    * this may yield serialised contact details for a cache copy holder.
-   * Otherwise it should yield the values (which may represent chunk holders'
-   * IDs).  It also yields the details of the last kad node to not return the
-   * value during the lookup.  If check_local is true, it also checks the local
-   * chunkstore first.  The values are loaded in reverse order.
+   * Otherwise it should yield the values.  It also yields the details of the
+   * closest nodes and the last kad node to not return the value during the
+   * lookup.  If check_local is true, it also checks the local chunkstore first.
+   * The values are loaded in reverse order.
    */
   virtual int FindValue(const std::string &kad_key,
                         bool check_local,

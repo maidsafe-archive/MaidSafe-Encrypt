@@ -128,68 +128,6 @@ void ConditionNotifyNoFlag(int set_return,
   generic_cond_data->cond_variable->notify_all();
 }
 
-void FailedContactCallback(
-    const kad::Contact &holder,
-    const int &min_delay,
-    const int &max_delay,
-    std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
-    boost::shared_ptr<maidsafe::GenericConditionData> cond_data) {
-  int diff = max_delay - min_delay;
-  int sleep_time(base::random_32bit_uinteger() % diff + min_delay);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(sleep_time));
-  boost::shared_ptr<maidsafe::ChunkHolder> failed_chunkholder(
-      new maidsafe::ChunkHolder(kad::Contact(holder.node_id(), "", 0)));
-  failed_chunkholder->status = maidsafe::kFailedHolder;
-  boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
-  packet_holders->push_back(failed_chunkholder);
-  cond_data->cond_variable->notify_all();
-}
-
-void ContactCallback(
-    const kad::Contact &holder,
-    const int &min_delay,
-    const int &max_delay,
-    std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
-    boost::shared_ptr<maidsafe::GenericConditionData> cond_data) {
-  int diff = max_delay - min_delay;
-  int sleep_time(base::random_32bit_uinteger() % diff + min_delay);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(sleep_time));
-  boost::shared_ptr<maidsafe::ChunkHolder>
-      chunkholder(new maidsafe::ChunkHolder(holder));
-  chunkholder->status = maidsafe::kContactable;
-  boost::lock_guard<boost::mutex> lock(cond_data->cond_mutex);
-  packet_holders->push_back(chunkholder);
-  cond_data->cond_variable->notify_all();
-}
-
-void ThreadedGetHolderContactCallbacks(
-    const std::vector<kad::Contact> &holders,
-    const int &failures,
-    const int &min_delay,
-    const int &max_delay,
-    std::vector< boost::shared_ptr<maidsafe::ChunkHolder> > *packet_holders,
-    boost::shared_ptr<maidsafe::GenericConditionData> cond_data) {
-  int min(min_delay);
-  if (min < 0)
-    min = 0;
-  int max(max_delay);
-  if (max - min < 1)
-    max = min + 1;
-  for (size_t i = 0, failed = 0; i < holders.size(); ++i) {
-    // Add 500ms to each delay, to allow holders to callback in order
-    min += 500;
-    max += 500;
-    if (static_cast<int>(failed) < failures) {
-      boost::thread thr(FailedContactCallback, holders.at(i), min, max,
-          packet_holders, cond_data);
-      ++failed;
-    } else {
-      boost::thread thr(ContactCallback, holders.at(i), min, max,
-          packet_holders, cond_data);
-    }
-  }
-}
-
 void AddToWatchListCallback(bool initialise_response,
                             const int &result,
                             const std::string &pmid,

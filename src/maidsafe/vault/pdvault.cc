@@ -80,7 +80,7 @@ PDVault::PDVault(const std::string &pmid_public,
       svc_channel_(),
       kad_config_file_(vault_dir / ".kadconfig"),
       thread_pool_(),
-      maidsafe_join_thread_(),
+      // maidsafe_join_thread_(),
       create_account_thread_(),
       routing_table_() {
   transport_handler_->Register(&global_udt_transport_, &transport_id_);
@@ -190,7 +190,7 @@ void PDVault::Start(bool first_node) {
     our_details_ = our_details;
     // Announce available space to account, try repeatedly in thread
     // TODO(Team#) find better solution or make thread-safe!
-    maidsafe_join_thread_ = boost::thread(&PDVault::JoinMaidsafeNet, this);
+    // maidsafe_join_thread_ = boost::thread(&PDVault::JoinMaidsafeNet, this);
     create_account_thread_ = boost::thread(&PDVault::UpdateSpaceOffered, this);
   } else {
     SetVaultStatus(kVaultStarted);
@@ -227,7 +227,7 @@ int PDVault::Stop() {
     return -2;
   }
   SetVaultStatus(kVaultStopping);
-  maidsafe_join_thread_.join();
+  // maidsafe_join_thread_.join();
   create_account_thread_.join();
   UnRegisterMaidService();
   knode_->Leave();
@@ -1410,18 +1410,24 @@ void PDVault::UpdateSpaceOffered() {
     boost::this_thread::sleep(boost::posix_time::seconds(15));
     // vault_status_mutex_.lock();
   }
+  if (vault_status() == kVaultStarted) {
 #ifdef DEBUG
-  if (vault_status() == kVaultStarted)
     printf("In PDVault::UpdateSpaceOffered (%s), set space offered to %s "
            "on attempt #%d.\n", HexSubstr(pmid_).c_str(),
            base::itos_ull(vault_chunkstore_.available_space()).c_str(), n);
-  else if (result == 0)
+#endif
+    JoinMaidsafeNet();
+  } else if (result == 0) {
+#ifdef DEBUG
     printf("In PDVault::UpdateSpaceOffered (%s), amendment successful but "
            "vault now offline.\n", HexSubstr(pmid_).c_str());
-  else
+#endif
+  } else {
+#ifdef DEBUG
     printf("In PDVault::UpdateSpaceOffered (%s), vault offline, giving up "
            "after %d attempt(s).\n", HexSubstr(pmid_).c_str(), n);
 #endif
+  }
 }
 
 }  // namespace maidsafe_vault

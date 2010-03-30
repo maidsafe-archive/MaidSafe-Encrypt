@@ -34,6 +34,12 @@ bool KadOps::AddressIsLocal(const kad::ContactInfo &peer) {
       peer.local_port(), peer.ip()) == kad::LOCAL;
 }
 
+void KadOps::FindNode(const std::string &node_id,
+                      base::callback_func_type cb,
+                      const bool &local) {
+  knode_->FindNode(node_id, cb, local);
+}
+
 void KadOps::FindCloseNodes(const std::string &kad_key,
                             const base::callback_func_type &callback) {
   knode_->FindCloseNodes(kad_key, callback);
@@ -119,17 +125,21 @@ int KadOps::FindValue(const std::string &kad_key,
                       std::string *needs_cache_copy_id) {
   cache_holder->Clear();
   values->clear();
+  // closest_nodes->clear();
   needs_cache_copy_id->clear();
+
   CallbackObj kad_cb_obj;
   knode_->FindValue(kad_key, check_local,
                     boost::bind(&CallbackObj::CallbackFunc, &kad_cb_obj, _1));
   kad_cb_obj.WaitForCallback();
+
   if (kad_cb_obj.result().empty()) {
 #ifdef DEBUG
     printf("In KadOps::FindValue, fail - timeout.\n");
 #endif
     return kFindValueError;
   }
+
   kad::FindResponse find_response;
   if (!find_response.ParseFromString(kad_cb_obj.result())) {
 #ifdef DEBUG
@@ -138,27 +148,33 @@ int KadOps::FindValue(const std::string &kad_key,
     return kFindValueParseError;
   }
 
+  /* for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
+    kad::Contact contact;
+    contact.ParseFromString(find_response.closest_nodes(i));
+    closest_nodes->push_back(contact);
+    // printf("+-- node %s\n", HexSubstr(contact.node_id()).c_str());
+  } */
+
+  if (find_response.has_needs_cache_copy())
+    *needs_cache_copy_id = find_response.needs_cache_copy();
+
   if (find_response.result() != kad::kRpcResultSuccess) {
 #ifdef DEBUG
-    printf("In KadOps::FindValue, failed to find value for key %s"
-           " (found %i nodes, %i values and %i signed vals)\n",
-           HexSubstr(kad_key).c_str(), find_response.closest_nodes_size(),
-           find_response.values_size(), find_response.signed_values_size());
-    for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
-      kad::Contact contact;
-      contact.ParseFromString(find_response.closest_nodes(i));
-      printf("+-- node %s\n", HexSubstr(contact.node_id()).c_str());
-    }
+//    printf("In KadOps::FindValue, failed to find value for key %s"
+//           " (found %i nodes, %i values and %i signed vals)\n",
+//           HexSubstr(kad_key).c_str(), find_response.closest_nodes_size(),
+//           find_response.values_size(), find_response.signed_values_size());
+
 //    printf("Found alt val holder: %i\n",
 //           find_response.has_alternative_value_holder());
 #endif
     return kFindValueFailure;
   }
-  if (find_response.has_needs_cache_copy())
-    *needs_cache_copy_id = find_response.needs_cache_copy();
+
   // If the response has an alternative_value, then the value is the ID of a
   // peer which has a cached copy of the chunk.
-  if (find_response.has_alternative_value_holder()) {
+  if (find_response.result() == kad::kRpcResultSuccess &&
+      find_response.has_alternative_value_holder()) {
     *cache_holder = find_response.alternative_value_holder();
 #ifdef DEBUG
     printf("In KadOps::FindValue, node %s has cached the value.\n",
@@ -166,6 +182,7 @@ int KadOps::FindValue(const std::string &kad_key,
 #endif
     return kSuccess;
   }
+
   bool empty(true);
   for (int i = 0; i < find_response.signed_values_size(); ++i) {
     if (!find_response.signed_values(i).value().empty()) {
