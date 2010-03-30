@@ -82,14 +82,14 @@ void VaultRpcs::AddToReferenceList(
                              add_to_reference_list_response, done);
 }
 
-void VaultRpcs::RemoveFromReferenceList(
+void VaultRpcs::GetChunkReferences(
     const kad::Contact &peer,
     bool local,
     const boost::int16_t &transport_id,
-    maidsafe::RemoveFromReferenceListRequest
-        *remove_from_reference_list_request,
-    maidsafe::RemoveFromReferenceListResponse
-        *remove_from_reference_list_response,
+    maidsafe::GetChunkReferencesRequest
+        *get_chunk_references_request,
+    maidsafe::GetChunkReferencesResponse
+        *get_chunk_references_response,
     rpcprotocol::Controller *controller,
     google::protobuf::Closure *done) {
   std::string local_ip;
@@ -103,9 +103,8 @@ void VaultRpcs::RemoveFromReferenceList(
                                local_ip, local_port, peer.rendezvous_ip(),
                                peer.rendezvous_port());
   maidsafe::MaidsafeService::Stub service(&channel);
-  service.RemoveFromReferenceList(controller,
-      remove_from_reference_list_request, remove_from_reference_list_response,
-      done);
+  service.GetChunkReferences(controller, get_chunk_references_request,
+                             get_chunk_references_response, done);
 }
 
 void VaultRpcs::AmendAccount(

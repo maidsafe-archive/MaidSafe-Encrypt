@@ -115,6 +115,29 @@ void ClientRpcs::RemoveFromWatchList(
                               remove_from_watch_list_response, done);
 }
 
+void ClientRpcs::GetChunkReferences(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      GetChunkReferencesRequest *get_chunk_references_request,
+      GetChunkReferencesResponse *get_chunk_references_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done) {
+  std::string local_ip;
+  boost::uint16_t local_port(0);
+  if (local) {
+    local_ip = peer.local_ip();
+    local_port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.GetChunkReferences(controller, get_chunk_references_request,
+                             get_chunk_references_response, done);
+}
+
 void ClientRpcs::AmendAccount(const kad::Contact &peer,
                               bool local,
                               const boost::int16_t &transport_id,

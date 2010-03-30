@@ -252,58 +252,6 @@ void CreateBufferPacket(const std::string &owner,
   buffer_packet.SerializeToString(ser_packet);
 }
 
-size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
-                         const int &timeout_seconds,
-                         boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm) {
-  printf("\nChecking chunk references remotely...\n\n");
-  std::set<std::string> not_stored;
-  std::set<std::string> stored;
-  std::map<std::string, std::string>::iterator it;
-  for (it = chunks.begin(); it != chunks.end(); ++it)
-    not_stored.insert((*it).first);
-
-  int set_iteration = 0;
-  bool found(false);
-  int chunk_ref_count = 0;
-  boost::uint32_t timeout(base::get_epoch_time() + timeout_seconds);  // seconds
-  while (stored.size() < chunks.size() && (base::get_epoch_time() < timeout)) {
-    ++set_iteration;
-    if (!found) {
-      printf("Sleeping iteration %i\n", set_iteration);
-      boost::this_thread::sleep(boost::posix_time::seconds(10));
-    }
-    std::set<std::string>::iterator not_stored_it = not_stored.begin();
-    while (not_stored_it != not_stored.end()) {
-      kad::ContactInfo cache_holder;
-      std::vector<std::string> chunk_holders_ids;
-      std::string needs_cache_copy_id;
-      sm->kad_ops_->FindValue(*not_stored_it, false, &cache_holder,
-                              &chunk_holders_ids, &needs_cache_copy_id);
-      if (chunk_holders_ids.size() >= 1) {
-        printf("Found chunk ref for %s, got %u holders.\n",
-               HexSubstr(*not_stored_it).c_str(), chunk_holders_ids.size());
-        not_stored.erase(*not_stored_it);
-        stored.insert(*not_stored_it);
-        ++chunk_ref_count;
-        found = true;
-        break;
-      } else {
-        printf("Not there with chunk ref for %s, got %u holders.\n",
-               HexSubstr(*not_stored_it).c_str(), chunk_holders_ids.size());
-      }
-      ++not_stored_it;
-      found = false;
-    }
-  }
-  if (!not_stored.empty()) {
-    printf("Could NOT find refs to chunks:\n");
-    for (std::set<std::string>::iterator not_stored_it = not_stored.begin();
-         not_stored_it != not_stored.end(); ++not_stored_it)
-      printf("\t - %s\n", HexSubstr(*not_stored_it).c_str());
-  }
-  return chunk_ref_count;
-}
-
 }  // namespace testpdvault
 
 namespace maidsafe_vault {
@@ -312,7 +260,7 @@ static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNumOfClients = 1;
 static const int kNetworkSize = kKadStoreThreshold + kMinChunkCopies +
                                 kNumOfClients;
-static const int kNumOfTestChunks = kNetworkSize * 1.5;
+static const int kNumOfTestChunks = kNetworkSize + 1;
 /**
  * Note: StoreAndGetChunks only works for small K due to resource problems
  *       Recommended are K = 8 and kMinSuccessfulPecentageStore = 50%
@@ -499,20 +447,18 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   printf("\nWaiting for chunks to get stored...\n");
   boost::this_thread::sleep(boost::posix_time::seconds(15));
 
-  printf("\nChecking chunks and refs locally...\n");
+  printf("\nChecking chunks locally...\n");
 
-  // checking for chunks and reference packets
-  std::set<std::string> stored_chunks, stored_refs;
+  // checking for chunks
+  std::set<std::string> stored_chunks;
   int iteration = 0;
-  while ((stored_chunks.size() < chunks.size() ||
-         stored_refs.size() < chunks.size()) &&
-         iteration < 18) {
+  while (stored_chunks.size() < chunks.size() && iteration < 18) {
     ++iteration;
     printf("\n-- Sleeping iteration %i --\n\n", iteration);
     boost::this_thread::sleep(boost::posix_time::seconds(10));
 
     for (it = chunks.begin(); it != chunks.end(); ++it) {
-      int chunk_count(0), ref_count(0);
+      int chunk_count(0);
       std::vector<std::string> values;
 
       for (int vault_no = 0; vault_no < kNetworkSize; ++vault_no) {
@@ -522,13 +468,6 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
                  HexSubstr(pdvaults_[vault_no]->pmid_).c_str(),
                  HexSubstr((*it).first).c_str());
           ++chunk_count;
-        }
-        if (stored_refs.count((*it).first) == 0 &&
-            pdvaults_[vault_no]->knode_->FindValueLocal((*it).first, &values)) {
-          printf("Vault %d (%s) has %d refs to chunk %s.\n", vault_no,
-                 HexSubstr(pdvaults_[vault_no]->pmid_).c_str(),
-                 values.size(), HexSubstr((*it).first).c_str());
-          ++ref_count;
         }
       }
 
@@ -540,29 +479,12 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
                  HexSubstr((*it).first).c_str());
         }
       }
-
-      if (stored_refs.count((*it).first) == 0) {
-        if (ref_count >= kKadStoreThreshold) {
-          stored_refs.insert((*it).first);
-        } else {
-          printf("Only %d ref packets for %s stored so far.\n", ref_count,
-                 HexSubstr((*it).first).c_str());
-        }
-      }
     }
   }
 
   ASSERT_EQ(chunks.size(), stored_chunks.size());
   stored_chunks.clear();
-  ASSERT_EQ(chunks.size(), stored_refs.size());
-  stored_refs.clear();
 
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
-
-  ASSERT_EQ(chunks.size(),
-            testpdvault::CheckStoredCopies(chunks, 120, clients_[0]->msm));
-
-  boost::this_thread::sleep(boost::posix_time::seconds(20));
   printf("\nTrying to retrieve stored chunks...\n");
 
   // Check each chunk can be retrieved correctly
@@ -579,9 +501,9 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
     }
   }
 
-  printf("\nMaking each chunk unique, but keep ref packets...\n");
+  printf("\nMaking each chunk unique, but keep references...\n");
 
-  // Remove all but one copy of each chunk, but leave reference packet showing
+  // Remove all but one copy of each chunk, but leave reference list showing
   // multiple chunk holders.
   for (it = chunks.begin(); it != chunks.end(); ++it) {
     bool first_copy(true);
@@ -621,7 +543,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   printf("\nRemoving all chunks except one...\n");
 
   // Remove all copies of each chunk except the first one, but leave reference
-  // packet showing multiple chunk holders.
+  // list showing multiple chunk holders.
   bool first_chunk(true);
   for (it = chunks.begin(); it != chunks.end(); ++it) {
     for (int vault_no = 0; vault_no < kNetworkSize; ++vault_no) {

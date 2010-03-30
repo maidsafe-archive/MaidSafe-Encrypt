@@ -1910,16 +1910,6 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   // wait for amendments by the chunk info holder
   vault_service_->thread_pool_.waitForDone();
 
-  // check ref packet
-  {
-    kad::SignedValue signed_value;
-    std::vector<std::string> values;
-    ASSERT_TRUE(knode_->FindValueLocal(chunk_name, &values));
-    ASSERT_EQ(size_t(1), values.size());
-    signed_value.ParseFromString(values.front());
-    ASSERT_EQ(vlt_pmid, signed_value.value());
-  }
-
   // SpaceGiven should be the chunk size
   {
     maidsafe::AccountStatusResponse asrsp;

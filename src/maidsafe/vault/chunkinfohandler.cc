@@ -343,6 +343,30 @@ int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
   return 0;
 }
 
+int ChunkInfoHandler::GetActiveReferences(const std::string chunk_name,
+                                          std::list<std::string> *references) {
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
+  if (chunk_infos_.count(chunk_name) == 0)
+    return kChunkInfoInvalidName;
+
+  ChunkInfo &ci = chunk_infos_[chunk_name];
+
+  if (ci.watcher_count == 0 && ci.watcher_checksum == 0)
+    return kChunkInfoNoActiveWatchers;
+
+  boost::uint32_t now = base::get_epoch_time();
+
+  for (std::list<ReferenceListEntry>::iterator it = ci.reference_list.begin();
+       it != ci.reference_list.end(); ++it) {
+    if (it->last_seen + kChunkInfoRefActiveTimeout >= now)
+      references->push_back(it->pmid);
+  }
+
+  return kSuccess;
+}
+
 void ChunkInfoHandler::SetStoringDone(const std::string &chunk_name,
                                       const std::string &pmid) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);

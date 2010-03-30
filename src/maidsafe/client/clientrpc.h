@@ -71,6 +71,14 @@ class ClientRpcs {
       RemoveFromWatchListResponse *remove_from_watch_list_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done);
+  virtual void GetChunkReferences(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      GetChunkReferencesRequest *get_chunk_references_request,
+      GetChunkReferencesResponse *get_chunk_references_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done);
   virtual void AmendAccount(const kad::Contact &peer,
                             bool local,
                             const boost::int16_t &transport_id,

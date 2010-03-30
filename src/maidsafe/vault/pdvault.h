@@ -330,7 +330,7 @@ class PDVault {
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   fs::path kad_config_file_;
   QThreadPool thread_pool_;
-  boost::thread maidsafe_join_thread_, create_account_thread_;
+  boost::thread /* maidsafe_join_thread_, */ create_account_thread_;
   boost::shared_ptr<base::PDRoutingTableHandler> routing_table_;
 };
 
