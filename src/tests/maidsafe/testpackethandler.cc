@@ -65,7 +65,8 @@ TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateMID) {
   ASSERT_EQ(co_.Hash(hashusername + hashpin, "", crypto::STRING_STRING,
       false), boost::any_cast<std::string>(result["name"]));
 
-  ASSERT_NE(0, boost::any_cast<boost::uint32_t>(result["rid"]));
+  ASSERT_NE(boost::uint32_t(0),
+            boost::any_cast<boost::uint32_t>(result["rid"]));
 }
 
 TEST_F(SystemPacketHandlerTest, BEH_MAID_GetRidMID) {

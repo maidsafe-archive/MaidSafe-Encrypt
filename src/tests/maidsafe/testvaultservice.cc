@@ -131,8 +131,7 @@ class VaultServicesTest : public testing::Test {
                                       vault_chunkstore_, knode_.get(),
                                       vault_service_logic_, transport_id);
 
-    boost::shared_ptr<maidsafe::GetSyncDataResponse>
-        get_sync_data_response(new maidsafe::GetSyncDataResponse);
+    maidsafe::GetSyncDataResponse get_sync_data_response;
     vault_service_->AddStartupSyncData(get_sync_data_response);
 
     vault_service_logic_->Init(vault_pmid_,
@@ -461,8 +460,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
-  boost::shared_ptr<maidsafe::GetSyncDataResponse>
-      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
 
   rpcprotocol::Controller controller;
@@ -799,8 +797,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
                                     &mock_vault_service_logic,
                                     udt_transport_.GetID());
 
-  boost::shared_ptr<maidsafe::GetSyncDataResponse>
-      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
 
   rpcprotocol::Controller controller;
@@ -1228,8 +1225,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
-  boost::shared_ptr<maidsafe::GetSyncDataResponse>
-      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
 
   rpcprotocol::Controller controller;
@@ -1442,8 +1438,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
-  boost::shared_ptr<maidsafe::GetSyncDataResponse>
-      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
 
   rpcprotocol::Controller controller;
@@ -1681,8 +1676,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
-  boost::shared_ptr<maidsafe::GetSyncDataResponse>
-      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
 
   rpcprotocol::Controller controller;
@@ -1916,16 +1910,6 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   // wait for amendments by the chunk info holder
   vault_service_->thread_pool_.waitForDone();
 
-  // check ref packet
-  {
-    kad::SignedValue signed_value;
-    std::vector<std::string> values;
-    ASSERT_TRUE(knode_->FindValueLocal(chunk_name, &values));
-    ASSERT_EQ(size_t(1), values.size());
-    signed_value.ParseFromString(values.front());
-    ASSERT_EQ(vlt_pmid, signed_value.value());
-  }
-
   // SpaceGiven should be the chunk size
   {
     maidsafe::AccountStatusResponse asrsp;
@@ -1946,8 +1930,7 @@ TEST_F(MockVaultServicesTest, DISABLED_FUNC_MAID_ServicesRemoveFromReferenceList
                                     &mock_vault_service_logic_,
                                     udt_transport_.GetID());
 
-  boost::shared_ptr<maidsafe::GetSyncDataResponse>
-      get_sync_data_response(new maidsafe::GetSyncDataResponse);
+  maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
 
   ASSERT_TRUE(false) << "-- NOT IMPLEMENTED --";

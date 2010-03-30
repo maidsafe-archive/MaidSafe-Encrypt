@@ -97,17 +97,14 @@ message AddToReferenceListResponse {
   optional bytes pmid = 2;
 }
 
-message RemoveFromReferenceListRequest {
+message GetChunkReferencesRequest {
   required bytes chunkname = 1;
-  required bytes pmid = 2;  // vault's PMID
-  required bytes public_key = 3;
-  required bytes public_key_signature = 4;
-  required bytes request_signature = 5;
 }
 
-message RemoveFromReferenceListResponse {
+message GetChunkReferencesResponse {
   required uint32 result = 1;
   optional bytes pmid = 2;
+  repeated bytes references = 3;
 }
 
 message AmendAccountRequest {
@@ -234,6 +231,32 @@ message GetSyncDataResponse {
   required uint32 result = 1;
   optional maidsafe_vault.VaultAccountSet vault_account_set = 2;
   optional maidsafe_vault.ChunkInfoMap chunk_info_map = 3;
+}
+
+message GetAccountRequest {
+  required bytes account_pmid = 1;  // PMID of account being queried
+  required bytes pmid = 2;
+  required bytes public_key = 3;
+  required bytes public_key_signature = 4;
+  required bytes request_signature = 5;
+}
+
+message GetAccountResponse {
+  required uint32 result = 1;
+  optional maidsafe_vault.VaultAccountSet.VaultAccount vault_account = 2;
+}
+
+message GetChunkInfoRequest {
+  required bytes chunkname = 1;
+  required bytes pmid = 2;
+  required bytes public_key = 3;
+  required bytes public_key_signature = 4;
+  required bytes request_signature = 5;
+}
+
+message GetChunkInfoResponse {
+  required uint32 result = 1;
+  optional maidsafe_vault.ChunkInfoMap.VaultChunkInfo vault_chunk_info = 2;
 }
 
 message VaultCommunication {

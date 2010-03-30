@@ -171,6 +171,16 @@ struct SwapChunkArgs {
   base::callback_func_type cb_;
 };
 
+struct SyncDataArgs {
+  explicit SyncDataArgs(boost::shared_ptr<boost::mutex> mut)
+      : mutex(mut),
+        get_sync_data_response(),
+        controller() {}
+  boost::shared_ptr<boost::mutex> mutex;
+  maidsafe::GetSyncDataResponse get_sync_data_response;
+  rpcprotocol::Controller controller;
+};
+
 class PDVault {
  public:
   // vault_dir will contain .kadconfig (copied from read_only_kad_config_file)
@@ -248,9 +258,7 @@ class PDVault {
                             boost::shared_ptr<maidsafe::AmendAccountData> data);
   // Send request to kad-closest and k-th closest peers for their maidsafe info.
   void JoinMaidsafeNet();
-  void JoinMaidsafeNetCallback(
-      boost::shared_ptr<maidsafe::GetSyncDataResponse> get_sync_data_response,
-      boost::shared_ptr<boost::mutex> mutex);
+  void JoinMaidsafeNetCallback(boost::shared_ptr<SyncDataArgs> sync_data_args);
   void UpdateSpaceOffered();
 
 
@@ -322,7 +330,8 @@ class PDVault {
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   fs::path kad_config_file_;
   QThreadPool thread_pool_;
-  boost::thread maidsafe_join_thread_, create_account_thread_;
+  boost::thread /* maidsafe_join_thread_, */ create_account_thread_;
+  boost::shared_ptr<base::PDRoutingTableHandler> routing_table_;
 };
 
 }  // namespace maidsafe_vault

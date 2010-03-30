@@ -114,7 +114,7 @@ class VaultService : public maidsafe::MaidsafeService {
                const boost::int16_t &transport_id);
   ~VaultService() {}
   void AddStartupSyncData(
-      boost::shared_ptr<maidsafe::GetSyncDataResponse> get_sync_data_response);
+      const maidsafe::GetSyncDataResponse &get_sync_data_response);
   virtual void StorePrep(google::protobuf::RpcController* controller,
                          const maidsafe::StorePrepRequest *request,
                          maidsafe::StorePrepResponse *response,
@@ -137,10 +137,10 @@ class VaultService : public maidsafe::MaidsafeService {
       const maidsafe::AddToReferenceListRequest *request,
       maidsafe::AddToReferenceListResponse *response,
       google::protobuf::Closure *done);
-  virtual void RemoveFromReferenceList(
+  virtual void GetChunkReferences(
       google::protobuf::RpcController* controller,
-      const maidsafe::RemoveFromReferenceListRequest *request,
-      maidsafe::RemoveFromReferenceListResponse *response,
+      const maidsafe::GetChunkReferencesRequest *request,
+      maidsafe::GetChunkReferencesResponse *response,
       google::protobuf::Closure *done);
   virtual void AmendAccount(google::protobuf::RpcController* controller,
                             const maidsafe::AmendAccountRequest *request,
@@ -171,13 +171,21 @@ class VaultService : public maidsafe::MaidsafeService {
                          maidsafe::SwapChunkResponse *response,
                          google::protobuf::Closure *done);
   virtual void CacheChunk(google::protobuf::RpcController* controller,
-                         const maidsafe::CacheChunkRequest *request,
-                         maidsafe::CacheChunkResponse *response,
-                         google::protobuf::Closure *done);
+                          const maidsafe::CacheChunkRequest *request,
+                          maidsafe::CacheChunkResponse *response,
+                          google::protobuf::Closure *done);
   virtual void GetSyncData(google::protobuf::RpcController* controller,
                            const maidsafe::GetSyncDataRequest *request,
                            maidsafe::GetSyncDataResponse *response,
                            google::protobuf::Closure *done);
+  virtual void GetAccount(google::protobuf::RpcController* controller,
+                          const maidsafe::GetAccountRequest *request,
+                          maidsafe::GetAccountResponse *response,
+                          google::protobuf::Closure *done);
+  virtual void GetChunkInfo(google::protobuf::RpcController* controller,
+                            const maidsafe::GetChunkInfoRequest *request,
+                            maidsafe::GetChunkInfoResponse *response,
+                            google::protobuf::Closure *done);
   virtual void VaultStatus(google::protobuf::RpcController* controller,
                            const maidsafe::VaultStatusRequest *request,
                            maidsafe::VaultStatusResponse *response,
@@ -217,6 +225,7 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList);
   FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetChunkReferences);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidityCheck);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesCreateBP);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo);
@@ -280,6 +289,9 @@ class VaultService : public maidsafe::MaidsafeService {
   void RemoteVaultAbleToStore(const boost::uint64_t &size,
                               const std::string &account_pmid,
                               const VoidFuncOneInt &callback);
+  // Returns whether the node is within "count" closest nodes (Kademlia closest)
+  bool NodeWithinClosest(const std::string &peer_pmid,
+                         const boost::uint16_t &count);
   std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
   VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;

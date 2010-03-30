@@ -100,7 +100,7 @@ enum ReturnCode {
   // Store Managers
   kStoreManagerError = -7001,
   kNotConnected = -7002,
-  kLoadChunkFindValueFailure = -7003,
+  kLoadChunkFindNodesFailure = -7003,
   kStoreChunkFindNodesFailure = -7004,
   kStoreChunkError = -7005,
   kStoreCancelledOrDone = -7006,
@@ -257,7 +257,9 @@ enum ReturnCode {
   kChunkInfoHandlerNotStarted = -5501,
   kChunkInfoInvalidSize = -5502,
   kChunkInfoInvalidName = -5503,
-  kChunkInfoCannotDelete = -5504
+  kChunkInfoCannotDelete = -5504,
+  kChunkInfoExists = -5505,
+  kChunkInfoNoActiveWatchers = -5506
 
   // Vault Buffer Packet Handler
 };

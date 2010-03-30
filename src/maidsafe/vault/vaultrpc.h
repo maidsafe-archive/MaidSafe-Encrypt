@@ -64,14 +64,14 @@ class VaultRpcs {
       maidsafe::AddToReferenceListResponse *add_to_reference_list_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done);
-  void RemoveFromReferenceList(
+  void GetChunkReferences(
       const kad::Contact &peer,
       bool local,
       const boost::int16_t &transport_id,
-      maidsafe::RemoveFromReferenceListRequest
-          *remove_from_reference_list_request,
-      maidsafe::RemoveFromReferenceListResponse
-          *remove_from_reference_list_response,
+      maidsafe::GetChunkReferencesRequest
+          *get_chunk_references_request,
+      maidsafe::GetChunkReferencesResponse
+          *get_chunk_references_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done);
   virtual void AmendAccount(

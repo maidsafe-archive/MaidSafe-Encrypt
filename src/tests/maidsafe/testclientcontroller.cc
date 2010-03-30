@@ -1013,7 +1013,7 @@ TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerClearStaleMessages) {
   printf("Before sleep to wait for message clear.\n");
   boost::this_thread::sleep(boost::posix_time::seconds(21));
   printf("After sleep to wait for message clear.\n");
-  ASSERT_EQ(0, cc_->received_messages_.size());
+  ASSERT_EQ(size_t(0), cc_->received_messages_.size());
   cc_->logging_out_ = true;
   thr.join();
 }

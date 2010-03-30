@@ -597,4 +597,14 @@ TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
             crypto::STRING_STRING, false), msid_name);
 }
 
+TEST(AuthenticationTest1, BEH_MAID_TestDestructor) {
+  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore("tmp", 0, 0));
+  boost::shared_ptr<LocalStoreManager> sm(new LocalStoreManager(chunkstore));
+  Authentication *auth = new Authentication;
+  auth->Init(kNoOfSystemPackets, sm);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
+  delete auth;
+  SUCCEED();
+}
+
 }  // namespace maidsafe
