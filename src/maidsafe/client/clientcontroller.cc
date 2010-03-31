@@ -1808,7 +1808,7 @@ std::string ClientController::GenerateBPInfo(
   EndPoint *ep = bpi.add_ep();
   *ep = ss_->Ep();
   PersonalDetails *pd = bpi.mutable_pd();
-  if (info.empty()) {
+  if (!info.empty()) {
     pd->set_full_name(info[0]);
     pd->set_phone_number(info[1]);
     pd->set_birthday(info[2]);

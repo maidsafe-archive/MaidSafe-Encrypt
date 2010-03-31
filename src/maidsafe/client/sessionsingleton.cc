@@ -31,7 +31,8 @@ SessionSingleton* SessionSingleton::single = 0;
 boost::mutex ss_mutex;
 
 SessionSingleton::SessionSingleton()
-    : ud_(), ka_(), ch_(), psh_(), conversations_() {
+    : ud_(), ka_(), ch_(), psh_(), conversations_(), live_contacts_(),
+      lc_mutex_() {
   ResetSession();
 }
 
@@ -79,6 +80,7 @@ bool SessionSingleton::ResetSession() {
   ch_.ClearContacts();
   psh_.MI_ClearPrivateShares();
   conversations_.clear();
+  live_contacts_.clear();
   return true;
 }
 
@@ -536,16 +538,45 @@ void SessionSingleton::ClearConversations() {
 //// Live Contact Handling ////
 ///////////////////////////////
 
+int SessionSingleton::AddLiveContact(const std::string &contact,
+                                     const std::vector<EndPoint> &end_points,
+                                     int status) {
+  ConnectionDetails cd;
+  cd.external_ep = end_points[0];
+  cd.internal_ep = end_points[1];
+  cd.rendezvous_ep = end_points[2];
+  cd.status = status;
+  cd.transport = 0;
+  cd.connection_id = 0;
+  cd.init_timestamp = 0;
+
+  std::pair<live_map::iterator, bool> p;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    p = live_contacts_.insert(
+        std::pair<std::string, ConnectionDetails>(contact, cd));
+  }
+  if (!p.second)
+    return kAddLiveContactFailure;
+
+  return 0;
+}
 int SessionSingleton::LivePublicUsernameList(std::list<std::string> *contacts) {
   contacts->clear();
-  live_map::iterator it;
-  for (it = live_contacts_.begin(); it != live_contacts_.end(); ++it)
-    contacts->push_back(it->first);
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it;
+    for (it = live_contacts_.begin(); it != live_contacts_.end(); ++it)
+      contacts->push_back(it->first);
+  }
   return 0;
 }
 int SessionSingleton::LiveContactMap(
     std::map<std::string, ConnectionDetails> *live_contacts) {
-  *live_contacts = live_contacts_;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    *live_contacts = live_contacts_;
+  }
   return 0;
 }
 int SessionSingleton::LiveContactDetails(const std::string &contact,
@@ -559,18 +590,19 @@ int SessionSingleton::LiveContactDetails(const std::string &contact,
   *connection_id = 0;
   *status = 0;
   *init_timestamp = 0;
-  live_map::iterator it = live_contacts_.find(contact);
-  if (it == live_contacts_.end())
-    return kLiveContactNotFound;
-
-  end_points->push_back(it->second.external_ep);
-  end_points->push_back(it->second.internal_ep);
-  end_points->push_back(it->second.rendezvous_ep);
-  *transport_id = it->second.transport;
-  *connection_id = it->second.connection_id;
-  *status = it->second.status;
-  *init_timestamp = it->second.init_timestamp;
-
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    end_points->push_back(it->second.external_ep);
+    end_points->push_back(it->second.internal_ep);
+    end_points->push_back(it->second.rendezvous_ep);
+    *transport_id = it->second.transport;
+    *connection_id = it->second.connection_id;
+    *status = it->second.status;
+    *init_timestamp = it->second.init_timestamp;
+  }
   return 0;
 }
 int SessionSingleton::LiveContactTransportConnection(
@@ -579,85 +611,92 @@ int SessionSingleton::LiveContactTransportConnection(
     boost::uint32_t *connection_id) {
   *transport_id = 0;
   *connection_id = 0;
-  live_map::iterator it = live_contacts_.find(contact);
-  if (it == live_contacts_.end())
-    return kLiveContactNotFound;
-  *transport_id = it->second.transport;
-  *connection_id = it->second.connection_id;
-  return 0;
-}
-int SessionSingleton::AddLiveContact(const std::string &contact,
-                                     const std::vector<EndPoint> &end_points,
-                                     int status) {
-  ConnectionDetails cd;
-  cd.external_ep = end_points[0];
-  cd.internal_ep = end_points[1];
-  cd.rendezvous_ep = end_points[2];
-  cd.status = status;
-
-  std::pair<live_map::iterator, bool> p =
-      live_contacts_.insert(
-          std::pair<std::string, ConnectionDetails>(contact, cd));
-  if (!p.second)
-    return kAddLiveContactFailure;
-
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    *transport_id = it->second.transport;
+    *connection_id = it->second.connection_id;
+  }
   return 0;
 }
 int SessionSingleton::StartLiveConnection(const std::string &contact,
                                           boost::uint16_t transport_id,
                                           const boost::uint32_t &conn_id) {
-  live_map::iterator it = live_contacts_.find(contact);
-  if (it == live_contacts_.end())
-    return kLiveContactNotFound;
-  it->second.transport = transport_id;
-  it->second.connection_id = conn_id;
-  it->second.init_timestamp = base::get_epoch_time();
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    it->second.transport = transport_id;
+    it->second.connection_id = conn_id;
+    it->second.init_timestamp = base::get_epoch_time();
+  }
   return 0;
 }
 int SessionSingleton::ModifyTransportId(const std::string &contact,
                                         boost::uint16_t transport_id) {
-  live_map::iterator it = live_contacts_.find(contact);
-  if (it == live_contacts_.end())
-    return kLiveContactNotFound;
-  it->second.transport = transport_id;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    it->second.transport = transport_id;
+  }
   return 0;
 }
 int SessionSingleton::ModifyConnectionId(const std::string &contact,
                                          const boost::uint32_t &connection_id) {
-  live_map::iterator it = live_contacts_.find(contact);
-  if (it == live_contacts_.end())
-    return kLiveContactNotFound;
-  it->second.connection_id = connection_id;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    it->second.connection_id = connection_id;
+  }
   return 0;
 }
 int SessionSingleton::ModifyEndPoint(const std::string &contact,
                                      const EndPoint &end_point, int which) {
   if (which < 0 || which > 2)
     return kLiveContactNoEp;
-  live_map::iterator it = live_contacts_.find(contact);
-  if (it == live_contacts_.end())
-    return kLiveContactNotFound;
-  switch (which) {
-    case 0: it->second.external_ep = end_point; break;
-    case 1: it->second.internal_ep = end_point; break;
-    case 2: it->second.rendezvous_ep = end_point; break;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    switch (which) {
+      case 0: it->second.external_ep = end_point; break;
+      case 1: it->second.internal_ep = end_point; break;
+      case 2: it->second.rendezvous_ep = end_point; break;
+    }
   }
   return 0;
 }
 int SessionSingleton::ModifyStatus(const std::string &contact, int status) {
-  live_map::iterator it = live_contacts_.find(contact);
-  if (it == live_contacts_.end())
-    return kLiveContactNotFound;
-  it->second.status = status;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    it->second.status = status;
+  }
   return 0;
 }
 int SessionSingleton::DeleteLiveContact(const std::string &contact) {
-  size_t n = live_contacts_.erase(contact);
-  printf("%d\n", n);
-  return 0;
+  size_t n(0);
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    n = live_contacts_.erase(contact);
+  }
+  return n;
 }
 void SessionSingleton::ClearLiveContacts() {
-  live_contacts_.clear();
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_contacts_.clear();
+  }
 }
 
 }  // namespace maidsafe

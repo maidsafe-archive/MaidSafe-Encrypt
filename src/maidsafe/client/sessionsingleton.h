@@ -268,6 +268,9 @@ class SessionSingleton {
   ///////////////////////////////
 
   typedef std::map<std::string, ConnectionDetails> live_map;
+  int AddLiveContact(const std::string &contact,
+                     const std::vector<EndPoint> &end_points,
+                     int status);
   int LivePublicUsernameList(std::list<std::string> *contacts);
   int LiveContactMap(std::map<std::string, ConnectionDetails> *live_contacts);
   int LiveContactDetails(const std::string &contact,
@@ -279,9 +282,6 @@ class SessionSingleton {
   int LiveContactTransportConnection(const std::string &contact,
                                      boost::uint16_t *transport_id,
                                      boost::uint32_t *connection_id);
-  int AddLiveContact(const std::string &contact,
-                     const std::vector<EndPoint> &end_points,
-                     int status);
   int StartLiveConnection(const std::string &contact,
                           boost::uint16_t transport_id,
                           const boost::uint32_t &connection_id);
@@ -309,6 +309,7 @@ class SessionSingleton {
   PrivateShareHandler psh_;
   std::set<std::string> conversations_;
   std::map<std::string, ConnectionDetails> live_contacts_;
+  boost::mutex lc_mutex_;
 };
 
 }  // namespace maidsafe
