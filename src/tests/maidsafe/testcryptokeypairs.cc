@@ -54,8 +54,7 @@ TEST(CryptoKeyPairsTest, FUNC_MAID_GetMultipleCryptoKeys) {
     kp.ClearKeys();
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
-
-  ASSERT_EQ(static_cast<size_t>(no_of_keys), kps.size());
+  ASSERT_EQ(no_of_keys, kps.size());
 }
 
 TEST(CryptoKeyPairsTest, FUNC_MAID_ReuseObject) {
@@ -122,12 +121,35 @@ TEST(CryptoKeyPairsTest, FUNC_MAID_AccessFromDiffThreads) {
   }
 }
 
+void GetKeyPair(CryptoKeyPairs *ckp, int *counter) {
+  crypto::RsaKeyPair kp;
+  if (ckp->GetKeyPair(&kp)) {
+    ASSERT_FALSE(kp.private_key().empty());
+    ASSERT_FALSE(kp.public_key().empty());
+    ++(*counter);
+  }
+}
+
 TEST(CryptoKeyPairsTest, BEH_MAID_DestroyObjectWhileGenKeys) {
   CryptoKeyPairs *ckp = new CryptoKeyPairs;
-  ckp->StartToCreateKeyPairs(100);
-  boost::this_thread::sleep(boost::posix_time::seconds(6));
+  ckp->StartToCreateKeyPairs(20);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
   delete ckp;
-  SUCCEED();
+}
+
+
+TEST(CryptoKeyPairsTest, BEH_MAID_DestroyObjectWithGetKeyReq) {
+  CryptoKeyPairs *ckp = new CryptoKeyPairs;
+  ckp->StartToCreateKeyPairs(1);
+  boost::thread_group thrds;
+  int counter = 0;
+  for (int i = 0; i < 3; ++i) {
+    thrds.create_thread(boost::bind(&GetKeyPair, ckp, &counter));
+  }
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  delete ckp;
+  thrds.join_all();
+  ASSERT_EQ(1, counter);
 }
 
 }  // namespace maidsafe

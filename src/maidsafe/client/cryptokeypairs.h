@@ -47,11 +47,11 @@ class CryptoKeyPairs : public boost::noncopyable {
  private:
   void CreateKeyPair();
   void FinishedCreating();
-  boost::int16_t keypairs_done_, keypairs_todo_;
+  boost::int16_t keypairs_done_, keypairs_todo_, pending_requests_;
   std::list<crypto::RsaKeyPair> keypairs_;
   std::vector< boost::shared_ptr<boost::thread> > thrds_;
-  boost::mutex keyslist_mutex_, keys_done_mutex_, start_mutex_;
-  boost::condition_variable keys_cond_;
+  boost::mutex keyslist_mutex_, keys_done_mutex_, start_mutex_, req_mutex_;
+  boost::condition_variable keys_cond_, req_cond_;
   bool started_, destroying_this_;
 };
 
